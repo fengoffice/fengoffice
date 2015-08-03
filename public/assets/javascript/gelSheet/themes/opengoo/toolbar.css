@@ -1,0 +1,75 @@
+.ToolBar {
+	font-family: Arial;
+	font-size: 8pt;
+	border: solid 0px #4B4B6F;
+	overflow: hidden;
+	/*background-color:#AAA;*/
+	/*background-color:#a0bff5;*/
+	background-color: #DFDFEA ; 
+}
+
+.ToolBarButton {
+	font-family: Arial;
+	font-size: 8pt;
+	overflow: hidden;
+	background-color: #DFDFEA ; 
+	background-image:url(./img/backgroundShadowLight.png);
+}
+
+
+.ToolBarButton:hover {
+	border: solid 0px #4B4B6F;
+	background-color: #FFC06F;
+}
+
+#FontSizeCombo{
+	top:0px;
+	left:0px;
+	height: 24px;
+	width:70px;
+}
+
+
+
+#FormulaBar{
+	 padding-top: 5px ;	 
+	 padding-bottom: 2px ;
+	 border: none ;	 
+	 background-color: white ;
+	 font-family: Arial ;
+	 font-weight: bold ;
+}
+
+#nameSelector{
+	 padding-top: 5px ;	 
+	 padding-bottom: 2px ;
+	 border: none ; 
+	 background-color: white ;
+	 font-family: Arial ;
+	 font-weight: bold ;
+	 text-align: center ;
+	 
+}
+
+.nameSelectorContainer .x-form-field-wrap {
+	overflow: hidden ;
+}
+
+.nameSelectorContainer .x-form-field-wrap .x-form-trigger  {
+	background-color: white ;
+	height: 23px;
+	padding-top: 4px ;
+	border: none ;
+	width: 36px ;
+	background: url(img/icons/name-selector-trigger.png) no-repeat ;
+}
+
+.nameSelectorContainer .x-form-field-wrap .x-form-text  {
+	background-image: none ;
+}	
+
+.nameSelectorContainer {
+	width: 79px ;
+	border: none ;
+	background-color: white ;
+}

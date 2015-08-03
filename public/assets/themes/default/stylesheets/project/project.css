@@ -1,0 +1,824 @@
+/* -------------------------------- COMMENTS -------------------------------*/
+
+.objectComments div.comment {
+  /*margin: 8px 0;*/
+  padding: 10px;
+}
+
+.objectComments .commentHead {
+  color: #333;
+  font-size: 10px;
+}
+
+.objectComments .commentHead a {
+  font-weight: bolder;
+}
+
+.objectComments .commentBody {
+  border: 1px solid #ccc;
+  border-width: 1px 0px 0px 0px;
+  padding: 0 10px;
+}
+.objectComments .commentBody .commentText {
+	float:left;
+	margin-top:10px;
+}
+.objectComments .commentUserAvatar {
+  float: left;
+  margin: 10px 10px 10px 0;
+}
+
+.postComment .commentUserAvatar {
+	float: left;
+	margin: 1px 10px 1px 7px;
+}
+.postComment .formAddCommentText {
+	float:left;
+}
+.postComment .formAddCommentText textarea {
+	height: 50px;
+	width: 100%;
+	overflow: hidden;
+}
+.postComment .button-container {
+	margin-left: 15px;
+	float:left;
+}
+.postComment .button-container button {
+	margin-top: 0;
+}
+
+.postComment {
+  margin-top: 5px;
+  margin-bottom: 3px;
+  padding: 3px;
+  font-size: 120%;
+  font-weight: bolder;
+  /*border-bottom: 1px solid #ccc;*/
+}
+
+.commentsTitle {
+  margin-top: 10px;
+  margin-bottom: 8px;
+  padding: 3px;
+  font-size: 120%;
+  font-weight: bolder;
+  border-bottom: 1px solid #ccc;
+}
+
+
+
+/* -------------------------------- DOCUMENTS -------------------------------*/
+
+#FCKeditor1___Frame {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#fckform textarea {
+	margin: 20px;
+	max-width: 90%;
+	min-height: 400px;
+	max-height: 80%;
+}
+
+#fckform button {
+	margin-left: 20px;
+}
+
+
+div.filesOrderAndPagination {
+  border: 1px solid #ccc;
+  padding: 2px 5px;
+  font-size: 10px;
+  min-height: 20px;
+}
+
+div.filesOrder {
+  float: left;
+  line-height: 20px;
+}
+
+div.filesOrder span {
+  font-weight: bolder;
+}
+
+div.filesOrderAndPagination div.advancedPagination {
+  margin: 0;
+}
+
+/** File info **/
+
+div.listedFile {
+  margin: 2px 0;
+  padding: 2px;
+  clear: left;
+}
+
+div.listedFile div.fileIcon {
+  float: left;
+  width: 100px;
+  text-align: center;
+}
+
+div.listedFile div.fileInfo {
+  margin-left: 10px;
+}
+
+div.listedFile div.fileName {
+  padding-bottom: 1px;
+  font-size: 120%;
+  font-weight: bolder;
+}
+
+div.listedFile div.fileDescription p, div.listedFile div.fileDescription ul, div.listedFile div.fileDescription ol {
+  margin: 3px 0;
+}
+
+div.listedFile div.fileLastRevision, div.listedFile div.fileDetails, div.listedFile div.fileTags {
+  color: #666;
+}
+
+div.listedFile div.fileOptions {
+  margin-top: 1px;
+}
+
+/** Add / edit file **/
+
+#selectFileControl {
+  float: left;
+  width: 95%;
+}
+
+#selectFolderControl {
+  margin-left: 10px;
+}
+
+#selectFileControl label, #selectFolderControl label {
+  margin-top: 0;
+}
+
+#revisionControls {
+  margin-top: 10px;
+}
+
+#revisionControls label {
+  font-weight: bolder;
+}
+
+/** File details page **/
+
+#fileIcon {
+  float: left;
+  padding: 5px 5px 0 5px;
+  width: 100px;
+  text-align: center;
+}
+
+#fileInfo {
+  margin-left: 10px;
+}
+
+#fileInfo div span.propertyName {
+  font-weight: bolder;
+  color: #555;
+}
+
+div.revision {
+  margin: 5px;
+  padding: 5px 10px;
+}
+
+div.lastRevision {
+  border: 1px solid #E9BE31;
+}
+
+div.revisionName {
+  font-size: 13px;
+  color: #003562;
+  font-weight: bolder;
+}
+
+div.revisionName span {
+  font-weight: normal;
+  color: #333;
+  font-size: 10px;
+}
+
+div.revisionComment {
+  margin: 5px 0;
+  border: 1px solid #ccc;
+  border-width: 1px 0;
+  padding: 0 8px;
+}
+
+a.downloadLink {
+  font-weight: bolder;
+}
+
+a.downloadLink span {
+  font-weight: normal;
+}
+
+.save {
+	background-image: url(../images/16x16/save.png) !important;
+}
+
+.save_new_revision {
+	background-image: url(../images/16x16/save_new.png) !important;
+}
+
+.save_as {
+	background-image: url(../images/16x16/save_as.png) !important;
+}
+
+
+
+
+/* -------------------------------- FILES -------------------------------*/
+
+.save {
+	/*background-image: url(../../images/16x16/save.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/save.png) !important;
+}
+
+.save_new_revision {
+	background-image: url(../../images/16x16/save_new.png) !important;
+}
+
+.save_as {
+	/*background-image: url(../../images/16x16/save_as.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/save_as.png) !important;
+}
+
+div.filesOrderAndPagination {
+  border: 1px solid #ccc;
+  padding: 2px 5px;
+  font-size: 10px;
+  min-height: 20px;
+}
+
+div.filesOrder {
+  float: left;
+  line-height: 20px;
+}
+
+div.filesOrder span {
+  font-weight: bolder;
+}
+
+div.filesOrderAndPagination div.advancedPagination {
+  margin: 0;
+}
+
+/** File info **/
+
+div.listedFile {
+  margin: 2px 0;
+  padding: 2px;
+  clear: left;
+}
+
+div.listedFile div.fileIcon {
+  float: left;
+  width: 100px;
+  text-align: center;
+}
+
+div.listedFile div.fileInfo {
+}
+
+div.listedFile div.fileName {
+  padding-bottom: 1px;
+  font-size: 120%;
+  font-weight: bolder;
+}
+
+div.listedFile div.fileDescription p, div.listedFile div.fileDescription ul, div.listedFile div.fileDescription ol {
+  margin: 3px 0;
+}
+
+div.listedFile div.fileLastRevision, div.listedFile div.fileDetails, div.listedFile div.fileTags {
+  color: #666;
+}
+
+div.listedFile div.fileOptions {
+  margin-top: 1px;
+}
+
+/** Add / edit file **/
+
+#selectFileControl {
+  float: left;
+  width: 250px;
+}
+
+#selectFolderControl {
+  margin-left: 250px;
+}
+
+#selectFileControl label, #selectFolderControl label {
+  margin-top: 0;
+}
+
+#revisionControls {
+  margin-top: 10px;
+}
+
+#revisionControls label {
+  font-weight: bolder;
+}
+
+/** File details page **/
+
+#fileIcon {
+  float: left;
+  padding: 5px 5px 0 5px;
+  width: 100px;
+  text-align: center;
+}
+
+#fileInfo {
+  margin-left: 0px;
+}
+
+#fileInfo div span.propertyName {
+  font-weight: bolder;
+  color: #555;
+}
+
+div.revision {
+  margin: 5px;
+  padding: 5px 10px;
+}
+
+div.lastRevision {
+  border: 1px solid #E9BE31;
+}
+
+div.revisionName {
+  font-size: 13px;
+  color: #003562;
+  font-weight: bolder;
+}
+
+div.revisionName span {
+  font-weight: normal;
+  color: #333;
+  font-size: 10px;
+}
+
+div.revisionComment {
+  margin: 5px 0;
+  border: 1px solid #ccc;
+  border-width: 1px 0;
+  padding: 0 8px;
+}
+
+a.downloadLink {
+  font-weight: bolder;
+}
+
+a.downloadLink span {
+  font-weight: normal;
+}
+
+table.revisions {
+	width:100%;
+	border:2px solid #CCC;
+}
+
+table tr td.number {
+	vertical-align:middle;
+	text-align:center;
+	width:50px;
+	padding:6px;
+	border:2px solid #CCC;
+	border-right:0px solid;
+	color:#888;
+	font-size:24px;
+	font-weight:bold;
+}
+
+table tr td.line_header{
+	height:24px;
+	border-top:2px solid #CCC;
+	padding:2px;
+	padding-left:6px;
+}
+
+table tr td.line_header_icons{
+	width:40px;
+	border-right:2px solid #CCC;
+	border-top:2px solid #CCC;
+	text-align:right;
+	vertical-align: middle;
+}
+
+table tr td.line_comments{
+	border-left:1px solid #CCC;
+	border-top:1px solid #CCC;
+}
+
+table tr td.line_comments_icons{
+	text-align:right;
+	vertical-align:top;
+	padding-top:4px;
+	min-height:20px;
+	border-top:1px solid #CCC;
+}
+
+
+/* -------------------------------- LINKED OBJECTS -------------------------------*/
+
+.linkObjects button.add_button {
+  margin-top: 5px;
+}
+
+.linkObjects button.remove_button {
+  font-size: 10px;
+}
+
+* html .linkObjects button.remove_button {
+  margin-left: 3px;
+}
+
+#linkattachFormExistingFileControls, #linkFormNewFileControls {
+  padding: 5px 20px;
+}
+
+#linkFormExistingFileControls fieldset, #linkFormNewFileControls fieldset {
+  margin: 0 0 10px 0;
+}
+
+/** Linked Objects **/
+
+div.objectFiles {
+}
+
+div.objectFiles ul li a span {
+  font-weight: bolder;
+}
+
+div.objectFiles div.objectFilesTitle {
+  font-size: 10px;
+}
+
+div.objectFiles div.objectFilesTitle span {
+  font-weight: bolder;
+  color: #333;
+}
+
+#object_linker {
+	cursor: pointer;
+}
+
+
+
+
+/* -------------------------------- MESSAGES -------------------------------*/
+
+.message h1, .message h2, .message h3 {
+  font-weight: normal;
+  border-bottom: 1px solid #ccc;
+}
+
+.message h1 {
+  font-size: 2em;
+}
+
+.message h2 {
+  font-size: 1.5em;
+}
+
+.message h3 {
+  font-size: 1.1em;
+  text-decoration: none;
+}
+
+.message .messageText {
+  padding: 10px;
+  line-height: 150%;
+  font-size: 11px;
+}
+
+.message .messageSeparator {
+  text-align: center;
+  font-size: 9px;
+  font-weight: bolder;
+}
+
+.message .objectFilesTitle span, .message .messageCommentCount span, .message .messageTags span {
+  color: #333;
+  font-weight: bolder;
+}
+
+.message .messageOptions {
+  margin-top: 10px;
+}
+
+.message .messageComment {
+  margin: 10px 10px;
+}
+
+.message .messageCommentHead {
+  font-weight: bolder;
+}
+
+.message .messageCommentBody {
+  border: 1px solid #ccc;
+  border-width: 1px 0;
+  padding: 10px;
+  background: white;
+}
+
+/** Add message form **/
+
+#emailNotification .companyDetails {
+  margin: 10px 0;
+  border: 1px dotted #ccc;
+  padding: 5px 10px;
+}
+
+#emailNotification .companyName label {
+  font-weight: bolder;
+}
+
+#emailNotification .companyMembers {
+  padding-top: 5px;
+}
+
+#emailNotification .companyMembers ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#emailNotification .companyMembers ul li {
+  display: inline;
+  padding-right: 5px;
+}
+
+/** Subscribers **/
+.og-add-subscribers .companyDetails {
+  margin: 10px 0;
+  border: 1px dotted #ccc;
+  padding: 5px 10px;
+}
+
+.og-add-subscribers .companyName {
+	background: #F9F9FC;
+	border: 1px solid #DDD;
+	padding: 2px;
+}
+
+.og-add-subscribers .companyName label {
+  font-weight: bolder;
+}
+
+.og-add-subscribers .companyMembers {
+  padding-top: 5px;
+  margin: 5px 0 10px;
+  height: auto;
+}
+
+.og-add-subscribers .companyMembers ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.og-add-subscribers .companyMembers ul li {
+  display: inline;
+  padding-left: 5px;
+}
+
+
+
+
+/* -------------------------------- MILESTONES -------------------------------*/
+
+#milestones .milestone .dueDate span {
+  font-weight: bolder;
+}
+
+
+
+
+/* -------------------------------- PEOPLE -------------------------------*/
+
+#people div.projectCompany {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background: #fff url() no-repeat 10px 10px;
+  min-height: 50px;
+}
+
+* html #people div.projectCompany {
+  height: 50px;
+}
+
+#people div.projectCompanyLogo {
+  float: left;
+  width: 60px;
+}
+
+#people div.projectCompanyMeta {
+  margin-left: 60px;
+}
+
+#people div.projectCompany a.companyName {
+  font-size: 150%;
+  font-weight: bolder;
+}
+
+#people div.projectCompanyAddress, #people div.projectUserTitle, #people div.projectUserEmail {
+  margin-top: 5px;
+  padding-left: 5px;
+  color: #666;
+  line-height: 120%;
+}
+
+#people div.projectCompanyHomepage {
+  margin-top: 5px;
+  padding-left: 5px;
+  line-height: 100%;
+}
+
+#people div.projectCompanyOptions {
+  margin-top: 5px;
+  font-size: 10px;
+  border-top: 1px dotted #ccc;
+}
+
+#people div.projectCompanyUsers table {
+  margin-top: 20px;
+  background: white;
+  width: 448px;
+}
+
+#people div.projectUserTitle, #people div.projectUserEmail {
+  margin: 0;
+}
+
+
+
+
+/* -------------------------------- PERMISSIONS -------------------------------*/
+
+div.projectCompany {
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  padding: 10px;
+  min-height: 50px;
+}
+
+* html div.projectCompany {
+  height: 50px;
+}
+
+div.projectCompanyLogo {
+  float: left;
+  width: 60px;
+}
+
+div.projectCompanyMeta {
+  margin-left: 60px;
+}
+
+div.projectCompany .projectCompanyTitle label {
+  font-weight: bolder;
+}
+
+div.projectCompany div.projectCompanyUsers {
+  margin: 10px 0 0 10px;
+}
+
+div.projectCompany div.projectUserPermissions {
+  padding-left: 10px;
+}
+
+div.projectCompany tr.user {
+  border: 1px solid #ccc;
+  border-width: 1px 0;
+}
+
+
+
+
+/* -------------------------------- PROJECT LOG -------------------------------*/
+
+div.projectLog {
+  line-height: 150%;
+}
+
+div.projectLog table {
+  width: 530px;
+}
+
+div.projectLog a {
+  font-weight: normal;
+}
+
+div.projectLog tr {
+  border-bottom: 1px dotted #ccc;
+}
+
+div.projectLog tr td {
+  padding: 5px;
+}
+
+
+
+
+/* -------------------------------- TASK LIST -------------------------------*/
+
+div.taskList {
+  font-size: 110%;
+}
+
+div.taskList .desc {
+  padding: 10px;
+  padding-bottom: 0;
+}
+
+div.taskList .openTasks, .taskList .completedTasks {
+  margin: 10px;
+}
+
+div.taskList td.taskCheckbox {
+  padding-top: 4px;
+}
+
+div.taskList span.assignedTo {
+  font-weight: bolder;
+}
+
+div.taskList .addTask {
+  padding: 10px;
+  background: #e8e8e8;
+}
+
+div.taskList .options {
+  padding: 10px;
+  padding-top: 0;
+}
+
+div.taskList .completedTasks {
+  color: #666;
+}
+
+div.taskList .completedTasks td {
+  padding: 0 2px;
+  line-height: 16px;
+}
+
+div.taskList span.taskCompletedOnBy {
+  font-style: italic;
+  color: #333;
+}
+
+div.taskList .taskListTags {
+  margin: 10px;
+}
+
+div.taskList .taskListTags span {
+  font-weight: bolder;
+}
+
+.mail-account-item {
+	padding: 5px 0;
+}
+
+.mail-account-item input.medium {
+	width: 300px;
+}
+
+.account_permissions_user .user_picture {
+	float: left;
+	margin: 3px;
+}
+
+.account_permissions_user .user-picture img {
+	vertical-align: middle;
+}
+
+.account_permissions_user .user_name {
+	float: left;
+	margin-left: 20px;
+	width: 120px;
+	padding-top: 20px;
+}
+
+.account_permissions_user .user_access {
+	margin-left: 200px;
+	padding-top: 15px;
+}
+
+.account_permissions_user .separator {
+	clear: both;
+}

@@ -1,0 +1,9 @@
+Changes from Version 1 to 2
+---------------------------
+
+- 	Tab panel type: system -> plugin
+	When disable this plugins, the tab panel did not disappear from UI. So when accessing here it trows 'Invalid Controller'.
+	Changing from 'system' to plugin, the core checks if the plugin is intalled/activated before render.
+
+- 	Manual Upgrade instructions:
+	UPDATE fo_tab_panels SET type = 'plugin' WHERE id='mails-panel'

@@ -1,0 +1,18 @@
+<?php return array(
+	'upgrade' => 'Oppgrader',
+	'upgrade from' => 'Oppgrader fra',
+	'upgrade to' => 'Oppgrader til',
+	'upgrade from to' => 'Oppgrader fra {0} til {1}',
+	'already upgraded' => 'Du har allerede oppgradert til seneste mulige versjon.',
+	'back to fengoffice' => 'Tilbake til Feng Office',
+	'all rights reserved' => 'Alle rettigheter reservert',
+	'upgrade process log' => 'Oppgraderingslogg',
+	'upgrade fengoffice' => 'Oppgrader Feng Office',
+	'upgrade your fengoffice installation' => 'Oppgrader din Feng Office installasjon',
+	'upgrade warning' => 'Advarsel',
+	'upgrade warning desc' => 'Vennligst <a href="{0}" target="_blank">sikkerhetskopier</a> installasjonen din før du oppgraderer!',
+	'error upgrade version must be specified' => 'Ingen versjon er oppgitt. Kan ikke fortsette den automatiske oppgraderingen. Vennligst prøv igjen senere, eller prøv den manuelle oppgraderings-funksjonen.',
+	'error upgrade version not found' => 'Ugyldig versjonsnummer ({0}). Kan ikke fortsette den automatiske oppgraderingen. Vennligst prøv igjen senere eller prøv å oppgrader manuelt.',
+	'error upgrade invalid zip url' => 'Ugyldig nedlastningslenke for den valgte versjonen. Kan ikke fortsette den automatiske oppgraderingen. Vennligst prøv igjen senere eller prøv å oppgrader manuelt.',
+	'error upgrade cannot open zip file' => 'Kan ikke åpne den nye versjonens zip-fil. Kan ikke fortsette den automatiske oppgraderingen. Vennligst prøv igjen senere eller prøv å oppgrader manuelt.',
+); ?>

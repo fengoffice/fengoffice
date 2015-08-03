@@ -1,0 +1,142 @@
+
+
+/* -------------------------------- CONFIG -------------------------------*/
+
+#configCategoryOptions .configCategoryOtpion {
+  margin: 8px 0;
+  padding: 5px;
+}
+
+#configCategoryOptions label {
+  margin: 0;
+  padding: 0;
+}
+
+#configCategoryOptions .configOptionInfo {
+  float: left;
+  width: 300px;
+}
+
+#configCategoryOptions .configOptionControl {
+  margin-left: 310px;
+}
+
+#configCategoryOptions textarea {
+  width: 300px;
+}
+
+.configOptionControl .color-picker-container .modcoder_excolor_clrbox {
+	height: 15px !important;
+}
+.configOptionControl .color-picker-container input {
+	max-width:70px;
+}
+
+
+
+/* -------------------------------- MASS MAILER -------------------------------*/
+
+
+#massMailer div.massmailercompanyLogo {
+  float: right;
+}
+
+#massMailer div.massmailercompanyLogo img {
+  border: 1px solid #ccc;
+}
+
+#massMailer div.massmailerRecipeints {
+  padding-top: 5px;
+  padding-left: 10px;
+}
+
+
+
+
+
+/* -------------------------------- USER LIST -------------------------------*/
+
+#usersList div.listedUser {
+  padding: 10px;
+}
+
+#usersList div.userAvatar {
+  float: left;
+  width: 50px;
+  text-align: center;
+}
+
+#usersList div.userAvatar img , #contactsList div.contactPicture img {
+  border: 1px solid #ccc;
+  max-width: 50px;
+}
+
+#usersList div.userDetails {
+  margin-left: 60px;
+}
+
+#usersList div.userName {
+  margin-bottom: 10px;
+  font-size: 150%;
+  font-weight: bolder;
+}
+
+
+#usersList div.userIsAdmin span, #usersList div.userAutoAssign span {
+  font-weight: bolder;
+  color: #333;
+}
+
+#usersList div.userIsGuest span {
+  color: #555;
+  font-weight: bolder;
+  font-style: italic;
+}
+
+#usersList div.userAutoAssign {
+  margin-bottom: 10px;
+}
+
+
+
+
+
+/* -------------------------------- USER PERMISSIONS -------------------------------*/
+
+#userPermissions table {
+  width: 500px;
+  border: 1px solid #ccc;
+  border-width: 1px 0;
+  border-collapse: collapse;
+}
+
+#userPermissions td.projectName {
+  width: 150px;
+}
+
+/* ------------------------------- TAB ADMINISTRATION ------------------------------*/
+
+.tab-manager table {
+	width: 400px;
+	margin: 15px 5px;
+}
+.tab-manager th, .tab-manager td {
+	vertical-align: middle;
+	padding: 3px 5px;
+}
+
+/* ------------------------------- WIDGET ADMINISTRATION ------------------------------*/
+
+.widget-manager table {
+	width: 1010px;
+	margin: 15px 5px;
+}
+.widget-manager .left-section table, .widget-manager .right-section table {
+	width: 500px;
+	margin: 15px 5px;
+	float: left;
+}
+.widget-manager th, .widget-manager td {
+	vertical-align: middle;
+	padding: 3px 5px;
+}

@@ -1,0 +1,155 @@
+
+div.header-container {
+	width: 100%;
+	height: 110px;
+	background: url(../images/layout/login/header-background.jpg) repeat-x top;
+	margin: 0 auto;
+}
+
+div.header-container div.header {
+	width: 650px;
+	height: 110px;
+	margin: 0 auto;
+}
+
+div.header-container div.header a.logo {
+	background: url(../images/layout/login/logo.png) no-repeat top;
+	float: left;
+	background-position: 0px 0px;
+	width: 200px;
+	height: 109px;
+}
+
+div.login-body {
+	width: 650px;
+	height: auto;
+	margin: 0 auto;
+}
+
+div.login-body input[type="text"], div.login-body input[type="password"], div.login-body div.input select {
+	background: #fff;
+	box-shadow: 0 0 3px 3px #cdcccb inset !important;
+	background-position: 0px 10px;
+	border-radius: 3px;
+	height: 35px;
+	width: 250px;
+	border: none;
+	padding-left: 5px;
+	font-size: 18px;
+	color: #333;
+}
+
+div.login-body div.input {
+	margin: 20px;
+	width: 500px;
+	line-height: 40px;
+	vertical-align: middle;
+	text-align: left;
+}
+div.login-body div.input label {
+	font-size: 18px;
+	color: #333;
+	max-width: 200px;
+	display: inline;
+}
+div.login-body div.input input {
+	float: right;
+}
+div.login-body div.input select {
+	float: right;
+	height: 40px;
+	width: 258px;
+}
+
+div.login-body div.form-container {
+	background: url(../images/layout/login/content-background.jpg);
+	width: 540px;
+	margin: 30px auto;
+	border-radius: 10px;
+	border: 4px solid #ccc;
+	padding: 0 30px 30px;
+}
+div.login-body div.form-container button[type=submit] {
+	cursor: pointer;
+	border: 0px none;
+ 	background: #79B446;
+	background: -webkit-gradient(linear, left top, left bottom, from(#3D6A27), to(#79B446));
+	background: -webkit-linear-gradient(top, #3D6A27, #79B446);
+	background: -moz-linear-gradient(top, #3D6A27, #79B446);
+	background: -ms-linear-gradient(top, #3D6A27, #79B446);
+	background: -o-linear-gradient(top, #3D6A27, #79B446);
+	padding: 8px 16px;
+	border-radius: 9px;
+	box-shadow: rgba(100,100,100,1) 0 1px 0;
+	text-shadow: rgba(0,0,0,.4) 0 1px 0;
+	color: white;
+	font-size: 20px;
+	font-family: Helvetica, Arial, Sans-Serif;
+	text-decoration: none;
+	vertical-align: middle;
+}
+div.login-body div.form-container button[type=submit]:hover {
+	/*border-top-color: #053d0b;*/
+	background: #3B6920;
+	color: #ccc;
+}
+div.login-body div.form-container button[type=submit]:active {
+	border-top-color: #1b5c1d;
+	background: #1b5c1d;
+}
+
+div.options-container {
+	margin-top:10px;
+	text-align:center;
+}
+
+div.options-links {
+	float:left;
+	margin-left:20px;
+}
+
+div.submit-div {
+	text-align:center;
+}
+
+span.forgot-pass {
+	margin-left:30px;
+}
+
+div.remember-div {
+	float:left;
+	width:400px;
+}
+
+div.login-footer {
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+	height: 50px;
+	background: url(../images/layout/login/footer-background.jpg) repeat-x top;
+	margin: 0 auto;
+}
+
+div.powered-by {
+	width: 600px;
+	text-align: right;
+	margin: 15px auto;
+	font-size: 95%;
+	color: #ddd;
+}
+
+div.powered-by a {
+	border: 0px none;
+	text-decoration: underline;
+	color: #fff;
+}
+div.powered-by a:hover {
+	opacity: 0.7;
+	filter: alpha(opacity=70);
+	background-color: transparent;
+}
+.form-container h2 {
+  margin: 10px 0;
+  color: #263356;
+  font-size: 24px;
+}

@@ -1,0 +1,41 @@
+<!--
+ *  Slimey - SLIdeshow Microformat Editor - http://slimey.sourceforge.net
+ *  Copyright (C) 2007 - 2008 Ignacio de Soto
+ *
+ *  Editor.
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>Slimey</title>
+	<script type="text/javascript" src="slang/en_us.js"></script>
+	<script type="text/javascript" src="slimey.js"></script>
+	<script type="text/javascript">
+		Slimey.includeScripts();
+		Slimey.preloadImages();
+	</script>
+	<link rel="stylesheet" href="slimey.css" />
+	<link rel="shortcut icon" href="favicon.ico" />
+</head>
+
+<body>
+
+<div style="position: absolute; left: 1%; top: 1%; width: 98%; height: 98%;" id="slimey">
+</div>
+
+<script type="text/javascript">
+	new Slimey({
+		container: 'slimey',
+		rootDir: '',
+		imagesDir: 'images/',
+		filename: '',
+		slimContent: escapeSLIM('<div class="slide"><div style="font-size: 200%; font-weight: bold; font-family: sans-serif; position: absolute; left: 5%; top: 0%; width: 90%; height: 10%; text-align: center;">' + lang("new slideshow") + '</div></div><div class="slide"><div style="font-size: 200%; font-weight: bold; font-family: sans-serif; position: absolute; left: 5%; top: 0%; width: 90%; height: 10%; text-align: center;">' + lang("second slide") + '</div></div>'),
+		saveUrl: 'save.php'
+	});
+</script>
+
+</body>
+
+</html>

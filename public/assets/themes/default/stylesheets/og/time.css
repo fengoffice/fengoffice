@@ -1,0 +1,114 @@
+.TMTimespanHeader {
+	font-size:120%;
+	font-weight:bold;
+	color:white;
+	width:100%;
+	background-color:#80AEF0;
+}
+
+.TMTimespanEditHeader {
+	font-size:120%;
+	font-weight:bold;
+	color:white;
+	width:100%;
+	background-color:#BF9715;
+}
+
+.TMActiveTasksHeader {
+	font-size:120%;
+	font-weight:bold;
+	color:white;
+	width:100%;
+	background-color:#F7CD4D;
+	padding:3px 7px;
+}
+
+.TMTimespanAddNew {
+	color:#333;
+	background-color: #DAE3F0;
+	width:100%;
+	float:left;
+}
+
+.TMTimespanAddNew .selector-body, .TMTimespanEdit .selector-body{
+	width: 170px!important;
+	margin-bottom: 4px;
+}
+
+.TMTimespanAddNew .member-name-input, .TMTimespanEdit .member-name-input{
+	width: 145px!important;
+}
+
+.TMTimespanEdit .submit-btns{
+	/*clear: left;*/
+}
+
+.TMTimespanSelectorHeight {
+	height: 50px;
+}
+
+
+.TMTimespanDesc {
+	overflow-y: auto; 
+	word-wrap: break-word; 
+	tabindex:250; 
+	display:inline-block; 
+	border: solid 1px #CCCCCC; 
+	min-height: 35px; 
+	max-height: 12em;
+	width: 100%;
+	background: white;
+}
+
+.TMTimespanDesc:focus {
+	outline: 0;
+	border: solid 1px black; 
+}
+
+.TMTimespanRealSelector {
+	/*height: 22px !important;*/	
+}
+
+.TMTimespanEdit {
+	color:#333;
+	background-color: #FFF7C8;
+	width:100%;
+	float:left;
+}
+
+.TMTimespanContents {
+	color:#666;
+}
+
+.TMActiveTasksContents {
+	color:#666;
+}
+
+.TMTimespanEdit select, .TMTimespanAddNew select {
+	/*height: 21px;*/
+}
+
+.TMTimespanEdit .context-switcher {
+	disply:block;	 
+}
+
+.context-switcher .context-header {
+	margin-bottom: 5px;
+}
+.context-switcher .context-header label {
+	cursor: pointer ;	 
+	text-decoration: underline;	
+	color: #003562;
+	display: inline;
+}
+
+.time-breadcrumb-container{
+    display: inline;
+    line-height: 30px;
+    float: left;
+    width: 200px;
+    height: 100%;
+    min-height: 10px;
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}

@@ -1,0 +1,25 @@
+.op-details-ico {
+	height: 16px;
+	margin-right: 4px;
+	vertical-align: middle;
+}
+.op-ico {
+	background-image: url(../../images/16x16/open.png) !important;
+}
+.x-grid3-col-icon {
+	padding: 1px 3px;
+}
+.op-ico-view {
+	background-image: url(../../images/16x16/view.png) !important;
+}
+.op-ico-icons {
+	background-image: url(../../images/16x16/icons.png) !important;
+}
+.op-ico-details {
+	/*background-image: url(../../images/16x16/details.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/show.png) !important;
+	background-size: 16px 16px!important;	
+}
+.op-ico-refresh {
+	background-image: url(../../images/16x16/refresh.png) !important;
+}

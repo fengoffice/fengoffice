@@ -1,0 +1,77 @@
+.template-object-div {
+ 	border-color: #D8D8D8;
+    border-style: solid;
+ 	margin: 6px;
+ 	min-height: 20px;
+}
+
+#templateConteiner .coInputMainBlock label {
+	float: none;
+	min-width: 0px;
+}
+
+.template-add-template-object {
+	position: relative;
+	background-repeat: no-repeat;
+	vertical-align: middle;
+	line-height: 20px;
+	float: left;
+	width: 50%;
+}
+
+.template-add-template-object a{
+	margin-left: 5px;
+}
+
+.template-object-actions a{
+	padding-right: 10px;
+}
+
+
+.template-add-template-object .name {	
+	overflow: hidden;
+}
+
+.template-removeDiv {
+	position: absolute;
+	line-height: 25px;
+	right: 0;
+	top: 0;
+	cursor: pointer;
+}
+
+.template-subtasksExpander {
+	float: left;    
+}
+
+.template-subtasks-div {
+	background-color: white;
+	border: 1px solid #CCCCCC;
+	margin: 6px;
+	padding-left: 30px;
+}
+
+.template-text-ellipsis {
+	overflow: hidden; 
+	white-space: nowrap; 
+	text-overflow: ellipsis; 
+	word-wrap: break-word;
+}
+
+.template-property-div{
+	border: 1px solid #CCCCCC;
+	margin: 6px;
+	padding-left: 30px;
+}
+
+.pair{
+	background-color: white;
+}
+
+
+.templates-table {
+	border: 1px solid #d7e5f5
+}
+.templates-table td, .templates-table th {
+	padding: 2px 5px;
+}

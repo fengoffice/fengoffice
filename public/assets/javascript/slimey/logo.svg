@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.45.1"
+   sodipodi:docbase="C:\Users\Acio\Desktop\proyectos\slimey"
+   sodipodi:docname="logo.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="C:\Users\Acio\Desktop\proyectos\slimey\logo.png"
+   inkscape:export-xdpi="249.80643"
+   inkscape:export-ydpi="249.80643">
+  <defs
+     id="defs4">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient4265">
+      <stop
+         style="stop-color:#c1ff00;stop-opacity:1;"
+         offset="0"
+         id="stop4267" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="1"
+         id="stop4269" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4265"
+       id="linearGradient4271"
+       x1="403.77155"
+       y1="381.91437"
+       x2="403.77155"
+       y2="287.29373"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4265"
+       id="linearGradient8179"
+       gradientUnits="userSpaceOnUse"
+       x1="403.77155"
+       y1="381.91437"
+       x2="403.77155"
+       y2="287.29373" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.5"
+     inkscape:cx="332.38583"
+     inkscape:cy="806.79751"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     inkscape:window-width="842"
+     inkscape:window-height="575"
+     inkscape:window-x="92"
+     inkscape:window-y="92" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g8174"
+       transform="translate(-124,-246)">
+      <path
+         transform="translate(-186,0)"
+         d="M 396,342.36218 C 400.21163,344.468 395.23927,349.0783 392.5,349.36218 C 385.07674,350.13147 381.01461,341.64878 382,335.36218 C 383.76263,324.11692 396.26795,318.69994 406.5,321.36218 C 421.51596,325.26914 428.45262,342.25916 424,356.36219 C 418.06535,375.1593 396.44943,383.65114 378.49999,377.36218 C 355.91246,369.44816 345.85141,343.14679 354,321.36217 C 363.86904,294.97809 394.88646,283.34056 420.50001,293.36219 C 450.68469,305.17233 463.90305,340.92358 452,370.36219"
+         sodipodi:t0="0"
+         sodipodi:argument="-18.385908"
+         sodipodi:radius="62.609905"
+         sodipodi:revolution="2"
+         sodipodi:expansion="1"
+         sodipodi:cy="342.36218"
+         sodipodi:cx="396"
+         id="path3294"
+         style="fill:url(#linearGradient8179);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         sodipodi:type="spiral" />
+      <text
+         id="text4273"
+         y="367.2428"
+         x="277.50928"
+         style="font-size:80px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Trebuchet MS"
+         xml:space="preserve"><tspan
+           style="font-weight:bold;font-family:Trebuchet MS"
+           y="367.2428"
+           x="277.50928"
+           id="tspan4275"
+           sodipodi:role="line">Slimey</tspan></text>
+    </g>
+  </g>
+</svg>

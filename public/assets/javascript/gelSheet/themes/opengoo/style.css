@@ -1,0 +1,234 @@
+.ColumnUnselected{
+	font-family: tahoma,arial,verdana,sans-serif ;
+	font-size: 10pt;
+	font-weight: normal;
+	color: #15428B;
+	text-align:center;
+	border: 1px solid #84a0c4 ;
+	overflow: hidden;
+	background-color: #D4E1F1 ;
+	background-image: url(img/white-top-bottom.gif);
+	cursor: url(img/col.cur.ico), default;
+	
+}
+
+.ColumnSelected{
+	font-family: tahoma,arial,verdana,sans-serif ;
+	font-size: 10pt;
+	font-weight: bold;
+	color: #FFF;
+	border: solid 1px #4B4B6F;
+	overflow: hidden;
+	background-color:#003F90;
+	background-image: url(img/white-top-bottom-dark.gif);
+	cursor: url(img/col.cur.ico), default;
+}
+
+
+.ColumnFocused{
+	font-family: tahoma,arial,verdana,sans-serif ;
+	font-size: 10pt;
+	font-weight: bold;
+	color: #000;
+	border: solid 1px #4B4B6F;
+	overflow: hidden;
+	background-color:#FFC06F;
+	background-image: url(img/white-top-bottom-light.gif);
+	cursor: url(img/col.cur.ico), default;
+}
+
+
+.ColumnResizer {
+		width: 8px;
+		cursor: e-resize;
+		z-index: 1001 ;
+		height: 100% ;
+		float: right ;
+}
+
+.ColumnTitle {
+	width: "100%";
+	top: "0px" ;
+	left: "0px" ;
+	height: "100%" ;
+	z-index: 1000 ;		
+	background-image: none ;
+
+}
+
+.RowUnselected{
+	font-family: tahoma,arial,verdana,sans-serif ;
+	font-size: 10pt;
+	font-weight: normal;
+	color: #15428B;
+	border: 1px solid #84a0c4;
+	overflow: hidden;
+	background-color:#D4E1F1;
+	cursor: url(img/row.cur2.ico), default;
+}
+
+.RowSelected{
+	font-family: tahoma,arial,verdana,sans-serif ;
+	font-size: 10pt;
+	font-weight: bold;
+	color: #FFF;
+	border: solid 1px #4B4B6F;
+	overflow: hidden;
+	background-color: #96bae6 ;
+	background-repeat: repeat-x ; 
+	background-image:  url(img/white-top-bottom-dark.gif) ;
+	cursor: url(img/row.cur2.ico), default;
+}
+
+.VerticalResizeArea {
+	cursor: s-resize ;
+	height: 5px ;
+	width: 100% ;
+}
+
+.RowFocused{
+	font-family: tahoma,arial,verdana,sans-serif ;
+	font-size: 10pt;
+	font-weight: bold;
+	color: #000;
+	border: solid 1px #4B4B6F;
+	overflow: hidden;
+	background: #FFC57E url(img/white-top-bottom-light.gif) repeat-x;
+	cursor: url(img/row.cur2.ico), default;
+}
+
+
+.Cell{
+	font-family: Arial;
+	font-size: 10pt; 
+	overflow: hidden;
+	border: 1px solid #C0C0C0 ;
+	cursor: url(img/cell.cur.ico), default ;
+	height: 18px ;
+}
+
+
+.Cell.Selected {
+	background-color: #E4E4E8;
+}
+
+.Cell.Selected.Editing {
+	background-color: #FFFFFF;
+}
+
+.Cell.Selected .CellContainer    {
+	background-color:#E4E4E8;
+}
+
+.Cell.Selected .CellContainer input   {
+	background-color:#FFFFFF;
+}
+
+
+.Cell.Unselected{
+	background-color:#FFFFFF;
+}
+
+.Cell.Editing {
+	cursor: text ;
+}
+.Cell .CellContainer {
+	height: 18px ;
+	overflow: visible ; 
+	display: inline ;
+	background-color: #FFF ;
+}
+
+
+
+.OpenFileDialog{
+	font-family: Verdana;
+	font-size: 10pt;
+	border: solid 1px #C0C0C0;
+	overflow: visible;
+	background-color:#FFF;
+}
+.OpenFileDialog TH{
+	background-color:#a0bff5;
+	font-size: 11pt;
+	font-weight: bold;
+
+}
+.OpenFileDialog TR:hover{
+	background-color:#EEE;
+}
+
+
+#Grid{
+	left: 0px;
+    top: 0px;
+    height:100%;
+    width:100%;
+    /*position: absolute;*/
+    border-collapse: collapse;
+    overflow:hidden;
+    background-color: #0F0;
+}
+
+
+#ActiveCell{
+	font-family: Arial;
+	font-size: 10pt;
+	border: none;
+	overflow: visible;
+}
+
+#ActiveRange{
+	cursor: text ;
+	font-family: Arial;
+	font-size: 10pt;
+	border: solid 3px #000000;
+	overflow: hidden;
+}
+
+/*Toolbars Items*/
+#FontSizeCombo{
+	font-family: Verdana;
+	width: 70px;
+	height: 18px;
+}
+
+#FontCombo{
+	font-size: 10pt;
+	width: 150px;
+	height: 18px;
+}
+
+#logo{	
+	/* background-image: url(./img/gelsheet_logo-113x54-transparent.png); */
+	background-image: url(./img/gelsheet_logo-132x51-Tab-transparent.png);   
+	background-repeat: no-repeat ;
+	width: 132px;
+	height: 50px;
+	
+	top: 0px;
+	right:0px;
+	position: absolute ;
+	float: right ;		
+}
+
+.top-right-cell {
+	background: #D4E1F1 url(./img/select-all.png);
+	/* border: 2px solid  #dae7f6 ; */
+	
+	background-position:  -10px -0px ;
+	border-left: 1px solid #FFFFFF;
+}
+
+#FormulaBar {
+	left: 50px;
+	width: 480px;
+	height: 20px;
+	borderWidth: 1px;
+}
+
+.no-image div  img.x-form-trigger {
+	background: none ;
+	width: 0;
+	top: 0;
+}

@@ -1,0 +1,535 @@
+.pageTitle {
+	display: none;
+}
+
+#wrapper {
+	text-align: center;
+}
+
+#headerContent {
+	width: 100%;
+	position: relative;
+	margin: 0 auto;
+	z-index: 800; /* Object pick has z-idex 9000 approx */
+	
+	text-align: left;
+}
+.headerLogoAndWorkspace {
+	float: left;
+}
+
+#systemNoticesWrapper {
+	background: red;
+	color: white;
+	text-align: center;
+}
+
+#systemNotices {
+	margin: 0 auto;
+	padding: 10px 0;
+	width: 760px;
+	text-align: left;
+}
+
+#systemNotices ul {
+	margin: 0;
+	padding: 0 0 0 15px;
+}
+
+#systemNotices a, #systemNotices a:hover {
+	border: 0;
+	color: white;
+	text-decoration: underline;
+}
+
+#wsCrumbsDiv {
+	position: relative;
+	height: 45px;
+	padding-top:14px;
+	font-size: 130%;
+	font-weight:bolder;
+	color: #555555;
+}
+
+#wsTagCrumbs {
+	position: relative;
+	height: 45px;
+	padding-top:20px;
+	font-size: 120%;
+	font-weight:bolder;
+	color: #555555;
+}
+
+.wsTagCrumbsElement {
+	float: left;
+	padding-left: 18px;
+	margin-left: 10px;
+	background-image: url(../../images/16x16/tags.png);
+	background-repeat: no-repeat;
+	text-align: left;
+	position:relative;
+	padding-right: 14px;
+}
+
+.wsTagCloseDiv {
+	width:11px;
+	height:11px;
+	position: absolute;
+	right: 0px;
+	top: 0px;
+	background-image: url(../../images/layout/tag-close.gif);
+	background-repeat: no-repeat;
+	cursor:pointer;
+	display:none;
+}
+
+#logodiv {
+	float: left;
+	background-repeat: no-repeat;
+	height: 55px;
+	margin-left: 15px;
+	cursor: pointer;
+}
+
+#logodiv img, #logodiv a, #logodiv h1, #logodiv div
+{
+	float: left;
+	max-height: 55px;
+}
+
+#logodiv a
+{
+	font-size: 10px;
+	color: #fff;
+}
+
+#logodiv h1
+{
+   	color: #FFFFFF;
+        font-size: 22px;
+        font-weight: normal;
+        padding: 0 0 0 5px;
+}
+
+#subWsExpander {
+	position:absolute; 
+	z-index:10000; 
+	top:10px;
+	left:400px; 
+	background:white; 
+	border: 1px solid #99BBE8; 
+	padding:6px; 
+}
+
+#searchbox {
+	float: left;
+}
+
+#searchbox input {
+	width: 120px;
+	border-radius: 4px 0 0 4px;
+}
+
+.ico-quick-add {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -599px !important;
+}
+
+div.user-box-actions
+{
+	background: #fff;
+	filter: alpha(opacity=95);
+	float: right;
+	opacity: 0.95;
+	right: 10;
+	padding: 11px;
+	text-align: left;
+	margin-top: 5px;
+	border: 1px solid #999999;
+	z-index: 10000;
+	min-width: 290px;
+}
+
+div.user-box-actions textarea 
+{
+	border: solid 1px #999999 !important;
+	font-size: 12px !important;
+	margin-top: 3px;
+	height: 45px; !important;	
+}
+
+div.user-box-actions img 
+{
+	filter: alpha(opacity=100);
+	opacity: 1.0 !important;
+	max-height: 60px;
+	max-width: 60px;
+	margin-right: 10px;
+}
+
+div.user-box-actions ul li.line-top {
+	border-top: 1px solid #cccccc;
+	margin: 5px 0px 5px 0px;
+}
+
+div.user-box-actions ul li h2
+{
+	padding-left: 55px;
+	font-size: 15px;
+	font-weight: bold;	
+}
+
+div.user-box-actions ul li p
+{
+	padding-left: 55px;
+	font-size: 12px;
+	color: #999999;
+}
+
+div.user-box-actions a
+{
+	font-weight: bold;
+}
+
+div.user-box-actions div.color-pickers-container {
+	margin-bottom: 16px;
+}
+
+div.user-box-actions div.theme-color-picker input
+{
+	width: 80px;
+	margin-left: 3px;
+}
+
+div#modcoder_picker, div#modcoder_colorpicker
+{
+	z-index: 15000 !important;
+}
+
+div.user-comment
+{
+	background: #f0f6e6;
+	padding: 5px;
+}
+
+div.user-comment div div.comment-unit
+{
+	border-top: solid 1px #cccccc;
+	margin-top: 5px;
+	padding-top: 5px;
+}
+
+div.user-comment div div.comment-unit .feed-date
+{
+	padding-left: 0px !important;
+}
+
+div.user-comment a
+{
+	font-size: 11px !important;
+}
+
+div.overview-activity textarea, div.overview-activity textarea.huge
+{
+	border: solid 1px #cccccc !important;
+	font-size: 11px !important;
+	width: 400px;
+	height: 16px; !important;
+}
+
+#userbox {
+	/*padding: 0px 8px;*/
+	/*border: 1px solid #999;
+	background: #ffffcc;*/
+	background-image: url(../../images/layout/userborder.png);
+	padding-bottom:8px;
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-top:2px;
+	margin-right:0px;
+}
+
+#userbox ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#userbox ul li {
+	display: inline;
+	margin-right: 10px;
+}
+
+#userbox .PopupMenuWidgetDiv {
+	position: absolute;
+	border: 1px solid #666;
+	background: white;
+	padding: 5px 10px;
+	width: 140px;
+	color: #333;
+}
+
+#userbox .PopupMenuWidgetDiv p {
+	margin: 0;
+	font-weight: bolder;
+}
+
+#userbox .PopupMenuWidgetDiv ul {
+	margin-left: 12px;
+	padding-left: 5px;
+}
+
+#userbox .PopupMenuWidgetDiv ul li {
+	display: list-item;
+	font-weight: normal;
+	list-style: square;
+}
+
+#searchBox {
+	text-align: right;
+}
+
+#searchBox input {
+	border: 1px solid #222;
+	font-size: 10px;
+	padding: 1px;
+	width: 100px;
+	background: #e8e8e8;
+}
+
+#searchBox input:focus {
+	background: #f8f8f8;
+}
+
+#searchBox button {
+	margin: 0 0 0 2px;
+	border: 0;
+	padding: 0;
+	font-size: 10px;
+	color: #ccc;
+	background: #444;
+	height: 18px;
+}
+
+/** /crumbs **/
+
+/** content **/
+
+#pageTitle {
+	margin-bottom: 0;
+	padding: 5px 30px;
+	color: #BA0101;
+	font-weight: normal;
+}
+
+#pageContent {
+	position: relative;
+	border-top: 1px solid #ddd;
+}
+
+#mainContent {
+	float: left;
+	min-width: 200px;
+	padding: 10px 30px;
+	margin-right: 200px;
+}
+
+/** /content **/
+
+/** page actions **/
+
+#page_actions {
+	margin-bottom: 10px;
+}
+
+#page_actions ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#page_actions ul li {
+	padding-right: 3px;
+	display: inline;
+	font-weight: bolder;
+	font-size: 10px;
+}
+
+#page_actions ul li a {
+	border: 0;
+	padding: 0 15px 0 0;
+	color: #444;
+	text-decoration: underline;
+	background: url(../../images/icons/more_down.gif) no-repeat right bottom;
+}
+
+#page_actions ul li a:hover {
+	color: black;
+}
+/** /page actions **/
+
+/** footer **/
+
+#copy {
+	padding: 2px 15px;
+	float: left;
+}
+
+#productSignature {
+	padding: 2px 15px;
+	text-align: right;
+}
+
+#listOfRssFeeds {
+	list-style: none;
+	padding: 0 0 0 4px;
+}
+
+#listOfRssFeeds li {
+	padding-left: 16px;
+	background: url(../../images/icons/feed.gif) no-repeat;
+	line-height: 12px;
+	margin: 2px 0;
+}
+
+/** /footer **/
+
+/** helper classes **/
+
+.clear {
+	clear: both;
+	overflow: hidden;
+}
+
+#error, #success {
+	margin: 10px 0;
+	padding: 5px 10px;
+	border: 1px solid #ccc;
+	clear: both;
+	cursor: pointer;
+	text-align: left;
+}
+
+#error {
+	background: #FFB0B0;
+	border-color: red;
+}
+
+#success {
+	background: #90DC90;
+	border-color: green;
+}
+
+/** /helper classes **/
+
+/** contact card **/
+
+
+div.contact div.cardData h2 {
+	margin-top: 0;
+}
+
+div.contact div.cardBlock {
+	margin-bottom: 15px;
+	padding-left: 10px;
+}
+
+div.contact div.cardBlock span {
+	font-weight: bolder;
+	color: #333;
+}
+
+
+
+/** /contact card **/
+
+/** user card **/
+
+div.card {
+	padding: 10px;
+	/*border: 1px solid #ccc;*/
+}
+
+* html div.card {
+	padding-top: 5px;
+}
+
+div.card div.cardIcon {
+	float: left;
+}
+.cardIcon img{
+	max-height: 72px;
+	max-width: 72px;
+}
+
+div.card div.cardData {
+	margin-left: 60px;
+}
+
+div.card div.cardData h2 {
+	margin-top: 0;
+}
+
+div.card div.cardBlock {
+	margin-bottom: 25px;
+	padding-left: 10px;
+}
+
+div.card div.cardBlock span {
+	font-weight: bolder;
+	color: #333;
+}
+
+div.card table {
+	margin-top: 10px;
+}
+
+div.card table, div.card table tr, div.card table td {
+	border: 0;
+}
+
+div.card table tr, div.card table td {
+	padding: 2px;
+}
+div.contact div.direct-url {
+	margin: 15px 10px;
+}
+
+/** /user card **/
+
+/** advanced pagination **/
+
+div.advancedPagination {
+	margin: 10px;
+	text-align: right;
+}
+
+div.advancedPagination span {
+	line-height: 20px;
+}
+
+div.advancedPagination select {
+	padding: 0;
+}
+
+/** /advanced pagination **/
+
+/** private **/
+
+div.private {
+	/*float: right;*/
+	height: 9px;
+	width: 37px;
+	overflow: hidden;
+	background: url(../../images/icons/private.gif) no-repeat;
+}
+
+div.private span {
+	display: none;
+}
+
+
+/** /private **/
+
+td.td-pr {
+	padding-right:8px;
+}

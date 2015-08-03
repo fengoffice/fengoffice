@@ -1,0 +1,13 @@
+#center {
+	top: 65px ;
+}
+
+#north .x-panel-bwrap {
+	background: none ; 
+	height: 0px ;
+	overflow: hidden ;
+}
+
+.ColumnResizer{
+	background: url(img/transp-1px.png) repeat ;
+} 

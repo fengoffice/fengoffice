@@ -1,0 +1,18 @@
+<?php return array(
+	'upgrade' => 'Uppgradera',
+	'upgrade from' => 'Uppgradera från',
+	'upgrade to' => 'Uppgradera till',
+	'upgrade from to' => 'Uppgradera från {0} till {1}',
+	'already upgraded' => 'Du har redan uppgraderat till senaste versionen: {0}',
+	'back to fengoffice' => 'Tillbaka till Feng Office',
+	'all rights reserved' => 'Alla rättigheter reserverade',
+	'upgrade process log' => 'Uppgraderingshistorik (log)',
+	'upgrade fengoffice' => 'Uppgradera Feng Office',
+	'upgrade your fengoffice installation' => 'Uppgradera din Feng Office installation',
+	'upgrade warning' => 'Varning',
+	'upgrade warning desc' => 'Gör en <a href="{0}" target="_blank">backup</a> av installationen före uppgraderingen!',
+	'error upgrade version must be specified' => 'Ingen version funnen. Kan inte fortsätta med automatisk uppgradering. Vv. prova senare eller uppgradera manuellt.',
+	'error upgrade version not found' => 'Felaktig version vald {0}. . Kan inte fortsätta med automatisk uppdatering. Försök senare eller prova att manuellt uppdatera istället.',
+	'error upgrade invalid zip url' => 'Felaktig nerladdnings-URL för den valda versionen. Kan inte fortsätta med automatisk uppdatering. Försök senare eller prova att manuellt uppdatera istället.',
+	'error upgrade cannot open zip file' => 'Kan inte öppna den nya versionens zipfil. Kan inte fortsätta med automatisk uppgradering. Försök senare eller prova att manuellt uppdatera istället.',
+); ?>

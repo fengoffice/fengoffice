@@ -1,0 +1,186 @@
+
+
+div.member-selectors-container {
+	padding: 0 0 10px;
+}
+
+.small-member-selector {
+	display: inline-block;
+	float: left;
+	margin-left: 10px;
+	overflow: hidden;
+}
+
+.small-member-selector label{
+	font-size: 100%;
+}
+
+div.single-dimension-selector {
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	min-width: 350px;
+	/*max-width: 490px;*/
+	border-radius: 3px;
+	box-shadow: 5px 5px 7px #CCCCCC;
+}
+
+div.single-dimension-selector div.header {
+	padding: 3px 5px;
+	cursor: pointer;
+}
+
+div.single-dimension-selector div.selector-body {
+	padding: 8px;
+	border: 1px solid #cccccc;
+	border-radius: 0 0 3px 3px;
+	background-color: #ffffff;
+	color: #333333;
+}
+
+.completePath{
+	display: inline-block;
+	width: calc(100% - 20px);/*-79px*/
+	margin-top: 4px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.single_current_selected{
+	min-height: 20px;
+	border: 1px solid #ccc;
+	border-radius: 2px;
+}
+
+.single_current_selected .completePath{
+	width: 100%;
+	margin-bottom: 0px;
+	margin-top: 3px;
+}
+
+div.selector-body.loading {
+	color: #999999;
+	background: #f0f0f0  url(../../extjs/images/default/grid/loading.gif) center center no-repeat ;
+}
+
+div.single-dimension-selector div.selector-body div.separator {
+/*	border-bottom: 1px solid #cccccc;*/
+	margin: 10px 0;
+	width: 100%;
+}
+
+div.single-dimension-selector div.selector-body div.title {
+	font-weight: bold;
+	border-bottom: 1px solid #333;
+	color: #333;
+	margin: 5px 0 10px;
+}
+
+div.single-dimension-selector div.selector-body input.member-name-input {
+	min-width: 305px;
+}
+
+div.single-dimension-selector div.selector-body div.add-member-form .add-link {
+	padding-top: 4px;
+	white-space: nowrap;
+}
+
+div.single-dimension-selector div.selector-body div.og-membercombo-container {
+	float: left;
+}
+
+div.single-dimension-selector div.selector-body div.view-all-link {
+	margin-bottom: 5px;
+}
+div.single-dimension-selector div.selector-body div.view-all-link a {
+	text-decoration: underline;
+}
+
+
+div.single-dimension-selector div.selector-body div.selected-members div.selected-member-div .path {
+	font-style: normal;
+	color: #555;
+}
+
+div.single-dimension-selector div.selector-body div.selected-members div.selected-member-div {
+	padding: 2px;
+}
+
+div.single-dimension-selector div.selector-body div.selected-members div.selected-member-div.alt-row {
+	background-color: #ECEFF7;
+}
+
+div.selected-members div.selected-member-div div.selected-member-actions {
+	filter: alpha(opacity=60);
+	opacity: 0.6;
+	float:right;
+	display: inline-block;
+	width: 16px;
+	margin-top: 4px;
+}
+div.selected-members div.selected-member-div div.selected-member-actions:hover {
+	filter: alpha(opacity=100);
+	opacity: 1;
+}
+
+
+
+/* linked objects filters*/
+
+#dimFilter .x-panel-body {
+	background-color: #FFFFFF;
+}
+
+div.linked-objects-member-filters input.member-name-input {
+	min-width: 95%;
+}
+
+div.linked-objects-member-filters div.lo-member-selector {
+	padding: 10px 0 0;
+}
+
+div.linked-objects-member-filters div.selector-label {
+	margin-bottom: 2px;
+	font-weight: bold;
+}
+
+div.linked-objects-member-filters div.buttons {
+	padding: 10px 0 0;
+	text-align: center;
+}
+
+/*****************/
+
+
+.dimension-selector-container {
+	width: 100%;
+	display: table;
+	margin: 4px 0;
+}
+.general-timeslots .dimension-selector-container {
+	margin: 0;
+}
+
+.dimension-selector-container .input-container {
+	float: right;
+	width: 267px;
+}
+
+.coInputMainBlock .dimension-selector-container {
+	margin: 0 0 14px 0;
+}
+
+.coInputMainBlock .task-data .dimension-selector-container .input-container {
+	width: 250px;
+	float: left;
+}
+
+.contact .coInputMainBlock .dimension-selector-container, .adminAddCompany .dimension-selector-container {
+	min-width: 500px;
+	margin: 0 0 2px 0;
+}
+
+.coInputMainBlock .dimension-selector-container .input-container, .adminAddCompany .dimension-selector-container .input-container {
+	width: 250px;
+	float: left;
+}

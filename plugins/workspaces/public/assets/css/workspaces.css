@@ -1,0 +1,10 @@
+
+.ws-widget .widget-header {
+	color: white;
+	background-color: #6042A4;
+	border-color: #5229A3;
+}
+
+.widget-body .workspace-row-container {
+	margin: 10px 0 0;
+}

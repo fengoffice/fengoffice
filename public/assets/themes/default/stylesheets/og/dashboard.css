@@ -1,0 +1,581 @@
+.endSeparatorDiv {
+	border-bottom:#CCC solid 1px;
+	padding-bottom:8px;
+	margin-bottom:8px;
+}
+
+
+.dashWorkspace {
+  	padding-bottom: 4px;
+  	border-bottom: 1px solid #AAA;
+	width: 100%;
+	color: #666;
+	margin-bottom: 10px;
+	padding-top:10px;
+}
+
+.dashWorkspace .name{
+  	font-size: 200%;
+  	font-weight: bolder;
+}
+
+.dashWorkspace .description{
+}
+
+.dashActions .dashAction {
+	margin: 0px 5px;
+}
+
+.dashActions .viewAsList {
+    text-align: right;
+        
+}
+
+.ico-grid {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -100px !important;
+}
+
+.dashActions .viewAsList img {
+	height: 16px;
+	padding-left:20px;
+	padding-top: 5px;
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -100px !important;
+	cursor: pointer;
+	vertical-align: middle;
+}
+
+.dashHeader {
+	padding:2px 10px;	
+  	border-bottom: 1px solid;
+}
+
+.dashHeader .dashTitle {
+  	font-size: 120%;
+  	font-weight: bolder;
+  	border-bottom: 0px solid;
+}
+
+.dashSubtitle {
+  	font-weight: bolder;
+  	padding-top: 10px;
+  	padding-bottom: 2px;
+  	border-bottom: 1px solid #AAA;
+}
+
+.dashAltRow {
+	background-color:#ECEFF7;	
+}
+
+
+/*----------------------------------------
+		Messages
+----------------------------------------*/
+
+.dashMessages .dashHeader{
+	color: rgb(101,82,5);
+	background-color: rgb(246,214,78);
+	border-color: rgb(201,163,10);
+	border-bottom: none ;
+}
+
+.dashMessages .coViewBody {
+	background: #FFF2BF;	
+	color: rgb(101,82,5);
+}
+
+.dashMessages .dashAltRow {
+/*	background-color:#FAEBC9 !important;*/
+	background-color:#ECEFF7 !important;;
+}
+
+.dashMessages .internalLink {	
+	color: rgb(101,82,5);
+}
+
+/*----------------------------------------
+		Comments
+----------------------------------------*/
+
+.dashComments .dashHeader{
+	color: rgb(90,82,101);
+	background-color: rgb(210, 196, 252);
+	border-color: rgb(210, 196, 252);
+/*	border-color: rgb(180,163,201);*/
+}
+
+.dashComments .coViewBody {
+	background: #FFFFFFF;	
+	color: rgb(90,82,101);
+}
+
+.dashComments .dashAltRow {
+	/*background-color: #EFE0FF !important;*/
+	background-color: #ECEFF7 !important;
+}
+
+.dashComments .internalLink {	
+	color: rgb(90,82,101);
+}
+
+.dashComments .previewText {
+	color: rgb(136, 136, 136);
+}
+
+
+/*----------------------------------------
+		Late tasks and milestones
+----------------------------------------*/
+
+.dashLate .dashHeader{
+	color: white;
+	background-color: #DD4444;
+	border-color: #CC1111;
+}
+
+.dashLate .dashAltRow {
+	background-color:#FBEFEF;	
+}
+
+
+/*----------------------------------------
+		Pending tasks
+----------------------------------------*/
+
+.dashPendingTasks .dashHeader{
+	color: white;
+	background-color: #717FA1;
+	border-color: #596480;
+}
+
+
+/*----------------------------------------
+		Calendar
+----------------------------------------*/
+
+.dashCalendar .dashHeader {
+	color: white;
+	background-color: #717FA1;
+	border-color: #596480;
+}
+
+/*----------------------------------------
+		Getting Started
+----------------------------------------*/
+
+.dashGettingStarted .dashHeader {
+	color: white;
+	background-color: #717FA1;
+	border-color: #596480;
+}
+
+/*----------------------------------------
+		Documents
+----------------------------------------*/
+
+.dashDocuments .dashHeader{
+	color: white;
+	background-color: #717FA1;
+	border-color: #596480;
+}
+
+.dashDocuments .dashAltRow {
+	background-color: #ECEFF7 !important;
+}
+
+/*----------------------------------------
+		Tasks in progress
+----------------------------------------*/
+
+.dashTasksInProgress .dashHeader{
+	color: white;
+	background-color: #F68D4D;
+	border-color: #DB7D45;
+	padding-left:34px;
+	background-image: url(../../images/16x16/time.png) !important;
+	background-repeat:no-repeat;
+	background-position: 8px 4px;
+}
+
+/*----------------------------------------
+		Unread emails
+----------------------------------------*/
+
+.dashUnreadEmails .dashAltRow {
+	background-color: #ECEFF7 !important;
+}
+
+.dashUnreadEmails .dashHeader{
+	color: white;
+	background-color: #7789EE;
+	border-color: #7789EE;
+	/*border-color: #98A8FF;*/
+}
+
+
+/*----------------------------------------
+		Charts
+----------------------------------------*/
+
+.dashChart .dashHeader{
+	color: white;
+	background-color: #717FA1;
+	border-color: #596480;
+}
+
+/*----------------------------------------
+		Workspace Info
+----------------------------------------*/
+
+.dashInfo .dashHeader{
+	color: white;
+	background-color: #9583BF;
+	border-color: #69598F;
+}
+
+/*----------------------------------------
+		Activity
+----------------------------------------*/
+
+.dashActivity .dashAltRow {
+	background-color:#E1E9FF;		
+}
+
+.dashActivity .dashHeader{
+	color: white;
+	background-color: #496AB9;
+	border-color: #496AB9;
+}
+
+.dashActivity .avatar{
+	border: 0px none;
+	height: 26px;
+	width: 26px;
+	padding: 3px;
+}
+
+.dashActivity .groupTitle{
+	font-size: 150%;
+	border-bottom: 1px solid graytext;
+	vertical-align: middle;
+	height: 25px;
+	font-weight: bold;
+	color: navy;
+}
+
+
+/* completed tasks */
+.completed-tasks.widget .task-row {
+	margin-top: 10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+
+/*----------------------------------------
+		Generic widgets
+----------------------------------------*/
+.dashboard-container {
+	padding: 15px;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 5px 5px 5px 5px;
+    box-shadow: 0 0 3px 0 #CCCCCC inset;
+    margin: 5px;
+	min-width: 900px;
+}
+
+.dashboard-container .section-top {
+	padding-right: 15px;
+}
+
+.widget-calendar .widget-body {
+	padding: 0;
+	border: none;
+}
+
+.widget {
+	margin:5px 5px 15px 5px;
+	-moz-box-shadow: 1px 3px 7px #CCCCCC;
+	box-shadow: 1px 3px 7px #CCCCCC;
+	-webkit-box-shadow: 1px 3px 7px #CCCCCC;
+	width: 100%;
+	float: left;
+	border-radius: 0 0 6px 6px;
+}
+
+.widget p {
+	padding-left: 5px;
+}
+
+.widget h2  {
+	padding: 30px 0 5px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid #CCC;
+	font-size: 16px;
+	font-weigth: bold;
+}
+.widget h2.first  {
+	padding-top: 10px;
+}
+
+
+.widget h3  {
+    padding: 2px 3px 0;
+	margin-bottom: 5px;
+	font-size: 12px;
+	text-decoration: none;
+	font-weigth: bold;
+}
+
+
+
+.widget-header {
+	cursor: pointer;
+	height: 20px;
+	background: #496AB9;
+	color: #FFFFFF;
+	font-size: 17px;
+	padding: 8px 10px;
+	border-radius: 3px 3px 0 0;
+/*	white-space: nowrap;*/
+/*	background-image: -moz-linear-gradient(45deg, rgba(0, 0, 0, 0.25) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.25) 75%, rgba(0, 0, 0, 0.25)), -moz-linear-gradient(45deg, rgba(0, 0, 0, 0.25) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.25) 75%, rgba(0, 0, 0, 0.25));
+	background-image: -webkit-linear-gradient(45deg, rgba(0, 0, 0, .25) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, .25) 75%, rgba(0, 0, 0, .25)), -webkit-linear-gradient(45deg, rgba(0, 0, 0, .25) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, .25) 75%, rgba(0, 0, 0, .25));
+*/	background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 75%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05)), linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 75%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05));
+	background-position: 0 0pt, 2px 2px;
+	background-size: 4px 4px;
+	overflow:hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.widget-header .widget-title {
+	overflow:hidden;
+	float: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.widget-body {
+	background: #FFFFFF ;
+	padding: 10px;
+	border: 1px solid #DDDDDD;
+	border-top: none;
+	border-radius: 0 0 3px 3px;
+	overflow: hidden;
+}
+
+.widget .widget-body .separator {
+	border-top: 1px solid #DDDDDD;
+	margin: 5px 0;
+}
+
+.widget dt, .widget dd { 
+	margin: 0; padding: 2px 0;
+}
+
+.widget  dt { 
+	float: left; 
+	margin-right: 0.3em;
+	color: #003562 ;
+}
+.widget li, .widget dt {
+	margin-left: 10px ;
+}
+
+.widget  li { 
+	margin-right: 10px;
+}
+
+.widget .dimension-relation {
+	float: left ;
+	margin: 0 20px 20px 0  ;
+}
+
+
+.widget-activity .widget-header {
+	color: white;
+	background-color: #437691;
+	border-color: #437691;
+}
+
+.widget-active-context-info .widget-header {
+	color: white;
+	background-color: #42A489;
+	border-color: #42A489;
+}
+
+.widget-activity .date-container{
+	text-align: right;
+	margin-bottom: 5px;
+}
+
+/*----------------------------------------
+		Persons widget
+----------------------------------------*/
+.widget-persons {
+	float: left;
+	width: 100%;
+}
+
+.widget-persons ul li.alt-row {
+	background-color: #DFE8F6;
+}
+
+.widget-persons ul li div.contact-picture {
+	float: left;
+	padding: 5px;
+	font-size: 12px;
+	color: #666666;
+	text-align: center;
+	width: 70px;
+}
+.widget-persons ul li div.contact-picture img {
+	max-width: 60px;
+	max-height: 60px;
+}
+
+.contact-picture-container img {
+	max-height: 55px;
+}
+.contact-picture-container.small img {
+	max-height: 30px;
+}
+
+.widget-persons ul li a.person {
+	font-size: 13px;
+	font-weight: bold;
+}
+/*
+.widget-persons ul li div.email{
+	font-size: 11px;
+}*/
+
+.widget-persons ul li div.contact-info {
+	padding-top: 10px;
+	float:left;
+	margin-left: 10px;
+}
+
+.widget-persons .widget-header {
+	color: white;
+	background-color: #884F7A;
+	border-color: #884F7A;
+}
+.widget-persons .field.email input[type=email],
+.widget-persons .field.name input[type=text] {
+	width: 300px;
+}
+
+.widget-persons .access-data {
+	padding: 0;
+}
+
+.widget-persons div.person-list-separator {
+	margin-top: 10px;
+	border-top: 1px solid #ddd;
+}
+.widget-persons .add-person-form h2 {
+	padding-top: 10px;
+	border: 0px none;
+	font-size: 130%;
+	color: #333;
+}
+
+.widget-body .view-all-container {
+	text-align: right;
+}
+
+.widget-body.loading {
+	background: #f0f0f0  url(../../extjs/images/default/grid/loading.gif) center center no-repeat ;
+}
+
+.late-objects-widget .field.name,
+.late-objects-widget .field.assigned,
+.late-objects-widget .field.due,
+.late-objects-widget button.submit-task,
+.late-objects-widget a.task-more-details {
+	float: left;
+	margin-right: 20px;
+	
+}
+
+
+.late-objects-widget a.task-more-details {
+	margin-top: 2px;
+	margin-right: 10px;
+}
+
+
+.dimension-path  {
+	color: #FF0000;
+}
+
+.widget-body .co-row {
+	padding: 2px 0 2px 22px ;		
+}
+
+.widget-messages .message-row {
+	padding: 0 0 0 22px;
+	background-position: 0 2px !important;
+	margin: 10px 0 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.widget-body .date-container {
+	font-size:12px;
+}
+.widget-messages ul {
+	/* margin-top: 10px;*/ 	
+}
+
+.message-row .dashAltRow {
+	background-color: #63625F !important;
+}
+
+
+.no-obj-widget-msg {
+	font-size: 18px;
+	margin: 10px 5px;
+}
+
+
+.widget-comments .comment-row {
+	padding: 2px 0 2px 22px ;
+	background-position: 0 4px !important;
+	margin: 10px 0 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.widget-emails .email-row {
+	margin-top: 10px;
+	padding: 0 0 0px 22px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	/*background-position: 0 center !important;*/
+}
+
+.widget-documents .document-row {
+	margin: 10px 0 0;
+}
+
+.widget-body li {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.widget-body .widget-table td {
+	padding-top: 7px;
+}
+
+.widget-active-context-info .widget-body .info-content-item {
+	display: inline
+}
+
+.x-btn-text.link-ico {
+    height: inherit;
+}
+.x-btn-text.link-ico.ico-company {
+    padding: 1px 0 0px 18px;
+}

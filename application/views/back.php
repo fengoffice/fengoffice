@@ -1,0 +1,1 @@
+<a href="<?php echo ROOT_URL ?>"><?php echo lang('back to fengoffice')?></a>

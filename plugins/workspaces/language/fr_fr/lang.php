@@ -1,0 +1,16 @@
+<?php return array(
+	'add new workspace' => 'Ajouter un nouvel espace de travail',
+	'add your first workspace' => 'Ajouter un premier espace de travail',
+	'field workspace description' => 'Description',
+	'workspace description' => 'Description de l\'espace de travail',
+	'field workspace show_description_in_overview' => 'Afficher la description sur la page de présentation de l\'espace de travail?',
+	'add new relation workspaces' => 'Tapez pour sélectionner l\'espace de travail',
+	'add new relation tags' => 'Tapez pour sélectionner l\'étiquette',
+	'you have no workspaces yet' => 'Vous n\'avez encore aucun espace de travail',
+	'filter by workspaces' => 'Filtrer par espace de travail',
+	'filter by tags' => 'Filtrer par étiquette',
+	'user config option name lp_dim_workspaces_show_as_column' => 'Afficher les espaces de travail dans une colonne séparée',
+	'user config option desc lp_dim_workspaces_show_as_column' => 'Voir les espaces de travail dans une colonne séparée et pas à côté du nom de l\'élément de liste.',
+	'user config option name lp_dim_tags_show_as_column' => 'Voir les étiquettes dans une colonne séparée',
+	'user config option desc lp_dim_tags_show_as_column' => 'Voir les étiquettes dans une colonne séparée et non pas à côté du nom de l\'élément de liste.',
+); ?>

@@ -1,0 +1,189 @@
+=========================================
+An Introduction to the Graph eZ Component
+=========================================
+
+Description
+===========
+
+Among the additions to the latest eZ Components 2006.2 release is the Graph__
+component, which enables you to create bar, line and pie charts. The
+output driver mechanism allows you to create different image file types from
+each chart, and the available renderers make the chart output customizable from
+simple two-dimensional charts to beautiful three-dimensional data
+projections. 
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html
+
+.. image:: example_01.svg.png
+   :alt:   Simple 3d pie chart
+
+The different parts of a graph are separated into independently configurable
+chart elements, such as the title, the legend, or an axis. This not only allows
+you to use different colors or fonts for each chart element, but to also define
+their positions and sizes. The main chart elements are the same for all chart
+types. Default, overall graph layouts can be defined by palettes, which specify
+element colors, symbols, fonts and spacings.
+
+Chart data is held in ezcGraphDataSets, which typically takes the form of simple
+arrays. As you will see, statistical operations can be performed on the
+data.
+
+A more in-depth tutorial__ is available, and is referenced throughout this
+article. `API documentation`__ is also available.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html
+__ http://ez.no/doc/components/view/latest/(file)/classtrees_Graph.html
+
+Chart types
+===========
+
+The Graph component supports three chart types: bar__, line__ and `pie charts`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#bar-chart
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#line-charts
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#pie-charts
+
+Bar charts
+----------
+
+At the very least, after calling the Graph component and an existing dataset,
+the code to create a bar chart consists of only three lines.
+
+.. include:: example_02.php
+   :literal:
+
+First, you must create the chart object, which also defines the type of chart.
+Referencing the existing dataset, you then assign an array with key-value pairs
+containing the data. Finally, you render the chart, specifying its size, to a
+file.
+
+Line charts
+-----------
+
+Line charts are very similar to bar charts, but use other default axis
+renderers (see the tutorial__ for more information) and another display type
+for the dataset. Therefore, in order to create line charts, either use the
+ezcGraphLineChart class, or set the display type of the desired dataset to
+"LINE\" (as is done in the example below).
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html
+
+.. include:: example_03.php
+   :literal:
+
+This example is far more complex and shows more of the Graph component's
+capabilities. As stated earlier, each chart element can be configured
+independently. To show this, we set the position of the legend__ in line 7 to
+display at the bottom of the chart. The title, whose text is assigned in line
+6, can also be set to use a different font or to display at the bottom of the
+chart.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#the-legend
+
+You can `create your own palettes`__ to style your charts to fit your own color
+scheme. In this case we use the ezBlue palette (on line 8) to automatically 
+define the colors for the chart. Otherwise, the default palette would use the
+color scheme defined by the `Tango Desktop Project`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#create-a-custom-palette
+__ http://tango.freedesktop.org/Tango_Desktop_Project
+
+The axis can be of different types to render data differently. For
+bar and line charts the default x axis is the `labeled axis`__, which is
+intended to render string labels. Because we only have numeric data in this
+example we use the `numeric axis`__ (on line 10). There is also a date axis and
+an axis for logarithmic-scaled data available.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#labeled-axis
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#numeric-axis
+
+From line 14 to 21 we generate some random data and create a dataset from that.
+From this data we create another type of dataset, which tries to
+determine an `average polynomial`__ of a certain degree, approximating the 
+given data using the `least squares algorithm`__. We can switch 
+the display type between line and bar charts, as is done in line 25. 
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#average-polynomial-dataset
+__ http://en.wikipedia.org/wiki/Least_squares
+
+Each dataset has a symbol that is used in the legend in line charts at each
+data point and as the general shape for bars in the 3D renderer. Finally, on line
+28, we set an option to shade underneath the lines, then we render the chart.
+
+.. image:: example_03.svg.png
+   :alt:   Combined bar line chart with random data and average polynomial
+
+Pie charts
+----------
+
+Aside from the obvious display differences, there is only one functional
+difference between line / bar charts and pie charts: pie charts can only accept
+one dataset. There are also some `special configuration`__ options that are
+explored further in the tutorial__ or in the `API documentation`__. The first
+image in this article is an example pie chart rendered with the 3D renderer.
+The `source code for this example is available`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html
+__ http://ez.no/doc/components/view/latest/(file)/classtrees_Graph.html
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#pie-chart-options
+__ http://svn.ez.no/svn/ezcomponents/docs/articles/Graph/introduction/example_03.php
+
+What can be customized?
+=======================
+
+Nearly every aspect of a chart is customizable. For example, the 2D and 3D
+renderers can both be used with all chart types. For more information on this,
+see the tutorial__. You can even create your own renderer by extending the
+`abstract ezcGraphRenderer class`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html
+__ http://ez.no/doc/components/view/latest/(file)/Graph/ezcGraphRenderer.html
+
+Driver
+------
+
+The output drivers are used to create different image file formats. Graph
+supports rendering `bitmaps (jpeg, png) using PHP's GD extension`__, 
+`Flash SWF files using the ming extension`__ and `SVG files using the SVG
+driver`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#ming-flash-driver
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#gd-driver
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#svg-driver
+
+| To use another output driver, simply assign it to the driver property of your chart object:
+| $graph->driver = new ezcGraphFlashDriver();
+
+Each driver has several unique configuration options, but in most cases the
+default options will work. You can read about these options in the tutorial__
+or the `API documentation`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html
+__ http://ez.no/doc/components/view/latest/(file)/classtrees_Graph.html
+
+Additional modifications
+------------------------
+
+With the GD and SVG drivers, we support `element references`__ so that you 
+can link parts and elements of your chart. The GD driver gives polygon
+coordinates that can be used to create HTML image maps. The SVG driver returns
+the IDs of the elements so that you can use standard DOM operations to
+reference or link to the elements. You can see this link feature live in action
+on `busimess.org`__.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#element-references
+__ http://busimess.org/company/Description/axel_springer_verlag
+
+Creating custom palettes is described in the tutorial__. To explore the 
+available `dataset types`__, `axis types`__, `renderers`__, `axis label
+renderers`__, `drivers`__ and `chart elements`__, see the complete `API
+documentation`__, which is supplied for all eZ Components.
+
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#create-a-custom-palette
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#data-sets
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#axis
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#renderer
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#axis-label-renderer
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#drivers
+__ http://ez.no/doc/components/view/latest/(file)/introduction_Graph.html#chart-elements
+__ http://ez.no/doc/components/view/latest/(file)/classtrees_Graph.html

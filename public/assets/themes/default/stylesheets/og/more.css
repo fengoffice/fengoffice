@@ -1,0 +1,379 @@
+/**** user and groups ****/
+.user-groups-container {
+	background-color: white;
+	height: 100%;
+	padding: 10px;
+	min-width: 700px;
+}
+.user-groups-container .title {
+	font-weight: normal;
+	font-size: 200%;
+	margin-top: 20px;
+	margin-left: 20px;
+}
+.user-groups-container .title .titletext {
+	float: left;
+	min-width: 500px;
+}
+.user-groups-container .user-groups-section {
+	border-top: 1px solid #ccc;
+	margin: 60px 10px;
+	padding: 0 10px; 
+}
+.user-groups-container .user-groups-section h1 {
+	font-weight: normal;
+	font-size: 150%;
+	margin: 10px 0;
+	color: #444;
+}
+.user-groups-container .user-groups-section .section-description {
+	margin-bottom: 10px; 
+}
+.user-groups-container .user-groups-section .section-content .user {
+	padding: 0px;
+	margin: 5px 5px 5px 2px;
+	float: left;
+	min-width: 200px;
+	min-height: 55px;
+	border: 1px dotted #ccc;
+	border-radius: 4px;
+	background-color: #fafafa;
+}
+.user-groups-container .user-groups-section .section-content .user.disabled {
+	color: #888;
+	background-color: #eaeaea;
+}
+.user-groups-container .user-groups-section .section-content .user.disabled a, .user-groups-container .user-groups-section .section-content .user.disabled .desc {
+	color: #888;
+}
+
+.user-groups-container .user-groups-section .more-users-msg {
+	margin: 10px 0;
+}
+.user-groups-container .user-groups-section .section-content .user a div.wrapper {
+	padding: 5px;
+}
+.user-groups-container .user-groups-section .section-content .user:hover {
+	background-color: #eee;
+}
+.user-groups-container .user-groups-section .section-content .user .coViewIconImage {
+	margin: 3px;
+	float:left;
+}
+.user-groups-container .user-groups-section .section-content .user .coViewIconImage img {
+	max-height: 50px;
+	max-width: 50px;
+}
+.user-groups-container .user-groups-section .section-content .user .user-name-container {
+	margin-top: 10px;
+	margin-left: 5px;
+	float: left;
+}
+.user-groups-container .user-groups-section .section-content .user .user-name-container a,
+.user-groups-container .user-groups-section .section-content .user .company-name-container a {
+	font-size: 15px;
+}
+.user-groups-container .user-groups-section .section-content .user .company-name-container {
+	margin-top: 15px;
+	margin-left: 5px;
+	float: left;
+}
+.user-groups-container .user-groups-section .section-content .no-user-message {
+	margin: 10px 0;
+}
+
+/**** system modules ****/
+.system-modules-container {
+	background-color: white;
+	padding: 10px;
+}
+.system-modules-container .title {
+	font-weight: normal;
+	font-size: 200%;
+	margin-top: 20px;
+	margin-left: 20px;
+}
+.system-modules-container .title .titletext {
+	float: left;
+	min-width: 500px;
+}
+.system-modules-container .system-modules-section {
+	border-top: 1px solid #ccc;
+	margin: 20px 10px 30px;
+	padding: 0 10px; 
+}
+.system-modules-container .system-modules-section h1 {
+	font-weight: normal;
+	font-size: 150%;
+	margin: 10px 0;
+	color: #444;
+}
+.system-modules-container .system-modules-section div.description {
+	font-weight: normal;
+	margin: 5px 0 10px;
+}
+.system-modules-container .system-modules-section .section-content .module:hover {
+	background-color: #f9f9f9;
+}
+.system-modules-container .system-modules-section .section-content .module.disabled:hover {
+	background-color: #fff;
+}
+
+.system-modules-container .system-modules-section .section-content .module.not-sortable {
+	background-color: #fff;
+}
+.system-modules-container .system-modules-section .section-content .module.not-sortable:hover {
+	cursor: pointer;
+}
+
+.system-modules-container .system-modules-section .section-content .module {
+	text-align: center;
+	padding: 5px;
+	margin: 5px;
+	float: left;
+	min-width: 200px;
+	min-height: 55px;
+	cursor: move;
+	border: 1px dotted #ccc;
+	border-radius: 4px;
+}
+
+.system-modules-container .system-modules-section .section-content .module.active {
+	background-color: #E5F2E5;
+}
+.system-modules-container .system-modules-section .section-content .module.active:hover {
+	background-color: #DAEBDA;
+}
+
+.system-modules-container .system-modules-section .section-content .module.disabled {
+	opacity: 0.5;
+	filter: alpha(opacity=50);
+	cursor: default;
+}
+
+.system-modules-container .system-modules-section .section-content .coViewIconImage {
+	float: left;
+	margin-left: 0px;
+}
+.system-modules-container .system-modules-section .section-content .module .module-order, .system-modules-container .system-modules-section .section-content .module .dimension-order {
+	/*background-color: #cceacc;*/
+	background-color: transparent;
+	border-radius: 3px 0 4px;
+	/*border: 1px solid #A6D9A5;*/
+	padding-top: 1px;
+	float: left;
+	width: 18px;
+	color: #1a6314;
+	font-weight: bold;
+	margin-left: -5px;
+	margin-top: -5px;
+	height: 16px;
+	font-size: 110%;
+	line-height: 16px;
+	display: '';
+}
+
+.system-modules-container .system-modules-section .section-content .module .module-name {
+	float: left;
+	margin-top: 27px;
+	font-size: 15px;
+}
+.system-modules-container .system-modules-section .section-content .module .module-enabled-div {
+	float: right;
+	margin-left: 5px;
+	margin: 25px 15px;
+}
+
+.ui-sortable-helper {
+	background-color: #D5DCE5;
+	color: #21567A;
+	border: 5px solid #C5CCD5;
+	border-radius: 20px;
+}
+
+/**** index ****/
+.more-panel-container {
+	background-color: white;
+	padding: 10px;
+	min-width: 650px;
+}
+.more-panel-container .title {
+	font-weight: normal;
+	font-size: 200%;
+	padding-left: 20px;
+	margin-top: 20px;
+	line-height: 25px;
+}
+
+.more-panel-container .more-panel-section {
+	border-top: 1px solid #ccc;
+	margin: 20px 10px 30px;
+	padding: 0 10px; 
+}
+.more-panel-container .more-panel-section h1 {
+	font-weight: normal;
+	font-size: 150%;
+	margin: 10px 0;
+	color: #444;
+}
+.more-panel-container .more-panel-section .section-content .link {
+	text-align: center;
+	padding: 5px;
+	margin: 0 5px;
+	min-height: 98px;
+}
+.more-panel-container .more-panel-section .section-content .link:hover {
+	background-color: #E5ECF5;
+	border-radius: 5px;
+	border: 5px solid #D5DCE5;
+}
+.more-panel-container .more-panel-section .section-content .link .coViewIconImage {
+	margin: 5px auto;
+}
+.more-panel-container .more-panel-section .section-content.section1 {
+	max-width: 800px;
+}
+
+.section1 .link {
+	float: left;
+	width: 120px;
+	border: 5px solid white;
+	cursor: pointer;
+}
+.section1 .link.highlighted.off {
+	background-color: transparent;
+}
+.section1 .link.highlighted.on {
+	background-color: #FDFD9E;
+	border-radius: 5px;
+	border: 5px solid #E5E674;
+}
+.section1 .link.highlighted.off .highlighted-number {
+	display: none;
+}
+.section1 .link.highlighted.on .highlighted-number {
+	background-color: #E9E91A;
+	border-radius: 20px;
+	border: 5px solid #C9C93F;
+	float: left;
+	width: 25px;
+	color: #7A7A21;
+	font-weight: bold;
+	margin-left: -20px;
+	margin-top: -15px;
+	height: 25px;
+	font-size: 180%;
+	line-height: 25px;
+	display: '';
+}
+.section1 .link.highlighted.on:hover .highlighted-number {
+	background-color: #D5DCE5;
+	color: #21567A;
+	border: 5px solid #C5CCD5;
+}
+
+.section2 .link {
+	float: left;
+	width: 120px;
+	border: 5px solid white;
+}
+.more-panel-section .section-content.section2 .left-section {
+	float: left;
+	padding-right: 0px;
+	border-right: 1px solid #ccc;
+	width: 450px;
+}
+.more-panel-section .section-content.section2 .right-section {
+	float: left;
+	margin-left: 0px;
+}
+
+.section3 .link {
+	float: left;
+	width: 120px;
+	border: 5px solid white;
+}
+
+/**** more settings ****/
+.settings-container {
+	padding: 10px;
+	background-color: white;
+}
+.settings-container .title {
+	font-weight: normal;
+	font-size: 200%;
+	margin-top: 20px;
+	margin-left: 20px;
+}
+.settings-container .title .titletext {
+	float: left;
+	min-width: 500px;
+}
+.settings-container .settings-section {
+	border-top: 1px solid #ccc;
+	margin: 20px 10px;
+	padding: 0 10px; 
+}
+.settings-container .settings-section .settings-section-content {
+	width: 600px;
+	padding-top: 10px;
+}
+.settings-container .settings-section .settings-section-content .link:hover {
+	background-color: #E5ECF5;
+	border-radius: 5px;
+	border: 5px solid #D5DCE5;
+}
+.settings-container .settings-section h1 {
+	font-weight: normal;
+	font-size: 150%;
+	margin: 10px 0;
+	color: #444;
+}
+.settings-container .link {
+	text-align: center;
+	padding: 10px 5px;
+	margin: 0 5px;
+	min-height: 90px;
+	float: left;
+	width: 120px;
+	border: 5px solid white;
+}
+.settings-container .link .coViewIconImage {
+	margin: 0px auto;
+}
+
+#menu-panel .x-tool.x-tool-options.highlighted {
+	border: 2px solid #E5E674;
+	border-radius: 15px;
+	margin-top: -2px;
+	margin-right: 17px;
+	background-color: #FDFD9E;
+}
+
+.highlight-hint {
+	display: none;
+	position: absolute;
+	z-index: 1000;
+	padding: 5px;
+	margin-top: -5px;
+	background-color: #FDFD9E;
+	border-radius: 4px;
+	border: 1px solid #E5E674;
+	color: #5A5A21;
+	cursor: pointer;
+}
+
+#tasksPanel #tasksPanelContent #tasksPanelContainer #ogTasksPanelColNames .tasksActionsBtn.tasksBtn.highlighted {
+	background-color: #FDFD9E;
+	color: black;
+}
+
+.new_button.highlighted {
+	background-color: #FDFD9E;
+	border-radius: 4px;
+}
+
+.user-box-actions .highlighted {
+	background-color: #FDFD9E;
+	padding: 5px 1px;
+}

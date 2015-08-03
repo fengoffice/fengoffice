@@ -1,0 +1,495 @@
+
+
+
+
+
+/*###############################################
+       MAIN BACKGROUND TABLE PROPERTIES
+
+/* the main container - we override a lot of stuff here */
+
+#cal table, #cal td{
+	font-family: arial;
+	font-size: 12px;
+	color: #222222;
+}
+#cal form{
+	margin: 0px;
+	padding: 0px;
+}
+#cal a, #cal a:link, #cal a:visited, #cal a:active {
+    text-decoration:none;
+    color:#467DB4;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    text-align: left;
+}
+#cal a:hover {
+	color: blue;
+	background-color: inherit;
+	font-family: arial;
+	font-size: 12px;
+	text-decoration: none;
+} 
+/*################################################*/
+
+
+
+/*################################################
+           EVENT LINK PROPERTIES
+
+  the event links on the main calendar page,
+  shown inside each cell of the calendar.
+  NOTE: only used if you choose to let people click on 
+  the individual events from there. */
+a.event_link{
+	color: black;
+	text-decoration: none;
+	background-color: inherit;}
+a.event_link:hover{
+	color: black;
+	text-decoration: underline;
+	background-color: inherit;
+}
+div.event_block{
+	color: black;
+	text-decoration: none;
+	background-color: inherit;
+	border-left: 0px solid #AAEE00;
+	margin: 1px;
+	padding-left: 1px;
+	padding-bottom: 2px;
+	border-bottom: 0px solid #888888;
+	over-flow:hidden;
+}
+
+div.event_block img{
+	margin-right:2px;
+	}
+table.event_block{
+	background-color: #AAEE00;
+	border: 1px solid #777777;
+	width: 15px;
+	height: 35px;
+	font-size: 1px;
+}
+
+/*on the viewdate page, the event's title. 
+  (subject of the event) */
+a.viewdatesubject, a.viewdatesubject:link, a.viewdatesubject:visited, a.viewdatesubject:active{
+	color: #278181;
+	text-decoration: none;
+	font-size: 14px;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+}
+a.viewdatesubject:hover{
+	color: #278181;
+	text-decoration: underline;
+}
+
+a.viewdateoption, a.viewdateoption:visited, a.viewdateoption:hover, a.viewdateoption:active{
+	color: #778899;
+	text-decoration: none;
+	font-size: 10px;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+}
+.viewdatetext{
+	color: #445566;
+	text-decoration: none;
+	font-size: 11px;
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	font-weight: normal;
+}
+/*################################################*/
+	
+
+
+
+
+/*#################################################
+           LINK/TEXT PROPERTIES
+
+/* The titles that say the month year, and sometimes the day at the top. */
+.month_title{
+	font-family: Geneva, Verdana, Arial, sans-serif;
+	font-size: 15px;
+	font-weight: Bold;
+	color: #355881;
+}
+/* The titles on each of the modules */
+.box_title{
+  color: #99A5B2;
+  background-color: inherit;
+  font-family: Geneva, Arial, Helvetica, sans-serif;
+  font-size: 22px;
+  font-weight: bold;
+}
+.box_subtitle{
+  color: #99A5B2;
+  background-color: inherit;
+  font-family: Geneva, Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+}
+.cal_tab_title{
+  color: #444466;
+  background-color: inherit;
+  font-family: Geneva, Arial, Helvetica, sans-serif;
+  font-size: 22px;
+  font-weight: bold;
+}
+.cal_tab_subtitle{
+  color: #444466;
+  background-color: inherit;
+  font-family: Geneva, Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+}
+.success{
+    font-size: 18px;
+    color: #55aa55;
+}
+.failure{
+    font-size: 18px;
+    color: #aa5555;
+}
+/* this makes the link a big box to click on,
+such as the "back to calendar" box */
+a.box {
+  background-color: #afc6db;
+  border-color: black;
+  color: black;}
+a.box:hover {
+  background-color: white;
+  border-color: black;
+  color: black;}
+/* this makes a span act like a link */
+span.spanlink{
+    cursor:pointer;
+    cursor:hand;
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	color: #222233;
+}
+/*##############################################*/
+
+
+.cal_tab{
+	background-color: #BBCCE5;
+	border-top: 1px solid #888888;
+	border-left: 1px solid #888888;
+	border-right: 1px solid #888888;
+	border-bottom: 1px solid #888888;
+	padding: 3px;
+	padding-right: 5px;
+	padding-left: 5px;
+	margin-bottom: 0px;
+    cursor:pointer;
+    cursor:hand;
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	color: #222222;
+	margin-left: 5px;
+	margin-right: 5px;
+}
+
+.cal_tab2{
+	background-color: #FFFFBB;
+	border-top: 1px solid #888888;
+	border-left: 1px solid #888888;
+	border-right: 1px solid #888888;
+	border-bottom: 1px solid #FFFF99;
+	padding: 3px;
+	padding-right: 5px;
+	padding-left: 5px;
+	margin-bottom: 0px;
+    cursor:pointer;
+    cursor:hand;
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	color: #222233;
+	margin-left: 5px;
+	margin-right: 5px;
+}
+
+.cal_tabbody{
+	background-color: #FFFFBB;
+	border: 1px solid #888888;
+	padding: 5px;
+	float: center;
+	margin: 5px;
+	margin-top: 3px;
+}
+
+/*#############################################
+           NAVIGATION BAR PROPERTIES
+  These are the bottom links for the login page, admin page, etc 
+  #############################################*/
+#navbar a {
+	color: #7c93a8;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+#navbar a:hover {
+	color: #339933;
+	text-decoration: underline;
+}
+/*#############################################*/
+ 
+ 
+ 
+
+  
+
+  
+/*############################################
+      THE MAIN CALENDAR PROPERTIES
+  
+this is the calendar table background, and
+basically only shows up as the border and spaces
+between the cells of the main calendar.  */
+#calendar {
+  background-color: white;
+  color: white;
+  width: 100%;
+  text-align: center;
+  font-size: 10pt;
+  table-layout: fixed;
+  border-style: none;
+}
+#calendar table{
+  padding: 1px;
+  background-color: inherit;
+  border-spacing: 1px;
+}
+/* the calendar table headers */
+#calendar th{
+  background-color: #455678;
+  color: white;
+  font-size: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  padding: 2px;
+  text-align: center;
+}
+#calendar td{
+	font-size: 11px;
+	overflow: hidden;
+}
+#calendar div.daylink{
+	width: 100%;
+	background-color: #ECEFF7;/*#6485af;*/
+	padding-right: 3px;
+}
+
+#calendar div.selecteddaylink{
+	width: 100%;
+	background-color: #E1FFFF;/*#6485af;*/
+	padding-right: 3px;
+}
+
+#calendar div.daylink a, #calendar div.daylink a:active, #calendar div.daylink a:visited{
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #999;
+	padding: 0px;
+	padding-left: 3px;
+	padding-right: 3px;
+	margin-right: 1px;
+	display: inline;
+	text-decoration: none;
+}
+#calendar div.daylink a:hover{
+	color: #999;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	padding-left: 3px;
+	padding-right: 3px;
+	text-decoration:none;
+}
+#calendar div.todaylink{
+	width: 100%;
+	background-color: #FFFFB3; /*#FBEA86;  #FFCC33; /* #31528E; */
+	padding-right: 3px;
+}
+#calendar div.todaylink a, #calendar div.todaylink a:active, #calendar div.todaylink a:visited{
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	padding: 0px;
+	padding-left: 3px;
+	padding-right: 3px;
+	margin-right: 1px;
+	display: inline;
+	text-decoration: none;
+}
+#calendar div.todaylink a:hover{
+	color: black;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	padding-left: 3px;
+	padding-right: 3px;
+	margin-right: 1px;
+	text-decoration: none;
+}
+
+#calendar td.today{
+  text-align: left;
+  color: black;
+  background-color: #FFFFCC;
+  border: 1px solid  #999999;
+/*  height: 90px;*/ 
+}
+
+#calendar td.selectedday{
+  text-align: left;
+  color: black;
+  background-color: #F5FFFF;
+  border: 1px solid  #999999;
+  /*height: 90px; */
+}
+
+#calendar div.extralink{
+	width: 100%;
+	background-color: #ECEFF7; /*#FFF;/*#A9BCD5;  D1DCEE; /* #A2A9BB; */
+	padding-right: 3px;
+	opacity: 0.5;
+	filter: alpha(opacity = 50);
+}
+
+#calendar div.extraweekendlink{
+	width: 100%;
+	/*background-color: #FFF;/*#A9BCD5;  D1DCEE; /* #A2A9BB; */
+	padding-right: 3px;
+}
+
+#calendar div.extralink a, #calendar div.extralink a:active, #calendar div.extralink a:visited{
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	font-weight: bold;
+	color: #999;
+	padding: 0px;
+	padding-left: 4px;
+	padding-right: 3px;
+	margin-right: 1px;
+	display: inline;
+	text-decoration: none;
+}
+#calendar div.extralink a:hover{
+	color: #999;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	
+	padding-left: 3px;
+	padding-right: 3px;
+	text-decoration: none;
+}
+/* the 'past' colors for the main calednar page */
+#calendar td.weekend{
+  text-align: left;
+  color: black;
+  background-color: #F0F2F7;
+  border: #999999 1px solid;
+  }
+#calendar td.weekday{
+  text-align: left;
+  color: black;
+  background-color: white;
+  border: #999999 1px solid;}
+#calendar td.weekday_future{
+  text-align: left;
+  color: black;
+  background-color: #fff;
+  border: #999999 1px solid;
+  }
+#calendar td.weekend, #calendar td.weekday, #calendar td.weekday_future{
+  text-align: left;
+  height: 100px;
+  border:#999 thin solid;
+}
+
+
+/*#################################################*/
+
+
+
+
+
+
+/*###################################################
+            MODULE TABLE PROPERTIES
+
+This are the admin page table properties  */
+table.adminpage-table{
+  background-color: #afc6db;
+  color: black;
+  border-color: black;
+}
+/* This is for the table each module is loaded in,
+with the exception of the admin page */
+table.box{
+  background-color: #E8EFF5;
+  color: black;
+  color: black;
+  border: 1px solid #99AEAE;
+  width: 90%;
+  font-family: Arial;
+  font-size: 12px;
+  color: #222222;
+}
+/*################################################*/
+
+
+
+
+/* this is for the usernames listed in the admin section where you edit user options */
+span.cal_admin_usernames{
+	color: #222222; 
+	font-size: 14px; 
+	font-family: Arial; 
+	font-weight: bold;
+} 
+
+/* this is the wrapper table arround all the edit user blocks in the admin section */
+table.cal_admin_userlist{
+	background-color: inherit;
+	padding: 0px;
+	border-spacing: 5px;
+	border-width: 0px;
+	width: 100%;
+}
+table.cal_admin_userlist td{
+	vertical-align: top;
+}
+table.cal_admin_userblock_anonymous{
+	background-color: #FFCC00; 
+	border: 1px solid #777777;
+	width: 98%;
+	padding: 3px;
+	margin-bottom: 10px;
+}
+table.cal_admin_userblock{
+	background-color: #99AABB; 
+	border: 1px solid #777777;
+	width: 98%;
+	padding: 3px;
+	margin-bottom: 10px;
+}
+
+input.cal_admin_edituser_button{
+	width: 120px;
+	font-size: 11px;
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	text-align: center;
+}
+
+.weeknumber {
+	background-color: #455678;
+	color: white;
+	vertical-align: middle;
+	font-weight: bold;
+}

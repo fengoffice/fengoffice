@@ -1,0 +1,18 @@
+<?php return array(
+	'field workspace description' => 'Beschreibung',
+	'workspace description' => 'Beschreibung des Arbeitsbereiches',
+	'field workspace show_description_in_overview' => 'Arbeitsbereichsbeschreibung in der Übersichtsseite anzeigen?',
+	'add new relation workspaces' => 'mit einem Arbeitsbereich verknüpfen',
+	'add new relation tags' => 'Schlagwort zuordnen',
+	'filter by workspaces' => 'filtern per Arbeitsbereich',
+	'filter by tags' => 'filtern per Schlagwort',
+	'add new workspace' => 'Neuen Arbeitsbereich hinzufügen',
+	'add your first workspace' => 'Legen Sie Ihren Arbeitsbereich an',
+	'you have no workspaces yet' => 'Sie haben keine Arbeitsbereiche',
+	'user config option name lp_dim_workspaces_show_as_column' => 'Arbeitsbereiche in eigener Spalte anzeigen',
+	'user config option desc lp_dim_workspaces_show_as_column' => 'Arbeitsbereiche in eigener Spalte und nicht unmittelbar neben dem Objekt anzeigen.',
+	'user config option name lp_dim_tags_show_as_column' => 'Schlagworte in eigener Spalte anzeigen',
+	'user config option desc lp_dim_tags_show_as_column' => 'Schlagworte in eigener Spalte und nicht unmittelbar neben dem Objekt anzeigen.',
+	'add a new member in workspaces' => 'Neuen Arbeitsbereich hinzufügen',
+	'add a new member in tags' => 'Neues Schlagwort hinzufügen',
+); ?>

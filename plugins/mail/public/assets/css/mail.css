@@ -1,0 +1,40 @@
+#mails-panel button.mail {
+  margin-top: 0px;
+  padding: 5px 10px;
+  font-size: 18px;
+  cursor: pointer;
+  background: none repeat scroll 0 0 #f8f8f8;
+  border-color: #c4c4c4;
+  border-radius: 2px;
+  border-style: solid; 
+  border-width: 1px;
+  color: #333;
+  box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
+  -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+  -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+}
+
+#mails-panel button.mail:HOVER {
+  background: none repeat scroll 0 0 #f0f0f0; 
+}
+
+#mails-panel button.mail.send {
+	margin-left: 10px;
+}
+
+.mail-classify-selector{
+	display: inline-block;
+	font-size: 15px;
+}
+
+.mail-classify-selector label{
+	min-width: 140px;
+}
+
+#mails-panel .mail-classify-selector .x-column-inner{
+	width: 100%!important;
+}
+
+blockquote {
+	margin-left: 10px!important;
+}

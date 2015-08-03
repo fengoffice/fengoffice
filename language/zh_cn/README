@@ -1,0 +1,9 @@
+如果你的Feng Office已经安装完毕，解压缩本包到你安装的Feng Office根目录下面的language/目录下面。
+然后编辑Feng Office根目录下的config/config.php文件中缺省语言选项如下所示:
+  define('DEFAULT_LOCALIZATION', 'zh_CN');
+重新刷新浏览器即可
+如果还是英文，则需要在帐户选项中设定默认帐户语言。
+
+By autumn.peak
+不足之处请mailto:autumn.peak.Z@gmail.com
+

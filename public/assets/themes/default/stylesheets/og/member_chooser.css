@@ -1,0 +1,40 @@
+
+.mc-container {
+	color: #666;	
+}
+
+
+.mc-container {
+	position: absolute ;
+	max-height: 150px ;
+	max-width:  300px ;
+	background: #FFF ;
+	        box-shadow: 0 0 5px 1px #CCCCCC ; 
+	   -moz-box-shadow: 0 0 5px 1px #CCCCCC ; 
+	-webkit-box-shadow: 0 0 5px 1px #CCCCCC ; 
+	border: 1px solid #CCCCCC ;
+	padding: 5px ;
+	overflow-y: scroll ;
+	
+}
+
+.mc-container input[type=checkbox] {
+	margin: 5px 10px 5px 5px ;
+}
+
+.mc-container input {
+	width: auto ;
+	height: auto ;
+	border: 1px solid #CCC ;
+	margin: 5px ;
+}
+.mc-container input[type=text] {
+	width: 90% ;
+	height: auto ;
+	border-radius: 3px ;
+	padding: 5px;
+}
+
+.mc-container li.hidden {
+	display: none; 
+}

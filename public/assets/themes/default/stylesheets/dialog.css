@@ -1,0 +1,270 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font: 12px verdana, arial, helvetica, sans-serif;
+  color: black;
+  background: white;
+  text-align: center;
+  line-height: 150%;
+}
+
+a {
+  color: #263356;
+}
+
+a:hover {
+  border: 0;
+  color: #566386;
+}
+
+h1 {
+  margin: 0 0 5px 0;
+  padding: 0 0 5px 0;
+  color: #263356;
+  font-size: 20px;
+  border-bottom: 3px double #ccc;
+}
+
+h2 {
+  margin: 10px 0;
+  color: #263356;
+  font-size: 16px;
+}
+
+p, ul, pre {
+  margin: 8px 0;
+}
+
+ul {
+  padding-left: 20px;
+  list-style: square;
+}
+
+code {
+  padding: 0 2px;
+  font-size: 1.2em;
+  background: #e8e8e8;
+}
+
+pre {
+  border: 1px solid #263356;
+  padding: 0 8px;
+  font-size: 1.2em;
+  background: #e8e8e8;
+}
+
+acronym {
+  border-bottom: 1px dotted #ccc;
+  cursor: help;
+}
+
+/** Form **/
+
+label {
+  margin: 3px 0;
+  font-weight: bolder;
+  display: block;
+  white-space: nowrap;
+}
+
+label.checkbox {
+  font-weight: normal;
+  display: inline;
+}
+
+span.label_required {
+  color: red;
+}
+
+input, textarea, select {
+  border: 1px solid #ccc;
+  padding: 3px;
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size: 11px;
+  background: white;
+}
+
+input:hover, textarea:hover, select:hover {
+  border: 1px solid green;
+}
+
+input:focus, textarea:focus, select:focus {
+  border: 1px solid black;
+}
+
+fieldset {
+  margin: 10px 0;
+  padding: 10px;
+  padding-top: 5px;
+  border: 1px solid #ccc;
+}
+
+fieldset legend {
+  font-weight: bolder;
+}
+
+input { width: 200px; }
+input.short { width: 50px; }
+input.medium { width: 150px; }
+input.long { width: 320px; }
+
+input.checkbox {
+  border: 0;
+  width: auto;
+}
+
+textarea {
+  width: 400px;
+  height: 150px;
+}
+
+textarea.short {
+  height: 70px;
+}
+
+
+button.submit {
+  /*argin-top: 10px;*/
+}
+
+span.required {
+  color: rgb(170, 33, 33);
+}
+
+#formErrors {
+  background: rgb(170, 33, 33);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin: 10px 20px;
+}
+
+#formErrors ul li {
+}
+
+/** Classes **/
+
+.desc, .desc* {
+  color: #666;
+  font-style: italic;
+}
+
+.desc ul {
+	list-style-type: disc;
+	list-style-position: inside;
+	list-style-image: none;
+	padding-left: 30px;
+}
+
+.bold {
+  font-weight: bolder;
+}
+
+.note {
+  border: 1px solid #263356;
+  padding: 0 8px;
+  background: #e8e8e8;
+}
+
+/** Construction **/
+
+#dialog {
+  margin: 100px auto 0 auto;
+  border: 3px solid #ccc;
+  padding: 10px;
+  width: 332px;
+  text-align: left;
+}
+
+#error, #success {
+  margin: 10px 0;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  clear: both;
+  cursor: pointer;
+  text-align: left;
+}
+
+#error {
+  background: #FFB0B0;
+  border-color: red;
+}
+
+#success {
+  background: #90DC90;
+  border-color: green;
+}
+
+/** Login dialog **/
+
+#loginUsernameDiv, #loginPasswordDiv {
+  padding-top: 1px;
+  height: 45px;
+}
+
+#loginUsernameDiv {
+  float: left;
+  width: 170px;
+}
+
+* html #loginUsernameDiv {
+  margin-top: 1px;
+}
+
+#loginPasswordDiv {
+  margin-left: 170px;
+}
+
+#loginSubmit span, #forgotPasswordSubmit span {
+  padding-left: 8px;
+  font-size: 11px;
+}
+
+* html #loginSubmit span, * html #forgotPasswordSubmit span {
+  position: relative;
+  top: -4px;
+}
+
+/** Change password dialog **/
+
+#changePasswordDiv, #repeatPasswordDiv {
+  padding-top: 1px;
+}
+
+#changePasswordDiv {
+  float: left;
+  margin-left: 1px;
+}
+
+#repeatPasswordDiv {
+  margin-left: 170px;
+}
+
+#loginSubmit {
+	position: relative;
+}
+
+#optionsLink, #hideOptionsLink {
+/*	position: absolute;
+	right: 10px;
+	top: 0px;*/
+}
+
+#optionsDiv {
+	/*padding-top: 10px;*/
+}
+#optionsDiv label {
+	float: left;
+	width: 100px;
+	margin-right: 10px;
+}
+
+#reset_password_new {
+	margin-top: 20px;
+}
+#reset_password_repeat {
+	margin-bottom: 20px;
+}

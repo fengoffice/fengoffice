@@ -1,0 +1,15 @@
+<?php return array(
+	'upgrade' => 'Povýšení',
+	'upgrade from' => 'Povýšit z',
+	'upgrade to' => 'Povýšit na',
+	'already upgraded' => 'Právě máte poslední možnou verzi.',
+	'back to fengoffice' => 'Zpět na Feng Office',
+	'all rights reserved' => 'Všechna práva rezerována',
+	'upgrade process log' => 'Log procesu povyšování',
+	'upgrade fengoffice' => 'Povýšit Feng Office',
+	'upgrade your fengoffice installation' => 'Povýšit vaši Feng Office instalaci',
+	'error upgrade version must be specified' => 'Není specifikovaná žádná verze. Nelze pokračovat s automatickým povýšením. Prosím, zkuste to znovu později nebo zkuste raději ruční povýšení.',
+	'error upgrade version not found' => 'Byla určena neplatná verze  ({0}). Nelze pokračovat s automatickým povýšením. Prosím, zkuste to znovu později nebo zkuste raději ruční povýšení.',
+	'error upgrade invalid zip url' => 'Neplatná URL adresa této verze. Nelze pokračovat s automatickým povýšením. Prosím, zkuste to znovu později nebo zkuste raději ruční povýšení.',
+	'error upgrade cannot open zip file' => 'Nelze otevřít zazipovaný soubor s novou verzí. Nelze pokračovat s automatickým povýšením. Prosím, zkuste to znovu později nebo zkuste raději ruční povýšení.',
+); ?>

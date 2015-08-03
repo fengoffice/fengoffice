@@ -1,0 +1,18 @@
+<?php return array(
+	'mail' => 'Mail',
+	'linked mail tab'=>'Emails',
+    'subscribed notification mail' => 'Subscribed to Mail \'{0}\'',
+    'subscribed notification mail desc' => 'You have been subscribed to the Mail \'{0}\' by {1}.',
+	'user config option name mails_per_page' => 'Mails per page',
+  	'user config option desc mails_per_page' => 'Amount of emails listed (avoid 0 and negative numbers). Take into account that the larger the number, the more time it will take to load the emails.',
+	'user config option name check_attach_word' => 'Check attach word',
+	'user config option desc check_attach_word' => 'Notifies the user when sending an email if it has nothing attached but contains the word attach',
+	'by subject or address' => 'Search by subject or address',
+	'are you sure you want to send the email using account x' => 'Are you sure you want to send the email using account {0} ?',
+	'field Objects to' => 'To',
+	'field Objects cc' => 'CC',
+	'field Objects bcc' => 'BCC',
+	'field Objects body_html' => 'Html body',
+	'field Objects body_plain' => 'Plain Body',
+	'classify attachments' => 'Classify attachments',
+);
