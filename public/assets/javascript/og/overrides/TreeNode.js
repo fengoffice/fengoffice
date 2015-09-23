@@ -3,7 +3,7 @@
 Ext.override(Ext.tree.TreeNodeUI, {
 	
     renderElements : function(n, a, targetNode, bulkRender){
-    	
+    	nodeIconHide = "";
     	extraHTML = '';
     	if (n.actions && n.actions.length) {
     		
@@ -31,6 +31,8 @@ Ext.override(Ext.tree.TreeNodeUI, {
     			}
     		}
     		extraHTML += "</ul>" ;
+    		
+    		nodeIconHide = "tree-node-icon-hide-over";
     	}    	
     	
         this.indentMarkup = n.parentNode ? n.parentNode.ui.getChildIndent() : '';
@@ -39,10 +41,10 @@ Ext.override(Ext.tree.TreeNodeUI, {
         var buf = ['<li class="x-tree-node"><div ext:tree-node-id="',n.id,'" class="x-tree-node-el x-tree-node-leaf x-unselectable ', a.cls,'" unselectable="on">',
             '<span class="x-tree-node-indent">',this.indentMarkup,"</span>",
             '<img src="', this.emptyIcon, '" class="x-tree-ec-icon x-tree-elbow" />',
-            '<img src="', a.icon || this.emptyIcon, '" class="x-tree-node-icon',(a.icon ? " x-tree-node-inline-icon" : ""),(a.iconCls ? " "+a.iconCls : ""),'" unselectable="on" />',
+            '<img src="', a.icon || this.emptyIcon, '" class="x-tree-node-icon '+nodeIconHide+' ',(a.icon ? " x-tree-node-inline-icon" : ""),(a.iconCls ? " "+a.iconCls : ""),'" unselectable="on" />',
             cb ? ('<input class="x-tree-node-cb" type="checkbox" ' + (a.checked ? 'checked="checked" />' : '/>')) : '',
-            '<a hidefocus="on" class="x-tree-node-anchor" href="',href,'" tabIndex="1" ',
-             a.hrefTarget ? ' target="'+a.hrefTarget+'"' : "", '><span unselectable="on">',n.text,"</span></a>"+extraHTML+"</div>",
+            '<div style="display: inline-block;">'+extraHTML+'<a style="display: table-cell;" hidefocus="on" class="x-tree-node-anchor" href="',href,'" tabIndex="1" ',
+             a.hrefTarget ? ' target="'+a.hrefTarget+'"' : "", '><span unselectable="on">',n.text,"</span></a></div></div>",
             '<ul class="x-tree-node-ct" style="display:none;"></ul>',
             // Extra HTML (feng override)
 
@@ -73,8 +75,9 @@ Ext.override(Ext.tree.TreeNodeUI, {
 			this.checkbox.defaultChecked = this.checkbox.checked;			
             index++;
         }
-        this.anchor = cs[index];
-        this.textNode = cs[index].firstChild;
+      
+        this.anchor = cs[index].lastChild;
+        this.textNode = this.anchor.firstChild;
     }
     
     

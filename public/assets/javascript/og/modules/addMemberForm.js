@@ -121,7 +121,7 @@
 					if (del_prop_link.style.display != 'none') {
 						this.drawDimensionProperties(genid, document.getElementById(genid + 'dimension_id').value);
 					}
-					Ext.get(genid + 'property_links').setDisplayed(true);
+				//	Ext.get(genid + 'property_links').setDisplayed(true);
 				} else {
 					Ext.get(genid + 'property_links').setDisplayed(false);
 					var properties_container = Ext.get(genid + 'dimension_properties');

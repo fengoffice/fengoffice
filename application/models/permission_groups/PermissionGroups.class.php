@@ -64,7 +64,7 @@
     	foreach ($pgs as $pg) {
     		$result[$pg->getId()] = array('id' => $pg->getId());
     		if ($escape) {
-    			$result[$pg->getId()]['name'] = str_replace("'", "\'", $pg->getName());
+    			$result[$pg->getId()]['name'] = escape_character($pg->getName());
     		} else {
     			$result[$pg->getId()]['name'] = str_replace("'", "&apos;", $pg->getName());
     		}

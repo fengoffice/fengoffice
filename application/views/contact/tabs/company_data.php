@@ -118,7 +118,7 @@ $(document).ready(function() {
 	
 		<?php foreach ($company_data['all_addresses'] as $address) { ?>
 			og.addNewAddressInput('<?php echo $genid?>_addresses_container', 'company', '<?php echo $address->getAddressTypeId()?>', {
-				street: '<?php echo str_replace("'", "\'", $address->getStreet())?>',
+				street: '<?php echo escape_character(str_replace("\n", " ", $address->getStreet()))?>',
 				city: '<?php echo str_replace("'", "\'", $address->getCity())?>',
 				state: '<?php echo str_replace("'", "\'", $address->getState())?>',
 				zip_code: '<?php echo str_replace("'", "\'", $address->getZipCode())?>',

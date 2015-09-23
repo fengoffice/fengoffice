@@ -18,7 +18,8 @@
     	'dimension_id' => DATA_TYPE_INTEGER, 
     	'object_type_id' => DATA_TYPE_INTEGER,
     	'is_root' => DATA_TYPE_BOOLEAN,
-    	'options' => DATA_TYPE_STRING
+    	'options' => DATA_TYPE_STRING,
+    	'enabled' => DATA_TYPE_BOOLEAN,
     );
   
     /**

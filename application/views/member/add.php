@@ -41,6 +41,26 @@
 	$categories = array();
 	Hook::fire('member_edit_categories', array('member' => $member, 'genid' => $genid), $categories);
 	$has_custom_properties = count(MemberCustomProperties::getCustomPropertyIdsByObjectType($obj_type_sel)) > 0;
+	
+	$member_ot = ObjectTypes::findById($member->getObjectTypeId());
+	
+	$dim_obj = null;
+	if ($member_ot->getType() == 'dimension_object') {
+		if (!$member->isNew()) {
+			$dim_obj = Objects::findObject($member->getObjectId());
+		} else {
+			if (class_exists($member_ot->getHandlerClass())) {
+				eval('$ot_manager = '.$member_ot->getHandlerClass().'::instance();');
+				if (isset($ot_manager) && $ot_manager instanceof ContentDataObjects) {
+					eval('$dim_obj = new '.$ot_manager->getItemClass().'();');
+					if ($dim_obj instanceof ContentDataObject) {
+						$dim_obj->setNew(true);
+						$dim_obj->setObjectTypeId($member->getObjectTypeId()); 
+					}
+				}
+			} 
+		}
+	}
 ?>
 
 <form 
@@ -63,7 +83,11 @@
 	
 	  <div>
 		<div class="coInputName">
-			<?php echo text_field('member[name]', array_var($member_data, 'name'), array('id' => $genid . '-name', 'class' => 'title', 'placeholder' => lang('type name here'))) ?>
+			<?php
+			$member_name = clean(array_var($member_data, 'name'));
+			Hook::fire("render_object_name_prefix", array('object' => $dim_obj), $member_name);
+			?>
+			<?php echo text_field('member[name]', $member_name, array('id' => $genid . '-name', 'class' => 'title', 'placeholder' => lang('type name here'))) ?>
 		</div>
 			
 		<div class="coInputButtons">
@@ -106,7 +130,14 @@
 			<div id="<?php echo $genid ?>object_type_combo_container"></div>
 			<div class="clear"></div>
 		</div>
-		<?php if($member instanceof Member && DimensionObjectTypeHierarchies::typeAllowChilds($current_dimension->getId(), $member->getObjectTypeId())){ ?>
+		<?php
+		
+		$doths = DimensionObjectTypeHierarchies::findAll(array('conditions' => 'dimension_id='.$current_dimension->getId()." AND child_object_type_id=".$member->getObjectTypeId()));
+		$can_have_parent = count($doths) > 0;
+		
+		//$can_have_parent = count(DimensionObjectTypeHierarchies::getAllParentObjectTypeIds($current_dimension->getId(), $member_ot->getId())) > 0;
+		
+		if($member instanceof Member && $can_have_parent){ ?>
 		<div id="<?php echo $genid?>memberParentContainer" style="width:267px;">
 			<?php  
 				$selected_members = array();
@@ -116,7 +147,7 @@
 				//echo label_tag(lang('located under'), "", false);
 				//render_single_dimension_tree($current_dimension, $genid, $selected_members, array('checkBoxes'=>false,'all_members' => true));
 				
-				render_single_member_selector($current_dimension, $genid, $selected_members, array('is_multiple' => false, 'label' => lang('located under'), 
+				render_single_member_selector($current_dimension, $genid, $selected_members, array('is_multiple' => false, 'label' => lang('located under'), 'width'=>400,
 					'select_function' => 'og.onParentMemberSelect', 'listeners' => array('on_remove_relation' => "og.onParentMemberRemove('".$genid."');")), false);
 				
 				
@@ -139,16 +170,34 @@
 			}
 		?>
 		
+		<?php // used for dimension associations
+		Hook::fire('render_additional_member_add_fields', array('member' => $member, 'is_new' => $member->isNew()), $member); 
+		?>
+		<div class="x-clear"></div>
+		
 		<?php 
 		if ($has_custom_properties) { 
-			echo render_member_custom_properties($member, false, 'visible_by_default');
+			echo render_member_custom_properties($member, false, 'visible_by_default', $parent_sel, $member->isNew());
 		}
 		?>
+		
+		<div class="x-clear"></div>
+		
+		<?php if (!Plugins::instance()->isActivePlugin('member_custom_properties')) { ?>
 		
 		<div id="<?php echo $genid?>member_color_input" class="dataBlock"></div>
 		<div class="x-clear"></div>
 		
-		<?php if (ObjectTypes::findById($member->getObjectTypeId())->getUsesOrder()) { ?>
+		<div id="<?php echo $genid?>member_description_div" class="dataBlock">
+			<label><?php echo lang('description')?></label>
+			<textarea name="member[description]" class="long"><?php echo $member->getDescription()?></textarea>
+		</div>
+		<div class="x-clear"></div>
+		
+		<?php } ?>
+		
+		
+		<?php if ($member_ot->getUsesOrder()) { ?>
 		
 		<div id="<?php echo $genid?>member_order_div" class="dataBlock">
 			<label><?php echo lang('order')?></label>
@@ -157,6 +206,9 @@
 		<div class="x-clear"></div>
 		
 		<?php } ?>
+		
+		<div class="x-clear"></div>
+		
 		
 		
 		<div id="<?php echo $genid?>dimension_object_fields" style="display:none;"></div>
@@ -216,7 +268,7 @@
 		<?php if ($has_custom_properties) { ?>
 		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab"><?php 
 			if($member->getObjectTypeId() > 0){
-				echo render_member_custom_properties($member, false, 'others');
+				echo render_member_custom_properties($member, false, 'others', $parent_sel, $member->isNew());
 			}			
 		?></div>
 		<div class="x-clear"></div>
@@ -254,11 +306,13 @@
 		App.modules.addMemberForm.drawObjectTypesSelectBox(genid, Ext.util.JSON.decode('<?php echo json_encode($dimension_obj_types)?>'), 'object_type_combo_container', 'memberObjectType', '<?php echo (isset($obj_type_sel) ? $obj_type_sel : 0) ?>', '<?php echo (isset($can_change_type) && $can_change_type ? '0' : '1')?>');
 		App.modules.addMemberForm.objectTypeChanged('<?php echo $obj_type_sel ?>', genid, true);
 
-		<?php if (count($selected_members) > 0) { ?>
+		<?php if (false && count($selected_members) > 0) { ?>
 		App.modules.addMemberForm.drawDimensionProperties('<?php echo $genid;?>', <?php echo $current_dimension->getId();?>);
 		<?php } ?>
-		
+
+		<?php if (!Plugins::instance()->isActivePlugin('member_custom_properties')) { ?>
 		document.getElementById(genid + 'member_color_input').innerHTML = og.getColorInputHtml(genid, 'member', <?php echo "$member_color"?>, 'color', '<?php echo lang('color')?>');
+		<?php } ?>
 		
 		<?php if (isset($obj_type_sel) && $obj_type_sel) {?>
 			$("#<?php echo $genid?>_member_type_container").hide();

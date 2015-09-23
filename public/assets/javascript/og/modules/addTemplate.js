@@ -595,7 +595,7 @@ og.integerPropertyTypeSel = function(count, obj_id, callback){
 		var type = integerPropTypeSel[selectedPropTypeIndex].value;		
 		if(type == 0){
 			
-			og.openLink(og.getUrl('task', 'allowed_users_to_assign'), {
+			og.openLink(og.getUrl('task', 'allowed_users_to_assign', {for_template_var:1}), {
 				callback: function(success, data) {
 					
 					var companies = data.companies;
@@ -604,7 +604,7 @@ og.integerPropertyTypeSel = function(count, obj_id, callback){
 					html += '<select name="propValues[' + obj_id + '][' + prop + ']" id="propValues[' + obj_id + '][' + prop + ']">';
 					if (companies.length > 0){
 						for (var i=0; i<companies.length; i++) {
-							if (!companies[i] || companies[i].id==0) continue;
+							if (!companies[i]) continue;
 							html += '<option value="'+ companies[i].id+'" name="propValue[' + obj_id + '][' + prop + ']">'+ companies[i].name + '</option>';
 							var users = companies[i].users;
 							for(j=0; j<users.length; j++){

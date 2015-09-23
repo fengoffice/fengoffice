@@ -15,7 +15,7 @@
 			$fname = substr($fname, 0, $dot_pos);
 		}
 	}
-	$fname_s = str_replace("'","\'",$fname);
+	$fname_s = escape_character($fname);
 ?>
 
 <form class="internalForm" style="height:100%; overflow:hidden;" id="<?php echo $genid ?>form" action="<?php echo get_url('files', 'save_document') ?>" method="post" enctype="multipart/form-data" onsubmit="return og.addDocumentSubmit('<?php echo $genid ?>');">

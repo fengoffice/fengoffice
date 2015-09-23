@@ -20,13 +20,15 @@ if (array_var($_REQUEST, 'modal')) {
 <div class="coInputMainBlock">
 	
 	<div>
-		<table><tbody>
+		<table style="width:100%;"><tbody>
 		<?php foreach($parameters as $parameter) {
 				$default_value = array_var($parameter, 'default_value');
 				$dont_render_this_param = false;
 				Hook::fire('before_instantiating_template_param_def_value', array('param' => $parameter), $dont_render_this_param);
 				if ($dont_render_this_param) {
 					continue;
+				} else {
+					$default_value = str_replace(array('{{email_body}}', '{{email_subject}}'), '', $default_value);
 				}
 		?>
 			<tr style='height:30px;'>
@@ -45,6 +47,12 @@ if (array_var($_REQUEST, 'modal')) {
 								$additional_member = Members::findById($member_id);
 								if ($additional_member instanceof Member) {
 									$context = array($additional_member);
+								}
+							}
+							if (array_var($_REQUEST, 'from_email')) {
+								$from_email = MailContents::findById(array_var($_REQUEST, 'from_email'));
+								if ($from_email instanceof MailContent) {
+									$context = $from_email->getMembers();
 								}
 							}
 							$companies  = allowed_users_to_assign($context);
@@ -69,6 +77,9 @@ if (array_var($_REQUEST, 'modal')) {
 			</tr>
 		<?php }//foreach ?>
 		</tbody></table>
+		<?php if (isset($member_id) && $member_id > 0) {
+			?><input type="hidden" name="additional_member_ids" value="<?php echo $member_id?>"><?php 
+		} ?>
 	</div>
 	<br/>
 	<div>

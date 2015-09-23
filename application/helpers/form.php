@@ -513,6 +513,7 @@
 			"value: '" . $dateValue . "'});
 	</script>
 	";
+  	
 	return $html;
   } // pick_date_widget
   
@@ -795,3 +796,59 @@
   	return $ok;
   }
   
+  /**
+   * Renders pagination for view history lists
+   * @param $base_url: view history url of the object
+   * @param $pagination_obj: pagination information
+   * @param $page_param_prefix: prefix for the "page" parameter (view or mod)
+   * @param $other_list_current_page: current page of the other list, if viewing modification list this param must contain the current read logs page and viceversa
+   */
+  function render_view_history_pagination($base_url, $pagination_obj, $page_param_prefix, $other_list_current_page) {
+  	$current_page = array_var($pagination_obj, 'current_page');
+  	$total_pages = array_var($pagination_obj, 'total_pages');
+  
+  	$add_param = "&curtab=$page_param_prefix";
+  	if ($page_param_prefix == 'mod') {
+  		$add_param .= '&view_page='.$other_list_current_page;
+  	}
+  	if ($page_param_prefix == 'view') {
+  		$add_param .= '&mod_page='.$other_list_current_page;
+  	}
+  	$base_url .= $add_param;
+  
+  	if ($current_page > 1) {
+  		echo '<a class="internalLink pagitem x-tbar-page-first" href="'. $base_url . '&'.$page_param_prefix.'_page=1' .'">&nbsp;</a>';
+  		echo '<a class="internalLink pagitem x-tbar-page-prev" href="'. $base_url . '&'.$page_param_prefix.'_page='. ($current_page - 1) .'">&nbsp;</a>';
+  	}
+  
+  	echo '<span class="pagitem text">'. lang("page") . " $current_page " . strtolower(lang('of')) . " $total_pages" . '</span>';
+  
+  	if ($current_page < $total_pages) {
+  		echo '<a class="internalLink pagitem x-tbar-page-next" href="'. $base_url . '&'.$page_param_prefix.'_page='. ($current_page + 1) .'">&nbsp;</a>';
+  		echo '<a class="internalLink pagitem x-tbar-page-last" href="'. $base_url . '&'.$page_param_prefix.'_page='. $total_pages .'">&nbsp;</a>';
+  	}
+  }
+  
+  
+  
+  function build_percent_completed_bar_html($task) {
+  	$color_cls = 'task-percent-completed-';
+  	 
+  	if (array_var($task, 'percentCompleted') < 25) $color_cls .= '0';
+  	else if (array_var($task, 'percentCompleted') < 50) $color_cls .= '25';
+  	else if (array_var($task, 'percentCompleted') < 75) $color_cls .= '50';
+  	else if (array_var($task, 'percentCompleted') < 100) $color_cls .= '75';
+  	else if (array_var($task, 'percentCompleted') == 100) $color_cls .= '100';
+  	else $color_cls .= 'more-estimate';
+  	 
+  	$percent_complete = 100;
+  	if(array_var($task, 'percentCompleted') <= 100){
+  		$percent_complete = array_var($task, 'percentCompleted');
+  	}
+  	
+  	$html = "<span><span class='nobr'><table style='display:inline;'><tr><td style='padding-left:15px;padding-top:6px'>".
+  			"<table style='height:7px;width:50px'><tr><td style='height:7px;width:" . $percent_complete . "%;' class='". $color_cls ."'></td><td style='width:" . (100 - $percent_complete) . "%;background-color:#DDD'></td></tr></table>" .
+  			"</td><td style='padding-left:3px;line-height:12px'><span class='percent_num' style='font-size:8px;color:#777'>" . $percent_complete . "%</span></td></tr></table></span></span>";
+  	 
+  	return $html;
+  }

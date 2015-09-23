@@ -17,13 +17,8 @@ function workspaces_custom_reports_additional_columns($args, &$ret) {
 	$dimensions = Dimensions::findAll ( array("conditions" => "code IN ('workspaces','tags')") );
 	foreach ($dimensions as $dimension) {
 		if (in_array($dimension->getId(), config_option('enabled_dimensions'))) {
-			$doptions = $dimension->getOptions(true);
 			
-			if( $doptions && isset($doptions->useLangs) && $doptions->useLangs ) {
-				$name = lang($dimension->getCode());
-			} else {
-				$name = $dimension->getName();
-			}
+			$name = $dimension->getName();
 			
 			$ret[] =  array('id' => 'dim_'.$dimension->getId(), 'name' => $name, 'type' => DATA_TYPE_STRING);
 		}
@@ -89,49 +84,21 @@ function workspaces_render_widget_member_information(Member $member, &$prop_html
 	if ($member->getObjectTypeId() == $ws_ot->getId()) {
 		
 		$ws = Workspaces::getWorkspaceById($member->getObjectId());
-		if ($ws instanceof Workspace && $ws->getDescription() != "" && $ws->getColumnValue('show_description_in_overview')) {
-			$prop_html .= '<div style="margin-bottom:5px;">'.escape_html_whitespace(convert_to_links(clean($ws->getDescription()))).'</div>';
+		if ($ws instanceof Workspace && trim($member->getDescription()) != "" && $ws->getColumnValue('show_description_in_overview')) {
+			$prop_html .= '<div style="margin-bottom:5px;">'.escape_html_whitespace(convert_to_links(clean($member->getDescription()))).'</div>';
 		}
 		
 	}
 }
 
-function workspaces_render_administration_dimension_icons($ignored, &$icons){
-	if (logged_user() instanceof Contact && can_manage_dimension_members(logged_user())) {
-		$enabled_dimensions = config_option("enabled_dimensions");
-		$dimension = Dimensions::instance()->findByCode('workspaces');
-		if (in_array($dimension->getId(), $enabled_dimensions)) {
-			$icons[] = array(
-				'ico' => 'ico-large-workspace',
-				'url' => get_url('dimension', 'list_members', array('dim' => $dimension->getId())),
-				'name' => lang($dimension->getCode()),
-				'extra' => '',
-			);
-		}
-		
-		$dimension = Dimensions::instance()->findByCode('tags');
-		if (in_array($dimension->getId(), $enabled_dimensions)) {
-			$icons[] = array(
-				'ico' => 'ico-large-tags',
-				'url' => get_url('dimension', 'list_members', array('dim' => $dimension->getId())),
-				'name' => lang($dimension->getCode()),
-				'extra' => '',
-			);
-		}
-	}
-}
+
 
 function workspaces_more_panel_dimension_links($ignored, &$links) {
 	$dimension = Dimensions::findByCode('workspaces');
 	$enabled_dimensions = config_option("enabled_dimensions");
 	if (!in_array($dimension->getId(), $enabled_dimensions)) return;
 	
-	$dimension_options = $dimension->getOptions(true);
-	if($dimension_options && isset($dimension_options->useLangs) && $dimension_options->useLangs ) {
-		$name = lang($dimension->getCode());
-	} else {
-		$name = $dimension->getName();
-	}
+	$name = $dimension->getName();
 	
 	$step = Plugins::instance()->isActivePlugin('crpm') ? 5 : 4;
 	
@@ -210,3 +177,38 @@ function workspaces_custom_reports_object_types($parameters, &$object_types) {
 	}*/
 }
 
+
+function workspaces_additional_dashboard_actions($ignored, &$actions) {
+	
+	$ws_dim = Dimensions::findByCode('workspaces');
+	$wot = ObjectTypes::findByName('workspace');
+	$wdot = DimensionObjectTypes::findOne(array('conditions' => 'dimension_id='.$ws_dim->getId().' AND object_type_id='.$wot->getId()));
+	if ($wdot instanceof DimensionObjectType && $wdot->getEnabled()) {
+		if (active_context_can_contain_member_type($ws_dim->getId(), $wot->getId())) {
+			$actions[] = array(
+				'id' => 'workspaces-list',
+				'assoc_ot' => $wot->getId(),
+				'assoc_dim' => $ws_dim->getId(),
+				'name' => lang('workspaces list'),
+				'class' => 'link-ico ico-workspace',
+				'onclick' => "og.openLink(og.getUrl('member', 'init', {dim_id:".$ws_dim->getId().", type_id:".$wot->getId()."}), {caller:'".$ws_dim->getCode()."'}); return false;",
+			);
+		}
+	}
+	
+	$tags_dim = Dimensions::findByCode('tags');
+	$tot = ObjectTypes::findByName('tag');
+	$tdot = DimensionObjectTypes::findOne(array('conditions' => 'dimension_id='.$tags_dim->getId().' AND object_type_id='.$tot->getId()));
+	if ($tdot instanceof DimensionObjectType && $tdot->getEnabled()) {
+		if (active_context_can_contain_member_type($tags_dim->getId(), $tot->getId())) {
+			$actions[] = array(
+				'id' => 'tags-list',
+				'assoc_ot' => $tot->getId(),
+				'assoc_dim' => $tags_dim->getId(),
+				'name' => lang('tags list'),
+				'class' => 'link-ico ico-tag',
+				'onclick' => "og.openLink(og.getUrl('member', 'init', {dim_id:".$tags_dim->getId().", type_id:".$tot->getId()."}), {caller:'".$tags_dim->getCode()."'}); return false;",
+			);
+		}
+	}
+}

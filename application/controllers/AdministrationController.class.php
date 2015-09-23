@@ -861,5 +861,88 @@ class AdministrationController extends ApplicationController {
 		}
 		flash_success(lang('success file extension'));
 	}
+	
+	
+	
+	
+	
+	function dimension_options() {
+		if(!can_manage_dimensions(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
+		}
+		
+		$enabled_dimensions = config_option('enabled_dimensions');
+		
+		// custom dimension name
+		$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',', $enabled_dimensions).')'));
+		
+		$custom_dimension_names = array();
+		foreach ($dimensions as $dim) {
+			$cdim_name = $dim->getOptionValue('custom_dimension_name');
+			if (is_null($cdim_name)) {
+				$cdim_name = "";
+			}
+			$custom_dimension_names[$dim->getId()] = $cdim_name;
+		}
+		
+		// enabled dimension object types
+		$dots = DimensionObjectTypes::findAll(array('conditions' => 'dimension_id IN ('.implode(',', $enabled_dimensions).')'));
+		
+		tpl_assign('custom_dimension_names', $custom_dimension_names);
+		tpl_assign('dimension_ots', $dots);
+	}
+	
+	function dimension_options_submit() {
+		ajx_current("empty");
+		if(!can_manage_dimensions(logged_user())) {
+			flash_error(lang('no access permissions'));
+			return;
+		}
+		
+		$folder_ots = ObjectTypes::findAll(array('id' => true, 'conditions' => "name IN ('folder','project_folder','customer_folder')"));
+		
+		$data = array_var($_POST, 'enabled_dots');
+		$names_data = array_var($_POST, 'custom_names');
+		if (is_array($data) || is_array($names_data)) {
+			try {
+				DB::beginWork();
+				
+				// enabled dimension object types
+				foreach ($data as $dim_id => $ots_info) {
+					foreach ($ots_info as $ot_id => $enabled) {
+						DB::execute("UPDATE ".TABLE_PREFIX."dimension_object_types SET enabled=".DB::escape($enabled)." 
+							WHERE dimension_id=".DB::escape($dim_id)." AND object_type_id=".DB::escape($ot_id));
+						
+						// if object type is folder, set the same configuration to all folder types
+						if (in_array($ot_id, $folder_ots)) {
+							DB::execute("UPDATE ".TABLE_PREFIX."dimension_object_types SET enabled=".DB::escape($enabled)."
+								WHERE dimension_id=".DB::escape($dim_id)." AND object_type_id IN (".implode(',', $folder_ots).")");
+						}
+					}
+				}
+				
+				// custom dimension names
+				foreach ($names_data as $dim_id => $custom_name) {
+					$cname = trim($custom_name);
+					$dimension = Dimensions::getDimensionById($dim_id);
+					if ($dimension instanceof Dimension) {
+						$dimension->setOptionValue('custom_dimension_name', $cname);
+					}
+				}
+				
+				DB::commit();
+				flash_success(lang("success edit dimension options"));
+				evt_add('tabs changed');
+				//ajx_current("back");
+				
+			} catch (Exception $e) {
+				DB::rollback();
+				flash_error($e->getMessage());
+				ajx_current("empty");
+			}
+		}
+	}
 
 } 

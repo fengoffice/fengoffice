@@ -227,7 +227,14 @@ member_selector.remove_relation = function(dimension_id, genid, member_id, dont_
 
 member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 	if (typeof member_selector[genid].properties[dimension_id] == 'undefined') return;
-	dimensions_to_reload = member_selector[genid].properties[dimension_id].reloadDimensions;
+	var dimensions_to_reload_object = member_selector[genid].properties[dimension_id].reloadDimensions;
+	
+	var dimensions_to_reload = [];
+	for (ot in dimensions_to_reload_object) {
+		for (var i=0; i<dimensions_to_reload_object[ot].length; i++) {
+			dimensions_to_reload.push(dimensions_to_reload_object[ot][i]);
+		}
+	}
 
 	for (i=0; i<dimensions_to_reload.length; i++) {
 		var dim_id = dimensions_to_reload[i];

@@ -16,7 +16,7 @@ og.FileManager = function() {
 		'dateUpdated', 'dateUpdated_today',
 		'icon', 'wsIds', 'manager', 'checkedOutById',
 		'checkedOutByName', 'mimeType', 'isModifiable',
-		'modifyUrl', 'songInfo', 'ftype', 'url', 'ix','isRead', 'isMP3', 'memPath'
+		'modifyUrl', 'songInfo', 'ftype', 'url', 'ix','isRead', 'isMP3', 'memPath', 'genid'
 	];
 	var cps = og.custom_properties_by_type['file'] ? og.custom_properties_by_type['file'] : [];
 	var cp_names = [];
@@ -88,14 +88,20 @@ og.FileManager = function() {
 		mem_path = "";
 		var mpath = Ext.util.JSON.decode(r.data.memPath);
 		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
+			mem_path = "<div class='breadcrumb-container' style='display: inline-block;'>";
 			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
 			mem_path += "</div>";
 		}
+		
+		var file_name = og.clean(og.removeFileExtension(value));
+		//do not remove . for weblinks
+		if(r.data.ftype == 1){
+			file_name = og.clean(value);
+		}
+		
 		var name = String.format(
 			'<a style="font-size:120%;" class="{3}" href="{2}" onclick="og.openLink(\'{2}\');return false;">{0}</a>',
-			og.clean(og.removeFileExtension(value)), r.data.name, og.getUrl('files', 'file_details', {id: r.data.object_id}), classes) + mem_path;
-		
+			file_name, r.data.name, og.getUrl('files', 'file_details', {id: r.data.object_id}), classes) + mem_path;
 		return name;
 	}
 	function renderIsRead(value, p, r){
@@ -172,8 +178,7 @@ og.FileManager = function() {
 					lang('unlock'), og.getUrl('files', 'undo_checkout', {id: r.id}));
 				
 				if (r.data.checkedOutById == og.loggedUser.id) {
-					html += String.format(', <a href="#" onclick="og.openLink(\'{1}\')" title="{2}">{0}</a>', lang('checkin'), 
-						og.getUrl('files', 'checkin_file', {id: r.id}), lang('checkin description'));
+					html += String.format(', <a href="#" onclick=og.uploadNewRevision('+ r.id +',"'+ r.data.genid +'")>{0}</a>', lang('checkin'));
 				} else {
 					html += ', ' + lang('checked out by', String.format('<a href="#" onclick="og.openLink(\'{1}\')">{0}</a>', 
 						r.data.checkedOutByName, og.getUrl('contact', 'card', {id: r.data.checkedOutById})));

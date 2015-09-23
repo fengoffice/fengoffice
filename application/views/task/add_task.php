@@ -76,7 +76,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
   <div>
 	<div class="coInputName">
 	<?php
-		echo text_field('task[name]', array_var($task_data, 'name', $task->getName()), array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "size"=>"255", "maxlength"=>"255", 'placeholder' => lang('task')));
+		$task_name = array_var($task_data, 'name', $task->getName());
+		Hook::fire("render_object_name_prefix", array('object' => $task), $task_name);
+		
+		echo text_field('task[name]', $task_name, array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "size"=>"255", "maxlength"=>"255", 'placeholder' => lang('task')));
 	?>
 	</div>
 		
@@ -126,7 +129,6 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	<div class="left-section">
 	
 		<div class="dataBlock">
-			<?php $defaultNotifyValue = user_config_option('can notify from quick add'); ?>
 			<!-- needs a table because ext dropdown list is not aligned otherwise -->
 			<table><tr><td>
 				<label><?php echo lang('assign to') ?>:</label> 
@@ -134,6 +136,24 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<input type="hidden" id="<?php echo $genid ?>taskFormAssignedTo" name="task[assigned_to_contact_id]" value="<?php echo array_var($task_data, 'assigned_to_contact_id')?>"></input>
 				<div id="<?php echo $genid ?>assignto_container_div"></div>
 			</td></tr></table>
+			<div class="clear"></div>
+		</div>
+		
+		<?php 
+			$can_notify_assigned = user_config_option('can notify from quick add');
+			$is_assigned = array_var($task_data, 'assigned_to_contact_id') != 0;
+			$assigned_to_me = array_var($task_data, 'assigned_to_contact_id') == logged_user()->getId(); 
+			
+			$show_notif_checkbox_div = $can_notify_assigned && $task->isNew() && $is_assigned && !$assigned_to_me;
+			$check_notif_checkbox = $show_notif_checkbox_div;
+		?>
+		
+		<div id="<?php echo $genid ?>taskFormSendNotificationDiv" style="display:<?php echo ($show_notif_checkbox_div ? 'block' : 'none') ?>" class="dataBlock">
+			<label for="<?php echo $genid ?>taskFormSendNotification" class="checkbox" title="<?php echo lang('send task assigned to notification') ?>"><?php echo lang('notify assigned user')?></label>
+			
+			<?php echo checkbox_field('task[send_notification]', $check_notif_checkbox, array('id' => $genid . 'taskFormSendNotification', 'title' => lang('send task assigned to notification'))) ?>
+			
+			<input type="hidden" name="original_assigned_user" id="<?php echo $genid?>originalAssignedUser" value="<?php echo array_var($task_data, 'assigned_to_contact_id')?>" />
 			<div class="clear"></div>
 		</div>
 		
@@ -594,12 +614,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
   
 	    <div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
 	    
-		    <div id="<?php echo $genid ?>taskFormSendNotificationDiv" style="display:none" class="dataBlock">
-				<?php echo checkbox_field('task[send_notification]', array_var($task_data, 'send_notification'), array('id' => $genid . 'taskFormSendNotification', 'style' => 'margin-left:5px;margin-top:3px;')) ?>
-				<label for="<?php echo $genid ?>taskFormSendNotification" class="checkbox"><?php echo lang('send task assigned to notification') ?></label>
+		    
+			<div id="<?php echo $genid ?>taskFormSendNotificationSubscribersDiv" style="display:<?php echo (array_var($task_data, 'display_notification_checkbox')) ? 'block' : 'none' ?>" class="dataBlock">
+				<?php echo checkbox_field('task[send_notification_subscribers]', array_var($task_data, 'send_notification_subscribers'), array('id' => $genid . 'taskFormSendNotificationSubscribers', 'style' => 'margin-left:5px;margin-top:3px;')) ?>
+				<label for="<?php echo $genid ?>taskFormSendNotificationSubscribers" class="checkbox"><?php echo lang('send task subscribers notification') ?></label>
 				<div class="clear"></div>
 			</div>
-		
+			
 			<?php $subscriber_ids = array();
 				if (!$task->isNew()) {
 					$subscriber_ids = $task->getSubscriberIds();
@@ -643,7 +664,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	if (!ogTasks.usersStore) ogTasks.usersStore = {};
 	og.add_task_genid = '<?php echo $genid ?>';
 
-	var assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
+	var is_new_task = <?php echo $task->isNew() ? '1' : '0'?>;
+	var original_assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
+	var can_notify_assigned = <?php echo $can_notify_assigned ? '1' : '0'?>;
 	var start = true;
 	
 	og.drawAssignedToSelectBox = function(companies, only_me, groups) {
@@ -652,7 +675,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			renderTo:'<?php echo $genid ?>assignto_container_div',
 			name: 'taskFormAssignedToCombo',
 			id: '<?php echo $genid ?>taskFormAssignedToCombo',
-			value: assigned_user,
+			value: original_assigned_user,
 			store: ogTasks.usersStore['<?php echo $genid ?>'],
 			displayField:'text',
 	        mode: 'local',
@@ -669,10 +692,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		assignCombo.on('select', og.onAssignToComboSelect);
 
 		assignedto = document.getElementById('<?php echo $genid ?>taskFormAssignedTo');
-		if (assignedto){
-			assignedto.value = assigned_user;
-			og.addTaskUserChanged('<?php echo $genid ?>', '<?php echo logged_user()->getId() ?>');
-		}
+		
 	}
 	
 	og.onAssignToComboSelect = function() {
@@ -681,24 +701,32 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		if (assignedto) assignedto.value = combo.getValue();
 		assigned_user = combo.getValue();
 		
-		og.addTaskUserChanged('<?php echo $genid ?>', '<?php echo logged_user()->getId() ?>');
+		og.enableDisableNotifyAssignedCheckbox(assigned_user, '<?php echo $genid ?>');
 
 		ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid?>');
 	}
 
-	og.addTaskUserChanged = function(genid, logged_user_id){
-		var ddUser = document.getElementById(genid + 'taskFormAssignedTo');
-		var chk = document.getElementById(genid + 'taskFormSendNotification');
-		if (ddUser && chk){
-			var user = ddUser.value;
-			var nV = <?php echo $defaultNotifyValue?>;
-			chk.checked = (user > 0 && nV != 0 && user != logged_user_id);
-			var comp_obj = ogTasks.getCompany(user); // check if selected user is a user or a company
-			var not_div = document.getElementById(genid + 'taskFormSendNotificationDiv');
-			if (not_div) not_div.style.display = (user > 0 && !comp_obj) ? 'block':'none';
+	og.enableDisableNotifyAssignedCheckbox = function(assigned_user, genid) {
+
+		var original_assigned = $("#" + genid + "originalAssignedUser").val();
+		
+		var show_div = can_notify_assigned && assigned_user > 0 && assigned_user != og.loggedUser.id;
+
+		var check = show_div && (assigned_user != original_assigned || is_new_task);
+		
+		if (show_div) {
+			$("#" + genid + "taskFormSendNotificationDiv").removeClass('desc').slideDown();
+		} else {
+			$("#" + genid + "taskFormSendNotificationDiv").addClass('desc').slideUp();
 		}
+
+		if (check) {
+			$("#" + genid + "taskFormSendNotification").attr('checked', 'checked');
+		} else {
+			$("#" + genid + "taskFormSendNotification").removeAttr('checked');
+		}
+		
 	}
-	
 
 	og.redrawUserLists = function(context){
 		if (!og.redrawingUserList) {
@@ -932,7 +960,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			if (!$task->isNew()) {
 				$subtasks = ProjectTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
 				foreach ($subtasks as $st) {
-					$st_name = clean(str_replace("'", "\'", $st->getObjectName()));
+					$st_name = clean(escape_character($st->getObjectName()));
 					?>
 					ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>', {id:'<?php echo $st->getId()?>', name:'<?php echo $st_name?>', assigned_to:'<?php echo $st->getAssignedToContactId()?>'});
 			<?php

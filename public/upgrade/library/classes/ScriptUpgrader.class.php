@@ -213,6 +213,10 @@ final class ScriptUpgrader {
 				} // if
 			} // foreach
 			
+			// clean autoloader
+			file_put_contents(INSTALLATION_PATH . "/cache/autoloader.php", "");
+			@unlink(INSTALLATION_PATH . "/cache/autoloader.php");
+			
 			if (isset($last_correct_version)) {
 				@mysql_query("UPDATE `".TABLE_PREFIX."config_options` SET `value` = 0 WHERE `name` = 'upgrade_last_check_new_version'");
 				tpl_assign('version', $last_correct_version);

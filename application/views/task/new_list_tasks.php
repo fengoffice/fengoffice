@@ -132,7 +132,7 @@ og.config.quick_add_task_combos = <?php
 			$dim = Dimensions::instance()->getDimensionById($dimension_id);
 			if($dim instanceof Dimension){
 				if($key!=0) $object .=",";
-				$object .= "{name : '". $dim->getName()."', desc : '".str_replace("'", "\'", lang('add new relation ' . $dim->getCode()))."'}";
+				$object .= "{name : '". escape_character($dim->getName())."', desc : '".escape_character(lang('add new relation ' . $dim->getCode()))."'}";
 			}
 		}		
 		echo "[".$object."]";
@@ -146,18 +146,18 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 
       
 <div id="taskPanelHiddenFields">
-	<input type="hidden" id="hfProjectTemplates" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($project_templates_array)))) ?>"/>
-	<input type="hidden" id="hfAllTemplates" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($all_templates_array)))) ?>"/>
-	<input type="hidden" id="hfTasks" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($tasks_array)))) ?>"/>
-	<input type="hidden" id="hfIMilestones" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($internal_milestones_array)))) ?>"/>
-	<input type="hidden" id="hfEMilestones" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($external_milestones_array)))) ?>"/>
-	<input type="hidden" id="hfUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
-	<input type="hidden" id="hfAllUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($allUsers_array)))) ?>"/>
-	<input type="hidden" id="hfCompanies" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($companies_array)))) ?>"/>
-	<input type="hidden" id="hfUserPreferences" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPreferences)))) ?>"/>
-	<input type="hidden" id="hfUserPermissions" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPermissions)))) ?>"/>
-	<input type="hidden" id="hfObjectSubtypes" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($object_subtypes_array)))) ?>"/>
-	<input type="hidden" id="hfDependencyCount" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($dependency_count)))) ?>"/>
+	<input type="hidden" id="hfProjectTemplates" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($project_templates_array)))) ?>"/>
+	<input type="hidden" id="hfAllTemplates" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($all_templates_array)))) ?>"/>
+	<input type="hidden" id="hfTasks" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($tasks_array)))) ?>"/>
+	<input type="hidden" id="hfIMilestones" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($internal_milestones_array)))) ?>"/>
+	<input type="hidden" id="hfEMilestones" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($external_milestones_array)))) ?>"/>
+	<input type="hidden" id="hfUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($users_array)))) ?>"/>
+	<input type="hidden" id="hfAllUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($allUsers_array)))) ?>"/>
+	<input type="hidden" id="hfCompanies" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($companies_array)))) ?>"/>
+	<input type="hidden" id="hfUserPreferences" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPreferences)))) ?>"/>
+	<input type="hidden" id="hfUserPermissions" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPermissions)))) ?>"/>
+	<input type="hidden" id="hfObjectSubtypes" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($object_subtypes_array)))) ?>"/>
+	<input type="hidden" id="hfDependencyCount" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($dependency_count)))) ?>"/>
 	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
 	<input id="<?php echo $genid?>complete_task" type="hidden" name="complete_task" value="yes" />        
 </div>
@@ -172,11 +172,11 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 		<div style="font-weight:bold;width:99%;text-align:center;padding:4px;color:#AF8300;"><?php echo lang('too many tasks to display', user_config_option('task_display_limit')) ?></div>
 	</div>
 	<?php } ?>
-		<div id="tasksPanelContainer" style="background-color:white;padding-top:0px;position: absolute;min-width: 100%;">
+		<table id="tasksPanelContainer" style="background-color:white;padding-top:0px;position: absolute;width: 100%;table-layout: fixed;">
 	<?php if(!(isset($tasks) || $userPreferences['groupBy'] == 'milestone')) { ?>
 			<div style="font-size:130%;width:100%;text-align:center;padding-top:10px;color:#777;"><?php echo lang('no tasks to display') ?></div>
 	<?php } ?>			
-		</div>
+		</table>
 	</div>
 </div>
 

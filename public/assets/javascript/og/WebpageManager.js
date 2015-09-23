@@ -92,7 +92,7 @@ og.WebpageManager = function() {
 		mem_path = "";
 		var mpath = Ext.util.JSON.decode(r.data.memPath);
 		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
+			mem_path = "<div class='breadcrumb-container' style='display: inline-block;'>";
 			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
 			mem_path += "</div>";
 		}

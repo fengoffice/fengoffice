@@ -453,9 +453,9 @@ ogTasks.draw = function(){
 		var context_names = og.contextManager.getActiveContextNames();
 		if (context_names.length == 0) context_names.push(lang('all'));
 		
-		sb.append('<div id="rx__no_tasks_info">' +	
+		sb.append('<tr id="rx__no_tasks_info"><td colspan="10">' +	
 			'<div class="inner-message">'+lang('no tasks to display', '"'+context_names.join('", "')+'"')+ '</div>'+
-		'</div>');	
+		'</td></tr>');	
 	}
 	// *** /RX ***
 	
@@ -464,79 +464,38 @@ ogTasks.draw = function(){
 		container.innerHTML = '';
 		container.innerHTML = sb.toString();
 	}
-	
-	ogTasks.resizeRows();
+	ogTasks.initColResize();
 	if(this.Groups.length != 0) {
 		ogTasks.drawAllGroupsTasks();
 	}
 }
 
-og.eventManager.addListener('menu-panel expand', function() {
-	ogTasks.resizeRowsDelay();
-});
-
-og.eventManager.addListener('menu-panel collapse', function() {
-	ogTasks.resizeRowsDelay();
-});
-
-ogTasks.resizeRowsDelay = function(){
-	var currentPanel = Ext.getCmp('tabs-panel').getActiveTab();
-	if (currentPanel.id == 'tasks-panel') {
-		setTimeout(function(){
-			ogTasks.resizeRows();
-		}, 200);
-	}	
-}
-
-ogTasks.resizeRows = function(){
-	$(".task-name-container").width('200px');
-	var container_width = 0;
-	$(".task-list-row-template").first().children().each(function() {
-		container_width += $(this).outerWidth( true );
-	});
-
-	//set the width of the task panel container
-	$("#tasksPanelContainer").width(container_width+40);
-	
-	ogTasks.tasks_row_width = $(".task-list-row-template").first().width();
-		
-	//fill all the free space width the name of the task
-	var name = $(".task-name-container").width() + ogTasks.tasks_row_width - container_width ;
-		
-	ogTasks.tasks_row_name_width = name;
-	ogTasks.tasks_row_clock_on_width = 65;
-
-	if(ogTasks.tasks_row_clock_on_width > 0 && ($(".og-timeslot-work-started").length > 0 || $(".og-timeslot-work-paused").length > 0) ){
-		ogTasks.tasks_row_name_width = ogTasks.tasks_row_name_width - ogTasks.tasks_row_clock_on_width;
-		ogTasks.tasks_row_clock_on_width = 0;
-	}
-	$(".task-name-container").width(ogTasks.tasks_row_name_width);
-	
-	//name width of subtasks
-	$('.subtasks-container .task-name-container').each(function(){
-		var rest = ogTasks.tasks_row_width - $(this).closest(".task-list-row").width() - 15;		
-	    $(this).width(name - rest);
-	});
-}
-
-ogTasks.resizeRow = function(task_row_id,task){
-	if(ogTasks.tasks_row_clock_on_width > 0 && ($(".og-timeslot-work-started").length > 0 || $(".og-timeslot-work-paused").length > 0) ){
-		ogTasks.tasks_row_name_width = ogTasks.tasks_row_name_width - ogTasks.tasks_row_clock_on_width;
-		$(".task-name-container").width(ogTasks.tasks_row_name_width);		
-		ogTasks.tasks_row_clock_on_width = 0;
-	}else{
-		$("#"+task_row_id+" .task-name-container").width(ogTasks.tasks_row_name_width);
-	}
+ogTasks.initColResize = function(){
+	$("#tasksPanelContainer").colResizable({disable:true});//remove previous colResize
+	$("#tasksPanelContainer").colResizable({
+			fixed: false,
+			minWidth:50,
+			postbackSafe:true,
+			disable:false		
+	});	
 }
 
 ogTasks.toggleSubtasks = function(taskId, groupId){
-	var subtasksDiv = document.getElementById('ogTasksPanelSubtasksT' + taskId + 'G' + groupId);
+	//var subtasksDiv = document.getElementById('ogTasksPanelSubtasksT' + taskId + 'G' + groupId);
+	var subtasks_container_id = 'SubtasksT' + taskId + 'G' + groupId;
+	$("."+subtasks_container_id);
 	var expander = document.getElementById('ogTasksPanelFixedExpanderT' + taskId + 'G' + groupId);
 	var task = this.getTask(taskId);
 	
-	if (subtasksDiv){
+	if ($("."+subtasks_container_id).length){
 		task.isExpanded = !task.isExpanded;
-		subtasksDiv.style.display = (task.isExpanded)? 'block':'none';		
+		//subtasksDiv.style.display = (task.isExpanded)? 'block':'none';
+		
+		if(task.isExpanded){
+			$("."+subtasks_container_id).show();	
+		}else{
+			$("."+subtasks_container_id).hide();	
+		}
 	}else{
 		if (task.subtasksIds.length > 0){
 			task.isExpanded = !task.isExpanded;			
@@ -569,6 +528,111 @@ ogTasks.loadAllDescriptions = function(task_ids) {
 //************************************
 //*		Draw group
 //************************************
+ogTasks.drawGroup = function(displayCriteria, drawOptions, group){
+	group.view = [];
+	if(displayCriteria.group_by == 'milestone'){
+		var sb = new StringBuffer();
+		var milestone = this.getMilestone(group.group_id);
+		if (milestone){
+			if (milestone.isUrgent){
+				group.group_icon = 'ico-urgent-milestone';
+			}
+						
+			if (milestone.completedById){
+				var user = this.getUser(milestone.completedById, true);
+				var tooltip = '';
+				if (user){
+					var time = new Date(milestone.completedOn * 1000);
+					var now = new Date();
+					var timeFormatted = time.getYear() != now.getYear() ? time.dateFormat('M j, Y'): time.dateFormat('M j');
+					tooltip = lang('completed by name on', og.clean(user.name), timeFormatted).replace(/'\''/g, '\\\'');
+				}
+				group.group_name = "<a href='#' style='text-decoration:line-through' class='internalLink' onclick='og.openLink(\"" + og.getUrl('milestone', 'view', {id: group.group_id}) + "\")' title='" + tooltip + "'>" + og.clean(group.group_name) + '</a>';
+			}else{
+				group.group_name = "<a href='#' class='internalLink' onclick='og.openLink(\"" + og.getUrl('milestone', 'view', {id: group.group_id}) + "\")'>" + og.clean(group.group_name) + '</a>';
+			}
+			
+			//Due date
+			var date = new Date();
+			date.setTime((milestone.dueDate + date.getTimezoneOffset()*60)* 1000);
+			var now = new Date();
+			var dateFormatted = date.getYear() != now.getYear() ? date.dateFormat('M j, Y'): date.dateFormat('M j');
+			
+			css_class = "milestone-date";
+			if (milestone.completedById > 0){
+				css_class = "milestone-date milestone-completed";
+			} else {
+				if ((date < now))
+					css_class = "milestone-date milestone-delayed";
+			}
+			group.view.push({id : 'ogTasksPanelMileGroupDate' + group.group_id, text : lang('due') + ':&nbsp;' + dateFormatted, css_class : css_class});
+			
+			//Percent complete
+			group.view.push({id : 'ogTasksPanelCompleteBar' + group.group_id, text : this.drawMilestoneCompleteBar(group) , css_class : "group-milestone-complete-bar"});
+			
+		} 		
+	}
+
+	//get template for the row
+	var source = $("#task-list-group-template").html(); 
+	//compile the template
+	var template = Handlebars.compile(source);
+	
+	//template data
+	var data = {			
+		group : group,
+		cols_total : ogTasks.TasksList.tasks_list_cols.length
+	}
+	
+	//instantiate the template
+	var html = template(data);
+	
+	html = html + ogTasks.newTaskGroupTotals(group);
+	
+	return html;	
+}
+
+ogTasks.newTaskGroupTotals = function(group) {
+	//get template for the row
+	var source = $("#task-list-group-totals-template").html(); 
+	//compile the template
+	var template = Handlebars.compile(source);
+	
+	var total_cols = [];
+	
+	for (var i = 0; i < ogTasks.TasksList.tasks_list_cols.length; i++){
+		if(ogTasks.TasksList.tasks_list_cols[i].id == "task_name"){
+			var total = lang('total')+':';
+		}else{
+			var total = group[ogTasks.TasksList.tasks_list_cols[i].group_total_field];
+		}
+		
+		total_cols.push({id: ogTasks.TasksList.tasks_list_cols[i].id, text: total});
+	}
+
+	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
+	var drawOptions = topToolbar.getDrawOptions();
+	drawOptions.groupId = group.group_id;
+	
+	if(group.total_tasks_loaded < group.root_total){
+		drawOptions.showMore = true;				
+	}else{
+		drawOptions.showMore = false;
+	}	
+
+	//template data
+	var data = {	
+			draw_options : drawOptions,
+			group : group,
+			total_cols: total_cols				
+	}
+	
+	//instantiate the template
+	var html = template(data);
+		
+	return html;
+}
+
 
 ogTasks.drawMilestoneCompleteBar = function(group){
 	var html = '';
@@ -593,117 +657,6 @@ ogTasks.drawMilestoneCompleteBar = function(group){
 	"</td><td style='padding-left:3px;line-height:12px'><span style='font-size:8px;color:#AAA'>(" + completedTasks + '/' +  totalTasks + ")</span></td></tr></table>";
 
 	return html;			
-}
-
-ogTasks.drawGroup = function(displayCriteria, drawOptions, group){
-	var sb = new StringBuffer();
-	
-	sb.append("<div id='ogTasksPanelGroupCont" + group.group_id + "' class='ogTasksGroup' style='display:block;'><div id='ogTasksPanelGroup" + group.group_id + "' class='ogTasksGroupHeader' onmouseover='ogTasks.mouseMovement(null,\"" + group.group_id + "\",true)' onmouseout='ogTasks.mouseMovement(null,\"" + group.group_id + "\", false)'>");
-	sb.append("<table width='100%'><tr>");
-	sb.append('<td style="width:13px"><div style="width: 13px;" onclick="ogTasks.expandCollapseAllTasksGroup(\'' + group.group_id + '\')" class="og-task-expander toggle_expanded" id="ogTasksPanelGroupExpanderG' + group.group_id + '"></div></td>');
-	sb.append('<td style="width:20px" title="'+lang('select all tasks')+'"><input style="width:14px;height:14px" type="checkbox" id="ogTasksPanelGroupChk' + group.group_id + '" ' + (group.isChecked?'checked':'') + ' onclick="ogTasks.GroupSelected(this,\'' + group.group_id + '\')"/></td>');
-	
-	sb.append("<td width='20px'><div class='db-ico " + group.group_icon + "'></div></td>");
-	
-	sb.append('<td>');
-	switch (displayCriteria.group_by){
-		case 'milestone':
-			var milestone = this.getMilestone(group.group_id);
-			if (milestone){
-				if (milestone.isUrgent){
-					sb.append("</td><td><div class='db-ico ico-urgent-milestone'></div></td><td>");
-				}
-				sb.append("<table><tr><td><div class='ogTasksGroupHeaderName'>");
-				if (milestone.completedById){
-					var user = this.getUser(milestone.completedById, true);
-					var tooltip = '';
-					if (user){
-						var time = new Date(milestone.completedOn * 1000);
-						var now = new Date();
-						var timeFormatted = time.getYear() != now.getYear() ? time.dateFormat('M j, Y'): time.dateFormat('M j');
-						tooltip = lang('completed by name on', og.clean(user.name), timeFormatted).replace(/'\''/g, '\\\'');
-					}
-					sb.append("<a href='#' style='text-decoration:line-through' class='internalLink' onclick='og.openLink(\"" + og.getUrl('milestone', 'view', {id: group.group_id}) + "\")' title='" + tooltip + "'>" + og.clean(group.group_name) + '</a></div></td>');
-				}
-				else
-					sb.append("<a href='#' class='internalLink' onclick='og.openLink(\"" + og.getUrl('milestone', 'view', {id: group.group_id}) + "\")'>" + og.clean(group.group_name) + '</a></div></td>');
-				
-			} else {
-				sb.append("<table><tr><td><div class='ogTasksGroupHeaderName'>" + og.clean(group.group_name) + '</div></td>');
-			}
-			sb.append("</tr></table>");
-			break;
-		default:
-			sb.append("<div class='ogTasksGroupHeaderName'>" + og.clean(group.group_name) + '</div>');
-	}
-	sb.append("</td><td align='right'>");
-	
-	if(!drawOptions.show_subtasks_structure){
-	//	sb.append("<div class='ogTasksGroupHeaderName' style='font-size: 14px;margin-right: 10px;'>" + lang('total') + ": " + + og.clean(group.real_total) + '</div>');
-	}
-
-	var transparent_style = "opacity:0.35;filter:alpha(opacity=35);";
-	if (displayCriteria.group_by == 'milestone' && this.getMilestone(group.group_id)){
-		var milestone = this.getMilestone(group.group_id);
-		sb.append("<table><tr>");
-		if (milestone){
-			sb.append('<td><span style="padding-left:12px;color:#888;">');
-			var date = new Date();
-			date.setTime((milestone.dueDate + date.getTimezoneOffset()*60)* 1000);
-			var now = new Date();
-			var dateFormatted = date.getYear() != now.getYear() ? date.dateFormat('M j, Y'): date.dateFormat('M j');
-			if (milestone.completedById > 0){
-				sb.append('<span style="text-decoration:line-through">' +  lang('due') + ':&nbsp;' + dateFormatted + '</span>');
-			} else {
-				if ((date < now))
-					sb.append('<span style="font-weight:bold;color:#F00">' + lang('due') + ':&nbsp;' + dateFormatted + '</span>');
-				else
-					sb.append(lang('due') + ':&nbsp;' + dateFormatted);
-			}
-			sb.append('</span></td>');
-		}
-		sb.append("<td><div id='ogTasksPanelCompleteBar" + group.group_id + "'>" + this.drawMilestoneCompleteBar(group) + "</div></td>");
-		sb.append("<td></td></tr></table>");
-	} else {
-		//sb.append("<div class='ogTasksGroupHeaderActions' style='"+transparent_style+"' id='ogTasksPanelGroupActions" + group.group_id + "'>" + this.drawGroupActions(group) + '</div>');
-	}
-	sb.append('</td></tr></table></div>');
-	//35
-	sb.append("<div id='ogTasksPanelTaskRowsContainer" + group.group_id + "'>");
-	
-	//draw the group's tasks
-	group.isExpanded = ogTasks.expandedGroups.indexOf(group.group_id) > -1;
-	
-	/*for (var i = 0; i < group.group_tasks.length; i++){
-		if (i == og.noOfTasks){//Draw expander if group has more than og.noOfTasks tasks
-			sb.append("<div class='ogTasksTaskRow' style='display:" + (group.isExpanded? "none" : "inline") + "' id='ogTasksGroupExpandTasksTitle" + group.group_id + "'>");
-			sb.append("<a href='#' class='internalLink' onclick='ogTasks.expandGroup(\"" + group.group_id + "\")'>" + lang('show more tasks number', (group.group_tasks.length - i)) + "</a>");
-			sb.append("</div>");
-			sb.append("<div id='ogTasksGroupExpandTasks" + group.group_id + "'>");
-			if (group.isExpanded){
-				for (var j = og.noOfTasks; j < group.group_tasks.length; j++){
-					sb.append(this.drawTask(group.group_tasks[j], drawOptions, displayCriteria, group.group_id, 1));
-				}
-			}
-			sb.append("</div>");
-			break;
-		}
-		sb.append(this.drawTask(group.group_tasks[i], drawOptions, displayCriteria, group.group_id, 1));
-	}*/
-
-	var time_estimated = 0;	
-	
-	//if (drawOptions.show_time_estimates) {
-		//format_group_totals.total_tasks = group.total;
-		/*for (var key in group_totals) {
-			format_group_totals[key] = ogTasks.minutesToHoursAndMinutes(group_totals[key]);
-		}*/
-		
-		sb.append("</div><div>");
-		sb.append(ogTasks.newTaskGroupTotals(group));
-	//}
-	sb.append("</div></div>");
-	return sb.toString();
 }
 
 ogTasks.minutesToHoursAndMinutes = function(minutes){
@@ -783,9 +736,6 @@ ogTasks.expandGroup = function(group_id){
 		var btns = $("#ogTasksGroupExpandTasks"+ group_id +" .tasksActionsBtn").toArray();
 		og.initPopoverBtns(btns);
 		
-		//resize rows
-		ogTasks.resizeRows();
-		
 		//init breadcrumbs
 		og.eventManager.fireEvent('replace all empty breadcrumb', null);
 		
@@ -818,8 +768,8 @@ ogTasks.expandCollapseAllTasksGroup = function(group_id) {
 			group.alltasks_collapsed = true;
 			if (expander) expander.className = 'og-task-expander toggle_collapsed';
 		}
-		
-		$("#ogTasksPanelTaskRowsContainer" +  group.group_id).slideToggle();
+				
+		$("#ogTasksPanelGroup" +  group.group_id + " .task-list-row").slideToggle();
 	}
 }
 
@@ -874,6 +824,7 @@ ogTasks.drawGroupNextTask = function(group,drawOptions,displayCriteria){
 		  }else{
 			  //if is the last task of the last group
 			  if(ogTasks.Groups.group_interval_iteration == ogTasks.Groups.length){
+				  	ogTasks.initColResize();
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 			  }
 		  }	  
@@ -908,25 +859,16 @@ ogTasks.drawAllGroupsTasks = function(){
 
 ogTasks.drawTask = function(task, drawOptions, displayCriteria, group_id, level, target, returnHtml){
 	//Draw indentation
-	var padding = 15 * level;
-	var containerName = 'ogTasksPanelTask' + task.id + 'G' + group_id;
 	task.divInfo[task.divInfo.length] = {group_id: group_id, drawOptions: drawOptions, displayCriteria: displayCriteria, group_id: group_id, level:level};
 
-	// **** <RX : dragging **** //
-	var rx__drag_h = '';
-	var tgId = "T" + task.id + 'G' + group_id;
-	
-	var html = '<div style="padding-left:' + padding + 'px" id="' + containerName + '" class="RX__tasks_row level-'+level+'">' + rx__drag_h 
-		 + this.drawTaskRow(task, drawOptions, displayCriteria, group_id, level) + '</div>';
+	var html = this.drawTaskRow(task, drawOptions, displayCriteria, group_id, level);
 		
 	if (typeof returnHtml != 'undefined') {
 		return html;
 	}else if (typeof target != 'undefined') {
-		$(target).append(html);	
-		ogTasks.resizeRow(containerName,task);
+		$(target).append(html);
 	}else{
-		$("#ogTasksPanelTaskRowsContainer"+group_id).append(html);	
-		ogTasks.resizeRow(containerName,task);
+		$("#ogTasksPanelGroup"+group_id).append(html);				
 	}
 }
 
@@ -945,6 +887,7 @@ ogTasks.removeTaskFromView = function(task) {
 }
 
 ogTasks.reDrawTask = function(task) {
+	//ogTasks.drawTask
 	var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');	
 	var displayCriteria = bottomToolbar.getDisplayCriteria();
@@ -1010,8 +953,6 @@ ogTasks.reDrawTask = function(task) {
 		//init action btns
 		var btns = $("#ogTasksPanelTask" + task.id + "G"+group_id +" .tasksActionsBtn").toArray();
 		og.initPopoverBtns(btns);
-		
-		ogTasks.resizeRow("ogTasksPanelTask" + task.id + "G"+group_id,task);		
 	});	
 	
 	//start all clocks on the list
@@ -1031,7 +972,7 @@ ogTasks.reDrawTask = function(task) {
 ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, level){
 	var sb = new StringBuffer();
 	var tgId = "T" + task.id + 'G' + group_id;
-
+	
 	//checkbox container class by priority
 	var priorityColor = "priority-default";
 	if (typeof task.priority != 'undefined') {
@@ -1081,8 +1022,28 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 	//Member Path
 	mem_path = "";
 	var mpath = Ext.util.JSON.decode(task.memPath);
-	if (mpath) mem_path = og.getEmptyCrumbHtml(mpath,".task-breadcrumb-container");
 	
+	if (mpath) mem_path = og.getEmptyCrumbHtml(mpath,".task-breadcrumb-container",og.breadcrumbs_skipped_dimensions);
+	
+	//dimesions breadcrumbs
+	var dim_classification = new Array();
+	for(x in  drawOptions.show_dimension_cols){
+		did = drawOptions.show_dimension_cols[x];
+		if (isNaN(did) || did == 0) continue;
+		var dim_mpath = {};
+		dim_mpath[did] = mpath[did];
+		
+		dim_mem_path = "";
+		
+		if (typeof mpath[did] != "undefined") dim_mem_path = og.getEmptyCrumbHtml(dim_mpath,".task-breadcrumb-container");
+		dim_classification.push(
+				{
+					id: 'task_clasification_dim_'+did,
+					dim_mem_path: dim_mem_path 
+				}
+		);
+	}
+
 	//Dates
 	var start_date = '';
 	if (task.startDate){
@@ -1201,6 +1162,10 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 	}
 	
 	var show_actions_popover_button = collapsed_actions > 0;
+	
+	//updating waiting tasks
+	waiting_tasks = task.dependants;
+	
 		
 	var row_total_cols = [];
 	for (var key in ogTasks.TotalCols){
@@ -1212,6 +1177,16 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 		row_total_cols.push({text : task[row_field], color: color});
 	}
 	
+	// dimension columns
+	var row_dim_cols = [];
+	for (did in og.dimensions_info) {
+		if (isNaN(did)) continue;
+		var key = 'lp_dim_' + did + '_show_as_column';
+		if (og.preferences['listing_preferences'][key]) {
+			
+		}
+	}
+
 	//get template for the row
 	if(typeof ogTasks.task_list_row_template == "undefined"){
 		var source = $("#task-list-row-template").html(); 
@@ -1243,15 +1218,14 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 			subtasksExpander: subtasksExpander,
 			priorityColor: priorityColor,
 			tgId: tgId,
-			group_id: "'"+group_id+"'",
+			group_id: group_id,
 			assigned_to : assignedTo,
 			assigned_by : assignedBy,
-			rx__dd : ++rx__dd,
-			rx__TasksDrag : rx__TasksDrag,
 			view_url :  og.getUrl('task', 'view', {id: task.id}),
 			task_name : taskName,
 			tool_tip : tooltip,
 			mem_path: mem_path,
+			dim_classification: dim_classification,
 			percent_completed_bar : ogTasks.buildTaskPercentCompletedBar(task),
 			level : level,
 			user_is_working : userIsWorking,
@@ -1261,7 +1235,7 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 			user_start_time : userStartTime,
 			working_on_users : workingOnUsers,
 			show_working_on_users : showWorkingOnUsers,
-			row_total_cols : row_total_cols
+			row_total_cols : row_total_cols			
 	}
 	
 	//instantiate the template
@@ -1297,7 +1271,7 @@ ogTasks.closeTimeslot = function(tId){
 		
 			
 		$.modal(html,modal_params);
-				
+	
 		$( "#small-task-timespan-modal-form"+og.genid ).submit(function( event ) {
 			var parameters = [];
 			var form_params = $( this ).serializeArray();
@@ -1322,25 +1296,25 @@ ogTasks.drawSubtasks = function(params){
 	var group_id = params.group_id;
 		
 	var $task_view = $('#ogTasksPanelTask' + task.id + 'G' + group_id);
-	var subtasks_container_id = 'ogTasksPanelSubtasksT' + task.id + 'G' + group_id;
+	var subtasks_container_id = 'SubtasksT' + task.id + 'G' + group_id;
 	
-	var html = '<div class="subtasks-container" style="margin-left: '+ $task_view.css( "padding-left" )+'; display:' + ((task.isExpanded)?'block':'none') + '" id="' + subtasks_container_id +'"></div>';
-	
-	$task_view.after(html);	
-	
+	var level = parseInt($task_view.find( "div.task-name span").css('margin-left')) + 10;
+
 	var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');	
 	var displayCriteria = bottomToolbar.getDisplayCriteria();
 	var drawOptions = topToolbar.getDrawOptions();
 		
-	var target = "#"+subtasks_container_id;
 	for (var i = 0; i < task.subtasksIds.length; i++){
 		var subtask = ogTasks.getTask(task.subtasksIds[i]);
-		ogTasks.drawTask(subtask, drawOptions, displayCriteria, group_id, 1, target);
+		var subtask_row = ogTasks.drawTask(subtask, drawOptions, displayCriteria, group_id, level, null, 1);
+		subtask_row = $(subtask_row).attr("class", $task_view.attr("class"));
+		$task_view.after(subtask_row.addClass(subtasks_container_id));
 	}	
 	
-	ogTasks.resizeRows();
-	
+	var btns = $("."+subtasks_container_id+" .tasksActionsBtn").toArray();
+	og.initPopoverBtns(btns);
+
 	og.eventManager.fireEvent('replace all empty breadcrumb', null);
 }
                     
@@ -1376,8 +1350,19 @@ ogTasks.ToggleCompleteStatusOk = function(task_id, status, opt){
 			} else {
 				//Set task data
 				var task = ogTasksCache.addTasks(data.task);
-				ogTasks.UpdateTask(task.id,false);
 				
+				//update dependants
+				if (task.status){
+					ogTasks.updateDependantTasks(task.id,false);
+				}else{
+					ogTasks.updateDependantTasks(task.id,true);
+				}
+				
+				ogTasks.UpdateTask(task.id,false);
+
+				for ( var j = 0; j < data.more_tasks.length; j++) {
+					ogTasks.drawTaskRowAfterEdit({'task':data.more_tasks[j]});//$hola					
+				}				
 				ogTasks.refreshGroupsTotals();
 			}
 		},
@@ -1553,77 +1538,226 @@ ogTasks.UpdateDependants = function(task, complete, prev_status) {
 	}
 }
 
-ogTasks.newTaskFormTopList = function() {
+ogTasks.initTasksList = function() {
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
-	
 	var drawOptions = topToolbar.getDrawOptions();
-	var draw_quick_actions = false;
-	if(drawOptions.show_quick_complete){
-		draw_quick_actions = true;
+	
+	var tasks_list_cols = [];
+	
+	//actions
+	tasks_list_cols.push(
+			{
+				id: 'task_actions',
+				col_width: '70px'
+			}
+	);
+	
+	//assigned by
+	if (drawOptions.show_by){
+		tasks_list_cols.push(
+				{
+					id: 'task_assigned_by_id',
+					title: lang('by uppercase'), 
+					group_total_field: '', 
+					row_field: 'assignedById',
+					col_width: '30px'
+				}
+		);
+	}	
+	
+	//assigned to
+	tasks_list_cols.push(
+			{
+				id: 'task_assigned_to_id',
+				title: lang('to'), 
+				group_total_field: '', 
+				row_field: 'assignedToId',
+				col_width: '30px'
+			}
+	);
+	
+	//task name
+	tasks_list_cols.push(
+			{
+				id: 'task_name',
+				title: lang('task'), 
+				data: 'data-resizable=1',
+				group_total_field: '', 
+				row_field: 'title',
+				col_width: 'auto'
+			}
+	);
+		
+	//clasification
+	if (drawOptions.show_classification){
+		tasks_list_cols.push(
+				{
+					id: 'task_clasification',
+					title: lang('classified under'), 
+					data: 'data-resizable=1',
+					group_total_field: '', 
+					row_field: 'memPath',
+					col_width: 'auto'
+				}
+		);
 	}
-	if(drawOptions.show_quick_add_sub_tasks){
-		draw_quick_actions = true;
-	}
-	if(drawOptions.show_quick_edit){
-		draw_quick_actions = true;
+
+	//dimesions breadcrumbs
+	for(x in  drawOptions.show_dimension_cols){
+		did = drawOptions.show_dimension_cols[x];
+		if (isNaN(did) || did == 0) continue;
+		tasks_list_cols.push(
+				{
+					id: 'task_clasification'+did,
+					css_class: 'task_clasification',
+					title: og.dimensions_info[did].name, 
+					data: 'data-resizable=1',
+					group_total_field: '', 
+					col_width: 'auto'
+				}
+		);
 	}
 	
-	var title_total_cols = [];
-	for (var key in ogTasks.TotalCols){
-		var title_field = ogTasks.TotalCols[key].title;
-		title_total_cols.push(lang(title_field));
+	//percent complete bar
+	if (drawOptions.show_percent_completed_bar){
+		tasks_list_cols.push(
+				{
+					id: 'task_completed_bar',
+					title: lang('completed'), 
+					group_total_field: '', 
+					row_field: 'ogTasks.buildTaskPercentCompletedBar(task)',
+					col_width: '100px'
+				}
+		);
 	}
 	
+	//start date
+	if (drawOptions.show_start_dates){
+		tasks_list_cols.push(
+				{
+					id: 'task_start_date',
+					title: lang('start m'), 
+					group_total_field: '', 
+					row_field: 'startDate',
+					col_width: '100px'
+				}
+		);
+	}
+	
+	//due date
+	if (drawOptions.show_end_dates){
+		tasks_list_cols.push(
+				{
+					id: 'task_due_date',
+					title: lang('due m'), 
+					group_total_field: '', 
+					row_field: 'dueDate',
+					col_width: '100px'
+				}
+		);
+	}
+	
+	//time estimated
+	if (drawOptions.show_time_estimates){
+		tasks_list_cols.push(
+				{
+					id: 'task_estimated',
+					title: lang('estimated'), 
+					group_total_field: 'estimatedTime', 
+					row_field: 'estimatedTime',
+					col_width: '100px'
+				}
+		);		
+	}
+	
+	//time pending
+	if (drawOptions.show_time_pending){
+		tasks_list_cols.push(
+				{
+					id: 'task_pending',
+					title: lang('pending'), 
+					group_total_field: 'pending_time_string', 
+					row_field: 'pending_time_string',
+					col_width: '100px'
+				}
+		);		
+	}
+	
+	//time worked
+	if (drawOptions.show_time_worked){
+		tasks_list_cols.push(
+				{
+					id: 'task_worked',
+					title: lang('worked'), 
+					group_total_field: 'worked_time_string', 
+					row_field: 'worked_time_string',
+					col_width: '100px'
+				}
+		);		
+	}
+    	
+	//previous tasks
+	if (drawOptions.show_previous_pending_tasks){
+		tasks_list_cols.push(
+				{
+					id: 'task_previous',
+					title: lang('previous tasks'), 
+					group_total_field: '', 
+					row_field: 'previous_tasks_total',
+					col_width: '100px'
+				}
+		);		
+	}
+	
+	//quick actions
+	tasks_list_cols.push(
+			{
+				id: 'task_quick_actions',
+				col_width: '100px'
+			}
+	);
+		
+	//actions btn
+	tasks_list_cols.push(
+			{
+				id: 'task_btn_actions',
+				col_width: '100px'
+			}
+	);
+
+	ogTasks.TasksList.tasks_list_cols = tasks_list_cols;	
+}
+
+ogTasks.newTaskFormTopList = function() {
+	ogTasks.initTasksList();
+	var title_cols = [];
+	
+	//title_cols.push({text:group[row_field], cssclass:'task-date-container'});
+		
 	//get template for the row
 	var source = $("#task-list-col-names-template").html(); 
 	//compile the template
 	var template = Handlebars.compile(source);
 	
+	var add_btn_position = 'task_quick_actions';
+	for (var i=0; i < ogTasks.TasksList.tasks_list_cols.length; i++) {
+		var col = ogTasks.TasksList.tasks_list_cols[i];
+		if(ogTasks.TasksList.tasks_list_cols[i].id == 'task_name'){
+			add_btn_position = ogTasks.TasksList.tasks_list_cols[i+1].id;
+		}			
+	}
+
 	//template data
-	var data = {
-			draw_options : drawOptions,
-			title_total_cols: title_total_cols,
-			draw_quick_actions : draw_quick_actions
+	var data = {			
+			tasks_list_cols : ogTasks.TasksList.tasks_list_cols,
+			add_btn_position : add_btn_position,
+			genid : og.genid	
 	}
 	
 	//instantiate the template
-	var html = template(data);
+	var html = template(data);	
 	
-	return '<div id="ogTasksPanelColNames">'+html+'</div>';
-		
+	return html;		
 }
 
-ogTasks.newTaskGroupTotals = function(group) {
-	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
-	
-	var drawOptions = topToolbar.getDrawOptions();
-	drawOptions.groupId = group.group_id;
-	
-	if(group.total_tasks_loaded < group.root_total){
-		drawOptions.showMore = true;				
-	}
-	
-	//get template for the row
-	var source = $("#task-list-group-totals-template").html(); 
-	//compile the template
-	var template = Handlebars.compile(source);
-	
-	var format_group_totals = [];
-	for (var key in ogTasks.TotalCols){
-		var row_field = ogTasks.TotalCols[key].row_field;
-		format_group_totals.push({text : group[row_field]});
-	}
-	
-	//template data
-	var data = {
-			draw_options : drawOptions,
-			format_group_totals : format_group_totals
-	}
-	
-	//instantiate the template
-	var html = template(data);
-	
-	return html;
-		
-}
 

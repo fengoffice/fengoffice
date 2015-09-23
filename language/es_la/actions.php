@@ -178,4 +178,7 @@
 	'recent activities to show lines' => 'líneas',
 	'views and downloads' => 'ver vistas y descargas',
 	'confirm delete permanently sync' => '¿Está seguro que desea borrar los datos de sincronización?',
+	'add project' => 'Agregar proyecto',
+	'day' => 'Día',
+	'restore user' => 'Restaurar usuario',
 ); ?>

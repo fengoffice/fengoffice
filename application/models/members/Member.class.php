@@ -133,7 +133,7 @@ class Member extends BaseMember {
 	function getParentMember() {
 		if ($this->parent_member == null){
 			if ($this->getParentMemberId() != 0) {
-				 $this->parent_member = Members::findById($this->getParentMemberId());
+				 $this->parent_member = Members::getMemberById($this->getParentMemberId());
 			}
 		}
 		return $this->parent_member;
@@ -441,17 +441,28 @@ class Member extends BaseMember {
 		return false;
 	}
 	
-	function getPath(){
-		$path='';
-		foreach(array_reverse($this->getAllParentMembersInHierarchy(false)) as $parent){
-			$path.= $parent->getName(). "/";
-		}
-		if ($path){
-			$path=substr($path, 0, -1);
+	function getPath($separator="/", $prefix="", $suffix=""){
+		$path = '';
+		$parents = array_reverse($this->getAllParentMembersInHierarchy(false));
+		foreach($parents as $parent) {
+			$path .= ($path == "" ? "" : $separator) . $prefix . $parent->getName() . $suffix;
 		}
 		return $path;
 	}
 	
+	
+	function getPathToPrint($separator="/", $prefix="", $suffix=""){
+		$path = '';
+		$parents = array_reverse($this->getAllParentMembersInHierarchy(false));
+		if (count($parents) > 1) {
+			$path .= $prefix . "..." . $suffix;
+		} else {
+			foreach($parents as $parent) {
+				$path .= ($path == "" ? "" : $separator) . $prefix . $parent->getName() . $suffix;
+			}
+		}
+		return $path;
+	}
 	
 	
 	/**
@@ -498,6 +509,14 @@ class Member extends BaseMember {
 			foreach ($sub_members as $sub_member) {
 				if ($sub_member->getArchivedById() == 0) {
 					$count += $sub_member->archive($user);
+				}
+			}
+			
+			// if member has an associated object then archive it
+			if ($this->getObjectId() > 0) {
+				$rel_obj = Objects::findObject($this->getObjectId());
+				if ($rel_obj instanceof ContentDataObject && !$rel_obj->isArchived()) {
+					$rel_obj->archive();
 				}
 			}
 			
@@ -551,6 +570,14 @@ class Member extends BaseMember {
 			foreach ($sub_members as $sub_member) {
 				if ($sub_member->getArchivedById() > 0) {
 					$count += $sub_member->unarchive($user);
+				}
+			}
+			
+			// if member has an associated object then unarchive it
+			if ($this->getObjectId() > 0) {
+				$rel_obj = Objects::findObject($this->getObjectId());
+				if ($rel_obj instanceof ContentDataObject && $rel_obj->isArchived()) {
+					$rel_obj->unarchive();
 				}
 			}
 

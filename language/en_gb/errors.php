@@ -22,7 +22,7 @@
     
     // User validation errors
     'username value required' => 'Username value is required',
-    'username must be unique' => 'Sorry, but selected username is already taken',
+    'username must be unique' => 'Selected username is already taken',
     'email value is required' => 'Email address is required',
     'email address must be unique' => 'Sorry, selected email address is already taken',
     'company value required' => 'User must be part of company / organization',

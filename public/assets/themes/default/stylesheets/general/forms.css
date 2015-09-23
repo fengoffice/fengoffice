@@ -171,6 +171,67 @@ button.add-first-btn.blue:hover {
 	background-color: #5d92dc;
 }
 
+/*Buttons common*/
+.btn {
+	width: auto;
+	height: auto;
+    vertical-align: middle;
+    font-size: 18px;
+	float: left;
+	cursor: pointer;	
+	background: none repeat scroll 0 0 #f8f8f8;
+    border-color: #c4c4c4;
+    border-radius: 2px;
+    border-style: solid; 
+    border-width: 1px;
+    color: #333;
+    text-shadow: none;
+    box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
+    -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+    -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+    white-space: nowrap;
+}
+
+
+/*Buttons sizes*/
+.btn-lg{
+  padding: 10px 16px;
+  font-size: 18px;
+  line-height: 22px;
+  border-radius: 6px;
+}
+.btn-sm{
+  padding: 5px 10px;
+  padding-left: 4px;
+  font-size: 13px;
+  line-height: 1.26;
+  border-radius: 3px;
+}
+.btn-xs{
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 2px;
+}
+
+/*Buttons colors*/
+.btn-primary {
+  color: #ffffff;
+  background-color: #337ab7;
+  border-color: #2e6da4;
+}
+.btn-primary:focus,
+.btn-primary.focus {
+  color: #ffffff;
+  background-color: #286090;
+  border-color: #122b40;
+}
+.btn-primary:hover {
+  color: #ffffff;
+  background-color: #286090;
+  border-color: #204d74;
+}
+
 span.required {
   color: red;
 }
@@ -371,16 +432,6 @@ a.button {
 
 #quick-form a.more.coViewAction.ico-edit {
 	padding-top: 0px;
-}
-
-#menu-panel .x-tool.x-tool-options.x-tool-options-over {
-	border: 1px solid #999;
-	margin-top: -1px;
-}
-#menu-panel .x-tool.x-tool-options {
-	border: 1px solid #e7e7e7;
-	margin-top: -1px;
-	border-radius: 15px;
 }
 
 /** QUICK FORMS CONFIG**/

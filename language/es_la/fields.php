@@ -275,6 +275,15 @@
 	'field Objects trashed_by_id' => 'Eliminado por',
 	'field Objects archived_on' => 'Archivado el',
 	'field Objects archived_by_id' => 'Archivado por',
+	'field Objects description' => 'Descripción',
+	'field Objects end_date' => 'Fecha de fin',
+	'field Objects start_date' => 'Fecha de inicio',
+	'field Objects manager_id' => 'Gerente de proyecto',
+	'field Objects status' => 'Estado',
+	'field Objects assigned_by_id' => 'Asignado por',
+	'field Objects cmrr' => 'Cmrr',
+	'field Objects payment_cycle_id' => 'Ciclo de pago',
+	'field Objects status_id' => 'Estado',
 
 	'is_user' => 'Es usuario',
 	'field Objects is_user' => 'Es usuario',
@@ -301,4 +310,7 @@
 	'field Contacts home_address' => 'Dirección personal',
 	'field Contacts work_address' => 'Dirección del trabajo',
 	'field Contacts other_address' => 'Otra dirección',
+		
+		'field ProjectMilestones assigned_to_company_id' => 'Asignado a empresa',
+		'field ProjectMilestones assigned_to_user_id' => 'Asignado a usuario',
 );

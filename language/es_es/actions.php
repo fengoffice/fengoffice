@@ -179,4 +179,6 @@
 	'success unarchive member' => '{0} fue desarchivado exitosamente. Se desarchivaron {1} objetos de {0}.',
 	'confirm delete permanently' => '¿Está seguro que desea eliminar {0}?',
 	'template context' => 'Elija la ubicación de la plantilla',
+    'day' => 'Día',
+    'restore user' => 'Restaurar usuario',
 ); ?>

@@ -24,7 +24,6 @@
 	'index' => 'Índice',
 	'view' => 'Ver',
 	'edit' => 'Editar',
-	'group users' => 'Usuarios del grupo',
 	'untitled note' => 'Nota sín titulo',
 	'of' => 'de',
 	'search results for' => 'Resultados de la búsqueda de',
@@ -260,7 +259,6 @@
 	'previous' => 'Anterior',
 	'empty title' => 'Sin título',
 	'the template' => 'la plantilla',
-	'associate' => 'Vincular',
 	'vinculations' => 'vinculaciones',
 	'last updated' => 'Ultima modificación',
 	'no data to show' => 'No existen datos',
@@ -393,4 +391,27 @@
 	
 	'write the first letters of the name or surname of the person to select' => 'Escriba las primeras letras del nombre o apellido de la persona a seleccionar o ',
 	'click here to select one from a list' => 'Click aquí para seleccionar de una lista',
+	
+	'select contact' => 'Seleccione un contacto',
+	'select user' => 'Seleccione un usuario',
+	'click to select country' => 'Click aquí para selccionar país',
+		
+	'completed by name on' => 'Completado por {0} el {1}',
+		
+	'without due date' => 'Sin fecha de fin',
+	'without start date' => 'Sin fecha de comienzo',
+	'without date' => 'Sin fecha',
+		
+	'settings' => 'Ajustes',
+	'street' => 'calle',
+	'zip_code' => 'Código zip',
+	'field Objects attach_to_notification' => 'Adjuntar documento a notificación',
+	'field Objects default_subject' => 'Asunto por defecto de la notificación',
+	'without a member' => 'Sin',
+	'uncompleted tasks' => 'Tareas no completadas',
+	'address field is required' => 'Información sobre {1} para el campo \'{0}\' es requerida.',
+	'select group to add user' => 'Elija un grupo de la lista para agregar el usuario a ese grupo.',
+	'there are no custom properties defined message' => 'No hay propiedades personalizadas para {0} "{1}".',
+	'there are no custom properties defined link' => 'Por favor vea <a href="http://wiki.fengoffice.com/doku.php/custom_properties" target="_blank" class="wiki-link">this article</a> para consultar el uso de las propiedades personalizadas.',
+	'notify assigned user' => 'Notificar al usuario asignado',
 );

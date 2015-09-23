@@ -442,7 +442,7 @@ class ProjectTasks extends BaseProjectTasks {
 			'createdById' => (int)$raw_data['created_by_id'],
 			'otype' => $raw_data['object_subtype'],
 			'percentCompleted' => (int)$raw_data['percent_completed'],			
-			'memPath' => str_replace('"',"'", str_replace("'", "\'", json_encode($tmp_task->getMembersIdsToDisplayPath())))
+			'memPath' => str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())))
 		);
 		
 		if(isset($raw_data['isread'])){
@@ -559,7 +559,9 @@ class ProjectTasks extends BaseProjectTasks {
 			$pending_tasks_ids = ProjectTaskDependencies::getDependenciesForTaskOnlyPendingIds($tmp_task->getId());
 			
 			//get the total of previous tasks 
-			$result['dependants'] = $pending_tasks_ids;		
+			$result['dependants'] = $pending_tasks_ids;	
+			
+			$result['previous_tasks_total'] = ProjectTaskDependencies::countPendingPreviousTasks($tmp_task->getId());	
 		}
 		
 		return $result;

@@ -195,16 +195,21 @@ class TimeslotController extends ApplicationController {
 		
 		try{
 			DB::beginWork();
-			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true')
+			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true'){
 				$timeslot->delete();
-			else
+			}else{
 				$timeslot->save();
+			}
 			
+			$object = $timeslot->getRelObject();
 			if($object instanceof ProjectTask) {
-				$object->calculatePercentComplete();				
+				$object->calculatePercentComplete();
 			}
 			
 			DB::commit();
+			if($object instanceof ProjectTask) {
+				$this->notifier_work_estimate($object);
+			}
 			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_CLOSE);
 				
 			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true')

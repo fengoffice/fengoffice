@@ -104,7 +104,7 @@ addLangs({
 	'edit workspace': 'Edit the selected workspace',
 	'company': 'Company',
 	'companies': 'Companies',
-	'checkin': 'Check in',
+	'checkin': 'Upload new version',
 	'checkout': 'Check out',
 	'checked out by': 'Checked out by {0}',
 	'add file checked out by': '{0} was checked out by {1}',
@@ -121,7 +121,7 @@ addLangs({
 	'year': 'Year',
 	'playlist': 'Playlist',
 	'playlists': 'Playlists',
-	'unknown': 'Unkown',
+	'unknown': 'Unknown',
 	'previous': 'Previous',
 	'play': 'Play',
 	'pause': 'Pause',
@@ -310,7 +310,8 @@ addLangs({
 	
 	'checkout description': 'Lock this file for editing',
 	'undo checkout description': 'Make this file available',
-	'checkin description': 'Check in new version of this file',
+	'checkin description': 'Upload a new version of this file',
+	'upload new revision': 'Upload a new version',
 	
 	'created by on': 'Created by {0} on {1}',
 	
@@ -527,6 +528,7 @@ addLangs({
 	'due' : 'due',
 	'start m' : 'Start',
 	'due m' : 'Due',
+	'previous tasks': 'Previous',
 	'add subtask': 'Add a new subtask',
 	'completed by name on' : 'Completed by {0} on {1}',
 	'completed by' : 'Completed by',
@@ -642,8 +644,8 @@ addLangs({
     'error adding timeslot' : 'An error occurred while adding the timeslot',
     'confirm unclassify email' : 'Are you sure you want to unclassify this email?\nThe email will be removed from the workspaces ant its attachments will not appear in Documents tab.',
     
-    'no due date': 'No due date',
-    'no start date': 'No start date',
+    'no due date': 'Without due date',
+    'no start date': 'Without start date',
     'untagged': 'Untagged',
     'download selected file': 'Download selected file',
     'edit selected file properties': 'Edit selected file\'s properties',
@@ -708,7 +710,7 @@ addLangs({
     'custom property invalid numeric value': 'Default value must be a number for custom property: {0}',
     'value cannot be empty': 'Value cannot be empty',
     'value must be numeric': 'Value must be numeric',
-    'memo': 'Memo',
+    'memo': 'Large text',
     'add value': 'Add value',
     	
     /* Custom Reports */
@@ -923,7 +925,8 @@ addLangs({
 	'quick edit': 'Quick edit',
 	'quick complete': 'Quick complete',
 	'quick add sub tasks': 'Quick add sub tasks',
-	'subtasks structure': 'Subtasks structure',	
+	'subtasks structure': 'Subtasks structure',
+	'previous pending tasks': 'Number of previous pending tasks',	
 	
 	'new member added popup title' : '{0} {1} successfully added',
 	'new member added popup msg' : 'You have succesfully added the new {0} named {1}.',

@@ -162,9 +162,10 @@ class TemplateController extends ApplicationController {
 	 */
 	function add_template_object_to_view($template_id) {
 		$objects = array();
-		$conditions = array('conditions' => '`template_id` = '.$template_id);
-		$tasks = TemplateTasks::findAll($conditions);			
-		$milestones = TemplateMilestones::findAll($conditions);	
+		$tasks_conditions = array('conditions' => '`template_id` = '.$template_id,  "order" => "depth,name");
+		$milestones_conditions = array('conditions' => '`template_id` = '.$template_id,  "order" => "name");
+		$tasks = TemplateTasks::findAll($tasks_conditions);			
+		$milestones = TemplateMilestones::findAll($milestones_conditions);	
 				
 		foreach ($milestones as $milestone){
 			$objectId = $milestone->getObjectId();
@@ -493,9 +494,9 @@ class TemplateController extends ApplicationController {
 		foreach ($parameters as $param) {
 			/* @var $param TemplateParameter */
 			$param_val = array_var($parameterValues, $param->getName(), '');
-			$param_val = str_replace("'", "\'", $param_val);
+			$param_val = escape_character($param_val);
 			DB::execute("INSERT INTO `".TABLE_PREFIX."template_instantiated_parameters` (`template_id`, `instantiation_id`, `parameter_name`, `value`) VALUES
-					('".$template->getId()."', '$instantiation_id', '".$param->getName()."', '$param_val') ON DUPLICATE KEY UPDATE template_id=template_id");
+					('".$template->getId()."', '$instantiation_id', '".escape_character($param->getName())."', '$param_val') ON DUPLICATE KEY UPDATE template_id=template_id");
 		}
 		
 		set_config_option('last_template_instantiation_id', $instantiation_id);
@@ -535,6 +536,14 @@ class TemplateController extends ApplicationController {
 				if ($selection instanceof Member) $selected_members[] = $selection->getId();
 			}
 		}
+		if (array_var($_POST, 'additional_member_ids')) {
+			$add_mem_ids = explode(',', array_var($_POST, 'additional_member_ids'));
+			if (is_array($add_mem_ids)) {
+				foreach ($add_mem_ids as $add_mem_id) {
+					if (is_numeric($add_mem_id)) $selected_members[] = $add_mem_id;
+				}
+			}
+		}
 		
 		$objects = $template->getObjects() ;
 		$controller  = new ObjectController();
@@ -567,17 +576,6 @@ class TemplateController extends ApplicationController {
 				}
 											
 				$copy = $object->copyToProjectTask($instantiation_id);
-				//if is subtask
-				if($copy->getParentId() > 0){	
-					foreach ($copies as $c) {
-						if($c instanceof ProjectTask){
-							if($c->getFromTemplateObjectId() == $object->getParentId()){
-								$copy->setParentId($c->getId());								
-							}
-						}
-						
-					}					
-				}
 			}else if ($object instanceof TemplateMilestone) {
 				$copy = $object->copyToProjectMilestone();
 							
@@ -664,6 +662,20 @@ class TemplateController extends ApplicationController {
 							break;
 						}
 					}
+				}
+
+				//if is subtask we search for the project task id of the parent
+				if($c->getParentId() > 0){	
+					foreach ($copies as $cp) {
+						if($cp instanceof ProjectTask){
+							if($cp->getFromTemplateObjectId() == $c->getParentId()){
+								$c->setParentId($cp->getId());	
+								$c->save();	
+								break;						
+							}
+						}
+						
+					}					
 				}
 			}			
 		}

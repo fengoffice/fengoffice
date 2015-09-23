@@ -681,4 +681,21 @@
 		
 	'all previous tasks have been completed' => 'Las tareas previas a \'{0}\' han sido completadas',
 	'task x can be started' => 'Las tareas previas han sido completadas. Ya puede comenzar a trabajar en la tarea \'{0}\'.',
+	
+	'no groups in company' => 'Todavía no se han agregado grupos',
+	'confirm restore user' => 'El usuario será activado. ¿Continuar?',
+	'log login contact' => 'usuario {0} ha ingresado',
+	'log read projectfiles' => 'Vió \'{0}\'',
+	'log download projectfiles' => 'Descargó \'{0}\'',
+	'log read projectmessages' => 'Vió \'{0}\'',
+	'log read mailcontents' => 'Vió \'{0}\'',
+	'log read companies' => 'Vió \'{0}\'',
+	'log read contacts' => 'Vió \'{0}\'',
+	'log read projectevents' => 'Vió \'{0}\'',
+	'log read projecttasks' => 'Vió \'{0}\'',
+	'log read projectmilestones' => 'Vió \'{0}\'',
+	'log read projectwebpages' => 'Vió \'{0}\'',
+	'log read reports' => 'Vió \'{0}\'',
+	'the Time' => 'el tiempo de trabajo',
+	'success delete member' => '{0} ha sido eliminado',
 ); ?>

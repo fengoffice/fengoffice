@@ -150,6 +150,25 @@ class ApplicationLogs extends BaseApplicationLogs {
 
 		return in_array($action, $valid_actions);
 	} // isValidAction
+	
+	static function countObjectLogs($object, $include_private = false, $include_silent = false, $extra_conditions="") {
+		$private_filter = $include_private ? '1' : '0';
+		$silent_filter = $include_silent ? '1' : '0';
+		
+		if ($object instanceof Contact && $object->isUser()){
+			
+			$userCond = " AND `taken_by_id` = " . $object->getId();
+			
+			return self::count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' '.$userCond. $extra_conditions);
+			
+		} else {
+			
+			return self::count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' AND 
+				(`rel_object_id` = ('.$object->getId().') OR `rel_object_id` IN (SELECT com.object_id FROM '.TABLE_PREFIX.'comments com WHERE com.rel_object_id='.$object->getId().' )) 
+				' . $extra_conditions
+			);
+		}
+	}
 
 	/**
 	 * Return entries related to specific object

@@ -129,12 +129,7 @@ class Timeslot extends BaseTimeslot {
     	  	$dt = DateTimeValueLib::now();
 			$this->setEndTime($dt);
     	}
-    	
-    	$task = ProjectTasks::findById($this->getRelObjectId());
-		if($task instanceof ProjectTask) {
-			$task->calculatePercentComplete();
-		}
-    	
+        	
     	//Billing
 		$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
 		$billing_category_id = $user->getDefaultBillingId();

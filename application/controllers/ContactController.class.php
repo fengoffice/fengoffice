@@ -1037,7 +1037,17 @@ class ContactController extends ApplicationController {
 				if($newCompany) {
 					$contact->setCompanyId($company->getId());
 				}
-				
+
+				if (isset($_SESSION['new_contact_picture']) && $_SESSION['new_contact_picture']) {
+					$contact->setPicture($_SESSION['new_contact_picture'], 'image/png');
+					$contact->setPictureFileMedium($_SESSION['new_contact_picture_medium'], 'image/png');
+					$contact->setPictureFileSmall($_SESSION['new_contact_picture_small'], 'image/png');
+
+					$_SESSION['new_contact_picture_medium'] = null;
+					$_SESSION['new_contact_picture_small'] = null;
+					$_SESSION['new_contact_picture'] = null;					
+				}
+
 				$contact->setObjectName();
 				$contact->save();
 				
@@ -1143,6 +1153,9 @@ class ContactController extends ApplicationController {
 					
 					evt_add("new user added", $contact->getArrayInfo());
 				}
+				
+
+				$null=null; Hook::fire('after_add_contact', $contact, $null);
 				
 				DB::commit();
 				
@@ -1446,6 +1459,7 @@ class ContactController extends ApplicationController {
 					}
 					
 				}
+				$null=null; Hook::fire('after_edit_contact', $contact, $null);
 				
 				DB::commit();
 				
@@ -1474,7 +1488,10 @@ class ContactController extends ApplicationController {
 		} // if
 	} // edit
 
-	private function get_contact_data_from_contact($contact) {
+	function get_contact_data_from_contact($contact) {
+		if (!$contact instanceof Contact) {
+			return array();
+		}
 		$contact_data = array(
 				'first_name' => $contact->getFirstName(),
 				'surname' => $contact->getSurname(),
@@ -1569,7 +1586,7 @@ class ContactController extends ApplicationController {
 	}
 	
 	
-	private function save_non_main_emails($contact_data, $contact) {
+	function save_non_main_emails($contact_data, $contact) {
 		$emails_data = array_var($contact_data, 'emails');
 		if (is_array($emails_data)) {
 			foreach ($emails_data as $data) {
@@ -1802,7 +1819,11 @@ class ContactController extends ApplicationController {
 				
 				if ($is_new) {
 					$file_id = $contact->setPicture($image_path, 'image/png', null, null, false);
+					$file_id_medium = $contact->getPictureFileMedium();
+					$file_id_small = $contact->getPictureFileSmall();
 					$_SESSION['new_contact_picture'] = $file_id;
+					$_SESSION['new_contact_picture_medium'] = $file_id_medium;
+					$_SESSION['new_contact_picture_small'] = $file_id_small;					
 				} else {
 					if(!$contact->setPicture($image_path, 'image/png')) {
 						throw new InvalidUploadError($picture);
@@ -3419,8 +3440,13 @@ class ContactController extends ApplicationController {
 				Contacts::validate($company_data); 
 				DB::beginWork();
 				if (isset($_SESSION['new_contact_picture']) && $_SESSION['new_contact_picture']) {
-					$company->setPictureFile($_SESSION['new_contact_picture']);
-					$_SESSION['new_contact_picture'] = null;
+					$company->setPicture($_SESSION['new_contact_picture'], 'image/png');
+					$company->setPictureFileMedium($_SESSION['new_contact_picture_medium'], 'image/png');
+					$company->setPictureFileSmall($_SESSION['new_contact_picture_small'], 'image/png');
+
+					$_SESSION['new_contact_picture_medium'] = null;
+					$_SESSION['new_contact_picture_small'] = null;
+					$_SESSION['new_contact_picture'] = null;					
 				}
 				$company->save();
 				

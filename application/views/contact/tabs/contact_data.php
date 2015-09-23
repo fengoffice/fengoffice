@@ -98,19 +98,19 @@
 	            </div>
 	        </div>
 	        
-	        <?php if (!$contact->isNew()) { ?>
+	        <?php // if (!$contact->isNew()) { ?>
 	        <div class="dataBlock">
 				<div><?php echo label_tag(lang('avatar')) ?></div>
 	            <div style="float:left;" id="<?php echo $genid?>_avatar_container" class="picture-container">
 	            	<img src="<?php echo $contact->getPictureUrl('medium') ?>" alt="<?php echo clean($contact->getObjectName()) ?>" id="<?php echo $genid?>_avatar_img"/>
 	            </div>
 	            <div style="padding:20px 0 0 20px; text-decoration:underline; float:left; display:none;">
-		           	<a href="<?php echo $contact->getUpdatePictureUrl()?>&reload_picture=<?php echo $genid?>_avatar_container" class="internallink coViewAction ico-picture" target=""><?php echo lang('update avatar') ?></a>
+		           	<a href="<?php echo $contact->getUpdatePictureUrl()?>&reload_picture=<?php echo $genid?>_avatar_container" class="internallink coViewAction ico-picture" target=""><?php echo lang('update avatarkkk') ?></a>
 				</div>
 				
 				<div style="padding:20px 0 0 20px; text-decoration:underline; float:left;">
 		           	<a href="#" onclick="og.openLink('<?php echo $contact->getUpdatePictureUrl();?>&reload_picture=<?php echo $genid?>_avatar_img<?php echo ($contact->isNew() ? '&new_contact='.$genid.'_picture_file' :'')?>', {caller:'edit_picture'});" 
-		           		class="coViewAction ico-picture"><?php echo lang('update avatar') ?></a>
+		           		class="coViewAction ico-picture"><?php echo ($contact->isNew() ? lang('new avatar') : lang('update avatar'))?></a>
 		           	<?php if ($contact->isNew()) { ?>
 		           		<input type="hidden" id="<?php echo $genid?>_picture_file" name="contact[picture_file]" value=""/>
 		           	<?php }?>
@@ -118,7 +118,7 @@
 				
 	            <div class="clear"></div>
 			</div>
-			<?php } ?>
+			<?php //} ?>
 			
 			<?php if (!$renderContext) { ?>
 			<div id="<?php echo $genid ?>add_contact_select_context_div" class="dataBlock"><?php
@@ -158,7 +158,7 @@ $(document).ready(function() {
 	og.addNewTelephoneInput('<?php echo $genid?>_phones_container', 'contact', def_phone_type);
 	<?php } else { 
 			foreach (array_var($contact_data, 'all_phones') as $phone) { ?>
-				og.addNewTelephoneInput('<?php echo $genid?>_phones_container', 'contact', '<?php echo $phone->getTelephoneTypeId()?>', '<?php echo str_replace("'", "\'", $phone->getNumber())?>', '<?php echo str_replace("'", "\'", $phone->getName())?>', '<?php echo $phone->getId()?>');
+				og.addNewTelephoneInput('<?php echo $genid?>_phones_container', 'contact', '<?php echo $phone->getTelephoneTypeId()?>', '<?php echo $phone->getNumber()?>', '<?php echo htmlentities($phone->getName(),ENT_QUOTES)?>', '<?php echo $phone->getId()?>');
 	  <?php } ?>
 	<?php } ?>
 

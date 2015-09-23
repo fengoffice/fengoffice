@@ -240,7 +240,7 @@ if(count($cps) > 0){
 								$exploded = explode("|", $values);
 								foreach ($exploded as &$v) {
 									$v = str_replace("%%_PIPE_%%", "|", $v);
-									$v = str_replace("'", "\'", $v);
+									$v = escape_character($v);
 								}
 								if (count($exploded) > 0) {
 									$address_type = array_var($exploded, 0, '');
@@ -262,7 +262,8 @@ if(count($cps) > 0){
 						echo $html;
 						
 						break;
-					
+
+				case 'user':
 				case 'contact':
 					$value = '0';
 					$cp_value = CustomPropertyValues::getCustomPropertyValue($_custom_properties_object->getId(), $customProp->getId());
@@ -271,7 +272,15 @@ if(count($cps) > 0){
 						$contact = Contacts::findById($value);
 					}
 					
+					$emtpy_text = lang('select contact');
+					
 					Hook::fire('object_contact_cp_filters', array('cp' => $customProp, 'object' => $_custom_properties_object), $filters);
+					
+					if ($customProp->getType() == 'user') {
+						$filters['is_user'] = 1;
+						$emtpy_text = lang('select user');
+					}
+					
 					if (is_array($filters) && count($filters) > 0) {
 						$filters_str = '{';
 						foreach ($filters as $k => $v) {
@@ -293,6 +302,7 @@ if(count($cps) > 0){
 						render_to: "contacts_combo_container-cp'.$customProp->getId().'",
 						selected: '.$value.',
 						selected_name: "'.($contact instanceof Contact ? clean($contact->getName()) : '').'",
+						empty_text: "'. $emtpy_text .'",
 						filters: '.$filters_str.'
 					  });
 					});

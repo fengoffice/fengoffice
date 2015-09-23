@@ -69,7 +69,7 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
 	else
 		var containerName = 'ogTasksPanelGroup' + group_id;
 	
-	this.drawTaskForm(containerName, {
+	var task = {
 		parentId: parent_id,
 		milestoneId: milestone_id,
 		member_id: member_id,
@@ -84,7 +84,9 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
 		multiAssignment: 0,
 		isEdit: false,
 		position: position
-	});
+	};
+
+	this.drawTaskForm(containerName, task);
 	
 	if(og.config.wysiwyg_tasks){
 		var height = $("#tasks_quick_add_selectors").height();
@@ -137,6 +139,19 @@ ogTasks.checkEnterPress = function (e,id)
 		return false;
 	}
 	return true;
+}
+
+ogTasks.drawAddNewTaskFromData = function(container_id){
+	var task = {
+		name:'lala'
+	};
+	$("#"+container_id+" :input").each(function(){
+		var input = $(this);
+		task[input.attr("name")]=input.val();
+		input.val("");
+	});
+	
+	og.render_modal_form('', {c:'task', a:'add_task', params: task});
 }
 
 ogTasks.drawTaskForm = function(container_id, data){
@@ -835,7 +850,12 @@ ogTasks.drawTaskRowAfterEdit = function(data) {
 	}
 }
 
-
+ogTasks.drawTasksRowsAfterAddEdit = function(data) {
+	if (!data || !data.tasks) return;
+	for ( var j = 0; j < data.tasks.length; j++) {
+		ogTasks.drawTaskRowAfterEdit({'task':data.tasks[j]});
+	}
+}
 
 ogTasks.buildAssignedToComboStore = function(companies, only_me, groups) {
 	var usersStore = [];

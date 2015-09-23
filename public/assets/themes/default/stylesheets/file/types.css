@@ -4,7 +4,7 @@
 	background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important;
 }
 .x-tree-node-icon.ico-folder, .x-tree-node-icon.ico-customer_folder, .x-tree-node-icon.ico-project_folder, .x-tree-node-icon.ico-project {
-	background-position: 0 2px !important;
+	background-position: 0 0px !important;
 }
 .x-tree-node-icon.ico-company {
 	background: url("../../images/16x16/all_16_16_vertical.png") no-repeat scroll 0 -539px transparent !important

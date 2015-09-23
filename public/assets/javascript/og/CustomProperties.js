@@ -8,10 +8,10 @@ og.addCPValue = function(id, memo, is_member_cp){
 	
 	if(memo){
 		newValue.innerHTML = '<textarea cols="40" rows="10" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]"></textarea>' +
-			'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', true)">' + lang('add value') + '</a><br/>';
+			'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', true, '+(is_member_cp ? '1':'0')+')">' + lang('add value') + '</a><br/>';
 	}else{
 		newValue.innerHTML = '<input type="text" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]" />' +
-			'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', false)">' + lang('add value') + '</a><br/>';
+			'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', false, '+(is_member_cp ? '1':'0')+')">' + lang('add value') + '</a><br/>';
 	}
 	
 	listDiv.appendChild(newValue);
@@ -19,10 +19,10 @@ og.addCPValue = function(id, memo, is_member_cp){
 	var value = item.firstChild.value;
 	if(memo){
 		item.innerHTML = '<textarea cols="40" rows="10" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]">' + value + '</textarea>' +
-		'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + (count - 1) + ', true)" ></a>';
+		'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + (count - 1) + ', true, '+(is_member_cp ? '1':'0')+')" ></a>';
 	}else{
 		item.innerHTML = '<input type="text" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]" value="' + value + '" />' +
-			'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + (count - 1) + ', false)" ></a>';
+			'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + (count - 1) + ', false, '+(is_member_cp ? '1':'0')+')" ></a>';
 	}
 };
  
@@ -40,10 +40,10 @@ og.removeCPValue = function(id, pos, memo, is_member_cp){
 		value = item.firstChild.value;
 		if(memo){
 			item.innerHTML = '<textarea cols="40" rows="10" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]">' + value + '</textarea>' +
-				'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', true)">' + lang('add value') + '</a><br/>';
+				'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', true, '+(is_member_cp ? '1':'0')+')">' + lang('add value') + '</a><br/>';
 		}else{
 			item.innerHTML = '<input type="text" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]" value="' + value + '" />' +
-				'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', false)">' + lang('add value') + '</a><br/>';
+				'&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue(' + id + ', false, '+(is_member_cp ? '1':'0')+')">' + lang('add value') + '</a><br/>';
 		}
 	}else{
 		for(i=0; i < listDiv.childNodes.length; i++){
@@ -53,10 +53,10 @@ og.removeCPValue = function(id, pos, memo, is_member_cp){
 			if(i < listDiv.childNodes.length - 1){
 				if(memo){
 					item.innerHTML = '<textarea cols="40" rows="10" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]">' + value + '</textarea>' +
-					'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + i + ', true)" ></a>';
+					'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + i + ', true, '+(is_member_cp ? '1':'0')+')" ></a>';
 				}else{
 					item.innerHTML = '<input type="text" name="'+field_name+'[' + id + '][]" id="object_custom_properties[' + id + '][]" value="' + value + '" />' +
-						'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + i + ', false)" ></a>';
+						'&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue(' + id + ',' + i + ', false, '+(is_member_cp ? '1':'0')+')" ></a>';
 				}
 			}
 			
@@ -78,7 +78,7 @@ og.addCPDateValue = function(genid, id, is_member_cp){
 		id: genid + name + dateCount
 	});
 	var deleteTD = document.createElement('td');
-	deleteTD.innerHTML = '<a href="#" class="link-ico ico-delete" onclick="og.removeCPDateValue(\'' + genid + '\',' + id + ',' + dateCount + ')"></a>';
+	deleteTD.innerHTML = '<a href="#" class="link-ico ico-delete" onclick="og.removeCPDateValue(\'' + genid + '\',' + id + ',' + dateCount + ', '+(is_member_cp ? '1':'0')+')"></a>';
 	newTR.appendChild(dateTD);
 	newTR.appendChild(deleteTD);
 	tBody.appendChild(newTR);
@@ -106,7 +106,7 @@ og.removeCPDateValue = function(genid, id, pos, is_member_cp){
 			value: value
 		});
 		var deleteTD = document.createElement('td');
-		deleteTD.innerHTML = '<a href="#" class="link-ico ico-delete" onclick="og.removeCPDateValue(\'' + genid + '\',' + id + ',' + i + ')"></a>';
+		deleteTD.innerHTML = '<a href="#" class="link-ico ico-delete" onclick="og.removeCPDateValue(\'' + genid + '\',' + id + ',' + i + ', '+(is_member_cp ? '1':'0')+')"></a>';
 		newTR.appendChild(dateTD);
 		newTR.appendChild(deleteTD);
 		newTBody.appendChild(newTR);

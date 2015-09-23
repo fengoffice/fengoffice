@@ -1,4 +1,20 @@
 <?php return array(
-
-
-);
+	'mail' => 'E-posta',
+	'linked mail tab' => 'E-postalar',
+	'subscribed notification mail' => '\'{0}\' e-postasına abone olundu',
+	'subscribed notification mail desc' => '{1} tarafından \'{0}\' e-postasına abone edildiniz.',
+	'user config option name mails_per_page' => 'Sayfadaki E-posta Sayısı',
+	'user config option desc mails_per_page' => 'Bir sayfada görüntülenecek e-posta sayısı (0 ya da eksi bir değer yazmayın). Büyük değerler yazıldığında e-postaların yüklenme süresinin uzayacağını unutmayın.',
+	'user config option name check_attach_word' => 'Ekle Sözcüğü Denetlensin',
+	'user config option desc check_attach_word' => 'Bu seçenek etkinleştirildiğinde, içeriğinde ek sözcüğü geçtiği halde dosya eki bulunmayan e-postalar için kullanıcı uyarılır.',
+	'by subject or address' => 'Konu ya da Adrese Göre Arama',
+	'are you sure you want to send the email using account x' => 'E-postayı {0} hesabından göndermek istediğinize emin misiniz?',
+	'field Objects to' => 'Kime',
+	'field Objects cc' => 'Kopya',
+	'field Objects bcc' => 'Gizli Kopya',
+	'field Objects body_html' => 'HTML Metin',
+	'field Objects body_plain' => 'Düz Metin',
+	'user config option name check_is_defult_account' => 'E-postaların gönderileceği hesabı denetle',
+	'user config option desc check_is_defult_account' => 'E-posta gönderilecek hesabın varsayılan hesap  olup olmadığını denetler ve değilse kullanıcıya bildirir',
+	'classify attachments' => 'Ekleri Sınıflandır',
+); ?>

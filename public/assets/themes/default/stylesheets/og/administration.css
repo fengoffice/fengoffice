@@ -286,3 +286,28 @@ div.checkbox-config-option {
 	margin-right: 15px;
 	min-width: 130px;
 }
+
+.adminMainBlock h1 {
+	font-weight: normal;
+	font-size: 125%;
+	margin: 10px 0;
+	color: #444;
+}
+.adminMainBlock div.description {
+	font-weight: normal;
+	margin: 5px 0 10px;
+}
+.adminMainBlock table.bordered {
+	border: 1px solid #d7e5f5;
+}
+.adminMainBlock table.bordered td {
+	padding: 3px 5px;
+	vertical-align: bottom;
+}
+.adminMainBlock table.bordered tr.bordered-top {
+	border-top: 1px solid #d7e5f5;
+}
+.dimensionOptionsConfiguration .adminMainBlock .section {
+	/*border-top: 1px solid #ddd;*/
+	padding: 10px 0;
+}

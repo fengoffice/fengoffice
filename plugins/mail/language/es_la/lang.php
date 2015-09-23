@@ -16,4 +16,5 @@
 	'field Objects body_html' => 'Contenido html',
 	'field Objects body_plain' => 'Contenido texto plano',
 	'classify attachments' => 'Clasificar adjuntos',
+	'by subject or address' => 'Buscar por asunto o dirección',
 );

@@ -220,7 +220,9 @@
 	text-align: center;
 	padding: 5px;
 	margin: 0 5px;
-	min-height: 98px;
+	height: 100px;
+	max-height: 100px;
+	line-height: 16px;
 }
 .more-panel-container .more-panel-section .section-content .link:hover {
 	background-color: #E5ECF5;
@@ -343,11 +345,9 @@
 }
 
 #menu-panel .x-tool.x-tool-options.highlighted {
-	border: 2px solid #E5E674;
-	border-radius: 15px;
-	margin-top: -2px;
-	margin-right: 17px;
+	border: 1px solid #E5E674;
 	background-color: #FDFD9E;
+	color: #5A5A21;
 }
 
 .highlight-hint {
@@ -363,9 +363,13 @@
 	cursor: pointer;
 }
 
-#tasksPanel #tasksPanelContent #tasksPanelContainer #ogTasksPanelColNames .tasksActionsBtn.tasksBtn.highlighted {
+#tasksPanel #tasksPanelContent #tasksPanelContainer #ogTasksPanelColNames .tasksActionsBtn.tasksBtn.highlighted,
+.x-menu a.x-menu-item.tasks-panel-add-button.highlighted, .task-list-row-template .btn.btn-xs.btn-primary.highlighted {
 	background-color: #FDFD9E;
 	color: black;
+}
+.task-list-row-template .btn.btn-xs.btn-primary.highlighted {
+	border: 1px solid #E5E674;
 }
 
 .new_button.highlighted {

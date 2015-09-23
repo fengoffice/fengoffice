@@ -339,6 +339,9 @@
 .ico-large-config {
 	background-image: url(../../images/48x48/config.png);
 }
+.ico-large-config2 {
+	background-image: url(../../images/48x48/config_2.png);
+}
 .ico-large-change-password {
 	background-image: url(../../images/48x48/change-password.png);
 }
@@ -415,7 +418,7 @@
 .ico-sprd {
 	background-image: url(../../images/16x16/sprd.png) !important;
 }
-.ico-tag {
+.ico-tag, .ico-tags {
 	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -219px !important;*/
 	background: url(../../images/icons-feng-3/16x16/tags.png) no-repeat !important;		
 }
@@ -1362,11 +1365,14 @@ span.members-total-colapsed {
     font-size: 12px;
     font-weight: 700;
     line-height: 1;
-    min-width: 10px;
     padding: 2px 4px;
     text-align: center;
     vertical-align: baseline;
     white-space: nowrap;
+}
+
+.previous-pending{
+	background-color: #d43f3a;
 }
 
 .bullet-separator:after{
@@ -1453,7 +1459,7 @@ span.member-path span a:hover {
 }
 .address-input-container .undo-delete, .address-input-container .delete-link {
 	float: left;
-	margin-left: 390px;
+	margin-left: 350px;
 }
 
 .task .address-input-container .address_street_input {
@@ -1766,4 +1772,22 @@ a.underline {
 
 .form-tab .custom-properties {
 	margin-bottom: 12px;
+}
+
+.ico-view-more {
+	background-image: url(../../images/icons-feng-3/16x16/view_more.png) !important;
+}
+
+.view-more-node {
+	font-style: italic;
+	background-color: rgb(232, 241, 224);
+}
+
+.breadcrumb-container{
+	max-width: 250px;
+	display: inline-block;
+    line-height: 25px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
 }

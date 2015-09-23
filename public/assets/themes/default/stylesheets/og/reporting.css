@@ -44,7 +44,7 @@
 /* timeslots report */
 
 .timeslot-report-container {
-	width: 750px;
+	min-width: 750px;
 	margin-top: 20px;
 }
 

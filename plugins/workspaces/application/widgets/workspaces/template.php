@@ -10,7 +10,7 @@ $section = $ws_widget instanceof Widget && in_array($ws_widget->getDefaultSectio
 <div class="ws-widget widget">
 
 	<div class="widget-header" onclick="og.dashExpand('<?php echo $genid?>');">
-		<div class="widget-title"><?php echo lang('workspaces')?></div>
+		<div class="widget-title"><?php echo $ws_dim->getName()?></div>
 		<div class="dash-expander ico-dash-expanded" id="<?php echo $genid; ?>expander"></div>
 	</div>
 	

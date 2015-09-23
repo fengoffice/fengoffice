@@ -37,7 +37,7 @@ foreach ($default_user_permissions as $perm_info) {
 <?php
 
 foreach ( $dimensions as $dimension ) {
-	if ($dimension->getOptions(1) && isset($dimension->getOptions(1)->hidden) && $dimension->getOptions(1)->hidden) continue;
+	
 	$class = $dimension->getIsManageable() ? 'toggle_expanded' : 'toggle_collapsed';
 	$expand = $dimension->getIsManageable() ? 'false' : 'true';
 	?>

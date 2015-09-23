@@ -296,7 +296,7 @@ class SearchController extends ApplicationController {
 			}
 
 			$sql = "
-			SELECT DISTINCT so.rel_object_id AS id
+			SELECT DISTINCT so.rel_object_id AS id, so.content
 			FROM ".TABLE_PREFIX."searchable_objects so
 			".$joincp."
 			INNER JOIN  ".TABLE_PREFIX.$table." nto ON nto.object_id = so.rel_object_id 
@@ -318,7 +318,7 @@ class SearchController extends ApplicationController {
 			$type_object = '';
 			
 			$sql = "	
-			SELECT DISTINCT so.rel_object_id AS id   
+			SELECT DISTINCT so.rel_object_id AS id, so.content
 			FROM ".TABLE_PREFIX."searchable_objects so
 			WHERE " . (($useLike) ? " so.content LIKE '%$search_string%' " : " MATCH (so.content) AGAINST ('\"$search_string\"' IN BOOLEAN MODE) ") . "  
 			AND (EXISTS
@@ -353,6 +353,7 @@ class SearchController extends ApplicationController {
 		tpl_assign('type_object', $type_object);
 		$db_search_results = array();
 		$search_results_ids = array();
+		$all_search_results = array();
 		
 		if(!$advanced){
 			$timeBegin = time();
@@ -360,10 +361,11 @@ class SearchController extends ApplicationController {
 			$timeEnd = time();
 			while ($row = $res->fetchRow() ) {
 				$search_results_ids[$row['id']] = $row['id'];
+				$all_search_results[$row['id']] = $row;
 			}
 		}
 		// Prepare results for view to avoid processing at presentation layer 
-		$search_results = $this->prepareResults($search_results_ids, $null, $limit);
+		$search_results = $this->prepareResults($search_results_ids, $null, $limit, $all_search_results);
 		
 		// Calculate or approximate total for pagination
 		$total = count($search_results_ids) + $start ;
@@ -626,7 +628,7 @@ class SearchController extends ApplicationController {
 	 * @param unknown_type $filtered_results
 	 * @param unknown_type $total
 	 */
-	private function prepareResults($ids, &$filtered_results, $limit) {
+	private function prepareResults($ids, &$filtered_results, $limit, $all_search_results=array()) {
 		$return = array();
 		foreach ($ids as $search_result_id) {
 			$search_results = array();
@@ -646,10 +648,10 @@ class SearchController extends ApplicationController {
 			$search_result['type'] = $obj->getObjectTypeName();
 			$search_result['created_on'] = friendly_date($obj->getCreatedOn());
 			$search_result['updated_on'] = friendly_date($obj->getObjectTypeName() == 'mail' ? $obj->getSentDate() : $obj->getUpdatedOn());
-			$search_result['content'] = $this->highlightResult($obj->getSummary(array(
-				"size" => $this->contentSize,
-				"near" => $this->search_for
-			)));
+			
+			$searchable_object_text = $this->prepareMatchedText($obj, array_var($all_search_results, $obj->getId()));
+			$search_result['content'] = $this->highlightResult($searchable_object_text);
+			
 			hook::fire("search_result", $search_result, $search_result);
 			$return[] = $search_result;
 			$limit--;
@@ -657,7 +659,22 @@ class SearchController extends ApplicationController {
 		return $return;
 		
 	} 	
+
+	
+	private function prepareMatchedText($object, $search_result) {
+		$size = $this->contentSize;
+		$search_for = $this->search_for;
+		$text = $search_result['content'];
 		
+		$position = strpos($text, $search_for);
+		$spacesBefore = min(10, $position);
+		if ($size && strlen($text) > $size){
+			return utf8_safe(substr($text, $position - $spacesBefore, $size))."...";
+		} else {
+			return $text;
+		}
+	}
+	
 	private function prepareCreatedBy($name,$id){
 		return "<a href='".get_url('contact', 'card', array('id'=>$id))."'>".$name."</a>";
 	}
