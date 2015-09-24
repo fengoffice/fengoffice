@@ -875,3 +875,17 @@
 .event .og-add-custom-properties {
 	margin-left: 200px;
 }
+
+.history .pagination {
+	margin: 10px 0 0;
+	padding: 10px 5px 0;
+	border-top: 1px solid #ccc;
+}
+.history .pagination .pagitem {
+	padding-left: 14px;
+	margin-left: 5px;
+}
+.history .pagination .pagitem.text {
+	padding-left: 0px;
+	margin-left: 5px;
+}

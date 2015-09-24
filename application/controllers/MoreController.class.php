@@ -70,7 +70,7 @@ class MoreController extends ApplicationController {
 					'name' => lang($panel->getTitle()),
 					'enabled' => $enabled,
 					'ico' => str_replace('ico-', 'ico-large-', $panel->getIconCls()),
-					'hint' => str_replace("'", "\'", lang('system module '.$panel->getId().' hint')),
+					'hint' => escape_character(lang('system module '.$panel->getId().' hint')),
 			);
 		}
 		
@@ -84,7 +84,7 @@ class MoreController extends ApplicationController {
 					'name' => lang('gantt chart'),
 					'enabled' => $gantt_plugin->isActive(),
 					'ico' => 'ico-large-gantt-module',
-					'hint' => str_replace("'", "\'", lang('system module gantt hint')),
+					'hint' => escape_character(lang('system module gantt hint')),
 			);
 			$other_modules[] = $gantt_info;
 		}
@@ -152,7 +152,7 @@ class MoreController extends ApplicationController {
 		foreach ($active_dimensions_tmp as $dim) {
 			if ($dim->getCode() == 'feng_persons') continue;
 			
-			$dname = ( $dim->getOptions() && isset($dim->getOptions(1)->useLangs) && ($dim->getOptions(1)->useLangs) ) ? lang($dim->getCode()) : $dim->getName();
+			$dname = $dim->getName();
 			$active_dimensions[$dim->getCode()] = array(
 					'id' => $dim->getId(),
 					'name' => $dname,
@@ -434,6 +434,17 @@ class MoreController extends ApplicationController {
 			// change tab title and icon
 			if ($step >= 99) {
 				DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET title='settings', icon_cls='ico-administration' WHERE id='more-panel';");
+			}
+		}
+		
+		$update_cm_cache = array_var($_REQUEST, 'update_cm_cache');
+		if ($update_cm_cache) {
+			$cron_event = CronEvents::instance()->getByName('rebuild_contact_member_cache');
+			if ($cron_event instanceof CronEvent && $cron_event->getEnabled()) {
+				$d = DateTimeValueLib::now();
+				$d->add('m', -1 * $cron_event->getDelay());
+				$cron_event->setDate($d);
+				$cron_event->save();
 			}
 		}
 		

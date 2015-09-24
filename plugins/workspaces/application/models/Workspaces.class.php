@@ -12,10 +12,10 @@ class Workspaces extends BaseWorkspaces {
 
     function getPublicColumns() {
         $cols = array(
-            array(
+          /*  array(
             	'col' => 'description', 
             	'type' => DATA_TYPE_STRING, 
-            	'large' => true ),
+            	'large' => true ),*/
             array(
             	'col' => 'show_description_in_overview',
             	'type' => DATA_TYPE_BOOLEAN, 

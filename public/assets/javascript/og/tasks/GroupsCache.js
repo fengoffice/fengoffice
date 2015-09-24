@@ -36,15 +36,15 @@ ogTasks.addNewTaskGroup = function(data, group_index, draw){
 				}				
 			}
 			if(target_id == 0){
-				$("#ogTasksPanelColNames").after(group_html);				
+				$("#ogTasksPanelAddNewTaskThead").after(group_html);				
 			}else{
-				$("#ogTasksPanelGroupCont"+target_id).after(group_html);
-			}			
+				$("#ogTasksPanelGroup"+target_id+"Totals").after(group_html);
+			}	
+				
 		}else{
 			$("#tasksPanelContainer").append(group_html);
-		}		
+		}
 	};
-	
 	//keep all values for gorup object but change group_tasks from task data to ogTasksTask object
 	for (var j = 0; j < data.groups[group_index].group_tasks.length; j++){
 		var task_data = data.groups[group_index].group_tasks[j];
@@ -97,10 +97,8 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 		group.rendering = false;	
 		
 		//update group totals
-		$("#group_totals_"+group.group_id).replaceWith(ogTasks.newTaskGroupTotals(group));	
+		$("#ogTasksPanelGroup"+group.group_id+"Totals").replaceWith(ogTasks.newTaskGroupTotals(group));	
 		
-		//resize total row
-		$("#group_totals_"+group.group_id+" .task-name-container").width(ogTasks.tasks_row_name_width);
 	}	
 };
 

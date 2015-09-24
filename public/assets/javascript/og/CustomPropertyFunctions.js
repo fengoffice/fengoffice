@@ -63,17 +63,17 @@ og.addCustomProperty = function(genid, property){
 	} else {
 		var classname = "odd";
 	}
-	var types = '<select id="custom_properties[' + count + '][type]" name="custom_properties[' + count + '][type]" onchange="og.fieldTypeChanged(' + count + ')">' +
-		'<option value="text"' + (!prop_is_new && property.type == 'text' ? 'selected' : '') + '>' + lang('text') + '</option>' + 
-		'<option value="numeric"' + (!prop_is_new && property.type == 'numeric' ? 'selected' : '') + '>' + lang('numeric') + '</option>' +
-		'<option value="boolean"' + (!prop_is_new && property.type == 'boolean' ? 'selected' : '') + '>' + lang('boolean') + '</option>' +
-		'<option value="contact"' + (!prop_is_new && property.type == 'contact' ? 'selected' : '') + '>' + lang('contact') + '</option>' +
-		'<option value="list"' + (!prop_is_new && property.type == 'list' ? 'selected' : '') + '>' + lang('list') + '</option>' +
-		'<option value="date"' + (!prop_is_new && property.type == 'date' ? 'selected' : '') + '>' + lang('date') + '</option>' +
-		'<option value="memo"' + (!prop_is_new && property.type == 'memo' ? 'selected' : '') + '>' + lang('memo') + '</option>' +
-		'<option value="table"' + (!prop_is_new && property.type == 'table' ? 'selected' : '') + '>' + lang('table') + '</option>' +
-		'<option value="address"' + (!prop_is_new && property.type == 'address' ? 'selected' : '') + '>' + lang('address') + '</option>' +
-		'</select>';
+	
+	// custom properties type selector
+	var cp_types = ['text', 'numeric', 'boolean', 'contact', 'user', 'date', 'list', 'memo', 'address'];
+	
+	var cp_types_html = '<select id="custom_properties[' + count + '][type]" name="custom_properties[' + count + '][type]" onchange="og.fieldTypeChanged(' + count + ')">';
+	for (var i=0; i<cp_types.length; i++) {
+		var t = cp_types[i];
+		cp_types_html += '<option value="'+t+'"' + (!prop_is_new && property.type == t ? 'selected' : '') + '>' + lang(t) + '</option>';
+	}
+	cp_types_html += '</select>';
+	
 	
 	var style = 'style="width:auto;padding-right:10px;"';
 	var styleHidden = 'style="width:100px;padding-right:10px;display:none;"';
@@ -83,11 +83,44 @@ og.addCustomProperty = function(genid, property){
 		prop_order = property.order;
 	}
 	
-	var table = '<table><tr>' +
-		'<td style="display:none;"><input id="custom_properties[' + count + '][id]" name="custom_properties[' + count + '][id]" type="hidden" value="{0}"/>' +
+	var table = '<table style="min-width:950px"><tr>';
+	
+	if (property && property.is_special) {
+		
+		table += '<td style="display:none;">'+
+		'<input id="custom_properties[' + count + '][id]" name="custom_properties[' + count + '][id]" type="hidden" value="{0}"/>' +
+		'<input id="custom_properties[' + count + '][name]" name="custom_properties[' + count + '][name]" type="hidden" value="{1}"/>' +
+		'<input id="custom_properties[' + count + '][deleted]" name="custom_properties[' + count + '][deleted]" type="hidden" value="0"/>' +
+		'<input id="custom_properties[' + count + '][is_disabled]" name="custom_properties[' + count + '][is_disabled]" type="hidden" value="' + (property.is_disabled ? '1' : '0') + '"/>' +
+		'<input id="custom_properties[' + count + '][is_special]" name="custom_properties[' + count + '][is_special]" type="hidden" value="' + (property.is_special ? '1' : '0') + '"/>' +
+		'<input id="custom_properties[' + count + '][type]" name="custom_properties[' + count + '][type]" type="hidden" value="' + property.type + '"/>' +
+		'<input id="custom_properties[' + count + '][description]" name="custom_properties[' + count + '][description]" type="hidden" value="' + property.description + '"/>' +
+		'<input id="custom_properties[' + count + '][values]" name="custom_properties[' + count + '][values]" type="hidden" value="' + property.values + '"/>' +
+		'<input id="custom_properties[' + count + '][default_value]" name="custom_properties[' + count + '][default_value]" type="hidden" value="' + property.default_value + '"/>' +
+		'<input id="custom_properties[' + count + '][multiple_values]" name="custom_properties[' + count + '][multiple_values]" type="hidden" value="' + (property.multiple_values ? '1' : '0') + '"/>' +
+		'<input id="custom_properties[' + count + '][required]" name="custom_properties[' + count + '][required]" type="hidden" value="' + (property.required ? '1' : '0') + '"/>' +
+		'<input id="custom_properties[' + count + '][visible_by_default]" name="custom_properties[' + count + '][visible_by_default]" type="hidden" value="' + (property.visible_by_default ? '1' : '0') + '"/>' +
+		'</td>' +
+		
+		'<td style="width:182px;padding-right:10px;"><b>' + lang('name') + '</b>:<br/>' + property.name + '</td>' +
+		'<td style="min-width:107px;"><b>' + lang('type') + '</b>:<br/>' + lang(property.type) + '</td>' +
+		
+		'<td colspan="3" style="width:600px"></td>' +
+		
+		'<td><div id="up' + count + '" class="clico ico-up" onclick="og.swapVisual(' + count + ',\'1\')" style="' + (property.is_disabled ? 'display:none;' : '') + '"></div></td>' +
+		'<td><div id="down' + count + '" class="clico ico-down" onclick="og.swapVisual(' + count + ',\'0\')" style="' + (property.is_disabled ? 'display:none;' : '') + '"></div></td>' +
+		'<td><div id="delete' + count + '" class="clico ico-delete" onclick="og.disableSpecialCustomProperty(' + count + ',\'' + genid + '\')" style="' + (property.is_disabled ? 'display:none;' : '') + '"></div></td>' +
+		'<td style="display:none;"><input id="CP' + count + '_order" name="custom_properties[' + count + '][order]" type="hidden" value="'+prop_order+'"/>' +
+		'<tr id="trDelete' + count + '" style="' + (property.is_disabled ? '' : 'display:none;') + '"><td colspan="6"><b>' + lang('custom property is disabled') +
+		'</b><a class="internalLink" href="javascript:og.undoDisableSpecialCustomProperty(' + count + ',\'' + genid + '\')">&nbsp;(' + lang('enable') + ')</a></td></tr>' +
+  		'</tr></table>';
+		 
+	} else {
+		
+		table += '<td style="display:none;"><input id="custom_properties[' + count + '][id]" name="custom_properties[' + count + '][id]" type="hidden" value="{0}"/>' +
 		'<input id="custom_properties[' + count + '][deleted]" name="custom_properties[' + count + '][deleted]" type="hidden" value="0"/></td>' +
   		'<td ' + style + '><b>' + lang('name') + '</b>:<br/><input type="text" id="custom_properties[' + count + '][name]" name="custom_properties[' + count + '][name]" value="{1}"/></td>' +
-		'<td ' + style + '><b>' + lang('type') + '</b>:<br/>' + types + '</td>' +
+		'<td ' + style + '><b>' + lang('type') + '</b>:<br/>' + cp_types_html + '</td>' +
 		'<td ' + (!prop_is_new && (property.type == 'list' || property.type == 'table') && property.values != null ? style : styleHidden) + ' id="tdValues' + count + '">' + 
 		
 		'<b><span id="tdValues' + count + '_label">' + (!prop_is_new && property.type == 'table' ? lang('columns comma separated') : lang('values comma separated')) + '</span>' + 
@@ -117,6 +150,8 @@ og.addCustomProperty = function(genid, property){
 		'<tr id="trDelete' + count + '" style="display:none;"><td colspan="6"><b>' + lang('custom property deleted') +
 		'</b><a class="internalLink" href="javascript:og.undoDeleteCustomProperty(' + count + ',\'' + genid + '\')">&nbsp;(' + lang('undo') + ')</a></td></tr>' +
   		'</tr></table>';
+		
+	}
   	
   	// CO Types
   	if (og.coTypes && og.coTypes.length > 0) {
@@ -161,6 +196,9 @@ og.addCustomProperty = function(genid, property){
 	if(prop_is_new) { 
   		cpModified = true;
 	} else {
+		if (property.is_disabled) {
+			cp.style.background = "#F5E3C8";
+		}
   		if(property.type == 'boolean'){
   			document.getElementById('tdDefaultValueCheck' + count).style.display = '';
   			document.getElementById('tdDefaultValueText' + count).style.display = 'none';
@@ -350,12 +388,25 @@ og.swapVisual = function(id, dir){
 	}
 };
 
-og.deleteCustomProperty = function(id, genid){
+og.disableSpecialCustomProperty = function(id, genid) {
+	var del_attr = 'is_disabled'; 
+	var cp = document.getElementById('CP' + id);
+	cp.style.background = '#F5E3C8';
+	document.getElementById('trDelete' + id).style.display = '';
+	document.getElementById('custom_properties[' + id + ']['+ del_attr +']').value = 1;
+	document.getElementById('down' + id).style.display = 'none';
+	document.getElementById('up' + id).style.display = 'none';
+	document.getElementById('delete' + id).style.display = 'none';
+	cpModified = true;
+}
+
+og.deleteCustomProperty = function(id, genid, del_attr){
   	if(confirm(lang('delete custom property confirmation'))){
+  		if (!del_attr) del_attr = 'deleted'; 
 		var cp = document.getElementById('CP' + id);
 		cp.style.background = '#FFDEAD';
 		document.getElementById('trDelete' + id).style.display = '';
-		document.getElementById('custom_properties[' + id + '][deleted]').value = 1;
+		document.getElementById('custom_properties[' + id + ']['+ del_attr +']').value = 1;
 		document.getElementById('down' + id).style.display = 'none';
 		document.getElementById('up' + id).style.display = 'none';
 		document.getElementById('delete' + id).style.display = 'none';
@@ -363,9 +414,14 @@ og.deleteCustomProperty = function(id, genid){
   	}
 };
 
-og.undoDeleteCustomProperty = function(id, genid){
+og.undoDisableSpecialCustomProperty = function(id, genid) {
+	og.undoDeleteCustomProperty(id, genid, 'is_disabled');
+}
+
+og.undoDeleteCustomProperty = function(id, genid, del_attr){
+	if (!del_attr) del_attr = 'deleted';
 	document.getElementById('trDelete' + id).style.display = 'none';
-	document.getElementById('custom_properties[' + id + '][deleted]').value = 0;
+	document.getElementById('custom_properties[' + id + ']['+ del_attr +']').value = 0;
 	document.getElementById('down' + id).style.display = '';
 	document.getElementById('up' + id).style.display = '';
 	document.getElementById('delete' + id).style.display = '';

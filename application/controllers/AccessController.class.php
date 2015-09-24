@@ -696,7 +696,8 @@ class AccessController extends ApplicationController {
 			$content .= "} catch (e) {}";
 		}
 	
-		$plugins = Plugins::instance ()->getActive ();
+		// include all installed plugins, no matter if they they have not been activated
+		$plugins = Plugins::instance ()->getAll();
 	
 		foreach ( $plugins as $plugin ) {
 			$plg_dir = $plugin->getLanguagePath () . "/" . $defaultLang;

@@ -120,6 +120,7 @@ Ext.onReady(function(){
 				        	id: 'menu-panel',
 				        	split: true,
 				        	width: 250,
+				        	minWidth: 200,
 				        	//bodyBorder: false,
 				        	hideCollapseTool:true,
 				        	collapseMode:'mini',
@@ -128,16 +129,21 @@ Ext.onReady(function(){
 				        	//autoWidth: true,
 				        	layout: 'multi-accordion',
 				        	listeners: {
+				        		/*'resize': function(p){
+				        			
+				        		},*/
 				        	    'collapse': function(p) {
 				        	      og.eventManager.fireEvent("menu-panel collapse");
 				        	      setTimeout(function(){
 				        	    	  og.checkAndAdjustTabsSize();
+				        	    	  ogTasks.initColResize();
 								  }, 200);
 				        	    },
 				        	    'expand': function(p) {
 					        	  og.eventManager.fireEvent("menu-panel expand");
 				        	      setTimeout(function(){
 				        	    	  og.checkAndAdjustTabsSize();
+				        	    	  ogTasks.initColResize();
 								  }, 200);
 					        	}
 				        	  },
@@ -151,8 +157,8 @@ Ext.onReady(function(){
 				        		collapsed: true,
 				        		expanded: false
 				        	},
-				        	stateful: false,
-				        	//stateful: og.preferences['rememberGUIState'],
+				        	//stateful: false,
+				        	stateful: og.preferences['rememberGUIState'],
 				        	items:  og.dimensionPanels,
 				        	bbar : [
 				        	    {	

@@ -1273,7 +1273,7 @@ class MailController extends ApplicationController {
 				
 				// dont show inline images in attachments box
 				if (array_var($attach, 'FileDisposition') == 'inline' && array_var($parsedEmail, 'Type') == 'html') {
-					unset($attachments[$k]);
+					$attach['hide'] = true;
 				}
 				if (array_var($attach, 'Type') == 'html') {
 					$attach_tmp = $attach['Data'];
@@ -1708,7 +1708,7 @@ class MailController extends ApplicationController {
 				} else {
 					ajx_current("back");
 					if (!$after_receiving) {
-						evt_add("reload mails panel", array());
+						evt_add("reload current panel", array());
 					}
 				}
 			} else {

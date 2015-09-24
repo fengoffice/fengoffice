@@ -24,6 +24,10 @@
 		$is_required = array_var($dimension, 'is_required');
 		$dimension_name = array_var($dimension, 'dimension_name');
 		Hook::fire("edit_dimension_name", array('dimension' => $dimension_id), $dimension_name);
+		
+		$custom_name = DimensionOptions::getOptionValue($dimension_id, 'custom_dimension_name');
+		$dimension_name = $custom_name && trim($custom_name) != "" ? $custom_name : $dimension_name;
+		
 		if ($is_required) $dimension_name .= " *";
 		
 		if (isset($simulate_required) && is_array($simulate_required) && in_array($dimension_id, $simulate_required)) $is_required = true;
@@ -38,7 +42,7 @@
 
 		// Render view by obj type
 		$container_id = $genid."member-seleector-dim".$dimension_id;
-		$search_placeholder = str_replace("'", "\'", lang('add new relation ' . $dimension['dimension_code']));
+		$search_placeholder = escape_character(lang('add new relation ' . $dimension['dimension_code']));
 		$search_function = "ogSearchSelector.searchMember";
 		$result_limit = "5";
 		$select_function = array_var($options, 'select_function', "");
@@ -71,11 +75,11 @@
 	?>
 
 	member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'] = {
-		title: '<?php echo $dimension_name ?>',
+		title: '<?php echo escape_character($dimension_name) ?>',
 		dimensionId: <?php echo $dimension_id ?>,
 		objectTypeId: '<?php echo $content_object_type_id ?>',
 		required: <?php echo $is_required ? '1' : '0'?>,
-		reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReload($dimension_id) ); ?>,
+		reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK ); ?>,
 		isMultiple: <?php echo $dimension['is_multiple'] ? '1' : '0'?>,
 		allowedMemberTypes: <?php echo json_encode($allowed_member_type_ids)?>,
 		listeners: <?php echo $listeners_str ?>

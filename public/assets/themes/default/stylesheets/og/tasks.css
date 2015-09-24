@@ -8,8 +8,7 @@
 
 .ogTasksGroupHeader{
 	border-bottom: 2px solid #CCC;
-	padding-top: 10px;
-	margin-top: 10px;
+	padding-top: 12px;	
 	padding-bottom:1px;	
 }
 
@@ -17,6 +16,19 @@
 	font-weight:bold;
 	color: #888;
 	font-size:130%;
+}
+
+.ogTasksGroupHeader .milestone-date{
+	padding-left: 15px;
+}
+
+.ogTasksGroupHeader .milestone-completed{
+	text-decoration:line-through;
+}
+
+.ogTasksGroupHeader .milestone-delayed{
+	font-weight:bold;
+	color:#F00;
 }
 
 .ogTasksGroup {	
@@ -427,11 +439,88 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-col-names-template{
-	display: inline-block!important;
-	height: 24px!important;
+	line-height: 28px;
 	background-color: #4f4f4f;
 	color: #d1d1d1;
 }
+
+.task-list-col-names-template th{
+	background: inherit;
+	border: 1px solid #a6a6a6;
+	padding-left: 5px;
+	white-space: nowrap;
+}
+
+.task-list-row-template td{
+	text-align: left;
+	vertical-align: middle;
+	padding-left: 5px;
+/*	max-width: 100px; */
+}
+
+.task-list-col-names-template .task_assigned_by_id,
+.task-list-col-names-template .task_assigned_to_id{
+	min-width: 24px;
+	max-width: 24px;
+	width: 24px;
+}
+.task-list-row-template .task_name,
+.task-list-col-names-template .task_name{
+	min-width: 250px;
+}
+
+.task-list-row-template td.task_name{
+	max-width: 50px;
+}
+
+.task-list-col-names-template .task_clasification{
+	min-width: 150px;	
+}
+.task-list-col-names-template .task_completed_bar{
+	min-width: 100px;
+	max-width: 100px;
+}
+
+.task-list-col-names-template .task_quick_actions,
+.task-list-col-names-template .task_start_date,
+.task-list-col-names-template .task_due_date,
+.task-list-col-names-template .task_estimated,
+.task-list-col-names-template .task_pending,
+.task-list-col-names-template .task_worked,
+.task-list-col-names-template .task_quick_actions{
+	min-width: 70px;
+	max-width: 70px;
+	width: 70px;
+}
+
+.task-list-col-names-template .task_actions{
+	min-width: 70px;
+	max-width: 70px;
+	width: 70px;
+}
+
+.task-list-col-names-template .task_previous{
+	min-width: 55px;
+	max-width: 55px;
+}
+
+.task-list-col-names-template .task_btn_actions{
+	min-width: 100px;
+	max-width: 100px;
+	width: 100px;
+}
+
+.task-list-row-template .task-date-container,
+.task-list-group-totals-template .task_estimated,
+.task-list-group-totals-template .task_pending,
+.task-list-group-totals-template .task_worked{
+    width: 70px;
+    line-height: 12px;
+    font-size: 9px;
+}
+
+
+
 
 .task-list-col-names-template .col-name{
 	box-sizing: border-box;
@@ -451,13 +540,10 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-group-totals-template{
-	margin-left: 15px;
-	color:#888;
-	display: inline-block !important;
-	font-size : 10px;
+	color: #888;
 }
 
-.task-list-group-totals-template .task-name{
+.task-list-group-totals-template .task_name{
 	font-size : 130%;
 	font-weight:bold;
 }
@@ -467,12 +553,11 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-row-template{
-    height: 30px;
+    line-height: 30px;
+    vertical-align: middle;
     border-bottom-style: solid;
     border-bottom-color: #E5E6E1;
-    border-bottom-width: 1px;
-    min-width: 100%;
-    display: table;
+    border-bottom-width: 1px;    
 }
 
 .task-list-row-template:hover {
@@ -491,8 +576,8 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-row-template .task-row-checkbox{
-    display: inline;
-    float: left;
+    display: table-cell;
+    vertical-align: middle;
     width:17px;
     margin-top: 7px;
 }
@@ -533,8 +618,8 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-row-template .og-task-expander{
-    display: inline;
-    float: left;
+    display: table-cell;
+    vertical-align: middle;
     line-height: 30px;
     height: 31px;
     width:17px; 
@@ -544,8 +629,8 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-row-template .read-un-read-task{
- 	display: inline;
-    float: left;
+ 	display: table-cell;
+    vertical-align: middle;
     width:17px;
     margin-top: 7px;
 }
@@ -571,6 +656,13 @@ button.add-first-btn.no-tasks-add-task-btn {
     width: 100%;
 }
 
+.task-list-row-template .task-name .ico-recurrent{
+   	display: inline-block;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
 .task-list-row-template .task-row-avatar{
  	display: table;
     float: left;
@@ -593,21 +685,24 @@ button.add-first-btn.no-tasks-add-task-btn {
     width: 20px;
 }
 
-
-.task-list-row-template .task-percent-completed-bar-container{
-    display: inline;
-    width: 90px; 
-}
-
 .task-list-row-template .task-breadcrumb-container{
-    display: inline;
+    /*display: inline;*/
     line-height: 30px;
     float: left;
-    width: 200px;
+    width: 100%;
     height: 100%;
     min-height: 10px;
     overflow: hidden; 
     text-overflow: ellipsis;
+
+    /*$hola*/
+    display: flex;
+}
+
+.task-list-row-template .task-breadcrumb-container .member-path{
+    white-space: nowrap;
+    overflow: hidden; 
+    text-overflow: ellipsis;    
 }
 
 .task-list-row-template .task-row-obj-container{
@@ -638,12 +733,18 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-row-template .task-single-action{
-    width: 25px;
+   	display: table-cell;
+    vertical-align: middle;
+    min-width: 25px;  
 }
 
-.task-list-row-template .task-date-container{
-    width: 70px;
-    line-height: 12px;
+.task-list-row-template .task-single-div{
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.ogTasksGroupHeader.task-list-row-template .task-single-div{
+    padding-right: 5px;
 }
 
 .task-list-row-template .task-actions-container{
@@ -662,6 +763,10 @@ button.add-first-btn.no-tasks-add-task-btn {
 	cursor: pointer;
 	font-size: 13px;
 	height: 26px;
+	width:72px;
+	padding: 0px;
+	margin-left:5px;
+	margin-right: 5px;
 	background-image: none;   
 	background: none repeat scroll 0 0 #f8f8f8;
 	border-color: #c4c4c4;
@@ -761,4 +866,25 @@ button.add-first-btn.no-tasks-add-task-btn {
 .sub-section-div h2 {
 	color: #333;
 	margin: 10px 0;
+}
+
+
+.printTasksListContainer .task-list-row-template .task-breadcrumb-container {
+	line-height: 16px;
+	max-width: 250px;
+}
+.printTasksListContainer .task-list-row-template .task-breadcrumb-container .member-path.real-breadcrumb {
+	text-overflow: ellipsis;
+    overflow-x: hidden;
+}
+.printTasksListContainer .task-list-row-template .task-breadcrumb-container .member-path.real-breadcrumb .print-breadcrumb {
+	text-overflow: ellipsis;
+    display: inline-block;
+    max-width: 50px;
+    overflow: hidden;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+.printTasksListContainer .task-list-row-template .task-breadcrumb-container .member-path.real-breadcrumb .print-breadcrumb.wide {
+	max-width: 200px;
 }

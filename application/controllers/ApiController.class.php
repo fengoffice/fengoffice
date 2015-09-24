@@ -100,7 +100,10 @@ class ApiController extends ApplicationController {
 
     //provides all of the members from the dimension member in question
     private function list_members($request) {
-        $service = $request ['srv'];
+    	$service = $request ['srv'];
+        $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
+        $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
+        $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
         
         $members = array();
         $type = ObjectTypes::instance()->findByName($service);
@@ -110,28 +113,28 @@ class ApiController extends ApplicationController {
         }else{
             $dimension_id = Dimensions::findByCode('customer_project')->getId();
         }
-        $ids = array();
-        $dimensionController = new DimensionController();
-        foreach ($dimensionController->initial_list_dimension_members($dimension_id, null, array($typeId)) as $member) {
-            $ids [] = $member['object_id'];
+        $limit_obj = array(
+        		'offset' => $start,
+        		'limit' => $limit,
+        );
+        $extra_conditions = null;
+        if ($name!=""){
+        	$extra_conditions = "AND name LIKE '%".$name."%'";
         }
-
-        if (count($ids)) {
-            $args['conditions'] = " `object_id` IN (" . implode(",", $ids) . ") AND object_type_id = $typeId";
-            $args['order'] = " name ASC";
-            foreach (Members::instance()->findAll($args) as $member) {
-                /* @var $member Member */
-                $memberInfo = array(
-                    'id' => $member->getId(),
-                    'name' => $member->getName(),
-                    'type' => $service,
-                    'path' => $member->getPath()
-                );
-
-                $members[] = $memberInfo;
-            }
+        $params = array('dim_id' => $dimension_id, 'type_id' => $typeId, 'start'=>$start,'limit'=>$limit);
+        $memberController = new MemberController();
+        $object = $memberController->list_all($params);
+        foreach ($object["members"] as $m) {
+        	$member = Members::getMemberById($m['id']);
+        	$memberInfo = array(
+        			'id' => $m['id'],
+        			'name' => $m['name'],
+        			'type' => $service,
+        			'path' => $member->getPath()
+        	);
+        	
+        	$members[] = $memberInfo;
         }
-
         return $this->response('json', $members);
     }
     
@@ -408,6 +411,50 @@ class ApiController extends ApplicationController {
             }
         }
         return $this->response('json', $response);
+    }
+    
+    private function add_comment($request) {
+    	$_GET['object_id'] = $request ['args'] ['id'];
+    	$_POST['comment[text]'] = $request ['args'] ['comment'];
+    	CommentController::add();
+    	/*$response = false;
+    	if (!empty($request ['args'])) {
+    		$object = ProjectTasks::instance()->findByid($request ['args'] ['id']);
+    		$comment = new Comment();
+    		$comment_data = ($request ['args'] ['comment']);
+    		
+    		
+    		try {
+    			$comment->setFromAttributes($comment_data);
+	    		$comment->setRelObjectId($object->getId());
+	    		$comment->setObjectName(substr_utf($comment->getText(), 0, 250));
+
+	    		DB::beginWork();
+	    		$comment->save();
+    			
+	    		$comment->addToMembers($object->getMembers());
+	    		$comment->addToSharingTable();
+	    		
+	    		// Subscribe user to object
+	    		if(!$object->isSubscriber(logged_user())) {
+	    			$object->subscribeUser(logged_user());
+	    		}
+	    		if (strlen($comment->getText()) < 100) {
+	    			$comment_head = $comment->getText();
+	    		} else {
+	    			$lastpos = strpos($comment->getText(), " ", 100);
+	    			if ($lastpos === false) $comment_head = $comment->getText();
+	    			else $comment_head = substr($comment->getText(), 0, $lastpos) . "...";
+	    		}
+	    		$comment_head = html_to_text($comment_head);
+	    		DB::commit();
+    			$response = true;
+    		} catch (Exception $e) {
+    				DB::rollback();
+    				return false;
+    			}
+    		}*/
+    	return $this->response('json', true);
     }
     
     private function active_plugin($request){

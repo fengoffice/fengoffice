@@ -26,8 +26,7 @@ class SingleDimensionConfigHandler extends ConfigHandler {
 			
        		if (in_array($dim->getId(), config_option('enabled_dimensions'))) {
        			
-       			$dim_name = lang($dim->getCode());
-       			Hook::fire("edit_dimension_name", array('dimension' => $dim), $dim_name);
+       			$dim_name = $dim->getName();
        			
 	       		$option_attributes = $this->getValue() == $dim->getId() ? array('selected' => 'selected') : null;
 	       		$options[] = option_tag($dim_name, $dim->getId(), $option_attributes);

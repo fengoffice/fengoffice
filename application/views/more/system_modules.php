@@ -123,7 +123,7 @@ $genid = gen_id();
 			
 		} else {
 			
-			og.openLink(og.getUrl('more', 'set_getting_started_step', {'step': 2}), {
+			og.openLink(og.getUrl('more', 'set_getting_started_step', {'step': 2, 'update_cm_cache':og.must_reload_system_modules}), {
 				callback: function(success, data) {
 					if (og.must_reload_system_modules || og.must_reload_dimensions) {
 						window.location.href='<?php echo ROOT_URL ?>';
@@ -269,22 +269,22 @@ $genid = gen_id();
 		og.original_module_status = {};
 		<?php foreach ($modules as $module) { ?>
 			og.original_module_status['<?php echo $module['id']?>'] = <?php echo $module['enabled'] ? '1' : '0'?>;
-			og.module_hints['<?php echo $module['id']?>'] = '<?php echo $module['hint']?>';
+			og.module_hints['<?php echo $module['id']?>'] = '<?php echo escape_character($module['hint'],null,true)?>';
 		<?php } ?>
 		
 		<?php foreach ($disabled_modules as $module) { ?>
-			og.module_hints['<?php echo $module['id']?>'] = '<?php echo $module['hint']?>';
+			og.module_hints['<?php echo $module['id']?>'] = '<?php echo escape_character($module['hint'],null,true)?>';
 		<?php } ?>
 		<?php foreach ($other_modules as $module) { ?>
-			og.module_hints['<?php echo $module['id']?>'] = '<?php echo $module['hint']?>';
+			og.module_hints['<?php echo $module['id']?>'] = '<?php echo escape_character($module['hint'],null,true)?>';
 		<?php } ?>
 
 		og.dimension_hints = {};
 		<?php foreach ($active_dimensions as $dim) { ?>
-			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo $dim['hint']?>';
+			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo escape_character($dim['hint'],null,true)?>';
 		<?php } ?>
 		<?php foreach ($other_dimensions as $dim) { ?>
-			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo $dim['hint']?>';
+			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo escape_character($dim['hint'],null,true)?>';
 		<?php } ?>
 
 		og.order_dimensions();

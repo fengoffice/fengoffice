@@ -53,9 +53,13 @@
 		 <?php if (config_option('use_milestones')){ ?>	
 			<br/>
 		
-		 		<div class="db-ico ico-milestone" style="float: left;"></div>
+	 		<div class="db-ico ico-milestone" style="float: left;"></div>
+	 		
+	 		<?php $add_milestone_link_js = "og.render_modal_form('', {c:'milestone', a:'add', params: {template_milestone:1, template_id:". ($cotemplate->getId()? $cotemplate->getId():0) .", use_ajx:1}});"?>
+			<a id="<?php echo $genid ?>add_template_milestone" class='internalLink dashboard-link' href="#" onclick="<?php echo $add_milestone_link_js ?>">
+			<?php echo lang('add a new milestone to this template') ?></a>
 			
-			<a id="<?php echo $genid ?>add_template_milestone" class='internalLink dashboard-link' href="#" onmousedown="og.openLink(og.getUrl('milestone', 'add', {template_milestone:1, template_id:<?php echo $cotemplate->getId()? $cotemplate->getId():0 ?>}), {caller:'new_task_template'});" onclick="Ext.getCmp('tabs-panel').activate('new_task_template');">
+				<a style="display:none;" id="<?php echo $genid ?>add_template_milestone" class='internalLink dashboard-link' href="#" onmousedown="og.openLink(og.getUrl('milestone', 'add', {template_milestone:1, template_id:<?php echo $cotemplate->getId()? $cotemplate->getId():0 ?>}), {caller:'new_task_template'});" onclick="Ext.getCmp('tabs-panel').activate('new_task_template');">
 		 	<?php echo lang('add a new milestone to this template') ?></a>
 		 <?php }?>
 		
@@ -101,7 +105,7 @@
 		foreach ($parameters as $param) {
 			$param_def_val = str_replace(array('{{','}}'), '', $param->getDefaultValue());
 	?>
-		og.addParameterToTemplate(document.getElementById('<?php echo $genid ?>params'), '<?php echo str_replace("'","\'",$param->getName()) ?>','<?php echo $param->getType() ?>','<?php echo $param_def_val ?>'); 
+		og.addParameterToTemplate(document.getElementById('<?php echo $genid ?>params'), '<?php echo escape_character($param->getName()) ?>','<?php echo $param->getType() ?>','<?php echo $param_def_val ?>'); 
 	<?php }
 	}?>
 
@@ -192,7 +196,7 @@
 								$property = $objProp->getProperty();
 								
 								$value =  str_replace("\n","\\n",$objProp->getValue());
-								$value =  str_replace("'","\'",$value);								
+								$value =  escape_character($value);								
 							?>
 							og.addTemplateObjectProperty(<?php echo $oid ?>, <?php echo $oid ?>, '<?php echo $property ?>', '<?php echo $value ?>');
 					  <?php }
@@ -223,7 +227,8 @@
 		if(type == "template_task"){
 			og.render_modal_form('', {c:'task', a:'edit_task', params: {id: id, template_task:1, template_id:<?php echo $cotemplate->getId() ? $cotemplate->getId():0 ?>}});
 		}else if(type == "template_milestone"){
-			og.openLink(og.getUrl('milestone', 'edit', {id: id, template_milestone:1}), {caller:'new_task_template'});
+			og.render_modal_form('', {c:'milestone', a:'edit', params: {id: id, template_milestone:1, template_id:<?php echo $cotemplate->getId() ? $cotemplate->getId():0 ?>, use_ajx:1}});
+			//og.openLink(og.getUrl('milestone', 'edit', {id: id, template_milestone:1}), {caller:'new_task_template'});
 		}
 	}
 

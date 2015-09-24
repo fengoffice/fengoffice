@@ -6,15 +6,18 @@ if ($ot->getName()=='project_folder' || $ot->getName()=='customer_folder') {
 	$ot = ObjectTypes::findByName('folder');
 }
 
+if (!isset($genid)) $genid = gen_id();
+
 $cps = MemberCustomProperties::getAllMemberCustomPropertiesByObjectType($ot->getId(), $visibility);
-if ($visibility == 'others' && count($cps) == 0) {
-	echo lang('there are no custom properties defined message', strtolower(lang($ot->getName())), str_replace("'", "\'", $member->getName()));
-	echo '<br />'. lang('there are no custom properties defined link');
+if ($visibility == 'others' && count($cps) == 0 && Plugins::instance()->isActivePlugin('member_custom_properties')) {
+	echo "<div id='".$genid."_no_cp_msg'>" . lang('there are no custom properties defined message', strtolower(lang($ot->getName())), escape_character($member->getName()));
+	echo '<br />'. lang('there are no custom properties defined link') . '</div>';
 }
+
+if (!$parent_member) $parent_member = 0;
 
 $ti = 0;
 
-if (!isset($genid)) $genid = gen_id();
 if (!isset($startTi)) $startTi = 10000;
 
 if(count($cps) > 0){
@@ -33,10 +36,20 @@ if(count($cps) > 0){
 			if ($customProp->getType() == 'boolean')
 				echo checkbox_field($name, $default_value, array('tabindex' => $startTi + $ti, 'style' => 'margin-right:4px', 'id' => $genid . 'cp' . $customProp->getId()));
 
-			echo label_tag(clean($customProp->getName()), $genid . 'cp' . $customProp->getId(), $customProp->getIsRequired(), array('style' => 'display:inline'), $customProp->getType() == 'boolean'?'':':');
+			$label = clean($customProp->getName());
+			if ($customProp->getIsSpecial()) {
+				$label = lang(str_replace("_special", "", $customProp->getCode()));
+			} else {
+				if ($customProp->getCode() != '') {
+					$tmp_label = Localization::instance()->lang($customProp->getCode());
+					if (is_null($tmp_label)) $tmp_label = Localization::instance()->lang(str_replace("_"," ",$customProp->getCode()));
+					if (!is_null($tmp_label) && $tmp_label != "") $label = $tmp_label;
+				}
+			}
+			echo label_tag($label, $genid . 'cp' . $customProp->getId(), $customProp->getIsRequired(), array('style' => 'display:inline'), $customProp->getType() == 'boolean'?'':':');
 			
 			echo '</div>';
-
+			
 			switch ($customProp->getType()) {
 				case 'text':
 				case 'numeric':
@@ -69,7 +82,7 @@ if(count($cps) > 0){
 						}
 						echo '<div id="value'.$count.'">';
 						if($customProp->getType() == 'memo'){
-							echo textarea_field($name.'[]', '', array('tabindex' => $startTi + $ti, 'id' => $name.'[]'));
+							echo textarea_field($name.'[]', '', array('tabindex' => $startTi + $ti, 'id' => $name.'[]', 'class' => 'long'));
 						}else{
 							echo text_field($name.'[]', '', array('tabindex' => $startTi + $ti, 'id' => $name.'[]'));
 						}
@@ -80,7 +93,7 @@ if(count($cps) > 0){
 						$include_script = true;
 					} else {
 						if($customProp->getType() == 'memo'){
-							echo textarea_field($name, $default_value, array('tabindex' => $startTi + $ti, 'class' => 'short', 'id' => $genid . 'cp' . $customProp->getId()));
+							echo textarea_field($name, $default_value, array('tabindex' => $startTi + $ti, 'class' => 'long', 'id' => $genid . 'cp' . $customProp->getId()));
 						}else{
 							echo text_field($name, $default_value, array('tabindex' => $startTi + $ti, 'id' => $genid . 'cp' . $customProp->getId()));
 						}
@@ -144,10 +157,11 @@ if(count($cps) > 0){
 					}
 					foreach(explode(',', $customProp->getValues()) as $value){
 						$selected = ($value == $default_value) || ($customProp->getIsMultipleValues() && (in_array($value, explode(',', $default_value)))||in_array($value,$toSelect));
+						$text = $customProp->getCode() == "" ? $value : lang($value);
 						if($selected){
-							$options[] = '<option value="'. clean($value) .'" selected>'. clean($value) .'</option>';
+							$options[] = '<option value="'. clean($value) .'" selected>'. clean($text) .'</option>';
 						}else{
-							$options[] = option_tag($value, $value);
+							$options[] = option_tag($text, $value);
 						}
 						$totalOptions++;
 					}
@@ -200,6 +214,17 @@ if(count($cps) > 0){
 					echo $html;
 					break;
 				
+				case 'color':
+					
+					// og.getColorInputHtml = function(genid, field_name, value, col, label) 
+					$html = '<div><div id="'.$genid.'colorcontainer-cp'.$customProp->getId().'"></div><div class="x-clear"></div></div>';
+					$html .= "<script>$(function(){";
+					$html .= "var cont = document.getElementById('".$genid."colorcontainer-cp".$customProp->getId()."');";
+					$html .= "if (cont) cont.innerHTML = og.getColorInputHtml('$genid', '$name', '$default_value', '', '');";
+					$html .= '});</script>';
+					echo $html;
+					break;
+					
 				case 'address':
 					$html = '<div id="'.$genid.'addresscontainer-cp'.$customProp->getId().'" class="address-input-container custom-property"></div>';
 					$html .= "<div style='display:none;'>" . select_country_widget('template_country', '', array('id'=>'template_select_country')) . "</div>";
@@ -212,10 +237,11 @@ if(count($cps) > 0){
 					if (is_array($values) && count($values) > 0) {
 						foreach ($values as $val) {
 							$values = str_replace("\|", "%%_PIPE_%%", $val->getValue());
+							$values = str_replace(array("\r","\n"), " ", $values);
 							$exploded = explode("|", $values);
 							foreach ($exploded as &$v) {
 								$v = str_replace("%%_PIPE_%%", "|", $v);
-								$v = str_replace("'", "\'", $v);
+								$v = escape_character($v);
 							}
 							if (count($exploded) > 0) {
 								$address_type = array_var($exploded, 0, '');
@@ -237,7 +263,8 @@ if(count($cps) > 0){
 					echo $html;
 					
 					break;
-					
+				
+				case 'user':
 				case 'contact':
 					$value = '0';
 					$contact = null;
@@ -246,8 +273,21 @@ if(count($cps) > 0){
 						$value = $cp_value->getValue();
 						$contact = Contacts::findById($value);
 					}
+
+					$emtpy_text = lang('select contact');
 					
 					Hook::fire('member_contact_cp_filters', array('cp' => $customProp, 'member' => $member), $filters);
+					
+					if ($customProp->getType() == 'user') {
+						$filters['is_user'] = 1;
+						if ($member_is_new) {
+							$filters['has_permissions'] = $parent_member;
+						} else {
+							$filters['has_permissions'] = $member->getId();
+						}
+						$emtpy_text = lang('select user');
+					}
+					
 					if (is_array($filters) && count($filters) > 0) {
 						$filters_str = '{';
 						foreach ($filters as $k => $v) {
@@ -269,6 +309,7 @@ if(count($cps) > 0){
 						render_to: "contacts_combo_container-cp'.$customProp->getId().'",
 						selected: '.(is_numeric($value) ? "$value" : "0").',
 						selected_name: "'.($contact instanceof Contact ? clean($contact->getObjectName()) : '').'",
+						empty_text: "'. $emtpy_text .'",
 						filters: '.$filters_str.'
 					  });
 					});
@@ -287,5 +328,8 @@ if(count($cps) > 0){
 		}
 	}
 }
+
+$null = null;
+Hook::fire('render_additional_member_custom_properties', array('member' => $member, 'genid' => $genid, 'ot' => $ot), $null);
 
 ?></div>

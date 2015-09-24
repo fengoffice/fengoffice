@@ -17,7 +17,10 @@
 	  		foreach ($dimension_obj_type_hierarchy as $obj_type_hierarchy) {
 	  			$child = $obj_type_hierarchy['child_object_type_id'];
 	  			$children [] = $child;
-	  			$children = array_unique(array_merge($children, self::getAllChildrenObjectTypeIds($dimension_id, $child, $recursive)));
+  				// prevent infinite loop
+	  			if ($child != $parent_object_type_id) {
+	  				$children = array_unique(array_merge($children, self::getAllChildrenObjectTypeIds($dimension_id, $child, $recursive)));
+	  			}
 	  		}
 		}
 		

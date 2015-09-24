@@ -56,7 +56,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 				
 				switch ($ot->getName()) {
 					case "task":
-						$selector = '#tasksPanel #tasksPanelContent #tasksPanelContainer #ogTasksPanelColNames .tasksActionsBtn.tasksBtn:last'; break;
+						$selector = '.task-list-row-template .btn.btn-xs.btn-primary'; break;
 					case "message": 
 					case "weblink": 
 					case "file":
@@ -90,7 +90,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 				
 					$step = 98;
 					$hint_text = lang('click here to add a new', strtolower(lang($ot->getName())));
-					$acitvate_tab_js = "var panel = Ext.getCmp('".$first_tab_panel->getId()."'); Ext.getCmp('tabs-panel').setActiveTab(panel); og.highlight_link({selector:'$selector', step:$step, time_active:30000, timeout:500, hint_text:'$hint_text', hint_pos:'bottom', animate_opacity:10, reload_panel:true})";
+					$acitvate_tab_js = "var panel = Ext.getCmp('".$first_tab_panel->getId()."'); Ext.getCmp('tabs-panel').setActiveTab(panel); og.highlight_link({selector:'$selector', step:$step, time_active:30000, timeout:500, hint_text:'$hint_text', hint_pos:'right', animate_opacity:10, reload_panel:true})";
 					$add_first_obj_url = "javascript:$acitvate_tab_js";
 					
 					$icon_class = $ot->getName() == 'file' ? 'ico-large-text-html' : 'ico-large-' . $ot->getName();
@@ -172,6 +172,15 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 				'ico' => 'ico-large-custom-properties',
 				'url' => get_url('administration', 'custom_properties'),
 				'name' => lang('custom properties'),
+				'extra' => '',
+		);
+	}
+	
+	if (can_manage_dimensions(logged_user())) {
+		$links[] = array(
+				'ico' => 'ico-large-config2',
+				'url' => get_url('administration', 'dimension_options'),
+				'name' => lang('dimension options'),
 				'extra' => '',
 		);
 	}

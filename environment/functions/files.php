@@ -342,7 +342,7 @@ function insert_before_file_extension($filename, $insert) {
  * @param boolean $force_download Force download (add Disposition => attachement)
  * @return boolean
  */
-function download_file($path, $type = 'application/octet-stream', $name = '', $force_download = false) {
+function download_file($path, $type = 'application/octet-stream', $name = '', $disposition_attachment=false, $force_download=true) {
 	if (!is_readable($path)) return false;
 
 	$name = trim($name) == '' ? basename($path) : trim($name);
@@ -354,32 +354,32 @@ function download_file($path, $type = 'application/octet-stream', $name = '', $f
 	
 	if (!function_exists('readfile')) {
 		$contents = file_get_contents($path);
-		return download_contents($contents, $type, $name, $size, $force_download);
+		return download_contents($contents, $type, $name, $size, $disposition_attachment, $force_download);
 	}
 	if(connection_status() != 0) return false; // check connection
-
-	/*
-	if($force_download) {
-		header("Cache-Control: public");
-	} else {
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-	} // if
-	*/
+	
 	if (ob_get_length()) ob_clean();
-	header("Expires: " . gmdate("D, d M Y H:i:s", mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))) . " GMT");
-	header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+	
 	header("Content-Type: $type");
 	header("Content-Length: " . (string) $size);
 
 	// Prepare disposition
-	$disposition = $force_download ? 'attachment' : 'inline';
+	$disposition = $disposition_attachment ? 'attachment' : 'inline';
 	header("Content-Disposition: $disposition; filename=\"" . $name . "\"");
 	header("Content-Transfer-Encoding: binary");
-	//header("Cache-Control: maxage=1"); // Age is in seconds.
-	header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-    header("Cache-Control: post-check=0, pre-check=0", false);
+	
+	if ($force_download) {
+		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");// Age is in seconds.
+	    header("Cache-Control: post-check=0, pre-check=0");
+	    header("Expires: " . gmdate("D, d M Y H:i:s", mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))) . " GMT");
+	    header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+	} else {
+   		header("Cache-Control: maxage=2592000"); // 1 month
+   		$next = DateTimeValueLib::now(); // next month
+   		$next = $next->add('M', 1);
+   		header("Expires: " . $next->format("D, d M Y H:i:s") . " GMT");
+	}
+    
    	header("Pragma: public");
 	readfile($path);
 
@@ -396,7 +396,7 @@ function download_file($path, $type = 'application/octet-stream', $name = '', $f
  * @param boolean $force_download Send Content-Disposition: attachment to force save dialog
  * @return boolean
  */
-function download_contents($content, $type, $name, $size, $force_download = false) {
+function download_contents($content, $type, $name, $size, $disp_attachment = false, $force_download = true) {
 	if(connection_status() != 0) return false; // check connection
 
 	include_once ROOT . "/library/browser/Browser.php";
@@ -404,28 +404,28 @@ function download_contents($content, $type, $name, $size, $force_download = fals
 		$name = rawurlencode($name);
 	}
 	
-	/*
-	if($force_download) {
-		header("Cache-Control: public");
-	} else {
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-	} // if
-	*/
 	if (ob_get_length()) ob_clean();
-	header("Expires: " . gmdate("D, d M Y H:i:s", mktime(date("H") + 2, date("i"), date("s"), date("m"), date("d"), date("Y"))) . " GMT");
-	header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 	header("Content-Type: $type");
 	header("Content-Length: " . (string) $size);
 
 	// Prepare disposition
-	$disposition = $force_download ? 'attachment' : 'inline';
+	$disposition = $disp_attachment ? 'attachment' : 'inline';
 	header("Content-Disposition: $disposition; filename=\"" . $name . "\"");
 	header("Content-Transfer-Encoding: binary");
-	header("Cache-Control: maxage=1"); // Age is in seconds.
-   	header("Pragma: public");
    	
+   	if ($force_download) {
+   		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");// Age is in seconds.
+   		header("Cache-Control: post-check=0, pre-check=0");
+   		header("Expires: " . gmdate("D, d M Y H:i:s", mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))) . " GMT");
+   		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+   	} else {
+   		header("Cache-Control: maxage=2592000"); // 1 month
+   		$next = DateTimeValueLib::now(); // next month
+   		$next = $next->add('M', 1);
+   		header("Expires: " . $next->format("D, d M Y H:i:s") . " GMT");
+   	}
+   	
+   	header("Pragma: public");
 	print $content;
 
 	return((connection_status() == 0) && !connection_aborted());
@@ -440,16 +440,16 @@ function download_contents($content, $type, $name, $size, $force_download = fals
  * @param boolean $force_download
  * @return boolean
  */
-function download_from_repository($id, $type, $name, $force_download = false) {
+function download_from_repository($id, $type, $name, $disp_attachment=false, $force_download = false) {
 	if (FileRepository::getBackend() instanceof FileRepository_Backend_FileSystem) {
 		$path = FileRepository::getBackend()->getFilePath($id);
 		if (is_file($path)) {
 			// this method allows downloading big files without exhausting php's memory
-			return download_file($path, $type, $name, $force_download);
+			return download_file($path, $type, $name, $disp_attachment, $force_download);
 		}
 	}
 	$content = FileRepository::getBackend()->getFileContent($id);
-	return download_contents($content, $type, $name, strlen($content), $force_download);
+	return download_contents($content, $type, $name, strlen($content), $disp_attachment, $force_download);
 }
 
 /**

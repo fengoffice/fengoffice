@@ -27,7 +27,7 @@
 	'tags' => 'Etiquetas',
 	'attachment' => 'Adjunto',
 	'attachments' => 'Adjunto',
-	'object subscribers' => 'Subscriptores',
+	'object subscribers' => 'Suscriptores',
 	'form' => 'Formulario',
 	'forms' => 'Formularios',
 	'file' => 'Archivo',
@@ -46,8 +46,8 @@
 	'time' => 'Horas',
 	'report' => 'Reporte',
 	'reporting' => 'Reportes',
-	'modify object subscribers' => 'Modificar Subscriptores',
-	'subscription modified successfully' => 'Subscriptores modificados exitosamente',
+	'modify object subscribers' => 'Modificar Suscriptores',
+	'subscription modified successfully' => 'Suscriptores modificados exitosamente',
 	'owner company' => 'Empresa propietaria',
 	'client companies' => 'Empresas clientes',
 	'open milestone' => 'Abrir hito',
@@ -172,4 +172,7 @@
 	'x users' => '{0} usuarios {1}',
     
 	'warning file extension type' => "Advertencia: está a punto de guardar un documento con extensión de archivo diferente al guardado previamente",
+    'mail' => 'Correo',
+    'the weblink activity' => 'el enlace{0}',
+    'the file_revision' => 'la revisión',
 ); ?>

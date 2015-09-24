@@ -417,7 +417,11 @@ return array(
 	
 	'without a member' => 'Without',
 	'uncompleted tasks' => 'Uncompleted tasks',
-	
+		
+	'without due date' => 'Without Due Date',
+	'without start date' => 'Without Start Date',
+	'without date' => 'Without Date',
+		
 	'address field is required' => '{1} information for field \'{0}\' is required.',
 	
 	'menu home' => 'Home',
@@ -428,4 +432,11 @@ return array(
 	
 	'write the first letters of the name or surname of the person to select' => 'Write the first letters of the name or surname of the person to select',
 	'click here to select one from a list' => 'Click here to select one from a list',
+	
+	'select contact' => 'Select contact',
+	'select user' => 'Select user',
+	
+	'completed by name on' => 'Completad by {0} on {1}',
+	'notify assigned user' => 'Notify assigned user',
+	'overdue and upcomming' => 'Overdue and Upcomming',
 );

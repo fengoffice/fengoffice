@@ -208,7 +208,7 @@ class FilesController extends ApplicationController {
 		session_commit();
 		download_from_repository($file->getLastRevision()->getRepositoryId(), $file->getTypeString(), $file->getFilename(), !$inline);
 		die();
-	} // download_file
+	} // download_image
 
 	
 	function checkout_file()
@@ -520,9 +520,9 @@ class FilesController extends ApplicationController {
 				$object_controller->add_custom_properties($file);
 				
 				DB::commit();
-				
+
+				set_user_config_option('notify_myself_too', array_var($file_data, 'notify_myself_too'));
 				if (array_var($file_data, 'notify_myself_too')) {
-					set_user_config_option('notify_myself_too', 1);
 					logged_user()->notify_myself = true;
 				}
 				
@@ -630,8 +630,8 @@ class FilesController extends ApplicationController {
 			}
 			DB::commit();
 			
+			set_user_config_option('notify_myself_too', array_var($file_data, 'notify_myself_too'));
 			if (array_var($file_data, 'notify_myself_too')) {
-				set_user_config_option('notify_myself_too', 1);
 				logged_user()->notify_myself = true;
 			}
 			
@@ -694,6 +694,15 @@ class FilesController extends ApplicationController {
 				$upload_id = array_var($file_data, 'upload_id');
 				$uploaded_file = array_var($_SESSION, $upload_id, array());
 				$member_ids = json_decode(array_var($_POST, 'members'));
+				
+				$notAllowedMember = '';
+				$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).')'));
+				if(!$file->canAdd(logged_user(), $members, $notAllowedMember )) {
+					if (str_starts_with($notAllowedMember, '-- req dim --')) $err_msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
+					else trim($notAllowedMember) == "" ? $err_msg = lang('you must select where to keep', lang('the file')) : $err_msg = lang('no context permissions to add',lang("files"),$notAllowedMember );
+					
+					throw new Exception($err_msg);
+				}
 				
 				//files ids to return
 				$file_ids = array();
@@ -810,6 +819,9 @@ class FilesController extends ApplicationController {
 					// set updated on
 					$file->setUpdatedById(logged_user()->getId());
 					$file->setUpdatedOn(DateTimeValueLib::now());
+					if ($file->isCheckedOut()){
+						$file->checkIn();
+					}
 					$file->save();
 				}
 				$file->subscribeUser(logged_user());
@@ -1733,7 +1745,6 @@ class FilesController extends ApplicationController {
 		$order = array_var($_GET,'sort');
 		$order_dir = array_var($_GET,'dir');
 		$page = (integer) ($start / $limit)+1;
-		$hide_private = !logged_user()->isMemberOfOwnerCompany();
 		$type = array_var($_GET,'type');
 		$user = array_var($_GET,'user');
 
@@ -1864,8 +1875,6 @@ class FilesController extends ApplicationController {
 			$order = '`name`';
 		} // if
 		
-		$extra_conditions .= $hide_private ? 'AND `is_visible` = 1' : '';
-		
 		// filter attachments of other people if not filtering
 		$tmp_mids = array();
 		foreach (active_context() as $selection) {
@@ -1970,6 +1979,7 @@ class FilesController extends ApplicationController {
 					"ftype" => $o->getType(),
 					"url" => $o->getUrl(),
 					"memPath" => json_encode($o->getMembersIdsToDisplayPath()),
+					"genid" => gen_id(),
 				);
 				if ($o->isMP3()) {
 					$values['isMP3'] = true;
@@ -2125,9 +2135,8 @@ class FilesController extends ApplicationController {
 				$file->resetIsRead();
 				
 				DB::commit();
-				
+				set_user_config_option('notify_myself_too', array_var($file_data, 'notify_myself_too'));
 				if (array_var($file_data, 'notify_myself_too')) {
-					set_user_config_option('notify_myself_too', 1);
 					logged_user()->notify_myself = true;
 				}
 				

@@ -487,63 +487,54 @@
 		return ((millis / 1000) / 60); 		
 	}
 	
-	og.showEventPopup = function(day, month, year, hour, minute, use_24hr, st_val, genid, obj_type) {
-		var typeid = 1, hrs = 1, mins = 0;
-		if (hour == -1 || minute == -1) {
-			hour = 0;
-			minute = 0;
-			typeid = 2;
-			ev_start_hour = ev_start_minute = durationhour = durationmin = 0;
-			ev_start_day = day;
-			ev_start_month = month;
-			ev_start_year = year;
-		} else {
-			og.selectEndDateTime(day, month, year, hour, minute);
-			hrs = 0;
-			mins = og.getDurationMinutes();
-			while (mins >= 60) {
-				mins -= 60;
-				hrs +=1;
-			}
-			if (hrs == 0) {
-				hrs = 1;
-				mins = 0;
-			}
-		}
-		
-		if (use_24hr) {
-			st_hour = ev_start_hour;
-			ampm = '';
-		} else {
-			if (ev_start_hour >= 12) {
-				st_hour = ev_start_hour - (ev_start_hour > 12 ? 12 : 0);
-				ampm = ' PM';
+	og.showEventPopup = function(day, month, year, hour, minute, use_24hr, st_val, genid, type_id, viewMonth) {
+		var add_params;
+		if (!viewMonth){
+			var typeid = 1, hrs = 1, mins = 0;
+			if (hour == -1 || minute == -1) {
+				hour = 0;
+				minute = 0;
+				typeid = 2;
+				ev_start_hour = ev_start_minute = durationhour = durationmin = 0;
+				ev_start_day = day;
+				ev_start_month = month;
+				ev_start_year = year;
 			} else {
-				if (ev_start_hour == 0) st_hour = 12;
-				else st_hour = ev_start_hour;
-				ampm = ' AM';
+				og.selectEndDateTime(day, month, year, hour, minute);
+				hrs = 0;
+				mins = og.getDurationMinutes();
+				while (mins >= 60) {
+					mins -= 60;
+					hrs +=1;
+				}
+				if (hrs == 0) {
+					hrs = 1;
+					mins = 0;
+				}
 			}
+			
+			if (use_24hr) {
+				st_hour = ev_start_hour;
+				ampm = '';
+			} else {
+				if (ev_start_hour >= 12) {
+					st_hour = ev_start_hour - (ev_start_hour > 12 ? 12 : 0);
+					ampm = ' PM';
+				} else {
+					if (ev_start_hour == 0) st_hour = 12;
+					else st_hour = ev_start_hour;
+					ampm = ' AM';
+				}
+			}
+			st_time = st_hour + ':' + ev_start_minute + (ev_start_minute < 10 ? '0' : '') + ampm;
+			add_params = {day:ev_start_day , month: ev_start_month, year: ev_start_year, hour: ev_start_hour, minute: ev_start_minute, durationhour:hrs, durationmin:mins, start_value:st_val, start_time:st_time, type_id:typeid, view:'week'};
+		}else{
+			add_params = {day:day , month:month, year: year, hour: 9, minute: 0, durationhour:1, durationmin:0, start_value:st_val, start_time:'9:00', type_id:type_id, view:'month'};
 		}
-		st_time = st_hour + ':' + ev_start_minute + (ev_start_minute < 10 ? '0' : '') + ampm;
 		
-		og.EventPopUp.show(null, {day: ev_start_day,
-								month: ev_start_month,
-								year: ev_start_year,
-								hour: ev_start_hour,
-								minute: ev_start_minute,
-								durationhour: hrs,
-								durationmin: mins,
-								start_value: st_val,
-								start_time: st_time,
-								type_id: typeid,
-								view:'week', 
-								title: lang('add event'),
-								time_format: use_24hr ? 'G:i' : 'g:i A',
-								hide_calendar_toolbar: 1,
-								genid: genid,
-								otype: obj_type
-							}, '');
-		og.clearPaintedCells();								
+		og.render_modal_form('', {c:'event', a:'add', params: add_params});
+		
+		//og.clearPaintedCells();								
 	}
 	
 	og.callEventAdd = function(day, month, year, hour, minute) {

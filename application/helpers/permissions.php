@@ -206,7 +206,7 @@
 		if (is_array($context)) {
 			foreach($context as $selection){
 				$sel_dimension = $selection instanceof Dimension ? $selection : ($selection instanceof Member ? $selection->getDimension() : null);
-				if ($sel_dimension instanceof Dimension && $sel_dimension->getOptions(1) && isset($sel_dimension->getOptions(1)->hidden) && $sel_dimension->getOptions(1)->hidden ) continue;
+				
 				//$can_add = false;
 				if ($selection instanceof Member){
 					
@@ -1483,7 +1483,7 @@
 			//pclose(popen("start /B ". $command, "r"));
 			save_member_permissions($member, $permissions);
 			
-			if ($old_parent_id != $member->getParentMemberId()) {
+			if ($old_parent_id != -1 && $old_parent_id != $member->getParentMemberId()) {
 				member_parent_changed_refresh_object_permisssions($member, $old_parent_id, $user);
 			}
 		} else {

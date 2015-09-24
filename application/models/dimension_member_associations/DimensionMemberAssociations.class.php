@@ -38,14 +38,43 @@
 	    	}
     	}
 
-    	return $dIds ;	
+    	return $dIds;
   	}
   	
   	
-    function getAllAssociationIds($dimension_id, $associated_dimension_id) {
+  	/** 
+  	 * Returns an array with the dimensions to reload foreach member type that belongs to this dimension
+  	 */
+	function getDimensionsToReloadByObjectType($dimension_id) {
 		
-    	$sql = "SELECT `id` FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $dimension_id AND `associated_dimension_id` = $associated_dimension_id
-				UNION SELECT `id` FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $associated_dimension_id AND `associated_dimension_id` = $dimension_id";
+		$sql = "SELECT `associated_dimension_id` as dim_id, `object_type_id` as ot_id FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $dimension_id
+				UNION SELECT `dimension_id` as dim_id, `associated_object_type_id` as ot_id  FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `associated_dimension_id` = $dimension_id";
+		
+		$rows = DB::executeAll($sql);
+		
+		$result = array();
+		if (is_array($rows)) {
+			foreach ($rows as $row) {
+				if (!isset($result[$row['ot_id']])) $result[$row['ot_id']] = array();
+				$result[$row['ot_id']][] = $row['dim_id'];
+			}
+		}
+		
+		return $result;
+	}
+  	
+  	
+    function getAllAssociationIds($dimension_id, $associated_dimension_id, $obj_type_id=null) {
+    	
+    	$ot_cond = "";
+    	$associated_ot_cond = "";
+    	if (is_numeric($obj_type_id)) {
+    		$ot_cond = " AND object_type_id=$obj_type_id";
+    		$associated_ot_cond = " AND associated_object_type_id=$obj_type_id";
+    	}
+		
+    	$sql = "SELECT `id` FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $dimension_id $ot_cond AND `associated_dimension_id` = $associated_dimension_id
+		  UNION SELECT `id` FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $associated_dimension_id $associated_ot_cond AND `associated_dimension_id` = $dimension_id";
   		
     	$result = DB::execute($sql);
     	$rows = $result->fetchAll();

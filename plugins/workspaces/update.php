@@ -109,3 +109,19 @@
 		DB::execute("UPDATE ".TABLE_PREFIX."contact_config_options SET default_value='1' WHERE name='lp_dim_workspaces_show_as_column';");
 		DB::execute("UPDATE ".TABLE_PREFIX."contact_config_options SET default_value='1' WHERE name='lp_dim_tags_show_as_column';");
 	}
+	
+	function workspaces_update_11_12() {
+		DB::execute("
+			UPDATE ".TABLE_PREFIX."members SET description=(SELECT p.description FROM ".TABLE_PREFIX."workspaces p WHERE p.object_id=".TABLE_PREFIX."members.object_id)
+			WHERE object_type_id=(SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='workspace');
+		");
+	}
+	
+	function workspaces_update_12_13() {
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."dimension_object_type_options (`dimension_id`, `object_type_id`, `name`, `value`) VALUES
+			 ((SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code`='workspaces'), (SELECT `id` FROM `".TABLE_PREFIX."object_types` WHERE `name`='workspace'),'select_after_creation','1'),
+			 ((SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code`='tags'), (SELECT `id` FROM `".TABLE_PREFIX."object_types` WHERE `name`='tag'),'select_after_creation','1')
+			ON DUPLICATE KEY UPDATE `value`=`value`;
+		");
+	}

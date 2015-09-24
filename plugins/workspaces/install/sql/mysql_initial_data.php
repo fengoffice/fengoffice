@@ -2,9 +2,21 @@ INSERT INTO `<?php echo $table_prefix ?>dimensions` (`code`, `name`, `is_root`, 
  ('workspaces', 'Workspaces', 1, 1, 0, 1, 1, 2,'{"defaultAjax":{"controller":"dashboard", "action": "main_dashboard"}, "quickAdd":true,"showInPaths":true,"useLangs":true}', 'mandatory'),
  ('tags', 'Tags', 1, 1, 0, 0, 1, 3,'{"defaultAjax":{"controller":"dashboard", "action": "main_dashboard"},"quickAdd":true,"showInPaths":true,"useLangs":true}', 'not_mandatory');
 
+INSERT INTO <?php echo $table_prefix ?>dimension_options (`dimension_id`, `name`, `value`) VALUES 
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'),'useLangs','1'),
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'),'showInPaths','1'),
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'),'useLangs','1'),
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'),'showInPaths','1')
+ON DUPLICATE KEY UPDATE `value`=`value`;
+
 INSERT INTO `<?php echo $table_prefix ?>dimension_object_types` (`dimension_id`, `object_type_id`, `is_root`,`options` ) VALUES
  ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'), 1, '{"defaultAjax":{"controller":"dashboard", "action": "main_dashboard"}}'),
  ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='tag'), 1, '{"defaultAjax":{"controller":"dashboard", "action": "main_dashboard"}}');
+
+INSERT INTO <?php echo $table_prefix ?>dimension_object_type_options (`dimension_id`, `object_type_id`, `name`, `value`) VALUES 
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'),'select_after_creation','1'),
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'),'select_after_creation','1')
+ON DUPLICATE KEY UPDATE `value`=`value`;
 
 INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (`dimension_id`, `parent_object_type_id`, `child_object_type_id`) VALUES
  ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'));
@@ -73,7 +85,17 @@ ON DUPLICATE KEY UPDATE name=name;
 UPDATE `<?php echo $table_prefix ?>contact_config_options` 
  SET default_value = concat((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'),',', (SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'),',',(default_value)) 
  WHERE name='quick_add_task_view_dimensions_combos';
- 
+
 UPDATE `<?php echo $table_prefix ?>contact_config_options` 
  SET default_value = concat((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'),',', (SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'),',',(default_value)) 
  WHERE name='add_timeslot_view_dimensions_combos';
+
+INSERT INTO `<?php echo $table_prefix ?>member_custom_properties` (`object_type_id`, `name`, `code`, `type`, `description`, `values`, `default_value`, `is_system`, `is_required`, `is_multiple_values`, `property_order`, `visible_by_default`, `is_special`, `is_disabled`)
+  SELECT mt.id, 'Color', 'color_special','color','','','',0,0,0,30,1, 1, 0
+  FROM <?php echo $table_prefix ?>object_types mt WHERE mt.`type` IN ('dimension_object','dimension_group') AND name IN ('workspace','tag')
+ON DUPLICATE KEY UPDATE `code`=`code`;
+
+INSERT INTO `<?php echo $table_prefix ?>member_custom_properties` (`object_type_id`, `name`, `code`, `type`, `description`, `values`, `default_value`, `is_system`, `is_required`, `is_multiple_values`, `property_order`, `visible_by_default`, `is_special`, `is_disabled`)
+  SELECT mt.id, 'Description', 'description_special', 'memo','','','',0,0,0,31,1, 1, 0
+  FROM <?php echo $table_prefix ?>object_types mt WHERE mt.`type` IN ('dimension_object','dimension_group') AND name IN ('workspace','tag')
+ON DUPLICATE KEY UPDATE `code`=`code`;

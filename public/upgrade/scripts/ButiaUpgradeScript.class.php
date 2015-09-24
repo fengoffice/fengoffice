@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Butia upgrade script will upgrade FengOffice 3.1.5.3 to FengOffice 3.2.2.1
+ * Butia upgrade script will upgrade FengOffice 3.1.5.3 to FengOffice 3.2.3
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.1.5.3');
-		$this->setVersionTo('3.2.2.1');
+		$this->setVersionTo('3.2.3');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -412,7 +412,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 		
 		if (version_compare($installed_version, '3.2.1-beta') < 0) {
 			$upgrade_script .= "
-				ALTER TABLE `".$t_prefix."objects` ADD INDEX `type_trash_arch`(`object_type_id`, `trashed_on`, `archived_on`);
+				ALTER TABLE `".$t_prefix."objects` ADD INDEX (`object_type_id`, `trashed_on`, `archived_on`);
 			";
 			
 			$upgrade_script .= "
@@ -468,7 +468,16 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 					 SELECT o.id
 					 FROM `".$t_prefix."object_types` o 
 					 WHERE o.`name` IN ('comment','template')				
-				);				
+				);
+			";
+		}
+		
+		if (version_compare($installed_version, '3.2.3-beta') < 0) {
+			$upgrade_script .= "
+			INSERT INTO `" . $t_prefix . "contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES 
+				('task panel', 'tasksPreviousPendingTasks', '1', 'BoolConfigHandler', 1, 0, ''),
+				('task panel', 'can notify subscribers', '1', 'BoolConfigHandler', 0, 0, 'Notification checkbox default value')
+					ON DUPLICATE KEY UPDATE id=id;
 			";
 		}
 		

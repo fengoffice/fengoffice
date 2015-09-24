@@ -1466,7 +1466,30 @@ class Notifier {
 			}
 			$qm->save();
 		} else {
-			self::sendEmail($to, $from, $subject, $body, $type, $encoding, $attachments);
+			// not using cron
+			try {
+				$sent_ok = self::sendEmail($to, $from, $subject, $body, $type, $encoding, $attachments);
+				if ($sent_ok) {
+					// save notification history when notifications are not sent by cron
+					self::saveNotificationHistory(array(
+						'to' => $to,
+						'cc' => $cc,
+						'bcc' => $bcc,
+						'from' => $from,
+						'subject' => $subject,
+						'body' => $body,
+						'attachments' => json_encode($attachments),
+						'timestamp' => DateTimeValueLib::now()->toMySQL(),
+					));
+				}
+				
+			} catch (Exception $e) {
+				// save log in server
+				if (defined('EMAIL_ERRORS_LOGDIR') && file_exists(EMAIL_ERRORS_LOGDIR) && is_dir(EMAIL_ERRORS_LOGDIR)) {
+					$err_msg = ROOT_URL."\nError sending notification (subject=$subject) using account $from\n\nError detail:\n".$e->getMessage()."\n".$e->getTraceAsString();
+					file_put_contents(EMAIL_ERRORS_LOGDIR . basename(ROOT), $err_msg, FILE_APPEND);
+				}
+			}
 		}
 	}
 	
@@ -1535,7 +1558,9 @@ class Notifier {
 				if ($email->columnExists('attachments')) {
 					$attachments = json_decode($email->getColumnValue('attachments'));
 					foreach ($attachments as $a) {
-						if (!file_exists($a->path)) continue;
+						// if file does not exists or its size is greater than 20 MB then don't process the atachments
+						if (!file_exists($a->path) || filesize($a->path) / (1024 * 1024) > 20) continue;
+						
 						$attach = Swift_Attachment::fromPath($a->path, $a->type);
 						$attach->setDisposition($a->disposition);
 						if ($a->cid) $attach->setId($a->cid);
@@ -1557,13 +1582,25 @@ class Notifier {
 					$message->addBcc(array_var($address, 0), array_var($address, 1));
 				}
 				$result = $mailer->send($message);
-
-				DB::beginWork();
-				$email->delete();
-				DB::commit();
+				
+				if ($result) {
+					DB::beginWork();
+					// save notification history after cron sent the email
+					self::saveNotificationHistory(array('email_object' => $email));
+					// delte from queued_emails
+					$email->delete();
+					DB::commit();
+				}
 				$count++;
 			} catch (Exception $e) {
 				DB::rollback();
+				
+				// save log in server
+				if (defined('EMAIL_ERRORS_LOGDIR') && file_exists(EMAIL_ERRORS_LOGDIR) && is_dir(EMAIL_ERRORS_LOGDIR)) {
+					$err_msg = ROOT_URL."\nError sending notification (queued_email_id=".$email->getId().") using account ".print_r($from, 1)."\n\nError detail:\n".$e->getMessage()."\n".$e->getTraceAsString();
+					file_put_contents(EMAIL_ERRORS_LOGDIR . basename(ROOT), $err_msg, FILE_APPEND);
+				}
+				
 				Logger::log("There has been a problem when sending the Queued emails.\nError Message: ". $e->getMessage(). "\nTrace: ". $e->getTraceAsString());
 				$msg = $e->getMessage();
 				if (strpos($msg, 'Failed to authenticate') !== false) {
@@ -1711,7 +1748,10 @@ class Notifier {
 					tpl_assign('due_date', $due_date);
 					
 					$attachments = array();
-					$attachments['logo'] = self::getLogoAttachmentData($assigned_user->getEmailAddress());
+					$logo_info = self::getLogoAttachmentData($assigned_user->getEmailAddress());
+					if (is_array($logo_info) && count($logo_info) > 0) {
+						$attachments['logo'] = $logo_info;
+					}
 					tpl_assign('attachments', $attachments);
 					
 					// send notification
@@ -1797,7 +1837,7 @@ class Notifier {
 		} catch (FileNotInRepositoryError $e) {
 			Logger::log("Could not find owner company picture file: ".$e->getMessage());
 		}
-		$logo_info;
+		return $logo_info;
 	}
 	
 	private static function buildContextObjectForNotification($object) {
@@ -1828,6 +1868,78 @@ class Notifier {
 		}
 		
 		return $contexts;
+	}
+	
+	/**
+	 * Delete sent notifications logs which are older than $days days
+	 * @param $days: number of days to mantain logs, default value=60 
+	 */
+	private static function deleteOldNotificationHistory($days = 60) {
+		$date = DateTimeValueLib::now();
+		$date->add("d", -1 * $days);
+		$sql = "DELETE FROM ".TABLE_PREFIX."sent_notifications WHERE sent_date < ".DB::escape($date->toMySQL());
+		try {
+			DB::execute($sql);
+		} catch (Exception $e) {
+			Logger::log("ERROR: Could not delete old notification history.\nMessage:".$e->getMessage()."\nSQL:\n$sql");
+		}
+	}
+	
+	/**
+	 * Save notifications history, saves the same information stored in queued_emails after sending the email 
+	 * and before deleting the record from this table 
+	 * @param $parameters: array with the data to save, if key 'email_object' exists and its value is a QueuedEmail 
+	 * 					   object then the values are taken from this object, else use the 'from', 'to', etc. parameters. 
+	 */
+	private static function saveNotificationHistory($parameters) {
+		// first clean old history
+		self::deleteOldNotificationHistory();
+		
+		// build column values to insert
+		$email = array_var($parameters, 'email_object');
+		if ($email instanceof QueuedEmail) {
+			// if notification was sent by cron
+			$values = array(
+				$email->getId(),
+				DB::escape(DateTimeValueLib::now()->toMySQL()), 
+				DB::escape($email->getTo()), 
+				DB::escape($email->getCc()), 
+				DB::escape($email->getBcc()), 
+				DB::escape($email->getFrom()), 
+				DB::escape($email->getSubject()), 
+				DB::escape($email->getBody()), 
+				DB::escape($email->getAttachments()), 
+				DB::escape($email->getTimestamp()),
+			);
+		} else {
+			// if notification is sent inmediately after an action (not by cron)
+			$values = array(
+				0,
+				DB::escape(DateTimeValueLib::now()->toMySQL()),
+				DB::escape(array_var($parameters, 'to', '')), 
+				DB::escape(array_var($parameters, 'cc', '')), 
+				DB::escape(array_var($parameters, 'bcc', '')), 
+				DB::escape(array_var($parameters, 'from', '')), 
+				DB::escape(array_var($parameters, 'subject', '')), 
+				DB::escape(array_var($parameters, 'body', '')), 
+				DB::escape(array_var($parameters, 'attachments', '')), 
+				DB::escape(array_var($parameters, 'timestamp', '')),
+			);
+		}
+		// columns to set
+		$columns_sql = "`queued_email_id`, `sent_date`, `to`, `cc`, `bcc`, `from`, `subject`, `body`, `attachments`, `timestamp`";
+		
+		// sql query
+		$sql = "INSERT INTO ".TABLE_PREFIX."sent_notifications ($columns_sql)
+				VALUES (". implode(",", $values) .")
+				ON DUPLICATE KEY UPDATE id=id";
+		
+		// execute the query
+		try {
+			DB::execute($sql);
+		} catch (Exception $e) {
+			Logger::log("ERROR: Could not save notification history.\nMessage:".$e->getMessage()."\nSQL:\n$sql");
+		}
 	}
 	
 } // Notifier

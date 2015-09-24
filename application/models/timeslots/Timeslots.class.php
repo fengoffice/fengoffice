@@ -245,6 +245,19 @@ class Timeslots extends BaseTimeslots {
 		return $result;
 	}
 	
+	static function getTotalMinutesWorkedOnObject($object_id) {
+		$sql = " SELECT SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60) as total
+				FROM `".TABLE_PREFIX."timeslots`
+				WHERE `rel_object_id` =  ". $object_id ." 
+				AND `end_time` > ".DB::escape(EMPTY_DATETIME).";";
+		return array_var(DB::executeOne($sql), "total");
+	}
+	
+	static function getTotalSecondsWorkedOnObject($object_id) {//getTotalSecondsWorkedOnObject
+		$totalMinutes = Timeslots::getTotalMinutesWorkedOnObject($object_id);
+		$totalSeconds = $totalMinutes * 60;
+		return $totalSeconds;
+	}
 	
 } // Timeslots
 

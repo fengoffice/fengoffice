@@ -48,6 +48,9 @@ og.OverviewManager = function() {
 					Ext.getCmp('overview-manager').reloadGridPagingToolbar('object','list_objects','overview-manager');
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
+					
+					Ext.getCmp('overview-manager').enableDisableActionsByContext();
+					
 				}
 			}
 		});
@@ -107,7 +110,7 @@ og.OverviewManager = function() {
 		mem_path = "";
 		var mpath = Ext.util.JSON.decode(r.data.memPath);
 		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
+			mem_path = "<div class='breadcrumb-container' style='display: inline-block;'>";
 			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
 			mem_path += "</div>";
 		}
@@ -576,6 +579,58 @@ Ext.extend(og.OverviewManager, Ext.grid.GridPanel, {
 	showMessage: function(text) {
 		if (this.innerMessage) {
 			this.innerMessage.innerHTML = text;
+		}
+	},
+	
+	enableDisableActionsByContext: function() {
+		// disable unavailable actions depending on current context
+		var add_actions = $(".dash-additional-action");
+		var disabled_actions = [];
+		
+		// for each action check the selected member in its associated dimension  
+		// and disable it if selected member cannot have a child with type=action.assoc_ot 
+		for (var i=0; i<add_actions.length; i++) {
+			var add_action = Ext.getCmp(add_actions[i].id);
+			
+			// if action does not have associated dimension or object type then dont disable it
+			if (add_action && add_action.assoc_ot > 0 && add_action.assoc_dim > 0) {
+				
+				// get selected member in action associated dimension
+				var sel_mem_type_id = og.contextManager.getSelectedMemberObjectTypeId(add_action.assoc_dim);
+				
+				// if member selected check if it can have child of type action.assoc_ot
+				if (sel_mem_type_id > 0) {
+					if (og.dimension_object_type_descendants[add_action.assoc_dim]
+						&& og.dimension_object_type_descendants[add_action.assoc_dim][sel_mem_type_id]) {
+						
+						// get descendants of selected member
+						var available_childs_tmp = og.dimension_object_type_descendants[add_action.assoc_dim][sel_mem_type_id];
+						var available_childs = [];
+						if (typeof(available_childs_tmp) == 'object') {
+							for (var j=0; j<available_childs_tmp.length; j++) {
+								available_childs.push(parseInt(available_childs_tmp[j]));
+							}
+						}
+						
+						// add to disabled_actions if action.assoc_ot cannot be descendant of selected member type
+						if (typeof(available_childs) == 'object' && available_childs.indexOf(add_action.assoc_ot) == -1) {
+							disabled_actions.push(add_action.id);
+						}
+					}
+				}
+			}
+		}
+		
+		// disable actions that are in disabled_actions and enable the others
+		for (var i=0; i<add_actions.length; i++) {
+			var add_action = Ext.getCmp(add_actions[i].id);
+			if (add_action) {
+				if (disabled_actions.indexOf(add_action.id) != -1) {
+					add_action.hide();
+				} else {
+					add_action.show();
+				}
+			}
 		}
 	}
 });

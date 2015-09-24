@@ -71,7 +71,7 @@
 		$result = Contacts::instance()->listing(array(
 			"order" => $order,
 			"order_dir" => "DESC",
-			"extra_conditions" => " AND `is_company` = 0 AND disabled = 0",
+			"extra_conditions" => " AND `is_company` = 0 AND disabled = 0 AND `user_type` > 0",
 			"start" => 0,
 			"limit" => $limit
 		));

@@ -153,7 +153,7 @@
 			?>
 				<div class="member-actions"><a class="db-ico ico-edit" href="<?php echo $edit_url?>"><?php echo lang('edit')?></a></div>
 		  <?php if(!is_null($log_data[$member->getId()]['created_by_id'])){ ?>
-				<div class="desc member-log"><?php echo lang('created by on', $created_by->getCardUrl(), $created_by_name, format_date($created_on))?></div>
+				<div class="desc member-log"><?php echo lang('created by on', ($created_by instanceof Contact ? $created_by->getCardUrl() : ''), $created_by_name, format_date($created_on))?></div>
 				<?php } ?>
 				<div class="clear"></div>
 			</div>

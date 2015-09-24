@@ -15,7 +15,7 @@ if (!isset($allow_export)) $allow_export = true;
 
 		<div class="coViewTitleContainer">
 			<div class="coViewTitle" style="margin-left:55px;"><?php echo $title ?></div>
-			<input type="submit" name="print" value="<?php echo lang('print view') ?>" onclick="og.reports.printReport('<?php echo $genid?>','<?php echo str_replace("'", "\'", $title) ?>'); return false;" style="width:150px; margin-top:10px;"/>
+			<input type="submit" name="print" value="<?php echo lang('print view') ?>" onclick="og.reports.printReport('<?php echo $genid?>','<?php echo escape_character($title) ?>'); return false;" style="width:150px; margin-top:10px;"/>
 
 			<input type="submit" name="exportCSV" value="<?php echo lang('export csv') ?>" onclick="og.submit_csv_form('<?php echo $genid ?>');return false;" style="width:150px; margin-top:10px;"/>
 			

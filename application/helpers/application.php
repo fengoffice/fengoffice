@@ -177,7 +177,7 @@ function intersectCSVs($csv1, $csv2){
 	return implode(',', $final);
 }
 
-function allowed_users_to_assign($context = null) {
+function allowed_users_to_assign($context = null, $filter_by_permissions = true) {
 	if ($context == null) {
 		$context = active_context();
 	}
@@ -196,7 +196,17 @@ function allowed_users_to_assign($context = null) {
 	if(!can_manage_tasks(logged_user()) && can_task_assignee(logged_user())) {
 		$contacts = array(logged_user());
 	} else if (can_manage_tasks(logged_user())) {
-		$contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ, "AND `is_company`=0 AND `company_id` IN (".implode(",", $comp_ids).")");
+		// for task selectors
+		if ($filter_by_permissions) {
+			$contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ, "AND `is_company`=0 AND `company_id` IN (".implode(",", $comp_ids).")");
+		} else {
+			// for template variables selectors
+			$tmp_contacts = Contacts::getAllUsers();
+			$contacts = array();
+			foreach ($tmp_contacts as $c) {
+				if (can_task_assignee($c)) $contacts[] = $c;
+			}
+		}
 	} else {
 		$contacts = array();
 	}
@@ -451,10 +461,16 @@ function render_object_custom_properties($object, $required, $co_type=null) {
  * @param ContentDataObject $object Show custom properties of this object
  * @return null
  */
-function render_member_custom_properties($member, $required, $visibility='all') {
-	tpl_assign('member', $member);
-	tpl_assign('visibility', $visibility);
-	return tpl_fetch(get_template_path('member_custom_properties', 'custom_properties'));
+function render_member_custom_properties($member, $required, $visibility='all', $parent_member=0, $member_is_new=false) {
+	if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+		tpl_assign('member', $member);
+		tpl_assign('visibility', $visibility);
+		tpl_assign('parent_member', $parent_member);
+		tpl_assign('member_is_new', $member_is_new);
+		return tpl_fetch(get_template_path('member_custom_properties', 'custom_properties'));
+	} else {
+		return "";
+	}
 } // render_member_custom_properties
 
 
@@ -1271,12 +1287,10 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 			if ( $all_dimensions = Dimensions::getAllowedDimensions($content_object_type_id) ) { // Diemsions for this content type
 				foreach ($all_dimensions as $dimension){ // A kind of intersection...
 					if ( isset($user_dimensions[$dimension['dimension_id']] ) ){
-						if( $dimension_options = json_decode($dimension['dimension_options'])){
-							if (isset($dimension_options->useLangs) && $dimension_options->useLangs ) {
-								$dimension['dimension_name'] = lang($dimension['dimension_code']);
-							}
-						}
-						$dimensions[] = $dimension ;
+						$custom_name = DimensionOptions::getOptionValue($dimension['dimension_id'], 'custom_dimension_name');
+						$dimension['name'] = $custom_name && trim($custom_name) != "" ? $custom_name : lang($dimension['code']);
+						
+						$dimensions[] = $dimension;
 					}
 				}
 			}
@@ -1330,7 +1344,7 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 						if (!$dimension['is_manageable']) continue;
 						
 						$is_required = $dimension['is_required'];				
-						$dimension_name = $dimension['dimension_name'] ;				
+						$dimension_name = escape_character($dimension['dimension_name']);				
 						if ($is_required) $dimension_name.= " *" ;
 						
 						if (is_array($simulate_required) && in_array($dimension_id, $simulate_required))
@@ -1343,7 +1357,7 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 							dimensionId: <?php echo $dimension_id ?>,
 							objectTypeId: <?php echo $content_object_type_id ?>,
 							required: <?php echo $is_required ?>,
-							reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReload($dimension_id) ) ; ?>,
+							reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK ); ?>,
 							isMultiple: <?php echo $dimension['is_multiple'] ?>,
 							selModel: <?php echo ($dimension['is_multiple'])?
 								'new Ext.tree.MultiSelectionModel()':
@@ -1467,6 +1481,9 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			$dimension_info = $dimension;
 		}
 		
+		$custom_name = DimensionOptions::getOptionValue($dimension_info['dimension_id'], 'custom_dimension_name');
+		$dimension_info['dimension_name'] = ($custom_name && trim($custom_name) != "" ? $custom_name : $dimension_info['dimension_name']);
+		
 		$dimension_id  = $dimension_info['dimension_id'];
 		if (is_null($genid)) $genid = gen_id();
 		$selected_members_json = json_encode($selected_members);
@@ -1497,7 +1514,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				if ( is_array(array_var($options, 'allowedDimensions')) && array_search($dimension_id, $options['allowedDimensions']) === false ){
 					continue;	 
 				}					
-				$dimension_name = $dimension_info['dimension_name'];
+				$dimension_name = escape_character($dimension_info['dimension_name']);
 				if (!isset($id)) $id = gen_id();
 			?>
 			var select_root = <?php echo (array_var($options, 'select_root') ? '1' : '0') ?>;
@@ -1520,7 +1537,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				width: <?php echo array_var($options, 'width', '385') ?>,
 				listeners: {'tree rendered': function (t) {if (select_root) t.root.select();}}
 			};
-
+		
 			<?php if( isset ($options['root_lang'])) : ?>
 				config.root_lang = <?php echo json_encode($options['root_lang']) ?>;
 			<?php endif; ?>

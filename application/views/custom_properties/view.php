@@ -44,7 +44,7 @@
 						$exploded = explode("|", $values);
 						foreach ($exploded as &$v) {
 							$v = str_replace("%%_PIPE_%%", "|", $v);
-							$v = str_replace("'", "\'", $v);
+							$v = escape_character($v);
 						}
 						if (count($exploded) > 0) {
 							$address_type = array_var($exploded, 0, '');
@@ -56,6 +56,7 @@
 							
 							$out = $street;
 							if($city != '') $out .= ' - ' . $city;
+							if($zip_code != '') $out .= ' - ' . $zip_code;
 							if($state != '') $out .= ' - ' . $state;
 							if($country != '') $out .= ' - ' . lang("country $country");
 

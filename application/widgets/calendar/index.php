@@ -21,6 +21,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 	$genid = gen_id();
 	
 	require_javascript('og/EventPopUp.js');
+	require_javascript('og/CalendarFunctions.js');
 	
 	//$startday = date("d",mktime()) - (date("N", mktime()) %7);
 	if (user_config_option("start_monday")) {
@@ -192,7 +193,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 			
 			$start_value = $dtv->format(user_config_option('date_format'));
 			$popupTitle = lang('add event');
-			$output .= "><div style='z-index:0; min-height:100px; height:100%;cursor:pointer' onclick=\"og.EventPopUp.show(null, {caller:'overview-panel', day:'".$dtv->getDay()."', month:'".$dtv->getMonth()."', year:'".$dtv->getYear()."', type_id:1, hour:'9', minute:'0', durationhour:1, durationmin:0, start_value: '$start_value', start_time:'9:00', title:'".format_datetime($dtv, 'l, j F', logged_user()->getTimezone()) ."', view: 'week', title: '$popupTitle', time_format: '$timeformat', hide_calendar_toolbar: 0},'');\") >
+			$output .= "><div style='z-index:0; min-height:100px; height:100%;cursor:pointer' onclick=\"og.showEventPopup('".$dtv->getDay()."','".$dtv->getMonth()."','".$dtv->getYear()."',9,0,true,'".$start_value."', '".$genid."',1,true);\") >
 			<div class='$daytitle' style='text-align:right'>";
 			//if($day_of_month >= 1){
 				$output .= "<a class='internalLink' href=\"$p\" onclick=\"og.disableEventPropagation(event);\"  style='color:#5B5B5B' >$w</a>";				

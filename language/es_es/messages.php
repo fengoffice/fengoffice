@@ -672,4 +672,31 @@
 		
 	'all previous tasks have been completed' => 'Las tareas previas a \'{0}\' han sido completadas',
 	'task x can be started' => 'Las tareas previas han sido completadas. Ya puede comenzar a trabajar en la tarea \'{0}\'.',
+		
+
+		'close' => 'Cerrar',
+		'invalid webpage' => 'La dirección del sitio web introduccida no es válida',
+		'information' => 'Información',
+		'confirm disable user' => '¿Realmente quiere desactivar esta cuenta?',
+		'log login contact data' => 'usuario {0} ingresó desde IP: {1}',
+		'log logout contact data' => 'usuario {0} salió del sistema',
+		'log edit contact' => 'usuario {0} editado',
+		'log delete contact' => 'usuario {0} eliminado',
+		'log add contact' => 'usuario {0} agregado',
+		'log read files' => 'Vió \'{0}\'',
+		'log download files' => 'Descargó \'{0}\'',
+		'log read message' => 'Vió \'{0}\'',
+		'log read mailcontent' => 'Vió \'{0}\'',
+		'log read event' => 'Vió \'{0}\'',
+		'log read task' => 'Vió \'{0}\'',
+		'log read milestone' => 'Vió \'{0}\'',
+		'log read webpage' => 'Vió \'{0}\'',
+		'log read report' => 'Vió \'{0}\'',
+		'the Contact' => 'la persona',
+		'no groups in company' => 'Todavía no se han agregado grupos',
+		'confirm restore user' => 'El usuario será activado. ¿Continuar?',
+		'log login contact' => 'usuario {0} ha ingresado',
+		'the Time' => 'el tiempo de trabajo',
+		'success delete member' => '{0} ha sido eliminado',
+		
 ); ?>

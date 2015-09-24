@@ -112,7 +112,7 @@
     */
     function getSystemColumns() {
       return array_merge(parent::getSystemColumns(), array(
-      	'company_id', 'picture_file', 'timezone', 'user_id', 'avatar_file',
+      	'company_id', 'picture_file', 'picture_file_small', 'picture_file_medium', 'timezone', 'user_id', 'avatar_file',
       	'contact_passwords_id', 'permission_group_id', 
       	'personal_member_id', 'salt', 'token', 'twister',
       	'is_active_user', 'user_type', 'default_billing_id')

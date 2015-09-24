@@ -11,11 +11,9 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 		if ( $all_dimensions = Dimensions::getAllowedDimensions($content_object_type_id) ) {
 			foreach ($all_dimensions as $dimension){
 				if ( isset($user_dimensions[$dimension['dimension_id']] ) ){
-					if( $dimension_options = json_decode($dimension['dimension_options'])){
-						if (isset($dimension_options->useLangs) && $dimension_options->useLangs ) {
-							$dimension['dimension_name'] = lang($dimension['dimension_code']);
-						}
-					}
+					$custom_name = DimensionOptions::getOptionValue($dimension['dimension_id'], 'custom_dimension_name');
+					$dimension['dimension_name'] = $custom_name && trim($custom_name) != "" ? $custom_name : lang($dimension['dimension_code']);
+					
 					$dimensions[] = $dimension;
 				}
 			}
@@ -64,7 +62,6 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 			}
 			$initial_selected_members = $tmp;
 			
-			
 			// Render view
 			include get_template_path("components/multiple_dimension_selector", "dimension");
 			
@@ -76,23 +73,19 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 function render_single_member_selector(Dimension $dimension, $genid = null, $selected_member_ids = null, $options = array(), $default_view = true) {
 	if (is_null($genid)) $genid = gen_id();
 	
-	$dimension_options = $dimension->getOptions(true);
 	$dim_info = array(
 		'dimension_id' => $dimension->getId(),
 		'dimension_code' => $dimension->getCode(),
-		'dimension_options' => $dimension_options,
+		'dimension_name' => $dimension->getName(),
 		'is_manageable' => $dimension->getIsManageable(),
 		'is_required' => array_var($options, 'is_required'),
 		'is_multiple' => array_var($options, 'is_multiple'),
 	);
-	if($dimension_options && isset($dimension_options->useLangs) && $dimension_options->useLangs ) {
-		$dim_info['dimension_name'] = lang($dimension->getCode());
-	} else {
-		$dim_info['dimension_name'] = $dimension->getName();
-	}
 	
 	$dimensions = array($dim_info);
-	
+	if (!is_array($selected_member_ids)) {
+		$selected_member_ids = array();
+	}
 	foreach ($selected_member_ids as $k => &$v) {
 		if (!is_numeric($v)) unset($selected_member_ids[$k]);
 	}

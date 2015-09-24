@@ -8,7 +8,7 @@
 	</div>
 	
 	<div class="widget-body" id="<?php echo $genid; ?>_widget_body">
-		<?php echo escape_html_whitespace(convert_to_links(clean($workspace->getDescription()))); ?>
+		<?php echo escape_html_whitespace(convert_to_links(clean($description))); ?>
 	</div>
 </div>
 <?php  endif ;?>
