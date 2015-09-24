@@ -66,7 +66,7 @@
 	'phone number' => '电话号码',
 	'phone numbers' => '多个电话号码',
 	'office phone number' => '办公电话',
-	'fax number' => '传真',
+	'fax number' => '传真号',
 	'mobile phone number' => '手机',
 	'home phone number' => '家庭电话',
 	'homepage' => '主页',
@@ -392,4 +392,7 @@
 	'users in' => '用户 {0}',
 	'widget_overdue_upcoming_assigned_to_user' => '显示任务',
 	'widget_calendar_filter_by_myself' => '仅显示本人的活动',
+	'sec order' => '订单',
+	'activity_feed' => '近期活动',
+	'overdue and upcomming' => '过去未来',
 ); ?>

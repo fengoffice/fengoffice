@@ -132,8 +132,8 @@
 	'log read weblink' => '用户已经访问该链接
 ',
 	'activity upload' => '{1} 上传新版本 {0} {2}',
-	'activity checkout' => '{1} 检出 {0} {2}',
-	'activity checkin' => '{1} 检入 {0} {2}',
+	'activity checkout' => '{1} 解锁 {0} {2}',
+	'activity checkin' => '{1} 锁定 {0} {2}',
 	'activity made several changes' => '{1} 作出变更在 {0} {2}',
 	'the company activity' => '公司{0}',
 	'report' => '报表',
@@ -170,4 +170,5 @@
 	'log read mail' => '用户访问了邮件',
 	'log read event' => '用户访问了活动',
 	'warning file extension type' => '警告：您将要保存一个文件，以不同的文件扩展名从以前的',
+	'mail' => '邮件',
 ); ?>
