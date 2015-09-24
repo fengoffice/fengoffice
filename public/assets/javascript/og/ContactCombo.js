@@ -114,6 +114,8 @@ og.renderContactSelector = function(config) {
 		})
 	});
 	
+	var list_class = (config.listClass ? config.listClass : '') + ' ' + genid;
+	
 	var contactsCombo = new og.ContactCombo({
 		renderTo: genid + render_to,
 		name: name + 'combo',
@@ -126,7 +128,7 @@ og.renderContactSelector = function(config) {
         width: !isNaN(config.width) ? config.width : 300,
 		listWidth: config.listWidth ? config.listWidth : 'auto',
         cls: config.cls ? config.cls : 'assigned-to-combo',
-        listClass: config.listClass ? config.listClass : '',
+        listClass: list_class,
         shadow: config.shadow != 'undefined' ? config.shadow : true,
         triggerAction: 'all',
         selectOnFocus: true,
@@ -136,6 +138,24 @@ og.renderContactSelector = function(config) {
 	});
 	contactsCombo.doQuery('', true);
 
+	// ensure that dropdown list is aligned with the text input
+	contactsCombo.on('expand', function(combo) {
+		var ddlist = $("."+genid);
+		ddlist = ddlist[0];
+		
+		combo.try_count = 0;
+		var interval_ddlist = setInterval(function(){
+			var left = $('#' + genid + id + 'combo').offset().left;
+			if (left == $(ddlist).offset().left || combo.try_count >= 50) {
+				clearInterval(interval_ddlist);
+			} else {
+				$(ddlist).css('left', left + 'px');
+				$(ddlist).css('min-width', ($('#' + genid + id + 'combo').outerWidth()-2)+'px');
+			}
+			combo.try_count = combo.try_count + 1;
+		}, 10);
+	});
+	
 	contactsCombo.on('beforeselect', function(combo, record, index){
 		
 		if (record.data.id == -1) {

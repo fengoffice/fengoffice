@@ -23,6 +23,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		$start = array_var($args,'start');
 		$limit = array_var($args,'limit');
 		$order = array_var($args,'order', 'id');
+		$order_dir = array_var($args,'order_dir', 'DESC');
 		$dimension = array_var($args,'dimension');
 		$parent_member_id = array_var($args,'parent_member_id',null);
 		$contact_id = array_var($args,'contact_id',null);
@@ -60,7 +61,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 					INNER JOIN  ".TABLE_PREFIX."members m ON cmc.member_id = m.id 					
 					WHERE m.dimension_id = ".$dimension->getId()."
 					$SQL_CONDITION
-					ORDER BY $order DESC 
+					ORDER BY $order $order_dir 
 					$SQL_LIMIT ;
 		";
 		
@@ -127,7 +128,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 			
 			//Get all members	
 			$extra_conditions = " AND id IN (".implode(",",$members_ids).")";
-			$all_members = $dimension->getAllMembers(false, null, true, $extra_conditions, null);
+			$all_members = $dimension->getAllMembers(false, array_var($args,'order',null), true, $extra_conditions, null, array_var($args,'order_dir',null));
 				
 			//Add an extra temp param with the cached parent id
 			foreach ($all_members as $member){

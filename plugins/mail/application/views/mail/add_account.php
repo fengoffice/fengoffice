@@ -206,6 +206,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 			<span class="desc"><?php echo lang ('classify mails on workspace desc') ?> </span>
 		</div>
 		
+		<div class="clear"></div>
+		
 	</div>
 
 	<div id="<?php echo $genid ?>smtp_settings_div" class="form-tab">

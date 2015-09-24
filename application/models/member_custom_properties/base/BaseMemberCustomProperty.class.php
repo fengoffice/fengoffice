@@ -295,6 +295,50 @@
     function setVisibleByDefault($value) {
       return $this->setColumnValue('visible_by_default', $value);
     } // getVisibleByDefault() 
+    
+    /**
+     * Return value of 'is_special' field
+     *
+     * @access public
+     * @param void
+     * @return boolean
+     */
+    function getIsSpecial() {
+    	return $this->getColumnValue('is_special');
+    } // getIsSpecial()
+    
+    /**
+     * Set value of 'is_special' field
+     *
+     * @access public
+     * @param boolean $value
+     * @return boolean
+     */
+    function setIsSpecial($value) {
+    	return $this->setColumnValue('is_special', $value);
+    } // setIsSpecial()
+    
+    /**
+     * Return value of 'is_disabled' field
+     *
+     * @access public
+     * @param void
+     * @return boolean
+     */
+    function getIsDisabled() {
+    	return $this->getColumnValue('is_disabled');
+    } // getIsDisabled()
+    
+    /**
+     * Set value of 'is_disabled' field
+     *
+     * @access public
+     * @param boolean $value
+     * @return boolean
+     */
+    function setIsDisabled($value) {
+    	return $this->setColumnValue('is_disabled', $value);
+    } // getIsDisabled()
       
     /**
     * Return manager instance

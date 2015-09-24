@@ -24,7 +24,9 @@
     	'is_required' => DATA_TYPE_BOOLEAN,
     	'is_multiple_values' => DATA_TYPE_BOOLEAN,
     	'property_order' => DATA_TYPE_INTEGER,
-    	'visible_by_default' => DATA_TYPE_BOOLEAN
+    	'visible_by_default' => DATA_TYPE_BOOLEAN,
+    	'is_special' => DATA_TYPE_INTEGER,
+    	'is_disabled' => DATA_TYPE_BOOLEAN,
     );
   
     /**

@@ -193,7 +193,13 @@ class Contacts extends BaseContacts {
 		$year1 = $from->getYear();
 		$year2 = $to->getYear();
 		if ($year1 == $year2) {
-			$condition = 'DAYOFYEAR(`birthday`) >= DAYOFYEAR(' . DB::escape($from) . ')' . ' AND DAYOFYEAR(`birthday`) <= DAYOFYEAR(' . DB::escape($to) . ')';
+			$firstDate = $from->format('Ymd');
+			$secondDate = $to->format('Ymd');
+			if ($firstDate == $secondDate) {				
+				$condition = "DATE_FORMAT(`birthday`, '%m-%d') = DATE_FORMAT(" . DB::escape($from) . ", '%m-%d')";
+			}else{
+				$condition = 'DAYOFYEAR(`birthday`) >= DAYOFYEAR(' . DB::escape($from) . ')' . ' AND DAYOFYEAR(`birthday`) <= DAYOFYEAR(' . DB::escape($to) . ')';
+			}
 		} else if ($year2 - $year1 == 1) {
 			$condition = '(DAYOFYEAR(`birthday`) >= DAYOFYEAR(' . DB::escape($from) . ')' . ' OR DAYOFYEAR(`birthday`) <= DAYOFYEAR(' . DB::escape($to) . '))';
 		} else {

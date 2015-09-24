@@ -76,6 +76,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	protected $timeslots = null;
 	
 	/**
+	 * When this attribute is set to true, no calculations in other tables should be triggered
+	 */
+	protected $dont_make_calculations = false;
+	
+	/**
 	 * 
 	 * Enter description here ...
 	 */
@@ -431,6 +436,15 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	function setTrashedById($value){
 		return $this->object->setTrashedById($value);
 	} // setTrashedById()   
+
+	
+	
+	function getDontMakeCalculations() {
+		return $this->dont_make_calculations;
+	}
+	function setDontMakeCalculations($value) {
+		$this->dont_make_calculations = $value;
+	}
 
 	
 	/**
@@ -1033,6 +1047,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$this->getObject()->setColumnValue('archived_by_id', logged_user()->getId());
 		}
 		$this->save();
+		
+		// archive associated member if exists
+		$mem = Members::findOneByObjectId($this->getId());
+		if ($mem instanceof Member) {
+			$mem->archive(logged_user());
+		}
 	}
 	
 	
@@ -1044,6 +1064,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$this->getObject()->setColumnValue('archived_by_id', 0);
 		}
 		$this->save();
+		
+		// unarchive associated member if exists
+		$mem = Members::findOneByObjectId($this->getId());
+		if ($mem instanceof Member) {
+			$mem->unarchive(logged_user());
+		}
 	}
 	
 	
@@ -1579,14 +1605,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 */
 	//
 	function getTotalMinutes(){
-		$timeslots = $this->getTimeslots();
-		$totalMinutes = 0;
-		if (is_array($timeslots)){
-			foreach ($timeslots as $ts){
-				if (!$ts->isOpen())
-				$totalMinutes += $ts->getMinutes();
-			}
-		}
+		$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+		$totalMinutes = $totalSeconds / 60;
 		return $totalMinutes;
 	}
 
@@ -1597,15 +1617,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 */
 
 	function getTotalSeconds(){
-		$timeslots = $this->getTimeslots();
-		$totalMinutes = 0;
-		if (is_array($timeslots)){
-			foreach ($timeslots as $ts){
-				if (!$ts->isOpen())
-				$totalMinutes += $ts->getSeconds();
-			}
-		}
-		return $totalMinutes;
+		$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+		return $totalSeconds;
 	}
 	
 
@@ -1652,8 +1665,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		
 		if(count($members) > 0){
 			foreach ($members as $mem) {
-				$options = Dimensions::getDimensionById($mem['dimension_id'])->getOptions(true);
-				if (isset($options->showInPaths) && $options->showInPaths) {
+				$dimension = Dimensions::getDimensionById($mem['dimension_id']);
+				
+				if (intval($dimension->getOptionValue('showInPaths'))) {
 					if (!isset($members_info[$mem['dimension_id']])) $members_info[$mem['dimension_id']] = array();
 					
 					$active_context_condition = true;

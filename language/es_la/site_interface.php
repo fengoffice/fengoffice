@@ -446,8 +446,8 @@
 	'success create timeslot' => 'Tiempo de trabajo creado en forma satisfactoria',
 	'do complete' => 'Completar',
 	'task data' => 'Datos de tarea',
-	'basic data' => 'Basic data',
-	'more details' => 'More details',
+	'basic data' => 'Datos básicos',
+	'more details' => 'Más detalles',
 	'search in all workspaces' => 'Buscar en todas partes',
 	'paused time' => 'Tiempo pausado',
 	'total pause time' => 'Tiempo total pausado',
@@ -631,4 +631,7 @@
 	'set manual permissions desc' => 'Si los permisos no se asignan manualmente, serán asignados automáticamente según el rol del usuario (Administradores, Gerentes and Ejecutivos tendrán todos los permisos asignados).',
 	'or you can also' => 'O también puede',
 	'template parameters description' => 'Este formulario contiene los parámetros necesarios para completar los datos de las tareas a generar.',
+    'pending' => 'Pendiente',
+    'template_task' => 'Plantilla de tarea',
+    'repeat options' => 'Opciones de repetición',
 );

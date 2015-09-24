@@ -44,6 +44,7 @@ CREATE TABLE `<?php echo $table_prefix ?>members` (
   `parent_member_id` int(10) unsigned NOT NULL default '0',
   `depth` int(2) unsigned NOT NULL,
   `name` varchar(160) <?php echo $default_collation ?> NOT NULL default '',
+  `description` TEXT NOT NULL,
   `object_id` int(10) unsigned,
   `order` int(10) unsigned NOT NULL default '0',
   `color` int(10) unsigned NOT NULL default '0',
@@ -106,6 +107,7 @@ CREATE TABLE `<?php echo $table_prefix ?>dimension_object_types` (
   `object_type_id` int(10) unsigned NOT NULL,
   `is_root` tinyint(1) unsigned NOT NULL default '0',
   `options` TEXT NOT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY  (`dimension_id`,`object_type_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -114,6 +116,21 @@ CREATE TABLE `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (
   `parent_object_type_id` int(10) unsigned NOT NULL,
   `child_object_type_id` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`dimension_id`,`parent_object_type_id`,`child_object_type_id`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE `<?php echo $table_prefix ?>dimension_options` (
+  `dimension_id` INTEGER UNSIGNED NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `value` TEXT NOT NULL,
+  PRIMARY KEY (`dimension_id`, `name`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE `<?php echo $table_prefix ?>dimension_object_type_options` (
+  `dimension_id` INTEGER UNSIGNED NOT NULL,
+  `object_type_id` INTEGER UNSIGNED NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `value` TEXT NOT NULL,
+  PRIMARY KEY (`dimension_id`, object_type_id, `name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>object_members` (
@@ -1193,6 +1210,8 @@ CREATE TABLE `<?php echo $table_prefix ?>member_custom_properties` (
   `is_multiple_values` tinyint(1) NOT NULL,
   `property_order` int(10) NOT NULL,
   `visible_by_default` tinyint(1) NOT NULL,
+  `is_special` tinyint(1) NOT NULL,
+  `is_disabled` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -1222,4 +1241,19 @@ CREATE TABLE `<?php echo $table_prefix ?>template_instantiated_parameters` (
   `parameter_name` varchar(255) <?php echo $default_collation ?> NOT NULL,
   `value` TEXT NOT NULL,
   PRIMARY KEY (`template_id`, `instantiation_id`, `parameter_name`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE `<?php echo $table_prefix ?>sent_notifications` (
+ `id` int(10) NOT NULL AUTO_INCREMENT,
+ `queued_email_id` int(10) NOT NULL DEFAULT 0,
+ `sent_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+ `to` text <?php echo $default_collation ?>,
+ `cc` text <?php echo $default_collation ?>,
+ `bcc` text <?php echo $default_collation ?>,
+ `from` text <?php echo $default_collation ?>,
+ `subject` text <?php echo $default_collation ?>,
+ `body` text <?php echo $default_collation ?>,
+ `attachments` text <?php echo $default_collation ?>,
+ `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+ PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;

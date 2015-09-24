@@ -70,9 +70,10 @@ og.eventManager.addListener('update dimension tree node',
 			if (tree && !tree.hidden){
 
 				var callback_extra_params = {
-												dim_id:data.dim_id,
-												member_id:data.member_id												
-											}; 
+					dim_id:data.dim_id,
+					select_node: data.select_node,
+					member_id:data.member_id
+				};
 				og.getMemberFromServer(data.member_id, og.updateDimensionTreeNode, callback_extra_params);					
 			}
 		}
@@ -516,6 +517,24 @@ og.eventManager.addListener('ask to assign default permissions',
 			if (confirm(lang('do you want to add default permissions in member for users', data.member.name, user_names.join(', ')))) {
 				og.openLink(og.getUrl('member', 'add_default_permissions', {member_id:data.member.id, user_ids:data.user_ids}));
 			}
+		}
+	}
+);
+
+og.eventManager.addListener('refresh member list parameters', 
+	function (data){
+		if (!og.member_list_params) og.member_list_params = {};
+		og.member_list_params.object_type_name = data.object_type_name;
+		og.member_list_params.object_type_id = data.object_type_id;
+		og.member_list_params.dimension_id = data.dimension_id;
+		og.member_list_params.dimension_code = data.dimension_code;
+	}
+);
+
+og.eventManager.addListener('add tasks info to tasks list', 
+	function (data) {
+		if (data && data.tasks && data.tasks.length > 0) {
+			ogTasks.drawTasksRowsAfterAddEdit(data);
 		}
 	}
 );

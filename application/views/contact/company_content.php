@@ -57,6 +57,7 @@
     		
 			$out = $address->getStreet();
 			if($address->getCity() != '') $out .= ' - ' . $address->getCity();
+			if($address->getZipCode() != '') $out .= ' - ' . $address->getZipCode();
 			if($address->getState() != '') $out .= ' - ' . $address->getState();
 			if($address->getCountry() != '') $out .= ' - ' . $address->getCountryName();
 			

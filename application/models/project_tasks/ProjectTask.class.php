@@ -395,7 +395,7 @@ class ProjectTask extends BaseProjectTask {
 		}
 
 		if(user_config_option('close timeslot open')){
-			$timeslots = $this->getTimeslots();
+			$timeslots = Timeslots::getOpenTimeslotsByObject($this->getId());
 			if ($timeslots){
 				foreach ($timeslots as $timeslot){
 					if ($timeslot->isOpen())
@@ -819,6 +819,56 @@ class ProjectTask extends BaseProjectTask {
 		return $result;
 	} // getTasks
 	
+	
+	/**
+	 * Gets all subtasks ids recursively
+	 */
+	function getAllSubtaskIdsInHierarchy() {
+		$subtasks_ids = array();
+		$this->getAllSubtaskIdsInHierarchyRecursive($subtasks_ids);
+		
+		return $subtasks_ids;
+	}
+	
+	/**
+	 * Private function to get the subtasks ids recursively
+	 */
+	private function getAllSubtaskIdsInHierarchyRecursive(&$all_subtasks_ids) {
+		$subtasks_ids = $this->getSubTasksIds();
+		foreach ($subtasks_ids as $sub_id) {
+			$all_subtasks_ids[$sub_id] = $sub_id;
+			$sub = ProjectTasks::findById($sub_id);
+			if ($sub instanceof ProjectTask) {
+				$sub->getAllSubtaskIdsInHierarchyRecursive($all_subtasks_ids);
+			}
+		}
+	}
+	
+	/**
+	 * Gets all subtasks info recursively
+	 */
+	function getAllSubtaskInfoInHierarchy() {
+		$subtasks = array();
+		$this->getAllSubtaskInfoInHierarchyRecursive($subtasks, 1);
+	
+		return $subtasks;
+	}
+	
+	/**
+	 * Private function to get the subtasks info recursively
+	 */
+	private function getAllSubtaskInfoInHierarchyRecursive(&$subtasks, $depth=0) {
+		$subtasks_ids = $this->getSubTasksIds();
+		foreach ($subtasks_ids as $sub_id) {
+			$sub = ProjectTasks::findById($sub_id);
+			if ($sub instanceof ProjectTask) {
+				$subtasks[$sub_id] = $sub->getArrayInfo();
+				$subtasks[$sub_id]['depth'] = $depth;
+				$sub->getAllSubtaskInfoInHierarchyRecursive($subtasks, $depth+1);
+			}
+		}
+	}
+	
 	/**
 	 * Return open tasks
 	 *
@@ -1140,8 +1190,10 @@ class ProjectTask extends BaseProjectTask {
 	function delete($delete_children = true) {
 		if($delete_children)  {
 			$children = $this->getSubTasks();
-			foreach($children as $child)
+			foreach($children as $child) {
+				$child->setDontMakeCalculations($this->getDontMakeCalculations());
 				$child->delete(true);
+			}
 		}
 		ProjectTaskDependencies::delete('( task_id = '. $this->getId() .' OR previous_task_id = '.$this->getId().')');
 				
@@ -1155,8 +1207,10 @@ class ProjectTask extends BaseProjectTask {
 			$trashDate = DateTimeValueLib::now();
 		if($trash_children)  {
 			$children = $this->getAllSubTasks();
-			foreach($children as $child)
+			foreach($children as $child) {
+				$child->setDontMakeCalculations($this->getDontMakeCalculations());
 				$child->trash(true,$trashDate);
+			}
 		}
 		return parent::trash($trashDate);
 	} // delete
@@ -1166,8 +1220,10 @@ class ProjectTask extends BaseProjectTask {
 			$archiveDate = DateTimeValueLib::now();
 		if($archive_children)  {
 			$children = $this->getAllSubTasks();
-			foreach($children as $child)
+			foreach($children as $child) {
+				$child->setDontMakeCalculations($this->getDontMakeCalculations());
 				$child->archive(true,$archiveDate);
+			}
 		}
 		return parent::archive($archiveDate);
 	} // delete
@@ -1279,9 +1335,12 @@ class ProjectTask extends BaseProjectTask {
 		parent::unarchive();
 		if ($unarchive_children){
 			$children = $this->getAllSubTasks();
-			foreach($children as $child)
-				if ($child->isArchived() && $child->getArchivedOn()->getTimestamp() == $archiveTime->getTimestamp())
+			foreach($children as $child) {
+				if ($child->isArchived() && $child->getArchivedOn()->getTimestamp() == $archiveTime->getTimestamp()) {
+					$child->setDontMakeCalculations($this->getDontMakeCalculations());
 					$child->unarchive(false);
+				}
+			}
 		}
 	}
 
@@ -1290,9 +1349,12 @@ class ProjectTask extends BaseProjectTask {
 		parent::untrash();
 		if ($untrash_children){
 			$children = $this->getAllSubTasks();
-			foreach($children as $child)
-				if ($child->isTrashed() && $child->getTrashedOn()->getTimestamp() == $deleteTime->getTimestamp())
+			foreach($children as $child) {
+				if ($child->isTrashed() && $child->getTrashedOn()->getTimestamp() == $deleteTime->getTimestamp()) {
+					$child->setDontMakeCalculations($this->getDontMakeCalculations());
 					$child->untrash(false);
+				}
+			}
 		}
 /* FIXME
 		if ($this->hasOpenTimeslots()){
@@ -1498,13 +1560,10 @@ class ProjectTask extends BaseProjectTask {
 
 	function calculatePercentComplete() {
 		if (!$this->isCompleted() && $this->getTimeEstimate() > 0){
-			$all_timeslots = $this->getTimeslots();
-			$total_time = 0;
-			foreach ($all_timeslots as $ts) {
-				if (!$ts->getEndTime() instanceof DateTimeValue) continue;
-				$total_time += ($ts->getEndTime()->getTimestamp() - ($ts->getStartTime()->getTimestamp() + $ts->getSubtract())) / 3600;
-			}
-			$total_percentComplete = round(($total_time * 100) / ($this->getTimeEstimate() / 60));
+			$total_time = 0;			
+			$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+			
+			$total_percentComplete = round(($totalSeconds * 100) / ($this->getTimeEstimate() * 60));
 			if ($total_percentComplete < 0) $total_percentComplete = 0;
 			
 			$this->setPercentCompleted($total_percentComplete);

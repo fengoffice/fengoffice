@@ -16,6 +16,9 @@
 	
 	'and' => 'and',
 	'Any' => 'Any',
+	'color' => 'Color',
+	'custom property is disabled' => 'This custom property is disabled and won\'t be shown in forms.',
+	'enable' => 'Enable',
 	
 	'modify subtasks dates' => 'Modify subtasks dates?',
 	'success update subtasks dates' => 'Subtasks dates updated successfully.',
@@ -25,4 +28,10 @@
 	'forward' => 'forward',
 	'backward' => 'backward',
 	'task start or due date has been changed' => 'Task start or due date has been changed.',
+	'located under' => 'Located under',
+	'add new member' => 'Add new {0}',
+	'edit selected member' => 'Edit selected {0}',
+	'delete selected member' => 'Delete selected {0}',
+	'delete member warning' => 'Are you sure you want to delete this {0}?',
+	'tasks list' => 'Tasks list',
 );

@@ -555,6 +555,7 @@ class TemplateTask extends BaseTemplateTask {
 		if($new_due_date != "") {
 			if ($new_task->getDueDate() instanceof DateTimeValue) $new_task->setDueDate($new_due_date);
 		}
+		$new_task->setDontMakeCalculations(true);
 		$new_task->save();
 		
 		// Copy members, linked_objects, custom_properties, subscribers, reminders and comments
@@ -1444,7 +1445,7 @@ class TemplateTask extends BaseTemplateTask {
 			//set Parents Path
 			$parents_ids = array();
 			$parent = $this->getParent();
-			if(!$parent instanceof ProjectTask){
+			if(!$parent instanceof TemplateTask){
 				return;
 			}
 			$stop = false;
@@ -1647,7 +1648,7 @@ class TemplateTask extends BaseTemplateTask {
 			'cid' => $this->getCreatedById(),
 			'otype' => $this->getObjectSubtype(),
 			'pc' => $this->getPercentCompleted(),
-			'memPath' => str_replace('"',"'", str_replace("'", "\'", json_encode($this->getMembersIdsToDisplayPath())))
+			'memPath' => str_replace('"',"'", escape_character(json_encode($this->getMembersIdsToDisplayPath())))
 		);
 
 		if ($full) {

@@ -348,9 +348,9 @@ if (isset($email)){
 			} else {
 				$url = get_url('mail', 'show_html_mail', array('pre' => $tpre, 'r' => gen_id()));
 			}
-			$content .= '<div style="position: relative; left:0; top: 0; width: 100%; height: 100px; background-color: white">';
+			$content .= '<div style="position: relative; left:0; top: 0; width: 100%; height: 600px; background-color: white">';
 			$content .= '<iframe id="'.$genid.'ifr" name="'.$genid.'ifr" style="width:100%;height:100%" frameborder="0" src="'.$url.'" 
-							onload="javascipt:iframe=document.getElementById(\''.$genid.'ifr\'); iframe.parentNode.style.height = Math.min(600, iframe.contentWindow.document.body.scrollHeight + 30) + \'px\' ;">
+							onload="javascipt:iframe=document.getElementById(\''.$genid.'ifr\'); iframe.parentNode.style.height = Math.min(600, iframe.contentWindow.document.body.scrollHeight + 60) + \'px\' ;">
 						</iframe>';
 			'<script>if (Ext.isIE) document.getElementById(\''.$genid.'ifr\').contentWindow.location.reload();</script>';
 			$content .= '<a class="ico-expand" style="display: block; width: 16px; height: 16px; cursor: pointer; position: absolute; right: 20px; top: 2px" title="' . lang('expand') . '" onclick="og.expandDocumentView(this)"></a>

@@ -74,7 +74,7 @@
 	padding-left: 17px;
 	margin-left: 10px;
 }
-.coInputMainBlock .dataBlock .ws-color-chooser {
+.coInputMainBlock .ws-color-chooser {
 	margin-left: 200px;
 }
 
@@ -124,9 +124,15 @@
 .task-data {
 	min-width: 950px;
 }
-.task-data .dataBlock input.checkbox{
-	margin-top: 5px;
+.task-data .dataBlock input.checkbox {
+	margin-top: 4px;
 	margin-left: 10px;
+}
+.task-data .left-section .dataBlock input.checkbox {
+	margin-left: 0px;
+}
+.task-data .left-section label {
+	min-width: 190px;
 }
 
 .coInputLinkedObjects {

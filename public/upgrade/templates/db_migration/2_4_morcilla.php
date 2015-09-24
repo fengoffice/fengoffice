@@ -108,7 +108,7 @@ update <?php echo $table_prefix ?>project_tasks set percent_completed=100 where 
 
 
 INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
-VALUES ('mails panel', 'attach_to_notification', '1', 'BoolConfigHandler', '0', '0', NULL)
+VALUES ('mails panel', 'attach_to_notification', '0', 'BoolConfigHandler', '0', '0', NULL)
 ON DUPLICATE KEY UPDATE name=name;
 
 ALTER TABLE `<?php echo $table_prefix ?>project_files` ADD `attach_to_notification` TINYINT( 1 ) NOT NULL DEFAULT 0;

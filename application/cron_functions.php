@@ -81,7 +81,7 @@ function clear_tmp_folder($dir = null) {
 		$left = 0;
 		$deleted = 0;
 		while (false !== ($f = readdir($handle))) {
-			if ($f != "." && $f != "..") {
+			if ($f != "." && $f != ".." && $f != ".htaccess") {
 				if ($f == "CVS") {
 					$left++;
 					continue;
@@ -176,4 +176,16 @@ function check_sharing_table_flags() {
 	} else {
 		_log("No permission groups need to be updated.");
 	}
+}
+
+function rebuild_contact_member_cache() {
+	Env::useHelper('permissions');
+	_log("Recalculating contact member cache...");
+	
+	$users = Contacts::getAllUsers();
+	foreach ($users as $user) {
+		ContactMemberCaches::updateContactMemberCacheAllMembers($user);
+	}
+	
+	_log("Member cache updated for ".count($users)." users.");
 }

@@ -251,7 +251,7 @@ class MorcillaUpgradeScript extends ScriptUpgraderScript {
 			if (version_compare($installed_version, '2.4.1-beta') <= 0) {
 				$upgrade_script .= "
 					INSERT INTO `" . $t_prefix . "contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
-					VALUES ('mails panel', 'attach_to_notification', '1', 'BoolConfigHandler', '0', '0', NULL)
+					VALUES ('mails panel', 'attach_to_notification', '0', 'BoolConfigHandler', '0', '0', NULL)
 					ON DUPLICATE KEY UPDATE name=name;
 				";
 				if (!$this->checkColumnExists($t_prefix . "project_files", "attach_to_notification", $this->database_connection)) {

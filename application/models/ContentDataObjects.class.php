@@ -63,6 +63,9 @@ abstract class ContentDataObjects extends DataManager {
 		$ot = ObjectTypes::findById($this->getObjectTypeId());
 		eval('$manager = '.$ot->getHandlerClass().'::instance();');
 		eval('$object = new '.$manager->getItemClass().'();');
+		if (isset($object) && $object) {
+			$object->setObjectTypeId($this->getObjectTypeId());
+		}
 		return $object;
 	}
 	
@@ -497,6 +500,42 @@ abstract class ContentDataObjects extends DataManager {
 					AND sh.group_id  IN ($logged_user_pgs)
 			)";
 			
+			
+			/*
+			 * Check that the objects to list does not belong only to a non-manageable dimension that defines permissions
+			 * Object can be shown if:
+			 * 		1 - It belongs to at least a member in a dimension that defines permissions and is manageable
+			 * 		2 - Or it belongs to at least a member in a dimension that does not defines permissions
+			 * 		3 - Or user has permissions to read objects without classification 
+			 */
+		  if (!$type instanceof ObjectType || !$type->getName()=='mail') {
+			$without_perm_dim_ids = Dimensions::findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
+			$no_perm_dims_cond = "";
+			
+			if (count($without_perm_dim_ids) > 0) {
+				$no_perm_dims_cond = " OR EXISTS (
+					select * from ".TABLE_PREFIX."object_members omems
+					  inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
+					  WHERE omems.object_id=o.id AND mems.dimension_id IN (".implode(',', $without_perm_dim_ids).")
+				)";
+			}
+			
+			$permissions_condition .= " AND (
+				EXISTS (
+					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
+					WHERE cmp.member_id=0 AND cmp.permission_group_id=".logged_user()->getPermissionGroupId()." AND cmp.object_type_id = o.object_type_id
+				)
+				OR
+				EXISTS (
+					select * from ".TABLE_PREFIX."object_members omems
+						inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
+						inner join ".TABLE_PREFIX."dimensions dims on dims.id = mems.dimension_id
+					WHERE omems.object_id=o.id and dims.defines_permissions=1 and dims.is_manageable=1
+				) $no_perm_dims_cond
+			)";
+		  }
+			/********************************************************************************************************/
+			
 			if (!$this instanceof MailContents && logged_user()->isAdministrator() || 
 					($this instanceof Contacts && $this->object_type_name == 'contact' && can_manage_contacts(logged_user()))) {
 				$permissions_condition = "true";
@@ -504,9 +543,9 @@ abstract class ContentDataObjects extends DataManager {
 			
 			if ($this instanceof ProjectFiles && logged_user()->isAdministrator() && Plugins::instance()->isActivePlugin('mail')) {
 				$permissions_condition = "IF(e.mail_id > 0,
-					  e.mail_id IN (
+					  o.id IN (
 										SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-										WHERE e.mail_id = sh.object_id
+										WHERE o.id = sh.object_id
 										AND sh.group_id  IN ($logged_user_pgs)
 					  ),
 					  true
@@ -834,8 +873,7 @@ abstract class ContentDataObjects extends DataManager {
     	
     	$dimensions = Dimensions::findAll();
     	foreach ($dimensions as $dimension){
-    		if ($dimension->canContainObjects() && !in_array($dimension, $context) && !in_array($dimension, $selected_dimensions) &&
-    			!($dimension->getOptions(1) && isset($dimension->getOptions(1)->hidden) && $dimension->getOptions(1)->hidden)){
+    		if ($dimension->canContainObjects() && !in_array($dimension, $context) && !in_array($dimension, $selected_dimensions)){
     			$member_ids = array();
     			$all_members = $dimension->getAllMembers();
     			foreach($all_members as $member) {
@@ -1180,26 +1218,24 @@ abstract class ContentDataObjects extends DataManager {
 				// 3.2 No memeber dimensions defines permissions.
 				// No esta en ninguna dimension que defina permisos, El objecto esta en algun lado
 				// => En todas las dimensiones en la que está no definen permisos => Busco todos los grupos
-				$gids = PermissionGroups::instance()->findAll(array('id' => true));
-				
+				$gids = PermissionGroups::instance()->findAll(array('id' => true, 'conditions' => "type != 'roles'"));
 			} else {
 
 				// if this object is an email and it is unclassified => add to sharing table the permission groups of the users that have permissions in the email's account
 				if (Plugins::instance()->isActivePlugin('mail')) {
 					$mail_ot = ObjectTypes::instance()->findByName('mail');
 					if ($mail_ot instanceof ObjectType && $tid == $mail_ot->getId()) {
-						$gids = DB::executeAll("
+						$gids = array_flat(DB::executeAll("
 							SELECT cpg.permission_group_id
 							FROM ".TABLE_PREFIX."contact_permission_groups cpg
 							INNER JOIN ".TABLE_PREFIX."contacts c ON c.permission_group_id=cpg.permission_group_id
 							WHERE cpg.contact_id IN (
 							  SELECT mac.contact_id FROM ".TABLE_PREFIX."mail_account_contacts mac WHERE mac.account_id = (SELECT mc.account_id FROM ".TABLE_PREFIX."mail_contents mc WHERE mc.object_id=$oid)
 							);
-						");
+						"));
 					}
 				}
 			}
-			
 		}
 	
 		if(count($gids)) {

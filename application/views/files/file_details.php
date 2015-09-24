@@ -21,31 +21,6 @@ require_javascript("og/modules/addFileForm.js");
 			selected_type: 'file'
 		});
 	}
-
-
-	og.uploadNewRevision = function(file_id, quickId) {
-		og.openLink(og.getUrl('files', 'quick_add_files', {genid: quickId, object_id: file_id, new_rev_file_id: file_id}), {
-			preventPanelLoad: true,
-			onSuccess: function(data) {
-				og.ExtendedDialog.show({
-	        		html: data.current.data,
-	        		height: 300,
-	        		width: 600,
-	        		title: '<?php echo lang('upload new revision')?>',
-	        		ok_fn: function() {
-	    				og.doFileUpload(quickId, {
-	    					callback: function() {
-	    						form = document.getElementById(quickId + 'quickaddfile');
-	    						og.ajaxSubmit(form);
-	    					}
-	    				});
-	            		og.ExtendedDialog.hide();
-	    			}
-	        	});
-	        	return;
-			}
-		});
-	}
 	
 </script>
 

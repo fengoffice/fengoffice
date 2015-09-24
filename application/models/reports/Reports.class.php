@@ -420,8 +420,8 @@ class Reports extends BaseReports {
 						$dim_id = str_replace("dim_", "", $field);
 						$dimension = Dimensions::getDimensionById($dim_id);
 						$dimensions_cache[$dim_id] = $dimension;
-						$doptions = $dimension->getOptions(true);
-						$column_name = $doptions && isset($doptions->useLangs) && $doptions->useLangs ? lang($dimension->getCode()) : $dimension->getName();
+						
+						$column_name = $dimension->getName();
 						
 						$results['columns'][$field] = $column_name;
 						$results['db_columns'][$column_name] = $field;
@@ -532,9 +532,12 @@ class Reports extends BaseReports {
 									if(($field == 'due_date' && !$object->getUseDueTime()) || ($field == 'start_date' && !$object->getUseStartTime())){
 										$dateFormat = user_config_option('date_format');
 										$tz = 0;
-									}								
+									}
 								}
-								$value = format_date($value, $dateFormat, $tz * 3600);
+								
+								$value->add('h', $tz);
+								$value = $value->format($dateFormat);
+								
 							}
 							
 							if(in_array($field, $managerInstance->getExternalColumns())){

@@ -94,7 +94,7 @@
 	'country ht' => 'Haiti',
 	'country hm' => 'Heard and McDonald Islands',
 	'country hn' => 'Honduras',
-	'country hk' => 'Hong Kong',
+	'country hk' => '香港',
 	'country hu' => 'Hungary',
 	'country is' => 'Iceland',
 	'country in' => 'India',

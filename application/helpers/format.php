@@ -324,9 +324,18 @@ function date_format_tip($format) {
 		$cp_vals = CustomPropertyValues::getCustomPropertyValues($obj->getId(), $cp->getId());
 		$val_to_show = "";
 		foreach ($cp_vals as $cp_val) {
-			if ($cp->getType() == 'contact' && $cp_val instanceof CustomPropertyValue) {
+			if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof CustomPropertyValue) {
 				$cp_contact = Contacts::findById($cp_val->getValue());
-				$cp_val->setValue($cp_contact->getObjectName());
+				if ($cp_contact instanceof Contact) {
+					$cp_val->setValue($cp_contact->getObjectName());
+				} else {
+					$cp_val->setValue("");
+				}
+			}
+			
+			if ($cp->getType() == 'boolean' && $cp_val instanceof CustomPropertyValue) {
+				$formatted = $cp_val->getValue() > 0 ? lang('yes') : lang('no');
+				$cp_val->setValue($formatted);
 			}
 			
 			if ($cp->getType() == 'date' && $cp_val instanceof CustomPropertyValue) {
@@ -351,7 +360,7 @@ function date_format_tip($format) {
 				$exploded = explode("|", $values);
 				foreach ($exploded as &$v) {
 					$v = str_replace("%%_PIPE_%%", "|", $v);
-					$v = str_replace("'", "\'", $v);
+					$v = escape_character($v);
 				}
 				if (count($exploded) > 0) {
 					$address_type = array_var($exploded, 0, '');
@@ -383,7 +392,7 @@ function date_format_tip($format) {
 		}
 		$val_to_show = "";
 		foreach ($cp_vals as $cp_val) {
-			if ($cp->getType() == 'contact' && $cp_val instanceof MemberCustomPropertyValue) {
+			if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof MemberCustomPropertyValue) {
 				$cp_contact = Contacts::findById($cp_val->getValue());
 				if ($cp_contact instanceof Contact) {
 					$cp_val->setValue($cp_contact->getObjectName());
@@ -437,6 +446,7 @@ function date_format_tip($format) {
 				
 			$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof MemberCustomPropertyValue ? $cp_val->getValue() : "");
 		}
+		$val_to_show = html_to_text($val_to_show);
 		return $val_to_show;
 	}
 

@@ -666,4 +666,6 @@
 	'and xx more' => 'et {0} de plus.',
 	'confirm restore user' => 'L\'usager sera activé, continuer ?',
 	'permissions successfully saved' => 'Permissions sauvegardées avec succès',
+	'all previous tasks have been completed' => 'Toutes les tâches précédant \'{0}\' ont été complétées',
+	'task x can be started' => 'Toutes les tâches précédentes ont été complétées. La tâche \'{0}\' peut maintenant être débutée.',
 ); ?>

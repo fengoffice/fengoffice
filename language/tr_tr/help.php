@@ -1,64 +1,62 @@
 <?php return array(
-	'chelp pending tasks widget' => 'Bu alan bitmemiş görevlerinizi görüntüler. Sadece bitmemiş görevlerini görüntüleyebilir veya bu ayarları Anasayfa\'dan değiştirebilirsiniz.',
-	'chelp documents widget' => 'Bu alan çalışma alanındaki en son belgeleri gösterir.',
-	'chelp active tasks widget' => 'Bu alan aktif ve durdurulmuş görevleri gösterir.',
-	'chelp late tasks widget' => 'Bu alan sizin gecikmiş görevlerinizi ve kilometretaşlarınızı bugünden geçmişe doğru gösterir.',
-	'chelp calendar widget' => 'Bu alan bu haftanın etkinliklerini, görevlerini ve kilometretaşlarını gösterir. Günün üstüne tıklayarak yeni bir tane yaratabilirsiniz.',
-	'chelp comments widget' => 'Bu alan nesneler için yapılmış şuanki çalışma alanınızdaki en son yorumları gösterir.',
-	'chelp dashboard info widget' => 'Bu alan seçili çalışma alanındaki, kullanıcıları, kişileri vs. gösterir',
-	'chelp emails widget' => 'Bu alan seçili çalışma alanındaki sınıflandırılmış, en son e-postaları gösterir.',
-	'chelp messages widget' => 'Bu alan seçili çalışma alanı için en son notları gösterir.',
-	'chelp active tasks panel' => 'Çalışma alanınızı gözetmeksizin, bütün aktif görevleriniz aşağıda görüntülenmektedir.',
-	'chelp general timeslots panel' => 'Bu panel çalışma alanlarına atanmış zaman dilimlerini göstermektedir.',
-	'chelp personal account' => 'Bu sizin kişisel hesabınızdır.<br/>Bu alanda profilinizi güncelleyebilir, avatarınızı, şifrenizi ve kişisel bilgilerinizi değiştirebilirsiniz
-',
+	'chelp pending tasks widget' => 'Bu araç, tamamlanmamış görevlerinizi görüntüler. Yalnız size atanmış tamamlanmamış görevleri görüntüleyebilir ya da pano ayarlarınızdan görünümü değiştirebilirsiniz.',
+	'chelp documents widget' => 'Bu araç, seçilmiş çalışma alanındaki en son belgeleri görüntüler.',
+	'chelp active tasks widget' => 'Bu araç, etkin ve durdurulmuş görevlerinizi görüntüler.',
+	'chelp late tasks widget' => 'Bu araç, gecikmiş görev ve kilometre taşlarınızı, bugün bitecek olanlardan geçmişe doğru sıralanmış olarak görüntüler.',
+	'chelp calendar widget' => 'Bu araç, bu hafta gerçekleşecek etkinlikleri, tamamlanacak görevleri ve kilometre taşlarını görüntüler. Bir gün üzerine tıklanarak yeni bir etkinlik eklenebilir.',
+	'chelp comments widget' => 'Bu araç, geçerli çalışma alanındaki ögelere yapılan son yorumları görüntüler.',
+	'chelp dashboard info widget' => 'Bu araç, geçerli çalışma alanı ile ilgili, erişim izni olan kullanıcılar, atanmış kişiler gibi çeşitli bilgileri görüntüler',
+	'chelp emails widget' => 'Bu araç, seçilmiş çalışma alanındaki son e-postaları görüntüler.',
+	'chelp messages widget' => 'Bu araç, son notları görüntüler.',
+	'chelp active tasks panel' => 'Aşağıda, geçerli çalışma alanına bakılmaksızın, tüm etkin görevleriniz görüntülenir. Ayrıca bu panodan görevleri duraklatma, sürdürme ve tamamlanmış olarak işaretleme işlemleri de yapılabilir',
+	'chelp general timeslots panel' => 'Bu panoda, doğrudan çalışma alanına atanmış çalışma süreleri görüntülenir.',
+	'chelp personal account' => 'Burada kişisel hesabınız görüntülenir.<br/>Bu bölümden profilinizi, profil görselinizi, parolanızı ve kişisel bilgilerinizi değiştirebilirsiniz',
 	'chelp user account' => 'Bu bir kullanıcı hesabıdır.',
-	'chelp user account admin' => 'Bu bir kullanıcı hesabıdır.<br/>Yönetici olarak bu alanda kullanıcının profilini güncelleyebilir; avatarını, şifresini ve kişisel bilgilerini değiştirebilirsiniz',
-	'chelp reporting panel' => '<b>Duyuru Paneline Hoşgeldiniz<b/><br/>Soldaki panelden duyuruları düzenleyebilirsiniz.',
-	'chelp reporting panel manage' => '<b>Duyuru Paneline Hoşgeldiniz<b/><br/>Soldaki panelden duyuruları düzenleyebilirsiniz.<br/>Ayrıca sizin duyuru düzenleme ve duyuru yaratma yetkilerinizde vardır.',
-	'chelp reporting panel manage admin' => '<b>Duyuru Paneline Hoşgeldiniz<b/><br/>Soldaki panelden duyuruları düzenleyebilirsiniz.<br/>Ayrıca sizin duyuru düzenleme ve duyuru yaratma yetkilerinizde vardır. Bu ayarlar her kullanıcı için ayrıcalıklar bölümünden ayarlanabilmektedir.',
-	'chelp addfile' => 'Web linki veya dosya yükleme talimatı verdiniz.<br/>
-                                                     
-                                                     <b>
-Dosya:</b>Yerel diskinizden belge arama veya yüklemenize izin verir</br>
-                                                 <b> Web
-Linki: Referans göstermek istediğiniz web sitesi URL\'sini girmenize izin verir.<br/>',
-	'remove context help' => 'Bu yardım mesajını sil',
-	'chelp tasks list welcome' => 'Görev paneline hoşgeldiniz',
-	'chelp tasks list' => '<br/>Herhangi bir filtreyi uygulayabilirsiniz:<br/>
-
-<b>Tarafından Yaratıldı</b>: Sadece belli bir kullanıcı tarafından yaratılan görevleri gösterir<br/>
-
-<b>Tarafından Tamamlandı</b>: Sadece belli bir kullanıcı tarafından bitirelin görevleri gösterir<br/>
-
-<b>Kişiye Atandı<b/>: Sadece belirli bir kişiye veya gruba atanmış görevleri gösterir <br/>
-
-<b>Tarafından Atandı<br/>: Sadece belirli bir kişi veya grup tarafından atanan görevleri gösterir <br/>
-
-<b>Kilometretaşı<br/>: Sadece belirli bir kilometretaşına bağlı görevleri gösterir<br/>
-
-<b>Öncelik</b>: Sadece belirli önceliğe sahip görevleri gösterir (düşük, orta, yüksek) <br/>
-
-</td>
-
-<td>
-
-<br/>Görevleri şu kriterlere göre gruplayabilirsiniz (diğerleri arasında):<br/>
-
-<b>Kilometretaşı</b>: Görevleri kilometretaşlarına göre grupla<br/>
-
-<b>Priority</b>: Görevleri önceliklerine göre grupla (düşük, normal, yüksek) <br/>
-
-<br>Çalışma Alanı</b>: Görevleri çalışma alanlarına göre grupla<br/>
-',
-	'help opt show' => 'Göster',
+	'chelp user account admin' => 'Bu bir kullanıcı hesabıdır.<br/>Yönetici olarak bu bölümden kullanıcının profilini, avatarını, parolasını ve kişisel bilgilerini değiştirebilirsiniz',
+	'chelp reporting panel' => '<b>Rapor panosuna hoşgeldiniz<b/><br/>Soldaki panoda bulunan farklı ögeleri kullanarak raporları isteğinize göre uyarlayabilirsiniz.',
+	'chelp reporting panel manage' => '<b>Rapor panosuna hoşgeldiniz<b/><br/>Soldaki panoda bulunan farklı ögeleri kullanarak raporları isteğinize göre uyarlayabilirsiniz..<br/>Ayrıca rapor yönetimi izinleriniz olduğundan her bir öge tipi için isteğe göre uyarlanmış raporlar oluşturup düzenleyebilirsiniz',
+	'chelp reporting panel manage admin' => '<b>Rapor panosuna hoşgeldiniz<b/><br/>Soldaki panoda bulunan farklı ögeleri kullanarak raporları isteğinize göre uyarlayabilirsiniz..<br/>Ayrıca rapor yönetimi izinleriniz olduğundan her bir öge tipi için isteğe göre uyarlanmış raporlar oluşturup düzenleyebilirsiniz. Her bir kullanıcı için bu izinler kullanıcı izinleri bölümünen ayarlanabilir.',
+	'chelp addfile' => 'Bir dosya ya da web sayfası yükleme seçeneğiniz bulunuyor.<br/>
+						<b>Dosya:</b>Yerel diskinizden istediğiniz bir belgeyi arayıp yükleyebilirsiniz.</br>
+						<b> Web Sayfası: Referans vermek istediğiniz bir web sitesinin İnternet adresini yazabilirsiniz.<br/>',
+	'remove context help' => 'Bu yardım iletisini sil',
+	'chelp tasks list welcome' => 'Görevler panosuna hoşgeldiniz',
+	'chelp tasks list' => '<br/>Şu süzgeçlerden birini uygulayabilirsiniz:<br/>
+							<b>Oluşturan</b>: Yalnız belirli bir kullanıcı ya da grup tarafından oluşturulmuş görevleri görüntüler<br/>
+							<b>Tamamlayan</b>: Yalnız belirli bir kullanıcı ya da grup tarafından tamamlanan görevleri görüntüler<br/>
+							<b>Sorumlu<b/>: Yalnız belirli bir kullanıcı ya da gruba atanmış görevleri görüntüler<br/>
+							<b>Atayan<br/>: Yalnız belirli bir kullanıcı ya da grup tarafından atanan görevleri görüntüler<br/>
+							<b>Kilometre taşı<br/>: Yalnız belirli bir kilometre taşına bağlı görevleri görüntüler<br/>
+							<b>Öncelik</b>: Yalnız belirli bir önceliğe sahip görevleri görüntüler (düşük, orta, yüksek) <br/>
+							</td>
+							<td>
+							<br/>Görevleri şu ölçüte göre gruplayabilirsiniz (diğerleri arasında):<br/>
+							<b>Kilometre taşı</b>: Görevleri belirli bir kilometre taşına göre gruplar<br/>
+							<b>Öncelik</b>: Görevleri belirli bir önceliğe göre gruplar (düşük, normal, yüksek) <br/>
+							<br>Çalışma Alanı</b>: Görevleri belirli bir çalışma alanına göre gruplar<br/>',
+	'help opt show' => 'Görüntüle',
 	'help opt hide' => 'Gizle',
-	'context help messages' => 'Yardım Mesajları',
-	'enable all chelp messages' => 'Tüm yardım mesajlarını elle kapanacak biçimde aktifleştir',
-	'enable all chelp messages click' => 'Buraya Tıklayın',
-	'help manual' => 'Yardım Kitapcığı',
+	'context help messages' => 'Konu yardımı iletileri',
+	'enable all chelp messages' => 'Tüm konu yardımı iletileri el ile kapatılabilsin',
+	'enable all chelp messages click' => 'buraya yıklayın',
+	'help manual' => 'Yardım Kitabı',
 	'about us' => 'Hakkımızda',
-	'success enable all context help' => 'Yardım başarıyla tekrar açıldı.',
-	'success enable context help' => 'Yardım başarıyla aktifleştirildi.',
-	'success disable context help' => 'Yardım başarıyla kapatıldı.',
+	'success enable all context help' => 'Konu yardımı yeniden açıldı.',
+	'success enable context help' => 'Konu yardımı etkinleştirildi.',
+	'success disable context help' => 'Konu yardımı devre dışı bırakıldı.',
+	'how to purchase' => 'Satın Alma Yardımı',
+	'how to purchase desc' => 'Çeşitli planlarımız ve özellikleri hakkında bilgiler',
+	'add ticket' => 'Destek İsteği',
+	'add ticket desc' => 'Feng Office ile ilgili özel destek isteyin',
+	'Super Administrator user role description' => 'Herşeyi görüp tüm işlemleri yapabilir. Bu rol Feng Office sistemini kullanan iş yeri sahibi için uygundur.',
+	'Administrator user role description' => 'Diğer yönetici ve süper yöneticilerin izinlerini değiştirebilmek dışında tüm işlemleri yapabilir.',
+	'Manager user role description' => 'Yöneticiler tarafından verilen izinlere göre müşteri, proje ve çalışma alanları üzerinde tüm işlemleri yapabilir.',
+	'Executive user role description' => 'İzin verilen tüm işlemleri yapabilir ancak başkalarına izin veremez. Bu rol, görevler üzerine çalışan kişilerin yanısıra bir projede çalışan üçüncü taraf paydaşları kapsar. Ücretlendirme ayarlarını yapamaz.',
+	'Collaborator Customer user role description' => 'Bir projeye oldukça katkıda bulunan bir müşteri: görev atanabilir, kendi görevlerini tamamlayabilir, belgeleri yükleyip değiştirebilir ve izin verilen tüm alanları okuyup yorum yapabilir. Varsayılan olarak diğer kullanıcılara atanmış ya da atanmamış görevler ile ücretlendirme bilgilerini görüntüleyemez.',
+	'Internal Collaborator user role description' => 'İşlem yürütenler kadar izinlere sahip olması gerekmeyen iç paydaşlar. Bu roldeki kullanıcılar: kendi görevleri ile ilgili tamamlama, zaman kaydı ve yorumlama işlemlerini yapabilir, belgeleri yükleyip değiştirebilir ve izin verilen tüm alanları okuyup yorum yapabilir. Varsayılan olarak diğer kullanıcılara atanmış ya da atanmamış görevler ile ücretlendirme bilgilerini görüntüleyemez.',
+	'External Collaborator user role description' => 'İşlem yürütenler kadar izinlere sahip olması gerekmeyen iç paydaşlar. Bu roldeki kullanıcılar: kendi görevleri ile ilgili tamamlama, zaman kaydı ve yorumlama işlemlerini yapabilir, belgeleri yükleyip değiştirebilir ve izin verilen tüm alanları okuyup yorum yapabilir. Varsayılan olarak diğer kullanıcılar atanmış ya da atanmamış görevler ile ücretlendirme bilgilerini görüntüleyemez.',
+	'Guest Customer user role description' => 'Bilgiye sınırlı (salt okunur) erişimi olan ancak ekleme, değiştirme ya da yükleme yapamayan müşteri kullanıcıları. Bununla birlikte izin verilen tüm alanları okuyup yorum yapabilir. Varsayılan olarak diğer kullanıcılara atanmış ya da atanmamış görevler ile ücretlendirme bilgilerini görüntüleyemez.',
+	'Guest user role description' => 'Bilgiye sınırlı (salt okunur) erişimi olan ancak ekleme, değiştirme ya da yükleme yapamayan kullanıcılar. Yorum da yapamaz. Varsayılan olarak diğer kullanıcılara atanmış ya da atanmamış görevler ile ücretlendirme bilgilerini görüntüleyemez.',
+	'Non-Exec Director user role description' => 'Tüm bilgilere erişebilir ancak değiştiremez. Böylece sorun çıkaramaz :) Varsayılan olarak tüm görevleri zaman kayıtlarını ve ücretlendirme bilgilerini görebilir.',
+	'more information about user roles' => '<br />Kullanıcı rolleri hakkında ayrıntılı bilgiler',
 ); ?>

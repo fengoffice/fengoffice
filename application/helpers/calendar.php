@@ -399,7 +399,7 @@ function renderCalendarFeedLink() {
 	   	title: '". escape_single_quotes(lang('import events from third party software')) ."',
 	   	msg: '". escape_single_quotes(lang('copy this url in your calendar client software')) ."<br/><br/><br/>'+document.getElementById('ical_link').href,
    		icon: Ext.MessageBox.INFO,
-   		minWidth: 700,
+   		minWidth: 700
 	}); return false;";
  	
  	$link_html = '<a class="iCalSubscribe" id="ical_link" style="float:right;" href="'.$url.'" title="'.$link_title.'" onclick="'.$onclick.'"></a>';

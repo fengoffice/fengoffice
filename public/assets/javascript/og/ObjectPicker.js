@@ -12,7 +12,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		extra_list_params: extra_list_param
 	};
 	if (ignore_context) {
-		url_params['ignore_context'] = ignore_context;
+		url_params['ignore_context'] = ignore_context ? '1' : '0';
 	}
 	
 	var Grid = function(config) {
@@ -177,7 +177,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				//member_ids.push(this.member_filter[x]);
 			}
 			this.store.baseParams.extra_member_ids = Ext.util.JSON.encode(member_ids);
-			this.store.baseParams.ignore_context = this.store.baseParams.ignore_context || member_ids.length > 0;
+			this.store.baseParams.ignore_context = this.store.baseParams.ignore_context || member_ids.length > 0 ? '1' : '0';
 			
 			this.load();
 		},
@@ -479,7 +479,7 @@ Ext.extend(og.ObjectPicker, Ext.Window, {
 
 og.ObjectPicker.show = function(callback, scope, config, object_id, object_id_no_select) {
 	if (!config) config = {};
-	if (!config.ignore_context) config.ignore_context = false;
+	if (!config.ignore_context) config.ignore_context = 0;
     
 	this.dialog = new og.ObjectPicker(config, object_id, object_id_no_select, config.ignore_context);
 	

@@ -20,4 +20,7 @@
 	
 	'add a new member in workspaces' => 'Agregar un nuevo espacio de trabajo',
 	'add a new member in tags' => 'Agregar una nueva etiqueta',
+
+	'workspaces list' => 'Listado de espacios',
+	'tags list' => 'Listado de etiquetas',
 );

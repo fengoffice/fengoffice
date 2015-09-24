@@ -21,6 +21,17 @@ class MemberController extends ApplicationController {
 	
 	
 	function init() {
+		
+		$ot = ObjectTypes::findById(array_var($_REQUEST, 'type_id'));
+		$dim = Dimensions::findById(array_var($_REQUEST, 'dim_id'));
+		
+		evt_add("refresh member list parameters", array(
+			'object_type_id' => array_var($_REQUEST, 'type_id'),
+			'dimension_id' => array_var($_REQUEST, 'dim_id'),
+			'dimension_code' => $dim instanceof Dimension ? $dim->getCode() : '',
+			'object_type_name' => $ot instanceof ObjectType ? $ot->getName() : '',
+		));
+		
 		require_javascript("og/MemberManager.js");
 		ajx_current("panel", "members", null, null, true);
 		ajx_replace(true);
@@ -45,74 +56,253 @@ class MemberController extends ApplicationController {
 	}
 	
 	
-	function list_all() {
+	function list_all($parameters = null) {
+		$return_the_list = true;
 		
-		ajx_current("empty");
+		// if parameters not specified => use the request
+		if (is_null($parameters)) {
+			ajx_current("empty");
+			$parameters = $_REQUEST;
+			$return_the_list = false;
+		}
+		
 		// Get all variables from request
-		$start = array_var($_GET,'start', 0);
-		$limit = array_var($_GET,'limit', config_option('files_per_page'));
-		$order = 'name';
-		$order_dir = array_var($_GET,'dir');
-		$action = array_var($_GET,'action');
-		$attributes = array("ids" => explode(',', array_var($_GET,'ids')));
+		$start = array_var($parameters,'start', '0');
+		$limit = array_var($parameters,'limit', config_option('files_per_page'));
+		$order = array_var($parameters,'sort');
+		$order_dir = array_var($parameters,'dir');
+		$dimension_id = array_var($parameters, 'dim_id');
+		$member_type_id = array_var($parameters, 'type_id');
+		$parent_id = array_var($parameters, 'parent_id');
 		
-		if (!$order_dir){
-			switch ($order){
-				case 'name': $order_dir = 'ASC'; break;
-				default: $order_dir = 'DESC';
+		$dimension = Dimensions::findById($dimension_id);
+		
+		$join_sql = "";
+		
+		switch ($order){
+			/*case 'task_completion_p':
+				$order = "d.task_completion_p";
+				break;
+			case 'time_worked_p':
+				$order = "d.time_worked_p";
+				break;
+			case 'total_tasks':
+				$order = "d.total_tasks";
+				break;
+			case 'completed_tasks':
+				$order = "d.completed_tasks";
+				break;
+			case 'total_estimated_time':
+				$order = "d.total_estimated_time";
+				break;
+			case 'total_worked_time':
+				$order = "d.total_worked_time";
+				break;*/
+			case 'name':
+			case 'description':
+				$order = "mem.".$order;
+				break;
+
+			case 'mem_path':
+				$join_sql = "LEFT JOIN ".TABLE_PREFIX."members mem_parent ON mem.parent_member_id = mem_parent.id";
+				$order = "mem_parent.`name`";
+				break;
+			default:
+				if (str_starts_with($order, "cp_")) {
+					$cp_id = str_replace("cp_", "", $order);
+					$join_sql = "LEFT JOIN ".TABLE_PREFIX."member_custom_property_values cpv ON cpv.member_id=mem.id AND cpv.custom_property_id=$cp_id";
+					$order = "LPAD(cpv.`value`, 25, ' ')";
+				} else {
+					$order = 'mem.`name`';
+				}
+				break;
+		}
+		if (!$order_dir) {
+			$order_dir = 'ASC';
+		}
+		
+		$associated_dimension_ids = array();
+		$dimension_associations = DimensionMemberAssociations::findAll(array(
+			"conditions" => array("(`dimension_id` = ? AND `object_type_id` = ?) OR (`associated_dimension_id` = ? AND `associated_object_type_id` = ?)", 
+					$dimension->getId(), $member_type_id, $dimension->getId(), $member_type_id)
+		));
+		
+		foreach ($dimension_associations as $da) {
+			/* @var $da DimensionMemberAssociation */
+			if ($da->getDimensionId() == $dimension->getId()) $associated_dimension_ids[] = $da->getAssociatedDimensionMemberAssociationId();
+			else $associated_dimension_ids[] = $da->getDimensionId();
+		}
+		
+		
+		$parent = null;
+		if ($parent_id > 0) {
+			$parent = Members::findById($parent_id);
+		}
+		
+		$associated_member_ids = array();
+		$extra_conds = "";
+		$context = active_context();
+		if (is_array($context)) {
+		  foreach ($context as $sel) {
+			if ($sel instanceof Member) {
+				if ($sel->getDimensionId() == $dimension->getId()) {
+					$parent = $sel;
+				} else {
+					if (in_array($sel->getDimensionId(), $associated_dimension_ids)) {
+						$associated_member_ids[] = $sel->getId();
+					}
+				}
+			}
+		  }
+		}
+		
+		$member_association_cond = "";
+		// associated member conditions
+		foreach ($associated_member_ids as $amid) {
+			if (is_numeric($amid) && $amid > 0) {
+				$member_association_cond .= " AND EXISTS (SELECT mpm.id FROM ".TABLE_PREFIX."member_property_members mpm 
+					WHERE mpm.member_id=".TABLE_PREFIX."members.id AND mpm.property_member_id=$amid ) ";
 			}
 		}
-		
-		$dim_id = array_var($_REQUEST, 'dim_id');
-		if (!is_numeric($dim_id)) return;
-		$ot_id = array_var($_REQUEST, 'ot');
-		
-		$dim_controller = new DimensionController();
-		$members = $dim_controller->initial_list_dimension_members($dim_id, $ot_id);
+
 		$ids = array();
-		foreach ($members as $m){
-			$ids[]=$m['object_id'];
-		}
-		$members = active_context_members(false); // Context Members Ids
-		$members_sql = "";
-		if(count($members) > 0){
-			$members_sql .= " AND parent_member_id IN (" . implode ( ',', $members ) . ")";
-		}else{
-			$members_sql .= " AND parent_member_id = 0";
-			//$members_sql .= "";
-		}
-		$res = Members::findAll(array("conditions" => "object_id IN (".implode(',', $ids).") ". $members_sql,'offset' => $start, 'limit' => $limit, 'order' => "$order $order_dir"));
 		
-		$object = $this->prepareObject($res, $start, $limit, count($res));
-                
-		ajx_extra_data($object);
-		tpl_assign("listing", $object);
+		$pg_array = logged_user()->getPermissionGroupIds();
+		$current_member_cond = $parent instanceof Member ? "AND parent_member_id=".$parent->getId() : "";
+
+		if ($parent instanceof Member) {
+			$extra_conds = " AND archived_by_id=0 AND EXISTS (
+				SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
+				WHERE cmp.member_id=".TABLE_PREFIX."members.id AND cmp.permission_group_id IN (".implode(',',$pg_array)."))";
+	
+			$members = $parent->getAllChildren(true, 'name', $extra_conds);
+	
+			$member_ids = array();
+			foreach ( $members as $member ){
+				if ($member->getObjectTypeId() == $member_type_id) {
+					$member_ids[] = $member->getId();
+				}
+			}
+			
+			if (count($associated_member_ids) > 0 && count($member_ids) > 0) {
+				$mpm_sql = "SELECT m.object_id FROM ".TABLE_PREFIX."members m  
+						INNER JOIN ".TABLE_PREFIX."member_property_members mpm ON mpm.member_id=m.id 
+						WHERE m.id IN (".implode(',', $member_ids).") 
+						AND mpm.property_member_id IN (".implode(',', $associated_member_ids).")";
+				
+				$ids = array_flat(DB::executeAll($mpm_sql));
+			}
+			
+			$ids = $member_ids;
+			
+		} else {
+			$dim_controller = new DimensionController();
+			$members = $dim_controller->initial_list_dimension_members($dimension->getId(), null, array($member_type_id), false, $extra_conds . $member_association_cond);
+			foreach ($members as $m){
+				$ids[] = $m['id'];
+			}
+		}
+	
+		if (count($ids) == 0) $ids[] = 0;
+
+		$sql = "SELECT mem.*, mem.id as member_id FROM ".TABLE_PREFIX."members mem
+		--	LEFT JOIN ".TABLE_PREFIX."member_additional_data d ON c.object_id=d.customer_id
+			$join_sql
+			WHERE mem.id IN (".implode(',', $ids).") AND mem.dimension_id=".$dimension->getId()."
+			ORDER BY $order $order_dir
+			LIMIT $start, $limit";
+		
+		$rows = DB::executeAll($sql);
+		if (!is_array($rows)) $rows = array();
+	
+		$object = $this->prepareObject($rows, $start, $limit, $dimension, $member_type_id, count($ids));
+		
+		if ($return_the_list) {
+			
+			return $object;
+			
+		} else {
+			ajx_extra_data($object);
+			tpl_assign("listing", $object);
+		}
+		
 	}
 	
-	private function prepareObject($totMsg, $start, $limit, $total) {
+	private function prepareObject($rows, $start, $limit, $dimension, $member_type_id, $total) {
+		
+		$custom_properties = MemberCustomProperties::getAllMemberCustomPropertiesByObjectType($member_type_id);
+		$ot = ObjectTypes::findById($member_type_id);
+		
 		$object = array(
 			"totalCount" => $total,
 			"start" => $start,
-			"dimension_id" => 0,
-			"members" => array()
+			"dimension_id" => $dimension->getId(),
+			"dimension_name" => $dimension->getName(),
+			"object_type_name" => $ot->getName(),
+			"members" => array(),
 		);
+		$member_ids = array();
+		$ids = array();
 		for ($i = 0; $i < $limit; $i++){
-			if (isset($totMsg[$i])){
-				$member = $totMsg[$i];
-				if ($member instanceof Member){
-					$object["members"][] = array(
-						'object_id' => $member->getObjectId(),
-						'name' => $member->getName(),
-						'depth' => $member->getDepth(),
-						'parent_member_id' => $member->getParentMemberId(),
-						'dimension_id' => $member->getDimensionId(),
-						'id' => $member->getId(),
-						'ico_color' => $member->getMemberColor()
-					);
+			if (isset($rows[$i])){
+				$row = $rows[$i];
+				
+				$info = $row;
+				$info['icon_cls'] = $ot->getIconClass();
+				
+				$path_ids = array();
+				$m = Members::findById(array_var($row, 'member_id'));
+				$all_parents = $m->getAllParentMembersInHierarchy();
+				foreach ($all_parents as $parent) {
+					if (!isset($path_ids[$dimension->getId()])) $path_ids[$dimension->getId()] = array();
+					$path_ids[$dimension->getId()][$parent->getId()] = $parent->getId();
+					break;
 				}
+				$info['mem_path'] = json_encode($path_ids);
+				
+				// calculated info
+			/*	$more_info = array(
+					'total_tasks' => array_var($row, 'total_tasks'),
+					'completed_tasks' => array_var($row, 'completed_tasks'),
+					'task_completion_p' => number_format(array_var($row, 'task_completion_p'), 2),
+					'total_estimated_time' => array_var($row, 'total_estimated_time'),
+					'total_worked_time' => array_var($row, 'total_worked_time'),
+					'time_worked_p' => number_format(array_var($row, 'time_worked_p'), 2),
+				);
+				$info = array_merge($info, $more_info);*/
+				
+				$object["members"][] = $info;
+				$member_ids[] = array_var($row, 'member_id');
 			}
 		}
 		
+		// set custom properties
+		foreach ($member_ids as $k => &$mid) {
+			if (!is_numeric($mid) || $mid==0) unset($member_ids[$k]);
+		}
+		if (Plugins::instance()->isActivePlugin('member_custom_properties') && count($member_ids) > 0) {
+			
+			foreach ($custom_properties as $cp) {
+				$cp_rows = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."member_custom_property_values cpv 
+					WHERE cpv.member_id IN (".implode(',', $member_ids).") 
+					AND cpv.custom_property_id = '".$cp->getId()."' AND cpv.value != ''
+					AND cpv.value != '".EMPTY_DATETIME."' AND cpv.value != '".EMPTY_DATE."'
+					ORDER BY cpv.member_id");
+			
+				$mcpv = new MemberCustomPropertyValue();
+				foreach ($cp_rows as $cp_row) {
+					$mcpv->setValue($cp_row['value']);
+					$cp_val = get_member_custom_property_value_for_listing($cp, $cp_row['member_id'], array($mcpv));
+					foreach ($object["members"] as &$x) {
+						if ($x['member_id'] == $cp_row['member_id']) {
+							$x['cp_'.$cp->getId()] = $cp_val;
+							break;
+						}
+					}
+				}
+			}
+		}
+	
 		return $object;
 	}
 	
@@ -135,14 +325,14 @@ class MemberController extends ApplicationController {
 				$pg = PermissionGroups::findById($pg_id);
 				if ($pg->getType() == 'permission_groups') {
 					$c = Contacts::findById($pg->getContactId());
-					$name = $name = str_replace("'", "\'", $c->getObjectName());
+					$name = $name = escape_character($c->getObjectName());
 					$picture_url = $c->getPictureUrl();
-					$company_name = ($c->getCompany() instanceof Contact ? str_replace("'", "\'", $c->getCompany()->getObjectName()) : "");
+					$company_name = ($c->getCompany() instanceof Contact ? escape_character($c->getCompany()->getObjectName()) : "");
 					$type = 'contact';
 					$is_guest = $c->isGuest() ? "1" : "0";
 					$role = $c->getUserTypeName();
 				} else {
-					$name = str_replace("'", "\'", $pg->getName());
+					$name = escape_character($pg->getName());
 					$picture_url = "";
 					$company_name = "";
 					$type = 'group';
@@ -330,18 +520,18 @@ class MemberController extends ApplicationController {
 				$ret = null;
 				Hook::fire('after_add_member', $member, $ret);
 				//evt_add("external dimension member click", array('dim_id' => $member->getDimensionId(),'member_id' => $member->getId()));
-				evt_add("update dimension tree node", array('dim_id' => $member->getDimensionId(), 'member_id' => $member->getId()));
+				
+				$select_node = intval(DimensionObjectTypeOptions::getOptionValue($member->getDimensionId(), $member->getObjectTypeId(), 'select_after_creation'));
+				evt_add("update dimension tree node", array('dim_id' => $member->getDimensionId(), 'member_id' => $member->getId(), 'select_node' => $select_node));
 								
 				if (array_var($_POST, 'rest_genid')) evt_add('reload member restrictions', array_var($_POST, 'rest_genid'));
 				if (array_var($_POST, 'prop_genid')) evt_add('reload member properties', array_var($_POST, 'prop_genid'));
 				if (array_var($_GET, 'current') == 'overview-panel' && array_var($_GET, 'quick') ) {
 					//ajx_current("reload");
 				}
-				if (array_var($_GET, 'current') == 'more-panel') {
-					ajx_current("back");
-				} else {
-					ajx_current("empty");
-				}
+				
+				ajx_current("back");
+				
 			}
 		} catch (Exception $e) {
 			DB::rollback();
@@ -386,6 +576,7 @@ class MemberController extends ApplicationController {
 			
 			tpl_assign("member", $member);
 			$member_data['name'] = $member->getName();
+			$member_data['description'] = $member->getDescription();
 			
 			$current_dimension = $member->getDimension();
 			if (!$current_dimension instanceof Dimension) {
@@ -441,10 +632,9 @@ class MemberController extends ApplicationController {
 					$ret = null;
 					Hook::fire('after_edit_member', $member, $ret);
 					//evt_add("reload dimension tree", array('dim_id' => $member->getDimensionId(), 'mid' => $member->getId(), 'pid' => $member->getParentMemberId()));
-					evt_add("update dimension tree node", array('dim_id' => $member->getDimensionId(), 'member_id' => $member->getId()));						
+					evt_add("update dimension tree node", array('dim_id' => $member->getDimensionId(), 'member_id' => $member->getId()));
 				}
 			} catch (Exception $e) {
-				DB::rollback();
 				flash_error($e->getMessage());
 				ajx_current("empty");
 			}
@@ -533,7 +723,7 @@ class MemberController extends ApplicationController {
 							$dimension_obj_data[$field['col']] = getDateValue($dimension_obj_data[$field['col']]);
 						}
 					}
-					$member->save();
+					
 					$dimension_object->setFromAttributes($dimension_obj_data, $member);
 					$dimension_object->save();
 					$member->setObjectId($dimension_object->getId());
@@ -1267,7 +1457,6 @@ class MemberController extends ApplicationController {
 		$dimension = is_numeric($dimension_id) ? Dimensions::instance()->findById($dimension_id) : null;
 		
 		if ($dimension instanceof Dimension){
-			$dimensionOptions = $dimension->getOptions(true);
 
 			$object_Types = array();
 			$parent_member_id = array_var($_GET, 'parent_member_id');
@@ -1277,10 +1466,10 @@ class MemberController extends ApplicationController {
 				$object_types = DimensionObjectTypes::getChildObjectTypes($parent_member);
 				if(count($object_types) == 0){
 					$parent_member = null;
-					$object_types = DimensionObjectTypes::instance()->findAll(array("conditions"=>"dimension_id = $dimension_id AND is_root = 1 AND object_type_id<>(SELECT id from ".TABLE_PREFIX."object_types WHERE name='company')"));
+					$object_types = DimensionObjectTypes::instance()->findAll(array("conditions"=>"enabled=1 AND dimension_id = $dimension_id AND is_root = 1 AND object_type_id<>(SELECT id from ".TABLE_PREFIX."object_types WHERE name='company')"));
 				}				
 			} else {
-				$object_types = DimensionObjectTypes::instance()->findAll(array("conditions"=>"dimension_id = $dimension_id AND is_root = 1 AND object_type_id<>(SELECT id from ".TABLE_PREFIX."object_types WHERE name='company')"));
+				$object_types = DimensionObjectTypes::instance()->findAll(array("conditions"=>"enabled=1 AND dimension_id = $dimension_id AND is_root = 1 AND object_type_id<>(SELECT id from ".TABLE_PREFIX."object_types WHERE name='company')"));
 			}
 			
 			$obj_types = array();
@@ -1298,7 +1487,12 @@ class MemberController extends ApplicationController {
 					$obj_types[$t->getId()] = $t;
 					
 					$class_name = ucfirst($t->getName())."Controller";
-					if ($t && controller_exists($t->getName(), $t->getPluginId())) {
+					$controller_exists = controller_exists($t->getName(), $t->getPluginId());
+					if ($controller_exists) {
+						Env::useController(ucfirst($t->getName()));
+						eval('$controller = new '.$class_name.'();');
+					}
+					if ($t && controller_exists($t->getName(), $t->getPluginId()) && $t->getHandlerClass()!='' && $controller_exists && method_exists($controller, 'add')) {
 						$params = array("type" => $t->getId());
 						if ($parent_member instanceof Member) $params['parent'] = $parent_member->getId();
 						
@@ -1424,26 +1618,8 @@ class MemberController extends ApplicationController {
 					
 					$obj->addToMembers(array($member));
 					$obj->addToSharingTable();
-					$objects[] = $obj;
-					
-					if ($obj->allowsTimeslots()) {
-						$timeslots = $obj->getTimeslots();
-						foreach ($timeslots as $timeslot) {
-							$ts_mids = ObjectMembers::getMemberIdsByObject($timeslot->getId());
-							// if classified then reclassify
-							if (count($ts_mids)) {
-								if (array_var($_POST, 'remove_prev')) {
-									ObjectMembers::delete('`object_id` = ' . $timeslot->getId() . ' AND `member_id` IN (SELECT `m`.`id` FROM `'.TABLE_PREFIX.'members` `m` WHERE `m`.`dimension_id` = '.$member->getDimensionId().')');
-								}
-								$timeslot->addToMembers(array($member));
-								//$timeslot->addToSharingTable();
-								// fill sharing table in background
-								add_object_to_sharing_table($timeslot, logged_user());
-								$objects[] = $timeslot;
-							}
-						}
-					}
-					
+					$objects[] = $obj;					
+									
 					if (Plugins::instance()->isActivePlugin('mail') && $obj instanceof MailContent) {
 						$conversation = MailContents::getMailsFromConversation($obj);
 						foreach ($conversation as $conv_email) {

@@ -36,4 +36,16 @@
 	'how to purchase desc' => 'Información acerca de nuestros diferentes planes y beneficios', 
 	'add ticket' => 'Agregar un nuevo ticket de soporte',
 	'add ticket desc' => "Para obtener ayuda personalizada acerca de Feng Office",	
+
+		'Super Administrator user role description' => 'Puede ver y hacer absolutamente todo. Rol ideal para el propietario de la empresa.',
+		'Administrator user role description' => 'Puede hacer todo, excepto cambiar permisos de otros administradores o super administradores.',
+		'Manager user role description' => 'Puede hacer todo lo que los administradores le permitan en clientes, proyectos, espacios de trabajo, etc.',
+		'Executive user role description' => 'Pueden hacer todo lo que necesiten donde se les sea permitido excepto cambiar permisos. Este rol es para usuarios que trabajan con tareas, así como terceros que trabajan junto a la empresa en un proyecto. No puede modificar datos de facturación.',
+		'Collaborator Customer user role description' => 'Es un cliente que se ha involucrado en la colaboración sobre un proyecto: puede ser asignado a tareas, completar sus tareas, modificar y cargar documentos, leer y comentar en datos sobre los cuales tenga permisos asignados.  Por defecto no pueden las tareas de otros usuarios ni las tareas no asignadas ni la información de facturación.',
+		'Internal Collaborator user role description' => 'Es un colega que no necesita tantos permisos como un usuario ejecutivo. Este tipo de usuarios puede: completar, registrar tiempos de trabajo y comentar sus propias tareas, modificar y cargar documentos, leer y comentar en datos sobre los cuales tenga permisos asignados. Por defecto pueden ver las tareas de otros usuarios y las que no están asignadas, pero no así la información de facturación.',
+		'External Collaborator user role description' => 'Es un usuario externo a la empresa que no necesita tantos permisos como un usuario ejecutivo. Este tipo de usuarios puede: completear, registrar tiempos de trabajo y comentar sus propias tareas, modificar y cargar documentos, leer y comentar en datos sobre los cuales tenga permisos asignados.  Por defecto no pueden las tareas de otros usuarios ni las tareas no asignadas ni la información de facturación.',
+		'Guest Customer user role description' => 'Son clientes con acceso a la información limitado (solo lectura), pero no pueden modificar, crear o cargar datos. Sin embargo pueden realizar comentarios sobre los datos a los que se les hayan asignado permisos. Por defecto no pueden las tareas de otros usuarios ni las tareas no asignadas ni la información de facturación.',
+		'Guest user role description' => 'Personas con las cuales se comparte información pero no pueden modificar, crear o cargar datos. No pueden hacer comentarios. No pueden las tareas de otros usuarios ni las tareas no asignadas ni la información de facturación.',
+		'Non-Exec Director user role description' => 'Tiene acceso a todos los datos, pero no los puede modificar. Por defecto pueden ver todas las tareas, registros de tiempos de trabajo e información de facturación.',
+		'more information about user roles' => 'Más información sobre roles de usuarios',
 ); ?>

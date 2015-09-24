@@ -70,9 +70,9 @@ foreach($companies as $company)
 ?>
 
 <div id="calHiddenFields">
-	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
-	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($companies_array)))) ?>"/>
-	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPreferences)))) ?>"/>
+	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($users_array)))) ?>"/>
+	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($companies_array)))) ?>"/>
+	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPreferences)))) ?>"/>
 	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
 </div>
 
@@ -322,7 +322,7 @@ foreach($companies as $company)
 					?>
 						 		<div id="m<?php echo $dtv->getMonth() ?>_d<?php echo $dtv->getDay() ?>" style='z-index:0; min-height:90px; height:100%; cursor:pointer;<?php echo $extra_style ?>'
 						 		<?php if (!logged_user()->isGuest()) { ?>
-							 		onclick="showMonthEventPopup('<?php echo $dtv->getDay() ?>','<?php echo $dtv->getMonth()?>','<?php echo $dtv->getYear()?>','<?php echo $start_value ?>', '<?php echo $genid ?>');">
+							 		onclick="og.showEventPopup('<?php echo $dtv->getDay() ?>','<?php echo $dtv->getMonth()?>','<?php echo $dtv->getYear()?>',9,0,true,'<?php echo $start_value ?>', '<?php echo $genid ?>',2,true);">
 						 		<?php } ?>
 						 			<div class='<?php echo $daytitle?>' style='text-align:right;'>
 							 		<a class='internalLink' href="<?php echo $p ?>" onclick="og.disableEventPropagation(event);return true;"  style='color:#5B5B5B' ><?php echo $w?></a>				
@@ -617,26 +617,6 @@ foreach($companies as $company)
 
 	Ext.QuickTips.init();
 
-	function showMonthEventPopup(day, month, year, st_val, genid) {
-		
-		og.EventPopUp.show(null, {day: day,
-								month: month,
-								year: year,
-								hour: 9,
-								minute: 0,
-								durationhour: 1,
-								durationmin: 0,
-								start_value: st_val,
-								start_time: '9:00',
-								type_id:2, 
-								view:'month', 
-								title: lang('add event'),
-								time_format: '<?php echo $timeformat ?>',
-								hide_calendar_toolbar: 1,
-								genid: genid,
-								otype: <?php echo ProjectEvents::instance()->getObjectTypeId(); ?>
-								}, '');
-	}
 
 	if (Ext.isIE) document.getElementById('ie_scrollbar_adjust').style.display = 'block';
 	

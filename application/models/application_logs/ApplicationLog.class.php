@@ -174,7 +174,8 @@ class ApplicationLog extends BaseApplicationLog {
 			$object_link = '<a style="font-weight:bold" href="' . $object->getObjectUrl() . '">&nbsp;'.
 			'<span style="padding: 2px 0 3px 24px;" class="link-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($object->getObjectName()).'</a>';
 		} else{
-			$object_link = clean($this->getObjectName()).'&nbsp;'.lang('object is deleted');
+			$type = null;
+			$object_link = '"'.clean($this->getObjectName()).'"&nbsp;<span class="desc">'.lang('object is deleted').'</span>';
 		}	
 		switch ($this->getAction()) {
 			case ApplicationLogs::ACTION_EDIT :
@@ -191,9 +192,9 @@ class ApplicationLog extends BaseApplicationLog {
 			case ApplicationLogs::ACTION_UPLOAD :				
 			case ApplicationLogs::ACTION_CHECKIN :
 			case ApplicationLogs::ACTION_CHECKOUT :
-				if ($object) {
-					return lang('activity ' . $this->getAction(), lang('the '.$type), $user->getDisplayName(), $object_link);
-				}
+				
+				return lang('activity ' . $this->getAction(), ($type ? lang('the '.$type) : ""), $user->getDisplayName(), $object_link);
+				
 			case ApplicationLogs::ACTION_SUBSCRIBE :
 			case ApplicationLogs::ACTION_UNSUBSCRIBE :
 				$user_ids = explode(",", $this->getLogData());

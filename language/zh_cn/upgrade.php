@@ -14,8 +14,8 @@
 	'upgrade your fengoffice installation' => '升级你的OA系统程序',
 	'upgrade warning' => '警告',
 	'upgrade warning desc' => '升级之前请<a href="{0}" target="_blank">备份</a>你目前的数据！',
-	'error upgrade version must be specified' => 'No version specified. Cannot continue with automatic upgrade. Please, try again later or try the manual upgrade instead.',
-	'error upgrade version not found' => 'Invalid version specified ({0}). Cannot continue with automatic upgrade. Please, try again later or try the manual upgrade instead.',
-	'error upgrade invalid zip url' => 'Invalid download URL for specified version. Cannot continue with automatic upgrade. Please, try again later or try the manual upgrade instead.',
-	'error upgrade cannot open zip file' => 'Cannot open new version\'s zip file. Cannot continue with automatic upgrade. Please, try again later or try the manual upgrade instead.',
+	'error upgrade version must be specified' => '未指定版本。无法继续自动升级。请稍后再试或尝试手动升级。',
+	'error upgrade version not found' => '无效的版本({0})。 无法继续自动升级。请稍后再试或尝试手动升级。',
+	'error upgrade invalid zip url' => '指定版本的无效下载地址。无法继续自动升级。请稍后再试或尝试手动升级。',
+	'error upgrade cannot open zip file' => '无法打开新版本的压缩文件。无法继续自动升级。请稍后再试或尝试手动升级。',
 ); ?>

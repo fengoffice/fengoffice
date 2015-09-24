@@ -1,35 +1,33 @@
-/**
- *  MemberManager
- *
- */
-og.members = {
-	onMemberClick: function (member_id) {
-		og.contextManager.currentDimension = og.customers.dimension_id ;
-		var dimensions_panel = Ext.getCmp('menu-panel');
-		dimensions_panel.items.each(function(item, index, length) {
-			if (item.dimensionId == og.customers.dimension_id) {
-				og.expandCollapseDimensionTree(item);
-				var n = item.getNodeById(member_id);
-				if (n) {
-					if (n.parentNode) item.expandPath(n.parentNode.getPath(), false);
-					n.select();
-					og.eventManager.fireEvent('member tree node click', n);
-				}
-				
-			}
-
-		});
-		
-	}
-}
-
 og.MemberManager = function() {
 	var actions;
 	this.doNotRemove = true;
 	this.needRefresh = false;
+	this.fields = [
+		'id', 'name', 'dimension_id', 'object_type_id', 'parent_member_id', 'depth', 'object_id', 'color', 'template_id', 'icon_cls', 'member_id', 'mem_path',
+		'total_tasks', 'completed_tasks', 'task_completion_p', 'total_estimated_time', 'total_worked_time', 'time_worked_p'
+  	];
 	
-	if (!og.MemberManager.store) {
-		og.MemberManager.store = new Ext.data.Store({
+	this.dimension_id = og.member_list_params.dimension_id;
+	this.dimension_code = og.member_list_params.dimension_code;
+	this.object_type_id = og.member_list_params.object_type_id;
+	this.object_type_name = og.member_list_params.object_type_name;
+	
+	// prepare reader fields for any member type
+	var cp_names = [];
+  	for (ot_name in og.custom_properties_by_type) {
+		var cps = og.custom_properties_by_type[ot_name];
+		for (i=0; i<cps.length; i++) {
+	  		if (cps[i].member_cp) {
+	  			cp_names.push('cp_' + cps[i].id);
+	  		}
+	  	}
+  	}
+  	this.fields = this.fields.concat(cp_names);
+  	
+  	
+	if (!this.store) {
+		//this.store = new Ext.data.GroupingStore({
+		this.store = new Ext.data.Store({
 			proxy: new og.GooProxy({
 				url: og.getUrl('member', 'list_all')
 			}),
@@ -38,51 +36,78 @@ og.MemberManager = function() {
 				totalProperty: 'totalCount',
 				id: 'id',
 				dimension_id: 'dimension_id',
-				fields: [
-					'object_id', 'name', 'depth', 'parent_member_id', 'dimension_id', 'id', 'ico_color'
-				]
+				dimension_name: 'dimension_name',
+				fields: this.fields
 			}),
 			remoteSort: true,
 			listeners: {
 				'load': function() {
 					var d = this.reader.jsonData;
-					og.members.dimension_id = d.dimension_id;
-					this.fireEvent('after list load', "");
-					if (d.totalCount == 0) {
-						var sel_context_names = og.contextManager.getActiveContextNames();
-						if (sel_context_names.length > 0) {
-							this.fireEvent('messageToShow', lang("no objects message", lang("members"), sel_context_names.join(', ')));
-						} else {
-							this.fireEvent('messageToShow', lang("no more objects message", lang("members")));
-						}
+					
+					if (d.totalCount === 0) {
+						this.fireEvent('messageToShow', lang("no more objects message", d.dimension_name));
+					} else if (d.members.length == 0) {
+						this.fireEvent('messageToShow', lang("no more objects message", d.dimension_name));
 					} else {
 						this.fireEvent('messageToShow', "");
 					}
+				
+					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 				}
 			}
+	        
 		});
-		og.MemberManager.store.setDefaultSort('name', 'asc');
-	}
-	this.store = og.MemberManager.store;
-	this.store.addListener({messageToShow: {fn: this.showMessage, scope: this}});
-
-	function renderDragHandle(value, p, r, ix) {
-		return '<div class="img-grid-drag" title="' + lang('click to drag') + '" onmousedown="var sm = Ext.getCmp(\'member-manager\').getSelectionModel();if (!sm.isSelected('+ix+')) sm.clearSelections();sm.selectRow('+ix+', true);"></div>';
+		og.eventManager.addListener('member changed', this.reset, this);
+		this.store.setDefaultSort('name', 'asc');
 	}
 	
+	this.store.addListener({messageToShow: {fn: this.showMessage, scope: this}});
+
+	
+	var readClass = 'read-unread-' + Ext.id();
+	
 	function renderName(value, p, r) {
-		var text = '<span>'+ og.clean(value) +'</span>';
+		var text = '<span class="bold">'+ og.clean(value) +'</span>';
+		var dcode = '';
+		var treepanel = Ext.getCmp('dimension-panel-'+r.data.dimension_id);
+		if (treepanel) dcode = treepanel.dimensionCode;
+		var onclick = "og.memberTreeExternalClick('"+dcode+"', "+r.data.id+"); return false;";
 		
-		var onclick = 'og.workspaces.onWorkspaceClick('+r.data.id+'); return false;';
-		
-		return String.format(
-				'<a style="font-size:120%;" class="{2}" href="#" onclick="{3}" title="{1}">{0}</a>',
-				text, og.clean(value), '', onclick);
-		
+		return String.format('<a style="font-size:120%;" class="{3}" href="{1}" onclick="{4}" title="{2}">{0}</a>', text, "#", og.clean(value), '', onclick);
 	}
 
 	function renderIcon(value, p, r) {
-		return '<div class="db-ico ico-color'+value+'"></div>';
+		return '<div class="link-ico '+r.data.icon_cls+'"></div>';
+	}
+	
+	function renderMemberPath(value, p, r) {
+		var mem_path = "";
+		if (r.data.mem_path) {
+			var mpath = Ext.util.JSON.decode(r.data.mem_path);
+			if (mpath){ 
+				mem_path = "<div class='breadcrumb-container' style='display: inline-block;'>";
+				mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
+				mem_path += "</div>";
+			}
+		}
+		return mem_path;
+	}
+	
+	function renderProjectCompletionTasks(value, p, r) {
+		return r.data.task_completion_p + " %";
+	}
+	
+	function renderProjectCompletionTime(value, p, r) {
+		return r.data.time_worked_p + " %";
+	}
+	
+	function renderTime(value, p, r) {
+		var hours = Math.floor(value / 60);
+		var mins = value % 60;
+		if (hours < 10) hours = '0'+ hours;
+		if (mins < 10) mins = '0'+ mins;
+		
+		return hours +":"+ mins;
 	}
 
 	function getSelectedIds() {
@@ -92,7 +117,7 @@ og.MemberManager = function() {
 		} else {
 			var ret = '';
 			for (var i=0; i < selections.length; i++) {
-				ret += "," + selections[i].data.id;
+				ret += "," + selections[i].data.object_id;
 			}
 			return ret.substring(1);
 		}
@@ -104,9 +129,17 @@ og.MemberManager = function() {
 		if (selections.length <= 0) {
 			return '';
 		} else {
-			return selections[0].data.id;
+			return selections[0].data.object_id;
 		}
-		return '';
+	}
+	
+	function getFirstSelectedMemberId() {
+		var selections = sm.getSelections();
+		if (selections.length <= 0) {
+			return '';
+		} else {
+			return selections[0].data.member_id;
+		}
 	}
 
 	var sm = new Ext.grid.CheckboxSelectionModel();
@@ -120,58 +153,142 @@ og.MemberManager = function() {
 		}
 	});
 	
-	var cm = new Ext.grid.ColumnModel([
+	var cm_info = [
 		sm,{
 			id: 'icon',
 			header: '&nbsp;',
-			dataIndex: 'ico_color',
+			dataIndex: 'type',
 			width: 28,
-                        renderer: renderIcon,
-                        fixed:true,
-                        resizable: false,
-                        hideable:false,
-                        menuDisabled: true
-                        }
-                ,{
-                        id: 'name',
-                        header: lang("name"),
-                        dataIndex: 'name',
-                        width: 250,
-                        renderer: renderName,
-                        sortable:true
-                }]);
-        cm.defaultSortable = false;
+        	renderer: renderIcon,
+        	fixed:true,
+        	resizable: false,
+        	hideable:false,
+        	menuDisabled: true
+		},{
+			id: 'name',
+			header: lang("name"),
+			dataIndex: 'name',
+			width: 250,
+			renderer: renderName,
+			sortable:true
+		},{
+			id: 'mem_path',
+			header: lang("located under"),
+			dataIndex: 'mem_path',
+			width: 250,
+			renderer: renderMemberPath,
+			sortable:true
+		/*},{
+			id: 'task_completion_p',
+			header: lang("customer completion perc tasks"),
+			dataIndex: 'task_completion_p',
+			width: 100,
+			align: 'center',
+			renderer: renderProjectCompletionTasks,
+			sortable:true
+        },{
+			id: 'completed_tasks',
+			header: lang("completed tasks"),
+			dataIndex: 'completed_tasks',
+			width: 50,
+			align: 'center',
+			renderer: og.clean,
+			hidden: true,
+			sortable:true
+        },{
+			id: 'total_tasks',
+			header: lang("total tasks"),
+			dataIndex: 'total_tasks',
+			width: 50,
+			align: 'center',
+			renderer: og.clean,
+			hidden: true,
+			sortable:true
+        },{
+			id: 'time_worked_p',
+			header: lang("customer completion perc time"),
+			dataIndex: 'time_worked_p',
+			width: 100,
+			align: 'center',
+			renderer: renderProjectCompletionTime,
+			sortable:true
+        },{
+			id: 'total_worked_time',
+			header: lang("worked time"),
+			dataIndex: 'total_worked_time',
+			width: 50,
+			align: 'center',
+			renderer: renderTime,
+			hidden: true,
+			sortable:true
+        },{
+			id: 'total_estimated_time',
+			header: lang("estimated time"),
+			dataIndex: 'total_estimated_time',
+			width: 50,
+			align: 'center',
+			renderer: renderTime,
+			hidden: true,
+			sortable:true*/
+        }];
+	
+	
+	
+	// custom property columns
+	var cps = og.custom_properties_by_type[this.object_type_name] ? og.custom_properties_by_type[this.object_type_name] : [];
+	for (i=0; i<cps.length; i++) {
+		cm_info.push({
+			id: 'cp_' + cps[i].id,
+			header: cps[i].name,
+			dataIndex: 'cp_' + cps[i].id,
+			sortable: true,
+			renderer: og.clean
+		});
+	}
+	
+    var cm = new Ext.grid.ColumnModel(cm_info);
+	cm.defaultSortable = false;
 
 		
 	actions = {
 		newCO: new Ext.Action({
 			text: lang('new'),
-                        tooltip: lang('add new workspace'),
-                        iconCls: 'ico-new',
-                        handler: function() {
-                                            var url = og.getUrl('member', 'add', {dim_id:og.members.dimension_id});
-                                            og.openLink(url, null);
-                                    }
-                            }),
-                        edit: new Ext.Action({
+            tooltip: lang('add new member', lang(this.object_type_name)),
+            iconCls: 'ico-new',
+            handler: function() {
+            	var parameters = { dim_id: this.dimension_id, type: this.object_type_id };
+            	var mem_selection = og.contextManager.getDimensionMembers(this.dimension_id);
+            	var parent_id = 0;
+            	for (var i=0; i<mem_selection.length; i++) {
+            		if (mem_selection[i] > 0) parent_id = mem_selection[i];
+            	}
+            	if (parent_id > 0) {
+            		parameters.parent = parent_id;
+            	}
+            	var url = og.getUrl('member', 'add', parameters);
+				og.openLink(url, null);
+			},
+			scope: this
+		}),
+		edit: new Ext.Action({
 			text: lang('edit'),
-                        tooltip: lang('edit selected workspace'),
-                        iconCls: 'ico-edit',
+            tooltip: lang('edit selected member', lang(this.object_type_name)),
+            iconCls: 'ico-edit',
 			disabled: true,
 			handler: function() {
-				var url = og.getUrl('member', 'edit', {id:getFirstSelectedId()});
+				var url = og.getUrl('member', 'edit', {id:getFirstSelectedMemberId()});
 				og.openLink(url, null);
 			},
 			scope: this
 		}),
 		del: new Ext.Action({
 			text: lang('delete'),
-                        tooltip: lang('delete selected workspace_'),
-                        iconCls: 'ico-delete',
+            tooltip: lang('delete selected member', lang(this.object_type_name)),
+            iconCls: 'ico-delete',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('delete workspace warning'))) {
-					var url = og.getUrl('member', 'delete', {id:getFirstSelectedId()});
+				if (confirm(lang('delete member warning', lang(this.object_type_name)))) {
+					var url = og.getUrl('member', 'delete', {id:getFirstSelectedMemberId()});
 					og.openLink(url, null);
 				}
 			},
@@ -184,15 +301,16 @@ og.MemberManager = function() {
 		tbar.push(actions.newCO);
 		tbar.push('-');
 		tbar.push(actions.edit);
-		//tbar.push(actions.del);
+		tbar.push(actions.del);
 	}
 	
+	//og.MemberManager.superclass.constructor.call(this, {
 	og.MemberManager.superclass.constructor.call(this, {
 		store: this.store,
 		layout: 'fit',
 		cm: cm,
 		stateful: og.preferences['rememberGUIState'],
-		id: 'member-manager',
+		id: 'member-manager-'+this.dimension_id,
 		stripeRows: true,
 		closable: true,
 		loadMask: true,
@@ -202,8 +320,13 @@ og.MemberManager = function() {
 			displayInfo: true,
 			displayMsg: lang('displaying objects of'),
 			emptyMsg: lang("no objects to display")
-
-		}),
+		}),/*
+		view: new Ext.grid.GroupingView({
+	        forceFit: true,
+			//enableGroupingMenu: false,
+	        //hideGroupedColumn: true,
+	        //groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "'+lang('customers')+'" : "'+lang('customer')+'"]})'
+	    }),*/
 		viewConfig: {
 			forceFit: true
 		},
@@ -236,6 +359,7 @@ og.MemberManager = function() {
 
 Ext.extend(og.MemberManager, Ext.grid.GridPanel, {
 	load: function(params) {
+		
 		if (!params) params = {};
 		var start;
 		if (typeof params.start == 'undefined') {
@@ -246,10 +370,10 @@ Ext.extend(og.MemberManager, Ext.grid.GridPanel, {
 		
 		
 		this.store.baseParams = {
-		      context: og.contextManager.plainContext(), 
-			  account_id: this.accountId
-		    };
-		
+			context: og.contextManager.plainContext(),
+			dim_id: this.dimension_id,
+			type_id: this.object_type_id
+	    };
 		
 		this.store.removeAll();
 		this.store.load({
@@ -260,14 +384,12 @@ Ext.extend(og.MemberManager, Ext.grid.GridPanel, {
 		});
 	},
 	resetVars: function(){
-		this.viewUnclassified = false;
-		this.accountId = 0;
+		
 	},
 	
 	activate: function() {
-		if (this.needRefresh) {
-			this.load({start:0});
-		}
+		if (this.needRefresh)
+		this.load();
 	},
 	
 	reset: function() {
@@ -301,70 +423,3 @@ Ext.extend(og.MemberManager, Ext.grid.GridPanel, {
 
 
 Ext.reg("members", og.MemberManager);
-
-/************************************************
-Container for MemberManager,
-*************************************************/
-og.MemberManagerPanel = function() {
-	this.doNotRemove = true;
-	this.needRefresh = false;
-	
-	this.manager = new og.MemberManager();
-	
-	this.helpPanel = new og.HtmlPanel({
-		html:'<div style="height:50px; line-height:50px; background-color:green;">HOLA</div>',
-		style:'height: 50px;'
-	});
-
-	og.MemberManagerPanel.superclass.constructor.call(this, {
-		layout: 'fit',
-		border: false,
-		bodyBorder: false,
-		items: [
-			this.helpPanel,
-			this.manager
-		],
-		closable: true
-	});
-}
-
-Ext.extend(og.MemberManagerPanel, Ext.Panel, {
-	load: function(params) {
-		this.manager.load(params);
-	},
-	activate: function() {
-		this.manager.activate();
-	},	
-	reset: function() {
-		this.manager.reset();
-	},	
-	showMessage: function(text) {
-		this.manager.showMessage(text);
-	}
-});
-
-Ext.reg("members-containerpanel", og.MemberManagerPanel);
-
-
-og.CustomerManagerView = function() {
-	og.CustomerManagerView.superclass.constructor.call(this, {});
-}
-
-
-Ext.grid.GridView.override({
-	getRowClass: function (  record,  index,  rowParams,  store ) {
-		return "";
-	},
-	focusCell : function(row, col, hscroll){
-		this.syncFocusEl(this.ensureVisible(row, col, hscroll));
-		this.focusEl.focus.defer(1, this.focusEl);
-	},
-
-        syncFocusEl : function(row, col, hscroll){
-            var xy = row;
-            if(!Ext.isArray(xy)){
-                row = Math.min(row, Math.max(0, this.getRows().length-1));
-            }
-            this.focusEl.setXY(xy||this.scroller.getXY());
-        }
-});

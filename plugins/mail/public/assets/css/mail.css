@@ -1,4 +1,4 @@
-#mails-panel button.mail {
+button.mail {
   margin-top: 0px;
   padding: 5px 10px;
   font-size: 18px;
@@ -14,11 +14,11 @@
   -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
 }
 
-#mails-panel button.mail:HOVER {
+button.mail:HOVER {
   background: none repeat scroll 0 0 #f0f0f0; 
 }
 
-#mails-panel button.mail.send {
+button.mail.send {
 	margin-left: 10px;
 }
 
@@ -31,7 +31,7 @@
 	min-width: 140px;
 }
 
-#mails-panel .mail-classify-selector .x-column-inner{
+.mail-classify-selector .x-column-inner{
 	width: 100%!important;
 }
 

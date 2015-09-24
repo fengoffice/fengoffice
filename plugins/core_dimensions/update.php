@@ -203,8 +203,64 @@ function core_dimensions_update_9_10() {
 function core_dimensions_update_10_11() {
 	// generate small, medium and large size images for users, contacts and companies
 	$all_contacts_with_picture = Contacts::findAll(array('conditions' => "picture_file <> ''"));
-	
+
 	foreach ($all_contacts_with_picture as $contact) {
 		$result = $contact->generateAllSizePictures($contact->getPictureFile());
 	}
 }
+
+
+function core_dimensions_update_11_12() {
+	// normaize dimension options
+	$dimensions = Dimensions::findAll();
+	
+	foreach ($dimensions as $dimension) {/* @var $dimension Dimension */
+		$options_json = $dimension->getOptions();
+		$options = json_decode($options_json, true);
+		
+		foreach ($options as $key => $value) {
+			if (in_array($key, array('defaultAjax', 'quickAdd'))) {
+				// skip defaultAjax and quickAdd
+				continue;
+			}
+			$sql = "INSERT INTO ".TABLE_PREFIX."dimension_options (`dimension_id`, `name`, `value`) 
+					VALUES (".$dimension->getId().",'$key','$value') 
+					ON DUPLICATE KEY UPDATE `value`='$value'";
+			DB::execute($sql);
+		}
+	}
+}
+
+/**
+ * template tasks depth
+ *
+ */
+function core_dimensions_update_12_13() {
+	//UPDATE depth for all template tasks
+	//update root 
+	DB::execute("UPDATE ".TABLE_PREFIX."template_tasks SET depth = 0  WHERE parent_id = 0;");
+	//clean root 
+	DB::execute("UPDATE ".TABLE_PREFIX."template_tasks SET depth = 1  WHERE parent_id != 0 AND depth = 0;");
+		
+	$tasks_depth = DB::executeAll("SELECT object_id FROM ".TABLE_PREFIX."template_tasks WHERE parent_id =0 ORDER BY object_id");
+	$tasks_depth = array_flat($tasks_depth);
+	$tasks_depth = implode(",", $tasks_depth);
+	
+	$depth = 1;
+	$max_depth = DB::executeOne("SELECT  MAX(depth) AS depth FROM `".TABLE_PREFIX."template_tasks`");
+			
+	//update all depths
+	for ($i = $depth; $i <= $max_depth['depth']; $i++) {
+		//update template tasks depth
+		DB::execute("UPDATE ".TABLE_PREFIX."template_tasks SET depth = ".$depth." WHERE parent_id  IN (".$tasks_depth.");");
+		
+		//Get template tasks from next depth
+		$tasks_depth = DB::executeAll("SELECT object_id FROM ".TABLE_PREFIX."template_tasks WHERE depth= ".$depth." ORDER BY object_id");
+		$tasks_depth = array_flat($tasks_depth);
+		$tasks_depth = implode(",", $tasks_depth);
+		
+		$depth++;
+	}
+	//END UPDATE depth for all template tasks
+}
+

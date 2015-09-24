@@ -7,13 +7,26 @@
   */
   class Members extends BaseMembers {
     
-	static function getSubmembers(Member $member, $recursive = true, $extra_conditions="") {
-		$members = Members::findAll(array('conditions' => '`parent_member_id` = ' . $member->getId() .' '. $extra_conditions));
+	static function getSubmembers(Member $member, $recursive = true, $extra_conditions="", $order_by=null, $order_dir=null, $offset = -1, $limit = -1) {
+		if (is_null($order_by)) $order_by = "name";
+		if (is_null($order_dir)) $order_dir = "ASC";
+		
+		$params = array(
+				'conditions' => '`parent_member_id` = ' . $member->getId() .' '. $extra_conditions,
+				'order' => "`$order_by` $order_dir",
+		);
+		if ($limit > 0 && $offset >= 0) {
+			$params['limit'] = $limit;
+			$params['offset'] = $offset;
+		}
+		
+		$members = Members::findAll($params);
 		if ($recursive) {
 	  		foreach ($members as $m) {
 	  			$members = array_merge($members, self::getSubmembers($m, $recursive));
 	  		}
 		}
+		
 		return $members;
 	}
 	

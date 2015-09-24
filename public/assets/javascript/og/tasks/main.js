@@ -12,7 +12,7 @@ ogTasks.Users = [];
 ogTasks.Companies = [];
 ogTasks.Milestones = [];
 
-ogTasks.TotalCols = {};
+ogTasks.TasksList = {};
 
 ogTasks.Groups = [];
 
@@ -45,6 +45,7 @@ ogTasksTask = function(){
 	this.workingOnIds;
 	this.workingOnTimes;
 	this.workingOnPauses;
+	this.previous_tasks_total;
 	this.pauseTime;
 	this.isAdditional = false;
 	this.isRead = true;
@@ -108,6 +109,7 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.workingOnIds) this.workingOnIds = tdata.workingOnIds; else this.workingOnIds = null;
 	if (tdata.workingOnTimes) this.workingOnTimes = tdata.workingOnTimes; else this.workingOnTimes = null;
 	if (tdata.workingOnPauses) this.workingOnPauses = tdata.workingOnPauses; else this.workingOnPauses = null;
+	if (tdata.previous_tasks_total) this.previous_tasks_total = tdata.previous_tasks_total; else this.previous_tasks_total = 0;
 	if (tdata.pauseTime) this.pauseTime = tdata.pauseTime; else this.pauseTime = null;
 	if (tdata.completedById) this.completedById = tdata.completedById; else this.completedById = null;
 	if (tdata.completedOn) this.completedOn = tdata.completedOn; else this.completedOn = null;
@@ -304,8 +306,8 @@ ogTasks.TaskSelected = function(checkbox, task_id, group_id){
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
 	topToolbar.updateCheckedStatus();
 	
-	if (task.isChecked) rx__TasksDrag.addTaskToMove(task_id);
-	else rx__TasksDrag.removeTaskToMove(task_id);
+	//if (task.isChecked) rx__TasksDrag.addTaskToMove(task_id);
+	//else rx__TasksDrag.removeTaskToMove(task_id);
 }
 
 
@@ -325,8 +327,8 @@ ogTasks.GroupSelected = function(checkbox, group_id){
 		var chkTask = document.getElementById('ogTasksPanelChk' + tgId);
 		chkTask.checked = checkbox.checked;
 		
-		if (chkTask.checked) rx__TasksDrag.addTaskToMove(tasks[i].id);
-		else rx__TasksDrag.removeTaskToMove(tasks[i].id);
+		//if (chkTask.checked) rx__TasksDrag.addTaskToMove(tasks[i].id);
+		//else rx__TasksDrag.removeTaskToMove(tasks[i].id);
 		
 		var table = document.getElementById('ogTasksPanelTaskTable' + tgId);
 		if (table)
@@ -341,6 +343,19 @@ ogTasks.GroupSelected = function(checkbox, group_id){
 //*		Helpers
 //************************************
 
+ogTasks.updateDependantTasks = function(task_id, add){
+	var task = ogTasksCache.getTask(task_id);
+	var dependant_task;
+	for (var i = 0; i < task.dependants.length; i++){		
+		dependant_task = ogTasksCache.getTask(task.dependants[i]);
+		if (add){
+			dependant_task.previous_tasks_total++;
+		}else{
+			dependant_task.previous_tasks_total--;
+		}
+		ogTasks.UpdateTask(task.dependants[i],true);
+	}
+}
 
 ogTasks.executeAction = function(actionName, ids, options){
 	if (!ids)
@@ -359,6 +374,12 @@ ogTasks.executeAction = function(actionName, ids, options){
 					var tdata = data.tasks[i];
 					var task = ogTasksCache.addTasks(tdata);
 					if (actionName == 'delete' || actionName == 'archive'){
+						
+						//update dependants 
+						if (actionName == 'delete'){
+							ogTasks.updateDependantTasks(task.id,false);
+						}
+						
 						//remove task from cache	
 						ogTasksCache.removeTask(task);
 						ogTasks.removeTaskFromView(task);
@@ -599,19 +620,6 @@ ogTasks.flattenTasks = function(tasks){
 		result = result.concat(tasks[i].flatten());
 	}
 	return result;
-}
-
-
-//Written for edit task view
-og.addTaskUserChanged = function(genid, user_id){
-	var ddUser = document.getElementById(genid + 'taskFormAssignedTo');
-	var chk = document.getElementById(genid + 'taskFormSendNotification');
-	if (ddUser && chk){
-		var user = ddUser.value;
-		chk.checked = (user > 0 && user != user_id);
-		var comp_obj = ogTasks.getCompany(user); // check if selected user is a user or a company
-		document.getElementById(genid + 'taskFormSendNotificationDiv').style.display = (user > 0 && !comp_obj) ? 'block':'none';
-	}
 }
 
 $(function (){

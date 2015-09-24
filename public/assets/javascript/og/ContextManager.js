@@ -330,6 +330,27 @@ og.contextManager  = new function() {
 		
 		return context_names;
     }
+    
+    this.getSelectedMemberObjectTypeId = function(dimension_id) {
+    	var sel_member_type = 0;
+    	context_ids = Ext.util.JSON.decode(this.plainContext());
+		for (dim_id in context_ids) {
+			if (dim_id == dimension_id) {
+				var mids = context_ids[dim_id];
+				for (i=0; i<mids.length; i++) {
+					if (mids[i] > 0) {
+						var tree = Ext.getCmp('dimension-panel-'+dimension_id);
+						if (tree) {
+							var node = tree.getNodeById(mids[i]);
+							if (node) sel_member_type = node.object_type_id; 
+						}
+					}
+				}
+				break;
+			}
+		}
+		return sel_member_type;
+    }
 }
 
 

@@ -478,6 +478,24 @@ function get_context_from_array($ids){
 	return $context ;
 }
 
+
+function active_context_can_contain_member_type($dimension_id, $member_type_id) {
+	$context = active_context();
+	foreach ($context as $selection) {
+		if ($selection instanceof Dimension && $selection->getId() == $dimension_id) {
+			// if no member of this dimension is selected return true
+			return true;
+		} else {
+			if ($selection instanceof Member && $selection->getDimensionId() == $dimension_id) {
+				// check if member type parameter can be descendant of the selected member type
+				$child_ots = DimensionObjectTypeHierarchies::getAllChildrenObjectTypeIds($dimension_id, $selection->getObjectTypeId());
+				return in_array($member_type_id, $child_ots);
+			}
+		}
+	}
+	return true;
+}
+
 /**
  * Return which is the upload hook
  * @return string
@@ -1978,7 +1996,7 @@ function print_modal_json_response($data, $dont_process_response = true, $use_aj
 
 
 
-function associate_member_to_status_member($project_member, $old_project_status, $status_member_id, $status_dimension, $status_ot=null) {
+function associate_member_to_status_member($project_member, $old_project_status, $status_member_id, $status_dimension, $status_ot=null, $remove_prev_associations=true) {
 
 	if ($status_dimension instanceof Dimension && in_array($status_dimension->getId(), config_option('enabled_dimensions'))) {
 
@@ -2036,7 +2054,9 @@ function associate_member_to_status_member($project_member, $old_project_status,
 				}
 
 			}
-			MemberPropertyMembers::instance()->delete('association_id = '.$a->getId().' AND member_id = '.$project_member->getId() . " AND property_member_id <> '$status_member_id'");
+			if ($remove_prev_associations) {
+				MemberPropertyMembers::instance()->delete('association_id = '.$a->getId().' AND member_id = '.$project_member->getId() . " AND property_member_id <> '$status_member_id'");
+			}
 		}
 		
 		
@@ -2057,9 +2077,32 @@ function associate_member_to_status_member($project_member, $old_project_status,
 				}
 		
 			}
-			MemberPropertyMembers::instance()->delete('association_id = '.$a->getId().' AND property_member_id = '.$project_member->getId() . " AND member_id <> '$status_member_id'");
+			if ($remove_prev_associations) {
+				MemberPropertyMembers::instance()->delete('association_id = '.$a->getId().' AND property_member_id = '.$project_member->getId() . " AND member_id <> '$status_member_id'");
+			}
 		}
 	}
+}
+
+function get_all_associated_status_member_ids($member, $dimension, $ot=null) {
+	$ids = array();
+	if ($member instanceof Member && $dimension instanceof Dimension) {
+		$member_dimension = $member->getDimension();
+		if (!$member_dimension instanceof Dimension) return 0;
+
+		$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND associated_dimension_id=?'.
+				($ot instanceof ObjectType ? ' AND associated_object_type_id='.$ot->getId() : ''),
+				$member_dimension->getId(), $member->getObjectTypeId(), $dimension->getId())));
+
+		// create relation between members and remove old relations
+		if ($a instanceof DimensionMemberAssociation) {
+			$mpms = MemberPropertyMembers::findAll(array('conditions' => array('association_id = ? AND member_id = ?', $a->getId(), $member->getId())));
+			foreach ($mpms as $mpm) {
+				$ids[] = intval($mpm->getPropertyMemberId());
+			}
+		}
+	}
+	return $ids;
 }
 
 
@@ -2312,4 +2355,13 @@ function get_time_info($timestamp) {
 	$mins = floor($ts_mins / (60));
 	
 	return array('days' => $days, 'hours' => $hours, 'mins' => $mins, 'sign' => $sign);
+}
+
+//escapes a character from a string, escapes ' by default, or all characters according to $all
+function escape_character($string, $char="'", $all = false) {
+	if ($all){
+		return addslashes($string);
+	}else{
+		return str_replace($char, "\\".$char, $string);
+	}
 }

@@ -55,7 +55,6 @@ border-bottom:1px solid black;
 
 <?php if (count($task->getMembers()) > 0) { ?>
             <p><b>
-                <!-- CONTEXTS -->
 		        <?php    	
 				$contexts = array();
 				$members =  $task->getMembers();
@@ -66,18 +65,19 @@ border-bottom:1px solid black;
 							if ($dim->getCode() == "customer_project" || $dim->getCode() == "customers"){
 								$obj_type = ObjectTypes::findById($member->getObjectTypeId());
 								if ($obj_type instanceof ObjectType) {
-								echo lang($dim->getCode()). ": ";
-								echo $contexts[$dim->getCode()][$obj_type->getName()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
-							}
+									echo lang($dim->getCode()). ": ";
+									echo $contexts[$dim->getCode()][$obj_type->getName()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
+									echo '<br />';
+								}
 							}else{
 								echo lang($dim->getCode()). ": ";
 								echo $contexts[$dim->getCode()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
+								echo '<br />';
 							}
 						}
 					}
 				}
 				?>
-                <!-- CONTEXTS -->
             </b></p>
 <?php } // if ?>
 
@@ -92,7 +92,7 @@ border-bottom:1px solid black;
 
 <?php if ($task->getText() != '') { ?>
 <p><b><?php echo lang('description') ?>:</b></p>
-<div style="margin-left:14px;padding:6px;border:1px solid #AAA">
+<div style="margin:5px 5px 5px 0;padding:5px;border:1px solid #AAA">
 <?php 
     if($task->getTypeContent() == "text"){
         echo escape_html_whitespace(convert_to_links(clean($task->getText())));
@@ -133,10 +133,13 @@ if ($hasIncompleteSubtasks || $hasCompletedSubtasks) { ?>
 
 <br/>
 
+<?php $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($task->getObjectTypeId()) > 0;
+	  if ($has_custom_properties) { ?>
 <p><b><?php echo lang('custom properties') ?>:</b></p>
 <div style="margin-left:14px;padding:6px;border:1px solid #AAA">
 <?php echo str_replace(lang('custom properties'), "", render_custom_properties($task));?>
 </div>
+<?php } ?>
 
 
 </div>

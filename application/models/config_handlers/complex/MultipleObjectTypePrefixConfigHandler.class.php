@@ -10,7 +10,7 @@
     
     function render($control_name) {
     	$genid = gen_id();
-    	$object_types = ObjectTypes::getAvailableObjectTypesWithDimensionObjects(" AND `name` IN ('task', 'project')");
+    	$object_types = ObjectTypes::getAvailableObjectTypesWithDimensionObjects(" AND `name` IN ('task', 'project', 'sample')");
     	
     	$value =  $this->getValue();
     	$out = '';

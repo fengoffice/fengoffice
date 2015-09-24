@@ -1,5 +1,5 @@
 
-	About Feng Office 3.2.2.1
+	About Feng Office 3.3.0.4
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,9 +105,190 @@
 	Changelog
 	=========
 	
+	Since 3.3.0.3
+	----------------
+	bugfix: member list order by parent name.
+	bugfix: search on member trees is not working if the node name have html entities.
+	
+	Since 3.3.0.2
+	----------------
+	bugfix: web documents only working for super admins.
+	bugfix: workspaces and tags list not working.
+	bugfix: add new contact/user/company picture error
+
+	Since 3.3.0.1
+	----------------
+	bugfix: when adding/editing suppliers the associated contact custom properties are not rendered and if there is any required cp the supplier cannot be added.
+	bugfix: clear filter after select on member selectors.
+	bugfix: single member selector
+	bugfix: breadcrumbs js error
+	bugfix: ensure to archive-unarchive associated object or associated member
+	bugfix: filter dimensions by other dimensions does not get the filtered members always.
+	bugfix: ensure that deprecated gantt overview widget is not rendered.
+	bugfix: custom properties address fields renderization crashes when it has enters.
+
+	performance: member tree search.
+	performance: member trees.
+	
+	
+	Since 3.3
+	----------------
+	
+	bugfix: js error and new tab opens when trying to add new invoice and module is not configured.
+	bugfix: tasks list group by dimension not showing tasks without member.
+	bugfix: when no formula status is matched then the last one is assigned.
+	bugfix: super admin can not see other users attachments if the mail is not classified.
+	bugfix: repeating template tasks not working with config option repeating_task.
+	bugfix: purchase orders "ordered by" field must be only users.
+	bugfix: expenses payments numeration
+	
+	lang: Turkish translation
+
+
+	Since 3.3-rc
+	----------------
+	bugfix: contact list image width.
+	bugfix: settings icons misalignments when language is es_es or es_la
+	bugfix: search results not always shows where is the match (e.g.: if match is in a comment)
+	bugfix: template tasks parent id is not set in some cases.
+	bugfix: dont delete .htaccess when cleaning tmp folder using cron events
+	bugfix: set "attach document to notification" default value to "false"
+	bugfix: filters bug in linked objects picker.
+	bugfix: custom report dates are not correct.
+	bugfix: search results not always shows where is the match (e.g.when matched word is in a comment)
+	bugfix: report is shown in permissions screen when reports tab is disabled
+	bugfix: sharing table not updated for user when permissions changed.
+	bugfix: birthday query not correct for leap-years
+	bugfix: dont set user images to expire today.
+	bugfix: incorrect error message when user cannot upload document
+	
+	
+	Since 3.3-beta
+	----------------
+	bugfix: breadcrumbs on mail list.
+	bugfix: template tasks depth.
+	bugfix: some template tasks disappear from template view.
+	bugfix: contact member cache is not recalculated when enabling or disabling modules.
+	bugfix: weblinks names.
+	bugfix: non working days - remove option "leave as they are" and set min amount of days to 1.
+	bugfix: user birthday
+	bugfix: administrator cannot edit user in some cases
+	bugfix: in template user variables: dont filter fixed user variables by context or company
+	bugfix: all prev tasks completed notification cant be sent if company logo file does not exists
+	bugfix: dont show member custom properties if plugin not installed.
+
+	
+	Since 3.2.3.2
+	----------------
+
+	bugfix: dont show object in listings if it is only classified in a person member.
+	bugfix: resize members panel.
+	bugfix: multiline text on street address.
+	bugfix: missing contact data inputs in clients edition when client is a person.
+	bugfix: langs in tasks groups.
+	bugfix: user's widget in dashboard showing contacts.
+	bugfix: php execution in tmp folder must be disabled
+	bugfix: no message is shown when tasks report does not have tasks
+	bugfix: change project_manager to custom property
+	bugfix: related dimensions are reloaded with selected node object type not having an association.
+	bugfix: edit button on members trees
+	bugfix: after change client parent classify contact 
+	bugfix: update parent after adding child node on members trees 
+	bugfix: print tasks list
+	bugfix: don't allow duplicated username
+	bugfix: Error when filtering tasks by tag.
+	bugfix: dont show object in listings if it is only classified in a person member
+	bugfix: do not reload tasks list after complete tasks
+	bugfix: javascript infinite loop on tasks list
+	bugfix: dont force repository files download, keep cache for these files
+	bugfix: mail rules mark as read fail when is called from cron
+	bugfix: when filtering members by another dimension, cannot view filtered member childs
+	bugfix: autoclassify components misaligned in mail account edition
+	bugfix: drag and drop on member tree node
+	bugfix: zip code is not shown in user/contact/company card
+	bugfix: cannot download attachments if email has inline images before the attachments
+	bugfix: checkbox to send notification to assignee does not appear
+	
+	
+	feature: resize columns on tasks list.
+	feature: separate dimensions columns on tasks list.
+	feature: general member listings.
+	fetaure: allow to reorder and disable description and color fields (in custom properties administration).
+	feature: custom properties of type user
+	feature: table to add options for different member types
+	feature: dimension object type option to decide if member is selected or not after its creation
+	feature: description field for all type of members.
+	feature: lab samples plugin and object prefixes modifications
+	feature: dimension options normalization
+	feature: dimension options settings section
+	feature: allow to set custom dimension names
+	feature: allow to enable/disable dimension member types
+	feature: show or hide overview action links checking by current context (e.g.: dont show clients list link if a client is selected)
+	feature: sent notifications history log
+	feature: ability to log in filesystem the error details when sending a notification fails
+	feature: dont reload all panel when task workflow generates new tasks, only add new tasks to the list
+	
+	perfromance: mobile member listing
+	performance: remove object timeslots permissions 
+	performance: close timeslots when completing tasks
+	
+	language: non working days traductions for es_es and es_la
+	
+	usability: time report using 100% width, min-width:750
+		
+	
+	Since 3.2.3.1
+	----------------
+	bugfix: Error when filtering tasks by tag.
+	
+	Since 3.2.3
+	----------------
+	feature: view object history paginated.
+	
+	Since 3.2.3-beta
+	----------------
+	bugfix: fixed addToSharingTable when called from rebuild_sharing_table.php
+	bugfix: unclassified emails are not added to sharing table.
+	bugfix: group totals on tasks list.
+	bugfix: new mail old view from contact list.
+	bugfix: blocking file for uploading new revision.
+	bugfix: when instantiating template from email, assigned users should be filtered using email's members
+	bugfix: ensure that member template tasks are classified in the recently created member.
+	bugfix: when viewing mails, container must be bigger before the resize
+	bugfix: view more french.
+
+	
 	Since 3.2.2
 	----------------
+	bugfix: object prefix is not deleted after deleting object.
+	bugfix: removed trailing commas from javascript objects.
+	bugfix: classify contact after change client parent.
+	bugfix: mail view doesn't reload after classifying mail.
+	bugfix: remember notify my self checkbox in add and edit file. 
+	bugfix: notify myself checkbox view in add and edit file.
+	bugfix: notifications to asignee when creating and editing tasks.
+	bugfix: update parent after adding child node on members trees.
+	bugfix: mail rules history view.
+	bugfix: not possible to upload picture when creating contact or user.
+	bugfix: not showing which tab is selected in the mail panel.
+	bugfix: phone number name with special characters. 
+	bugfix: language and css of installed plugins that are not activated are not included.
+	bugfix: template milestone add is not modal.
+	bugfix: when modifying/trashing several tasks don't make all client/project calculations foreach task, do it once after all modifications
+	bugfix: calculate percent completed on tasks.
+	bugfix: group totals on tasks list.
 	bugfix: Superadmin cannot edit other superadmins.
+	
+	feature: generate template from mail - edit email fields - link mail to generated tasks.
+	feature: calendar new event view when clicking on the calendar.
+	feature: when creating subsecuent tasks (tasks workflow) also creates a task dependency between the completed task and the new ones
+	
+	performance: member trees paginated (left panel and selectors).
+	performance: remove object timeslots permissions.
+	performance: close timeslots when completing tasks.
+	
+	config option: number of previous pending tasks showing next to each task.
+	config option: notification to subscribers when creating and editing tasks.
 	
 	Since 3.2.2-rc
 	----------------
@@ -122,7 +303,8 @@
 	bugfix: showing which tab is selected in mail panel.
 	bugfix: prevent "duplicate key" message in permission groups table when creating an user.
 	bugfix: some checkboxes are not submitted correctly.
-		
+	
+	
 	Since 3.2.2-alpha
 	----------------
 	fetaure: When editing a task and start or due date is changed, ask the user to advance/rewind the subtasks dates.

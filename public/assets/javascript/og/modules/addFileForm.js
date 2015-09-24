@@ -146,7 +146,7 @@ og.checkFileName = function(genid) {
 			caller: this,
 			callback: function(success, data) {
 				og.checkFileNameCallback(success, data, genid);
-				og.resize_modal_form();
+				//og.resize_modal_form();
 			}
 		});
 	}, 100);
