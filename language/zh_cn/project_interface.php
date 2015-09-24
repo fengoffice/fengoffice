@@ -268,7 +268,7 @@
 	'linked milestone tab' => '里程碑',
 	'linked task tab' => '任务',
 	'linked event tab' => '事件',
-	'update unset billing values' => '不设置账单值以更新时段',
+	'update unset billing values' => '不设置工资值以更新时段',
 	'update unset billing values desc' => 'NOTICE: This action will apply the new billing values to all timeslots without values. Are you sure you wish to proceed?',
 	'mail account sender name description' => 'Name to use as "From" field when sending email. If left blank the user\'s display name will be used.',
 	'classify mails on workspace desc' => 'If selected, all email sent to or from this account will be automatically classified to the selected workspace.',

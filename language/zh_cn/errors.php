@@ -125,7 +125,7 @@
 	'error invalid recipients' => '无效的Email地址 "{0}": {1}',
 	'no context permissions to add' => '您没有权限将 {0} 加到 {1}',
 	'you must select where to keep' => '你必须选择在哪里保持 {0}。',
-	'there are no changes' => '没变化。此文件未被覆盖。',
+	'there are no changes' => '未进行任何更改。该文件还没有被覆盖。',
 	'error cannot assign task to user' => '任务{0} 无法指派给 {1}。',
 	'content too long not loaded' => '上封邮件过长故未加载进来，但此邮件会正常送出，请放宽心。',
 	'member name already exists in dimension' => '成员\'{0}\' 已存在维度dimension有选到。',

@@ -153,7 +153,7 @@ addLangs({
 	'email tab': '电子邮件',
 	'add new contact': '添加新的联系人',
 	'displaying contacts of': '显示联系人{0} 到 {1} 总计 {2}',
-	'no contacts to display': '没有联系人显示',
+	'no contacts to display': '无联系人',
 	'delete selected contacts': '删除选中的联系人',
 	'confirm delete contacts': '你是否确认你想删除选中的联系人?',
 	'role': '角色',
@@ -848,5 +848,9 @@ addLangs({
 	'confirm delete group': '你确定要删除这个群组吗？',
 	'push': '推送',
 	'move tasks forward': '向前移动任务',
-	'fee': '费用'
+	'fee': '费用',
+	'email already taken by': 'Email已被 {0} 收取',
+	'this task alone and all to come forward': '该任务及全部向前推进的任务',
+	'this event alone and all to come forward': '该活动及全部向前推进的活动',
+	'previous pending tasks': '过去的一些未完成任务'
 });
