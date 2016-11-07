@@ -1,0 +1,6 @@
+#!/bin/bash
+sudo DEBIAN_FRONTEND=noninteractive aptitude install -q -y mysql-server php5-mysql php5-gd
+cd /var/www/html/current/;chmod 777 tmp upload cache config
+sudo a2enmod mpm_prefork
+sed -i '1 s/^/#/' /etc/apache2/mods-enabled/mpm_event.load
+sudo service apache2 restart

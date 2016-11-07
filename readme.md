@@ -14,6 +14,10 @@
 	Contact the Feng Office team at:
 		* contact@fengoffice.com
 	
+<a href="https://docs.megam.io" target="_blank">
+<img src="https://s3-ap-southeast-1.amazonaws.com/megampub/images/vertice/DEPLOY-TO-MEGAM-VERTICE2.png" alt="wordpres button" />
+</a>
+
 	
 	System requirements
 	===================
