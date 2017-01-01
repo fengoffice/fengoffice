@@ -5,9 +5,10 @@ require_javascript('og/EventPopUp.js');
 require_javascript('og/CalendarPrint.js');
 require_javascript('og/EventRelatedPopUp.js'); 
 $genid = gen_id();
-
+/*
 $max_events_to_show = user_config_option('displayed events amount');
-if (!$max_events_to_show) $max_events_to_show = 3;
+if (!$max_events_to_show) $max_events_to_show = 3;*/
+$max_events_to_show = 300;
 ?>
 
 <script>
@@ -70,7 +71,7 @@ $(function(){
 	$tasks = array();
 	$milestones = ProjectMilestones::getRangeMilestones($date_start, $date_end);
     if($task_filter != "hide"){
-    	$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null), $task_filter);
+    	$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null), $task_filter, false, false, 250);
     }
     
     if (user_config_option('show_birthdays_in_calendar')) {
@@ -228,6 +229,12 @@ $(function(){
 	$alldaygridHeight = $max_events * PX_HEIGHT / 2 + PX_HEIGHT / 2;//Day events container height= all the events plus an extra free space
         if($alldaygridHeight > 100){
             $alldaygridHeight = 100;
+        } else {
+			if ($max_events < 3) {
+				$alldaygridHeight = 37 + (21 * $max_events);
+			} else {
+				$alldaygridHeight = 100;
+			}
         }
 
 	$users_array = array();
@@ -343,7 +350,7 @@ $(function(){
 				</div>
 				<div id="allDay<?php echo $day_of_week ?>" class="allDayCell" style="left: <?php echo $width ?>%; height: 100%;border-left:3px double #DDDDDD !important; position:absolute;width:3px;z-index:110;background:#E8EEF7;top:0%;"></div>
 
-				<div id="alldayeventowner_<?php echo $day_of_week ?>" style="width: <?php echo $width_percent ?>%;position:absolute;left: <?php echo $width ?>%; top: 12px;height: <?php echo $alldaygridHeight ?>px;"
+				<div id="alldayeventowner_<?php echo $day_of_week ?>" style="overflow:hidden; height: <?php echo $alldaygridHeight - 31 ?>px; width: <?php echo $width_percent ?>%;position:absolute;left: <?php echo $width ?>%; top: 12px;"
 				<?php if (!logged_user()->isGuest()) { ?>
 					onclick="og.showEventPopup(<?php echo $dtv_temp->getDay() ?>, <?php echo $dtv_temp->getMonth()?>, <?php echo $dtv_temp->getYear()?>, -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv_temp->format($date_format) ?>', '<?php echo $genid?>',0, false);">
 				<?php } else echo ">"; ?>
@@ -469,6 +476,9 @@ $(function(){
 							}
 						}
 					?>
+				</div>
+				<div id="all_ev_show_more_link_<?php echo $day_of_week ?>" class="adc" style="visibility:hidden;bottom:3px; z-index: 5;margin:1px; width: <?php echo $width_percent ?>%; left: <?php echo $width ?>%;text-align:center;position:absolute;">
+					<a href="<?php echo $p?>" class="internalLink"  onclick="og.disableEventPropagation(event);return true;"><?php echo lang('show more');?> </a>
 				</div>
 			<script>
 				var ev_dropzone_allday = new Ext.dd.DropZone('alldayeventowner_<?php echo $day_of_week ?>', {ddGroup:'ev_dropzone_allday'});
@@ -911,6 +921,25 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 	}
 	og.drawCurrentHourLine(today_d, 'w_');
 <?php } ?>
+
+
+
+
+	var genid = '<?php echo $genid ?>';
+	var resizer = new Ext.Resizable('allDayGrid', {
+		handles: 's',
+		minHeight: <?php echo $alldaygridHeight ?>,
+		pinned: true
+	});
+	
+	resizer.on('resize', function() {
+		for (var dow=0; dow<5; dow++) {
+			og.adjustAllDayEventsHeight(genid);
+		}
+	});
+	
+	og.adjustAllDayEventsHeight();
+	
 	// init tooltips
 	Ext.QuickTips.init();
         

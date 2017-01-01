@@ -613,4 +613,6 @@ Le contexte <b>{0}</b> est utilisé comme contexte personnel d\'un utilisateur',
 	'remove all filters' => 'Supprimer tous les filtres',
 	'plugins' => 'Plugins',
 	'located under' => 'Situé sous',
+	'basic data' => 'Général',
+	'more details' => 'Détails',
 ); ?>

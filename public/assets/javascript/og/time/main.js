@@ -27,6 +27,8 @@ ogTimeTimeslot = function(){
 	this.description = '';
 	this.taskName;
 	this.otid;
+	
+	this.additional_data = {};
 }
 
 ogTimeTimeslot.prototype.setFromTdata = function(tdata){
@@ -45,6 +47,8 @@ ogTimeTimeslot.prototype.setFromTdata = function(tdata){
 	
 	if (tdata.desc)	this.description = tdata.desc; else this.description = '';
 	if (tdata.tn)	this.taskName = tdata.tn; else this.taskName = null;
+	
+	if (tdata.additional_data) this.additional_data = tdata.additional_data;
 }
 
 

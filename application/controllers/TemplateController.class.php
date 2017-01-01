@@ -470,6 +470,11 @@ class TemplateController extends ApplicationController {
 	
 
 	function template_parameters(){
+		if (!can_instantiate_templates(logged_user())) {
+			flash_error(lang("no access permissions"));
+			ajx_current("empty");
+			return;
+		}
 		$id = get_id();
 		$parameters = TemplateParameters::getParametersByTemplate($id);
 		ajx_current("empty");
@@ -477,16 +482,6 @@ class TemplateController extends ApplicationController {
 	}
 	
 	
-	function get_context(){
-		$id = get_id();
-		$template = COTemplates::findById($id);
-		$this->setTemplate('get_context');
-		if(array_var($_POST, 'members')){
-			$this->instantiate();
-		}
-		tpl_assign('cotemplate',$template);
-		tpl_assign('id',$id);
-	}
 	
 	function save_instantiated_parameters($template, $parameters, $parameterValues) {
 		$instantiation_id = config_option('last_template_instantiation_id') + 1;
@@ -496,7 +491,7 @@ class TemplateController extends ApplicationController {
 			$param_val = array_var($parameterValues, $param->getName(), '');
 			$param_val = escape_character($param_val);
 			DB::execute("INSERT INTO `".TABLE_PREFIX."template_instantiated_parameters` (`template_id`, `instantiation_id`, `parameter_name`, `value`) VALUES
-					('".$template->getId()."', '$instantiation_id', '".escape_character($param->getName())."', '$param_val') ON DUPLICATE KEY UPDATE template_id=template_id");
+					('".$template->getId()."', '$instantiation_id', '".escape_character($param->getName())."', ".DB::escape($param_val).") ON DUPLICATE KEY UPDATE template_id=template_id");
 		}
 		
 		set_config_option('last_template_instantiation_id', $instantiation_id);
@@ -505,6 +500,12 @@ class TemplateController extends ApplicationController {
 	
 	
 	function instantiate($arguments = null) {
+		if (!can_instantiate_templates(logged_user())) {
+			flash_error(lang("no access permissions"));
+			ajx_current("empty");
+			return;
+		}
+
 		$selected_members = array();
 		$id = array_var($arguments, 'id', get_id());
 	
@@ -527,8 +528,8 @@ class TemplateController extends ApplicationController {
 			$instantiation_id = $this->save_instantiated_parameters($template, $parameters, $parameterValues);
 		}
 		
-		if(array_var($_POST, 'members') || array_var($arguments, 'members')){
-			$selected_members = array_var($arguments, 'members', json_decode(array_var($_POST, 'members')));
+		if(array_var($_REQUEST, 'members') || array_var($arguments, 'members')){
+			$selected_members = array_var($arguments, 'members', json_decode(array_var($_REQUEST, 'members')));
 		}else{
 			$context = active_context();
 			
@@ -536,14 +537,29 @@ class TemplateController extends ApplicationController {
 				if ($selection instanceof Member) $selected_members[] = $selection->getId();
 			}
 		}
-		if (array_var($_POST, 'additional_member_ids')) {
-			$add_mem_ids = explode(',', array_var($_POST, 'additional_member_ids'));
+		if (array_var($_REQUEST, 'additional_member_ids')) {
+			$add_mem_ids = json_decode(array_var($_REQUEST, 'additional_member_ids'));
 			if (is_array($add_mem_ids)) {
 				foreach ($add_mem_ids as $add_mem_id) {
 					if (is_numeric($add_mem_id)) $selected_members[] = $add_mem_id;
 				}
 			}
 		}
+
+		//Linked objects
+		if (array_var($_REQUEST, 'linked_objects')) {
+			$linked_objects_ids = json_decode(array_var($_REQUEST, 'linked_objects'));
+			$linked_objects = array();
+			if (is_array($linked_objects_ids)) {
+				foreach ($linked_objects_ids as $linked_object_id) {
+					$linked_object = Objects::findObject($linked_object_id);
+					if ($linked_object instanceof ApplicationDataObject) {
+						$linked_objects[] = $linked_object;
+					}
+				}
+			}
+		}
+
 		
 		$objects = $template->getObjects() ;
 		$controller  = new ObjectController();
@@ -677,6 +693,15 @@ class TemplateController extends ApplicationController {
 						
 					}					
 				}
+
+				//linked objects
+				if (isset($linked_objects) && is_array($linked_objects)) {
+					foreach ($linked_objects as $linked_object) {
+						if ($linked_object instanceof ApplicationDataObject) {
+							$c->linkObject($linked_object);
+						}
+					}
+				}
 			}			
 		}
 		
@@ -691,7 +716,7 @@ class TemplateController extends ApplicationController {
 		}
 		
 		DB::commit();
-		
+
 		foreach ($copies as $c) {
 			if ($c instanceof ProjectTask) {
 				ApplicationLogs::createLog($c, ApplicationLogs::ACTION_ADD);
@@ -702,6 +727,11 @@ class TemplateController extends ApplicationController {
 			ajx_current("back");
 		}else{
 			ajx_current("back");
+		}
+		
+		flash_success(lang('success instatiate template', $template->getName()));
+		if (array_var($_GET, 'from_email') > 0) {
+			evt_add('reload tab panel', 'tasks-panel');
 		}
 	}
 	
@@ -715,15 +745,38 @@ class TemplateController extends ApplicationController {
 			$this->instantiate();
 		}else{
 			$id = get_id();
-			$member_id = get_id('member_id');
+
+			$additional_member_ids = array();
+			if(get_id('member_id')){
+				$additional_member_ids[] = get_id('member_id');
+			}
+			$linked_objects = array();
 			$parameters = TemplateParameters::getParametersByTemplate($id);
 			$params = array();
 			foreach($parameters as $parameter){
 				$params[] = array('name' => $parameter->getName(), 'type' => $parameter->getType(), 'default_value' => $parameter->getDefaultValue());
 			}
+
+			$template = COTemplates::findById($id);
+			if (!$template instanceof COTemplate) {
+				flash_error(lang("template dnx"));
+				ajx_current("empty");
+				return;
+			}
+
+			if (array_var($_REQUEST, 'additional_member_ids')) {
+				$additional_member_ids = array_merge($additional_member_ids,json_decode(array_var($_REQUEST, 'additional_member_ids')));
+			}
+
+			if (array_var($_REQUEST, 'linked_objects')) {
+				$linked_objects = json_decode(array_var($_REQUEST, 'linked_objects'));
+			}
+
 			tpl_assign('id', $id);
-			tpl_assign('member_id', $member_id);
+			tpl_assign('additional_member_ids', $additional_member_ids);
+			tpl_assign('linked_objects', $linked_objects);
 			tpl_assign('parameters', $params);
+			tpl_assign('template', $template);
 		}
 	}
 

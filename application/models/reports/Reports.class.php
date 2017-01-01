@@ -98,13 +98,13 @@ class Reports extends BaseReports {
 			case 'mobile_phone':
 			case 'work_phone':
 			case 'home_phone':
-				$type_name = ($filed == 'mobile_phone' ? 'mobile' : ($filed == 'work_phone' ? 'work' : 'home'));
+				$type_name = ($field == 'mobile_phone' ? 'mobile' : ($field == 'work_phone' ? 'work' : 'home'));
 				$type_cond = " AND ce.telephone_type_id in (select t.id from ".TABLE_PREFIX."telephone_types t where t.name='$type_name')";
 				return 'o.id IN (select ce.contact_id from '.TABLE_PREFIX.'contact_telephones ce where ce.contact_id=o.id and ce.number '.$cond.' AND '.$type_cond.')';
 			case 'personal_webpage':
 			case 'work_webpage':
 			case 'other_webpage':
-				$type_name = ($filed == 'personal_webpage' ? 'personal' : ($filed == 'work_webpage' ? 'work' : 'other'));
+				$type_name = ($field == 'personal_webpage' ? 'personal' : ($field == 'work_webpage' ? 'work' : 'other'));
 				$type_cond = " AND ce.web_type_id in (select t.id from ".TABLE_PREFIX."webpage_types t where t.name='$type_name')";
 				return 'o.id IN (select ce.contact_id from '.TABLE_PREFIX.'contact_web_pages ce where ce.contact_id=o.id and ce.url '.$cond.' AND '.$type_cond.')';
 			case 'im_values':
@@ -112,7 +112,7 @@ class Reports extends BaseReports {
 			case 'home_address':
 			case 'work_address':
 			case 'other_address':
-				$type_name = ($filed == 'home_address' ? 'home' : ($filed == 'work_address' ? 'work' : 'other'));
+				$type_name = ($field == 'home_address' ? 'home' : ($field == 'work_address' ? 'work' : 'other'));
 				$type_cond = " AND ce.address_type_id in (select t.id from ".TABLE_PREFIX."address_types t where t.name='$type_name')";
 				return "o.id IN (select ce.contact_id from ".TABLE_PREFIX."contact_addresses ce where ce.contact_id=o.id ".$type_cond." and (
 					ce.street ".$cond." or ce.city ".$cond." or ce.state ".$cond." or ce.country ".$cond." or ce.zip_code ".$cond."))";
@@ -194,28 +194,26 @@ class Reports extends BaseReports {
 		$report = self::getReport($id);
 		$show_archived = false;
 		if($report instanceof Report){
-			$conditionsFields = ReportConditions::getAllReportConditionsForFields($id);
-			$conditionsCp = ReportConditions::getAllReportConditionsForCustomProperties($id);
 			
 			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
 			$table = $ot->getTableName();
 			
-			if ($ot->getType() == 'dimension_object' || $ot->getType() == 'dimension_group') {
-				$hook_parameters = array(
-					'report' => $report,
-					'params' => $params,
-					'order_by_col' => $order_by_col,
-					'order_by_asc' => $order_by_asc,
-					'offset' => $offset,
-					'limit' => $limit,
-					'to_print' => $to_print,
-				);
-				$report_result = null;
-				Hook::fire('replace_execute_report_function', $hook_parameters, $report_result);
-				if ($report_result) {
-					return $report_result;
-				}
+			
+			$hook_parameters = array(
+				'report' => $report,
+				'params' => $params,
+				'order_by_col' => $order_by_col,
+				'order_by_asc' => $order_by_asc,
+				'offset' => $offset,
+				'limit' => $limit,
+				'to_print' => $to_print,
+			);
+			$report_result = null;
+			Hook::fire('replace_execute_report_function', $hook_parameters, $report_result);
+			if ($report_result) {
+				return $report_result;
 			}
+			
 			
 			eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
 			eval('$item_class = ' . $ot->getHandlerClass() . '::instance()->getItemClass(); $object = new $item_class();');
@@ -226,130 +224,13 @@ class Reports extends BaseReports {
 			}
 			
 			$report_columns = ReportColumns::getAllReportColumns($id);
-
-			$allConditions = "";
 			
 			$contact_extra_columns = self::get_extra_contact_columns();
 			
-			if(count($conditionsFields) > 0){
-				foreach($conditionsFields as $condField){
-					if($condField->getFieldName() == "archived_on"){
-						$show_archived = true;
-					}
-					$skip_condition = false;
-					$model = $ot->getHandlerClass();
-					$model_instance = new $model();
-					$col_type = $model_instance->getColumnType($condField->getFieldName());
-
-					$allConditions .= ' AND ';
-					$dateFormat = 'm/d/Y';
-					if(isset($params[$condField->getId()])){
-						$value = $params[$condField->getId()];
-						if ($col_type == DATA_TYPE_DATE || $col_type == DATA_TYPE_DATETIME) {
-							$dateFormat = user_config_option('date_format');
-						}
-					} else {
-						$value = $condField->getValue();
-					}
-					
-					if ($ot->getHandlerClass() == 'Contacts' && in_array($condField->getFieldName(), $contact_extra_columns)) {
-						$allConditions .= self::get_extra_contact_column_condition($condField->getFieldName(), $condField->getCondition(), $value);
-					} else {
-						if ($value == '' && $condField->getIsParametrizable()) $skip_condition = true;
-						if (!$skip_condition) {
-							$field_name = $condField->getFieldName();
-							if (in_array($condField->getFieldName(), Objects::getColumns())) {
-								$field_name = 'o`.`'.$condField->getFieldName();
-							}
-							if($condField->getCondition() == 'like' || $condField->getCondition() == 'not like'){
-								$value = '%'.$value.'%';
-							}
-							if ($col_type == DATA_TYPE_DATE || $col_type == DATA_TYPE_DATETIME) {
-								if ($value == date_format_tip($dateFormat)) {
-									$value = EMPTY_DATE;
-								} else {
-									$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
-									$value = $dtValue->format('Y-m-d');
-								}
-							}
-							if($condField->getCondition() != '%'){
-								if ($col_type == DATA_TYPE_INTEGER || $col_type == DATA_TYPE_FLOAT) {
-									$allConditions .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
-								} else {
-									if ($condField->getCondition()=='=' || $condField->getCondition()=='<=' || $condField->getCondition()=='>='){
-										if ($col_type == DATA_TYPE_DATETIME || $col_type == DATA_TYPE_DATE) {
-											$equal = 'datediff('.DB::escape($value).', `'.$field_name.'`)=0';
-										} else {
-											$equal = '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
-										}
-										switch($condField->getCondition()){
-											case '=':
-												$allConditions .= $equal;
-												break;
-											case '<=':
-											case '>=':
-												$allConditions .= '(`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value).' OR '.$equal.') ';
-												break;																
-										}										
-									} else {
-										$allConditions .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
-									}									
-								}
-							} else {
-								$allConditions .= '`'.$field_name.'` like '.DB::escape("%$value");
-							}
-						} else $allConditions .= ' true';
-					}
-				}
-			}
-			if(count($conditionsCp) > 0){
-				$dateFormat = user_config_option('date_format');
-				$date_format_tip = date_format_tip($dateFormat);
-				
-				foreach($conditionsCp as $condCp){
-					$cp = CustomProperties::getCustomProperty($condCp->getCustomPropertyId());
-
-					$skip_condition = false;
-					
-					if(isset($params[$condCp->getId()."_".$cp->getName()])){
-						$value = $params[$condCp->getId()."_".$cp->getName()];
-					}else{
-						$value = $condCp->getValue();
-					}
-					if ($value == '' && $condCp->getIsParametrizable()) $skip_condition = true;
-					if (!$skip_condition) {
-						$current_condition = ' AND ';
-						$current_condition .= 'o.id IN ( SELECT object_id as id FROM '.TABLE_PREFIX.'custom_property_values cpv WHERE ';
-						$current_condition .= ' cpv.custom_property_id = '.$condCp->getCustomPropertyId();
-						$fieldType = $object->getColumnType($condCp->getFieldName());
-
-						if($condCp->getCondition() == 'like' || $condCp->getCondition() == 'not like'){
-							$value = '%'.$value.'%';
-						}
-						if ($cp->getType() == 'date') {
-							if ($value == $date_format_tip) continue;
-							$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
-							$value = $dtValue->format('Y-m-d H:i:s');
-						}
-						if($condCp->getCondition() != '%'){
-							if ($cp->getType() == 'numeric') {
-								$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.DB::escape($value);
-							}else if ($cp->getType() == 'boolean') {
-								$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.($value ? '1' : '0');
-								if (!$value) {
-									$current_condition .= ') OR o.id NOT IN (SELECT object_id as id FROM '.TABLE_PREFIX.'custom_property_values cpv2 WHERE cpv2.object_id=o.id AND cpv2.value=1 AND cpv2.custom_property_id = '.$condCp->getCustomPropertyId();
-								}
-							}else{
-								$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.DB::escape($value);
-							}
-						}else{
-							$current_condition .= ' AND cpv.value like '.DB::escape("%$value");
-						}
-						$current_condition .= ')';
-						$allConditions .= $current_condition;
-					}
-				}
-			}
+			
+			
+			$cond_sql_obj = build_report_conditions_sql(array('report' => $report, 'params' => $params));
+			$allConditions = array_var($cond_sql_obj, 'all_conditions');
 			
 			$select_columns = array('*');
 			$join_params = null;
@@ -359,6 +240,14 @@ class Reports extends BaseReports {
 			
 			if ($ot->getHandlerClass() == 'Contacts' && in_array($order_by_col, $contact_extra_columns)) {
 				$join_params = self::get_extra_contact_column_order_by($order_by_col, $order_by_col, $select_columns);
+				
+			} else if ($ot->getHandlerClass() == 'MailContents') {
+				$join_params = array(
+					'table' => TABLE_PREFIX."mail_datas",
+					'jt_field' => 'id',
+					'e_field' => 'object_id',
+					'join_type' => 'inner'
+				);
 			}
 			
 			$original_order_by_col = $order_by_col;
@@ -376,42 +265,90 @@ class Reports extends BaseReports {
 				$tmp_cols = Objects::instance()->getColumns();
 				foreach ($tmp_cols as $col) $select_columns[] = "o.$col";
 				$select_columns[] = 'jt.name as name_order';
+				
+			} else {
+				if (in_array($order_by_col, $managerInstance->getColumns())) {
+					$original_order_by_col = "e.$order_by_col";
+				} else if (in_array($order_by_col, Objects::instance()->getColumns())) {
+					$original_order_by_col = "o.$order_by_col";
+				}
 			}
 			if ($order_by_asc == null) $order_by_asc = $report->getIsOrderByAsc();
 
 			if ($ot->getName() == 'task' && !SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
 				$allConditions .= " AND assigned_to_contact_id = ".logged_user()->getId();
 			}
-			if ($managerInstance) {
-				if ($order_by_col == "order"){
-					$order_by_col = "`$order_by_col`";
-				};
-				$listing_parameters = array(
-					"select_columns" => $select_columns,
-					"order" => "$order_by_col",
-					"order_dir" => ($order_by_asc ? "ASC" : "DESC"),
-					"extra_conditions" => $allConditions,
-					"count_results" => true,
-					"join_params" => $join_params
-				);
-				if ($limit > 0) {
-					$listing_parameters["start"] = $offset;
-					$listing_parameters["limit"] = $limit;
+			
+			Hook::fire('custom_report_extra_conditions', array('report' => $report), $allConditions);
+			
+			$report_options = array(
+					'report' => $report,
+					'order' => $original_order_by_col,
+					'order_dir' => $order_by_asc ? 'ASC' : 'DESC',
+					'offset' => $offset,
+					'limit' => $limit,
+					'conditions' => $allConditions,
+					'select_columns' => $select_columns,
+			);
+			$results = null;
+			Hook::fire('execute_object_custom_report', $report_options, $results);
+			
+			if (is_null($results)) {
+				$results = array();
+				
+				if ($managerInstance) {
+					if ($order_by_col == "order"){
+						$order_by_col = "`$order_by_col`";
+					};
+					$listing_parameters = array(
+						"select_columns" => $select_columns,
+						"order" => "$order_by_col",
+						"order_dir" => ($order_by_asc ? "ASC" : "DESC"),
+						"extra_conditions" => $allConditions,
+						"count_results" => true,
+						"join_params" => $join_params
+					);
+					if (is_numeric($order_by_col)) {
+						$listing_parameters['cp_order'] = $order_by_col;
+					}
+					
+					if ($limit > 0) {
+						$listing_parameters["start"] = $offset;
+						$listing_parameters["limit"] = $limit;
+					}
+					if($show_archived){
+						$listing_parameters["archived"] = true;
+					}
+					$result = $managerInstance->listing($listing_parameters);
+					
+				}else{
+					// TODO Performance Killer
+					$result = ContentDataObjects::getContentObjects(active_context(), $ot, $order_by_col, ($order_by_asc ? "ASC" : "DESC"), $allConditions);
 				}
-				if($show_archived){
-					$listing_parameters["archived"] = true;
-				}				
-				$result = $managerInstance->listing($listing_parameters);
-			}else{
-				// TODO Performance Killer
-				$result = ContentDataObjects::getContentObjects(active_context(), $ot, $order_by_col, ($order_by_asc ? "ASC" : "DESC"), $allConditions);
-			}
-			$objects = $result->objects;
-			$totalResults = $result->total;
+				
+				$objects = $result->objects;
+				$totalResults = $result->total;
+				if (isset($result->totals)) {
+					$results['totals'] = $result->totals;
+				}
+				
+				$use_obj_id_as_row_key = false;
 
+			} else {
+				
+				$objects = array_var($results, 'objects');
+				$totalResults = array_var($results, 'total');
+				
+				$use_obj_id_as_row_key = array_var($results, 'use_obj_id_as_row_key');
+				
+			}
+			
 			$results['pagination'] = Reports::getReportPagination($id, $params, $original_order_by_col, $order_by_asc, $offset, $limit, $totalResults);
+			
 		
 			$dimensions_cache = array();
+
+			$results['columns'] = array('names' => array(), 'order' => array(), 'types' => array());
 			
 			foreach($report_columns as $column){
 				if ($column->getCustomPropertyId() == 0) {
@@ -423,36 +360,46 @@ class Reports extends BaseReports {
 						
 						$column_name = $dimension->getName();
 						
-						$results['columns'][$field] = $column_name;
-						$results['db_columns'][$column_name] = $field;
+						$results['columns']['names'][$field] = $column_name;
+						$results['columns']['order'][] = $field;
+						$results['columns']['types'][$field] = DATA_TYPE_STRING;
+						
 					} else {
 						if ($managerInstance->columnExists($field) || Objects::instance()->columnExists($field)) {
 							$column_name = Localization::instance()->lang('field '.$ot->getHandlerClass().' '.$field);
 							if (is_null($column_name)) $column_name = lang('field Objects '.$field);
-							$results['columns'][$field] = $column_name;
-							$results['db_columns'][$column_name] = $field;
+							
+							$results['columns']['names'][$field] = $column_name;
+							$results['columns']['order'][] = $field;
+							
 						}else{
 							if($ot->getHandlerClass() == 'Contacts'){
 								if (in_array($field, $contact_extra_columns)){
-									$results['columns'][$field] = lang($field);	
-									$results['db_columns'][lang($field)] = $field;
+									$results['columns']['names'][$field] = lang($field);
+									$results['columns']['order'][] = $field;
 								}
 							} else if($ot->getHandlerClass() == 'Timeslots'){
 								if (in_array($field, array('time', 'billing'))){
-									$results['columns'][$field] = lang('field Objects '.$field);
-									$results['db_columns'][lang('field Objects '.$field)] = $field;
+									$results['columns']['names'][$field] = lang('field Objects '.$field);
+									$results['columns']['order'][] = $field;
 								}
 							} else if($ot->getHandlerClass() == 'MailContents'){
 								if (in_array($field, array('to', 'cc', 'bcc', 'body_plain', 'body_html'))){
-									$results['columns'][$field] = lang('field Objects '.$field);
-									$results['db_columns'][lang('field Objects '.$field)] = $field;
+									$results['columns']['names'][$field] = lang('field Objects '.$field);
+									$results['columns']['order'][] = $field;
 								}
 							}
 						}
+						$results['columns']['types'][$field] = $managerInstance->getColumnType($field);
 					}
 					
 				} else {
-					$results['columns'][$column->getCustomPropertyId()] = $column->getCustomPropertyId();					
+					$cp = CustomProperties::getCustomProperty($column->getCustomPropertyId());
+					if ($cp instanceof CustomProperty) {
+						$results['columns']['names'][$column->getCustomPropertyId()] = $cp->getName();
+						$results['columns']['order'][] = $column->getCustomPropertyId();
+						$results['columns']['types'][$column->getCustomPropertyId()] = $cp->getType();
+					}
 				}
 			}
 			
@@ -466,7 +413,6 @@ class Reports extends BaseReports {
 				if (!$to_print) {
 					$row_values['link'] = '<a class="link-ico '.$icon_class.'" title="' . clean($obj_name) . '" target="new" href="' . $object->getViewUrl() . '">&nbsp;</a>';
 				}
-				
 				foreach($report_columns as $column){
 					if ($column->getCustomPropertyId() == 0) {
 						
@@ -515,8 +461,9 @@ class Reports extends BaseReports {
 												}
 											}
 										}
-										$results['columns'][$field] = lang('field ProjectTasks '.$field);
-										$results['db_columns'][lang('field ProjectTasks '.$field)] = $field;
+										
+										$results['columns']['names'][$field] = lang('field ProjectTasks '.$field);
+										$results['columns']['order'][] = $field;
 									}
 								}
 							} else {
@@ -539,19 +486,20 @@ class Reports extends BaseReports {
 								$value = $value->format($dateFormat);
 								
 							}
-							
 							if(in_array($field, $managerInstance->getExternalColumns())){
+							
 								if ($object instanceof Timeslot && $field == 'time') {
-									$lastStop = $object->getEndTime() != null ? $object->getEndTime() : ($object->isPaused() ? $object->getPausedOn() : DateTimeValueLib::now());
-									$seconds = $lastStop->getTimestamp() - $object->getStartTime()->getTimestamp();
-									$hours = number_format($seconds / 3600, 2, ',', '.');
-									$value = $hours;
-									//$value = DateTimeValue::FormatTimeDiff($object->getStartTime(), $lastStop, "hm", 60, $object->getSubtract());
+									
+									$value = $object->getEndTime()->getTimestamp() - $object->getStartTime()->getTimestamp() - $object->getSubtract();
+									$value = floor($value/60); // format_value_to_print requires time in minutes
+									$value = format_value_to_print('time', $value, DATA_TYPE_INTEGER, $report->getReportObjectTypeId());
+									
 								} else if ($object instanceof Timeslot && $field == 'billing') {
 									$value = config_option('currency_code', '$') .' '. $object->getFixedBilling();
 								} else {
 									$value = self::instance()->getExternalColumnValue($field, $value, $managerInstance);
 								}
+								
 							} else if ($field != 'link'){
 								//$value = html_to_text(html_entity_decode($value));
 								if ($object->getColumnType($field) == DATA_TYPE_STRING) {
@@ -567,6 +515,9 @@ class Reports extends BaseReports {
 									$value = '<a class="internalLink" target="_self" href="mailto:'.clean($value).'">'.clean($value).'</a></div>';
 								}
 							}
+							
+							Hook::fire('custom_reports_override_column_format', array('field' => $field, 'manager' => $managerInstance, 'object' => $object), $value);
+							
 							$row_values[$field] = $value;
 							
 							if($ot->getHandlerClass() == 'Contacts'){
@@ -634,9 +585,7 @@ class Reports extends BaseReports {
 						$cp = CustomProperties::getCustomProperty($colCp);
 						if ($cp instanceof CustomProperty) { /* @var $cp CustomProperty */
 							
-							$row_values[$cp->getName()] = get_custom_property_value_for_listing($cp, $object);
-							$results['columns'][$colCp] = $cp->getName();
-							$results['db_columns'][$cp->getName()] = $colCp;
+							$row_values[$cp->getId()] = get_custom_property_value_for_listing($cp, $object);
 							
 						}
 					}
@@ -645,21 +594,29 @@ class Reports extends BaseReports {
 				
 				Hook::fire("report_row", $object, $row_values);
 				
-				$report_rows[] = $row_values;
+				if ($use_obj_id_as_row_key) {
+					$report_rows[$object->getId()] = $row_values;
+				} else {
+					$report_rows[] = $row_values;
+				}
 			}
 			
 			if (!$to_print) {
-				if (is_array($results['columns'])) {
-					array_unshift($results['columns'], '');
+				if (is_array($results['columns']['names'])) {
+					$results['columns']['names']['link'] = '';
+					array_unshift($results['columns']['order'], 'link');
 				} else {
-					$results['columns'] = array('');
+					$results['columns']['names'] = array('');
+					$results['columns']['order'] = array('link');
 				}
 				Hook::fire("report_header", $ot, $results['columns']);
 			}
+			
 			$results['rows'] = $report_rows;
 		}
 		
 		return $results;
+		
 	} //  executeReport
 	
 	function isReportColumnEmail($col){
@@ -692,7 +649,7 @@ class Reports extends BaseReports {
 	}
 
 	static function getReportPagination($report_id, $params, $order_by='', $order_by_asc=true, $offset, $limit, $total){
-		if($total == 0) return '';
+		if($total == 0 || $limit == 0) return '';
 		$a_nav = array(
 			'<span class="x-tbar-page-first" style="padding-left:12px">&nbsp;</span>', 
 			'<span class="x-tbar-page-prev" style="padding-left:12px">&nbsp;</span>', 
@@ -715,20 +672,24 @@ class Reports extends BaseReports {
 		
 		$nav = '';
 		if($page != 0){
-			$nav .= '<a class="internalLink" href="'.get_url('reporting', 'view_custom_report', array('id' => $report_id, 'offset' => '0', 'limit' => $limit)).$parameters.'">'.sprintf($a_nav[0], $offset).'</a>';
+			$nav .= '<a class="internalLink" href="#" onclick="og.reports.go_to_custom_report_page({offset:0, limit:'.$limit.', link:this});">'.sprintf($a_nav[0], $offset).'</a>';
+			
 			$off = $offset - $limit;
-			$nav .= '<a class="internalLink" href="'.get_url('reporting', 'view_custom_report', array('id' => $report_id, 'offset' => $off, 'limit' => $limit)).$parameters.'">'.$a_nav[1].'</a>&nbsp;';
+			$nav .= '<a class="internalLink" href="#" onclick="og.reports.go_to_custom_report_page({offset:'.$off.', limit:'.$limit.', link:this});">'.$a_nav[1].'</a>&nbsp;';
 		}
 		for($i = 1; $i < $totalPages + 1; $i++){
 			$off = $limit * ($i - 1);
-			if(($i != $page + 1) && abs($i - 1 - $page) <= 2 ) $nav .= '<a class="internalLink" href="'.get_url('reporting', 'view_custom_report', array('id' => $report_id, 'offset' => $off, 'limit' => $limit)).$parameters.'">'.$i.'</a>&nbsp;&nbsp;';
+			if(($i != $page + 1) && abs($i - 1 - $page) <= 2 ) {
+				$nav .= '<a class="internalLink" href="#" onclick="og.reports.go_to_custom_report_page({offset:'.$off.', limit:'.$limit.', link:this});">'.$i.'</a>&nbsp;&nbsp;';
+			}
 			else if($i == $page + 1) $nav .= '<span class="bold">'.$i.'</span>&nbsp;&nbsp;';
 		}
 		if($page < $totalPages - 1){
 			$off = $offset + $limit;
-			$nav .= '<a class="internalLink" href="'.get_url('reporting', 'view_custom_report', array('id' => $report_id, 'offset' => $off, 'limit' => $limit)).$parameters.'">'.$a_nav[2].'</a>';
+			$nav .= '<a class="internalLink" href="#" onclick="og.reports.go_to_custom_report_page({offset:'.$off.', limit:'.$limit.', link:this});">'.$a_nav[2].'</a>';
+			
 			$off = $limit * ($totalPages - 1);
-			$nav .= '<a class="internalLink" href="'.get_url('reporting', 'view_custom_report', array('id' => $report_id, 'offset' => $off, 'limit' => $limit)).$parameters.'">'.$a_nav[3].'</a>';
+			$nav .= '<a class="internalLink" href="#" onclick="og.reports.go_to_custom_report_page({offset:'.$off.', limit:'.$limit.', link:this});">'.$a_nav[3].'</a>';
 		}
 		return $nav . "<br/><span class='desc'>&nbsp;".lang('total').": $totalPages ".lang('pages').'</span>';
 	}

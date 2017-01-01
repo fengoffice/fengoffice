@@ -34,6 +34,7 @@
     * @return BaseObjects 
     */
     function __construct() {
+		Hook::fire('object_definition', 'Object', self::$columns);
       parent::__construct('Object', 'objects', true);
     } // __construct
     
@@ -92,6 +93,7 @@
     function getAutoIncrementColumn() {
       return 'id';
     } // getAutoIncrementColumn
+    
     
     // -------------------------------------------------------
     //  Finders

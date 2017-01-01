@@ -43,7 +43,7 @@ CREATE TABLE `<?php echo $table_prefix ?>members` (
   `object_type_id` int(10) unsigned NOT NULL,
   `parent_member_id` int(10) unsigned NOT NULL default '0',
   `depth` int(2) unsigned NOT NULL,
-  `name` varchar(160) <?php echo $default_collation ?> NOT NULL default '',
+  `name` varchar(511) <?php echo $default_collation ?> NOT NULL default '',
   `description` TEXT NOT NULL,
   `object_id` int(10) unsigned,
   `order` int(10) unsigned NOT NULL default '0',
@@ -54,7 +54,8 @@ CREATE TABLE `<?php echo $table_prefix ?>members` (
   KEY `by_parent` USING HASH (`parent_member_id`),
   KEY `by_dimension` (`dimension_id`,`parent_member_id`,`name`),
   KEY `by_object_id` (`object_id`),
-  KEY `archived_on` (`archived_on`)
+  KEY `archived_on` (`archived_on`),
+  KEY `name` (`name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>member_restrictions` (
@@ -74,6 +75,7 @@ CREATE TABLE `<?php echo $table_prefix ?>member_property_members` (
   `created_by_id` int(10) unsigned default NULL,
   PRIMARY KEY  (`id`),
   INDEX `member_id_property_member_id` (`member_id`, `property_member_id`),
+  INDEX `property_member_id_member_id` (`property_member_id`, `member_id`),
   INDEX  `is_active` (`is_active`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -97,6 +99,7 @@ CREATE TABLE `<?php echo $table_prefix ?>dimension_member_associations` (
   `is_required` tinyint(1) unsigned NOT NULL default '0',
   `is_multiple` tinyint(1) unsigned NOT NULL default '0',
   `keeps_record` tinyint(1) unsigned NOT NULL default '0',
+  `allows_default_selection` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
   KEY `by_associated` USING HASH (`associated_dimension_id`,`associated_object_type_id`),
   KEY `by_dimension_objtype` USING HASH (`dimension_id`, `object_type_id`)
@@ -230,6 +233,7 @@ CREATE TABLE `<?php echo $table_prefix ?>system_permissions` (
   `can_manage_contacts` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_update_other_users_invitations` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_link_objects` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `can_instantiate_templates` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`permission_group_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -250,6 +254,7 @@ CREATE TABLE `<?php echo $table_prefix ?>max_system_permissions` (
   `can_manage_contacts` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_update_other_users_invitations` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_link_objects` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `can_instantiate_templates` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`permission_group_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -297,14 +302,14 @@ CREATE TABLE `<?php echo $table_prefix ?>permission_contexts` (
 
 CREATE TABLE `<?php echo $table_prefix ?>contacts` (
   `object_id` int(10) unsigned NOT NULL auto_increment,
-  `first_name` varchar(50) <?php echo $default_collation ?> NOT NULL default '',
-  `surname` varchar(50) <?php echo $default_collation ?> NOT NULL default '',
+  `first_name` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
+  `surname` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
   `is_company` tinyint(1) unsigned NOT NULL default '0',
   `company_id` int(10) unsigned,
   `department` varchar(50) <?php echo $default_collation ?> default NULL,
   `job_title` varchar(50) <?php echo $default_collation ?> default NULL,
   `birthday` datetime default NULL,
-  `timezone` float(3,1) NOT NULL default '0.0',
+  `timezone` decimal(3,1) NOT NULL default '0.0',
   `user_type` smallint unsigned NOT NULL default '0',
   `is_active_user` tinyint(1) unsigned NOT NULL default '0',
   `token` varchar(40) <?php echo $default_collation ?> NOT NULL default '',
@@ -362,7 +367,7 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_emails` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `contact_id` int(10) unsigned NOT NULL, 
   `email_type_id` int(10) unsigned NOT NULL, 
-  `email_address` varchar(50) <?php echo $default_collation ?> NOT NULL default '',
+  `email_address` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
   `is_main` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
   KEY `by_contact` (`contact_id`,`is_main`)
@@ -685,13 +690,15 @@ CREATE TABLE `<?php echo $table_prefix ?>project_tasks` (
   `original_task_id` INT( 10 ) UNSIGNED NULL DEFAULT '0',
   `instantiation_id` int(10) unsigned NOT NULL default '0',
   `type_content` ENUM( 'text', 'html' ) NOT NULL DEFAULT 'text',
+  `total_worked_time` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY  (`object_id`),
   KEY `parent_id` (`parent_id`),
   KEY `completed_on` (`completed_on`),
   KEY `order` (`order`),
   KEY `milestone_id` (`milestone_id`),
   KEY `priority` (`priority`),
-  KEY `assigned_to` USING HASH (`assigned_to_contact_id`)
+  KEY `assigned_to` USING HASH (`assigned_to_contact_id`),
+  KEY `total_worked_time` (`total_worked_time`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>workspaces` (
@@ -866,10 +873,12 @@ CREATE TABLE `<?php echo $table_prefix ?>custom_properties` (
   `description` text <?php echo $default_collation ?> NOT NULL,
   `values` text <?php echo $default_collation ?> NOT NULL,
   `default_value` varchar(255) <?php echo $default_collation ?> NOT NULL,
-  `is_required` tinyint(1) NOT NULL,
-  `is_multiple_values` tinyint(1) NOT NULL,
-  `property_order` int(10) NOT NULL,
-  `visible_by_default` tinyint(1) NOT NULL,
+  `is_required` tinyint(1) NOT NULL DEFAULT 0,
+  `is_multiple_values` tinyint(1) NOT NULL DEFAULT 0,
+  `property_order` int(10) NOT NULL DEFAULT 0,
+  `visible_by_default` tinyint(1) NOT NULL DEFAULT 0,
+  `is_special` tinyint(1) NOT NULL DEFAULT 0,
+  `is_disabled` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -878,7 +887,8 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>custom_property_values` (
   `object_id` int(10) NOT NULL,
   `custom_property_id` int(10) NOT NULL,
   `value` text <?php echo $default_collation ?>,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `object_id_custom_property_id` (`object_id`,`custom_property_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>queued_emails` (
@@ -901,6 +911,8 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>reports` (
   `order_by` varchar(255) <?php echo $default_collation ?> NOT NULL,
   `is_order_by_asc` tinyint(1) <?php echo $default_collation ?> NOT NULL,
   `ignore_context` tinyint(1) NOT NULL DEFAULT '1',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `code` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`object_id`),
   KEY `object_type` (`report_object_type_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -1196,34 +1208,6 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_widget_options` (
   PRIMARY KEY (`widget_name`,`contact_id`,`member_type_id`,`option`) USING BTREE
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
-CREATE TABLE `<?php echo $table_prefix ?>member_custom_properties` (
-  `id` int(10) NOT NULL AUTO_INCREMENT,
-  `object_type_id` int(10) unsigned NOT NULL,
-  `name` varchar(255) <?php echo $default_collation ?> NOT NULL,
-  `code` varchar(255) <?php echo $default_collation ?> NOT NULL,
-  `type` varchar(255) <?php echo $default_collation ?> NOT NULL,
-  `description` text <?php echo $default_collation ?> NOT NULL,
-  `values` text <?php echo $default_collation ?> NOT NULL,
-  `default_value` text <?php echo $default_collation ?> NOT NULL,
-  `is_system` tinyint(1) NOT NULL,
-  `is_required` tinyint(1) NOT NULL,
-  `is_multiple_values` tinyint(1) NOT NULL,
-  `property_order` int(10) NOT NULL,
-  `visible_by_default` tinyint(1) NOT NULL,
-  `is_special` tinyint(1) NOT NULL,
-  `is_disabled` tinyint(1) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
-
-CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>member_custom_property_values` (
-  `id` int(10) NOT NULL AUTO_INCREMENT,
-  `member_id` int(10) NOT NULL,
-  `custom_property_id` int(10) NOT NULL,
-  `value` text <?php echo $default_collation ?> NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `member_id` USING HASH (`member_id`)
-) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
-
 CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>contact_member_cache` (
   `contact_id` int(10) UNSIGNED NOT NULL,
   `member_id` int(10) UNSIGNED NOT NULL,
@@ -1256,4 +1240,41 @@ CREATE TABLE `<?php echo $table_prefix ?>sent_notifications` (
  `attachments` text <?php echo $default_collation ?>,
  `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  PRIMARY KEY (`id`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>currencies` (
+  `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  `symbol` VARCHAR(5) NOT NULL,
+  `name` VARCHAR(128) NOT NULL,
+  `short_name` VARCHAR(50) NOT NULL,
+  `is_default` BOOLEAN NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>object_selector_temp_values` (
+  `user_id` int(11) NOT NULL DEFAULT 0,
+  `identifier` varchar(255) <?php echo $default_collation ?> NOT NULL,
+  `updated_on` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `value` text <?php echo $default_collation ?> NOT NULL,
+  PRIMARY KEY (`user_id`,`identifier`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>dimension_associations_config` (
+  `association_id` int(10) unsigned NOT NULL,
+  `config_name` varchar(255) <?php echo $default_collation ?> NOT NULL,
+  `value` text <?php echo $default_collation ?> NOT NULL,
+  PRIMARY KEY (`association_id`,`config_name`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>dimension_member_association_default_selections` (
+  `association_id` INTEGER UNSIGNED NOT NULL,
+  `member_id` INTEGER UNSIGNED NOT NULL,
+  `selected_member_id` INTEGER UNSIGNED NOT NULL,
+  PRIMARY KEY (`association_id`, `member_id`, `selected_member_id`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>object_type_dependencies` (
+  `object_type_id` INTEGER UNSIGNED NOT NULL,
+  `dependant_object_type_id` INTEGER UNSIGNED NOT NULL,
+  PRIMARY KEY (`object_type_id`,`dependant_object_type_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;

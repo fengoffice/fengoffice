@@ -76,4 +76,8 @@ return array(
 		'system dimension customer_project hint' => 'Allows you to organize all your clients and projects with all their related information.',
 		'system dimension workspaces hint' => 'Workspaces allow individuals and teams to organize their data and tasks, and share them with other people.',
 		'system dimension tags hint' => 'Allows you to assign tags to any object in the system.',
+
+
+		'done apply changes' => 'Done. Apply changes',
+		'config category desc organization data' => 'Here you can manage the information of your organization.',
 );

@@ -407,9 +407,12 @@ class MailContent extends BaseMailContent {
 	function canView(Contact $user) {
 		$account = $this->getAccount();
 		if ($account instanceof MailAccount) {
-			return ($account->getContactId() == logged_user()->getId() || can_read_sharing_table($user, $this->getId(), false));
+			$mac = MailAccountContacts::instance()->findOne(array('conditions' => 'account_id='.$account->getId()." AND contact_id=".logged_user()->getId()));
+			return $mac instanceof MailAccountContact || 
+				$account->getContactId() == logged_user()->getId() || 
+				can_read($user, $this->getMembers(), $this->getObjectTypeId());
 		}else{
-			return can_read_sharing_table($user, $this->getId(), false);
+			return can_read($user, $this->getMembers(), $this->getObjectTypeId());
 		}
 	}
 
@@ -787,7 +790,7 @@ class MailContent extends BaseMailContent {
 	 * 
 	 * @see ContentDataObject::addToSharingTable()
 	 */
-	function addToSharingTable() {	
+	/*function addToSharingTable() {	
 		parent::addToSharingTable();
 		$id = $this->getId();
 		
@@ -808,7 +811,7 @@ class MailContent extends BaseMailContent {
 			}
 			
 		}
-	}
+	}*/
 	
 	/**
 	 * Use this function to order conversation

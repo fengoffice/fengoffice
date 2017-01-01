@@ -137,9 +137,10 @@
   		}
   		
   		
-  		static function getMembersByObjectAndDimension($object_id, $dimension_id, $extra_conditions = "") {
+  		static function getMembersByObjectAndDimension($object_id, $dimension_id, $extra_conditions = "", $only_ids = false) {
+  			$sel_cols = $only_ids ? "m.id" : "m.*";
   			$sql = "
-  				SELECT m.* 
+  				SELECT $sel_cols 
   				FROM ".TABLE_PREFIX."object_members om 
   				INNER JOIN ".TABLE_PREFIX."members m ON om.member_id = m.id 
   				WHERE 
@@ -151,6 +152,10 @@
   			$result = array();
   			$rows = DB::executeAll($sql);
   			if (!is_array($rows)) return $result;
+  			
+  			if ($only_ids) {
+  				return array_filter(array_flat($rows));
+  			}
   			
   			foreach ($rows as $row) {
   				$member = new Member();

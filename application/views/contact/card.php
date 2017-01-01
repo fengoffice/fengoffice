@@ -1,6 +1,7 @@
 <div style="padding:7px">
 <div class="contact">
 <?php
+	$otname = $contact->getIsCompany() ? 'company' : 'contact';
 	if ($contact->hasPicture()){
 		$image = '<div class="cardIcon" style="text-align:center;">';
 		
@@ -19,7 +20,7 @@
 	} else {
 		
 		if ($contact->canEdit(logged_user())) {
-			$image .= '<a class="internalLink" href="' . $contact->getUpdatePictureUrl() .'" title="' . lang('edit picture') . '"><div id="2_iconDiv" class="coViewIconImage ico-large-contact"></div></a>';
+			$image .= '<a class="internalLink" href="' . $contact->getUpdatePictureUrl() .'" title="' . lang('edit picture') . '"><div id="2_iconDiv" class="coViewIconImage ico-large-'.$otname.'"></div></a>';
 			tpl_assign("image",$image);
 		}
 	}
@@ -49,7 +50,7 @@
 	tpl_assign("content_template", array('card_content', 'contact'));
 	tpl_assign("object", $contact);
 	tpl_assign("title", clean($contact->getObjectName()));
-	tpl_assign('iconclass', $contact->isTrashed()? 'ico-large-contact-trashed' :  ($contact->isArchived() ? 'ico-large-contact-archived' : 'ico-large-contact'));
+	tpl_assign('iconclass', $contact->isTrashed()? 'ico-large-'.$otname.'-trashed' :  ($contact->isArchived() ? 'ico-large-'.$otname.'-archived' : 'ico-large-'.$otname));
 		
   	$this->includeTemplate(get_template_path('view', 'co'));
   	

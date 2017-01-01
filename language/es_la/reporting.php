@@ -61,4 +61,5 @@
 	'field Timeslots start_time' => 'Fecha del tiempo de trabajo',
 	'field ProjectTasks assigned_by_id' => 'Asignado por',
 	'field ProjectTasks type_content' => 'Tipo de contenido',
+  	'report date' => 'Fecha del reporte',
 ); ?>

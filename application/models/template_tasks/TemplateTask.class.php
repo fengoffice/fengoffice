@@ -305,7 +305,18 @@ class TemplateTask extends BaseTemplateTask {
 	} // canEdit
 	
 	function canAddTimeslot($user) {
-		return $this->canChangeStatus($user) || can_manage_time($user) || can_access_pgids($user->getPermissionGroupIds(), $this->getMembers(), Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+		return $this->canChangeStatus($user) || can_manage_time($user) || can_access($user, $this->getMembers(), Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+	}
+	
+	
+	function canLinkObject(Contact $user) {
+		if(!$this->isLinkableObject()) return false;
+	
+		if(can_link_objects($user)){
+			return can_write($user, $this->getMembers(), ProjectTasks::instance()->getObjectTypeId());
+		}else{
+			return false;
+		}
 	}
 	
 	/**
@@ -1418,14 +1429,6 @@ class TemplateTask extends BaseTemplateTask {
 					interval `minutes_before` minute) WHERE `object_id` = $id;";
 			DB::execute($sql);
 		}
-		
-		$tasks = $this->getSubTasks();
-		if(is_array($tasks)) {
-			$task_ids = array();
-			foreach($tasks as $task) {
-				$task_ids[] = $task->getId();
-			} // if
-		} // if
 		
 		//update Depth And Parents Path for subtasks
 		$subtasks = $this->getSubTasks();

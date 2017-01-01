@@ -46,6 +46,15 @@ og.reportObjectTypeChanged = function(genid, order_by, order_by_asc, cols){
 			url: og.getUrl('reporting', 'get_object_column_list', {object_type: type, columns:cols, orderby:order_by, orderbyasc:order_by_asc, genid:genid}),
 			scripts: true
 		});
+		
+		if (og.after_report_object_type_change_functions) {
+			for (var i=0; i<og.after_report_object_type_change_functions.length; i++) {
+				var fn = og.after_report_object_type_change_functions[i];
+				if (typeof(fn) == "function") {
+					fn.call(null, type, genid);
+				}
+			}
+		}
 
 		document.getElementById(genid + 'MainDiv').style.display = '';
 	}
@@ -62,13 +71,16 @@ og.reportTask = function(genid, order_by, order_by_asc, cols){
 	}
 };
 
-og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_parametrizable, is_for_time_report){ //param is_for_time_report only used for time reporting
-	var time_report = false;	
-	if (is_for_time_report!=null)
-		time_report = true;
-	if(!time_report){		
-		var get_object_fields = 'get_object_fields';
-		var type = document.getElementById('report[report_object_type_id]').value;
+og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_parametrizable, is_for_time_report, only_cps, hide_param_field){ //param is_for_time_report only used for time reporting
+	var time_report = is_for_time_report;	
+	var type_el = document.getElementById('report[report_object_type_id]');
+	if(!time_report){
+		var get_object_fields = only_cps ? 'get_object_fields_custom_properties' : 'get_object_fields';
+		if (!type_el) {
+			alert(lang('object type not selected'));
+	  		return;
+		}
+		var type = type_el.value;
 		if(type == ""){
 	  		alert(lang('object type not selected'));
 	  		return;
@@ -93,7 +105,7 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 	'<td ' + style + ' id="tdValue' + count + '"><b>' + lang('value') + '</b>:<br/>' +
 	'<input type="text" style="width:100px;" id="conditions[' + count + '][value]" name="conditions[' + count + '][value]" name="conditions[' + count + '][value]" value="{1}" ></td>';	
 	
-	if (!time_report) {
+	if (!time_report && !hide_param_field) {
 		table = table + '<td ' + style + '><label for="conditions[' + count + '][is_parametrizable]">' + lang('parametrizable') + '</label>' + 
 		'<input type="checkbox" class="checkbox" onclick="og.changeParametrizable(' + count + ')" id="conditions[' + count + '][is_parametrizable]" name="conditions[' + count + '][is_parametrizable]" {2}></td>';	
 	}
@@ -275,10 +287,12 @@ og.fieldChanged = function(id, condition, value){
 		}
 		
 		var conditionSel = document.getElementById('conditions[' + id + '][condition]');
-		for(var j=0; j < conditionSel.options.length; j++){ 
+		if (conditionSel) {
+		  for(var j=0; j < conditionSel.options.length; j++){ 
 			if(conditionSel.options[j].value == condition){
 				conditionSel.selectedIndex = j;
 			}
+		  }
 		}
 		if(condition == "") {
 			var isparam_el = document.getElementById('conditions[' + id + '][is_parametrizable]');

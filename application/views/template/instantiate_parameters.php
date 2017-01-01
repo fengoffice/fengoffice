@@ -12,13 +12,16 @@ if (array_var($_REQUEST, 'modal')) {
 <div class="template">
 <div class="coInputHeader">
 	<div class="coInputHeaderUpperRow">
-		<div class="coInputTitle"><?php echo lang('template parameters')?></div>
+		<div class="coInputTitle"><?php echo lang('template parameters').': '.$template->getObjectName() ?></div>
 		<div class="desc"><?php echo lang('template parameters description')?></div>
+		<div class="desc"><?php echo $template->getDescription()?></div>
 	</div>
 	<div class="clear"></div>
 </div>
 <div class="coInputMainBlock">
-	
+	<?php if (!isset($parameters) || count($parameters) == 0) { ?>
+	<input name="parameterValues[dummy]" value="" type="hidden"/>
+	<?php } ?>
 	<div>
 		<table style="width:100%;"><tbody>
 		<?php foreach($parameters as $parameter) {
@@ -49,12 +52,7 @@ if (array_var($_REQUEST, 'modal')) {
 									$context = array($additional_member);
 								}
 							}
-							if (array_var($_REQUEST, 'from_email')) {
-								$from_email = MailContents::findById(array_var($_REQUEST, 'from_email'));
-								if ($from_email instanceof MailContent) {
-									$context = $from_email->getMembers();
-								}
-							}
+
 							$companies  = allowed_users_to_assign($context);
 							foreach ($companies as $c) {
 								if (config_option('can_assign_tasks_to_companies')) { ?>
@@ -77,9 +75,13 @@ if (array_var($_REQUEST, 'modal')) {
 			</tr>
 		<?php }//foreach ?>
 		</tbody></table>
-		<?php if (isset($member_id) && $member_id > 0) {
-			?><input type="hidden" name="additional_member_ids" value="<?php echo $member_id?>"><?php 
-		} ?>
+		<input type="hidden" name="additional_member_ids" value='<?php echo json_encode($additional_member_ids)?>'>
+		<input type="hidden" name="linked_objects" value='<?php echo json_encode($linked_objects)?>'>
+		<?php
+		if (isset($from_email)) {
+			?><input type="hidden" name="from_email_id" value="<?php echo array_var($_REQUEST, 'from_email')?>"><?php 
+		}
+		?>
 	</div>
 	<br/>
 	<div>

@@ -62,17 +62,17 @@
 	        <div class="input-container">
 				<div><?php echo label_tag(lang('logo')) ?></div>
 	            <div style="float:left;" id="<?php echo $genid?>_avatar_container" class="picture-container">
-	            	<img src="<?php echo $company->getPictureUrl('medium') ?>" alt="<?php echo clean($company->getObjectName()) ?>" id="<?php echo $genid?>_avatar_img"/>
+	            	<img src="<?php echo $company->getPictureUrl('medium') ?>" alt="<?php echo clean($company->getObjectName()) ?>" id="<?php echo $genid?>_logo_img"/>
 	            </div>
 	            <div style="padding:20px 0 0 20px; text-decoration:underline; float:left; display:none;">
 		           	<a href="<?php echo $company->getUpdatePictureUrl()?>&reload_picture=<?php echo $genid?>_avatar_container" class="internallink coViewAction ico-picture" target=""><?php echo lang('update logo') ?></a>
 				</div>
 				
 				<div style="padding:20px 0 0 20px; text-decoration:underline; float:left;">
-		           	<a href="#" onclick="og.openLink('<?php echo $company->getUpdatePictureUrl();?>&reload_picture=<?php echo $genid?>_avatar_img<?php echo ($company->isNew() ? '&new_contact='.$genid.'_picture_file' :'')?>', {caller:'edit_picture'});" 
+		           	<a href="#" onclick="og.openLink('<?php echo $company->getUpdatePictureUrl();?>&reload_picture=<?php echo $genid?>_logo_img<?php echo $company->isNew() ? '&new_contact='.$genid.'_logo_file' : '' ?>', {caller:'edit_picture'});" 
 		           		class="coViewAction ico-picture"><?php echo lang('update logo') ?></a>
 		           	<?php if ($company->isNew()) { ?>
-		           		<input type="hidden" id="<?php echo $genid?>_picture_file" name="company[picture_file]" value=""/>
+		           		<input type="hidden" id="<?php echo $genid?>_logo_file" name="company[picture_file]" value=""/>
 		           	<?php }?>
 				</div>
 				

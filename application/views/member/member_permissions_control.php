@@ -40,6 +40,9 @@
 		}
 	}
 	ksort($users_with_perms);
+	
+	if (!isset($obj_type_sel)) $obj_type_sel=null;
+	if (!isset($current_dimension)) $current_dimension=null;
 ?>
 
 	<input id="<?php echo $genid ?>hfPerms" type="hidden" value="<?php echo str_replace('"',"'", json_encode($member_permissions));?>"/>

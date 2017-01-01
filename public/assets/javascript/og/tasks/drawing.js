@@ -7,400 +7,6 @@
  */
 
 //************************************
-//*		<RX : dragging
-//************************************
-
-var rx__dd = 1000;
-rx__TasksD = Ext.extend(Ext.dd.DDProxy, {
-startDrag: function(x, y) {
-	var dragEl = Ext.get(this.getDragEl());
-	var el = Ext.get(this.getEl());
-	
-	if (!Ext.isIE) dragEl.applyStyles({'border':'1px solid gray;','border-width':'1px 1px 1px 6px','width':'auto','height':'auto','cursor':'move'});
-	else dragEl.setWidth('auto');
-	var task = ogTasks.getTask(this.config.dragData.i_t);
-	var str = '';
-	for (var i=0; i < rx__TasksDrag.tasks_to_edit.length; i++) {
-		var t = ogTasks.getTask(rx__TasksDrag.tasks_to_edit[i]);
-		str += (str == '' ? '' : '<hr />') + t.title;
-	}
-	dragEl.update(str);
-	dragEl.addClass(el.dom.className + ' RX__tasks_dd-proxy'); 
-},
-onDragOver: function(e, targetId) {
-    var target = Ext.get(targetId);
-	if(targetId.indexOf(rx__TasksDrag.idGroup)>=0) /* group */ {
-        this.lastTargetId = targetId;		
-		this.lastGroupTargetId = targetId;
-        target.addClass('RX__tasks_dd-over');
-	}else if(targetId.indexOf(rx__TasksDrag.idTask)>=0) /* task */ {
-        this.lastTargetId = targetId;				
-        target.addClass('RX__tasks_dd-over');
-	}else{
-		//XXX: mark wrong target, check other options
-	}
-},
-onDragOut: function(e, targetId) {
-	var target = Ext.get(targetId);
-	if(targetId.indexOf(rx__TasksDrag.idGroup)>=0) /* group */ {
-        this.lastTargetId = ''; //targetId;		
-        target.removeClass('RX__tasks_dd-over');
-	}else if(targetId.indexOf(rx__TasksDrag.idTask)>=0) /* task */ {
-        this.lastTargetId = this.lastGroupTargetId;				
-        target.removeClass('RX__tasks_dd-over');
-	}else{
-		//XXX: mark wrong target, check other options
-	}
-},
-endDrag: function() {
-    var dragEl = Ext.get(this.getDragEl());
-    var el = Ext.get(this.getEl());
-    if(this.lastGroupTargetId) 
-		Ext.get(this.lastGroupTargetId).removeClass('RX__tasks_dd-over');
-	if(this.lastTargetId) 
-		Ext.get(this.lastTargetId).removeClass('RX__tasks_dd-over');
-	
-	var targetId = this.lastTargetId;
-	rx__TasksDrag.d = rx__TasksDrag.haveExtDD[this.lastGroupTargetId];
-	rx__TasksDrag.p = rx__TasksDrag.haveExtDD[this.lastTargetId];
-	rx__TasksDrag.t = this.config.dragData.i_t;
-	rx__TasksDrag.g = this.config.dragData.i_g;
-	this.lastTargetId = null;
-	this.lastGroupTargetId = null;
-	
-	var doProcess = false;
-	if (targetId) {
-		if(targetId.indexOf(rx__TasksDrag.idGroup)>=0) /* group */ {
-			doProcess = true;
-			rx__TasksDrag.p = false;
-		}else if(targetId.indexOf(rx__TasksDrag.idTask)>=0) /* task */ {
-			doProcess = true;
-		}else{
-			//XXX: mark wrong target
-		}
-	}
-	
-	if(doProcess) {
-		rx__TasksDrag.process();
-		/*/ alert('From '+rx__TasksDrag.g+'.'+rx__TasksDrag.t+' to '+rx__TasksDrag.d+'.'+rx__TasksDrag.p+' ('+rx__TasksDrag.displayCriteria.group_by+')'); /* */
-		//alert(dump(ogTasks.Groups));
-	}else{
-		//alert(targetId);
-	}
-}
-});
-
-var rx__TasksDrag = {
-	t: false,
-	g: false,
-	d: false,
-	p: false,
-	tasks_to_edit: [],
-	// (g::t)-->(d::p)
-	displayCriteria: '',
-	allowDrag: false,
-	state: 'no',
-	haveExtDD: {},
-	full_redraw: false,
-
-	classGroup: 'ogTasksGroup', //'ogTasksGroupHeader',
-	idGroup: 'ogTasksPanelGroupCont', // 'ogTasksPanelGroup',
-	classTask: 'ogTasksTaskTable',
-	idTask: 'ogTasksPanelTaskTable',
-	ddGroup: 'WorkspaceDD', // group
-	dzClass: 'rx__hasDZ',
-	
-	initialize: function() {
-		this.haveExtDD = {};
-	},
-	addTaskToMove: function(task_id) {
-		task_id = task_id.toString();
-		var index = this.tasks_to_edit.indexOf(task_id);
-		if (index < 0) this.tasks_to_edit.push(task_id);
-	},
-	removeTaskToMove: function(task_id) {
-		task_id = task_id.toString();
-		var index = this.tasks_to_edit.indexOf(task_id);
-		if (index > -1) this.tasks_to_edit.splice(index, 1);
-	},
-	prepareExt: function(t,g,id) {
-		if(this.haveExtDD[id]) return;
-		Ext.get(id).dd = new rx__TasksD(id, rx__TasksDrag.ddGroup, { scope: this, dragData: {i_t:t, i_g: g} });
-		new Ext.dd.DropZone(id, {ddGroup: rx__TasksDrag.ddGroup});
-		this.haveExtDD[id] = t; // true
-		this.prepareDrops();
-	},
-	prepareDrops: function() {
-		Ext.select('.'+rx__TasksDrag.classGroup).each( function(el) {
-			if(el.hasClass(rx__TasksDrag.dzClass)) return;
-			el.addClass(rx__TasksDrag.dzClass);
-			id = el.dom.id;
-			new Ext.dd.DropZone(id, {ddGroup: rx__TasksDrag.ddGroup});
-			d = id.substr(rx__TasksDrag.idGroup.length, 66);
-			rx__TasksDrag.haveExtDD[id] = d;
-		} );
-		Ext.select('.'+rx__TasksDrag.classTask).each( function(el) {
-			if(el.hasClass(rx__TasksDrag.dzClass)) return;
-			el.addClass(rx__TasksDrag.dzClass);
-			id = el.dom.id;
-			new Ext.dd.DropZone(id, {ddGroup: rx__TasksDrag.ddGroup});
-			d = new String( id.substr(rx__TasksDrag.idTask.length, 66) );
-			d = d.substr(1,d.indexOf('G')-1); // format: T{task_id}G{group_id}
-			rx__TasksDrag.haveExtDD[id] = d;
-		} );
-	},
-	prepareDrop: function(d,id) {
-		if(this.haveExtDD[id]) return;
-		/*Ext.get(id).dd =*/ new Ext.dd.DropZone(id, {ddGroup: rx__TasksDrag.ddGroup});
-		this.haveExtDD[id] = d;
-	},
-	parametersFromTask: function(task, wrapper) {
-		var parameters = [];
-		
-		// mandatory
-		parameters["id"] = task.id;
-		parameters["assigned_to_contact_id"] = task.assignedToId;
-		parameters["milestone_id"] = task.milestoneId;
-		parameters["priority"] = task.priority;
-		parameters["title"] = task.title;
-		//parameters["text"] = task.description;
-		
-		var ehours = Math.floor(task.TimeEstimate / 60);
-		var emins = task.TimeEstimate - ehours*60;
-		parameters["hours"] = ehours;
-		parameters["minutes"] = emins;
-		
-		// add dates to parameters
-		if (task.dueDate) {
-			var d1 = new Date();
-			var seconds = task.dueDate + (task.useDueTime ? -og.loggedUser.tz * 3600 : 0);
-			d1.setTime(seconds * 1000);
-			parameters["task_due_date"] = d1.format(og.preferences['date_format']);
-			if (task.useDueTime) {
-				parameters["use_due_time"] = true;
-				parameters["task_due_time"] = d1.format(og.config.time_format_use_24_duetime);
-			}
-		}
-		if (task.startDate) {
-			var d2 = new Date();
-			var seconds = task.startDate + (task.useStartTime ? -og.loggedUser.tz * 3600 : 0);
-			d2.setTime(seconds * 1000);
-			parameters["task_start_date"] = d2.format(og.preferences['date_format']);
-			if (task.useStartTime) {
-				parameters["use_start_time"] = true;
-				parameters["task_start_time"] = d2.format(og.config.time_format_use_24_duetime);
-			}
-		}
-		
-		if (wrapper) {
-			var params2 = [];
-			for (var i in parameters) {
-				if (typeof(parameters[i]) == 'function') continue;
-				if (parameters[i] || parameters[i] === 0) {
-					params2[wrapper + "[" + i + "]"] = parameters[i];
-				}
-			}
-			parameters = params2;
-		}
-		
-		return parameters;
-	},
-	quickEdit: function(parameters) {
-		
-		var url = og.getUrl('task', 'quick_edit_multiple_task', {dont_mark_as_read:1});
-	
-		og.openLink(url, {
-			method: 'POST',
-			post: parameters,
-			callback: function(success, data) {
-				if (success && ! data.errorCode) {
-					
-					for (var k=0; k<data.tasks.length; k++) {
-						var task = ogTasks.getTask(data.tasks[k].task.id);
-						if (!task){
-							var task = new ogTasksTask();
-							task.setFromTdata(data.tasks[k].task);
-							if (data.tasks[k].task.s) {
-								task.statusOnCreate = data.tasks[k].task.s;
-							}
-							task.isCreatedClientSide = true;
-							ogTasks.Tasks[ogTasks.Tasks.length] = task;
-							var parent = ogTasks.getTask(task.parentId);
-							if (parent){
-								task.parent = parent;
-								parent.subtasks[parent.subtasks.length] = task;
-							}
-						} else {
-							task.setFromTdata(data.tasks[k].task);
-							var parent = ogTasks.getTask(task.parentId);
-							if (parent){
-								task.parent = parent;
-								parent.subtasks[parent.subtasks.length] = task;
-							}
-						}
-						task.isChecked = false;
-						if (data.tasks[k].subtasks && data.tasks[k].subtasks.length > 0) {
-							ogTasks.setSubtasksFromData(task, data.tasks[k].subtasks);
-						}
-					}
-					if(!rx__TasksDrag.full_redraw) ogTasks.redrawGroups = false;
-					else rx__TasksDrag.full_redraw = true;
-					ogTasks.draw();
-					ogTasks.redrawGroups = true;
-					rx__TasksDrag.haveExtDD = {};
-				} else {
-					if (!data.errorMessage || data.errorMessage == '') {
-						og.err(lang("error adding task"));
-					}
-				}
-			},
-			scope: ogTasks
-		});
-		
-	},
-	process: function() {
-
-		var all_parameters = [];
-		this.addTaskToMove(this.t);
-		
-		for (var k = 0; k < this.tasks_to_edit.length; k++) {
-
-			var task = ogTasks.getTask(this.tasks_to_edit[k]);
-			
-			this.p = parseInt(this.p);
-			
-			// non-edits
-			if (this.g == this.d && !this.p) {
-				// task is being dragged from group #G to group #G
-				if (task.parentId != 0) {
-					// however, the intention might be to un-attach the task from its parent (!)
-					this.p = 0;
-				} else return;
-			}
-			if (task.parentId == this.d && task.parentId) {// is the task being dragged as a subtask o its own parent?
-				return;
-			}
-			
-			// check for unwanted cycles - #t cannot be a predecessor of #p 
-			var ti = this.p;
-			var tiQ = {};
-			while(ti!=0 && !tiQ[ti]) {
-				if(ti == task.id) return;
-				var tt = ogTasks.getTask(ti);
-				if(!tt) break;
-				tiQ[ti] = 1; // loop protection - mark visited vertices
-				ti = tt.parentId;
-			}
-			
-			// unattach from current parent
-			if(task.parentId) {
-				// delete task #t from the list of its parent subtasks 
-				var parent = ogTasks.getTask(task.parentId);
-				for(var i=parent.subtasks.length; i-->0;) { 
-					if(parent.subtasks[i].id == task.id)
-					{
-						parent.subtasks.splice(i,1);
-						break;
-					}
-				}
-				// change task #t parent to #0
-				for (var i = 0; i < ogTasks.Tasks.length; i++) {
-					if (ogTasks.Tasks[i].id == task.id) {
-						ogTasks.Tasks[i].parentId = 0;
-						ogTasks.Tasks[i].parent = null;
-						break;
-					}
-				}
-			}
-			
-			// special edits
-			switch(this.displayCriteria.group_by) {
-				case 'status': ogTasks.ToggleCompleteStatus(task.id, 1-this.d); return; break;
-				default:
-			}
-	
-			var parameters = this.parametersFromTask(task);
-			
-			parameters['parent_id'] = this.p ? this.p : 0;
-			parameters['apply_ws_subtasks'] = "checked";
-			parameters['apply_milestone_subtasks'] = "checked";
-		
-			var group = ogTasks.getGroup(this.d);
-			var group_not_empty = group && group.group_tasks && group.group_tasks.length > 0;
-			
-			// change
-			switch (this.displayCriteria.group_by){
-				case 'milestone':	parameters["milestone_id"] = this.d != 'unclassified' ? ogTasks.getMilestone(this.d).id : 0; parameters["keep_members"]=1;break;
-				case 'priority':	parameters["priority"] = this.d != 'unclassified' ? parseInt(this.d) : 200; /*100,200,300*/ break;
-				case 'assigned_to':	parameters["assigned_to_contact_id"] = this.d; parameters["keep_members"]=1; break;
-				case 'due_date' : 	if(group_not_empty) parameters["task_due_date"] = group.group_tasks[0].dueDate; break;
-				case 'start_date' : if(group_not_empty) parameters["task_start_date"] = group.group_tasks[0].startDate; break;
-				case 'created_on' : if(group_not_empty) parameters["created_on"] = group.group_tasks[0].createdOn; break;
-				case 'completed_on':if(group_not_empty) parameters["completed_on"] = group.group_tasks[0].completedOn.toString().format(lang('date format')); break;
-				case 'created_by' :	parameters["created_by"] = this.d; /* ? */ break;
-				case 'status' : 	parameters["status"] = this.d; /* done previously, special request */ break;
-				case 'completed_by':parameters["completed_by"] = this.d; /* ? */ break;
-				case 'subtype':parameters["object_subtype"] = this.d; /* ? */ break;
-				default:
-					if (this.displayCriteria.group_by.indexOf('dimension_') == 0) {
-						// Group by dimension
-						var dim_id = this.displayCriteria.group_by.replace('dimension_', '');
-						parameters['member_id'] = this.d == 'unclassified' ? '0' : this.d;
-						parameters['remove_from_dimension'] = dim_id;
-					}
-					break;
-			}
-			for (var n in parameters) {
-				if (typeof(parameters[n]) == 'function') continue;
-				all_parameters['tasks['+k+']['+n+']'] = parameters[n];
-			}
-		}
-		
-		rx__TasksDrag.full_redraw = true;
-		this.tasks_to_edit = [];
-		this.quickEdit(all_parameters);
-		
-	},
-	onDragStart: function(t,g,id) {
-		return false;
-		/*if(this.state!='no') return false;
-		this.t=t;
-		this.g=g;
-		this.state = 'md';
-		return false;*/
-	},
-	last_oDO_e: null,
-	markCursor: function(e,d) {
-		if(this.last_oDO_e)
-			this.last_oDO_e.style.cursor = 'auto';
-		if(e)
-			e.style.cursor = (d==this.g?'not-allowed':'crosshair')+' !important';
-		this.last_oDO_e = e;
-	},
-	onDragOver: function(e,d) {
-		if(this.state!='md') return false;
-		if(this.last_oDO_e==e) return false;
-			else this.markCursor(e,d);
-		return false;
-	},
-	onDrop: function(d) {
-		if(this.state!='md') return false;
-		this.markCursor(null,d);
-		this.d=d;
-		this.state = 'no';
-		return false;
-	},
-	showHandle: function(id,v) {
-		if(!rx__TasksDrag.allowDrag || og.loggedUser.isGuest) return;
-		var o = document.getElementById('RX__ogTasksPanelDrag'+id);
-		var ine = Ext.get('ogTasksPanelAT');
-		if(ine) if(ine.isVisible()) v = false;
-		if(o) o.style.visibility = v?'visible':'hidden';
-	}
-};
-
-
-//************************************
 //*		Main function
 //************************************
 
@@ -429,16 +35,6 @@ ogTasks.draw = function(){
 	var displayCriteria = bottomToolbar.getDisplayCriteria();
 	var drawOptions = topToolbar.getDrawOptions();
 		
-	// *** <RX ***
-	rx__TasksDrag.displayCriteria = displayCriteria;
-	rx__TasksDrag.allowDrag = false;
-	if( displayCriteria.group_by=='milestone' || displayCriteria.group_by=='priority' || displayCriteria.group_by=='assigned_to' 
-		|| displayCriteria.group_by=='status' || displayCriteria.group_by=='subtype' || displayCriteria.group_by.indexOf('dimension_') == 0) {
-		
-		rx__TasksDrag.allowDrag = true;
-	}
-	// *** /RX ***
-	
 	//Drawing
 	var sb = new StringBuffer();
 	sb.append(ogTasks.newTaskFormTopList());	
@@ -448,16 +44,15 @@ ogTasks.draw = function(){
 		sb.append(this.drawGroup(displayCriteria, drawOptions, this.Groups[i]));				
 	}
 	
-	// *** <RX ***
+	//Message
 	if(this.Groups.length==0) {
 		var context_names = og.contextManager.getActiveContextNames();
 		if (context_names.length == 0) context_names.push(lang('all'));
 		
-		sb.append('<tr id="rx__no_tasks_info"><td colspan="10">' +	
+		sb.append('<tr id="no_tasks_info"><td colspan="10">' +	
 			'<div class="inner-message">'+lang('no tasks to display', '"'+context_names.join('", "')+'"')+ '</div>'+
 		'</td></tr>');	
 	}
-	// *** /RX ***
 	
 	var container = document.getElementById('tasksPanelContainer');
 	if (container) {
@@ -468,6 +63,8 @@ ogTasks.draw = function(){
 	if(this.Groups.length != 0) {
 		ogTasks.drawAllGroupsTasks();
 	}
+	
+	ogTasks.initDragDrop();
 }
 
 ogTasks.initColResize = function(){
@@ -573,6 +170,11 @@ ogTasks.drawGroup = function(displayCriteria, drawOptions, group){
 		} 		
 	}
 
+	//Member Path
+	var mem_path = "";
+	var mpath = Ext.util.JSON.decode(group.group_memPath);
+	if (mpath) mem_path = og.getEmptyCrumbHtml(mpath,".task-breadcrumb-container");
+
 	//get template for the row
 	var source = $("#task-list-group-template").html(); 
 	//compile the template
@@ -581,6 +183,7 @@ ogTasks.drawGroup = function(displayCriteria, drawOptions, group){
 	//template data
 	var data = {			
 		group : group,
+		mem_path: mem_path,
 		cols_total : ogTasks.TasksList.tasks_list_cols.length
 	}
 	
@@ -625,6 +228,9 @@ ogTasks.newTaskGroupTotals = function(group) {
 			draw_options : drawOptions,
 			group : group,
 			total_cols: total_cols				
+	}
+	if (ogTasks.additional_task_list_columns) {
+		data.additional_task_list_columns = ogTasks.additional_task_list_columns;
 	}
 	
 	//instantiate the template
@@ -827,9 +433,7 @@ ogTasks.drawGroupNextTask = function(group,drawOptions,displayCriteria){
 				  	ogTasks.initColResize();
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 			  }
-		  }	  
-		  
-		 
+		  }
 	  } 
 }
 
@@ -858,8 +462,10 @@ ogTasks.drawAllGroupsTasks = function(){
 };
 
 ogTasks.drawTask = function(task, drawOptions, displayCriteria, group_id, level, target, returnHtml){
+	if (!task) return;
 	//Draw indentation
-	task.divInfo[task.divInfo.length] = {group_id: group_id, drawOptions: drawOptions, displayCriteria: displayCriteria, group_id: group_id, level:level};
+	var pos = (task.divInfo && !isNaN(task.divInfo.length)) ? task.divInfo.length : 0;
+	task.divInfo[pos] = {group_id: group_id, drawOptions: drawOptions, displayCriteria: displayCriteria, group_id: group_id, level:level};
 
 	var html = this.drawTaskRow(task, drawOptions, displayCriteria, group_id, level);
 		
@@ -880,7 +486,7 @@ ogTasks.removeTaskFromView = function(task) {
 	//parent
 	if(task.parentId > 0){
 		var parent = ogTasksCache.getTask(task.parentId);
-		if(parent.subtasksIds.length == 0){
+		if(typeof parent != "undefined" && parent.subtasksIds.length == 0){
 			ogTasks.reDrawTask(parent);
 		}
 	}
@@ -897,7 +503,7 @@ ogTasks.reDrawTask = function(task) {
 	if(drawOptions.show_subtasks_structure){
 		if(task.parentId > 0){
 			var parent = ogTasksCache.getTask(task.parentId);
-			
+			if (typeof parent != 'undefined') {
 				//if is not rendered and is subtask?			
 				$("[id^='ogTasksPanelSubtasksT" + parent.id + "']").each(function( index ) {
 					var group_id = $(this).attr('id');
@@ -924,7 +530,7 @@ ogTasks.reDrawTask = function(task) {
 					var btns = $("#ogTasksPanelTask" + parent.id + "G"+group_id +" .tasksActionsBtn").toArray();
 					og.initPopoverBtns(btns);
 				});	
-						
+			}						
 		}else{
 			//if is not rendered redraw all groups from server
 			if($("[id^='ogTasksPanelTask" + task.id + "']").length == 0){
@@ -1036,12 +642,15 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 		dim_mem_path = "";
 		
 		if (typeof mpath[did] != "undefined") dim_mem_path = og.getEmptyCrumbHtml(dim_mpath,".task-breadcrumb-container");
-		dim_classification.push(
+		var key = 'lp_dim_' + did + '_show_as_column';
+		if (og.preferences['listing_preferences'][key]) {
+			dim_classification.push(
 				{
 					id: 'task_clasification_dim_'+did,
 					dim_mem_path: dim_mem_path 
 				}
-		);
+			);
+		}
 	}
 
 	//Dates
@@ -1238,6 +847,18 @@ ogTasks.drawTaskRow = function(task, drawOptions, displayCriteria, group_id, lev
 			row_total_cols : row_total_cols			
 	}
 	
+	if (ogTasks.additional_task_list_columns) {
+		data.additional_task_list_columns = [];
+		for (var i=0; i<ogTasks.additional_task_list_columns.length; i++) {
+			var col = ogTasks.additional_task_list_columns[i];
+			data.additional_task_list_columns.push({
+				id: col.id,
+				cls: col.cls ? col.cls : '',
+				html: task.additional_data[col.id] ? task.additional_data[col.id].html : ''
+			});
+		}
+	}
+	
 	//instantiate the template
 	var html = ogTasks.task_list_row_template(data);
 	
@@ -1304,7 +925,10 @@ ogTasks.drawSubtasks = function(params){
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');	
 	var displayCriteria = bottomToolbar.getDisplayCriteria();
 	var drawOptions = topToolbar.getDrawOptions();
-		
+	
+	// reverse the array because rows are inserted in reverse order (using function "after" of the task parent)
+	task.subtasksIds = task.subtasksIds.reverse();
+	
 	for (var i = 0; i < task.subtasksIds.length; i++){
 		var subtask = ogTasks.getTask(task.subtasksIds[i]);
 		var subtask_row = ogTasks.drawTask(subtask, drawOptions, displayCriteria, group_id, level, null, 1);
@@ -1348,26 +972,53 @@ ogTasks.ToggleCompleteStatusOk = function(task_id, status, opt){
 			if (!success || data.errorCode) {
 				
 			} else {
-				//Set task data
-				var task = ogTasksCache.addTasks(data.task);
+				if (data.task) {
+					//Set task data
+					var task = ogTasksCache.addTasks(data.task);
+					
+					//update dependants
+					if (task.status){
+						ogTasks.updateDependantTasks(task.id,false);
+					}else{
+						ogTasks.updateDependantTasks(task.id,true);
+					}
 				
-				//update dependants
-				if (task.status){
-					ogTasks.updateDependantTasks(task.id,false);
-				}else{
-					ogTasks.updateDependantTasks(task.id,true);
+					ogTasks.UpdateTask(task.id, false);
+				} else {
+					ogTasks.UpdateTask(task_id, true);
 				}
-				
-				ogTasks.UpdateTask(task.id,false);
 
-				for ( var j = 0; j < data.more_tasks.length; j++) {
-					ogTasks.drawTaskRowAfterEdit({'task':data.more_tasks[j]});//$hola					
-				}				
+				if (data.more_tasks) {
+					for ( var j = 0; j < data.more_tasks.length; j++) {
+						ogTasks.drawTaskRowAfterEdit({'task':data.more_tasks[j]});					
+					}
+				}
 				ogTasks.refreshGroupsTotals();
 			}
 		},
 		scope: this
 	});
+}
+
+ogTasks.loadTimeslotUsers = function(genid, task_id) {
+	
+	og.openLink(og.getUrl('timeslot', 'get_users_for_timeslot', {task_id:task_id}), {
+		callback: function(success, data) {
+			if (data.users && data.users.length > 0) {
+				for (var i=0; i<data.users.length; i++) {
+					var u = data.users[i];
+					var sel = u.id == og.loggedUser.id ? 'selected="selected"' : '';
+					$('#' + genid + 'tsUser').append('<option value="'+ u.id +'" '+ sel +'>'+ u.name +'</option>');
+				}
+				$('#' + genid + 'tsUserContainer').show();
+				
+			} else {
+				$('#' + genid + 'tsUser').remove();
+				$('#' + genid + 'tsUserContainer').append('<input type="hidden" name="timeslot[contact_id]" value="'+ og.loggedUser.id +'" />');
+			}
+		}
+	});
+	
 }
 
 ogTasks.AddWorkTime = function(task_id) {
@@ -1402,6 +1053,8 @@ ogTasks.AddWorkTime = function(task_id) {
 		};
 		
 	$.modal(html,modal_params);
+	
+	ogTasks.loadTimeslotUsers(og.genid, task_id);
 	
 	// DatePicker Menu  
 	var dateCond = new og.DateField({
@@ -1606,7 +1259,9 @@ ogTasks.initTasksList = function() {
 	for(x in  drawOptions.show_dimension_cols){
 		did = drawOptions.show_dimension_cols[x];
 		if (isNaN(did) || did == 0) continue;
-		tasks_list_cols.push(
+		var key = 'lp_dim_' + did + '_show_as_column';
+		if (og.preferences['listing_preferences'][key]) {
+			tasks_list_cols.push(
 				{
 					id: 'task_clasification'+did,
 					css_class: 'task_clasification',
@@ -1615,7 +1270,8 @@ ogTasks.initTasksList = function() {
 					group_total_field: '', 
 					col_width: 'auto'
 				}
-		);
+			);
+		}
 	}
 	
 	//percent complete bar
@@ -1695,6 +1351,25 @@ ogTasks.initTasksList = function() {
 				}
 		);		
 	}
+	
+	// additional columns
+	if (ogTasks.additional_task_list_columns) {
+		for (var i=0; i<ogTasks.additional_task_list_columns.length; i++) {
+			var col = ogTasks.additional_task_list_columns[i];
+			var field = col.row_field ? col.row_field : col.id;
+			var width = col.width ? col.width : '100px';
+			
+			if (drawOptions[col.id]){
+				tasks_list_cols.push({
+					id: col.id,
+					title: col.name, 
+					group_total_field: '', 
+					row_field: field,
+					col_width: width
+				});		
+			}
+		}
+	}
     	
 	//previous tasks
 	if (drawOptions.show_previous_pending_tasks){
@@ -1708,6 +1383,7 @@ ogTasks.initTasksList = function() {
 				}
 		);		
 	}
+	
 	
 	//quick actions
 	tasks_list_cols.push(
@@ -1761,3 +1437,274 @@ ogTasks.newTaskFormTopList = function() {
 }
 
 
+/*******************************************************/
+/**************** DRAG & DROP FUNCTIONS ****************/
+/*******************************************************/
+ogTasks.initDragDrop = function() {
+	
+	$(".tasks-panel-group").sortable({
+		connectWith: ".tasks-panel-group-droppable:not(.ui-sortable-helper)",
+		stop: function(event, object, c , d) {
+			ogTasks.processTaskDrop(event, object);
+			$(".dragging").removeClass("dragging");
+
+			var add_trs = $(object.item).children('.task-list-row');
+			for (var i=0; i<add_trs.length; i++) {
+				var tr = add_trs[i];
+				$(tr).remove();
+				$(object.item).after(tr);
+			}
+		},
+		helper: function (e, item) {
+			var ids_str = ogTasks.getSelectedIds()+'';
+			var selected_ids = ids_str.split(',');
+			$(item).addClass('dragging');
+
+			var html = item;
+			var processed_ids = [item[0].id];
+			
+			for (var i=0; i<selected_ids.length; i++) {
+				var sel_task = ogTasks.getTask(selected_ids[i]);
+				if (sel_task && sel_task.divInfo && sel_task.divInfo[0]) {
+					var sel_el_id = "ogTasksPanelTask"+sel_task.id+"G"+sel_task.divInfo[0].group_id;
+					var sel_el = $("#"+sel_el_id);
+					if (sel_el.length > 0 && processed_ids.indexOf(sel_el[0].id) == -1) {
+						$(sel_el).addClass('dragging');
+
+						$(html).append(sel_el[0]);
+						processed_ids.push(sel_el[0].id);
+					}
+				}
+			}
+
+			return html;
+		},
+		handle: ".ddhandle",
+		cursor: "move",
+		dropOnEmpty: false,
+		placeholder: "tasks-dd-placeholder"
+	});
+	$(".tasks-panel-group").disableSelection();
+};
+
+ogTasks.processTaskDrop = function(event, object) {
+	if (object.item.length > 0 && object.item[0].parentNode && object.item[0].parentNode.id) {
+
+		var from_group_id = event.target.id.replace("ogTasksPanelGroup", "");
+		var to_group_id = object.item[0].parentNode.id.replace("ogTasksPanelGroup", "");
+		
+		var task_id = object.item[0].id.replace("ogTasksPanelTask", "");
+		var gpos = task_id.indexOf("G");
+		if (gpos >= 0) {
+			task_id = task_id.substring(0, gpos);
+		}
+
+		var ids_str = ogTasks.getSelectedIds()+'';
+		ids_str += (ids_str == '' ? '' : ',') + task_id;
+		var task_ids = ids_str.split(',');
+
+		var valid_dropzone = $(event.toElement).closest(".tasks-panel-group-droppable");
+		
+		// check if dropped to a dimension tree node
+		var member_id = null;
+		var dimension_id = null;
+		if (event.toElement.hasAttribute("ext:tree-node-id")) {
+			var node_id = $(event.toElement).attr("ext:tree-node-id");
+			if (!isNaN(node_id)) {
+				member_id = node_id;
+			}
+			dimension_id = parseInt($(event.toElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-',''));
+			
+		} else if (event.toElement.id.indexOf("extdd-") >= 0) {
+			var node_id = $(event.toElement).closest(".x-tree-node-el").attr("ext:tree-node-id");
+			if (!isNaN(node_id)) {
+				member_id = node_id;
+			}
+			dimension_id = parseInt($(event.toElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-',''));
+		}
+
+		// classify task
+		if (dimension_id != null && !isNaN(dimension_id)) {
+			// ensure that task is not moved to another group
+			ogTasks.cancelDrop();
+
+			ogTasks.classifyTasks(task_ids, member_id, dimension_id, from_group_id);
+			
+		} else {
+			// valid dropzone and source group != to group
+			if (valid_dropzone.length > 0 && from_group_id != to_group_id) {
+				
+				ogTasks.changeTasksGroup(task_ids, from_group_id, to_group_id);
+				
+			} else {
+				// Invalid dropzone
+				ogTasks.cancelDrop();
+			}
+		}
+	}
+}
+
+ogTasks.cancelDrop = function() {
+	try {
+		$(".tasks-panel-group").sortable("cancel");
+	} catch (e) {
+		// try/catch to avoid js crash, this error does not need to be handled
+	}
+}
+
+ogTasks.changeTasksGroup = function(task_ids, from_group_id, to_group_id) {
+
+	var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+	var filters = bottomToolbar.getFilters();
+	var displayCriteria = bottomToolbar.getDisplayCriteria();
+
+	if (displayCriteria.group_by.indexOf('dimension_') >= 0) {
+		// grouping by dimension -> classify selected tasks
+		var dimension_id = displayCriteria.group_by.replace('dimension_', '');
+		ogTasks.classifyTasks(task_ids, to_group_id, dimension_id, from_group_id);
+		
+	} else {
+		// Possible grouping: 'nothing','milestone','priority','assigned_to','due_date','start_date','created_on','created_by','completed_on','completed_by','status'
+		// Do not modify if grouping by 'created_on' or 'created_by' or 'completed_on' or 'completed_by'
+		
+		switch (displayCriteria.group_by) {
+		case 'assigned_to':
+		case 'priority':
+		case 'status':
+		case 'milestone':
+			ogTasks.editTasksAttribute(task_ids, displayCriteria.group_by, to_group_id, from_group_id);
+			break;
+			
+		case 'due_date':
+		case 'start_date':
+			// TODO: prompt exact date and update tasks
+			//var date_value = '';
+			//ogTasks.editTasksAttribute(task_ids, displayCriteria.group_by, date_value, from_group_id);
+			ogTasks.promptDate(task_ids, displayCriteria.group_by, to_group_id, from_group_id);
+			break;
+			
+		default:
+			// Invalid grop group
+			ogTasks.cancelDrop();
+			break;
+		}
+	}
+}
+
+ogTasks.promptDate = function(task_ids, attribute, to_group_id, from_group_id) {
+	var extid = Ext.id();
+	var title = (attribute == 'due_date' ? lang('new due date') : lang('new start date'));
+	var description = (attribute == 'due_date' ? lang('new due date desc') : lang('new start date desc'));
+
+	var source = $("#change-tasks-date").html();
+	var template = Handlebars.compile(source);
+	var html = template({genid: extid, attribute: attribute, title: title, description:description});
+	
+	var modal_params = {
+		'escClose': true,
+		'overlayClose': true,
+		'minWidth' : 400,
+		'minHeight' : 200,
+		'closeHTML': '<a id="ogTasksPanelAT_close_link" class="modal-close modal-close-img"></a>',
+		'onClose': function (dialog) {
+			ogTasks.cancelDrop();
+			$.modal.close();
+		},
+		'onShow': function (dialog) {
+		
+			var dtp = new og.DateField({
+				renderTo: extid + '_date_picker_container',
+				name: 'new_date_value',
+				emptyText: og.preferences.date_format_tip,
+				id: extid + '_date_picker',
+				value: ''
+			});
+		}
+		
+	};
+	$.modal(html, modal_params);
+
+	$("#change-tasks-date-modal-form-"+extid).submit(function( event ) {
+		var date_picker = Ext.getCmp(extid + "_date_picker");
+		var dp_value = date_picker.getValue();
+		var date_value = dp_value ? dp_value.format(og.preferences.date_format) : '';
+		ogTasks.editTasksAttribute(task_ids, attribute, date_value, from_group_id);
+		$.modal.close();
+		return false;
+	});
+}
+
+ogTasks.editTasksAttribute = function(task_ids, attribute, new_value, from_group_id) {
+
+	var params = {
+		task_ids: Ext.util.JSON.encode(task_ids),
+		attribute: attribute,
+		new_value: new_value
+	};
+	og.openLink(og.getUrl('task', 'edit_tasks_attribute'), {
+		method: 'POST',
+		post: params,
+		callback: function(success, data) {
+			for (var x=0; x<task_ids.length; x++) {
+				var t = ogTasks.getTask(task_ids[x]);
+				if (t) {
+					$("#ogTasksPanelTask"+t.id+"G"+from_group_id).remove();
+					ogTasks.UpdateTask(t.id, true);
+				}
+			}
+		}
+	});
+}
+
+ogTasks.classifyTasks = function(task_ids, member_id, dimension_id, from_group_id) {
+	var multiple_sel = task_ids.length > 1;
+	var is_classified_in_dim = false;
+
+	// check if there is any selected task classified in dimension_id
+	for (var i=0; i<task_ids.length; i++) {
+		var task = ogTasks.getTask(task_ids[i]);
+		var classification = Ext.util.JSON.decode(task.memPath);
+		var task_classified_in_dim = classification && typeof(classification[dimension_id]) == 'object';
+		if (task_classified_in_dim) {
+			is_classified_in_dim = true;
+		}
+	}
+	var rm_prev = 0;
+
+	// if there are tasks classified in dimension_id => check if remove previous members of dimension_id
+	if (is_classified_in_dim && !isNaN(member_id) && member_id > 0) {
+		if (og.preferences['drag_drop_prompt'] == 'prompt') {
+			var rm_prev = confirm(lang('do you want to mantain the current associations of this obj with members of', og.dimensions_info[dimension_id].name)) ? "0" : "1";
+		}else if (og.preferences['drag_drop_prompt'] == 'move') {
+			var rm_prev = 1;
+		}else if (og.preferences['drag_drop_prompt'] == 'keep') {
+			var rm_prev = 0;
+		}
+	}
+	
+	// set request parameters
+	var params = {
+		objects: Ext.util.JSON.encode(task_ids),
+		remove_prev: rm_prev
+	};
+	if (!isNaN(member_id) && member_id > 0) {
+		params.member = member_id; // classify in member_id
+	} else {
+		params.dimension = dimension_id; // unclassify from dimension_id
+	}
+
+	// make the classification request
+	og.openLink(og.getUrl('member', 'add_objects_to_member'),{
+		method: 'POST',
+		post: params,
+		callback: function (success, data) {
+			for (var x=0; x<task_ids.length; x++) {
+				var t = ogTasks.getTask(task_ids[x]);
+				if (t) {
+					$("#ogTasksPanelTask"+t.id+"G"+from_group_id).remove();
+					ogTasks.UpdateTask(t.id, true);
+				}
+			}
+		}
+	});
+}

@@ -172,6 +172,7 @@
     * @return string 
     */
     function getDefaultValue() {
+      Hook::fire('before_get_obj_cp_default_value',$this, $null);
       return $this->getColumnValue('default_value');
     } // getDefaultValue()
     
@@ -274,6 +275,25 @@
       return $this->setColumnValue('visible_by_default', $value);
     } // getVisibleByDefault() 
       
+    
+    function getIsSpecial() {
+    	return $this->getColumnValue('is_special');
+    }
+    
+    function setIsSpecial($value) {
+    	return $this->setColumnValue('is_special', $value);
+    }
+    
+    
+    function getIsDisabled() {
+    	return $this->getColumnValue('is_disabled');
+    }
+    
+    function setIsDisabled($value) {
+    	return $this->setColumnValue('is_disabled', $value);
+    }
+    
+    
     /**
     * Return manager instance
     *

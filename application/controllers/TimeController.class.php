@@ -240,17 +240,22 @@ class TimeController extends ApplicationController {
 			if (!array_var($timeslot_data, 'contact_id', false) || !SystemPermissions::userHasSystemPermission(logged_user(), 'can_manage_time')) {
 				$timeslot_data['contact_id'] = logged_user()->getId();
 			}
-			$timeslot->setFromAttributes($timeslot_data);			
-			$user = Contacts::findById($timeslot_data['contact_id']);
-			$billing_category_id = $user->getDefaultBillingId();
-			$bc = BillingCategories::findById($billing_category_id);
-			if ($bc instanceof BillingCategory) {
-				$timeslot->setBillingId($billing_category_id);
-				$hourly_billing = $bc->getDefaultValue();
-				$timeslot->setHourlyBilling($hourly_billing);
-				$timeslot->setFixedBilling($hourly_billing * $hoursToAdd);
-				$timeslot->setIsFixedBilling(false);
+			$timeslot->setFromAttributes($timeslot_data);
+
+			// Billing
+			if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
+				$user = Contacts::findById($timeslot_data['contact_id']);
+				$billing_category_id = $user->getDefaultBillingId();
+				$bc = BillingCategories::findById($billing_category_id);
+				if ($bc instanceof BillingCategory) {
+					$timeslot->setBillingId($billing_category_id);
+					$hourly_billing = $bc->getDefaultValue();
+					$timeslot->setHourlyBilling($hourly_billing);
+					$timeslot->setFixedBilling($hourly_billing * $hoursToAdd);
+					$timeslot->setIsFixedBilling(false);
+				}
 			}
+							
 			DB::beginWork();
 			$timeslot->save();
 			
@@ -263,7 +268,9 @@ class TimeController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 			}
 			$object_controller = new ObjectController();
-			$object_controller->add_to_members($timeslot, $member_ids);
+			if (!is_null($member_ids)) {
+				$object_controller->add_to_members($timeslot, $member_ids);
+			}
 			
 			DB::commit();
 			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_ADD);
@@ -278,110 +285,164 @@ class TimeController extends ApplicationController {
 	
 	function edit_timeslot(){
 		
-		ajx_current("empty");
-		$timeslot_data = array_var($_POST, 'timeslot');
-		$timeslot = Timeslots::findById(array_var($timeslot_data,'id',0));
-	
+		$timeslot = Timeslots::findById(get_id());
 		if (!$timeslot instanceof Timeslot){
 			flash_error(lang('timeslot dnx'));
+			ajx_current("empty");
 			return;
 		}
 				
-		//context permissions or members
-		$member_ids = json_decode(array_var($_POST, 'members',array()));
-		// clean member_ids
-		$tmp_mids = array();
-		foreach ($member_ids as $mid) {
-			if (!is_null($mid) && trim($mid) != "") $tmp_mids[] = $mid;
-		}
-		$member_ids = $tmp_mids;
-				
-		if(empty($member_ids)){
-			if (!can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId())) {
-				flash_error(lang('no access permissions'));
-				ajx_current("empty");
-				return;
-			}
-		}else{
-			if (count($member_ids) > 0) {
-				$enteredMembers = Members::findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
-			} else {
-				$enteredMembers = array();
-			}
-			if (!can_add(logged_user(), $enteredMembers, Timeslots::instance()->getObjectTypeId())) {
-				flash_error(lang('no access permissions'));
-				ajx_current("empty");
-				return;
-			}
-		}
+		$timeslot_data = array_var($_POST, 'timeslot');
+		if (!is_array($timeslot_data)) {
+			
+			if (logged_user()->isAdminGroup()) {
+				//Get Users Info
+				$users = array();
+				if (!can_manage_time(logged_user())) {
+					if (can_add(logged_user(), $context, Timeslots::instance()->getObjectTypeId())) $users = array(logged_user());
+				} else {
 					
-		try {
-			$hoursToAdd = array_var($timeslot_data, 'hours',0);
-			$minutes = array_var($timeslot_data, 'minutes',0);
-
-			if (strpos($hoursToAdd,',') && !strpos($hoursToAdd,'.'))
-			$hoursToAdd = str_replace(',','.',$hoursToAdd);
-			if (strpos($hoursToAdd,':') && !strpos($hoursToAdd,'.')) {
-				$pos = strpos($hoursToAdd,':') + 1;
-				$len = strlen($hoursToAdd) - $pos;
-				$minutesToAdd = substr($hoursToAdd,$pos,$len);
-				if( !strlen($minutesToAdd)<=2 || !strlen($minutesToAdd)>0){
-					$minutesToAdd = substr($minutesToAdd,0,2);
+					if (logged_user()->isMemberOfOwnerCompany()) {
+						$users = Contacts::getAllUsers();
+					} else {
+						$users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = ". logged_user()->getCompanyId()) : array(logged_user());
+					}
+					// filter users by permissions only if any member is selected.
+					$members = $timeslot->getMembers();
+					if (count($members) > 0) {
+						$tmp_users = array();
+						foreach ($users as $user) {
+							if (can_add($user, $members, Timeslots::instance()->getObjectTypeId())) $tmp_users[] = $user;
+						}
+						$users = $tmp_users;
+					}
 				}
-				$mins = $minutesToAdd / 60;
-				$hours = substr($hoursToAdd, 0, $pos-1);
-				$hoursToAdd = $hours + $mins;
+				tpl_assign('users', $users);
 			}
-
-			if($minutes){
-				$min = str_replace('.','',($minutes/6));
-				$hoursToAdd = $hoursToAdd + ("0.".$min);
-                        }
+			
+			tpl_assign('timeslot', $timeslot);
+			
+		} else {
+			// FORM SENT...
+		
+			//context permissions or members
+			$member_ids = json_decode(array_var($_POST, 'members',array()));
+			// clean member_ids
+			$tmp_mids = array();
+			foreach ($member_ids as $mid) {
+				if (!is_null($mid) && trim($mid) != "") $tmp_mids[] = $mid;
+			}
+			$member_ids = $tmp_mids;
+					
+			if(empty($member_ids)){
+				if (!can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId())) {
+					flash_error(lang('no access permissions'));
+					ajx_current("empty");
+					return;
+				}
+			}else{
+				if (count($member_ids) > 0) {
+					$enteredMembers = Members::findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
+				} else {
+					$enteredMembers = array();
+				}
+				if (!can_add(logged_user(), $enteredMembers, Timeslots::instance()->getObjectTypeId())) {
+					flash_error(lang('no access permissions'));
+					ajx_current("empty");
+					return;
+				}
+			}
+						
+			try {
+				$hoursToAdd = array_var($timeslot_data, 'hours',0);
+				$minutes = array_var($timeslot_data, 'minutes',0);
+	
+				if (strpos($hoursToAdd,',') && !strpos($hoursToAdd,'.'))
+				$hoursToAdd = str_replace(',','.',$hoursToAdd);
+				if (strpos($hoursToAdd,':') && !strpos($hoursToAdd,'.')) {
+					$pos = strpos($hoursToAdd,':') + 1;
+					$len = strlen($hoursToAdd) - $pos;
+					$minutesToAdd = substr($hoursToAdd,$pos,$len);
+					if( !strlen($minutesToAdd)<=2 || !strlen($minutesToAdd)>0){
+						$minutesToAdd = substr($minutesToAdd,0,2);
+					}
+					$mins = $minutesToAdd / 60;
+					$hours = substr($hoursToAdd, 0, $pos-1);
+					$hoursToAdd = $hours + $mins;
+				}
+	
+				if($minutes){
+					$min = str_replace('.','',($minutes/6));
+					$hoursToAdd = $hoursToAdd + ("0.".$min);
+	                        }
+					
+				if ($hoursToAdd <= 0){
+					flash_error(lang('time has to be greater than 0'));
+					return;
+				}
 				
-			if ($hoursToAdd <= 0){
-				flash_error(lang('time has to be greater than 0'));
-				return;
-			}
-			
-			$startTime = getDateValue(array_var($timeslot_data, 'date'));
-			$startTime = $startTime->add('h', 8 - logged_user()->getTimezone());
-			$endTime = getDateValue(array_var($timeslot_data, 'date'));
-			$endTime = $endTime->add('h', 8 - logged_user()->getTimezone() + $hoursToAdd);
-			$timeslot_data['start_time'] = $startTime;
-			$timeslot_data['end_time'] = $endTime;
-			$timeslot_data['name'] = $timeslot_data['description'];
-			
-			//Only admins can change timeslot user
-			if (!array_var($timeslot_data, 'contact_id') && !logged_user()->isAdministrator()) {
-				$timeslot_data['contact_id'] = $timeslot->getContactId();
-			}
-			$timeslot->setFromAttributes($timeslot_data);
-			
-			$user = Contacts::findById($timeslot_data['contact_id']);
-			$billing_category_id = $user->getDefaultBillingId();
-			$bc = BillingCategories::findById($billing_category_id);
-			if ($bc instanceof BillingCategory) {
-				$timeslot->setBillingId($billing_category_id);
-				$hourly_billing = $bc->getDefaultValue();
-				$timeslot->setHourlyBilling($hourly_billing);
-				$timeslot->setFixedBilling($hourly_billing * $hoursToAdd);
-				$timeslot->setIsFixedBilling(false);
-			}
-			DB::beginWork();
-			$timeslot->save();
-			
-			$member_ids = json_decode(array_var($_POST, 'members', ''));
-			$object_controller = new ObjectController();
-			$object_controller->add_to_members($timeslot, $member_ids);
-			
-			DB::commit();
-			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT);
-			
-			ajx_extra_data(array("timeslot" => $timeslot->getArrayInfo()));
-		} catch(Exception $e) {
-			DB::rollback();
-			flash_error($e->getMessage());
-		} // try
+				$startTime = getDateValue(array_var($timeslot_data, 'date'));
+				$startTime = $startTime->add('h', 8 - logged_user()->getTimezone());
+				$endTime = getDateValue(array_var($timeslot_data, 'date'));
+				$endTime = $endTime->add('h', 8 - logged_user()->getTimezone() + $hoursToAdd);
+				$timeslot_data['start_time'] = $startTime;
+				$timeslot_data['end_time'] = $endTime;
+				$timeslot_data['name'] = $timeslot_data['description'];
+				
+				// get old properties to check if has to recalculate billing
+				$old_user_id = $timeslot->getContactId();
+				$old_member_ids = array_flat(DB::executeAll("SELECT om.member_id FROM `".TABLE_PREFIX."object_members` om
+					inner join ".TABLE_PREFIX."members m on om.member_id=m.id
+					inner join ".TABLE_PREFIX."dimensions d on d.id=m.dimension_id
+					where om.object_id=".$timeslot->getId()." and d.is_manageable;"));
+				
+				//Only admins can change timeslot user
+				if (!array_var($timeslot_data, 'contact_id') && !logged_user()->isAdminGroup()) {
+					$timeslot_data['contact_id'] = $timeslot->getContactId();
+				}
+				$timeslot->setFromAttributes($timeslot_data);
+				
+				// set to recalculate billing if user changed
+				if ($timeslot->getContactId() != $old_user_id) {
+					$timeslot->setForceRecalculateBilling(true);
+				}
+				// set to recalculate billing if members changed
+				if (count(array_diff($member_ids, $old_member_ids)) > 0 || count(array_diff($old_member_ids, $member_ids)) > 0) {
+					$timeslot->setForceRecalculateBilling(true);
+				}
+				
+				if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
+					$user = Contacts::findById($timeslot_data['contact_id']);
+					$billing_category_id = $user->getDefaultBillingId();
+					$bc = BillingCategories::findById($billing_category_id);
+					if ($bc instanceof BillingCategory) {
+						$timeslot->setBillingId($billing_category_id);
+						$hourly_billing = $bc->getDefaultValue();
+						$timeslot->setHourlyBilling($hourly_billing);
+						$timeslot->setFixedBilling($hourly_billing * $hoursToAdd);
+						$timeslot->setIsFixedBilling(false);
+					}
+				}
+				
+				DB::beginWork();
+				$timeslot->save();
+				
+				$member_ids = json_decode(array_var($_POST, 'members', ''));
+				$object_controller = new ObjectController();
+				$object_controller->add_to_members($timeslot, $member_ids);
+				
+				DB::commit();
+				ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT);
+				ajx_current("reload");
+				evt_add("reload current panel");
+				
+				ajx_extra_data(array("timeslot" => $timeslot->getArrayInfo()));
+			} catch(Exception $e) {
+				DB::rollback();
+				ajx_current("empty");
+				flash_error($e->getMessage());
+			} // try
+		}
 	}
 	
 	function delete_timeslot(){

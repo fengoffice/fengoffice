@@ -45,7 +45,7 @@ class Timeslots extends BaseTimeslots {
 	private $cached_timeslots = null;
 
 	function getOpenTimeslotsByObject($object_id) {
-		if ($this->cached_timeslots == null) {
+		if (!isset($this->cached_timeslots) || $this->cached_timeslots == null) {
 			$this->cached_timeslots = array();
 			$cached_ts = self::findAll(array('conditions' => array('`end_time`= ? ', EMPTY_DATETIME), 'order' => 'start_time'));
 			foreach ($cached_ts as $ct) {

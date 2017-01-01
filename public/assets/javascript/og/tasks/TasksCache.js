@@ -31,7 +31,8 @@ ogTasksCache.removeTask = function(task){
 	//parent
 	if(task.parentId > 0){
 		var parent = ogTasksCache.getTask(task.parentId);
-		if(parent.subtasksIds.indexOf(task.id) != -1){
+		
+		if(typeof parent != "undefined" && parent.subtasksIds.indexOf(task.id) != -1){
 			parent.subtasksIds.splice(parent.subtasksIds.indexOf(task.id), 1);
 		}
 	}

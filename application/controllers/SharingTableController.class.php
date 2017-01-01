@@ -92,26 +92,6 @@ class  SharingTableController extends ApplicationController {
 		foreach ($all_del_conditions as $delete_conditions) {
 			
 			if (!is_array($delete_conditions) || count($delete_conditions) == 0) continue;
-			/*
-			// check if the permission group still can view any of the affected objects (if they are classified in another dimension member)
-			$del_objs = DB::executeAll("SELECT object_id, o.object_type_id $from WHERE ".implode(' OR ' , $delete_conditions ));
-			
-			$del_objs_can_read = array();
-			foreach ($del_objs as $do_row) {
-				$do = $do_row['object_id'];
-				$ot_id = $do_row['object_type_id'];
-				
-				$mems = ObjectMembers::instance()->getMembersByObject($object_id);
-				if (can_access_pgids(array($group), $mems, $ot_id, ACCESS_LEVEL_READ)) {
-					$del_objs_can_read[] = $do;
-				}
-			}
-			
-			// objects that were included to be deleted but still can be read
-			$not_to_del_objs_cond = "";
-			if (count($del_objs_can_read) > 0) {
-				$not_to_del_objs_cond = " AND object_id NOT IN (".implode(',',$del_objs_can_read).")";
-			}*/
 			
 			// delete registers only for objects that cannot be read anymore for this permission group
 			$oids = DB::executeAll("SELECT object_id $from WHERE ".implode(' OR ' , $delete_conditions )."");
@@ -206,9 +186,13 @@ class  SharingTableController extends ApplicationController {
 					
 					$values = "";
 					foreach ($ids as $id) {
-						$values .= ($values == "" ? "" : ",") . "('$id','$group')";
+						if ($id) {
+							$values .= ($values == "" ? "" : ",") . "('$id','$group')";
+						}
 					}
-					DB::execute("INSERT INTO ".TABLE_PREFIX."sharing_table (object_id, group_id) VALUES $values ON DUPLICATE KEY UPDATE group_id=group_id;");
+					if ($values != "") {
+						DB::execute("INSERT INTO ".TABLE_PREFIX."sharing_table (object_id, group_id) VALUES $values ON DUPLICATE KEY UPDATE group_id=group_id;");
+					}
 				}
 			}
 		}

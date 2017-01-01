@@ -178,6 +178,8 @@ addLangs({
 	'no objects to display': 'No hay objetos para mostrar',
 	'ok': 'Aceptar',
 	'cancel': 'Cancelar',
+	'select all': 'Seleccionar todos',
+	'select all desc': 'Seleccionar todos',
 	'add new contact': 'Añadir nuevo contacto',
 	'displaying contacts of': 'Mostrando contacto {0} al {1} de {2}',
 	'no contacts to display': 'No hay contactos para mostrar',
@@ -869,5 +871,7 @@ addLangs({
     'at least one dimension must be selected' : 'Debe seleccionar al menos una dimensión.',
     'confirm delete group' : '¿Está seguro que quiere eliminar este grupo?',
     
-	'move tasks forward' : 'Mover las tareas hacia adelante'
+	'move tasks forward' : 'Mover las tareas hacia adelante',
+    'birthday' : 'Cumpleaños',
+    'job title' : 'Título'
 });

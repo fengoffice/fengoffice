@@ -558,28 +558,23 @@ og.datePropertyTypeSel = function(count, obj_id){
 		}else if(type == 1){
 			var selectParam = '';
 			
-			if(og.templateParameters.length > 0){
-				
-				selectParam = '<select name="propValueParam[' + obj_id + '][' + prop + ']" id="propValueParam[' + obj_id + '][' + prop + ']">';
-				for(var j=0; j < og.templateParameters.length; j++){
-					var item = og.templateParameters[j];
-					if(item.type == "date"){
-						selectParam += '<option>' + item['name'] + '</option>';
-					}
+			selectParam = '<select name="propValueParam[' + obj_id + '][' + prop + ']" id="propValueParam[' + obj_id + '][' + prop + ']">';
+			for(var j=0; j < og.templateParameters.length; j++){
+				var item = og.templateParameters[j];
+				if(item.type == "date"){
+					selectParam += '<option value="'+ item['name'] +'">' + item['name'] + '</option>';
 				}
-				selectParam += '<option value="task_creation">' + lang('date of task creation') + '</option>';
-				selectParam += '</select>';
-				datePropTD.innerHTML = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + 
-					selectParam + '&nbsp;<select name="propValueOperation[' + obj_id + '][' + prop + ']" id="propValueOperation[' + obj_id + '][' + prop + ']">' +
-					'<option>+</option><option>-</option></select>&nbsp;' + 
-					'<input name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:30px;" />' +
-					'&nbsp;<select name="propValueUnit[' + obj_id + '][' + prop + ']" id="propValueUnit[' + obj_id + '][' + prop + ']"><option value="d">'+ lang('days') + '</option>' +
-					'<option value="w">'+ lang('weeks') + '</option><option value="m">'+ lang('months') + '</option></select>';
 			}
-			if(selectParam == ''){
-				alert(lang('no parameters in template'));
-				datePropTypeSel.selectedIndex = 0;
-			}
+			selectParam += '<option value="task_creation">' + lang('date of task creation') + '</option>';
+			selectParam += '</select>';
+			datePropTD.innerHTML = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + 
+				selectParam + '&nbsp;<select name="propValueOperation[' + obj_id + '][' + prop + ']" id="propValueOperation[' + obj_id + '][' + prop + ']">' +
+				'<option>+</option><option>-</option></select>&nbsp;' + 
+				'<input name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:30px;" />' +
+				'&nbsp;<select name="propValueUnit[' + obj_id + '][' + prop + ']" id="propValueUnit[' + obj_id + '][' + prop + ']">' + 
+				'<option value="i">'+ lang('minutes') + '</option><option value="d" selected="selected">'+ lang('days') + '</option>' +
+				'<option value="w">'+ lang('weeks') + '</option><option value="m">'+ lang('months') + '</option></select>';
+			
 		}
 	}
 };
@@ -633,7 +628,7 @@ og.integerPropertyTypeSel = function(count, obj_id, callback){
 					var item = og.templateParameters[j];
 					if(item.type == "user"){
 						// value="{'+ item['name'] +'}" name="propValue[' + obj_id + '][' + prop + ']"
-						selectParam += '<option>' + item['name'] + '</option>';
+						selectParam += '<option value="'+ item['name'] +'">' + item['name'] + '</option>';
 					}
 				}
 				selectParam += '</select>';

@@ -66,15 +66,14 @@ class SharingTables extends BaseSharingTables {
 		}
 		
 		try {
-			$object_ids = Objects::instance()->findAll(array('id' => true, "conditions" => "updated_on >= '$start_date' $end_cond"));
+			$object_ids = DB::executeAll("SELECT id, object_type_id FROM ".TABLE_PREFIX."objects WHERE updated_on >= '$start_date' $end_cond");
 			$obj_count = 0;
 			DB::beginWork();
-			foreach ($object_ids as $id) {
-				$obj = Objects::findObject($id);
-				if ($obj instanceof ContentDataObject) {
-					$obj->addToSharingTable();
-					$obj_count++;
-				}
+			foreach ($object_ids as $info) {
+				$oid = $info['id'];
+				$tid = $info['object_type_id'];
+				ContentDataObjects::addObjToSharingTable($oid, $tid, null);
+				$obj_count++;
 			}
 			set_config_option('last_sharing_table_rebuild', DateTimeValueLib::now()->toMySQL());
 			DB::commit();

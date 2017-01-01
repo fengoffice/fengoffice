@@ -56,7 +56,7 @@
 			$data['isread'] = isset($read_objects[$data['id']]);
 		}
 	}
-	
+
 	if (is_array($internalMilestones)) {
 		foreach($internalMilestones as $milestone) {
 			$internal_milestones_array[] = $milestone->getArrayInfo();
@@ -85,7 +85,7 @@
 			if ($user instanceof Contact) $users_array[] = $user->getArrayInfo();
 		}
 	}
-	
+
 	foreach($allUsers as $usr) {
 		$allUsers_array[] = $usr->getArrayInfo();
 	}
@@ -114,6 +114,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 og.config.use_milestones = <?php echo config_option('use_milestones') ? 'true' : 'false' ?>;
 og.config.show_notify_checkbox_in_quick_add = <?php echo user_config_option('show_notify_checkbox_in_quick_add') ? 'true' : 'false' ?>;
 og.config.tasks_show_description_on_time_forms = <?php echo user_config_option('tasksShowDescriptionOnTimeForms') ? 'true' : 'false' ?>;
+og.config.tasks_use_date_filters = <?php echo user_config_option('tasksUseDateFilters') ? 'true' : 'false' ?>;
 og.config.quick_add_task_combos = <?php 
 		$object = "";
 		$dimensions_user = get_user_dimensions_ids();
@@ -182,8 +183,6 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 
 <script type="text/javascript">
 	if (!ogTasks.tasks_object_type_id) ogTasks.tasks_object_type_id = '<?php echo ProjectTasks::instance()->getObjectTypeId() ?>';
-	if (rx__TasksDrag)
-		rx__TasksDrag.initialize();
 
 	ogTasks.userPreferences = Ext.util.JSON.decode(document.getElementById('hfUserPreferences').value);
 
@@ -299,12 +298,23 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 					editor.resetDirty();
 				}
 			},
+			removePlugins: 'magicline',
 			entities_additional : '#39,#336,#337,#368,#369'
 		});
 	}
 	
 	
 
+
+	// tasks group by dimensions
+	var dimensions_panel = Ext.getCmp('menu-panel');
+	ogTasks.additional_groupby_dimensions = [];
+	dimensions_panel.items.each(function(item, index, length) {
+		ogTasks.additional_groupby_dimensions.push({
+			id: item.dimensionId,
+			name: item.title
+		});
+	});
 	
 	
 	

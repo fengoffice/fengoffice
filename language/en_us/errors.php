@@ -211,6 +211,8 @@
   	
   	'failed to authenticate email account' => 'Failed to authenticate email account',
   	'failed to authenticate email account desc' => 'Could not authenticate account "{0}" to send notifications, please make sure that the account\'s username and password are correct.',
+  		
+  	'you cant add member without security permissions' => 'You can\'t add {0} without specifying where is located because you can\'t manage permissions. Please select where to put {0} so the permissions can be inherited.',
   ); // array
 
 ?>

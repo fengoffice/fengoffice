@@ -387,6 +387,28 @@ abstract class BaseMailAccount extends DataObject {
 		return $this->setColumnValue('mark_read_on_server', $value);
 	} // setMarkReadOnServer()
 
+	/**
+	 * Return value of 'get_read_state_from_server' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getGetReadStateFromServer() {
+		return $this->getColumnValue('get_read_state_from_server');
+	} // getGetReadStateFromServer()
+
+	/**
+	 * Set value of 'get_read_state_from_server' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setGetReadStateFromServer($value) {
+		return $this->setColumnValue('get_read_state_from_server', $value);
+	} // setGetReadStateFromServer()
+
 
 	/**
 	 * Return value of 'outgoing_transport_type' field

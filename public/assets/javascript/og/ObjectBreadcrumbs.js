@@ -598,7 +598,9 @@ og.checkMultiMemberBreadcrumb = function(target, container_width) {
 				plural = "s";
 			}			
 			object_types_totals_text += "<span class='ctmBadge'>"+total+"</span> ";
-			object_types_totals_text += lang(og.objectTypes[prop].name+plural)+" ";						
+			if (og.objectTypes[prop] && og.objectTypes[prop].name) {
+				object_types_totals_text += lang(og.objectTypes[prop].name+plural)+" ";						
+			}
  	    }
 		object_types_totals_text += "</button>";
 		
@@ -657,7 +659,8 @@ og.initBreadcrumbsBtns = function(btns){
 	   		var ot = $(member_paths[j]).data("object-type");
 	   		if(typeof ot == "undefined"){
 	   			continue;
-	   		}	   		
+	   		}
+	   		if (!og.objectTypes[ot]) continue;
 	   		var ot_name = og.objectTypes[ot].name+"s";
 	   		
 	   		if(typeof tmp_ot[ot_name] == "undefined"){

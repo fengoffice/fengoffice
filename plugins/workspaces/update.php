@@ -125,3 +125,11 @@
 			ON DUPLICATE KEY UPDATE `value`=`value`;
 		");
 	}
+	
+	function workspaces_update_13_14() {
+		if (Plugins::instance()->isActivePlugin('advanced_reports')) {
+			Env::useHelper('default_member_reports', 'advanced_reports');
+		
+			create_default_member_report('workspace');
+		}
+	}

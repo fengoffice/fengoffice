@@ -509,7 +509,7 @@
 			name: '" . $name . "',
 			emptyText: '" . date_format_tip($date_format) . "',
 			id: '" . $id . "',".
-			(isset($tabindex) ? "tabIndex: '$tabindex'," : "").
+			(isset($tabindex) && !is_null($tabindex) ? "tabIndex: '$tabindex'," : "").
 			"value: '" . $dateValue . "'});
 	</script>
 	";
@@ -852,3 +852,26 @@
   	 
   	return $html;
   }
+  
+  
+  function get_custom_property_type_selector_html($attributes) {
+  	
+  	$sel_type = array_var($attributes, 'sel_type', 'text');
+  	$name_prefix = array_var($attributes, 'name_prefix');
+  	$name = array_var($attributes, 'name', 'type');
+  	if (!isset($attributes['onchange'])) $attributes['onchange'] = "og.customPropTypeChanged(this);";
+  	
+  	$cp_types = array('text', 'numeric', 'boolean', 'contact', 'user', 'date', 'list', 'memo', 'address', 'table');
+  	
+  	$options = array();
+  	foreach ($cp_types as $t) {
+  		$attr = $t == $sel_type ? array('selected' => 'selected') : null;
+  		$options[] = option_tag(lang($t), $t, $attr);
+  	}
+  	
+  	$cp_types_html = select_box($name_prefix.'['.$name.']', $options, $attributes);
+  	
+  	return $cp_types_html;
+  }
+  
+  

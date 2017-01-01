@@ -149,4 +149,6 @@
 	'failed to authenticate email account' => 'No se pudo autenticar la cuenta de correo',
 	'failed to authenticate email account desc' => 'La cuenta "{0}" no se pudo autenticar para enviar notificaciones. Por favor asegúrese de que la contraseña de la cuenta sea la correcta.',
 	'must choose at least one workspace error' => 'Debe elegir al menos un espacio de trabajo donde colocar el objeto.',
+		
+	'you cant add member without security permissions' => 'No se puede agregar {0} sin especificar su ubicación porque usted no puede asignar permisos. Por favor seleccione donde ubicar {0} para que los permisos puedan ser heredados.',
 );

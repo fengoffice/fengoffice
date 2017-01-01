@@ -168,7 +168,7 @@
 	'confirm delete permanently' => '{0} ögesini kalıcı olarak silmek istediğinize emin misiniz?',
 	'report as spam' => 'Önemsiz Posta Olarak İşaretle',
 	'not spam' => 'Önemsiz Posta Değil',
-	'mark as unread' => 'Okunmadı Olarak İşaretle',
+	'mark as unread' => 'Okunmamış olarak işaretle',
 	'activate' => 'Etkinleştir',
 	'disabled' => 'Devre Dışı Bırak',
 	'restore user' => 'Kullanıcıyı geri yükle',
@@ -180,4 +180,7 @@
 	'recent activities to show lines' => 'satır',
 	'views and downloads' => 'Bakma ve indirmeler görüntülensin',
 	'confirm delete permanently sync' => 'Eşitleme verilerini silmek istediğinize emin misiniz?',
+	'dont filter' => 'Süzülmesin',
+	'select all' => 'Tümünü Seç',
+	'year' => 'Yıl',
 ); ?>

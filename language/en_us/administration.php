@@ -6,7 +6,7 @@
     //  Administration tools
     // ---------------------------------------------------
     
-    'administration tool name test_mail_settings' => 'Test mail settings',
+    'administration tool name test_mail_settings' => 'Test outgoing mail settings',
     'administration tool desc test_mail_settings' => 'Use this simple tool to send test emails to check if Feng Office mailer is well configured',
     'administration tool name mass_mailer' => 'Mass mailer',
     'administration tool desc mass_mailer' => 'Simple tool that let you send plain text messages to any group of users registered to the system',
@@ -15,7 +15,7 @@
     //  Configuration categories and options
     // ---------------------------------------------------
   
-    'configuration' => 'Configuration',
+    'configuration' => 'General configuration',
     
     'mail transport mail()' => 'Default PHP settings',
     'mail transport smtp' => 'SMTP server',
@@ -30,7 +30,7 @@
     // Categories
     'config category name general' => 'General',
     'config category desc general' => 'General Feng Office settings.',
-    'config category name mailing' => 'Mailing',
+    'config category name mailing' => 'Notifications',
     'config category desc mailing' => 'Use these settings to set up how Feng Office should handle email sending. You can use configuration options provided in your php.ini or set it so it uses any other SMTP server.',
     'config category name modules' => 'Modules',
     'config category desc modules' => 'Use these settings to enable or disable Feng Office modules. Disabling a module only hides it from the graphical interface. It doesn\'t remove permissions from users to create or edit content objects.',
@@ -135,6 +135,8 @@
   	'config option desc check_spam_in_subject' => 'Filter all the emails that contain the word "Spam" in the subject',
     'config option name show images in document notifications' => 'Attach images in document notifications',
     'config option desc show images in document notifications' => 'If the document is an image, it is attached in the content of the notification.',
+    'config option name show company logo in notifications' => 'Attach company logo in notifications',
+    'config option desc show company logo in notifications' => 'The company logo is attached in the content of the notification.',
     'config option name notification_recipients_field' => 'Notification recipients email field',
     'config option desc notification_recipients_field' => 'Select if the recipients for each notifications will be put in the "To" field, in "CC" field or in "BCC" field (by using this last one the recipients will not see each other in the mail header).',
   	'config option name check_unique_mail_contact_comp' => 'Check email unicity between contacts and companies',
@@ -203,6 +205,7 @@
   	'config option desc brand_colors_head_back' => '',
   	'config option name brand_colors_head_font' => 'Header font color',
   	'config option desc brand_colors_head_font' => '',
+	'config option name brand_colors_texture' => 'Use texture on colors',
   		
   	'notify myself too' => 'Include myself in automatic notifications',
   	
@@ -223,6 +226,7 @@
     'user ws config category name calendar panel' => 'Calendar options',
     'user ws config category name mails panel' => 'Email options',
 	'user ws config category name listing preferences' => 'Listing options',
+	'user ws config category name reporting' => 'Report options',
     'user config option name show pending tasks widget' => 'Show pending tasks widget',
     'user config option name pending tasks widget assigned to filter' => 'Show tasks assigned to',
     'user config option name show late tasks and milestones widget' => 'Show late tasks and milestones widget',
@@ -386,6 +390,7 @@
 	'object type not supported' => 'This object type is not supported for templates',
   	'assign template to workspace' => 'Assign template to workspace',
   	'parameters' => 'Parameters',
+  	'success instatiate template' => 'Template \'{0}\' successfully instantiated',
   
   	'cron events' => 'Cron events',
   	'about cron events' => 'Learn about cron events...',
@@ -810,6 +815,7 @@
     'can manage security' => 'Can manage security configuration (users, groups and permissions)',
     'can manage configuration' => 'Can manage configuration, owner company data, tabs, logos and colors',
     'can manage templates' => 'Can manage task templates',
+	'can_instantiate_templates' => 'Can use task templates',
     'can manage time' => 'Can manage timeslots',
     'can add mail accounts' => 'Can add mail accounts',
     'can_manage_dimensions'=>'Can manage dimensions',
@@ -821,10 +827,11 @@
     'can_manage_security description' => 'If this permission is checked the user will be able to create, update and delete users and groups, and modify their permissions.',
     'can_manage_configuration description' => 'If this permission is checked the user will be able to edit application configuration, information on the owner company , cron events, application upgrades, the logo shown in the upper left corner of the application and the brand colours.',
     'can_manage_templates description' => 'If this permission is checked the user will be able to create, update and delete Templates. All users with permissions on the task module will be able to use these templates.',
+	'can_instantiate_templates description' => 'If this permission is checked the user will be able to instantiate Templates.',
     'can_manage_time description' => 'If this permission is checked the user will have full permissions over timeslots, being able to edit them even when the have not been created by himself.',
     'can_add_mail_accounts description' => 'If this permission is checked the user will be able to add email accounts for himself or for other users. ',
     'can_manage_dimensions description'=>'If this permission is checked the user will have full permissions over dimensions. He will be able to create new dimensions and change their configuration. This is an advanced administrative feature.',
-    'can_manage_dimension_members description' => 'If this permission is checked the user will have full permissions over dimension members. He will be able to create, edit and delete new members. In practice, a member could be a workspace, project, client, etc.',
+    'can_manage_dimension_members description' => 'If this permission is checked the user will have full permissions over dimension members. He will be able to create, edit and delete new members. In practice, a member could be a workspace, project, client, etc. If user does not manage security configuration then when creating a client/project/workspace it will be mandatory to select where is located, so the permissions can be inherited.',
     'can_manage_tasks description' => 'If this permission is checked the user will have full permissions over tasks. He will be able to assign tasks to other users and complete them.',
 	'can_see_assigned_to_other_tasks description'=>'If enabled then the user will be able to see tasks that are not assigned to him/her.',
   	'can_update_other_users_invitations description' => 'If enabled then the user will be able to change the status of other users event invitations.',
@@ -848,9 +855,30 @@
 	'user config option name attach_to_notification' => 'Attach documents to notifications',
 	'user config option desc attach_to_notification' => 'When enabled, by default, the option to send the document within the notifications is checked.',
   		
+  	'user config option name tasksUseDateFilters' => 'Use task date filters',
+  	'user config option desc tasksUseDateFilters' => 'If enabled then you will be able to filter tasks list using a date range.',
+  		
+  	'user config option name report_time_colums_display' => 'Time column format',
+  	'user config option desc report_time_colums_display' => 'If friendly format is selected then the time columns will be shown in a descriptive mode (e.g.: 2 hours, 15 minutes). If not then they will show the amount of minutes or seconds',
+  		
 	'member custom properties' => 'Dimension custom properties',
 	'select member type' => 'Select type',
   		
+  		'object custom properties' => 'Object custom properties',
+  		'custom properties for' => 'Custom properties for {0}',
+  		'default value' => 'Default value',
+  		'list values comma separated' => 'List values (comma separated)',
+  		'cp list values hint' => 'Only for list properties.',
+  		'is required' => 'Is required',
+  		'is multiple' => 'Multiple values',
+  		'show in main tab' => 'Show in main tab',
+		'numeric' => 'Numeric',
+		'boolean' => 'Boolean',
+		'list' => 'List',
+		'memo' => 'Large text',
+  		'add new custom property' => 'Add new custom property for {0}',
+  		'custom property name empty'=> 'Custom property names cannot be empty',
+  		'custom properties reorder help' => 'The defined properties can be reordered by dragging (click and hold property number) and dropping it in the desired order.',
   		
   		'invalid parent member' => 'Cannot save \'{0}\' under \'{1}\'',
       
@@ -871,6 +899,39 @@
   		'default name' => 'Default name',
   		'custom name' => 'Custom name',
   		'custom name placeholder' => 'Type here to define a custom name',
+  		
+  		
+  		'billing and invoicing' => 'Billing and Invoicing',
+  		'billing categories description' => 'In this section you can define the billing rates for persons.',
+  		'income config general' => 'General invoicing configuration',
+  		'income general config description' => 'General options for invoicing configuration.',
+  		'invoice copies' => 'Invoice copies',
+  		'copies config description' => 'Add, edit and delete invoice copy definitions',
+  		'invoice types' => 'Invoice types',
+  		'invoice types config description' => 'Manage the invoice types for your organization.',
+  		'invoice notebooks' => 'Invoice notebooks',
+  		'invoice notebooks config description' => 'Manage the invoice notebooks used in your organization.',
+  		'taxes' => 'Taxes',
+  		'taxes config description' => 'Manage the taxes that will be included in invoices',
+  		'invoice logo' => 'Invoice logo',
+  		'invoice logo config description' => 'Edit the logo to include in invoices',
+
+  		'config category name mail module' => 'Email module',
+  		'config category desc mail module' => 'General configurations of email module',
+
+  		'default value must be numeric' => 'Default value for {0} must be numeric.',
+  		'default value must be date' => 'Default value for {0} must be a date.',
+
+  		
+  		'dimension association options' => 'Dimension association options',
+  		'dimension association options desc' => 'In this section you can change the options of each association between dimensions.',
+  		'associated to' => 'Associated to',
+  		'option' => 'Option',
+  		'dim assoc config name allow_remove_from_property_member' => 'Allow to remove related {1}',
+  		'dim assoc config desc allow_remove_from_property_member' => 'When auto-classification of {1} is enabled for {0} you can set if this classification can be removed or not.',
+  		'dim assoc config name autoclassify_in_property_member' => 'Autoclassify in {1} when classifying in {0}',
+  		'dim assoc config desc autoclassify_in_property_member' => 'Use this option if you want to pre-select the {1} of the selected {0} in the classification component.',
+  		
   ); // array
 
 ?>

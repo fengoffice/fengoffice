@@ -131,7 +131,7 @@ foreach ($all_type_codes as $type_code) {
 <?php 	}
 	}
 	
-	if ($tel_type) {
+	if ($web_type) {
 		foreach ($all_webpages as $webpage) {
 			if ($webpage->getWebTypeId() != $web_type['id']) continue;
 			$any_obj = true;

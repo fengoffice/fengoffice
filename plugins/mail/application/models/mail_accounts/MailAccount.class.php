@@ -89,7 +89,7 @@ class MailAccount extends BaseMailAccount {
 		}else{
 			$max_param = "received_date";
 		}
-		$sql .= "$box_cond AND $max_param = (SELECT max($max_param) FROM `". MailContents::instance()->getTableName() . "` WHERE `account_id` = ". $this->getId(). " AND `state` in (0,1,4) $box_cond) LIMIT 1";
+		$sql .= "$box_cond AND $max_param = (SELECT max($max_param) FROM `". MailContents::instance()->getTableName() . "` WHERE `account_id` = ". $this->getId(). " AND `state` in (0,1,4,5) $box_cond) LIMIT 1";
 		
 		$res = DB::execute($sql);
 		$rows = $res->fetchAll();

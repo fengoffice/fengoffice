@@ -1,7 +1,7 @@
 <?php return array(
 	'upgrade' => 'Mise à jour',
-	'upgrade from' => 'Mise à jour depuis ',
-	'upgrade to' => 'Mise à jour vers ',
+	'upgrade from' => 'Mise à jour depuis',
+	'upgrade to' => 'Mise à jour vers',
 	'already upgraded' => 'Vous disposez de la toute dernière version.',
 	'back to fengoffice' => 'Retour à FENG OFFICE',
 	'all rights reserved' => 'Tous droits réservés',

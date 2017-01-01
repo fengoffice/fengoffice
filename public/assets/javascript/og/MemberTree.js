@@ -19,11 +19,12 @@ og.MemberTree = function(config) {
 
 							// Calculate the difference in milliseconds
 							var timeDiff = now.getTime() - this.tbar.history.date.getTime();
-							//convert to hours
-							timeDiff = timeDiff/(1000*60*60);
 							
-							//refresh history after 24 hours
-							if(timeDiff > 24){
+							// convert to minutes
+							timeDiff = timeDiff/(1000*60);
+							
+							// refresh history after 10 minutes
+							if(timeDiff > 10){
 								this.tbar.history = undefined;
 							}						
 						}
@@ -46,10 +47,6 @@ og.MemberTree = function(config) {
 							}							
 						}
 
-						//save the text on the histroy only if we search on the server
-						if(from_server && e.target.value.trim() != ''){
-							this.tbar.history.prevTextFilters.push(e.target.value);
-						}
 
 						this.filterTree(e.target.value, from_server);
 					},
@@ -128,6 +125,7 @@ og.MemberTree = function(config) {
 				var has_relations = false;
 				var ids = [];
 				for (var i=0; i<e.data.selections.length; i++) {
+					if (isNaN(e.data.selections[i].data.object_id)) continue;
 					ids.push(e.data.selections[i].data.object_id);
 					if (!has_relations) {
 						var mpath = Ext.util.JSON.decode(e.data.selections[i].data.memPath);
@@ -157,7 +155,10 @@ og.MemberTree = function(config) {
 				}
 				this.selectionHasAttachments = selectionHasAttachments;
 
-				if (e.data.selections[0] && og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][e.data.selections[0].data.ot_id] &&
+				if (e.data.selections[0] && e.data.selections[0].data && e.target && 
+						og.dimension_object_type_contents[config.dimensionId] &&
+						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id] &&
+						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][e.data.selections[0].data.ot_id] &&
 						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][e.data.selections[0].data.ot_id].multiple) {
 					
 					if (og.preferences['drag_drop_prompt'] == 'prompt') {
@@ -280,6 +281,12 @@ og.MemberTree = function(config) {
 	    				}
 	    			}
 	    		});
+	        }else{
+	        	//ensure show childs
+	        	for (var i = 0 ; i < node.childNodes.length ; i++) {
+						var child = node.childNodes[i];
+						child.getUI().show();
+				}
 	        }
 			
 		},
@@ -288,10 +295,6 @@ og.MemberTree = function(config) {
 				return;
 			}
 			
-			//clear search filter
-			//this.clearFilter();
-			//$("#" + this.id + '-textfilter').val("");
-						
 			og.contextManager.currentDimension = self.dimensionId ;
 			og.eventManager.fireEvent("member tree node click", node);
 			var treeConf = node.attributes.loader.ownerTree.initialConfig ;
@@ -375,6 +378,12 @@ og.MemberTree = function(config) {
 		    				dimension_tree.innerCt.unmask();    						    				
 		    			}
 		    		});
+		        }else{
+		        	//ensure show childs
+		        	for (var i = 0 ; i < node.childNodes.length ; i++) {
+							var child = node.childNodes[i];
+							child.getUI().show();
+					}
 		        }		        		       				
 			}
 		},
@@ -441,7 +450,13 @@ og.MemberTree = function(config) {
 							trees.each(function (item, index, length){
 								var must_reload = false;
 								if (self.reloadDimensions && self.reloadDimensions[node.object_type_id]) {
-									if (self.reloadDimensions[node.object_type_id].indexOf(item.dimensionId) != -1) must_reload = true;
+									for (var k=0; k<self.reloadDimensions[node.object_type_id].length; k++) {
+										var reload_dim_id = parseInt(self.reloadDimensions[node.object_type_id][k]);
+										if (reload_dim_id == parseInt(item.dimensionId)) {
+											must_reload = true;
+											break;
+										}
+									}
 								}
 								
 								if ( self.id != item.id  && (!item.hidden ||item.reloadHidden) && (must_reload || item.is_filtered_by)) {
@@ -465,7 +480,7 @@ og.MemberTree = function(config) {
 									
 									// register that this tree has been filtered, so if any other node is selected this has to be reloaded despite of having no associations with selected member.  
 									item.is_filtered_by = must_reload;
-								}								
+								}
 							});
 							
 							if (this.totalFilterTrees == 0 ) {
@@ -538,13 +553,29 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 			if(from_server){
 				//search on server
 				this.innerCt.mask();
-				og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {dimension_id:this.id.replace("dimension-panel-", ""),query:Ext.escapeRe(text.toLowerCase())}), {
+				// if there is an active search request it must be cancelled
+				/*if (og.last_search_request_id && Ext.Ajax.isLoading(og.last_search_request_id)) {
+					Ext.Ajax.abort(og.last_search_request_id);
+				}*/
+				
+				var d = new Date();
+				this.tbar.last_search_time = d.getTime();
+				
+				og.last_search_request_id = og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {
+					dimension_id: this.id.replace("dimension-panel-", ""),
+					query: Ext.escapeRe(text.toLowerCase()),
+					time: d.getTime()
+				}), {
 	    			hideLoading:true, 
 	    			hideErrors:true,
 	    			callback: function(success, data){
 	    				if(success){
 		    				var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension_id);
-		    				    	
+		    				// don't process response if it isn't the last one
+		    				if (dimension_tree.tbar.last_search_time != data.time) {
+		    					dimension_tree.innerCt.unmask();
+		    					return;
+		    				}
 		    				//add nodes to tree
 		    				dimension_tree.addMembersToTree(data.members, data.dimension_id);
 		    								
@@ -553,6 +584,14 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    				//get the text from the filter
 		    				var search_text = dimension_tree.getTopToolbar().items.get(dimension_tree.id + '-textfilter').el.getValue();
 		    				re_search_text = new RegExp(Ext.escapeRe(search_text.toLowerCase()), 'i');
+		    				
+		    				//add the last search criteria to the search history
+		    				if(data.query && data.query.trim() != ''){
+		    					if(dimension_tree.tbar.history == undefined){
+		    						dimension_tree.tbar.history = {prevTextFilters: [], date: new Date()};
+								}
+		    					dimension_tree.tbar.history.prevTextFilters.push(data.query);
+							}
 
 		    				//filter the tree
 		    				dimension_tree.filterNode(dimension_tree.getRootNode(), re_search_text);
@@ -713,8 +752,13 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 						trees.each(function (item, index, length){
 							for (ot in dimensions_to_reload) {
 								var dims_array = dimensions_to_reload[ot];
-								if (dims_array.indexOf(item.dimensionId) != -1) {
-									item.disableReloadOtherDimensions = true;
+								
+								for (var k=0; k<dims_array.length; k++) {
+									var reload_dim_id = parseInt(dims_array[k]);
+									if (reload_dim_id == parseInt(item.dimensionId)) {
+										item.disableReloadOtherDimensions = true;
+										break;
+									}
 								}
 							}
 						});
@@ -765,18 +809,29 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 
 		tree.expandMode = "root";
 		
+		// reset search cache
+		tree.getTopToolbar().container.history = undefined;
+		
 		//this.collapseAll() ;
 		
 		this.loader =  new og.MemberChooserTreeLoader({
 			dataUrl: 'index.php?c=dimension&a=initial_list_dimension_members_tree_root&ajax=true&dimension_id='+this.dimensionId+'&selected_ids='+ Ext.util.JSON.encode(memberIds) +'&avoid_session=1',	
 			ownerTree: this
 		});
-		this.loader.load(this.getRootNode(), function() {
+		this.loader.load(this.getRootNode(), function(loader, node, response_object) {
 			tree.init(
 				function() {
+					var was_filtered = true;
+					if (response_object && response_object.list_was_filtered_by) {
+						if (response_object.list_was_filtered_by.length==0) {
+							was_filtered = false;
+						}
+					}
+					// dont expand if the list was filtered by an associated dimension
+					var expand = response_object && !(response_object.list_was_filtered_by && response_object.list_was_filtered_by.length > 0);
 					
 					// expand filtered nodes
-					if (nodeClicked.getDepth() > 0) {
+					if (nodeClicked.getDepth() > 0 && expand) {
 						og.expandAllChildNodes(tree.getRootNode());
 					}
 					
@@ -826,12 +881,15 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 				dimension_tree.suspendEvents();
 				if (node_parent) node_parent.appendChild(new_node);
 				dimension_tree.resumeEvents();
-			}else{				
+			}else{
 				if (node_parent){
-					//node_exist.setText(new_node.text);
-				/*	node_parent.removeChild(node_exist);
-					node_parent.appendChild(new_node);*/								
-				}							
+					// replace existing node with the one that comes from server
+					dimension_tree.suspendEvents();
+					node_parent.removeChild(node_exist);
+					node_parent.appendChild(new_node);
+					node_parent.expand();
+					dimension_tree.resumeEvents();
+				}
 			}
 		}
 	},
@@ -841,7 +899,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		var n = this.getNodeById(member_id);
 		if (n) {
 			if (n.parentNode) this.expandPath(n.parentNode.getPath(), false);
-			n.select();
+			if (n.getOwnerTree()) n.select();
 			og.eventManager.fireEvent('member tree node click', n);
 		}else {
 			this.innerCt.mask();
@@ -861,9 +919,12 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 							dimension_tree.suspendEvents();
 							if (n.parentNode) dimension_tree.expandPath(n.parentNode.getPath(), false);
 							dimension_tree.resumeEvents();
-							n.select();
+							if (n.getOwnerTree()) n.select();
 							og.eventManager.fireEvent('member tree node click', n);
 						}
+						
+						// ensure that first level nodes are ordered after the insertion
+						dimension_tree.root.sort(og.sortNodesFn);
 					}
 				}
 			});
@@ -882,8 +943,9 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 	if(member.parent == 0){
 		node_parent = dimension_tree.root;
 	}
-		
-	member.leaf = false;
+	
+	member.leaf = !member.expandable;
+	
 	member.text = member.name;
 	var new_node = dimension_tree.loader.createNode(member);
 		    												
@@ -918,5 +980,13 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 		og.eventManager.fireEvent('member tree node click', new_node);
 	}
 	new_node.expand();
+	
+	// ensure that first level nodes are ordered after the insertion
+	dimension_tree.root.sort(og.sortNodesFn);
 }
 
+og.sortNodesFn = function(node1, node2) {
+	if (node1 && node2) {
+		return node1.text.toLowerCase().localeCompare(node2.text.toLowerCase());
+	}
+}

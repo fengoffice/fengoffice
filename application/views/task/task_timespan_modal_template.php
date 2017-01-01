@@ -1,14 +1,16 @@
 <script id="task-timespan-template" type="text/x-handlebars-template"> 
 <div id="task-timespan-modal{{genid}}" class="modal-container" style="background-color: white;padding: 10px;">
+
 <form id="task-timespan-modal-form{{genid}}" style="min-width: 340px;">
-	<div style="display: inline-block;" id="og_1412688898_673035addwork">
+	<div style="display: inline-block; width:100%;" id="{{genid}}addwork">
 		<input type="hidden" value="{{taskId}}" name="object_id">
-	<!--<div style="float:left;margin-left:10px;">
-			<label for="og_1412688898_673035closeTimeslotDescription">Person:</label>
-			<select name="timeslot[contact_id]" tabindex="60" id="og_1412688898_673035tsUser">
+
+		<div style="margin-bottom:10px;display:none;" id="{{genid}}tsUserContainer">
+			<label for="{{genid}}closeTimeslotDescription">{{lang 'person'}}:</label>
+			<select name="timeslot[contact_id]" tabindex="60" id="{{genid}}tsUser">
 			</select>
 		</div>
-	-->
+	
 		{{#if showDesc}}
 		<div>
 			<label>{{lang 'description'}}:</label>
@@ -35,8 +37,8 @@
 			</div>
 		</div>
 
-		<div style="float:right;width:70px;margin-left:10px;clear: left;">
-			<button class="submit" tabindex="90" style="">Add</button>
+		<div style="float:right;margin-left:10px;clear: left;">
+			<button class="submit blue" tabindex="90" style="">{{lang 'add timeslot'}}</button>
 		</div>
 	</div>
 </form>	
@@ -56,7 +58,7 @@
 		</div>		
 
 		<div style="float:right;width:70px;margin-left:10px;">
-			<button class="submit" tabindex="90" style="">Add</button>
+			<button class="submit blue" tabindex="90" style="">{{lang 'add'}}</button>
 		</div>
 	</div>
 </form>	

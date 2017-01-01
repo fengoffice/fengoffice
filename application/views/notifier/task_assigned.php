@@ -6,7 +6,7 @@
                 if (isset($attachments['logo']) && is_array($attachments['logo']) || file_exists(ROOT . '/tmp/logo_empresa.png')){
                 ?>
 <!--                    <img src="cid:<?php echo $attachments['logo']['cid']?>"/>-->
-                    <img style="max-height: 50px;max-width: 70px;" src="<?php echo ROOT_URL . '/tmp/logo_empresa.png' ?>"/>
+                    <img style="max-height: 50px;max-width: 50px;" src="<?php echo ROOT_URL . '/tmp/logo_empresa.png' ?>"/>
                 <?php 
                     unset($attachments['logo']);
                 }else{  

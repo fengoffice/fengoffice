@@ -1,0 +1,34 @@
+/*.data-container{
+	border-color: #ddd;
+    border-width: 1px;
+    border-radius: 4px 4px 0 0;
+    border-style: solid;
+    padding: 15px 15px;
+}*/
+
+.data-container table{
+	width: 100%;
+ 	max-width: 100%; 	
+}
+
+.data-container th {
+  text-align: left;
+}
+
+.data-container table > thead > tr > th,
+.data-container table > tbody > tr > th,
+.data-container table > tfoot > tr > th,
+.data-container table > thead > tr > td,
+.data-container table > tbody > tr > td,
+.data-container table > tfoot > tr > td {
+  padding: 8px;
+  line-height: 1.42857143;
+  vertical-align: top;
+  border-top: 1px solid #dddddd;
+}
+.data-container table > thead > tr > th {
+  vertical-align: bottom;
+  border-bottom: 2px solid #dddddd;
+  font-weight: bold;
+  font-size: 14px;
+}

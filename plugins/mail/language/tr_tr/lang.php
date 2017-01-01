@@ -17,4 +17,7 @@
 	'user config option name check_is_defult_account' => 'E-postaların gönderileceği hesabı denetle',
 	'user config option desc check_is_defult_account' => 'E-posta gönderilecek hesabın varsayılan hesap  olup olmadığını denetler ve değilse kullanıcıya bildirir',
 	'classify attachments' => 'Ekleri Sınıflandır',
+	'mails' => 'Postalar',
+	'config option name use_mail_accounts_to_send_nots' => 'Bildirimler göndericinin e-posta hesabından gönderilsin',
+	'config option desc use_mail_accounts_to_send_nots' => 'Bu seçenek etkinleştirildiğinde ve gönderici bir e-posta hesabı tanımladığında bu kullanıcının bildirimleri bu e-posta hesabı kullanılarak gönderilir.',
 ); ?>

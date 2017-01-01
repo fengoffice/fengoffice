@@ -10,6 +10,9 @@
 	$dim_count = 0;
 	$members_dimension = array();
 	$sel_mem_ids = array();
+	
+	$original_options = $options;
+	
 	foreach ($dimensions as $dimension) :
 	
 		$dimension_id = $dimension['dimension_id'];
@@ -20,6 +23,11 @@
 		}
 
 		if (!array_var($options, 'allow_non_manageable') && !$dimension['is_manageable']) continue;
+		
+		$options = $original_options;
+		if (!isset($options['is_multiple'])) {
+			$options['is_multiple'] = array_var($dimension, 'is_multiple');
+		}
 		
 		$is_required = array_var($dimension, 'is_required');
 		$dimension_name = array_var($dimension, 'dimension_name');
@@ -64,6 +72,14 @@
 	if (!member_selector['<?php echo $genid; ?>'].properties) member_selector['<?php echo $genid; ?>'].properties = {};
 	member_selector['<?php echo $genid; ?>'].hiddenFieldName = '<?php echo $hidden_field_name; ?>';
 	member_selector['<?php echo $genid; ?>'].otid = '<?php echo $content_object_type_id; ?>';
+	
+	<?php if (isset($dont_filter_this_selector)) { ?>
+	member_selector['<?php echo $genid; ?>'].dontFilterThisSelector = <?php echo $dont_filter_this_selector ? '1' : '0'?>,
+	<?php } ?>
+
+	<?php if (isset($default_selection_checkboxes)) { ?>
+	member_selector['<?php echo $genid; ?>'].defaultSelectionCheckboxes = <?php echo $default_selection_checkboxes ? '1' : '0'?>,
+	<?php } ?>
 	<?php
 	
 	$listeners_str = "{";
@@ -72,6 +88,13 @@
 	}
 	if (str_ends_with($listeners_str, ",")) $listeners_str = substr($listeners_str, 0, -1);
 	$listeners_str .= "}";
+	
+	if (defined('JSON_NUMERIC_CHECK')) {
+		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
+	} else {
+		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
+	}
+	
 	?>
 
 	member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'] = {
@@ -79,7 +102,7 @@
 		dimensionId: <?php echo $dimension_id ?>,
 		objectTypeId: '<?php echo $content_object_type_id ?>',
 		required: <?php echo $is_required ? '1' : '0'?>,
-		reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK ); ?>,
+		reloadDimensions: <?php echo $reloadDimensions ?>,
 		isMultiple: <?php echo $dimension['is_multiple'] ? '1' : '0'?>,
 		allowedMemberTypes: <?php echo json_encode($allowed_member_type_ids)?>,
 		listeners: <?php echo $listeners_str ?>
@@ -104,7 +127,7 @@
 	}
 ?>
 </div>
-
+<div class="clear"></div>
 <script>
 <?php if ($dim_count > 0) { ?>
 member_selector['<?php echo $genid; ?>'].members_dimension = Ext.util.JSON.decode('<?php echo json_encode($members_dimension)?>');

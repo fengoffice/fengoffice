@@ -670,4 +670,6 @@
 	'cannot delete file' => '\'{0}\' dosyasını silme izniniz yok',
 	'unknown' => 'Bilinmeyen',
 	'log read company' => '\'{0}\' okundu',
+	'all previous tasks have been completed' => '\'{0}\' için önceki tüm görevler tamamlanmış',
+	'task x can be started' => 'Önceki tüm görevler tamamlanmış. Şimdi \'{0}\' görevi başlatılabilir.',
 ); ?>

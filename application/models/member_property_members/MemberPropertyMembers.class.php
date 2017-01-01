@@ -28,7 +28,7 @@
     
     static function getAllPropertyMemberIds($association_id, $member_id, $is_active = true){
     	$sql = "SELECT DISTINCT (`property_member_id`) FROM `".TABLE_PREFIX."member_property_members` WHERE 
-    		`association_id` = $association_id AND `member_id` = $member_id AND `is_active` = $is_active";
+    		`association_id` = $association_id AND `member_id` IN ($member_id) AND `is_active` = $is_active";
     	
     	$result = DB::execute($sql);
     	$rows = $result->fetchAll();
@@ -46,7 +46,7 @@
     
      static function getAllMemberIds($association_id, $property_member_id, $is_active = true){
     	$sql = "SELECT DISTINCT (`member_id`) FROM `".TABLE_PREFIX."member_property_members` WHERE 
-    		`association_id` = $association_id AND `property_member_id` = $property_member_id AND `is_active` = $is_active";
+    		`association_id` = $association_id AND `property_member_id` IN ($property_member_id) AND `is_active` = $is_active";
     	
     	$result = DB::execute($sql);
     	$rows = $result->fetchAll();

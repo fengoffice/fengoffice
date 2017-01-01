@@ -284,6 +284,8 @@ return array(
 	'is_user' => 'Is user',
 	'field Objects is_user' => 'Is user',
 	'field Contacts is_user' => 'Is user',
+		
+	'field ProjectTasks total_worked_time' => 'Total worked time', 
 
 	'home_phone' => 'Home phone',
 	'work_phone' => 'Work phone',

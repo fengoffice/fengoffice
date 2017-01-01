@@ -269,6 +269,21 @@
 	}
 	
 	
+	og.adjustAllDayEventsHeight = function(genid) {
+		var h = $("#allDayGrid").outerHeight() - 31;
+		for (var dow=0; dow<5; dow++) {
+			$("#"+ genid +"view_calendar #alldayeventowner_"+dow).css('height', h+'px');
+			
+			var real_h = document.getElementById("alldayeventowner_"+dow).scrollHeight;
+			if (h < real_h) {
+				$("#all_ev_show_more_link_"+dow).css('visibility', 'visible');
+			} else {
+				$("#all_ev_show_more_link_"+dow).css('visibility', 'hidden');
+			}
+		}
+	}
+	
+	
 	og.setResizableEvent = function(div_id, ev_id, w_day) {
 		var resizer = new Ext.Resizable(div_id, {
 		    adjustments: [0,-4],

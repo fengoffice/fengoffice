@@ -9,7 +9,7 @@
 //*		Draw add new task form
 //************************************
 
-ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
+ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload){
 	var additionalParams = {};
 	var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 	if (toolbar.filterNamesCompaniesCombo.isVisible()){
@@ -21,6 +21,9 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
 	if (parent_id > 0)
 		additionalParams.parent_id = parent_id;
 	
+	if (reload > 0)
+		additionalParams.reload = 1;
+
 	og.render_modal_form('', {c:'task', a:'add_task', params: additionalParams});
 	return;
 	
@@ -143,7 +146,7 @@ ogTasks.checkEnterPress = function (e,id)
 
 ogTasks.drawAddNewTaskFromData = function(container_id){
 	var task = {
-		name:'lala'
+		name:''
 	};
 	$("#"+container_id+" :input").each(function(){
 		var input = $(this);

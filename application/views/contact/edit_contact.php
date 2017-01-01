@@ -20,13 +20,14 @@
 		$on_submit = "og.ogPermPrepareSendData('$genid');" . $on_submit;
 	}
 	
-	$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+	$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+	$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
 	
 	$categories = array(); Hook::fire('object_edit_categories', $object, $categories);
 	
-	$add_contact_lang = lang('add contact');
-	$new_contact_lang = lang('new contact');
-	$edit_contact_lang = lang('edit contact');
+	$add_contact_lang = $object->getSubmitButtonFormTitle();
+	$new_contact_lang = $object->getAddEditFormTitle();
+	$edit_contact_lang = $object->getAddEditFormTitle();
 	if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0) {
 		$add_contact_lang = lang('add user');
 		$new_contact_lang = lang('new user');
@@ -99,7 +100,7 @@
 				<?php } ?>
 			<?php } ?>
 			
-			<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 			<li><a id="<?php echo $genid?>add_custom_properties_div_tab" href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
@@ -111,7 +112,9 @@
 			<li><a id="<?php echo $genid?>add_linked_objects_div_tab" href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 			<?php } ?>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a id="<?php echo $genid . $category['id']?>_tab" href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 	</ul>
@@ -264,8 +267,14 @@
 	
 	<?php
 	//Basic contact data tab
-	render_contact_data_tab($genid, $object, $renderContext, $contact_data);
+	render_contact_data_tab($genid, $object, $renderContext, $contact_data, $main_cp_count);
 	?>
+	
+	<div class="main-custom-properties-div"><?php
+		if ($main_cp_count) {
+		//	echo render_object_custom_properties($object, false, null, 'visible_by_default');
+		}
+	?></div>
 	
 	
 	<div class="contact_form_container form-tab" id="<?php echo $genid?>additional_data">
@@ -333,12 +342,15 @@
 			</div>
 		</div>
 		<?php } ?>
+		
+		
+		<?php $null = null; Hook::fire('render_additional_user_data_fields', $contact, $null); ?>
 	</div>
 	
 	
-	<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-	<div id='<?php echo $genid ?>add_custom_properties_div' class="form-tab">
-		<?php echo render_object_custom_properties($object, false) ?>
+	<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+	<div id='<?php echo $genid ?>add_custom_properties_div' class="form-tab other-custom-properties-div">
+		<?php echo render_object_custom_properties($object, false, null, 'other') ?>
 		<?php echo render_add_custom_properties($object); ?>
 	</div>
 	<?php } ?>
@@ -354,9 +366,11 @@
 			} else {
 		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
 		<?php } ?>
-		<div id="<?php echo $genid ?>add_subscribers_content">
-		<?php //echo render_add_subscribers($object, $genid); ?>
-		</div>
+		<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 	</div>
 	
 	

@@ -198,6 +198,8 @@ function replicateRepetitiveTaskForCalendar(ProjectTask $task, $from_date, $to_d
 			return array();
 		}
 		
+		$max_iterations = 30; // prevent infinite loop, max query is for monthly calendar
+		
 		$num_repetitions = 0;
 		while ($ref_date->getTimestamp() < $to_date->getTimestamp()) {
 			if ($task->getRepeatBy() == 'start_date' && !($task->getStartDate() instanceof DateTimeValue)) return $new_task_array;
@@ -278,6 +280,10 @@ function replicateRepetitiveTaskForCalendar(ProjectTask $task, $from_date, $to_d
 
 			$new_task_array[] = $new_task;
 			$task = $new_task;
+			
+			if ($num_repetitions > $max_iterations) {
+				break;
+			}
 		}
 	}
 	return $new_task_array;
@@ -297,6 +303,8 @@ function replicateRepetitiveTaskForCalendarRawTask($task, $from_date, $to_date) 
 		if (($task['repeat_num'] > 0 && $top_repeat_num <= 0) || ($last_repeat instanceof DateTimeValue && $last_repeat->getTimestamp() < $ref_date->getTimestamp())) {
 			return array();
 		}
+		
+		$max_iterations = 30; // prevent infinite loop, max query is for monthly calendar
 		
 		$num_repetitions = 0;
 		while ($ref_date->getTimestamp() < $to_date->getTimestamp()) {
@@ -365,6 +373,10 @@ function replicateRepetitiveTaskForCalendarRawTask($task, $from_date, $to_date) 
 			$new_task_array[] = $new_task;
 			$task = array();
 			foreach ($new_task as $k => $v) $task[$k] = $v;
+			
+			if ($num_repetitions > $max_iterations) {
+				break;
+			}
 		}
 	} else {
 		return array($task);

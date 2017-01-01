@@ -429,6 +429,10 @@
 .report-print-header .title-container {
 	float: left;
 }
+.report-print-header .title-container h1 {
+    font-size: 200%;
+    margin-bottom: 10px;
+}
 .report-print-header .company-info {
 	float: right;
 	font-size: 11px;
@@ -454,4 +458,111 @@
 }
 .report-print-header .company-info .phone-container {
 	float: left;
+}
+
+.reporting-table .member-path, .tasks-report-container .member-path {
+	display: inline-block;
+	margin: 1px 0;
+}
+
+.reportTotalTimeParams .coInputMainBlock label {
+	min-width: 100px;
+	float: none;
+}
+
+
+
+th.report-group-heading-0 {
+    padding-top: 15px;
+    padding-left: 2px;
+}
+th.report-group-heading-1 {
+    padding-top: 10px;
+    padding-left: 15px;
+}
+th.report-group-heading-2, th.report-group-heading-3, th.report-group-heading-4, th.report-group-heading-5 {
+    padding-top: 5px;
+    padding-left: 25px;
+}
+
+
+tr.list-totals-row {
+	background-color: #E5E5E5;
+}
+.report tr.list-totals-row {
+	border: 1px solid #aaa;
+}
+
+tr.list-totals-row.level-0 {
+	background-color: #E0E0E0;
+}
+tr.list-totals-row.level-1 {
+	background-color: #E7E7E7;
+}
+tr.list-totals-row.level-2 {
+	background-color: #EEEEEE;
+}
+
+tr.list-totals-row td {
+	border-top: 1px solid #CCC;
+	border-bottom: 1px solid #CCC;
+	height: 20px;
+	font-weight: bold;
+	text-align: right;
+}
+.report tr.list-totals-row td {
+	padding-right:10px;
+}
+tr.list-totals-row td.textrow, tr.list-totals-row td.x-grid3-td-name {
+	text-align: left;
+}
+tr.list-totals-row.level-0 td.textrow {
+	padding: 8px 2px;
+}
+tr.list-totals-row.level-1 td.textrow {
+	padding: 5px 15px;
+}
+tr.list-totals-row.level-2 td.textrow {
+	padding: 3px 25px;
+}
+tr.list-totals-row.level-0 td, tr.list-totals-row.level-1 td, tr.list-totals-row.level-2 td {
+	vertical-align: middle;
+}
+
+tr.list-totals-row td.x-grid3-td-checker {
+	border-top: 0px none;
+	border-bottom: 0px none;
+}
+tr.list-totals-row div.x-grid3-col-checker, tr.list-totals-row td.x-grid3-td-icon {
+	display: none;
+}
+tr.list-totals-row td.x-grid3-col.x-grid3-cell.x-grid3-td-name {
+    padding-left: 30px;
+}
+
+
+.report-header-button {
+	width: 160px;
+    margin-top: 10px;
+    background-repeat: no-repeat;
+    background-position-y: 2px;
+    background-position-x: 4px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+.report-header-button:hover {
+	opacity: 0.75;
+	filter: 'alpha(opacity=75)';
+}
+
+
+.custom-report-info-block {
+	float: left;
+	margin-right: 20px;
+	margin-bottom: 10px;
+	padding-right: 20px;
+	border-right: 1px dotted #aaa;
+}
+.custom-report-info-block.no-border {
+	border: 0px none;
 }

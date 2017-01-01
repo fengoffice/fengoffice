@@ -4,4 +4,5 @@
 	'all feng_persons' => 'Tout le Monde',
 	'all feng_users' => 'Tous les Utilisateurs',
 	'feng_persons' => 'Personnes',
+	'notify assigned user' => 'Envoyer une notification',
 ); ?>

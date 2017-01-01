@@ -277,7 +277,8 @@ class Localization {
 		$names['F'] = array(-1 => 'n', 1 => lang('month 1'), 2 => lang('month 2'), 3 => lang('month 3'), 4 => lang('month 4'), 5 => lang('month 5'), 6 => lang('month 6'), 7 => lang('month 7'), 8 => lang('month 8'), 9 => lang('month 9'), 10 => lang('month 10'), 11 => lang('month 11'), 12 => lang('month 12') );
 		$names['M'] = array(-1 => 'n');
 		for ($i = 1; $i <= 12; $i++) {
-			$names['M'][$i] = substr_utf($names['F'][$i], 0, 3);
+			$short_lang = Localization::instance()->lang("month $i short");
+			$names['M'][$i] = $short_lang ? $short_lang : substr_utf($names['F'][$i], 0, 3);
 		}
 		
 		$str_date = '';

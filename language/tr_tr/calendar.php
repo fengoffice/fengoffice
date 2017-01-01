@@ -93,7 +93,7 @@
 	'CAL_SELECT_TIME' => 'Başlangıç Saati Seçin',
 	'event invitations' => 'Çağrılmış kişiler',
 	'event invitations desc' => 'Seçilmiş kişileri bu etkinliğe çağır',
-	'send new event notification' => 'E-posta bildirimlerini gönder',
+	'send new event notification' => 'E-posta Bildirimleri Gönderilsin',
 	'new event notification' => 'Yeni etkinlik eklendi',
 	'change event notification' => 'Etkinlik değiştirildi',
 	'deleted event notification' => 'Etkinlik silindi',

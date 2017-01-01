@@ -26,7 +26,7 @@
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($billing->isNew() ? lang('add billing category') : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($billing->isNew() ? lang('add') : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -51,7 +51,7 @@
 	<div class="dataBlock">
 	<?php echo label_tag(lang('description'), $genid . 'billingFormDescription', false) ?>
 	<?php echo textarea_field('billing[description]', array_var($billing_data, 'description'), 
-		array('id' => $genid . 'billingFormDescription', 'class' => 'comment', 'tabindex' => '4')) ?>
+		array('id' => $genid . 'billingFormDescription', 'class' => 'comment', 'tabindex' => '4', 'style'=>'width:71%;')) ?>
 	</div>
 	
 	<?php if (!array_var($_REQUEST, 'modal')) {

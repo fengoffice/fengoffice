@@ -30,21 +30,43 @@ $alt = "";
 						?></div>
 					<?php } // if ?>
 				</div>
-				<?php $alt = ($alt == "" ? " alt" : "")?>
+				<?php $alt = ($alt == "" ? " odd" : "")?>
 			<?php } // if ?>
 		<?php } // foreach ?>
 	<?php } // if ?>
 		
 		<div class="configCategory<?php echo $alt?>" id="category_default_user_preferences">
+			<h2><a class="internalLink" href="<?php echo get_url('administration', 'company') ?>"><?php echo lang('organization data') ?></a></h2>
+			<div class="configCategoryDescription"><?php echo lang('config category desc organization data') ?></div>
+		</div>
+		
+	<?php
+		$more_links = array(); 
+		Hook::fire("general_settings_additional_links", null, $more_links);
+		foreach ($more_links as $link) {
+			$alt = ($alt == "" ? " odd" : ""); 
+		?>
+		<div class="configCategory<?php echo $alt?>" id="category_default_user_preferences">
+			<h2><a class="internalLink" href="<?php echo array_var($link, 'url') ?>"><?php echo array_var($link, 'name') ?></a></h2>
+			<div class="configCategoryDescription"><?php echo array_var($link, 'desc') ?></div>
+		</div>
+	<?php
+		}
+	?>
+		
+		<?php $alt = ($alt == "" ? " odd" : "")?>
+		<div class="configCategory<?php echo $alt?>" id="category_default_user_preferences">
 			<h2><a class="internalLink" href="<?php echo get_url('administration', 'documents') ?>"><?php echo lang('config category name documents') ?></a></h2>
 			<div class="configCategoryDescription"><?php echo lang('config category desc documents') ?></div>
 		</div>
-		<?php $alt = ($alt == "" ? " alt" : "")?>
+		
+		<?php $alt = ($alt == "" ? " odd" : "")?>
 		<div class="configCategory<?php echo $alt?>" id="category_default_user_preferences">
 			<h2><a class="internalLink" href="<?php echo get_url('administration', 'cron_events') ?>"><?php echo lang('cron events') ?></a></h2>
 			<div class="configCategoryDescription"><?php echo lang('cron events info') ?></div>
 		</div>
-		<?php $alt = ($alt == "" ? " alt" : "")?>
+		
+		<?php $alt = ($alt == "" ? " odd" : "")?>
 		<div class="configCategory<?php echo $alt?>" id="category_default_user_preferences">
 			<h2><a class="internalLink" href="<?php echo get_url('config', 'default_user_preferences') ?>"><?php echo lang('default user preferences') ?></a></h2>
 			<div class="configCategoryDescription"><?php echo lang('default user preferences desc') ?></div>

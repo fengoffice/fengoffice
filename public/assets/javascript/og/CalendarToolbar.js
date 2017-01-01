@@ -108,12 +108,12 @@ var markactions = {
 // Toolbar Items
 var topToolbarItems = { 
 	add: new Ext.Action({
+		id: 'new_button_event',
 		text: lang('add event'),
         tooltip: lang('add new event'),
         iconCls: 'ico-new new_button',
+        hidden: og.replace_list_new_action && og.replace_list_new_action.event,
         handler: function() {
-        	/*var date = og.calToolbarDateMenu.picker.getValue();
-			changeView('add', date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);*/
 			og.render_modal_form('', {c:'event', a:'add'});
 		}
 	}),
@@ -284,6 +284,10 @@ og.CalendarTopToolbar = function(config) {
 	og.CalendarTopToolbar.superclass.constructor.call(this, config);
 	
 	if (!og.loggedUser.isGuest) {
+		if (og.replace_list_new_action && og.replace_list_new_action.event) {
+			this.add(og.replace_list_new_action.event);
+		}
+		
 		this.add(topToolbarItems.add);
 		this.addSeparator();
 		this.add(topToolbarItems.edit);

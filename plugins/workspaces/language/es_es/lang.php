@@ -23,4 +23,9 @@
 
 	'workspaces list' => 'Listado de espacios',
 	'tags list' => 'Listado de etiquetas',
+
+	'the workspaces' => 'los espacios de trabajo',
+	'the tags' => 'las etiquetas',
+	'workspace report' => 'Reporte de espacios de trabajo',
+	'tag report' => 'Reporte de etiquetas',
 );

@@ -24,7 +24,9 @@
     	'is_required' => DATA_TYPE_BOOLEAN,
     	'is_multiple_values' => DATA_TYPE_BOOLEAN,
     	'property_order' => DATA_TYPE_INTEGER,
-    	'visible_by_default' => DATA_TYPE_BOOLEAN
+    	'visible_by_default' => DATA_TYPE_BOOLEAN,
+    	'is_special' => DATA_TYPE_BOOLEAN,
+    	'is_disabled' => DATA_TYPE_BOOLEAN,
     );
   
     /**
@@ -33,6 +35,7 @@
     * @return BaseCustomProperties 
     */
     function __construct() {
+      Hook::fire('object_definition', 'CustomProperty', self::$columns);
       parent::__construct('CustomProperty', 'custom_properties', true);
     } // __construct
     

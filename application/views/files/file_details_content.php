@@ -22,7 +22,10 @@
 <?php }
 } ?>
 
-<?php if ($file->isDisplayable()) {?>
+<?php if ($file->isDisplayable()) {
+	$extra_preview_css = array();
+	Hook::fire('html_document_preview_css', $file, $extra_preview_css);
+?>
 <div>
 	<div id="<?php echo $genid?>document-view" style="position: relative; left:0; top: 0; width: 100%; height: 700px; background-color: white">
 		<iframe class="document-preview" style="width:100%;height:100%;border:1px solid #ddd;" src="<?php echo get_sandbox_url("feed", "display_content", array("id" => $file->getId(), "user_id" => logged_user()->getId(), "token" => logged_user()->getTwistedToken())) ?>"></iframe>
@@ -33,6 +36,9 @@
 		$(function(){
 			$("iframe.document-preview").load(function(){
 				$("iframe.document-preview").contents().find("a").attr("target", "_blank");
+				<?php foreach ($extra_preview_css as $css) { ?>
+				$('iframe.document-preview').contents().find('head').append('<?php echo $css?>');
+				<?php } ?>
 			});
 		});
 		
@@ -74,7 +80,8 @@
 <?php }?>
 
 <?php
-   if (strtolower(substr($file->getFilename(), -3)) == 'pdf'){
+	/* @var $last_revision ProjectFileRevision */
+   if (strtolower(substr($file->getFilename(), -3)) == 'pdf' || $last_revision instanceof ProjectFileRevision && $last_revision->getTypeString() == 'application/pdf'){
       echo'<div>';
       if($file->getType() != ProjectFiles::TYPE_WEBLINK){       
         $urlpdf=get_url('files', 'download_image', array('id' => $file->getId(), 'inline' => true, 'modtime' => $modtime));

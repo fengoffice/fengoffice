@@ -45,6 +45,17 @@ class Contact extends BaseContact {
 		else return 'contact';
 	}
 	
+	
+	
+	function getObjectName() {
+		$name = parent::getObjectName();
+		
+		Hook::fire('override_contact_name', array('contact' => $this), $name);
+		
+		return $name;
+	}
+	
+	
 	/**
 	 * Array of email accounts
 	 *
@@ -462,10 +473,13 @@ class Contact extends BaseContact {
 				AND email_address IS NOT NULL
 				AND contact_id = $contact_id
 				$type_condition order by is_main desc LIMIT 1";
+	 	
+	 	$email_address = null;
 		if ($row = DB::executeOne($sql)) {
-			return $row['email_address'];	
-		}				
-		return null;
+			$email_address = $row['email_address'];
+		}
+		Hook::fire('override_contact_email', array('contact' => $this), $email_address);
+		return $email_address;
 	 } 
 	
 	 	 
@@ -578,6 +592,12 @@ class Contact extends BaseContact {
 		$telephone = $this->getPhone($type, $is_main, $check_is_main);
 		$number = is_null($telephone)? '' : $telephone->getNumber();
 		return $number;
+	} // getPhoneNumber
+	
+	function getPhoneName($type, $is_main = false, $check_is_main = true) {
+		$telephone = $this->getPhone($type, $is_main, $check_is_main);
+		$name = is_null($telephone)? '' : $telephone->getName();
+		return $name;
 	} // getPhoneNumber
 
 	function getAllImValues() {
@@ -945,21 +965,16 @@ class Contact extends BaseContact {
 				$errors[] = lang('company name required');
 			} 
 
-			// Esta mal porque ya nbo estan en el modelo... hay que validarlo en el submit del controller.. 
-			/*if($this->validatePresenceOf('homepage')) {
-				$page = trim($this->getHomepage());
-				if (substr_utf($page, 0,7) != "http://" && substr_utf($page, 0,8) != "https://") {
-					$this->setHomepage("http://" . $page);
-				}
-				if(!is_valid_url($this->getHomepage())) {
-					$errors[] = lang('company homepage invalid');
-				} // if
-			} // if*/
 		}
 		else{
 			$fields = array();
 			
-			// Validate username if present
+			// Only for users: Validate if username is present
+			if ($this->getUserType() > 0 && !$this->validatePresenceOf('username')) {
+				$errors[] = lang('username value required');
+				$fields[] = 'username';
+			}
+			// Only for users: Validate uniqueness of username
 			if ($this->getUserType() > 0 && !$this->validateUniquenessOf('username')) {
 				$errors[] = lang('username must be unique');
 				$fields[] = 'username';
@@ -984,12 +999,15 @@ class Contact extends BaseContact {
 					}
 					
 					$conditions = "email_address=".DB::escape($main_email);
-					if (!$this->isNew()) {
-						if (!config_option('check_unique_mail_contact_comp')) {
-							$type_condition = " AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0";
-						}
-						$conditions .= " AND contact_id <> ".$this->getId() . $type_condition;
+					$type_condition = "";
+					if (!config_option('check_unique_mail_contact_comp')) {
+						$type_condition = " AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0";
 					}
+					if (!$this->isNew()) {
+						$conditions .= " AND contact_id <> ".$this->getId();
+					}
+					$conditions .= $type_condition;
+					
 					$em = ContactEmails::instance()->findOne(array('conditions' => $conditions));
 					if($em instanceof ContactEmail) {
 						$errors[] = lang('email address must be unique');
@@ -1072,12 +1090,21 @@ class Contact extends BaseContact {
 	 * @return boolean
 	 */
 	function canView(Contact $user) {
+		
+		$return_false = false;
+		Hook::fire('contact_can_view', $this, $return_false);
+		if ($return_false) return false;
+		
 		if ( $this->isOwnerCompany()) return true;
 		if ( $this->getId() == logged_user()->getId() ) return true ;
 		if ($this->isUser()) {
 			// a contact that has a user assigned to it can be modified by anybody that can manage security (this is: users and permissions) or the user himself.
-			return can_manage_security($user) && ($this->getUserType() > $user->getUserType() || $user->isAdministrator());
-		} 
+			if($this->getCompanyId() ==  $user->getCompanyId()){
+				return true;
+			}
+			return ($this->getUserType() > $user->getUserType() || $user->isAdministrator());
+		}
+		 
 		return can_read($user, $this->getMembers(), $this->getObjectTypeId());
 	} // canView
 	
@@ -1126,8 +1153,12 @@ class Contact extends BaseContact {
 	 */
 	function canEdit(Contact $user) {
 		if ($this->isUser()) {
-			// a contact that has a user assigned to it can be modified by anybody that can manage security (this is: users and permissions) or the user himself.
-			return can_manage_security($user) && ($this->getUserType() > $user->getUserType() || $user->isAdministrator()) || $this->getObjectId() == $user->getObjectId();
+		
+			$return_false = false;
+			Hook::fire('contact_can_edit', $this, $return_false);
+			if ($return_false) return false;
+			// a contact that has a user assigned to it can be modified by anybody that can manage security (this is: users and permissions) or the user himself. admin can edit admin
+			return can_manage_security($user) && ($this->getUserType() > $user->getUserType() || $user->isAdministrator() || $this->isAdminGroup() && $user->isAdminGroup() && $this->getUserType() >= $user->getUserType() ) || $this->getObjectId() == $user->getObjectId();
 		} 
 		if ($this->isOwnerCompany()) return can_manage_configuration($user);
 		return can_manage_contacts($user) || can_write ($user, $this->getMembers(), $this->getObjectTypeId());
@@ -1521,13 +1552,18 @@ class Contact extends BaseContact {
     
 	
     function getPictureUrl($size = 'small') {
+    	$default_img_file = $this->getIsCompany() ? 'default-company.png' : 'default-avatar.png';
+    	
+    	$url = null; Hook::fire('override_contact_picture_url', $this, $url);
+    	if ($url != null) return $url;
+    	
     	switch ($size) {
     		case 'small':
-    			return ($this->getPictureFileSmall() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFileSmall())): get_image_url('default-avatar.png'));
+    			return ($this->getPictureFileSmall() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFileSmall())): get_image_url($default_img_file));
     		case 'medium':
-    			return ($this->getPictureFileMedium() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFileMedium())): get_image_url('default-avatar.png'));
+    			return ($this->getPictureFileMedium() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFileMedium())): get_image_url($default_img_file));
     		case 'large':
-    			return ($this->getPictureFile() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFile())): get_image_url('default-avatar.png'));
+    			return ($this->getPictureFile() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFile())): get_image_url($default_img_file));
     	}
 	} // getPictureUrl
 	
@@ -1569,7 +1605,9 @@ class Contact extends BaseContact {
 		if(!$result && $public_fileId) {
 			FileRepository::deleteFile($public_fileId);
 		}
-		@unlink($temp_file);
+		if (file_exists($temp_file)) {
+			@unlink($temp_file);
+		}
 
 		return $public_fileId;
 	} // setPicture
@@ -1583,7 +1621,7 @@ class Contact extends BaseContact {
 			
 			$result = array();
 			
-			$temp_file_name = CACHE_DIR . "/contact-" . $this->getId() . ".png";
+			$temp_file_name = CACHE_DIR . "/contact-" . $this->getId() . "_" . gen_id() . ".png";
 			
 			$content = FileRepository::getFileContent($repository_id);
 			file_put_contents($temp_file_name, $content);
@@ -1615,6 +1653,8 @@ class Contact extends BaseContact {
 			if ($save) {
 				$this->save();
 			}
+			
+			@unlink($temp_file_name);
 			
 			return $result;
 			
@@ -1673,7 +1713,11 @@ class Contact extends BaseContact {
 	function deletePicture() {
 		if($this->hasPicture()) {
 			FileRepository::deleteFile($this->getPictureFile());
+			FileRepository::deleteFile($this->getPictureFileMedium());
+			FileRepository::deleteFile($this->getPictureFileSmall());
 			$this->setPictureFile('');
+			$this->setPictureFileMedium('');
+			$this->setPictureFileSmall('');
 		} // if
 	} // deletePicture
 	
@@ -1755,8 +1799,9 @@ class Contact extends BaseContact {
 		$this_user_type = array_var(self::$pg_cache, $this->getUserType());
 		if (!$this_user_type)
 			$this_user_type = PermissionGroups::instance()->findOne(array("conditions" => "id = ".$this->getUserType()));
-		
-		$can_change_type = $actual_user_type->getId() < $this_user_type->getId() || $user->isAdminGroup() && $this->getId() == $user->getId() || $user->isAdministrator();
+
+		//if current user type < user type OR current user is admin and user is admin OR current user is superadmin
+		$can_change_type = $actual_user_type->getId() < $this_user_type->getId() || $user->isAdminGroup() && $this->isAdminGroup() && $actual_user_type->getId() <= $this_user_type->getId()  || $user->isAdministrator();
 		
 		return can_manage_security($user) && $can_change_type;
 	} // canUpdatePermissions
@@ -1980,4 +2025,41 @@ class Contact extends BaseContact {
 		}
 		return $this->pg_ids_cache;
 	}
+	
+	
+	
+	
+	// override job title attribute getter and setter
+	function getJobTitle() {
+		$cp = CustomProperties::findOne(array('conditions' => "code='job_title' AND object_type_id=".$this->manager()->getObjectTypeId()));
+		if ($cp instanceof CustomProperty) {
+			$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getId(), $cp->getId());
+			if ($cp_val instanceof CustomPropertyValue) {
+				return $cp_val->getValue();
+			} else {
+				return "";
+			}
+		} else {
+			return $this->getColumnValue('job_title');
+		}
+	}
+	
+	function setJobTitle($value) {
+		$cp = CustomProperties::findOne(array('conditions' => "code='job_title' AND object_type_id=".$this->manager()->getObjectTypeId()));
+		if ($cp instanceof CustomProperty) {
+			$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getId(), $cp->getId());
+			if (!$cp_val instanceof CustomPropertyValue) {
+				$cp_val = new CustomPropertyValue();
+				$cp_val->setObjectId($this->getId());
+				$cp_val->setCustomPropertyId($cp->getId());
+			}
+			$cp_val->setValue($value);
+			$cp_val->save();
+			return true;
+			
+		} else {
+			return $this->setColumnValue('job_title', $value);
+		}
+	}
+	
 }

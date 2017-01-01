@@ -21,7 +21,7 @@
 				<li id="<?php echo "message-".$message->getId()?>" class="message-row ico-message <?php echo $row_cls ?>">
 					<a href="<?php echo $message->getViewUrl() ?>"><span class="message-title"><?php echo clean($message->getName());?></span></a>
 					<?php if (trim($message->getText()) != "") { ?>
-					<span class="message-text"> - <?php echo clean(substr(html_to_text($message->getText()), 0, 100)); ?></span>
+					<span class="message-text"> - <?php echo clean(substr_utf(html_to_text($message->getText()), 0, 200)); ?></span>
 					<?php } ?>
 					<?php if ($message->getUpdatedBy() instanceof Contact) { ?>
 					<div class="desc date-container"><?php 

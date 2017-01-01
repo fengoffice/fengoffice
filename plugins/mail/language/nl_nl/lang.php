@@ -1,4 +1,23 @@
 <?php return array(
-
-
-);
+	'mail' => 'mail',
+	'mails' => 'Mails',
+	'linked mail tab' => 'E-mails',
+	'subscribed notification mail' => 'geabonneerd naar mail',
+	'subscribed notification mail desc' => 'U bent geabonneerd op de Mail \'{0}\' door {1}',
+	'user config option name mails_per_page' => 'Mails per pagina',
+	'user config option desc mails_per_page' => 'Bedrag van beursgenoteerde e-mails (vermijd 0 en negatieve getallen ) . Hou er rekening mee dat hoe groter het getal , hoe langer het duurt om de e-mails te laden.',
+	'user config option name check_attach_word' => 'Controleer gehechte woord',
+	'user config option desc check_attach_word' => 'Waarschuwt de gebruiker wanneer het versturen van een e-mail als er niets is bevestigd , maar bevat het woord te bevestigen',
+	'user config option name check_is_defult_account' => 'Controleer de gekozen om de e-mail -account',
+	'user config option desc check_is_defult_account' => 'Controleert of de gekozen om de e-mail -account is de standaard -account en waarschuwt de gebruiker als niet',
+	'config option name use_mail_accounts_to_send_nots' => 'Meldingen verzenden met behulp van e-mailaccount van de afzender',
+	'config option desc use_mail_accounts_to_send_nots' => 'Als deze optie is ingeschakeld en de verzender heeft een e-mailaccount heeft bepaald meldingen van deze gebruiker zal worden verzonden met zijn / haar e-mailaccount.',
+	'by subject or address' => 'Zoeken op onderwerp of adres',
+	'are you sure you want to send the email using account x' => 'Weet u zeker dat u de e-mail met account {0} te sturen ?',
+	'field Objects to' => 'Naar',
+	'field Objects cc' => 'CC',
+	'field Objects bcc' => 'BCC',
+	'field Objects body_html' => 'Html text',
+	'field Objects body_plain' => 'Normale text',
+	'classify attachments' => 'classificeren toevoeging',
+); ?>

@@ -105,7 +105,7 @@
 						<span class="breadcrumb"></span>
 						<script>
 							<?php $crumbOptions = json_encode($report->getMembersToDisplayPath());
-							$crumbJs = " og.getCrumbHtml($crumbOptions) ";?>
+							$crumbJs = " og.getEmptyCrumbHtml($crumbOptions) ";?>
 							var crumbHtml = <?php echo $crumbJs;?>;
 							$("#report-<?php echo $report->getId()?> .breadcrumb").html(crumbHtml);
 						</script>
@@ -144,4 +144,7 @@
 			og.openLink(og.getUrl('reporting', 'delete_custom_report', {id: id}));
 		}
 	};
+	$(function() {
+		og.eventManager.fireEvent('replace all empty breadcrumb');
+	});
 </script>

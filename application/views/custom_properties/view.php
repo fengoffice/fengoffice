@@ -1,27 +1,51 @@
+<style>
+table.og-custom-properties.main td {
+	line-height: 25px;
+	font-size: 14px;
+}
+</style>
 <?php
+	if (!isset($visibility)) $visibility = 'all';
+	
 	$properties = $__properties_object->getCustomProperties();	
-	$cpvCount = CustomPropertyValues::getCustomPropertyValueCount($__properties_object);
+	$cpvCount = CustomPropertyValues::getCustomPropertyValueCount($__properties_object, $visibility);
 	if ((!is_array($properties) || count($properties) == 0) && $cpvCount == 0) 
 		return "";
+
+if (!($visibility == 'all' || $visibility == 'visible_by_default')) { 
+	?><div class="commentsTitle"><?php
+		echo lang('other properties');
+	?></div><?php
+} 
 ?>
-<div class="commentsTitle"><?php echo lang('custom properties')?></div>
 <?php if($cpvCount > 0){?>
-<table class="og-custom-properties">
+<table class="og-custom-properties <?php echo ($visibility == 'visible_by_default' ? 'main' : 'other')?>">
 <?php 
 	$alt = true;
-	$cps = CustomProperties::getAllCustomPropertiesByObjectType($__properties_object->getObjectTypeId());
+	$cps = CustomProperties::getAllCustomPropertiesByObjectType($__properties_object->getObjectTypeId(), $visibility);
 	foreach($cps as $customProp){ 
 		$cpv = CustomPropertyValues::getCustomPropertyValue($__properties_object->getId(), $customProp->getId());
 		if($cpv instanceof CustomPropertyValue && ($customProp->getIsRequired() || $cpv->getValue() != '')){
 			$alt = !$alt; ?>
 			<tr class="<?php echo $alt ? 'altRow' : ''?>">
-				<td class="name" title="<?php echo clean($customProp->getName()) ?>"><?php echo clean($customProp->getName()) ?>:&nbsp;</td>
+				<td class="name" title="<?php 
+					$label = clean($customProp->getName());
+					if ($customProp->getIsSpecial()) {
+						$label_code = str_replace("_special", "", $customProp->getCode());
+						$label_value = Localization::instance()->lang($label_code);
+						if (is_null($label_value)) {
+							$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
+						}
+						if (!is_null($label_value)) $label = $label_value;
+					}
+					echo $label;
+				?>"><?php echo $label ?>:&nbsp;</td>
 				<?php
 					// dates are in standard format "Y-m-d H:i:s", must be formatted
 					if ($customProp->getType() == 'date') {
 						$dtv = DateTimeValueLib::dateFromFormatAndString("Y-m-d H:i:s", $cpv->getValue());
 						$format = user_config_option('date_format');
-						Hook::fire("custom_property_date_format", null, $format);
+						//Hook::fire("custom_property_date_format", null, $format);
 						$value = $dtv->format($format);
 					} else {
 						$value = clean($cpv->getValue());
@@ -29,14 +53,52 @@
 					
 					$title = '';
 					$style = '';
-					if ($customProp->getType() == 'contact'){
+					if ($customProp->getType() == 'contact' || $customProp->getType() == 'user'){
 						$c = Contacts::findById($value);
 						if($c instanceof Contact){
-							$htmlValue = '<div class="db-ico ico-contact" style="padding-left:18px;width:100%;">'.clean($c->getObjectName()).'</div>';
+							$htmlValue = clean($c->getObjectName());
 						}
+						
+					} else if ($customProp->getType() == 'list'){
+						if ($customProp->getIsSpecial()) {
+							$lang_value = Localization::instance()->lang($value);
+							$htmlValue = is_null($lang_value) ? $value : $lang_value;
+						}
+						
 					} else if ($customProp->getType() == 'boolean'){
 						
 						$htmlValue = '<div class="db-ico ico-'.($value?'complete':'delete').' '.($value?'cpbooltrue':'cpboolfalse').'">&nbsp;</div>';
+						
+					} else if ($customProp->getType() == 'table'){
+					
+						$headers = explode(',', $customProp->getValues());
+						$rows = array();
+						
+						$cpvs = CustomPropertyValues::getCustomPropertyValues($__properties_object->getId(), $customProp->getId());
+						foreach ($cpvs as $cpval) {
+							$row = array();
+							$values = str_replace("\|", "%%_PIPE_%%", $cpval->getValue());
+							$exploded = explode("|", $values);
+							foreach ($exploded as &$v) {
+								$v = str_replace("%%_PIPE_%%", "|", $v);
+								$v = escape_character($v);
+								$row[] = $v;
+							}
+							$rows[] = $row;
+						}
+						
+						$table_html = '<table class="og-add-custom-properties"><tr>';
+						foreach ($headers as $h) $table_html .= '<th>'.$h.'</th>';
+						$table_html .= '</tr>';
+						
+						foreach ($rows as $row) {
+							$table_html .= '<tr>';
+							foreach ($row as $rowval) $table_html .= '<td>'.$rowval.'</td>';
+							$table_html .= '</tr>';
+						}
+						$table_html .= '</table>';
+						
+						$htmlValue = $table_html;
 						
 					} else if ($customProp->getType() == 'address'){
 						

@@ -341,4 +341,6 @@
 	'default dashboard options' => 'Les options par défaut du tableau de bord',
 	'permissions for unclassified objects' => 'Autorisations pour les objets sans classification',
 	'sec order' => 'Ordre',
+	'without due date' => 'Non planifiées',
+	'there are no linked objects yet' => 'Il n\'y a pas d\'objets liés',
 ); ?>

@@ -1,15 +1,19 @@
 <?php
 Hook::register('mail');
 
-function mail_render_administration_icons($ignored, &$icons){
-	if (can_manage_security(logged_user())) {
-		$icons[] = array(
-			'ico' => 'ico-large-email',
+
+function mail_additional_general_config_option($params, &$options) {
+	$cat = array_var($params, 'category');
+	$cat_name = $cat instanceof ConfigCategory ? $cat->getName() : "";
+	
+	if ($cat_name == 'mail module') {
+		$options[] = array(
+			'id' => 'mail_accounts',
 			'url' => get_url('administration', 'mail_accounts'),
 			'name' => lang('mail accounts'),
-			'extra' => '<a class="internalLink coViewAction ico-add" href="' . get_url('mail', 'add_account') . '">' . lang('add mail account') . '</a>',
 		);
 	}
+	
 }
 
 function mail_allowed_subscribers($object, &$contacts) {
@@ -79,6 +83,12 @@ function mail_do_mark_as_read_unread_objects($ids_to_mark, $read) {
 	$all_accounts = array();
 	$all_accounts_ids = array();
 	
+	// update mail list
+	$dont_remove = array_var($_REQUEST, 'dont_remove');
+	if ($read && user_config_option('mails read filter') == 'unread' || !$read && user_config_option('mails read filter') == 'read') {
+		evt_add("remove from email list", array('ids' => $ids_to_mark, 'remove_later' => $dont_remove));
+	}
+	
 	foreach ($ids_to_mark as $id) {
 		$obj = Objects::findObject($id);
 		if ($obj instanceof MailContent && logged_user() instanceof Contact) {
@@ -139,4 +149,61 @@ function mail_do_mark_as_read_unread_objects($ids_to_mark, $read) {
 		
 	}	
 
+}
+
+function mail_custom_reports_external_column_info($params, &$field) {
+	$ot = array_var($params, 'object_type');
+	$fname = array_var($params, 'field_name');
+	
+	if ($ot instanceof ObjectType && $ot->getName() == 'mail') {
+		if (in_array($fname, array('to','cc','bcc','body_plain','body_html'))) {
+			$field['type'] = 'text';
+		}
+	}
+}
+
+
+function mail_after_object_controller_trash($ids, &$ignored) {
+	if (!is_array($ids)) {
+		$ids = explode(',', $ids);
+	}
+	evt_add("remove from email list", array('ids' => $ids));
+}
+
+function mail_after_object_controller_archive($ids, &$ignored) {
+	if (!is_array($ids)) {
+		$ids = explode(',', $ids);
+	}
+	evt_add("remove from email list", array('ids' => $ids));
+}
+
+
+/**
+ * Ensure that mail account owners are added to the sharing table when adding the mail to it
+ */
+function mail_after_add_obj_to_sharing_table($params, &$ignored) {
+	
+	$oid = array_var($params, 'id');
+	$tid = array_var($params, 'type_id');
+	
+	$mail_ot = ObjectTypes::instance()->findByName('mail');
+	if ($mail_ot instanceof ObjectType && $tid == $mail_ot->getId()) {
+		
+		$mail = MailContents::findById($oid);
+		if(!$mail instanceof MailContent || !$mail->getAccount() instanceof MailAccount) return;
+		
+		$macs = MailAccountContacts::instance()->getByAccount($mail->getAccount());
+		foreach ($macs as $mac) {
+			
+			$contact = Contacts::instance()->findById($mac->getContactId());
+			if (!$contact instanceof Contact) continue;
+			
+			$group_id = $contact->getPermissionGroupId();
+			if ($group_id) {
+				$sql = "INSERT INTO ".TABLE_PREFIX."sharing_table ( object_id, group_id ) VALUES ('$oid','$group_id') ON DUPLICATE KEY UPDATE group_id=group_id";
+				DB::execute($sql);
+			}
+			
+		}
+	}
 }

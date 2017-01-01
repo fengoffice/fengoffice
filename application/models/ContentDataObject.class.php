@@ -1336,6 +1336,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $this->members ;
 	}
 	
+	function resetCachedVars() {
+		$this->memberIds = null;
+		$this->members = null;
+		$this->subscribers = null;
+	}
 	
 	function getDimensionObjectTypes(){
 		return DimensionObjectTypeContents::getDimensionObjectTypesforObject($this->getObjectTypeId());
@@ -1360,6 +1365,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$comment->addToSharingTable();
 			}
 		}
+		
+		// clear this object's cached variables
+		$this->resetCachedVars();
 	}
 	
 	/**
@@ -1574,7 +1582,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Timeslot $timeslot
 	 * @return boolean
 	 */
-	function onAddTimeslot(Timeslot $timeslot) {
+	function onAddTimeslot(Timeslot $timeslot, $params = array()) {
+		if ($this->allowsTimeslots()) {
+			$total_worked_time = $this->calculateTotalWorkedTime();
+			$twt_column = array_var($params, 'total_worked_time_column');
+			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+		}
 		return true;
 	}
 
@@ -1584,7 +1597,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Timeslot $timeslot
 	 * @return boolean
 	 */
-	function onEditTimeslot(Timeslot $timeslot) {
+	function onEditTimeslot(Timeslot $timeslot, $params = array()) {
+		if ($this->allowsTimeslots()) {
+			$total_worked_time = $this->calculateTotalWorkedTime();
+			$twt_column = array_var($params, 'total_worked_time_column');
+			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+		}
 		return true;
 	}
 
@@ -1594,8 +1612,46 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Timeslot $timeslot
 	 * @return boolean
 	 */
-	function onDeleteTimeslot(Timeslot $timeslot) {
+	function onDeleteTimeslot(Timeslot $timeslot, $params = array()) {
+		if ($this->allowsTimeslots()) {
+			$total_worked_time = $this->calculateTotalWorkedTime();
+			$twt_column = array_var($params, 'total_worked_time_column');
+			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+		}
 		return true;
+	}
+	
+	/**
+	 * Returns the total worked time in minutes for this object
+	 *
+	 * @return integer
+	 */
+	function calculateTotalWorkedTime() {
+		if ($this->allowsTimeslots()) {
+			
+			$sql = "SELECT (SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60)) as total_minutes 
+					FROM ".TABLE_PREFIX."timeslots ts WHERE ts.rel_object_id=".$this->getId();
+			
+			$row = DB::executeOne($sql);
+			return array_var($row, 'total_minutes');
+			
+		} else {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Saves the $total_worked_time in the column '$total_worked_time_column'
+	 * 
+	 * @param integer $total_worked_time
+	 * @param string $total_worked_time_column
+	 */
+	function saveTotalWorkedTime($total_worked_time=0, $total_worked_time_column='') {
+		$total_worked_time_column = trim($total_worked_time_column);
+		if ($total_worked_time_column && $this->columnExists($total_worked_time_column)) {
+			$this->setColumnValue($total_worked_time_column, $total_worked_time);
+			$this->save();
+		}
 	}
 
 	/**
@@ -1667,7 +1723,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			foreach ($members as $mem) {
 				$dimension = Dimensions::getDimensionById($mem['dimension_id']);
 				
-				if (intval($dimension->getOptionValue('showInPaths'))) {
+				$hook_return = null;
+				Hook::fire("hidden_breadcrumbs", array('ot_id' => $this->getObjectTypeId(), 'dim_id' => $mem['dimension_id']), $hook_return);
+				if (!is_null($hook_return) && array_var($hook_return, 'hidden')) {
+					continue;
+				}
+				
+				if (intval($dimension->getOptionValue('showInPaths')) && $dimension->getIsManageable()) {
 					if (!isset($members_info[$mem['dimension_id']])) $members_info[$mem['dimension_id']] = array();
 					
 					$active_context_condition = true;
@@ -1705,8 +1767,15 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			//get all dimensions ids to showInPaths
 			$dimensions = Dimensions::getAllowedDimensions($this->getObjectTypeId());
 			foreach ($dimensions as $dimension) {
-				$options = json_decode ( $dimension['dimension_options'] );
-				if (isset($options->showInPaths) && $options->showInPaths) {
+				$dim = Dimensions::getDimensionById($dimension['dimension_id']);
+				if (intval($dim->getOptionValue('showInPaths')) && $dim->getIsManageable()) {
+					
+					$hook_return = null;
+					Hook::fire("hidden_breadcrumbs", array('ot_id' => $this->getObjectTypeId(), 'dim_id' => $dimension['dimension_id']), $hook_return);
+					if (!is_null($hook_return) && array_var($hook_return, 'hidden')) {
+						continue;
+					}
+					
 					$dimensions_ids[] = $dimension['dimension_id'];
 					$to_display = user_config_option('breadcrumb_member_count');
 					$extra_cond = " AND m.dimension_id = ".$dimension['dimension_id'];
@@ -1759,6 +1828,109 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	function canAddTimeslot($user) {
 		return can_add_timeslots($user, $this->getMembers());
+	}
+	
+	
+	function getAddEditFormTitle() {
+		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		if ($ot instanceof ObjectType) {
+			$otname = $ot->getName();
+			$title = $this->isNew() ? lang("new $otname") : lang("edit $otname");
+		} else {
+			$title = $this->isNew() ? lang("new object") : lang("edit object");
+		}
+		
+		Hook::fire('override_add_edit_form_title', array('object' => $this, 'ot' => $ot), $title);
+		
+		return $title;
+		
+	}
+	
+	function getSubmitButtonFormTitle() {
+		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		if ($ot instanceof ObjectType) {
+			$otname = $ot->getName();
+			$title = $this->isNew() ? lang("add $otname") : lang("save changes");
+		} else {
+			$title = $this->isNew() ? lang("add object") : lang("save changes");
+		}
+		
+		Hook::fire('override_submit_button_form_title', array('object' => $this, 'ot' => $ot), $title);
+		
+		return $title;
+	}
+	
+	function getObjectTypeNameLang() {
+		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		if ($ot instanceof ObjectType) {
+			$otname = lang($ot->getName());
+		} else {
+			$otname = lang('object');
+		}
+		
+		Hook::fire('override_get_object_type_name', $this, $otname);
+		
+		return $otname;
+	}
+	
+
+
+	function addToRelatedMembers($members, $from_form = false){
+		$related_member_ids = array();
+		
+		foreach ($members as $member) {
+			$associations = DimensionMemberAssociations::getAssociatations($member->getDimensionId(), $member->getObjectTypeId());
+			foreach ($associations as $a) {/* @var $a DimensionMemberAssociation */
+				$aconfig = $a->getConfig();
+				$classify_it = false;
+				
+				// classify only if 'autoclassify_in_property_member' option is set for this association
+				if (array_var($aconfig, 'autoclassify_in_property_member')) {
+					
+					// if the request does not come from object form (e.g.: d&d, it hasn't member selectors)
+					if (!$from_form) {
+						$classify_it = true;
+						
+					} else {
+						// force the add to the related member in background if the member is not allowed to be removed  
+						if (!array_var($aconfig, 'allow_remove_from_property_member')) {
+							$classify_it = true;
+							
+						} else {
+							// to check if this dimension selector is hidden in forms or not
+							$hookparams = array('dim_id' => $a->getAssociatedDimensionMemberAssociationId(), 'ot_id' => $this->getObjectTypeId());
+							Hook::fire('more_autoclassify_in_related_checks', $hookparams, $classify_it);
+							
+						}
+						
+						// @TODO: ver que pasa cuando se hace el submit antes de que se terminen de pre-cargar las dim relacionadas
+					}
+					
+				}
+				
+				if ($classify_it) {
+					$rel_mem_ids = array_flat(DB::executeAll("SELECT property_member_id FROM ".TABLE_PREFIX."member_property_members 
+							WHERE association_id=".$a->getId()." AND member_id=".$member->getId()));
+					
+					$related_member_ids = array_merge($related_member_ids, $rel_mem_ids);
+				}
+			}
+		}
+
+		$related_member_ids = array_unique(array_filter($related_member_ids));
+		if (count($related_member_ids) > 0) {
+			$related_members = Members::findAll(array("conditions" => "id IN (".implode(',', $related_member_ids).")"));
+			if (count($related_members) > 0) {
+				ObjectMembers::addObjectToMembers($this->getId(), $related_members);
+			}
+		}
+		
+	}
+	
+	
+	
+	function getExternalColumnValue($column) {
+		return "";
 	}
 	
 }

@@ -51,7 +51,10 @@
 					}
 				?>
 			</td>
-			<td align="right" <?php if(count($options)) echo 'style="min-width:120px;"' ?>>
+			
+			<?php $ret=null; Hook::fire('view_timeslot_render_more_columns', $timeslot, $ret); ?>
+			
+			<td align="right" <?php if(count($options)) echo 'style="min-width:120px;width:150px;"' ?>>
 			<?php if(count($options)) { ?>
 					<?php echo implode(' | ', $options) ?>
 			<?php } // if ?>

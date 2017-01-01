@@ -41,7 +41,7 @@
             <div style="display:none;"><?php echo select_country_widget('country', '', array('id'=>'template_select_country'));?></div>
             <div class="input-container">
 	            <div><?php echo label_tag(lang('address')) ?></div>
-            <div style="float:left;" id="<?php echo $genid . $id_prefix ?>_addresses_container"></div>
+            <div style="float:left;width:530px;" id="<?php echo $genid . $id_prefix ?>_addresses_container"></div>
             <div class="clear"></div>
             <div style="margin:5px 0 10px 200px;">
             	<a href="#" onclick="og.addNewAddressInput('<?php echo $genid . $id_prefix ?>_addresses_container')" class="coViewAction ico-add"><?php echo lang('add new address') ?></a>
@@ -96,7 +96,7 @@
 
 $(document).ready(function() {
 	
-	var is_new_contact = <?php echo $new_contact ? 'true' : 'false'?>;
+	og.is_new_contact = <?php echo $new_contact ? 'true' : 'false'?>;
 	
 	og.addressCount = 0;
 	og.address_types = Ext.util.JSON.decode('<?php echo json_encode($all_address_types)?>');
@@ -110,7 +110,7 @@ $(document).ready(function() {
 	og.telephoneCount = 0;
 	og.telephone_types = Ext.util.JSON.decode('<?php echo json_encode($all_telephone_types)?>');
 
-	if (!is_new_contact) {
+	if (!og.is_new_contact) {
 	<?php foreach (array_var($contact_data, 'all_addresses') as $address) { ?>
 		og.addNewAddressInput('<?php echo $genid . $id_prefix ?>_addresses_container', 'contact', '<?php echo $address->getAddressTypeId()?>', {
 			street: '<?php echo escape_character(str_replace("\n", " ", $address->getStreet()))?>',
@@ -168,7 +168,7 @@ $(document).ready(function() {
 
 	og.resizeAddressContainer = function() {
 		setTimeout(function(){
-	    	var container_w = $('.additional-data').width();
+	    	var container_w = $('.additional-data').outerWidth();
 	    	$('.address-input-container').css('width', (container_w - 220)+'px').css('max-width', (container_w - 220)+'px');
 		}, 250);
     }

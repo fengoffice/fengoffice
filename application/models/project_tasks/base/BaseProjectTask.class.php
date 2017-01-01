@@ -789,6 +789,28 @@ abstract class BaseProjectTask extends ContentDataObject {
 		return $this->setColumnValue('type_content', $value);
 	} // setTypeContent()
         
+	/**
+	 * Return value of 'total_worked_time' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getTotalWorkedTime() {
+		return $this->getColumnValue('total_worked_time');
+	}
+	
+	/**
+	 * Set value of 'total_worked_time' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setTotalWorkedTime($value) {
+		return $this->setColumnValue('total_worked_time', $value);
+	}
+	
         /**
 	 * Return manager instance
 	 *

@@ -115,7 +115,7 @@ Ext.extend(og.MemberChooserTreeLoader , Ext.tree.TreeLoader, {
 			
 			node.endUpdate();
 			if(typeof callback == "function"){
-				callback(this, node);
+				callback(this, node, json_obj);
 			}
 			this.ownerTree.expanded_once = false;
 			

@@ -15,9 +15,11 @@ class ReportColumns extends BaseReportColumns {
 	 * @return array
 	 */
 	static function getAllReportColumns($report_id) {
-		return self::findAll(array(
+		$columns = self::findAll(array(
 			'conditions' => array("`report_id` = ?", $report_id)
-		)); // findAll
+		));
+		Hook::fire('override_custom_report_columns', $report_id, $columns);
+		return $columns;
 	} //  getAllReportColumns
 	
 	/**

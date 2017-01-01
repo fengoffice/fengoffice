@@ -91,7 +91,7 @@ if (isset($_REQUEST['activity']) && $_REQUEST['activity']) {
 	$all_statistics['activity'] = $activity;
 	
 	$last_month_activity = array();
-	$db_res = mysql_query("select count(*) as num, DATE(created_on) as created from ".TABLE_PREFIX."application_logs WHERE action in ('add','edit','trash','comment') AND created_on > ADDDATE(NOW(), INTERVAL -1 MONTH) group by created;");
+	$db_res = mysql_query("select count(*) as num, DATE(created_on) as created from ".TABLE_PREFIX."application_logs WHERE created_by_id>0 AND action in ('add','edit','trash','comment') AND created_on > ADDDATE(NOW(), INTERVAL -1 MONTH) group by created;");
 	while ($row = mysql_fetch_assoc($db_res)) {
 		$last_month_activity[] = $row;
 	}

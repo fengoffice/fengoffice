@@ -48,8 +48,12 @@
     * @param void
     * @return array
     */
-    function getColumns() {
-      return array_keys(self::$columns);
+    function getColumns($only_names = true) {
+    	if ($only_names) {
+      		return array_keys(self::$columns);
+    	} else {
+      		return self::$columns;
+      	}
     } // getColumns
     
     /**

@@ -28,11 +28,22 @@
 		$model = $ot->getHandlerClass(); 
 		foreach($conditions as $condition){
 			if($condition->getCustomPropertyId() > 0){
-				$cp = CustomProperties::getCustomProperty($condition->getCustomPropertyId());
-				$name = $cp->getName();
+				$cp = null;
+				if ($ot instanceof ObjectType && in_array($ot->getType(), array('dimension_object','dimension_group'))) {
+					if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+						$cp = MemberCustomProperties::getCustomProperty($condition->getCustomPropertyId());
+					}
+				} else {
+					$cp = CustomProperties::getCustomProperty($condition->getCustomPropertyId());
+				}
 				if (!$cp) continue;
+				$name = $cp->getName();
+				
 			} else {
-				$name = lang('field ' . $model . ' ' . $condition->getFieldName());
+				$name = Localization::instance()->lang('field ' . $model . ' ' . $condition->getFieldName());
+				if (!$name) {
+					$name = lang('field Objects ' . $condition->getFieldName());
+				}
 			}
 			$tiCount ++;
 			?>
@@ -65,10 +76,10 @@
 			<?php }else{ ?>
 				<td align='left'>
 				<?php 
-					$model_instance = new $model();
-					$col_type = $model_instance->getColumnType($condition->getFieldName());
-					$externalCols = $model_instance->getExternalColumns();
-						if(in_array($condition->getFieldName(), $externalCols)){
+						$model_instance = new $model();
+						$col_type = $model_instance->getColumnType($condition->getFieldName());
+						
+						if(in_array($condition->getFieldName(), array_keys($external_fields))){
 				?>
 						<select id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId() ?>]">
 				<?php 		foreach($external_fields[$condition->getFieldName()] as $value){ ?>

@@ -49,7 +49,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 	$date_start = new DateTimeValue(mktime(0, 0, 0, $currentmonth, $startday, $currentyear));
 	$date_end = new DateTimeValue(mktime(0, 0, 0, $currentmonth, $endday, $currentyear));
 
-	$tmp_tasks = ProjectTasks::instance()->getRangeTasksByUser($date_start, $date_end, $user_filter, null, false, true);
+	$tmp_tasks = ProjectTasks::instance()->getRangeTasksByUser($date_start, $date_end, $user_filter, null, false, true, 250);
 	$birthdays = Contacts::instance()->getRangeContactsByBirthday($date_start, $date_end);
 	
 	$milestones = ProjectMilestones::getRangeMilestones($date_start, $date_end);
@@ -414,7 +414,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('upcoming events milestones and tasks'). ' '. lang('in').' '. implode(", ", $mnames);
+		$widget_title = lang('upcoming events milestones and tasks'). ' '. lang('in m').' '. implode(", ", $mnames);
 	}
 	include_once 'template.php';
 

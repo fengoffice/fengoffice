@@ -22,4 +22,9 @@
 	'add a new member in tags' => 'Add a new tag',
 	'workspaces list' => 'Workspaces list',
 	'tags list' => 'Tags list',
+	
+	'the workspaces' => 'the workpsaces',
+	'the tags' => 'the tags',
+	'workspace report' => 'Workspaces report',
+	'tag report' => 'Tags report',
 );

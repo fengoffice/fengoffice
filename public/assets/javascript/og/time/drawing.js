@@ -158,6 +158,11 @@ ogTimeManager.insertRow = function(genid, timeslot, position){
 	
 	var pos = 0;
 	
+	if (this.show_checkboxes) {
+		var cell = row.insertCell(pos++);
+		cell.innerHTML = '<input type="checkbox" name="timeslot_chk['+timeslot.id+']" id="timeslot_check_'+timeslot.id+'" class="'+genid+' checkbox timeslot-sel" style="margin-top:8px;"/>';
+	}
+	
 	var cell = row.insertCell(pos++);
 	mem_path = "";
 	var mpath = Ext.util.JSON.decode(timeslot.memPath);
@@ -192,10 +197,29 @@ ogTimeManager.insertRow = function(genid, timeslot, position){
 	e.innerHTML = timeslot.description.replace(/\n/g, "<br />");
 	cell.appendChild(e);
 	
-	if (table.rows[0].cells.length >= 8) {
+	if (this.show_billing) {
 		cell = row.insertCell(pos++);
 		textNode = document.createTextNode(timeslot.hourlyBilling + " (" + timeslot.totalBilling + ")");
 		cell.appendChild(textNode);
+	}
+	
+	// show additional columns
+	if (timeslot.additional_data) {
+		for (key in timeslot.additional_data) {
+			var add_data = timeslot.additional_data[key];
+			if (add_data && add_data.html) {
+				
+				cell = row.insertCell(pos++);
+				var add_data_div = document.createElement('div');
+				add_data_div.innerHTML = add_data.html;
+				add_data_div.style.marginTop = '3px';
+				cell.appendChild(add_data_div);
+				
+				if (add_data.width) {
+					cell.style.width = add_data.width;
+				}
+			}
+		}
 	}
 	
 	cell = row.insertCell(pos++);
@@ -208,7 +232,7 @@ ogTimeManager.insertRow = function(genid, timeslot, position){
 	
 	if (ogTimeManager.DrawInputs) {
 		cell = row.insertCell(pos++);
-		cell.innerHTML = '<a class="internalLink coViewAction ico-edit" href="javascript:ogTimeManager.EditTimeslot(' + timeslot.id + ')" style="display: block;width:0;padding-bottom:0;padding-top:0;line-height:18px" title="' + lang('edit') + '">&nbsp;</a>';
+		cell.innerHTML = '<a class="internalLink coViewAction ico-edit" href="javascript:og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params: {id:'+ timeslot.id +'}});" style="display: block;width:0;padding-bottom:0;padding-top:0;line-height:18px" title="' + lang('edit') + '">&nbsp;</a>';
 		cell.width = 18;
 		
 		cell = row.insertCell(pos++);

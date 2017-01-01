@@ -49,9 +49,15 @@ class CustomPropertyValues extends BaseCustomPropertyValues {
 	 * @param $object_id
 	 * @return array
 	 */
-	static function getCustomPropertyValueCount($object) {
+	static function getCustomPropertyValueCount($object, $visibility='all') {
+		$visibility_cond = "";
+		if ($visibility != 'all') {
+			if ($visibility == 'visible_by_default') $visibility_cond = " AND visible_by_default=1";
+			else $visibility_cond = " AND visible_by_default=0";
+		}
 		return count(self::findAll(array(
-			'conditions' => array("`object_id` = ? AND `custom_property_id` in (SELECT `id` FROM " . CustomProperties::instance()->getTableName(true) . " where `object_type_id` = ?)"  , $object->getObjectId(), $object->getObjectTypeId())
+			'conditions' => array("`object_id` = ? AND `custom_property_id` in (SELECT `id` FROM " . 
+				CustomProperties::instance()->getTableName(true) . " where `object_type_id` = ? $visibility_cond)"  , $object->getObjectId(), $object->getObjectTypeId())
 		))); // findAll
 	} //  getCustomPropertyValue
 	

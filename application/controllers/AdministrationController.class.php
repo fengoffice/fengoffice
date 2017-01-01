@@ -201,7 +201,7 @@ class AdministrationController extends ApplicationController {
 	} // clients
 
 	/**
-	 * List custom properties
+	 * List object types for custom properties
 	 *
 	 * @access public
 	 * @param void
@@ -214,92 +214,140 @@ class AdministrationController extends ApplicationController {
 			return;
 		}
 		
-		$object_types = ObjectTypes::instance()->findAll(array("conditions" => "`type` IN ('content_object')  AND `name` <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'file revision'", "order" => "name"));
+		$object_types = array();
 		$ordered_object_types = array();
-		foreach ($object_types as $ot) {
-			$ordered_object_types[$ot->getId()] = lang($ot->getName());
+		$object_types_tmp = ObjectTypes::instance()->findAll(array("conditions" => "`type` IN ('content_object')  AND `name` <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'file revision'", "order" => "name"));
+		foreach ($object_types_tmp as $ot) {
+			$ordered_object_types[$ot->getId()] = lang($ot->getName() . "s");
+			$object_types[$ot->getId()] = $ot->getName();
 		}
 		asort($ordered_object_types, SORT_STRING);
-		$select_options = array('<option value="" selected>'.lang('select one').'</option>');
-		foreach ($ordered_object_types as $k => $v) {
-			$select_options[] = '<option value="'.$k.'">'.$v.'</option>';
+		
+		tpl_assign('object_types', $object_types);
+		tpl_assign('ordered_object_types', $ordered_object_types);
+		
+	} // custom_properties
+	
+	function list_custom_properties_for_type() {
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
 		}
 		
-		tpl_assign('object_types', $select_options);
-		$custom_properties = array_var($_POST, 'custom_properties');
-		$obj_type_id = array_var($_POST, 'objectType');
-		$delete = 0;
+		$object_type_id = get_id();
+		$object_type = ObjectTypes::findById($object_type_id);
+		if (!$object_type instanceof ObjectType) {
+			flash_error(lang('object dnx'));
+			ajx_current("empty");
+			return;
+		}
+		
+		$extra_params = array('extra_conditions' => '', 'form_title' => '', 'add_link_text' => '');
+		Hook::fire('list_custom_properties_for_type_extra_parameters', array('request' => $_REQUEST, 'object_type' => $object_type), $extra_params);
+		
+		$extra_conditions = array_var($extra_params, 'extra_conditions');
+		
+		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType($object_type->getId(), 'all', $extra_conditions, true, true);
+		
+		tpl_assign('object_type', $object_type);
+		tpl_assign('dont_fire_hook', array_var($_REQUEST, 'dont_fire_hook'));
+		tpl_assign('extra_params', $extra_params);
+		tpl_assign('custom_properties', $custom_properties);
+		
+	}
+	
+	function save_custom_properties_for_type() {
+		ajx_current("empty");
+		
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			return;
+		}
+		
+		$obj_type_id = array_var($_REQUEST, 'ot_id');
+		$object_type = ObjectTypes::findById($obj_type_id);
+		if (!$object_type instanceof ObjectType) {
+			flash_error(lang('object dnx'));
+			return;
+		}
+		
+		$custom_properties_parameter = array_var($_POST, 'custom_properties');
+		if (is_string($custom_properties_parameter)) {
+			$custom_properties = json_decode($custom_properties_parameter, true);
+		} else {
+			$custom_properties = $custom_properties_parameter;
+		}
+		
 		if (is_array($custom_properties)) {
-			try {
-				DB::beginWork();
-				foreach ($custom_properties as $id => $data) {
-					$new_cp = null;
-					if($data['id'] != ''){
-						$new_cp = CustomProperties::getCustomProperty($data['id']);
+		  try {
+			DB::beginWork();
+			
+			foreach ($custom_properties as $order => $data) {
+				$new_cp = null;
+				if($data['id'] != ''){
+					$new_cp = CustomProperties::getCustomProperty($data['id']);
+				}
+				if ($new_cp == null) {
+					$new_cp = new CustomProperty();
+				}
+			
+				if($data['deleted'] == "1"){
+					if (!$new_cp->isNew()) {
+						$new_cp->delete();
 					}
-					if ($new_cp == null) {
-						$new_cp = new CustomProperty();
-					}
-					
-					if($data['deleted'] == "1"){
-						$delete = $delete +1;
-						if (!$new_cp->isNew()) {
-							$new_cp->delete();
-						}
+					continue;
+				}
+				
+				if (array_var($data, 'name') == '') {
+					if (array_var($data, 'id') == 0) {
 						continue;
-					}
-					$new_cp->setObjectTypeId($obj_type_id);
-					$new_cp->setName($data['name']);
-					$new_cp->setType($data['type']);
-					$new_cp->setDescription($data['description']);
-					if ($data['type'] == 'list') {
-						$values = array();
-						$list = explode(",", $data['values']);
-						foreach ($list as $l) {
-							$values[] = trim($l);
-						}
-						$value = implode(",", $values);
-						$new_cp->setValues($value);
 					} else {
-						$new_cp->setValues($data['values']);
-					}
-					if($data['type'] == 'boolean'){
-						$new_cp->setDefaultValue(isset($data['default_value_boolean']));
-					}else{
-						$new_cp->setDefaultValue($data['default_value']);
-					}
-					$new_cp->setIsRequired(isset($data['required']));
-					$new_cp->setIsMultipleValues(isset($data['multiple_values']));
-					$new_cp->setOrder($data['order']-$delete);
-					$new_cp->setVisibleByDefault(isset($data['visible_by_default']));
-					$new_cp->save();
-					
-					if (is_array(array_var($data, 'applyto'))) {
-						$applyto = array_var($data, 'applyto');
-						foreach ($applyto as $co_type => $value) {
-							if ($value == 'true') {
-								if (!CustomPropertiesByCoType::findById(array('co_type_id' => $co_type, 'cp_id' => $new_cp->getId()))) {
-									$obj = new CustomPropertyByCoType();
-									$obj->setCoTypeId($co_type);
-									$obj->setCpId($new_cp->getId());
-									$obj->save();
-								}
-							} else {
-								$obj = CustomPropertiesByCoType::findById(array('co_type_id' => $co_type, 'cp_id' => $new_cp->getId()));
-								if ($obj) $obj->delete();
-							}
-						}
+						throw new Exception(lang('custom property name empty'));
 					}
 				}
-				DB::commit();
-				flash_success(lang('custom properties updated'));
-				ajx_current('back');
-			} catch (Exception $ex) {
-				DB::rollback();
-				flash_error($ex->getMessage());
+				
+				if (array_var($data, 'type') == 'boolean') {
+					$data['default_value'] = array_var($data, 'default_value_bool');
+				}
+
+				if (array_var($data, 'type') == 'numeric') {
+					if ($data['default_value'] != '' && !is_numeric($data['default_value'])) {
+						throw new Exception(lang('default value must be numeric', $data['name']));
+					}
+				}
+				
+				$new_cp->setFromAttributes($data);
+				$new_cp->setObjectTypeId($obj_type_id);
+				$new_cp->setOrder($order);
+				
+				if ($data['type'] == 'list' || $data['type'] == 'table') {
+					$values = array();
+					$list = explode(",", $data['values']);
+					foreach ($list as $l) {
+						$values[] = trim($l);
+					}
+					$value = implode(",", $values);
+					$new_cp->setValues($value);
+				} else {
+					$new_cp->setValues($data['values']);
+				}
+				
+				$new_cp->save();
 			}
+			
+			DB::commit();
+			flash_success(lang('custom properties updated'));
+			ajx_current("back");
+			
+		  } catch (Exception $e) {
+			DB::rollback();
+			flash_error($e->getMessage());
+		  }
+			
 		}
-	} // custom_properties
+	}
+	
 
 	/**
 	 * List groups
@@ -863,86 +911,5 @@ class AdministrationController extends ApplicationController {
 	}
 	
 	
-	
-	
-	
-	function dimension_options() {
-		if(!can_manage_dimensions(logged_user())) {
-			flash_error(lang('no access permissions'));
-			ajx_current("empty");
-			return;
-		}
-		
-		$enabled_dimensions = config_option('enabled_dimensions');
-		
-		// custom dimension name
-		$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',', $enabled_dimensions).')'));
-		
-		$custom_dimension_names = array();
-		foreach ($dimensions as $dim) {
-			$cdim_name = $dim->getOptionValue('custom_dimension_name');
-			if (is_null($cdim_name)) {
-				$cdim_name = "";
-			}
-			$custom_dimension_names[$dim->getId()] = $cdim_name;
-		}
-		
-		// enabled dimension object types
-		$dots = DimensionObjectTypes::findAll(array('conditions' => 'dimension_id IN ('.implode(',', $enabled_dimensions).')'));
-		
-		tpl_assign('custom_dimension_names', $custom_dimension_names);
-		tpl_assign('dimension_ots', $dots);
-	}
-	
-	function dimension_options_submit() {
-		ajx_current("empty");
-		if(!can_manage_dimensions(logged_user())) {
-			flash_error(lang('no access permissions'));
-			return;
-		}
-		
-		$folder_ots = ObjectTypes::findAll(array('id' => true, 'conditions' => "name IN ('folder','project_folder','customer_folder')"));
-		
-		$data = array_var($_POST, 'enabled_dots');
-		$names_data = array_var($_POST, 'custom_names');
-		if (is_array($data) || is_array($names_data)) {
-			try {
-				DB::beginWork();
-				
-				// enabled dimension object types
-				foreach ($data as $dim_id => $ots_info) {
-					foreach ($ots_info as $ot_id => $enabled) {
-						DB::execute("UPDATE ".TABLE_PREFIX."dimension_object_types SET enabled=".DB::escape($enabled)." 
-							WHERE dimension_id=".DB::escape($dim_id)." AND object_type_id=".DB::escape($ot_id));
-						
-						// if object type is folder, set the same configuration to all folder types
-						if (in_array($ot_id, $folder_ots)) {
-							DB::execute("UPDATE ".TABLE_PREFIX."dimension_object_types SET enabled=".DB::escape($enabled)."
-								WHERE dimension_id=".DB::escape($dim_id)." AND object_type_id IN (".implode(',', $folder_ots).")");
-						}
-					}
-				}
-				
-				// custom dimension names
-				foreach ($names_data as $dim_id => $custom_name) {
-					$cname = trim($custom_name);
-					$dimension = Dimensions::getDimensionById($dim_id);
-					if ($dimension instanceof Dimension) {
-						$dimension->setOptionValue('custom_dimension_name', $cname);
-					}
-				}
-				
-				DB::commit();
-				flash_success(lang("success edit dimension options"));
-				evt_add('tabs changed');
-				//ajx_current("back");
-				
-			} catch (Exception $e) {
-				DB::rollback();
-				flash_error($e->getMessage());
-				ajx_current("empty");
-			}
-		}
-	}
 
 } 

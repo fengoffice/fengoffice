@@ -193,10 +193,20 @@ class ToolController extends ApplicationController {
 	}
 	
 	private function escape_lang($string) {
-		return str_replace(array("\\", "'", "\r\n", "\r"), array("\\\\", "\\'", "\n", "\n"), $string);
+		// remove spaces between parameter brackets
+		$string = preg_replace("{\s*([0-9])\s*}", "$1", $string);
+		// escape special characters
+		$string = str_replace(array("\\", "'", "\r\n", "\r"), array("\\\\", "\\'", "\n", "\n"), $string);
+		// trim the resulting string
+		$string = trim($string);
+		
+		return $string;
 	}
 	
 	private function escape_lang_js($string) {
+		// remove spaces between parameter brackets
+		$string = preg_replace("{\s*([0-9])\s*}", "$1", $string);
+		
 		return str_replace(array("\\", "'", "\r\n", "\r", "\n"), array("\\\\", "\\'", "\n", "\n", "\\n"), $string);
 	}
 	

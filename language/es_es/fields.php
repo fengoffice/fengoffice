@@ -243,6 +243,7 @@
 	'field ProjectTasks repeat_m' => 'Mes de repetición',
 	'field ProjectTasks repeat_y' => 'Año de repetición',
 	'field ProjectTasks percent_completed' => 'Percentaje completado',
+	'field ProjectTasks total_worked_time' => 'Total de tiempo trabajado',
 	'field Users created_by_id' => 'Creado por',
 	'field Users updated_by_id' => 'Actualizado por',
 	'field Users company_id' => 'Empresa',

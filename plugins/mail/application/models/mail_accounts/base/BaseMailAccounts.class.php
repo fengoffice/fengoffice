@@ -32,6 +32,7 @@
     'smtp_password' => DATA_TYPE_STRING,
     'del_from_server' => DATA_TYPE_INTEGER,
     'mark_read_on_server' => DATA_TYPE_INTEGER,
+    'get_read_state_from_server' => DATA_TYPE_BOOLEAN,
     'outgoing_transport_type' => DATA_TYPE_STRING,
     'last_checked' => DATA_TYPE_DATETIME,
 	'is_default' => DATA_TYPE_BOOLEAN,

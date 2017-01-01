@@ -58,6 +58,7 @@ return array(
 	"h5f.min.js",
 	"og/main.js",
 	"og/SearchSelector.js",
+	"og/ObjectGrid.js",
 	"jquery/bootstrap-dropdown.js",
 	"jquery/bootstrap-button.js",
 	"bootstrap/bootstrap-tooltip.js",

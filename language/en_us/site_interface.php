@@ -301,6 +301,7 @@ return array(
   'after' => 'after',
   'delete mails from server' => 'Delete mails from server',
   'mark as read mails from server' => 'Mark emails as read in the email server when receiving them in Feng Office',
+  'get read state from server' => 'Preserve emails state (read, unread) when receiving them in Feng Office',
   'mail account delete mails from server description' => 'Enable this option in order to delete mails from server after desired time.',
   'show images' => 'Show images.',
   'images are blocked' => 'Images are blocked',
@@ -319,6 +320,7 @@ return array(
 
   'new filename' => 'New filename',
   'new weblink' => 'New link',
+  'add weblink' => 'Add link',
   'add as revision' => 'Add as revision',
   'duplicate filename' => 'Duplicate filename',
   'filename exists' => 'Files with the specified filename already exists. You can select a different filename or choose among the following options',
@@ -501,7 +503,7 @@ return array(
   'statistics' => 'Statistics',
   'time' => 'Time',
   'meeting_time' => 'Time',
-  'task time report' => 'Total task execution time',
+  'task time report' => 'Timesheets',
   'new tasks by user' => 'New tasks by user',
   'generate report' => 'Generate report',
   'task title' => 'Task title',
@@ -768,11 +770,12 @@ return array(
 	'update logo' => 'Update logo',
 	
 	'set manual permissions' => 'Set manual permissions',
-	'set manual permissions desc' => 'If you don\'t set the permissions manually, they will be assinged automatically depending on the user role (Administrators, Managers and Executives will be granted with all permissions).',
+	'set manual permissions desc' => 'If you don\'t set the permissions manually, they will be assigned automatically depending on the user role (Administrators, Managers and Executives will be granted with all permissions).',
 	'or you can also' => 'Or you can also',
 	'template parameters description' => 'This form contains the parameters that are needed to fill the tasks to be generated.',
 	'template_task' => 'Template task',
 	'repeat options' => 'Repeat options',
+	'other properties' => 'Other properties',
 ); // array
 
 ?>

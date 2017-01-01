@@ -58,9 +58,26 @@
 			$i++;
 	?>	
 				<tr<?php echo ($isAlt ? ' class="altRow"': '') ?>>
-				<td><?php echo checkbox_field('check_'.$c_field, true, array('tabindex' => 20 + $i)) ?></td><td><?php echo $c_label ?></td></tr>
+				<td><?php echo checkbox_field('check_'.$c_field, true) ?></td><td><?php echo $c_label ?></td></tr>
 	<?php	
-		} //foreach ?>
+		} //foreach
+		
+		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(Contacts::instance()->getObjectTypeId());
+		if (is_array($custom_properties) && count($custom_properties)>0) { ?>
+			<tr><td colspan="3" style="text-align:center;"><b><?php echo lang('custom properties')?></b></td></tr>
+		<?php
+			foreach ($custom_properties as $cp) {/* @var $cp CustomProperty */
+				$isAlt = !$isAlt;
+				$i++;
+				
+				?><tr<?php echo ($isAlt ? ' class="altRow"': '') ?>>
+					<td><?php echo checkbox_field('check_'.$import_type.'['.$cp->getId().']', true) ?></td><td><?php echo $cp->getName() ?></td>
+				</tr>
+		<?php
+			}
+		
+		}
+		?>
 	</table>
 
 	<br>

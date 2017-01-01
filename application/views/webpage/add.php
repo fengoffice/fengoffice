@@ -14,7 +14,9 @@
 	$categories = array();
 	Hook::fire('object_edit_categories', $object, $categories);
 	
-	$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+	$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+	$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
+	
 ?>
 <form id="<?php echo $genid ?>submit-edit-form" onsubmit="<?php echo $on_submit?>" class="internalForm"
 	action="<?php echo $webpage->isNew() ? get_url('webpage', 'add') : $webpage->getEditUrl() ?>" method="post">
@@ -25,7 +27,7 @@
 
   <div class="coInputHeaderUpperRow" id="<?php echo $genid?>_title_label">
 	<div class="coInputTitle">
-		<?php echo $webpage->isNew() ? lang('new webpage') : lang('edit webpage') ?>
+		<?php echo $object->getAddEditFormTitle(); ?>
 	</div>
   </div>
 
@@ -35,7 +37,7 @@
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($webpage->isNew() ? lang('add webpage') : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($object->getSubmitButtonFormTitle(),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -63,7 +65,7 @@
 	
 		<li><a href="#<?php echo $genid?>add_webpage_data_div"><?php echo lang('text') ?></a></li>
 		
-		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+		<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 		<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 		<?php } ?>
 		
@@ -73,7 +75,9 @@
 		<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 		<?php } ?>
 		
-		<?php foreach ($categories as $category) { ?>
+		<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 		<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 		<?php } ?>
 	</ul>
@@ -93,10 +97,18 @@
 		<?php echo label_tag(lang('description'), 'webpageFormDesc') ?>
 		<?php echo textarea_field('webpage[description]', array_var($webpage_data, 'description'), array('class' => 'long', 'id' => 'webpageFormDesc')) ?>
 		</div>
+		
+		<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+		
+		<div class="main-custom-properties-div"><?php
+			if ($main_cp_count) {
+				echo render_object_custom_properties($object, false, null, 'visible_by_default');
+			}
+		?></div>
 	</div>
         
-	<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
-		<?php echo render_object_custom_properties($webpage, false) ?>
+	<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+		<?php echo render_object_custom_properties($webpage, false, null, 'other') ?>
 		<?php echo render_add_custom_properties($webpage); ?>
 	</div>
         
@@ -108,9 +120,11 @@
 				$subscriber_ids[] = logged_user()->getId();
 			}
 		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-		<div id="<?php echo $genid ?>add_subscribers_content">
-			<?php //echo render_add_subscribers($webpage, $genid); ?>
-		</div>
+		<div id="<?php echo $genid ?>add_subscribers_content"><?php
+			foreach ($subscriber_ids as $subid) {
+				echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+			} 
+		?></div>
 	</div>
 	
 	<?php if($webpage->isNew() || $webpage->canLinkObject(logged_user())) { ?>

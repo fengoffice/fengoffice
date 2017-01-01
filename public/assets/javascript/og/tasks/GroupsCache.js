@@ -54,6 +54,10 @@ ogTasks.addNewTaskGroup = function(data, group_index, draw){
 	}
 	
 	ogTasks.Groups.push(group);
+	
+	if (typeof draw != 'undefined' && draw) {
+		ogTasks.initDragDrop();
+	}
 };
 
 ogTasks.removeTaskGroup = function(group){
@@ -76,7 +80,9 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 	var drawOptions = topToolbar.getDrawOptions();
 	
 	for (var i = 0; i < data.groups.length; i++){
+		if (!data.groups[i]) continue;
 		var group = ogTasks.getGroup(data.groups[i].group_id);
+		if (!group) continue;
 		
 		if (typeof add_new_tasks != 'undefined'){			
 			
@@ -90,7 +96,7 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 		
 		//update group params
 		for (var key in data.groups[i]){							
-			if(key != 'group_tasks'){
+			if(key != 'group_tasks' && data.groups[i]){
 				group[key] = data.groups[i][key];
 			}												
 		}
@@ -139,7 +145,7 @@ ogTasks.addTaskToGroup = function(group, task, draw){
 			var displayCriteria = bottomToolbar.getDisplayCriteria();
 			var drawOptions = topToolbar.getDrawOptions();
 						
-			$("#rx__no_tasks_info").remove(); 
+			$("#no_tasks_info").remove(); 
 			
 			ogTasks.drawTask(task, drawOptions, displayCriteria, group.group_id, 1);
 			

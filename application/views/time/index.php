@@ -50,7 +50,26 @@
 			break;
 		}
 	}
+	
+	$additional_columns_params = array('genid' => $genid);
+	$additional_columns = array();
+	Hook::fire('timeslot_list_additional_columns', $additional_columns_params, $additional_columns);
 
+	$additional_actions_params = array('genid' => $genid);
+	$additional_actions = array();
+	Hook::fire('timeslot_list_additional_actions', $additional_actions_params, $additional_actions);
+	
+	$list_actions = array(
+		array(
+			'url' => get_url("reporting",'total_task_times_p', array('type' => '1')),
+			'cls' => 'ico-print',
+			'text' => lang('generate report'),
+		)
+	);
+	
+	$list_actions = array_merge($list_actions, $additional_actions);
+	
+	$show_checkboxes = count($list_actions) > 1;
 ?>
 
 <style>
@@ -106,7 +125,18 @@
 				<?php echo lang('time timeslots') ?>
 			</td>
 			<td align="right" style="font-size:80%;font-weight:normal">
-				<a href="<?php echo get_url("reporting",'total_task_times_p', array('type' => '1', 'ws' => active_project() instanceof Project ? active_project()->getId() : 0)) ?>" class="internalLink coViewAction ico-print" style="color:white;font-weight:bold"><?php echo lang('generate report') ?></a>
+			<?php
+				$i=0;
+				foreach ($list_actions as $action) {
+					$onclick = array_var($action, 'onclick');
+					$onclick_str = $onclick ? 'onclick="'.$onclick.'"' : "";
+			?>
+				<a href="<?php echo array_var($action, 'url') ?>" <?php echo $onclick_str?> class="internalLink coViewAction <?php echo array_var($action, 'cls') ?>" style="color:white;font-weight:bold"><?php echo array_var($action, 'text')?></a>
+			<?php
+					$i++;
+					if ($i < count($list_actions)) echo "&nbsp;";
+				}
+			?>
 			</td>
 		</tr></table>
 		</div>
@@ -148,7 +178,7 @@
 					?>
 					
 			</div>
-						
+			
 			<div class="small-member-selector TMTimespanSelectorHeight" style="<?php echo (can_manage_time(logged_user())) ? '':'display: none;'?>">
 				<?php echo label_tag(lang('user')) ?>
 				<?php
@@ -223,6 +253,11 @@
 		<div style="padding:7px">
 			<table style="width:100%" id="<?php echo $genid ?>TMTimespanTable">
 			<tr>
+				<?php if ($show_checkboxes) { ?>
+				<td width='20px'>
+					<input type="checkbox" onclick="ogTimeManager.updateAllTimeslotSelection('<?php echo $genid?>', this);" style="margin-top:3px;" title="<?php echo lang('select all')?>"/>
+				</td>
+				<?php } ?>
 				<td width='20%'><span class="bold"><?php echo lang('related to') ?></span></td>
 				<td width='15%'><span class="bold"><?php echo lang('user') ?></span></td>
 				<td width='70px'><span class="bold"><?php echo lang('date') ?></span></td>
@@ -230,6 +265,9 @@
 				<td><span class="bold"><?php echo lang('description') ?></span></td>
 				<?php if ($show_billing) { ?>
 					<td width="100px"><span class="bold"><?php echo lang('billing') ?></span></td>
+				<?php } ?>
+				<?php foreach ($additional_columns as $add_col) { ?>
+					<td><span class="bold"><?php echo array_var($add_col, 'name') ?></span></td>
 				<?php } ?>
 				<td width='220px'><span class="bold"><?php echo lang('last updated by') ?></span></td>
 				<td></td>
@@ -292,9 +330,28 @@
 </div>
 
 <script>
+
+	ogTimeManager.updateAllTimeslotSelection = function(genid, checkbox) {
+		var checked = $(checkbox).attr('checked');
+		
+		var checkboxes = $('.'+genid+'.checkbox.timeslot-sel');
+		
+		for (var x=0; x<checkboxes.length; x++) {
+			if (checked) {
+				$(checkboxes[x]).attr('checked', 'checked');
+			} else {
+				$(checkboxes[x]).removeAttr('checked');
+			}
+		}
+	}
+
+	ogTimeManager.show_billing = <?php echo $show_billing ? '1' : '0'?>;
+	ogTimeManager.show_checkboxes = <?php echo $show_checkboxes ? '1' : '0'?>;
+	
 	ogTimeManager.loadDataFromHF('<?php echo $genid ?>');
 	ogTimeManager.drawTasks('<?php echo $genid ?>');
-	ogTimeManager.drawTimespans('<?php echo $genid ?>');	
+	ogTimeManager.drawTimespans('<?php echo $genid ?>');
+	
 	Ext.getCmp("<?php echo $genid ?>timeslot[date]Cmp").focus();
 	$('.context-header').click(function(){
 		$('.context-body').slideToggle();

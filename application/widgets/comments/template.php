@@ -21,22 +21,42 @@
 				$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.comment-row' ) ";
 				if ($count >= 5) $style = 'display:none;';
 			?>
-				<li id="<?php echo "comment-".$comment->getId()?>" class="comment-row ico-comment <?php echo $row_cls ?>" style="<?php echo $style;?>">
-					<a href="<?php echo $comment->getViewUrl() ?>" title="<?php echo lang('comment posted on by linktitle', format_datetime($comment->getCreatedOn()), clean($comment->getCreatedByDisplayName())) ?>">
-						<span class="comment-title"><?php echo clean($comment->getObjectName());?></span>
-						<span class="previewText"><?php echo clean($comment->getText());?></span>
-					</a>
-					<br/>
-					<span class="breadcrumb"></span>
-					<script>
-						var crumbHtml = <?php echo $crumbJs?> ;
-						$("#comment-<?php echo $comment->getId()?> .breadcrumb").html(crumbHtml);
-					</script>
-					<?php if ($comment->getUpdatedBy() instanceof Contact) { ?>
-					<div class="desc date-container"><?php 
-						echo lang('by').' '.lang('user date', $comment->getUpdatedBy()->getCardUserUrl(), clean($comment->getUpdatedByDisplayName()), lcfirst(friendly_date($comment->getUpdatedOn())), clean($comment->getUpdatedByDisplayName()));
-					?></div>
-					<?php } ?>
+				<li id="<?php echo "comment-".$comment->getId()?>" class="comment-row <?php echo $row_cls ?>" style="<?php echo $style;?>">
+					<div class="contact-picture-container medium-size">
+						<img class="commentUserAvatar" src="<?php echo $comment->getCreatedBy()->getPictureUrl() ?>" alt="<?php echo clean($comment->getCreatedBy()->getObjectName()) ?>" />
+					</div>
+					<div class="comment-info-container">
+						<div class="comment-text-container">
+							<a href="<?php echo $comment->getViewUrl() ?>" title="<?php echo lang('comment posted on by linktitle', format_datetime($comment->getCreatedOn()), clean($comment->getCreatedByDisplayName())) ?>">
+								<span class="comment-text"><?php echo clean($comment->getText());?></span>
+							</a>
+						</div>
+						<table class="comment-info-table">
+							<tr>
+								<td class="comment-object">
+									<a href="<?php echo $comment->getViewUrl() ?>" title="<?php echo lang('comment posted on by linktitle', format_datetime($comment->getCreatedOn()), clean($comment->getCreatedByDisplayName())) ?>">
+										<span class="comment-title"><?php echo clean($comment->getObjectName());?></span>
+									</a>
+								</td>
+								<td class="datecomment-breadcrumb-container">
+									<div class="comment-breadcrumb-container">
+									<span class="breadcrumb"></span>
+									</div>
+									<script>
+										var crumbHtml = <?php echo $crumbJs?> ;
+										$("#comment-<?php echo $comment->getId()?> .breadcrumb").html(crumbHtml);
+									</script>
+								</td>
+								<?php if ($comment->getUpdatedBy() instanceof Contact) { ?>
+								<td class="desc date-container">
+									<?php
+										echo lcfirst(friendly_date($comment->getUpdatedOn()));
+									?>
+								</td>
+								<?php } ?>
+							</tr>
+						</table>
+					</div>
 				</li>
 				<?php 
 				$count++;

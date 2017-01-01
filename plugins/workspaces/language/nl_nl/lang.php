@@ -1,4 +1,22 @@
 <?php return array(
-
-
-);
+	'field workspace description' => 'Beschrijving',
+	'workspace description' => 'Werkomgeving beschrijving',
+	'field workspace show_description_in_overview' => 'Toon beschrijving op de werkruimte overzichtspagina?',
+	'add new relation workspaces' => 'Typ om werkruimte te selecteren',
+	'add new relation tags' => 'Typ om label te selecteren',
+	'add new workspace' => 'Voeg een nieuwe werkruimte toe',
+	'add your first workspace' => 'Voeg uw eerste werkruimte toe',
+	'you have no workspaces yet' => 'Je heb nog geen werkruimte',
+	'filter by workspaces' => 'Filter op werkruimte',
+	'filter by tags' => 'Filter op label',
+	'user config option name lp_dim_workspaces_show_as_column' => 'Show werkplekken in een aparte kolom',
+	'user config option desc lp_dim_workspaces_show_as_column' => 'Laat de werkplekken in een aparte kolom staan en niet naast de naam van de lijst item.',
+	'user config option name lp_dim_tags_show_as_column' => 'Toon labels in een aparte kolom.',
+	'user config option desc lp_dim_tags_show_as_column' => 'Toon de labels in een aparte kolom en niet naast de naam van de lijst item.',
+	'add a new member in workspaces' => 'Voeg een nieuwe werkruimte toe',
+	'add a new member in tags' => 'Voeg een nieuwe label',
+	'workspaces list' => 'Werkomgevingenslijst',
+	'tags list' => 'Labels lijst',
+	'the workspaces' => 'De werkruimte',
+	'the tags' => 'De labels',
+); ?>

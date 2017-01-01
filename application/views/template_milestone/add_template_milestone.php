@@ -69,7 +69,9 @@
 			<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 			<?php } ?>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
@@ -80,7 +82,7 @@
 			<?php
 				$listeners = array('on_selection_change' => 'og.reload_milestone_form_selectors()');
 				if ($milestone->isNew()) {
-					render_member_selectors($milestone->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners), null, null, false);
+					render_member_selectors($milestone->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => false, 'listeners' => $listeners), null, null, false);
 				} else {
 					render_member_selectors($milestone->manager()->getObjectTypeId(), $genid, $milestone->getMemberIds(), array('listeners' => $listeners), null, null, false);
 				} 
@@ -116,7 +118,7 @@
 		</div>
 	
 		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
+		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
 			<?php echo render_object_custom_properties($milestone, false) ?>
 			<?php echo render_add_custom_properties($milestone); ?>
 		</div>
@@ -131,9 +133,11 @@
 				}
 			?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
 			<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content">
-				<?php //echo render_add_subscribers($milestone, $genid); ?>
-			</div>
+			<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 		</div>
 	
 	<?php if($milestone->isNew() || $milestone->canLinkObject(logged_user())) { ?>

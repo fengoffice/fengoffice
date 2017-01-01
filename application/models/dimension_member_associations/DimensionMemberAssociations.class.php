@@ -100,6 +100,11 @@
   		return self::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $dimension_id, $object_type_id)));
   	}
   	
+  	static function getAllAssociatationsForObjectType($dimension_id, $object_type_id) {
+  		return self::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? OR `associated_dimension_id` = ? AND `associated_object_type_id` = ?",
+  				$dimension_id, $object_type_id, $dimension_id, $object_type_id)));
+  	}
+  	
 	static function getRequiredAssociatations($dimension_id, $object_type_id, $only_ids = false) {
   		return self::findAll(array(
   			"conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND is_required = 1", $dimension_id, $object_type_id),
@@ -115,6 +120,77 @@
 		if (is_null($associations)) return false;
 		else return true;						
   	}
+  	
+  	
+  	
+  	function getAllAssociationsInfo() {
+  		$enabled_dimensions = config_option('enabled_dimensions');
+		$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',', $enabled_dimensions).')'));
+		
+		$dims_info = array();
+		
+		foreach ($dimensions as $dim) {
+			$associations = self::findAll(array('conditions' => '`dimension_id` = ' .$dim->getId().' OR `associated_dimension_id` = ' . $dim->getId()));
+			
+			if (is_array($associations) && count($associations)) {
+				$this_dim_info = array();
+				foreach ($associations as $assoc) {
+					/* @var $assoc DimensionMemberAssociation */
+					
+					if ($assoc->getDimensionId() == $dim->getId()) {
+						if (!in_array($assoc->getAssociatedDimensionMemberAssociationId(), $enabled_dimensions)) continue;
+						
+						$object_type_id = $assoc->getObjectTypeId();
+						$assoc_dimension_id = $assoc->getAssociatedDimensionMemberAssociationId();
+						$assoc_dim = Dimensions::getDimensionById($assoc->getAssociatedDimensionMemberAssociationId());
+						$assoc_dimension_name = $assoc_dim->getName();
+						$assoc_dimension_code = $assoc_dim->getCode();
+						$assoc_object_type_id = $assoc->getAssociatedObjectType();
+					} else {
+						if (!in_array($assoc->getDimensionId(), $enabled_dimensions)) continue;
+						
+						$object_type_id = $assoc->getAssociatedObjectType();
+						$assoc_dimension_id = $assoc->getDimensionId();
+						$assoc_dim = Dimensions::getDimensionById($assoc->getDimensionId());
+						$assoc_dimension_name = $assoc_dim->getName();
+						$assoc_dimension_code = $assoc_dim->getCode();
+						$assoc_object_type_id = $assoc->getObjectTypeId();
+					}
+					
+					$info = array(
+						'id' => $assoc->getId(),
+						'name' => $assoc_dimension_name,
+						'code' => $assoc_dimension_code,
+						'assoc_dimension_id' => $assoc_dimension_id,
+						'assoc_object_type_id' => $assoc_object_type_id,
+						'is_required' => $assoc->getIsRequired(),
+						'is_multiple' => $assoc->getIsMultiple(),
+						'keeps_record' => $assoc->getKeepsRecord(),
+						'allows_default_selection' => $assoc->getAllowsDefaultSelection(),
+						// load the configs only in one direction
+						'config' => $dim->getId() == $assoc->getDimensionId() ? $assoc->getConfig() : array(),
+					);
+					
+					if (!isset($this_dim_info[$object_type_id])) {
+						$this_dim_info[$object_type_id] = array();
+					}
+					$this_dim_info[$object_type_id][] = $info;
+				}
+				
+				$dims_info[$dim->getId()] = $this_dim_info;
+			}
+		}
+		
+		return $dims_info;
+  	}
+  	
+  	
+  	function getAssociationObject($dimension_id, $object_type_id, $assoc_dimension_id, $assoc_object_type_id) {
+  		return self::findOne(array('conditions' => "dimension_id=$dimension_id AND object_type_id=$object_type_id
+  				AND associated_dimension_id=$assoc_dimension_id AND associated_object_type_id=$assoc_object_type_id"));
+  	}
+  	
+  	
   }
 
 ?>

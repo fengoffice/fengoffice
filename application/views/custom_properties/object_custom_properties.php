@@ -2,18 +2,24 @@
 require_javascript("og/CustomProperties.js");
 
 $object_type_id = $_custom_properties_object instanceof TemplateTask ? ProjectTasks::instance()->getObjectTypeId() : $_custom_properties_object->getObjectTypeId();
+$ot = ObjectTypes::findById($object_type_id);
 
-$cps = CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, $co_type);
-$ti = 0;
+$extra_conditions = "";
+Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $object_type_id, 'object' => $_custom_properties_object), $extra_conditions, true);
+
+$cps = CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, $visibility, $extra_conditions);
+if ($visibility == 'others' && count($cps) == 0) {
+	echo lang('there are no custom properties defined message', (lang("the ".$ot->getName()."s")));
+	echo '<br />'. lang('there are no custom properties defined link');
+}
 
 if (!isset($genid)) $genid = gen_id();
-if (!isset($startTi)) $startTi = 10000;
 
 if(count($cps) > 0){
 	$print_table_functions = false;
 	foreach($cps as $customProp){
 		if(!isset($required) || ($required && ($customProp->getIsRequired() || $customProp->getVisibleByDefault())) || (!$required && !($customProp->getIsRequired() || $customProp->getVisibleByDefault()))){
-			$ti++;
+			
 			$cpv = CustomPropertyValues::getCustomPropertyValue($_custom_properties_object->getId(), $customProp->getId());
 			$default_value = $customProp->getDefaultValue();
 			if($cpv instanceof CustomPropertyValue){
@@ -23,9 +29,20 @@ if(count($cps) > 0){
 			echo '<div style="margin-top:12px">';
 
 			if ($customProp->getType() == 'boolean')
-				echo checkbox_field($name, $default_value, array('tabindex' => $startTi + $ti, 'style' => 'margin-right:4px', 'id' => $genid . 'cp' . $customProp->getId()));
+				echo checkbox_field($name, $default_value, array('style' => 'margin-right:4px', 'id' => $genid . 'cp' . $customProp->getId()));
 
-			echo label_tag(clean($customProp->getName()), $genid . 'cp' . $customProp->getId(), $customProp->getIsRequired(), array('style' => 'display:inline'), $customProp->getType() == 'boolean'?'':':');
+			$label = clean($customProp->getName());
+			if ($customProp->getIsSpecial()) {
+				$label_code = str_replace("_special", "", $customProp->getCode());
+				$label_value = Localization::instance()->lang($label_code);
+				if (is_null($label_value)) {
+					$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
+				}
+				if (!is_null($label_value)) $label = $label_value;
+			}
+			
+			$add_style = "";
+			echo label_tag($label, $genid . 'cp' . $customProp->getId(), $customProp->getIsRequired(), array('style' => 'display:inline;'.$add_style), $customProp->getType() == 'boolean'?'':':');
 			
 			echo '</div>';
 
@@ -50,9 +67,9 @@ if(count($cps) > 0){
 							if($value != ''){
 								echo '<div id="value'.$count.'">';
 								if($isMemo){
-									echo textarea_field($name.'[]', $value, array('tabindex' => $startTi + $ti, 'id' => $name.'[]'));
+									echo textarea_field($name.'[]', $value, array('id' => $name.'[]'));
 								}else{
-									echo text_field($name.'[]', $value, array('tabindex' => $startTi + $ti, 'id' => $name.'[]'));
+									echo text_field($name.'[]', $value, array('id' => $name.'[]'));
 								}
 								echo '&nbsp;<a href="#" class="link-ico ico-delete" onclick="og.removeCPValue('.$customProp->getId().','.($count).','.($isMemo ? 1 : 0).')" ></a>';
 								echo '</div>';
@@ -61,9 +78,9 @@ if(count($cps) > 0){
 						}
 						echo '<div id="value'.$count.'">';
 						if($customProp->getType() == 'memo'){
-							echo textarea_field($name.'[]', '', array('tabindex' => $startTi + $ti, 'id' => $name.'[]'));
+							echo textarea_field($name.'[]', '', array('id' => $name.'[]'));
 						}else{
-							echo text_field($name.'[]', '', array('tabindex' => $startTi + $ti, 'id' => $name.'[]'));
+							echo text_field($name.'[]', '', array('id' => $name.'[]'));
 						}
 						echo '&nbsp;<a href="#" class="link-ico ico-add" onclick="og.addCPValue('.$customProp->getId().',\''.$isMemo.'\')">'.lang('add value').'</a><br/>';
 						echo '</div>';
@@ -72,9 +89,9 @@ if(count($cps) > 0){
 						$include_script = true;
 					} else {
 						if($customProp->getType() == 'memo'){
-							echo textarea_field($name, $default_value, array('tabindex' => $startTi + $ti, 'class' => 'short', 'id' => $genid . 'cp' . $customProp->getId()));
+							echo textarea_field($name, $default_value, array('class' => 'short', 'id' => $genid . 'cp' . $customProp->getId()));
 						}else{
-							echo text_field($name, $default_value, array('tabindex' => $startTi + $ti, 'id' => $genid . 'cp' . $customProp->getId()));
+							echo text_field($name, $default_value, array('id' => $genid . 'cp' . $customProp->getId()));
 						}
 					}
 					break;
@@ -97,7 +114,7 @@ if(count($cps) > 0){
 								$value = DateTimeValueLib::dateFromFormatAndString("Y-m-d H:i:s", $val->getValue());
 							}
 							echo '<tr><td style="width:150px;">';
-							echo pick_date_widget2($name, $value, null, $startTi + $ti, null, $genid . 'cp' . $customProp->getId());
+							echo pick_date_widget2($name, $value, null, null, null, $genid . 'cp' . $customProp->getId());
 							echo '</td><td>';
 							echo '<a href="#" class="link-ico ico-delete" onclick="og.removeCPDateValue(\''.$genid.'\','.$customProp->getId().','.$count.')"></a>';
 							echo '</td></tr>';
@@ -117,8 +134,10 @@ if(count($cps) > 0){
 									$value = '';
 								}
 							}
+						} else {
+							$value = null;
 						}
-						echo pick_date_widget2($name, $value, null, $startTi + $ti, null, $genid . 'cp' . $customProp->getId());
+						echo pick_date_widget2($name, $value, null, null, null, $genid . 'cp' . $customProp->getId());
 					}
 					break;
 				case 'list':
@@ -132,54 +151,52 @@ if(count($cps) > 0){
 					foreach ($multValues as $m){
 						$toSelect[] = $m->getValue();
 					}
+					
+					if($customProp->getIsMultipleValues()) {
+						echo '<div class="multiple-list-custom-property">';
+					}
+					
 					foreach(explode(',', $customProp->getValues()) as $value){
-						$selected = ($value == $default_value) || ($customProp->getIsMultipleValues() && (in_array($value, explode(',', $default_value))) || in_array($value,$toSelect));
-						$attr = array();
-						if ($selected) $attr['selected'] = 'selected';
-						$options[] = option_tag($value, $value, $attr);
+						
+						$text = null;
+						if (strpos($value, '@') !== false) {
+							$exp = explode('@', $value);
+							$value = array_var($exp, 0);
+							$text = array_var($exp, 1);
+						}
+						
+						if ($text == null) {
+							$text = $customProp->getCode() == "" ? $value : lang($value);
+						} else {
+							$text = $customProp->getCode() == "" ? $text : lang($text);
+						}
+						
+						
+						$selected = ($value == $default_value) || ($customProp->getIsMultipleValues() && (in_array($value, explode(',', $default_value)))||in_array($value,$toSelect));
+						
+						if($selected){
+							$options[] = '<option value="'. clean($value) .'" selected>'. clean($text) .'</option>';
+						}else{
+							$options[] = option_tag($text, $value);
+						}
+						
+						if($customProp->getIsMultipleValues()) {
+							echo '<div class="cp-list-multiple-option-container">';
+							echo checkbox_field($name."[$value]", $selected, array('id' => "$genid-$name-$totalOptions", 'class' => "cp-list-multiple-checkbox"));
+							echo '<span class="cp-list-multiple-option" onclick="document.getElementById(\''."$genid-$name-$totalOptions".'\').click();">' . $text . '</span>';
+							echo '</div>';
+						}
+						
 						$totalOptions++;
 					}
 					
-					$cp_id = $customProp->getId();
-					$is_mult = $customProp->getIsMultipleValues() ? '1' : '0';
-					echo select_box('aux_'.$name, $options, array('tabindex' => $startTi + $ti, 'style' => 'min-width:140px',
-						'id' => $genid . 'cp' . $customProp->getId(), 'onchange' => "og.cp_list_selected(this, '$genid', '$name', $cp_id, $is_mult);"));
-					
-					$display = $customProp->getIsMultipleValues() ? "" : "display:none;";
-					
-					echo '<div id="'.$genid.'cp_list_selected'.$cp_id.'">';
-					$i = 0;
-					foreach ($toSelect as $value) {
-						echo '<div style="width:200px;'.$display.'">'.$value
-							.'&nbsp;<a href="#" onclick="og.cp_list_remove(this, \''.$genid.'\', '.$cp_id.');" class="db-ico coViewAction ico-delete" title="'.lang('remove').'">&nbsp;</a>'
-							.'<input type="hidden" name="'.$name.'['.$i.']" value="'.clean($value).'" /></div>';
-						$i++;
-					}
-					if (count($toSelect) == 0 && $default_value != '') {
-						echo '<div style="width:200px;'.$display.'">'.$default_value
-							.'&nbsp;<a href="#" onclick="og.cp_list_remove(this, \''.$genid.'\', '.$cp_id.');" class="db-ico coViewAction ico-delete" title="'.lang('remove').'">&nbsp;</a>'
-							.'<input type="hidden" name="'.$name.'['.$i.']" value="'.clean($default_value).'" /></div>';
-						$i++;
+					if($customProp->getIsMultipleValues()) {
+						echo '</div><div class="clear"></div>';
 					}
 					
-					echo '<script>
-						if (!og.cp_list_selected_index) og.cp_list_selected_index = [];
-						if (!og.cp_list_selected_index['.$cp_id.']) og.cp_list_selected_index['.$cp_id.'] = [];
-						og.cp_list_selected_index['.$cp_id.']["'.$genid.'"] = '.$i.';
-						if (!og.cp_list_selected_values) og.cp_list_selected_values = [];
-						if (!og.cp_list_selected_values['.$cp_id.']) og.cp_list_selected_values['.$cp_id.'] = [];
-						og.cp_list_selected_values['.$cp_id.']["'.$genid.'"] = [];';
-					foreach ($toSelect as $value) {
-						echo "og.cp_list_selected_values[$cp_id]['$genid'].push('$value');";
+					if(!$customProp->getIsMultipleValues()){
+						echo select_box($name, $options, array('style' => 'min-width:140px', 'id' => $genid . 'cp' . $customProp->getId()));
 					}
-					if (count($toSelect) == 0 && $default_value != '') {
-						echo "og.cp_list_selected_values[$cp_id]['$genid'].push('$default_value');";
-					}
-					echo '</script>';
-					
-					echo '<input type="hidden" id="'.$genid.'_remove_cp_'.$cp_id.'" name="remove_custom_properties['.$cp_id.']" value="0"/>';
-					
-					echo '</div>';
 					
 					break;
 				case 'table':
@@ -187,10 +204,10 @@ if(count($cps) > 0){
 					$cell_width = (600 / count($columnNames)) . "px";
 					$html = '<div class="og-add-custom-properties"><table><tr>';
 					foreach ($columnNames as $colName) {
-						$html .= '<th style="width:'.$cell_width.';min-width:120px;">'.$colName.'</th>';
+						$html .= '<th style="width:'.$cell_width.';min-width:105px;">'.$colName.'</th>';
 					}
-					$ti += 1000;
-					$html .= '</tr><tr>';
+					
+					$html .= '<th style="width:20px;"></th></tr>';
 					$values = CustomPropertyValues::getCustomPropertyValues($_custom_properties_object->getId(), $customProp->getId());
 					if (trim($default_value) != '' && (!is_array($values) || count($values) == 0)) {
 						$def_cp_value = new CustomPropertyValue();
@@ -200,26 +217,31 @@ if(count($cps) > 0){
 					$rows = 0;
 					if (is_array($values) && count($values) > 0) {
 						foreach ($values as $val) {
+							$html .= '<tr>';
 							$col = 0;
 							$values = str_replace("\|", "%%_PIPE_%%", $val->getValue());
 							$exploded = explode("|", $values);
 							foreach ($exploded as $v) {
 								$v = str_replace("%%_PIPE_%%", "|", $v);
-								$html .= '<td><input class="value" style="width:'.$cell_width.';min-width:120px;" name="'.$name."[$rows][$col]". '" value="'. clean($v) .'" tabindex="'.($startTi + $ti++).'"/></td>';
+								$html .= '<td><input class="value" style="width:'.$cell_width.';min-width:105px;" name="'.$name."[$rows][$col]". '" value="'. clean($v) .'" /></td>';
 								$col++;
 							}
-							$html .= '<td><div class="ico ico-delete" style="width:16px;height:16px;cursor:pointer" onclick="og.removeTableCustomPropertyRow(this.parentNode.parentNode);return false;">&nbsp;</div></td>';
-							$html .= '</tr><tr>';
+							$html .= '<td><div class="ico ico-delete" style="width: 20px;height: 20px;cursor: pointer;margin-left: 2px;margin-top: 1px;" 
+										onclick="og.removeTableCustomPropertyRow(this.parentNode.parentNode);return false;">&nbsp;</div></td>';
 							$rows++;
+							$html .= '</tr>';
 						}
 					}
-					$html .= '</tr></table>';
-					$html .= '<a href="#" id="'.$genid.'-add-row-'.$customProp->getId().'" tabindex="'.($startTi + $ti + 50*count($columnNames)).'" onclick="og.addTableCustomPropertyRow(this.parentNode, true, null, '.count($columnNames).', '.($startTi + $ti).', '.$customProp->getId().');return false;">' . lang("add") . '</a></div>';
+					$html .= '</table>';
+					
+					$html .= '<a href="#" id="'.$genid.'-add-row-'.$customProp->getId().'" class="link-ico ico-add" onclick="og.addTableCustomPropertyRow(this.parentNode, true, null, '.count($columnNames).', null, '.$customProp->getId().');return false;">' . lang("add new row") . '</a></div>';
+					$html .= '<div class="clear"></div>';
+					
 					if ($rows == 0) {
 						// create first empty row
 						$html .= '<script>if (!Ext.isIE) document.getElementById("'.$genid.'-add-row-'.$customProp->getId().'").onclick();</script>';
 					}
-					$ti += 50*count($columnNames);
+					
 					$print_table_functions = true;
 					echo $html;
 					break;
@@ -265,6 +287,7 @@ if(count($cps) > 0){
 
 				case 'user':
 				case 'contact':
+					$filters = array();
 					$value = '0';
 					$cp_value = CustomPropertyValues::getCustomPropertyValue($_custom_properties_object->getId(), $customProp->getId());
 					if ($cp_value instanceof CustomPropertyValue && is_numeric($cp_value->getValue())) {
@@ -292,7 +315,8 @@ if(count($cps) > 0){
 						$filters_str = 'null';
 					}
 					
-					$html = '<div id="'.$genid.'contacts_combo_container-cp'.$customProp->getId().'"></div>';
+					$html = '<div class="dataBlock" style="width:500px !important">';
+					$html .= '<div id="'.$genid.'contacts_combo_container-cp'.$customProp->getId().'"></div><div class="clear"></div></div>';
 					$html .= '<script>'.
 					'$(function(){
 					  og.renderContactSelector({
@@ -303,6 +327,8 @@ if(count($cps) > 0){
 						selected: '.$value.',
 						selected_name: "'.($contact instanceof Contact ? clean($contact->getName()) : '').'",
 						empty_text: "'. $emtpy_text .'",
+						listClass: "custom-prop",
+						listAlign: "tr-br",
 						filters: '.$filters_str.'
 					  });
 					});
@@ -312,16 +338,20 @@ if(count($cps) > 0){
 				default: break;
 			}
 			
+			if (!isset($value)) $value = "";
+			$ret = null;
+			Hook::fire('after_render_cp_input', array('custom_prop' => $customProp, 'value' => $value, 'input_name' => $name, 'object' => $_custom_properties_object), $ret);
+			
 			if ($customProp->getDescription() != ''){
 				// the label is set to pad the description
 				echo '<div><label>&nbsp;</label><span class="desc">' . clean($customProp->getDescription()) . '</span></div>';
 			}
 			
-			if (!isset($value)) $value = "";
-			$ret = null;
-			Hook::fire('after_render_cp_input', array('custom_prop' => $customProp, 'value' => $value, 'input_name' => $name), $ret);
+			echo '<div class="clear"></div>';
 		}
 	}
+	
+	Hook::fire('after_render_custom_properties', array('object' => $_custom_properties_object, 'genid' => $genid), $ret);
 }
 
 ?></div>

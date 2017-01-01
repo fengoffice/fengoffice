@@ -144,6 +144,29 @@
       return $this->setColumnValue('ignore_context', $value);
     } // setIgnoreContext() 
     
+    
+    
+    /**
+     * Return value of 'is_default' field
+     *
+     * @access public
+     * @param void
+     * @return boolean
+     */
+    function getIsDefault() {
+    	return $this->getColumnValue('is_default');
+    }
+    
+    /**
+     * Set value of 'is_default' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setIsDefault($value) {
+    	return $this->setColumnValue('is_default', $value);
+    }
 
     /**
     * Return manager instance

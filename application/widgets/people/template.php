@@ -28,13 +28,15 @@
 		?>
 		<ul>
 		<?php 
-		$row_cls = "";
+		$row_cls = "contact-row";
 		$i = 0;
 		foreach ($contacts as $person): ?>
 			<?php
 			$i++;
-			if ($i < $limit) :?>
-				<li<?php echo ($row_cls == "" ? "" : " class='$row_cls'")?>>
+			?>
+				<li<?php echo ($row_cls == "" ? "" : " class='$row_cls'")?>
+					<?php if ($i >= $limit) :?>style="display: none;"<?php endif;?>
+				>
 					<div class="contact-picture contact-picture-container">
 						<a href="<?php echo $person->getCardUrl() ?>" class="person" onclick="if (og.core_dimensions) og.core_dimensions.buildBeforeObjectViewAction(<?php echo $person->getId()?>, true);">
 							<img src="<?php echo $person->getPictureUrl(); ?>" />
@@ -48,7 +50,7 @@
 					
 					<div class="clear"></div>
 				</li>
-			<?php endif;?>
+
 		<?php endforeach; ?>
 		</ul>
 		
@@ -82,11 +84,9 @@
 				 * View all container
 				 */
 				?> 
-				<?php if (count($contacts) == $limit) :?>
-					<div class="view-all-container" style="float:right; width: 25%; overflow: hidden; font-size: 14px; margin-top: 0.75em; height: 16px;">
-						<a href="#" onclick="og.openLink(og.getUrl('contact', 'init'), {caller: 'contacts'}); return false;" ><?php echo lang("view all");?></a>
-					</div>
-					<div class="clear"></div>
+				<?php if (count($contacts) >= 1) :?>
+					<div style="text-align:right;"><a id='showlnk-contacts' href="#" onclick="og.showHideWidgetMoreLink('.widget-persons .contact-row','-contacts',true)"><?php echo lang("show more") ?></div>
+
 				<?php endif;?>
 				
 			

@@ -24,7 +24,7 @@
 	'timezone gmt +5.5' => '(GMT+5:30) Bombay, Calcutta, Madras, New Delhi',
 	'timezone gmt +6' => '(GMT+6:00) Almaty, Dhaka, Colombo',
 	'timezone gmt +7' => '(GMT+7:00) Bangkok, Hanoi, Jakarta',
-	'timezone gmt +8' => '(GMT+8:00) 北京, 澳大利亚, 新加坡, 香港, 乌鲁木齐, 台北',
+	'timezone gmt +8' => '(GMT+8:00) 北京, 珀斯, 新加坡, 香港, 乌鲁木齐, 台北',
 	'timezone gmt +9' => '(GMT+9:00) Tokyo, Seoul, Osaka, Sapporo, Yakutsk',
 	'timezone gmt +9.5' => '(GMT+9:30) Adelaide, Darwin',
 	'timezone gmt +10' => '(GMT+10:00) Brisbane, Canberra, Melbourne, Sydney, Guam,Vlasdiostok',

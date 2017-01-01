@@ -17,7 +17,7 @@ if (isset($email)){
 		}
 	}
 	if ($email->canEdit(logged_user()) && !$email->isTrashed()){
-		add_page_action(lang('classify'), "javascript: og.render_modal_form('', {c:'mail', a:'classify', params: {id: '" .$email->getId(). "'}, focusFirst: false})", 'ico-classify', null, null, true);
+		add_page_action(lang('classify'), "javascript: og.render_modal_form('', {c:'mail', a:'classify', params: {id: '" .$email->getId(). "', from_mail_view:1}, focusFirst: false})", 'ico-classify', null, null, true);
 		
 		if (!$email->isArchived()) {
 			add_page_action(lang('archive'), "javascript:if(confirm(lang('confirm archive object'))) og.openLink('" . $email->getArchiveUrl() ."');", 'ico-archive-obj');
@@ -115,34 +115,46 @@ if (isset($email)){
 		$attach_div_style = "display:none;";
 	}
 	
-	if ($email->getHasAttachments() && is_array($attachments) && count($attachments) > 0) {
-		$description .=	'<tr><td colspan=2>	<fieldset>
-		<legend class="'.$attach_toggle_cls.'" onclick="og.toggle(\'mv_attachments\',this)">' . lang('attachments') . '</legend>
-		<div id="mv_attachments" style="'.$attach_div_style.'">
-		<table>';
+	if (is_array($attachments) && count($attachments) > 0) {
+		// check if has to show the container
+		$show_attach_container = false;
 		foreach($attachments as $att) {
 			if (!array_var($att, 'hide')) {
-				$size = $att['size'];//format_filesize(strlen($att["Data"]));
-				$fName = str_starts_with($att["FileName"], "=?") ? iconv_mime_decode($att["FileName"], 0, "UTF-8") : utf8_safe($att["FileName"]);
-				if (trim($fName) == "" && strlen($att["FileName"]) > 0) $fName = utf8_encode($att["FileName"]);
-				$description .= '<tr><td style="padding-right: 10px">';
-				$ext = get_file_extension($fName);
-				$fileType = FileTypes::getByExtension($ext);
-				if (isset($fileType))
-					$icon = $fileType->getIcon();
-				else
-					$icon = "unknown.png";
-				$download_url = get_url('mail', 'download_attachment', array('email_id' => $email->getId(), 'attachment_id' => $c));
-				include_once ROOT . "/library/browser/Browser.php";
-				if (Browser::instance()->getBrowser() == Browser::BROWSER_IE) {
-					$download_url = "javascript:location.href = '$download_url';";
-				}
-	      		$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
-				<td><a target="_self" href="' . $download_url . '">' . clean($fName) . " ($size)" . '</a></td></tr>';
+				$show_attach_container = true;
 			}
-      		$c++;
 		}
-		$description .= '</table></div></fieldset></td></tr>';
+		if ($show_attach_container) {
+			$description .=	'<tr><td colspan=2>	<fieldset>
+			<legend class="'.$attach_toggle_cls.'" onclick="og.toggle(\'mv_attachments\',this)">' . lang('attachments') . '</legend>
+			<div id="mv_attachments" style="'.$attach_div_style.'">
+			<table>';
+			foreach($attachments as $att) {
+				if (!array_var($att, 'hide')) {
+					$size = $att['size'];//format_filesize(strlen($att["Data"]));
+					$fName = str_starts_with($att["FileName"], "=?") ? iconv_mime_decode($att["FileName"], 0, "UTF-8") : utf8_safe($att["FileName"]);
+					if (trim($fName) == "" && strlen($att["FileName"]) > 0) $fName = utf8_encode($att["FileName"]);
+					$description .= '<tr><td style="padding-right: 10px">';
+					$ext = get_file_extension($fName);
+					$fileType = FileTypes::getByExtension($ext);
+					if ($fileType instanceof FileType)
+						$icon = $fileType->getIcon();
+					else
+						$icon = "unknown.png";
+					$download_url = get_url('mail', 'download_attachment', array('email_id' => $email->getId(), 'attachment_id' => $c));
+					include_once ROOT . "/library/browser/Browser.php";
+					if (Browser::instance()->getBrowser() == Browser::BROWSER_IE) {
+						$download_url = "javascript:location.href = '$download_url';";
+					}
+					
+					$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
+					<td><div id="att-link-container-'.$c.'">
+						<a target="_self" href="' . $download_url . '" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
+					</div></td></tr>';
+				}
+	      		$c++;
+			}
+			$description .= '</table></div></fieldset></td></tr>';
+		}
   } //if
   $description .= '</table></div>';
 		if (($email_count = MailContents::countMailsInConversation($email)) > 1) {
@@ -398,3 +410,45 @@ if (isset($email)){
 </div>
 <?php } else { echo lang('email not available'); } //if ?>
 
+<script>
+	// prevent mails panel full reload after closing this email
+	og.viewing_mail = true;
+	
+	// remove from list the emails that are marked to be removed
+	og.mail.removePendingMailsFromList();
+
+	$(function() {
+
+		og.original_download_attachment_link_href_values = {};
+		
+		$(".download-attachment-link").click(function(e) {
+			if ($(this).attr("disabled") == "disabled") {
+				e.preventDefault();
+				return;
+			}
+			
+			$(this).attr("disabled", "disabled");
+
+			var href_value = $(this).attr('href');
+			var container_id = $(this).parent().attr('id');
+
+			og.original_download_attachment_link_href_values[container_id] = href_value;
+			setTimeout(function() {
+				$(this).attr('href', 'javascript:return false;');
+			}, 10);
+			
+			og.reenable_download_attachment_link(container_id);
+
+			return true;
+		});
+	});
+
+	
+	
+	og.reenable_download_attachment_link = function(elem_id) {
+		setTimeout(function() {
+			$("#"+elem_id+" a").removeAttr("disabled");
+			$("#"+elem_id+" a").attr("href", og.original_download_attachment_link_href_values[elem_id]);			
+		}, 2000);
+	}
+</script>

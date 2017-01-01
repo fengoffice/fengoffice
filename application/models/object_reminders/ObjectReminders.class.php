@@ -50,10 +50,14 @@ class ObjectReminders extends BaseObjectReminders {
 		} else {
 			$extra = "";
 		}
+		$yesterday = DateTimeValueLib::now();
+		$yesterday = $yesterday->add('d', -1);
+		
 		return ObjectReminders::findAll(array(
 			'conditions' => array(
-				"`date` > '0000-00-00 00:00:00' AND `date` < ?" . $extra, DateTimeValueLib::now(),
+				"`date` > ? AND `date` < ?" . $extra, $yesterday, DateTimeValueLib::now(),
 			),
+			'order' => "date desc",
 			'limit' => config_option('cron reminder limit', 100)
 		));
 	}

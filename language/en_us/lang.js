@@ -197,6 +197,10 @@ addLangs({
 	'ok': 'OK',
 	'cancel': 'Cancel',
 	
+	/* object selector */
+	'select all': 'Select all',
+	'select all desc': 'Select all',
+	
 	/* contact manager*/
 	'company': 'Company',
 	'add new contact': 'Add a new person',
@@ -955,6 +959,8 @@ addLangs({
 	'classified under' : 'Classified under',
 	'percent completed' : 'Percent completed',
 	'birthdays': 'Birthdays',
+	'birthday': 'Birthday',
+	'job title': 'Job title',
 	'email address': 'Email address',
 	'home': 'Home',
 	'click here': 'Click here',

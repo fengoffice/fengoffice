@@ -73,4 +73,6 @@
 	'system dimension tags hint' => 'Etiketler modülü, sistemdeki ögelere etiketler atanmasını sağlar.',
 	'system module income-panel hint' => 'Gelir modülü, kurumunuzun faturalarını izlemenizi sağlar.',
 	'system module purchase-order-panel hint' => 'Kurumunuzun satın alma siparişlerini izlemenizi sağlar.',
+	'done apply changes' => 'Tamam. Değişiklikleri uygula',
+	'config category desc organization data' => 'Kuruluşunuzla ilgili bilgileri buradan yönetebilirsiniz.',
 ); ?>

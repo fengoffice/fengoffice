@@ -8,6 +8,7 @@ og.TrashCan = function() {
 
 	this.doNotRemove = true;
 	this.needRefresh = false;
+	this.actual_type_filter = 0;
 
 	if (!og.TrashCan.store) {
 		og.TrashCan.store = new Ext.data.Store({
@@ -40,7 +41,24 @@ og.TrashCan = function() {
 					} else {
 						this.fireEvent('messageToShow', "");
 					}
+					
+					var cmp = Ext.getCmp('trash-can');
+					if (d.filters.types) {
+						var items = [['0', '-- ' + lang('All') + ' --']];
+						for (i=0; i<d.filters.types.length; i++) {
+							items[items.length] = [d.filters.types[i].id, d.filters.types[i].name];
+						}
+						var types_filter = Ext.getCmp('ogTrashedTypeFilterCombo');
+						types_filter.reset();
+						types_filter.store.removeAll();
+						types_filter.store.loadData(items);
+						
+						types_filter.setValue(cmp.actual_type_filter);
+						types_filter.collapse();
+					}
+					
 					og.TrashCan.store.lastOptions.params.trashed = true;
+					og.TrashCan.store.lastOptions.params.count_results = 1;
 					Ext.getCmp('trash-can').reloadGridPagingToolbar('object','list_objects','trash-can');
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
@@ -67,7 +85,7 @@ og.TrashCan = function() {
 		mem_path = "";
 		var mpath = Ext.util.JSON.decode(r.data.memPath);
 		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;'>";
+			mem_path = "&nbsp;<div class='breadcrumb-container' style='display: inline-block;'>";
 			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
 			mem_path += "</div>";
 		}
@@ -287,6 +305,46 @@ og.TrashCan = function() {
 			scope: this
 		})
     };
+	
+	filters = {
+		type_filter: new Ext.form.ComboBox({
+	    	id: 'ogTrashedTypeFilterCombo',
+	    	store: new Ext.data.SimpleStore({
+		        fields: ['value', 'text'],
+		        data : []
+		    }),
+		    displayField:'text',
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:true,
+	        width:160,
+	        valueField: 'value',
+	        valueNotFoundText: '',
+	        listeners: {
+	        	'select' : function(combo, record) {
+					var man = Ext.getCmp("trash-can");
+					man.actual_type_filter = combo.getValue();
+					man.load();
+	        	}
+	        }
+		})
+	}
+	
+	var tbar = [
+		actions.restore,
+		'-',
+		actions.deletePermanently,
+		'-',
+		lang('show'),
+		filters.type_filter,
+		'->', {
+			xtype: 'label',
+			id: 'trash_warning',
+			text: og.config['days_on_trash'] ? lang('trash emptied periodically', og.config['days_on_trash']) : ''
+		},
+		'-',
+		actions.emptycan
+	];
     
 	og.TrashCan.superclass.constructor.call(this, {
 		//enableDrag: true,
@@ -311,17 +369,7 @@ og.TrashCan = function() {
 			forceFit: true
 		},
 		sm: sm,
-		tbar:[
-			actions.restore,
-			'-',
-			actions.deletePermanently,
-			'->', {
-				xtype: 'label',
-				id: 'trash_warning',
-				text: og.config['days_on_trash'] ? lang('trash emptied periodically', og.config['days_on_trash']) : ''
-			}
-		,'-',actions.emptycan
-		],
+		tbar: tbar,
 		listeners: {
 			'render': {
 				fn: function() {
@@ -367,9 +415,9 @@ Ext.extend(og.TrashCan, Ext.grid.GridPanel, {
 		this.store.load({
 			params: Ext.applyIf(params, {
 				start: start,
+				type_filter: params.type_filter ? params.type_filter : this.actual_type_filter,
 				limit: og.config['files_per_page'],
-				context: og.contextManager.plainContext() 
-
+				context: og.contextManager.plainContext()
 			})
 		});
 		this.needRefresh = false;
@@ -382,7 +430,10 @@ Ext.extend(og.TrashCan, Ext.grid.GridPanel, {
 	},
 	
 	reset: function() {
-		this.load({start:0});
+		var params = {start:0};
+		if (this.actual_type_filter) params.type_filter = this.actual_type_filter;
+		
+		this.load(params);
 	},
 	
 	showMessage: function(text) {

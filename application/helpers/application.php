@@ -177,97 +177,75 @@ function intersectCSVs($csv1, $csv2){
 	return implode(',', $final);
 }
 
-function allowed_users_to_assign($context = null, $filter_by_permissions = true) {
+function allowed_users_to_assign($context = null, $filter_by_permissions = true, $return_company_array = true) {
 	if ($context == null) {
 		$context = active_context();
 	}
-	
-	// only companies with users
-	$companies = Contacts::findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", "order" => "first_name, surname"));
 
-	$comp_ids = array("0");
-	$comp_array = array("0" => array('id' => "0", 'name' => lang('without company'), 'users' => array() ));
-	
-	foreach ($companies as $company) {
-		$comp_ids[] = $company->getId();
-		$comp_array[$company->getId()] = array('id' => $company->getId(), 'name' => $company->getObjectName(), 'users' => array() );
-	}
-	
 	if(!can_manage_tasks(logged_user()) && can_task_assignee(logged_user())) {
 		$contacts = array(logged_user());
 	} else if (can_manage_tasks(logged_user())) {
+		$contacts = array();
+		$tmp_contacts = array();
 		// for task selectors
 		if ($filter_by_permissions) {
-			$contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ, "AND `is_company`=0 AND `company_id` IN (".implode(",", $comp_ids).")");
+			//check if context is empty
+			$root_context = true;
+			if (isset($context) && is_array($context)) {
+				foreach ($context as $selection) {
+					if ($selection instanceof Member && $selection->getDimension()->getDefinesPermissions() && $selection->getDimension()->getIsManageable()) {
+						$root_context = false;
+						break;
+					}
+				}
+			}
+			//get users with can_task_assignee permissions
+			if($root_context){
+				$tmp_contacts = get_users_with_system_permission('can_task_assignee');
+			}else{
+				$tmp_contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ);
+			}
 		} else {
 			// for template variables selectors
 			$tmp_contacts = Contacts::getAllUsers();
-			$contacts = array();
-			foreach ($tmp_contacts as $c) {
-				if (can_task_assignee($c)) $contacts[] = $c;
-			}
+		}
+		foreach ($tmp_contacts as $c) {
+			if (can_task_assignee($c)) $contacts[] = $c;
 		}
 	} else {
 		$contacts = array();
 	}
-	
+
+	if(!$return_company_array){
+		return $contacts;
+	}
+
+	$comp_array = array();
+	Hook::fire('contact_check_can_view_in_array', null, $contacts);
 	foreach ($contacts as $contact) { /* @var $contact Contact */
-		$pg_ids = implode(',', $contact->getPermissionGroupIds());
-		if ($pg_ids == "") $pg_ids = "0";
-		if ( TabPanelPermissions::instance()->count( array( "conditions" => "permission_group_id IN ($pg_ids) AND tab_panel_id = 'tasks-panel' " )) && can_task_assignee($contact)){
-			$comp_array[$contact->getCompanyId()]['users'][] = array('id' => $contact->getId(), 'name' => $contact->getObjectName(), 'isCurrent' => $contact->getId() == logged_user()->getId());
+		if (!isset($comp_array[$contact->getCompanyId()])) {
+			if ($contact->getCompanyId() == 0) {
+				$comp_array[0] = array('id' => "0", 'name' => lang('without company'), 'users' => array());
+			} else {
+				$comp = Contacts::findById($contact->getCompanyId());
+				$comp_array[$contact->getCompanyId()] = array('id' => $contact->getCompanyId(), 'name' => $comp->getObjectName(), 'users' => array());
+			}
 		}
+		$comp_array[$contact->getCompanyId()]['users'][] = array('id' => $contact->getId(), 'name' => $contact->getObjectName(), 'isCurrent' => $contact->getId() == logged_user()->getId());
 	}
-	foreach ($comp_array as $company_id => &$comp_data) {
-		if (count($comp_data['users']) == 0) {
-			unset($comp_array[$company_id]);
-		}
-	}
+	
 	return array_values($comp_array);
 }
 
 function allowed_users_to_assign_all_mobile($member_id = null) {
-	if ($member_id == null) {
-		$context = active_context();
-	}else{
+	$context = null;
+	if ($member_id != null) {
 		$member = Members::findById($member_id);
 		if ($member instanceof Member){
-			$context[] = $member;
+			$context = array($member);
 		}
 	}
-	
-	// only companies with users
-	$companies = Contacts::findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", "order" => "first_name ASC"));
-
-	$comp_ids = array("0");
-	$comp_array = array("0" => array('id' => "0", 'name' => lang('without company'), 'users' => array() ));
-	
-	foreach ($companies as $company) {
-		$comp_ids[] = $company->getId();
-		$comp_array[$company->getId()] = array('id' => $company->getId(), 'name' => $company->getObjectName(), 'users' => array() );
-	}
-	
-	if(!can_manage_tasks(logged_user()) && can_task_assignee(logged_user())) {
-		$contacts = array(logged_user());
-	} else if (can_manage_tasks(logged_user())) {
-		$contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ, "AND `is_company`=0 AND `company_id` IN (".implode(",", $comp_ids).")");
-	} else {
-		$contacts = array();
-	}
-	
-	foreach ($contacts as $contact) { /* @var $contact Contact */
-		$pg_ids = implode(',', $contact->getPermissionGroupIds());
-		if ($pg_ids == "") $pg_ids = "0";
-		if ( TabPanelPermissions::instance()->count( array( "conditions" => "permission_group_id IN ($pg_ids) AND tab_panel_id = 'tasks-panel' " )) && can_task_assignee($contact)){
-			$comp_array[$contact->getCompanyId()]['users'][] = array('id' => $contact->getId(), 'name' => $contact->getObjectName(), 'isCurrent' => $contact->getId() == logged_user()->getId());
-		}
-	}
-	foreach ($comp_array as $company_id => &$comp_data) {
-		if (count($comp_data['users']) == 0) {
-			unset($comp_array[$company_id]);
-		}
-	}
-	return array_values($comp_array);
+	return allowed_users_to_assign($context);
 }
 
 
@@ -448,8 +426,9 @@ function render_object_comments_for_print(ContentDataObject $object) {
  * @param ContentDataObject $object Show custom properties of this object
  * @return null
  */
-function render_object_custom_properties($object, $required, $co_type=null) {
+function render_object_custom_properties($object, $required, $co_type=null, $visibility='all') {
 	tpl_assign('_custom_properties_object', $object);
+	tpl_assign('visibility', $visibility);
 	//tpl_assign('required', $required);
 	tpl_assign('co_type', $co_type);
 	return tpl_fetch(get_template_path('object_custom_properties', 'custom_properties'));
@@ -467,12 +446,18 @@ function render_member_custom_properties($member, $required, $visibility='all', 
 		tpl_assign('visibility', $visibility);
 		tpl_assign('parent_member', $parent_member);
 		tpl_assign('member_is_new', $member_is_new);
-		return tpl_fetch(get_template_path('member_custom_properties', 'custom_properties'));
+		return tpl_fetch(get_template_path('member_custom_properties', 'member_custom_properties', 'member_custom_properties'));
 	} else {
 		return "";
 	}
 } // render_member_custom_properties
 
+function member_has_custom_properties($type_id) {
+	if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+		return count(MemberCustomProperties::getCustomPropertyIdsByObjectType($type_id)) > 0;
+	}
+	return false;
+}
 
 /**
  * Show object timeslots block
@@ -1068,7 +1053,8 @@ function render_add_custom_properties(ContentDataObject $object) {
 	
 	$genid = gen_id();
 	$output = '
-		<div id="'.$genid.'" class="og-add-custom-properties">
+        <label>'.lang('properties').'</label>
+		<div id="'.$genid.'" class="og-add-custom-properties" style="float:left;">
 			<table><tbody><tr>
 			<th>' . lang('name') . '</th>
 			<th>' . lang('value') . '</th>
@@ -1076,6 +1062,7 @@ function render_add_custom_properties(ContentDataObject $object) {
 			</tr></tbody></table>
 			<a href="#" onclick="og.addObjectCustomProperty(this.parentNode, \'\', \'\', true);return false;">' . lang("add custom property") . '</a>
 		</div>
+		<div class="clear"></div>
 		<script>
 		var ti = 30000;
 		og.addObjectCustomProperty = function(parent, name, value, focus) {
@@ -1090,7 +1077,7 @@ function render_add_custom_properties(ContentDataObject $object) {
 			td.innerHTML = \'<input class="value" type="text" name="custom_prop_values[\' + count + \']" value="\' + value + \'" tabindex=\' + (ti + 1) + \'>\';;
 			tr.appendChild(td);
 			var td = document.createElement("td");
-			td.innerHTML = \'<div class="link-ico ico-delete" style="width:16px;height:16px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
+			td.innerHTML = \'<div class="db-ico ico-delete" style="margin-left:2px;height:20px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
 			tr.appendChild(td);
 			tbody.appendChild(tr);
 			if (input && focus)
@@ -1135,8 +1122,9 @@ function render_add_custom_properties(ContentDataObject $object) {
  * Renders an object's custom properties
  * @return string
  */
-function render_custom_properties(ApplicationDataObject $object) {
+function render_custom_properties(ApplicationDataObject $object, $visibility='all') {
 	tpl_assign('__properties_object', $object);
+	tpl_assign('visibility', $visibility);
 	return tpl_fetch(get_template_path('view', 'custom_properties'));
 }
 
@@ -1351,13 +1339,19 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 							$is_required = true;
 						
 						if (!isset($id)) $id = gen_id();
+						
+						if (defined('JSON_NUMERIC_CHECK')) {
+							$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
+						} else {
+							$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
+						}
 					?>
 					var config = {
 							title: '<?php echo $dimension_name ?>',
 							dimensionId: <?php echo $dimension_id ?>,
 							objectTypeId: <?php echo $content_object_type_id ?>,
 							required: <?php echo $is_required ?>,
-							reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK ); ?>,
+							reloadDimensions: <?php echo $reloadDimensions ?>,
 							isMultiple: <?php echo $dimension['is_multiple'] ?>,
 							selModel: <?php echo ($dimension['is_multiple'])?
 								'new Ext.tree.MultiSelectionModel()':
@@ -1500,7 +1494,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			<input id='<?php echo $genid . array_var($options, 'pre_hf_id', '') ?>members' name='<?php echo array_var($options, 'pre_hf_id', '') ?>members' type='hidden' ></input> 
 		<?php } ?>
 
-		<div id='<?php echo $component_id ?>-container' class="<?php echo array_var($options, 'pre_class', '')?>single-tree member-chooser-container" ></div>
+		<div id='<?php echo $component_id ?>-container' class="<?php echo array_var($options, 'pre_class', '')?>single-tree member-chooser-container <?php echo array_var($dimension_info, 'is_multiple') ? "multiple-selection" : "single-selection"; ?>" ></div>
 		
 		<script>
 			var memberChooserPanel = new og.MemberChooserPanel({
@@ -1657,7 +1651,14 @@ function render_widget_option_input($widget_option, $genid=null) {
 		case 'UserCompanyConfigHandler' :
 			if ($widget_option['widget'] == 'overdue_upcoming') $ot = ObjectTypes::findByName('task');
 			else break;
+			
 			$users = allowed_users_in_context($ot->getId(), array(), ACCESS_LEVEL_READ, '', true);
+			$has_myself = false;
+			foreach ($users as $u) {
+				if ($u->getId() == logged_user()->getId()) $has_myself = true;
+			}
+			if (!$has_myself) array_unshift($users, logged_user());
+			
 			$output .= "<select name='$name' id='".$genid.$name."' onchange='og.on_widget_select_option_change(this);'>";
 			$sel = $widget_option['value'] == 0 ? 'selected="selected"' : '';
 			$output .= "<option value='0' $sel>".lang('everyone')."</option>";

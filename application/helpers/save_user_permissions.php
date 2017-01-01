@@ -167,13 +167,15 @@
 	}
 	
 	// remove contact object from members where permissions were deleted
-	$user = Contacts::findOne(array('conditions' => 'permission_group_id='.$pg_id));
-	if ($user instanceof Contact) {
-		$to_remove = array();
-		foreach ($all_perm_deleted as $m_id => $must_remove) {
-			if ($must_remove) $to_remove[] = $m_id;
+	if (isset($all_perm_deleted) && is_array($all_perm_deleted)) {
+		$user = Contacts::findOne(array('conditions' => 'permission_group_id='.$pg_id));
+		if ($user instanceof Contact) {
+			$to_remove = array();
+			foreach ($all_perm_deleted as $m_id => $must_remove) {
+				if ($must_remove) $to_remove[] = $m_id;
+			}
+			ObjectMembers::removeObjectFromMembers($user, logged_user(), null, $to_remove);
 		}
-		ObjectMembers::removeObjectFromMembers($user, logged_user(), null, $to_remove);
 	}
 	
 	@unlink($permissions_filename);

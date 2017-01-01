@@ -191,11 +191,15 @@ function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
 		}
 		if (count($member_ids) == 0) return;
 		
-		$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).')'));
+		$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).') AND dimension_id IN (SELECT d.id FROM '.TABLE_PREFIX.'dimensions d WHERE d.defines_permissions=1)'));
 		$persons_dim = Dimensions::findByCode("feng_persons");
 		$user_member = Members::findOneByObjectId($user->getId(), $persons_dim->getId());
 		
 		$affected_dimensions = core_dim_create_member_associations($user, $user_member, $members);
+		
+		if (count($member_ids) > 0) {
+			$affected_dimensions = array_flat(DB::executeAll("SELECT DISTINCT(dimension_id) FROM ".TABLE_PREFIX."members WHERE id IN (".implode(',', $member_ids).")"));
+		}
 		
 		// remove from all members of the affected dimensions
 		if (count($affected_dimensions) > 0) {

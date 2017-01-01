@@ -54,6 +54,7 @@ return array(
   	'assigned to description' => 'To select the electronic mail account owner',
         'late' => 'Late',
         'upcoming' => 'Upcoming',
+		'upcoming tasks w' => 'Upcoming',
         'today' => 'Today',
         'yesterday' => 'Yesterday',
         'tomorrow' => 'Tomorrow',
@@ -81,6 +82,7 @@ return array(
         'at' => 'at',
         'on' => 'On',
         'in' => 'In',
+		'in m' => 'in',
   	'check all' => 'Check All',
   	'uncheck all' => 'Uncheck All',
         'people' => 'People',
@@ -421,6 +423,6 @@ return array(
 	'menu home' => 'Home',
 	'select group to add user' => 'Select a group from the dropdown list below to add the user to the group',
 	'click to select country' => 'Click to select country',
-	'there are no custom properties defined message' => 'There are no custom properties defined for {0} "{1}".',
+	'there are no custom properties defined message' => 'There are no custom properties defined for {0}.',
 	'there are no custom properties defined link' => 'Please refer to <a href="http://wiki.fengoffice.com/doku.php/custom_properties" target="_blank" class="wiki-link">this article</a> to learn how to add custom properties.',
 );

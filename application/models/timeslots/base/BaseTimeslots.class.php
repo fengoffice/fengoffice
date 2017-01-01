@@ -92,6 +92,14 @@
 		return array_merge(parent::getExternalColumns(), array('contact_id', 'time', 'billing'));
 	}
 	
+	/**
+	 * Returns the numeric fields that store a time value
+	 * Must be overriden by the specific object classes
+	 */
+	function getTimeColumns() {
+		return array('time');
+	}
+	
 	
 	/**
 	 * Return system columns

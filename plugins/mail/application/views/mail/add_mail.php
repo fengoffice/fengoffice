@@ -20,6 +20,11 @@
 	
 	$visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
 ?>
+<style>
+#add_mail_attachments .removeDiv {
+	line-height: 20px;
+}
+</style>
 <input type="hidden" id="<?php echo $genid ?>signatures" />
 <script>
 og.attachContents = <?php echo user_config_option('attach_docs_content') ? '1' : '0'; ?>;
@@ -67,7 +72,7 @@ sig.actualHtmlSignature = '';
     		$sig = "";
     	}
     	//$sig = nl2br($sig);
-    	$htmlsig = str_replace(array("\r", "\n"), "", "<div class=\"fengoffice_signature\">$sig</div>");
+    	$htmlsig = str_replace(array("\r", "\n"), "", "<div ".MAIL_SIGNATURE_DIV_ATTRIBUTES."><div contenteditable='true'>$sig</div></div>");
     	$textsig = html_to_text($sig);
     	if ($acc_id) {
 	    	if ($m_acc->getId() == $acc_id) {
@@ -177,7 +182,9 @@ sig.actualHtmlSignature = '';
  		<a href="#" class="option" onclick="og.toggleAndBolden('add_mail_attachments', this);og.resizeMailDiv();"><?php echo lang('mail attachments') ?></a> -
 
 		<a href="#" class="option" onclick="og.toggleAndBolden('<?php echo $genid ?>add_mail_add_contacts',this);og.resizeMailDiv();"><?php echo lang('mail add contacts') ?></a>
-		<?php foreach ($categories as $category) { ?>
+		<?php foreach ($categories as $category) {
+				if (array_var($category, 'hidden')) continue;
+			?>
 			- <a href="#" class="option" <?php if ($category['visible']) echo 'style="font-weight: bold"'; ?> onclick="og.toggleAndBolden('<?php echo $genid . $category['name'] ?>', this);og.resizeMailDiv();"><?php echo lang($category['name'])?></a>
 		<?php } ?>
 	</div>
@@ -266,9 +273,9 @@ sig.actualHtmlSignature = '';
     	$idx = stripos($body, '<body');
     	if (false) {
     		$end_tag = strpos($body, '>', $idx) + 1;
-    		$html_body = utf8_substr($body, 0, $end_tag) . "<br />--<br />$orig_htmlsignature" . utf8_substr($body, $end_tag); 
+    		$html_body = utf8_substr($body, 0, $end_tag) . "<br /><br />$orig_htmlsignature" . utf8_substr($body, $end_tag); 
     	} else {
-    		$html_body = "<br />--<br />$orig_htmlsignature" . $body;
+    		$html_body = "<br /><br />$orig_htmlsignature" . $body;
     	}
     } else $html_body = array_var($mail_data, 'body');
     
@@ -299,9 +306,9 @@ var h = document.getElementById(genid+"ck_editor").offsetHeight;
 try {
 var editor = CKEDITOR.replace(genid+'ckeditor', {
 	height: (h) + 'px',
-	enterMode: CKEDITOR.ENTER_BR,
 	allowedContent: true,
-	shiftEnterMode: CKEDITOR.ENTER_P,
+	enterMode: CKEDITOR.ENTER_BR,
+	shiftEnterMode: CKEDITOR.ENTER_BR,
 	disableNativeSpellChecker: false,
 	resize_enabled: false, //this causes a bug when pasting info into Google Chrome and other browsers 
 	customConfig: '',
@@ -352,7 +359,7 @@ var editor = CKEDITOR.replace(genid+'ckeditor', {
 			Ext.getCmp(p.id).setPreventClose(ev.editor.checkDirty());
 		}
 	},
-	removePlugins: 'scayt,liststyle,tabletools,contextmenu',
+	removePlugins: 'scayt,liststyle,tabletools,contextmenu,magicline',
 	entities_additional : '#39,#336,#337,#368,#369'
 });
 } catch (e) {
@@ -475,5 +482,7 @@ og.checkFrom = function() {
 	}
 }
 
+<?php if (!$draft_edit) { ?>
 og.changeSignature(genid, $("#"+genid+"mailAccount").val());
+<?php } ?>
 </script>

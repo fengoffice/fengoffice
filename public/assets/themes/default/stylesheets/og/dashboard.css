@@ -307,12 +307,13 @@
 	padding-left: 5px;
 }
 
-.widget h2  {
-	padding: 30px 0 5px;
-	margin-bottom: 10px;
+.view-container .widget h2  {
+	padding: 15px 0 5px;
+	margin-bottom: 0px;
 	border-bottom: 1px solid #CCC;
 	font-size: 16px;
 	font-weigth: bold;
+	color: #666;
 }
 .widget h2.first  {
 	padding-top: 10px;
@@ -437,6 +438,10 @@
 .contact-picture-container img {
 	max-height: 55px;
 }
+.contact-picture-container.medium-size img {
+	max-height: 40px;
+	max-width: 40px;
+}
 .contact-picture-container.small img {
 	max-height: 30px;
 }
@@ -540,11 +545,59 @@
 
 
 .widget-comments .comment-row {
-	padding: 2px 0 2px 22px ;
-	background-position: 0 4px !important;
-	margin: 10px 0 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	padding-bottom: 10px;
+}
+
+.widget-comments .comment-text {
+	font-size: 13px;
+	color: #333333;
+}
+
+.widget-comments .contact-picture-container{
+	float: left;
+	max-height: 55px;
+}
+
+.widget-comments .comment-text-container{
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+.widget-comments .comment-info-container{
+	line-height: 20px;
+	margin-left: 50px;
+}
+
+.widget-comments .date-container{
+	text-align: right;
+	width: 180px;
+}
+
+.widget-comments .datecomment-breadcrumb-container{
+	max-width: 160px;
+}
+
+.widget-comments .comment-breadcrumb-container{
+	width: 100%;
+	display: inline-block;
+	line-height: 25px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	vertical-align: middle;
+}
+
+.widget-comments .comment-info-table{
+	table-layout: fixed;
+	width: 100%;
+}
+
+.widget-comments .comment-object{
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 100px;
+	white-space: nowrap;
 }
 
 .widget-emails .email-row {

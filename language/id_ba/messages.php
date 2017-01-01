@@ -303,8 +303,7 @@
 	'log edit projectmessages' => '\'{0}\' diperbarui',
 	'log delete projectmessages' => '\'{0}\' dihapus',
 	'log trash projectmessages' => '\'{0}\' dipindahkan ke trash (sampah)',
-	'log untrash projectmessages' => '\'{0}\' dikembalikan ke folder semula dari trash (sampah)
-',
+	'log untrash projectmessages' => '\'{0}\' dikembalikan ke folder semula dari trash (sampah)',
 	'log archive projectmessages' => '\'{0}\' diarsipkan',
 	'log unarchive projectmessages' => '\'{0}\' tidak diarsipkan',
 	'log comment projectmessages' => 'Komentar pada \'{0}\'',
@@ -561,8 +560,7 @@
 	'log read projectfiles' => 'Dilihat \'{0}\'',
 	'log download projectfiles' => 'Diunduh \'{0}\'',
 	'log read projectmessages' => 'Dilihat \'{0}\'',
-	'log read mailcontents' => 'Dilihat \'{0}\'
-',
+	'log read mailcontents' => 'Dilihat \'{0}\'',
 	'log read companies' => 'Dilihat \'{0}\'',
 	'log read contacts' => 'Dilihat \'{0}\'',
 	'log read projectevents' => 'Dilihat \'{0}\'',

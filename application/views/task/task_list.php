@@ -107,6 +107,8 @@ if($task_list->getAssignedTo()){
 		} ?>
 		 
 		 <div class="member-path-dim-block" style="font-weight:bold"><?php if (isset($status)){echo $status;} ?></div>
+		 
+		 <?php $null=null; Hook::fire('view_task_render_more_properties', $task_list, $null)?>
 	</div>
 	<?php } ?>
 	

@@ -52,6 +52,8 @@ class ConfigController extends ApplicationController {
 		$options = $category->getOptions(false);
 		$categories = ConfigCategories::getAll(false);
 
+		Hook::fire('additional_general_config_option', array('category' => $category), $options);
+		
 		tpl_assign('category', $category);
 		tpl_assign('options', $options);
 		tpl_assign('config_categories', $categories);
@@ -63,7 +65,7 @@ class ConfigController extends ApplicationController {
                                 if (GlobalCache::isAvailable() && GlobalCache::key_exists('config_option_'.$option->getName())) {					
                                         GlobalCache::delete('config_option_'.$option->getName());					
                                 }
-                                
+                                if (!$option instanceof ConfigOption) continue;
                                 if($option->getName() == "working_days"){
                                     $new_value = "";
                                     foreach (array_var($submited_values, $option->getName()) as $value){

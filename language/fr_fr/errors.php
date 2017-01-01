@@ -133,4 +133,5 @@
 	'you dont have permissions to classify object in member' => 'Vous n\'avez pas les permissions pour classer \'{0}\' dans \'{1}\'',
 	'uploaded file bigger than max upload size' => 'Vous essayez de télécharger un document dont la taille de téléchargement dépasse la limite permise actuelle de {0}.',
 	'date format error' => 'Vous avez une erreur lors de la saisie date d\'échéance ou la date de début, le format de date correcte est "{0}", s\'il vous plaît utiliser ce format ou le changer dans les préférences de votre compte.',
+	'you must select where to keep' => 'Vous devez spécifier une destination pour {0}.',
 ); ?>

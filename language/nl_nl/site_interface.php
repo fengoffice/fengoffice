@@ -140,7 +140,7 @@
 	'import contact success' => 'De contacten zijn geïmporteerd',
 	'contact fields' => 'Contact velden',
 	'fields from file' => 'Velden uit bestand',
-	'you must match the database fields with file fields before executing the import process' => 'U moet aangeven welke gegevens in welk veld van de database moeten worden geïmporteerd voor dat het import proces kan worden gestart.',
+	'you must match the database fields with file fields before executing the import process' => 'U moet overeenkomen met de database velden met file velden voor het uitvoeren van het importeren.',
 	'import result' => 'Importeer resultaten',
 	'contacts succesfully imported' => 'De contacten zijn succesvol geïmporteerd ',
 	'contacts import fail' => 'Het importeren van de contacten is niet gelukt',
@@ -543,8 +543,7 @@
 	'reset password form desc' => '<b>{0}</b>, uw nieuwe wachtwoord 2 maal invoeren',
 	'success reset password' => 'Uw nieuwe wachtwoord is opgeslagen',
 	'auto detect user timezone' => 'Gebruikers tijdzone automatisch detecteren aan de hand van internetbrowser',
-	'confirm discard email' => 'Weet u zeker dat u deze email wilt negeren ?
-',
+	'confirm discard email' => 'Weet u zeker dat u deze email wilt negeren ?',
 	'download email' => 'Download email',
 	'instantiate' => 'Beheren',
 	'template parameters' => 'Sjabloon variabelen',
@@ -598,4 +597,6 @@
 	'success add task dependency' => 'Taakafhankelijkheid toegevoegd',
 	'click to expand' => 'Klik om uit te vouwen',
 	'select member to add timeslots' => 'To add general time records you have to select at least one item of: {0}',
+	'add contact here' => 'Contact Voeg hier toe',
+	'add contacts to' => 'Contacten toe voegen {0}',
 ); ?>

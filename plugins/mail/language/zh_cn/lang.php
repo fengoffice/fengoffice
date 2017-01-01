@@ -1,20 +1,4 @@
 <?php return array(
-	'mail' => '邮件',
-	'linked mail tab' => '邮件',
-	'subscribed notification mail' => '订阅邮件 \'{0}\'',
-	'subscribed notification mail desc' => '你已经订阅了邮件 \'{0}\'  {1}。',
-	'user config option name mails_per_page' => '邮件页码',
-	'user config option desc mails_per_page' => 'Amount of emails listed (avoid 0 and negative numbers). Take into account that the larger the number, the more time it will take to load the emails.',
-	'user config option name check_attach_word' => '检查附加词',
-	'user config option desc check_attach_word' => 'Notifies the user when sending an email if it has nothing attached but contains the word attach',
-	'user config option name check_is_defult_account' => '选中并发送邮件',
-	'user config option desc check_is_defult_account' => 'Checks whether the account selected to send the email is the default account and notifies the user if is not',
-	'by subject or address' => '按标题或地址搜索',
-	'are you sure you want to send the email using account x' => 'Are you sure you want to send the email using account {0} ?',
-	'field Objects to' => '收件者',
-	'field Objects cc' => '抄送',
-	'field Objects bcc' => '密送',
-	'field Objects body_html' => '正文HTML',
-	'field Objects body_plain' => '正文Plain',
-	'classify attachments' => '分类附件',
-); ?>
+
+
+);

@@ -18,6 +18,15 @@ class Timeslot extends BaseTimeslot {
 	
 	protected $rel_object = null;
 	
+	protected $force_recalculate_billing = false;
+	
+	function setForceRecalculateBilling($force) {
+		$this->force_recalculate_billing = $force;
+	}
+	function getForceRecalculateBilling() {
+		return $this->force_recalculate_billing;
+	}
+	
 	/**
 	 * Return object connected with this action
 	 *
@@ -404,6 +413,8 @@ class Timeslot extends BaseTimeslot {
 			
 		if ($task_name != '')
 			$result['tn'] = $task_name;
+		
+		Hook::fire('timeslot_info_additional_data', $this, $result);
 		
 		return $result;
 	}

@@ -109,7 +109,7 @@ class ProjectTasks extends BaseProjectTasks {
 	 * @param DateTimeValue $date_end	in user gmt 
 	 * @return array
 	 */
-	function getRangeTasksByUser(DateTimeValue $date_start, DateTimeValue $date_end, $assignedUser, $task_filter = null, $archived = false, $raw_data = false) {
+	function getRangeTasksByUser(DateTimeValue $date_start, DateTimeValue $date_end, $assignedUser, $task_filter = null, $archived = false, $raw_data = false, $limit = 50) {
 		
 		$from_date = new DateTimeValue ( $date_start->getTimestamp ());
 		$from_date = $from_date->beginningOfDay ();
@@ -135,10 +135,15 @@ class ProjectTasks extends BaseProjectTasks {
 		if(!$other_perm_conditions){
 			$conditions = " AND (`assigned_to_contact_id` = ". logged_user()->getId () ." OR `created_by_id` = ". logged_user()->getId () .")";
 		}
-		$result = self::instance()->listing(array(
+		
+		$listing_params = array(
 			"extra_conditions" => $conditions,
 			"raw_data" => $raw_data,
-		));
+		);
+		if ($limit) {
+			$listing_params["limit"] = $limit;
+		}
+		$result = self::instance()->listing($listing_params);
 		
 		return $result->objects;
 	} // getDayTasksByUser
@@ -563,6 +568,8 @@ class ProjectTasks extends BaseProjectTasks {
 			
 			$result['previous_tasks_total'] = ProjectTaskDependencies::countPendingPreviousTasks($tmp_task->getId());	
 		}
+		
+		Hook::fire('task_info_additional_data', $raw_data, $result);
 		
 		return $result;
 	}

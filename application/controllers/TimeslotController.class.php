@@ -79,7 +79,7 @@ class TimeslotController extends ApplicationController {
 
 		$timeslot_data = array_var($_POST, 'timeslot');
 		$hours = array_var($timeslot_data, 'hours');
-                $minutes = array_var($timeslot_data, 'minutes');
+		$minutes = array_var($timeslot_data, 'minutes');
 		
 		if (strpos($hours,',') && !strpos($hours,'.')) {
 			$hours = str_replace(',','.',$hours);
@@ -105,17 +105,19 @@ class TimeslotController extends ApplicationController {
 			$timeslot->setContactId(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
 			$timeslot->setRelObjectId($object_id);
 			
-			$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
-			$billing_category_id = $user->getDefaultBillingId();
-			$bc = BillingCategories::findById($billing_category_id);
-			if ($bc instanceof BillingCategory) {
-				$timeslot->setBillingId($billing_category_id);
-				$hourly_billing = $bc->getDefaultValue();
-				$timeslot->setHourlyBilling($hourly_billing);
-				$timeslot->setFixedBilling(number_format($hourly_billing * $hours, 2));
-				$timeslot->setIsFixedBilling(false);
+			// Billing
+			if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
+				$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
+				$billing_category_id = $user->getDefaultBillingId();
+				$bc = BillingCategories::findById($billing_category_id);
+				if ($bc instanceof BillingCategory) {
+					$timeslot->setBillingId($billing_category_id);
+					$hourly_billing = $bc->getDefaultValue();
+					$timeslot->setHourlyBilling($hourly_billing);
+					$timeslot->setFixedBilling(number_format($hourly_billing * $hours, 2));
+					$timeslot->setIsFixedBilling(false);
+				}
 			}
-			
 
 			try{
 				DB::beginWork();
@@ -182,15 +184,17 @@ class TimeslotController extends ApplicationController {
 		$timeslot->setFromAttributes($timeslot_data);
 		
 		//Billing
-		$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
-		$billing_category_id = $user->getDefaultBillingId();
-		$bc = BillingCategories::findById($billing_category_id);
-		if ($bc instanceof BillingCategory) {
-			$timeslot->setBillingId($billing_category_id);
-			$hourly_billing = $bc->getDefaultValue();
-			$timeslot->setHourlyBilling($hourly_billing);
-			$timeslot->setFixedBilling(number_format($hourly_billing * $hours, 2));
-			$timeslot->setIsFixedBilling(false);
+		if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
+			$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
+			$billing_category_id = $user->getDefaultBillingId();
+			$bc = BillingCategories::findById($billing_category_id);
+			if ($bc instanceof BillingCategory) {
+				$timeslot->setBillingId($billing_category_id);
+				$hourly_billing = $bc->getDefaultValue();
+				$timeslot->setHourlyBilling($hourly_billing);
+				$timeslot->setFixedBilling(number_format($hourly_billing * $hours, 2));
+				$timeslot->setIsFixedBilling(false);
+			}
 		}
 		
 		try{
@@ -361,21 +365,30 @@ class TimeslotController extends ApplicationController {
 		
 		if(is_array(array_var($_POST, 'timeslot'))) {
 			try {
+				$old_user_id = $timeslot->getContactId();
+				
+				$timeslot->setFromAttributes($timeslot_data);
 				
 				$timeslot->setContactId(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
 				$timeslot->setDescription(array_var($timeslot_data, 'description'));
+				
+				if ($timeslot->getContactId() != $old_user_id) {
+					$timeslot->setForceRecalculateBilling(true);
+				}
        			
 				$st = getDateValue(array_var($timeslot_data, 'start_value'),DateTimeValueLib::now());
-				$st->setHour(array_var($timeslot_data, 'start_hour'));
-				$st->setMinute(array_var($timeslot_data, 'start_minute'));
+				$s_time = getTimeValue(array_var($timeslot_data, 'start_time'));
+				$st->setHour($s_time['hours']);
+				$st->setMinute($s_time['mins']);
 				
 				$et = getDateValue(array_var($timeslot_data, 'end_value'),DateTimeValueLib::now());
-				$et->setHour(array_var($timeslot_data, 'end_hour'));
-				$et->setMinute(array_var($timeslot_data, 'end_minute'));
+				$e_time = getTimeValue(array_var($timeslot_data, 'end_time'));
+				$et->setHour($e_time['hours']);
+				$et->setMinute($e_time['mins']);
 				
 				$st = new DateTimeValue($st->getTimestamp() - logged_user()->getTimezone() * 3600);
 				$et = new DateTimeValue($et->getTimestamp() - logged_user()->getTimezone() * 3600);
-                                $timeslot->setStartTime($st);
+				$timeslot->setStartTime($st);
 				$timeslot->setEndTime($et);
 				
 				if ($timeslot->getStartTime() > $timeslot->getEndTime()){
@@ -500,6 +513,60 @@ class TimeslotController extends ApplicationController {
 		if($task->getPercentCompleted() > 100){
 			Notifier::workEstimate($task);
 		}
+	}
+	
+	
+	function get_users_for_timeslot() {
+		ajx_current("empty");
+		$user_info = array();
+		
+		if (can_manage_time(logged_user())) {
+			
+			$timeslot = Timeslots::findById(get_id());
+			
+			$rel_object = null;
+			if (array_var($_GET, 'task_id')) {
+				$rel_object = ProjectTasks::findById(array_var($_GET, 'task_id'));
+			}
+			
+			if (is_null($rel_object) && $timeslot instanceof Timeslot) {
+				$rel_object = $timeslot->getRelObject();
+			}
+			
+			if (can_manage_time(logged_user())) {
+				if (logged_user()->isMemberOfOwnerCompany()) {
+					$users = Contacts::getAllUsers();
+				} else {
+					$users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = ". logged_user()->getCompanyId()) : array(logged_user());
+				}
+			} else {
+				$users = array(logged_user());
+			}
+			$tmp_users = array();
+			foreach ($users as $user) {
+				
+				if ($rel_object instanceof ProjectTask) {
+					$is_assigned = $rel_object->getAssignedToContactId() == $user->getId();
+					$members = $rel_object->getMembers();
+				} else {
+					$is_assigned = false;
+					$members = $timeslot instanceof Timeslot ? $timeslot->getMembers() : array();
+				}
+				
+				if ($is_assigned || can_add($user, $members, Timeslots::instance()->getObjectTypeId())) {
+					$tmp_users[] = $user;
+				}
+			}
+			$users = $tmp_users;
+			
+			$user_info = array();
+			foreach ($users as $user) {
+				$user_info[] = array('id' => $user->getId(), 'name' => $user->getObjectName());
+			}
+			
+		}
+		
+		ajx_extra_data(array('users' => $user_info));
 	}
 
 } // TimeslotController

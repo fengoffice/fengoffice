@@ -16,6 +16,9 @@
 #tabs-panel .x-panel-body-noheader {
 	overflow-x: hidden !important;
 }
+#tabs-panel #reporting-panel .x-panel-body-noheader {
+	overflow-x: auto !important;
+}
 
 #menu-panel .x-panel-body{
 	border-bottom-width: 0;
@@ -38,7 +41,7 @@
 
 /*--- tabs.css ---*/
 .x-tab-strip span.x-tab-strip-text {
-	padding-top: 5px;
+	padding-top: 6px;
 	font-size: 11px;
 	font-weight: bold;
 }
@@ -588,15 +591,22 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 }
 
 .x-grid-group-hd {
-    background-color: #eeeeee;
+    background-color: #e5e5e5;
     border-bottom: 1px solid #cccccc;
     border-top: 1px solid #cccccc;
     cursor: pointer;
-    padding: 5px 2px;
+    padding: 2px;
 }
 .x-grid-group-hd div {
     font: bold 13px "Open Sans",Arial,sans-serif;
+    color: #111;
 }
 .x-btn-pressed{
 	background-color: #e6e6e6;
+}
+
+
+.x-menu-list {
+    max-height: 500px;
+    overflow-y: auto;
 }

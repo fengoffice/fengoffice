@@ -40,7 +40,7 @@
 
 	$categories = array();
 	Hook::fire('member_edit_categories', array('member' => $member, 'genid' => $genid), $categories);
-	$has_custom_properties = count(MemberCustomProperties::getCustomPropertyIdsByObjectType($obj_type_sel)) > 0;
+	$has_custom_properties = member_has_custom_properties($obj_type_sel);
 	
 	$member_ot = ObjectTypes::findById($member->getObjectTypeId());
 	
@@ -62,7 +62,9 @@
 		}
 	}
 ?>
+<style>
 
+</style>
 <form 
 	id="<?php echo $genid ?>submit-edit-form" 
 	class="edit-member" 
@@ -117,7 +119,7 @@
 			<?php } ?>
 			
 			<?php if ($has_custom_properties) { ?>
-			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
+			<li id="<?php echo $genid?>add_custom_properties_li"><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
 		</ul>
@@ -144,10 +146,9 @@
 				if ($parent_sel) {
 					$selected_members[] = $parent_sel;
 				}
-				//echo label_tag(lang('located under'), "", false);
-				//render_single_dimension_tree($current_dimension, $genid, $selected_members, array('checkBoxes'=>false,'all_members' => true));
 				
-				render_single_member_selector($current_dimension, $genid, $selected_members, array('is_multiple' => false, 'label' => lang('located under'), 'width'=>400,
+				render_single_member_selector($current_dimension, $genid, $selected_members, array('is_multiple' => false, 'label' => lang('located under'),
+					'width'=>400, 'allow_non_manageable' => true, 'dont_filter_this_selector' => true,
 					'select_function' => 'og.onParentMemberSelect', 'listeners' => array('on_remove_relation' => "og.onParentMemberRemove('".$genid."');")), false);
 				
 				
@@ -170,8 +171,8 @@
 			}
 		?>
 		
-		<?php // used for dimension associations
-		Hook::fire('render_additional_member_add_fields', array('member' => $member, 'is_new' => $member->isNew()), $member); 
+		<?php
+			render_associated_dimensions_selectors(array('member' => $member, 'is_new' => $member->isNew()));
 		?>
 		<div class="x-clear"></div>
 		
@@ -268,6 +269,7 @@
 		<?php if ($has_custom_properties) { ?>
 		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab"><?php 
 			if($member->getObjectTypeId() > 0){
+				tpl_assign('genid', $genid); 
 				echo render_member_custom_properties($member, false, 'others', $parent_sel, $member->isNew());
 			}			
 		?></div>

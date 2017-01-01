@@ -215,6 +215,7 @@ class AccessController extends ApplicationController {
 			$this->redirectTo('dashboard', 'main_dashboard');
 		} else {
 			if (!(logged_user() instanceof Contact && logged_user()->isUser())) {
+				Hook::fire('before_redirect_to_login',null,$ret);
 				$this->redirectTo('access', 'login');
 			}
 			

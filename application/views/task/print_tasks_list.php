@@ -110,7 +110,7 @@
 		  			$dim_member_path = json_decode(str_replace("'", '"', $task['memPath']), true);
 		  			$dim_mem_path_html = "";
 		  			
-		  			$mem_ids = $dim_member_path[$dim_col];
+		  			$mem_ids = array_var($dim_member_path, $dim_col);
 		  			if (is_array($mem_ids) && count($mem_ids) > 0) {
 		  				$sep = '<span class="print-breadcrumb">-</span>';
 						foreach ($mem_ids as $mem_id) {

@@ -80,5 +80,63 @@
 				`dimension_object_type_id` = ".$member_type_id." AND `content_object_type_id` = '$object_type_id'");
 		return $res->numRows() > 0;
 	}
+	
+
+	/**
+	 * @abstract Returns all the parents of the member ids passed by parameters, does not check permissions
+	 * @param array $members_ids: child member ids to retrieve parents
+	 * @param boolean $only_ids: if true then only the parent member ids will be returned, otherwise the member objects will be returned 
+	 */
+	static function getAllParentsInHierarchy($members_ids, $only_ids = false) {
+		$parent_members = array();
+		$parent_member_ids = array();
+		
+		$tmp_parent_member_ids = array_filter($members_ids);
+		while (count($tmp_parent_member_ids) > 0) {
+		
+			$tmp_parent_member_ids = DB::executeAll("SELECT parent_member_id FROM ".TABLE_PREFIX."members WHERE id IN (".implode(',', $tmp_parent_member_ids).")");
+			$tmp_parent_member_ids = array_filter(array_flat($tmp_parent_member_ids));
+		
+			$parent_member_ids = array_unique(array_merge($parent_member_ids, $tmp_parent_member_ids));
+		}
+		
+		if ($only_ids) {
+			return $parent_member_ids;
+		} else {
+			if (count($parent_member_ids) > 0) {
+				$parent_members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $parent_member_ids).')'));
+			}
+			return $parent_members;
+		}
+	}
+	
+
+	/**
+	 * @abstract Returns all the childs of the member ids passed by parameters, does not check permissions
+	 * @param array $members_ids: parent member ids to retrieve childs
+	 * @param boolean $only_ids: if true then only the child member ids will be returned, otherwise the member objects will be returned 
+	 */
+	static function getAllChildrenInHierarchy($members_ids, $only_ids = false) {
+		$child_members = array();
+		$child_member_ids = array();
+		
+		$tmp_child_member_ids = array_filter($members_ids);
+		while (count($tmp_child_member_ids) > 0) {
+		
+			$tmp_child_member_ids = DB::executeAll("SELECT id FROM ".TABLE_PREFIX."members WHERE parent_member_id IN (".implode(',', $tmp_child_member_ids).")");
+			$tmp_child_member_ids = array_filter(array_flat($tmp_child_member_ids));
+		
+			$child_member_ids = array_unique(array_merge($child_member_ids, $tmp_child_member_ids));
+		}
+		
+		if ($only_ids) {
+			return $child_member_ids;
+		} else {
+			if (count($child_member_ids) > 0) {
+				$child_members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $child_member_ids).')'));
+			}
+			return $child_members;
+		}
+	}
 
   }

@@ -32,7 +32,7 @@
 	'report font size' => 'Schriftgröße',
 	'showing indformation for' => 'Zeige Informationen für:',
 	'columns' => 'Spalten',
-	'showing information for' => 'zeige Information für ',
+	'showing information for' => 'zeige Information für',
 	'show always' => 'diesen Bericht immer anzeigen',
 	'general reports' => 'Allgemeine Berichte',
 	'print this page' => 'Diese Seite drucken',
@@ -55,4 +55,5 @@
 	'field Timeslots start_time' => 'Datum des Zeitabschnittes',
 	'field ProjectTasks assigned_by_id' => 'Zugeordnet von',
 	'field ProjectTasks type_content' => 'Art des Inhaltes',
+	'report date' => 'Datum des Berichts',
 ); ?>

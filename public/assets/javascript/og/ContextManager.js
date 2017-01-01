@@ -75,7 +75,13 @@ og.contextManager  = new function() {
     					}else{
     						panel.show();
     						panel.expand();
+    						
+    						// expand nodes after setting visible
+    						if (panel && panel.getRootNode()) {
+    							panel.getRootNode().expand();
+    						}
     					}
+
     					
     					og.contextManager.setDimensionVisibility(item.dimensionId, status);
     					

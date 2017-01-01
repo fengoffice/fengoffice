@@ -13,7 +13,8 @@
   	$on_submit = "return true";
   }
   
-  $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+  $main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+  $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
 ?>
 <form class="add-milestone" id="<?php echo $genid?>submit-edit-form" onsubmit="<?php echo $on_submit?>" class="internalForm" action="<?php echo $milestone->isNew() ? get_url('milestone', 'add', array("copyId" => array_var($milestone_data, 'copyId'))) : $milestone->getEditUrl() ?>" method="post">
 
@@ -28,10 +29,10 @@
 			} else if (isset($milestone_task ) && $milestone_task instanceof ProjectTask) {
 				echo lang('new milestone from template');
 			} else {
-				echo lang('new milestone');
+				echo $object->getAddEditFormTitle();
 			}
 		} else {
-			echo lang('edit milestone');
+			echo $object->getAddEditFormTitle();
 		}
 	?></div>
   </div>
@@ -43,7 +44,7 @@
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($milestone->isNew() ? (array_var($milestone_data, 'is_template', false) ? lang('save template') : lang('add milestone')) : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($milestone->isNew() ? (array_var($milestone_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -58,7 +59,7 @@
 		
 			<li><a href="#<?php echo $genid?>add_milestone_data"><?php echo lang('details') ?></a></li>
 			
-			<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
@@ -68,7 +69,9 @@
 			<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 			<?php } ?>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
@@ -96,6 +99,14 @@
 				<label><?php echo lang("description")?>:</label>
 				<?php echo textarea_field('milestone[description]', array_var($milestone_data, 'description'), array('class' => 'long', 'id' => $genid . 'milestoneFormDesc', 'tabindex' => '20')) ?>
 			</div>
+			
+			<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+			
+			<div class="main-custom-properties-div"><?php
+				if ($main_cp_count) {
+					echo render_object_custom_properties($object, false, null, 'visible_by_default');
+				}
+			?></div>
 		</div>
 	
   
@@ -114,8 +125,8 @@
 			</fieldset>
 		</div>
 	
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
-			<?php echo render_object_custom_properties($milestone, false) ?>
+		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+			<?php echo render_object_custom_properties($milestone, false, null, 'other') ?>
 			<?php echo render_add_custom_properties($milestone); ?>
 		</div>
 	
@@ -128,9 +139,11 @@
 				}
 			?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
 			<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content">
-				<?php //echo render_add_subscribers($milestone, $genid); ?>
-			</div>
+			<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 		</div>
 	
 	<?php if($milestone->isNew() || $milestone->canLinkObject(logged_user())) { ?>
@@ -152,7 +165,7 @@
 		
 	</div>
 	<?php if (!array_var($_REQUEST, 'modal')) {
-			echo submit_button($milestone->isNew() ? (array_var($milestone_data, 'is_template', false) ? lang('save template') : lang('add milestone')) : lang('save changes'), 's', array('tabindex' => '20000'));
+			echo submit_button($milestone->isNew() ? (array_var($milestone_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'), 's', array('tabindex' => '20000'));
 		} ?>
 </div>
 </div>

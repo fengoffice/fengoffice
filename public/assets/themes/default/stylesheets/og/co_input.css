@@ -40,6 +40,10 @@
 	min-height: 20px;
 }
 
+.coInputMainBlock .dataBlock label {
+	margin-top: 3px;
+}
+
 .dataBlock .og-add-template-object {
 	float: left;
 	padding-left: 0;

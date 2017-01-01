@@ -68,6 +68,7 @@
 	'back to calendar' => 'Volver al calendario',
 	'back to day' => 'Volver al día',
 	'pick a date' => 'Elegir fecha',
+    'year' => 'Año',
 	'month' => 'Mes',
 	'week' => 'Semana',
 	'can edit company data' => 'Permitir la edición de los datos de la empresa propietaria',
@@ -181,4 +182,6 @@
 	'template context' => 'Elija la ubicación de la plantilla',
     'day' => 'Día',
     'restore user' => 'Restaurar usuario',
+    'select all' => 'Seleccionar todos',
+  	'dont filter' => 'No filtrar',
 ); ?>

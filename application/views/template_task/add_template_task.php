@@ -31,7 +31,9 @@
 		require_javascript('og/tasks/task_dependencies.js');
 	}
 	
-	$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(ProjectTasks::instance()->getObjectTypeId()) > 0;
+
+	$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType(ProjectTasks::instance()->getObjectTypeId());
+	$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType(ProjectTasks::instance()->getObjectTypeId());
 	
 	$categories = array(); Hook::fire('object_edit_categories', $task, $categories);
 	
@@ -104,13 +106,15 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			<li><a href="#<?php echo $genid?>add_task_more_details_div"><?php echo lang('more details') ?></a></li>
 			
 			
-			<?php if (false && ($has_custom_properties || config_option('use_object_properties')) ) { ?>
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
 			<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
@@ -201,17 +205,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}
 		?>
 		
+		<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
 		
-		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div">
-			<div id="<?php echo $genid ?>not_required_custom_properties_container">
-		    	<div id="<?php echo $genid ?>not_required_custom_properties">
-		      	<?php echo render_object_custom_properties($task, false, $co_type) ?>
-		      	</div>
-		    </div>
-	      <?php echo render_add_custom_properties($task); ?>
-	 	</div>
-	 	<?php } ?>
+		<div class="main-custom-properties-div"><?php
+			if ($main_cp_count) {
+				echo render_object_custom_properties($object, false, null, 'visible_by_default');
+			}
+		?></div>
 		
   	</div>
   	
@@ -220,7 +220,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php
 			$listeners = array('on_selection_change' => 'og.reload_task_form_selectors()');
 			if ($task->isNew()) {
-				render_member_selectors($projectTask->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners), null, null, false);
+				render_member_selectors($projectTask->getObjectTypeId(), $genid, null, array('select_current_context' => false, 'listeners' => $listeners), null, null, false);
 			} else {
 				render_member_selectors($projectTask->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', $task->getMemberIds()), array('listeners' => $listeners), null, null, false);
 			}
@@ -299,11 +299,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				
 				<?php 
 					foreach ($previous_tasks as $task_dep) {
-						$task = TemplateTasks::findById($task_dep->getPreviousTaskId());
+						$task_prev = TemplateTasks::findById($task_dep->getPreviousTaskId());
 				?>
 					<div class="og-add-template-object previous-task">
-						<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task->getId()?>" />
-						<div class="previous-task-name action-ico ico-task"><?php echo clean($task->getTitle()) ?></div>
+						<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task_prev->getId()?>" />
+						<div class="previous-task-name action-ico ico-task"><?php echo clean($task_prev->getTitle()) ?></div>
 						<a href="#" onclick="og.removePreviousTask(this.parentNode, '<?php echo $genid?>', '<?php echo $k?>')" class="removeDiv link-ico ico-delete" style="display: block;"><?php echo lang('remove') ?></a>
 						<div class="clear"></div>
 					</div>
@@ -377,6 +377,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 						editor.resetDirty();
 					}
 				},
+				removePlugins: 'magicline',
 				entities_additional : '#39,#336,#337,#368,#369'
 			});
 
@@ -414,6 +415,17 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		</script>
 	<?php }?>
 	</div>
+	
+	<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+	<div id="<?php echo $genid ?>add_custom_properties_div" class="task-data form-tab other-custom-properties-div">
+		<div id="<?php echo $genid ?>not_required_custom_properties_container">
+	    	<div id="<?php echo $genid ?>not_required_custom_properties">
+	      	<?php echo render_object_custom_properties($task, false, $co_type, 'other') ?>
+	      	</div>
+	    </div>
+      <?php echo render_add_custom_properties($task); ?>
+ 	</div>
+ 	<?php } ?>
 
   	<div id="<?php echo $genid ?>add_task_more_details_div" class="task-data form-tab">
 		
@@ -581,7 +593,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
   	
   	  
 		<?php if (false && ($has_custom_properties || config_option('use_object_properties')) ) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
+		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
 			<div id="<?php echo $genid ?>not_required_custom_properties_container">
 		    	<div id="<?php echo $genid ?>not_required_custom_properties">
 		      	<?php echo render_object_custom_properties($task, false, $co_type) ?>
@@ -612,8 +624,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				}
 			?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
 			<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content">
-			</div>
+			<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 		</div>
 	
 	
@@ -749,7 +764,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		} else opt_display = 'none';
 		
 		document.getElementById("<?php echo $genid ?>word").innerHTML = word;
-		if (ro) ro.style.display = opt_display;	
+		if (ro) ro.style.display = opt_display;
+
+		// if no option selected => select repeat forever
+		if (!$("#<?php echo $genid ?>repeat_opt_forever").attr('checked') && !$("#<?php echo $genid ?>repeat_opt_times").attr('checked') 
+				&& !$("#<?php echo $genid ?>repeat_opt_until").attr('checked')) {
+			$("#<?php echo $genid ?>repeat_opt_forever").attr('checked', 'checked');
+		}
 
 		if(document.getElementById("<?php echo $genid ?>today").selected){
 			og.viewDays(false);
@@ -770,18 +791,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		var milestone_el = document.getElementById('<?php echo $genid ?>taskListFormMilestone');
 		var actual_value = milestone_el ? milestone_el.value : 0;
 		var milestone_div = Ext.get('<?php $genid ?>add_task_more_div_milestone_combo');
-	/*	if (milestone_div) {
-			milestone_div.load({
-				url: og.getUrl('milestone', 'render_add_milestone', {
-					context: dimension_members_json,
-					genid: '<?php echo $genid ?>',
-					selected: actual_value,
-					template_milestone: 1,
-					template_id: '<?php echo $template_id ?>'
-				}),
-				scripts: true
-			});
-		}*/
+	
 	
 		var uids = App.modules.addMessageForm.getCheckedUsers('<?php echo $genid ?>');
 
@@ -910,7 +920,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 
 		<?php
 			if (!$task->isNew()) {
-				$subtasks = ProjectTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
+				$subtasks = TemplateTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
 				foreach ($subtasks as $st) {
 					$st_name = clean(escape_character($st->getObjectName()));
 					?>

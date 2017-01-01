@@ -79,7 +79,9 @@ class WebpageController extends ApplicationController {
 				//link it!
 				$object_controller = new ObjectController();
 				$object_controller->add_subscribers($webpage);
-				$object_controller->add_to_members($webpage, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($webpage, $member_ids);
+				}
 				$object_controller->link_to_new_object($webpage);
 				$object_controller->add_subscribers($webpage);
 				$object_controller->add_custom_properties($webpage);
@@ -163,7 +165,9 @@ class WebpageController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($webpage, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($webpage, $member_ids);
+				}
 				$object_controller->link_to_new_object($webpage);
 				$object_controller->add_subscribers($webpage);
 				$object_controller->add_custom_properties($webpage);
@@ -244,6 +248,17 @@ class WebpageController extends ApplicationController {
 		
 		$order = array_var($_GET, 'sort');
 		if ($order == "updatedOn" || $order == "updated" || $order == "date" || $order == "dateUpdated") $order = "updated_on";
+		
+		$dim_order = null;
+		if (str_starts_with($order, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order = 'dimensionOrder';
+		}
+		$cp_order = null;
+		if (str_starts_with($order, "cp_")) {
+			$cp_order = substr($order, 3);
+			$order = 'customProp';
+		}
 		
 		$order_dir = array_var($_GET, 'dir');
 		$page = (integer) ($start / $limit) + 1;
@@ -345,6 +360,8 @@ class WebpageController extends ApplicationController {
 			"limit" => $limit,
 			"order" => $order , 
 			"order_dir" => $order_dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			"extra_conditions" => $extra_conditions,
 			'count_results' => false,
 			'only_count_results' => $only_count_result
@@ -355,6 +372,10 @@ class WebpageController extends ApplicationController {
 			"start" => $start,
 			"webpages" => array()
 		);
+		foreach ($res as $k => $v) {
+			if ($k != 'total' && $k != 'objects') $object[$k] = $v;
+		}
+		
 		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(ProjectWebpages::instance()->getObjectTypeId());
 		if (isset($res->objects)) {
 			$index = 0;

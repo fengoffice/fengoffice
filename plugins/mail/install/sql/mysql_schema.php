@@ -67,6 +67,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_accounts` (
   `smtp_port` INTEGER UNSIGNED NOT NULL default 25,
   `del_from_server` INTEGER NOT NULL default 0,
   `mark_read_on_server` INTEGER NOT NULL default 1,
+  `get_read_state_from_server` BOOLEAN NOT NULL default 1,
   `outgoing_transport_type` VARCHAR(5) <?php echo $default_collation ?> NOT NULL default '',
   `last_checked` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `is_default` BOOLEAN NOT NULL default '0',

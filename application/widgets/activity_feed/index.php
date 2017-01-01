@@ -54,7 +54,7 @@
     	foreach ($active_members as $member) {
     		$mnames[] = clean($member->getName());
     	}
-    	$widget_title = lang('activity'). ' '. lang('in').' '. implode(", ", $mnames);
+    	$widget_title = lang('activity'). ' '. lang('in m').' '. implode(", ", $mnames);
     }
     
     $total = $limit ;

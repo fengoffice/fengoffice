@@ -73,6 +73,9 @@ class ProjectEvents extends BaseProjectEvents {
 
 		$tz_hm = "'". floor(logged_user()->getTimezone()).":".(abs(logged_user()->getTimezone()) % 1)*60 ."'";
 
+		$date_no_tz = new DateTimeValue($date->getTimestamp());
+		$start_date_no_tz_str = $date_no_tz->format("Y-m-d H:i:s");
+		
 		$date = new DateTimeValue($date->getTimestamp() - logged_user()->getTimezone() * 3600);
 		$next_date = new DateTimeValue($date->getTimestamp() + 24*3600);
 
@@ -153,13 +156,13 @@ class ProjectEvents extends BaseProjectEvents {
 				(
 					original_event_id = 0
 					AND
-					DATE(`start`) <= '$start_date_str'
+					DATE(`start`) <= '$start_date_no_tz_str'
 					AND
 					`repeat_h` = 1 
 					AND
-					`repeat_dow` = DAYOFWEEK('$start_date_str') 
+					`repeat_dow` = DAYOFWEEK('$start_date_no_tz_str') 
 					AND
-					`repeat_wnum` + $week_of_first_day - 1 = WEEK('$start_date_str', 3) 
+					`repeat_wnum` + $week_of_first_day - 1 = WEEK('$start_date_no_tz_str', 3) 
 					AND
 					MOD( ABS(PERIOD_DIFF(DATE_FORMAT(`start`, '%Y%m'), DATE_FORMAT('$start_date_str', '%Y%m'))), `repeat_mjump`) = 0
 				)

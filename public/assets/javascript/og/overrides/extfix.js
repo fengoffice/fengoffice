@@ -26,24 +26,45 @@ Ext.tree.DefaultSelectionModel.override({
 
 Ext.grid.CheckboxSelectionModel.override({
 	handleMouseDown: function(grid, rowIndex, e) {
+		var t = e.getTarget();
+		var checkbox_clicked = (t.className == 'x-grid3-row-checker');
 		
-		t = e.getTarget();
-		if(e.button === 0 && t.className != 'x-grid3-row-checker'){
+		if(e.button === 0){
 			e.stopEvent();
 			var row = e.getTarget('.x-grid3-row');
 			if(row){
 				var index = row.rowIndex;
 				if(this.isSelected(index)){
-					this.deselectRow(index);
+					if (!checkbox_clicked) this.deselectRow(index);
 				}else{
 					if (e.shiftKey) {
 						// range selection
 	            		var sels = this.getSelections();
 	            		if (sels.length > 0) {
-	            			var first_idx = sels[0].data.ix;
+	            			// get first selected index
+	            			var first_idx = 0;
+	            			var all_items = sels[0].store.data.items;
+	            			for (var k=0; k<all_items.length; k++) {
+	            				if (sels[0].data.object_id == all_items[k].data.object_id) break;
+	            				first_idx++;
+	            			}
+	            			
+	            			if (checkbox_clicked) {
+	            				// avoid selecting the clicked checkbox row, let its handler to select it.
+	            				if (first_idx < index) {
+	            					index = index-1;
+	            				} else {
+	            					index = index+1;
+	            				}
+	            			}
+	            			// make the selection
 	            			this.selectRange(first_idx, index);
 	            		}
 	            	} else {
+	            		if (checkbox_clicked) {
+	            			// let the checkbox handler to handle the selection
+	            			return;
+	            		}
 	            		// single selection, if ctrlKey then keep previous selection
 	            		this.selectRow(index, e.ctrlKey === true);
 	            	}
@@ -207,9 +228,11 @@ Ext.grid.GridPanel.override({
 			bba_before.loading.disable();
 		}
 		var params = Ext.getCmp(manager).store.lastOptions.params;
+		
 		if(typeof params != 'undefined'){
 			delete params.action;
 			params.only_result = 1;
+			Ext.getCmp(manager).getBottomToolbar().disable();
 			og.openLink(og.getUrl(controller, func, params), {
 			  hideLoading: true,
 			  callback: function(success, data) {
@@ -225,12 +248,23 @@ Ext.grid.GridPanel.override({
 				var total_pag =  data.totalCount < bba.pageSize ? 1 : Math.ceil(data.totalCount/bba.pageSize)
 				bba.afterTextEl.el.textContent = String.format(bba.afterPageText, total_pag);
 				
-				if(parseInt(data.start) == 0 && total_pag > 1){
+				// enable toolbar
+				bba.enable();
+				
+				var current_page = $("#"+manager+" .x-tbar-page-number").val();
+				
+				// disable prev,first buttons if first page
+				if(parseInt(current_page) == 1) {					
+					bba.first.disable();
+					bba.prev.disable();
+				}
+				if(parseInt(current_page) == 1 && total_pag > 1){
 					bba.last.enable();
 					bba.next.enable();
 				}
 				
-				if((parseInt(data.totalCount) - parseInt(data.start))<= parseInt(bba.pageSize)){
+				//if((parseInt(data.totalCount) - parseInt(data.start))<= parseInt(bba.pageSize)){
+				if(Math.ceil(parseInt(data.totalCount) / parseInt(bba.pageSize)) == current_page){
 					bba.last.disable();
 					bba.next.disable();
 				}
@@ -241,7 +275,26 @@ Ext.grid.GridPanel.override({
 			params.only_result = 0;
 			params.count_results = 0;
 		}
+	},
+	columnModelHasDimensionAssociations: function() {
+		var man = this;
+		var has_associations = false;
+		var cm = man.getColumnModel();
+		for (var i=0; i<cm.config.length; i++) {
+			if (cm.config[i].id.indexOf('dimassoc_') == 0) {
+				has_associations = true;
+				break;
+			}
+		}
+		return has_associations;
 	}
 });
+
+Date.getShortMonthName = function(month) {
+	var short_lang = lang("month "+(month+1)+" short");
+	if (short_lang && short_lang.indexOf("Missing lang") == -1) return short_lang;
+    return Date.monthNames[month].substring(0, 3);
+}
+
 
 /**/

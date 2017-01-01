@@ -131,18 +131,14 @@ class Dimension extends BaseDimension {
 	function getAllowedObjectTypeContents(){
 		return DimensionObjectTypeContents::findAll(array(
 		'conditions' => array("`dimension_id` = ?
-			AND (
-				(`content_object_type_id` IN (SELECT `id` FROM ".ObjectTypes::instance()->getTableName(true)." WHERE `type` = 'located' AND `name` <> 'template')
-					AND `content_object_type_id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0)
-				)
-				OR (
-					`content_object_type_id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0) 
-		  			AND `content_object_type_id` IN (
-		  				SELECT `id` FROM ".ObjectTypes::instance()->getTableName(true)." WHERE `type` = 'content_object' AND `name` <> 'file revision' AND `name` <> 'template' AND name <> 'template_task' AND name <> 'template_milestone' 
-		  					AND IF(plugin_id is NULL OR plugin_id = 0, TRUE, plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))
-		  			)
+			AND (`content_object_type_id` IN (SELECT `id` FROM ".ObjectTypes::instance()->getTableName(true)." WHERE `type` = 'located' AND `name` <> 'template')
+			OR ( 
+				`content_object_type_id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0) 
+	  			AND `content_object_type_id` IN (
+	  				SELECT `id` FROM ".ObjectTypes::instance()->getTableName(true)." WHERE `type` = 'content_object' AND `name` <> 'file revision' AND `name` <> 'template' AND name <> 'template_task' AND name <> 'template_milestone' 
+	  					AND IF(plugin_id is NULL OR plugin_id = 0, TRUE, plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))
 	  			)
-			)", $this->getId()), 
+  			))", $this->getId()), 
   		'distinct' => true));
   	}
   	

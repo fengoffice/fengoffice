@@ -98,6 +98,10 @@ echo select_box('objectTypeSel', $options, array('id' => 'objectTypeSel' ,'oncha
 			<a href="#" class="link-ico ico-add" onclick="og.addCondition('<?php echo $genid ?>', 0, 0, '', '', '', false)"><?php echo lang('add condition')?></a>
 		</div>
 	</fieldset>
+	
+	<div id="more_custom_report_parameters">
+	<?php $ret=null; Hook::fire('add_more_custom_report_parameters', array('report' => $object, 'genid' => $genid), $ret); ?>
+	</div>
 
 	<fieldset><legend><?php echo lang('columns and order') ?></legend>
 		<div id="columnListContainer"></div>

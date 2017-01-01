@@ -76,6 +76,8 @@ ogTasksTask = function(){
 	this.isCreatedClientSide = false;
 	
 	this.canAddTimeslots = false;
+	
+	this.additional_data = {};
 }
 
 ogTasksTask.prototype.flatten = function(){
@@ -136,6 +138,8 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.subtasksIds) this.subtasksIds = tdata.subtasksIds;
 	
 	if (tdata.can_add_timeslots) this.canAddTimeslots = tdata.can_add_timeslots;
+	
+	if (tdata.additional_data) this.additional_data = tdata.additional_data;
 }
 
 ogTasksMilestone = function(id, title, dueDate, totalTasks, completedTasks, isInternal, isUrgent){
@@ -305,9 +309,6 @@ ogTasks.TaskSelected = function(checkbox, task_id, group_id){
 	task.isChecked = checkbox.checked;
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
 	topToolbar.updateCheckedStatus();
-	
-	//if (task.isChecked) rx__TasksDrag.addTaskToMove(task_id);
-	//else rx__TasksDrag.removeTaskToMove(task_id);
 }
 
 
@@ -325,10 +326,7 @@ ogTasks.GroupSelected = function(checkbox, group_id){
 		tasks[i].isChecked = checkbox.checked;
 		var tgId = "T" + tasks[i].id + 'G' + group_id;
 		var chkTask = document.getElementById('ogTasksPanelChk' + tgId);
-		chkTask.checked = checkbox.checked;
-		
-		//if (chkTask.checked) rx__TasksDrag.addTaskToMove(tasks[i].id);
-		//else rx__TasksDrag.removeTaskToMove(tasks[i].id);
+		if (chkTask) chkTask.checked = checkbox.checked;
 		
 		var table = document.getElementById('ogTasksPanelTaskTable' + tgId);
 		if (table)
@@ -441,7 +439,7 @@ ogTasks.getTask = function(id){
 }
 
 ogTasks.removeTask = function(id){
-	rx__TasksDrag.removeTaskToMove(id);
+	
 	for (var i = 0; i < this.Tasks.length; i++) {
 		if (this.Tasks[i].id == id){
 			if (this.Tasks[i].milestoneId > 0) {

@@ -172,6 +172,8 @@ addLangs({
 	'no objects to display': 'No hay objetos para mostrar',
 	'ok': 'OK',
 	'cancel': 'Cancelar',
+	'select all': 'Seleccionar todos',
+	'select all desc': 'Seleccionar todos',
 	'add new contact': 'Agregar nueva persona',
 	'displaying contacts of': 'Mostrando persona {0} al {1} de {2}',
 	'no contacts to display': 'No hay personas para mostrar',
@@ -257,7 +259,7 @@ addLangs({
 	'alphabetical desc': 'Ordenar por orden alfabético',
 	'most active desc': 'Ordenar por más activo',
 	'sort desc': 'Ordenar',
-	'no objects message': 'No hay {0} in {1}',
+	'no objects message': 'No hay {0} en {1}',
 	'no objects with tag message': 'No hay {0} etiquetados como \'{2}\' en \'{1}\'',
 	'objects': 'Objetos',
 	'checkout description': 'Bloquear documento para edición',
@@ -866,5 +868,7 @@ addLangs({
     'more-panel' : 'Ajustes',
     'select user group' : 'Seleccione un grupo',
     'at least one dimension must be selected' : 'Debe seleccionar al menos una dimensión.',
-    'confirm delete group' : '¿Está seguro que quiere eliminar este grupo?'
+    'confirm delete group' : '¿Está seguro que quiere eliminar este grupo?',
+    'birthday' : 'Cumpleaños',
+    'job title' : 'Título'
 });

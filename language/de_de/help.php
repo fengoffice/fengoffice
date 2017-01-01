@@ -8,7 +8,7 @@
 	'chelp dashboard info widget' => 'Dieses Widget zeigt die Informationen für den aktuellen Arbeitsbereich, einschließlich der zugeordneten Benutzer, zugeordnete Kontakte, etc.',
 	'chelp emails widget' => 'Dieses Widget zeigt die neuesten E-Mails geordnet im aktuellen Arbeitsbereich.',
 	'chelp messages widget' => 'Dieses Widget zeigt die neuesten Notizen für den ausgewählten Arbeitsbereich.',
-	'chelp active tasks panel' => 'Alle aktiven Aufgaben werden unten angezeigt, unabhängig vom aktuellen Arbeitsbereich. Sie können unterbrochen, fortgesetzt und beendet werden oder als abgeschlossen markiert werden. ',
+	'chelp active tasks panel' => 'Alle aktiven Aufgaben werden unten angezeigt, unabhängig vom aktuellen Arbeitsbereich. Sie können unterbrochen, fortgesetzt und beendet werden oder als abgeschlossen markiert werden.',
 	'chelp general timeslots panel' => 'Dieses Panel zeigt zu Arbeitsbereichen direkt zugeordnete Zeitfenster. Die Erfassung von Zeit und Zuordnung zu Benutzern kann schnell durchgeführt werden. Berichte können durch Klick auf den „Bericht drucken“-Link gedruckt werden.',
 	'chelp user account' => 'Dies ist ein Benutzerkonto.',
 	'chelp personal account' => 'Dies ist Ihr persönliches Benutzerkonto. <br />In dieser Ansicht kann das Profil und Avatar aktualisiert, das Passwort geändert und die persönlichen Eigenschaften bearbeitet werden.',
@@ -39,4 +39,5 @@
 	'more information about user roles' => 'Weitere Informationen über Benutzerrollen',
 	'Administrator user role description' => 'Darf, mit Ausnahme der Berechtigungsverwaltung für Administratoren und Super-Administratoren, alles.',
 	'Manager user role description' => 'Darf alles an Kunden, Projekten und Arbeitsbereichen durchführen, wofür er von den Administratoren berechtigt wurde.',
+	'Guest user role description' => 'Benutzer dieser Rolle können auf Informationen zugreifen, die andere Benutzer mit ihnen teilen, aber weder diese Informationen ändern, noch Informationen erstellen, hochladen oder kommentieren. Auch können diese Benutzer weder auf die Aufgaben anderer Benutzer noch nicht zugeordnete Aufgaben noch Abrechnungsinformationen zugreifen.',
 ); ?>

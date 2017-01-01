@@ -176,7 +176,8 @@ if($event->isNew()) {
 $categories = array();
 Hook::fire('object_edit_categories', $object, $categories);
 
-$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
 
 ?>
 	<form id="<?php echo $genid ?>submit-edit-form" class="add-event" onsubmit="<?php echo $on_submit?>" class="internalForm" action="<?php echo $form_view_url; ?>" method="post">
@@ -188,7 +189,7 @@ $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(
 	
 	  <div class="coInputHeaderUpperRow">
 		<div class="coInputTitle">
-			<?php echo $event->isNew() ? lang('new event') : lang('edit event') ?>
+			<?php echo $object->getAddEditFormTitle(); ?>
 		</div>
 	  </div>
 	
@@ -201,7 +202,7 @@ $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(
 		<div class="coInputButtons">
 		<?php
 			$is_repetitive = $event->isRepetitive() ? 'true' : 'false'; 
-			echo submit_button($event->isNew() ? lang('add event') : lang('save changes'),'e',array('style'=>'margin-top:0px;margin-left:10px', 'onclick' => (!$event->isNew() ? "javascript:if(!og.confirmEditRepEvent('".$event->getId()."',$is_repetitive)) return false;" : '')));
+			echo submit_button($object->getSubmitButtonFormTitle(),'e',array('style'=>'margin-top:0px;margin-left:10px', 'onclick' => (!$event->isNew() ? "javascript:if(!og.confirmEditRepEvent('".$event->getId()."',$is_repetitive)) return false;" : '')));
 		?>
 		</div>
 		<div class="clear"></div>
@@ -221,11 +222,17 @@ $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(
 			<li><a href="#<?php echo $genid?>time_and_duration"><?php echo lang('basic data') ?></a></li>
 			<li><a href="#<?php echo $genid?>add_more_details_div"><?php echo lang('more details') ?></a></li>
 			
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
+			<?php } ?>
+			
 			<li><a href="#<?php echo $genid?>add_event_invitation_div"><?php echo lang('event invitations') ?></a></li>
 			
 			<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
@@ -308,14 +315,22 @@ $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(
 		  </div>
 		  <div class="clear"></div>
 		  
-		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-		  <div id="<?php echo $genid ?>add_custom_properties_div">
-			<?php echo render_object_custom_properties($object, false) ?>
+		  <?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+		  
+			<div class="main-custom-properties-div"><?php
+				if ($main_cp_count) {
+					echo render_object_custom_properties($object, false, null, 'visible_by_default');
+				}
+			?></div>
+			
+		</div>
+		
+		<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+		  <div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+			<?php echo render_object_custom_properties($object, false, null, 'other') ?>
 			<?php echo render_add_custom_properties($object);?>
 		  </div>
-		<?php } ?>		  
-		  
-		</div>
+		<?php } ?>
 		
 		<div id="<?php echo $genid ?>add_more_details_div"  class="form-tab">
 		
@@ -497,9 +512,11 @@ $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(
 				$subscriber_ids[] = logged_user()->getId();
 			}
 		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-		<div id="<?php echo $genid ?>add_subscribers_content">
-			<?php //echo render_add_subscribers($object, $genid); ?>
-		</div>
+		<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 	</div>
 	
 
@@ -564,7 +581,7 @@ $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType(
 
 	</div>
 	<?php if (!array_var($_REQUEST, 'modal')) {
-		echo submit_button($event->isNew() ? lang('add event') : lang('save changes'),'e',array('onclick' => (!$event->isNew() ? "javascript:if(!og.confirmEditRepEvent('".$event->getId()."',$is_repetitive)) return false;" : ''))); 
+		echo submit_button($object->getSubmitButtonFormTitle(),'e',array('onclick' => (!$event->isNew() ? "javascript:if(!og.confirmEditRepEvent('".$event->getId()."',$is_repetitive)) return false;" : ''))); 
 	}?>
   </div>
 </form>

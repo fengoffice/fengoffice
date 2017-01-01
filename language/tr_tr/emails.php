@@ -1,5 +1,5 @@
 <?php return array(
-	'new message' => 'Not ekle',
+	'new message' => 'Not Ekle',
 	'new comment' => 'Yorum ekle',
 	'your account created' => 'Feng Office hesabınız eklendi',
 	'your password' => 'Parolanız',

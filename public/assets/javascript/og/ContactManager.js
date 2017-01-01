@@ -10,7 +10,7 @@ og.ContactManager = function() {
 	
 	this.fields = [
         'object_id', 'picture', 'type', 'ot_id', 'name', 'companyId', 'companyName', 'email', 'website', 'jobTitle', 'createdBy', 'createdById', 'createdOn', 'createdOn_today', 'role', 'tags',
-        'department', 'email2', 'email3', 'workWebsite', 'workAddress', 'workPhone1', 'workPhone2', 
+        'department', 'email2', 'email3', 'workWebsite', 'workAddress', 'workPhone1', 'workPhone2', 'jobTitle', 'birthday',
         'homeWebsite', 'homeAddress', 'homePhone1', 'homePhone2', 'mobilePhone','wsIds','workspaceColors','updatedBy','updatedById', 'updatedOn', 'updatedOn_today', 'ix', 'memPath', 'userType', 'contacts', 'users'
     ];
 	var cps = og.custom_properties_by_type['contact'] ? og.custom_properties_by_type['contact'] : [];
@@ -27,6 +27,13 @@ og.ContactManager = function() {
 	   	}
    	}
    	this.fields = this.fields.concat(additional_fields);
+   	
+   	var dim_names = [];
+   	for (did in og.dimensions_info) {
+		if (isNaN(did)) continue;
+		dim_names.push('dim_' + did);
+	}
+   	this.fields = this.fields.concat(dim_names);
 	
 	if (!og.ContactManager.store) {
 		og.ContactManager.store = new Ext.data.Store({
@@ -59,6 +66,8 @@ og.ContactManager = function() {
 						cmp.getView().focusRow(og.lastSelectedRow.contacts+1);
 						var sm = cmp.getSelectionModel();
 						sm.clearSelections();
+						
+						og.eventManager.fireEvent('after grid panel load', {man:cmp, data:d});
 					}
 					
 					Ext.getCmp('contact-manager').reloadGridPagingToolbar('contact','list_all','contact-manager');
@@ -81,6 +90,9 @@ og.ContactManager = function() {
 	}
 	
     function renderContactName(value, p, r) {
+		if (isNaN(r.data.object_id)) {
+			return '<span class="bold" id="'+r.data.id+'">'+ (value ? og.clean(value) : '') +'</span>';
+		}
     	var name = lang('n/a');
 		if (r.data.type == 'company'){
 			name = String.format(
@@ -98,11 +110,6 @@ og.ContactManager = function() {
 					og.clean(r.data.companyName), og.getUrl('contact', 'view_company', {id: r.data.companyId}), og.clean(r.data.companyName));
 			} //end else
 		}
-		/*
-		mem_path = "";
-		var mpath = Ext.util.JSON.decode(r.data.memPath);
-		if (mpath) mem_path = og.getCrumbHtml(mpath, false, og.breadcrumbs_skipped_dimensions);
-		*/
 		mem_path = "";
 		var mpath = Ext.util.JSON.decode(r.data.memPath);
 		if (mpath){ 
@@ -439,13 +446,31 @@ og.ContactManager = function() {
 			hidden: true,
 			renderer: renderDateCreated,
 			sortable: true
+		},{
+			id: 'jobTitle',
+			header: lang("job title"),
+			dataIndex: 'jobTitle',
+			width: 120,
+			hidden: true,
+			renderer: og.clean,
+			sortable: true
+		},{
+			id: 'birthday',
+			header: lang("birthday"),
+			dataIndex: 'birthday',
+			width: 120,
+			hidden: true,
+			renderer: og.clean,
+			sortable: true
 		}];
 	// custom property columns
 	var cps = og.custom_properties_by_type['contact'] ? og.custom_properties_by_type['contact'] : [];
 	for (i=0; i<cps.length; i++) {
 		cm_info.push({
 			id: 'cp_' + cps[i].id,
+			hidden: parseInt(cps[i].visible_def) == 0,
 			header: cps[i].name,
+			align: cps[i].cp_type=='numeric' ? 'right' : 'left',
 			dataIndex: 'cp_' + cps[i].id,
 			sortable: true,
 			renderer: og.clean
@@ -460,7 +485,7 @@ og.ContactManager = function() {
 				id: 'dim_' + did,
 				header: og.dimensions_info[did].name,
 				dataIndex: 'dim_' + did,
-				sortable: false,
+				sortable: true,
 				renderer: og.renderDimCol
 			});
 			og.breadcrumbs_skipped_dimensions[did] = did;
@@ -546,35 +571,47 @@ og.ContactManager = function() {
 			sendItems.push(og.additional_group_mailer_send[i]);
 		}
 	}
+	
+	var addMenuItems = [];
+	addMenuItems.push({text: lang('contact'), iconCls: 'ico-contact-small', handler: function() {
+		//og.render_modal_form('', {c:'contact', a:'add'});
+		var url = og.getUrl('contact', 'add');
+		og.openLink(url);
+	}});
+	
+	if (og.replace_list_new_action && og.replace_list_new_action.contact) {
+		for (var k=0; k<og.replace_list_new_action.contact.menu.items.items.length; k++) {
+			addMenuItems.push(og.replace_list_new_action.contact.menu.items.items[k]);
+		}
+		addMenuItems.push('-');
+	}
+	
+	addMenuItems.push({text: lang('user'), iconCls: 'ico-user', handler: function() {
+		//og.render_modal_form('', {c:'contact', a:'add'});
+		var exe_type = 0;
+		for (id in og.userRoles) {
+			if (og.userRoles[id].code == 'Executive') {
+				exe_type = id;
+				break;
+			}
+		}
+		var url = og.getUrl('contact', 'add', {is_user:1, user_type:exe_type});
+		og.openLink(url);
+	}});
+	
+	addMenuItems.push({text: lang('company'), iconCls: 'ico-company', handler: function() {
+		//og.render_modal_form('', {c:'contact', a:'add_company'});
+		var url = og.getUrl('contact', 'add_company');
+		og.openLink(url);
+	}});
+	
 	actions = {
 		newContact: new Ext.Action({
+			id: 'new_menu_contact',
 			text: lang('new'),
             tooltip: lang('create contact or client company'),
             iconCls: 'ico-new new_button',
-			menu: {items: [
-				{text: lang('contact'), iconCls: 'ico-contact-small', handler: function() {
-					//og.render_modal_form('', {c:'contact', a:'add'});
-					var url = og.getUrl('contact', 'add');
-					og.openLink(url);
-				}},
-				{text: lang('user'), iconCls: 'ico-user', handler: function() {
-					//og.render_modal_form('', {c:'contact', a:'add'});
-					var exe_type = 0;
-					for (id in og.userRoles) {
-						if (og.userRoles[id].code == 'Executive') {
-							exe_type = id;
-							break;
-						}
-					}
-					var url = og.getUrl('contact', 'add', {is_user:1, user_type:exe_type});
-					og.openLink(url);
-				}},
-				{text: lang('company'), iconCls: 'ico-company', handler: function() {
-					//og.render_modal_form('', {c:'contact', a:'add_company'});
-					var url = og.getUrl('contact', 'add_company');
-					og.openLink(url);
-				}}				
-			]}
+			menu: {items: addMenuItems}
 		}),
 		delContact: new Ext.Action({
 			text: lang('move to trash'),
@@ -742,6 +779,7 @@ og.ContactManager = function() {
 	
 	var tbar = [];
 	if (!og.loggedUser.isGuest) {
+		
 		tbar.push(actions.newContact);
 		tbar.push('-');
 		tbar.push(actions.editContact);

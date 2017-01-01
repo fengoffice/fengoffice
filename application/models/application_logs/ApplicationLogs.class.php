@@ -315,7 +315,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$member_logs_sql = "SELECT al.id FROM ".TABLE_PREFIX."application_logs al
 									INNER JOIN ".TABLE_PREFIX."members mem ON mem.id=al.member_id 
 										INNER JOIN ".TABLE_PREFIX."contact_member_cache cmcache ON cmcache.member_id=mem.id AND cmcache.contact_id = ".logged_user()->getId()."
-											WHERE al.member_id>0
+											WHERE al.member_id>0 and al.is_silent=0
 											$user_condition
 											$is_member_child
 							ORDER BY created_on DESC LIMIT 100";

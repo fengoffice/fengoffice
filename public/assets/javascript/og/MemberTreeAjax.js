@@ -123,6 +123,7 @@ og.MemberTreeAjax = function(config) {
 				var parameters = {
 					member: node.id,
 					limit: limit,
+					ignore_context_filters: true,
 					offset: node.last_childs_offset
 				};
 				
@@ -172,7 +173,7 @@ og.MemberTreeAjax = function(config) {
 				node.ensureVisible();
 				node.select();
 								
-				var params = '"' + this.genid +'",'+ node.attributes.dimension_id +','+ node.attributes.id;
+				var params = '"' + this.genid +'",'+ node.attributes.dimension_id +','+ node.attributes.id + ',"' + member_selector[this.genid].hiddenFieldName +'"';
 				eval(this.selectFunction + '(' + params + ')');
 				if(this.selectFunction == ""){
 					member_selector.add_relation(node.attributes.dimension_id, this.genid, node.attributes.id);
@@ -182,10 +183,13 @@ og.MemberTreeAjax = function(config) {
 				}
 			}else{ 
 				//root
-				var params = '"' + this.genid +'",'+ this.dimensionId +','+ 0;
+				var params = '"' + this.genid +'",'+ this.dimensionId +','+ 0 + ',"' + member_selector[this.genid].hiddenFieldName +'"';
 				eval(this.selectFunction + '(' + params + ')');
 				if(!this.isMultiple && node.getOwnerTree()){
 					$("#"+ node.getOwnerTree().id +"-current-selected .empty-text").show();
+				}
+				if(!this.isMultiple) {
+					member_selector.remove_all_dimension_selections(this.genid, this.dimensionId);
 				}
 			}
 			
@@ -203,59 +207,24 @@ og.MemberTreeAjax = function(config) {
 			
 			
 			if(!this.isMultiple){
+				
+				if (!og.tree_focus) og.tree_focus = {};
+				
 				$("#" + tree.id + '-textfilter').hide();				
 				$("#" + tree.id + '-textfilter').closest('.x-panel-tbar').attr("tabindex", -1);
 				$("#" + tree.id + '-textfilter').parent().append( "<div id='"+ tree.id +"-current-selected' class='single_current_selected ico-search-m'><div class='empty-text'>"+tree.getRootNode().text+"</div></div>" );
-								
 
 				$("#" + tree.id + '-textfilter').closest('.x-panel-tbar').focusin(function(e) {
+					
+					// flag class to check if the input has the focus
+					$("#" + tree.id + '-textfilter').addClass("filter-has-focus");
+					
+					// hide the selection, show the filter and set the focus to the textfilter input 
 					$("#" + tree.id + '-textfilter').show();
 					$("#" + tree.id + '-textfilter').select();
 					$("#" + tree.id + '-current-selected').hide();
 
-					setTimeout(function(){					
-						tree.body.show();
-						var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
-						$("#"+tree.body.id).css({top: top+'px'});
-						if(!tree.initialized){
-							tree.init();
-						}
-				 	}, 300);
-				});
-				
-				$("#" + tree.id + '-textfilter').closest('.x-panel-tbar').focusout(function(e) {
-					if(!tree.body.hasClass( "have-focus" )){				 			
-				 			$("#" + tree.id + '-textfilter').hide();
-				 			$("#" + tree.id + '-current-selected').show();
-				 	}
-				 	setTimeout(function(){
-				 		if(!tree.body.hasClass( "have-focus" )){
-				 			tree.body.hide();
-				 			tree.clearFilter();
-				 					 			
-				 			$("#" + tree.id + '-textfilter').val("");
-				 			
-				 		}
-				 	}, 300);			 	
-				});
-				
-				var cont = $("#"+this.body.id);
-				cont.attr("tabindex", -1);
-				cont.focusin(function() {
-						cont.addClass("have-focus");
-					});
-				cont.focusout(function() {
-				 	cont.removeClass("have-focus");
-				 	setTimeout(function(){
-				 		tree.body.hide();
-				 		tree.clearFilter();
-				 		$("#" + tree.id + '-textfilter').val("");
-				 		$("#" + tree.id + '-textfilter').hide();
-			 			$("#" + tree.id + '-current-selected').show();
-				 	}, 200);			 	
-				});	
-			}else{
-				$("#"+this.tbar.id).focusin(function() {
+					// show the tree and position it just below the text filter 
 					setTimeout(function(){
 						tree.body.show();
 						var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
@@ -266,33 +235,79 @@ og.MemberTreeAjax = function(config) {
 				 	}, 300);
 				});
 				
+				$("#" + tree.id + '-textfilter').closest('.x-panel-tbar').focusout(function(e) {
+					
+					// only show selection and hide filter if filter input has lost its focus
+					if(!$("#" + tree.id + '-textfilter').hasClass("filter-has-focus")){
+						$("#" + tree.id + '-textfilter').hide();
+			 			$("#" + tree.id + '-current-selected').show();
+				 	}
+					
+				 	setTimeout(function(){
+				 		// hide tree if the tree has lost its focus (selecting a node or clicking outside)
+				 		if(!tree.body.hasClass( "have-focus" )){
+				 			tree.body.hide();
+				 			tree.clearFilter();
+				 		}
+				 		// after losing focus of the tree remove the flag of the filter so it can be hidden and the current selection can be shown
+				 		$("#" + tree.id + '-textfilter').val("");
+				 		$("#" + tree.id + '-textfilter').removeClass("filter-has-focus");
+				 		
+				 	}, 300);			 	
+				});
+				
+				
+			}else{
+				$("#"+this.tbar.id).focusin(function() {
+					
+					// dont display tree if og.dont_show_tree = tree.dimensionId, sometimes we want to focus in text input and not display tree
+					if (!og.dont_show_tree || og.dont_show_tree != tree.dimensionId) {
+						setTimeout(function(){
+							tree.body.show();
+							var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
+							$("#"+tree.body.id).css({top: top+'px'});
+							if(!tree.initialized){
+								tree.init();
+							}
+					 	}, 300);
+					}
+				});
+				
+				$("#"+this.tbar.id).keyup(function() {
+					// if tree is not visible, show it after a key is pressed.
+					if ($("#"+tree.body.id).css('display') == 'none') {
+						$(this).focus();
+					}
+				});
+				
 				$("#"+this.tbar.id).focusout(function() {
 				 	setTimeout(function(){
 				 		if(!tree.body.hasClass( "have-focus" )){
 				 			tree.body.hide();
 				 			tree.clearFilter();
-				 					 			
+				 			
 				 			$("#" + tree.id + '-textfilter').val("");
 				 			
 				 		}
 				 	}, 300);			 	
 				});
 				
-				var cont = $("#"+this.body.id);
-				cont.attr("tabindex", -1);
-				cont.focusin(function() {
-						cont.addClass("have-focus");
-					});
-				cont.focusout(function() {
-				 	cont.removeClass("have-focus");
-				 	setTimeout(function(){
-				 		tree.body.hide();
-				 		tree.clearFilter();
-				 		$("#" + tree.id + '-textfilter').val("");			 		
-				 	}, 200);			 	
-				});	
-			}			
-						
+			}
+			
+			// same events for both kind of trees, mark with "have-focus" class when the tree is displayed and remove this flag class when the focus is lost
+			var cont = $("#"+this.body.id);
+			cont.attr("tabindex", -1);
+			cont.focusin(function() {
+				cont.addClass("have-focus");
+			});
+			cont.focusout(function() {
+				cont.removeClass("have-focus");
+				setTimeout(function(){
+					tree.body.hide();
+					tree.clearFilter();
+					$("#" + tree.id + '-textfilter').val("");
+				}, 200);
+			});
 		}
 	});
 	
@@ -345,7 +360,11 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 				//search on server
 				this.innerCt.mask();
 				var tree_id = this.id;
-				og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {dimension_id:this.dimensionId,query:Ext.escapeRe(text.toLowerCase())}), {
+				og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {
+						dimension_id:this.dimensionId,
+						query:Ext.escapeRe(text.toLowerCase()),
+						ignore_context_filters: true
+					}), {
 	    			hideLoading:true, 
 	    			hideErrors:true,
 	    			callback: function(success, data){
@@ -376,6 +395,25 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 	    		this.resumeEvents();
 	    	}	
 		}
+	},
+	
+	filterByMember: function(memberIds, nodeClicked, callback, options) {
+
+		// remove all nodes
+		while (n = this.getRootNode().childNodes[0]) {
+			this.getRootNode().removeChild(n);
+		}
+		
+		if (!options) options = {};
+		
+		options.dimension_id = this.dimensionId;
+		options.selected_ids = Ext.util.JSON.encode(memberIds);
+		options.avoid_session = 1;
+		options.node_clicked = nodeClicked ? (isNaN(nodeClicked) ? nodeClicked.id : nodeClicked) : null;
+		
+		// load filtered tree
+		og.initialMemberTreeAjaxLoad(this, 500, 0, options);
+		
 	},
 	
 	filterNode: function(n, re) {

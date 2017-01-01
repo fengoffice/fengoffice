@@ -135,7 +135,7 @@
 	'field ProjectFiles is_important' => 'Önemli',
 	'field ProjectFiles is_locked' => 'Kilitli',
 	'field ProjectFiles is_visible' => 'Görünür',
-	'field ProjectFiles expiration_time' => 'Kullanma Süresi Sonu',
+	'field ProjectFiles expiration_time' => 'Geçerlilik Süresi',
 	'field ProjectFiles comments_enabled' => 'Yorum Yapılabilir',
 	'field ProjectFiles anonymous_comments_enabled' => 'Adsız Yorum Yapılabilir',
 	'field ProjectFiles url' => 'İnternet Adresi',
@@ -222,7 +222,7 @@
 	'field Users can_manage_workspaces' => 'Çalışma alanlarını değiştirebilir',
 	'field Users can_manage_security' => 'Güvenlik ayarlarını değiştirebilir',
 	'field Users can_manage_configuration' => 'Sistem ayarlarını değiştirebilir',
-	'field Users auto_assign' => 'Otomatik atama',
+	'field Users auto_assign' => 'Otomatik Atama',
 	'field Users can_manage_contacts' => 'Tüm kişileri düzenleyebilir',
 	'field Users can_manage_templates' => 'Tüm şablonları düzenleyebilir',
 	'field Users can_manage_reports' => 'Raporları düzenleyebilir',
@@ -276,4 +276,5 @@
 	'field Contacts home_address' => 'Ev Adresi',
 	'field Contacts work_address' => 'İş Adresi',
 	'field Contacts other_address' => 'Diğer Adres',
+	'field ProjectTasks total_worked_time' => 'Toplam Çalışma Süresi',
 ); ?>

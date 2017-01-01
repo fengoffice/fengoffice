@@ -99,7 +99,7 @@
 .ico-reporting {
 	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -256px !important;*/
 	background-image: url(../../images/icons-feng-3/24x22/reporting.png) !important;
-	background-position: 0 center !important;
+	background-position: 0 -1px !important;
 }
 
 .ico-task-start {
@@ -579,9 +579,15 @@
 	/*background-image: url(../../images/16x16/expand.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/expand.png) !important;
 }
+.ico-expand-lens {
+	background-image: url(../../images/16x16/expand_grey.png) !important;
+}
 .ico-collapse {
 	/*background-image: url(../../images/16x16/collapse.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/collapse.png) !important;
+}
+.ico-collapse-lens {
+	background-image: url(../../images/16x16/collapse_grey.png) !important;
 }
 .ico-asc {
 	background-image: url(../../images/icons/asc.png) !important;
@@ -671,6 +677,13 @@
 	color: #777777;
 	font-size: 14px;
 	text-align: center;
+}
+
+.x-grid3-scroller .inner-message.warning {
+	border-radius: 2px;
+	background-color: #FFDADA;
+	color: #330000;
+	padding: 10px 0;
 }
 
 .subwscrumbs {
@@ -1090,7 +1103,7 @@ select.select_milestone, select.select_task_list, select.select_message {
 
 .member-chooser .x-panel-body{
 	max-height: 250px ;
-	overflow-x: inherit !important;
+	overflow-x: auto !important;
 }
 
 .member-chooser .x-toolbar table {
@@ -1773,6 +1786,29 @@ a.underline {
 .form-tab .custom-properties {
 	margin-bottom: 12px;
 }
+.form-tab .custom-properties label {
+	margin-top: 3px;
+}
+
+.custom-properties .multiple-list-custom-property {
+	float: left;
+	max-width: 250px;
+	border: 1px solid #ccc;
+	padding: 0 5px;
+	max-height: 120px;
+	overflow-y: auto;
+}
+.custom-properties .cp-list-multiple-option-container {
+	min-width: 120px;
+	float: left;
+}
+.custom-properties span.cp-list-multiple-option {
+	margin: 0 5px;
+	cursor: pointer;
+}
+.custom-properties input[type="checkbox"].cp-list-multiple-checkbox {
+	vertical-align: middle;
+}
 
 .ico-view-more {
 	background-image: url(../../images/icons-feng-3/16x16/view_more.png) !important;
@@ -1790,4 +1826,8 @@ a.underline {
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: middle;
+}
+
+.x-layer.x-combo-list.custom-prop {
+	width: 298px !important;
 }

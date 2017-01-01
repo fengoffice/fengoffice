@@ -19,6 +19,7 @@ foreach ($default_user_permissions as $perm_info) {
 <input id="<?php echo $genid ?>hfAllowedOTbyMemType" type="hidden" value="<?php echo str_replace('"',"'", json_encode($allowed_object_types_by_member_type));?>" />
 <input id="<?php echo $genid ?>hfMemTypes" type="hidden" value="<?php echo str_replace('"',"'", json_encode($member_types));?>" />
 <input id="<?php echo $genid ?>hfPermsSend" name="<?php echo $name ?>" type="hidden" value="" />
+<input id="<?php echo $genid ?>hfAdditionalPermsSend" name="additional_<?php echo $name ?>" type="hidden" value="" />
 <input id="<?php echo $genid ?>hfPgId" name="hfPgId" type="hidden" value="<?php echo $pg_id?>" />
 
 <?php 
@@ -121,6 +122,10 @@ foreach ( $dimensions as $dimension ) {
 <?php }?>
     
 	    </table>
+	    
+		<div class="additional-member-permissions" id="<?php echo $genid?>-<?php echo $dimension->getId()?>-additional-member-permissions">
+		</div>
+	    
 		<div style="width: 100%; text-align: right; margin: 15px 0;">
 			<div>
 				<a href="#" class="internalLink underline" onclick="og.ogPermApplyToSubmembers('<?php echo $genid ?>', '<?php echo $dimension->getId() ?>');return false;" id="<?php echo $genid."_".$dimension->getId()?>_apply_to_submembers"></a>

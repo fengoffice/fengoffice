@@ -51,8 +51,25 @@ class  CustomProperties extends  BaseCustomProperties {
 	 * @return array
 	 * 
 	 */
-	static function getAllCustomPropertiesByObjectType($object_type, $co_type = null) {
-		$cond = array("`object_type_id` = ?", $object_type);
+	static function getAllCustomPropertiesByObjectType($object_type, $visibility = 'all', $extra_cond = "", $fire_cond_hook=false, $include_disabled=false) {
+		
+		if ($fire_cond_hook) {
+			Hook::fire('get_custom_properties_conditions', array('ot' => $object_type), $extra_cond);
+		}
+		
+		if ($visibility != 'all') {
+			if ($visibility == 'visible_by_default') {
+				$extra_cond .= " AND (visible_by_default = 1 OR is_required = 1)";
+			} else {
+				$extra_cond .= " AND (visible_by_default = 0 AND is_required = 0)";
+			}
+		}
+		
+		$disabled_cond = "";
+		if (!$include_disabled) {
+			$disabled_cond = "AND is_disabled=0";
+		}
+		$cond = array("`object_type_id` = ? $extra_cond $disabled_cond", $object_type);
 		
 		return self::findAll(array(
 			'conditions' => $cond,
@@ -87,6 +104,18 @@ class  CustomProperties extends  BaseCustomProperties {
 			'conditions' => array("`object_type_id` = ? and `name` = ? ", $object_type, $custom_property_name)
 		));
 	} //  getCustomPropertyByName
+
+	/**
+	 * Return one custom property, given the object type and the property code
+	 *
+	 * @param String $custom_property_name
+	 * @return array
+	 */
+	static function getCustomPropertyByCode($object_type, $custom_property_code) {
+		return self::findOne(array(
+			'conditions' => array("`object_type_id` = ? and `code` = ? ", $object_type, $custom_property_code)
+		));
+	} //  getCustomPropertyByCode
 
 	/**
 	 * Return one custom property given the id

@@ -23,8 +23,10 @@ ogTasks.getGroups = function(){
 			post: filters,
 			callback: function(success, data) {
 				ogTasks.Groups.length = 0;
-				for (var i = 0; i < data.groups.length; i++){
-					ogTasks.addNewTaskGroup(data, i);
+				if (data.groups) {
+					for (var i = 0; i < data.groups.length; i++){
+						ogTasks.addNewTaskGroup(data, i);
+					}
 				}
 				
 				ogTasks.Groups.loaded = true; 

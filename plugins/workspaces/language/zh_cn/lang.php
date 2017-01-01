@@ -1,20 +1,4 @@
 <?php return array(
-	'field workspace description' => '描述',
-	'workspace description' => '工作区描述',
-	'field workspace show_description_in_overview' => '是否需要在工作区概览页面上显示说明？',
-	'add new relation workspaces' => '点这里会弹下拉列表方便选择工作区',
-	'add new relation tags' => '点这里会弹下拉列表方便选择标签',
-	'add new workspace' => '新增工作区',
-	'add your first workspace' => '添加您的首个工作区',
-	'you have no workspaces yet' => '你还没有工作区',
-	'filter by workspaces' => '按工作区过滤',
-	'filter by tags' => '按标签过滤',
-	'user config option name lp_dim_workspaces_show_as_column' => '单独列显示工作区',
-	'user config option desc lp_dim_workspaces_show_as_column' => '显示在一个单独的列的工作区和旁边没有列表项的名称。',
-	'user config option name lp_dim_tags_show_as_column' => '单独列显示标签',
-	'user config option desc lp_dim_tags_show_as_column' => '在一个单独的列中显示标签，而不是在列表项的名称旁边。',
-	'add a new member in workspaces' => '新增工作区',
-	'add a new member in tags' => '新增标签',
-	'workspaces list' => '工作区列表',
-	'tags list' => '标签列表',
-); ?>
+
+
+);

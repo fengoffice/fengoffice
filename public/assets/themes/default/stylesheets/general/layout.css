@@ -1,5 +1,5 @@
 .x-viewport body {
-	overflow-y: auto ;
+	overflow: hidden;
 }
 
 #header {

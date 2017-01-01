@@ -188,6 +188,8 @@
 			$grouped = groupObjectsByColumnValue($objects, array_var($gb_criteria, 'value'), $parent_group);
 		} else if (array_var($gb_criteria, 'type') == 'assoc_obj') {
 			$grouped = groupObjectsByAssocObjColumnValue($objects, array_var($gb_criteria, 'value'), array_var($gb_criteria, 'fk'), $parent_group);
+		} else if (array_var($gb_criteria, 'type') == 'custom_prop') {
+			$grouped = groupObjectsByCustomPropertyValue($objects, array_var($gb_criteria, 'value'), $parent_group);
 		}
 		return $grouped;
 	}
@@ -195,9 +197,11 @@
 	
 	function order_groups_by_name($groups) {
 		$tmp = array();
-		foreach ($groups as $group_obj) {
+		if (is_array($groups)) {
+		  foreach ($groups as $group_obj) {
 			// id is concatenated to avoid losing information when two groups have the same name
 			$tmp[strtoupper($group_obj['group']['name'] . "_" . $group_obj['group']['id'])] = $group_obj;
+		  }
 		}
 		ksort($tmp, SORT_STRING);
 		$ordered = array();
@@ -302,3 +306,50 @@
 		return array('groups' => $groups, 'grouped_objects' => $grouped_objects);
 	}
 	
+	
+	function groupObjectsByCustomPropertyValue($objects, $cp_id, &$parent_group = null) {
+	
+		$cp = CustomProperties::findById($cp_id);
+		if (!$cp instanceof CustomProperty) {
+			return array('groups' => array(), 'grouped_objects' => $objects);
+		}
+		
+		$groups = array();
+		$grouped_objects = array();
+		$i=1;
+		foreach ($objects as $obj) {
+			$group = null;
+			$cp_value = CustomPropertyValues::getCustomPropertyValue($obj->getId(), $cp->getId());
+			
+			if (!$cp_value instanceof CustomPropertyValue) {
+				$gb_val = 'unclassified';
+			} else {
+				$gb_val = trim($cp_value->getValue());
+				if ($gb_val == "") $gb_val = 'unclassified';
+			}
+			foreach ($groups as $g) {
+				if (array_var($g, 'id') == $gb_val) $group = $g;
+			}
+			if (is_null($group)) {
+				if ($gb_val != 'unclassified') {
+					$name = $cp->getName() . ": " . $gb_val;
+				} else {
+					$name = lang('unclassified');
+				}
+	
+				$group = array('group' => array('id' => $gb_val, 'name' => $name, 'pid' => 0, 'group_type' => 'assoc_obj'), 'subgroups' => array());
+				$groups[$gb_val] = $group;
+			}
+				
+			if (!isset($grouped_objects[$gb_val])) $grouped_objects[$gb_val] = array();
+			$grouped_objects[$gb_val][] = $obj;
+		}
+	
+		if ($parent_group != null) {
+			foreach ($groups as $mid => $group) {
+				$parent_group['subgroups'][$mid] = $group;
+			}
+		}
+	
+		return array('groups' => $groups, 'grouped_objects' => $grouped_objects);
+	}

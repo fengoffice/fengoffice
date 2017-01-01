@@ -9,6 +9,12 @@
  */
 class ProjectTask extends BaseProjectTask {
 
+	/**
+	 * set to false when completing or reopening a task, no need to recalculate the parents path in that actions
+	 * 
+	 * @var boolean
+	 */
+	protected $update_parents_path = true;
 
 	protected $searchable_columns = array('name', 'text');
 		
@@ -320,13 +326,18 @@ class ProjectTask extends BaseProjectTask {
 	
 	
 	/**
-	 * Check if specific user can change task status
+	 * Check if specific user can change task status, complete or reopen
 	 *
 	 * @access public
 	 * @param Contact $user
 	 * @return boolean
 	 */
 	function canChangeStatus(Contact $user) {
+		$continue_check = true;
+		Hook::fire('can_change_task_status', array('task' => $this, 'user' => $user), $continue_check);
+		if (!$continue_check) {
+			return false;
+		}
 		return (can_manage_tasks($user) || $this->isAsignedToUserOrCompany($user));
 	} // canChangeStatus
 
@@ -364,6 +375,45 @@ class ProjectTask extends BaseProjectTask {
 	function canAddSubTask(Contact $user) {
 		return can_write($user, $this->getMembers(), $this->getObjectTypeId());
 	} // canAddTask
+	
+	
+	// ---------------------------------------------------
+	//  ContentDataObject override
+	// ---------------------------------------------------
+	/**
+	 * This event is triggered when we create a new timeslot
+	 *
+	 * @param Timeslot $timeslot
+	 * @return boolean
+	 */
+	function onAddTimeslot(Timeslot $timeslot, $params = array()) {
+		$params['total_worked_time_column'] = 'total_worked_time';
+		return parent::onAddTimeslot($timeslot, $params);
+	}
+	
+	/**
+	 * This event is trigered when Timeslot that belongs to this object is updated
+	 *
+	 * @param Timeslot $timeslot
+	 * @return boolean
+	 */
+	function onEditTimeslot(Timeslot $timeslot, $params = array()) {
+		$params['total_worked_time_column'] = 'total_worked_time';
+		return parent::onAddTimeslot($timeslot, $params);
+	}
+	
+	/**
+	 * This event is triggered when timeslot that belongs to this object is deleted
+	 *
+	 * @param Timeslot $timeslot
+	 * @return boolean
+	 */
+	function onDeleteTimeslot(Timeslot $timeslot, $params = array()) {
+		$params['total_worked_time_column'] = 'total_worked_time';
+		return parent::onAddTimeslot($timeslot, $params);
+	}
+	
+	
 	// ---------------------------------------------------
 	//  Operations
 	// ---------------------------------------------------
@@ -375,7 +425,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return $log_info
 	 */
-	function completeTask($options) {
+	function completeTask($options = array()) {
 		if (!$this->canChangeStatus(logged_user())) {
 			flash_error('no access permissions');
 			ajx_current("empty");
@@ -388,12 +438,7 @@ class ProjectTask extends BaseProjectTask {
 		$this->setCompletedOn(DateTimeValueLib::now());
 		$this->setCompletedById(logged_user()->getId());
 
-		if($options == "yes"){
-			foreach ($this->getAllSubTasks() as $subt) {
-				$subt->completeTask($options);
-			}
-		}
-
+		
 		if(user_config_option('close timeslot open')){
 			$timeslots = Timeslots::getOpenTimeslotsByObject($this->getId());
 			if ($timeslots){
@@ -407,7 +452,9 @@ class ProjectTask extends BaseProjectTask {
 
 		// check if all previuos tasks are completed
 		$log_info = "";
-		if (config_option('use tasks dependencies')) {
+		$ignore_task_dependencies = array_var($options, 'ignore_task_dependencies');
+		
+		if (config_option('use tasks dependencies') && !$ignore_task_dependencies) {
 			$saved_ptasks = ProjectTaskDependencies::findAll(array('conditions' => 'task_id = '. $this->getId()));
 			foreach ($saved_ptasks as $pdep) {
 				$ptask = ProjectTasks::findById($pdep->getPreviousTaskId());
@@ -436,6 +483,7 @@ class ProjectTask extends BaseProjectTask {
 			}
 		}
 		$this->setPercentCompleted(100);
+		$this->update_parents_path = false;
 		$this->save();
 		return $log_info;
 	} // completeTask
@@ -455,6 +503,7 @@ class ProjectTask extends BaseProjectTask {
 		}
 		$this->setCompletedOn(null);
 		$this->setCompletedById(0);
+		$this->update_parents_path = false;
 		$this->save();
 
 		$this->calculatePercentComplete();
@@ -480,13 +529,6 @@ class ProjectTask extends BaseProjectTask {
 			}
 		}
 		
-		/*
-		 * this is done in the controller
-		$task_list = $this->getParent();
-		if(($task_list instanceof ProjectTask) && $task_list->isCompleted()) {
-			$open_tasks = $task_list->getOpenSubTasks();
-			if(!empty($open_tasks)) $task_list->open();
-		} // if*/
 		
 		return $log_info;
 	} // openTask
@@ -684,7 +726,7 @@ class ProjectTask extends BaseProjectTask {
 		$task->setParentId($this->getId());
 		$task->save();
 
-		if($this->isCompleted()) $this->open();
+		if($this->isCompleted()) $this->openTask();
 	} // attachTask
 
 	/**
@@ -706,35 +748,7 @@ class ProjectTask extends BaseProjectTask {
 		}
 	} // detachTask
 
-	/**
-	 * Complete this task lists
-	 *
-	 * @access public
-	 * @param DateTimeValue $on Completed on
-	 * @param Contact $by Completed by
-	 * @return null
-	 */
-	function complete(DateTimeValue $on, $by) {
-		$by_id = $by instanceof Contact ? $by->getId() : 0;
-		$this->setCompletedOn($on);
-		$this->setCompletedById($by_id);
-		$this->save();
-		ApplicationLogs::createLog($this, ApplicationLogs::ACTION_CLOSE);
-	} // complete
 
-	/**
-	 * Open this list
-	 *
-	 * @access public
-	 * @param void
-	 * @return null
-	 */
-	function open() {
-		$this->setCompletedOn(NULL);
-		$this->setCompletedById(0);
-		$this->save();
-		ApplicationLogs::createLog($this, ApplicationLogs::ACTION_OPEN);
-	} // open
 
 	// ---------------------------------------------------
 	//  Related object
@@ -1265,8 +1279,8 @@ class ProjectTask extends BaseProjectTask {
 		$parent_id_changed = false;
 		$new_parent_id = $this->getParentId();
 		if (!$this->isNew()) {
-			$old_parent_id = $old_me->getParentId();			
-			if($old_parent_id != $new_parent_id){				
+			$old_parent_id = isset($old_me) && $old_me instanceof ProjectTask ? $old_me->getParentId() : 0;
+			if($this->update_parents_path && $old_parent_id != $new_parent_id){
 				$this->updateDepthAndParentsPath($new_parent_id);
 			}
 		}else{
@@ -1284,7 +1298,7 @@ class ProjectTask extends BaseProjectTask {
 		}
 		
 		$old_parent_id = isset($old_me) && $old_me instanceof ProjectTask ? $old_me->getParentId() : 0;
-		if ($this->isNew() || $old_parent_id != $new_parent_id) {
+		if ($this->isNew() || ($this->update_parents_path && $old_parent_id != $new_parent_id)) {
 			//update Depth And Parents Path for subtasks
 			$subtasks = $this->getSubTasks();
 			if(is_array($subtasks)) {

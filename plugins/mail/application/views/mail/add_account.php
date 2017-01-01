@@ -98,6 +98,10 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 			
 		<?php if ($logged_user_can_edit) { ?>	
 			<li><a href="#<?php echo $genid?>account_permissions_div"><?php echo lang('mail account permissions') ?></a></li>
+			
+			<?php if (config_option("sent_mails_sync")) { ?>
+			<li><a href="#<?php echo $genid?>sent_mails_sync"><?php echo lang('sent mails sync') ?></a></li>
+			<?php } ?>
 		<?php } ?>
 		
 		</ul>
@@ -145,7 +149,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 					$attributes['selected'] = "selected";
 				}
 				$options[] = option_tag(lang('pop3'), '0', $attributes);
-				$onchange = "var ssl = document.getElementById('$genid' + 'sslport');var folders = document.getElementById('$genid' + 'folders');var readOnServer = document.getElementById('$genid' + 'readOnServer');if (this.value == 1) { folders.style.display = 'block'; readOnServer.style.display = 'block'; ssl.value = '993'; } else { folders.style.display = 'none'; readOnServer.style.display = 'none'; ssl.value = '995'; }";
+				$onchange = "var ssl = document.getElementById('$genid' + 'sslport');var folders = document.getElementById('$genid' + 'folders');var readOnServer = document.getElementById('$genid' + 'readOnServer');var get_read_state_from_server = document.getElementById('$genid' + 'get_read_state_from_server');if (this.value == 1) { folders.style.display = 'block'; readOnServer.style.display = 'block'; get_read_state_from_server.style.display = 'block'; ssl.value = '993'; } else { folders.style.display = 'none'; readOnServer.style.display = 'none'; get_read_state_from_server.style.display = 'none'; ssl.value = '995'; }";
 				echo '<div style="float:left;">'. select_box('mailAccount[is_imap]', $options, array("onchange" => $onchange, 'tabindex' => '60', 'id' => $genid . 'method')) . '</div>';
 			?>
 		</div>
@@ -191,6 +195,15 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 			<?php echo yes_no_widget('mailAccount[mark_read_on_server]', 'mailAccountMarkReadOnServer', $mark_read_on_server > 0, lang('yes'), lang('no'), 130) ?>
 			
 		</div>
+
+		<div id="<?php echo $genid ?>get_read_state_from_server" style="<?php if (!array_var($mailAccount_data, 'is_imap', false)) echo 'display:none'; ?>" class="mail-account-item dataBlock">
+			<label for="mailAccountGetReadStateFromServer">
+				<?php echo lang('get read state from server')?>
+			</label>
+			<?php $get_read_state_from_server = array_var($mailAccount_data, 'get_read_state_from_server', 1) ?>
+			<?php echo yes_no_widget('mailAccount[get_read_state_from_server]', 'mailAccountGetReadStateFromServer', $get_read_state_from_server > 0, lang('yes'), lang('no'), 130) ?>
+
+		</div>
 		
 		<div class="mail-account-item dataBlock">
 			<label>
@@ -207,6 +220,20 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		</div>
 		
 		<div class="clear"></div>
+		
+		<?php
+			$more_options = array();
+			Hook::fire('more_mail_account_incoming_options', $mailAccount, $more_options);
+			foreach ($more_options as $option) { ?>
+				<div class="mail-account-item dataBlock">
+					<label><?php echo array_var($option, 'label')?></label>
+					<?php echo array_var($option, 'html'); ?>
+					<span class="desc"><?php echo array_var($option, 'description'); ?></span>
+				</div>
+				<div class="clear"></div>
+				<?php
+			}
+		?>
 		
 	</div>
 
@@ -275,11 +302,26 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 			?>
 			<span class="desc"><?php echo lang('mail account outgoing transport type description') ?></span>
 		</div>
+		
+		<?php
+			$more_options = array();
+			Hook::fire('more_mail_account_outgoing_options', $mailAccount, $more_options);
+			foreach ($more_options as $option) { ?>
+				<div class="mail-account-item dataBlock">
+					<label><?php echo array_var($option, 'label')?></label>
+					<?php echo array_var($option, 'html'); ?>
+					<span class="desc"><?php echo array_var($option, 'description'); ?></span>
+				</div>
+				<div class="clear"></div>
+				<?php
+			}
+		?>
+		
 	</div>
 	
 	<?php		
 		if (config_option("sent_mails_sync")) { ?>
-			<div id="<?php echo $genid ?>sent_mails_sync" class="form-tab">
+			<div id="<?php echo $genid ?>sent_mails_sync" class="form-tab" style="display:none;">
 				
 							<div class="mail-account-item dataBlock">
 								<label for="<?php echo $genid ?>sync_addr">
@@ -407,6 +449,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                 editor.resetDirty();
                         }
                     },
+                removePlugins: 'magicline',
                 entities_additional : '#39,#336,#337,#368,#369'
             });
 
@@ -434,8 +477,10 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		<div class="desc"><?php echo lang('mail account permissions desc')?></div>
 		<?php
 		$account_users = array();
-		if(logged_user()/* && logged_user()->getCompany()*/) {
-			$account_users = Contacts::findAll(array('conditions' => '`user_type` <> 0 AND `disabled` = 0'));
+		if (logged_user() instanceof Contact) {
+			$conditions = '`user_type` <> 0 AND `disabled` = 0';
+			Hook::fire("mail_account_permissions_extra_cond", array('account' => $mailAccount), $conditions);
+			$account_users = Contacts::findAll(array('conditions' => $conditions));
 		}
 		$account_user_ids = is_array($mailAccountUsers) ? array_keys($mailAccountUsers) : array();
 		$num = 0;

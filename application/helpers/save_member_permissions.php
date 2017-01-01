@@ -37,7 +37,7 @@
 			DB::beginWork();
 			$result = save_member_permissions($member, $permissions, true, false, false, false);
 			if ($old_parent_id != -1 && $old_parent_id != $member->getParentMemberId()) {
-				do_member_parent_changed_refresh_object_permisssions($member_id, $old_parent_id);
+				do_member_parent_changed_refresh_object_permisssions($member_id, $old_parent_id, $member->getParentMemberId());
 			}
 			DB::commit();
 		} catch (Exception $e) {

@@ -23,7 +23,7 @@
 	'recently completed tasks' => 'Geçenlerde tamamlanmış görevler',
 	'task open of total tasks' => 'Listedeki {1} görevden {0} görev açık',
 	'subtask of' => 'Alt Görevi: <a class="internalLink" href="{0}">{1}</a>',
-	'read more' => 'Devamı &raquo;',
+	'read more' => 'Devamı »',
 	'message separator' => '<p>* * *</p>',
 	'comments on message' => '{0} yorum',
 	'comment on object' => '\'{1}\' hakkında \'{0}\' yorum',
@@ -293,4 +293,5 @@ Konu:        {0}<br/>
 	'undo remove subtasks' => 'Silinmiş Alt Görevleri Geri Yükle',
 	'attachment from email' => '"{0}" e-postasına eklendi',
 	'new milestone template' => 'Kilometre Taşı Kalıbı Ekle',
+	'send task subscribers notification' => 'Abonelere E-posta Bildirimleri Gönderilsin',
 ); ?>

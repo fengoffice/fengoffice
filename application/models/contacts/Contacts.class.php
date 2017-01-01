@@ -195,7 +195,7 @@ class Contacts extends BaseContacts {
 		if ($year1 == $year2) {
 			$firstDate = $from->format('Ymd');
 			$secondDate = $to->format('Ymd');
-			if ($firstDate == $secondDate) {				
+			if ($firstDate == $secondDate) {
 				$condition = "DATE_FORMAT(`birthday`, '%m-%d') = DATE_FORMAT(" . DB::escape($from) . ", '%m-%d')";
 			}else{
 				$condition = 'DAYOFYEAR(`birthday`) >= DAYOFYEAR(' . DB::escape($from) . ')' . ' AND DAYOFYEAR(`birthday`) <= DAYOFYEAR(' . DB::escape($to) . ')';

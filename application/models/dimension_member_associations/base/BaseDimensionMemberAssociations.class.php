@@ -22,7 +22,8 @@
     	'associated_object_type_id' => DATA_TYPE_INTEGER, 
     	'is_required' => DATA_TYPE_BOOLEAN, 
     	'is_multiple' => DATA_TYPE_BOOLEAN, 
-    	'keeps_record' => DATA_TYPE_BOOLEAN
+    	'keeps_record' => DATA_TYPE_BOOLEAN,
+    	'allows_default_selection' => DATA_TYPE_BOOLEAN,
     );
   
     /**

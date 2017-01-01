@@ -89,8 +89,11 @@
     * @return string
     */
     function render($control_name) {
-      $handler = $this->getConfigHandler();
-      return $handler->render($control_name);
+    	if ($this->getConfigHandlerClass() == '') {
+    		return '';
+    	}
+    	$handler = $this->getConfigHandler();
+    	return $handler->render($control_name);
     } // render
     
     function save(){

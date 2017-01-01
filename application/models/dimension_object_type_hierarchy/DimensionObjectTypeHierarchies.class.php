@@ -9,7 +9,7 @@
     
   	static function getAllChildrenObjectTypeIds($dimension_id, $parent_object_type_id, $recursive = true){
   		  		
-  		$res = DB::execute("SELECT child_object_type_id FROM ".TABLE_PREFIX."dimension_object_type_hierarchies WHERE `dimension_id` = $dimension_id AND `parent_object_type_id` = $parent_object_type_id");
+  		$res = DB::execute("SELECT child_object_type_id FROM ".TABLE_PREFIX."dimension_object_type_hierarchies WHERE `dimension_id` = '$dimension_id' AND `parent_object_type_id` = $parent_object_type_id");
   		$dimension_obj_type_hierarchy = $res->fetchAll();
 		
   		$children = array();

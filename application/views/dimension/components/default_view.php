@@ -29,9 +29,16 @@ if (trim(array_var($options, 'root_lang')) != "") {
 	$opts["root_lang"] = array_var($options, 'root_lang');
 }
 
+$add_selected_classes = "";
+if (isset($default_selection_checkboxes)) {
+	$add_selected_classes = "with-checkbox";
+} else {
+	$default_selection_checkboxes = false;
+}
+
 ?>
 		
-	<div id="<?php echo $genid; ?>selected-members-dim<?php echo $dimension_id?>" class="selected-members">
+	<div id="<?php echo $genid; ?>selected-members-dim<?php echo $dimension_id?>" class="selected-members <?php echo $add_selected_classes?>">
 				<?php
 				$dimension_has_selection = false; 
 				if (count($dimension_selected_members) > 0) : 
@@ -40,12 +47,41 @@ if (trim(array_var($options, 'root_lang')) != "") {
 						$allowed_members = array_keys($members_dimension);
 						if (count($allowed_members) > 0 && !in_array($selected_member->getId(), $allowed_members)) continue;
 						$dimension_has_selection = true;
+						
+						$complete_path_add_style = "";
+						$checked_str = "";
+						$actions_div_width = 20;
+						if ($default_selection_checkboxes && $related_member_id > 0) {
+							$actions_div_width = 40;
+							$row = DB::executeOne("SELECT count(*) as cant FROM ".TABLE_PREFIX."dimension_member_association_default_selections
+								WHERE member_id='$related_member_id' AND selected_member_id='".$selected_member->getId()."'");
+							if ($row['cant'] > 0) {
+								$checked_str = 'checked="checked"';
+							}
+							$complete_path_add_style = "width:calc(100% - 40px);";
+						}
+						
+						
+						// if is a member_property_member of another selected member and the association doesn't have the config "allow_remove_from_property_member" => dont let remove
+						$can_remove_classification = true;
+						$mpm = MemberPropertyMembers::findOne(array('conditions' => 'property_member_id = '.$selected_member->getId() . 
+								" AND member_id IN (".implode(',',$selected_member_ids).")"));
+						if ($mpm instanceof MemberPropertyMember) {
+							$can_remove_classification = DimensionAssociationsConfigs::getConfigValue($mpm->getAssociationId(), 'allow_remove_from_property_member');
+						}
+						
 				?>
 						<div class="selected-member-div <?php echo $alt_cls?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
-							<div class="completePath"></div>
+							<div class="completePath" style="<?php echo $complete_path_add_style?>"></div>
 							<?php if ($is_multiple) : ?>
-							<div class="selected-member-actions" <?php echo $is_ie ? 'style="display:inline;margin-left:40px;float:none;"' : ''?>>
+							<div class="selected-member-actions" <?php echo $is_ie ? 'style="display:inline;margin-left:'.$actions_div_width.'px;float:none;"' : 'style="width:'.$actions_div_width.'px;"'?>>
+								<?php if ($default_selection_checkboxes) { ?>
+								<input type="checkbox" class="checkbox" name="member[default_selection][<?php echo $selected_member->getId()?>]" <?php echo $checked_str ?> title="<?php echo lang('select by default')?>"/>
+								<?php } ?>
+								
+								<?php if ($can_remove_classification) { ?>
 								<a href="#" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
+								<?php } ?>
 							</div>	
 							<div class="clear"></div>
 							<?php endif;?>	

@@ -342,11 +342,13 @@ function insert_before_file_extension($filename, $insert) {
  * @param boolean $force_download Force download (add Disposition => attachement)
  * @return boolean
  */
-function download_file($path, $type = 'application/octet-stream', $name = '', $disposition_attachment=false, $force_download=true) {
+function download_file($path, $type = 'application/octet-stream', $name = '', $disposition_attachment=false, $force_download=true, $size=null) {
 	if (!is_readable($path)) return false;
 
 	$name = trim($name) == '' ? basename($path) : trim($name);
-	$size = filesize($path);
+	if (is_null($size)) {
+		$size = filesize($path);
+	}
 	include_once ROOT . "/library/browser/Browser.php";
 	if (Browser::instance()->getBrowser() == Browser::BROWSER_IE) {
 		$name = rawurlencode($name);

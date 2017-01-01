@@ -77,5 +77,8 @@ return array(
 		'system dimension tags hint' => 'Le permite asignar etiquetas a cualquier objeto del sistema.',
 
 		'system module purchase-order hint' => 'Permite administrar las órdenes de compra de su empresa.',
+		
+	    'done apply changes' => 'Aplicar cambios',
+	    'config category desc organization data' => 'Aquí puede administrar los datos de su organización.',
 );
 

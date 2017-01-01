@@ -76,4 +76,7 @@ return array(
 		'system dimension customer_project hint' => 'Le permite organizar todos sus clientes y proyectos con toda su información relacionada.',
 		'system dimension workspaces hint' => 'Las áreas de trabajo le permiten a los individuos y equipos organizar sus datos y tareas, y compartirlos con otras personas.',
 		'system dimension tags hint' => 'Le permite asignar etiquetas a cualquier objeto del sistema.',
+
+		'done apply changes' => 'Aplicar cambios',
+		'config category desc organization data' => 'Aquí puede administrar los datos de su organización.',
 );

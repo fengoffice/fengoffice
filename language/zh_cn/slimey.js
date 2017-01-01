@@ -1,4 +1,4 @@
-locale = 'zh_cn';
+locale = 'zh_cq';
 addLangs({
 	'enter the url of the image': '输入图片的链接地址',
 	'enter a color': '输入颜色',
@@ -41,7 +41,7 @@ addLangs({
 	'save slideshow': '保存幻灯片',
 	'preview slideshow': '预览幻灯片',
 	'add a new slide after the selected one': '在所选幻灯片后新建',
-	'delete the selected slide': '删除所选的幻灯片',
+	'delete the selected slide': '删除选中的幻灯片',
 	'move the selected slide down one place': '移动选定的幻灯片下滑一个位置',
 	'move the selected slide up one place': '选定的幻灯片上滑一个位置',
 	'new slideshow': '新建幻灯片',

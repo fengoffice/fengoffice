@@ -31,7 +31,7 @@ if (count($active_members) > 0) {
 	foreach ($active_members as $member) {
 		$mnames[] = clean($member->getName());
 	}
-	$widget_title = lang('completed tasks'). ' '. lang('in').' '. implode(", ", $mnames);
+	$widget_title = lang('completed tasks'). ' '. lang("in m").' '. implode(", ", $mnames);
 }
 
 if ($tasks_result->total > 0) {

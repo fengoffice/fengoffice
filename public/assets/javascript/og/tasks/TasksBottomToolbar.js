@@ -130,6 +130,19 @@ og.TasksBottomToolbar = function(config) {
 		}
 	}
     
+    if (ogTasks.additional_filtercombo_types) {
+		for (i=0; i<ogTasks.additional_filtercombo_types.length; i++) {
+			var gb = ogTasks.additional_filtercombo_types[i];
+			var found = false;
+			for (k=0; k<filtercombo_store_data.length; k++) {
+				gsd = filtercombo_store_data[k];
+				found = gsd[0] == gb.id;
+				if (found) break;
+			}
+			if (!found) filtercombo_store_data.push([gb.id, gb.name]);
+		}
+	}
+    
     this.filtercombo = new Ext.form.ComboBox({
     	id: 'ogTasksFilterCombo',
         store: new Ext.data.SimpleStore({
@@ -194,6 +207,15 @@ og.TasksBottomToolbar = function(config) {
         				Ext.getCmp('ogTasksFilterMilestonesCombo').hide();
         				Ext.getCmp('ogTasksFilterPriorityCombo').hide();
         				Ext.getCmp('ogTasksFilterSubtypeCombo').hide();
+        				
+        				if (ogTasks.additional_filtercombo_types) {
+        					for (var x=0; x<ogTasks.additional_filtercombo_types.length; x++) {
+        						var fc_type = ogTasks.additional_filtercombo_types[x];
+        						if (fc_type && typeof(fc_type.onselect) == 'function') {
+        							fc_type.onselect.call(null, record.data.value);
+        						}
+        					}
+        				}
         				break;
         		}
         	}
@@ -311,7 +333,7 @@ og.TasksBottomToolbar = function(config) {
 	        fields: ['value', 'text'],
 	        data : uData
 	    }),
-	    hidden: (ogTasks.userPreferences.filter == 'milestone' || ogTasks.userPreferences.filter == 'priority' || ogTasks.userPreferences.filter == 'assigned_to' || ogTasks.userPreferences.filter == 'subtype' || ogTasks.userPreferences.filter == 'no_filter'),
+	    hidden: true,//(ogTasks.userPreferences.filter == 'milestone' || ogTasks.userPreferences.filter == 'priority' || ogTasks.userPreferences.filter == 'assigned_to' || ogTasks.userPreferences.filter == 'subtype' || ogTasks.userPreferences.filter == 'no_filter'),
         displayField:'text',
         //typeAhead: true,
         mode: 'local',
@@ -445,6 +467,8 @@ og.TasksBottomToolbar = function(config) {
         	}
         }
     });
+    
+  if (og.config.tasks_use_date_filters) {
     // DatePicker Menu  
     this.dateFieldStart = new og.DateField({
 		displayField : 'text',
@@ -561,6 +585,7 @@ og.TasksBottomToolbar = function(config) {
 	});
     this.dateFieldEnd.setValue(ogTasks.userPreferences.dateEnd); 	
     this.dateFieldStart.setValue(ogTasks.userPreferences.dateStart);
+  }
     this.statusCombo.setValue(ogTasks.userPreferences.status);
     this.add(lang('filter') + ':');
     this.add(this.filtercombo);
@@ -569,6 +594,22 @@ og.TasksBottomToolbar = function(config) {
     this.add(this.filterPriorityCombo);
     this.add(this.filterSubtypeCombo);
     this.add(this.filterMilestonesCombo);
+    
+    if (ogTasks.additional_filtercombo_types) {
+		for (var x=0; x<ogTasks.additional_filtercombo_types.length; x++) {
+			var fc_type = ogTasks.additional_filtercombo_types[x];
+			
+			try {
+				if (fc_type && fc_type.component_id) {
+					var comp = Ext.getCmp(fc_type.component_id);
+					if (comp) this.add(comp);
+				}
+			} catch (e) {
+				
+			}
+		}
+	}
+    
     this.add('&nbsp;&nbsp;&nbsp;' + lang('status') + ':');
     this.add(this.statusCombo);
     
@@ -576,14 +617,16 @@ og.TasksBottomToolbar = function(config) {
     this.add(this.groupcombo);
     this.add('&nbsp;&nbsp;&nbsp;' + lang('order by') + ':');
     this.add(this.ordercombo);
-    this.add('&nbsp;&nbsp;&nbsp;' + lang('from date') + ':');
-    this.add(this.dateFieldStart);
-    this.add('&nbsp;&nbsp;&nbsp;' + lang('to date') + ':');
-    this.add(this.dateFieldEnd);
     
+    if (og.config.tasks_use_date_filters) {
+	    this.add('&nbsp;&nbsp;&nbsp;' + lang('from date') + ':');
+	    this.add(this.dateFieldStart);
+	    this.add('&nbsp;&nbsp;&nbsp;' + lang('to date') + ':');
+	    this.add(this.dateFieldEnd);
+    }
     if (ogTasks.extraBottomToolbarItems) {
-    	for (i=0; i<ogTasks.extraTopToolbarItems.length; i++) {
-    		this.add(ogTasks.extraTopToolbarItems[i]);
+    	for (i=0; i<ogTasks.extraBottomToolbarItems.length; i++) {
+    		this.add(ogTasks.extraBottomToolbarItems[i]);
     	}
     }
 };
@@ -617,6 +660,18 @@ Ext.extend(og.TasksBottomToolbar, Ext.Toolbar, {
 				break;
 			default:
 				filterValue = this.filterNamesCombo.getValue();
+				
+				if (ogTasks.additional_filtercombo_types) {
+					for (var x=0; x<ogTasks.additional_filtercombo_types.length; x++) {
+						var fc_type = ogTasks.additional_filtercombo_types[x];
+						if (fc_type && fc_type.component_id) {
+							var comp = Ext.getCmp(fc_type.component_id);
+							if (comp) filterValue = comp.getValue();
+							else filterValue = "";
+						}
+					}
+				}
+				
 				break;
 		}		
 		return {

@@ -237,7 +237,35 @@ function date_format_tip($format) {
 
 
 	function format_value_to_print($col, $value, $type, $obj_type_id, $textWrapper='', $dateformat='Y-m-d') {
-		switch ($type) {
+		
+		$is_time_column = false;
+		
+		$ot = ObjectTypes::findById($obj_type_id);
+		if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
+			eval('$manager = '.$ot->getHandlerClass()."::instance();");
+			if ($manager) {
+				
+				$time_cols = $manager->getTimeColumns();
+				if (in_array($col, $time_cols)) {
+					$format = user_config_option('report_time_colums_display');
+					$is_time_column = true;
+					
+					switch ($format) {
+						case 'seconds': $formatted = $value * 60; break;
+						case 'minutes': $formatted = $value; break;
+						default: 
+							$formatted = '';
+							if($value > 0) {
+								$formatted = DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($value * 60), 'hm', 60);
+							}
+							break;
+					}
+				}
+			}
+		}
+		
+		if (!$is_time_column) {
+		  switch ($type) {
 			case DATA_TYPE_STRING: 
 				if(preg_match(EMAIL_FORMAT, strip_tags($value))){
 					$formatted = strip_tags($value);
@@ -268,21 +296,17 @@ function date_format_tip($format) {
 						break;
 					default: $formatted = clean($value);
 					}
-				}elseif ($col == 'time_estimate'){
-					if($value > 0)
-					$formatted = DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($value * 60), 'hm', 60);
-					else{
-						$formatted = clean($value);
-					}
-				}
-				else{				
+					
+				} else{
 					$formatted = clean($value);
 				}
 				break;
 			case DATA_TYPE_BOOLEAN: $formatted = ($value == 1 ? lang('yes') : lang('no'));
 				break;
 			case DATA_TYPE_DATE:
-				if ($value != 0) { 
+				if ($value instanceof DateTimeValue) {
+					$formatted = $value->format("$dateformat");
+				} else if ($value != 0) { 
 					if (str_ends_with($value, "00:00:00")) $dateformat .= " H:i:s";
 					try {
 						$dtVal = DateTimeValueLib::dateFromFormatAndString($dateformat, $value);
@@ -295,7 +319,9 @@ function date_format_tip($format) {
 				} else $formatted = '';
 				break;
 			case DATA_TYPE_DATETIME:
-				if ($value != 0) {
+				if ($value instanceof DateTimeValue) {
+					$formatted = $value->format("$dateformat H:i:s");
+				} else if ($value != 0) {
 					try {
 						$dtVal = DateTimeValueLib::dateFromFormatAndString("$dateformat H:i:s", $value);
 					} catch (Exception $e) {
@@ -311,6 +337,7 @@ function date_format_tip($format) {
 				} else $formatted = '';
 				break;
 			default: $formatted = $value;
+		  }
 		}
 		if($formatted == ''){
 			$formatted = '--';
@@ -323,65 +350,99 @@ function date_format_tip($format) {
 	function get_custom_property_value_for_listing($cp, $obj) {
 		$cp_vals = CustomPropertyValues::getCustomPropertyValues($obj->getId(), $cp->getId());
 		$val_to_show = "";
-		foreach ($cp_vals as $cp_val) {
-			if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof CustomPropertyValue) {
-				$cp_contact = Contacts::findById($cp_val->getValue());
-				if ($cp_contact instanceof Contact) {
-					$cp_val->setValue($cp_contact->getObjectName());
-				} else {
-					$cp_val->setValue("");
-				}
-			}
+		
+		if ($cp->getType() == 'table') {
 			
-			if ($cp->getType() == 'boolean' && $cp_val instanceof CustomPropertyValue) {
-				$formatted = $cp_val->getValue() > 0 ? lang('yes') : lang('no');
-				$cp_val->setValue($formatted);
-			}
-			
-			if ($cp->getType() == 'date' && $cp_val instanceof CustomPropertyValue) {
-				
-				$format = user_config_option('date_format');
-				Hook::fire("custom_property_date_format", null, $format);
-				$tmp_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $cp_val->getValue());
-				if (str_starts_with($cp_val->getValue(), EMPTY_DATE)) {
-					$formatted = "";
-				} else {
-					if (str_ends_with($cp_val->getValue(), "00:00:00")) {
-						$formatted = $tmp_date->format(user_config_option('date_format'));
-					} else {
-						$formatted = $tmp_date->format($format);
-					}
-				}
-				$cp_val->setValue($formatted);
-			}
-			
-			if ($cp->getType() == 'address' && $cp_val instanceof CustomPropertyValue) {
-				$values = str_replace("\|", "%%_PIPE_%%", $cp_val->getValue());
+			$rows = array();
+			$cpvs = CustomPropertyValues::getCustomPropertyValues($obj->getId(), $cp->getId());
+			foreach ($cpvs as $cpval) {
+				$row = array();
+				$values = str_replace("\|", "%%_PIPE_%%", $cpval->getValue());
 				$exploded = explode("|", $values);
 				foreach ($exploded as &$v) {
 					$v = str_replace("%%_PIPE_%%", "|", $v);
 					$v = escape_character($v);
+					if (trim($v) != "") $row[] = $v;
 				}
-				if (count($exploded) > 0) {
-					$address_type = array_var($exploded, 0, '');
-					$street = array_var($exploded, 1, '');
-					$city = array_var($exploded, 2, '');
-					$state = array_var($exploded, 3, '');
-					$country = array_var($exploded, 4, '');
-					$zip_code = array_var($exploded, 5, '');
-					$country_name = CountryCodes::getCountryNameByCode($country);
-					
-					$tmp = array();
-					if ($street != '') $tmp[] = $street;
-					if ($city != '') $tmp[] = $city;
-					if ($state != '') $tmp[] = $state;
-					if ($zip_code != '') $tmp[] = $zip_code;
-					if ($country_name != '') $tmp[] = $country_name;
-					$cp_val->setValue(implode(' - ', $tmp));
-				}
+				$rows[] = $row;
 			}
+				
+			$formatted = "";
+			foreach ($rows as $row) {
+				$formatted .= ($formatted == "" ? "" : " - ") . implode(', ', $row);
+			}
+				
+			$val_to_show .= $formatted;
 			
-			$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof CustomPropertyValue ? $cp_val->getValue() : "");
+		} else {
+			
+			foreach ($cp_vals as $cp_val) {
+				if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof CustomPropertyValue) {
+					$cp_contact = Contacts::findById($cp_val->getValue());
+					if ($cp_contact instanceof Contact) {
+						$cp_val->setValue($cp_contact->getObjectName());
+					} else {
+						$cp_val->setValue("");
+					}
+				}
+				
+				if ($cp->getType() == 'boolean' && $cp_val instanceof CustomPropertyValue) {
+					$formatted = $cp_val->getValue() > 0 ? lang('yes') : lang('no');
+					$cp_val->setValue($formatted);
+				}
+				
+				if ($cp->getType() == 'list' && $cp->getIsSpecial()) {
+					$lang_value = Localization::instance()->lang($cp_val->getValue());
+					if (!is_null($lang_value)) {
+						$cp_val->setValue($lang_value);
+					}
+				}
+				
+				if ($cp->getType() == 'date' && $cp_val instanceof CustomPropertyValue) {
+					
+					$format = user_config_option('date_format');
+					Hook::fire("custom_property_date_format", null, $format);
+					$tmp_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $cp_val->getValue());
+					if ($cp_val->getValue() == "" || str_starts_with($cp_val->getValue(), EMPTY_DATE)) {
+						$formatted = "";
+					} else {
+						if (str_ends_with($cp_val->getValue(), "00:00:00")) {
+							$formatted = $tmp_date->format(user_config_option('date_format'));
+						} else {
+							$formatted = $tmp_date->format($format);
+						}
+					}
+					$cp_val->setValue($formatted);
+				}
+				
+				if ($cp->getType() == 'address' && $cp_val instanceof CustomPropertyValue) {
+					$values = str_replace("\|", "%%_PIPE_%%", $cp_val->getValue());
+					$exploded = explode("|", $values);
+					foreach ($exploded as &$v) {
+						$v = str_replace("%%_PIPE_%%", "|", $v);
+						$v = escape_character($v);
+					}
+					if (count($exploded) > 0) {
+						$address_type = array_var($exploded, 0, '');
+						$street = array_var($exploded, 1, '');
+						$city = array_var($exploded, 2, '');
+						$state = array_var($exploded, 3, '');
+						$country = array_var($exploded, 4, '');
+						$zip_code = array_var($exploded, 5, '');
+						$country_name = CountryCodes::getCountryNameByCode($country);
+						
+						$tmp = array();
+						if ($street != '') $tmp[] = $street;
+						if ($city != '') $tmp[] = $city;
+						if ($state != '') $tmp[] = $state;
+						if ($zip_code != '') $tmp[] = $zip_code;
+						if ($country_name != '') $tmp[] = $country_name;
+						$cp_val->setValue(implode(' - ', $tmp));
+					}
+				}
+				
+				$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof CustomPropertyValue ? $cp_val->getValue() : "");
+			}
 		}
 		return $val_to_show;
 	}
@@ -391,63 +452,127 @@ function date_format_tip($format) {
 			$cp_vals = MemberCustomPropertyValues::getMemberCustomPropertyValues($member_id, $cp->getId());
 		}
 		$val_to_show = "";
-		foreach ($cp_vals as $cp_val) {
-			if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof MemberCustomPropertyValue) {
-				$cp_contact = Contacts::findById($cp_val->getValue());
-				if ($cp_contact instanceof Contact) {
-					$cp_val->setValue($cp_contact->getObjectName());
-				} else {
-					$cp_val->setValue("");
-				}
-			}
+		
+		if ($cp->getType() == 'table') {
 				
-			if ($cp->getType() == 'date' && $cp_val instanceof MemberCustomPropertyValue) {
-	
-				$format = user_config_option('date_format');
-				Hook::fire("custom_property_date_format", null, $format);
-				$tmp_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $cp_val->getValue());
-				if (str_starts_with($cp_val->getValue(), EMPTY_DATE)) {
-					$formatted = "";
-				} else {
-					if (str_ends_with($cp_val->getValue(), "00:00:00")) {
-						$formatted = $tmp_date->format(user_config_option('date_format'));
-					} else {
-						$formatted = $tmp_date->format($format);
-					}
-				}
-				$cp_val->setValue($formatted);
-			}
-			
-			if ($cp->getType() == 'address' && $cp_val instanceof MemberCustomPropertyValue) {
-				$values = str_replace("\|", "%%_PIPE_%%", $cp_val->getValue());
+			$rows = array();
+			$cpvs = MemberCustomPropertyValues::getMemberCustomPropertyValues($member_id, $cp->getId());
+			foreach ($cpvs as $cpval) {
+				$row = array();
+				$values = str_replace("\|", "%%_PIPE_%%", $cpval->getValue());
 				$exploded = explode("|", $values);
 				foreach ($exploded as &$v) {
 					$v = str_replace("%%_PIPE_%%", "|", $v);
-					$v = str_replace("'", "\'", $v);
+					$v = escape_character($v);
+					if (trim($v) != "") $row[] = $v;
 				}
-				if (count($exploded) > 0) {
-					$address_type = array_var($exploded, 0, '');
-					$street = array_var($exploded, 1, '');
-					$city = array_var($exploded, 2, '');
-					$state = array_var($exploded, 3, '');
-					$country = array_var($exploded, 4, '');
-					$zip_code = array_var($exploded, 5, '');
-					$country_name = CountryCodes::getCountryNameByCode($country);
-					
-					$tmp = array();
-					if ($street != '') $tmp[] = $street;
-					if ($city != '') $tmp[] = $city;
-					if ($state != '') $tmp[] = $state;
-					if ($zip_code != '') $tmp[] = $zip_code;
-					if ($country_name != '') $tmp[] = $country_name;
-					$cp_val->setValue(implode(' - ', $tmp));
-				}
+				$rows[] = $row;
 			}
+		
+			$formatted = "";
+			foreach ($rows as $row) {
+				$formatted .= ($formatted == "" ? "" : " - ") . implode(', ', $row);
+			}
+		
+			$val_to_show .= $formatted;
 				
-			$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof MemberCustomPropertyValue ? $cp_val->getValue() : "");
+		} else {
+			
+			foreach ($cp_vals as $cp_val) {
+				if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof MemberCustomPropertyValue) {
+					$cp_contact = Contacts::findById($cp_val->getValue());
+					if ($cp_contact instanceof Contact) {
+						$cp_val->setValue($cp_contact->getObjectName());
+					} else {
+						$cp_val->setValue("");
+					}
+				}
+				
+				if ($cp->getType() == 'list' && $cp_val instanceof MemberCustomPropertyValue) {
+					
+					$all_values = explode(',', $cp->getValues());
+					foreach ($all_values as $value) {
+						$text = null;
+						if (strpos($value, '@') !== false) {
+							$exp = explode('@', $value);
+							$value = array_var($exp, 0);
+							$text = array_var($exp, 1);
+						}
+						
+						if ($text == null) {
+							$text = $cp->getCode() == "" ? $value : lang($value);
+						} else {
+							$text = $cp->getCode() == "" ? $text : lang($text);
+						}
+						if ($value == $cp_val->getValue()) {
+							$cp_val->setValue($text);
+							break;
+						}
+					}
+					
+				}
+					
+				if ($cp->getType() == 'date' && $cp_val instanceof MemberCustomPropertyValue) {
+		
+					$format = user_config_option('date_format');
+					Hook::fire("custom_property_date_format", null, $format);
+					$tmp_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $cp_val->getValue());
+					if (str_starts_with($cp_val->getValue(), EMPTY_DATE)) {
+						$formatted = "";
+					} else {
+						if (str_ends_with($cp_val->getValue(), "00:00:00")) {
+							$formatted = $tmp_date->format(user_config_option('date_format'));
+						} else {
+							$formatted = $tmp_date->format($format);
+						}
+					}
+					$cp_val->setValue($formatted);
+				}
+				
+				if ($cp->getType() == 'address' && $cp_val instanceof MemberCustomPropertyValue) {
+					$values = str_replace("\|", "%%_PIPE_%%", $cp_val->getValue());
+					$exploded = explode("|", $values);
+					foreach ($exploded as &$v) {
+						$v = str_replace("%%_PIPE_%%", "|", $v);
+						$v = str_replace("'", "\'", $v);
+					}
+					if (count($exploded) > 0) {
+						$address_type = array_var($exploded, 0, '');
+						$street = array_var($exploded, 1, '');
+						$city = array_var($exploded, 2, '');
+						$state = array_var($exploded, 3, '');
+						$country = array_var($exploded, 4, '');
+						$zip_code = array_var($exploded, 5, '');
+						$country_name = CountryCodes::getCountryNameByCode($country);
+						
+						$tmp = array();
+						if ($street != '') $tmp[] = $street;
+						if ($city != '') $tmp[] = $city;
+						if ($state != '') $tmp[] = $state;
+						if ($zip_code != '') $tmp[] = $zip_code;
+						if ($country_name != '') $tmp[] = $country_name;
+						$cp_val->setValue(implode(' - ', $tmp));
+					}
+				}
+					
+				$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof MemberCustomPropertyValue ? $cp_val->getValue() : "");
+			}
+			$val_to_show = html_to_text($val_to_show);
 		}
-		$val_to_show = html_to_text($val_to_show);
+		
 		return $val_to_show;
+	}
+	
+	
+	function format_money_amount($number, $symbol = '$', $decimals = 2) {
+		
+		$sign = "";
+		if ($number < 0) {
+			$sign = "- ";
+		}
+		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals);
+		
+		return $formatted;
 	}
 
 ?>

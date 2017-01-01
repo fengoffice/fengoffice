@@ -45,6 +45,8 @@ class MessageController extends ApplicationController {
 			"types" => explode(',', array_var($_GET,'types')),
 			"accountId" => array_var($_GET,'account_id'),
 		);
+		$dim_order = null;
+		$cp_order = null;
 		
 		//Resolve actions to perform
 		$actionMessage = array();
@@ -59,8 +61,11 @@ class MessageController extends ApplicationController {
 		
 		//if order by custom prop
 		if (strpos($order, 'p_') == 1 ){
-			$cpId = substr($order, 3);
+			$cp_order = substr($order, 3);
 			$order = 'customProp';
+		} else if (str_starts_with($order, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order = 'dimensionOrder';
 		}
 		$join_params = array();
 		$select_columns = array('*');
@@ -75,16 +80,6 @@ class MessageController extends ApplicationController {
 				break;
 			case 'name':
 				$order = '`name`';
-				break;
-			case 'customProp':
-				$order = 'IF(ISNULL(jt.value),1,0),jt.value';
-				$join_params['join_type'] = "LEFT ";
-				$join_params['table'] = "".TABLE_PREFIX."custom_property_values";
-				$join_params['jt_field'] = "object_id";
-				$join_params['e_field'] = "object_id";
-				$join_params['on_extra'] = "AND custom_property_id = ".$cpId;
-				$extra_conditions.= " AND ( custom_property_id = ".$cpId. " OR custom_property_id IS NULL)";
-				$select_columns = array("DISTINCT o.*", "e.*");
 				break;
 			default:
 				$order = '`updated_on`';  
@@ -104,6 +99,8 @@ class MessageController extends ApplicationController {
 		$res = ProjectMessages::instance()->listing(array(
 			"order" => $order,
 			"order_dir" => $order_dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			"start" => $start,
 			"limit" => $limit,
 			"extra_conditions" => $extra_conditions,
@@ -115,7 +112,7 @@ class MessageController extends ApplicationController {
 		$messages = $res->objects ; 
 		
 		// Prepare response object
-		$object = $this->prepareObject($messages, $start, $limit, $res->total);
+		$object = $this->prepareObject($messages, $start, $limit, $res);
 		ajx_extra_data($object);
 		tpl_assign("listing", $object);
 		
@@ -237,12 +234,16 @@ class MessageController extends ApplicationController {
 	 * @param integer $limit
 	 * @return array
 	 */
-	private function prepareObject($totMsg, $start, $limit, $total) {
+	private function prepareObject($totMsg, $start, $limit, $res_obj) {
 		$object = array(
-			"totalCount" => $total,
+			"totalCount" => $res_obj->total,
 			"start" => $start,
 			"messages" => array()
 		);
+		foreach ($res_obj as $k => $v) {
+			if ($k != 'total' && $k != 'objects') $object[$k] = $v;
+		}
+		
 		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(ProjectMessages::instance()->getObjectTypeId());
 		$ids = array();
 		for ($i = 0; $i < $limit; $i++){
@@ -402,6 +403,7 @@ class MessageController extends ApplicationController {
 				if(config_option("wysiwyg_messages")){
 					$message_data['type_content'] = "html";
 					$message_data['text'] = preg_replace("/[\n|\r|\n\r]/", '', array_var($message_data, 'text'));
+//					$message_data['text'] = preg_replace("/[\r\n|\n|\r]/", '<br>', array_var($message_data, 'text'));
 				}else{
 					$message_data['type_content'] = "text";
 				}
@@ -416,8 +418,10 @@ class MessageController extends ApplicationController {
 				
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
-				$object_controller->add_to_members($message, $member_ids);
-                                $object_controller->add_subscribers($message);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($message, $member_ids);
+				}
+				$object_controller->add_subscribers($message);
 				$object_controller->link_to_new_object($message);				
 				$object_controller->add_custom_properties($message);
 				
@@ -526,6 +530,8 @@ class MessageController extends ApplicationController {
 				if(config_option("wysiwyg_messages")){
 					$message_data['type_content'] = "html";
 					$message_data['text'] = preg_replace("/[\n|\r|\n\r]/", '', array_var($message_data, 'text'));
+/*					$message_data['text'] = str_replace(array("<br>\r\n","<br>\n","<br>\r"), "<br>", array_var($message_data, 'text'));
+					$message_data['text'] = preg_replace("/[\r\n|\n|\r]/", '<br>', array_var($message_data, 'text'));*/
 				}else{
 					$message_data['type_content'] = "text";
 				}
@@ -538,7 +544,9 @@ class MessageController extends ApplicationController {
 				
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
-				$object_controller->add_to_members($message, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($message, $member_ids);
+				}
 			    $object_controller->link_to_new_object($message);
 				$object_controller->add_subscribers($message);
 				$object_controller->add_custom_properties($message);

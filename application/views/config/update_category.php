@@ -19,8 +19,10 @@
 	<?php if(isset($options) && is_array($options) && count($options)) { ?>
 			<div id="configCategoryOptions">
 				<?php $counter = 0; ?>
-				<?php foreach($options as $option) { ?>
-					<?php $counter++; ?>
+				<?php foreach($options as $option) {
+						$counter++;
+						if ($option instanceof ConfigOption) { 
+				?>
 					<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
 						<div class="configOptionInfo">
 							<div class="configOptionLabel"><label><?php echo clean($option->getDisplayName()) ?>:</label></div>
@@ -37,6 +39,21 @@
 						?></div>
 						<div class="clear"></div>
 					</div>
+					
+					<?php } else {?>
+					
+					<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo array_var($option, 'id', '') ?>">
+						<div class="configOptionInfo">
+							<div class="configOptionLabel"><a href="<?php echo array_var($option, 'url', '#')?>"><?php echo clean(array_var($option, 'name', '')) ?></a></div>
+						<?php if (trim(array_var($option, 'description', ''))) { ?>
+							<div class="configOptionDescription desc"><?php echo array_var($option, 'description', '') ?></div>
+						<?php } // if ?>
+						</div>
+						<div class="configOptionControl"><?php echo array_var($option, 'control_html', ''); ?></div>
+						<div class="clear"></div>
+					</div>
+					
+					<?php }?>
 				<?php } // foreach ?>
 			</div>
 			<?php echo submit_button(lang('save')) ?>&nbsp;<button class="submit" type="reset"><?php echo lang('reset') ?></button>

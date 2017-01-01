@@ -23,11 +23,12 @@
 	// get parameters
 	$member_id = array_var($argv, 4);
 	$old_parent_id = array_var($argv, 5);
-	
+	$new_parent_id = array_var($argv, 6);
+
 	// execute the permissions rebuild
 	try {
 		DB::beginWork();
-		do_member_parent_changed_refresh_object_permisssions($member_id, $old_parent_id);
+		do_member_parent_changed_refresh_object_permisssions($member_id, $old_parent_id, $new_parent_id);
 		DB::commit();
 	} catch (Exception $e) {
 		Logger::log("ERROR updating permissions after changing member parent for member ($member_id)");

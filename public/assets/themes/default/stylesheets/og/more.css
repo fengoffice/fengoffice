@@ -184,7 +184,7 @@
 	margin: 25px 15px;
 }
 
-.ui-sortable-helper {
+.system-modules-container .ui-sortable-helper {
 	background-color: #D5DCE5;
 	color: #21567A;
 	border: 5px solid #C5CCD5;

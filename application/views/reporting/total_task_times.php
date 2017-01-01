@@ -1,6 +1,6 @@
 <?php
 	
-	function total_task_times_print_group($group_obj, $grouped_objects, $options, $skip_groups = array(), $level = 0, $prev = "", &$total = 0, &$billing_total = 0, &$estimated_total = 0) {
+	function total_task_times_print_group($group_obj, $grouped_objects, $options, $skip_groups = array(), $level = 0, $prev = "", &$total = 0, &$billing_total = 0, &$cost_total = 0, &$estimated_total = 0) {
 		
 		$margin_left = 15 * $level;
 		$cls_suffix = $level > 2 ? "all" : $level;
@@ -13,16 +13,19 @@
 		
 		$group_total = 0;
 		$group_billing_total = 0;
+		$group_cost_total = 0;
 		$group_estimated_total = 0;
 		
 		$table_total = 0;
 		$table_billing_total = 0;
+		$table_cost_total = 0;
 		$table_estimated_total = 0;
 		// draw the table for the values
 		if (isset($grouped_objects[$mem_index]) && count($grouped_objects[$mem_index]) > 0) {
-			total_task_times_print_table($grouped_objects[$mem_index], $margin_left, $options, $group_name, $table_total, $table_billing_total, $table_estimated_total);
+			total_task_times_print_table($grouped_objects[$mem_index], $margin_left, $options, $group_name, $table_total, $table_billing_total, $table_cost_total, $table_estimated_total);
 			$group_total += $table_total;
 			$group_billing_total += $table_billing_total;
+			$group_cost_total += $table_cost_total;
 			$group_estimated_total += $table_estimated_total;
 		}
 		
@@ -33,23 +36,31 @@
 		foreach ($subgroups as $subgroup) {
 			$sub_total = 0;
 			$sub_total_billing = 0;
+			$sub_total_cost = 0;
 			$sub_total_estimated = 0;
-			total_task_times_print_group($subgroup, $grouped_objects, $options, array(), $next_level, $prev . $group_obj['group']['id'] . "_", $sub_total, $sub_total_billing, $sub_total_estimated);
+			total_task_times_print_group($subgroup, $grouped_objects, $options, array(), $next_level, $prev . $group_obj['group']['id'] . "_", $sub_total, $sub_total_billing, $sub_total_cost, $sub_total_estimated);
 			$group_total += $sub_total;
 			$group_billing_total += $sub_total_billing;
+			$group_cost_total += $sub_total_cost;
 			$group_estimated_total += $sub_total_estimated;
 		}
 		
 		$total += $group_total;
 		$billing_total += $group_billing_total;
+		$cost_total += $group_cost_total;
 		$estimated_total += $group_estimated_total;
 		
 		
-		echo '<div style="margin-left:' . $margin_left . 'px;" class="report-group-footer">' . $group_name;
+		echo '<div style="margin-left:' . $margin_left . 'px;padding-right:4px;" class="report-group-footer">' . $group_name;
 		if ((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && array_var($options, 'show_estimated_time')) {
 			echo '<div style="float:right;width:140px;" class="bold right">' . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($estimated_total * 60), "hm", 60) . '</div>';
 		}
 		echo '<div style="float:right;width:140px;" class="bold right">' . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_total * 60), "hm", 60) . '</div>';
+
+		if (array_var($options, 'show_cost') == 'checked') {
+			echo '<div style="float:right;width:140px;text-align:right;margin-left:8px;" class="bold">' . config_option('currency_code', '$') . " " . number_format($cost_total, 2) . '</div>';
+		}
+		
 		if (array_var($options, 'show_billing') == 'checked') {
 			echo '<div style="float:right;" class="bold">' . config_option('currency_code', '$') . " " . number_format($billing_total, 2) . '</div>';
 		}
@@ -58,7 +69,7 @@
 	}
 	
 	
-	function total_task_times_print_table($objects, $left, $options, $group_name, &$sub_total = 0, &$sub_total_billing = 0, &$sub_total_estimated = 0) {
+	function total_task_times_print_table($objects, $left, $options, $group_name, &$sub_total = 0, &$sub_total_billing = 0, &$sub_total_cost = 0, &$sub_total_estimated = 0) {
 		echo '<div style="padding-left:'. $left .'px;">';
 		echo '<table class="reporting-table"><tr class="reporting-table-heading">';
 		echo '<th>' . lang('date') . '</th>';
@@ -67,6 +78,9 @@
 		echo '<th>' . lang('person') . '</th>';
 		if (array_var($options, 'show_billing') == 'checked') {
 			echo '<th class="right">' . lang('billing') . '</th>';
+		}
+		if (array_var($options, 'show_cost') == 'checked') {
+			echo '<th class="right">' . lang('cost') . '</th>';
 		}
 		echo '<th class="right">' . lang('time') . '</th>';
 		if ((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && array_var($options, 'show_estimated_time')) {
@@ -84,6 +98,7 @@
 			echo "<td class='name'>" . ($ts->getRelObjectId() == 0 ? clean($ts->getObjectName()) : clean($ts->getRelObject()->getObjectName())) ."</td>";
 			echo "<td class='name'>" . nl2br(clean($ts->getDescription())) ."</td>";
 			echo "<td class='person'>" . clean($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') ."</td>";
+			
 			if (array_var($options, 'show_billing') == 'checked') {
 				if($ts->getIsFixedBilling()){
 					echo "<td class='nobr right'>" . config_option('currency_code', '$') . " " . number_format($ts->getFixedBilling(), 2) . "</td>";
@@ -94,6 +109,18 @@
 					$sub_total_billing += ($ts->getHourlyBilling()/60) * $min;
 				}
 			}
+			
+			if (array_var($options, 'show_cost') == 'checked') {
+				if($ts->getColumnValue('is_fixed_cost')){
+					echo "<td class='nobr right' style='width:140px;'>" . config_option('currency_code', '$') . " " . number_format($ts->getColumnValue('fixed_cost'), 2) . "</td>";
+					$sub_total_cost += $ts->getColumnValue('fixed_cost');
+				}else{
+					$min = $ts->getMinutes();
+					echo "<td class='nobr right' style='width:140px;'>" . config_option('currency_code', '$') . " " . number_format(($ts->getColumnValue('hourly_cost')/60) * $min, 2) . "</td>";
+					$sub_total_cost += ($ts->getColumnValue('hourly_cost')/60) * $min;
+				}
+			}
+			
 			$lastStop = $ts->getEndTime() != null ? $ts->getEndTime() : ($ts->isPaused() ? $ts->getPausedOn() : DateTimeValueLib::now());
 			echo "<td class='time nobr right'>" . DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "hm", 60, $ts->getSubtract()) ."</td>";
 			if((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && $ts->getRelObject() instanceof ProjectTask && array_var($options, 'show_estimated_time')) {
@@ -154,7 +181,7 @@
 	}
 	
 	$sectionDepth = 0;
-	$totCols = 6 + count_extra_cols($columns);
+	$totCols = 7 + count_extra_cols($columns);
 	$date_format = user_config_option('date_format');
 
 	if (array_var($post, 'date_type') != 6) {
@@ -198,30 +225,39 @@
         if(count($grouped_timeslots) > 0){
             $total = 0;
             $billing_total = 0;
+            $cost_total = 0;
             $estimated_total = 0;
             
             $groups = order_groups_by_name($grouped_timeslots['groups']);
             foreach ($groups as $gid => $group_obj) {
                     $tmp_total = 0;
                     $tmp_billing_total = 0;
+                    $tmp_cost_total = 0;
                     $tmp_estimated_total = 0;
-                    total_task_times_print_group($group_obj, $grouped_timeslots['grouped_objects'], array_var($_SESSION, 'total_task_times_report_data'), array(), 0, "", $tmp_total, $tmp_billing_total, $tmp_estimated_total);
+                    total_task_times_print_group($group_obj, $grouped_timeslots['grouped_objects'], array_var($_SESSION, 'total_task_times_report_data'), array(), 0, "", $tmp_total, $tmp_billing_total, $tmp_cost_total, $tmp_estimated_total);
                     $total += $tmp_total;
                     $billing_total += $tmp_billing_total;
+                    $cost_total += $tmp_cost_total;
                     $estimated_total += $tmp_estimated_total;
             }
             if(count($groups) >0){
             ?>
             <div class="clear"></div>
-            <div class="report-group-footer" style="margin-top:10px;padding-top:10px;border-top:1px solid #bbb;">
+            <div class="report-group-footer" style="margin-top:10px;padding-top:10px;padding-right:4px;border-top:1px solid #bbb;">
             	<span class="bold" style="font-size:150%;"><?php echo lang('total').": "; ?></span>
             	<?php if ((array_var(array_var($_SESSION, 'total_task_times_report_data'), 'timeslot_type') == 0 || array_var(array_var($_SESSION, 'total_task_times_report_data'), 'timeslot_type') == 2 ) && array_var(array_var($_SESSION, 'total_task_times_report_data'), 'show_estimated_time')) { ?>
             	<div style="float:right;width:140px;" class="bold right"><?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($estimated_total * 60), "hm", 60) ?></div>
             	<?php } ?>
             	<div style="float:right;width:140px;" class="bold right"><?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total * 60), "hm", 60) ?></div>
+            	
+            	<?php if (array_var(array_var($_SESSION, 'total_task_times_report_data'), 'show_cost') == 'checked') { ?>
+            	<div style="float:right;width:140px;text-align:right;margin-left:8px;" class="bold"><?php echo config_option('currency_code', '$') . " " . number_format($cost_total, 2) ?></div>
+            	<?php }?>
+            	
             	<?php if (array_var(array_var($_SESSION, 'total_task_times_report_data'), 'show_billing') == 'checked') { ?>
             	<div style="float:right;" class="bold"><?php echo config_option('currency_code', '$') . " " . number_format($billing_total, 2) ?></div>
             	<?php }?>
+            	
             </div>
             <?php }?>
         <?php }?>
@@ -229,7 +265,10 @@
     <?php 
 	$sumTime = 0;
 	$sumBilling = 0;
+	$sumCost = 0;
 	$showBillingCol = array_var($post, 'show_billing', false);
+	$showCostsCol = array_var($post, 'show_cost', false);
+	
 	if (count($timeslotsArray) > 0){
     ?>
         <table style="min-width:564px">
@@ -244,6 +283,7 @@
 	$gbvals = array('','','');
 	$sumTimes = array(0,0,0);
 	$sumBillings = array(0,0,0);
+	$sumCosts = array(0,0,0);
 	$hasGroupBy = is_array($group_by) && count($group_by) > 0;
 	$sectionDepth = $hasGroupBy ? count($group_by) : 0;
 	$c = 0;
@@ -259,6 +299,7 @@
 	if (!$showUserCol) $totCols--;
 	if (!$showTitleCol) $totCols--;
 	if (!$showBillingCol) $totCols--;
+	if (!$showCostsCol) $totCols--;
 	if (count_extra_cols($columns)>0) $showSelCol = true;
 	
 	$previousTSRow = null;
@@ -280,13 +321,24 @@
 <tr style="padding-top:2px;font-weight:bold;">
 	<td style="padding:4px;border-top:2px solid #888;font-size:90%;color:#AAA;text-align:left;font-weight:normal"><?php echo truncate(clean(getGroupTitle($group_by[$i], $previousTSRow)),40,'&hellip;') ?></td>
 	<td colspan=<?php echo ($showBillingCol)? $totCols -2 : $totCols -1 ?> style="padding:4px;border-top:2px solid #888;text-align:right;"><?php echo lang('total') ?>:&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($sumTimes[$i] * 60), "hm", 60) ?></td>
+	
 	<?php if ($showBillingCol) {
-		?><td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;"><?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumBillings[$i] ?></td><?php 
+		?><td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;">
+			<?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumBillings[$i] ?>
+		</td><?php 
 	} ?>
+	
+	<?php if ($showCostsCol) {
+		?><td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;">
+			<?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumCosts[$i] ?>
+		</td><?php 
+	} ?>
+	
 </tr></table></div></td></tr><?php
 				}
 				$sumTimes[$i] = 0;
 				$sumBillings[$i] = 0;
+				$sumCosts[$i] = 0;
 			}
 		}
 		
@@ -304,11 +356,17 @@
 
 <?php 		}
 			$sumTimes[$i] += $ts->getMinutes();
-                        if($ts->getIsFixedBilling()){
-                            $sumBillings[$i] += $ts->getFixedBilling();
-                        }else{
-                            $sumBillings[$i] += ($ts->getHourlyBilling()/60) * $ts->getMinutes();
-                        }
+			if($ts->getIsFixedBilling()){
+				$sumBillings[$i] += $ts->getFixedBilling();
+			}else{
+				$sumBillings[$i] += ($ts->getHourlyBilling()/60) * $ts->getMinutes();
+			}
+			
+			if($ts->getColumnValue('is_fixed_cost')){
+				$sumCosts[$i] += $ts->getColumnValue('fixed_cost');
+			}else{
+				$sumCosts[$i] += ($ts->getColumnValue('hourly_cost')/60) * $ts->getMinutes();
+			}
 		}
 		
 		$isAlt = !$isAlt;
@@ -320,7 +378,15 @@
 	<th style="padding:4px;border-bottom:1px solid #666666"><?php echo lang('description') ?></th>
 	<?php if ($showUserCol) { ?><th style="padding:4px;border-bottom:1px solid #666666"><?php echo lang('user') ?></th><?php } ?>
 	<th style="padding:4px;text-align:right;border-bottom:1px solid #666666"><?php echo lang('time') ?></th>
-	<?php if ($showBillingCol) { ?><th style="padding:4px;text-align:right;border-bottom:1px solid #666666"><?php echo lang('billing') ?></th><?php } ?>
+	
+	<?php if ($showBillingCol) { ?>
+		<th style="padding:4px;text-align:right;border-bottom:1px solid #666666"><?php echo lang('billing') ?></th>
+	<?php } ?>
+	
+	<?php if ($showCostsCol) { ?>
+		<th style="padding:4px;text-align:right;border-bottom:1px solid #666666"><?php echo lang('cost') ?></th>
+	<?php } ?>
+	
 	<?php if ($showSelCol) {
 			$cols = get_cols($columns);
 			foreach ($cols as $k => $i){
@@ -343,7 +409,19 @@
 	<?php if ($showUserCol) { ?><td style="padding:4px;<?php echo $isAlt? 'background-color:#F2F2F2':'' ?>"><?php echo clean(Contacts::getUserDisplayName($ts->getContactId())) ?></td><?php } ?>
 	<?php $lastStop = $ts->getEndTime() != null ? $ts->getEndTime() : ($ts->isPaused() ? $ts->getPausedOn() : DateTimeValueLib::now()); ?>
 	<td style="padding:4px;text-align:right;<?php echo $isAlt? 'background-color:#F2F2F2':'' ?>"><?php echo DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "hm", 60, $ts->getSubtract()) ?></td>
-	<?php if ($showBillingCol) { ?><td style="padding:4px;text-align:right;<?php echo $isAlt? 'background-color:#F2F2F2':'' ?>"><?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $ts->getFixedBilling() ?></td><?php } ?>
+	
+	<?php if ($showBillingCol) { ?>
+	<td style="padding:4px;text-align:right;<?php echo $isAlt? 'background-color:#F2F2F2':'' ?>">
+		<?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $ts->getFixedBilling() ?>
+	</td>
+	<?php } ?>
+	
+	<?php if ($showCostsCol) { ?>
+	<td style="padding:4px;text-align:right;<?php echo $isAlt? 'background-color:#F2F2F2':'' ?>">
+		<?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $ts->getColumnValue('fixed_cost') ?>
+	</td>
+	<?php } ?>
+	
 	<?php if ($showSelCol) {
 			$cols = get_cols($columns);	
 			foreach ($cols as $k => $i){
@@ -379,7 +457,19 @@
 <tr style="padding-top:2px;text-align:right;font-weight:bold;">
 	<td style="padding:4px;border-top:2px solid #888;font-size:90%;color:#AAA;text-align:left;font-weight:normal"><?php echo truncate(clean(getGroupTitle($group_by[$i], $previousTSRow)),40,'&hellip;') ?></td>
 	<td colspan=<?php echo ($showBillingCol)? $totCols -2 : $totCols -1 ?> style="padding:4px;border-top:2px solid #888;text-align:right;"><?php echo lang('total') ?>:&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($sumTimes[$i] * 60), "hm", 60) ?></td>
-	<?php if ($showBillingCol) { ?><td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;"><?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumBillings[$i] ?></td><?php } ?>
+	
+	<?php if ($showBillingCol) { ?>
+	<td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;">
+		<?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumBillings[$i] ?>
+	</td>
+	<?php } ?>
+	
+	<?php if ($showCostsCol) { ?>
+	<td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;">
+		<?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumCosts[$i] ?>
+	</td>
+	<?php } ?>
+	
 </tr></table></div></td></tr>
 	<?php }?>
 <?php 
@@ -390,14 +480,29 @@ if (count($timeslotsArray) > 0) {
 		$sumTime += $t->getMinutes();
 		if($ts->getIsFixedBilling()){
 			$sumBilling += $t->getFixedBilling();
+			$sumCost += $t->getColumnValue('fixed_cost');
 		}else{
 			$sumBilling += ($ts->getHourlyBilling()/60) * $ts->getMinutes();
+			$sumCost += ($t->getColumnValue('hourly_cost')/60) * $ts->getMinutes();
 		}
 	}
 ?>
 <tr><td style="text-align: right; border-top: 1px solid #AAA; padding: 10px 0; font-weight: bold;" colspan=<?php echo ($showBillingCol)? $totCols -1 : $totCols ?>>
 <div ><?php echo strtoupper(lang("total")) . ": " . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($sumTime * 60), "hm", 60) ?></div>
-</td><?php if ($showBillingCol) { ?><td style="width:30px;padding-left:8px;border-top: 1px solid #AAA;"><div style="text-align: right;padding: 10px 0; font-weight: bold;"><?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumBilling ?></div></td><?php } ?>
+</td>
+
+<?php if ($showBillingCol) { ?>
+<td style="width:30px;padding-left:8px;border-top: 1px solid #AAA;">
+	<div style="text-align: right;padding: 10px 0; font-weight: bold;"><?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumBilling ?></div>
+</td>
+<?php } ?>
+
+<?php if ($showCostsCol) { ?>
+<td style="width:30px;padding-left:8px;border-top: 1px solid #AAA;">
+	<div style="text-align: right;padding: 10px 0; font-weight: bold;"><?php echo config_option('currency_code', '$') ?>&nbsp;<?php echo $sumCost ?></div>
+</td>
+<?php } ?>
+
 </tr>
 </table>
 <?php }?>

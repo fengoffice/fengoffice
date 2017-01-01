@@ -724,7 +724,7 @@ class SearchController extends ApplicationController {
     	
     	if(strlen($text) > 100){
 	    	$text_ret = '...';    	    
-	    	$text_ret .= substr($text, strpos($text, $pieces[0]) , 100);
+	    	$text_ret .= substr_utf($text, strpos($text, $pieces[0]) , 100);
 	    	$text_ret .= '...';
     	}else{
     		$text_ret = $text;
@@ -764,7 +764,7 @@ class SearchController extends ApplicationController {
 		$position = strpos($content,$this->search_for);
 		$spacesBefore = min(10, $position); 
 		if (strlen($content) > $size ){
-			return substr($content , $position - $spacesBefore, $size)."...";
+			return substr_utf($content , $position - $spacesBefore, $size)."...";
 			
 		}else{
 			return $content ;

@@ -197,6 +197,8 @@ og.searchMemberOnServer = function(dimension_id, search_params, func_callback){
 		params.allowed_member_types = search_params.allowed_member_types;
 	}
 	
+	params.ignore_context_filter = true;
+	
 	og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', params), {
 		hideLoading:true, 
 		hideErrors:true,

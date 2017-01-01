@@ -92,6 +92,12 @@ function render_chart($options = array()) {
 	$x_axis->set_colours(array_var($options, 'x_axis_color', '#87C4FA'), array_var($options, 'x_grid_color', '#D4E8FA'));
 	if (array_var($x_range, 'step')) $x_axis->set_range($x_range_start, $x_range_end, array_var($x_range, 'step', 1));
 	$x_axis->set_labels_from_array($labels);
+	$x_axis_labels = $x_axis->labels;
+	switch (array_var($options, 'x_axis_rotation')) {
+		case 'diagonal': $x_axis_labels->rotate = 'diagonal'; break;
+		case 'vertical': $x_axis_labels->rotate = 'vertical'; break;
+		default: break;
+	}
 	
 	$y_axis = new OFC_Elements_Axis_Y();
 	$y_axis->set_colours(array_var($options, 'y_axis_color', '#87C4FA'), array_var($options, 'y_grid_color', '#D4E8FA'));

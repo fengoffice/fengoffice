@@ -1,4 +1,4 @@
-如果你的Feng Office已经安装完毕，解压缩本包到你安装的Feng Office根目录下面的language/目录下面。
+﻿如果你的Feng Office已经安装完毕，解压缩本包到你安装的Feng Office根目录下面的language/目录下面。
 然后编辑Feng Office根目录下的config/config.php文件中缺省语言选项如下所示:
   define('DEFAULT_LOCALIZATION', 'zh_CN');
 重新刷新浏览器即可
@@ -7,3 +7,12 @@
 By autumn.peak
 不足之处请mailto:autumn.peak.Z@gmail.com
 
+---------------------------------------
+2017-01-01
+
+由Feng Office 3.4.4.1驱动； 
+基础汉化：Shellway ； 
+完整汉化：BD7LRQ@139.cn；
+本FengOffice中文汉化包；
+首发地址：http://duuge.com/
+---------------------------------------

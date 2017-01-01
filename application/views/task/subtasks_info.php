@@ -109,7 +109,7 @@ if($showOpenSubtasksDiv) { ?>
   
   <div class="addTask">
 <?php if($task_list->canAddSubTask(logged_user()) && !$task_list->isTrashed()) { ?>
-    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink"><a class="internalLink" href="<?php echo $task_list->getAddTaskUrl(false) ?>" onclick="App.modules.addTaskForm.showAddTaskForm(<?php echo $task_list->getId() ?>); return false"><?php echo lang('add sub task') ?></a></div>
+    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink"><a class="internalLink" href="<?php echo $task_list->getAddTaskUrl(false) ?>" onclick="ogTasks.drawAddNewTaskForm (null,<?php echo $task_list->getId() ?>,null, null,1); return false"><?php echo lang('add sub task') ?></a></div>
   
     <div id="addTaskForm<?php echo $task_list->getId() ?>" style="display:none">
       <form class="internalForm" action="<?php echo $task_list->getAddTaskUrl(false) ?>" method="post">

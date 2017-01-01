@@ -194,7 +194,7 @@ $show_owner_company_name_header = config_option("show_owner_company_name_header"
 					?>
 					</div>
 				</li>	
-			  	<li id="userboxWrapper" class="texture-n-1" onclick="showUserOptionsPanel()">			  	
+			  	<li id="userboxWrapper" class="<?php echo config_option('brand_colors_texture',1)?'texture-n-1':''; ?>" onclick="showUserOptionsPanel()">
 					<img src="<?php echo logged_user()->getPictureUrl(); ?>" alt="" />
 					<a id="userLink" style="margin-right: 5px;" href="#" ><?php echo clean(logged_user()->getObjectName()); ?></a>	
 					<div class="account"></div>										
@@ -274,7 +274,9 @@ og.loggedUser = {
 	isGuest: <?php echo logged_user()->isGuest() ? 'true' : 'false' ?>,
 	tz: <?php echo logged_user()->getTimezone() ?>,
 	type: <?php echo logged_user()->getUserType() ?>,
-	localization: '<?php echo logged_user()->getLocale() ?>'
+	localization: '<?php echo logged_user()->getLocale() ?>',
+	can_instantiate_templates: <?php echo can_instantiate_templates(logged_user()) ? 'true' : 'false'?>,
+	can_manage_tasks: <?php echo can_manage_tasks(logged_user()) ? 'true' : 'false' ?>
 };
 og.zipSupported = <?php echo zip_supported() ? 1 : 0 ?>;
 og.hasNewVersions = <?php
@@ -308,7 +310,8 @@ og.config = {
 		brand_colors_head_back: '<?php echo config_option('brand_colors_head_back')?>',
 		brand_colors_head_font: '<?php echo config_option('brand_colors_head_font')?>',
 		brand_colors_tabs_back: '<?php echo config_option('brand_colors_tabs_back')?>',
-		brand_colors_tabs_font: '<?php echo config_option('brand_colors_tabs_font')?>'
+		brand_colors_tabs_font: '<?php echo config_option('brand_colors_tabs_font')?>',
+		brand_colors_texture: '<?php echo config_option('brand_colors_texture')?>'
 	},
 	'with_perm_user_types': Ext.util.JSON.decode('<?php echo json_encode(config_option('give_member_permissions_to_new_users'))?>'),
 	'member_selector_page_size': 100,
@@ -398,10 +401,14 @@ $object_types = ObjectTypes::getAllObjectTypes();
 
 foreach ($object_types as $ot) {
 	$types[$ot->getId()] = array(
-								"name" => $ot->getName(),
-								"icon" => $ot->getIconClass(),
-								"type" => $ot->getType()
-							);
+		"name" => $ot->getName(),
+		"icon" => $ot->getIconClass(),
+		"type" => $ot->getType()
+	);
+	if ($ot->getType() == 'content_object') {
+		$types[$ot->getId()]['controller'] = $ot->getObjectTypeController();
+		$types[$ot->getId()]['add_action'] = $ot->getObjectTypeAddAction();
+	}
 }
 ?>
 og.objectTypes =  <?php echo clean(str_replace('"',"'", escape_character(json_encode($types)))) ?>;
@@ -422,7 +429,8 @@ Ext.Ajax.timeout = <?php echo get_max_execution_time()*1100 // give a 10% margin
 og.musicSound = new Sound();
 og.systemSound = new Sound();
 
-
+<?php $all_dimension_associations = DimensionMemberAssociations::instance()->getAllAssociationsInfo(); ?>
+og.dimension_member_associations = Ext.util.JSON.decode('<?php echo json_encode($all_dimension_associations)?>');
 
 <?php if (!defined('DISABLE_JS_POLLING') || !DISABLE_JS_POLLING) { ?>
 var isActiveBrowserTab = true;
@@ -500,14 +508,20 @@ foreach ($actions as $action) {
 	og.emailFilters = {};
 	og.emailFilters.classif = '<?php echo user_config_option('mails classification filter') ?>';
 	og.emailFilters.read = '<?php echo user_config_option('mails read filter') ?>';
-	og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
-	if (og.emailFilters.account != 0 && og.emailFilters.account != '') {
-		og.emailFilters.accountName = '<?php
-			$acc_id = user_config_option('mails account filter');
-			$acc = $acc_id > 0 ? MailAccounts::findById($acc_id) : null; 
-			echo ($acc instanceof MailAccount ? mysql_real_escape_string($acc->getName()) : ''); 
-		?>';
-	} else og.emailFilters.accountName = '';
+	<?php
+		$acc = MailAccounts::findById(user_config_option('mails account filter'));
+		if ($acc instanceof MailAccount) {
+			?>
+			og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
+			og.emailFilters.accountName = '<?php echo mysql_real_escape_string($acc->getName()) ?>';
+			<?php
+		} else { 
+			?>
+			og.emailFilters.account = '';
+			og.emailFilters.accountName = '';
+			<?php
+		}
+	?>
 <?php } ?>
 og.lastSelectedRow = {messages:0, mails:0, contacts:0, documents:0, weblinks:0, overview:0, linkedobjs:0, archived:0};
 
@@ -530,9 +544,15 @@ og.dimensionPanels = [
 		if (!$first) echo ",";
 		$first = false;
 		
+		if (defined('JSON_NUMERIC_CHECK')) {
+			$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()), JSON_NUMERIC_CHECK );
+		} else {
+			$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()) );
+		}
+		
 		?>
 		{	
-			reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()), JSON_NUMERIC_CHECK ); ?>,
+			reloadDimensions: <?php echo $reloadDimensions ?>,
 			xtype: 'member-tree',
 			id: 'dimension-panel-<?php echo $dimension->getId() ; ?>',
 			lines: false,
@@ -617,7 +637,7 @@ og.objPickerTypeFilters = [];
 	} 
 ?>
 
-og.dimension_object_type_contents = [];
+og.dimension_object_type_contents = {};
 <?php 
 	$dotcs = DimensionObjectTypeContents::findAll();
 	foreach ($dotcs as $dotc) { /* @var $dotc DimensionObjectTypeContent */?>
@@ -695,10 +715,16 @@ $(document).ready(function() {
 	});
 });
 
-
+<?php
+$default_currency = Currencies::getDefaultCurrencyInfo();
+if (is_array($default_currency) && count($default_currency) > 0) {
+	?>og.default_currency = Ext.util.JSON.decode('<?php echo json_encode($default_currency)?>');<?php
+} 
+?>
 
 </script>
 <?php include_once(Env::getLayoutPath("listeners"));?>
+	<div style="height:100%;width:100%;display:none;position:fixed;top:0px;left:0px;z-index: 2000;overflow-y: auto;" id="modal-forms-container"></div>
 
 	<div id="quick-form" > 
             <div id="close_text" style="float: right; cursor: pointer;height: 12px;position: absolute;right: 19px;top: 2px;"><a href="#" onclick="$('.close').click();"><?php echo lang('close')?></a></div>

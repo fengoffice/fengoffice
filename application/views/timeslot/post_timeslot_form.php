@@ -14,7 +14,7 @@
 	if (can_manage_time(logged_user())) {
 		echo label_tag(lang("person"), $genid . "closeTimeslotDescription", false);
 		
-		if (logged_user()->isMemberOfOwnerCompany()) {
+		if (logged_user()->isAdministrator() || logged_user()->isMemberOfOwnerCompany()) {
 			$users = Contacts::getAllUsers();
 		} else {
 			$users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = ". logged_user()->getCompanyId()) : array(logged_user());

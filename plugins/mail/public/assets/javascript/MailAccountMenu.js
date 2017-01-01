@@ -67,8 +67,10 @@ Ext.extend(og.EmailAccountMenu, Ext.menu.Menu, {
 	},
 	
 	addAccounts: function(accounts) {
-		for (var i=0; i < accounts.length; i++) {
-			this.addAccount(accounts[i]);
+		if (accounts && accounts.length) {
+			for (var i=0; i < accounts.length; i++) {
+				this.addAccount(accounts[i]);
+			}
 		}
 	},
 

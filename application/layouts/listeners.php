@@ -49,11 +49,9 @@ og.eventManager.addListener('reload tab panel',
 
 og.eventManager.addListener('reload user picture', 
  	function (data){
- 		var el = document.getElementById(data.el_id);
- 		if (el) el.src=data.url;
+ 		$("#"+data.el_id).attr('src', data.url);
  		if (data.file_id && data.hf_picture) {
- 	 		var hf = document.getElementById(data.hf_picture);
- 	 		if (hf) hf.value = data.file_id;
+ 			$("#"+data.hf_picture).val(data.file_id);
  		}
  	}
 );
@@ -194,7 +192,7 @@ og.eventManager.addListener('draft mail autosaved',
 
 og.eventManager.addListener('popup',
 	function (args) {
-		og.msg(args.title, args.message, 0, args.type, args.sound);
+		og.msg(args.title, args.message, args.timeout | 0, args.type, args.sound);
 	}
 );
 
@@ -482,6 +480,60 @@ og.eventManager.addListener('ask to change subtasks dates',
 );
 
 
+og.eventManager.addListener('ask to complete subtasks',
+	function (data) {
+		if (data && data.parent_id) {
+			var question = lang('complete task and subtask');
+			var div = document.createElement('div');
+			var genid = Ext.id();
+			div.innerHTML = '<div style="border-radius: 5px; background-color: #fff; padding: 10px; width: 400px;">'+ 
+				'<div><label class="coInputTitle">'+lang('update subtasks')+'</label></div>'+
+				'<div id="'+genid+'_question">'+ question +'</div>'+
+				'<div id="'+genid+'_buttons">'+
+				'<button class="yes submit blue">'+lang('yes')+'</button><button class="no submit blue">'+lang('no')+'</button>'+
+				'</div><div class="clear"></div></div>';
+
+			var modal_params = {
+				'escClose': false,
+				'overlayClose': false,
+				'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+				'onShow': function (dialog) {
+					$("#"+genid+"_close_link").addClass("modal-close-img");
+					$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
+					$("#"+genid+"_question").css('margin', '10px 0');
+					$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+
+						var pids = (data.parent_id+"").split(',');
+						for (var k=0; k<pids.length; k++) {
+						  og.openLink(og.getUrl('task', 'complete_subtasks', {id: pids[k]}), {
+							callback: function(success, cbdata) {
+								if (success && cbdata && cbdata.tasks) {
+									for (var i=0; i<cbdata.tasks.length; i++) {
+										var task = cbdata.tasks[i];
+										if (task) {
+											var task_added = ogTasksCache.addTasks(task);
+											ogTasks.UpdateTask(task_added.id, false);
+										}
+									}
+								}
+							}
+						  });
+						}
+						$('.modal-close').click();
+					});
+					$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+						$('.modal-close').click();
+					});
+			    }
+			};
+			setTimeout(function() {
+				$.modal(div, modal_params);
+			}, 100);
+		}
+	}
+);
+
+
 og.eventManager.addListener('new user added', 
  	function (data){
  		if (data && data.id > 0) { 
@@ -531,6 +583,16 @@ og.eventManager.addListener('refresh member list parameters',
 	}
 );
 
+og.eventManager.addListener('update last member list groups info', 
+	function (data){
+		if (!og.member_list_groups_info) og.member_list_groups_info = {};
+		for (k in data) {
+			if (typeof(k)=='function') continue;
+			og.member_list_groups_info[k] = data[k];
+		}
+	}
+);
+
 og.eventManager.addListener('add tasks info to tasks list', 
 	function (data) {
 		if (data && data.tasks && data.tasks.length > 0) {
@@ -538,4 +600,31 @@ og.eventManager.addListener('add tasks info to tasks list',
 		}
 	}
 );
+
+
+og.eventManager.addListener('member parent changed', 
+	function (data) {
+		var tree = Ext.getCmp("dimension-panel-"+data.d);
+		if (tree) {
+			// update old parent
+			var old_parent = tree.getNodeById(data.op);
+			if (old_parent && !old_parent.hasChildNodes()) {
+				var mobj = old_parent.attributes;
+				mobj.expandable = false;
+				
+				og.updateDimensionTreeNode(data.d, mobj, {});
+			}
+
+			// update current parent
+			var parent = tree.getNodeById(data.p);
+			if (parent) {
+				var mobj = parent.attributes;
+				mobj.expandable = true;
+				og.updateDimensionTreeNode(data.d, mobj, {});
+			}
+		}
+	}
+);
+
+
 </script>

@@ -189,3 +189,19 @@ function rebuild_contact_member_cache() {
 	
 	_log("Member cache updated for ".count($users)." users.");
 }
+
+function clean_object_selector_temp_selection() {
+	_log("Cleaning object selector temp selections...");
+	
+	Env::useHelper('object_selector');
+	clean_old_object_selector_temp_values();
+	
+	_log("Object selector temp values cleaned.");
+}
+
+$files = array();
+Hook::fire('additional_cron_function_files', null, $files);
+foreach ($files as $file) {
+	include_once $file;
+}
+

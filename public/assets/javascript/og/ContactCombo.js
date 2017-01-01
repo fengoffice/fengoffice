@@ -85,6 +85,7 @@ og.renderContactSelector = function(config) {
 	var selected_name = config.selected_name;
 	var onchange_fn = config.onchange_fn;
 	var is_multiple = config.is_multiple;
+	var tabindex = config.tabindex | 0;
 	
 	var url_params = null;
 	if (!isNaN(selected) && selected > 0){
@@ -115,6 +116,7 @@ og.renderContactSelector = function(config) {
 	});
 	
 	var list_class = (config.listClass ? config.listClass : '') + ' ' + genid;
+	var list_align = (config.listAlign ? config.listAlign : 'tl-bl');
 	
 	var contactsCombo = new og.ContactCombo({
 		renderTo: genid + render_to,
@@ -127,33 +129,22 @@ og.renderContactSelector = function(config) {
         mode: 'remote',
         width: !isNaN(config.width) ? config.width : 300,
 		listWidth: config.listWidth ? config.listWidth : 'auto',
-        cls: config.cls ? config.cls : 'assigned-to-combo',
         listClass: list_class,
+        listAlign: list_align,
+        cls: config.cls ? config.cls : 'assigned-to-combo',
         shadow: config.shadow != 'undefined' ? config.shadow : true,
         triggerAction: 'all',
         selectOnFocus: true,
         valueField: 'id',
+        tabIndex: tabindex,
         emptyText: config.empty_text ? config.empty_text : (lang('select contact') + '...'),
-        valueNotFoundText: ''
+        valueNotFoundText: '',
+        inline_selector: config.inline_selector
 	});
 	contactsCombo.doQuery('', true);
 
-	// ensure that dropdown list is aligned with the text input
-	contactsCombo.on('expand', function(combo) {
-		var ddlist = $("."+genid);
-		ddlist = ddlist[0];
-		
-		combo.try_count = 0;
-		var interval_ddlist = setInterval(function(){
-			var left = $('#' + genid + id + 'combo').offset().left;
-			if (left == $(ddlist).offset().left || combo.try_count >= 50) {
-				clearInterval(interval_ddlist);
-			} else {
-				$(ddlist).css('left', left + 'px');
-				$(ddlist).css('min-width', ($('#' + genid + id + 'combo').outerWidth()-2)+'px');
-			}
-			combo.try_count = combo.try_count + 1;
-		}, 10);
+	contactsCombo.on('focus', function(combo) {
+		if (combo) combo.expand();
 	});
 	
 	contactsCombo.on('beforeselect', function(combo, record, index){
@@ -232,8 +223,18 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 	document.getElementById(hf_id).value = contact_id;
 	// draw contact div and hide combo
 	if (!is_multiple) combo.hide();
-	var html = '<div class="" style="min-width:500px; width:500px;">'+contact_name+
-		'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" style="float:right;padding-left:18px;" class="link-ico ico-delete">'+lang('remove')+'</a></div>';
+	var style = "min-width:500px; width:500px;";
+	var remove_text = lang('remove');
+	var rem_float_dir = 'right';
+	
+	if (combo.initialConfig.inline_selector) {
+		style = "display:inline-flex; width:"+ combo.initialConfig.width +"px;";
+		remove_text = "";
+		rem_float_dir = 'left';
+	}
+	
+	var html = '<div class="" style="'+style+'"><div style="float:left;margin-right:5px;">'+ contact_name + '</div>' +
+		'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" style="float:'+rem_float_dir+';padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
 	Ext.get(container_id).insertHtml('beforeEnd', html);
 	
 	if (typeof(onchange_fn) == 'function') {

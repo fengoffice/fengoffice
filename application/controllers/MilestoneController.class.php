@@ -137,7 +137,9 @@ class MilestoneController extends ApplicationController {
 
 				$milestone->save();
 				$object_controller = new ObjectController();
-			    $object_controller->add_to_members($milestone, $member_ids);
+			    if (!is_null($member_ids)) {
+					$object_controller->add_to_members($milestone, $member_ids);
+			    }
 			    $object_controller->add_subscribers($milestone);
 			    $object_controller->link_to_new_object($milestone);
 				$object_controller->add_custom_properties($milestone);
@@ -303,7 +305,9 @@ class MilestoneController extends ApplicationController {
 				$milestone->save();
 				
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($milestone, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($milestone, $member_ids);
+				}
 			    $object_controller->add_subscribers($milestone);
 			    $object_controller->link_to_new_object($milestone);
 				$object_controller->add_custom_properties($milestone);

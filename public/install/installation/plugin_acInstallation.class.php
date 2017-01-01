@@ -714,8 +714,26 @@ final class acInstallation {
 						
 					$install_script = INSTALLATION_PATH."/plugins/$name/install/install.php" ;
 					if ( file_exists($install_script) ){
+						$queries = array();
+						
 						include_once $install_script;
+						$function_name = $name."_get_additional_install_queries";
+						if (function_exists($function_name)) {
+							$queries = $function_name($this->table_prefix);
+						}
+					
+						$total_queries = 0;
+						$executed_queries = 0;
+						if($this->executeMultipleQueries(implode("\n", $queries), $total_queries, $executed_queries)) {
+							$this->printMessage("File install.php processed for plugin $name ");
+						}else{
+							echo mysql_error();
+							$this->breakExecution("Error while executing install.php for plugin '$name'.".mysql_error());
+							DB::rollback();
+							return false;
+						}
 					}
+					
 					@mysql_query('COMMIT');
 				}
 			}

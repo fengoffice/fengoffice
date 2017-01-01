@@ -39,7 +39,7 @@ class MoreController extends ApplicationController {
 		
 		// mail
 		$mail_info = null;
-		if (!Plugins::instance()->isActivePlugin('mail')) {
+		if (!Plugins::instance()->isInstalledPlugin('mail')) {
 			$mail_info = array(
 					'id' => 'mails-panel',
 					'name' => lang('email tab'),

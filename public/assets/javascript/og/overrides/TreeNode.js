@@ -43,7 +43,7 @@ Ext.override(Ext.tree.TreeNodeUI, {
             '<img src="', this.emptyIcon, '" class="x-tree-ec-icon x-tree-elbow" />',
             '<img src="', a.icon || this.emptyIcon, '" class="x-tree-node-icon '+nodeIconHide+' ',(a.icon ? " x-tree-node-inline-icon" : ""),(a.iconCls ? " "+a.iconCls : ""),'" unselectable="on" />',
             cb ? ('<input class="x-tree-node-cb" type="checkbox" ' + (a.checked ? 'checked="checked" />' : '/>')) : '',
-            '<div style="display: inline-block;">'+extraHTML+'<a style="display: table-cell;" hidefocus="on" class="x-tree-node-anchor" href="',href,'" tabIndex="1" ',
+            '<div style="display: inline-block;" class="tree-name-container">'+extraHTML+'<a style="display: table-cell;" hidefocus="on" class="x-tree-node-anchor" href="',href,'" tabIndex="1" ',
              a.hrefTarget ? ' target="'+a.hrefTarget+'"' : "", '><span unselectable="on">',n.text,"</span></a></div></div>",
             '<ul class="x-tree-node-ct" style="display:none;"></ul>',
             // Extra HTML (feng override)

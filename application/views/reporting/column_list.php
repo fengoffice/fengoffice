@@ -35,7 +35,7 @@
 			);
 		}
 		if(!isset($order_by) || $order_by == '') $order_by = 'updated_on';
-		if (!str_starts_with($acol['id'], "dim_") && $acol['id']!='time' && $acol['id']!='billing') {
+		if (!str_starts_with($acol['id'], "dim_") && !str_starts_with($acol['id'], "dimassoc_") && $acol['id']!='time' && $acol['id']!='billing') {
 			$options[] = option_tag($acol['name'], $acol['id'], $acol['id'] == $order_by ? array('selected' => 'selected') : null);
 		}
 	}

@@ -66,7 +66,7 @@ foreach ($objects as $obj) {
 	$cobj = Objects::findObject($obj);
 	if ($cobj instanceof ContentDataObject) {
 		
-		if (!$cobj instanceof Workspace) {
+		if (!$cobj instanceof Workspace && !$cobj instanceof Comment) {
 			$mem_ids = $cobj->getMemberIds();
 			if (count($mem_ids) > 0) {
 				$object_controller->add_to_members($cobj, $mem_ids, $user);

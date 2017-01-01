@@ -4,6 +4,8 @@
 ?>
 <form id='<?php echo $genid ?>formClassify' name='formClassify' style='padding: 7px;height:100%;background-color:white; min-width: 550px; min-height: 220px'  class="internalForm miclase" onsubmit="<?php echo $on_submit?>" action="<?php echo get_url('mail','classify', array('id'=>$email->getId())) ?>" method="post">
 	<input type="hidden" name="id" value="<?php echo $email->getId() ?>" />
+	<input type="hidden" name="from_mail_view" value="<?php echo array_var($_GET, 'from_mail_view') ?>" />
+	<input type="hidden" name="from_mail_list" value="<?php echo array_var($_GET, 'from_mail_list') ?>" />
 	<input type="hidden" name="submit" value="1" />
 	
 	<div class="classify mail-classify-selector">

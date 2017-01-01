@@ -223,7 +223,7 @@
 	'country um' => 'Îles mineures éloignées des États-Unis',
 	'country ug' => 'Ouganda',
 	'country ua' => 'Ukraine',
-	'country ae' => 'Émirats Arabes Unis ',
+	'country ae' => 'Émirats Arabes Unis',
 	'country uk' => 'Royaume Unis',
 	'country uy' => 'Uruguay',
 	'country uz' => 'Ouzbékistan',

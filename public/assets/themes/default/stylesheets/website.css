@@ -16,7 +16,9 @@
 @import 'og/goo_player.css';
 @import 'og/image_chooser.css';
 @import 'og/object_picker.css';
+@import 'og/object_selector.css';
 @import 'og/og.css';
+@import 'og/basics.css';
 @import 'og/reporting.css';
 @import 'og/search.css';
 @import 'og/tag_panel.css';

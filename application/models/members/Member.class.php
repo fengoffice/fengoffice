@@ -249,7 +249,8 @@ class Member extends BaseMember {
 						return false;
 					}
 				} else {
-					if (!in_array($child->getObjectTypeId(), $child_ots)){
+					// if $child has same type than $this, then there is no need to check if $child can be son of $this->parent  
+					if ($child->getObjectTypeId() != $this->getObjectTypeId() && !in_array($child->getObjectTypeId(), $child_ots)){
 						$error_message = lang("cannot delete member childs cannot be moved to parent");
 						return false;
 					}

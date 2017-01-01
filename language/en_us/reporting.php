@@ -65,6 +65,7 @@
   
   	'field ProjectTasks assigned_by_id' => 'Assigned by',
   	'field ProjectTasks type_content' => 'Type content',
+  	'report date' => 'Report date',
   );
   
 ?>

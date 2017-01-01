@@ -18,7 +18,7 @@ if ($linked_objects_object->isNew()){
 	foreach ($linked_objects as $linked_object) {
 		if( !$linked_object instanceof ApplicationDataObject ) continue ; //check that it is a valid object
 		
-		if (!$linked_object->canView(logged_user()) ) continue; // check permissions
+		if (!$linked_object->canEdit(logged_user()) ) continue; // check permissions
 		
 		$object_title = $linked_object->getObjectName();
 		if (strlen($object_title) > 28){

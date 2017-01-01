@@ -17,4 +17,8 @@
 	'add a new member in tags' => 'Etiket Ekle',
 	'workspaces list' => 'Çalışma Alanları',
 	'tags list' => 'Etiketler',
+	'the workspaces' => 'çalışma alanları',
+	'the tags' => 'etiketler',
+	'workspace report' => 'Çalışma alanları raporu',
+	'tag report' => 'Etiketler raporu',
 ); ?>

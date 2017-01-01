@@ -166,7 +166,7 @@ class ContactController extends ApplicationController {
 			
 			// Module permissions
 			$module_permissions_info = array();
-			$all_modules = TabPanels::findAll(array("conditions" => "`enabled` = 1", "order" => "ordering"));
+			$all_modules = TabPanels::findAll(array("conditions" => "`enabled` = 1 AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))", "order" => "ordering"));
 			$all_modules_info = array();
 			foreach ($all_modules as $module) {
 				$all_modules_info[] = array('id' => $module->getId(), 'name' => lang($module->getTitle()), 'ot' => $module->getObjectTypeId());
@@ -438,6 +438,8 @@ class ContactController extends ApplicationController {
 		$order = array_var($_GET,'sort');
 		$order_dir = array_var($_GET,'dir');
 		$action = array_var($_GET,'action');
+		$dim_order = null;
+		$cp_order = null;
 		
 		$attributes = array(
 			"ids" => explode(',', array_var($_GET, 'ids')),
@@ -454,6 +456,7 @@ class ContactController extends ApplicationController {
 				flash_success($actionMessage["errorMessage"]);
 			} else {
 				flash_error($actionMessage["errorMessage"]);
+				ajx_current("reload");
 			}
 		} 
 		
@@ -479,8 +482,11 @@ class ContactController extends ApplicationController {
 		//$extra_conditions.= " AND disabled = 0 " ;
 		
 		if (strpos($order, 'p_') == 1 ){
-			$cpId = substr($order, 3);
+			$cp_order = substr($order, 3);
 			$order = 'customProp';
+		} else if (str_starts_with($order, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order = 'dimensionOrder';
 		}
 		$select_columns = array('*');
 		$join_params = array();
@@ -492,18 +498,19 @@ class ContactController extends ApplicationController {
 			case 'createdOn':
 				$order = '`created_on`';
 				break;
-			case 'name':
-				$order = ' concat(surname, first_name) ';
+			case 'jobTitle':
+				$order = '`job_title`';
 				break;
-			case 'customProp':
-				$order = 'IF(ISNULL(jt.value),1,0),jt.value';
-				$join_params['join_type'] = "LEFT ";
-				$join_params['table'] = TABLE_PREFIX."custom_property_values";
-				$join_params['jt_field'] = "object_id";
-				$join_params['e_field'] = "object_id";
-				$join_params['on_extra'] = "AND custom_property_id = ".$cpId;
-				$extra_conditions.= " AND ( custom_property_id = ".$cpId. " OR custom_property_id IS NULL)";
-				$select_columns = array("DISTINCT o.*", "e.*");
+			case 'birthday':
+				if (!$order_dir) $order_dir = "ASC";
+				$order = 'MONTH(`birthday`) '.$order_dir.',DAY(`birthday`)';
+				break;
+			case 'name':
+				if(user_config_option("listingContactsBy")){
+					$order = ' concat(first_name, surname) ';
+				} else {
+					$order = ' concat(surname, first_name) ';
+				}
 				break;
 			case 'email':
 				$join_params['join_type'] = "LEFT ";
@@ -537,6 +544,8 @@ class ContactController extends ApplicationController {
 		$content_objects = Contacts::instance()->listing(array(
 			"order" => $order,
 			"order_dir" => $order_dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			"extra_conditions" => $extra_conditions,
 			"start" =>$start,
 			"limit" => $limit,
@@ -548,7 +557,7 @@ class ContactController extends ApplicationController {
 		
 		
 		// Prepare response object
-		$object = $this->prepareObject($content_objects->objects, $content_objects->total, $start, $attributes);
+		$object = $this->prepareObject($content_objects->objects, $content_objects, $start, $attributes);
 		ajx_extra_data($object);
     	tpl_assign("listing", $object);
 
@@ -574,7 +583,7 @@ class ContactController extends ApplicationController {
 					$type = $attributes["types"][$i];
 					
 					$contact = Contacts::findById($id);
-					if (isset($contact) && $contact->canDelete(logged_user())){
+					if ($contact instanceof Contact && $contact->canDelete(logged_user()) && !$contact->isUser()){
 						try{
 							DB::beginWork();
 							$contact->trash();
@@ -646,19 +655,24 @@ class ContactController extends ApplicationController {
 	 * @param integer $limit
 	 * @return array
 	 */
-	private function prepareObject($objects, $count, $start = 0, $attributes = null)
+	private function prepareObject($objects, $res_obj, $start = 0, $attributes = null)
 	{
 		$object = array(
-			"totalCount" => $count,
+			"totalCount" => $res_obj->total,
 			"start" => $start,
 			"contacts" => array()
 		);
+
+		foreach ($res_obj as $k => $v) {
+			if ($k != 'total' && $k != 'objects') $object[$k] = $v;
+		}
+		
 		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(Contacts::instance()->getObjectTypeId());
 		for ($i = 0; $i < count($objects); $i++){
 			if (isset($objects[$i])){
 				$c= $objects[$i];
 					
-				if ($c instanceof Contact && !$c->isCompany()){						
+				if ($c instanceof Contact && !$c->isCompany()){
 					$company = $c->getCompany();
 					$companyName = '';
 					if (!is_null($company))
@@ -709,6 +723,7 @@ class ContactController extends ApplicationController {
 						"updatedById" => $c->getUpdatedById(),
 						"memPath" => json_encode($c->getMembersIdsToDisplayPath()),
 						"userType" => $c->getUserType(),
+						"birthday" => $c->getBirthday() instanceof DateTimeValue ? $c->getBirthday()->format('M, j') : '',
 					);
 				} else if ($c instanceof Contact){
 					
@@ -720,6 +735,7 @@ class ContactController extends ApplicationController {
 						"ot_id" => $c->getObjectTypeId(),
 						"type" => 'company',
 						'name' => $c->getObjectName(),
+						"picture" => $c->getPictureUrl(),
 						'email' => $c->getEmailAddress(),
 						'website' => $c->getWebpage('work') ? cleanUrl($c->getWebpageUrl('work'), false) : '',
 						'workPhone1' => $c->getPhone('work',true) ? $c->getPhoneNumber('work',true) : '',
@@ -748,6 +764,7 @@ class ContactController extends ApplicationController {
 						"memPath" => json_encode($c->getMembersIdsToDisplayPath()),
 						"contacts" => $c->getContactsByCompany(),
 						"users" => $c->getUsersByCompany(),
+						"birthday" => '',
 					);
 				}
 				
@@ -964,14 +981,14 @@ class ContactController extends ApplicationController {
 				return;
 			} // if
 
-			if (array_var($_REQUEST, 'create_user_from_contact')){
-				$contact_data = $this->get_contact_data_from_contact($contact_old);
-				tpl_assign('userFromContactId', get_id());
-				
-				$contact_old->setNew(true);
-				// to keep custom properties and linked objects
-				tpl_assign('object', $contact_old);
-			}
+		
+			$contact_data = $this->get_contact_data_from_contact($contact_old);
+			tpl_assign('userFromContactId', get_id());
+			
+			$contact_old->setNew(true);
+			// to keep custom properties and linked objects
+			tpl_assign('object', $contact_old);
+		
 		}
 		if(array_var($_REQUEST, 'user_from_contact_id') > 0){
 			$contact = Contacts::findById(array_var($_REQUEST, 'user_from_contact_id'));
@@ -1104,14 +1121,16 @@ class ContactController extends ApplicationController {
 				
 				//NEW ! User data in the same form 
 				$user = array_var(array_var($_POST, 'contact'),'user');
-				if(isset($contact_data['specify_username'])){
-					if($contact_data['user']['username'] != ""){
-						$user['username'] = $contact_data['user']['username'];
+				if (is_array($user)) {
+					if(isset($contact_data['specify_username'])){
+						if($contact_data['user']['username'] != ""){
+							$user['username'] = $contact_data['user']['username'];
+						}else{
+							$user['username'] = str_replace(" ","",strtolower($contact_data['name'])) ;
+						}
 					}else{
 						$user['username'] = str_replace(" ","",strtolower($contact_data['name'])) ;
 					}
-				}else{
-					$user['username'] = str_replace(" ","",strtolower($contact_data['name'])) ;
 				}
 				
 
@@ -1149,7 +1168,6 @@ class ContactController extends ApplicationController {
 						evt_add("contact added from mail", array("div_id" => $contact_data['new_contact_from_mail_div_id'], "combo_val" => $combo_val, "hf_contacts" => $contact_data['hf_contacts']));
 					}
 					$contact = Contacts::findById($contact->getId());
-					ContactMemberCaches::updateContactMemberCacheAllMembers($contact);
 					
 					evt_add("new user added", $contact->getArrayInfo());
 				}
@@ -1165,6 +1183,9 @@ class ContactController extends ApplicationController {
 					
 					$contact = Contacts::findById($contact->getId());
 					save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest());
+					
+					// create member cache for the new user
+					ContactMemberCaches::updateContactMemberCacheAllMembers($contact);
 					
 					DB::commit();
 				}
@@ -1409,35 +1430,47 @@ class ContactController extends ApplicationController {
 						$contact_im_value->save();
 					} // if
 				} // foreach
+				
 
+				$member_ids_to_add = array();
+				
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				$object_controller = new ObjectController();
-				if (!is_null($member_ids)){
-					$object_controller->add_to_members($contact, $member_ids);
+				if (!is_null($member_ids) && count($member_ids) > 0){
+					$member_ids_to_add = array_merge($member_ids_to_add, $member_ids);
 				}
 				$no_perm_members_ids = json_decode(array_var($_POST, 'no_perm_members'));
-				if (count($no_perm_members_ids)){
-					$object_controller->add_to_members($contact, $no_perm_members_ids);
+				if (count($no_perm_members_ids) > 0){
+					$member_ids_to_add = array_merge($member_ids_to_add, $no_perm_members_ids);
+				}
+				
+				if (count($member_ids_to_add) > 0) {
+					$object_controller->add_to_members($contact, $member_ids_to_add);
 				}
 				
 				if ($newCompany) $object_controller->add_to_members($company, $member_ids);
 				$object_controller->link_to_new_object($contact);
-				$object_controller->add_subscribers($contact);
 				$object_controller->add_custom_properties($contact);
 				
-				
+				// modify subscribers only if contact is not an user
+				if (trim(array_var($contact_data, 'username', '')) == '') {
+					$object_controller->add_subscribers($contact);
+				}
 
 				// User settings
 				$user = array_var(array_var($_POST, 'contact'),'user');
 				if($user && $contact->canUpdatePermissions(logged_user())){
+					$new_user_type_is_lower = false;
 					$user_type_changed = false;
 					if (array_var($user, 'type')) {
 						$user_type_changed = $contact->getUserType() != array_var($user, 'type');
+						$new_user_type_is_lower = $contact->getUserType() < array_var($user, 'type'); // greater user type id means lower user type rank
 						$contact->setUserType(array_var($user, 'type'));
 						$contact->save();
 					}
 					
-					if ($user_type_changed) {
+					// cut the permissions only if new user type has lower rank than before
+					if ($user_type_changed && $new_user_type_is_lower) {
 						$this->cut_max_user_permissions($contact);
 					}
 					
@@ -1511,7 +1544,7 @@ class ContactController extends ApplicationController {
 			tpl_assign('user_type', $contact->getUserType());
 		}
 		
-		if(is_array($im_types)) {
+		if(isset($im_types) && is_array($im_types)) {
 			foreach($im_types as $im_type) {
 				$contact_data['im_' . $im_type->getId()] = $contact->getImValue($im_type);
 			} // foreach
@@ -1569,20 +1602,7 @@ class ContactController extends ApplicationController {
 		}
 		
 		// rebuild sharing table for permission group $pg_id
-		$cmp_rows = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."contact_member_permissions WHERE permission_group_id=$pg_id");
-		$permissions_array = array();
-		foreach ($cmp_rows as $row) {
-			$p = new stdClass();
-			$p->m = array_var($row, 'member_id');
-			$p->o = array_var($row, 'object_type_id');
-			$p->d = array_var($row, 'can_delete');
-			$p->w = array_var($row, 'can_write');
-			$p->r = 1;
-			$permissions[] = $p;
-		}
-		
-		$sharing_table_controller = new SharingTableController();
-		$sharing_table_controller->after_permission_changed($pg_id, $permissions_array);
+		rebuild_sharing_table_for_pg_background($pg_id);
 	}
 	
 	
@@ -2385,7 +2405,6 @@ class ContactController extends ApplicationController {
 						$titles .= $field_names["contact[$k]"] . $delimiter;
 					}
 				}
-				$titles = substr_utf($titles, 0, strlen_utf($titles)-1) . "\n";
 			}else{
 				$field_names = Contacts::getCompanyFieldNames();
 				
@@ -2394,8 +2413,23 @@ class ContactController extends ApplicationController {
 						$titles .= $field_names["company[$k]"] . $delimiter;
 					}
 				}
-				$titles = substr_utf($titles, 0, strlen_utf($titles)-1) . "\n";
 			}
+			
+			// available custom properties
+			$cps = CustomProperties::getAllCustomPropertiesByObjectType(Contacts::instance()->getObjectTypeId());
+			$custom_properties = array();
+			foreach ($cps as $cp) $custom_properties[$cp->getId()] = $cp;
+			
+			// add selected custom properties to titles
+			foreach($checked_fields as $k => $v) {
+				if ($v == 'checked' && is_numeric($k)) {
+					$cp = array_var($custom_properties, $k);
+					if ($cp instanceof CustomProperty) {
+						$titles .= $cp->getName() . $delimiter;
+					}
+				}
+			}
+			$titles = substr_utf($titles, 0, strlen_utf($titles)-1) . "\n";
 			
 			// export the same type of contact objects that are enabled in the contacts tab.
 			$extra_conditions = "";
@@ -2429,7 +2463,7 @@ class ContactController extends ApplicationController {
 				$conditions .= $context_condition;
 				$contacts = Contacts::instance()->getAllowedContacts($conditions);
 				foreach ($contacts as $contact) {					
-					fwrite($handle, $this->build_csv_from_contact($contact, $checked_fields, $delimiter) . "\n");
+					fwrite($handle, $this->build_csv_from_contact($contact, $checked_fields, $delimiter, $custom_properties) . "\n");
 				}
 			}else{
 				$conditions .= ($conditions == "" ? "" : " AND ") . "`archived_by_id` = 0" . ($conditions ? " AND $conditions" : "");
@@ -2437,7 +2471,7 @@ class ContactController extends ApplicationController {
 				$conditions .= $context_condition;
 				$companies = Contacts::getVisibleCompanies(logged_user(), $conditions);
 				foreach ($companies as $company) {
-					fwrite($handle, $this->build_csv_from_company($company, $checked_fields, $delimiter) . "\n");
+					fwrite($handle, $this->build_csv_from_company($company, $checked_fields, $delimiter, $custom_properties) . "\n");
 				}
 			}
 			
@@ -2456,7 +2490,7 @@ class ContactController extends ApplicationController {
 			$size = filesize($path);
 			
 			$name = array_var($_REQUEST, 'fname', array_var($_SESSION, 'fname', ''));
-			if ($name == '') {
+			if ($name == '' || !str_ends_with($name, '.csv')) {
 				$name = (array_var($_SESSION, 'import_type', 'contact') == 'contact' ? 'contacts.csv' : 'companies.csv');
 			}
 			
@@ -2497,67 +2531,93 @@ class ContactController extends ApplicationController {
 	}
 	
 	
-	function build_csv_from_contact(Contact $contact, $checked, $delimiter = ',') {
+	function build_csv_from_contact(Contact $contact, $checked, $delimiter = ',', $custom_properties=array()) {
 		$str = '';
-                
-		if (isset($checked['first_name']) && $checked['first_name'] == 'checked') $str .= self::build_csv_field($contact->getFirstName(), $delimiter);
-		if (isset($checked['surname']) && $checked['surname'] == 'checked') $str .= self::build_csv_field($contact->getSurname(), $delimiter);
-		if (isset($checked['email']) && $checked['email'] == 'checked') $str .= self::build_csv_field($contact->getEmailAddress('personal'), $delimiter);
-		if (isset($checked['company_id']) && $checked['company_id'] == 'checked') $str .= self::build_csv_field($contact->getCompany() ? $contact->getCompany()->getObjectName() : "", $delimiter);
 		
-		if (isset($checked['w_web_page']) && $checked['w_web_page'] == 'checked') $str .= self::build_csv_field($contact->getWebPageUrl('work'), $delimiter);
-		$work_address = $contact->getAddress('work');
-		if ($work_address){
-			if (isset($checked['w_address']) && $checked['w_address'] == 'checked') $str .= self::build_csv_field($work_address->getStreet(), $delimiter);
-			if (isset($checked['w_city']) && $checked['w_city'] == 'checked') $str .= self::build_csv_field($work_address->getStreet(), $delimiter);
-			if (isset($checked['w_state']) && $checked['w_state'] == 'checked') $str .= self::build_csv_field($work_address->getState(), $delimiter);
-			if (isset($checked['w_zipcode']) && $checked['w_zipcode'] == 'checked') $str .= self::build_csv_field($work_address->getZipcode(), $delimiter);
-			if (isset($checked['w_country']) && $checked['w_country'] == 'checked') $str .= self::build_csv_field($work_address->getCountryName(), $delimiter);
-		}
-		
-		if (isset($checked['w_phone_number']) && $checked['w_phone_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('work',true), $delimiter);
-		if (isset($checked['w_phone_number2']) && $checked['w_phone_number2'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('work'), $delimiter);
-		if (isset($checked['w_fax_number']) && $checked['w_fax_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('fax',true), $delimiter);
-		if (isset($checked['w_assistant_number']) && $checked['w_assistant_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('assistant'), $delimiter);
-		if (isset($checked['w_callback_number']) && $checked['w_callback_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('callback'), $delimiter);
-		
-		if (isset($checked['h_web_page']) && $checked['h_web_page'] == 'checked') $str .= self::build_csv_field($contact->getWebPageUrl('personal'), $delimiter);
-		$home_address = $contact->getAddress('home');
-		if ($home_address){
-			if (isset($checked['h_address']) && $checked['h_address'] == 'checked') $str .= self::build_csv_field($home_address->getStreet(), $delimiter);
-			if (isset($checked['h_city']) && $checked['h_city'] == 'checked') $str .= self::build_csv_field($home_address->getCity(), $delimiter);
-			if (isset($checked['h_state']) && $checked['h_state'] == 'checked') $str .= self::build_csv_field($home_address->getState(), $delimiter);
-			if (isset($checked['h_zipcode']) && $checked['h_zipcode'] == 'checked') $str .= self::build_csv_field($home_address->getZipcode(), $delimiter);
-			if (isset($checked['h_country']) && $checked['h_country'] == 'checked') $str .= self::build_csv_field($home_address->getCountryName(), $delimiter);
-		}
-		if (isset($checked['h_phone_number']) && $checked['h_phone_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('home',true), $delimiter);
-		if (isset($checked['h_phone_number2']) && $checked['h_phone_number2'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('home'), $delimiter);
-		if (isset($checked['h_fax_number']) && $checked['h_fax_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('fax'), $delimiter);
-		if (isset($checked['h_mobile_number']) && $checked['h_mobile_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('mobile'), $delimiter);
-		if (isset($checked['h_pager_number']) && $checked['h_pager_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('pager'), $delimiter);
-		
-		if (isset($checked['o_web_page']) && $checked['o_web_page'] == 'checked') $str .= self::build_csv_field($contact->getWebPageUrl('other'), $delimiter);
-		$other_address = $contact->getAddress('other');
-		if ($other_address){
-			if (isset($checked['o_address']) && $checked['o_address'] == 'checked') $str .= self::build_csv_field($other_address->getStreet(), $delimiter);
-			if (isset($checked['o_city']) && $checked['o_city'] == 'checked') $str .= self::build_csv_field($other_address->getCity(), $delimiter);
-			if (isset($checked['o_state']) && $checked['o_state'] == 'checked') $str .= self::build_csv_field($other_address->getState(), $delimiter);
-			if (isset($checked['o_zipcode']) && $checked['o_zipcode'] == 'checked') $str .= self::build_csv_field($other_address->getZipcode(), $delimiter);
-			if (isset($checked['o_country']) && $checked['o_country'] == 'checked') $str .= self::build_csv_field($other_address->getCountryName(), $delimiter);
-		}
-		if (isset($checked['o_phone_number']) && $checked['o_phone_number'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('other',true), $delimiter);
-		if (isset($checked['o_phone_number2']) && $checked['o_phone_number2'] == 'checked') $str .= self::build_csv_field($contact->getPhoneNumber('other'), $delimiter);
-		
-		if (isset($checked['o_birthday']) && $checked['o_birthday'] == 'checked') $str .= self::build_csv_field($contact->getBirthday(), $delimiter);
-		
+		//Personal emails
 		$personal_emails = $contact->getContactEmails('personal');
-		if (isset($checked['email2']) && $checked['email2'] == 'checked' && !is_null($personal_emails) && isset($personal_emails[0])) 
-			$str .= self::build_csv_field($personal_emails[0]->getEmailAddress(), $delimiter);
-		if (isset($checked['email3']) && $checked['email3'] == 'checked' && !is_null($personal_emails) && isset($personal_emails[1])) 
-			$str .= self::build_csv_field($personal_emails[1]->getEmailAddress(), $delimiter);
-		if (isset($checked['job_title']) && $checked['job_title'] == 'checked') $str .= self::build_csv_field($contact->getJobTitle(), $delimiter);
-		if (isset($checked['department']) && $checked['department'] == 'checked') $str .= self::build_csv_field($contact->getDepartment(), $delimiter);
-		
+		$personal_email2 = null;
+		$personal_email3 = null;
+		if (isset($checked['email2']) && $checked['email2'] == 'checked' && !is_null($personal_emails) && isset($personal_emails[0])){
+			$personal_email2 = $personal_emails[0];
+		}		
+		if (isset($checked['email3']) && $checked['email3'] == 'checked' && !is_null($personal_emails) && isset($personal_emails[1])){
+			$personal_email3 = $personal_emails[1];
+		}
+						
+		$params_fucntions = array
+		(
+				'first_name' => array('object' => $contact, 'func_name' => 'getFirstName', 'params' => array()),
+				'surname' => array('object' => $contact, 'func_name' => 'getSurname', 'params' => array()),
+				'email' => array('object' => $contact, 'func_name' => 'getEmailAddress', 'params' => array('personal')),
+				'company_id' => array('object' => $contact->getCompany(), 'func_name' => 'getObjectName', 'params' => array()),
+				'w_web_page' => array('object' => $contact, 'func_name' => 'getWebPageUrl', 'params' => array('work')),
+				'w_address' => array('object' => $contact->getAddress('work'), 'func_name' => 'getStreet', 'params' => array()),
+				'w_city' => array('object' => $contact->getAddress('work'), 'func_name' => 'getCity', 'params' => array()),
+				'w_state' => array('object' => $contact->getAddress('work'), 'func_name' => 'getState', 'params' => array()),
+				'w_zipcode' => array('object' => $contact->getAddress('work'), 'func_name' => 'getZipcode', 'params' => array()),
+				'w_country' => array('object' => $contact->getAddress('work'), 'func_name' => 'getCountryName', 'params' => array()),
+				'w_phone_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('work',true)),
+				'w_phone_number2' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('work')),
+				'w_fax_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('fax',true)),
+				'w_assistant_name' => array('object' => $contact, 'func_name' => 'getPhoneName', 'params' => array('assistant')),
+				'w_assistant_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('assistant')),
+				'w_callback_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('callback')),
+				'h_web_page' => array('object' => $contact, 'func_name' => 'getWebPageUrl', 'params' => array('personal')),
+				'h_address' => array('object' => $contact->getAddress('home'), 'func_name' => 'getStreet', 'params' => array()),
+				'h_city' => array('object' => $contact->getAddress('home'), 'func_name' => 'getCity', 'params' => array()),
+				'h_state' => array('object' => $contact->getAddress('home'), 'func_name' => 'getState', 'params' => array()),
+				'h_zipcode' => array('object' => $contact->getAddress('home'), 'func_name' => 'getZipcode', 'params' => array()),
+				'h_country' => array('object' => $contact->getAddress('home'), 'func_name' => 'getCountryName', 'params' => array()),
+				'h_phone_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('home',true)),
+				'h_phone_number2' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('home')),
+				'h_fax_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('fax')),
+				'h_mobile_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('mobile')),
+				'h_pager_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('pager')),
+				'o_web_page' => array('object' => $contact, 'func_name' => 'getWebPageUrl', 'params' => array('other')),
+				'o_address' => array('object' => $contact->getAddress('other'), 'func_name' => 'getStreet', 'params' => array()),
+				'o_city' => array('object' => $contact->getAddress('other'), 'func_name' => 'getCity', 'params' => array()),
+				'o_state' => array('object' => $contact->getAddress('other'), 'func_name' => 'getState', 'params' => array()),
+				'o_zipcode' => array('object' => $contact->getAddress('other'), 'func_name' => 'getZipcode', 'params' => array()),
+				'o_country' => array('object' => $contact->getAddress('other'), 'func_name' => 'getCountryName', 'params' => array()),
+				'o_phone_number' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('other',true)),
+				'o_phone_number2' => array('object' => $contact, 'func_name' => 'getPhoneNumber', 'params' => array('other')),
+				'o_birthday' => array('object' => $contact, 'func_name' => 'getBirthday', 'params' => array()),
+				'email2' => array('object' => $personal_email2, 'func_name' => 'getEmailAddress', 'params' => array()),
+				'email3' => array('object' => $personal_email3, 'func_name' => 'getEmailAddress', 'params' => array()),
+				'job_title' => array('object' => $contact, 'func_name' => 'getJobTitle', 'params' => array()),
+				'department' => array('object' => $contact, 'func_name' => 'getDepartment', 'params' => array())				
+				);
+
+		//add csv fields to $str
+		foreach ($checked as $key => $param) {
+			if($param == 'checked'){
+				if (is_numeric($key)) {
+					// custom property
+					$cp = array_var($custom_properties, $key);
+					if ($cp instanceof CustomProperty) {
+						$str .= self::build_csv_field(get_custom_property_value_for_listing($cp, $contact), $delimiter);
+					} else {
+						$str .= self::build_csv_field("", $delimiter);
+					}
+				} else {
+					$param_func = $params_fucntions[$key];
+					//check the object
+					if(is_null($param_func['object'])){
+						$str .= self::build_csv_field("", $delimiter);
+					}else{
+						//check method exists
+						if(method_exists($param_func['object'], $param_func['func_name'])){
+							$param_text = call_user_func_array(array($param_func['object'],$param_func['func_name']),$param_func['params']);
+							$str .= self::build_csv_field($param_text, $delimiter);
+						}else{
+							$str .= self::build_csv_field("", $delimiter);
+						}
+					}
+				}
+			}
+		}
+					
 		$str = str_replace(array(chr(13).chr(10), chr(13), chr(10)), ' ', $str); //remove line breaks
 		
 		return $str;
@@ -3186,7 +3246,7 @@ class ContactController extends ApplicationController {
 	}
 	
 	
-	function build_csv_from_company(Contact $company, $checked, $delimiter = ',') {
+	function build_csv_from_company(Contact $company, $checked, $delimiter = ',', $custom_properties=array()) {
 		$str = '';
 		
 		if (isset($checked['first_name']) && $checked['first_name'] == 'checked') $str .= self::build_csv_field($company->getObjectName(), $delimiter);
@@ -3203,6 +3263,18 @@ class ContactController extends ApplicationController {
 		if (isset($checked['fax_number']) && $checked['fax_number'] == 'checked') $str .= self::build_csv_field($company->getPhoneNumber('fax', true), $delimiter);
 		if (isset($checked['email']) && $checked['email'] == 'checked') $str .= self::build_csv_field($company->getEmailAddress(), $delimiter);
 		if (isset($checked['homepage']) && $checked['homepage'] == 'checked') $str .= self::build_csv_field($company->getWebpageUrl('work'), $delimiter);
+		
+		foreach ($checked as $key => $param) {
+			if ($param == 'checked' && is_numeric($key)) {
+				// custom property
+				$cp = array_var($custom_properties, $key);
+				if ($cp instanceof CustomProperty) {
+					$str .= self::build_csv_field(get_custom_property_value_for_listing($cp, $company), $delimiter);
+				} else {
+					$str .= self::build_csv_field("", $delimiter);
+				}
+			}
+		}
 		
 		$str = str_replace(array(chr(13).chr(10), chr(13), chr(10)), ' ', $str); //remove line breaks
 		
@@ -3336,7 +3408,9 @@ class ContactController extends ApplicationController {
 				
 				$object_controller = new ObjectController();
 				
-				$object_controller->add_to_members($company, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($company, $member_ids);
+				}
 		    	$object_controller->link_to_new_object($company);
 				$object_controller->add_subscribers($company);
 				$object_controller->add_custom_properties($company);
@@ -3898,6 +3972,8 @@ class ContactController extends ApplicationController {
 			$name_condition = " AND o.name LIKE '%$name_filter%'";
 		}
 		
+		$permissions_checked = false;
+		
 		// by default list only contacts
 		$type_condition = " AND is_company=0";
 		
@@ -3914,6 +3990,7 @@ class ContactController extends ApplicationController {
 						
 					} else if ($col == 'has_permissions') {
 						
+						$permissions_checked = true;
 						$extra_conditions .= " AND `user_type`>0 AND EXISTS(
 							SELECT * FROM ".TABLE_PREFIX."contact_member_permissions cmp
 							WHERE cmp.permission_group_id IN (SELECT x.permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups x WHERE x.contact_id=o.id)
@@ -3947,8 +4024,15 @@ class ContactController extends ApplicationController {
 		$info = array();
 		$pg_ids = logged_user()->getPermissionGroupIds();
 		if (count($pg_ids) > 0) {
-			$permissions_condition = " AND (o.id=".logged_user()->getId()." OR EXISTS (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND group_id IN (".implode(',',$pg_ids).")))";
-			
+			if ($permissions_checked) {
+				$permissions_condition = ""; // if filtering by users the permissions are already checked with filters
+			} else {
+				if (logged_user()->isAdministrator()) {
+					$permissions_condition = "";
+				} else {
+					$permissions_condition = " AND (o.id=".logged_user()->getId()." OR EXISTS (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND group_id IN (".implode(',',$pg_ids).")))";
+				}
+			}
 			$conditions = "o.trashed_by_id=0 AND o.archived_by_id=0 $name_condition $permissions_condition $type_condition $extra_conditions";
 			$query_params = array(
 				'condition' => $conditions,

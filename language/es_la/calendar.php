@@ -209,6 +209,7 @@
         'success import calendar' => 'Sus eventos fueron importados correctamente',
       
         'all day event' => 'Todo el día',
+	  	'without title' => 'Sin título',
         'date' => 'Fecha',
         'time' => 'Hora',
 		'connect with google' => 'Conectar con Google',

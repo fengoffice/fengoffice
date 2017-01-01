@@ -125,6 +125,9 @@
 	margin-left: 20px;
 }
 /* </upgrade> */
+.configCategoryOtpion {
+	padding: 5px;
+}
 .configCategory, .userWsConfigCategory {
 	padding: 10px 5px;
 }
@@ -310,4 +313,117 @@ div.checkbox-config-option {
 .dimensionOptionsConfiguration .adminMainBlock .section {
 	/*border-top: 1px solid #ddd;*/
 	padding: 10px 0;
+}
+
+
+
+
+.custom-properties-admin.object-type .custom-property-list {
+	width: 100%;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container .handle, .ddhandle {
+	background: transparent url(../../images/rx/grid_drag.png) repeat-y !important;
+	padding-left:10px;
+	cursor: move;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container input[disabled="disabled"] {
+	color: black;
+	border: 0;
+	background-color: transparent;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.header {
+	line-height: 20px;
+	background-color: #4f4f4f;
+	color: #d1d1d1;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.header th {
+	background-color: #4f4f4f;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.bottom-row td {
+	padding-bottom: 8px;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.top-row td {
+	padding-top: 8px;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list .alt {
+	background-color: #efefef;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list .disabled {
+	background-color: #FFDEAD;
+}
+
+.custom-properties-admin.object-type .custom-property-list td {
+	padding: 0px;
+	line-height: 25px;
+}
+.custom-properties-admin.object-type .custom-property-list tr.top-row td.order {
+	font-size: 25px;
+	padding-top: 20px;
+	text-align: center;
+}
+.custom-properties-admin.object-type .custom-property-list td.actions a {
+	text-decoration: underline;
+}
+
+.custom-properties-admin.object-type .custom-property-list td input[type="text"],
+.custom-properties-admin.object-type .custom-property-list td select {
+	width:92%;
+}
+
+.custom-properties-admin .add-new-cp-link-container {
+	margin-top: 20px;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list .ui-sortable-helper {
+	opacity: 0.85;
+	filter: alpha(opacity=85);
+	border-radius: 2px;
+}
+
+.custom-properties-admin ul.object-type-list li {
+	padding: 8px;
+}
+.custom-properties-admin ul.object-type-list li a {
+	text-decoration: underline;
+}
+.custom-properties-admin .cp-admin-container {
+	float: left;
+	width: 49%;
+	border-right: 1px dotted #ccc;
+}
+.custom-properties-admin ul.object-type-list li.odd {
+	background-color: #eeeef3;
+}
+.custom-properties-admin .cp-admin-container.member-cps-container {
+	
+}
+
+.listing-admin ul li {
+	padding: 8px;
+}
+.listing-admin ul li a {
+	text-decoration: underline;
+}
+
+.listing-admin table {
+	min-width: 600px;
+}
+
+.listing-admin .actions {
+	margin-top: 15px;
+}
+
+.listing-admin .adminMainBlock tr.header th {
+	line-height: 20px;
+	background-color: #4f4f4f;
+	color: #d1d1d1;
+}
+
+.listing-admin .adminMainBlock .alt {
+	background-color: #efefef;
 }

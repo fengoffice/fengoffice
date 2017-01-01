@@ -169,7 +169,19 @@ class FilesController extends ApplicationController {
 
 		ApplicationReadLogs::createLog($file, ApplicationReadLogs::ACTION_DOWNLOAD);
 
-		download_from_repository($file->getLastRevision()->getRepositoryId(), $file->getTypeString(), $file->getFilename(), !$inline);
+		//check file extension
+		$file_name = $file->getFilename();
+		$file_name_extension = get_file_extension($file->getFilename());
+		$file_type = $file->getFileType();
+		if($file_type instanceof FileType){
+			$file_type_extension = $file->getFileType()->getExtension();
+			if($file_name_extension != $file_type_extension){
+				$file_name_info = pathinfo($file_name);
+				$file_name = $file_name_info['filename']. '.' . $file_type_extension;
+			}
+		}
+
+		download_from_repository($file->getLastRevision()->getRepositoryId(), $file->getTypeString(), $file_name, !$inline);
 		die();
 	} // download_file
 	
@@ -298,7 +310,20 @@ class FilesController extends ApplicationController {
 			return;
 		} // if
 		session_commit();
-		download_from_repository($revision->getRepositoryId(),$revision->getTypeString(), $file->getFilename(), !$inline);
+
+		//check file extension
+		$file_name = $file->getFilename();
+		$file_name_extension = get_file_extension($file->getFilename());
+		$file_type = $revision->getFileType();
+		if($file_type instanceof FileType){
+			$file_type_extension = $file_type->getExtension();
+			if($file_name_extension != $file_type_extension){
+				$file_name_info = pathinfo($file_name);
+				$file_name = $file_name_info['filename']. '.' . $file_type_extension;
+			}
+		}
+
+		download_from_repository($revision->getRepositoryId(),$revision->getTypeString(), $file_name, !$inline);
 		die();
 	} // download_revision
 
@@ -363,7 +388,9 @@ class FilesController extends ApplicationController {
 				//link it!
 				$object_controller = new ObjectController();
 				$object_controller->add_subscribers($file);
-				$object_controller->add_to_members($file, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($file, $member_ids);
+				}
 				$object_controller->link_to_new_object($file);
 				$object_controller->add_subscribers($file);
 				$object_controller->add_custom_properties($file);
@@ -510,7 +537,7 @@ class FilesController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
 				//Add properties
-				if (!$skipSettings){
+				if (!$skipSettings && !is_null($member_ids)){
 					$object_controller->add_to_members($file, $member_ids);
 				}
 
@@ -599,6 +626,12 @@ class FilesController extends ApplicationController {
 			}else{
 				$file->setDefaultSubject('');
 			}
+			
+			// files added as email attachments must be archived
+			if (array_var($file_data, 'composing_mail') && $upload_option == -1) {
+				$file->getObject()->setColumnValue('archived_by_id', logged_user()->getId());
+				$file->getObject()->setColumnValue('archived_on', DateTimeValueLib::now());
+			}
 		
 			DB::beginWork();
 			
@@ -612,7 +645,6 @@ class FilesController extends ApplicationController {
 			}
 					
 			$object_controller = new ObjectController();
-			//$member_ids = json_decode(array_var($_POST, 'members'));
 		
 			if (count($member_ids) > 0 || !array_var($file_data, 'composing_mail')) {
 				$object_controller->add_to_members($file, $member_ids);
@@ -1747,6 +1779,8 @@ class FilesController extends ApplicationController {
 		$page = (integer) ($start / $limit)+1;
 		$type = array_var($_GET,'type');
 		$user = array_var($_GET,'user');
+		$dim_order = null;
+		$cp_order = null;
 
 		// if there's an action to execute, do so 
 		if (array_var($_GET, 'action') == 'delete') {
@@ -1847,8 +1881,11 @@ class FilesController extends ApplicationController {
 		$select_columns = null;
 		$extra_conditions = "";
 		if (strpos($order, 'p_') == 1 ){
-			$cpId = substr($order, 3);
+			$cp_order = substr($order, 3);
 			$order = 'customProp';
+		} else if (str_starts_with($order, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order = 'dimensionOrder';
 		}
 		if ($order == ProjectFiles::ORDER_BY_POSTTIME) {
 			$order = '`created_on`';
@@ -1862,15 +1899,6 @@ class FilesController extends ApplicationController {
 				'e_field' => 'object_id',
 			);
 			$extra_conditions .= " AND `jt`.`object_id` = (SELECT max(`x`.`object_id`) FROM ".TABLE_PREFIX."project_file_revisions `x` WHERE `x`.`file_id` = `e`.`object_id`)";
-		}else if ($order == 'customProp') {
-			$order = 'IF(ISNULL(jt.value),1,0),jt.value';
-			$join_params['join_type'] = "LEFT ";
-			$join_params['table'] = "".TABLE_PREFIX."custom_property_values";
-			$join_params['jt_field'] = "object_id";
-			$join_params['e_field'] = "object_id";
-			$join_params['on_extra'] = "AND custom_property_id = ".$cpId;
-			$extra_conditions .= " AND ( custom_property_id = ".$cpId. " OR custom_property_id IS NULL)";
-			$select_columns = array("DISTINCT o.*", "e.*");
 		} else {
 			$order = '`name`';
 		} // if
@@ -1898,6 +1926,8 @@ class FilesController extends ApplicationController {
 		$objects = ProjectFiles::instance()->listing(array(
 			"order"=>$order,
 			"order_dir" => $order_dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			"extra_conditions"=> $extra_conditions,
 			"show_only_member_objects" => user_config_option('show_only_member_files'),
 			'count_results' => false,
@@ -1918,6 +1948,9 @@ class FilesController extends ApplicationController {
 			"objType" => ProjectFiles::instance()->getObjectTypeId(),
 			"files" => array(),
 		);
+		foreach ($objects as $k => $v) {
+			if ($k != 'total' && $k != 'objects') $listing[$k] = $v;
+		}
 		
 		if (is_array($objects->objects)) {
 			$index = 0;
@@ -2126,8 +2159,11 @@ class FilesController extends ApplicationController {
 				} // if
 
 				$member_ids = json_decode(array_var($_POST, 'members'));
+				
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($file, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($file, $member_ids);
+				}
 				$object_controller->link_to_new_object($file);
 				$object_controller->add_subscribers($file);
 				$object_controller->add_custom_properties($file);
@@ -2233,9 +2269,10 @@ class FilesController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 	
 				//link it!
-				$member_ids = json_decode(array_var($_POST, 'members'));
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($file, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($file, $member_ids);
+				}
 				$object_controller->link_to_new_object($file);
 				$object_controller->add_subscribers($file);
 				$object_controller->add_custom_properties($file);

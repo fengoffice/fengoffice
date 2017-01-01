@@ -2209,7 +2209,7 @@ class Net_IMAPProtocol
             }
             $this->_getNextToken($str, $params, false, false);
         }
-        $this->arrayfy_content_level--;
+        if (isset($this->arrayfy_content_level)) $this->arrayfy_content_level--;
         return $params_arr;
     }
 

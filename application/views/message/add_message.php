@@ -14,7 +14,8 @@
 		$on_submit = "og.setDescription();";
 	}
 	
-	$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+	$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+	$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
 ?>
 <form onsubmit="<?php echo $on_submit?>" class="add-message" id="<?php echo $genid ?>submit-edit-form" style='height:100%;background-color:white' action="<?php echo $message->isNew() ? get_url('message', 'add') : $message->getEditUrl() ?>" method="post" enctype="multipart/form-data" >
 <div class="message">
@@ -22,7 +23,8 @@
 
   <div class="coInputHeaderUpperRow">
 	<div class="coInputTitle">
-		<?php echo $message->isNew() ? lang('new message') : lang('edit message') ?>
+			
+		<?php echo $object->getAddEditFormTitle(); ?>
 	</div>
   </div>
 
@@ -33,7 +35,7 @@
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($message->isNew() ? lang('add message') : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($object->getSubmitButtonFormTitle(),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -52,7 +54,7 @@
 			<li><a href="#<?php echo $genid?>add_message_text"><?php echo lang('details') ?></a></li>
 			<li><a href="#<?php echo $genid?>add_message_select_context_div"><?php echo lang('related to') ?></a></li>
 			
-			<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
@@ -62,12 +64,15 @@
 			<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 			<?php } ?>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
 	
-		<div id="<?php echo $genid ?>add_message_select_context_div" class="context-selector-container form-tab">
+		<div id="<?php echo $genid ?>add_message_select_context_div" class="form-tab">
+			<div class="context-selector-container form-tab">
 		<?php
 			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
 			if ($message->isNew()) {
@@ -76,6 +81,15 @@
 				render_member_selectors($message->manager()->getObjectTypeId(), $genid, $message->getMemberIds(), array('listeners' => $listeners), null, null, false);
 			} 
 		?>
+			</div>
+			
+			<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+			
+			<div class="main-custom-properties-div"><?php
+				if ($main_cp_count) {
+					echo render_object_custom_properties($object, false, null, 'visible_by_default');
+				}
+			?></div>
 		</div>
 		
 		<div id="<?php echo $genid ?>add_message_text" class="editor-container form-tab">
@@ -105,7 +119,7 @@
 	            	height: '330px',
 	            	allowedContent: true,
 	            	resize_enabled: false,
-	            	enterMode: CKEDITOR.ENTER_DIV,
+	            	//enterMode: CKEDITOR.ENTER_DIV,
 	            	shiftEnterMode: CKEDITOR.ENTER_BR,
 	            	disableNativeSpellChecker: false,
 	            	language: '<?php echo $loc ?>',
@@ -126,7 +140,8 @@
 	                                editor.resetDirty();
 	                        }
 	                    },
-	                entities_additional : '#39,#336,#337,#368,#369,#124'
+	                removePlugins: 'magicline',
+	                entities_additional : '#336,#337,#368,#369,#124'
 	            });
 	
 	            og.setDescription = function() {
@@ -164,9 +179,9 @@
 	
 		</div>
 		
-		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
-			<?php  echo render_object_custom_properties($message, false) ?>
+		<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+			<?php  echo render_object_custom_properties($object, false, null, 'other') ?>
 			<?php  echo render_add_custom_properties($object); ?>
 		</div>
 		<?php } ?>
@@ -180,7 +195,11 @@
 				}
 			?>
 			<input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content"></div>
+			<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 		</div>
 		
 		<?php if($object->isNew() || $object->canLinkObject(logged_user())) { ?>

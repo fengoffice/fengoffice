@@ -135,11 +135,18 @@ class MailContents extends BaseMailContents {
 		return " NOT EXISTS(SELECT `object_id` FROM `" . TABLE_PREFIX . "workspace_objects` WHERE `object_manager` = 'MailContents' AND `object_id` = `id`) ";
 	}
 	
-	static function mailRecordExists($account_id, $uid, $folder = null, $is_deleted = null) {
+	static function mailRecordExists(MailAccount $account, $uid, $folder = null, $is_deleted = null, $message_id = null) {
+		$account_id = $account->getId();
 		if (!$uid) return false;
 		$folder_cond = is_null($folder) ? '' : " AND `imap_folder_name` = " . DB::escape($folder);
 		$del_cond = is_null($is_deleted) ? "" : " AND `is_deleted` = " . DB::escape($is_deleted ? true : false);
-		$conditions = "`account_id` = " . DB::escape($account_id) . " AND `uid` = " . DB::escape($uid) . $folder_cond . $del_cond;
+		
+		if(!is_null($message_id) && $account->getIsImap()){
+			$id_cond = " AND `message_id` = " . DB::escape($message_id);
+		}else{			
+			$id_cond = " AND `uid` = " . DB::escape($uid);
+		}		
+		$conditions = "`account_id` = " . DB::escape($account_id) . $id_cond . $folder_cond . $del_cond;
 		
 		$rows = DB::executeAll("SELECT object_id FROM `".TABLE_PREFIX."mail_contents` WHERE $conditions limit 1");
 		return count($rows) > 0;
@@ -208,7 +215,7 @@ class MailContents extends BaseMailContents {
 	 * @param Project $project
 	 * @return array
 	 */
-	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = false, $conversation_list = null, $only_count_result = false) {
+	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = false, $conversation_list = null, $only_count_result = false, $extra_cond="") {
 		$mailTablePrefix = "e";
 		if (!$limit) $limit = user_config_option('mails_per_page') ? user_config_option('mails_per_page') : config_option('files_per_page');
 		$accountConditions = "";
@@ -296,15 +303,29 @@ class MailContents extends BaseMailContents {
 			$conversation_cond = "AND e.conversation_last = 1";
 		}
 		
-		$extra_conditions = "$accountConditions $classified $read $conversation_cond $box_cond";
+		$extra_conditions = "$accountConditions $classified $read $conversation_cond $box_cond $extra_cond";
 		
 		Hook::fire("listing_extra_conditions", null, $extra_conditions);
+		
+		$dim_order = null;
+		if (str_starts_with($order_by, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order_by = 'dimensionOrder';
+		}
+		
+		$cp_order = null;
+		if (str_starts_with($order_by, "cp_")) {
+			$cp_order = substr($order, 3);
+			$order_by = 'customProp';
+		}
 		
 		return self::instance()->listing(array(
 			'limit' => $limit, 
 			'start' => $start, 
 			'order' => $order_by,
 			'order_dir' => $dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			'extra_conditions' => $extra_conditions,
 			'count_results' => false,
 			'only_count_results' => $only_count_result,

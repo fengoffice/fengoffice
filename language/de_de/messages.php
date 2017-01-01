@@ -628,7 +628,7 @@
 	'disable' => 'Deaktivieren',
 	'log subscribe projectmessages data' => '\'{0}\' abonniert',
 	'log logout users data' => 'Benutzer {0} ist abgemeldet',
-	'object is deleted' => ' (dieses Ojekt kann gelöscht werden)',
+	'object is deleted' => '(dieses Ojekt kann gelöscht werden)',
 	'the Timeslots' => 'das Zeitfenster',
 	'success delete member' => '{0} wurde gelöscht',
 	'objects moved to member success' => 'Das Objekt wurde erfolgreich zu {0} hinzugefügt',
@@ -666,4 +666,8 @@
 	'object removed from' => 'Sie haben {0} erfolgreich aus den ausgewählten Objekten entfernt',
 	'and xx more' => 'und {0} weitere.',
 	'log login contact data' => 'Benutzer {0} von folgender IP protokolliert: {1}',
+	'log read company' => 'Angezeigt \'{0}\'',
+	'all previous tasks have been completed' => 'Alle vorangehenden Aufgaben von \'{0}\' sind abgeschlossen.',
+	'task x can be started' => 'Alle vorangehenden Aufgaben sind abgeschlossen. Die Aufgabe \'{0}\' kann nun gestartet werden.',
+	'cannot delete file' => 'Ihre Berechtigungen zum Löschen der Datei \'{0}\' reichen nicht aus.',
 ); ?>

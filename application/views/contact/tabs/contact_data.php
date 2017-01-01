@@ -1,3 +1,4 @@
+<?php require_javascript("og/modules/addContactForm.js"); ?>
 <div class="contact_form_container form-tab" id="<?php echo $genid?>contact_data">
   <div class="information-block no-border-bottom">
 	<div style="float:left;min-width: 100%;">
@@ -83,7 +84,12 @@
 	
 			<div class="clear"></div>
 	
-			<div class="dataBlock">
+			<?php 
+				$job_title_cp = CustomProperties::findOne(array('conditions' => "code='job_title' AND object_type_id=".$contact->manager()->getObjectTypeId()));
+				$style = "";
+				if ($job_title_cp instanceof CustomProperty) $style = "display:none;";
+			?>
+			<div class="dataBlock" style="<?php echo $style?>">
 				<div><?php echo label_tag(lang('job title'), $genid.'profileFormJobTitle') ?>
 				<?php echo text_field('contact[job_title]', array_var($contact_data, 'job_title'), array('id' => $genid.'profileFormJobTitle', 'maxlength' => '40', 'maxlength' => 50)) ?></div>
 				<div class="clear"></div>
@@ -112,13 +118,14 @@
 		           	<a href="#" onclick="og.openLink('<?php echo $contact->getUpdatePictureUrl();?>&reload_picture=<?php echo $genid?>_avatar_img<?php echo ($contact->isNew() ? '&new_contact='.$genid.'_picture_file' :'')?>', {caller:'edit_picture'});" 
 		           		class="coViewAction ico-picture"><?php echo ($contact->isNew() ? lang('new avatar') : lang('update avatar'))?></a>
 		           	<?php if ($contact->isNew()) { ?>
-		           		<input type="hidden" id="<?php echo $genid?>_picture_file" name="contact[picture_file]" value=""/>
+		           		<input type="hidden" id="<?php echo $genid?>_picture_file" name="contact[picture_file]" value="<?php echo $contact->getPictureFile()?>"/>
 		           	<?php }?>
 				</div>
 				
 	            <div class="clear"></div>
 			</div>
 			<?php //} ?>
+			
 			
 			<?php if (!$renderContext) { ?>
 			<div id="<?php echo $genid ?>add_contact_select_context_div" class="dataBlock"><?php
@@ -129,15 +136,24 @@
 				}
 				$listeners = array('on_selection_change' => '');
 				$contact_obj = isset($object) && $object instanceof Contact ? $object : $contact;
-				if ($contact->isNew()) {
+				
+				if ($contact->isNew() && !array_var($_REQUEST, 'create_user_from_contact')) {
 					render_member_selectors($contact_obj->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'hidden_field_name' => 'no_perm_members'), $skipped_dimensions, null, false); 
 				} else {
 					render_member_selectors($contact_obj->manager()->getObjectTypeId(), $genid, $contact_obj->getMemberIds(), array('listeners' => $listeners, 'hidden_field_name' => 'no_perm_members'), $skipped_dimensions, null, false); 
 				} 
 			?></div>
 			<?php } ?>
-	</div>		  
+	</div>
+
+	<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+	
+	<?php if ($render_custom_prop) { ?>
+	<div class="main-custom-properties-div"><?php
+		echo render_object_custom_properties($object, false, null, 'visible_by_default');
+	?></div>
 	<div class="clear"></div>
+	<?php } ?>
   </div>
 </div>
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Anis upgrade script will upgrade FengOffice 3.2.3 to FengOffice 3.3.0.4
+ * Anis upgrade script will upgrade FengOffice 3.2.3 to FengOffice 3.3.2-beta
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.2.3');
-		$this->setVersionTo('3.3.0.4');
+		$this->setVersionTo('3.3.2-beta');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -158,12 +158,12 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 
 					insert into ".$t_prefix."member_custom_property_values (`member_id`, `custom_property_id`, `value`)
 					  select m.id, (select id from ".$t_prefix."member_custom_properties where code='description_special' and is_special=1 and object_type_id=m.object_type_id), m.description
-					  from fo_members m where m.description != ''
+					  from ".$t_prefix."members m where m.description != ''
 					on duplicate key update `value`=description;
 					
 					insert into ".$t_prefix."member_custom_property_values (`member_id`, `custom_property_id`, `value`)
 					  select m.id, (select id from ".$t_prefix."member_custom_properties where code='color_special' and is_special=1 and object_type_id=m.object_type_id), m.color
-					  from fo_members m where m.color != ''
+					  from ".$t_prefix."members m where m.color != ''
 					on duplicate key update `value`=color;
 				";
 			}
@@ -200,23 +200,46 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 			";
 		}
 		
-		
 		if (version_compare($installed_version, '3.3-rc') < 0) {
 			$upgrade_script .= "
-				INSERT INTO `".$t_prefix."cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES
-				('rebuild_contact_member_cache', '1', '1440', '1', '1', '0000-00-00 00:00:00')
-				ON DUPLICATE KEY UPDATE name=name;
+			INSERT INTO `".$t_prefix."cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES
+			('rebuild_contact_member_cache', '1', '1440', '1', '1', '0000-00-00 00:00:00')
+			ON DUPLICATE KEY UPDATE name=name;
 			";
-			
+				
 			$upgrade_script .= "
-				UPDATE ".$t_prefix."contact_config_options SET default_value=0 WHERE `name`='attach_to_notification';
+			UPDATE ".$t_prefix."contact_config_options SET default_value=0 WHERE `name`='attach_to_notification';
 			";
 		}
 		
 		if (version_compare($installed_version, '3.3') < 0) {
 			$upgrade_script .= "
-				DELETE FROM `".$t_prefix."guistate` WHERE `name` = 'contact-manager';
-			";			
+			DELETE FROM `".$t_prefix."guistate` WHERE `name` = 'contact-manager';
+			";
+		}
+		
+		if (version_compare($installed_version, '3.3.1') < 0) {
+			if (!$this->checkTableExists($t_prefix."currencies", $this->database_connection)) {
+				$upgrade_script .= "
+					CREATE TABLE IF NOT EXISTS `".$t_prefix."currencies` (
+					`id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+					`symbol` VARCHAR(5) NOT NULL,
+					`name` VARCHAR(128) NOT NULL,
+					`short_name` VARCHAR(50) NOT NULL,
+					`is_default` BOOLEAN NOT NULL,
+					PRIMARY KEY (`id`)
+					) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+				";
+				
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."currencies` (`symbol`, `name`, `short_name`, `is_default`) VALUES
+					('$', 'Dollar', 'USD', 0);
+				";
+			}
+			
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."contact_config_options` SET is_system=0 WHERE `name`='sendEmailNotification';
+			";
 		}
 		
 		// Execute all queries
