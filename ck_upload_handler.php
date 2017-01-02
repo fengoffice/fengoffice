@@ -1,4 +1,4 @@
-<?php
+<?php 
 	$exp = explode("/", $_SERVER['REQUEST_URI']);
 	$iname = $exp[1];
 	
