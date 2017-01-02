@@ -228,7 +228,7 @@
 	'information' => '信息',
 	'im' => 'IM',
 	'untitled note' => '未命名笔记',
-	'email or username' => '呼号',
+	'email or username' => '用户名手机号邮箱地址',
 	'search results for' => '搜索结果',
 	'search speed' => '搜索速度',
 	'assigned to description' => '选择邮箱帐户',
