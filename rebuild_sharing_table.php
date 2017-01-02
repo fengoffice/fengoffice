@@ -1,4 +1,4 @@
-<?php
+<?php 
 chdir(dirname(__FILE__));
 header("Content-type: text/plain");
 define("CONSOLE_MODE", true);
