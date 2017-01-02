@@ -6,7 +6,7 @@
   * 
   * When you set the values in this file delete original 'config.php' (it should just have 
   * return false; command) and rename this one to 'config.php'
-  *
+  * 
   * @author Ilija Studen <ilija.studen@gmail.com>
   */
   
