@@ -32,7 +32,7 @@ foreach ($users as $user) {
 			$sql = "DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE permission_group_id=$pg_id AND object_type_id=$ot";
 			DB::execute($sql);
 			
-		} else {
+		} else { 
 			// cut can_delete and can_write using max permissions
 			$can_d = $max['can_delete'] ? "1" : "0";
 			$can_w = $max['can_write'] ? "1" : "0";
