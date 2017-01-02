@@ -1,4 +1,4 @@
-<?php
+<?php 
 chdir(dirname(__FILE__));
 define("CONSOLE_MODE", true);
 define('PUBLIC_FOLDER', 'public');
