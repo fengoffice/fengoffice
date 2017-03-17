@@ -978,7 +978,7 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_config_option_values` (
   `option_id` int(10) unsigned NOT NULL default '0',
   `contact_id` int(10) unsigned NOT NULL default '0',
   `value` text <?php echo $default_collation ?>,
-  `member_id` INT( 10 ) UNSIGNED NULL DEFAULT '0',
+  `member_id` INT( 10 ) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  ( `option_id` , `contact_id` , `member_id` )
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
