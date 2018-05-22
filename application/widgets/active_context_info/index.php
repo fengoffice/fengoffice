@@ -12,8 +12,7 @@ if(isset($context)){
 	}	
 }
 
-if (count($members) == 1) {
-	$member = $members[0];
+foreach ($members as $member) {
 	
 	$prop_html = "";
 	Hook::fire("render_widget_member_information", $member, $prop_html);
@@ -24,26 +23,57 @@ if (count($members) == 1) {
 	}
 	
 	$cp_html = "";
-	$custom_properties = MemberCustomProperties::getAllMemberCustomPropertiesByObjectType($ot->getId());
-	foreach ($custom_properties as $cp) {
-		$cp_name = $cp->getName();
-		$cp_values = MemberCustomPropertyValues::getMemberCustomPropertyValues($member->getId(), $cp->getId());
-		
-		if(is_array($cp_values) && count($cp_values) > 0){
-			$first = true;
-			$cp_html .= '<div class="cp-info"><span class="bold">'.$cp_name.': </span>';
-			foreach ($cp_values as $cp_val) {
-				if (!$first) {
-					$cp_html .= ", ";
-				} 
-				$first = false;
-				$cp_html .= $cp_val->format_value();
-			}
-			$cp_html .= '</div>';
-		}
+    Hook::fire("render_member_properties_for_view", array('member' => $member, 'visible_by_default' => 'all'), $cp_html);
+
+	// title
+	if (trim($prop_html . $cp_html) != "") {
+	//	$prop_html = '<tr class="cp-info"><td colspan="2"><h2 style="border-bottom: 0px; ">'.lang('details').'</h2></td></tr>' . $prop_html;
 	}
 	
-	if (trim($prop_html . $cp_html) != "") {
-		include_once 'template.php';
+	$assoc_mem_html = "";
+	
+	$render_dim_associations = true;
+	Hook::fire('member_form_render_associated_dimension_selectors', array('member' => $member, 'is_new' => $member->isNew()), $render_dim_associations);
+	
+	if ($render_dim_associations) {
+	  $dim_associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($member->getDimensionId(), $member->getObjectTypeId());
+	  foreach ($dim_associations as $a) {/* @var $a DimensionMemberAssociation */
+		
+		$assoc_mem_ids = explode(',', MemberPropertyMembers::getAllMemberIds($a->getId(), $member->getId()));
+		$assoc_mem_ids = array_merge($assoc_mem_ids, explode(',', MemberPropertyMembers::getAllPropertyMemberIds($a->getId(), $member->getId())));
+		$assoc_mem_ids = array_unique(array_filter($assoc_mem_ids));
+		
+		if (is_array($assoc_mem_ids) && count($assoc_mem_ids) > 0) {
+			$did = $member->getDimensionId() == $a->getDimensionId() ? $a->getAssociatedDimensionMemberAssociationId() : $a->getDimensionId();
+			$assoc_otid = $member->getDimensionId() == $a->getDimensionId() ? $a->getAssociatedObjectType() : $a->getObjectTypeId();
+			$dim = Dimensions::getDimensionById($did);
+			
+			if ($dim->getCode() != 'feng_persons') {
+				
+				$mems = Members::findAll(array('conditions' => "id IN (".implode(',', $assoc_mem_ids).")"));
+				
+				$assoc_ot = ObjectTypes::findById($assoc_otid);
+				$custom_ot_name = Members::getTypeNameToShowByObjectType($dim->getId(), $assoc_ot->getId());
+				$label = ($a->getIsMultiple() || count($assoc_mem_ids) > 1) ? $dim->getName() : $custom_ot_name;
+				
+				// title
+				if ($assoc_mem_html == "") {
+				//	$assoc_mem_html .= '<tr class="cp-info"><td colspan="2"><h2>'.lang('relations').'</h2></td></tr>';
+				}
+				// content
+				$assoc_mem_html .= '<tr class="cp-info"><td style="padding-top:4px;padding-left:21px;width:160px;"><span class="bold">'.$label.': </span></td><td>';
+				$assoc_mem_html_vals = "";
+				
+				foreach ($mems as $m) {
+					$assoc_mem_html_vals .= '<span class="member-path real-breadcrumb og-wsname-color-'.$m->getColor().'" style="display:inline-block;margin:1px;padding:2px 4px;">' . $m->getName() . '</span>';
+				}
+				$assoc_mem_html .= $assoc_mem_html_vals . '</td></tr>';
+			}
+		}
+	  }
+	}
+
+	if (trim($prop_html . $cp_html . $assoc_mem_html) != "") {
+		include 'template.php';
 	}
 }

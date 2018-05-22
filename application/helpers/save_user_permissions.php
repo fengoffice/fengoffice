@@ -11,6 +11,8 @@
 
 	Env::useHelper('permissions');
 	
+	debug_log("Start Save user permissions", "permissions_debug.log");
+	
 	$user_id = array_var($argv, 2);
 	$token = array_var($argv, 3);
 	
@@ -47,12 +49,16 @@
 		'root_perm_genid' => $root_permissions_genid,
 	);
 	
+	debug_log("Before save_permissions", "permissions_debug.log");
+	
 	// save permissions
 	try {
 		$result = save_permissions($pg_id, $is_guest, $perms, true, false, false, false, array(), $only_member_permissions);
 	} catch (Exception $e) {
 		Logger::log("Error saving permissions (1): ".$e->getMessage()."\n".$e->getTraceAsString());
 	}
+	
+	debug_log("Before sharing table update", "permissions_debug.log");
 	
 	// update sharing table
 	try {
@@ -93,20 +99,16 @@
 		// root permissions
 		$root_permissions_sharing_table_add = array();
 		$root_permissions_sharing_table_delete = array();
-		
-		foreach ($root_permissions as $name => $value) {
-			if (str_starts_with($name, $root_permissions_genid . 'rg_root_')) {
-				$rp_ot = substr($name, strrpos($name, '_')+1);
-				
-				if (is_numeric($rp_ot) && $rp_ot > 0 && $value == 0) {
-					$root_permissions_sharing_table_delete[] = $rp_ot;
-				}
-				if (!is_numeric($rp_ot) || $rp_ot <= 0 || $value < 1) continue;
-				
-				$root_permissions_sharing_table_add[] = $rp_ot;
-			}
-		}
-		$rp_info = array('root_permissions_sharing_table_delete' => $root_permissions_sharing_table_delete, 'root_permissions_sharing_table_add' => $root_permissions_sharing_table_add);
+
+		if(is_array($result) && array_key_exists('root_permissions_sharing_table_add',$result)){
+            $root_permissions_sharing_table_add = $result['root_permissions_sharing_table_add'];
+        }
+
+        if(is_array($result) && array_key_exists('root_permissions_sharing_table_delete',$result)){
+            $root_permissions_sharing_table_delete = $result['root_permissions_sharing_table_delete'];
+        }
+
+        $rp_info = array('root_permissions_sharing_table_delete' => $root_permissions_sharing_table_delete, 'root_permissions_sharing_table_add' => $root_permissions_sharing_table_add);
 		
 		// update sharing table
 		DB::beginWork();
@@ -120,6 +122,8 @@
 		DB::rollback();
 		Logger::log("Error saving permissions (2): ".$e->getMessage()."\n".$e->getTraceAsString());
 	}
+	
+	debug_log("Before member cache update", "permissions_debug.log");
 	
 	// save tree
 	try {
@@ -156,6 +160,8 @@
 		Logger::log("Error saving permissions (3): ".$e->getMessage()."\n".$e->getTraceAsString());
 	}
 	
+	debug_log("Before firing hooks", "permissions_debug.log");
+	
 	// fire hooks
 	try {
 		DB::beginWork();
@@ -167,13 +173,15 @@
 	}
 	
 	// remove contact object from members where permissions were deleted
-	$user = Contacts::findOne(array('conditions' => 'permission_group_id='.$pg_id));
-	if ($user instanceof Contact) {
-		$to_remove = array();
-		foreach ($all_perm_deleted as $m_id => $must_remove) {
-			if ($must_remove) $to_remove[] = $m_id;
+	if (isset($all_perm_deleted) && is_array($all_perm_deleted)) {
+		$user = Contacts::findOne(array('conditions' => 'permission_group_id='.$pg_id));
+		if ($user instanceof Contact) {
+			$to_remove = array();
+			foreach ($all_perm_deleted as $m_id => $must_remove) {
+				if ($must_remove) $to_remove[] = $m_id;
+			}
+			ObjectMembers::removeObjectFromMembers($user, logged_user(), null, $to_remove);
 		}
-		ObjectMembers::removeObjectFromMembers($user, logged_user(), null, $to_remove);
 	}
 	
 	@unlink($permissions_filename);

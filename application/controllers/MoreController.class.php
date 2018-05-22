@@ -25,6 +25,117 @@ class MoreController extends ApplicationController {
 		ajx_set_no_toolbar();
 	}
 	
+	function users_list() {
+		ajx_current("empty");
+		
+		if (!can_manage_security(logged_user())) {
+			flash_error(lang('no access permissions'));
+			return;
+		}
+		
+		// Get all variables from request
+		$start = array_var($_GET,'start', 0);
+		$limit = array_var($_GET,'limit', config_option('files_per_page'));
+		$order = array_var($_GET,'sort');
+		$order_dir = array_var($_GET,'dir');
+		
+		$only_count = array_var($_GET, 'count_results') && array_var($_GET, 'only_result');
+		
+		if (!in_array(strtoupper($order_dir), array('ASC','DESC'))) {
+			$order_dir = 'ASC';
+		}
+		
+		switch($order) {
+			case 'last_activity':
+			case 'role':
+				$order_sql = "ORDER BY $order $order_dir";
+				break;
+			case 'name':
+				$order_sql = "ORDER BY c.first_name $order_dir, c.surname $order_dir";
+				break;
+			case 'company':
+				$order_sql = "ORDER BY comp_fname $order_dir, comp_surname $order_dir";
+				break;
+			case 'status':
+				$order_sql = "ORDER BY c.disabled $order_dir, c.first_name ASC, c.surname ASC";
+				break;
+			default:
+				$order_sql = "ORDER BY c.first_name $order_dir, c.surname $order_dir";
+		}
+		
+		$filter_conditions = "";
+		$status_filter = array_var($_GET, 'status_filter');
+        $text_filter = array_var($_GET, 'text_filter');
+		if (is_null($status_filter)) {
+			$status_filter = array_var($_SESSION, 'users_list_current_status_filter', 'enabled');
+		}
+		$_SESSION['users_list_current_status_filter'] = $status_filter;
+		
+		if ($status_filter == 'enabled') {
+			$filter_conditions = " AND c.disabled=0";
+		} else if ($status_filter == 'disabled') {
+			$filter_conditions = " AND c.disabled=1";
+		}
+		if ($text_filter){
+            $filter_conditions .= " AND CONCAT(c.first_name,' ',c.surname) LIKE '%".$text_filter."%'";
+        }
+		
+		Hook::fire('user_and_groups_additional_filters_query', array('params' => $_GET), $filter_conditions);
+		
+		$columns_sql = "c.object_id, c.first_name, c.surname, c.last_activity, p.name as role, c.disabled,
+					comp.first_name as comp_fname, comp.surname as comp_surname, c.picture_file_small";
+		
+		$main_sql = "FROM ".TABLE_PREFIX."contacts c
+				INNER JOIN ".TABLE_PREFIX."permission_groups p ON p.id=c.user_type
+				LEFT JOIN ".TABLE_PREFIX."contacts comp ON comp.object_id=c.company_id
+				WHERE c.user_type>0 $filter_conditions";
+		
+		$order_limit_sql = "
+				$order_sql
+				LIMIT $start, $limit";
+		
+		$users_data = array();
+		
+		if (!$only_count) {
+			$sql = "SELECT $columns_sql 
+				$main_sql
+				$order_limit_sql
+			";
+			$rows = DB::executeAll($sql);
+			foreach ($rows as $r) {
+				$dtval = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $r['last_activity']);
+				$picture_url = trim($r['picture_file_small'])!='' ? get_url('files', 'get_public_file', array('id' => $r['picture_file_small'])) : get_image_url('default-avatar.png');
+				
+				$users_data[] = array(
+						'object_id' => $r['object_id'],
+						'name' => trim($r['first_name'].' '.$r['surname']),
+						'role' => $r['role'],
+						'last_activity' => format_datetime($dtval),
+						'company' => trim($r['comp_fname'].' '.$r['comp_surname']),
+						'status' => $r['disabled'] ? lang('inactive') : lang('active'),
+						'disabled' => $r['disabled'] ? '1' : '',
+						'type_controller' => 'contact',
+						'picture' => $picture_url,
+				);
+			}
+		}
+		
+		$count_sql = "SELECT count(c.object_id) as total $main_sql";
+		$total_row = DB::executeOne($count_sql);
+		$total = $total_row['total'];
+		
+		$object = array(
+			"totalCount" => $total,
+			"start" => $start,
+			"users" => $users_data,
+		);
+		
+		ajx_extra_data($object);
+		
+		
+		//tpl_assign("listing", $object);
+	}
+	
 	function system_modules() {
 		if (!can_manage_configuration(logged_user())) {
 			flash_error(lang('no access permissions'));
@@ -39,7 +150,7 @@ class MoreController extends ApplicationController {
 		
 		// mail
 		$mail_info = null;
-		if (!Plugins::instance()->isActivePlugin('mail')) {
+		if (!Plugins::instance()->isInstalledPlugin('mail')) {
 			$mail_info = array(
 					'id' => 'mails-panel',
 					'name' => lang('email tab'),
@@ -59,19 +170,30 @@ class MoreController extends ApplicationController {
 		
 		$tab_panels = TabPanels::findAll(array('conditions' => "id<>'more-panel' AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_installed > 0))", 'order' => 'ordering'));
 		foreach ($tab_panels as $panel) {
-			if ($panel->getId() == 'mails-panel' && $mail_info != null) continue;
-			$enabled = $panel->getEnabled();
-			if ($enabled && $panel->getPluginId() > 0) {
-				$plugin = Plugins::findById($panel->getPluginId());
-				$enabled = $enabled && $plugin instanceof Plugin && $plugin->isActive();
-			}
-			$modules[] = array(
-					'id' => $panel->getId(),
-					'name' => lang($panel->getTitle()),
-					'enabled' => $enabled,
-					'ico' => str_replace('ico-', 'ico-large-', $panel->getIconCls()),
-					'hint' => str_replace("'", "\'", lang('system module '.$panel->getId().' hint')),
-			);
+		    if ($panel->getId() == 'mails-panel' && $mail_info != null) continue;
+		    $enabled = $panel->getEnabled();
+		    if ($enabled && $panel->getPluginId() > 0) {
+		        $plugin = Plugins::findById($panel->getPluginId());
+		        $enabled = $enabled && $plugin instanceof Plugin && $plugin->isActive();
+		    }
+		    
+		    $url_params = json_decode($panel->getUrlParams(), true);
+		    
+		    if ( $panel->getDefaultController() == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {
+		        $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id']);
+		        $hint = escape_character(lang('custom system member module hint', $name_tab));
+		    }else{
+		        $name_tab = lang($panel->getTitle());
+		        $hint = escape_character(lang('system module '.$panel->getId().' hint'));
+		    }
+		    
+		    $modules[] = array(
+		        'id' => $panel->getId(),
+		        'name' => $name_tab,
+		        'enabled' => $enabled,
+		        'ico' => str_replace('ico-', 'ico-large-', $panel->getIconCls()),
+		        'hint' => $hint,
+		    );
 		}
 		
 		
@@ -84,7 +206,7 @@ class MoreController extends ApplicationController {
 					'name' => lang('gantt chart'),
 					'enabled' => $gantt_plugin->isActive(),
 					'ico' => 'ico-large-gantt-module',
-					'hint' => str_replace("'", "\'", lang('system module gantt hint')),
+					'hint' => escape_character(lang('system module gantt hint')),
 			);
 			$other_modules[] = $gantt_info;
 		}
@@ -152,7 +274,7 @@ class MoreController extends ApplicationController {
 		foreach ($active_dimensions_tmp as $dim) {
 			if ($dim->getCode() == 'feng_persons') continue;
 			
-			$dname = ( $dim->getOptions() && isset($dim->getOptions(1)->useLangs) && ($dim->getOptions(1)->useLangs) ) ? lang($dim->getCode()) : $dim->getName();
+			$dname = $dim->getName();
 			$active_dimensions[$dim->getCode()] = array(
 					'id' => $dim->getId(),
 					'name' => $dname,
@@ -217,7 +339,7 @@ class MoreController extends ApplicationController {
 				if ($enabled > 0) {
 					DB::execute("INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id) VALUES (".logged_user()->getPermissionGroupId().",'".$tab_panel->getId()."') ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;");
 				}
-				if ($tab_panel->getPluginId() > 0) {
+				if ($tab_panel->getPluginId() > 0 && $tab_panel->getDefaultController() != 'member') {
 					$plugin = Plugins::findById($tab_panel->getPluginId());
 					if ($plugin instanceof Plugin) {
 						if ($enabled) $plugin->activate();
@@ -381,10 +503,10 @@ class MoreController extends ApplicationController {
 			
 		}
 		set_config_option('enabled_dimensions', implode(',', $enabled_dim_vals));
-		
+		/*
 		if ($update_root_dimensions) {
 			set_user_config_option('root_dimensions', implode(',', $root_dids), logged_user()->getId());
-		}
+		}*/
 		
 		ajx_extra_data(array('ok' => '1'));
 	}
@@ -434,6 +556,17 @@ class MoreController extends ApplicationController {
 			// change tab title and icon
 			if ($step >= 99) {
 				DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET title='settings', icon_cls='ico-administration' WHERE id='more-panel';");
+			}
+		}
+		
+		$update_cm_cache = array_var($_REQUEST, 'update_cm_cache');
+		if ($update_cm_cache) {
+			$cron_event = CronEvents::instance()->getByName('rebuild_contact_member_cache');
+			if ($cron_event instanceof CronEvent && $cron_event->getEnabled()) {
+				$d = DateTimeValueLib::now();
+				$d->add('m', -1 * $cron_event->getDelay());
+				$cron_event->setDate($d);
+				$cron_event->save();
 			}
 		}
 		

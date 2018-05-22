@@ -10,6 +10,9 @@
 	$dim_count = 0;
 	$members_dimension = array();
 	$sel_mem_ids = array();
+	
+	$original_options = $options;
+	
 	foreach ($dimensions as $dimension) :
 	
 		$dimension_id = $dimension['dimension_id'];
@@ -21,9 +24,18 @@
 
 		if (!array_var($options, 'allow_non_manageable') && !$dimension['is_manageable']) continue;
 		
+		$options = $original_options;
+		if (!isset($options['is_multiple'])) {
+			$options['is_multiple'] = array_var($dimension, 'is_multiple');
+		}
+		
 		$is_required = array_var($dimension, 'is_required');
 		$dimension_name = array_var($dimension, 'dimension_name');
 		Hook::fire("edit_dimension_name", array('dimension' => $dimension_id), $dimension_name);
+		
+		$custom_name = DimensionOptions::getOptionValue($dimension_id, 'custom_dimension_name');
+		$dimension_name = $custom_name && trim($custom_name) != "" ? $custom_name : $dimension_name;
+		
 		if ($is_required) $dimension_name .= " *";
 		
 		if (isset($simulate_required) && is_array($simulate_required) && in_array($dimension_id, $simulate_required)) $is_required = true;
@@ -38,7 +50,7 @@
 
 		// Render view by obj type
 		$container_id = $genid."member-seleector-dim".$dimension_id;
-		$search_placeholder = str_replace("'", "\'", lang('add new relation ' . $dimension['dimension_code']));
+		$search_placeholder = escape_character(lang('add new relation ' . $dimension['dimension_code']));
 		$search_function = "ogSearchSelector.searchMember";
 		$result_limit = "5";
 		$select_function = array_var($options, 'select_function', "");
@@ -60,6 +72,14 @@
 	if (!member_selector['<?php echo $genid; ?>'].properties) member_selector['<?php echo $genid; ?>'].properties = {};
 	member_selector['<?php echo $genid; ?>'].hiddenFieldName = '<?php echo $hidden_field_name; ?>';
 	member_selector['<?php echo $genid; ?>'].otid = '<?php echo $content_object_type_id; ?>';
+	
+	<?php if (isset($dont_filter_this_selector)) { ?>
+	member_selector['<?php echo $genid; ?>'].dontFilterThisSelector = <?php echo $dont_filter_this_selector ? '1' : '0'?>,
+	<?php } ?>
+
+	<?php if (isset($default_selection_checkboxes)) { ?>
+	member_selector['<?php echo $genid; ?>'].defaultSelectionCheckboxes = <?php echo $default_selection_checkboxes ? '1' : '0'?>,
+	<?php } ?>
 	<?php
 	
 	$listeners_str = "{";
@@ -68,14 +88,25 @@
 	}
 	if (str_ends_with($listeners_str, ",")) $listeners_str = substr($listeners_str, 0, -1);
 	$listeners_str .= "}";
+	
+	if (defined('JSON_NUMERIC_CHECK')) {
+		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
+	} else {
+		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
+	}
+	
 	?>
 
+	<?php if (isset($options['filter_by_ids']) && isset($options['filter_by_ids'][$dimension_id])) : ?>
+		config.filter_by_ids = '<?php echo implode(',', $options['filter_by_ids'][$dimension_id]) ?>' ;
+	<?php endif; ?>
+
 	member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'] = {
-		title: '<?php echo $dimension_name ?>',
+		title: '<?php echo escape_character($dimension_name) ?>',
 		dimensionId: <?php echo $dimension_id ?>,
 		objectTypeId: '<?php echo $content_object_type_id ?>',
 		required: <?php echo $is_required ? '1' : '0'?>,
-		reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReload($dimension_id) ); ?>,
+		reloadDimensions: <?php echo $reloadDimensions ?>,
 		isMultiple: <?php echo $dimension['is_multiple'] ? '1' : '0'?>,
 		allowedMemberTypes: <?php echo json_encode($allowed_member_type_ids)?>,
 		listeners: <?php echo $listeners_str ?>
@@ -100,7 +131,7 @@
 	}
 ?>
 </div>
-
+<div class="clear"></div>
 <script>
 <?php if ($dim_count > 0) { ?>
 member_selector['<?php echo $genid; ?>'].members_dimension = Ext.util.JSON.decode('<?php echo json_encode($members_dimension)?>');

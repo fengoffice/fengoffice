@@ -20,6 +20,13 @@ return array(
         'password again' => 'Repeat password',
         'old password' => 'Old password',
   	'new password' => 'New password',
+    'token title' => 'Token',
+    'token external key' => 'External key',
+    'token external name' => 'External name',
+    'token external type' => 'Type',
+    'token expire' => 'Expire Date',
+    'token generate' => 'Generate Token',
+    'token external list' => 'External Tokens List',
         'remember me' => 'Remember me for 14 days',
         'email address' => 'Email address',
         'display name' => 'Display name',
@@ -54,6 +61,7 @@ return array(
   	'assigned to description' => 'To select the electronic mail account owner',
         'late' => 'Late',
         'upcoming' => 'Upcoming',
+		'upcoming tasks w' => 'Upcoming',
         'today' => 'Today',
         'yesterday' => 'Yesterday',
         'tomorrow' => 'Tomorrow',
@@ -69,6 +77,7 @@ return array(
         'status' => 'Status',
         'options' => 'Options',
         'active' => 'Active',
+		'inactive' => 'Inactive',
         'completed' => 'Completed',
         'administrator' => 'Administrator',
         'error' => 'Error',
@@ -81,6 +90,7 @@ return array(
         'at' => 'at',
         'on' => 'On',
         'in' => 'In',
+		'in m' => 'in',
   	'check all' => 'Check All',
   	'uncheck all' => 'Uncheck All',
         'people' => 'People',
@@ -328,6 +338,7 @@ return array(
         'advanced search' => 'Advanced search',
   	'empty title' => 'Empty title',
 	'people in' => 'People in {0}',
+	'contacts in' => 'Contacts in {0}',
 	'users in' => 'Users in {0}',
 
         'field Objects type_content' => 'Type content',
@@ -376,6 +387,7 @@ return array(
 	'crpm_people' => 'People',
 	'estimated_worked_time' => 'Estimated and worked time',
 	'pending time' => 'Pending time',
+	'worked time' => 'Worked time',
 	'overdue and upcoming' => 'Late and upcoming tasks',
 	'projects widget title' => 'Projects',
 	'statics' => 'Statistics',
@@ -413,19 +425,55 @@ return array(
 	'next month' => 'Next month',
 	'next three months(after next month)' => 'Next three months (after next month)',
 	'this year' => 'This year',
+	'last year' => 'Last year',
+	'this quarter' => 'This quarter',
+	'last quarter' => 'Last quarter',
 	'after this year' => 'After this year',
 	
 	'without a member' => 'Without',
 	'uncompleted tasks' => 'Uncompleted tasks',
-	
+		
+	'without due date' => 'Without Due Date',
+	'without start date' => 'Without Start Date',
+	'without date' => 'Without Date',
+		
 	'address field is required' => '{1} information for field \'{0}\' is required.',
 	
 	'menu home' => 'Home',
 	'select group to add user' => 'Select a group from the dropdown list below to add the user to the group',
 	'click to select country' => 'Click to select country',
-	'there are no custom properties defined message' => 'There are no custom properties defined for {0} "{1}".',
+	'there are no custom properties defined message' => 'There are no custom properties defined for {0}.',
 	'there are no custom properties defined link' => 'Please refer to <a href="http://wiki.fengoffice.com/doku.php/custom_properties" target="_blank" class="wiki-link">this article</a> to learn how to add custom properties.',
 	
 	'write the first letters of the name or surname of the person to select' => 'Write the first letters of the name or surname of the person to select',
 	'click here to select one from a list' => 'Click here to select one from a list',
+	
+	'select contact' => 'Select contact',
+	'select user' => 'Select user',
+	
+	'completed by name on' => 'Completad by {0} on {1}',
+	'overdue and upcomming' => 'Overdue and Upcomming',
+	
+	'extend billing categories with advanced billing' => 'Extend billing categories with advanced billing',
+	'relations' => 'Relations',
+	'table' => 'Table',
+	'task status' => 'Task status',
+	'time report task status desc' => 'If a status is selected then the tasks timeslots will be filtered by it\'s task status. This filter does not apply to timeslots created in Time panel.',
+	'all tasks' => 'All tasks',
+	'general' => 'General',
+	'friendly date' => 'Friendly date',
+
+	'set rwd permissions for all object types' => 'Set full permissions to all object types.',
+	'set rw permissions for all object types' => 'Set read/write permissions to all object types.',
+	'set r permissions for all object types' => 'Set read-only permissions to all object types.',
+	'set none permissions for all object types' => 'Remove permissions in all object types',
+		
+	'object could not be classfied in due to permissions' => 'Could not classify {0} in \'{1}\' because you don\'t have permissions for {2} there.',
+	'if not specified then current time will be used' => 'If not specified then current time will be used.',
+	
+	'couldnt assign user to task due to permissions' => 'Could not assign {0} to {1} because the user doesn\'t have permissions where the task is classified.',
+	'specify end date' => 'Specify end date',
+        'specify paused time' => 'Specify paused time',
+	'start date cannot be greater than due date' => 'Start date cannot be greater than due date',
+    
 );

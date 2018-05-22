@@ -300,7 +300,7 @@ class GroupController extends ApplicationController {
 		
 		// query for permission groups
 		$sql = "SELECT * FROM ".TABLE_PREFIX."permission_groups pg LEFT JOIN ".TABLE_PREFIX."contacts c ON pg.id=c.permission_group_id
-			WHERE pg.type IN ('permission_groups', 'user_groups') AND (c.user_type IS NULL OR c.user_type >= ".logged_user()->getUserType().") $query_name
+			WHERE (pg.type='permission_groups' AND c.user_type >= ".logged_user()->getUserType()." OR pg.type='user_groups') $query_name
 			ORDER BY c.first_name, c.surname, pg.name
 			LIMIT $start, $limit";
 		

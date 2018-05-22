@@ -24,7 +24,7 @@ $alt = "";
 					<?php } // if ?>
 				</div>
 			<?php } // if ?>
-			<?php $alt = ($alt == "" ? " alt" : "")?>
+			<?php $alt = ($alt == "" ? " odd" : "")?>
 		<?php } // foreach ?>
 	<?php } // if ?>
 		<div class="userWsConfigCategory<?php echo $alt?>" id="user_ws_category_widgets">

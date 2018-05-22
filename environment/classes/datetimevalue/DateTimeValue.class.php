@@ -94,8 +94,8 @@ class DateTimeValue {
 	function isToday() {
 		$today = DateTimeValueLib::now();
 		if (logged_user() instanceof Contact) {
-			$date = new DateTimeValue($this->getTimestamp() + logged_user()->getTimezone() * 3600);
-			$today = new DateTimeValue($today->getTimestamp() + logged_user()->getTimezone() * 3600);
+			$date = new DateTimeValue($this->getTimestamp() + logged_user()->getUserTimezoneValue());
+			$today = new DateTimeValue($today->getTimestamp() + logged_user()->getUserTimezoneValue());
 		} else {
 			$date = $this;
 		}

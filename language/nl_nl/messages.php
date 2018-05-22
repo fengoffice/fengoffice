@@ -636,4 +636,8 @@
 	'contact email is required to create user' => 'Om een gebruiker aan te maken moet het contact een emailadres hebben. Wijzig de contactgegevens en probeer opnieuw.',
 	'success delete member' => '{0} werd verwijderd',
 	'disable' => 'Uitschakelen',
+	'no search result' => 'Er zijn geen objecten',
+	'success disable user' => 'Account voor de gebruiker {0} is met succes uitgeschakeld',
+	'success restore user' => 'Account voor de gebruiker {0} is succesvol geactiveerd',
+	'confirm restore user' => 'De gebruiker wordt geactiveerd . Doorgaan ?',
 ); ?>

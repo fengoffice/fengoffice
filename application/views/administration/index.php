@@ -49,7 +49,7 @@ if (can_manage_billing(logged_user())) {
 	$icons[] = array(
 		'ico' => 'ico-large-billing',
 		'url' => get_url('billing', 'index'),
-		'name' => lang('billing'),
+		'name' => lang('billing and invoicing'),
 		'extra' => '<a class="internalLink coViewAction ico-add" href="' . get_url('billing', 'add') . '">' . lang('add billing category') . '</a>',
 	);	
 }

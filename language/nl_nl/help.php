@@ -34,4 +34,7 @@
 	'how to purchase desc' => 'Informatie over onze verschillende tarieven en voordelen',
 	'add ticket' => 'Voeg een nieuw support-ticket toe',
 	'add ticket desc' => 'Om gepersonaliseerde help over Feng Office te krijgen',
+	'Super Administrator user role description' => 'Kan alles doen en zien . Ideale rol voor de bedrijfseigenaar van de Feng Office-systeem .',
+	'Administrator user role description' => 'Kan alles , behalve het beheer van rechten voor andere beheerders en super administrators .',
+	'Manager user role description' => 'Kan alles op Opdrachtgevers , Projecten en werkruimten waarvoor administrators ze toegang hebben verleend doen .',
 ); ?>

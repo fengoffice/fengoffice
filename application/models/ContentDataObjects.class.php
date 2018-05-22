@@ -37,7 +37,46 @@ abstract class ContentDataObjects extends DataManager {
 	 * Must be overriden by the specific object classes
 	 */
 	function getPublicColumns() {
+		$public_columns = array();
+		Hook::fire('modify_content_object_public_columns', $this, $public_columns);
+		return $public_columns;
+	}
+	
+	
+	/**
+	 * Returns the numeric fields that store a time value
+	 * Must be overriden by the specific object classes
+	 */
+	function getTimeColumns() {
 		return array();
+	}
+	
+	/**
+	 * Return system columns
+	 *
+	 * @access public
+	 * @param void
+	 * @return array
+	 */
+	function getSystemColumns() {
+		$system_columns = parent::getSystemColumns();
+		Hook::fire('additional_system_columns', $this, $system_columns);
+		
+		return $system_columns;
+	}
+	
+	/**
+	 * Return system columns
+	 *
+	 * @access public
+	 * @param void
+	 * @return array
+	 */
+	function getExternalColumns() {
+		$external_columns = parent::getExternalColumns();
+		Hook::fire('additional_external_columns', $this, $external_columns);
+		
+		return $external_columns;
 	}
 	
 	/**
@@ -63,6 +102,9 @@ abstract class ContentDataObjects extends DataManager {
 		$ot = ObjectTypes::findById($this->getObjectTypeId());
 		eval('$manager = '.$ot->getHandlerClass().'::instance();');
 		eval('$object = new '.$manager->getItemClass().'();');
+		if (isset($object) && $object) {
+			$object->setObjectTypeId($this->getObjectTypeId());
+		}
 		return $object;
 	}
 	
@@ -353,9 +395,15 @@ abstract class ContentDataObjects extends DataManager {
 		$result->total =array();
 		$type_id  = self::getObjectTypeId();
 		$SQL_BASE_JOIN = '';
+		$SQL_SEARCHABLE_OBJ_JOIN = '';
 		$SQL_EXTRA_JOINS = '';
 		$SQL_TYPE_CONDITION = 'true';
 		$SQL_FOUND_ROWS = '';
+        $SQL_BEFORE_COLUMNS = '';
+
+        if (isset($args['sql_before_columns'])) {
+            $SQL_BEFORE_COLUMNS = $args['sql_before_columns'];
+        }
 
 		if (isset($args['count_results'])) {
 			$count_results = $args['count_results'];
@@ -377,10 +425,49 @@ abstract class ContentDataObjects extends DataManager {
 		$extra_member_ids =  array_var($args,'extra_member_ids');
 		$ignore_context = array_var($args,'ignore_context');
 		$include_deleted = (bool) array_var($args,'include_deleted');
+		$join_with_searchable_objects = array_var($args, 'join_with_searchable_objects');
 		$select_columns = array_var($args, 'select_columns');
-		if (empty($select_columns)) {
-			$select_columns = array('*');
+		
+		//text filter param
+		$text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
+		
+		$controller = array_var($_GET, 'c');
+		$text_filter_extra_conditions = ''; 
+		
+		if (trim($text_filter) != '') {
+		    
+		    $join_with_searchable_objects = true;
+		    
+		    $text_filter = str_replace("'", "\'", trim($text_filter));
+		    
+		    //if text_filter starts or ends with special characters, remove it for do the query.
+		    $text_filter = str_replace( array( '-', '+', '~' , '(', ')','<','>','*','"' ), ' ', $text_filter);
+		    
+		    if(str_word_count($text_filter, 0) > 1){
+		        $text_filter_extra_conditions .= "
+								AND MATCH (so.content) AGAINST ('\"$text_filter\"' IN BOOLEAN MODE)
+						    ";
+		    }else{
+		        $text_filter_extra_conditions  .= "
+								AND MATCH (so.content) AGAINST ('$text_filter*' IN BOOLEAN MODE)
+						    ";
+		    }
 		}
+		
+		if (empty($select_columns)) {
+		    if ($join_with_searchable_objects) {
+		        $select_columns = array('DISTINCT(o.id),o.*,e.*');
+		    } else {
+		        $select_columns = array('*');
+		    }
+		}else{
+		    if ($join_with_searchable_objects) {
+		        $select_columns = array('DISTINCT(o.id),o.*,e.*');		        		        
+		    }
+		}
+		
+		
+		$only_return_query_string = array_var($args, 'only_return_query_string');
 		
 		//template objects
 		$template_objects = (bool) array_var($args,'template_objects',false);
@@ -393,8 +480,11 @@ abstract class ContentDataObjects extends DataManager {
 			$handler_class = $type->getHandlerClass();
 			$table_name = self::getTableName();
 			
+			if (!isset($args['join_ts_with_task'])) $args['join_ts_with_task'] = false;
+			$join_ts_with_task = $args['join_ts_with_task'];
+			
 	    	// Extra Join statements
-	    	if ($this instanceof ContentDataObjects && $this->object_type_name == 'timeslot') {
+	    	if ($this instanceof ContentDataObjects && $this->object_type_name == 'timeslot' && $join_ts_with_task) {
 	    		// if object is a timeslot and is related to a content object => check for members of the related content object.
 	    		$SQL_BASE_JOIN = " INNER JOIN  $table_name e ON IF(e.rel_object_id > 0, e.rel_object_id, e.object_id) = o.id ";
 	    		$SQL_TYPE_CONDITION = "o.object_type_id = IF(e.rel_object_id > 0, (SELECT z.object_type_id FROM ".TABLE_PREFIX."objects z WHERE z.id = e.rel_object_id), $type_id)";
@@ -404,6 +494,10 @@ abstract class ContentDataObjects extends DataManager {
 	    	}
 			$SQL_EXTRA_JOINS = self::prepareJoinConditions(array_var($args,'join_params'));
 			
+		}
+		
+		if ($join_with_searchable_objects) {
+			$SQL_SEARCHABLE_OBJ_JOIN = " INNER JOIN ".TABLE_PREFIX."searchable_objects so ON so.rel_object_id=o.id ";
 		}
 		
 		if (!$ignore_context && !$member_ids) {
@@ -420,6 +514,48 @@ abstract class ContentDataObjects extends DataManager {
 			}
 		}
 		
+		// Specific order statements for dimension orders
+		if (is_numeric(array_var($args,'dim_order')) && array_var($args,'dim_order') > 0) {
+			
+			$SQL_BASE_JOIN .= "
+					LEFT JOIN ".TABLE_PREFIX."object_members obj_mems ON obj_mems.object_id=o.id AND obj_mems.is_optimization=0
+			";
+			$SQL_BASE_JOIN .= "
+					LEFT JOIN ".TABLE_PREFIX."members memb ON obj_mems.member_id=memb.id AND memb.dimension_id=".array_var($args,'dim_order')."
+			";
+			
+			$select_columns = array("DISTINCT o.*", "e.*, GROUP_CONCAT(memb.name) as memb_name");
+			
+			$args['order'] = 'memb_name';
+			$args['group_by'] = "o.id";
+			
+		} else if (is_numeric(array_var($args,'cp_order')) && array_var($args,'cp_order') > 0) {
+			// Specific order statements for custom property orders
+			
+			$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."custom_property_values cpropval ON cpropval.object_id=o.id 
+					AND (cpropval.custom_property_id=".array_var($args,'cp_order')." OR cpropval.custom_property_id IS NULL) ";
+			
+			$cp = CustomProperties::findById(array_var($args,'cp_order'));
+			if ($cp instanceof CustomProperty && ($cp->getType() == 'contact' || $cp->getType() == 'user')) {
+				
+				$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."objects cpobj ON cpobj.id=cpropval.value";
+				
+				$select_columns = array("DISTINCT o.*", "e.*, GROUP_CONCAT(cpobj.name) as cpobj_name");
+				$args['order'] = 'cpobj_name';
+				$args['group_by'] = "o.id";
+				
+			} else {
+				
+			    if ($cp instanceof CustomProperty && $cp->getType() == 'numeric'){			        
+			        $cp_concat_string = "CONVERT(cpropval.value,SIGNED INTEGER)";
+			    }else{
+			        $cp_concat_string = "cpropval.value";
+			    }
+			    $select_columns = array("DISTINCT o.*", "e.*, $cp_concat_string as cpropval_value");
+				$args['order'] = 'cpropval_value';
+				$args['group_by'] = "o.id";
+			}
+		}
 		// Order statement
     	$SQL_ORDER = self::prepareOrderConditions(array_var($args,'order'), array_var($args,'order_dir'));
 		
@@ -430,13 +566,6 @@ abstract class ContentDataObjects extends DataManager {
 			$SQL_LIMIT = '' ;
 		}
 		
-		// Prepare Group By SQL $group_by = array_var($args,'group_by');
-		if (array_var($args,'group_by')){
-			$SQL_GROUP_BY = "GROUP BY ".array_var($args,'group_by');
-		}else{
-			$SQL_GROUP_BY = '' ;
-		}
-		
 		$SQL_CONTEXT_CONDITION = " true ";
 		//show only objects that are on this members by classification not by hierarchy
 		$show_only_member_objects = array_var($args,'show_only_member_objects',false);
@@ -445,12 +574,17 @@ abstract class ContentDataObjects extends DataManager {
 			$exclusive_in_member = " AND om.`is_optimization` = 0";
 		}
 		if (!empty($members) && count($members)) {
-			$SQL_CONTEXT_CONDITION = "(EXISTS (SELECT om.object_id
-					FROM  ".TABLE_PREFIX."object_members om
-					WHERE	om.member_id IN (" . implode ( ',', $members ) . ") AND o.id = om.object_id $exclusive_in_member
-					GROUP BY object_id
-					HAVING count(member_id) = ".count($members)."
-			))";			
+			
+			$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=o.id ";
+			
+			$SQL_CONTEXT_CONDITION = "om.member_id IN (" . implode ( ',', $members ) . ") $exclusive_in_member";
+			
+			if (trim($args['group_by']) != "") {
+				$args['group_by'] .= ", ";
+			}
+			$args['group_by'] .= "om.object_id HAVING COUNT(DISTINCT(om.member_id)) = ".count($members);
+			
+
 		}else{
 			//show only objects that are on root
 			if($show_only_member_objects){				
@@ -471,6 +605,14 @@ abstract class ContentDataObjects extends DataManager {
 				}				
 			}
 		}
+
+
+		// Prepare Group By SQL $group_by = array_var($args,'group_by');
+		if (array_var($args,'group_by')){
+			$SQL_GROUP_BY = "GROUP BY ".array_var($args,'group_by');
+		}else{
+			$SQL_GROUP_BY = '' ;
+		}
 		
 		// Trash && Archived CONDITIONS
     	$trashed_archived_conditions = self::prepareTrashandArchivedConditions(array_var($args,'trashed'), array_var($args,'archived'));
@@ -484,42 +626,106 @@ abstract class ContentDataObjects extends DataManager {
 			$SQL_EXTRA_CONDITIONS = '';
 		}
 		
+		$SQL_EXTRA_CONDITIONS .= $text_filter_extra_conditions;
+		
 		$SQL_COLUMNS = implode(',', $select_columns);
+
+		//column to check permissions
+		if (isset($args['check_permissions_col'])){
+			$check_permissions_col = $args['check_permissions_col'];
+		}else{
+			$check_permissions_col = "o.id";
+		}
 		
 		if (logged_user() instanceof Contact) {
 			$uid = logged_user()->getId();
 			// Build Main SQL
 			$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
 			
-			$permissions_condition = "o.id IN (
-					SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-					WHERE o.id = sh.object_id
-					AND sh.group_id  IN ($logged_user_pgs)
+			$permissions_condition = " true ";
+			if (!logged_user()->isAdministrator() || $this instanceof MailContents) {
+				if ($this instanceof MailContents) {
+					$permissions_condition = "(
+						$check_permissions_col IN (
+							SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+							WHERE ".$check_permissions_col." = sh.object_id
+								AND sh.group_id  IN ($logged_user_pgs)
+							)
+						OR
+						e.account_id IN (
+							SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
+							WHERE macc.contact_id=$uid
+						)
+					) ";
+				} else {
+					$permissions_condition = $check_permissions_col." IN (
+						SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+						WHERE ".$check_permissions_col." = sh.object_id
+						AND sh.group_id  IN ($logged_user_pgs)
+					) ";
+				}
+			}
+			
+			
+			/*
+			 * Check that the objects to list does not belong only to a non-manageable dimension that defines permissions
+			 * Object can be shown if:
+			 * 		1 - It belongs to at least a member in a dimension that defines permissions and is manageable
+			 * 		2 - Or it belongs to at least a member in a dimension that does not defines permissions
+			 * 		3 - Or user has permissions to read objects without classification 
+			 */
+		  if (!$type instanceof ObjectType || !$type->getName()=='mail') {
+			$without_perm_dim_ids = Dimensions::findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
+			$no_perm_dims_cond = "";
+			
+			if (count($without_perm_dim_ids) > 0) {
+				$no_perm_dims_cond = " OR EXISTS (
+					select * from ".TABLE_PREFIX."object_members omems
+					  inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
+					  WHERE omems.object_id=o.id AND mems.dimension_id IN (".implode(',', $without_perm_dim_ids).")
+				)";
+			}
+			
+			$permissions_condition .= " AND (
+				EXISTS (
+					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
+					WHERE cmp.member_id=0 AND cmp.permission_group_id=".logged_user()->getPermissionGroupId()." AND cmp.object_type_id = o.object_type_id
+				)
+				OR
+				EXISTS (
+					select * from ".TABLE_PREFIX."object_members omems
+						inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
+						inner join ".TABLE_PREFIX."dimensions dims on dims.id = mems.dimension_id
+					WHERE omems.object_id=o.id and dims.defines_permissions=1 and dims.is_manageable=1
+				) $no_perm_dims_cond
 			)";
+		  }
+			/********************************************************************************************************/
 			
 			if (!$this instanceof MailContents && logged_user()->isAdministrator() || 
 					($this instanceof Contacts && $this->object_type_name == 'contact' && can_manage_contacts(logged_user()))) {
 				$permissions_condition = "true";
 			}
-			
-			if ($this instanceof ProjectFiles && logged_user()->isAdministrator() && Plugins::instance()->isActivePlugin('mail')) {
-				$permissions_condition = "IF(e.mail_id > 0,
-					  e.mail_id IN (
+			/*
+			if ($this instanceof ProjectFiles && !logged_user()->isAdministrator() && Plugins::instance()->isActivePlugin('mail')) {
+				$permissions_condition .= ($permissions_condition=="" ? "" : " AND ") . "IF(e.mail_id > 0,
+					  o.id IN (
 										SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-										WHERE e.mail_id = sh.object_id
+										WHERE o.id = sh.object_id
 										AND sh.group_id  IN ($logged_user_pgs)
 					  ),
 					  true
 					)";
-			}
+			}*/
 			
 			if($template_objects){
 				$permissions_condition = "true";
 				$SQL_BASE_JOIN .= " INNER JOIN  ".TABLE_PREFIX."template_tasks temob ON temob.object_id = o.id ";
 			}
 			$sql = "
-				SELECT $SQL_FOUND_ROWS $SQL_COLUMNS FROM ".TABLE_PREFIX."objects o
+				SELECT $SQL_FOUND_ROWS $SQL_BEFORE_COLUMNS $SQL_COLUMNS FROM ".TABLE_PREFIX."objects o
 				$SQL_BASE_JOIN
+				$SQL_SEARCHABLE_OBJ_JOIN
 				$SQL_EXTRA_JOINS
 				WHERE
 					$permissions_condition
@@ -537,16 +743,30 @@ abstract class ContentDataObjects extends DataManager {
 			}
 			
 			$sql_total = "
-				SELECT count(o.id) as total FROM ".TABLE_PREFIX."objects o
+				SELECT count(DISTINCT(o.id)) as total FROM ".TABLE_PREFIX."objects o
 				$SQL_BASE_JOIN
+				$SQL_SEARCHABLE_OBJ_JOIN
 				$SQL_EXTRA_JOINS
 				WHERE
 					$permissions_condition
 					AND	$SQL_CONTEXT_CONDITION
 					AND $SQL_TYPE_CONDITION
-					AND $SQL_TRASHED_CONDITION $SQL_ARCHIVED_CONDITION $SQL_EXTRA_CONDITIONS
-				$SQL_GROUP_BY			
+					AND $SQL_TRASHED_CONDITION $SQL_ARCHIVED_CONDITION $SQL_EXTRA_CONDITIONS	
+					$SQL_GROUP_BY
 			";
+
+			if($SQL_GROUP_BY != ''){
+                $sql_total = "
+                  SELECT count(*) as total FROM (
+                  $sql_total
+                  ) as temptotal
+                ";
+            }
+			
+			
+			if ($only_return_query_string) {
+				return $sql;
+			}
 
 			
 		    if(!$only_count_results){
@@ -578,10 +798,34 @@ abstract class ContentDataObjects extends DataManager {
 						$result->total = $start + count($result->objects);
 					}
 				}
+				
+				// additional data over result
+				$from_sql = "FROM ".TABLE_PREFIX."objects o";
+				$joins_sql = "$SQL_BASE_JOIN $SQL_SEARCHABLE_OBJ_JOIN $SQL_EXTRA_JOINS";
+				$all_conditions_sql = "
+					$permissions_condition
+					AND $SQL_CONTEXT_CONDITION
+					AND $SQL_TYPE_CONDITION
+					AND $SQL_TRASHED_CONDITION $SQL_ARCHIVED_CONDITION $SQL_EXTRA_CONDITIONS
+				";
+				$params = array('type_id' => $type_id, 'from_sql' => $from_sql, 'joins_sql' => $joins_sql, 'conditions_sql' => $all_conditions_sql,
+						'group_by' => $SQL_GROUP_BY, 'order' => array_var($args,'order'), 'order_dir' => array_var($args,'order_dir'),
+						'start' => $start, 'limit' => $limit, 'totalCount' => $result->total, 'member_ids' => $members);
+				
+				$more_data = null;
+				Hook::fire('object_listing_additional_data', $params, $more_data);
+				if ($more_data) {
+					foreach ($more_data as $key => $value) {
+						$result->$key = $value;
+					}
+				}
+				// ---------------------------
+				
 		    }else{
 		    	$total = DB::executeOne($sql_total);
 		    	$result->total = $total['total'];		    	
 		    }
+		    
 		} else {
 			$result->objects = array();
 			$result->total = 0;
@@ -703,11 +947,19 @@ abstract class ContentDataObjects extends DataManager {
     
     
     static function prepareTrashAndArchivedConditions($trashed, $archived){
-        $trashed_cond = "`o`.`trashed_on` " .($trashed ? ">" : "="). " " . DB::escape(EMPTY_DATETIME);
+        $trashed_cond = "`o`.`trashed_by_id` " .($trashed ? ">" : "="). " 0";
     	if ($trashed) {
     		$archived_cond = "";
     	} else {
-    		$archived_cond = "AND `o`.`archived_on` " .($archived ? ">" : "="). " " . DB::escape(EMPTY_DATETIME);
+    		if ($archived == 'all') {
+    			$archived_cond = "";
+    		} else {
+    			if (!$archived || $archived == 'unarchived') {
+    				$archived_cond = "AND `o`.`archived_by_id` = 0";
+    			} else {
+    				$archived_cond = "AND `o`.`archived_by_id` > 0";
+    			}
+    		}
     	}
     	if ($trashed && Plugins::instance()->isActivePlugin('mail')) {
     		$mail_accounts = MailAccounts::getMailAccountsByUser(logged_user());
@@ -730,8 +982,9 @@ abstract class ContentDataObjects extends DataManager {
     	$order_conditions = "";
     	if (is_null($order_dir)) $order_dir = "DESC";
     	if ($order && $order_dir){
-    		if (!is_array($order)) $order_conditions = "ORDER BY $order $order_dir";
-    		else {
+    		if (!is_array($order)){
+                $order_conditions = "ORDER BY $order $order_dir";
+            } else {
     			$i = 0;
     			foreach($order as $o){
     				switch ($o) {
@@ -743,11 +996,19 @@ abstract class ContentDataObjects extends DataManager {
     				}
     				if ($i==0)$order_conditions.= "ORDER BY $o $order_dir";
     				else $order_conditions.= ", $o $order_dir";
-    				$i++;
+
+    				if($i == count($order)){
+                        $order_conditions .= ", o.name ".$order_dir;
+                    }
+
+                    $i++;
     			}
     		}
+    	}else{
+            $order_conditions = "ORDER BY o.name ASC";
     	}
-    	return $order_conditions;
+
+        return $order_conditions;
     }
     
     static function prepareDimensionConditions($context, $object_type_id){
@@ -834,8 +1095,7 @@ abstract class ContentDataObjects extends DataManager {
     	
     	$dimensions = Dimensions::findAll();
     	foreach ($dimensions as $dimension){
-    		if ($dimension->canContainObjects() && !in_array($dimension, $context) && !in_array($dimension, $selected_dimensions) &&
-    			!($dimension->getOptions(1) && isset($dimension->getOptions(1)->hidden) && $dimension->getOptions(1)->hidden)){
+    		if ($dimension->canContainObjects() && !in_array($dimension, $context) && !in_array($dimension, $selected_dimensions)){
     			$member_ids = array();
     			$all_members = $dimension->getAllMembers();
     			foreach($all_members as $member) {
@@ -1015,198 +1275,71 @@ abstract class ContentDataObjects extends DataManager {
 		return $res;
 	}
 	
-	static function addObjToSharingTable($oid, $tid,  $obj_mem_ids) {
-		$gids = array();
-	
-		$table_prefix = defined('FORCED_TABLE_PREFIX') && FORCED_TABLE_PREFIX ? FORCED_TABLE_PREFIX : TABLE_PREFIX;
-		
-		//1. clear sharing table for this object
-		SharingTables::delete("object_id=$oid");
-		
-		//2. get dimensions of this object's members that defines permissions
-		$res = DB::execute("SELECT d.id as did FROM ".$table_prefix."dimensions d INNER JOIN ".$table_prefix."members m on m.dimension_id=d.id
-				WHERE m.id IN ( SELECT member_id FROM ".$table_prefix."object_members WHERE object_id = $oid AND is_optimization = 0 ) AND d.defines_permissions = 1");
-		$dids_tmp = array();
-		while ($row = $res->fetchRow() ) {
-			$dids_tmp[$row['did']] = $row['did'] ;
-		}
-		$res->free();
-		$dids = array_values($dids_tmp);
-		$dids_tmp = null;
-	
-		$sql_from = "".$table_prefix."contact_member_permissions cmp
-		LEFT JOIN ".$table_prefix."members m ON m.id = cmp.member_id
-		LEFT JOIN ".$table_prefix."dimensions d ON d.id = m.dimension_id";
-	
-		$member_where_conditions = "";
-		$dim_where_conditions = "";
-		// if users can add objects without classifying then check for permissions with member_id=0
-		if (config_option('let_users_create_objects_in_root')) {
-			$member_where_conditions = "member_id=0 OR ";
-			$dim_where_conditions = " OR d.id IS NULL";
-		}
-	
-		$sql_where = "($member_where_conditions member_id IN ( SELECT member_id FROM ".$table_prefix."object_members WHERE object_id = $oid AND is_optimization = 0)) AND cmp.object_type_id = $tid";
-	
-		//3. If there are dimensions that defines permissions containing any of the object members
-		if ( count($dids) ){
-			// 3.1 get permission groups with permissions over the object.
-			$sql_fields = "permission_group_id  AS group_id";
-				
-			$sql = "
-				SELECT
-				$sql_fields
-				FROM
-				$sql_from
-				WHERE
-				$sql_where AND (d.id IN (". implode(',',$dids).") $dim_where_conditions)
-			";
-	
-			$res = DB::execute($sql);
-			$gids_tmp = array();
-			while ( $row = $res->fetchRow() ) {
-				$gids_tmp[$row['group_id']] = $row['group_id'];
-			}
-			$res->free();
-				
-			// allow all permission groups
-			$allow_all_rows = DB::executeAll("SELECT DISTINCT permission_group_id FROM ".$table_prefix."contact_dimension_permissions cdp
-					INNER JOIN ".$table_prefix."members m on m.dimension_id=cdp.dimension_id
-					WHERE cdp.permission_type='allow all' AND cdp.dimension_id IN (". implode(',',$dids).");");
-						
-			if (is_array($allow_all_rows)) {
-				foreach ($allow_all_rows as $row) {
-					$gids_tmp[$row['permission_group_id']] = $row['permission_group_id'];
-				}
-			}
-				
-			$gids = array_values($gids_tmp);
-			$gids_tmp = null;
-				
-			// check for mandatory dimensions
-			$enabled_dimensions_sql = "";
-			$enabled_dimensions_ids = implode(',', config_option('enabled_dimensions'));
-			if ($enabled_dimensions_ids != "") {
-				$enabled_dimensions_sql = "AND id IN ($enabled_dimensions_ids)";
-			}
-						
-			$mandatory_dim_ids = Dimensions::findAll(array('id' => true, 'conditions' => "`defines_permissions`=1 $enabled_dimensions_sql AND `permission_query_method`='".DIMENSION_PERMISSION_QUERY_METHOD_MANDATORY."'"));
-			if (count($gids) > 0 && count($mandatory_dim_ids) > 0) {
-				$sql = "SELECT om.member_id, m.dimension_id FROM ".$table_prefix."object_members om
-					INNER JOIN ".$table_prefix."members m ON m.id=om.member_id INNER JOIN ".$table_prefix."dimensions d ON d.id=m.dimension_id
-					WHERE om.object_id = $oid AND om.is_optimization = 0 AND d.id IN (".implode(",", $mandatory_dim_ids).")";
-	
-			// Object members in mandatory dimensions
-			$object_member_ids_res = DB::executeAll($sql);
-			$mandatory_dim_members = array();
-			if (!is_null($object_member_ids_res)) {
-				foreach ($object_member_ids_res as $row) {
-					if (!isset($mandatory_dim_members[$row['dimension_id']])) $mandatory_dim_members[$row['dimension_id']] = array();
-						$mandatory_dim_members[$row['dimension_id']][] = $row['member_id'];
-					}
-						
-					$mandatory_dim_allowed_pgs = array();
-					// Check foreach group that it has permissions over at least one member of each mandatory dimension
-					foreach ($mandatory_dim_members as $mdim_id => $mmember_ids) {
-						$sql = "SELECT pg.id FROM ".$table_prefix."permission_groups pg
-							INNER JOIN ".$table_prefix."contact_dimension_permissions cdp ON cdp.permission_group_id=pg.id
-							INNER JOIN ".$table_prefix."contact_member_permissions cmp ON cmp.permission_group_id=pg.id
-							WHERE cdp.dimension_id = '$mdim_id' AND (
-							cdp.permission_type='allow all' OR cdp.permission_type='check' AND cmp.permission_group_id IN (".implode(',', $gids).")
-							AND cmp.member_id IN (".implode(',', $mmember_ids).")
-						)";
-		
-						$permission_groups_res = DB::executeAll($sql);
-						$mandatory_dim_allowed_pgs[$mdim_id] = array();
-						if (!is_null($permission_groups_res)) {
-								foreach ($permission_groups_res as $row) {
-									if (!in_array($row['id'], $mandatory_dim_allowed_pgs[$mdim_id])) $mandatory_dim_allowed_pgs[$mdim_id][] = $row['id'];
-								}
-						}
-					}
-		
-					if (isset($mandatory_dim_allowed_pgs) && count($mandatory_dim_allowed_pgs) > 0) {
-						$original_mandatory_dim_allowed_pgs = $mandatory_dim_allowed_pgs;
-						$allowed_gids = array_pop($mandatory_dim_allowed_pgs);
-						foreach ($mandatory_dim_allowed_pgs as $pg_array) {
-							$allowed_gids = array_intersect($allowed_gids, $pg_array);
-						}
-		
-						// If an user has permissions in one dim using a group and in other dim using his personal permissions then add to sharing table its personal permission group
-						$pg_ids = array_unique(array_flat($original_mandatory_dim_allowed_pgs));
-						if (count($pg_ids) == 0) $pg_ids[0] = 0;
-			
-						$contact_pgs = array();
-						$contact_pg_rows = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."contact_permission_groups WHERE permission_group_id IN (".implode(',',$pg_ids).") ORDER BY permission_group_id");
-						if (is_array($contact_pg_rows)) {
-							foreach ($contact_pg_rows as $cpgr) {
-								if (!isset($contact_pgs[$cpgr['contact_id']])) $contact_pgs[$cpgr['contact_id']] = array();
-								$contact_pgs[$cpgr['contact_id']][] = $cpgr['permission_group_id'];
-							}
-						}
-			
-						// each user must have at least one pg for every dimension
-						foreach ($contact_pgs as $contact_id => $permission_groups) {
-							$has_one = array_flip(array_keys($original_mandatory_dim_allowed_pgs));
-							foreach ($has_one as $k => &$v) $v = false;
-								
-							foreach ($permission_groups as $pg_id) {
-								foreach ($original_mandatory_dim_allowed_pgs as $dim_id => $allowedpgs) {
-									if (in_array($pg_id, $allowedpgs)) {
-										$has_one[$dim_id] = true;
-										break;
-									}
-								}
-							}
-							// all dims must be true in this array to allow permissions
-							$has_permission = !in_array(false, $has_one);
-							if ($has_permission) {
-								$contact_row = DB::executeOne("SELECT permission_group_id FROM ".TABLE_PREFIX."contacts where object_id = $contact_id");
-								if (is_array($contact_row) && $contact_row['permission_group_id'] > 0) {
-									$allowed_gids[] = $contact_row['permission_group_id'];
-								}
-							}
-						}
-			
-						$gids = array_unique($allowed_gids, SORT_NUMERIC);
-					} else {
-						$gids = array();
-					}
-				}
-			}
-						
-		} else {
-			if ( $obj_mem_ids ) {
-				// 3.2 No memeber dimensions defines permissions.
-				// No esta en ninguna dimension que defina permisos, El objecto esta en algun lado
-				// => En todas las dimensiones en la que está no definen permisos => Busco todos los grupos
-				$gids = PermissionGroups::instance()->findAll(array('id' => true));
-				
-			} else {
-
-				// if this object is an email and it is unclassified => add to sharing table the permission groups of the users that have permissions in the email's account
-				if (Plugins::instance()->isActivePlugin('mail')) {
-					$mail_ot = ObjectTypes::instance()->findByName('mail');
-					if ($mail_ot instanceof ObjectType && $tid == $mail_ot->getId()) {
-						$gids = DB::executeAll("
-							SELECT cpg.permission_group_id
-							FROM ".TABLE_PREFIX."contact_permission_groups cpg
-							INNER JOIN ".TABLE_PREFIX."contacts c ON c.permission_group_id=cpg.permission_group_id
-							WHERE cpg.contact_id IN (
-							  SELECT mac.contact_id FROM ".TABLE_PREFIX."mail_account_contacts mac WHERE mac.account_id = (SELECT mc.account_id FROM ".TABLE_PREFIX."mail_contents mc WHERE mc.object_id=$oid)
-							);
-						");
-					}
-				}
-			}
-			
-		}
-	
-		if(count($gids)) {
-			$stManager = SharingTables::instance();
-			$stManager->populateGroups($gids, $oid);
-			$gids = null;
-		}
-	
+	static function addObjToSharingTable($oid) {
+		SharingTables::instance()->fill_sharing_table_by_object($oid);
 	}
+
+	function getColumnsToAggregateInTotals() {
+		$columns = array();
+		Hook::fire('more_columns_to_aggregate_in_totals', $this, $columns);
+		return $columns;
+	}
+	
+	
+	function getCalculatedColumns() {
+		$columns = array();
+		Hook::fire('more_object_calculated_columns', $this, $columns);
+		return $columns;
+	}
+	
+	
+	function getDefinition($ot_id = null) {
+	    $columns = $this->getColumns();
+	    $object_columns = Objects::instance()->getColumns();
+	    $columns = array_merge($columns,$object_columns);
+	    
+	    if (is_null($ot_id)) {
+	    	$ot_id = $this->getObjectTypeId();
+	    }
+	    
+	    $cps = CustomProperties::getAllCustomPropertiesByObjectType($ot_id);
+	    
+	    $array_cp_info = array();
+	    foreach($cps as $cp){
+	        $array_cp_info["cp_".$cp->getId()]= array('id' => $cp->getId(), 'type'=>$cp->getType(), 'label'=>$cp->getName(),'code'=>$cp->getCode());
+	    }
+
+	    $result = array();
+	    $system_columns = $this->getSystemColumns();
+	    
+	    foreach ($columns as $c){
+	        if (!in_array($c, $system_columns)){
+	            $result[$c]= array( 'id'=>$c, 'type' => $this->getColumnType($c), 'label'=>lang( 'field '.get_class($this).' '.$c ));
+	        }	        
+	    }
+	    
+	    $associated_obj_columns = $this->getAssociatedObjectsFixedColumns();
+	    foreach ($associated_obj_columns as $key_col => $col_infos) {
+		    foreach ($col_infos as $col) {
+		    	$result[$col['col']]= array('id'=>$col['col'], 'type'=>$col['type'], 'label'=>$col['label']);
+		    }
+	    }
+	    
+	    $result = array_merge($result,$array_cp_info);
+	    return $result;
+	}
+	
+	
+	function getAdditionalCustomProperties() {
+		return array();
+	}
+	
+	function getAssociatedObjectsFixedColumns() {
+		return array();
+	}
+	
+	function getAssociatedObjectManagers() {
+		return array();
+	}
+	
 }

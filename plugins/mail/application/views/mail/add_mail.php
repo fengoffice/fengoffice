@@ -11,6 +11,11 @@
 	add_page_action(lang('save')." ".lang('draft'), "javascript:document.getElementById('saveMail').click();", "mail",null,null,true);
 	add_page_action(lang('discard'), "javascript:document.getElementById('discardMail').click();","mail",null,null,true);
  	
+	if (isset($_SESSION['add_mail_override_mail_data'])) {
+		$mail_data = $_SESSION['add_mail_override_mail_data'];
+		unset($_SESSION['add_mail_override_mail_data']);
+	}
+	
 	$type = array_var($mail_data, 'type', user_config_option('last_mail_format'));
 	if (!$type) $type = 'plain';
 	$object = $mail;
@@ -20,6 +25,11 @@
 	
 	$visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
 ?>
+<style>
+#add_mail_attachments .removeDiv {
+	line-height: 20px;
+}
+</style>
 <input type="hidden" id="<?php echo $genid ?>signatures" />
 <script>
 og.attachContents = <?php echo user_config_option('attach_docs_content') ? '1' : '0'; ?>;
@@ -34,11 +44,8 @@ sig.actualHtmlSignature = '';
 <form style="height:100%;background-color:white;" id="<?php echo $genid ?>form" name="frmMail"  class="internalForm" action="<?php echo $mail->getSendMailUrl()?>" method="post"  onsubmit="return og.checkFrom() && og.mailSetBody('<?php echo $genid ?>')">
 <input type="hidden" name="instanceName" value="<?php echo $genid?>" />
 <input type="hidden" name="mail[body]" value="" />
-<input type="hidden" name="mail[sendBtnClick]" id="<?php echo $genid ?>sendBtnClick" value="false" />
-<input type="hidden" name="mail[isDraft]" id="<?php echo $genid ?>isDraft" value="true" />
 <input type="hidden" name="mail[id]" id="<?php echo $genid ?>id" value="<?php echo  array_var($mail_data, 'id') ?>" />
 <input type="hidden" name="mail[hf_id]" id="<?php echo $genid ?>hf_id" value="<?php echo $genid ?>id" />
-<input type="hidden" name="mail[isUpload]" id="<?php echo $genid ?>isUpload" value="false" />
 <input type="hidden" name="mail[autosave]" id="<?php echo $genid ?>autosave" value="false" />
 <input type="hidden" name="mail[link_to_objects]" id="<?php echo $genid ?>link_to_objects" value="<?php echo $link_to_objects?>" />
 
@@ -48,6 +55,12 @@ sig.actualHtmlSignature = '';
 <input type="hidden" name="mail[last_mail_in_conversation]" value="<?php echo array_var($mail_data, 'last_mail_in_conversation') ?>" />
 <input type="hidden" name="mail[pre_body_fname]" value="<?php echo array_var($mail_data, 'pre_body_fname') ?>" />
 <?php 
+	$mail_data_additional_info = array_var($mail_data, 'additional_info');
+	if (is_array($mail_data_additional_info)) {
+		foreach ($mail_data_additional_info as $key => $val) {
+			?><input type="hidden" name="mail[additional_info][<?php echo $key ?>]" value="<?php echo $val ?>" /><?php
+		}
+	}
 
 	tpl_display(get_template_path('form_errors'));
 	$account = isset($default_account) ? $default_account : $mail_accounts[0];
@@ -67,7 +80,7 @@ sig.actualHtmlSignature = '';
     		$sig = "";
     	}
     	//$sig = nl2br($sig);
-    	$htmlsig = str_replace(array("\r", "\n"), "", "<div class=\"fengoffice_signature\">$sig</div>");
+    	$htmlsig = str_replace(array("\r", "\n"), "", "<div id='".$genid."_fengoffice_signature_id' ".MAIL_SIGNATURE_DIV_ATTRIBUTES.">$sig</div>");
     	$textsig = html_to_text($sig);
     	if ($acc_id) {
 	    	if ($m_acc->getId() == $acc_id) {
@@ -97,10 +110,10 @@ sig.actualHtmlSignature = '';
   	<div style="display: none;">
   		<table><tr><td>
   			<?php echo submit_button(lang('send mail'), '', 
-  			array('id'=>'sendMail','onclick'=>"og.checkAttach();"))?>
+  			array('id'=>'sendMail','onclick'=>"return og.checkAttach();"))?>
   		</td><td>
   			<?php echo submit_button(lang('save')." ".lang('draft'), '', 
-  			array('id'=>'saveMail','onclick'=>"og.setHfValue('$genid', 'isDraft', 'true');og.stopAutosave('$genid');")) ?>
+  			array('id'=>'saveMail','onclick'=>"og.saveDraftEmail('$genid');og.stopAutosave('$genid');")) ?>
   		</td><td>
   			<?php
   			$strDisabled = "";//array_var($mail_data, 'id') == ''?'disabled':'';
@@ -177,7 +190,9 @@ sig.actualHtmlSignature = '';
  		<a href="#" class="option" onclick="og.toggleAndBolden('add_mail_attachments', this);og.resizeMailDiv();"><?php echo lang('mail attachments') ?></a> -
 
 		<a href="#" class="option" onclick="og.toggleAndBolden('<?php echo $genid ?>add_mail_add_contacts',this);og.resizeMailDiv();"><?php echo lang('mail add contacts') ?></a>
-		<?php foreach ($categories as $category) { ?>
+		<?php foreach ($categories as $category) {
+				if (array_var($category, 'hidden')) continue;
+			?>
 			- <a href="#" class="option" <?php if ($category['visible']) echo 'style="font-weight: bold"'; ?> onclick="og.toggleAndBolden('<?php echo $genid . $category['name'] ?>', this);og.resizeMailDiv();"><?php echo lang($category['name'])?></a>
 		<?php } ?>
 	</div>
@@ -194,7 +209,7 @@ sig.actualHtmlSignature = '';
 	<div id="add_mail_attachments" style="display:none;">
  	<fieldset>
  	    <legend><?php echo lang('mail attachments')?></legend>
- 	    <div id="<?php echo $genid ?>attachments" style="max-height: 60px; max-width: 550px; margin-bottom:5px;"></div>
+ 	    <div id="<?php echo $genid ?>attachments" style="max-height: 60px; max-width: 550px; margin-bottom:5px; overflow:auto;"></div>
  	<a href="#" onclick="og.attachFromWorkspace('<?php echo $genid ?>')">
  		<?php  echo lang('attach from fengoffice') ?>		
  	</a>
@@ -219,6 +234,17 @@ sig.actualHtmlSignature = '';
 		icocls: '<?php echo $icon_class ?>'
 	});
 	<?php 
+			}
+		}
+		if (isset($_SESSION['existing_attachments'])) {
+			$existing_attachments = $_SESSION['existing_attachments'];
+			unset($_SESSION['existing_attachments']);
+			
+			foreach ($existing_attachments as $att) {?>
+				var obj = {object_id: <?php echo $att['object_id']?>, manager: '<?php echo $att['manager']?>', 
+					name: '<?php echo $att['name']?>', icocls: '<?php echo $att['ico']?>', mimeType: '<?php echo $att['type']?>'};
+				og.addMailAttachment(container, obj);
+		<?php
 			}
 		}
 	?>
@@ -263,12 +289,19 @@ sig.actualHtmlSignature = '';
 
     if (!$draft_edit) {
     	$body = array_var($mail_data, 'body');
-    	$idx = stripos($body, '<body');
-    	if (false) {
-    		$end_tag = strpos($body, '>', $idx) + 1;
-    		$html_body = utf8_substr($body, 0, $end_tag) . "<br />--<br />$orig_htmlsignature" . utf8_substr($body, $end_tag); 
+    	
+    	if (array_var($mail_data, 'is_new_mail')) {
+    		$html_body = $body . "<br /><br />$orig_htmlsignature";
+    		
     	} else {
-    		$html_body = "<br />--<br />$orig_htmlsignature" . $body;
+    		
+	    	$idx = stripos($body, '<body');
+	    	if (false) {
+	    		$end_tag = strpos($body, '>', $idx) + 1;
+	    		$html_body = utf8_substr($body, 0, $end_tag) . "<br /><br />$orig_htmlsignature" . utf8_substr($body, $end_tag); 
+	    	} else {
+	    		$html_body = "<br /><br />$orig_htmlsignature" . $body;
+	    	}
     	}
     } else $html_body = array_var($mail_data, 'body');
     
@@ -288,6 +321,9 @@ sig.actualHtmlSignature = '';
 <?php
 	$loc = user_config_option('localization');
 	if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
+	
+	$font_size = user_config_option('default_mail_font_size');
+
 ?>
 <script>
 var genid = '<?php echo $genid ?>';
@@ -299,11 +335,11 @@ var h = document.getElementById(genid+"ck_editor").offsetHeight;
 try {
 var editor = CKEDITOR.replace(genid+'ckeditor', {
 	height: (h) + 'px',
-	enterMode: CKEDITOR.ENTER_BR,
 	allowedContent: true,
-	shiftEnterMode: CKEDITOR.ENTER_P,
+	enterMode: CKEDITOR.ENTER_BR,
+	shiftEnterMode: CKEDITOR.ENTER_BR,
 	disableNativeSpellChecker: false,
-	resize_enabled: false, //this causes a bug when pasting info into Google Chrome and other browsers 
+	resize_enabled: false, //this causes a bug when pasting info into Google Chrome and other browsers
 	customConfig: '',
 	contentsCss: og.getUrl('mail', 'get_mail_css'),
 	language: '<?php echo $loc ?>',
@@ -346,13 +382,16 @@ var editor = CKEDITOR.replace(genid+'ckeditor', {
 			mb.oldMailBody = og.getMailBodyFromUI(genid);
 			ev.editor.resetDirty();
 			if (focus_editor) ev.editor.focus();
+            ev.editor.document.getBody().setStyles({'font-size':+ <?php echo $font_size ?>+'px'});
+			
 		},
 		change: function(ev) {
 			var p = og.getParentContentPanel(Ext.get(genid+'ckeditor'));
 			Ext.getCmp(p.id).setPreventClose(ev.editor.checkDirty());
 		}
 	},
-	removePlugins: 'scayt,liststyle,tabletools,contextmenu',
+	fillEmptyBlocks: false,
+	removePlugins: 'scayt,liststyle,magicline,contextmenu,tabletools',
 	entities_additional : '#39,#336,#337,#368,#369'
 });
 } catch (e) {
@@ -409,7 +448,7 @@ if (!editor || !focus_editor) Ext.get('auto_complete_input_'+genid+'mailTo').foc
 og.resetClassButton(genid);
 
 Ext.onReady(function() {
-	og.openLink(og.getUrl('mail', 'get_allowed_addresses'), {
+	og.openLink(og.getUrl('contact', 'get_allowed_addresses'), {
 		post: {
 			max: 1000
 		},
@@ -426,6 +465,17 @@ Ext.onReady(function() {
 	});
 });
 
+og.saveDraftEmail = function(genid){
+	var prev_action = document.frmMail.action;
+	document.frmMail.action = og.getUrl('mail', 'save_draft', {ajax:'true'});
+
+	var form = document.getElementById(genid + 'form');
+	if (form) form.onsubmit();
+
+	document.frmMail.action = prev_action;
+};
+
+
 og.checkAttach = function() {
 	var attach = $("#<?php echo $genid;?>attachments").children().length;
 	var editor = og.getCkEditorInstance(genid + 'ckeditor');	
@@ -436,17 +486,16 @@ og.checkAttach = function() {
 	if(config && !attach && ((text.indexOf(lang('attach')) !== -1 && (text.indexOf(lang('attach')) < originalMail || originalMail == -1)) || (text.indexOf(lang('attach')) !== -1 && (text.indexOf(lang('attach')) < originalMail || originalMail == -1)))){
 		var conf = confirm(lang("confirm_mail_without_attach"));
 		if (conf==true){
-			og.setHfValue('<?php echo $genid;?>', 'sendBtnClick', 'true');	
-			og.setHfValue('<?php echo $genid;?>', 'isDraft', 'false');
 			og.stopAutosave('<?php echo $genid;?>');
+			return true;
 		}else{
-			og.setHfValue('<?php echo $genid;?>', 'sendBtnClick', 'false');	
+			return false;
 		}
 	}else{
-		og.setHfValue('<?php echo $genid;?>', 'sendBtnClick', 'true');	
-		og.setHfValue('<?php echo $genid;?>', 'isDraft', 'false');
 		og.stopAutosave('<?php echo $genid;?>');
+		return true;
 	}
+	return true;
 }
 
 og.checkFrom = function() {
@@ -475,5 +524,7 @@ og.checkFrom = function() {
 	}
 }
 
+<?php if (!$draft_edit) { ?>
 og.changeSignature(genid, $("#"+genid+"mailAccount").val());
+<?php } ?>
 </script>

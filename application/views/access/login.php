@@ -1,5 +1,7 @@
 <?php 
-set_page_title(lang('login'));
+$page_title = lang('login');
+Hook::fire('login_page_title', null, $page_title);
+set_page_title($page_title);
 add_javascript_to_page('jquery/jquery.js');
 
 $css = array();
@@ -50,17 +52,22 @@ foreach ($css as $c) {
 	
 <?php tpl_display(get_template_path('form_errors')) ?>
 
+<?php $null=null; Hook::fire('login_form_before_form', $null, $null)?>
+
 <div class="form-container">
+
+<?php $null=null; Hook::fire('login_form_before_inputs', $null, $null)?>
+
   <div class="input">
-    <label for="loginUsername"><?php echo lang('email or username') ?>:</label>
+    <label for="loginUsername"><?php echo lang('email or username') ?></label>
     <?php echo text_field('login[username]', array_var($login_data, 'username'), array('id' => 'loginUsername')) ?>
   </div>
   <div class="input">
-    <label for="loginPassword"><?php echo lang('password') ?>:</label>
+    <label for="loginPassword"><?php echo lang('password') ?></label>
     <?php echo password_field('login[password]', null, array('id' => 'loginPassword')) ?>
   </div>
   <div id="optionsDiv" class="input" style="display:none">
-	<label><?php echo lang('language')?>:</label>
+	<label><?php echo lang('language')?></label>
   	<div style="float:right"><?php
   		$handler = new LocalizationConfigHandler();
   		echo $handler->render('configOptionSelect', array('text' => lang('last language'), 'value' => 'Default'));
@@ -91,8 +98,14 @@ foreach ($css as $c) {
 		</div>
 	</div>
   	
+  	<?php $null=null; Hook::fire('login_form_after_inputs', $null, $null)?>
+  	
 </div>
+
+<?php $null=null; Hook::fire('login_form_after_form', $null, $null)?>
+
 </form>
+
 
 </div>
 

@@ -184,31 +184,35 @@ final class acInstallation {
 		} // if
 		
 		//Execute plugin sql files
-		$handle = opendir(get_template_path('sql/plugins'));
-		while ($file = readdir($handle)) {
-			if ($file != 'dummy.txt' && is_file(get_template_path("sql/plugins/$file"))) {
-				$total_queries = 0;
-				$executed_queries = 0;
-				if($this->executeMultipleQueries(tpl_fetch(get_template_path("sql/plugins/$file")), $total_queries, $executed_queries)) {
-					$this->printMessage("Plugin executed: $file. (Executed queries: $executed_queries)");
-				} else {
-					return $this->breakExecution('Failed to execute plugin: '. $file . '. MySQL said: ' . mysql_error($this->database_connection));
-				} // if
+		$sql_plugins_dir = get_template_path('sql/plugins');
+		if (is_dir($sql_plugins_dir)) {
+			$handle = opendir($sql_plugins_dir);
+			while ($file = readdir($handle)) {
+				if ($file != 'dummy.txt' && is_file(get_template_path("sql/plugins/$file"))) {
+					$total_queries = 0;
+					$executed_queries = 0;
+					if($this->executeMultipleQueries(tpl_fetch(get_template_path("sql/plugins/$file")), $total_queries, $executed_queries)) {
+						$this->printMessage("Plugin executed: $file. (Executed queries: $executed_queries)");
+					} else {
+						return $this->breakExecution('Failed to execute plugin: '. $file . '. MySQL said: ' . mysql_error($this->database_connection));
+					} // if
+				}
 			}
+			closedir($handle);
 		}
-		closedir($handle);
-		
 		
 		//Execute plugin php files
-		$handle = opendir(get_template_path('php/plugins'));
-		while ($file = readdir($handle)) {
-			$file_path = get_template_path("php/plugins/$file");
-			if ($file != 'dummy.txt' && is_file($file_path)) {
-				include $file_path;
+		$php_plugins_dir = get_template_path('php/plugins');
+		if (is_dir($php_plugins_dir)) {
+			$handle = opendir($php_plugins_dir);
+			while ($file = readdir($handle)) {
+				$file_path = get_template_path("php/plugins/$file");
+				if ($file != 'dummy.txt' && is_file($file_path)) {
+					include $file_path;
+				}
 			}
+			closedir($handle);
 		}
-		closedir($handle);
-		
 
 		$this->installPlugins($plugins);
 		
@@ -279,7 +283,7 @@ final class acInstallation {
 		$mysql_version = mysql_get_server_info($this->database_connection);
 		
 		// check if mysql is >= mysql 5.6 
-		if($mysql_version && version_compare($mysql_version, '5.6', '>=')){
+		if($mysql_version && (version_compare($mysql_version, '5.6', '>=') || strpos($mysql_version, 'MariaDB') !== false)){
 			//mysql 5.6 have_innodb is deprecated
 			if($res = mysql_query("SHOW ENGINES", $this->database_connection)){
 				while($rows = mysql_fetch_assoc($res)) {
@@ -702,7 +706,24 @@ final class acInstallation {
 						
 					$install_script = INSTALLATION_PATH."/plugins/$name/install/install.php" ;
 					if ( file_exists($install_script) ){
+						$queries = array();
+					
 						include_once $install_script;
+						$function_name = $name."_get_additional_install_queries";
+						if (function_exists($function_name)) {
+							$queries = $function_name($this->table_prefix);
+						}
+					
+						$total_queries = 0;
+						$executed_queries = 0;
+						if($this->executeMultipleQueries(implode("\n", $queries), $total_queries, $executed_queries)) {
+							$this->printMessage("File install.php processed for plugin $name ");
+						}else{
+							echo mysql_error();
+							$this->breakExecution("Error while executing install.php for plugin '$name'.".mysql_error());
+							DB::rollback();
+							return false;
+						}
 					}
 				}
 			}

@@ -5,11 +5,20 @@ require_javascript("og/modules/addTaskForm.js");
  * This section builds the actions menu 
  */
 if (isset($task_list) && $task_list instanceof ProjectTask) {
+	$tz_offset = Timezones::getTimezoneOffsetToApply($task_list);
+	$tz_offset = $tz_offset/3600;
+	
 	if (!$task_list->isTrashed()){
-		if (!$task_list->isCompleted() && $task_list->canEdit(logged_user())) {
+		if (!$task_list->isCompleted() && ($task_list->canEdit(logged_user()) || $task_list->getAssignedTo() == logged_user())) {
 			add_page_action(lang('do complete'), $task_list->getCompleteUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId())))) , 'ico-complete', null, null, true);
+			
+			if($task_list->isMarkedAsStarted()){
+			    add_page_action(lang('unmark as started this task'), $task_list->getChangeMarkStartedUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId())))) , 'ico-undo', null, null, true);			    
+			}else{
+			    add_page_action(lang('mark as started this task'), $task_list->getChangeMarkStartedUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId())))) , 'ico-start', null, null, true);
+			}
 		} // if
-		if ($task_list->isCompleted() && $task_list->canEdit(logged_user())) {
+		if ($task_list->isCompleted() && ($task_list->canEdit(logged_user()) || $task_list->getAssignedTo() == logged_user())) {
 			add_page_action(lang('open task'), $task_list->getOpenUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId())))) , 'ico-reopen', null, null, true);
 		} // if
 
@@ -32,8 +41,12 @@ if (isset($task_list) && $task_list instanceof ProjectTask) {
 	} // if
 
 	if (!$task_list->isTrashed() && !logged_user()->isGuest()){
+		
+		$ret=null; Hook::fire('view_task_actions', $task_list, $ret);
+		
 		if ($task_list->isRepetitive()) {
-			add_page_action(lang('generate repetitition'), get_url("task", "generate_new_repetitive_instance", array("id" => $task_list->getId())), 'ico-recurrent', null, null, true);
+		    if ($can_manage_repetitive_properties_of_tasks)
+			 add_page_action(lang('generate repetitition'), get_url("task", "generate_new_repetitive_instance", array("id" => $task_list->getId())), 'ico-recurrent', null, null, true);
 		} else {
 			add_page_action(lang('copy task'), get_url("task", "copy_task", array("id" => $task_list->getId())), 'ico-copy');
 		}
@@ -98,7 +111,7 @@ if ($task_list->getAssignedTo()){
 		. clean($task_list->getAssignedBy()->getObjectName()) . '</a>';
 		if ($task_list->getAssignedOn() instanceof DateTimeValue) {
 			$description .= ' <span style="font-weight:bold">' . lang("on") . ': </span>'
-			. format_date($task_list->getAssignedOn());
+			. format_date($task_list->getAssignedOn(), null, $tz_offset);
 		}
 	}
 }

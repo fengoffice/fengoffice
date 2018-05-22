@@ -79,7 +79,9 @@ class WebpageController extends ApplicationController {
 				//link it!
 				$object_controller = new ObjectController();
 				$object_controller->add_subscribers($webpage);
-				$object_controller->add_to_members($webpage, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($webpage, $member_ids);
+				}
 				$object_controller->link_to_new_object($webpage);
 				$object_controller->add_subscribers($webpage);
 				$object_controller->add_custom_properties($webpage);
@@ -163,7 +165,9 @@ class WebpageController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($webpage, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($webpage, $member_ids);
+				}
 				$object_controller->link_to_new_object($webpage);
 				$object_controller->add_subscribers($webpage);
 				$object_controller->add_custom_properties($webpage);
@@ -245,6 +249,17 @@ class WebpageController extends ApplicationController {
 		$order = array_var($_GET, 'sort');
 		if ($order == "updatedOn" || $order == "updated" || $order == "date" || $order == "dateUpdated") $order = "updated_on";
 		
+		$dim_order = null;
+		if (str_starts_with($order, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order = 'dimensionOrder';
+		}
+		$cp_order = null;
+		if (str_starts_with($order, "cp_")) {
+			$cp_order = substr($order, 3);
+			$order = 'customProp';
+		}
+		
 		$order_dir = array_var($_GET, 'dir');
 		$page = (integer) ($start / $limit) + 1;
 		$hide_private = !logged_user()->isMemberOfOwnerCompany();
@@ -254,7 +269,7 @@ class WebpageController extends ApplicationController {
 			$succ = 0; $err = 0;
 			foreach ($ids as $id) {
 				$web_page = ProjectWebpages::findById($id);
-				if (isset($web_page) && $web_page->canDelete(logged_user())) {
+				if ($web_page instanceof ProjectWebpage && $web_page->canDelete(logged_user())) {
 					try{
 						DB::beginWork();
 						$web_page->trash();
@@ -279,7 +294,8 @@ class WebpageController extends ApplicationController {
 			$ids = explode(',', array_var($_GET, 'ids'));
 			$succ = 0; $err = 0;
 				foreach ($ids as $id) {
-				$webpage = ProjectWebpages::findById($id);
+					$webpage = ProjectWebpages::findById($id);
+					if (!$webpage instanceof ProjectWebpage) continue;
 					try {
 						$webpage->setIsRead(logged_user()->getId(),true);
 						$succ++;
@@ -295,7 +311,8 @@ class WebpageController extends ApplicationController {
 			$ids = explode(',', array_var($_GET, 'ids'));
 			$succ = 0; $err = 0;
 				foreach ($ids as $id) {
-				$webpage = ProjectWebpages::findById($id);
+					$webpage = ProjectWebpages::findById($id);
+					if (!$webpage instanceof ProjectWebpage) continue;
 					try {
 						$webpage->setIsRead(logged_user()->getId(),false);
 						$succ++;
@@ -312,7 +329,7 @@ class WebpageController extends ApplicationController {
 			$succ = 0; $err = 0;
 			foreach ($ids as $id) {
 				$web_page = ProjectWebpages::findById($id);
-				if (isset($web_page) && $web_page->canEdit(logged_user())) {
+				if ($web_page instanceof ProjectWebpage && $web_page->canEdit(logged_user())) {
 					try{
 						DB::beginWork();
 						$web_page->archive();
@@ -345,6 +362,8 @@ class WebpageController extends ApplicationController {
 			"limit" => $limit,
 			"order" => $order , 
 			"order_dir" => $order_dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			"extra_conditions" => $extra_conditions,
 			'count_results' => false,
 			'only_count_results' => $only_count_result
@@ -355,26 +374,28 @@ class WebpageController extends ApplicationController {
 			"start" => $start,
 			"webpages" => array()
 		);
+		foreach ($res as $k => $v) {
+			if ($k != 'total' && $k != 'objects') $object[$k] = $v;
+		}
+		
 		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(ProjectWebpages::instance()->getObjectTypeId());
 		if (isset($res->objects)) {
 			$index = 0;
 			$ids = array();
 			foreach ($res->objects as $w) {
 				$ids[] = $w->getId();
-				$object["webpages"][$index] = array(
+				
+				$general_info = $w->getObject()->getArrayInfo();
+				
+				$info = array(
 					"ix" => $index,
-					"id" => $w->getId(),
-					"object_id" => $w->getObjectId(),
-					"ot_id" => $w->getObjectTypeId(),
-					"name" => $w->getObjectName(),
 					"description" => $w->getDescription(),
-					"url" => $w->getUrl(),
-					"updatedOn" => $w->getUpdatedOn() instanceof DateTimeValue ? ($w->getUpdatedOn()->isToday() ? format_time($w->getUpdatedOn()) : format_datetime($w->getUpdatedOn())) : '',
-					"updatedOn_today" => $w->getUpdatedOn() instanceof DateTimeValue ? $w->getUpdatedOn()->isToday() : 0,
-					"updatedBy" => $w->getUpdatedByDisplayName(),
-					"updatedById" => $w->getUpdatedById(),
+					"link_url" => $w->getUrl(),
 					"memPath" => json_encode($w->getMembersIdsToDisplayPath()),
 				);
+				$info = array_merge($info, $general_info);
+				
+				$object["webpages"][$index] = $info;
 				
 				foreach ($custom_properties as $cp) {
 					$object["webpages"][$index]['cp_'.$cp->getId()] = get_custom_property_value_for_listing($cp, $w);

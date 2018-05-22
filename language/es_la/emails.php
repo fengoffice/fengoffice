@@ -146,6 +146,8 @@
 	'deleted notification milestone desc' => '{1} ha enviado a la papelera el hito:',
 	'deleted notification email' => 'Correo enviado a la papelera: {0}',
 	'deleted notification email desc' => '{1} ha enviado a la papelera el correo:',
+	'deleted notification mail' => 'Correo enviado a la papelera: {0}',
+	'deleted notification mail desc' => '{1} ha enviado a la papelera el correo:',
 	'deleted notification comment' => 'Enviado a la papelera comentario de {1} en {2}: {0}',
 	'deleted notification comment desc' => '{1} ha enviado a la papelera el comentario de {3} en {2}:',
 

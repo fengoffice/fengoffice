@@ -84,7 +84,7 @@ class AccountController extends ApplicationController {
 	          'username'      => $user->getUsername(),
 	          'email'         => $user->getEmailAddress(),
 	          'display_name'  => $user->getObjectName(),
-	          'timezone'      => $user->getTimezone(),
+	          'user_timezone_id' => $user->getUserTimezoneId(),
 	          'company_id'    => $user->getCompanyId(),
 	          'is_admin'      => $user->isAdministrator(),
 			  'type'          => $user->getUserType(),
@@ -227,7 +227,155 @@ class AccountController extends ApplicationController {
 			} // try
 		} // if
 	} // edit_password
+	
+	
+	/**
+	 * Edit logged user external tokens
+	 *
+	 * @access public
+	 * @param void
+	 * @return null
+	 */
+	function edit_external_tokens() {
+	    
+	    $user_id = array_var($_GET, 'user_id');
+	    $user = Contacts::findById($user_id);
 
+	    if(!($user instanceof Contact && $user->isUser()) || $user->getDisabled()) {
+	        flash_error(lang('user dnx'));
+	        ajx_current("empty");
+	        return;
+	    } // if
+	    
+	    if(!$user->canChangeExternalToken(logged_user())) {
+	        flash_error(lang('no access permissions'));
+	        ajx_current("empty");
+	        return;
+	    } // if
+	    
+	    tpl_assign('redirect_to', null);
+	    
+	    $token_data = array_var($_REQUEST, 'token_data');
+	    tpl_assign('user', $user);
+	    $external_tokens = ContactExternalTokens::instance()->findAll(array('conditions' =>  "`contact_id` = ".$user_id ));
+	    
+	    tpl_assign('external_tokens', $external_tokens);
+	    
+	    if(is_array($token_data)) {
+
+	        $external_key = array_var($token_data, 'external_key');
+	        $external_name = array_var($token_data, 'external_name');
+	        $token_type = array_var($token_data, 'type');
+	        $action = array_var($token_data, 'action');
+	        $token_id = array_var($token_data, 'token_id');
+	        
+	        try {
+	            
+	            if (isset($action) && $action == 'edit'){
+	                $contact_external_token = ContactExternalTokens::instance()->findById($token_id);	                
+	                $contact_external_token->setType($token_type);
+	                $contact_external_token->setExternalKey($external_key);
+	                $contact_external_token->setExternalName($external_name);
+	                $contact_external_token->save();
+	                
+	                ApplicationLogs::createLog($user, ApplicationLogs::ACTION_EDIT);
+	                evt_add("reload current panel");
+	                flash_success(lang('success edited token'));
+	                
+	            }else if(isset($action) && $action == 'resetToken'){
+	                
+
+	                $contact_external_token = ContactExternalTokens::instance()->findById($token_id);
+	                
+	                $new_token = str_shuffle("abcdefghijklmnopqrstuvwxyz0123456789".uniqid());	                
+	                $contact_external_token->setToken($new_token);
+	                $contact_external_token->save();
+	                ajx_extra_data(array('token' => $new_token));	                
+	                ApplicationLogs::createLog($user, ApplicationLogs::ACTION_EDIT);
+	                ajx_current("reload");	                
+	                flash_success(lang('success edited token'));
+	                
+	            }else if($action == 'add'){
+	                //create new token
+	                $new_token = str_shuffle("abcdefghijklmnopqrstuvwxyz0123456789".uniqid());	                
+	                $contact_external_token = new ContactExternalToken();
+	                $contact_external_token->setContactId($user_id);
+	                $contact_external_token->setToken($new_token);
+	                $contact_external_token->setType($token_type);
+	                $contact_external_token->setExternalKey($external_key);
+	                $contact_external_token->setExternalName($external_name);
+	                $contact_external_token->setCreatedDate(DateTimeValueLib::now());
+	                //$contact_external_token->setExpiredDate(DateTimeValueLib::now());
+	                $contact_external_token->save();
+	                
+	                ApplicationLogs::createLog($user, ApplicationLogs::ACTION_ADD);
+	                
+	                evt_add("reload current panel");
+	                flash_success(lang('success created token'));	                
+	            }
+	            
+	            
+	        } catch(Exception $e) {
+	            ajx_current("empty");
+	            flash_error($e->getMessage());
+	        } // try
+	    } // if
+	} // edit_external_token
+
+	/**
+	 * Delete external token
+	 *
+	 * @param $id
+	 * @return null
+	 */	
+	function delete_external_token() {
+	    $id = array_var($_GET, 'token_id');
+	    $user = logged_user();
+	    
+	    if(!isset($id)){
+	        flash_error(lang('user dnx'));	        
+	        return;
+	    } //if
+	    
+	    if(!($user instanceof Contact && $user->isUser()) || $user->getDisabled()) {
+	        flash_error(lang('user dnx'));
+	        ajx_current("empty");
+	        return;
+	    } // if
+	    
+	    if(!$user->canChangeExternalToken(logged_user())) {
+	        flash_error(lang('no access permissions'));
+	        ajx_current("empty");
+	        return;
+	    } // if
+	    
+	    $token = ContactExternalTokens::instance()->findById($id);
+	    
+	    
+	    if (isset($token)){
+	       
+	       try{    
+	            DB::beginWork();
+	            
+	            $token->delete();
+	            
+	            DB::commit();
+	            
+	            ApplicationLogs::createLog($user, ApplicationLogs::ACTION_DELETE);
+	            flash_success(lang('success deleted token'));
+	            ajx_current("reload");	            
+	        
+	       }catch(Exception $e) {
+	        DB::rollback();
+	        flash_error(lang('error deleted token'));
+	        ajx_current("empty");
+	       } // try
+	    }else{
+	        ajx_current("empty");
+	    }	    
+	    
+	}
+	
 	/**
 	 * Show update permissions page
 	 *
@@ -265,7 +413,7 @@ class AccountController extends ApplicationController {
 			foreach ($module_permissions as $mp) {
 				$module_permissions_info[$mp->getTabPanelId()] = 1;
 			}
-			$all_modules = TabPanels::findAll(array("conditions" => "`enabled` = 1", "order" => "ordering"));
+			$all_modules = TabPanels::findAll(array("conditions" => "`enabled` = 1 AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))", "order" => "ordering"));
 			$all_modules_info = array();
 			foreach ($all_modules as $module) {
 				$all_modules_info[] = array('id' => $module->getId(), 'name' => lang($module->getTitle()), 'ot' => $module->getObjectTypeId());
@@ -571,6 +719,9 @@ class AccountController extends ApplicationController {
 		try {
 			DB::beginWork();
 			$user->setDisabled(false);
+			if (trim($user->getTokenDisabled()) != "" && trim($user->getToken()) == "") {
+				$user->setToken($user->getTokenDisabled());
+			}
 			$user->unarchive();
 			$ret = null ; 
 			Hook::fire("user_restored", $user, $ret );			
@@ -589,13 +740,87 @@ class AccountController extends ApplicationController {
 	
 	
 	function set_timezone() {
-		$tz = array_var($_REQUEST, 'tz');
-		if ($tz != logged_user()->getTimezone()) {
-			$sql = "UPDATE ".TABLE_PREFIX."contacts SET timezone = '".$tz."'
-			WHERE object_id = ".logged_user()->getId();
-			DB::execute($sql);
+		$tz_name = array_var($_REQUEST, 'tz_name');
+		$tz_offset = array_var($_REQUEST, 'tz_offset');
+		
+		$zone_id = null;
+		$zone = Timezones::getTimezoneFromName($tz_name);
+		if (is_array($zone)) {
+			$zone_id = $zone['id'];
 		}
+		
+		$user_tz_hours = logged_user()->getUserTimezoneValue() / 3600;
+		
+		// change user timezone id
+		if ($zone_id && ($zone_id != logged_user()->getTimezoneId() || $tz_offset != $user_tz_hours)) {
+			$sql = "UPDATE ".TABLE_PREFIX."contacts SET 
+						user_timezone_id = '$zone_id',
+						timezone = '$tz_offset'
+					WHERE object_id = ".logged_user()->getId();
+			
+			DB::execute($sql);
+			
+			// @TODO: When DST has changed we have to create a reminder to the logged user and the administrator so they can change the timezone configuration.
+			/*
+			if ($zone['has_dst']) {
+				if ($zone['using_dst'] && ($tz_offset * 3600) == $zone['gmt_offset']) {
+					Timezones::updateUsingDst($zone['id'], '0');
+				}
+				if (!$zone['using_dst'] && ($tz_offset * 3600) == $zone['gmt_dst_offset']) {
+					Timezones::updateUsingDst($zone['id'], '1');
+				}
+			}
+			*/
+		}
+		
+		
 		ajx_current("empty");
+	}
+	
+	
+	function get_country_timezones() {
+		$ccode = array_var($_REQUEST, 'code');
+		$zones = Timezones::getTimezonesByCountryCode($ccode);
+		
+		$zones_data = array();
+		foreach ($zones as $z) {
+			$zones_data[$z['id']] = Timezones::getFormattedDescription($z);
+		}
+		
+		ajx_current("empty");
+		ajx_extra_data(array('timezones' => $zones_data));
+	}
+	
+	function add_token() {
+        $user_id = array_var($_REQUEST, 'user_id');
+        $user = Contacts::findById($user_id);
+	    if(!($user instanceof Contact && $user->isUser()) || $user->getDisabled()) {
+	        flash_error(lang('user dnx'));
+	        ajx_current("empty");
+	        return;
+	    } // if
+	    
+	    if (!can_manage_configuration(logged_user())) {
+	        flash_error("no access permissions");
+	        return;
+	    }
+	    
+	    if (logged_user()->isGuest()) {
+	        flash_error(lang('no access permissions'));
+	        ajx_current('empty');
+	        return;
+	    }
+	    $this->setTemplate("add_token");
+	    tpl_assign('user', $user);
+	    tpl_assign('modal', true);
+	    $action = array_var($_REQUEST, 'action');
+	    if ($action){
+	        tpl_assign('action', 'edit');
+	        $token_id = array_var($_REQUEST, 'token_id');	        
+	        $token_obj = ContactExternalTokens::instance()->findById($token_id);
+	        tpl_assign('token', $token_obj);
+	    }
+	    
 	}
 
 } // AccountController

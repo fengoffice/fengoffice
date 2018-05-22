@@ -376,6 +376,17 @@ final class DB {
 	static function getSQLLog() {
 		return self::$sql_log;
 	} // getSQLLog
+	
+	/**
+	 * Return cleaned string for doing full text search
+	 *
+	 * @access public
+	 * @param string $string
+	 * @return string
+	 */
+	static function cleanStringToFullSearch($string) {
+	    return str_replace( array( '-', '+', '~' , '(', ')','<','>','*','"' ), ' ', $string);
+	}
 
 } // DB
 

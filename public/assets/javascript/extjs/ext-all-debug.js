@@ -1226,7 +1226,7 @@ Ext.util.Observable.prototype = {
     
     purgeListeners : function(){
         for(var evt in this.events){
-            if(typeof this.events[evt] == "object"){
+            if(typeof this.events[evt] == "object" && typeof(this.events[evt].clearListeners) == 'function'){
                  this.events[evt].clearListeners();
             }
         }

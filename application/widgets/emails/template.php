@@ -14,7 +14,7 @@
 			$style = '';
 			$row_cls = "";
 			foreach ($emails as $k => $email): /* @var $email MailContent */
-				$crumbOptions = json_encode($email->getMembersToDisplayPath());
+				$crumbOptions = json_encode($email->getMembersIdsToDisplayPath());
 				if($crumbOptions == ""){
 					$crumbOptions = "{}";
 				}

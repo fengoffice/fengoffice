@@ -299,6 +299,17 @@
       return $this->setColumnValue('billing_id', $value);
     } // setBillingId() 
     
+    
+    
+    function getRateCurrencyId() {
+      return $this->getColumnValue('rate_currency_id');
+    }
+    
+    function setRateCurrencyId($value) {
+      return $this->setColumnValue('rate_currency_id', $value);
+    }
+    
+    
     /**
     * Return manager instance
     *

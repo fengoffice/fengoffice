@@ -17,13 +17,8 @@ function workspaces_custom_reports_additional_columns($args, &$ret) {
 	$dimensions = Dimensions::findAll ( array("conditions" => "code IN ('workspaces','tags')") );
 	foreach ($dimensions as $dimension) {
 		if (in_array($dimension->getId(), config_option('enabled_dimensions'))) {
-			$doptions = $dimension->getOptions(true);
 			
-			if( $doptions && isset($doptions->useLangs) && $doptions->useLangs ) {
-				$name = lang($dimension->getCode());
-			} else {
-				$name = $dimension->getName();
-			}
+			$name = $dimension->getName();
 			
 			$ret[] =  array('id' => 'dim_'.$dimension->getId(), 'name' => $name, 'type' => DATA_TYPE_STRING);
 		}
@@ -48,14 +43,6 @@ function workspaces_total_tasks_times_csv_column_values($ts, &$new_values) {
 		}
 		$new_values[] = $str;
 	}
-}
-
-function workspaces_include_tasks_template($ignored, &$more_content_templates) {
-	$more_content_templates[] = array(
-		'template' => 'groupby',
-		'controller' => 'task',
-		'plugin' => 'workspaces'
-	);
 }
 
 
@@ -84,54 +71,15 @@ function workspaces_quickadd_extra_fields($parameters) {
 	}
 }
 
-function workspaces_render_widget_member_information(Member $member, &$prop_html="") {
-	$ws_ot = ObjectTypes::findByName('workspace');
-	if ($member->getObjectTypeId() == $ws_ot->getId()) {
-		
-		$ws = Workspaces::getWorkspaceById($member->getObjectId());
-		if ($ws instanceof Workspace && $ws->getDescription() != "" && $ws->getColumnValue('show_description_in_overview')) {
-			$prop_html .= '<div style="margin-bottom:5px;">'.escape_html_whitespace(convert_to_links(clean($ws->getDescription()))).'</div>';
-		}
-		
-	}
-}
 
-function workspaces_render_administration_dimension_icons($ignored, &$icons){
-	if (logged_user() instanceof Contact && can_manage_dimension_members(logged_user())) {
-		$enabled_dimensions = config_option("enabled_dimensions");
-		$dimension = Dimensions::instance()->findByCode('workspaces');
-		if (in_array($dimension->getId(), $enabled_dimensions)) {
-			$icons[] = array(
-				'ico' => 'ico-large-workspace',
-				'url' => get_url('dimension', 'list_members', array('dim' => $dimension->getId())),
-				'name' => lang($dimension->getCode()),
-				'extra' => '',
-			);
-		}
-		
-		$dimension = Dimensions::instance()->findByCode('tags');
-		if (in_array($dimension->getId(), $enabled_dimensions)) {
-			$icons[] = array(
-				'ico' => 'ico-large-tags',
-				'url' => get_url('dimension', 'list_members', array('dim' => $dimension->getId())),
-				'name' => lang($dimension->getCode()),
-				'extra' => '',
-			);
-		}
-	}
-}
+
 
 function workspaces_more_panel_dimension_links($ignored, &$links) {
 	$dimension = Dimensions::findByCode('workspaces');
 	$enabled_dimensions = config_option("enabled_dimensions");
 	if (!in_array($dimension->getId(), $enabled_dimensions)) return;
 	
-	$dimension_options = $dimension->getOptions(true);
-	if($dimension_options && isset($dimension_options->useLangs) && $dimension_options->useLangs ) {
-		$name = lang($dimension->getCode());
-	} else {
-		$name = $dimension->getName();
-	}
+	$name = $dimension->getName();
 	
 	$step = Plugins::instance()->isActivePlugin('crpm') ? 5 : 4;
 	
@@ -180,6 +128,26 @@ function workspaces_page_rendered() {
 		}
 	}
 
+}
+
+function workspaces_render_widget_member_information(Member $member, &$prop_html="") {
+	$ws_ot = ObjectTypes::findByName('workspace');
+
+	if ($member->getObjectTypeId() == $ws_ot->getId()) {
+
+		if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+			$desc_custom_prop = MemberCustomProperties::getCustomPropertyByCode($member->getObjectTypeId(), 'description_special');
+
+			if($desc_custom_prop instanceof MemberCustomProperty && !$desc_custom_prop->getIsDisabled()){
+				return;
+			}
+		}
+
+		$ws = Workspaces::getWorkspaceById($member->getObjectId());
+		if ($ws instanceof Workspace && trim($member->getDescription()) != "" && $ws->getColumnValue('show_description_in_overview')) {
+			$prop_html .= '<div style="margin-bottom:5px;">'.escape_html_whitespace(convert_to_links(clean($member->getDescription()))).'</div>';
+		}
+	}
 }
 
 function workspaces_after_user_add($object, $ignored) {

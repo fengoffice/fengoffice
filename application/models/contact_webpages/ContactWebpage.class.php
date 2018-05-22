@@ -43,6 +43,42 @@
     	}
     } // editWebpageURL
     
+    
+    /**
+     * Builds a correct url from the url field, e.g.: adds the "http://" part if the original url doesn't have the scheme.
+     * @return string
+     */
+    function getFixedUrl() {
+    	// parse original url
+    	$parsed_url = parse_url($this->getUrl());
+    	
+    	// scheme
+    	$url_string = array_var($parsed_url, 'scheme', 'http') . "://";
+    	
+    	// put host and port if they were parsed
+    	if (isset($parsed_url['host'])) {
+    		$url_string .= $parsed_url['host'];
+    		if (isset($parsed_url['port'])) {
+    			$url_string .= ":" . $parsed_url['port'];
+    		}
+    	}
+    	
+    	// add the path to the file or folder, if defined
+    	$url_string .= array_var($parsed_url, 'path', '');
+    	
+    	// add the query parameters
+    	if (isset($parsed_url['query'])) {
+    		$url_string .= "?" . $parsed_url['query'];
+    	}
+    	
+    	// add the anchor if it is defined 
+    	if (isset($parsed_url['fragment'])) {
+    		$url_string .= "#" . $parsed_url['fragment'];
+    	}
+    	
+    	return $url_string;
+    }
+    
   } // ContactWebpage 
 
 ?>

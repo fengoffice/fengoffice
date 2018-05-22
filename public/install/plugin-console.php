@@ -1,6 +1,6 @@
 <?php
 $argv or die("Are you using console ? \n");
-$usage = "USAGE: plugin-console.php COMMAND [list, install, activate, install_activate, deactivate, update, update_all] PLUGIN_NAME \n" ;
+$usage = "USAGE: plugin-console.php COMMAND [list, list_all, install, activate, install_activate, deactivate, update, update_all] PLUGIN_NAME \n" ;
 chdir(dirname(__FILE__) . '/../..');
 define("CONSOLE_MODE", true);
 define("PLUGIN_MANAGER_CONSOLE", true );
@@ -28,6 +28,21 @@ try {
 	$plugins = $ctrl->index();
 	
 	if ($command == 'list') {
+		echo "\nDISPLAYING ONLY INSTALLED PLUGINS (to display all plugins use 'list_all')\n\n";
+		foreach ($plugins as $plg){
+			/* @var $plg Plugin */
+			if ($plg->isInstalled()) {
+				echo "---------------------------------------------\n";
+				echo "NAME: \t\t".$plg->getSystemName() ."\n" ;
+				echo "VERSION: \t".$plg->getVersion() ."\n"  ;
+				echo "STATUS: \t".( $plg->isActive() ? 'Activated ':'Inactive ' ) ."\n";
+		
+				if ( $plg->updateAvailable() ) {
+					echo "*** There is a new version of this plugin *** \n";
+				}
+			}
+		}
+	} else if ($command == 'list_all') {
 		foreach ($plugins as $plg){
 			/* @var $plg Plugin */
 			echo "---------------------------------------------\n";

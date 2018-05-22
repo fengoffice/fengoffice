@@ -203,6 +203,8 @@ return array(
     'deleted notification milestone desc' => 'trash sent to the milestone:',
     'deleted notification email' => 'Email sent to trash: {0}',
     'deleted notification email desc' => 'trash sent to the email:',
+    'deleted notification mail' => 'Email sent to trash: {0}',
+    'deleted notification mail desc' => 'trash sent to the email:',
     'deleted notification comment' => 'Sent to the trash comment {1} on {2}: {0}',
     'deleted notification comment desc' => 'Sent to the trash {1} comment by {3} on {2}:',
     

@@ -41,9 +41,10 @@ class Net_IMAP extends Net_IMAPProtocol
      * @param int    $port           The port to connect to.
      * @param bool   $enableSTARTTLS Enable STARTTLS support
      */
-    function Net_IMAP(&$ret = null, $host = 'localhost', $port = 143, $enableSTARTTLS = true)
+    function Net_IMAP(&$ret = null, $host = 'localhost', $port = 143, $enableSTARTTLS = true, $options = null)
     {
         $this->Net_IMAPProtocol();
+        if ($options) $this->setStreamContextOptions($options);
         $ret = $this->connect($host, $port, $enableSTARTTLS);
     }
 

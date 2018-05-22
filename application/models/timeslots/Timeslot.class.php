@@ -18,6 +18,15 @@ class Timeslot extends BaseTimeslot {
 	
 	protected $rel_object = null;
 	
+	protected $force_recalculate_billing = false;
+	
+	function setForceRecalculateBilling($force) {
+		$this->force_recalculate_billing = $force;
+	}
+	function getForceRecalculateBilling() {
+		return $this->force_recalculate_billing;
+	}
+	
 	/**
 	 * Return object connected with this action
 	 *
@@ -129,12 +138,7 @@ class Timeslot extends BaseTimeslot {
     	  	$dt = DateTimeValueLib::now();
 			$this->setEndTime($dt);
     	}
-    	
-    	$task = ProjectTasks::findById($this->getRelObjectId());
-		if($task instanceof ProjectTask) {
-			$task->calculatePercentComplete();
-		}
-    	
+        	
     	//Billing
 		$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
 		$billing_category_id = $user->getDefaultBillingId();
@@ -329,6 +333,9 @@ class Timeslot extends BaseTimeslot {
 				}
 			}
 		}
+		DB::execute("UPDATE ".TABLE_PREFIX."timeslots 
+				SET worked_time=GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60)
+				WHERE object_id=".$this->getId());
 		return $saved;
 	}
 
@@ -375,7 +382,7 @@ class Timeslot extends BaseTimeslot {
 		return $this->getViewUrl();
 	}
 
-	function getArrayInfo($return_billing = false) {
+	function getArrayInfo($return_billing = false, $time_detail = false, $permissions_detail = false) {
 		$task_name = '';
 		
 		$user = Contacts::findById($this->getContactId());
@@ -398,10 +405,44 @@ class Timeslot extends BaseTimeslot {
 			'lastupdatedby' => $general_info['updatedBy'],
 			'memPath' => json_encode($this->getMembersIdsToDisplayPath()),
 			'otid' => Timeslots::instance()->getObjectTypeId(),
+			'description' => $this->getDescription(),
+			'rel_object_id' => $this->getRelObjectId(),
+			'rel_object_name' => '',
 		);
+		
+		if ($time_detail) {
+			$result['start_time'] = $this->getStartTime() instanceof DateTimeValue ? format_datetime($this->getStartTime()) : '';
+			$result['start_time_ts'] = $this->getStartTime() instanceof DateTimeValue ? $this->getStartTime()->getTimestamp() : '';
+			$result['end_time'] = $this->getEndTime() instanceof DateTimeValue ? format_datetime($this->getEndTime()) : '';
+			if ($this->getEndTime() instanceof DateTimeValue) {
+				$result['worked_time'] = DateTimeValue::FormatTimeDiff($this->getStartTime(), $this->getEndTime(), "hm", 60, $this->getSubtract());
+			}
+			$result['subtract'] = '';
+			if ($this->getSubtract() > 0) {
+				$now = DateTimeValueLib::now();
+				$now_sub = DateTimeValueLib::now();
+				$now_sub->add('s', $this->getSubtract());
+				$result['subtract'] = DateTimeValue::FormatTimeDiff($now, $now_sub, "hm", 60, 0);
+				$result['paused_time_sec'] = $this->getSubtract();
+			}
+			if ($this->getPausedOn() instanceof DateTimeValue) {
+				$result['paused_on'] = format_datetime($this->getPausedOn());
+				$result['paused_on_ts'] = $this->getPausedOn()->getTimestamp();
+			}
+		}
+		if ($permissions_detail) {
+			$result['can_edit'] = $this->canEdit(logged_user());
+			$result['can_delete'] = $this->canDelete(logged_user());
+		}
 		if ($return_billing) {
 			$result['hourlybilling'] = $this->getHourlyBilling();
 			$result['totalbilling'] = $this->getFixedBilling();
+			$result['fixed_billing'] = "";
+			if ($this->getFixedBilling() > 0) {
+				$c = Currencies::getCurrency($this->getRateCurrencyId());
+				$c_symbol = $c instanceof Currency ? $c->getSymbol() : '';
+				$result['fixed_billing'] = format_money_amount($this->getFixedBilling(), $c_symbol);
+			}
 		}
 		
 		if ($this->getDescription() != '')
@@ -410,37 +451,12 @@ class Timeslot extends BaseTimeslot {
 		if ($task_name != '')
 			$result['tn'] = $task_name;
 		
+		Hook::fire('timeslot_info_additional_data', $this, $result);
+		
 		return $result;
 	}
 
 	
-	
-	
-	/**
-	 * Returns an array with the ids of the members that this object belongs to
-	 *
-	 */
-	function getMemberIds() {
-		
-		if (is_null($this->memberIds)) {
-			 $this->memberIds = ObjectMembers::getMemberIdsByObject($this->getRelObjectId() > 0 ? $this->getRelObjectId() : $this->getId());
-		}
-		return $this->memberIds ;
-		
-		//return ObjectMembers::getMemberIdsByObject($this->getId());
-	}
-	
-	
-	/**
-	 * Returns an array with the members that this object belongs to
-	 *
-	 */
-	function getMembers() {
-		if ( is_null($this->members) ) {
-			$this->members =  ObjectMembers::getMembersByObject($this->getRelObjectId() > 0 ? $this->getRelObjectId() : $this->getId());
-		}
-		return $this->members ;
-	}
 } // Timeslot
 
 ?>

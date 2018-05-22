@@ -27,19 +27,37 @@ class PanelController extends ApplicationController {
 			
 			$res = DB::execute ( $sql );
 			while ( $row = $res->fetchRow () ) {
+				 $url_params = trim($row['url_params']) == '' ? array() : json_decode($row['url_params'], true);
+				 
+				 if ( $row['default_controller'] == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {				     
+				     $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id']);
+				     $name_tab .= 's'; //@TODO: change this when plural custom names are added
+				 }else{
+				     $name_tab = lang($row ['title']);
+				 }
+
+				 $dim_id = '';
+				 $ot_id = '';
+				 foreach ($url_params as $k => $v) {
+				 	if ($k == 'dim_id') $dim_id = $v;
+				 	if ($k == 'type_id') $ot_id = $v;
+				 }
+				 
 				 $object = array (
-					"title" => lang($row ['title']), 
+					"title" => $name_tab, 
 					"id" => $row ['id'], 
 				 	"quickAddTitle" => lang ($row['default_controller']), 
 					"refreshOnWorkspaceChange" => (bool) $row ['refresh_on_context_change'] , 
 				 	"defaultController" => $row['default_controller'] ,
 					"defaultContent" => array (
 						"type" => "url", 
-						"data" => get_url ( $row ['default_controller'], $row ['default_action'] ) 
+						"data" => get_url ( $row ['default_controller'], $row ['default_action'], $url_params ) 
 					),
 					"enabled" => $row ['enabled'], 
 					"type" => $row ['type'],
-				 	"tabTip" => lang($row ['title']),
+				    "tabTip" => $name_tab,
+				    "dimensionId" => $dim_id,
+				    "typeId" => $ot_id,
 				);
 				
 				if (config_option('show_tab_icons')) {
@@ -50,7 +68,7 @@ class PanelController extends ApplicationController {
 				if ( $row ['initial_controller'] && $row['initial_action'] ) {
 					$object["initialContent"] = array (
 						"type" => "url", 
-						"data" => get_url ( $row ['initial_controller'], $row ['initial_action'] ) 
+						"data" => get_url ( $row ['initial_controller'], $row ['initial_action'], $url_params ) 
 					);
 				}
 				if ($row['id'] == 'more-panel' && config_option('getting_started_step') >= 99) {

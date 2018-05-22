@@ -110,12 +110,44 @@
 	 
   <div id="<?php echo $genid ?>root_permissions" style="width:600px;">
   <table style="width:100%;">
-  <tr style="border-bottom:1px solid #888;margin-bottom:5px"><td></td>
-  	<td align=center style="padding-left:10px;padding-right:10px;width:120px;"><a href="#" class="internalLink radio-title-3" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 3);return false;"><?php echo lang('read write and delete') ?></a></td>
-  	<td align=center style="padding-left:10px;padding-right:10px;width:120px;"><a href="#" class="internalLink radio-title-2" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 2);return false;"><?php echo lang('read and write') ?></a></td>
-  	<td align=center style="padding-left:10px;padding-right:10px;width:120px;"><a href="#" class="internalLink radio-title-1" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 1);return false;"><?php echo lang('read only') ?></a></td>
-  	<td align=center style="padding-left:10px;padding-right:10px;width:120px;"><a href="#" class="internalLink radio-title-0" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 0);return false;"><?php echo lang('none no bars') ?></a></td>
-  </tr>
+  
+	<tr class="permissions-title-row">
+	    <td></td>
+	  	<td align=center style="width:120px;">
+	  		<a href="#" class="internalLink all-radio-sel radio-title-3" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 3);return false;"><?php echo lang('read write and delete') ?></a>
+	  	</td>
+	  	<td align=center style="width:120px;">
+	  		<a href="#" class="internalLink all-radio-sel radio-title-2" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 2);return false;"><?php echo lang('read and write') ?></a>
+	  	</td>
+	  	<td align=center style="width:120px;">
+	  		<a href="#" class="internalLink all-radio-sel radio-title-1" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 1);return false;"><?php echo lang('read only') ?></a>
+	  	</td>
+	  	<td align=center style="width:120px;">
+	  		<a href="#" class="internalLink all-radio-sel radio-title-0" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 0);return false;"><?php echo lang('none no bars') ?></a>
+	  	</td>
+	</tr>
+  
+  
+	<tr class="permissions-checkall-row">
+		<td style="padding-left:20px;"><?php echo lang('check all').":"?></td>
+		<td align="center">
+			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-3" title="<?php echo lang('set rwd permissions for all object types')?>"
+				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 3);"/>
+		</td>
+		<td align="center">
+			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-2" title="<?php echo lang('set rw permissions for all object types')?>"
+				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 2);"/>
+		</td>
+		<td align="center">
+			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-1" title="<?php echo lang('set r permissions for all object types')?>"
+				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 1);"/>
+		</td>
+		<td align="center">
+			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-0" title="<?php echo lang('set none permissions for all object types')?>"
+				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 0);"/>
+		</td>
+	</tr>
+	
 <?php 
 	$all_object_types = ObjectTypes::instance()->findAll(array('conditions' => "type IN ('content_object', 'located') AND type NOT IN ('comment') AND name <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND 
 		(plugin_id IS NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))"));
@@ -145,11 +177,11 @@
 		$can_read = array_var($root_perm_actual_info, 'd') == 0 && array_var($root_perm_actual_info, 'w') == 0 && array_var($root_perm_actual_info, 'r') == 1;
 
 ?><tr class="<?php echo $row_cls?>">
-  	<td style="padding:0 20px"><span id="<?php echo $genid.'obj_type_label'.$id_suffix?>"><?php echo lang($ot->getName()) ?></span></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_delete, array('value' => '3')) ?></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_write, array('value' => '2')) ?></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_read, array('value' => '1')) ?></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $none, array('value' => '0')) ?></td>
+  	<td style="padding-left:20px;"><span id="<?php echo $genid.'obj_type_label'.$id_suffix?>"><?php echo lang($ot->getName()) ?></span></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_delete, array('value' => '3', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_write, array('value' => '2', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_read, array('value' => '1', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $none, array('value' => '0', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
   </tr>
 <?php } ?>
   </table>
@@ -166,6 +198,30 @@ og.ogRootPermSetLevel = function (genid, level) {
 		var ot = og.perm_root_object_type_ids[i];
 		og.ogSetCheckedValue(document.getElementsByName(genid + "rg_root_" + ot), level);
 	}
+	$(".all-radio-sel-chk-root").removeAttr('checked');
+	$(".all-radio-sel-chk-root#chk-"+level).attr('checked','checked');
+}
+
+og.ogRootPermSetLevelCheckbox = function(checkbox, genid, radio_id) {
+	var is_checked = $(checkbox).attr('checked') == 'checked';
+	var id = is_checked ? radio_id : 0;
+	og.ogRootPermSetLevel(genid, id);
+}
+
+og.ogRootPermValueChanged = function() {
+	if (!og.perm_root_object_type_ids) return;
+	
+	var assigned_vals = [];
+	for (i=0; i<og.perm_root_object_type_ids.length; i++) {
+		var ot = og.perm_root_object_type_ids[i];
+		var v = og.ogGetCheckedValue(document.getElementsByName(genid + "rg_root_" + ot));
+		if (assigned_vals.indexOf(v) == -1) assigned_vals.push(v);
+	}
+	
+	$(".all-radio-sel-chk-root").removeAttr('checked');
+	if (assigned_vals.length == 1) {
+		$(".all-radio-sel-chk-root#chk-"+assigned_vals[0]).attr('checked','checked');
+	}
 }
 </script>
 <?php }?>
@@ -176,6 +232,7 @@ if ($role_id > 0 && !(isset($user_group_abm) && $user_group_abm)) { ?>
 $(function() {
 	var type = '<?php echo $role_id ?>';
 	og.userPermissions.enableDisableSystemPermissionsByRole(genid, type);
+	if (typeof(og.ogRootPermValueChanged) == 'function') og.ogRootPermValueChanged();
 });
 </script>
 <?php } ?>

@@ -562,8 +562,9 @@ class ProjectFile extends BaseProjectFile {
 	 */
 	function getDownloadUrl() {
 		return get_url('files', 'download_file', array(
-        'id' => $this->getId())
-		); // get_url
+        	'id' => $this->getId(), // file id
+			'mod' => gen_id(), // don't cache
+		)); // get_url
 	} // getDownloadUrl
 
 	
@@ -856,6 +857,7 @@ class ProjectFile extends BaseProjectFile {
 			$d = $m->getDimension();
 			if ($d instanceof Dimension && $d->getIsManageable()) $member_ids[] = $m->getId();
 		}
+		
 		if ($this->getMailId() == 0 || count($member_ids) > 0) {
 			$revisions = $this->getRevisions();
 			if (is_array($revisions)) {
@@ -875,7 +877,16 @@ class ProjectFile extends BaseProjectFile {
 					$c = Contacts::findById($mac->getContactId());
 					if ($c instanceof Contact) {
 						$values = "(".$c->getPermissionGroupId().",".$this->getId().")";
-						DB::execute("INSERT INTO ".TABLE_PREFIX."sharing_table (group_id, object_id) VALUES $values ON DUPLICATE KEY UPDATE group_id=group_id;");
+						$sql = "INSERT INTO ".TABLE_PREFIX."sharing_table (group_id, object_id) VALUES $values ON DUPLICATE KEY UPDATE group_id=group_id;";
+						
+						if (count($member_ids) > 0) {
+							DB::execute($sql);
+						} else {
+							$cmp = ContactMemberPermissions::findOne(array('conditions' => "member_id=0 AND object_type_id=".$this->getObjectTypeId()." AND permission_group_id=".$c->getPermissionGroupId()));
+							if ($cmp instanceof ContactMemberPermission) {
+								DB::execute($sql);
+							}
+						}
 					}
 				}
 			}

@@ -61,7 +61,7 @@ class MailAccount extends BaseMailAccount {
 	function getUids($folder = null, $limit = null) {
 		$sql = "SELECT `uid` FROM `" . MailContents::instance()->getTableName() . "` WHERE `account_id` = ". $this->getId();
 		if (!is_null($folder)) {
-			$sql .= " AND `imap_folder_name` = '$folder'";
+			$sql .= " AND `imap_folder_name` = ".DB::escape($folder);
 		}
 		if (!is_null($limit) && is_numeric($limit)) {
 			$sql .= " LIMIT $limit";
@@ -82,20 +82,37 @@ class MailAccount extends BaseMailAccount {
 		$box_cond = "";
 		$sql = "SELECT `uid` FROM `" . MailContents::instance()->getTableName() . "` WHERE `account_id` = ". $this->getId();
 		if (!is_null($folder)) {
-			$box_cond = " AND `imap_folder_name` = '$folder'";
+			$box_cond = " AND `imap_folder_name` = ".DB::escape($folder);
 		}
 		if ($this->getIsImap()) {			
 			$max_param = "object_id";
 		}else{
 			$max_param = "received_date";
 		}
-		$sql .= "$box_cond AND $max_param = (SELECT max($max_param) FROM `". MailContents::instance()->getTableName() . "` WHERE `account_id` = ". $this->getId(). " AND `state` in (0,1,4) $box_cond) LIMIT 1";
+		$sql .= "$box_cond AND $max_param = (SELECT max($max_param) FROM `". MailContents::instance()->getTableName() . "` WHERE `account_id` = ". $this->getId(). " AND `state` in (0,1,4,5) $box_cond) LIMIT 1";
 		
 		$res = DB::execute($sql);
 		$rows = $res->fetchAll();
 		if (is_array($rows) && count($rows) > 0){
 			$maxUID = $rows[0]['uid'];
 		}
+		return $maxUID;
+	}
+	
+	function getImapMaxUID($folder = ''){
+		$maxUID = "";
+		
+		$sql = "
+			SELECT `last_uid_in_folder` as uid FROM `".TABLE_PREFIX."mail_account_imap_folder`
+			WHERE `account_id` = ".$this->getId()." AND `folder_name` = ".DB::escape($folder)."
+			LIMIT 1;
+		";
+		
+		$row = DB::executeOne($sql);
+		if ($row) {
+			$maxUID = $row['uid'];
+		}
+		
 		return $maxUID;
 	}
 	
@@ -330,5 +347,40 @@ class MailAccount extends BaseMailAccount {
 		}
 		return $return ;
 	}
+	
+	
+	/**
+	 * Makes the imap connection and returns a Net_IMAP object
+	 * @return Net_IMAP
+	 */
+	function imapConnect() {
+		
+		require_once 'Net/IMAP.php';
+		
+		$ret = null;
+		if ($this->getIncomingSsl()) {
+			
+			if ($this->getIncomingSslVerifyPeer()) {
+				$options = null;
+			} else {
+				$options = array('ssl' => array());
+				$options['ssl']['verify_peer'] = FALSE;
+				$options['ssl']['verify_peer_name'] = FALSE;
+			}
+			
+			$imap = new Net_IMAP($ret, "ssl://" . $this->getServer(), $this->getIncomingSslPort(), null, $options);
+			
+		} else {
+			$imap = new Net_IMAP($ret, "tcp://" . $this->getServer());
+		}
+		
+		if (PEAR::isError($ret)) {
+			debug_log("IMAP connection error: ".$ret->getMessage(), "sent_emails_sync.log");
+			throw new Exception($ret->getMessage());
+		}
+		
+		return $imap;
+	}
+	
 }
 ?>

@@ -1,5 +1,7 @@
 <?php 
-set_page_title(lang('change password'));
+$page_title = lang('change password');
+Hook::fire('login_page_title', null, $page_title);
+set_page_title($page_title);
 add_javascript_to_page('jquery/jquery.js');
 
 $css = array();

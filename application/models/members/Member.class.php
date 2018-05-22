@@ -133,7 +133,7 @@ class Member extends BaseMember {
 	function getParentMember() {
 		if ($this->parent_member == null){
 			if ($this->getParentMemberId() != 0) {
-				 $this->parent_member = Members::findById($this->getParentMemberId());
+				 $this->parent_member = Members::getMemberById($this->getParentMemberId());
 			}
 		}
 		return $this->parent_member;
@@ -155,6 +155,10 @@ class Member extends BaseMember {
 	
 	function getDimensionRestrictedObjectTypeIds($restricted_dimension_id, $is_required = true){
 		return DimensionMemberRestrictionDefinitions::getRestrictedObjectTypeIds($this->getDimensionId(), $this->getObjectTypeId(), $restricted_dimension_id, $is_required);
+	}
+	
+	function getTypeNameToShow() {
+	    return Members::getTypeNameToShowByObjectType($this->getDimensionId(), $this->getObjectTypeId());	    
 	}
 	
 	
@@ -201,7 +205,7 @@ class Member extends BaseMember {
     	if (!is_null($rows)) {
 	    	foreach ($rows as $row) {
 	    		$obj = Objects::findById(array_var($row, 'object_id'));
-	    		$obj->delete();
+	    		if ($obj instanceof ContentDataObject) $obj->delete();
 	    	}
     	}
     	
@@ -249,7 +253,8 @@ class Member extends BaseMember {
 						return false;
 					}
 				} else {
-					if (!in_array($child->getObjectTypeId(), $child_ots)){
+					// if $child has same type than $this, then there is no need to check if $child can be son of $this->parent  
+					if ($child->getObjectTypeId() != $this->getObjectTypeId() && !in_array($child->getObjectTypeId(), $child_ots)){
 						$error_message = lang("cannot delete member childs cannot be moved to parent");
 						return false;
 					}
@@ -332,9 +337,11 @@ class Member extends BaseMember {
 	
 	function getObjectClass() {
 		if ($handler = $this->getObjectHandlerClass() ) {
-			eval ("\$itemClass = $handler::instance()->getItemClass();");
-			if ($itemClass) {
-				return $itemClass ;
+			if (class_exists($handler)) {
+				eval ("\$itemClass = $handler::instance()->getItemClass();");
+				if ($itemClass) {
+					return $itemClass ;
+				}
 			}
 		}
 		return '' ;
@@ -441,17 +448,28 @@ class Member extends BaseMember {
 		return false;
 	}
 	
-	function getPath(){
-		$path='';
-		foreach(array_reverse($this->getAllParentMembersInHierarchy(false)) as $parent){
-			$path.= $parent->getName(). "/";
-		}
-		if ($path){
-			$path=substr($path, 0, -1);
+	function getPath($separator="/", $prefix="", $suffix=""){
+		$path = '';
+		$parents = array_reverse($this->getAllParentMembersInHierarchy(false));
+		foreach($parents as $parent) {
+			$path .= ($path == "" ? "" : $separator) . $prefix . $parent->getName() . $suffix;
 		}
 		return $path;
 	}
 	
+	
+	function getPathToPrint($separator="/", $prefix="", $suffix=""){
+		$path = '';
+		$parents = array_reverse($this->getAllParentMembersInHierarchy(false));
+		if (count($parents) > 1) {
+			$path .= $prefix . "..." . $suffix;
+		} else {
+			foreach($parents as $parent) {
+				$path .= ($path == "" ? "" : $separator) . $prefix . $parent->getName() . $suffix;
+			}
+		}
+		return $path;
+	}
 	
 	
 	/**
@@ -498,6 +516,14 @@ class Member extends BaseMember {
 			foreach ($sub_members as $sub_member) {
 				if ($sub_member->getArchivedById() == 0) {
 					$count += $sub_member->archive($user);
+				}
+			}
+			
+			// if member has an associated object then archive it
+			if ($this->getObjectId() > 0) {
+				$rel_obj = Objects::findObject($this->getObjectId());
+				if ($rel_obj instanceof ContentDataObject && !$rel_obj->isArchived()) {
+					$rel_obj->archive();
 				}
 			}
 			
@@ -551,6 +577,14 @@ class Member extends BaseMember {
 			foreach ($sub_members as $sub_member) {
 				if ($sub_member->getArchivedById() > 0) {
 					$count += $sub_member->unarchive($user);
+				}
+			}
+			
+			// if member has an associated object then unarchive it
+			if ($this->getObjectId() > 0) {
+				$rel_obj = Objects::findObject($this->getObjectId());
+				if ($rel_obj instanceof ContentDataObject && $rel_obj->isArchived()) {
+					$rel_obj->unarchive();
 				}
 			}
 
@@ -642,4 +676,109 @@ class Member extends BaseMember {
 		
 		return $cant > 0;
 	}
+	
+	
+	
+	function getDataForHistory() {
+		$previous_data = array();
+		
+		$previous_data['original_member_data'] = DB::executeOne("SELECT * FROM ".TABLE_PREFIX."members WHERE id=".$this->getId());
+		
+		if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+			$previous_data['custom_properties'] = MemberCustomPropertyValues::instance()->getAllCustomPropertyValues($this->getId());
+		}
+		
+		$prev_assocs = MemberPropertyMembers::getAllAssociatedMemberIds($this->getId());
+		$prev_assocs_rev = MemberPropertyMembers::getAllAssociatedMemberIds($this->getId(), true);
+		foreach ($prev_assocs_rev as $a_id => $mem_ids) $prev_assocs[$a_id] = $mem_ids;
+		$previous_data['associations'] = $prev_assocs;
+		
+		return $previous_data;
+	}
+	
+	
+	
+	function getObjectData() {
+		$info = array();
+		
+		$definition = Members::instance()->getDefinition($this->getObjectTypeId(), $this->getDimensionId());
+		
+		$mem_columns = $this->manager()->getColumns();
+		
+		$mem_object = null;
+		if ($this->getObjectId() > 0) {
+			$mem_object = Objects::findObject($this->getObjectId());
+		}
+		
+		foreach ($definition as $property_id => $property_info) {
+			if (isset($info[$property_id])) continue;
+			
+			if (!str_starts_with($property_id, "cp_")) {
+				
+				if (str_starts_with($property_id, "dim_association_")) {
+					// dimension association
+					$association_id = $property_info['id'];
+					
+					if ($property_info['is_reverse']) {
+						$tmp_ids_csv = MemberPropertyMembers::getAllMemberIds($association_id, $this->getId());
+					} else {
+						$tmp_ids_csv = MemberPropertyMembers::getAllPropertyMemberIds($association_id, $this->getId());
+					}
+					$associated_members = array();
+					if (trim($tmp_ids_csv) != "") {
+						$associated_members = Members::findAll(array('conditions' => "id IN ($tmp_ids_csv)"));
+					}
+					$associated_info = array();
+					foreach ($associated_members as $amem) {
+						if ($amem instanceof Member) {
+							$associated_info[] = array('id' => $amem->getId(), 'name' => $amem->getName());
+						}
+					}
+					
+					$info[$property_id] = $associated_info;
+					
+				} else {
+					
+					// object property
+					if (in_array($property_id, $mem_columns)) {
+						$info[$property_id] = $this->getColumnValue($property_id);
+					} else {
+						if ($mem_object instanceof ContentDataObject) {
+							if (in_array($property_id, $mem_object->getColumns())) {
+								$info[$property_id] = $mem_object->getColumnValue($property_id);
+							} else {
+								if (!isset($associated_obj_columns)) {
+									$additional_fixed_columns = $mem_object->manager()->getAssociatedObjectsFixedColumns();
+								}
+
+								foreach ($additional_fixed_columns as $assoc_obj_col => $coldefinitions) {
+									foreach ($coldefinitions as $coldef) {
+										if ($coldef['col'] == $property_id) {
+											if (!isset($associated_object)) {
+												$associated_object = Objects::findObject($mem_object->getColumnValue($assoc_obj_col));
+											}
+											if ($associated_object instanceof ContentDataObject) {
+												$info[$property_id] = $associated_object->getColumnValue($property_id);
+											}
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					if (isset($info[$property_id]) && $info[$property_id] instanceof DateTimeValue) {
+						$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+					}
+				}
+			}
+		}
+		
+		Hook::fire('additional_member_column_values', array('definition' => $definition, 'member' => $this), $info);
+		
+		return $info;
+	}
+	
+	
 }

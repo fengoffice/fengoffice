@@ -13,7 +13,8 @@ function core_dimensions_after_edit_profile($user, &$ignored) {
 }
 
 
-function core_dimensions_after_dragdrop_classify($objects, &$member) {
+function core_dimensions_after_dragdrop_classify($parameters, &$member) {
+	$objects = array_var($parameters, 'objects');
 	$count = 0;
 	foreach ($objects as $obj) {
 		$count++;
@@ -191,11 +192,15 @@ function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
 		}
 		if (count($member_ids) == 0) return;
 		
-		$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).')'));
+		$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).') AND dimension_id IN (SELECT d.id FROM '.TABLE_PREFIX.'dimensions d WHERE d.defines_permissions=1)'));
 		$persons_dim = Dimensions::findByCode("feng_persons");
 		$user_member = Members::findOneByObjectId($user->getId(), $persons_dim->getId());
 		
 		$affected_dimensions = core_dim_create_member_associations($user, $user_member, $members);
+		
+		if (count($member_ids) > 0) {
+			$affected_dimensions = array_flat(DB::executeAll("SELECT DISTINCT(dimension_id) FROM ".TABLE_PREFIX."members WHERE id IN (".implode(',', $member_ids).")"));
+		}
 		
 		// remove from all members of the affected dimensions
 		if (count($affected_dimensions) > 0) {
@@ -208,8 +213,6 @@ function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
 		$obj_controller = new ObjectController();
 		ObjectMembers::addObjectToMembers($user->getId(), $members);
 		
-		// add user content object to sharing table
-		$user->addToSharingTable();
 	}
 }
 
@@ -231,18 +234,7 @@ function core_dimensions_after_save_member_permissions($params, &$ignored) {
 	if (count($permission_group_ids) > 0) {
 		$contacts = Contacts::findAll(array('conditions' => 'user_type > 0 && permission_group_id IN ('.implode(',', $permission_group_ids).')'));
 	}
-	// contacts
-	$contact_rows = DB::executeAll("SELECT DISTINCT om.object_id FROM ".TABLE_PREFIX."object_members om INNER JOIN ".TABLE_PREFIX."contacts c ON c.object_id=om.object_id 
-		WHERE om.member_id='".$member->getId()."' AND c.user_type=0");
-	$no_user_ids = array(0);
-	if (is_array($contact_rows)) {
-		foreach ($contact_rows as $row) {
-			$no_user_ids[] = $row['object_id'];
-		}
-	}
-	$more_contacts = Contacts::findAll(array('conditions' => 'object_id IN ('.implode(',', $no_user_ids).')'));
-	
-	$contacts = array_merge($contacts, $more_contacts);
+
 	$contact_ids = array(0);
 	
 	$persons_dim = Dimensions::findByCode("feng_persons");
@@ -430,7 +422,11 @@ function core_dimensions_after_object_delete_permanently($object_ids) {
 	$person_dim = Dimensions::findByCode('feng_persons');
 	$members = Members::findAll(array('conditions' => "`object_id` IN (".implode(",",$object_ids).") AND `dimension_id` = " . $person_dim->getId()));
 	foreach ($members as $mem) {
-		$mem->delete();
+		$obj = Objects::findObject($mem->getObjectId());
+		// ensure that the associated object no longer exists before deleting the member
+		if (!$object instanceof ContentDataObject) {
+			$mem->delete();
+		}
 	}
 }
 
@@ -578,3 +574,32 @@ function core_dimensions_quickadd_extra_fields($parameters) {
 		tpl_display(PLUGIN_PATH."/core_dimensions/templates/quickadd_extra_fields.php");
 	}
 }
+
+
+/**
+ * If no multiple currencies, then replicate the config option "currency_code" in the default currency
+ */
+function core_dimensions_after_update_config_category($params, &$ret) {
+	$category = array_var($params, 'category');
+	$post = array_var($params, 'post');
+
+	if ($category->getName() == 'general' && !Plugins::instance()->isActivePlugin("multiple_currencies")) {
+		$options = array_var($post, 'options', array());
+		$cur_code = array_var($options, "currency_code");
+		if ($cur_code) {
+			$def_currency = Currencies::findOne();
+			if (!$def_currency instanceof Currency) {
+				$def_currency = new Currency();
+				$def_currency->setIsDefault(true);
+				$def_currency->setName($cur_code);
+			}
+			if ($cur_code != $def_currency->getSymbol()) {
+				$def_currency->setShortName($cur_code);
+				$def_currency->setSymbol($cur_code);
+				$def_currency->save();
+			}
+		}
+	}
+}
+
+

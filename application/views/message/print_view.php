@@ -42,7 +42,10 @@ h2 {
 <div class="header">
 <h1><?php echo clean($message->getObjectName()); ?></h1>
 <b><?php echo lang('from') ?>:</b> <?php echo clean($message->getCreatedByDisplayName()) ?><br />
-<b><?php echo lang('date') ?>:</b> <?php echo format_datetime($message->getUpdatedOn(), null, logged_user()->getTimezone()) ?><br />
+<b><?php echo lang('date') ?>:</b> <?php
+	$tz_offset = Timezones::getTimezoneOffsetToApply($message) / 3600;
+	echo format_datetime($message->getUpdatedOn(), null, $tz_offset);
+	?><br />
 <b><?php /*FIXME echo lang('workspace') ?>:</b> <?php echo clean($message->getWorkspacesNamesCSV()) */?><br />
 </div>
 

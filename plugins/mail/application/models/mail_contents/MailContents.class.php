@@ -121,6 +121,47 @@ class MailContents extends BaseMailContents {
 		return false;;
 	}
 	
+
+	static function parse_to($to) {
+		if (!is_array($to)) $to = explode(';', $to);
+		$return = array();
+		foreach ($to as $elem){
+			$mail= preg_replace("/.*\<(.*)\>.*/", "$1", $elem, 1);
+			$nam = explode('<', $elem);
+			$return[]= array(trim($nam[0]),trim($mail));
+		}
+		return $return;
+	}
+
+	public static function conversationIsRepliedOrForwarded($mail = null, $include_trashed = false) {
+		if (!$mail instanceof MailContent || $mail->getConversationId() == 0) return false;
+		$conversation_id = $mail->getConversationId();
+		$deleted = ' AND `is_deleted` = false';
+		if (!$include_trashed) $deleted .= ' AND `trashed_by_id` = 0';
+		
+		$sql = "SELECT md.`to` FROM ". TABLE_PREFIX ."mail_contents mc
+			INNER JOIN ". TABLE_PREFIX ."objects o ON o.id = mc.object_id
+			INNER JOIN ". TABLE_PREFIX ."mail_datas md ON md.id = mc.object_id
+			WHERE `conversation_id` = '$conversation_id' $deleted AND `account_id` = " . $mail->getAccountId()." 
+				AND in_reply_to_id='".mysql_real_escape_string($mail->getMessageId())."'";
+		$row = DB::executeOne($sql);
+		
+		if ($row) {
+			$to_addresses = array();
+			$parsed_to = self::parse_to($row['to']);
+			foreach ($parsed_to as $pt) {
+				$to_addresses[] = $pt[1];
+			}
+			
+			if (in_array($mail->getFrom(), $to_addresses)) {
+				return 'replied';
+			} else {
+				return 'forwarded';
+			}
+		}
+		return false;
+	}
+	
 	public static function getNextConversationId($account_id) {
 		$sql = "INSERT INTO `".TABLE_PREFIX."mail_conversations` () VALUES ()";
 		DB::execute($sql);
@@ -135,14 +176,32 @@ class MailContents extends BaseMailContents {
 		return " NOT EXISTS(SELECT `object_id` FROM `" . TABLE_PREFIX . "workspace_objects` WHERE `object_manager` = 'MailContents' AND `object_id` = `id`) ";
 	}
 	
-	static function mailRecordExists($account_id, $uid, $folder = null, $is_deleted = null) {
+	static function mailRecordExists(MailAccount $account, $uid, $folder = null, $is_deleted = null, $message_id = null) {
+		$account_id = $account->getId();
 		if (!$uid) return false;
-		$folder_cond = is_null($folder) ? '' : " AND `imap_folder_name` = " . DB::escape($folder);
-		$del_cond = is_null($is_deleted) ? "" : " AND `is_deleted` = " . DB::escape($is_deleted ? true : false);
-		$conditions = "`account_id` = " . DB::escape($account_id) . " AND `uid` = " . DB::escape($uid) . $folder_cond . $del_cond;
 		
-		$rows = DB::executeAll("SELECT object_id FROM `".TABLE_PREFIX."mail_contents` WHERE $conditions limit 1");
-		return count($rows) > 0;
+		$join_sql = "";
+		$folder_cond = "";
+		$del_cond = is_null($is_deleted) ? "" : " AND mc.`is_deleted` = " . DB::escape($is_deleted ? true : false);
+		
+		if(trim($message_id) != '' && $account->getIsImap()){
+			$id_cond = " AND mc.`message_id` = " . DB::escape($message_id);
+			
+			$join_sql = " INNER JOIN ".TABLE_PREFIX."mail_content_imap_folders mcf 
+					ON mcf.account_id=mc.account_id AND mcf.message_id=mc.message_id ";
+
+			if(!is_null($folder)){
+				$folder_cond = " AND mcf.folder=".DB::escape($folder)." ";
+			}
+		}else{			
+			$id_cond = " AND mc.`uid` = " . DB::escape($uid);
+		}		
+		$conditions = "mc.`account_id` = " . DB::escape($account_id) . $id_cond . $folder_cond . $del_cond;
+		
+		$sql = "SELECT mc.object_id FROM `".TABLE_PREFIX."mail_contents` mc $join_sql WHERE $conditions limit 1";
+
+		$rows = DB::executeAll($sql);
+		return count($rows) > 0 ? $rows[0]['object_id'] : false;
 	}
 	
 	static function getUidsFromAccount($account_id, $folder = null) {
@@ -208,28 +267,21 @@ class MailContents extends BaseMailContents {
 	 * @param Project $project
 	 * @return array
 	 */
-	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = false, $conversation_list = null, $only_count_result = false) {
+	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = 'unarchived', $conversation_list = null, $only_count_result = false, $extra_cond="") {
 		$mailTablePrefix = "e";
 		if (!$limit) $limit = user_config_option('mails_per_page') ? user_config_option('mails_per_page') : config_option('files_per_page');
 		$accountConditions = "";
 		// Check for accounts
 		$accountConditions = '';
-		if (isset($account_id) && $account_id > 0) { //Single account
-			$accountConditions = " AND $mailTablePrefix.account_id = " . DB::escape($account_id);
-		} else {
-			// show mails for all visible accounts and classified mails where logged_user has permissions so we don't filter by account_id
-			/*// show emails from other accounts
-			$macs = MailAccountContacts::instance()->getByContact(logged_user());
-			$acc_ids = array(0);
-			foreach ($macs as $mac) $acc_ids[] = $mac->getAccountId();
-			
-			// permission conditions
-			$pgs = ContactPermissionGroups::getPermissionGroupIdsByContactCSV(logged_user()->getId());
-			if (trim($pgs == '')) $pgs = '0';
-			$perm_sql = "(SELECT count(*) FROM ".TABLE_PREFIX."sharing_table st WHERE st.object_id = $mailTablePrefix.object_id AND st.group_id IN ($pgs)) > 0";
-			
-			// show mails for all visible accounts and classified mails where logged_user has permissions
-			$accountConditions = " AND ($mailTablePrefix.account_id IN (" . implode(",", $acc_ids) . ") OR $perm_sql)";*/
+		if ($account_id) {
+			if (is_numeric($account_id)) {
+				$accountConditions = " AND $mailTablePrefix.account_id = " . DB::escape($account_id);
+			} else {
+				$acc_ids = array_filter(explode(',', $account_id));
+				if (count($acc_ids) > 0) {
+					$accountConditions = " AND $mailTablePrefix.account_id IN (" . implode(',', $acc_ids) .")";
+				}
+			}
 		}
 		
 		// Check for unclassified emails
@@ -238,8 +290,11 @@ class MailContents extends BaseMailContents {
 			$persons_dim = Dimensions::findByCode('feng_persons');
 			$persons_dim_id = $persons_dim instanceof Dimension ? $persons_dim->getId() : "0";
 			
+			$extra_ignore_classif_cond = '';
+			Hook::fire('mail_list_dim_ids_excluded_from_classified_filder', array('classif_filter'=>$classif_filter), $extra_ignore_classif_cond);
+			
 			$classified = "AND " . ($classif_filter == 'unclassified' ? "NOT " : "");
-			$classified .= "o.id IN (SELECT om.object_id FROM ".TABLE_PREFIX."object_members om INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id WHERE m.dimension_id<>$persons_dim_id)";
+			$classified .= "o.id IN (SELECT om.object_id FROM ".TABLE_PREFIX."object_members om INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id WHERE m.dimension_id<>$persons_dim_id $extra_ignore_classif_cond)";
 		}
 		
 		// if not filtering by account or classification then check that emails are classified or from one of my accounts
@@ -279,7 +334,7 @@ class MailContents extends BaseMailContents {
 				$read = "AND ";
 				$subread = "AND mc."; 
 			}
-			$read2 = "id IN (SELECT rel_object_id FROM " . TABLE_PREFIX . "read_objects t WHERE contact_id = " . logged_user()->getId() . " AND id = t.rel_object_id AND t.is_read = '1')";
+			$read2 = "o.id IN (SELECT rel_object_id FROM " . TABLE_PREFIX . "read_objects t WHERE contact_id = " . logged_user()->getId() . " AND o.id = t.rel_object_id AND t.is_read = '1')";
 			$read .= $read2;
 			$subread .= $read2;
 		} else {
@@ -296,19 +351,41 @@ class MailContents extends BaseMailContents {
 			$conversation_cond = "AND e.conversation_last = 1";
 		}
 		
-		$extra_conditions = "$accountConditions $classified $read $conversation_cond $box_cond";
+		$extra_conditions = "$accountConditions $classified $read $conversation_cond $box_cond $extra_cond";
 		
+		$original_extra_conditions = $extra_conditions;
 		Hook::fire("listing_extra_conditions", null, $extra_conditions);
+		
+		$join_with_searchable_objects = false;
+		if ($original_extra_conditions != $extra_conditions) {
+			$join_with_searchable_objects = true;
+		}
+		
+		$dim_order = null;
+		if (str_starts_with($order_by, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order_by = 'dimensionOrder';
+		}
+		
+		$cp_order = null;
+		if (str_starts_with($order_by, "cp_")) {
+			$cp_order = substr($order, 3);
+			$order_by = 'customProp';
+		}
 		
 		return self::instance()->listing(array(
 			'limit' => $limit, 
 			'start' => $start, 
 			'order' => $order_by,
 			'order_dir' => $dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			'extra_conditions' => $extra_conditions,
+			'join_with_searchable_objects' => $join_with_searchable_objects,
 			'count_results' => false,
 			'only_count_results' => $only_count_result,
-			'join_params' => $join_params
+			'join_params' => $join_params,
+			'archived' => $archived,
 		));
 		
 		

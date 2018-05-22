@@ -159,7 +159,7 @@
 	'show' => 'Montrer',
 	'report as spam' => 'Signaler comme spam',
 	'not spam' => 'Non-spam',
-	'mark as unread' => 'Marquer comme non lut',
+	'mark as unread' => 'Marquer comme non lu',
 	'archived' => 'Archivé',
 	'confirm archive member' => 'Êtes-vous certain de vouloir archiver cet {0} ? Tous les objets enfants seront également archivés.',
 	'confirm unarchive member' => 'Êtes-vous certain de vouloir réactiver cet {0} ? Tous les objets enfants seront également réactivés.',

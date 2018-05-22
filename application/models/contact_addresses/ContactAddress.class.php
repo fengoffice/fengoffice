@@ -63,6 +63,28 @@
 	} // getCountryName
 	
 	
+	function toString($include_type_label=false) {
+		$address = $this;
+		$out = "";
+		
+		if ($include_type_label) {
+			$address_type = $address->getAddressType();
+			if ($address_type instanceof AddressType) $out .= lang($address_type->getName()).": ";
+		}
+		
+		$out .= $address->getStreet();
+		if($address->getCity() != '') {
+			$out .= ' - ' . $address->getCity();
+		}
+		if($address->getState() != '') {
+			$out .= ' - ' . $address->getState();
+		}
+		if($address->getCountry() != '') {
+			$out .= ' - ' . $address->getCountryName();
+		}
+		return $out;
+	}
+	
 	
 	/**
 	 * Validate before save

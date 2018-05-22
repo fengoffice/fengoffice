@@ -8,7 +8,7 @@ og.WebpageManager = function() {
 	
 	this.fields = [
         'object_id','name', 'description',  'ot_id', 'url', 'updatedBy', 'updatedById',
-        'updatedOn', 'updatedOn_today', 'ix', 'isRead', 'memPath'
+        'dateUpdated', 'dateUpdated_today', 'ix', 'isRead', 'memPath', 'link_url'
     ];
 	var cps = og.custom_properties_by_type['weblink'] ? og.custom_properties_by_type['weblink'] : [];
    	var cp_names = [];
@@ -16,6 +16,13 @@ og.WebpageManager = function() {
    		cp_names.push('cp_' + cps[i].id);
    	}
    	this.fields = this.fields.concat(cp_names);
+   	
+   	var dim_names = [];
+   	for (did in og.dimensions_info) {
+		if (isNaN(did)) continue;
+		dim_names.push('dim_' + did);
+	}
+   	this.fields = this.fields.concat(dim_names);
 	
 	if (!og.WebpageManager.store) {
 		og.WebpageManager.store = new Ext.data.Store({
@@ -48,6 +55,8 @@ og.WebpageManager = function() {
 					if (cmp) {
 						var sm = cmp.getSelectionModel();
 						sm.clearSelections();
+						
+						og.eventManager.fireEvent('after grid panel load', {man:cmp, data:d});
 					}
 					Ext.getCmp('webpage-manager').reloadGridPagingToolbar('webpage','list_all','webpage-manager');
 					
@@ -70,17 +79,20 @@ og.WebpageManager = function() {
 	var readClass = 'read-unread-' + Ext.id();
 	
     function renderName(value, p, r) {
-    	var classes = readClass + r.id;
+		if (isNaN(r.data.object_id)) {
+			return '<span class="bold" id="'+r.data.ix+'">'+ (value ? og.clean(value) : '') +'</span>';
+		}
+    	var classes = readClass + r.data.object_id;
 		if (!r.data.isRead) classes += " bold";
 		
 		var name = String.format(
 			'<a style="font-size:120%;" class="{3}" title="{2}" href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>',
-			og.clean(value), og.getUrl('webpage', 'view', {id: r.id}), lang('view weblink'), classes);
+			og.clean(value), og.getUrl('webpage', 'view', {id: r.data.object_id}), lang('view weblink'), classes);
 		
 		var actionStyle= ' style="color:#777777;padding-top:3px;padding-left:18px;background-repeat:no-repeat;background-position:0px 1px;" ';
 		
 		var actions = String.format('<a class="list-action ico-open-link" href="{0}" target="_blank" title="{1}" ' + actionStyle + '>&nbsp;</a>',
-			r.data.url.replace(/\"/g, escape("\"")).replace(/\'/g, escape("'")), lang('open link in new window', og.clean(value)));
+			r.data.link_url.replace(/\"/g, escape("\"")).replace(/\'/g, escape("'")), lang('open link in new window', og.clean(value)));
 		actions = '<span>' + actions + '</span>';
 			
 		var text = '';
@@ -88,16 +100,8 @@ og.WebpageManager = function() {
 			text = '&nbsp;-&nbsp;<span class="desc nobr">';
 			text += og.clean(r.data.description) + "</span>";
 		}
-		
-		mem_path = "";
-		var mpath = Ext.util.JSON.decode(r.data.memPath);
-		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
-			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
-			mem_path += "</div>";
-		}
-	    
-		return name + actions + mem_path + text;
+
+		return name + actions + text;
 	}
     
     function renderIcon(value, p, r) {
@@ -105,6 +109,8 @@ og.WebpageManager = function() {
 	}
     
     function renderIsRead(value, p, r){
+		if (isNaN(r.data.object_id)) return;
+		
     	var idr = Ext.id();
 		var idu = Ext.id();
 		var jsr = 'og.WebpageManager.store.getById(\'' + r.id + '\').data.isRead = true; Ext.select(\'.' + readClass + r.id + '\').removeClass(\'bold\'); Ext.get(\'' + idu + '\').setDisplayed(true); Ext.get(\'' + idr + '\').setDisplayed(false); og.openLink(og.getUrl(\'object\', \'mark_as_read\', {ids:' + r.id + '}));'; 
@@ -124,10 +130,10 @@ og.WebpageManager = function() {
 
 		var now = new Date();
 		var dateString = '';
-		if (!r.data.updatedOn_today) {
+		if (!r.data.dateUpdated_today) {
 			return lang('last updated by on', userString, value);
 		} else {
-			return lang('last updated by at', userString, value);
+			return userString +", "+ value;
 		}
 	}
     
@@ -138,7 +144,7 @@ og.WebpageManager = function() {
 		} else {
 			var ret = '';
 			for (var i=0; i < selections.length; i++) {
-				ret += "," + selections[i].id;
+				ret += "," + selections[i].data.object_id;
 			}
 			og.lastSelectedRow.webpages = selections[selections.length-1].data.ix;
 			return ret.substring(1);
@@ -229,22 +235,15 @@ og.WebpageManager = function() {
         },{
         	id: 'updated',
 			header: lang("last updated by"),
-			dataIndex: 'updatedOn',
+			dataIndex: 'dateUpdated',
 			width: 90,
 			renderer: renderDateUpdated,
 			sortable: true
         }];
     // custom property columns
 	var cps = og.custom_properties_by_type['weblink'] ? og.custom_properties_by_type['weblink'] : [];
-	for (i=0; i<cps.length; i++) {
-		cm_info.push({
-			id: 'cp_' + cps[i].id,
-			header: cps[i].name,
-			dataIndex: 'cp_' + cps[i].id,
-			sortable: false,
-			renderer: og.clean
-		});
-	}
+	this.addCustomPropertyColumns(cps, cm_info, 'webpage-manager');
+
 	// dimension columns
 	for (did in og.dimensions_info) {
 		if (isNaN(did)) continue;
@@ -254,7 +253,7 @@ og.WebpageManager = function() {
 				id: 'dim_' + did,
 				header: og.dimensions_info[did].name,
 				dataIndex: 'dim_' + did,
-				sortable: false,
+				sortable: true,
 				renderer: og.renderDimCol
 			});
 			og.breadcrumbs_skipped_dimensions[did] = did;
@@ -263,6 +262,7 @@ og.WebpageManager = function() {
 	// create column model
 	var cm = new Ext.grid.ColumnModel(cm_info);
     cm.defaultSortable = false;
+    cm.on('hiddenchange', this.afterColumnShowHide, this);
     
     markactions = {
 		markAsRead: new Ext.Action({
@@ -297,9 +297,11 @@ og.WebpageManager = function() {
 	
 	actions = {
 		newWebpage: new Ext.Action({
+			id: 'new_button_weblink',
 			text: lang('new'),
             tooltip: lang('add new webpage'),
             iconCls: 'ico-new new_button',
+            hidden: og.replace_list_new_action && og.replace_list_new_action.weblink,
             handler: function() {
 				og.render_modal_form('', {c:'webpage', a:'add'});
 			}
@@ -310,7 +312,9 @@ og.WebpageManager = function() {
             iconCls: 'ico-trash',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('confirm move to trash'))) {
+				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
+				
+				if (og.confirmNorification(lang('confirm move to trash'), confirm_trash_config)) {
 					this.load({
 						action: 'delete',
 						webpages: getSelectedIds()
@@ -335,7 +339,9 @@ og.WebpageManager = function() {
             iconCls: 'ico-archive-obj',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('confirm archive selected objects'))) {
+				var confirm_archive_config = parseInt(og.preferences['enableArchiveConfirmation']);
+				
+				if (og.confirmNorification(lang('confirm archive selected objects'), confirm_archive_config)) {
 					this.load({
 						action: 'archive',
 						webpages: getSelectedIds()
@@ -366,6 +372,10 @@ og.WebpageManager = function() {
     
 	var tbar = [];
 	if (!og.loggedUser.isGuest) {
+		if (og.replace_list_new_action && og.replace_list_new_action.weblink) {
+			tbar.push(og.replace_list_new_action.weblink);
+		}
+		
 		tbar.push(actions.newWebpage);
 		tbar.push('-');
 		tbar.push(actions.editWebpage);
@@ -375,10 +385,10 @@ og.WebpageManager = function() {
 	}
 	tbar.push(actions.markAs);
 
-	if (og.additional_list_actions && og.additional_list_actions.webpage) {
+	if (og.additional_list_actions && og.additional_list_actions.weblink) {
 		tbar.push('-');
-		for (var i=0; i<og.additional_list_actions.webpage.length; i++) {
-			tbar.push(og.additional_list_actions.webpage[i]);
+		for (var i=0; i<og.additional_list_actions.weblink.length; i++) {
+			tbar.push(og.additional_list_actions.weblink[i]);
 		}
 	}
 	
@@ -440,10 +450,10 @@ Ext.extend(og.WebpageManager, Ext.grid.GridPanel, {
 		} else {
 			start = 0;
 		}
+
+		this.store.baseParams.context = og.contextManager.plainContext();
 		
-		this.store.baseParams = {
-			context: og.contextManager.plainContext()
-		};
+		this.updateColumnModelHiddenColumns();
 		
 		this.store.removeAll();
 		this.store.load({

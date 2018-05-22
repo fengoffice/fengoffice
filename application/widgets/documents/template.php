@@ -14,7 +14,7 @@
 			foreach ($documents as $k => $document): /* @var $document ProjectFile */
 				//$iconClass = $document->getIconClass();
 				$iconUrl = $document->getTypeIconUrl(true, "16x16");
-				$crumbOptions = json_encode($document->getMembersToDisplayPath());
+				$crumbOptions = json_encode($document->getMembersIdsToDisplayPath());
 				if($crumbOptions == ""){
 					$crumbOptions = "{}";
 				}

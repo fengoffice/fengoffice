@@ -77,6 +77,7 @@ og.setReadOnlyObjectTypeRow = function(genid, dim_id, obj_type, readonly) {
 }
 
 og.loadMemberPermissions = function(genid, dim_id, member_id) {
+	
 	var allowed_ot = og.permissionInfo[genid].allowedOt;
 	var member_perms = og.getPermissionsForMember(genid, member_id);
 	
@@ -100,10 +101,9 @@ og.loadMemberPermissions = function(genid, dim_id, member_id) {
 		og.setReadOnlyObjectTypeRow(genid, dim_id, allowed_ot[dim_id][i], !og.canEditPermissionObjType(genid, member_id, allowed_ot[dim_id][i]));
 	}
 
-	//Update the 'All' checkbox if all permissions are set
-	var chk = document.getElementById(genid + dim_id + 'pAll');
-	if (chk)
-		chk.checked = og.hasAllPermissions(genid, member_id, member_perms);
+	og.permSetCheckboxesSelected(member_perms);
+	
+	og.eventManager.fireEvent('on load member permissions for user', {genid:genid, dim_id:dim_id, member_id:member_id});
 }
 
 //Action to execute when the value of an element of the displayed permission changes
@@ -134,10 +134,24 @@ og.ogPermValueChanged = function(genid, dim_id, obj_type){
 
 	og.markMemberPermissionModified(genid, dim_id, member_id);
 
-	//Update the 'All' checkbox if all permissions are set
-	var chk = document.getElementById(genid + dim_id + 'pAll');
-	if (chk)
-		chk.checked = og.hasAllPermissions(genid, member_id, member_perms);
+	og.permSetCheckboxesSelected(member_perms);
+}
+
+// checks the "select all" checkbox if all permissions of its type are selected
+og.permSetCheckboxesSelected = function(perms, base_cls) {
+	var assigned_vals = [];
+	for (var i=0; i<perms.length; i++) {
+		var tmp = perms[i];
+		var v = Boolean(tmp.d) ? 3 : (Boolean(tmp.w) ? 2 : (Boolean(tmp.r) ? 1 : 0));
+		if (assigned_vals.indexOf(v) == -1) assigned_vals.push(v);
+	}
+	
+	if (!base_cls) base_cls = "all-radio-sel-chk";
+	
+	$("."+base_cls).removeAttr('checked');
+	if (assigned_vals.length == 1) {
+		$("."+base_cls+"#chk-"+assigned_vals[0]).attr('checked','checked');
+	}
 }
 
 og.hasAllPermissions = function(genid, member_id, member_permissions) {
@@ -190,16 +204,27 @@ og.ogPermSetLevel = function(genid, dim_id, level){
 
 	og.markMemberPermissionModified(genid, dim_id, member_id);
 	
-	//Update the 'All' checkbox if all permissions are set
-	var chk = document.getElementById(genid + dim_id + 'pAll');
-	if (chk)
-		chk.checked = level == 3;
+	$(".all-radio-sel-chk").removeAttr('checked');
+	$(".all-radio-sel-chk#chk-"+level).attr('checked','checked');
+}
+
+og.ogPermSetLevelCheckbox = function(checkbox, genid, dim_id, radio_id) {
+	var is_checked = $(checkbox).attr('checked') == 'checked';
+	var id = is_checked ? radio_id : 0;
+	og.ogPermSetLevel(genid, dim_id, id);
 }
 
 //Action to execute when the 'All' checkbox is checked or unchecked
 og.ogPermAllChecked = function(genid, dim_id, value){
 	var level = value ? 3 : 0;
-	og.ogPermSetLevel(genid, dim_id, level);
+	if (level == 3) {
+		// gradually set all permissions
+		og.ogPermSetLevel(genid, 1);
+		og.ogPermSetLevel(genid, 2);
+		og.ogPermSetLevel(genid, 3);
+	} else {
+		og.ogPermSetLevel(genid, level);
+	}
 }
 
 //Applies the current member permission settings to all submembers
@@ -264,7 +289,7 @@ og.ogPermApplyToSubmembers = function(genid, dim_id, from_root_node){
 				og.markMemberPermissionModified(genid, dim_id, node.submember_ids[i]);
 			}
 			
-			og.eventManager.fireEvent('after apply permissions to submembers', {node:node, dim_id: dim_id, subids:node.submember_ids, member_id:member_id});
+			og.eventManager.fireEvent('after apply permissions to submembers', {node:node, dim_id: dim_id, subids:node.submember_ids, member_id:member_id, genid:genid});
 		});
 	}
 }
@@ -690,7 +715,7 @@ og.ogPermPrepareSendData = function(genid){
 	
 	var hfpg = document.getElementById(genid + 'hfPgId');
 	var pg_id = hfpg ? hfpg.value : 0;
-	og.eventManager.fireEvent('on send user permissions', {pg_id: pg_id, perms: result});
+	og.eventManager.fireEvent('on send user permissions', {pg_id: pg_id, perms: result, genid: genid});
 		
 	return true;
 }
@@ -755,7 +780,7 @@ og.ogSetCheckedValue = function(radioObj, newValue) {
 og.afterUserTypeChangeAndPermissionsClick = function(genid) {
 	
 	if (og.tmp_must_check_member_permissions && og.tmp_must_check_member_permissions[genid]) {
-		if (is_new_contact) {
+		if (og.is_new_contact) {
     		// poner permisos por defecto
 			og.setDefaultPermissionsForAllMembers(genid);
 		} else {
@@ -865,7 +890,7 @@ og.setDefaultPermissionsForAllMembers = function(genid) {
 ******************************************************/
 
 og.userPermissions = {};
-og.userPermissions.permissionInfo = [];
+og.userPermissions.permissionInfo = {};
 
 og.userPermissions.loadPermissions = function (genid, selector_id) {
 	var hf = document.getElementById(genid + 'hfPerms');
@@ -931,13 +956,10 @@ og.userPermissions.loadPGPermissions = function(genid, pg_id) {
 		if (!found) {
 			og.userPermissions.permissionInfo[genid].permissions[pg_id].push({o: allowed_ot[i], d:0 , w:0, r:0});
 		}
-		document.getElementById(genid + 'rg_' + val + '_' + allowed_ot[i]).checked = 1;
+		$(".member.permission-form-container #" + genid + 'rg_' + val + '_' + allowed_ot[i]).attr("checked", "checked");
 	}
 
-	//Update the 'All' checkbox if all permissions are set
-	var chk = document.getElementById(genid + 'pAll');
-	if (chk)
-		chk.checked = og.userPermissions.hasAllPermissions(genid, pg_id);
+	og.permSetCheckboxesSelected(permissions);
 }
 
 og.userPermissions.hasAllPermissions = function(genid, pg_id) {
@@ -978,10 +1000,14 @@ og.userPermissions.ogPermSetLevel = function(genid, level){
 
 	og.userPermissions.setCheckedPG(genid, pg_id);
 	
-	//Update the 'All' checkbox if all permissions are set
-	var chk = document.getElementById(genid + 'pAll');
-	if (chk)
-		chk.checked = level == 3;
+	$(".all-radio-sel-chk").removeAttr('checked');
+	$(".all-radio-sel-chk#chk-"+level).attr('checked','checked');
+}
+
+og.userPermissions.ogPermSetLevelCheckbox = function(checkbox, genid, radio_id) {
+	var is_checked = $(checkbox).attr('checked') == 'checked';
+	var id = is_checked ? radio_id : 0;
+	og.userPermissions.ogPermSetLevel(genid, id);
 }
 
 //Action to execute when the value of an element of the displayed permission changes
@@ -1008,16 +1034,20 @@ og.userPermissions.ogPermValueChanged = function(genid, obj_type){
 
 	og.userPermissions.setCheckedPG(genid, pg_id);
 
-	//Update the 'All' checkbox if all permissions are set
-	var chk = document.getElementById(genid + 'pAll');
-	if (chk)
-		chk.checked = og.userPermissions.hasAllPermissions(genid, pg_id);
+	og.permSetCheckboxesSelected(permissions);
 }
 
 //Action to execute when the 'All' checkbox is checked or unchecked
 og.userPermissions.ogPermAllChecked = function(genid, value){
 	var level = value ? 3 : 0;
-	og.userPermissions.ogPermSetLevel(genid, level);
+	if (level == 3) {
+		// gradually set all permissions
+		og.userPermissions.ogPermSetLevel(genid, 1);
+		og.userPermissions.ogPermSetLevel(genid, 2);
+		og.userPermissions.ogPermSetLevel(genid, 3);
+	} else {
+		og.userPermissions.ogPermSetLevel(genid, level);
+	}
 }
 
 og.userPermissions.ogPermPrepareSendData = function(genid, send_all){
@@ -1081,35 +1111,26 @@ og.userPermissions.showPermissionsPopup = function(container, genid) {
 
 	og.userPermissions.current_pg_id = pg_id;
 	
-	$('#'+ genid +'member_permissions').modal({
-		'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
-		'onShow': function (dialog) {
-			$("#"+genid+"_close_link").addClass("modal-close-img");
-			
-			// show only the possible radio buttons for permissions (depending on role)
-			var user_id = $("#" + genid + "_user_id_" + pg_id).val();
-			if (user_id > 0) {
-				var role_id = 0;
-				if (og.allUsers[user_id]) {
-					role_id = og.allUsers[user_id].role;
-				}
-				if (role_id > 0) {
-					og.userPermissions.showHidePermissionsRadioButtonsByRole(genid, role_id);
-				}
-			}
-			// set as modified to save them all 
-			var permissions = og.userPermissions.permissionInfo[genid].permissions[pg_id];
-			if (permissions.length > 0) {
-				for (var i=0; i<permissions.length; i++) {
-					if (permissions[i]) permissions[i].modified = true;
-				}
-			}
-		},
-		'onClose': function (dialog) {
-			og.userPermissions.cancelPermissionsModification(genid, og.userPermissions.current_pg_id);
-			$.modal.close();
-		}
+	var id = $('#'+ genid +'member_permissions').attr('id');
+	var html = $('#'+ genid +'member_permissions').html();
+	
+	og.ExtModal.show({
+		basecls: 'member-permissions-definition',
+		html: '<div id="'+id+'" class="member permission-form-container">' + html + '</div>'
 	});
+	og.userPermissions.loadPGPermissions(genid, pg_id);
+	
+	$(".member-permissions-definition.ext-modal-object-list .x-tool-close").click(function(){
+		og.userPermissions.cancelPermissionsModification(genid, og.userPermissions.current_pg_id);
+	});
+	
+	// set as modified to save them all 
+	var permissions = og.userPermissions.permissionInfo[genid].permissions[pg_id];
+	if (permissions.length > 0) {
+		for (var i=0; i<permissions.length; i++) {
+			if (permissions[i]) permissions[i].modified = true;
+		}
+	}
 }
 
 og.userPermissions.cancelPermissionsModification = function(genid, pg_id) {
@@ -1304,7 +1325,8 @@ og.userPermissions.savePermissions = function(genid, member_id) {
 				}
 			}
 			
-			var applysub = $("#"+genid+"apply_to_submembers").attr('checked') == 'checked' ? 1 : 0;
+                        //If checked, length = 1, if not checked, length = 0
+                        var applysub = $("#" + genid + "apply_to_submembers:checked").length;
 			
 			if (to_send.length > 0) {
 				var post_vars = {

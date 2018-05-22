@@ -83,12 +83,21 @@ abstract class BaseDimensionObjectType extends DataObject {
 		return $this->setColumnValue ( 'is_root', $value );
 	}
 	
+	
 	function getOptions() {
 		return $this->getColumnValue ( 'options' );
 	}
 	
 	function setOptions($options) {
 		return $this->setColumnValue ( 'options', $options );
+	}
+	
+	function getEnabled() {
+		return $this->getColumnValue ( 'enabled' );
+	}
+	
+	function setEnabled($value) {
+		return $this->setColumnValue ( 'enabled', $value );
 	}
 	
 	/**

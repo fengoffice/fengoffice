@@ -23,8 +23,10 @@ ogTasks.getGroups = function(){
 			post: filters,
 			callback: function(success, data) {
 				ogTasks.Groups.length = 0;
-				for (var i = 0; i < data.groups.length; i++){
-					ogTasks.addNewTaskGroup(data, i);
+				if (data.groups) {
+					for (var i = 0; i < data.groups.length; i++){
+						ogTasks.addNewTaskGroup(data, i);
+					}
 				}
 				
 				ogTasks.Groups.loaded = true; 
@@ -79,28 +81,28 @@ ogTasks.showMoreTasks = function(group_id, show_all){
 	});
 };
 
-og.getTasksFromServer = function(tasks_ids, func_callback, callback_extra_params){	
-	if(tasks_ids.length > 0){
-		og.openLink(og.getUrl('task', 'get_tasks', {tasks_ids:Ext.encode(tasks_ids)}), {
-			hideLoading: true,
-			callback: function(s, data) {
-					for (var j = 0; j < data.tasks.length; j++){
-						var task_data = data.tasks[j];
-						var task = ogTasksCache.addTasks(task_data);													
-					}
-					
-					 //execute the callback function 
-			        if (typeof callback_extra_params == "undefined") {
-			        	callback_extra_params = {};
-			        }
-			        			   
-			        if (typeof func_callback != "undefined") {
-			        	func_callback(callback_extra_params);
-			        }	
-			}
-		})
-	}
-};
+og.getTasksFromServer = function (tasks_ids, func_callback, callback_extra_params) {
+        if (tasks_ids.length > 0) {
+            og.openLink(og.getUrl('task', 'get_tasks', {tasks_ids: Ext.encode(tasks_ids)}), {
+                hideLoading: true,
+                callback: function (s, data) {
+                    for (var j = 0; j < data.tasks.length; j++) {
+                        var task_data = data.tasks[j];
+                        var task = ogTasksCache.addTasks(task_data);
+                    }
+
+                    //execute the callback function 
+                    if (typeof callback_extra_params == "undefined") {
+                        callback_extra_params = {};
+                    }
+
+                    if (typeof func_callback != "undefined") {
+                        func_callback(callback_extra_params);
+                    }
+                }
+            })
+        }
+    };
 
 og.getSubTasksAndDraw = function(task, groupId){		
 	og.getTasksFromServer(task.subtasksIds, ogTasks.drawSubtasks, {task_id:task.id, group_id:groupId});

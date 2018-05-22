@@ -74,6 +74,8 @@ class TemplateController extends ApplicationController {
 				$propValueOperation = array_var($_POST, 'propValueOperation');
 				$propValueAmount = array_var($_POST, 'propValueAmount');
 				$propValueUnit = array_var($_POST, 'propValueUnit');
+				$propValueTime = array_var($_POST, 'propValueTime');
+				
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
 						foreach($propertyValues as $property => $value){
@@ -94,6 +96,16 @@ class TemplateController extends ApplicationController {
 								$amount = $propValueAmount[$objInfo][$property];
 								$unit = $propValueUnit[$objInfo][$property];
 								$propValue = '{'.$param.'}'.$operation.$amount.$unit;
+								
+								if (isset($propValueTime[$objInfo])) {
+									$time = array_var($propValueTime[$objInfo], $property);
+									if ($param == 'task_creation' && config_option('use_time_in_task_dates')) {
+										$tval = getTimeValue($time);
+										if (is_array($tval)) {
+											$propValue .= "|".str_pad($tval['hours'], 2, '0', STR_PAD_LEFT).":".str_pad($tval['mins'], 2, '0', STR_PAD_LEFT);
+										}
+									}
+								}
 							}else{
 								if(is_array($value)){
 									$propValue = $value[0];
@@ -162,9 +174,10 @@ class TemplateController extends ApplicationController {
 	 */
 	function add_template_object_to_view($template_id) {
 		$objects = array();
-		$conditions = array('conditions' => '`template_id` = '.$template_id);
-		$tasks = TemplateTasks::findAll($conditions);			
-		$milestones = TemplateMilestones::findAll($conditions);	
+		$tasks_conditions = array('conditions' => '`template_id` = '.$template_id,  "order" => "depth,name");
+		$milestones_conditions = array('conditions' => '`template_id` = '.$template_id,  "order" => "name");
+		$tasks = TemplateTasks::findAll($tasks_conditions);			
+		$milestones = TemplateMilestones::findAll($milestones_conditions);	
 				
 		foreach ($milestones as $milestone){
 			$objectId = $milestone->getObjectId();
@@ -174,7 +187,7 @@ class TemplateController extends ApplicationController {
 			$manager = get_class($milestone->manager());
 			$ico = "ico-milestone";
 			$action = "add";
-			$objects[] = $this->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,null, null, null, $ico);
+			$objects[] = $this->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,null, null, null, $ico, $milestone->getObjectTypeId());
 		}
 		
 		foreach ($tasks as $task){
@@ -188,15 +201,16 @@ class TemplateController extends ApplicationController {
 			$parentId = $task->getParentId();
 			$ico = "ico-task";
 			$action = "add";
-			$objects[] = $this->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId, $subTasks, $parentId, $ico);
+			$objects[] = $this->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId());
 		}
 		
 		return $objects;
 	}
 		
-	function prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId = null , $subTasks = null, $parentId = null, $ico = null) {
+	function prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId = null , $subTasks = null, $parentId = null, $ico = null, $objectTypeId=0) {
 		$object = array(
 				"object_id" => $objectId,
+				"object_type_id" => $objectTypeId,
 				"type" => $objectTypeName,
 				"id" => $id,
 				"name" => $objectName,
@@ -296,6 +310,8 @@ class TemplateController extends ApplicationController {
 				$propValueOperation = array_var($_POST, 'propValueOperation');
 				$propValueAmount = array_var($_POST, 'propValueAmount');
 				$propValueUnit = array_var($_POST, 'propValueUnit');
+				$propValueTime = array_var($_POST, 'propValueTime');
+				
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
 						foreach($propertyValues as $property => $value){
@@ -314,6 +330,16 @@ class TemplateController extends ApplicationController {
 								$amount = array_var($propValueAmount[$objInfo], $property);
 								$unit = array_var($propValueUnit[$objInfo], $property);
 								$propValue = '{'.$param.'}'.$operation.$amount.$unit;
+								
+								if (isset($propValueTime[$objInfo])) {
+									$time = array_var($propValueTime[$objInfo], $property);
+									if ($param == 'task_creation' && config_option('use_time_in_task_dates')) {
+										$tval = getTimeValue($time);
+										if (is_array($tval)) {
+											$propValue .= "|".str_pad($tval['hours'], 2, '0', STR_PAD_LEFT).":".str_pad($tval['mins'], 2, '0', STR_PAD_LEFT);
+										}
+									}
+								}
 							}else{
 								if(is_array($value)){
 									$propValue = $value[0];
@@ -469,6 +495,11 @@ class TemplateController extends ApplicationController {
 	
 
 	function template_parameters(){
+		if (!can_instantiate_templates(logged_user())) {
+			flash_error(lang("no access permissions"));
+			ajx_current("empty");
+			return;
+		}
 		$id = get_id();
 		$parameters = TemplateParameters::getParametersByTemplate($id);
 		ajx_current("empty");
@@ -476,16 +507,6 @@ class TemplateController extends ApplicationController {
 	}
 	
 	
-	function get_context(){
-		$id = get_id();
-		$template = COTemplates::findById($id);
-		$this->setTemplate('get_context');
-		if(array_var($_POST, 'members')){
-			$this->instantiate();
-		}
-		tpl_assign('cotemplate',$template);
-		tpl_assign('id',$id);
-	}
 	
 	function save_instantiated_parameters($template, $parameters, $parameterValues) {
 		$instantiation_id = config_option('last_template_instantiation_id') + 1;
@@ -493,9 +514,12 @@ class TemplateController extends ApplicationController {
 		foreach ($parameters as $param) {
 			/* @var $param TemplateParameter */
 			$param_val = array_var($parameterValues, $param->getName(), '');
-			$param_val = str_replace("'", "\'", $param_val);
+			
+			Hook::fire('before_saving_instantiated_template_param', array('param' => $param, 'template' => $template, 'inst_id' => $instantiation_id), $param_val);
+			$param_val = escape_character($param_val);
+			
 			DB::execute("INSERT INTO `".TABLE_PREFIX."template_instantiated_parameters` (`template_id`, `instantiation_id`, `parameter_name`, `value`) VALUES
-					('".$template->getId()."', '$instantiation_id', '".$param->getName()."', '$param_val') ON DUPLICATE KEY UPDATE template_id=template_id");
+					('".$template->getId()."', '$instantiation_id', '".escape_character($param->getName())."', ".DB::escape($param_val).") ON DUPLICATE KEY UPDATE template_id=template_id");
 		}
 		
 		set_config_option('last_template_instantiation_id', $instantiation_id);
@@ -504,6 +528,12 @@ class TemplateController extends ApplicationController {
 	
 	
 	function instantiate($arguments = null) {
+		if (!can_instantiate_templates(logged_user())) {
+			flash_error(lang("no access permissions"));
+			ajx_current("empty");
+			return;
+		}
+
 		$selected_members = array();
 		$id = array_var($arguments, 'id', get_id());
 	
@@ -521,13 +551,10 @@ class TemplateController extends ApplicationController {
 			return;
 		}
 		
-		$instantiation_id = 0;
-		if (count($parameters) > 0 ) {
-			$instantiation_id = $this->save_instantiated_parameters($template, $parameters, $parameterValues);
-		}
+		$instantiation_id = $this->save_instantiated_parameters($template, $parameters, $parameterValues);
 		
-		if(array_var($_POST, 'members') || array_var($arguments, 'members')){
-			$selected_members = array_var($arguments, 'members', json_decode(array_var($_POST, 'members')));
+		if(array_var($_REQUEST, 'members') || array_var($arguments, 'members')){
+			$selected_members = array_var($arguments, 'members', json_decode(array_var($_REQUEST, 'members')));
 		}else{
 			$context = active_context();
 			
@@ -535,6 +562,29 @@ class TemplateController extends ApplicationController {
 				if ($selection instanceof Member) $selected_members[] = $selection->getId();
 			}
 		}
+		if (array_var($_REQUEST, 'additional_member_ids')) {
+			$add_mem_ids = json_decode(array_var($_REQUEST, 'additional_member_ids'));
+			if (is_array($add_mem_ids)) {
+				foreach ($add_mem_ids as $add_mem_id) {
+					if (is_numeric($add_mem_id)) $selected_members[] = $add_mem_id;
+				}
+			}
+		}
+
+		//Linked objects
+		if (array_var($_REQUEST, 'linked_objects')) {
+			$linked_objects_ids = json_decode(array_var($_REQUEST, 'linked_objects'));
+			$linked_objects = array();
+			if (is_array($linked_objects_ids)) {
+				foreach ($linked_objects_ids as $linked_object_id) {
+					$linked_object = Objects::findObject($linked_object_id);
+					if ($linked_object instanceof ApplicationDataObject) {
+						$linked_objects[] = $linked_object;
+					}
+				}
+			}
+		}
+
 		
 		$objects = $template->getObjects() ;
 		$controller  = new ObjectController();
@@ -567,17 +617,6 @@ class TemplateController extends ApplicationController {
 				}
 											
 				$copy = $object->copyToProjectTask($instantiation_id);
-				//if is subtask
-				if($copy->getParentId() > 0){	
-					foreach ($copies as $c) {
-						if($c instanceof ProjectTask){
-							if($c->getFromTemplateObjectId() == $object->getParentId()){
-								$copy->setParentId($c->getId());								
-							}
-						}
-						
-					}					
-				}
 			}else if ($object instanceof TemplateMilestone) {
 				$copy = $object->copyToProjectMilestone();
 							
@@ -628,7 +667,7 @@ class TemplateController extends ApplicationController {
 				$object_members[] = $object_member->getId();
 			}
 			
-			$controller->add_to_members($copy, $object_members);
+			$controller->add_to_members($copy, $object_members, null, false);
 			
 			// set property values as defined in template
 			instantiate_template_task_parameters($object, $copy, $parameterValues);
@@ -655,6 +694,27 @@ class TemplateController extends ApplicationController {
 
 		foreach ($copies as $c) {
 			if ($c instanceof ProjectTask) {
+				
+				// check permissions for the assigned user
+				$assigned = $c->getAssignedToContact();
+				if ($assigned instanceof Contact) {
+					$allowed_users = allowed_users_to_assign($c->getMembers(), true, false);
+					$allowed = false;
+					foreach ($allowed_users as $auser) {
+						if ($auser->getId() == $assigned->getId()) {
+							$allowed = true;
+							break;
+						}
+					}
+					if (!$allowed) {
+						$text = lang('couldnt assign user to task due to permissions', $assigned->getObjectName(), $c->getObjectName());
+						evt_add("popup", array('title' => lang('information'), 'message' => $text));
+						
+						$c->setAssignedToContactId(0);
+						$c->save();
+					}
+				}
+				
 				if ($c->getMilestoneId() > 0) {
 					// find milestone in copies
 					foreach ($copies as $m) {
@@ -662,6 +722,29 @@ class TemplateController extends ApplicationController {
 							$c->setMilestoneId($m->getId());
 							$c->save();
 							break;
+						}
+					}
+				}
+
+				//if is subtask we search for the project task id of the parent
+				if($c->getParentId() > 0){	
+					foreach ($copies as $cp) {
+						if($cp instanceof ProjectTask){
+							if($cp->getFromTemplateObjectId() == $c->getParentId()){
+								$c->setParentId($cp->getId());	
+								$c->save();	
+								break;						
+							}
+						}
+						
+					}					
+				}
+
+				//linked objects
+				if (isset($linked_objects) && is_array($linked_objects)) {
+					foreach ($linked_objects as $linked_object) {
+						if ($linked_object instanceof ApplicationDataObject) {
+							$c->linkObject($linked_object);
 						}
 					}
 				}
@@ -679,17 +762,36 @@ class TemplateController extends ApplicationController {
 		}
 		
 		DB::commit();
-		
+
 		foreach ($copies as $c) {
 			if ($c instanceof ProjectTask) {
 				ApplicationLogs::createLog($c, ApplicationLogs::ACTION_ADD);
+
+                // notify asignee
+                if(1) { //array_var($task_data, 'send_notification')
+                    if(($c instanceof ProjectTask) && ($c->getAssignedToContactId() != $c->getAssignedById())) {
+                        try {
+                            Notifier::taskAssigned($c);
+                        } catch(Exception $e) {
+                            evt_add("debug", $e->getMessage());
+                        } // try
+                    }
+                }
 			}
+			
+			$ret = null;
+			Hook::fire('after_template_object_instantiation_and_commit', array('template' => $template, 'object' => $c), $ret);
 		}
 		
 		if (is_array($parameters) && count($parameters) > 0){
 			ajx_current("back");
 		}else{
 			ajx_current("back");
+		}
+		
+		flash_success(lang('success instatiate template', $template->getName()));
+		if (array_var($_GET, 'from_email') > 0) {
+			evt_add('reload tab panel', 'tasks-panel');
 		}
 	}
 	
@@ -698,20 +800,60 @@ class TemplateController extends ApplicationController {
 	function instantiate_parameters(){
 		if(is_array(array_var($_POST, 'parameterValues'))){
 			ajx_current("back");
-			$ret = null;
-			Hook::fire('before_instantiate_paramters', array_var($_POST, 'parameterValues'), $ret);
+			
+			$template_id = get_id();
+			$error = null;
+			Hook::fire('before_instantiate_paramters', array('id' => $template_id, 'params' => array_var($_POST, 'parameterValues')), $error);
+			if ($error) {
+				flash_error($error);
+				ajx_current("empty");
+				return;
+			}
+			
 			$this->instantiate();
+			
 		}else{
 			$id = get_id();
-			$member_id = get_id('member_id');
+
+			$additional_member_ids = array();
+			if($add_mem_id = get_id('member_id')){
+				$additional_member_ids[] = $add_mem_id;
+				
+				// ensure that new member is in context before rendering the template paramters form
+				if (!in_array($add_mem_id, active_context_members(false))) {
+					$current_context = active_context();
+					$add_mem = Members::findById($add_mem_id);
+					if ($add_mem instanceof Member) $current_context[] = $add_mem;
+					CompanyWebsite::instance()->setContext($current_context);
+				}
+			}
+			$linked_objects = array();
 			$parameters = TemplateParameters::getParametersByTemplate($id);
 			$params = array();
 			foreach($parameters as $parameter){
-				$params[] = array('name' => $parameter->getName(), 'type' => $parameter->getType(), 'default_value' => $parameter->getDefaultValue());
+				$params[] = $parameter->getArrayInfo();
 			}
+
+			$template = COTemplates::findById($id);
+			if (!$template instanceof COTemplate) {
+				flash_error(lang("template dnx"));
+				ajx_current("empty");
+				return;
+			}
+
+			if (array_var($_REQUEST, 'additional_member_ids')) {
+				$additional_member_ids = array_merge($additional_member_ids,json_decode(array_var($_REQUEST, 'additional_member_ids')));
+			}
+
+			if (array_var($_REQUEST, 'linked_objects')) {
+				$linked_objects = json_decode(array_var($_REQUEST, 'linked_objects'));
+			}
+
 			tpl_assign('id', $id);
-			tpl_assign('member_id', $member_id);
+			tpl_assign('additional_member_ids', $additional_member_ids);
+			tpl_assign('linked_objects', $linked_objects);
 			tpl_assign('parameters', $params);
+			tpl_assign('template', $template);
 		}
 	}
 

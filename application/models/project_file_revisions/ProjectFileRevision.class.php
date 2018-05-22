@@ -320,7 +320,8 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 	 * @return boolean
 	 */
 	function canView(Contact $user) {
-		return can_read($user, $this->getMembers(), $this->getObjectTypeId());
+		$file = $this->getFile();
+		return can_read($user, $file->getMembers(), $file->getObjectTypeId());
 	} // canView
 
 	

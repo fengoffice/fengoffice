@@ -137,4 +137,7 @@
 	'upload error msg UPLOAD_ERR_INI_SIZE' => 'Die hochgeladene Datei überschreitet die maximal zulässige Größe von {0}.',
 	'upload error msg UPLOAD_ERR_FORM_SIZE' => 'Die hochgeladene Datei überschreitet die maximal zulässige Größe von {0}.',
 	'upload error msg UPLOAD_ERR_PARTIAL' => 'Die hochgeladene Datei wurde nur zum Teil hochgeladen.',
+	'there are no changes' => 'Es wurden keine Änderungen vorgenommen. Das Dokument wurde nicht überschrieben.',
+	'uploaded file bigger than max upload size' => 'Sie versuchen ein Dokument hochzuladen, das größer als Ihr Upload-Limit von {0} ist.',
+	'failed to authenticate email account' => 'Konnte E-Mail-Konto nicht bestätigen.',
 ); ?>

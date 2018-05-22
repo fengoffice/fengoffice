@@ -32,6 +32,7 @@ ogMemberCache.reset_dimensions_cache = function(){
  *@return array with the member and it parents if you set include_parents. If the member is not found return an empty array.
  * */
 og.getMemberFromOgDimensions = function(mem_id, include_parents, func_callback, callback_extra_params) {
+    if (isNaN(mem_id)) return false;
 	var members = [];
 	
 	if (typeof include_parents == "undefined") {
@@ -79,6 +80,7 @@ og.getMemberFromOgDimensions = function(mem_id, include_parents, func_callback, 
  *@param callback_extra_params object with all the params for the callback function 
  * */
 og.getMemberFromServer = function(mem_id, func_callback, callback_extra_params){
+    if (isNaN(mem_id)) return false;
 	if(searchingMemberOnTheServer.indexOf(mem_id) == -1){
 		//add member to searchingMemberOnTheServer
 		searchingMemberOnTheServer.push(mem_id);
@@ -136,6 +138,7 @@ og.getMemberTextsFromOgDimensions = function(mem_id, include_parents, func_callb
 			var member_info = {};
 			member_info ={
 					"id":member.id,
+					"dim":member.dimension_id,
 					"ot":member.object_type_id,
 					"c":member.color,
 					"text":member.name
@@ -196,6 +199,8 @@ og.searchMemberOnServer = function(dimension_id, search_params, func_callback){
 	if(typeof search_params.allowed_member_types != 'undefined'){
 		params.allowed_member_types = search_params.allowed_member_types;
 	}
+	
+	params.ignore_context_filter = true;
 	
 	og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', params), {
 		hideLoading:true, 

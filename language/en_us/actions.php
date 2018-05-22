@@ -98,6 +98,7 @@
     'back to calendar' => 'Back to calendar',
     'back to day' => 'Back to day',
     'pick a date' => 'Pick a date',
+    'year' => 'Year',
     'month' => 'Month',
     'day' => 'Day',
     'week' => 'Week',
@@ -205,6 +206,8 @@
 	'edit preferences' => 'Edit preferences',
 	'view milestone' => 'View milestone',
   	'custom properties' => 'Custom Properties',
+      'more properties' => 'More Details',
+      'contact details' => 'Contact Details',
   	'move to trash' => 'Move to trash',
   	'restore from trash' => 'Restore from trash',
   	'delete permanently' => 'Delete permanently',
@@ -231,6 +234,7 @@
   	'activate' => 'Activate',
   	'disabled' => 'Disabled',
   	'restore user' => 'Restore user',
+  	'dont filter' => 'Don\'t filter',
   	
   	'template context' => 'Choose the template\'s location',
       
@@ -241,6 +245,13 @@
   		'recent activities to show lines' => 'lines',
         'views and downloads' => 'View views and downloads',
         'confirm delete permanently sync' => 'Are you sure you want to delete the sync data?',
+       'select all' => 'Select all',
+      
+      //Tokens
+      'add new external token' => 'Add new token',
+      'edit external tokens' => 'Manage external tokens',
+      'token edit' => 'Save',
+      
   ); // array
 
 ?>

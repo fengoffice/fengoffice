@@ -1,6 +1,6 @@
 <?php $genid = gen_id();?>
 
-<form class="internalForm" action="<?php echo Comment::getAddUrl($comment_form_object) ?>" method="post" enctype="multipart/form-data">
+<form class="internalForm" action="<?php echo Comment::getAddUrl($comment_form_object) ?>" id="<?php echo $genid?>postcomment" method="post" enctype="multipart/form-data">
 <?php tpl_display(get_template_path('form_errors')) ?>
 
 
@@ -30,7 +30,7 @@ $(function() {
 	});
 
 	$('#'+genid+'addCommentText').keyup(function(){
-		var max_height = 200;
+		var max_height = 2000;
 		if ($(this)[0].scrollHeight > $(this)[0].clientHeight && $(this)[0].clientHeight < max_height) {
 			var h = $(this)[0].scrollHeight + 10;
 			if (h > max_height) {
@@ -45,5 +45,19 @@ $(function() {
 			}
 		}
 	});
+	
+
+	// disable comment button after submit
+	$("#"+genid+"postcomment").submit(function () {
+		var text = $('#'+genid+'addCommentText').val();
+		if (text != "") {
+			// disable the button and enable it 2 seconds later
+			$("#"+genid+"_write_comment_btn button").attr("disabled", "disabled");
+			setTimeout(function() {
+				$("#"+genid+"_write_comment_btn button").removeAttr('disabled');
+			}, 2000);
+		}
+        return true;
+    });
 });
 </script>

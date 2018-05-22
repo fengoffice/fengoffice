@@ -6,8 +6,8 @@
 	'add new relation workspaces' => 'Type to select workspace',
 	'add new relation tags' => 'Type to select tag',
 
-	'add new workspace' => 'Add a new workspace',
-	'add your first workspace' => 'Add your first workspace',
+	'add new workspace' => 'Add a new {0}',
+	'add your first workspace' => 'Add your first {0}',
 	'you have no workspaces yet' => 'You have no workspaces yet',
 
 	'filter by workspaces' => 'Filter by workspace',
@@ -20,4 +20,14 @@
 	
 	'add a new member in workspaces' => 'Add a new workspace',
 	'add a new member in tags' => 'Add a new tag',
+	'workspaces list' => 'Workspaces list',
+	'tags list' => 'Tags list',
+	
+	'the workspaces' => 'the workpsaces',
+	'the tags' => 'the tags',
+	'workspace report' => 'Workspaces report',
+	'tag report' => 'Tags report',
+
+	'system module workspaces-panel hint' => 'View the workspaces list in a separate tab.',
+	'system module tags-panel hint' => 'View the tags list in a separate tab.',
 );

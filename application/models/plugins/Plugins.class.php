@@ -40,9 +40,24 @@
   	}
   	
   	function isActivePlugin($name) {
+  		if (!isset($this) || !$this instanceof Plugins) {
+  			return self::instance()->isActivePlugin($name);
+  		}
 		$this->getActive();
   		foreach ($this->active as $active_plugin) {
   			if ($active_plugin->getName() == $name) return true;
+  		}
+  		
+  		return false;
+  	}
+  	
+  	function isInstalledPlugin($name) {
+  		if (!isset($this) || !$this instanceof Plugins) {
+  			return self::instance()->isInstalledPlugin($name);
+  		}
+		$this->getAll();
+  		foreach ($this->all as $installed_plugin) {
+  			if ($installed_plugin->getName() == $name) return true;
   		}
   		
   		return false;

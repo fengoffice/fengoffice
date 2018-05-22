@@ -6,11 +6,13 @@ INSERT INTO `<?php echo $table_prefix ?>tab_panels` (`id`,`ordering`,`title`,`ic
  ('mails-panel', 12, 'email tab', 'ico-mail', 1, 'mail', 'init', '', '', 'system', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'), 1, (SELECT id FROM <?php echo $table_prefix ?>plugins WHERE name='mail'))
 ON DUPLICATE KEY UPDATE id=id;
 
+INSERT INTO `<?php echo $table_prefix ?>config_categories` (`name`, `is_system`, `category_order`) VALUES ('mail module', 0, 60);
 
 INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
- ('mailing', 'user_email_fetch_count', '10', 'IntegerConfigHandler', 0, 0, 'How many emails to fetch when checking for email'),
- ('mailing', 'sent_mails_sync', '0', 'BoolConfigHandler', 0, 0, 'imap email accounts synchronization possibility'),
- ('mailing', 'check_spam_in_subject', '0', 'BoolConfigHandler', 0, 0, '')
+ ('mail module', 'user_email_fetch_count', '10', 'IntegerConfigHandler', 0, 0, 'How many emails to fetch when checking for email'),
+ ('mail module', 'sent_mails_sync', '0', 'BoolConfigHandler', 0, 0, 'imap email accounts synchronization possibility'),
+ ('mail module', 'check_spam_in_subject', '0', 'BoolConfigHandler', 0, 0, ''),
+ ('mail module', 'use_mail_accounts_to_send_nots', '0', 'BoolConfigHandler', 0, 0, '')
  ON DUPLICATE KEY UPDATE name=name;
 
 INSERT INTO <?php echo $table_prefix ?>contact_config_options (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
@@ -18,10 +20,11 @@ INSERT INTO <?php echo $table_prefix ?>contact_config_options (`category_name`, 
  ('mails panel', 'check_is_defult_account', '1', 'BoolConfigHandler', '0', '0', NULL),
  ('mails panel', 'block_email_images', '1', 'BoolConfigHandler', '0', '0', NULL),
  ('mails panel', 'draft_autosave_timeout', '60', 'IntegerConfigHandler', '0', '100', NULL),
+ ('mails panel', 'default_mail_font_size', '14', 'IntegerConfigHandler', '0', '100', NULL),
  ('mails panel', 'attach_docs_content', '1', 'BoolConfigHandler', '0', '0', NULL),
  ('mails panel', 'email_polling', '0', 'IntegerConfigHandler', '1', '0', NULL),
  ('mails panel', 'show_unread_on_title', '0', 'BoolConfigHandler', '1', '0', NULL),
- ('mails panel', 'max_spam_level', '0', 'IntegerConfigHandler', '0', '100', NULL),
+ ('mails panel', 'max_spam_level', '5', 'IntegerConfigHandler', '0', '100', NULL),
  ('mails panel', 'create_contacts_from_email_recipients', '0', 'BoolConfigHandler', '0', '101', NULL),
  ('mails panel', 'mail_drag_drop_prompt', 'prompt', 'MailDragDropPromptConfigHandler', '0', '102', NULL),
  ('mails panel', 'auto_classify_attachments', '1', 'BoolConfigHandler', '0', '103', NULL),
@@ -111,3 +114,9 @@ INSERT INTO <?php echo $table_prefix ?>max_role_object_type_permissions (role_id
  WHERE o.`name` IN ('mail')
  AND p.`name` IN ('Collaborator Customer','Internal Collaborator','External Collaborator','Guest Customer')
 ON DUPLICATE KEY UPDATE role_id=role_id;
+
+INSERT INTO <?php echo $table_prefix ?>contact_member_permissions (permission_group_id, member_id, object_type_id, can_delete, can_write)
+ SELECT cmp.permission_group_id, cmp.member_id, (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='mail'), cmp.can_delete, cmp.can_write 
+ FROM <?php echo $table_prefix ?>contact_member_permissions cmp
+ WHERE cmp.object_type_id = (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='task')
+ON DUPLICATE KEY UPDATE <?php echo $table_prefix ?>contact_member_permissions.member_id=<?php echo $table_prefix ?>contact_member_permissions.member_id;

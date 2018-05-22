@@ -24,15 +24,23 @@
     	'is_required' => DATA_TYPE_BOOLEAN,
     	'is_multiple_values' => DATA_TYPE_BOOLEAN,
     	'property_order' => DATA_TYPE_INTEGER,
-    	'visible_by_default' => DATA_TYPE_BOOLEAN
+    	'visible_by_default' => DATA_TYPE_BOOLEAN,
+    	'is_special' => DATA_TYPE_BOOLEAN,
+    	'is_disabled' => DATA_TYPE_BOOLEAN,
+    	'show_in_lists' => DATA_TYPE_BOOLEAN,
     );
-  
+    
+    static private $non_orderable_column_types = array('image','table');
+    
+    static private $non_searchable_column_types = array('contact','user','image','boolean','date','datetime');
+    
     /**
     * Construct
     *
     * @return BaseCustomProperties 
     */
     function __construct() {
+      Hook::fire('object_definition', 'CustomProperty', self::$columns);
       parent::__construct('CustomProperty', 'custom_properties', true);
     } // __construct
     
@@ -87,6 +95,28 @@
     function getAutoIncrementColumn() {
       return 'id';
     } // getAutoIncrementColumn
+    
+    /**
+     * Return array of column types that are not orderable by this column type
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getNonOrderableColumnTypes() {
+        return self::$non_orderable_column_types;
+    } // getNotOrderColumnTypes
+    
+    /**
+     * Return array of column types that are not searchable by it
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getNonSearchableColumnTypes() {
+        return self::$non_searchable_column_types;
+    }//getNotSearchableColumnTypes
     
     // -------------------------------------------------------
     //  Finders

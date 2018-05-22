@@ -897,9 +897,11 @@ function get_flash_url($file_name) {
  * Return URL of specific stylesheet
  *
  * @param string $file_name
+ * @param string $plugin
+ * @param boolean $is_ajax
  * @return string
  */
-function get_stylesheet_url($file_name) {
+function get_stylesheet_url($file_name, $plugin = null, $is_ajax = false) {
 	static $theme = null;
 
 
@@ -912,8 +914,14 @@ function get_stylesheet_url($file_name) {
 		} // if
 	} // if
 
+
 	$prefix = get_assets_prefix();
-	return get_public_url("assets/{$prefix}themes/$theme/stylesheets/$file_name");
+
+	if ($plugin){
+		return 'plugins/'.$plugin.'/public/assets/css/'.$file_name ;
+	}else {
+		return get_public_url("assets/{$prefix}themes/$theme/stylesheets/$file_name");
+	}
 } // get_stylesheet_url
 
 /**

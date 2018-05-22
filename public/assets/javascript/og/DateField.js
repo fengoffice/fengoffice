@@ -19,6 +19,10 @@ Ext.extend(og.DateField, Ext.form.DateField,{
         }
         if(this.menu == null){
             this.menu = new Ext.menu.DateMenu();
+            
+            if (this.picker_select_listener && typeof(this.picker_select_listener) == 'function') {
+            	this.menu.picker.addListener("select", this.picker_select_listener);
+            }
         }
         Ext.apply(this.menu.picker,  {
         	nextText: lang('next month'),

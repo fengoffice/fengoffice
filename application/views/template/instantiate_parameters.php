@@ -12,31 +12,41 @@ if (array_var($_REQUEST, 'modal')) {
 <div class="template">
 <div class="coInputHeader">
 	<div class="coInputHeaderUpperRow">
-		<div class="coInputTitle"><?php echo lang('template parameters')?></div>
+		<div class="coInputTitle"><?php echo lang('template parameters').': '.$template->getObjectName() ?></div>
 		<div class="desc"><?php echo lang('template parameters description')?></div>
+		<div class="desc"><?php echo $template->getDescription()?></div>
 	</div>
 	<div class="clear"></div>
 </div>
 <div class="coInputMainBlock">
-	
+	<?php if (!isset($parameters) || count($parameters) == 0) { ?>
+	<input name="parameterValues[dummy]" value="" type="hidden"/>
+	<?php } ?>
 	<div>
-		<table><tbody>
+		<table style="width:100%;"><tbody>
 		<?php foreach($parameters as $parameter) {
 				$default_value = array_var($parameter, 'default_value');
 				$dont_render_this_param = false;
 				Hook::fire('before_instantiating_template_param_def_value', array('param' => $parameter), $dont_render_this_param);
 				if ($dont_render_this_param) {
 					continue;
+				} else {
+					$default_value = str_replace(array('{{email_body}}', '{{email_subject}}'), '', $default_value);
 				}
 		?>
 			<tr style='height:30px;'>
-				<td style="padding:3px 10px 0 10px;"><b><?php echo $parameter['name']; ?></b></td>
+				<td style="padding:3px 10px 0 10px;"><span class="bold"><?php
+					$parameter_name = $parameter['name'];
+					Hook::fire('template_param_instantiation_name', array('param' => $parameter, 'template' => $template), $parameter_name);
+					echo $parameter_name;
+				?></span></td>
 				<td align="left">
 					<?php if($parameter['type'] == 'string'){ ?>
 						<input id="parameterValues[<?php echo $parameter['name'] ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>"/>
-					<?php }else if($parameter['type'] == 'date'){ ?>
-						<?php echo pick_date_widget2('parameterValues['.$parameter['name'].']')?>
-					<?php }else{ ?>
+					<?php } else if ($parameter['type'] == 'date'){
+								echo pick_date_widget2('parameterValues['.$parameter['name'].']');
+							
+						  } else if($parameter['type'] == 'user') { ?>
 						<select name="<?php echo 'parameterValues['.$parameter['name'].']'; ?>">
 						<?php
 							$context = active_context();
@@ -47,7 +57,11 @@ if (array_var($_REQUEST, 'modal')) {
 									$context = array($additional_member);
 								}
 							}
+
 							$companies  = allowed_users_to_assign($context);
+							?>
+							<option value="<?php echo $usr['id'] ?>"><?php echo lang('none') ?></option>
+							<?php
 							foreach ($companies as $c) {
 								if (config_option('can_assign_tasks_to_companies')) { ?>
 								<option value="<?php echo $c['id']; ?>"> <?php echo $c['name']; ?></option>
@@ -64,11 +78,22 @@ if (array_var($_REQUEST, 'modal')) {
 							 
 						?>
 						</select>
-					<?php } ?>
+					<?php } else {
+								$null = null;
+								Hook::fire('render_param_to_instantiate', array('param' => $parameter), $null);
+						  }
+					?>
 				</td>
 			</tr>
 		<?php }//foreach ?>
 		</tbody></table>
+		<input type="hidden" name="additional_member_ids" value='<?php echo json_encode($additional_member_ids)?>'>
+		<input type="hidden" name="linked_objects" value='<?php echo json_encode($linked_objects)?>'>
+		<?php
+		if (isset($from_email)) {
+			?><input type="hidden" name="from_email_id" value="<?php echo array_var($_REQUEST, 'from_email')?>"><?php 
+		}
+		?>
 	</div>
 	<br/>
 	<div>

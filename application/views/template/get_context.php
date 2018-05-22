@@ -21,9 +21,9 @@
 		<?php
 			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
 			if ($cotemplate->isNew()) {
-				render_member_selectors($cotemplate->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners)); 
+				render_member_selectors($cotemplate->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object)); 
 			}else {
-				render_member_selectors($cotemplate->manager()->getObjectTypeId(), $genid, $cotemplate->getMemberIds(), array('listeners' => $listeners)); 
+				render_member_selectors($cotemplate->manager()->getObjectTypeId(), $genid, $cotemplate->getMemberIds(), array('listeners' => $listeners, 'object' => $object)); 
 			} 
 		?>		
 	</fieldset>

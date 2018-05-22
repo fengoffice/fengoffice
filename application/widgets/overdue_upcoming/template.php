@@ -28,7 +28,12 @@
 					$cls = 'completed';
 				} else {
 					if ($object->getDueDate()){
-						$object->getDueDate()->advance(logged_user()->getTimezone() * 3600, true);
+						$tz_offset = Timezones::getTimezoneOffsetToApply($object);
+						$tz = $tz_offset/3600;
+
+                        if($object instanceof ProjectTask && $object->getUseDueTime()) {
+                            $object->getDueDate()->advance($tz, true);
+                        }
 						if ($object->getDueDate()->getTimestamp() < $today->getTimestamp()) {
 							$days_str = lang('days late', $object->getLateInDays());
 							$cls = 'late';
@@ -56,13 +61,13 @@
 			    <td style="padding-left:5px;padding-bottom:2px;overflow:hidden;text-overflow:ellipsis;max-width:10px;vertical-align: middle;">
 			    	<div class="nobr">
 			    		<?php
-			    			$crumbOptions = json_encode($object->getMembersToDisplayPath());
+			    			$crumbOptions = json_encode($object->getMembersIdsToDisplayPath());
 			    			if($crumbOptions == ""){
 			    				$crumbOptions = "{}";
 			    			}
 							$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.nobr' ) "; 
 			    		?>
-			    		<a class="internalLink" href="<?php echo $object->getViewUrl() ?>" title="<?php echo clean($object->getObjectName()) ?>">
+			    		<a class="internalLink" href="#" onclick="og.openLink('<?php echo $object->getViewUrl() ?>');" title="<?php echo clean($object->getObjectName()) ?>">
 							<?php if ($object instanceof ProjectTask && $object->getAssignedToContactId() > 0) echo "<span class='bold'>". clean($object->getAssignedToName()).": </span>"; ?>
 							<?php echo clean($object->getObjectName()) ?>
 						</a>
@@ -104,33 +109,10 @@
 		<div class="separator"></div>
 		<?php endif; ?>
 		<div class="new-task">
-		
-			<div class="field name">
-				<label class="label"><?php echo lang("add task")?></label>
-				<input type="text" class="task-name" maxlength='255'  />
-			</div>
 
-			<div class="field assigned ">
-				<label><?php echo lang('assigned to')?>:</label>
-				<?php echo simple_select_box('task[assigned_to_contact_id]',$users, null, array('class'=> 'assigned-to' ) ) ?>
-				
-			</div>
-			
-			
-			<div class="field due">
-				<label><?php echo lang('due date') ?>:</label>
-				<?php echo pick_date_widget2('task[task_due_date]', null, $genid, 70, false, $genid.'due_date') ?>
-			</div>
-			
-			<?php if (config_option('use_time_in_task_dates')) { ?>
-			<div class="field due">
-				<label>&nbsp;</label>
-				<?php echo pick_time_widget2('task[task_due_time]', null, $genid, 75); ?>
-			</div>
-			<?php } ?>
+
 			<div style="padding-top:12px;">
-				<button class="submit-task add-first-btn" ><?php echo lang('add task')?></button>
-				<a class="task-more-details coViewAction ico-edit" href="#"><?php echo lang("details")?></a>
+				<button class="add-first-btn" type="" onclick="ogTasks.drawAddNewTaskFromData('new_task_<?php echo $genid?>')"><?php echo lang('add task')?></button>
 			</div>
 			<div class="x-clear"></div>
 			
@@ -138,64 +120,3 @@
 	<?php endif;?>
 	</div>
 </div>
-
-
-<script>
-	$(function(){
-		$("button.submit-task").click(function(){
-			var container = $(this).closest(".widget-body") ;
-			container.closest(".widget-body").addClass("loading");
-			
-			var name = $(container).find("input.task-name").val();
-			var due_date =  $(container).find('input[name="task[task_due_date]"]').val();
-			var due_time =  $(container).find('input[name="task[task_due_time]"]').val();
-			var assigned_to =  $(container).find("select.assigned-to option:selected").val();
-
-
-			if (name) {
-				
-				og.quickAddTask({
-					due_date: due_date,
-					due_time: due_time,
-					name: name,
-					assigned_to: assigned_to
-				},function(){
-					og.customDashboard('dashboard', 'main_dashboard',{},true);
-				});
-				
-			}else{
-				og.err('<?php echo lang('error add name required', lang('task'))?>');
-				$(container).find("input.task-name").focus();
-				container.removeClass("loading");
-			}	
-			
-		});
-
-
-		$(".late-objects-widget .task-name").keypress(function(e){
-			if(e.keyCode == 13){
-				$("button.submit-task").click();
-     		}
-		});
-
-
-		$(".late-objects-widget a.task-more-details").click(function(){
-			var container = $(this).closest(".widget-body");
-			var name = $(container).find("input.task-name").val();
-			var due_date =  $(container).find('input[name="task[task_due_date]"]').val();
-			var due_time =  $(container).find('input[name="task[task_due_time]"]').val();
-			var assigned_to =  $(container).find("select.assigned-to option:selected").val();
-			
-			og.openLink(og.getUrl('task','add_task'),{
-				post: {
-					'name': name,
-					'assigned_to_contact_id': assigned_to,
-					'task_due_date': due_date,
-					'task_due_time': due_time
-				}
-			});
-		});
-
-		// og.eventManager.fireEvent('replace all empty breadcrumb', null);
-	});
-</script>

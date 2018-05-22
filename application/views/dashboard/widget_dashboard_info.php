@@ -65,7 +65,7 @@
 					$datetime = format_time($project->getCreatedOn());
 					echo lang('user date today at', $project->getCreatedByCardUrl(), $username, $datetime, clean($project->getCreatedByDisplayName()));
 				} else {
-					$datetime = format_datetime($project->getCreatedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($project->getCreatedOn(), $date_format, logged_user()->getUserTimezoneHoursOffset());
 					echo lang('user date', $project->getCreatedByCardUrl(), $username, $datetime, clean($project->getCreatedByDisplayName()));
 				}
 			 ?></td></tr>
@@ -82,7 +82,7 @@
 					$datetime = format_time($project->getUpdatedOn());
 					echo lang('user date today at', $project->getUpdatedByCardUrl(), $username, $datetime, clean($project->getUpdatedByDisplayName()));
 				} else {
-					$datetime = format_datetime($project->getUpdatedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($project->getUpdatedOn(), $date_format, logged_user()->getUserTimezoneHoursOffset());
 					echo lang('user date', $project->getUpdatedByCardUrl(), $username, $datetime, clean($project->getUpdatedByDisplayName()));
 				}
 			 ?></td></tr>

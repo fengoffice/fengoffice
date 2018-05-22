@@ -8,6 +8,7 @@ og.ArchivedObjects = function() {
 
 	this.doNotRemove = true;
 	this.needRefresh = false;
+	this.actual_type_filter = 0;
 
 	if (!og.ArchivedObjects.store) {
 		og.ArchivedObjects.store = new Ext.data.Store({
@@ -46,8 +47,28 @@ og.ArchivedObjects = function() {
 						var sm = cmp.getSelectionModel();
 						sm.clearSelections();
 					}
+					
+					if (d.filters.types) {
+						var items = [['0', '-- ' + lang('All') + ' --']];
+						for (i=0; i<d.filters.types.length; i++) {
+							items[items.length] = [d.filters.types[i].id, d.filters.types[i].name];
+						}
+						var types_filter = Ext.getCmp('ogArchivedTypeFilterCombo');
+						if (types_filter) {
+							types_filter.reset();
+							types_filter.store.removeAll();
+							types_filter.store.loadData(items);
+							
+							types_filter.setValue(cmp.actual_type_filter);
+							types_filter.collapse();
+						}
+					}
+					
 					og.ArchivedObjects.store.lastOptions.params.archived = true;
-					Ext.getCmp('archivedobjects-manager').reloadGridPagingToolbar('object','list_objects','archivedobjects-manager');
+					og.ArchivedObjects.store.lastOptions.params.count_results = 1;
+					if (cmp) {
+						cmp.reloadGridPagingToolbar('object','list_objects','archivedobjects-manager');
+					}
 				
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 				}
@@ -75,11 +96,13 @@ og.ArchivedObjects = function() {
 		actions = '<span>' + actions + '</span>';
 	
 		mem_path = "";
-		var mpath = Ext.util.JSON.decode(r.data.memPath);
-		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
-			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
-			mem_path += "</div>";
+		if (r.data.memPath) {
+			var mpath = Ext.util.JSON.decode(r.data.memPath);
+			if (mpath){ 
+				mem_path = "&nbsp;<div class='breadcrumb-container' style='display: inline-block;'>";
+				mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
+				mem_path += "</div>";
+			}
 		}
 		
 		var name = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>', og.clean(value), viewUrl) + mem_path;
@@ -278,7 +301,9 @@ og.ArchivedObjects = function() {
             iconCls: 'ico-trash',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('confirm move to trash'))) {
+				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
+				
+				if (og.confirmNorification(lang('confirm move to trash'), confirm_trash_config)) {
 					this.load({
 						action: 'delete',
 						objects: getSelectedIds()
@@ -289,6 +314,38 @@ og.ArchivedObjects = function() {
 			scope: this
 		})
     };
+	filters = {
+		type_filter: new Ext.form.ComboBox({
+	    	id: 'ogArchivedTypeFilterCombo',
+	    	store: new Ext.data.SimpleStore({
+		        fields: ['value', 'text'],
+		        data : []
+		    }),
+		    displayField:'text',
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:true,
+	        width:160,
+	        valueField: 'value',
+	        valueNotFoundText: '',
+	        listeners: {
+	        	'select' : function(combo, record) {
+					var man = Ext.getCmp("archivedobjects-manager");
+					man.actual_type_filter = combo.getValue();
+					man.load();
+	        	}
+	        }
+		})
+	}
+	
+	var tbar = [
+		actions.unarchive,
+		'-',
+		actions.del,
+		'-',
+		lang('show'),
+		filters.type_filter
+	];
     
 	og.ArchivedObjects.superclass.constructor.call(this, {
 		//enableDrag: true,
@@ -312,11 +369,7 @@ og.ArchivedObjects = function() {
 			forceFit: true
 		},
 		sm: sm,
-		tbar:[
-			actions.unarchive,
-			'-',
-			actions.del
-		],
+		tbar: tbar,
 		listeners: {
 			'render': {
 				fn: function() {
@@ -354,6 +407,7 @@ Ext.extend(og.ArchivedObjects, Ext.grid.GridPanel, {
 		this.store.load({
 			params: Ext.applyIf(params, {
 				start: start,
+				type_filter: params.type_filter ? params.type_filter : this.actual_type_filter,
 				limit: og.config['files_per_page'],
 				context: og.contextManager.plainContext() 
 
@@ -369,7 +423,10 @@ Ext.extend(og.ArchivedObjects, Ext.grid.GridPanel, {
 	},
 	
 	reset: function() {
-		this.load({start:0});
+		var params = {start:0};
+		if (this.actual_type_filter) params.type_filter = this.actual_type_filter;
+		
+		this.load(params);
 	},
 	
 	trashObjects: function() {

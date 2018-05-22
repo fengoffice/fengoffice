@@ -300,6 +300,28 @@
     function setObjectTypeId($value) {
       return $this->setColumnValue('object_type_id', $value);
     } // setObjectTypeId()
+    
+    /**
+     * Return value of 'url_params' field
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getUrlParams() {
+    	return $this->getColumnValue('url_params');
+    } // getUrlParams()
+    
+    /**
+     * Set value of 'url_params' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setUrlParams($value) {
+    	return $this->setColumnValue('url_params', $value);
+    } // setUrlParams()
          
     /**
     * Return manager instance

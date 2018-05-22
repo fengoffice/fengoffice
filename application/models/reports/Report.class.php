@@ -78,9 +78,37 @@
 	 * @return boolean
 	 */
 	function canDelete(Contact $user) {
-		return can_delete($user, $this->getMembers(), $this->manager()->getObjectTypeId());
+		
+		$can_delete = can_delete($user, $this->getMembers(), $this->manager()->getObjectTypeId());
+		Hook::fire('report_can_delete', $this, $can_delete);
+		
+		return $can_delete;
 	} // canDelete
     
+	
+	private $report_external_columns = null;
+	
+	function getReportExternalColumns() {
+		if (is_null($this->report_external_columns)) {
+			$ot = ObjectTypes::findById($this->getReportObjectTypeId());
+			
+			if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
+				eval('$ot_manager = '.$ot->getHandlerClass().'::instance();');
+				
+				if ($ot_manager instanceof ContentDataObjects) {
+					$external_columns = $ot_manager->getExternalColumns();
+					
+					if ($ot_manager instanceof Timeslots) {
+						$external_columns = array_merge($external_columns, ProjectTasks::instance()->getExternalColumns());
+					}
+					
+					$this->report_external_columns = $external_columns;
+				}
+			}
+		}
+		
+		return $this->report_external_columns;
+	}
    
   } // Report
 

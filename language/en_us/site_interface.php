@@ -301,6 +301,7 @@ return array(
   'after' => 'after',
   'delete mails from server' => 'Delete mails from server',
   'mark as read mails from server' => 'Mark emails as read in the email server when receiving them in Feng Office',
+  'get read state from server' => 'Preserve emails state (read, unread) when receiving them in Feng Office',
   'mail account delete mails from server description' => 'Enable this option in order to delete mails from server after desired time.',
   'show images' => 'Show images.',
   'images are blocked' => 'Images are blocked',
@@ -319,6 +320,7 @@ return array(
 
   'new filename' => 'New filename',
   'new weblink' => 'New link',
+  'add weblink' => 'Add link',
   'add as revision' => 'Add as revision',
   'duplicate filename' => 'Duplicate filename',
   'filename exists' => 'Files with the specified filename already exists. You can select a different filename or choose among the following options',
@@ -435,11 +437,13 @@ return array(
   'start work' => 'Start clock',
   'end work' => 'Stop clock',
   'confirm delete timeslot' => 'Are you sure you want to permanently delete this timeslot?',
+  'confirm delete all timeslots' => 'Are you sure you want to permanently delete all this timeslots?',
   'success open timeslot' => 'Time slot opened successfully',
   'success create timeslot' => 'Time slot created successfully',
   'success cancel timeslot' => 'Time slot canceled successfully',
   'success close timeslot' => 'Time slot closed successfully',
   'success delete timeslot' => 'Time slot deleted successfully',
+  'success delete all timeslot' => 'All time slots was deleted successfully',    
   'success edit timeslot' => 'Time slot edited successfully',
   'open timeslot message' => 'Total work time elapsed: ',
   'success pause timeslot' => 'Time slot paused successfully',
@@ -450,6 +454,7 @@ return array(
   'resume work' => 'Resume clock',
   'end work description' => 'End work description',
   'add timeslot' => 'Add timeslot',
+  'new timeslot' => 'New timeslot',
   'edit timeslot' => 'Edit timeslot',
   'start date' => 'Start date',
   'start time' => 'Start time',
@@ -501,7 +506,7 @@ return array(
   'statistics' => 'Statistics',
   'time' => 'Time',
   'meeting_time' => 'Time',
-  'task time report' => 'Total task execution time',
+  'task time report' => 'Timesheets',
   'new tasks by user' => 'New tasks by user',
   'generate report' => 'Generate report',
   'task title' => 'Task title',
@@ -572,7 +577,10 @@ return array(
   'show image in new page' => 'Show image in new page',
   'no tasks to display' => 'There are no tasks to display',
   'do complete' => 'Complete',
-
+   
+  'mark as started this task' => 'Mark as started',
+  'unmark as started this task' => 'Unmark as started',
+    
   'task data' => 'Task data',
   'basic data' => 'Basic data',
   'more details' => 'More details',
@@ -722,6 +730,8 @@ return array(
   'add object subtype' => 'Add object subtype',
   'view more' => 'View more',
 
+    
+   'delete all timeslots' => 'Delete all',
 
 
 
@@ -768,11 +778,12 @@ return array(
 	'update logo' => 'Update logo',
 	
 	'set manual permissions' => 'Set manual permissions',
-	'set manual permissions desc' => 'If you don\'t set the permissions manually, they will be assinged automatically depending on the user role (Administrators, Managers and Executives will be granted with all permissions).',
+	'set manual permissions desc' => 'If you don\'t set the permissions manually, they will be assigned automatically depending on the user role (Administrators, Managers and Executives will be granted with all permissions).',
 	'or you can also' => 'Or you can also',
 	'template parameters description' => 'This form contains the parameters that are needed to fill the tasks to be generated.',
 	'template_task' => 'Template task',
 	'repeat options' => 'Repeat options',
+	'other properties' => 'Other properties',
 ); // array
 
 ?>

@@ -14,11 +14,15 @@ og.MailManager = function() {
 	this.doNotRemove = true;
 	this.needRefresh = false;
 	this.maxrowidx = 0;
+	this.last_email_date = '0000-00-00 00:00:00';
+	this.last_context_sent = '';
+	
+	if (!og.mail_rules || !og.mail_list_acc_filter_type) og.mail_list_acc_filter_type = 'view';
 
 	this.fields = [
-		'object_id', 'type', 'ot_id', 'accountId', 'accountName', 'hasAttachment', 'subject', 'text', 'date',
+		'object_id', 'type', 'ot_id', 'accountId', 'accountName', 'hasAttachment', 'subject', 'text', 'date', 'rawdate',
 		'memberIds', 'projectName', 'userId', 'userName', 'workspaceColors','isRead', 'from', 'memPath',
-		'from_email','isDraft','isSent','folder','to', 'ix', 'conv_total', 'conv_unread', 'conv_hasatt'
+		'from_email','isDraft','isSent','folder','to', 'ix', 'conv_total', 'conv_unread', 'conv_hasatt', 'status_ico'
 	];
 
 	var cps = og.custom_properties_by_type['mail'] ? og.custom_properties_by_type['mail'] : [];
@@ -27,6 +31,13 @@ og.MailManager = function() {
    		cp_names.push('cp_' + cps[i].id);
    	}
    	this.fields = this.fields.concat(cp_names);
+   	
+   	var dim_names = [];
+   	for (did in og.dimensions_info) {
+		if (isNaN(did)) continue;
+		dim_names.push('dim_' + did);
+	}
+   	this.fields = this.fields.concat(dim_names);
    	
 	this.Record = Ext.data.Record.create(this.fields);
 	
@@ -46,6 +57,13 @@ og.MailManager = function() {
 			listeners: {
 				'load': function(store, rs) {
 					var d = this.reader.jsonData;
+					var manager = Ext.getCmp('mails-manager');
+					
+					// if response has check_id check if it is the last check_id sent, if not then ignore the response.
+					if (d.check_id && d.check_id != manager.last_check_id) {
+						return;
+					}
+					
 					store.totalLength = store.proxy.totalLength;
 					if (d.totalCount == 0) {
 						var sel_context_names = og.contextManager.getActiveContextNames();
@@ -62,19 +80,37 @@ og.MailManager = function() {
 						og.updateUnreadEmail(d.unreadCount);
 					}
 					
-					var manager = Ext.getCmp('mails-manager');
+					
 					var view = manager.getView();
 					for (i=0; i<manager.maxrowidx; i++) {
 						var el = view.getRow(i);
 						if (el) el.innerHTML = el.innerHTML.replace('x-grid3-td-draghandle "', 'x-grid3-td-draghandle " onmousedown="var sm = Ext.getCmp(\'mails-manager\').getSelectionModel();if (!sm.isSelected('+i+')) {sm.clearSelections();} sm.selectRow('+i+', true);"');
 					}
 					
+					og.mail.mails_to_remove_from_list = [];
+					
 					//reload columns for this folder
 					showFolderColumns();
-					
-					Ext.getCmp('mails-manager').reloadGridPagingToolbar('mail','list_all','mails-manager');
+
+					manager.reloadGridPagingToolbar('mail','list_all','mails-manager');
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
+					
+					// save last email date in a variable
+					var active_page = manager.getBottomToolbar().getPageData().activePage;
+					if (active_page == 1 && d.messages.length > 0) {
+						manager.last_email_date = d.messages[0].rawdate;
+					}
+					
+					// post load processing
+					if (og.mail.after_mail_manager_load && og.mail.after_mail_manager_load.length > 0) {
+						for (var x=0; x<og.mail.after_mail_manager_load.length; x++) {
+							var func = og.mail.after_mail_manager_load[x];
+							if (typeof(func) == 'function') {
+								func.call(null);
+							}
+						}
+					}
 				}
 			}
 		});
@@ -92,24 +128,17 @@ og.MailManager = function() {
 		if (r.data.isDraft) {
 			strDraft = "<span style='font-size:90%;color:red'>"+lang('draft')+"&nbsp;</style>";			
 			strAction = 'edit_mail';
+		} else {
+			strDraft = '';
 		}
-		else { strDraft = ''; }
 		
 		var subject = value && og.clean(value.trim()) || '<span class="italic">' + lang("no subject") + '</span>';
 		var conv_str = r.data.conv_total > 1 ? " <span class='db-ico ico-comment' style='margin-left:3px;padding-left: 18px;'><span style='font-size:80%'>(" + (r.data.conv_unread > 0 ? '<b style="font-size:130%">' + r.data.conv_unread + '</b>/' : '') + r.data.conv_total + ")</span></span>" : "";
 		
-		mem_path = "";
-		var mpath = Ext.util.JSON.decode(r.data.memPath);
 		
-		if (typeof mpath.length === "undefined"){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
-			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
-			mem_path += "</div>";
-		}
-		
-		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = true;og.openLink(\'{1}\');r.commit();return false;';
+		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = true;og.openLink(\'{1}\');r.commit();og.eventManager.fireEvent(\'replace all empty breadcrumb\', null);return false;';
 		name = String.format(
-				'{4}<a style="font-size:120%;" class="{3}" href="#" onclick="' + js + '" title="{2}">{0}</a>',
+				'{4}<a style="font-size:120%;" class="{3}" href="{1}#" onclick="' + js + '" title="{2}">{0}</a>',
 				subject + conv_str, og.getUrl('mail', strAction, {id: r.data.object_id}), og.clean(r.data.text),classes,strDraft);
 				
 		if (r.data.isSent) {
@@ -121,7 +150,7 @@ og.MailManager = function() {
 			text = '&nbsp;-&nbsp;<span style="color:#888888;white-space:nowrap">';
 			text += og.clean(r.data.text) + "</span></i>";
 		}
-		return name + mem_path + text ;
+		return name + text ;
 	}
 	
 	
@@ -139,9 +168,9 @@ og.MailManager = function() {
 		var sender = (draw_to ? to_cut : og.clean(value.trim())) || '<span class="italic">' + lang("no sender") + '</span>';
 		var title = draw_to ? og.clean(r.data.to) : og.clean(r.data.from_email);
 		
-		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = true;og.openLink(\'{1}\');r.commit();return false;';
+		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = true;og.openLink(\'{1}\');r.commit();og.eventManager.fireEvent(\'replace all empty breadcrumb\', null);return false;';
 		name = String.format(
-				'<a style="font-size:120%;" class="{3}" href="#" onclick="' + js + '" title="{2}">{0}</a>',
+				'<a style="font-size:120%;" class="{3}" href="{1}#" onclick="' + js + '" title="{2}">{0}</a>',
 				sender, og.getUrl('mail', strAction, {id: r.data.object_id}), title, classes);
 		return name;
 	}
@@ -152,10 +181,17 @@ og.MailManager = function() {
 	}
 	
 	function renderIcon(value, p, r) {
+		var icon_cls = 'ico-classify';
 		if (r.data.memberIds.length > 0) {
-			return '<div class="db-ico ico-email"></div>';
-		} else {
-			return String.format('<a href="#" onclick="{0}" title={1}><div class="db-ico ico-classify"></div></a>', "og.render_modal_form('', {c:'mail', a:'classify', params: {id: "+r.data.object_id+"},focusFirst: false})", lang('classify'));
+			icon_cls = 'ico-email';
+		}
+		return String.format('<a href="#" onclick="{0}" title={1}><div class="db-ico '+icon_cls+'"></div></a>', "og.render_modal_form('', {c:'mail', a:'classify', params: {id: "+r.data.object_id+", from_mail_list: true},focusFirst: false})", lang('classify'));
+	}
+	
+	function renderStatusIcon(value, p, r) {
+		if (value != '') {
+			var title = value == 'ico-mail-replied' ? lang('email replied') : lang('email forwarded');
+			return '<div class="db-ico '+value+'" title="'+title+'"></div>';
 		}
 	}
 
@@ -167,7 +203,7 @@ og.MailManager = function() {
 	}
 	
 	function renderIsRead(value, p, r){
-		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = !r.data.isRead;og.openLink(og.getUrl(\'object\', \'' + (value ? 'mark_as_unread' : 'mark_as_read') + '\', {ids:\'' + r.data.object_id + '\'}));r.commit();';
+		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = !r.data.isRead;og.openLink(og.getUrl(\'object\', \'' + (value ? 'mark_as_unread' : 'mark_as_read') + '\', {ids:\'' + r.data.object_id + '\', dont_remove:1}), {hideLoading:true});r.commit();';
 		return String.format(
 				'<div title="{0}" class="db-ico {2}" onclick="{1}"></div>',
 				value ? lang('mark as unread') : lang('mark as read'), js, value ? 'ico-read' : 'ico-unread'
@@ -186,9 +222,11 @@ og.MailManager = function() {
 		if (!r.data.isRead) classes += ' bold';
 		
 		var receiver = value && og.clean(value.trim()) || '<span class="italic">' + lang("no recipient") + '</span>';
+		
+		var js = 'var r = og.MailManager.store.getById(\'' + r.id + '\'); r.data.isRead = true;og.openLink(\'{1}\');r.commit();og.eventManager.fireEvent(\'replace all empty breadcrumb\', null);return false;';
 
 		name = String.format(
-				'<a style="font-size:120%;" class="{3}" href="#" onclick="og.openLink(\'{1}\');return false;" title="{2}">{0}</a>',
+				'<a style="font-size:120%;" class="{3}" href="{1}#" onclick="'+ js +'" title="{2}">{0}</a>',
 				receiver, og.getUrl('mail', strAction, {id: r.data.object_id}), og.clean(value), classes);
 		return name;
 	}
@@ -345,6 +383,13 @@ og.MailManager = function() {
         	hideable:false,
         	menuDisabled: true
 		},{
+			id: 'status_ico',
+			header: lang('status'),
+			dataIndex: 'status_ico',
+			width: 30,
+        	renderer: renderStatusIcon,
+        	tooltip: lang('mail status col tooltip')
+		},{
 			id: 'hasAttachment',
 			header: '&nbsp;',
 			dataIndex: 'hasAttachment',
@@ -403,15 +448,8 @@ og.MailManager = function() {
 		}];
 	// custom property columns
 	var cps = og.custom_properties_by_type['mail'] ? og.custom_properties_by_type['mail'] : [];
-	for (i=0; i<cps.length; i++) {
-		cm_info.push({
-			id: 'cp_' + cps[i].id,
-			header: cps[i].name,
-			dataIndex: 'cp_' + cps[i].id,
-			sortable: false,
-			renderer: og.clean
-		});
-	}
+	this.addCustomPropertyColumns(cps, cm_info, 'mails-manager');
+
 	// dimension columns
 	for (did in og.dimensions_info) {
 		if (isNaN(did)) continue;
@@ -421,15 +459,24 @@ og.MailManager = function() {
 				id: 'dim_' + did,
 				header: og.dimensions_info[did].name,
 				dataIndex: 'dim_' + did,
-				sortable: false,
+				sortable: true,
 				renderer: og.renderDimCol
 			});
 			og.breadcrumbs_skipped_dimensions[did] = did;
 		}
 	}
+	
+	if (og.mail && og.mail.additional_mail_list_columns && og.mail.additional_mail_list_columns.length > 0) {
+		for (x in og.mail.additional_mail_list_columns) {
+			if (typeof(og.mail.additional_mail_list_columns[x]) == 'function') continue;
+			cm_info.push(og.mail.additional_mail_list_columns[x]);
+		}
+	}
+	
 	// create column model
 	var cm = new Ext.grid.ColumnModel(cm_info);
 	cm.defaultSortable = true;
+    cm.on('hiddenchange', this.afterColumnShowHide, this);
 
 	moreActions = {};
 	
@@ -439,7 +486,9 @@ og.MailManager = function() {
 			handler: function() {
 				og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails read filter', config_option_value: 'all'}), {preventPanelLoad: true});
 				this.reloadFiltering("all", null, null);
-				Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-read-unread').setText(lang('view by state'))
+				var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-read-unread');
+				comp.setText(lang('view by state'));
+				comp.removeClass('filter-selected');
 			},
 			scope: this
 		}),
@@ -448,7 +497,9 @@ og.MailManager = function() {
 			handler: function() {
 				og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails read filter', config_option_value: 'read'}), {preventPanelLoad: true});
 				this.reloadFiltering("read", null, null);
-				Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-read-unread').setText(lang('read'))
+				var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-read-unread');
+				comp.setText(lang('read'));
+				comp.addClass('filter-selected');
 			},
 			scope: this
 		}),
@@ -457,7 +508,9 @@ og.MailManager = function() {
 			handler: function() {
 				og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails read filter', config_option_value: 'unread'}), {preventPanelLoad: true});
 				this.reloadFiltering("unread", null, null);
-				Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-read-unread').setText(lang('unread'))
+				var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-read-unread');
+				comp.setText(lang('unread'));
+				comp.addClass('filter-selected');
 			},
 			scope: this
 		})
@@ -469,7 +522,9 @@ og.MailManager = function() {
 			handler: function() {
 				og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails classification filter', config_option_value: 'all'}), {preventPanelLoad: true});
 				this.reloadFiltering(null, null, null, 'all');
-				Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-classification').setText(lang('view by classification'))
+				var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-classification');
+				comp.setText(lang('view by classification'));
+				comp.removeClass('filter-selected');
 			},
 			scope: this
 		}),
@@ -478,7 +533,9 @@ og.MailManager = function() {
 			handler: function() {
 				og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails classification filter', config_option_value: 'classified'}), {preventPanelLoad: true});
 				this.reloadFiltering(null, null, null, "classified");
-				Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-classification').setText(lang('classified'))
+				var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-classification');
+				comp.setText(lang('classified'));
+				comp.addClass('filter-selected');
 			},
 			scope: this
 		}),
@@ -487,7 +544,9 @@ og.MailManager = function() {
 			handler: function() {
 				og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails classification filter', config_option_value: 'unclassified'}), {preventPanelLoad: true});
 				this.reloadFiltering(null, null, null, "unclassified");
-				Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-classification').setText(lang('unclassified'))
+				var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-classification');
+				comp.setText(lang('unclassified'));
+				comp.addClass('filter-selected');
 			},
 			scope: this
 		})
@@ -507,11 +566,11 @@ og.MailManager = function() {
 				var ids = "";
 				for (var i=0; i < sel.length; i++) {
 					if (ids) ids += ",";
-					ids += sel[i].id;
+					ids += sel[i].data.object_id;
 					sel[i].set('isRead', true);
 					sel[i].commit();
 				}
-				if (ids) og.openLink(og.getUrl('object', 'mark_as_read', {ids:ids}));
+				if (ids) og.openLink(og.getUrl('object', 'mark_as_read', {ids:ids, dont_remove:1}), {hideLoading:true});
 				sm.clearSelections();
 			},
 			scope: this
@@ -527,11 +586,11 @@ og.MailManager = function() {
 				var ids = "";
 				for (var i=0; i < sel.length; i++) {
 					if (ids) ids += ",";
-					ids += sel[i].id;
+					ids += sel[i].data.object_id;
 					sel[i].set('isRead', false);
 					sel[i].commit();
 				}
-				if (ids) og.openLink(og.getUrl('object', 'mark_as_unread', {ids:ids}));
+				if (ids) og.openLink(og.getUrl('object', 'mark_as_unread', {ids:ids, dont_remove:1}), {hideLoading:true});
 				sm.clearSelections();
 			},
 			scope: this
@@ -547,7 +606,7 @@ og.MailManager = function() {
 				var ids = "";
 				for (var i=0; i < sel.length; i++) {
 					if (ids) ids += ",";
-					ids += sel[i].id;
+					ids += sel[i].data.object_id;
 					this.store.remove(sel[i]);
 				}
 				if (ids) og.openLink(og.getUrl('mail', 'mark_as_spam', {ids:ids}));
@@ -567,7 +626,7 @@ og.MailManager = function() {
 				var ids = "";
 				for (var i=0; i < sel.length; i++) {
 					if (ids) ids += ",";
-					ids += sel[i].id;
+					ids += sel[i].data.object_id;
 					this.store.remove(sel[i]);
 				}
 				if (ids) og.openLink(og.getUrl('mail', 'mark_as_ham', {ids:ids}));
@@ -670,6 +729,7 @@ og.MailManager = function() {
 			text: lang('new'),
             tooltip: lang('create an email'),
             iconCls: 'ico-new new_button',
+            hidden: og.replace_list_new_action && og.replace_list_new_action.mail,
             handler: function() {
             	var url = og.getUrl('mail', 'add_mail');
             	og.openLink(url);
@@ -693,13 +753,15 @@ og.MailManager = function() {
             iconCls: 'ico-trash',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('confirm move to trash'))) {
+				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
+				
+				if (og.confirmNorification(lang('confirm move to trash'), confirm_trash_config)) {
 					var sm = this.getSelectionModel();
 					var sel = sm.getSelections();
 					var ids = "";
 					for (var i=0; i < sel.length; i++) {
 						if (ids) ids += ",";
-						ids += sel[i].id;
+						ids += sel[i].data.object_id;
 						this.store.remove(sel[i]);
 					}
 					if (ids) og.openLink(og.getUrl('object', 'trash', {ids:ids}),{callback:function(){Ext.getCmp('mails-manager').load()}});
@@ -713,13 +775,15 @@ og.MailManager = function() {
             iconCls: 'ico-archive-obj',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('confirm archive selected objects'))) {
+				var confirm_archive_config = parseInt(og.preferences['enableArchiveConfirmation']);
+				
+				if (og.confirmNorification(lang('confirm archive selected objects'), confirm_archive_config)) {
 					var sm = this.getSelectionModel();
 					var sel = sm.getSelections();
 					var ids = "";
 					for (var i=0; i < sel.length; i++) {
 						if (ids) ids += ",";
-						ids += sel[i].id;
+						ids += sel[i].data.object_id;
 						this.store.remove(sel[i]);
 					}
 					if (ids) og.openLink(og.getUrl('object', 'archive', {ids:ids}));
@@ -741,9 +805,7 @@ og.MailManager = function() {
 			text: lang('check mails'),
 			iconCls: 'ico-check_mails',
 			handler: function() {
-				this.load({
-					action: "checkmail"
-				});
+				this.checkmail();
 			},
 			scope: this
 		}),
@@ -948,6 +1010,7 @@ og.MailManager = function() {
             iconCls: 'ico-mail-mark-read',
 			disabled: false,
 			id: 'tb-item-read-unread',
+			cls: 'x-btn-wrap x-btn x-btn-text-icon ' + (this.readType == 'read' || this.readType == 'unread' ? 'filter-selected' : ''),
 			menu: {items: [
 				filterReadUnread.all,
 				'-',
@@ -956,32 +1019,109 @@ og.MailManager = function() {
 			]}
 		}),
 		viewByAccount: new Ext.Action({
-			text: this.accountId == 0 ? lang('view by account') : og.emailFilters.accountName,
+			text: !this.accountId ? lang('view by account') : (this.accountId.split(',').length==1 ? og.emailFilters.accountName : this.accountId.split(',').length + ' ' + lang('accounts')),
             iconCls: 'ico-account',
 			disabled: false,
 			id: 'tb-item-byaccount',
+			cls: 'x-btn-wrap x-btn x-btn-text-icon ' + (this.accountId ? 'filter-selected' : ''),
 			menu: new og.EmailAccountMenu({
 				listeners: {
 					'accountselect': {
 						fn: function(account, name) {
-							og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails account filter', config_option_value: account}), {preventPanelLoad: true});
-							this.accountId = account;
-							this.load();
+							
+							var timeout_milis = 10;
+							
 							if (account == 0) {
-								name = lang('view by account');
+								this.accountId = "";
+								var acc = [];
+								// remove all checks
+								var comp = Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-byaccount');
+								for (var i=0; i<comp.menu.items.items.length; i++) {
+									var mi = comp.menu.items.items[i];
+									mi.checked = false;
+									Ext.fly(mi.el.dom.parentNode).removeClass("x-menu-item-checked");
+								}
+								comp.menu.hide();
+								
+							} else {
+								account = account.toString();
+								
+								if (og.mail_list_acc_filter_type == 'view') {
+									this.accountId = account;
+									var acc = [];
+									if (account > 0) acc.push(account);
+								} else {
+									var acc = this.accountId.split(',');
+									if (acc.indexOf(account) == -1) acc.push(account);
+									else acc.splice(acc.indexOf(account), 1);
+									acc = acc.filter(function(n){ return n != undefined && n != ''});
+									
+									this.accountId = acc.join(',');
+									timeout_milis = 2000;
+								}
 							}
-							Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-byaccount').setText(name);
+							
+							// save user preference
+							og.openLink(og.getUrl('object', 'set_user_config_option_value', {config_option_name: 'mails account filter', config_option_value: this.accountId}), {preventPanelLoad: true, hideLoading: true});
+							
+							// filter button text
+							if (acc.length == 0) {
+								name = lang('view by account');
+							} else {
+								if (og.mail_list_acc_filter_type == 'view' || acc.length == 1) {
+									var sel_acc = null;
+									for (var j=0; j<og.email_accounts_toview.length; j++) {
+										if (acc[0] == og.email_accounts_toview[j].id.toString()) sel_acc = og.email_accounts_toview[j];
+									}
+									if (sel_acc) name = sel_acc.name;
+								} else {
+									name = acc.length + ' ' + lang('accounts');
+								}
+							}
+							var comp = this.getTopToolbar().items.get('tb-item-byaccount');
+							comp.setText(name);
+							
+							// filter button class
+							if (acc.length == 0) comp.removeClass('filter-selected');
+							else comp.addClass('filter-selected');
+							
+							if (og.mail.after_filter_by_mail_account_fn && og.mail.after_filter_by_mail_account_fn.length > 0) {
+								for (var x=0; x<og.mail.after_filter_by_mail_account_fn.length; x++) {
+									var func = og.mail.after_filter_by_mail_account_fn[x];
+									if (typeof(func) == 'function') {
+										func.call(null, this.accountId);
+									}
+								}
+							}
+							
+							// timeout to reload the panel
+							if (og.mail_acc_select_timeout) {
+								clearTimeout(og.mail_acc_select_timeout);
+							}
+							og.mail_acc_select_timeout = setTimeout(function(){
+								var man = Ext.getCmp('mails-manager');
+								// hide menu when loading
+								var comp = man.getTopToolbar().items.get('tb-item-byaccount');
+								comp.menu.hide();
+								// load panel
+								man.load();
+								
+								var acc = man.accountId.split(',');
+								acc = acc.filter(function(n){ return n != undefined && n != ''});
+								
+							}, timeout_milis);
 						},
 						scope: this
 					}
 				}
-			},[{name: lang('view all'), email:'', id: '', separator:true}],"view")
+			},[{name: lang('view all'), email:'', id: '', separator:true}], og.mail_list_acc_filter_type)
 		}),
 		viewByClassification: new Ext.Action({
 			text: this.classifType == 'classified' ? lang('classified') : (this.classifType == 'unclassified' ? lang('unclassified') : lang('view by classification')),
             iconCls: 'ico-classify',
 			disabled: false,
 			id: 'tb-item-classification',
+			cls: 'x-btn-wrap x-btn x-btn-text-icon ' + (this.classifType == 'classified' || this.classifType == 'unclassified' ? 'filter-selected' : ''),
 			menu: {items: [
 				filterClassification.all,
 				'-',
@@ -1080,13 +1220,16 @@ og.MailManager = function() {
 	var mas = og.eventManager.addListener("mail account select", function(account) {
 		this.accountId = account[0];
 		this.load();
-		Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-byaccount').setText(account[1]);
+		Ext.getCmp('mails-manager').getTopToolbar().items.get('tb-item-byaccount').setText("1 "+lang('account'));
 	}, this);
 	
 	this.actionRep = actions;
 
 	var top1 = [];
 	if (!og.loggedUser.isGuest) {
+		if (og.replace_list_new_action && og.replace_list_new_action.mail) {
+			top1.push(og.replace_list_new_action.mail);
+		}
 		top1.push(actions.newCO);
 		top1.push('-');
 		top1.push(actions.archive);
@@ -1225,13 +1368,8 @@ og.MailManager = function() {
 	// auto refresh emails
 	var me = this;
 	this.emailRefreshInterval = setInterval(function() {
-		var p = me.getBottomToolbar().getPageData().activePage;
-		if (window.isActiveBrowserTab && (Ext.getCmp('tabs-panel').getActiveTab().id == 'mails-panel' && p == 1)) {
-			me.needRefresh = false;
-			og.MailManager.store.reload();
-		} else {
-			me.needRefresh = true;
-		}
+		me.needRefresh = false;
+		me.checkIfNewMails();
 	}, 60000);
 	/*poll to see if an error has happened while checking mail*/
 	if (og.preferences.email_check_acc_errors > 0) {
@@ -1246,38 +1384,84 @@ og.MailManager = function() {
 
 Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 	load: function(params) {
+		var current_context = og.contextManager.plainContext();
+		
+		// dont reload the list if user was viewing an email and the context has not changed
+		if (og.viewing_mail && this.last_context_sent == current_context) {
+			og.viewing_mail = false;
+			return;
+		}
+		
 		if (!params) params = {};
 		var start;
 		if (typeof params.start == 'undefined') {
 			start = (this.getBottomToolbar().getPageData().activePage - 1) * mails_per_page;
 		} else {
-			start = 0;
+			start = isNaN(params.start) ? 0 : params.start;
 		}
 		
-		this.store.baseParams = {
-	      read_type: this.readType,
-	      view_type: this.viewType,
-	      state_type : this.stateType,
-	      classif_type: this.classifType,
-	      context: og.contextManager.plainContext(),
-		  account_id: this.accountId
-	    };
+		// before load processing
+		if (og.mail.before_mail_manager_load && og.mail.before_mail_manager_load.length > 0) {
+			for (var x=0; x<og.mail.before_mail_manager_load.length; x++) {
+				var func = og.mail.before_mail_manager_load[x];
+				if (typeof(func) == 'function') {
+					func.call(null, this);
+				}
+			}
+		}
+
+        this.store.baseParams.read_type =this.readType;
+        this.store.baseParams.view_type = this.viewType;
+        this.store.baseParams.state_type = this.stateType;
+        this.store.baseParams.classif_type = this.classifType;
+        this.store.baseParams.context = og.contextManager.plainContext();
+        this.store.baseParams.prev_context = this.last_context_sent;
+        this.store.baseParams.account_id = this.accountId;
+
+		if (this.store.extraParams) {
+			for (var x in this.store.extraParams) {
+				if (typeof(this.store.extraParams[x]) != 'function') {
+					this.store.baseParams[x] = this.store.extraParams[x];
+				}
+			}
+			this.store.extraParams = [];
+		}
+		
+		// save last context sent to reload the list always if it has changed
+		this.last_context_sent = og.contextManager.plainContext();
 		
 		this.actionRep.checkMails.disable();
-		//this.store.removeAll();
+		
+		// send a random id to the server and save it as the last, if the response has the last check_id then load it, else ignore it.
+		this.last_check_id = Ext.id();
+		params.check_id = this.last_check_id;
+
+		// disable toolbar actions while reloading
+		var bt = this.getBottomToolbar();
+		if (bt) bt.disable();
+		
+		this.updateColumnModelHiddenColumns();
+		
+		var old_scroll_top = $("#mails-panel .x-grid3-scroller").scrollTop();
 		this.store.load({
 			params: Ext.apply(params, {
 				start: start,
 				limit: mails_per_page
 			}),
 			callback: function() {
-				Ext.getCmp('mails-manager').actionRep.checkMails.enable();				
+				Ext.getCmp('mails-manager').actionRep.checkMails.enable();
+				$("#mails-panel .x-grid3-scroller").scrollTop(old_scroll_top);
+				
+				// disable toolbar actions while reloading
+				var bt = Ext.getCmp('mails-manager').getBottomToolbar();
+				if (bt) bt.enable();
 			}
 		});
 		this.store.baseParams.action = "";
 	},
 	
 	activate: function() {
+		og.mail.removePendingMailsFromList();
 		if (this.needRefresh) {
 			this.load({start:0});
 		}
@@ -1285,7 +1469,7 @@ Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 	
 	reset: function() {
 		this.load({start:0});
-                this.getSelectionModel().clearSelections();
+		this.getSelectionModel().clearSelections();
 	},
 	
 	showMessage: function(text) {
@@ -1316,6 +1500,101 @@ Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 		return this.topTbar1;
 	},
 	
+	checkmail: function(hide_message) {
+		this.actionRep.checkMails.disable();
+		setTimeout(function() {
+			Ext.getCmp("mails-manager").actionRep.checkMails.enable();
+		}, 3000);
+		var params = {};
+		if (!isNaN(this.accountId) && this.accountId > 0) {
+			params.account_id = this.accountId;
+		}
+		if (hide_message) {
+			params.hide_message = hide_message;
+		}
+		og.openLink(og.getUrl('mail', 'checkmail', params), {
+			callback: function(success, data) {
+				if (data && data.mails_received > 0) {
+					//this.checkIfNewMails(false);
+					this.reset();
+				}
+			},
+			scope: this
+		});
+	},
+	
+	checkIfNewMails: function(show_message) {
+		if (typeof(show_message) == 'undefined') {
+			show_message = true;
+		}
+		
+		// dont check if use has filtered the result
+		var text_filter = $("#mails-manager #text_filter").val();
+		if(text_filter && text_filter.trim() != ''){
+			return;
+		}
+		
+		// use same params of last query
+		var params = {
+	      read_type: this.readType,
+	      view_type: this.viewType,
+	      state_type : this.stateType,
+	      classif_type: this.classifType,
+	      context: og.contextManager.plainContext(),
+		  account_id: this.accountId,
+		  last_date: this.last_email_date
+	    }
+		// check if there are new mails
+		og.openLink(og.getUrl('mail', 'check_if_new_mails', params), {
+			hideLoading: true,
+			callback: function(success, data) {
+				if (!data) return;
+				
+				// if context has changed => dont load the response
+				var current_context = og.contextManager.plainContext();
+				if (current_context != data.context_sent) return;
+				
+				if (!data.mails || data.mails.length == 0) return;
+				
+				var man = Ext.getCmp("mails-manager");
+				var active_page = man.getBottomToolbar().getPageData().activePage;
+				
+				if (active_page == 1) {
+					// to restore original scroll
+					var old_scroll_top = $("#mails-panel .x-grid3-scroller").scrollTop();
+					
+					// reverse order because they are all inserted in position 0
+					var mails = data.mails.reverse();
+					
+					var records = [];
+					for (var x=0; x<mails.length; x++) {
+						var obj = mails[x];
+						var record = new Ext.data.Record(obj, obj.id);
+						records.push(record);
+						
+						// add record in the first line
+						if (og.MailManager.store && typeof(og.MailManager.store.add) == 'function' && og.MailManager.store.data.keys.indexOf(obj.id) == -1) {
+							og.MailManager.store.insert(0, record);
+						}
+						man.last_email_date = obj.rawdate;
+					}
+					
+					// scroll list to original position if user has already scrolled
+					if (old_scroll_top > 0) {
+						setTimeout(function() {
+							var lines_height = 37 * mails.length;
+							$("#mails-panel .x-grid3-scroller").scrollTop(old_scroll_top + lines_height);
+						}, 50);
+					}
+				}
+				if (show_message && mails) {
+					og.msg(lang('information'), lang('you have x new emails', mails.length));
+				}
+			}
+		});
+		
+	},
+	
 	reloadFiltering: function(readType, viewType, stateType, classifType) {
 		if (readType) this.readType = readType;
 		if (viewType) this.viewType = viewType;
@@ -1328,7 +1607,7 @@ Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 			state_type : this.stateType,
 			classif_type : this.classifType
 		};
-		this.load();
+		this.load({start: 0});
 	}
 });
 

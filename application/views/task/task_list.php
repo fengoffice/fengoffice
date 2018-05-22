@@ -3,6 +3,10 @@ require_javascript("og/modules/addTaskForm.js");
 $task_list = $object;
 $genid = gen_id();
 $description = "";
+
+$tz_offset = Timezones::getTimezoneOffsetToApply($task_list);
+$tz_offset = $tz_offset/3600;
+
 ?>
 <script>
   if(App.modules.addTaskForm) {
@@ -70,7 +74,7 @@ if($task_list->getAssignedTo()){
 	<div style="width:50%; float: left;">
 	<?php if ($task_list->getDueDate() instanceof DateTimeValue) {
 	 		if ($task_list->getDueDate()->getYear() > DateTimeValueLib::now()->getYear()) { ?> 
-			<div class="member-path-dim-block dueDate"><span class="bold"><?php echo lang('due date') ?>: </span><?php echo format_datetime($task_list->getDueDate(), null, 0) ?></div>
+			<div class="member-path-dim-block dueDate"><span class="bold"><?php echo lang('due date') ?>: </span><?php echo format_datetime($task_list->getDueDate(), null, $tz_offset) ?></div>
 	  <?php } else { ?> 
 	 		<div class="member-path-dim-block dueDate"><span class="bold"><?php echo lang('due date') ?>: </span><?php
 	 		
@@ -80,7 +84,7 @@ if($task_list->getAssignedTo()){
 	 		}	 		
 	 	  	echo format_descriptive_date($task_list->getDueDate(),$tm);
 	 	  	if ($task_list->getUseDueTime()) {
-	 	  		echo " ".lang('by time')." " . format_time($task_list->getDueDate(), user_config_option('time_format_use_24') ? 'G:i' : 'g:i A');
+	 	  		echo " ".lang('by time')." " . format_time($task_list->getDueDate(), user_config_option('time_format_use_24') ? 'G:i' : 'g:i A', $tz_offset);
 	 	  	}
 	 	  	
 	 	  ?></div>
@@ -99,7 +103,7 @@ if($task_list->getAssignedTo()){
 	 		}
 	 	  	echo format_descriptive_date($task_list->getStartDate(),$tm);
 	 	  	if ($task_list->getUseDueTime()) {
-	 	  		echo " ".lang('by time')." " . format_time($task_list->getStartDate(), user_config_option('time_format_use_24') ? 'G:i' : 'g:i A');
+	 	  		echo " ".lang('by time')." " . format_time($task_list->getStartDate(), user_config_option('time_format_use_24') ? 'G:i' : 'g:i A', $tz_offset);
 	 	  	}
 	 	  	
 	 	  ?></div>
@@ -107,6 +111,8 @@ if($task_list->getAssignedTo()){
 		} ?>
 		 
 		 <div class="member-path-dim-block" style="font-weight:bold"><?php if (isset($status)){echo $status;} ?></div>
+		 <div class="member-path-dim-block" style="font-weight:bold"><?php echo lang('mark as started this task') .": "; echo ($task_list->getMarkAsStarted()) ? lang('yes') : lang('no'); ?></div>
+		 <?php $null=null; Hook::fire('view_task_render_more_properties', $task_list, $null)?>
 	</div>
 	<?php } ?>
 	

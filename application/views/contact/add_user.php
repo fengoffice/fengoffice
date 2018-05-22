@@ -93,8 +93,7 @@
 			<div id ="<?php echo $genid?>detectTimeZone">
 			<?php echo yes_no_widget('user[autodetect_time_zone]', 'userFormAutoDetectTimezone', user_config_option('autodetect_time_zone', null, $user->getId()), lang('yes'), lang('no')) ?>
 			<div id="<?php echo $genid?>selecttzdiv" <?php if (user_config_option('autodetect_time_zone', null, $user->getId())) echo 'style="display:none"'; ?>>
-			<?php echo select_timezone_widget('user[timezone]', array_var($user_data, 'timezone'), 
-				array('id' => 'userFormTimezone', 'class' => 'long', 'tabindex' => '600')) ?>
+			<?php echo timezone_selector('user[user_timezone_id]', array_var($user_data, 'user_timezone_id'), array('id' => 'userFormTimezone')) ?>
 			</div>
 			</div>
 			<script type="text/javascript">

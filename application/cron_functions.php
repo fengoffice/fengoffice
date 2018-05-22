@@ -44,6 +44,11 @@ function send_reminders() {
 	$sent = 0;
 	$ors = ObjectReminders::getDueReminders();
 	foreach ($ors as $or) {
+	    $object = $or->getObject();
+	    //Check disabled object types notificactions.
+	    if(!$object instanceof ContentDataObject || ($object instanceof ContentDataObject && in_array($object->getObjectTypeId(),config_option("disable_notifications_for_object_type")))){
+	        return;
+	    }
 		$function = $or->getType();
 		try {
 			$ret = 0;
@@ -81,7 +86,7 @@ function clear_tmp_folder($dir = null) {
 		$left = 0;
 		$deleted = 0;
 		while (false !== ($f = readdir($handle))) {
-			if ($f != "." && $f != "..") {
+			if ($f != "." && $f != ".." && $f != ".htaccess") {
 				if ($f == "CVS") {
 					$left++;
 					continue;
@@ -177,3 +182,35 @@ function check_sharing_table_flags() {
 		_log("No permission groups need to be updated.");
 	}
 }
+
+function rebuild_contact_member_cache() {
+	Env::useHelper('permissions');
+	_log("Recalculating contact member cache...");
+	
+	$resource_cond = "";
+	if (Plugins::instance()->isActivePlugin('advanced_services')) {
+		$resource_cond = " AND is_resource=0 ";
+	}
+	$users = Contacts::getAllUsers($resource_cond);
+	foreach ($users as $user) {
+		ContactMemberCaches::updateContactMemberCacheAllMembers($user);
+	}
+	
+	_log("Member cache updated for ".count($users)." users.");
+}
+
+function clean_object_selector_temp_selection() {
+	_log("Cleaning object selector temp selections...");
+	
+	Env::useHelper('object_selector');
+	clean_old_object_selector_temp_values();
+	
+	_log("Object selector temp values cleaned.");
+}
+
+$files = array();
+Hook::fire('additional_cron_function_files', null, $files);
+foreach ($files as $file) {
+	include_once $file;
+}
+

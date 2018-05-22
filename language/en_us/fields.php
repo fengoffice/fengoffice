@@ -284,8 +284,19 @@ return array(
 	'is_user' => 'Is user',
 	'field Objects is_user' => 'Is user',
 	'field Contacts is_user' => 'Is user',
+	
+	'field Objects text' => 'Description',
+    'field Objects mark_as_started' => 'Marked as started',
+    
+    'field ProjectTasks total_worked_time' => 'Total worked time', 
+    'field ProjectTasks status' => 'Status',
 
-	'home_phone' => 'Home phone',
+    // Time fields 
+    'field Objects total_worked_time' => 'Total worked time', 
+    'field Objects status' => 'Status',
+    
+    
+    'home_phone' => 'Home phone',
 	'work_phone' => 'Work phone',
 	'mobile_phone' => 'Mobile phone',
 	'im_values' => 'Instant messaging',
@@ -295,6 +306,8 @@ return array(
 	'home_address' => 'Home address',
 	'work_address' => 'Work address',
 	'other_address' => 'Other address',
+	'postal_address' => 'Postal address',
+	'postal' => 'Postal',
 
 	'field Contacts home_phone' => 'Home phone',
 	'field Contacts work_phone' => 'Work phone',
@@ -306,5 +319,9 @@ return array(
 	'field Contacts home_address' => 'Home address',
 	'field Contacts work_address' => 'Work address',
 	'field Contacts other_address' => 'Other address',
+	'field Contacts postal_address' => 'Postal address',
+		
+	'field Timeslots rel_object_id' => 'Task',
+	
 );
 

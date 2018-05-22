@@ -668,6 +668,7 @@
   	'log read projectmilestones' => 'Viewed \'{0}\'',
   	'log read projectwebpages' => 'Viewed \'{0}\'',
   	'log read reports' => 'Viewed \'{0}\'',
+    'log read invoice' => 'Viewed \'{0}\'',
     
   
   	'error assign workspace' => 'Failed to assign template to workspace',
@@ -774,6 +775,17 @@
   	'permissions successfully saved' => 'Permissions saved successfully',
   	
   	'cannot delete file' => 'You don\'t have permissions to delete file \'{0}\'',
+    'config_start_calc'=>'Move the start date/time',
+    'config_end_calc'=>'Move the end date/time',
+    'always_show_modal'=>'Ask me every time',
+      'How should we adjust'=>'How should we adjust?',
+      'Did you start sooner'=>'Did you start sooner?',
+      'Did you end later'=>'Did you end later?',
+      'You changed the length of your time record'=>'You changed the length of your time record',
+      'Did you start later'=>'Did you start later?',
+      'Did you end sooner'=>'Did you end sooner?',
+      'Remember my selection' => 'Remember my selection',
+      'accept'=>'Accept',
   ); // array
 
 ?>

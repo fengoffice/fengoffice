@@ -288,7 +288,9 @@ class DashboardTools {
 		
 		usort($widgetsToRender, "widget_sort") ;
 		foreach ($widgetsToRender as $k => $w) {
+			debug_log(date("H:i:s")." - Starting widget ".$w->getName(), 'dashboard.log');
 			$w->execute();
+			debug_log(date("H:i:s")." - End widget ".$w->getName(), 'dashboard.log');
 		}
 		
 	}

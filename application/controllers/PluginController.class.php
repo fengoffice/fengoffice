@@ -155,6 +155,28 @@ class PluginController extends ApplicationController {
 		return $plugins ;
 	}
 	
+	
+	function ensure_installed_and_activated($plugin_name) {
+		
+		$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
+		if (!Plugins::instance()->isActivePlugin($plugin_name)) {
+			
+			if (!$plugin instanceof Plugin || !$plugin->isInstalled()) {
+				
+				$this->executeInstaller($plugin_name);
+		
+				$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
+			}
+				
+			$plugin->activate();
+		}
+		
+		// ensure that is running in the last version
+		if ($plugin instanceof Plugin) {
+			$plugin->update();
+		}
+	} 
+	
 /**
  * @param array of string $pluginNames
  */
@@ -190,6 +212,7 @@ static function executeInstaller($name) {
 					$values = array_var ( $pluginInfo, 'id' ) . ", " . $values;
 				}
 				$sql = "INSERT INTO " . TABLE_PREFIX . "plugins ($cols) VALUES ($values) ON DUPLICATE KEY UPDATE version='".array_var ( $pluginInfo, 'version' )."'";
+				
 				DB::executeOne($sql);
 				$id = DB::lastInsertId();
 				$pluginInfo ['id'] = $id;
@@ -197,6 +220,8 @@ static function executeInstaller($name) {
 			} else {
 				$id = $plg_obj['id'];
 				$pluginInfo ['id'] = $id;
+				
+				DB::executeOne("UPDATE " . TABLE_PREFIX . "plugins SET version='".array_var ( $pluginInfo, 'version' )."' WHERE id='".array_var ( $pluginInfo, 'id' )."'");
 			}
 			
 			if (isset($pluginInfo['dependences']) && is_array($pluginInfo['dependences'])) {
@@ -312,14 +337,31 @@ static function executeInstaller($name) {
 			
 			$install_script = ROOT . "/plugins/$name/install/install.php";
 			if (file_exists ( $install_script )) {
+				$queries = array();
+			
 				include_once $install_script;
+				$function_name = $name."_get_additional_install_queries";
+				if (function_exists($function_name)) {
+					$queries = $function_name(TABLE_PREFIX);
+				}
+			
+				$total_queries = 0;
+				$executed_queries = 0;
+				executeMultipleQueries ( implode("\n", $queries), $total_queries, $executed_queries );
+				Logger::log ( "File install.php processed for plugin  '$name'." . mysql_error () );
 			}
+			
+			DB::execute("UPDATE ".TABLE_PREFIX."plugins SET is_installed=1 WHERE name='$name'");
+			
 			DB::commit ();
+			
+			@unlink(ROOT . '/cache/autoloader.php');
+			
 			return true;
 		}
 		
 	} catch (Exception $e) {
-		//echo $e->getMessage();
+		Logger::log("ERROR installing plugin $name".$e->getMessage());
 		DB::rollback();
 		throw $e;
 	}

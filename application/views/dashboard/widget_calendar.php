@@ -18,7 +18,7 @@
 	user_config_option('show_two_weeks_calendar',null,logged_user()->getId())? $my_weeks = 2 : $my_weeks = 1 ;
 	
 	$endday = $startday + (7 * $my_weeks);
-	$today = DateTimeValueLib::now()->add('h', logged_user()->getTimezone());
+	$today = DateTimeValueLib::now()->add('s', logged_user()->getUserTimezoneValue());
 	$currentday = $today->getDay();
 	$currentmonth = $today->getMonth();
 	$currentyear = $today->getYear();
@@ -162,7 +162,7 @@
 			
 			$start_value = $dtv->format(user_config_option('date_format'));
 			$popupTitle = lang('add event');
-			$output .= "><div style='z-index:0; min-height:100px; height:100%;cursor:pointer' onclick=\"og.EventPopUp.show(null, {caller:'overview-panel', day:'".$dtv->getDay()."', month:'".$dtv->getMonth()."', year:'".$dtv->getYear()."', type_id:1, hour:'9', minute:'0', durationhour:1, durationmin:0, start_value: '$start_value', start_time:'9:00', title:'".format_datetime($dtv, 'l, j F', logged_user()->getTimezone()) ."', view: 'week', title: '$popupTitle', time_format: '$timeformat', hide_calendar_toolbar: 0, genid:$genid, otype:".$event->manager()->getObjectTypeId()."},'');\") >
+			$output .= "><div style='z-index:0; min-height:100px; height:100%;cursor:pointer' onclick=\"og.EventPopUp.show(null, {caller:'overview-panel', day:'".$dtv->getDay()."', month:'".$dtv->getMonth()."', year:'".$dtv->getYear()."', type_id:1, hour:'9', minute:'0', durationhour:1, durationmin:0, start_value: '$start_value', start_time:'9:00', title:'".format_datetime($dtv, 'l, j F', logged_user()->getUserTimezoneHoursOffset()) ."', view: 'week', title: '$popupTitle', time_format: '$timeformat', hide_calendar_toolbar: 0, genid:$genid, otype:".$event->manager()->getObjectTypeId()."},'');\") >
 			<div class='$daytitle' style='text-align:right'>";
 			//if($day_of_month >= 1){
 				$output .= "<a class='internalLink' href=\"$p\" onclick=\"og.disableEventPropagation(event);\"  style='color:#5B5B5B' >$w</a>";				
@@ -205,8 +205,8 @@
 							$private = $event->getIsPrivate(); 
 							$eventid = $event->getId();
 
-							$event_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * logged_user()->getTimezone());
-							$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * logged_user()->getTimezone());
+							$event_start = new DateTimeValue($event->getStart()->getTimestamp() + logged_user()->getUserTimezoneValue());
+							$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + logged_user()->getUserTimezoneValue());
 							
 							// make the event subjects links or not according to the variable $whole_day in gatekeeper.php
 							if(!$private && $count <= 3){

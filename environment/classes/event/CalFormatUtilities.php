@@ -8,8 +8,9 @@ class CalFormatUtilities {
 		
 		if (isset($parsed_data[0]['tzoffsetfrom'])){
 			$tz_diff = ($parsed_data[0]['tzoffsetfrom'] / 100);
-                }else
-			$tz_diff = logged_user()->getTimezone();
+		} else {
+			$tz_diff = logged_user()->getUserTimezoneHoursOffset();
+		}
 		unset($parsed_data[0]);
                 
 		$events_data = CalFormatUtilities::build_events_data($parsed_data, $tz_diff);
@@ -81,9 +82,12 @@ class CalFormatUtilities {
 		$ical_info .= "METHOD:REQUEST\n";
 		$ical_info .= "X-WR-CALNAME:$calendar_name\n";
 		
+		$tz_offset = $user->getUserTimezoneValue();
+		$tz_offset_hours = $tz_offset / 3600;
+		
 		// timezone info
-		$tz = ($user->getTimezone() < 0 ? "-":"+").str_pad(abs($user->getTimezone())*100, 4, '0', STR_PAD_LEFT);
-		$tz_desc = $user->getTimezone() > 0 ? lang("timezone gmt +".$user->getTimezone()) : lang("timezone gmt ".$user->getTimezone());
+		$tz = ($tz_offset_hours < 0 ? "-":"+").str_pad(abs($tz_offset_hours)*100, 4, '0', STR_PAD_LEFT);
+		$tz_desc = $tz_offset_hours > 0 ? lang("timezone gmt +".$tz_offset_hours) : lang("timezone gmt ".$tz_offset_hours);
 		$ical_info .= "BEGIN:VTIMEZONE\n";
 		$ical_info .= "TZID:$tz_desc\n";
 		$ical_info .= "BEGIN:STANDARD\n";
@@ -95,8 +99,8 @@ class CalFormatUtilities {
 		foreach ($events as $event) {
 			$ical_info .= "BEGIN:VEVENT\n";
 			
-			$event_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * $user->getTimezone());
-			$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * $user->getTimezone());
+			$event_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_offset);
+			$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_offset);
 			
 			$startNext = new DateTimeValue($event_start->getTimestamp());
 			$startNext->add('d', 1);
@@ -184,4 +188,3 @@ class CalFormatUtilities {
 
 }
 
-?>

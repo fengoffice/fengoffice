@@ -10,4 +10,11 @@
 	'contracted_services' => 'Services contractuels',
 	'apply to all members' => 'Appliquer les permissions à tous {0}',
 	'and' => 'et',
+	'Any' => 'Tous',
+	'color' => 'Couleur',
+	'enable' => 'Activer',
+	'forward' => 'avancer',
+	'backward' => 'reculer',
+	'add new row' => 'Ajouter une nouvelle ligne',
+	'new start date' => 'Nouvelle date de démarrage',
 ); ?>

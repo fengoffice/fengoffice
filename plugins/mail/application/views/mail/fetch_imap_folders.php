@@ -6,12 +6,14 @@
 		<th style="text-align:right">
 		<script>
 		og.fetchImapFolders = function(genid) {
+			var account_id = document.getElementById(genid + 'mail_account_id').value;
 			var server = document.getElementById(genid + 'server').value;
 			var email = document.getElementById(genid + 'email').value;
 			var password = document.getElementById(genid + 'password').value;
 			var ssl = document.getElementById(genid + 'ssl').checked ? document.getElementById(genid + 'ssl').value : '';
 			var sslport = document.getElementById(genid + 'sslport').value;
 			og.openLink(og.getUrl('mail', 'fetch_imap_folders', {
+					account_id: account_id,
 					server: server,
 					email: email,
 					pass: password,
@@ -30,12 +32,35 @@
 			<?php echo lang("fetch imap folders")?>
 			</a>  
 		</th>
+		<th></th>
 	</tr>
 	<?php $isAlt = false; $i=0;
-	foreach($imap_folders as $folder) { ?>
+	foreach($imap_folders as $folder) { 
+		$folder_name_key = str_replace(array('[',']'), array('¡','!'), $folder->getFolderName());
+	?>
 	<tr <?php echo ($isAlt ? ' class="altRow"': '') ?>>
 		<td style="padding-left: 10px;"><?php echo $folder->getFolderName() ?></td>
-		<td style="padding-left: 30px;"><?php echo checkbox_field('check['.str_replace(array('[',']'), array('¡','!'), $folder->getFolderName()).']', $folder->getCheckFolder(), array('tabindex'=>$base_tabindex + $i++)) ?></td>
+		<td style="padding-left: 30px;"><?php echo checkbox_field('imap_folders['.$folder_name_key.'][check]', $folder->getCheckFolder(), array('tabindex'=>$base_tabindex + $i++)) ?></td>
+		<td style="padding-left: 30px;"><?php 
+			if ($can_detect_special_folders) {
+				echo str_replace("\\", "", $folder->getSpecialUse());
+		?>
+			<input type="hidden" name="imap_folders[<?php echo $folder_name_key?>][special_use]" value="<?php echo $folder->getSpecialUse()?>" />
+		<?php } else { 
+				$mu = new MailUtilities();
+				$folder_codes = $mu->getSpecialImapFolderCodes();
+				$options = array(option_tag("", ""));
+				foreach ($folder_codes as $code) {
+					$code_text = str_replace("\\", "", $code);
+					$attr = array();
+					if ($folder->getSpecialUse() == $code) $attr["selected"] = "selected";
+					$options[] = option_tag($code_text, $code, $attr);
+				}
+				echo select_box('imap_folders['.$folder_name_key.'][special_use]', $options);
+			}
+		?>
+			<input type="hidden" name="can_detect_special_folders" value="<?php echo $can_detect_special_folders?"1":"0" ?>" />
+		</td>
 	</tr>
 	<?php $isAlt = !$isAlt;
 	} ?>

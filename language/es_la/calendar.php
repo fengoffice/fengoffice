@@ -209,7 +209,18 @@
         'success import calendar' => 'Sus eventos fueron importados correctamente',
       
         'all day event' => 'Todo el día',
+	  	'without title' => 'Sin título',
         'date' => 'Fecha',
         'time' => 'Hora',
+		'connect with google' => 'Conectar con Google',
+		'start sync' => 'Iniciar sincronización',
+		'stop sync' => 'Parar sincronización',
+		'restart sync' => 'Reiniciar sincronización',
+		'delete calendar' => 'Eliminar calendario',
+		'in sync' => 'En sincronización',
+		'never sync' => 'Nunca sincronizar',
+		'not in sync' => 'No sincronizado',
+		'deleted from google' => 'Eliminado de Google',
+		'out of sync' => 'Fuera de sincronización',
   ); // array
 ?>

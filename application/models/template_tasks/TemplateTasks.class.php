@@ -128,9 +128,9 @@ class TemplateTasks extends BaseTemplateTasks {
 	 */
 	function getRangeTasksByUser(DateTimeValue $date_start, DateTimeValue $date_end, $assignedUser, $task_filter = null, $archived = false) {
 		
-		$from_date = new DateTimeValue ( $date_start->getTimestamp () - logged_user()->getTimezone() * 3600 );
+		$from_date = new DateTimeValue ( $date_start->getTimestamp () - logged_user()->getUserTimezoneValue());
 		$from_date = $from_date->beginningOfDay ();
-		$to_date = new DateTimeValue ( $date_end->getTimestamp () - logged_user()->getTimezone() * 3600);
+		$to_date = new DateTimeValue ( $date_end->getTimestamp () - logged_user()->getUserTimezoneValue());
 		$to_date = $to_date->endOfDay ();
 		
 		$assignedFilter = '';
@@ -447,7 +447,7 @@ class TemplateTasks extends BaseTemplateTasks {
 			'cid' => (int)$raw_data['created_by_id'],
 			'otype' => $raw_data['object_subtype'],
 			'pc' => (int)$raw_data['percent_completed'],
-			'memPath' => str_replace('"',"'", str_replace("'", "\'", json_encode($tmp_task->getMembersIdsToDisplayPath())))
+			'memPath' => str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())))
 		);
 
 		$result['mas'] = (int)array_var($raw_data, 'multi_assignment');
@@ -475,13 +475,19 @@ class TemplateTasks extends BaseTemplateTasks {
 			$result['cbid'] = (int)$raw_data['completed_by_id'];
 			$result['con'] = strtotime($raw_data['completed_on']);;
 		}
+		
+		if (isset($raw_data['timezone_id']) && isset($raw_data['timezone_value'])) {
+			$tz_offset = Timezones::getTimezoneOffsetToApply($raw_data);
+		} else {
+			$tz_offset = Timezones::getTimezoneOffset(logged_user()->getUserTimezoneId());
+		}
 			
 		if ($raw_data['due_date'] != EMPTY_DATETIME) {
-			$result['dd'] = strtotime($raw_data['due_date']) + logged_user()->getTimezone() * 3600;
+			$result['dd'] = strtotime($raw_data['due_date']) + $tz_offset;
 			$result['udt'] = $raw_data['use_due_time'] ? 1 : 0;
 		}
 		if ($raw_data['start_date'] != EMPTY_DATETIME) {
-			$result['sd'] = strtotime($raw_data['start_date']) + logged_user()->getTimezone() * 3600;
+			$result['sd'] = strtotime($raw_data['start_date']) + $tz_offset;
 			$result['ust'] = $raw_data['use_start_time'] ? 1 : 0;
 		}
 
@@ -490,7 +496,7 @@ class TemplateTasks extends BaseTemplateTasks {
 		if ($time_estimate > 0) $result['et'] = DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($time_estimate * 60), 'hm', 60) ;
 
 
-		$result['tz'] = logged_user()->getTimezone() * 3600;
+		$result['tz'] = logged_user()->getUserTimezoneValue();
 
 		$ot = $tmp_task->getOpenTimeslots();
 

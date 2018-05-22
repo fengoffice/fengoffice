@@ -41,13 +41,14 @@
 	'print this page'=> 'Print this page',
   	'show estimated time column' => 'Show estimated time column',
 
+    'field Objects mark_as_started' => 'Mark as started',
 	'field Objects rel_object_id' => 'Task id',
 	'field Objects start_time' => 'Start time',
 	'field Objects end_time' => 'End Time',
 	'field Objects contact_id' => 'Person',
 	'field Objects description' => 'Description',
 	'field Objects paused_on' => 'Paused on',
-	'field Objects subtract' => 'Subtract',
+	'field Objects subtract' => 'Paused time',
 	'field Objects fixed_billing' => 'Fixed billing',
 	'field Objects hourly_billing' => 'Hourly billing',
 	'field Objects is_fixed_billing' => 'Is fixed billing',
@@ -61,10 +62,14 @@
 	'field Objects archived_on' => 'Archived on',
   	'field Objects time' => 'Time',
   	'field Objects billing' => 'Billing',
+        'field Objects worked_time' => 'Worked time',
+  	'field Timeslots worked_time' => 'Worked time',
   	'field Timeslots start_time' => 'Timeslot date',
   
   	'field ProjectTasks assigned_by_id' => 'Assigned by',
   	'field ProjectTasks type_content' => 'Type content',
+  	'report date' => 'Report date',
+  	'ignore this condition' => 'Ignore this condition',
   );
   
 ?>

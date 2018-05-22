@@ -29,6 +29,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		$this->object->setObjectTypeId($this->manager()->getObjectTypeId());
 		if ($this->is_searchable) {
 			$this->searchable_columns[] = 'object_id';
+			$this->searchable_columns[] = 'name';
 		}
 	}
 	
@@ -74,6 +75,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	protected $comments = null;
 	
 	protected $timeslots = null;
+	
+	/**
+	 * When this attribute is set to true, no calculations in other tables should be triggered
+	 */
+	protected $dont_make_calculations = false;
 	
 	/**
 	 * 
@@ -187,6 +193,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @return boolean
 	 */
 	function setObjectName($value) {
+		$value = preg_replace('/\s+/', ' ', trim($value)); // remove enters
 		return $this->object->setName($value);
 	} // setName() 
 	
@@ -431,6 +438,31 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	function setTrashedById($value){
 		return $this->object->setTrashedById($value);
 	} // setTrashedById()   
+
+	
+	
+	function getDontMakeCalculations() {
+		return $this->dont_make_calculations;
+	}
+	function setDontMakeCalculations($value) {
+		$this->dont_make_calculations = $value;
+	}
+	
+	
+	// timezone attributes
+	function getTimezoneId() {
+    	return $this->getObject()->getColumnValue('timezone_id');
+    }
+    function setTimezoneId($value) {
+    	return $this->getObject()->setColumnValue('timezone_id', $value);
+    }
+    
+    function getTimezoneValue() {
+    	return $this->getObject()->getColumnValue('timezone_value');
+    }
+    function setTimezoneValue($value) {
+    	return $this->getObject()->setColumnValue('timezone_value', $value);
+    }
 
 	
 	/**
@@ -1023,7 +1055,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	// ---------------------------------------------------
 	
 	
-	function archive($archiveDate = null) {
+	function archive($archiveDate = null, $fire_hook = true) {
 		if(!isset($archiveDate))
 			$archiveDate = DateTimeValueLib::now();
 		if ($this->getObject()->columnExists('archived_on')) {
@@ -1033,10 +1065,21 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$this->getObject()->setColumnValue('archived_by_id', logged_user()->getId());
 		}
 		$this->save();
+		
+		// archive associated member if exists
+		$mem = Members::findOneByObjectId($this->getId());
+		if ($mem instanceof Member) {
+			$mem->archive(logged_user());
+		}
+		
+		if ($fire_hook) {
+			$null = null;
+			Hook::fire("after_content_object_archive", array('object' => $this), $null);
+		}
 	}
 	
 	
-	function unarchive() {
+	function unarchive($fire_hook = true) {
 		if ($this->getObject()->columnExists('archived_on')) {
 			$this->getObject()->setColumnValue('archived_on', EMPTY_DATETIME);
 		}
@@ -1044,6 +1087,17 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$this->getObject()->setColumnValue('archived_by_id', 0);
 		}
 		$this->save();
+		
+		// unarchive associated member if exists
+		$mem = Members::findOneByObjectId($this->getId());
+		if ($mem instanceof Member) {
+			$mem->unarchive(logged_user());
+		}
+		
+		if ($fire_hook) {
+			$null = null;
+			Hook::fire("after_content_object_unarchive", array('object' => $this), $null);
+		}
 	}
 	
 	
@@ -1193,7 +1247,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	// ---------------------------------------------------
 	
 	
-	function trash($trashDate = null) {
+	function trash($trashDate = null, $fire_hook = true) {
 		// dont delete owner company and account owner
 		if ($this instanceof Contact && ($this->isOwnerCompany() || $this->isAccountOwner()) ){
 			return false;
@@ -1216,10 +1270,15 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				foreach ($comments as $comment) $comment->trash();
 			}
 		}
+		
+		if ($fire_hook) {
+			$null = null;
+			Hook::fire("after_content_object_trash", array('object' => $this), $null);
+		}
 	}
 	
 	
-	function untrash() {
+	function untrash($fire_hook = true) {
 		if ($this->getObject()->columnExists('trashed_on')) {
 			$this->getObject()->setColumnValue('trashed_on', EMPTY_DATETIME);
 		}
@@ -1237,6 +1296,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					if ($comment->getTrashedById() > 0) $comment->untrash();
 				}
 			}
+		}
+		
+		if ($fire_hook) {
+			$null = null;
+			Hook::fire("after_content_object_untrash", array('object' => $this), $null);
 		}
 	}
 	
@@ -1310,12 +1374,17 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $this->members ;
 	}
 	
+	function resetCachedVars() {
+		$this->memberIds = null;
+		$this->members = null;
+		$this->subscribers = null;
+	}
 	
 	function getDimensionObjectTypes(){
 		return DimensionObjectTypeContents::getDimensionObjectTypesforObject($this->getObjectTypeId());
 	}
 	
-	function addToMembers($members_array, $remove_old_comment_members = false){
+	function addToMembers($members_array, $remove_old_comment_members = false, $is_multiple = false){
 		ObjectMembers::addObjectToMembers($this->getId(),$members_array);
 		/*if (Plugins::instance()->isActivePlugin('mail') && $this instanceof MailContent) {
 			$inline_images = ProjectFiles::findAll(array("conditions" => "mail_id = ".$this->getId()));
@@ -1324,6 +1393,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$inline_img->addToSharingTable();
 			}
 		}*/
+		
+	   
+	    Hook::fire("after_classify_object", array('members'=> $members_array, 'object'=>$this, 'is_multiple_classify'=> $is_multiple));
+		
+
 		if ($this->isCommentable()) {
 			$comments = $this->getComments(true);
 			foreach ($comments as $comment) {
@@ -1334,6 +1408,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$comment->addToSharingTable();
 			}
 		}
+		
+		// clear this object's cached variables
+		$this->resetCachedVars();
 	}
 	
 	/**
@@ -1342,9 +1419,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 */
 	function addToSharingTable() {		
 		$oid = $this->getId();
-		$tid = $this->getObjectTypeId() ;
-		$obj_mem_ids = $this->getMemberIds();
-		ContentDataObjects::addObjToSharingTable($oid,$tid, count($obj_mem_ids));
+		ContentDataObjects::addObjToSharingTable($oid);
 	}
 	
 	
@@ -1354,12 +1429,14 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 	
 	
-	function getAllowedMembersToAdd(Contact $user, $enteredMembers){
+	function getAllowedMembersToAdd(Contact $user, $enteredMembers, &$not_valid_members=array()){
 		
 		$validMembers = array();
 		foreach ($enteredMembers as $m) {
 			if ($this->canAddToMember($user, $m, $enteredMembers)) {
 				$validMembers[] = $m;
+			} else {
+				$not_valid_members[] = $m;
 			}
 		}
 		
@@ -1447,6 +1524,10 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$timeslot->resume();
 			$timeslot->save();
 		}
+	}
+	
+	function getOpenTimeslots(){
+		return Timeslots::instance()->getOpenTimeslotsByObject($this->getId());
 	}
 
 	/**
@@ -1548,7 +1629,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Timeslot $timeslot
 	 * @return boolean
 	 */
-	function onAddTimeslot(Timeslot $timeslot) {
+	function onAddTimeslot(Timeslot $timeslot, $params = array()) {
+		if ($this->allowsTimeslots()) {
+			$total_worked_time = $this->calculateTotalWorkedTime();
+			$twt_column = array_var($params, 'total_worked_time_column');
+			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+		}
 		return true;
 	}
 
@@ -1558,7 +1644,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Timeslot $timeslot
 	 * @return boolean
 	 */
-	function onEditTimeslot(Timeslot $timeslot) {
+	function onEditTimeslot(Timeslot $timeslot, $params = array()) {
+		if ($this->allowsTimeslots()) {
+			$total_worked_time = $this->calculateTotalWorkedTime();
+			$twt_column = array_var($params, 'total_worked_time_column');
+			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+		}
 		return true;
 	}
 
@@ -1568,8 +1659,46 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Timeslot $timeslot
 	 * @return boolean
 	 */
-	function onDeleteTimeslot(Timeslot $timeslot) {
+	function onDeleteTimeslot(Timeslot $timeslot, $params = array()) {
+		if ($this->allowsTimeslots()) {
+			$total_worked_time = $this->calculateTotalWorkedTime();
+			$twt_column = array_var($params, 'total_worked_time_column');
+			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+		}
 		return true;
+	}
+	
+	/**
+	 * Returns the total worked time in minutes for this object
+	 *
+	 * @return integer
+	 */
+	function calculateTotalWorkedTime() {
+		if ($this->allowsTimeslots()) {
+			
+			$sql = "SELECT (SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60)) as total_minutes 
+					FROM ".TABLE_PREFIX."timeslots ts WHERE ts.rel_object_id=".$this->getId();
+			
+			$row = DB::executeOne($sql);
+			return array_var($row, 'total_minutes');
+			
+		} else {
+			return 0;
+		}
+	}
+	
+	/**
+	 * Saves the $total_worked_time in the column '$total_worked_time_column'
+	 * 
+	 * @param integer $total_worked_time
+	 * @param string $total_worked_time_column
+	 */
+	function saveTotalWorkedTime($total_worked_time=0, $total_worked_time_column='') {
+		$total_worked_time_column = trim($total_worked_time_column);
+		if ($total_worked_time_column && $this->columnExists($total_worked_time_column)) {
+			$this->setColumnValue($total_worked_time_column, $total_worked_time);
+			$this->save();
+		}
 	}
 
 	/**
@@ -1579,14 +1708,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 */
 	//
 	function getTotalMinutes(){
-		$timeslots = $this->getTimeslots();
-		$totalMinutes = 0;
-		if (is_array($timeslots)){
-			foreach ($timeslots as $ts){
-				if (!$ts->isOpen())
-				$totalMinutes += $ts->getMinutes();
-			}
-		}
+		$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+		$totalMinutes = $totalSeconds / 60;
 		return $totalMinutes;
 	}
 
@@ -1597,15 +1720,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 */
 
 	function getTotalSeconds(){
-		$timeslots = $this->getTimeslots();
-		$totalMinutes = 0;
-		if (is_array($timeslots)){
-			foreach ($timeslots as $ts){
-				if (!$ts->isOpen())
-				$totalMinutes += $ts->getSeconds();
-			}
-		}
-		return $totalMinutes;
+		$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+		return $totalSeconds;
 	}
 	
 
@@ -1652,8 +1768,15 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		
 		if(count($members) > 0){
 			foreach ($members as $mem) {
-				$options = Dimensions::getDimensionById($mem['dimension_id'])->getOptions(true);
-				if (isset($options->showInPaths) && $options->showInPaths) {
+				$dimension = Dimensions::getDimensionById($mem['dimension_id']);
+				
+				$hook_return = null;
+				Hook::fire("hidden_breadcrumbs", array('ot_id' => $this->getObjectTypeId(), 'dim_id' => $mem['dimension_id']), $hook_return);
+				if (!is_null($hook_return) && array_var($hook_return, 'hidden')) {
+					continue;
+				}
+				
+				if (intval($dimension->getOptionValue('showInPaths')) && $dimension->getIsManageable()) {
 					if (!isset($members_info[$mem['dimension_id']])) $members_info[$mem['dimension_id']] = array();
 					
 					$active_context_condition = true;
@@ -1681,7 +1804,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $members_info;
 	}
 	
-	function getMembersIdsToDisplayPath() {
+	function getMembersIdsToDisplayPath($show_hidden_breadcrumbs = false) {
 		$member_ids = array();
 		$dimensions_ids = array();
 		$selected_members_ids = $this->getMemberIds();
@@ -1691,15 +1814,55 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			//get all dimensions ids to showInPaths
 			$dimensions = Dimensions::getAllowedDimensions($this->getObjectTypeId());
 			foreach ($dimensions as $dimension) {
-				$options = json_decode ( $dimension['dimension_options'] );
-				if (isset($options->showInPaths) && $options->showInPaths) {
+				$dim = Dimensions::getDimensionById($dimension['dimension_id']);
+				if (intval($dim->getOptionValue('showInPaths')) && $dim->getIsManageable()) {
+					
+					if (!$show_hidden_breadcrumbs) {
+						$hook_return = null;
+						Hook::fire("hidden_breadcrumbs", array('ot_id' => $this->getObjectTypeId(), 'dim_id' => $dimension['dimension_id']), $hook_return);
+						if (!is_null($hook_return) && array_var($hook_return, 'hidden')) {
+							continue;
+						}
+					}
+					
 					$dimensions_ids[] = $dimension['dimension_id'];
-					$to_display = user_config_option('breadcrumb_member_count');
+					$to_display = null;
+					if ($this instanceof Contact && $this->isUser()) {
+						$to_display = user_config_option('breadcrumb_member_count');
+					}
 					$extra_cond = " AND m.dimension_id = ".$dimension['dimension_id'];
-					$extra_cond .= $selected_members_cond;
+					
+					Hook::fire("breadcrumbs_extra_conditions", array('dim'=>$dim), $extra_cond);
+					
 					$dim_members = ObjectMembers::getMembersIdsByObjectAndExtraCond($this->getId(), $extra_cond, $to_display, false);
-					foreach ($dim_members as $mem) {
-						$member_ids[$dimension['dimension_id']][$mem] = $mem;
+					if (is_array($dim_members)) {
+						foreach ($dim_members as $mem) {
+							$ot_id = $mem['object_type_id'];
+							if ($mem['is_optimization'] == '1') {
+								
+								if (!isset($member_ids[$dimension['dimension_id']]['opt'])) $member_ids[$dimension['dimension_id']]['opt'] = array();
+								if (!isset($member_ids[$dimension['dimension_id']]['opt'][$ot_id])) $member_ids[$dimension['dimension_id']]['opt'][$ot_id] = array();
+								$member_ids[$dimension['dimension_id']]['opt'][$ot_id][] = $mem['member_id'];
+								
+							} else {
+								if (!isset($member_ids[$dimension['dimension_id']][$ot_id])) $member_ids[$dimension['dimension_id']][$ot_id] = array();
+								$member_ids[$dimension['dimension_id']][$ot_id][] = $mem['member_id'];
+							}
+						}
+						
+						if (!user_config_option('show_associated_dims_in_breadcrumbs')) {
+							// check if this dimension is associated to any main dimensions
+							$main_dims_of_this_dim = array_var($_SESSION['main_dims_of_this_dim'], $dimension['dimension_id']);
+							if (is_null($main_dims_of_this_dim)) { 
+								$main_dims_of_this_dim = DimensionMemberAssociations::instance()->getAssociatedDimensions($dimension['dimension_id']);
+								if (!isset($_SESSION['main_dims_of_this_dim'])) $_SESSION['main_dims_of_this_dim'] = array();
+								$_SESSION['main_dims_of_this_dim'][$dimension['dimension_id']] = $main_dims_of_this_dim;
+							}
+							// don't show associated dimensions in content objects general breadcrumb
+							if (count($main_dims_of_this_dim) > 0) {
+								$member_ids[$dimension['dimension_id']]['is_assoc_dim'] = '1';
+							}
+						}
 					}
 				}
 			}
@@ -1745,6 +1908,216 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	function canAddTimeslot($user) {
 		return can_add_timeslots($user, $this->getMembers());
+	}
+	
+	
+	function getAddEditFormTitle() {
+		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		if ($ot instanceof ObjectType) {
+			$otname = $ot->getName();
+			$title = $this->isNew() ? lang("new $otname") : lang("edit $otname");
+		} else {
+			$title = $this->isNew() ? lang("new object") : lang("edit object");
+		}
+		
+		Hook::fire('override_add_edit_form_title', array('object' => $this, 'ot' => $ot), $title);
+		
+		return $title;
+		
+	}
+	
+	function getSubmitButtonFormTitle() {
+		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		if ($ot instanceof ObjectType) {
+			$otname = $ot->getName();
+			$title = $this->isNew() ? lang("add $otname") : lang("save changes");
+		} else {
+			$title = $this->isNew() ? lang("add object") : lang("save changes");
+		}
+		
+		Hook::fire('override_submit_button_form_title', array('object' => $this, 'ot' => $ot), $title);
+		
+		return $title;
+	}
+	
+	function getObjectTypeNameLang() {
+		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		if ($ot instanceof ObjectType) {
+			$otname = lang($ot->getName());
+		} else {
+			$otname = lang('object');
+		}
+		
+		Hook::fire('override_get_object_type_name', $this, $otname);
+		
+		return $otname;
+	}
+	
+
+
+	function addToRelatedMembers($members, $from_form = false){
+		$related_member_ids = array();
+		
+		foreach ($members as $member) {
+			// get normal associations
+			$associations = DimensionMemberAssociations::getAssociatations($member->getDimensionId(), $member->getObjectTypeId());
+			
+			
+			// get transitive associations - associations of parent member types
+			$transitive_associations = array();
+			$parent_mem_type_ids = DimensionObjectTypeHierarchies::getAllParentObjectTypeIds($member->getDimensionId(), $member->getObjectTypeId());
+			foreach ($parent_mem_type_ids as $pmem_type_id) {
+				$more_assocs = DimensionMemberAssociations::getAssociatations($member->getDimensionId(), $pmem_type_id);
+				foreach ($more_assocs as $a) {
+					$aconfig = $a->getConfig();
+					if (array_var($aconfig, 'autoclassify_in_property_member_by_child')) {
+						$transitive_associations[] = $a;
+					}
+				}
+			}
+			
+			$associations = array_merge($associations, $transitive_associations);
+			
+			
+			foreach ($associations as $a) {/* @var $a DimensionMemberAssociation */
+				$aconfig = $a->getConfig();
+				$classify_it = false;
+				$include_parents_in_query = false;
+				
+				// classify only if 'autoclassify_in_property_member' option is set for this association
+				if (array_var($aconfig, 'autoclassify_in_property_member')) {
+					
+					// if the request does not come from object form (e.g.: d&d, it hasn't member selectors)
+					if (!$from_form) {
+						$classify_it = true;
+						
+					} else {
+						// direct association
+						if ($member->getObjectTypeId() == $a->getObjectTypeId()) {
+							
+							// force the add to the related member in background if the member is not allowed to be removed  
+							if (!array_var($aconfig, 'allow_remove_from_property_member')) {
+								$classify_it = true;
+								
+							} else {
+								// to check if this dimension selector is hidden in forms or not
+								$hookparams = array('dim_id' => $a->getAssociatedDimensionMemberAssociationId(), 'ot_id' => $this->getObjectTypeId());
+								Hook::fire('more_autoclassify_in_related_checks', $hookparams, $classify_it);
+								
+							}
+							
+						} else {
+							// transitive association
+							$classify_it = true;
+							$include_parents_in_query = true;
+						}
+						
+						// @TODO: ver que pasa cuando se hace el submit antes de que se terminen de pre-cargar las dim relacionadas
+					}
+					
+				}
+				
+				if ($classify_it) {
+					$member_ids = array($member->getId());
+					
+					if ($include_parents_in_query) {
+						$pmembers = $member->getAllParentMembersInHierarchy(false, false);
+						foreach ($pmembers as $pmem) {
+							$member_ids[] = $pmem->getId();
+						}
+					}
+					
+					$rel_mem_ids = array_flat(DB::executeAll("SELECT property_member_id FROM ".TABLE_PREFIX."member_property_members 
+							WHERE association_id=".$a->getId()." AND member_id IN (".implode(',', $member_ids).")"));
+					
+					$related_member_ids = array_merge($related_member_ids, $rel_mem_ids);
+				}
+			}
+		}
+
+		$related_member_ids = array_unique(array_filter($related_member_ids));
+		if (count($related_member_ids) > 0) {
+			$related_members = Members::findAll(array("conditions" => "id IN (".implode(',', $related_member_ids).")"));
+			if (count($related_members) > 0) {
+				ObjectMembers::addObjectToMembers($this->getId(), $related_members);
+			}
+		}
+		
+	}
+	
+	
+	
+	function getExternalColumnValue($column) {
+		return "";
+	}
+	
+	
+	function getParentObjectId() {
+		return null;
+	}
+	
+	function getChildObjectIds() {
+		return null;
+	}
+	
+
+	function getObjectData() {
+		$info = array();
+		
+		$cps_by_id = array();
+		$cps = CustomProperties::getAllCustomPropertiesByObjectType($this->getObjectTypeId());
+		foreach ($cps as $cp) {
+			$cps_by_id[$cp->getId()] = $cp;
+		}
+		
+		$definition = $this->manager()->getDefinition();
+		
+		
+		foreach ($definition as $property_id => $property_info) {
+			if (isset($info[$property_id])) continue;
+			
+			if (str_starts_with($property_id, "cp_")) {
+				// custom property
+				$cp_id = str_replace("cp_", "", $property_id);
+				$cp = array_var($cps_by_id, $cp_id);
+				
+				if ($cp->getIsMultipleValues()) {
+					$cp_vals = CustomPropertyValues::getCustomPropertyValues($this->getId(), $cp->getId());
+					$cp_vals_info = array();
+					foreach ($cp_vals as $cp_val) {
+						$cp_vals_info[] = get_custom_property_value_for_listing($cp, $this, array($cp_val), true);
+					}
+					$info[$property_id] = $cp_vals_info;
+				
+				} else {
+				
+					$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getId(), $cp->getId());
+					$info[$property_id] = get_custom_property_value_for_listing($cp, $this, array($cp_val), true);
+				}
+				
+			} else {
+				// object property
+				$info[$property_id] = $this->getColumnValue($property_id);
+				if ($info[$property_id] instanceof DateTimeValue) {
+					$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+				}
+			}
+		}
+		
+		return $info;
+	}
+	
+	
+	function getAdditionalCustomPropertyValues($cp) {
+		return array();
+	}
+	
+	function getAdditionalCustomPropertyAssociatedObject($cp) {
+		return null;
+	}
+	
+	function getFixedColumnValue($column_name) {
+		return $this->getColumnValue($column_name);
 	}
 	
 }

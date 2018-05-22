@@ -47,6 +47,7 @@ function render_pie_chart($options) {
 
 
 function render_chart($options = array()) {
+    
 	$genid = array_var($options, 'genid', gen_id());
 	$title = array_var($options, 'title', '');
 	$width = array_var($options, 'width', 700);
@@ -64,14 +65,17 @@ function render_chart($options = array()) {
 	
 	$max = 0;
 	$chart_values = array();
-	foreach ($y_values as $y_values_array) {
-		$data_object = create_chart_data_object($type, $y_values_array);
-		
-		$values_data = array_var($y_values_array, 'values', array());
-		$max = count($values_data) > $max ? count($values_data) : $max;
-		
-		$chart_values[] = $data_object;
-	}
+        
+        if (isset($y_values) && !empty($y_values)){
+            foreach ($y_values as $y_values_array) {
+                    $data_object = create_chart_data_object($type, $y_values_array);
+
+                    $values_data = array_var($y_values_array, 'values', array());
+                    $max = count($values_data) > $max ? count($values_data) : $max;
+
+                    $chart_values[] = $data_object;
+            }
+        }
 	
 	$x_range_start = array_var($x_range, 'start', 0);
 	$x_range_end = array_var($x_range, 'end', 10) - $x_range_start > $max ? $max + $x_range_start - 1 : array_var($x_range, 'end', 10);
@@ -90,8 +94,15 @@ function render_chart($options = array()) {
 	
 	$x_axis = new OFC_Elements_Axis_X();
 	$x_axis->set_colours(array_var($options, 'x_axis_color', '#87C4FA'), array_var($options, 'x_grid_color', '#D4E8FA'));
+        
 	if (array_var($x_range, 'step')) $x_axis->set_range($x_range_start, $x_range_end, array_var($x_range, 'step', 1));
 	$x_axis->set_labels_from_array($labels);
+	$x_axis_labels = $x_axis->labels;
+	switch (array_var($options, 'x_axis_rotation')) {
+		case 'diagonal': $x_axis_labels->rotate = 'diagonal'; break;
+		case 'vertical': $x_axis_labels->rotate = 'vertical'; break;
+		default: break;
+	}
 	
 	$y_axis = new OFC_Elements_Axis_Y();
 	$y_axis->set_colours(array_var($options, 'y_axis_color', '#87C4FA'), array_var($options, 'y_grid_color', '#D4E8FA'));
@@ -108,17 +119,18 @@ function render_chart($options = array()) {
 	$chart->set_bg_colour(array_var($options, 'back_color', '#FFFFFF'));
 	if ($y_axis_right) $chart->set_y_axis_right($y_axis);
 	
-	foreach ($shapes as $s) {
-		$shape = new shape(array_var($s, 'color', '#FA6900'));
-		$points = array_var($s, 'points', array());
-		foreach ($points as $p) {
-			$shape->append_value( new shape_point($p['x'], $p['y']));
-		}
-		if (array_var($s, 'text')) $shape->set_text(array_var($s, 'text'));
-		if (array_var($s, 'alpha')) $shape->set_alpha(array_var($s, 'alpha'));
-		$chart->add_element($shape);
-	}
-	
+        if (isset($shapes) && !empty($shapes)) {
+            foreach ($shapes as $s) {
+                    $shape = new shape(array_var($s, 'color', '#FA6900'));
+                    $points = array_var($s, 'points', array());
+                    foreach ($points as $p) {
+                            $shape->append_value( new shape_point($p['x'], $p['y']));
+                    }
+                    if (array_var($s, 'text')) $shape->set_text(array_var($s, 'text'));
+                    if (array_var($s, 'alpha')) $shape->set_alpha(array_var($s, 'alpha'));
+                    $chart->add_element($shape);
+            }
+        }
 	$filename = 'tmp/' . gen_id().'.json';
 	file_put_contents(ROOT . "/$filename", $chart->toPrettyString());
 	

@@ -47,6 +47,9 @@ require_javascript('og/modules/addMessageForm.js');
 		}
 	}
 	
+	$hook_params = array('genid' => $genid, 'object_type_id' => $object->getObjectTypeId(), 'context' => $object->getMembers(), 'subscriberIds' => $subscriberIds);
+	Hook::fire('filter_subscribers', $hook_params, $users);
+	
 	$grouped = array();
 	$allChecked = true;
 	foreach($users as $user) {

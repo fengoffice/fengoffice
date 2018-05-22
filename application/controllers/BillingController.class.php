@@ -8,13 +8,17 @@ class BillingController extends ApplicationController {
 		//ajx_set_panel("administration");
 
 		// Access permissios
-		if(!logged_user()->isCompanyAdmin(owner_company())) {
+		if(!can_manage_billing(logged_user())) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 		} // if
 	}
 	
 	function index() {
+		
+	}
+	
+	function list_all() {
 		tpl_assign('billing_categories', BillingCategories::findAll());
 	}
 

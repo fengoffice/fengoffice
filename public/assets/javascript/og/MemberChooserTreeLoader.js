@@ -74,7 +74,7 @@ Ext.extend(og.MemberChooserTreeLoader , Ext.tree.TreeLoader, {
 				og.addMemberToOgDimensions(dimension_id,json_obj.dimension_members[i]);
 			}	
 			
-			if(typeof(json_obj.dimensions_root_members) != "undefined"){
+			if(typeof(json_obj.dimensions_root_members) != "undefined" && !json_obj.more_nodes_left){
 				ogMemberCache.addDimToDimRootMembers(json_obj.dimension_id);
 			}
 			
@@ -95,12 +95,12 @@ Ext.extend(og.MemberChooserTreeLoader , Ext.tree.TreeLoader, {
 			
 			// mask
 			var old_text = this.ownerTree.getRootNode().text;
-			this.ownerTree.getRootNode().setText(lang('loading'));
+			//this.ownerTree.getRootNode().setText(lang('loading'));
 			this.ownerTree.innerCt.mask();
 		
 			// add nodes
 			for (x=0; x<count; x++) {
-				setTimeout('og.addNodesToTree("'+tree_id+'");', 1000 * x);
+				setTimeout('og.addNodesToTree("'+tree_id+'", '+(json_obj.more_nodes_left ? '1':'0')+');', 1000 * x);
 			}
 			
 			// unmask
@@ -115,7 +115,7 @@ Ext.extend(og.MemberChooserTreeLoader , Ext.tree.TreeLoader, {
 			
 			node.endUpdate();
 			if(typeof callback == "function"){
-				callback(this, node);
+				callback(this, node, json_obj);
 			}
 			this.ownerTree.expanded_once = false;
 			

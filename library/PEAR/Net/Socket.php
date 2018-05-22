@@ -79,6 +79,7 @@ class Net_Socket extends PEAR {
     var $lineLength = 2048;
 
     /**
+     * @deprecated We override this function with the last implemented for this library
      * Connect to the specified port. If called when the socket is
      * already connected, it disconnects and connects again.
      *
@@ -94,7 +95,7 @@ class Net_Socket extends PEAR {
      *
      * @return boolean | PEAR_Error  True on success or a PEAR_Error on failure.
      */
-    function connect($addr, $port = 0, $persistent = null, $timeout = null, $options = null)
+ /*   function connect($addr, $port = 0, $persistent = null, $timeout = null, $options = null)
     {
         if (is_resource($this->fp)) {
             @fclose($this->fp);
@@ -147,7 +148,97 @@ class Net_Socket extends PEAR {
 
         return $this->setBlocking($this->blocking);
     }
+*/
+    public function connect(
+        $addr,
+        $port = 0,
+        $persistent = null,
+        $timeout = null,
+        $options = null
+    ) {
+        if (is_resource($this->fp)) {
+            @fclose($this->fp);
+            $this->fp = null;
+        }
 
+        if (!$addr) {
+            return $this->raiseError('$addr cannot be empty');
+        } else {
+            if (strspn($addr, ':.0123456789') === strlen($addr)) {
+                $this->addr = strpos($addr, ':') !== false ? '[' . $addr . ']' : $addr;
+            } else {
+                $this->addr = $addr;
+            }
+        }
+
+        $this->port = $port % 65536;
+
+        if ($persistent !== null) {
+            $this->persistent = $persistent;
+        }
+
+        $openfunc = $this->persistent ? 'pfsockopen' : 'fsockopen';
+        $errno = 0;
+        $errstr = '';
+
+        if (function_exists('error_clear_last')) {
+            error_clear_last();
+        } else {
+            $old_track_errors = @ini_set('track_errors', 1);
+        }
+
+        if ($timeout <= 0) {
+            $timeout = @ini_get('default_socket_timeout');
+        }
+
+        if ($options && function_exists('stream_context_create')) {
+            $context = stream_context_create($options);
+
+            // Since PHP 5 fsockopen doesn't allow context specification
+            if (function_exists('stream_socket_client')) {
+                $flags = STREAM_CLIENT_CONNECT;
+
+                if ($this->persistent) {
+                    $flags = STREAM_CLIENT_PERSISTENT;
+                }
+
+                $addr = $this->addr . ':' . $this->port;
+                $fp = @stream_socket_client($addr, $errno, $errstr,
+                    $timeout, $flags, $context);
+            } else {
+                $fp = @$openfunc($this->addr, $this->port, $errno,
+                    $errstr, $timeout, $context);
+            }
+        } else {
+            $fp = @$openfunc($this->addr, $this->port, $errno, $errstr, $timeout);
+        }
+
+        if (!$fp) {
+            if ($errno === 0 && !strlen($errstr)) {
+                $errstr = '';
+                if (isset($old_track_errors)) {
+                    $errstr = $php_errormsg ?: '';
+                    @ini_set('track_errors', $old_track_errors);
+                } else {
+                    $lastError = error_get_last();
+                    if (isset($lastError['message'])) {
+                        $errstr = $lastError['message'];
+                    }
+                }
+            }
+
+            return $this->raiseError($errstr, $errno);
+        }
+
+        if (isset($old_track_errors)) {
+            @ini_set('track_errors', $old_track_errors);
+        }
+
+        $this->fp = $fp;
+        $this->setTimeout();
+
+        return $this->setBlocking($this->blocking);
+    }
     /**
      * Disconnects from the peer, closes the socket.
      *

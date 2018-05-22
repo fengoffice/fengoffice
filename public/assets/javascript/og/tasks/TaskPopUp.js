@@ -7,7 +7,7 @@ og.TaskPopUp = function(action, task_id) {
         }else{
             html_option += "<div>" + lang('apply changes to') + "</div>";
             html_option += "<div><input type='radio' name='type_related' value='only' onclick='selectRelated(this.value)'/>" + lang('only this task') + "</div>";
-            html_option += "<div><input type='radio' name='type_related' value='news' onclick='selectRelated(this.value)' checked/>" + lang('this task alone and all to come forward') + "</div>";
+            html_option += "<div><input type='radio' name='type_related' value='news' onclick='selectRelated(this.value)' checked='checked'/>" + lang('this task alone and all to come forward') + "</div>";
             html_option += "<div><input type='radio' name='type_related' value='all' onclick='selectRelated(this.value)'/>" + lang('all tasks related') + "</div>";
         }       
         html_option += "<div><input type='hidden' name='action_related' id='action_related' value='" + action + "'/></div>";

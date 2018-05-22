@@ -119,6 +119,8 @@
     'success edit task' => 'Selected task has been updated',
     'success delete task' => 'Selected task has been deleted',
     'success complete task' => 'Selected task has been completed',
+    'success mark as started task' => 'Selected task has been mark as started',
+    'success unmark as started task' => 'Selected task has been unmark as started',
     'success open task' => 'Selected task has been reopened',
     'success n tasks updated' => '{0} tasks updated',
 	'success add mail' => 'Email sent successfully',
@@ -215,6 +217,7 @@
     'success delete contacts' => 'The selected people have been deleted successfully',
   
     'success classify email' => 'Email classified successfully',
+  	'success classify email in' => 'Email classified successfully in \'{0}\'',
     'success delete email' => 'Email has been deleted',
   	'success unclassify email' => 'Email unclassified successfully',
   	'error unclassify email' => 'Failed to unclassify email',
@@ -668,6 +671,7 @@
   	'log read projectmilestones' => 'Viewed \'{0}\'',
   	'log read projectwebpages' => 'Viewed \'{0}\'',
   	'log read reports' => 'Viewed \'{0}\'',
+    'log read invoice' => 'Viewed \'{0}\'',
     
   
   	'error assign workspace' => 'Failed to assign template to workspace',
@@ -707,6 +711,7 @@
   	'failed to assign contact due to permissions' => 'You don\'t have permissions to create or edit people on these workspaces: {0}',
   
   	'weblink dnx' => 'Requested link doesn\'t exist.',
+  	'webpage dnx' => 'Requested link doesn\'t exist.',
   
   	'success markasread files' => 'Marked as read',
   	'success markasunread files' => 'Marked as unread',
@@ -777,6 +782,21 @@
   	'permissions successfully saved' => 'Permissions saved successfully',
   	
   	'cannot delete file' => 'You don\'t have permissions to delete file \'{0}\'',
+      
+      'success created token' => 'Token has been created succesfully',
+      'success edited token' => 'Token has been edited succesfully',
+      'success deleted token' => 'Token has been deleted succesfully',
+      'config_start_calc'=>'Move the start date/time',
+      'config_end_calc'=>'Move the end date/time',
+      'always_show_modal'=>'Ask me every time',
+      'How should we adjust'=>'How should we adjust?',
+      'Did you start sooner'=>'Did you start sooner?',
+      'Did you end later'=>'Did you end later?',
+      'You changed the length of your time record'=>'You changed the length of your time record',
+      'Did you start later'=>'Did you start later?',
+      'Did you end sooner'=>'Did you end sooner?',
+      'Remember my selection' => 'Remember my selection',
+      'accept'=>'Accept',
   ); // array
 
 ?>

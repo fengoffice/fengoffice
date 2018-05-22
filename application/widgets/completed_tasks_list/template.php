@@ -12,7 +12,7 @@
 		$display = "";
 		$count = 1;
 		foreach ($tasks as $k => $task):
-			$crumbOptions = json_encode($task->getMembersToDisplayPath());
+			$crumbOptions = json_encode($task->getMembersIdsToDisplayPath());
 			if($crumbOptions == ""){
 					$crumbOptions = "{}";
 				}

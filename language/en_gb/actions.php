@@ -205,6 +205,8 @@
 	'edit preferences' => 'Edit preferences',
 	'view milestone' => 'View milestone',
   	'custom properties' => 'Custom Properties',
+      'more properties' => 'More Details',
+      'contact details' => 'Contact Details',
   	'move to trash' => 'Move to trash',
   	'restore from trash' => 'Restore from trash',
   	'delete permanently' => 'Delete permanently',

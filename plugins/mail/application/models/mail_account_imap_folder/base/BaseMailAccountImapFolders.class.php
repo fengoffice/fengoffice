@@ -17,7 +17,9 @@
     static private $columns = array(
     'account_id' => DATA_TYPE_INTEGER,
     'folder_name' => DATA_TYPE_STRING,
-    'check_folder' => DATA_TYPE_BOOLEAN
+    'check_folder' => DATA_TYPE_BOOLEAN,
+    'last_uid_in_folder' => DATA_TYPE_STRING,
+    'special_use' => DATA_TYPE_STRING,
 );
   
     /**

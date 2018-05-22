@@ -32,11 +32,13 @@ class  ContactMemberCacheController extends ApplicationController {
 				if ($dimension->getDefinesPermissions()) {
 					$member_list = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."members WHERE dimension_id = ".$dimension->getId()." ORDER BY id");
 				}
-				foreach ($member_list as $dim_member){
-					if (ContactMemberPermissions::instance()->contactCanAccessMemberAll($contact_pg_ids, $dim_member['id'], $user, ACCESS_LEVEL_READ, false)) {
-						$allowed_members[] = $dim_member['id'];
+				if (is_array($member_list)) {
+					foreach ($member_list as $dim_member){
+						if (ContactMemberPermissions::instance()->contactCanAccessMemberAll($contact_pg_ids, $dim_member['id'], $user, ACCESS_LEVEL_READ, false)) {
+							$allowed_members[] = $dim_member['id'];
+						}
 					}
-				}				
+				}
 			}
 			$membersIds = $allowed_members;
 		}

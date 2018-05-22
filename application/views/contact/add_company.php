@@ -20,7 +20,7 @@
 
   <div class="coInputHeaderUpperRow">
 	<div class="coInputTitle">
-		<?php echo $company->isNew() ? lang('new company') : lang('edit company') ?>
+		<?php echo $object->getAddEditFormTitle();?>
 	</div>
   </div>
 
@@ -30,7 +30,7 @@
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($company->isNew() ? lang('add company') : lang('save changes'), 's', array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($object->getSubmitButtonFormTitle(), 's', array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -53,7 +53,9 @@
 		<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 		<?php } ?>
 		
-		<?php foreach ($categories as $category) { ?>
+		<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 		<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 		<?php } ?>
 	</ul>
@@ -63,7 +65,7 @@
 	render_company_data_tab($genid, $company, $renderContext, $company_data);
 	?>
 	
-	<div id='<?php echo $genid ?>add_custom_properties_div' class="form-tab">
+	<div id='<?php echo $genid ?>add_custom_properties_div' class="form-tab other-custom-properties-div">
 		<?php echo render_object_custom_properties($object, false) ?>
 		<?php echo render_add_custom_properties($object); ?>
 	</div>
@@ -76,9 +78,11 @@
 				$subscriber_ids[] = logged_user()->getId();
 			} 
 		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-		<div id="<?php echo $genid ?>add_subscribers_content">
-		<?php //echo render_add_subscribers($object, $genid); ?>
-		</div>
+		<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 	</div>
 	
 	
@@ -100,7 +104,7 @@
 	if(!$company->isNew() && $company->isOwnerCompany()) { 
 		echo submit_button(lang('save changes'));
 	} else {
-		echo submit_button($company->isNew() ? lang('add company') : lang('save changes'));
+		echo submit_button($object->getSubmitButtonFormTitle());
 	}
 ?>
 </div>

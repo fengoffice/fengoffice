@@ -12,7 +12,7 @@ function get_company_data_tab_html($genid, $company, $renderContext, $company_da
 	return ob_get_clean();
 }
 
-function render_contact_data_tab($genid, $contact, $renderContext, $contact_data, $renderAddCompany = true){
+function render_contact_data_tab($genid, $contact, $renderContext, $contact_data, $renderAddCompany = true, $main_cp_count=0, $render_custom_prop = true){
 	$object = $contact;
 	
 	if ($contact instanceof Contact && !$contact->isNew()) {
@@ -26,7 +26,7 @@ function render_contact_data_tab($genid, $contact, $renderContext, $contact_data
 			'birthday'=> $contact->getBirthday(),
 			'comments' => $contact->getCommentsField(),
 			'picture_file' => $contact->getPictureFile(),
-			'timezone' => $contact->getTimezone(),
+			'user_timezone_id' => $contact->getUserTimezoneId(),
 			'company_id' => $contact->getCompanyId(),
 		); 
 		 
@@ -39,6 +39,9 @@ function render_contact_data_tab($genid, $contact, $renderContext, $contact_data
 		$all_emails = $contact->getNonMainEmails();
 		$contact_data['all_emails'] = $all_emails;
 	}
+	
+	tpl_assign('main_cp_count', $main_cp_count);
+	tpl_assign('render_custom_prop', $render_custom_prop);
 	
 	// telephone types
 	$all_telephone_types = TelephoneTypes::getAllTelephoneTypesInfo();
@@ -65,7 +68,7 @@ function render_company_data_tab($genid, $company, $renderContext, $company_data
 			
 		$company_data = array(
 			'first_name' => $company->getFirstName(),
-			'timezone' => $company->getTimezone(),
+			'user_timezone_id' => $company->getUserTimezoneId(),
 			'email' => $company->getEmailAddress(),
 			'comments' => $company->getCommentsField(),
 		); // array

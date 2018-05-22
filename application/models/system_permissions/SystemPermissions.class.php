@@ -78,4 +78,20 @@
   			}
   			return $roles_permissions;
   		}
-  } // SystemPermissions 
+
+	  /**
+	   * This function return all permission groups ids that have a system permission
+	   * @param array $system_permission_name
+	   * @return array permission groups ids
+	   */
+	  static function getAllPermissionGroupIdsWithSystemPermission($system_permission_name) {
+		  $pg_ids = array();
+		  $res = DB::execute("SELECT DISTINCT sp.permission_group_id as pgid FROM ".TABLE_PREFIX."system_permissions sp  WHERE sp.`$system_permission_name`=1");
+		  $rows = $res->fetchAll();
+		  if (is_array($rows)) {
+			  foreach ($rows as $pg) $pg_ids[] = $pg['pgid'];
+		  }
+
+		  return $pg_ids;
+	  }
+  } // SystemPermissions

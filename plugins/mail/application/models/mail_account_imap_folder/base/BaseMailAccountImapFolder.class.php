@@ -76,6 +76,15 @@
     function setCheckFolder($value) {
       return $this->setColumnValue('check_folder', $value);
     } // setCheckFolder() 
+    
+
+    function getSpecialUse() {
+    	return $this->getColumnValue('special_use');
+    }
+    
+    function setSpecialUse($value) {
+    	return $this->setColumnValue('special_use', $value);
+    }
 
     /**
     * Return manager instance

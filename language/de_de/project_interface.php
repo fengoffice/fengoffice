@@ -1,5 +1,5 @@
 <?php return array(
-	'upcoming milestones in next 30 days' => 'Anstehende Meilensteine (für die nächsten 30 Tage)',
+	'upcoming milestones in next 30 days' => 'Anstehende Meilensteine (für die nächsten30Tage)',
 	'show all upcoming milestones' => 'Alle anstehenden Meilensteine (Summe {0}) anzeigen',
 	'recent activities' => 'Neue Aktivitäten',
 	'search button caption' => 'Suche',
@@ -154,7 +154,7 @@
 	'new contact' => 'Neuer Kontakt',
 	'work' => 'Arbeit',
 	'home' => 'Privat',
-	'other' => 'Sonstige ',
+	'other' => 'Sonstige',
 	'display' => 'Anzeige',
 	'display options' => 'Anzeigeoptionen',
 	'show in project' => 'Im Arbeitsbereich anzeigen',
@@ -292,4 +292,6 @@ Thema:     {0}
 	'add a new task to this template' => 'Aufgaben zu dieser Vorlage hinzufügen',
 	'add a new milestone to this template' => 'Einen neuen Meilenstein zu dieser Vorlage hinzufügen',
 	'undo remove subtasks' => 'Gelöschte Unter-Aufagben wiederherstellen',
+	'send task subscribers notification' => 'Benachrichtigungen per E-Mail an Benutzer senden',
+	'linked objective tab' => 'Ziele',
 ); ?>

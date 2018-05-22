@@ -342,6 +342,30 @@ abstract class BaseMailAccount extends DataObject {
 	function setIncomingSslPort($value) {
 		return $this->setColumnValue('incoming_ssl_port', $value);
 	} // setIncomingSslPort()
+	
+	
+	/**
+	 * Return value of 'incoming_ssl_verify_peer' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getIncomingSslVerifyPeer() {
+		return $this->getColumnValue('incoming_ssl_verify_peer');
+	} // getIncomingSslVerifyPeer()
+	
+	/**
+	 * Set value of 'incoming_ssl_verify_peer' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setIncomingSslVerifyPeer($value) {
+		return $this->setColumnValue('incoming_ssl_verify_peer', $value);
+	} // setIncomingSslVerifyPeer()
+	
 
 	/**
 	 * Return value of 'del_from_server' field
@@ -386,6 +410,28 @@ abstract class BaseMailAccount extends DataObject {
 	function setMarkReadOnServer($value) {
 		return $this->setColumnValue('mark_read_on_server', $value);
 	} // setMarkReadOnServer()
+
+	/**
+	 * Return value of 'get_read_state_from_server' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getGetReadStateFromServer() {
+		return $this->getColumnValue('get_read_state_from_server');
+	} // getGetReadStateFromServer()
+
+	/**
+	 * Set value of 'get_read_state_from_server' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setGetReadStateFromServer($value) {
+		return $this->setColumnValue('get_read_state_from_server', $value);
+	} // setGetReadStateFromServer()
 
 
 	/**

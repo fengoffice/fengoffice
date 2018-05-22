@@ -45,7 +45,7 @@ class Timeslots extends BaseTimeslots {
 	private $cached_timeslots = null;
 
 	function getOpenTimeslotsByObject($object_id) {
-		if ($this->cached_timeslots == null) {
+		if (!isset($this->cached_timeslots) || $this->cached_timeslots == null) {
 			$this->cached_timeslots = array();
 			$cached_ts = self::findAll(array('conditions' => array('`end_time`= ? ', EMPTY_DATETIME), 'order' => 'start_time'));
 			foreach ($cached_ts as $ct) {
@@ -245,6 +245,31 @@ class Timeslots extends BaseTimeslots {
 		return $result;
 	}
 	
+	static function getTotalMinutesWorkedOnObject($object_id) {
+		$sql = " SELECT SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60) as total
+				FROM `".TABLE_PREFIX."timeslots`
+				WHERE `rel_object_id` =  ". $object_id ." 
+				AND `end_time` > ".DB::escape(EMPTY_DATETIME).";";
+		return array_var(DB::executeOne($sql), "total");
+	}
+	
+	static function getTotalSecondsWorkedOnObject($object_id) {//getTotalSecondsWorkedOnObject
+		$totalMinutes = Timeslots::getTotalMinutesWorkedOnObject($object_id);
+		$totalSeconds = $totalMinutes * 60;
+		return $totalSeconds;
+	}
+	
+	
+	function getColumnsToAggregateInTotals() {
+		$parent_cols = parent::getColumnsToAggregateInTotals();
+		$cols = array(
+			'worked_time' => array('operation' => 'sum', 'format' => 'time'),
+			'subtract' => array('operation' => 'sum', 'format' => 'time'),
+			'fixed_billing' => array('operation' => 'sum', 'format' => 'money', 'currency_id_col' => 'rate_currency_id', 'group_by' => 'rate_currency_id'),
+		);
+		
+		return array_merge($parent_cols, $cols);
+	}
 	
 } // Timeslots
 

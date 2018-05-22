@@ -28,6 +28,7 @@
     	'ordering' => DATA_TYPE_INTEGER,
     	'plugin_id' => DATA_TYPE_INTEGER,
     	'object_type_id' => DATA_TYPE_INTEGER,
+    	'url_params' => DATA_TYPE_STRING,
     );
   
     /**

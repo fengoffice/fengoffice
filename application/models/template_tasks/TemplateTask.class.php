@@ -209,7 +209,9 @@ class TemplateTask extends BaseTemplateTask {
 	function isLate() {
 		if($this->isCompleted()) return false;
 		if(!$this->getDueDate() instanceof DateTimeValue) return false;
-		return !$this->isToday() && ($this->getDueDate()->getTimestamp() < DateTimeValueLib::now()->add('h', logged_user()->getTimezone())->getTimestamp());
+		$tz_offset = Timezones::getTimezoneOffsetToApply($this);
+		
+		return !$this->isToday() && ($this->getDueDate()->getTimestamp() < DateTimeValueLib::now()->add('s', $tz_offset)->getTimestamp());
 	} // isLate
 	
 	/**
@@ -220,7 +222,9 @@ class TemplateTask extends BaseTemplateTask {
 	 * @return null
 	 */
 	function isToday() {
-		$now = DateTimeValueLib::now()->add('h', logged_user()->getTimezone());
+		$tz_offset = Timezones::getTimezoneOffsetToApply($this);
+		
+		$now = DateTimeValueLib::now()->add('s', $tz_offset);
 		$due = $this->getDueDate();
 		// getDueDate and similar functions can return NULL
 		if(!($now instanceof DateTimeValue)) return false;
@@ -240,18 +244,22 @@ class TemplateTask extends BaseTemplateTask {
 	 */
 	function getLateInDays() {
 		if (!$this->getDueDate() instanceof DateTimeValue) return 0;
+		$tz_offset = Timezones::getTimezoneOffsetToApply($this);
+		
 		$due_date_start = $this->getDueDate()->beginningOfDay();
 		$today = DateTimeValueLib::now();
-		$today = $today->add('h', logged_user()->getTimezone())->beginningOfDay();
+		$today = $today->add('s', $tz_offset)->beginningOfDay();
 		
 		return floor(abs($due_date_start->getTimestamp() - $today->getTimestamp()) / 86400);
 	} // getLateInDays
 	
 	function getLeftInDays() {
 		if (!$this->getDueDate() instanceof DateTimeValue) return 0;
+		$tz_offset = Timezones::getTimezoneOffsetToApply($this);
+		
 		$due_date_start = $this->getDueDate()->endOfDay();
 		$today = DateTimeValueLib::now();
-		$today = $today->add('h', logged_user()->getTimezone())->beginningOfDay();
+		$today = $today->add('s', $tz_offset)->beginningOfDay();
 		
 		return floor(abs($due_date_start->getTimestamp() - $today->getTimestamp()) / 86400);
 	}
@@ -305,7 +313,18 @@ class TemplateTask extends BaseTemplateTask {
 	} // canEdit
 	
 	function canAddTimeslot($user) {
-		return $this->canChangeStatus($user) || can_manage_time($user) || can_access_pgids($user->getPermissionGroupIds(), $this->getMembers(), Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+		return $this->canChangeStatus($user) || can_manage_time($user) || can_access($user, $this->getMembers(), Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+	}
+	
+	
+	function canLinkObject(Contact $user) {
+		if(!$this->isLinkableObject()) return false;
+	
+		if(can_link_objects($user)){
+			return can_write($user, $this->getMembers(), ProjectTasks::instance()->getObjectTypeId());
+		}else{
+			return false;
+		}
 	}
 	
 	/**
@@ -479,8 +498,9 @@ class TemplateTask extends BaseTemplateTask {
 		if (is_null($this->getDueDate()))
 			return null;
 		else{
+			$tz_offset = Timezones::getTimezoneOffsetToApply($this);
 			$due = $this->getDueDate();
-			$date = DateTimeValueLib::now()->add('h', logged_user()->getTimezone())->getTimestamp();
+			$date = DateTimeValueLib::now()->add('s', $tz_offset)->getTimestamp();
 			$nowDays = floor($date/(60*60*24));
 			$dueDays = floor($due->getTimestamp()/(60*60*24));
 			return $dueDays - $nowDays;
@@ -527,7 +547,13 @@ class TemplateTask extends BaseTemplateTask {
 		$new_task->setUseDueTime($this->getUseDueTime());
 		$new_task->setTypeContent($this->getTypeContent());
 		$new_task->setFromTemplateObjectId($this->getId());
-		$new_task->setParentId($this->getParentId());
+		
+		if ($this->getParentId() > 0) {
+			$ptask = ProjectTasks::findOne(array("conditions" => "from_template_id = ".$this->getTemplateId()." AND from_template_object_id = ".$this->getParentId()." AND instantiation_id='$instantiation_id'"));
+		}
+		$parent_task_id = $ptask instanceof ProjectTask ? $ptask->getId() : 0;
+		$new_task->setParentId($parent_task_id);
+		
 		$new_task->setOriginalTaskId(0);
 		$new_task->setInstantiationId($instantiation_id);
 		if ($this->getDueDate() instanceof DateTimeValue ) {
@@ -555,6 +581,10 @@ class TemplateTask extends BaseTemplateTask {
 		if($new_due_date != "") {
 			if ($new_task->getDueDate() instanceof DateTimeValue) $new_task->setDueDate($new_due_date);
 		}
+		
+		Hook::fire('template_task_to_task_columns', array('template_task' => $this, 'instantiation_id' => $instantiation_id), $new_task);
+		
+		$new_task->setDontMakeCalculations(true);
 		$new_task->save();
 		
 		// Copy members, linked_objects, custom_properties, subscribers, reminders and comments
@@ -850,8 +880,12 @@ class TemplateTask extends BaseTemplateTask {
 			}
 		}
 
-		$new_st_date = $this->correct_days_task_repetitive($new_st_date);
-		$new_due_date = $this->correct_days_task_repetitive($new_due_date);
+		$correct_the_days = true;
+		Hook::fire('check_working_days_to_correct_repetition', array('task' => $subtask), $correct_the_days);
+		if ($correct_the_days) {
+			$new_st_date = $this->correct_days_task_repetitive($new_st_date);
+			$new_due_date = $this->correct_days_task_repetitive($new_due_date);
+		}
 		
 		return array('st' => $new_st_date, 'due' => $new_due_date);
 	}
@@ -1418,14 +1452,6 @@ class TemplateTask extends BaseTemplateTask {
 			DB::execute($sql);
 		}
 		
-		$tasks = $this->getSubTasks();
-		if(is_array($tasks)) {
-			$task_ids = array();
-			foreach($tasks as $task) {
-				$task_ids[] = $task->getId();
-			} // if
-		} // if
-		
 		//update Depth And Parents Path for subtasks
 		$subtasks = $this->getSubTasks();
 		if(is_array($subtasks)) {
@@ -1444,7 +1470,7 @@ class TemplateTask extends BaseTemplateTask {
 			//set Parents Path
 			$parents_ids = array();
 			$parent = $this->getParent();
-			if(!$parent instanceof ProjectTask){
+			if(!$parent instanceof TemplateTask){
 				return;
 			}
 			$stop = false;
@@ -1647,7 +1673,7 @@ class TemplateTask extends BaseTemplateTask {
 			'cid' => $this->getCreatedById(),
 			'otype' => $this->getObjectSubtype(),
 			'pc' => $this->getPercentCompleted(),
-			'memPath' => str_replace('"',"'", str_replace("'", "\'", json_encode($this->getMembersIdsToDisplayPath())))
+			'memPath' => str_replace('"',"'", escape_character(json_encode($this->getMembersIdsToDisplayPath())))
 		);
 
 		if ($full) {
@@ -1679,13 +1705,18 @@ class TemplateTask extends BaseTemplateTask {
 			$result['cbid'] = $this->getCompletedById();
 			$result['con'] = $this->getCompletedOn()->getTimestamp();
 		}
+		
+		$result['timezone_id'] = $this->getTimezoneId();
+		$result['timezone_value'] = $this->getTimezoneValue();
+		
+		$tz_offset = Timezones::getTimezoneOffsetToApply($this);
 			
 		if ($this->getDueDate() instanceof DateTimeValue) {
-			$result['dd'] = $this->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600;
+			$result['dd'] = $this->getDueDate()->getTimestamp() + $tz_offset;
 			$result['udt'] = $this->getUseDueTime() ? 1 : 0;
 		}
 		if ($this->getStartDate() instanceof DateTimeValue) {
-			$result['sd'] = $this->getStartDate()->getTimestamp() + logged_user()->getTimezone() * 3600;
+			$result['sd'] = $this->getStartDate()->getTimestamp() + $tz_offset;
 			$result['ust'] = $this->getUseStartTime() ? 1 : 0;
 		}
 
@@ -1694,7 +1725,7 @@ class TemplateTask extends BaseTemplateTask {
 		if ($time_estimate > 0) $result['et'] = DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($time_estimate * 60), 'hm', 60) ;
 
 
-		$result['tz'] = logged_user()->getTimezone() * 3600;
+		$result['tz'] = $tz_offset;
 
 		$ot = $this->getOpenTimeslots();
 

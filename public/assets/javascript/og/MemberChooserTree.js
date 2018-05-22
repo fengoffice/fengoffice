@@ -14,10 +14,11 @@ og.MemberChooserTree = function(config) {
 		allowedMemberTypes: '', //Array of dimension member types to be rendered as checkbox
 		reloadDimensions: [],
 		loader: new og.MemberChooserTreeLoader({
-			dataUrl: config.loadUrl ? config.loadUrl : 'index.php?c=dimension&a=initial_list_dimension_members_tree&ajax=true&'+
-				'dimension_id='+config.dimensionId+objectTypeQuery+
+			dataUrl: config.loadUrl ? config.loadUrl : 'index.php?c=dimension&a=initial_list_dimension_members_tree&ajax=true'+
+				'&dimension_id='+config.dimensionId+objectTypeQuery+
 				(config.checkBoxes ? '&checkboxes=true' : '')+
 				(config.all_members ? '&all_members=true' : '')+
+				(og.config.member_selector_page_size ? '&limit='+og.config.member_selector_page_size : '')+
 				'&allowedMemberTypes='+Ext.encode(config.allowedMemberTypes)+
 				'&avoid_session=1',
 			ownerTree: this 

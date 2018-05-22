@@ -21,7 +21,12 @@
 	
 	// on submit functions
 	if (array_var($_REQUEST, 'modal')) {
-		$on_submit = "og.setDescription(); og.submit_modal_form('".$genid."submit-edit-form', ogTasks.drawTaskRowAfterEdit); return false;";
+		if (array_var($_REQUEST, 'from_email') > 0) {
+			$callback_fn = "og.reloadCurrentPanel";
+		} else {
+			$callback_fn = "ogTasks.drawTaskRowAfterEdit";
+		}
+		$on_submit = "og.setDescription(); og.submit_modal_form('".$genid."submit-edit-form', $callback_fn); return false;";
 	} else {
 		$on_submit = "return App.modules.addTaskForm.checkSubmitAddTask('".$genid."','". $task->manager()->getObjectTypeId()."') && og.setDescription()". 
 		((array_var($task_data, 'multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) ? "&& typeof('og.TaskMultiAssignment')=='function' ? og.TaskMultiAssignment() : true" : "").";";
@@ -33,7 +38,9 @@
 		require_javascript('og/tasks/task_dependencies.js');
 	}
 	
-	$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+	$cp_count = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId());
+	$cp_count_others = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
+	$has_custom_properties = $cp_count > 0;
 	
 	$categories = array(); Hook::fire('object_edit_categories', $task, $categories);
 	
@@ -49,6 +56,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	margin-right: 10px;
 	min-width: 0px;
 }
+.task .left-section {
+	max-width:465px;
+}
+.task .custom-properties label {
+	max-width: 190px;
+	min-width: 190px;
+}
 </style>
 <form id="<?php echo $genid ?>submit-edit-form" class="add-task" action="<?php echo $form_url ?>" method="post" onsubmit="<?php echo $on_submit?>">
 
@@ -63,10 +77,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			} else if (isset($base_task) && $base_task instanceof ProjectTask) {
 				echo lang('new task from template');
 			} else {
-				echo lang('new task list');
+				echo $object->getAddEditFormTitle();
 			}
 		} else {
-			echo lang('edit task list');
+			echo $object->getAddEditFormTitle();
 		}
 		echo ": ";
 		//$ignored = null; Hook::fire("object_name_prefix", array('object' => $task), $ignored);
@@ -76,12 +90,15 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
   <div>
 	<div class="coInputName">
 	<?php
-		echo text_field('task[name]', array_var($task_data, 'name', $task->getName()), array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "size"=>"255", "maxlength"=>"255", 'placeholder' => lang('task')));
+		$task_name = array_var($task_data, 'name', $task->getName());
+		Hook::fire("render_object_name_prefix", array('object' => $task), $task_name);
+		
+		echo text_field('task[name]', $task_name, array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "size"=>"255", "maxlength"=>"255", 'placeholder' => lang('task')));
 	?>
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($task->isNew() ? (array_var($task_data, 'is_template', false) ? lang('save template') : lang('add task list')) : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($task->isNew() ? (array_var($task_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -92,14 +109,14 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	<input id="<?php echo $genid?>updated-on-hidden" type="hidden" name="updatedon" value="<?php echo $task->isNew() ? '': $task->getUpdatedOn()->getTimestamp() ?>">
 	<input id="<?php echo $genid?>merge-changes-hidden" type="hidden" name="merge-changes" value="" >
 	<input id="<?php echo $genid?>genid" type="hidden" name="genid" value="<?php echo $genid ?>" >
-	<input id="<?php echo $genid?>view_related" type="hidden" name="view_related" value="<?php echo (isset($task_related) ? $task_related : "")?>" />
+	<input id="<?php echo $genid?>view_related" type="hidden" name="view_related" value="<?php echo (isset($task_related) && $can_manage_repetitive_properties_of_tasks == 1 ? $task_related : "")?>" />
 	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
 	<input id="<?php echo $genid?>multi_assignment_aplly_change" type="hidden" name="task[multi_assignment_aplly_change]" value="" />
 	<input id="<?php echo $genid?>view_add" type="hidden" name="view_add" value="true" />
 	<input id="<?php echo $genid?>control_dates" type="hidden" name="control_dates" value="false" />
 	
 	
-
+	<input id="<?php echo $genid?>task_id" type="hidden" name="task_id" value="<?php echo $task->isNew() ? '0': $task->getId() ?>" />
 	
 	<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
 	
@@ -109,13 +126,15 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			<li><a href="#<?php echo $genid?>add_task_desc_div"><?php echo lang('description') ?></a></li>
 			<li><a href="#<?php echo $genid?>add_task_more_details_div"><?php echo lang('more details') ?></a></li>
 			
-			<?php if (false && ($has_custom_properties || config_option('use_object_properties')) ) { ?>
+			<?php if ($cp_count_others > 0 || config_option('use_object_properties') ) { ?>
 			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
 			<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
@@ -126,7 +145,6 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	<div class="left-section">
 	
 		<div class="dataBlock">
-			<?php $defaultNotifyValue = user_config_option('can notify from quick add'); ?>
 			<!-- needs a table because ext dropdown list is not aligned otherwise -->
 			<table><tr><td>
 				<label><?php echo lang('assign to') ?>:</label> 
@@ -134,6 +152,24 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<input type="hidden" id="<?php echo $genid ?>taskFormAssignedTo" name="task[assigned_to_contact_id]" value="<?php echo array_var($task_data, 'assigned_to_contact_id')?>"></input>
 				<div id="<?php echo $genid ?>assignto_container_div"></div>
 			</td></tr></table>
+			<div class="clear"></div>
+		</div>
+		
+		<?php 
+			$can_notify_assigned = user_config_option('can notify from quick add');
+			$is_assigned = array_var($task_data, 'assigned_to_contact_id') != 0;
+			$assigned_to_me = array_var($task_data, 'assigned_to_contact_id') == logged_user()->getId(); 
+			
+			$show_notif_checkbox_div = $can_notify_assigned && $task->isNew() && $is_assigned && !$assigned_to_me;
+			$check_notif_checkbox = $show_notif_checkbox_div;
+		?>
+		
+		<div id="<?php echo $genid ?>taskFormSendNotificationDiv" style="display:<?php echo ($show_notif_checkbox_div ? 'block' : 'none') ?>" class="dataBlock">
+			<label for="<?php echo $genid ?>taskFormSendNotification" class="checkbox" title="<?php echo lang('send task assigned to notification') ?>"><?php echo lang('notify assigned user')?></label>
+			
+			<?php echo checkbox_field('task[send_notification]', $check_notif_checkbox, array('id' => $genid . 'taskFormSendNotification', 'title' => lang('send task assigned to notification'))) ?>
+			
+			<input type="hidden" name="original_assigned_user" id="<?php echo $genid?>originalAssignedUser" value="<?php echo array_var($task_data, 'assigned_to_contact_id')?>" />
 			<div class="clear"></div>
 		</div>
 		
@@ -157,6 +193,14 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
     		<div class="clear"></div>
 		
 		</div>
+		<?php 
+			if (!$task->isNew() && $task->getTimezoneId() != logged_user()->getUserTimezoneId()) {
+		?><div class="dataBlock" style="margin-bottom:8px;"><?php
+				echo timezone_selector_hidden($task, $genid);
+		?><div class='clear'></div></div><?php
+			}
+		?>
+    	<div class="clear"></div>
 		
 		<div class="dataBlock" id='<?php echo $genid ?>add_task_time_div'>
 		<?php
@@ -196,27 +240,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		</div>
 		<?php }?>
 		
+		<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
 		
-		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div">
-			<div id="<?php echo $genid ?>not_required_custom_properties_container">
-		    	<div id="<?php echo $genid ?>not_required_custom_properties">
-		      	<?php echo render_object_custom_properties($task, false, $co_type) ?>
-		      	</div>
-		    </div>
-	      <?php echo render_add_custom_properties($task); ?>
-	 	</div>
-	 	<?php } ?>
-	 	
-		
-		<?php $task_types = ProjectCoTypes::getObjectTypesByManager('ProjectTasks');
-			if (count($task_types) > 0) {?>
-		<div class="dataBlock"><?php
-				echo label_tag(lang('object type'));
-				echo select_object_type('task[object_subtype]', $task_types, array_var($task_data, 'object_subtype', config_option('default task co type')), array('onchange' => "og.onChangeObjectCoType('$genid', '".$task->getObjectTypeId()."', ".($task->isNew() ? "0" : $task->getId()).", this.value)"));
-		?></div><?php
-			}
-		?>
+
 		
   	</div>
   	</td><td>
@@ -225,9 +251,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php
 			$listeners = array('on_selection_change' => 'og.reload_task_form_selectors()');
 			if ($task->isNew()) {
-				render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', null), array('select_current_context' => true, 'listeners' => $listeners), null, null, false);
+				render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', null), array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
 			} else {
-				render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', $task->getMemberIds()), array('listeners' => $listeners), null, null, false);
+				render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', $task->getMemberIds()), array('listeners' => $listeners, 'object' => $object), null, null, false);
 			}
 		?>
 		<div class="clear"></div>
@@ -299,11 +325,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<input type="hidden" name="task[clean_dep]" value="1" />
 				<?php 
 					foreach ($previous_tasks as $task_dep) {
-						$task = ProjectTasks::findById($task_dep->getPreviousTaskId());
+						$task_prev = ProjectTasks::findById($task_dep->getPreviousTaskId());
 				?>
 					<div class="og-add-template-object previous-task">
-						<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task->getId()?>" />
-						<div class="previous-task-name action-ico ico-task"><?php echo clean($task->getTitle()) ?></div>
+						<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task_prev->getId()?>" />
+						<div class="previous-task-name action-ico ico-task"><?php echo clean($task_prev->getTitle()) ?></div>
 						<a href="#" onclick="og.removePreviousTask(this.parentNode, '<?php echo $genid?>', '<?php echo $k?>')" class="removeDiv link-ico ico-delete" style="display: block;"><?php echo lang('remove') ?></a>
 					</div>
 					<script>
@@ -328,6 +354,23 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
   	</td></tr></table>
   	<div class="clear"></div>
   	
+  	<div class="bottom-section">
+  		<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+		<div>
+			<div id="<?php echo $genid ?>not_required_custom_properties_container">
+		    	<div id="<?php echo $genid ?>not_required_custom_properties" class="main-custom-properties-div">
+		      	<?php
+		      	if ($cp_count <= 10) {
+		      		echo render_object_custom_properties($task, false, null, 'visible_by_default');
+				} ?>
+		      	</div>
+		    </div>
+	      <?php echo render_add_custom_properties($task); ?>
+	 	</div>
+	 	<?php } ?>
+  	</div>
+
+
   	<?php Hook::fire('draw_additional_task_html', $genid, $task); ?>
   	
   	</div>
@@ -355,9 +398,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}
 			
 			var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor', {
-				height: h,
+				height: '300px',
 				allowedContent: true,
-				enterMode: CKEDITOR.ENTER_DIV,
+				enterMode: CKEDITOR.ENTER_BR,
 				shiftEnterMode: CKEDITOR.ENTER_BR,
 				disableNativeSpellChecker: false,
 				language: '<?php echo $loc ?>',
@@ -377,6 +420,8 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 						editor.resetDirty();
 					}
 				},
+				fillEmptyBlocks: false,
+				removePlugins: 'scayt,liststyle,magicline,contextmenu,tabletools',
 				entities_additional : '#39,#336,#337,#368,#369'
 			});
 
@@ -430,6 +475,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			</div>
 		</div>
 		
+		<?php if ( $can_manage_repetitive_properties_of_tasks == 1 ){?>
 		<div class="repeat-options-div sub-section-div">
 			<h2><?php echo lang('repeating task')?></h2>
 			<div id="<?php echo $genid ?>task_repeat_options_div">
@@ -524,6 +570,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 						<tr><td><input class="checkbox" type="checkbox" value="1" name="task[repeat_saturdays]" /> <?php echo lang('repeat on saturdays')?></td></tr>
 						<tr><td><input class="checkbox" type="checkbox" value="1" name="task[repeat_sundays]" /> <?php echo lang('repeat on sundays')?></td></tr>
 						<tr><td><input class="checkbox" type="checkbox" value="1" name="task[working_days]" /> <?php echo lang('repeat working days')?></td></tr>
+						<?php
+							$html = "";
+							Hook::fire('form_repeat_by_more_checkboxes', array('object' => $object), $html);
+							if ($html) echo $html;
+						?>
 					</table>
 					</td>
 				</tr>
@@ -533,8 +584,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}?>
 			</div>
 		</div>
+		<?php } ?>
 		
-		
+		<?php if (isset($from_email) && $from_email instanceof MailContent) { ?>
+			<input type="hidden" name="task[from_email]" value="<?php echo $from_email->getId()?>"/>
+		<?php } ?>
 		
 		<?php if($task->isNew() || $task->canLinkObject(logged_user())) { ?>
 		<div class="linked-objects-div sub-section-div">
@@ -579,13 +633,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		</div>
   	</div>
   	
-  	
+  		
   
-		<?php if (false && ($has_custom_properties || config_option('use_object_properties')) ) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
+		<?php if ($cp_count_others > 0 || config_option('use_object_properties') ) { ?>
+		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
 			<div id="<?php echo $genid ?>not_required_custom_properties_container">
 		    	<div id="<?php echo $genid ?>not_required_custom_properties">
-		      	<?php echo render_object_custom_properties($task, false, $co_type) ?>
+		      	<?php echo render_object_custom_properties($task, false, null, 'others') ?>
 		      	</div>
 		    </div>
 	      <?php echo render_add_custom_properties($task); ?>
@@ -594,12 +648,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
   
 	    <div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
 	    
-		    <div id="<?php echo $genid ?>taskFormSendNotificationDiv" style="display:none" class="dataBlock">
-				<?php echo checkbox_field('task[send_notification]', array_var($task_data, 'send_notification'), array('id' => $genid . 'taskFormSendNotification', 'style' => 'margin-left:5px;margin-top:3px;')) ?>
-				<label for="<?php echo $genid ?>taskFormSendNotification" class="checkbox"><?php echo lang('send task assigned to notification') ?></label>
+		    
+			<div id="<?php echo $genid ?>taskFormSendNotificationSubscribersDiv" style="display:<?php echo (array_var($task_data, 'display_notification_checkbox')) ? 'block' : 'none' ?>" class="dataBlock">
+				<?php echo checkbox_field('task[send_notification_subscribers]', array_var($task_data, 'send_notification_subscribers'), array('id' => $genid . 'taskFormSendNotificationSubscribers', 'style' => 'margin-left:5px;margin-top:3px;')) ?>
+				<label for="<?php echo $genid ?>taskFormSendNotificationSubscribers" class="checkbox"><?php echo lang('send task subscribers notification') ?></label>
 				<div class="clear"></div>
 			</div>
-		
+			
 			<?php $subscriber_ids = array();
 				if (!$task->isNew()) {
 					$subscriber_ids = $task->getSubscriberIds();
@@ -608,8 +663,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				}
 			?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
 			<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content">
-			</div>
+			<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 		</div>
 	
 	
@@ -643,7 +701,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	if (!ogTasks.usersStore) ogTasks.usersStore = {};
 	og.add_task_genid = '<?php echo $genid ?>';
 
-	var assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
+	var is_new_task = <?php echo $task->isNew() ? '1' : '0'?>;
+	var original_assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
+	var can_notify_assigned = <?php echo $can_notify_assigned ? '1' : '0'?>;
 	var start = true;
 	
 	og.drawAssignedToSelectBox = function(companies, only_me, groups) {
@@ -652,7 +712,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			renderTo:'<?php echo $genid ?>assignto_container_div',
 			name: 'taskFormAssignedToCombo',
 			id: '<?php echo $genid ?>taskFormAssignedToCombo',
-			value: assigned_user,
+			value: original_assigned_user,
 			store: ogTasks.usersStore['<?php echo $genid ?>'],
 			displayField:'text',
 	        mode: 'local',
@@ -669,36 +729,57 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		assignCombo.on('select', og.onAssignToComboSelect);
 
 		assignedto = document.getElementById('<?php echo $genid ?>taskFormAssignedTo');
-		if (assignedto){
-			assignedto.value = assigned_user;
-			og.addTaskUserChanged('<?php echo $genid ?>', '<?php echo logged_user()->getId() ?>');
-		}
+		
 	}
 	
-	og.onAssignToComboSelect = function() {
+	og.onAssignToComboSelect = function(combo, selected, idx) {
+		// ensure that no html tags are inside the input
+		var plain_text = og.removeTags(selected.data.text);
+		$('#<?php echo $genid ?>taskFormAssignedToCombo').val(plain_text);
+		
+		// reload other components
 		combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
 		assignedto = document.getElementById('<?php echo $genid ?>taskFormAssignedTo');
 		if (assignedto) assignedto.value = combo.getValue();
 		assigned_user = combo.getValue();
 		
-		og.addTaskUserChanged('<?php echo $genid ?>', '<?php echo logged_user()->getId() ?>');
+		og.enableDisableNotifyAssignedCheckbox(assigned_user, '<?php echo $genid ?>');
 
 		ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid?>');
+
+		// more processing...
+		if (og.after_assigned_to_change_fn) {
+			for (var x=0; x<og.after_assigned_to_change_fn.length; x++) {
+				var fn = og.after_assigned_to_change_fn[x];
+				if (typeof(fn) == 'function') {
+					fn.call(null, '<?php echo $genid ?>', combo, selected);
+				}
+			}
+		}
+		
 	}
 
-	og.addTaskUserChanged = function(genid, logged_user_id){
-		var ddUser = document.getElementById(genid + 'taskFormAssignedTo');
-		var chk = document.getElementById(genid + 'taskFormSendNotification');
-		if (ddUser && chk){
-			var user = ddUser.value;
-			var nV = <?php echo $defaultNotifyValue?>;
-			chk.checked = (user > 0 && nV != 0 && user != logged_user_id);
-			var comp_obj = ogTasks.getCompany(user); // check if selected user is a user or a company
-			var not_div = document.getElementById(genid + 'taskFormSendNotificationDiv');
-			if (not_div) not_div.style.display = (user > 0 && !comp_obj) ? 'block':'none';
+	og.enableDisableNotifyAssignedCheckbox = function(assigned_user, genid) {
+
+		var original_assigned = $("#" + genid + "originalAssignedUser").val();
+		
+		var show_div = can_notify_assigned && assigned_user > 0 && assigned_user != og.loggedUser.id;
+
+		var check = show_div && (assigned_user != original_assigned || is_new_task);
+		
+		if (show_div) {
+			$("#" + genid + "taskFormSendNotificationDiv").removeClass('desc').slideDown();
+		} else {
+			$("#" + genid + "taskFormSendNotificationDiv").addClass('desc').slideUp();
 		}
+
+		if (check) {
+			$("#" + genid + "taskFormSendNotification").attr('checked', 'checked');
+		} else {
+			$("#" + genid + "taskFormSendNotification").removeAttr('checked');
+		}
+		
 	}
-	
 
 	og.redrawUserLists = function(context){
 		if (!og.redrawingUserList) {
@@ -712,6 +793,8 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}
 			
 			parameters = context ? {context: context} : {};
+			if (og.task_redraw_users_extra_params) parameters.extra_params = og.task_redraw_users_extra_params;
+			
 			og.openLink(og.getUrl('task', 'allowed_users_to_assign', parameters), {callback: function(success, data){
 				only_me = data.only_me ? data.only_me : null;
 				if (combo) {
@@ -738,7 +821,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					}
 				}
 				og.redrawingUserList = false;
-				og.eventManager.fireEvent('after usersStore init', null);
+				og.eventManager.fireEvent('after usersStore init', '<?php echo $genid?>');
+
+				// ensure that no html tags are inside the input
+				var plain_text = og.removeTags($('#<?php echo $genid ?>taskFormAssignedToCombo').val());
+				$('#<?php echo $genid ?>taskFormAssignedToCombo').val(plain_text);
 			}});
 			setTimeout(function() { 
 				og.redrawingUserList = false;
@@ -748,27 +835,39 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	
 	og.changeTaskRepeat = function() {
 		var ro = document.getElementById("<?php echo $genid ?>repeat_options");
-		if (ro) ro.style.display = 'none';
-		var word = '';
-		var opt_display = '';
-		if(document.getElementById("<?php echo $genid ?>daily").selected){
-			word = '<?php echo escape_single_quotes(lang("days"))?>';
-		} else if(document.getElementById("<?php echo $genid ?>weekly").selected){
-			word = '<?php echo escape_single_quotes(lang("weeks"))?>';
-		} else if(document.getElementById("<?php echo $genid ?>monthly").selected){
-			word = '<?php echo escape_single_quotes(lang("months"))?>';
-		} else if(document.getElementById("<?php echo $genid ?>yearly").selected){
-			word = '<?php echo escape_single_quotes(lang("years"))?>';
-		} else opt_display = 'none';
 		
-		document.getElementById("<?php echo $genid ?>word").innerHTML = word;
-		if (ro) ro.style.display = opt_display;	
+		if (ro){ 
+			ro.style.display = 'none';
 
-		if(document.getElementById("<?php echo $genid ?>today").selected){
-			og.viewDays(false);
-		}else{
-			og.viewDays(true);
+			var word = '';
+			var opt_display = '';
+			if(document.getElementById("<?php echo $genid ?>daily").selected){
+				word = '<?php echo escape_single_quotes(lang("days"))?>';
+			} else if(document.getElementById("<?php echo $genid ?>weekly").selected){
+				word = '<?php echo escape_single_quotes(lang("weeks"))?>';
+			} else if(document.getElementById("<?php echo $genid ?>monthly").selected){
+				word = '<?php echo escape_single_quotes(lang("months"))?>';
+			} else if(document.getElementById("<?php echo $genid ?>yearly").selected){
+				word = '<?php echo escape_single_quotes(lang("years"))?>';
+			} else opt_display = 'none';
+			
+			document.getElementById("<?php echo $genid ?>word").innerHTML = word;
+			if (ro) ro.style.display = opt_display;
+
+			// if no option selected => select repeat forever
+			if (!$("#<?php echo $genid ?>repeat_opt_forever").attr('checked') && !$("#<?php echo $genid ?>repeat_opt_times").attr('checked') 
+					&& !$("#<?php echo $genid ?>repeat_opt_until").attr('checked')) {
+				$("#<?php echo $genid ?>repeat_opt_forever").attr('checked', 'checked');
+			}
+
+			if(document.getElementById("<?php echo $genid ?>today").selected){
+				og.viewDays(false);
+			}else{
+				og.viewDays(true);
+			}
+			
 		}
+		
 	}
 
 
@@ -830,19 +929,39 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	});
 
 	//User combo
-	og.drawAssignedToSelectBox([], false, [])
+	og.drawAssignedToSelectBox([], false, []);
 	if(<?php echo $task->isNew() ? '0' : '1'?>){
-		var task_members_json = Ext.util.JSON.decode('<?php echo json_encode($task->getMembersIdsToDisplayPath()) ?>');
-		for (var key in task_members_json) {
-			task_members_json[key] = $.map(task_members_json[key], function(value, index) {
-			    return [value];
-			});
-		};
+		var mempath = Ext.util.JSON.decode('<?php echo json_encode($task->getMembersIdsToDisplayPath()) ?>');
 
+		var task_members_json = {};
+		for (var dim_id in mempath) {
+			task_members_json[dim_id] = [];
+			ots_data = mempath[dim_id];
+			for (var ot_id in ots_data) {
+				if (!isNaN(ot_id) && ots_data[ot_id] && ots_data[ot_id].length > 0) {
+					for (var x in ots_data[ot_id]) {
+						var m = ots_data[ot_id][x];
+						task_members_json[dim_id].push(m);
+					}
+				}
+			}
+		}
 		task_members_json = Ext.util.JSON.encode(task_members_json);
+		
 	}else{
 		var task_members_json = og.contextManager.plainContext();
 	}
+
+	// more task form initializations
+	if (og.more_add_task_form_init_fn) {
+		for (var x=0; x<og.more_add_task_form_init_fn.length; x++) {
+			var fn = og.more_add_task_form_init_fn[x];
+			if (typeof(fn) == 'function') {
+				fn.call(null, og.add_task_genid);
+			}
+		}
+	}
+	
 		
 	og.redrawUserLists(task_members_json);
 
@@ -921,6 +1040,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			<?php }?>
 			this.dialog.setTitle(lang('tasks related'));
 			this.dialog.show();
+			selectRelated("news");
 		}
 		
 		<?php if(!$task->isCompleted()){ ?>
@@ -932,7 +1052,8 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			if (!$task->isNew()) {
 				$subtasks = ProjectTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
 				foreach ($subtasks as $st) {
-					$st_name = clean(str_replace("'", "\'", $st->getObjectName()));
+					$st_name = clean(escape_character($st->getObjectName()));
+					$st_name = preg_replace('/\s+/', ' ', trim($st_name)); // remove enters
 					?>
 					ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>', {id:'<?php echo $st->getId()?>', name:'<?php echo $st_name?>', assigned_to:'<?php echo $st->getAssignedToContactId()?>'});
 			<?php
@@ -949,6 +1070,25 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		$('#<?php echo $genid?>taskFormApplyAssignee').change(function(event){
 			ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid?>');
 		});
+
+
+		<?php if ($cp_count > 10) { ?>
+		$('#<?php echo $genid ?>not_required_custom_properties').html('<div class="widget-body loading">'+lang('loading')+'</div>');
+		var render_cps_params = {id:'<?php echo $task->getId()?>', ot_id: <?php echo $task->getObjectTypeId()?>, visibility:'visible_by_default'};
+		if (og.more_params_for_render_cps_params) {
+			for (var x=0; x<og.more_params_for_render_cps_params.length; x++) {
+				var moreparams = og.more_params_for_render_cps_params[x].call(null, '<?php echo $task->getObjectTypeName()?>');
+				for (k in moreparams) render_cps_params[k]=moreparams[k];
+			}
+		}
+		og.openLink(og.getUrl('object','render_cps', render_cps_params), {
+			callback: function(success, data) {
+				$('#<?php echo $genid ?>not_required_custom_properties').html(data.html);
+				$("#modal-forms-container").scrollTop(0);
+			}
+		});
+		<?php } ?>
+		
 
 		$("#<?php echo $genid?>tabs").tabs();
 

@@ -37,8 +37,8 @@
 		echo stylesheet_tag('website.css');
 	}
 	
-	// Include plguin specif stylesheets
-	foreach (Plugins::instance()->getActive() as $p) {
+	// Include plguin specif stylesheets - include all installed plugins, no matter if they they have not been activated
+	foreach (Plugins::instance()->getAll() as $p) {
 		/* @var $p Plugin */
 		$css_file =	PLUGIN_PATH ."/".$p->getSystemName()."/public/assets/css/".$p->getSystemName().".css" ;
 		if (is_file($css_file)) {
@@ -139,7 +139,7 @@ $show_owner_company_name_header = config_option("show_owner_company_name_header"
 		<div style="float: left;" class="header-content-left">
 			<div id="logodiv" onclick="og.Breadcrumbs.resetSelection();">
 				<div style="height: 55px;" id="logo_company_margin_top">
-					<img src="<?php echo ($use_owner_company_logo) ? owner_company()->getPictureUrl('medium') : get_product_logo_url() ?>" name="img_company_margin" id="img_company_margin" style="display: none;"/>
+					<img src="<?php echo ($use_owner_company_logo) ? owner_company()->getPictureUrl('large') : get_product_logo_url() ?>" name="img_company_margin" id="img_company_margin" style="display: none;"/>
 					<script>
 						$('#img_company_margin').load(function() {
 							var margin = (Ext.isIE) ? 25 : Math.round(parseInt(document.img_company_margin.height) / 2);
@@ -194,7 +194,7 @@ $show_owner_company_name_header = config_option("show_owner_company_name_header"
 					?>
 					</div>
 				</li>	
-			  	<li id="userboxWrapper" class="texture-n-1" onclick="showUserOptionsPanel()">			  	
+			  	<li id="userboxWrapper" class="<?php echo config_option('brand_colors_texture',1)?'texture-n-1':''; ?>" onclick="showUserOptionsPanel()">
 					<img src="<?php echo logged_user()->getPictureUrl(); ?>" alt="" />
 					<a id="userLink" style="margin-right: 5px;" href="#" ><?php echo clean(logged_user()->getObjectName()); ?></a>	
 					<div class="account"></div>										
@@ -252,19 +252,19 @@ og.initialGUIState = <?php echo json_encode(GUIController::getState()) ?>;
 if (user_config_option("autodetect_time_zone", null)) {
 	$now = DateTimeValueLib::now();
 ?>
-	og.usertimezone = og.calculate_time_zone(new Date(<?php echo $now->getYear() ?>,<?php echo $now->getMonth() - 1 ?>,<?php echo $now->getDay() ?>,<?php echo $now->getHour() ?>,<?php echo $now->getMinute() ?>,<?php echo $now->getSecond() ?>));
-	og.openLink(og.getUrl('account', 'set_timezone', {'tz': og.usertimezone}), {'hideLoading': true});
+	og.tz_offset = og.calculate_time_zone(new Date(<?php echo $now->getYear() ?>,<?php echo $now->getMonth() - 1 ?>,<?php echo $now->getDay() ?>,<?php echo $now->getHour() ?>,<?php echo $now->getMinute() ?>,<?php echo $now->getSecond() ?>));
+	og.openLink(og.getUrl('account', 'set_timezone', {tz_name: jstz.determine().name(), tz_offset: og.tz_offset}), {'hideLoading': true});
 <?php 
 } ?>
 og.CurrentPagingToolbar = <?php echo defined('INFINITE_PAGING') && INFINITE_PAGING ? 'og.InfinitePagingToolbar' : 'og.PagingToolbar' ?>;
 og.ownerCompany = {
 	id: '<?php echo owner_company()->getId()?>',
-	name: '<?php echo str_replace("'", "\'", clean(owner_company()->getObjectName()))?>',
+	name: '<?php echo escape_character(clean(owner_company()->getObjectName()))?>',
 	logo_url: '<?php echo (owner_company()->getPictureFile() != '' ? owner_company()->getPictureUrl() : '')?>',
-	email: '<?php echo str_replace("'", "\'", clean(owner_company()->getEmailAddress('work'))) ?>',
-	phone: '<?php echo str_replace("'", "\'", clean(owner_company()->getPhoneNumber('work'))) ?>',
-	address: '<?php echo str_replace("\n", " ", str_replace("'", "\'", clean(owner_company()->getStringAddress('work')))) ?>',
-	homepage: '<?php echo str_replace("'", "\'", clean(owner_company()->getWebpageUrl('work'))) ?>'
+	email: '<?php echo escape_character(clean(owner_company()->getEmailAddress('work'))) ?>',
+	phone: '<?php echo escape_character(clean(owner_company()->getPhoneNumber('work'))) ?>',
+	address: '<?php echo str_replace("\n", " ", escape_character(clean(owner_company()->getStringAddress('work')))) ?>',
+	homepage: '<?php echo escape_character(clean(owner_company()->getWebpageUrl('work'))) ?>'
 };
 og.loggedUser = {
 	id: <?php echo logged_user()->getId() ?>,
@@ -272,9 +272,15 @@ og.loggedUser = {
 	displayName: <?php echo json_encode(logged_user()->getObjectName()) ?>,
 	isAdmin: <?php echo logged_user()->isAdministrator() ? 'true' : 'false' ?>,
 	isGuest: <?php echo logged_user()->isGuest() ? 'true' : 'false' ?>,
-	tz: <?php echo logged_user()->getTimezone() ?>,
 	type: <?php echo logged_user()->getUserType() ?>,
-	localization: '<?php echo logged_user()->getLocale() ?>'
+	localization: '<?php echo logged_user()->getLocale() ?>',
+	can_instantiate_templates: <?php echo can_instantiate_templates(logged_user()) ? 'true' : 'false'?>,
+	can_manage_tasks: <?php echo can_manage_tasks(logged_user()) ? 'true' : 'false' ?>,
+	tz: {
+		id: '<?php echo logged_user()->getUserTimezoneId() ?>',
+		name: '<?php echo Timezones::getTimezoneName(logged_user()->getUserTimezoneId()) ?>',
+		offset: '<?php echo logged_user()->getUserTimezoneValue() ?>'
+	}
 };
 og.zipSupported = <?php echo zip_supported() ? 1 : 0 ?>;
 og.hasNewVersions = <?php
@@ -302,14 +308,18 @@ og.config = {
 	'enable_weblinks_module': <?php echo json_encode(module_enabled('weblinks')) ?>,
 	'enable_time_module': <?php echo json_encode(module_enabled("time") && can_manage_time(logged_user())) ?>,
 	'enable_reporting_module': <?php echo json_encode(module_enabled("reporting")) ?>,
+	'use_tasks_dependencies': <?php echo json_encode(module_enabled("tasks")) ?>,
 	'enabled_dimensions': Ext.util.JSON.decode('<?php echo json_encode(config_option('enabled_dimensions')) ?>'),
 	'brand_colors': {
 		brand_colors_head_back: '<?php echo config_option('brand_colors_head_back')?>',
 		brand_colors_head_font: '<?php echo config_option('brand_colors_head_font')?>',
 		brand_colors_tabs_back: '<?php echo config_option('brand_colors_tabs_back')?>',
-		brand_colors_tabs_font: '<?php echo config_option('brand_colors_tabs_font')?>'
+		brand_colors_tabs_font: '<?php echo config_option('brand_colors_tabs_font')?>',
+		brand_colors_texture: '<?php echo config_option('brand_colors_texture')?>'
 	},
-	'with_perm_user_types': Ext.util.JSON.decode('<?php echo json_encode(config_option('give_member_permissions_to_new_users'))?>')
+	'with_perm_user_types': Ext.util.JSON.decode('<?php echo json_encode(config_option('give_member_permissions_to_new_users'))?>'),
+	'member_selector_page_size': 100,
+	'currency_code': '<?php config_option('currency_code', '$') ?>'
 };
 og.preferences = {
 	'viewContactsChecked': <?php echo json_encode(user_config_option('viewContactsChecked')) ?>,
@@ -331,7 +341,9 @@ og.preferences = {
 	'listing_preferences': [],
 	'breadcrumb_member_count': <?php echo user_config_option('breadcrumb_member_count') ?>,
 	'can_modify_navigation_panel': <?php echo user_config_option('can_modify_navigation_panel') ? '1' : '0' ?>,
-	'show_birthdays_in_calendar': <?php echo user_config_option('show_birthdays_in_calendar') ? '1' : '0' ?>
+	'show_birthdays_in_calendar': <?php echo user_config_option('show_birthdays_in_calendar') ? '1' : '0' ?>,
+	'enableArchiveConfirmation': <?php echo user_config_option('enable_archive_confirmation') ? '1' : '0' ?>,
+	'enableTrashConfirmation': <?php echo user_config_option('enable_trash_confirmation') ? '1' : '0' ?>
 };
 
 og.userRoles = {};
@@ -339,16 +351,16 @@ og.userRoles = {};
 	foreach ($all_roles as $role) {?>
 		og.userRoles[<?php echo $role->getId()?>] = {
 			code:'<?php echo $role->getName() ?>', 
-			name:'<?php echo str_replace("'", "\'", lang($role->getName()))?>', 
+			name:'<?php echo escape_character(lang($role->getName()))?>', 
 			parent:'<?php echo $role->getParentId()?>',
-			hint:'<?php echo str_replace("'", "\'", lang($role->getName().' user role description') . '&nbsp;<a href="http://www.fengoffice.com/web/user_types.php" target="_blank">'.lang('more information about user roles').'</a>') ?>'
+			hint:'<?php echo escape_character(lang($role->getName().' user role description') . '&nbsp;<a href="http://www.fengoffice.com/web/user_types.php" target="_blank">'.lang('more information about user roles').'</a>') ?>'
 		};
 <?php } ?>
 
 og.userTypes = {};
 <?php $all_user_types = PermissionGroups::instance()->getUserTypeGroups();
 	foreach ($all_user_types as $type) {?>
-		og.userTypes[<?php echo $type->getId()?>] = {code:'<?php echo $type->getName() ?>', name:'<?php echo str_replace("'", "\'", lang($type->getName()))?>'};
+		og.userTypes[<?php echo $type->getId()?>] = {code:'<?php echo $type->getName() ?>', name:'<?php echo escape_character(lang($type->getName()))?>'};
 <?php } ?>
 og.defaultRoleByType = {};
 <?php $default_roles_by_type = PermissionGroups::instance()->getDefaultRolesByType();
@@ -388,20 +400,35 @@ foreach($allUsers as $usr) {
     $allUsers_array[$usr->getId()] = $usr_info;
 }
 ?>
-og.allUsers =  <?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($allUsers_array)))) ?>;
+og.allUsers =  <?php echo clean(str_replace('"',"'", escape_character(json_encode($allUsers_array)))) ?>;
 
 <?php 
 $object_types = ObjectTypes::getAllObjectTypes();
 
 foreach ($object_types as $ot) {
+    $dim_ids = DimensionObjectTypes::getDimensionIdsByObjectTypeId($ot->getId());
+    if ( is_array($dim_ids) && count($dim_ids) > 0 ) {
+        $c_name = trim(Members::getTypeNameToShowByObjectType($dim_ids[0], $ot->getId()));
+    }else{
+        $c_name = lang($ot->getName());
+    }
 	$types[$ot->getId()] = array(
-								"name" => $ot->getName(),
-								"icon" => $ot->getIconClass(),
-								"type" => $ot->getType()
-							);
+		"name" => $ot->getName(),
+	    "c_name" => $c_name,
+		"icon" => $ot->getIconClass(),
+		"type" => $ot->getType()
+	);
+	if ($ot->getType() == 'content_object') {
+		$types[$ot->getId()]['controller'] = $ot->getObjectTypeController();
+		$types[$ot->getId()]['add_action'] = $ot->getObjectTypeAddAction();
+
+		$allow_generic_type = true;
+		Hook::fire('allow_generic_type_object_subtypes_ot', $ot, $allow_generic_type);
+		$types[$ot->getId()]['allow_generic_type'] = $allow_generic_type;
+	}
 }
 ?>
-og.objectTypes =  <?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($types)))) ?>;
+og.objectTypes =  <?php echo clean(str_replace('"',"'", escape_character(json_encode($types)))) ?>;
 
 <?php
 	$listing_preferences = ContactConfigOptions::getOptionsByCategoryName('listing preferences');
@@ -419,6 +446,12 @@ Ext.Ajax.timeout = <?php echo get_max_execution_time()*1100 // give a 10% margin
 og.musicSound = new Sound();
 og.systemSound = new Sound();
 
+<?php 
+	$all_dimension_associations = DimensionMemberAssociations::instance()->getAllAssociationsInfo();
+	$json_options = null;
+	if (defined('JSON_HEX_APOS')) $json_options = JSON_HEX_APOS;
+?>
+og.dimension_member_associations = Ext.util.JSON.decode('<?php echo json_encode($all_dimension_associations, $json_options)?>');
 
 
 <?php if (!defined('DISABLE_JS_POLLING') || !DISABLE_JS_POLLING) { ?>
@@ -442,7 +475,8 @@ if (Ext.isIE) {
 og.dimensions_check_date = new Date();
 
 setInterval(function() {
-	if (window.isActiveBrowserTab) {
+	// document.hidden is false when the current tab is the active tab
+	if (!document.hidden) {
 		og.openLink(og.getUrl('object', 'popup_reminders'), {
 			hideLoading: true,
 			hideErrors: true,
@@ -473,9 +507,12 @@ foreach ($actions as $action) {
 	?>
 	og.additional_dashboard_actions.push(
 		new Ext.Action({
-			id: "add-action-<?php echo $i?>",
+			id: "add-action-<?php echo $action['id']?>",
+			assoc_ot: <?php echo array_var($action, 'assoc_ot', '0')?>,
+			assoc_dim: <?php echo array_var($action, 'assoc_dim', '0')?>,
 			text: "<?php echo $action['name']?>",
 			tooltip: "<?php echo $action['name']?>",
+			cls: "x-btn-text-icon dash-additional-action",
 			iconCls: "<?php echo $action['class']?>",
 			handler: function() {
 				<?php echo $action['onclick']?>
@@ -494,14 +531,20 @@ foreach ($actions as $action) {
 	og.emailFilters = {};
 	og.emailFilters.classif = '<?php echo user_config_option('mails classification filter') ?>';
 	og.emailFilters.read = '<?php echo user_config_option('mails read filter') ?>';
-	og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
-	if (og.emailFilters.account != 0 && og.emailFilters.account != '') {
-		og.emailFilters.accountName = '<?php
-			$acc_id = user_config_option('mails account filter');
-			$acc = $acc_id > 0 ? MailAccounts::findById($acc_id) : null; 
-			echo ($acc instanceof MailAccount ? mysql_real_escape_string($acc->getName()) : ''); 
-		?>';
-	} else og.emailFilters.accountName = '';
+	<?php
+		$acc = MailAccounts::findById(user_config_option('mails account filter'));
+		if ($acc instanceof MailAccount) {
+			?>
+			og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
+			og.emailFilters.accountName = '<?php echo mysql_real_escape_string($acc->getName()) ?>';
+			<?php
+		} else { 
+			?>
+			og.emailFilters.account = '';
+			og.emailFilters.accountName = '';
+			<?php
+		}
+	?>
 <?php } ?>
 og.lastSelectedRow = {messages:0, mails:0, contacts:0, documents:0, weblinks:0, overview:0, linkedobjs:0, archived:0};
 
@@ -509,30 +552,36 @@ og.menuPanelCollapsed = false;
 
 og.dimensionPanels = [
 	<?php
+	$dim_obj_type_descendants = array();
 	$enabled_dimensions = config_option("enabled_dimensions");
 	$dimensionController = new DimensionController();
 	$first = true; 
 	$dimensions = $dimensionController->get_context();
-	foreach ( $dimensions['dimensions'] AS $dimension ):
-	 	if ( $dimension->getOptions(1) && isset($dimension->getOptions(1)->hidden) && $dimension->getOptions(1)->hidden || !in_array($dimension->getId(), $enabled_dimensions)) {
+	foreach ( $dimensions['dimensions'] as $dimension ):
+	 	if (!in_array($dimension->getId(), $enabled_dimensions)) {
 	 		continue;
 	 	}
 	 		
 		/* @var $dimension Dimension */
-		$title = ( $dimension->getOptions() && isset($dimension->getOptions(1)->useLangs) && ($dimension->getOptions(1)->useLangs) ) ? lang($dimension->getCode()) : $dimension->getName();
-	 	Hook::fire("edit_dimension_name", array('dimension' => $dimension), $title); 
+		$title = $dimension->getName();
 		if (!$first) echo ",";
 		$first = false;
 		
-		?>                      
+		if (defined('JSON_NUMERIC_CHECK')) {
+			$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()), JSON_NUMERIC_CHECK );
+		} else {
+			$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()) );
+		}
+		
+		?>
 		{	
-			reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReload($dimension->getId()) ) ; ?>,
+			reloadDimensions: <?php echo $reloadDimensions ?>,
 			xtype: 'member-tree',
 			id: 'dimension-panel-<?php echo $dimension->getId() ; ?>',
 			lines: false,
 			dimensionId: <?php echo $dimension->getId() ; ?>,
 			dimensionCode: '<?php echo $dimension->getCode() ; ?>',
-			dimensionOptions: <?php echo ( $dimension->getOptions() ) ?  $dimension->getOptions() : '""' ; ?>,
+			dimensionOptions: '{"defaultAjax":{"controller":"dashboard", "action": "main_dashboard"}}',
 			isDefault: '<?php echo (int) $dimension->isDefault() ; ?>',
 			title: "<?php echo $title ?>",
 			multipleSelection: <?php echo (int)$dimension->getAllowsMultipleSelection() ?>,
@@ -540,14 +589,23 @@ og.dimensionPanels = [
 			requiredObjectTypes: <?php echo json_encode($dimension->getRequiredObjectTypes()) ?>,
 			hidden: <?php echo (int) ! $dimension->getIsRoot(); ?>,
 			isManageable: <?php echo (int) $dimension->getIsManageable() ?>,
-			quickAdd: <?php echo ( $dimension->getOptions(1) && isset($dimension->getOptions(1)->quickAdd) && $dimension->getOptions(1)->quickAdd ) ? 'true' : 'false'  ?>,
+			quickAdd: <?php echo ( intval($dimension->getOptionValue('quickAdd')) ) ? 'true' : 'false'  ?>,
 			minHeight: 10
 			//animate: false,
 			//animCollapse: false
 			
 		}	
+	<?php
+		$dim_obj_types = DimensionObjectTypes::getObjectTypeIdsByDimension($dimension->getId());
+		$dim_obj_type_descendants[$dimension->getId()] = array();
+		foreach ($dim_obj_types as $ot_id) {
+			$all_child_ots = DimensionObjectTypeHierarchies::getAllChildrenObjectTypeIds($dimension->getId(), $ot_id);
+			$dim_obj_type_descendants[$dimension->getId()][$ot_id] = array_values($all_child_ots);
+		}
+	?>
 	<?php endforeach; ?>
 ];
+og.dimension_object_type_descendants = Ext.util.JSON.decode('<?php echo json_encode($dim_obj_type_descendants)?>');
 
 og.contextManager.construct();
 og.objPickerTypeFilters = [];
@@ -602,7 +660,7 @@ og.objPickerTypeFilters = [];
 	} 
 ?>
 
-og.dimension_object_type_contents = [];
+og.dimension_object_type_contents = {};
 <?php 
 	$dotcs = DimensionObjectTypeContents::findAll();
 	foreach ($dotcs as $dotc) { /* @var $dotc DimensionObjectTypeContent */?>
@@ -638,10 +696,10 @@ $(document).ready(function() {
 		}
 	}
 
-	og.custom_properties_by_type = [];
+	og.custom_properties_by_type = {};
 	og.openLink(og.getUrl('object', 'get_cusotm_property_columns'), {
 		callback: function(success, data){
-			if (typeof data.properties != 'undefined') {
+			if (typeof data.properties != 'undefined' && !(data.properties instanceof Array )) {
 				og.custom_properties_by_type = data.properties;
 			}
 		}
@@ -678,12 +736,43 @@ $(document).ready(function() {
 		og.Breadcrumbs.resizeHeaderBreadcrumbs();
 		og.checkAndAdjustTabsSize();
 	});
+
+
+<?php 
+	$all_telephone_types = TelephoneTypes::getAllTelephoneTypesInfo();
+	$all_address_types = AddressTypes::getAllAddressTypesInfo();
+	$all_webpage_types = WebpageTypes::getAllWebpageTypesInfo();
+	$all_email_types = EmailTypes::getAllEmailTypesInfo();
+?>
+	og.telephone_types = Ext.util.JSON.decode('<?php echo json_encode($all_telephone_types)?>');
+	og.address_types = Ext.util.JSON.decode('<?php echo json_encode($all_address_types)?>');
+	og.webpage_types = Ext.util.JSON.decode('<?php echo json_encode($all_webpage_types)?>');
+	og.email_types = Ext.util.JSON.decode('<?php echo json_encode($all_email_types)?>');
+	
 });
 
+<?php
+$default_currency = Currencies::getDefaultCurrencyInfo();
+if (is_array($default_currency) && count($default_currency) > 0) {
+	?>og.default_currency = Ext.util.JSON.decode('<?php echo json_encode($default_currency)?>');<?php
+} 
+?>
 
+
+og.loadedScripts = [];
+<?php 
+$revision = product_version_revision();
+if($revision != "") {
+	$revision = "?rev=".$revision;
+}
+foreach ($jss as $onejs) {
+	?>og.loadedScripts['<?php echo get_javascript_url($onejs . $revision) ?>'] = true;<?php 
+}
+?>
 
 </script>
 <?php include_once(Env::getLayoutPath("listeners"));?>
+	<div style="height:100%;width:100%;display:none;position:fixed;top:0px;left:0px;z-index: 2000;overflow-y: auto;" id="modal-forms-container"></div>
 
 	<div id="quick-form" > 
             <div id="close_text" style="float: right; cursor: pointer;height: 12px;position: absolute;right: 19px;top: 2px;"><a href="#" onclick="$('.close').click();"><?php echo lang('close')?></a></div>
