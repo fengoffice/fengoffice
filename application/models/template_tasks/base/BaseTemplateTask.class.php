@@ -810,6 +810,28 @@ abstract class BaseTemplateTask extends ContentDataObject {
 		return $this->setColumnValue('type_content', $value);
 	} // setTypeContent()
         
+    /**
+     * Set value of 'mark_as_started' field
+     *
+     * @access public
+     * @param boolean $value
+     * @return boolean
+     */
+    function setMarkAsStarted($value) {
+        return;
+    } // setMarkAsStarted()
+
+    /**
+     * Return value of 'mark_as_started' field
+     *
+     * @access public
+     * @param void
+     * @return boolean
+     */
+    function getMarkAsStarted() {
+        return false;
+    } // getMarkAsStarted()
+
         /**
 	 * Return manager instance
 	 *

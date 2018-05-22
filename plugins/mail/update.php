@@ -196,3 +196,196 @@
 			ON DUPLICATE KEY UPDATE name=name;
 		");
 	}
+	
+	function mail_update_16_17() {
+		DB::execute("
+			INSERT INTO `".TABLE_PREFIX."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+			 ('mailing', 'use_mail_accounts_to_send_nots', '0', 'BoolConfigHandler', 0, 0, '')
+			ON DUPLICATE KEY UPDATE name=name;
+		");
+	}
+	
+	function mail_update_17_18() {
+		// organize general config options
+		DB::execute("
+			UPDATE `".TABLE_PREFIX."config_categories` set `category_order`=`category_order`*10;
+		");
+		DB::execute("
+			INSERT INTO `".TABLE_PREFIX."config_categories` (`name`, `is_system`, `category_order`) VALUES
+				('mail module', 0, 60)
+			ON DUPLICATE KEY UPDATE `name`=`name`;
+		");
+		DB::execute("
+			update ".TABLE_PREFIX."config_options set category_name='mail module' where name in ('show images in document notifications','user_email_fetch_count','sent_mails_sync','check_spam_in_subject');
+		");
+	}
+
+	function mail_update_18_19() {
+		if (!check_column_exists(TABLE_PREFIX."mail_accounts", "get_read_state_from_server")) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts` ADD COLUMN `get_read_state_from_server` BOOLEAN NOT NULL default 1;
+			");
+		}
+	}
+
+	function mail_update_19_20() {
+		DB::execute("
+			ALTER TABLE `".TABLE_PREFIX."contact_emails` ADD INDEX (`email_address`);
+		");
+	}
+	
+	function mail_update_20_21() {
+		DB::execute("
+			UPDATE `".TABLE_PREFIX."contact_config_options` SET default_value='5'
+			WHERE `name`='max_spam_level' AND default_value='0';
+		");
+	}
+	
+	function mail_update_21_22() {
+		// normalize mail_contents - imap folder association
+		DB::execute("
+			CREATE TABLE IF NOT EXISTS `".TABLE_PREFIX."mail_content_imap_folders` (
+			  `account_id` int(10) unsigned NOT NULL,
+			  `message_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+			  `folder` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
+			  `uid` varchar(255) collate utf8_unicode_ci NOT NULL default '',
+  			  `object_id` int(10) unsigned NOT NULL default 0,
+			  PRIMARY KEY (`account_id`,`message_id`,`folder`),
+			  KEY `account_id_folder_object_id` (`account_id`,`folder`,`object_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+		");
+	}
+
+	function mail_update_22_23() {
+
+		// normalize mail_contents - imap folder association
+		DB::execute("
+				DROP TABLE `".TABLE_PREFIX."mail_content_imap_folders`;
+			");
+
+		DB::execute("
+			CREATE TABLE IF NOT EXISTS `".TABLE_PREFIX."mail_content_imap_folders` (
+			  `account_id` int(10) unsigned NOT NULL,
+			  `message_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+			  `folder` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
+			  `uid` varchar(255) collate utf8_unicode_ci NOT NULL default '',
+  			  `object_id` int(10) unsigned NOT NULL default 0,
+			  PRIMARY KEY (`account_id`,`folder`,`object_id`),
+			  KEY `account_id_folder_object_id` (`account_id`,`folder`,`object_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+		");
+
+
+
+		// fill the new table
+		DB::execute("
+				INSERT INTO ".TABLE_PREFIX."mail_content_imap_folders (account_id, message_id, folder, uid, object_id)
+					SELECT account_id, message_id, imap_folder_name, uid, object_id
+					FROM ".TABLE_PREFIX."mail_contents
+					WHERE imap_folder_name!=''
+				ON DUPLICATE KEY UPDATE ".TABLE_PREFIX."mail_content_imap_folders.account_id=".TABLE_PREFIX."mail_content_imap_folders.account_id;
+			");
+
+		if (!check_column_exists(TABLE_PREFIX."mail_account_imap_folder", "last_uid_in_folder")) {
+			DB::execute("
+				ALTER TABLE `" . TABLE_PREFIX . "mail_account_imap_folder` ADD COLUMN `last_uid_in_folder` varchar(255) collate utf8_unicode_ci NOT NULL default '';
+			");
+		}
+
+
+		DB::execute("
+			CREATE TABLE IF NOT EXISTS `".TABLE_PREFIX."tmp_table_last_uid_in_folder` (
+			  `account_id` int(10) unsigned NOT NULL,
+			  `folder` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
+			  `object_id` int(10) unsigned NOT NULL default 0,
+			  PRIMARY KEY (`account_id`,`folder`,`object_id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+		");
+
+		// fill the new table
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."tmp_table_last_uid_in_folder (account_id, folder, object_id)
+					SELECT account_id,folder,max(object_id) FROM `".TABLE_PREFIX."mail_content_imap_folders` GROUP BY `account_id`,`folder`
+				ON DUPLICATE KEY UPDATE account_id=account_id;
+		");
+
+		// fill the new table
+		DB::execute("
+			UPDATE `".TABLE_PREFIX."mail_account_imap_folder` ma SET ma.last_uid_in_folder=(
+				SELECT `uid` FROM `".TABLE_PREFIX."mail_content_imap_folders` mcif
+				WHERE mcif.`object_id` =(
+					SELECT `object_id` FROM `".TABLE_PREFIX."tmp_table_last_uid_in_folder` tmp
+					WHERE tmp.account_id=ma.account_id AND tmp.folder=ma.folder_name
+				)LIMIT 1
+			);
+		");
+
+		DB::execute("
+				DROP TABLE `".TABLE_PREFIX."tmp_table_last_uid_in_folder`;
+			");
+	}
+	
+	function mail_update_23_24() {
+		if (!check_column_exists(TABLE_PREFIX."mail_accounts", "incoming_ssl_verify_peer")) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts` ADD `incoming_ssl_verify_peer` tinyint(1) NOT NULL DEFAULT 0 AFTER `incoming_ssl_port`;
+			");
+		}
+	}
+	
+	
+	function mail_update_24_25() {
+		if (!check_column_exists(TABLE_PREFIX."mail_account_imap_folder", "special_use")) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_account_imap_folder` 
+					ADD `special_use` varchar(255) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
+			");
+			
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts`
+					ADD `can_detect_special_folders` tinyint(1) NOT NULL DEFAULT 0;
+			");
+			
+			// update mail account special folders
+			$mu = new MailUtilities();
+			$mail_accounts = MailAccounts::findAll();
+			foreach ($mail_accounts as $account) {/* @var $account MailAccount */
+				if ($account->getIsImap()) {
+					$can_detect_special_folders = false;
+					$folders_data = $mu->get_imap_account_mailboxes($account, $can_detect_special_folders);
+					if ($can_detect_special_folders) {
+						foreach ($folders_data as $fdata) {
+							if ($fdata['special_use']) {
+								DB::execute("UPDATE ".TABLE_PREFIX."mail_account_imap_folder SET
+									special_use='".$fdata['special_use']."'
+									WHERE account_id=".$account->getId()." AND folder_name=".DB::escape($fdata['name']));
+							}
+						}
+						$account->setColumnValue('can_detect_special_folders', $can_detect_special_folders);
+						$account->save();
+					} else {
+						$sent_folder = $account->getSyncFolder();
+						if ($sent_folder) {
+							$f = MailAccountImapFolders::instance()->findOne(
+								array("conditions" => array("account_id=? AND folder_name=?", $account->getId(), $sent_folder))
+							);
+							if ($f instanceof MailAccountImapFolder) {
+								$f->setSpecialUse("\\Sent");
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	function mail_update_25_26() {
+	    DB::execute("
+			INSERT INTO ".TABLE_PREFIX."contact_config_options (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES			
+            ('mails panel', 'default_mail_font_size', '14', 'IntegerConfigHandler', '0', '100', NULL)			
+			ON DUPLICATE KEY UPDATE name = name;
+			");
+	}
+	
+	
+	

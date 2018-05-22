@@ -43,7 +43,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 	 * @param boolean $save Save log object before you save it
 	 * @return ApplicationLog
 	 */
-	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '') {
+	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '', $exclude_contacts_ids = null) {
 		
 		$args = array (
 			'action' => &$action,
@@ -74,7 +74,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 
 		if (!$is_silent) {
 			try {
-				Notifier::notifyAction($object, $action, $log_data);
+				Notifier::notifyAction($object, $action, $log_data, $exclude_contacts_ids);
 			} catch (Exception $ex) {
 				Logger::log($ex->getMessage());
 			}
@@ -150,6 +150,25 @@ class ApplicationLogs extends BaseApplicationLogs {
 
 		return in_array($action, $valid_actions);
 	} // isValidAction
+	
+	static function countObjectLogs($object, $include_private = false, $include_silent = false, $extra_conditions="") {
+		$private_filter = $include_private ? '1' : '0';
+		$silent_filter = $include_silent ? '1' : '0';
+		
+		if ($object instanceof Contact && $object->isUser()){
+			
+			$userCond = " AND `taken_by_id` = " . $object->getId();
+			
+			return self::count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' '.$userCond. $extra_conditions);
+			
+		} else {
+			
+			return self::count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' AND 
+				(`rel_object_id` = ('.$object->getId().') OR `rel_object_id` IN (SELECT com.object_id FROM '.TABLE_PREFIX.'comments com WHERE com.rel_object_id='.$object->getId().' )) 
+				' . $extra_conditions
+			);
+		}
+	}
 
 	/**
 	 * Return entries related to specific object
@@ -230,61 +249,78 @@ class ApplicationLogs extends BaseApplicationLogs {
 	} // getObjectLogs
 
 	static function getLastActivities() {
+		$task_ot = ObjectTypes::findByName('task');
+		$temp_task_ot = ObjectTypes::findByName('template_task');
+		$timeslot_ot = ObjectTypes::findByName('timeslot');
+		
 		$members = active_context_members(false); // Context Members Ids
 		$options = explode(",",user_config_option("filters_dashboard",null,null,true));
-
-		$extra_conditions = "action <> 'login' AND action <> 'logout' AND action <> 'subscribe' AND created_by_id > '0'";
+		
+		$excluded_object_type_ids = array($temp_task_ot->getId());
+		
+		$extra_conditions = "AND action NOT IN ('login','logout','subscribe') AND created_by_id > '0'";
 		if($options[1] == 0){//do not show timeslots
-			$extra_conditions .= "AND action <> 'open' AND action <> 'close' AND ((action <> 'add' OR action <> 'edit' OR action <> 'delete') AND object_name NOT LIKE 'Time%')";
+			$excluded_object_type_ids[] = $timeslot_ot->getId();
 		}
 		
 		// task assignment conditions
 		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
-			$extra_conditions .= " AND IF((SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=rel_object_id)=(SELECT ot.id FROM ".TABLE_PREFIX."object_types ot WHERE ot.name='task'),
+			$extra_conditions .= " AND IF((SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=rel_object_id)=".$task_ot->getId().",
 				(SELECT t.assigned_to_contact_id FROM ".TABLE_PREFIX."project_tasks t WHERE t.object_id=rel_object_id) = ".logged_user()->getId().",
 				true)";
 		}
 		
-		//do not display template tasks logs 
-		$extra_conditions .= " AND IF((SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=rel_object_id)=(SELECT ot.id FROM ".TABLE_PREFIX."object_types ot WHERE ot.name='template_task'), false, true)";
-
+		// exclude template tasks logs and timeslot logs if widget is configured to do so.
+		if (count($excluded_object_type_ids) > 0) {
+			$extra_conditions .= " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=rel_object_id) NOT IN (".implode(',', $excluded_object_type_ids).") ";
+		}
+		
 		// if logged user is guest dont show other users logs
 		if (logged_user()->isGuest()) {
 			$extra_conditions .= " AND `created_by_id`=".logged_user()->getId();
 		}
 		
-		$members_sql = "";
+		$joins_sql = "";
+		$group_by_sql = "";
 		$is_member_child = "";
+		
 		if(count($members) > 0){
-			$members_sql = "(EXISTS(
-				SELECT om.object_id FROM  ".TABLE_PREFIX."object_members om
-				WHERE om.member_id IN (" . implode ( ',', $members ) . ") AND rel_object_id = om.object_id
-				GROUP BY object_id
-				HAVING count(member_id) = ".count($members)."
-			))";
 			
+			$joins_sql = "LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=al.rel_object_id";
+			
+			$extra_conditions .= "AND om.member_id IN (" . implode ( ',', $members ) . ")";
+			
+			$group_by_sql = "
+				GROUP BY al.id
+				HAVING count(om.member_id) = ".count($members)."
+			";
+			
+			//do not display users logs
+			$extra_conditions .= " AND NOT EXISTS(SELECT con.object_id FROM ".TABLE_PREFIX."contacts con WHERE con.object_id=rel_object_id AND user_type > 0)";
+			
+			// for members query
 			$is_member_child = "AND mem.parent_member_id IN (" . implode ( ',', $members ) . ")";
 		}
 		
 		//permissions
 		$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
 			
-		$permissions_condition = "al.rel_object_id IN (
-		SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-		WHERE al.rel_object_id = sh.object_id AND sh.object_id > 0
-		AND sh.group_id  IN ($logged_user_pgs)
+		$permissions_condition = "EXISTS (
+			SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+			WHERE al.rel_object_id = sh.object_id AND sh.object_id > 0
+			AND sh.group_id  IN ($logged_user_pgs) AND sh.object_id=al.rel_object_id
 		)";
 
 		
 		$sql = "SELECT al.id FROM ".TABLE_PREFIX."application_logs al 
-				WHERE $permissions_condition AND $extra_conditions";
-		if ($members_sql != "") {
-			$sql .= " AND $members_sql";
-			
-			//do not display users logs
-			$sql .= " AND NOT EXISTS(SELECT con.object_id FROM ".TABLE_PREFIX."contacts con WHERE con.object_id=rel_object_id AND user_type > 0)";
-		}
-		$sql .= " ORDER BY created_on DESC LIMIT 100";
+				$joins_sql
+				WHERE 
+					$permissions_condition 
+					$extra_conditions
+					$group_by_sql
+				ORDER BY created_on DESC LIMIT 100
+		";
+		
 		$id_rows = array_flat(DB::executeAll($sql));
 		
 		// if logged user is guest dont show other users logs
@@ -296,7 +332,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$member_logs_sql = "SELECT al.id FROM ".TABLE_PREFIX."application_logs al
 									INNER JOIN ".TABLE_PREFIX."members mem ON mem.id=al.member_id 
 										INNER JOIN ".TABLE_PREFIX."contact_member_cache cmcache ON cmcache.member_id=mem.id AND cmcache.contact_id = ".logged_user()->getId()."
-											WHERE al.member_id>0
+											WHERE al.member_id>0 and al.is_silent=0
 											$user_condition
 											$is_member_child
 							ORDER BY created_on DESC LIMIT 100";

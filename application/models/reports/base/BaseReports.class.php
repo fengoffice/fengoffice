@@ -20,6 +20,7 @@
     	'order_by' => DATA_TYPE_STRING,
     	'is_order_by_asc' => DATA_TYPE_BOOLEAN,
     	'ignore_context' => DATA_TYPE_BOOLEAN,
+    	'is_default' => DATA_TYPE_BOOLEAN,
     );
   
     /**
@@ -28,6 +29,7 @@
     * @return Report 
     */
     function __construct() {
+	  Hook::fire('object_definition', 'Report', self::$columns);
       parent::__construct('Report', 'reports', true);
     } // __construct
     

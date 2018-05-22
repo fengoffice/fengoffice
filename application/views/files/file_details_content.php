@@ -17,12 +17,26 @@
 					</div>';	
 	    echo lang("blank_google_doc");
 	    echo $content;
-	} else {?>
-	<b><?php echo lang('url') ?></b>: <a href="<?php echo clean($file->getUrl()) ?>" target="_blank"><?php echo clean($file->getUrl()) ?></a>
+	} else {
+		$file_url = $file->getUrl();
+		$target = 'target="_blank"';
+		if (str_starts_with($file_url, "file:")) {
+			$ext = get_file_extension($file->getName());
+			$ftype = FileTypes::getByExtension($ext);
+			
+			if ($ftype instanceof FileType && !($ftype->getIsImage() || in_array($ftype->getExtension(), array('pdf','txt','html'))) ) {
+				$target = 'target="_self"';
+			}
+		}
+		?>
+	<b><?php echo lang('url') ?></b>: <a href="<?php echo clean($file_url) ?>" <?php echo $target ?>><?php echo clean($file_url) ?></a>
 <?php }
 } ?>
 
-<?php if ($file->isDisplayable()) {?>
+<?php if ($file->isDisplayable()) {
+	$extra_preview_css = array();
+	Hook::fire('html_document_preview_css', $file, $extra_preview_css);
+?>
 <div>
 	<div id="<?php echo $genid?>document-view" style="position: relative; left:0; top: 0; width: 100%; height: 700px; background-color: white">
 		<iframe class="document-preview" style="width:100%;height:100%;border:1px solid #ddd;" src="<?php echo get_sandbox_url("feed", "display_content", array("id" => $file->getId(), "user_id" => logged_user()->getId(), "token" => logged_user()->getTwistedToken())) ?>"></iframe>
@@ -33,6 +47,9 @@
 		$(function(){
 			$("iframe.document-preview").load(function(){
 				$("iframe.document-preview").contents().find("a").attr("target", "_blank");
+				<?php foreach ($extra_preview_css as $css) { ?>
+				$('iframe.document-preview').contents().find('head').append('<?php echo $css?>');
+				<?php } ?>
 			});
 		});
 		
@@ -63,7 +80,10 @@
 	$modtime = $file->getUpdatedOn()->getTimestamp();
 } else {
 	$modtime = $file->getCreatedOn()->getTimestamp();
-}?>
+}
+$last_rev_id = $file->getLastRevision() instanceof ProjectFileRevision ? $file->getLastRevision()->getId() : "0";
+$modtime = $modtime . "-" . date('YmdH') . "-" . $last_rev_id; // don't cache more than 1 hour
+?>
 
 <?php if(($ftype = $file->getFileType()) instanceof FileType && $ftype->getIsImage()){?>
 	<div>
@@ -74,7 +94,8 @@
 <?php }?>
 
 <?php
-   if (strtolower(substr($file->getFilename(), -3)) == 'pdf'){
+	/* @var $last_revision ProjectFileRevision */
+   if (strtolower(substr($file->getFilename(), -3)) == 'pdf' || $last_revision instanceof ProjectFileRevision && $last_revision->getTypeString() == 'application/pdf'){
       echo'<div>';
       if($file->getType() != ProjectFiles::TYPE_WEBLINK){       
         $urlpdf=get_url('files', 'download_image', array('id' => $file->getId(), 'inline' => true, 'modtime' => $modtime));
@@ -155,7 +176,8 @@
 		</td>
 		<td class="line_comments_icons">
 			<?php if ($file->canEdit(logged_user()) && !$file->isTrashed()){?>
-				<a href="<?php echo $revision->getEditUrl() ?>" class="internalLink coViewAction ico-edit" title="<?php echo lang('edit revision comment')?>">&nbsp;</a>
+				<a href="javascript:og.render_modal_form('', {c:'files', a:'edit_file_revision', params: {id:<?php echo $revision->getId() ?>}});" 
+					class="internalLink coViewAction ico-edit" title="<?php echo lang('edit revision comment')?>">&nbsp;</a>
 			<?php }?>
 		</td>
 	</tr>	

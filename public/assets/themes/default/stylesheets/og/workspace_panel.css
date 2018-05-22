@@ -1,11 +1,11 @@
 .ext-el-mask {
 	background:#dadadb;
 }
-.ico-workspace, .ico-ws{
+.ico-workspace, .ico-ws, .ico-workspaces {
 	background-image: url(../../images/icons-feng-3/16x16/workspace.png) !important;
 }
 .ico-workspaces {
-	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -617px !important;
+/*	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -617px !important;*/
 }
 .ico-workspace-add {
 	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -600px !important;

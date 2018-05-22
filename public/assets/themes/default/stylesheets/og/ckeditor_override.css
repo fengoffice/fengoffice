@@ -1,6 +1,15 @@
 .cke_editable {
 	font-size: 14px;
+	line-height: normal;
+}
+.cke_editable p {
+	margin: 2px 0;
 }
 .cke_combo__fontsize .cke_combo_text {
 	width: auto;
+}
+
+/* to prevent bug that overlay stays over all elements and cant be removed */
+.cke_dialog_background_cover {
+	display:none;
 }

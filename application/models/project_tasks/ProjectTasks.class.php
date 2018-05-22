@@ -21,6 +21,7 @@ class ProjectTasks extends BaseProjectTasks {
 	const PRIORITY_NORMAL = 200;
 	const PRIORITY_LOW = 100;
 	
+	private static $custom_properties = null;
 
 	/**
 	 * Return tasks on which the user has an open timeslot
@@ -109,16 +110,21 @@ class ProjectTasks extends BaseProjectTasks {
 	 * @param DateTimeValue $date_end	in user gmt 
 	 * @return array
 	 */
-	function getRangeTasksByUser(DateTimeValue $date_start, DateTimeValue $date_end, $assignedUser, $task_filter = null, $archived = false, $raw_data = false) {
+	function getRangeTasksByUser(DateTimeValue $date_start, DateTimeValue $date_end, $assignedUser, $task_filter = null, $archived = false, $raw_data = false, $limit = 50) {
 		
 		$from_date = new DateTimeValue ( $date_start->getTimestamp ());
 		$from_date = $from_date->beginningOfDay ();
 		$to_date = new DateTimeValue ( $date_end->getTimestamp ());
 		$to_date = $to_date->endOfDay ();
 		
+		$orig_from_date = new DateTimeValue($from_date->getTimestamp());
+		$orig_from_date_sql = $orig_from_date->toMySQL();
+		$orig_to_date = new DateTimeValue($to_date->getTimestamp());
+		$orig_to_date_sql = $orig_to_date->toMySQL();
+		
 		//set dates to gmt 0 for sql
-		$from_date->advance(-logged_user()->getTimezone() * (3600));
-		$to_date->advance(-logged_user()->getTimezone() * (3600));	
+		$from_date->advance(-logged_user()->getUserTimezoneValue());
+		$to_date->advance(-logged_user()->getUserTimezoneValue());	
 			
 		$assignedFilter = '';
 		if ($assignedUser instanceof Contact) {
@@ -129,16 +135,27 @@ class ProjectTasks extends BaseProjectTasks {
 		$archived_cond = " AND `archived_on` ".($archived ? '<>' : '=')." 0";
 		
 		$conditions = DB::prepareString(' AND `is_template` = false AND `completed_on` '. ($task_filter == 'complete' ? '<>' : '=') .' ? AND 
-			(IF(due_date>0,(`due_date` >= ? AND `due_date` < ?),false) OR IF(start_date>0,(`start_date` >= ? AND `start_date` < ?),false) OR ' . $rep_condition . ') ' . $archived_cond . $assignedFilter, array(EMPTY_DATETIME,$from_date, $to_date, $from_date, $to_date));
+			(IF (due_date>0, 
+				IF (use_due_time, (`due_date` >= ? AND `due_date` < ?), (`due_date` >= \''.$orig_from_date_sql.'\' AND `due_date` < \''.$orig_to_date_sql.'\')), false) 
+			OR IF (start_date>0, 
+				IF (use_start_time, (`start_date` >= ? AND `start_date` < ?), (`start_date` >= \''.$orig_from_date_sql.'\' AND `start_date` < \''.$orig_to_date_sql.'\')), false)
+			OR ' . $rep_condition . ') ' . $archived_cond . $assignedFilter, 
+			array(EMPTY_DATETIME,$from_date, $to_date, $from_date, $to_date)
+		);
 		
 		$other_perm_conditions = SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks');
 		if(!$other_perm_conditions){
-			$conditions = " AND (`assigned_to_contact_id` = ". logged_user()->getId () ." OR `created_by_id` = ". logged_user()->getId () .")";
+			$conditions = " AND (`assigned_to_contact_id` = ". logged_user()->getId () ." OR o.`created_by_id` = ". logged_user()->getId () .")";
 		}
-		$result = self::instance()->listing(array(
+		
+		$listing_params = array(
 			"extra_conditions" => $conditions,
 			"raw_data" => $raw_data,
-		));
+		);
+		if ($limit) {
+			$listing_params["limit"] = $limit;
+		}
+		$result = self::instance()->listing($listing_params);
 		
 		return $result->objects;
 	} // getDayTasksByUser
@@ -442,11 +459,15 @@ class ProjectTasks extends BaseProjectTasks {
 			'createdById' => (int)$raw_data['created_by_id'],
 			'otype' => $raw_data['object_subtype'],
 			'percentCompleted' => (int)$raw_data['percent_completed'],			
-			'memPath' => str_replace('"',"'", str_replace("'", "\'", json_encode($tmp_task->getMembersIdsToDisplayPath())))
+			'memPath' => str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())))
 		);
 		
 		if(isset($raw_data['isread'])){
 			$result['isread'] = $raw_data['isread'];
+		}
+		
+		if(isset($raw_data['mark_as_started'])){
+		    $result['mark_as_started'] = $raw_data['mark_as_started'] ? "1" : "0";
 		}
 
 		$result['multiAssignment'] = (int)array_var($raw_data, 'multi_assignment');
@@ -485,7 +506,7 @@ class ProjectTasks extends BaseProjectTasks {
 		if ($raw_data['due_date'] != EMPTY_DATETIME) {
 			$result['useDueTime'] = $raw_data['use_due_time'] ? 1 : 0;
 			if($result['useDueTime']){
-				$result['dueDate'] = strtotime($raw_data['due_date']) + logged_user()->getTimezone() * 3600;
+				$result['dueDate'] = strtotime($raw_data['due_date']) + Timezones::getTimezoneOffsetToApplyFromArray($raw_data);
 			}else{
 				$result['dueDate'] = strtotime($raw_data['due_date']);
 			}			
@@ -493,7 +514,7 @@ class ProjectTasks extends BaseProjectTasks {
 		if ($raw_data['start_date'] != EMPTY_DATETIME) {
 			$result['useStartTime'] = $raw_data['use_start_time'] ? 1 : 0;			
 			if($result['useStartTime']){
-				$result['startDate'] = strtotime($raw_data['start_date']) + logged_user()->getTimezone() * 3600;
+				$result['startDate'] = strtotime($raw_data['start_date']) + Timezones::getTimezoneOffsetToApplyFromArray($raw_data);
 			}else{
 				$result['startDate'] = strtotime($raw_data['start_date']);
 			}			
@@ -504,7 +525,7 @@ class ProjectTasks extends BaseProjectTasks {
 		if ($time_estimate > 0) $result['timeEstimateString'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($time_estimate * 60), 'hm', 60));
 		
 
-		$result['timeZone'] = logged_user()->getTimezone() * 3600;
+		$result['timeZone'] = Timezones::getTimezoneOffsetToApplyFromArray($raw_data);
 
 		$ot = $tmp_task->getOpenTimeslots();
 
@@ -559,10 +580,54 @@ class ProjectTasks extends BaseProjectTasks {
 			$pending_tasks_ids = ProjectTaskDependencies::getDependenciesForTaskOnlyPendingIds($tmp_task->getId());
 			
 			//get the total of previous tasks 
-			$result['dependants'] = $pending_tasks_ids;		
+			$result['dependants'] = $pending_tasks_ids;	
+			
+			$result['previous_tasks_total'] = ProjectTaskDependencies::countPendingPreviousTasks($tmp_task->getId());	
 		}
 		
+		$cp_values = array();
+		if (is_null(self::$custom_properties)) {
+			self::$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(self::instance()->getObjectTypeId());
+		}
+		foreach (self::$custom_properties as $cp) {
+			$cp_values[] = array(
+					'id' => $cp->getId(),
+					'value' => get_custom_property_value_for_listing($cp, $result['id']),
+			);
+		}
+		$result['custom_properties'] = $cp_values;
+		
+		Hook::fire('task_info_additional_data', $raw_data, $result);
+		
 		return $result;
+	}
+	
+	static function getLastRepetitiveTaskId($task_id) {
+	    
+	    $db_res = DB::execute("SELECT original_task_id FROM `" . TABLE_PREFIX . "project_tasks` WHERE object_id = $task_id");
+	    $rows = $db_res->fetchAll();
+	    if (is_array($rows)) {
+	        if ($rows[0]['original_task_id'] > 0){
+                $db_res = DB::execute("SELECT MAX(object_id) as object_id FROM `" . TABLE_PREFIX . "project_tasks` WHERE original_task_id = ".$rows[0]['original_task_id'] );
+	        }else{
+	            $db_res = DB::execute("SELECT MAX(object_id) as object_id FROM `" . TABLE_PREFIX . "project_tasks` WHERE original_task_id = ".$task_id );
+	        }
+	        $rows = $db_res->fetchAll();
+	        if (is_array($rows)) {
+	            return (isset($rows[0]['object_id']) && $rows[0]['object_id'] > 0 ? $rows[0]['object_id'] : null);
+	        }
+	      
+	    }
+	   
+	    return null;
+	}
+
+	function getColumnsToAggregateInTotals() {
+		return array(
+			'time_estimate' => array('operation' => 'sum', 'format' => 'time'),
+			'total_worked_time' => array('operation' => 'sum', 'format' => 'time'),
+			'percent_completed' => array('operation' => 'average'),
+		);
 	}
 	
 } // ProjectTasks

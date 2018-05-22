@@ -6,14 +6,11 @@ if ((!is_array($objects) || count($objects) == 0))  {
 	echo '<div class="desc no_linked_objects_desc">' . lang('there are no linked objects yet') . '</div><br />';
 }
 ?>
-<div id="contene" class="linked-objects-container">
-	<a id="<?php echo $genid ?>before" class="add-linked-object" href="#" onclick="App.modules.linkToObjectForm.pickObject(this)"><span class="action-ico ico-open-link"><?php echo lang('link object') ?></span></a>
-</div>
-
 <style>
 .linked-objects-container{
 	max-height:250px;
 	overflow-y: auto;
+	padding: 5px 0;
 }
 
 .linked-objects-container .ico-contact{
@@ -35,19 +32,24 @@ if ((!is_array($objects) || count($objects) == 0))  {
 
 </style>
 
-<script>
-<?php
+<div id="contene" class="linked-objects-container">
+	<a id="<?php echo $genid ?>before" class="add-linked-object" href="#" onclick="App.modules.linkToObjectForm.pickObject(this)"><span class="action-ico ico-open-link"><?php echo lang('link object') ?></span></a>
+<?php 
 if (is_array($objects)) {
+	$cls = "";
+	$count = 0;
 	foreach ($objects as $o) {
-		if (!$o instanceof ContentDataObject) continue;
+		if (!$o instanceof ContentDataObject || !$o->canLinkObject(logged_user())) continue;
+		$cls = $cls == "" ? " odd" : "";
+		$count++;
 ?>
-App.modules.linkToObjectForm.addObject(document.getElementById('<?php echo $genid ?>before'), {
-	'object_id': <?php echo $o->getId() ?>,
-	'type': '<?php echo $o->getObjectTypeName() ?>',
-	'name': <?php echo json_encode($o->getObjectName()) ?>
-});
+	<div class="og-add-template-object ico-<?php echo $o->getObjectTypeName() . $cls ?>">
+		<input type="hidden" name="linked_objects[<?php echo $count?>]" value="<?php echo $o->getId()?>" />
+		<span class="name"><?php echo $o->getObjectName()?></span>
+		<a href="#" onclick="App.modules.linkToObjectForm.removeObject(this.parentNode)" class="removeDiv" style="display:block"><?php echo lang('remove') ?></a>
+	</div>
 <?php
 	}
 }
 ?>
-</script>
+</div>

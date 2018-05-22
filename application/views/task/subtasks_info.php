@@ -109,49 +109,8 @@ if($showOpenSubtasksDiv) { ?>
   
   <div class="addTask">
 <?php if($task_list->canAddSubTask(logged_user()) && !$task_list->isTrashed()) { ?>
-    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink"><a class="internalLink" href="<?php echo $task_list->getAddTaskUrl(false) ?>" onclick="App.modules.addTaskForm.showAddTaskForm(<?php echo $task_list->getId() ?>); return false"><?php echo lang('add sub task') ?></a></div>
+    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink"><a class="internalLink" href="<?php echo $task_list->getAddTaskUrl(false) ?>" onclick="ogTasks.drawAddNewTaskForm (null,<?php echo $task_list->getId() ?>,null, null,1); return false"><?php echo lang('add sub task') ?></a></div>
   
-    <div id="addTaskForm<?php echo $task_list->getId() ?>" style="display:none">
-      <form class="internalForm" action="<?php echo $task_list->getAddTaskUrl(false) ?>" method="post">
-        <div class="taskListAddTaskFields">
-          <label for="addTaskTitle<?php echo $task_list->getId() ?>"><?php echo lang('name') ?>:</label>
-          <?php echo text_field("task[name]", null, array('class' => 'title', 'id' => 'addTaskTitle' . $task_list->getId())) ?>
-          <label for="addTaskText<?php echo $task_list->getId() ?>"><?php echo lang('description') ?>:</label>
-          <?php echo textarea_field("task[text]", null, array('class' => 'short', 'id' => 'addTaskText' . $task_list->getId())) ?>
-        </div>
-        <div style="padding-top:4px">   
-	      <?php /*echo label_tag(lang('dates'))*/ ?>
-	      <table><tbody><tr><td style="padding-right: 10px">
-	      <?php echo label_tag(lang('start date')) ?>            
-	      </td><td>
-	      	<div style="float:left;"><?php echo pick_date_widget2('task_start_date', array_var($task_data, 'start_date'),$genid, 60) ?></div>
-	      	<?php if (config_option('use_time_in_task_dates')) { ?>
-	      	<div style="float:left;margin-left:10px;"><?php echo pick_time_widget2('task_start_time', array_var($task_data, 'start_date'), $genid, 65); ?></div>
-	      	<?php } ?>
-	      </td></tr><tr><td style="padding-right: 10px">
-	      <?php echo label_tag(lang('due date')) ?>
-	      </td><td>
-	      	<div style="float:left;"><?php echo pick_date_widget2('task_due_date', array_var($task_data, 'due_date'),$genid, 70) ?></div>
-	      	<?php if (config_option('use_time_in_task_dates')) { ?>
-	      	<div style="float:left;margin-left:10px;"><?php echo pick_time_widget2('task_due_time', array_var($task_data, 'due_date'), $genid, 65); ?></div>
-	      	<?php } ?>
-	      </td></tr><tr><td style="padding-right: 10px">
-	      	<label><?php echo lang('assign to') ?>:</label>
-	      </td><td>
-	       	<div class="taskListAddTaskAssignedTo" style="margin-top:1px;">
-	      	<?php
-	      		echo assign_to_select_box('task[assigned_to_contact_id]', $task_list->getMembers(), $task_list->getAssignedToContactId());
-	      	?>
-	      	</div>
-	      </td></tr></tbody></table>
-		</div>
-		<input type="hidden" id="addTaskMilestoneId<?php echo $task_list->getId() ?>" name="task[milestone_id]" value="<?php echo $task_list->getMilestoneId() ?>"/>
-		<input type="hidden" id="addTaskPriority<?php echo $task_list->getId() ?>" name="task[priority]" value="<?php echo $task_list->getPriority() ?>"/>
-		<input type="hidden" id="addTaskInputType<?php echo $task_list->getId() ?>" name="task[inputtype]" value="taskview"/>
-		<input type="hidden" id="addTaskInputType<?php echo $task_list->getId() ?>" name="template_task" value= "<?php echo $template_task ?>"/>
-        <?php echo submit_button(lang('add sub task'), 's', array('id' => 'addTaskSubmit' . $task_list->getId(), 'fromTaskView' => 'true')) ?> <?php echo lang('or') ?> <a href="#" onclick="App.modules.addTaskForm.hideAddTaskForm(<?php echo $task_list->getId() ?>); return false;"><?php echo lang('cancel') ?></a>
-      </form>
-    </div>
 <?php } // if ?>
   </div>
   <?php if(is_array($task_list->getOpenSubTasks()) && count($task_list->getOpenSubTasks()) > 0) { ?>

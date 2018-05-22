@@ -118,6 +118,8 @@ class AccessController extends ApplicationController {
 			if (!$userIsValidPassword){
 			  	$userIsValidPassword = $user->isValidPassword($password);
 			}
+			
+			Hook::fire('additional_login_validations', array('user' => $user), $userIsValidPassword);
 		
 			if (!$userIsValidPassword) {
 				AdministrationLogs::createLog("invalid login", array_var($_SERVER, 'REMOTE_ADDR'), AdministrationLogs::ADM_LOG_CATEGORY_SECURITY);
@@ -215,6 +217,7 @@ class AccessController extends ApplicationController {
 			$this->redirectTo('dashboard', 'main_dashboard');
 		} else {
 			if (!(logged_user() instanceof Contact && logged_user()->isUser())) {
+				Hook::fire('before_redirect_to_login',null,$ret);
 				$this->redirectTo('access', 'login');
 			}
 			
@@ -696,7 +699,8 @@ class AccessController extends ApplicationController {
 			$content .= "} catch (e) {}";
 		}
 	
-		$plugins = Plugins::instance ()->getActive ();
+		// include all installed plugins, no matter if they they have not been activated
+		$plugins = Plugins::instance ()->getAll();
 	
 		foreach ( $plugins as $plugin ) {
 			$plg_dir = $plugin->getLanguagePath () . "/" . $defaultLang;

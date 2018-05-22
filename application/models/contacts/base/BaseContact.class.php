@@ -620,6 +620,28 @@
     } // setDisabled()
     
     /**
+	 * Return value of 'token_disabled' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return string
+	 */
+	function getTokenDisabled() {
+		return $this->getColumnValue('token_disabled');
+	} // getTokenDisabled()
+
+	/**
+	 * Set value of 'token_disabled' field
+	 *
+	 * @access public
+	 * @param string $value
+	 * @return boolean
+	 */
+	function setTokenDisabled($value) {
+		return $this->setColumnValue('token_disabled', $value);
+	} // setTokenDisabled()
+    
+    /**
     * Return value of 'default_billing_id' field
     *
     * @access public
@@ -641,6 +663,14 @@
     function setDefaultBillingId($value) {
       return $this->setColumnValue('default_billing_id', $value);
     } // setDefaultBillingId()
+      
+    
+    function getUserTimezoneId() {
+    	return $this->getColumnValue('user_timezone_id');
+    }
+    function setUserTimezoneId($value) {
+    	return $this->setColumnValue('user_timezone_id', $value);
+    }
     
 	
     /**

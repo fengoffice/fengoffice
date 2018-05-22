@@ -30,6 +30,10 @@ if (!$object->isNew()) {
 		if($subscribers){
 			foreach ($subscribers as $subscriber) {
 				if (!$subscriber instanceof Contact || $subscriber->getUserType() == 0 || $subscriber->getId() == logged_user()->getId()) continue;
+				$show_this_user = true;
+				Hook::fire('show_in_subscribers', array('user' => $subscriber, 'object' => $object), $show_this_user);
+				if (!$show_this_user) continue;
+				
 				// if logged user is guest dont show other users info
 				if (logged_user()->isGuest() && $subscriber->getId() != logged_user()->getId()) continue;
 				$counter++; ?>

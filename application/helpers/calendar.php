@@ -2,9 +2,12 @@
 
 function getEventLimits($event, $date, &$event_start, &$event_duration, &$end_modified) {
 	$end_modified = false;
+	
+	$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+	
 	if ($event instanceof ProjectEvent) {
-		$event_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * logged_user()->getTimezone());
-		$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * logged_user()->getTimezone());
+		$event_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
+		$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
 	
 	} else if ($event instanceof ProjectTask) {/* @var $event ProjectTask */
 		
@@ -14,9 +17,9 @@ function getEventLimits($event, $date, &$event_start, &$event_duration, &$end_mo
 		$work_day_start->setMinute(substr($wsd, strpos($wsd, ':')+1));
 		
 		if ($event->getStartDate() instanceof DateTimeValue) {
-			$event_start = new DateTimeValue($event->getStartDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+			$event_start = new DateTimeValue($event->getStartDate()->getTimestamp() + $tz_value);
 		} else if ($event->getTimeEstimate() > 0 && $event->getDueDate() instanceof DateTimeValue) {
-			$event_start = new DateTimeValue($event->getDueDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+			$event_start = new DateTimeValue($event->getDueDate()->getTimestamp() + $tz_value);
 			$event_start->advance($event->getTimeEstimate() * -60);
 		} else {
 			$event_start = $work_day_start;
@@ -28,7 +31,7 @@ function getEventLimits($event, $date, &$event_start, &$event_duration, &$end_mo
 		$work_day_end->setMinute(substr($wed, strpos($wed, ':')+1));
 		
 		if ($event->getDueDate() instanceof DateTimeValue) {
-			$event_duration = new DateTimeValue($event->getDueDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+			$event_duration = new DateTimeValue($event->getDueDate()->getTimestamp() + $tz_value);
 		} else if ($event->getTimeEstimate() > 0 && $event->getStartDate() instanceof DateTimeValue) {
 			$event_duration = new DateTimeValue($event_start->getTimestamp());
 			$event_duration->advance($event->getTimeEstimate() * 60);
@@ -165,8 +168,9 @@ function forwardRepDateRawTask($task, $min_date) {
 				return array('date' => $min_date, 'count' => 0); //This should not happen...
 		}
 		$ts_date = new DateTimeValue($task['repeat_by'] == 'start_date' ? strtotime($task['start_date']) : strtotime($task['due_date']));
-		$date = new DateTimeValue($ts_date);
+		$date = $ts_date;
 		$count = 0;
+
 		if($date->getTimestamp() >= $min_date->getTimestamp()) {
 			return array('date' => $date, 'count' => $count);
 		}
@@ -197,6 +201,8 @@ function replicateRepetitiveTaskForCalendar(ProjectTask $task, $from_date, $to_d
 		if (($task->getRepeatNum() > 0 && $top_repeat_num <= 0) || ($last_repeat instanceof DateTimeValue && $last_repeat->getTimestamp() < $ref_date->getTimestamp())) {
 			return array();
 		}
+		
+		$max_iterations = 30; // prevent infinite loop, max query is for monthly calendar
 		
 		$num_repetitions = 0;
 		while ($ref_date->getTimestamp() < $to_date->getTimestamp()) {
@@ -278,6 +284,10 @@ function replicateRepetitiveTaskForCalendar(ProjectTask $task, $from_date, $to_d
 
 			$new_task_array[] = $new_task;
 			$task = $new_task;
+			
+			if ($num_repetitions > $max_iterations) {
+				break;
+			}
 		}
 	}
 	return $new_task_array;
@@ -290,6 +300,7 @@ function replicateRepetitiveTaskForCalendarRawTask($task, $from_date, $to_date) 
 	
 	if ($task['repeat_forever'] > 0 || $task['repeat_num'] > 0 || $task['repeat_end'] != EMPTY_DATETIME) {
 		$res = forwardRepDateRawTask($task, $from_date);
+
 		$ref_date = $res['date'];
 		$top_repeat_num = $task['repeat_num'] - $res['count'];
 
@@ -298,11 +309,24 @@ function replicateRepetitiveTaskForCalendarRawTask($task, $from_date, $to_date) 
 			return array();
 		}
 		
+		$max_iterations = 30; // prevent infinite loop, max query is for monthly calendar
+		
 		$num_repetitions = 0;
-		while ($ref_date->getTimestamp() < $to_date->getTimestamp()) {
+
 			if ($task['repeat_by'] == 'start_date' && $task['start_date'] == EMPTY_DATETIME) return $new_task_array;
 			if ($task['repeat_by'] == 'due_date' && $task['due_date'] == EMPTY_DATETIME) return $new_task_array;
 			
+
+        //set the same hour in order to control correctly
+        if ($last_repeat instanceof DateTimeValue) {
+            $last_repeat->setHour($ref_date->getHour());
+            $last_repeat->setMinute($ref_date->getMinute());
+        }
+
+        $new_task_array[] = $task;
+        while ($ref_date->getTimestamp() < $to_date->getTimestamp()) {
+
+
 			if ($task['repeat_by'] == 'start_date') {
 				$diff = $ref_date->getTimestamp() - strtotime($task['start_date']);
 				$task['start_date'] = $ref_date->toMySQL();
@@ -365,6 +389,10 @@ function replicateRepetitiveTaskForCalendarRawTask($task, $from_date, $to_date) 
 			$new_task_array[] = $new_task;
 			$task = array();
 			foreach ($new_task as $k => $v) $task[$k] = $v;
+			
+			if ($num_repetitions > $max_iterations) {
+				break;
+			}
 		}
 	} else {
 		return array($task);
@@ -399,7 +427,7 @@ function renderCalendarFeedLink() {
 	   	title: '". escape_single_quotes(lang('import events from third party software')) ."',
 	   	msg: '". escape_single_quotes(lang('copy this url in your calendar client software')) ."<br/><br/><br/>'+document.getElementById('ical_link').href,
    		icon: Ext.MessageBox.INFO,
-   		minWidth: 700,
+   		minWidth: 700
 	}); return false;";
  	
  	$link_html = '<a class="iCalSubscribe" id="ical_link" style="float:right;" href="'.$url.'" title="'.$link_title.'" onclick="'.$onclick.'"></a>';

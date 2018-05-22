@@ -75,7 +75,7 @@ og.submitCsv = function(genid) {
 			$contact_fields = Contacts::getContactFieldNames();
 		else $contact_fields = Contacts::getCompanyFieldNames();
 		
-		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(Contacts::instance()->getObjectTypeId());+
+		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(Contacts::instance()->getObjectTypeId());
 		
 		$isAlt = false;
 		$i = 0; $label_w = $label_h = $label_o = false;

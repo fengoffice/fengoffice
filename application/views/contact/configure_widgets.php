@@ -29,10 +29,10 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 				<th style="text-align:right;"><?php echo lang("sec order")?></th>
 				<th style="text-align:center;"><?php echo lang("section")?></th>
 			</tr>
-			<?php $altRow = 'altRow';
+			<?php $altRow = 'odd';
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'top') continue;
-				$altRow = $altRow == '' ? 'altRow' : '';
+				$altRow = $altRow == '' ? 'odd' : '';
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
 				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
@@ -67,10 +67,10 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 				<th style="text-align:right;"><?php echo lang("sec order")?></th>
 				<th style="text-align:center;"><?php echo lang("section")?></th>
 			</tr>
-			<?php $altRow = 'altRow';
+			<?php $altRow = 'odd';
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'left') continue;
-				$altRow = $altRow == '' ? 'altRow' : '';
+				$altRow = $altRow == '' ? 'odd' : '';
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
 				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
@@ -105,10 +105,10 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 				<th style="text-align:right;"><?php echo lang("sec order")?></th>
 				<th style="text-align:center;"><?php echo lang("section")?></th>
 			</tr>
-			<?php $altRow = 'altRow';
+			<?php $altRow = 'odd';
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'right') continue;
-				$altRow = $altRow == '' ? 'altRow' : '';
+				$altRow = $altRow == '' ? 'odd' : '';
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
 				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
@@ -143,10 +143,10 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 				<th style="text-align:right;"><?php echo lang("sec order")?></th>
 				<th style="text-align:center;"><?php echo lang("section")?></th>
 			</tr>
-			<?php $altRow = 'altRow';
+			<?php $altRow = 'odd';
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'none') continue;
-				$altRow = $altRow == '' ? 'altRow' : '';
+				$altRow = $altRow == '' ? 'odd' : '';
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
 				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>

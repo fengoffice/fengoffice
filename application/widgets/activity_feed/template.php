@@ -29,7 +29,7 @@ if($current_member instanceof Member){
             	if ($activity instanceof Member){
             		$crumbOptions = "{}";
             	} else if ($activity instanceof ContentDataObject) {
-					$crumbOptions = json_encode($activity->getMembersToDisplayPath(null,false,false));
+					$crumbOptions = json_encode($activity->getMembersIdsToDisplayPath());
             	} else {
             		continue;
             	}

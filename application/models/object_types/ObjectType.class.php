@@ -57,6 +57,34 @@ class ObjectType extends BaseObjectType {
 		}
 		return $color;
 	}
+	
+	
+	
+	function getObjectTypeController() {
+		$controller = "";
+		if ($this->getType() == 'content_object') {
+			$controller = $this->getName();
+			switch ($this->getName()) {
+				case 'weblink': $controller = 'webpage'; break;
+				case 'file': $controller = 'files'; break;
+			}
+		}
+		return $controller;
+	}
+	
+	
+	function getObjectTypeAddAction() {
+		$action = "";
+		if ($this->getType() == 'content_object') {
+			$action = 'add';
+			switch ($this->getName()) {
+				case 'task': $action = 'add_task'; break;
+				case 'file': $action = 'add_file'; break;
+			}
+		}
+		return $action;
+	}
+	
 } // ObjectType
 
 ?>

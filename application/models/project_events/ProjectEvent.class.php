@@ -115,7 +115,9 @@ class ProjectEvent extends BaseProjectEvent {
 	 * @return string
 	 */
 	function getEditUrl() {
-		return $this->getModifyUrl();
+		$url = $this->getModifyUrl();
+		Hook::fire('modify_object_edit_url', $this, $url);
+		return $url;
 	} // getEditUrl
 
 	/**
@@ -382,6 +384,11 @@ class ProjectEvent extends BaseProjectEvent {
 			$top_repeat_num = $this->getRepeatNum() - $res['count'];
 
 			$last_repeat = $this->getRepeatEnd() instanceof DateTimeValue ? new DateTimeValue($this->getRepeatEnd()->getTimestamp()) : null;
+			if ($last_repeat instanceof DateTimeValue) {
+				// to include the last repetition
+				$last_repeat = $last_repeat->endOfDay();
+			}
+			
 			if (($this->getRepeatNum() > 0 && $top_repeat_num <= 0) || ($last_repeat instanceof DateTimeValue && $last_repeat->getTimestamp() < $ref_date->getTimestamp())) {
 				return array();
 			}
@@ -483,7 +490,12 @@ class ProjectEvent extends BaseProjectEvent {
 						//go to the fixed day
 						$new_st_date_fixed = new DateTime(date("c", strtotime($ordinal . $day_name ." of ". $new_st_date_string)));
 						
-						$new_st_date = new DateTimeValue($new_st_date_fixed->getTimestamp());						
+						$new_st_date = new DateTimeValue($new_st_date_fixed->getTimestamp());
+						
+						// for all-day events use beggining of day to prevent that it goes to other day.
+						if ($event->getTypeId() == 2) {
+							$new_st_date = $new_st_date->beginningOfDay()->advance(logged_user()->getUserTimezoneValue() * -1, false);
+						}
 					}
 					if ($new_due_date instanceof DateTimeValue){
 						//set first day of the month
@@ -496,6 +508,11 @@ class ProjectEvent extends BaseProjectEvent {
 						$new_due_date_fixed = new DateTime(date("c", strtotime($ordinal . $day_name ." of ". $new_due_date_string)));
 						
 						$new_due_date = new DateTimeValue($new_due_date_fixed->getTimestamp());
+						
+						// for all-day events use end of day to prevent that it goes to other day.
+						if ($event->getTypeId() == 2) {
+							$new_due_date = $new_due_date->endOfDay()->advance(logged_user()->getUserTimezoneValue() * -1, false);
+						}
 					}
 					
 					$ref_date->add('M', $event->getRepeatMjump());									
@@ -515,6 +532,21 @@ class ProjectEvent extends BaseProjectEvent {
 
 		return $instances;
 	}
+	
+	
+	
+	function getArrayInfo() {
+		return array(
+			'id' => $this->getId(),
+			'object_id' => $this->getId(),
+			'name' => $this->getObjectName(),
+			'start' => format_datetime($this->getStart()),
+			'duration' => format_datetime($this->getDuration()),
+			'description' => $this->getDescription(),
+			'type' => $this->getObjectTypeName(),
+		);
+	}
+	
 } // projectEvent
 
 ?>

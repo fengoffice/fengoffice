@@ -1,0 +1,27 @@
+.input-container .date-picker {
+    float: left;
+}
+.cp-multiple {
+    margin-left: 200px;
+}
+.coInputMainBlock .input-container  label {
+    width: 200px;
+}
+
+.address-input-container .address_street_input {
+    width: 400px;
+}
+
+.address-input-container input.address_city_input {
+    width: 195px;
+}
+.address-input-container input.address_state_input {
+    width: 195px;
+}
+.address-input-container input.address_zipcode_input {
+    width: 195px;
+}
+.address-input-container select.country-selector {
+    width: 203px;
+    height: 24px;
+}

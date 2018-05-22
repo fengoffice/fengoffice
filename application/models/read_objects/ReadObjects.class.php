@@ -44,14 +44,13 @@
      * @return array
      */
     static function getReadByObjectList($object_id_list, $contact_id) {
+    	if (count($object_id_list) == 0) return array();
     	$idsCSV = implode(',',$object_id_list);
-    	$rol = self::findAll(array(
-       		'conditions' => array("`rel_object_id` in ($idsCSV) and `contact_id` = ? and is_read = 1", $contact_id)
-    	)); // findAll
+    	$rol = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."read_objects WHERE `rel_object_id` in ($idsCSV) and `contact_id` = '$contact_id' and is_read = 1");
     	if (is_array($rol) && count($rol) > 0){
     		$result = array();
     		foreach ($rol as $ro){
-    			$result[$ro->getRelObjectId()] = true;
+    			$result[$ro['rel_object_id']] = true;
     		}
     		return $result;
     	} else {

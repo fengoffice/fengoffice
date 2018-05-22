@@ -111,8 +111,8 @@
 	'error cannot assign task to user' => '{0} no puede ser asignado a la tarea {1}.',
 	'account already being checked' => 'La cuenta ya se está verificando.',
 	'no files to compress' => 'No hay archivos para comprimir.',
-	'cant modify subscribers' => 'No es posible modificar los subscriptores',
-	'this object must belong to a ws to modify its subscribers' => 'El objeto debe pertenecer a un espacio de trabajo para poder modificar sus subscriptores.',
+	'cant modify subscribers' => 'No es posible modificar los suscriptores',
+	'this object must belong to a ws to modify its subscribers' => 'El objeto debe pertenecer a un espacio de trabajo para poder modificar sus suscriptores.',
 	'mailAccount dnx' => 'La cuenta de correo no existe',
 	'error add contact from user' => 'No se pudo crear el contacto a partir del usuario.',
 	'zip not supported' => 'El servidor no soporta ZIP.',
@@ -148,4 +148,11 @@
 	
 	'failed to authenticate email account' => 'No se pudo autenticar la cuenta de correo',
 	'failed to authenticate email account desc' => 'La cuenta "{0}" no se pudo autenticar para enviar notificaciones. Por favor asegúrese de que la contraseña de la cuenta sea la correcta.',
+	'must choose at least one workspace error' => 'Debe elegir al menos un espacio de trabajo donde colocar el objeto.',
+		
+	'you cant add member without security permissions' => 'No se puede agregar {0} sin especificar su ubicación porque usted no puede asignar permisos. Por favor seleccione donde ubicar {0} para que los permisos puedan ser heredados.',
+    
+    'token external key value required' => 'Key es requerido',
+    'token external name value required' => 'Name es requerido',
+    'token external type value required' => 'Type es requerido',
 );

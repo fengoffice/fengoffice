@@ -208,6 +208,18 @@ abstract class BaseQueuedEmail extends DataObject {
 	function setTimestamp($value) {
 		return $this->setColumnValue('timestamp', $value);
 	} // setTimestamp()
+	
+	
+	
+	function getObjectId() {
+		return $this->getColumnValue('object_id');
+	}
+	
+	function setObjectId($value) {
+		return $this->setColumnValue('object_id', $value);
+	}
+	
+	
 
 	/**
 	 * Return manager instance

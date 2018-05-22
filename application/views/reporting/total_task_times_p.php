@@ -162,10 +162,28 @@
 			</td>
 		</tr>
 		<?php } ?>
+		
+		<?php $null = null; Hook::fire('render_more_total_task_times_report_params', $report_data, $null); ?>
+		
+		
 		<tr style='height:30px;'>
 			<td><span class="bold"><?php echo lang('show estimated time column') ?></span></td>
 			<td align='left' style="padding-left:10px;">
 				<?php echo checkbox_field('report[show_estimated_time]', array_var($report_data, 'show_estimated_time', true), array("id" => "report[show_estimated_time]")); ?> 
+			</td>
+		</tr>
+		
+		<tr style='height:30px;' id="<?php echo $genid?>task_status_row">
+			<td><span class="bold"><?php echo lang('task status') ?></span></td>
+			<td align='left' style="padding: 12px 0 0 0;"><?php
+				$sel_status = array_var($report_data, "task_status", 'all');
+				$options = array();
+				$options[] = option_tag('-- ' . lang('all tasks') . ' --', 'all', $sel_status == 'all' ? array('selected' => 'selected') : null);
+				$options[] = option_tag(lang('pending'), 'pending', $sel_status == 'pending' ? array('selected' => 'selected') : null);
+				$options[] = option_tag(lang('completed'), 'completed', $sel_status == 'completed' ? array('selected' => 'selected') : null);
+				echo select_box('report[task_status]', $options, array('style' => 'float:left;'));
+			?>
+				<div class="desc" style="width:75%; float:left; margin-left:10px;"><?php echo lang('time report task status desc')?></div>
 			</td>
 		</tr>
 		

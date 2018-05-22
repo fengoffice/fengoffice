@@ -13,7 +13,6 @@
 		<div class="clear"></div>
 	  </div>
 	</div>
-
 	<div class="adminMainBlock">
 
 	<?php if(isset($options) && is_array($options) && count($options)) { ?>
@@ -21,7 +20,7 @@
 			<?php $counter = 0; ?>
 			<?php foreach($options as $option) { ?>
 				<?php $counter++; ?>
-				<div class="configCategoryOtpion " style="<?php echo $counter % 2 ? 'background-color:#F4F8F9' : '' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
+				<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
 					<div class="configOptionInfo">
 						<div class="configOptionLabel"><label><?php echo $option->getDisplayName() ?>:</label></div>
 					<?php if(trim($option_description = $option->getDisplayDescription())) { ?>

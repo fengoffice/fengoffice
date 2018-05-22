@@ -112,3 +112,60 @@
     overflow: hidden; 
     text-overflow: ellipsis;
 }
+
+
+.x-grid3-row.open-timeslot, .x-grid3-row.open-timeslot.x-grid3-row-over {
+	background: #FDFFCC;
+}
+.x-grid3-row.open-timeslot .task-single-div, .x-grid3-row.open-timeslot .task-action-icon {
+	display: inline-block;
+}
+.x-grid3-row.open-timeslot .open-ts-clock {
+	float: left;
+	margin-top: 6px;
+	margin-right: 5px;
+	font-weight: bold;
+}
+
+
+.x-grid3-row.quick-add-row, .x-grid3-row.quick-add-row.x-grid3-row-over {
+	background: #d6ecd6;
+}
+.x-grid3-col.x-grid3-cell button.add-first-btn.blue:focus {
+	background-color: #2d62ac;
+}
+.x-grid3-col.x-grid3-cell button.add-first-btn {
+	height: 26px;
+	padding-right: 4px;
+	padding-left: 22px;
+	background-position: 2px center;
+	background-repeat: no-repeat;
+	min-width: 50px;
+	font-size: 13px;
+}
+.timeslot .dataBlock textarea{
+    white-space: pre;
+    white-space: pre-wrap;
+}
+
+.add-timeslot{}
+.add-timeslot a{text-decoration: underline;}
+.add-timeslot .coInputMainBlock label{min-width: 130px;}
+.add-timeslot .coInputMainBlock .input-container label{width: 130px;}
+.add-timeslot .coInputMainBlock .dataBlock .inputHours{width: 40px;text-indent: 3px;}
+.add-timeslot .coInputMainBlock .dataBlock .inputMinutes{width: 28px;text-indent: 1px;}
+.add-timeslot .coInputMainBlock .dataBlock .specify-link{margin-left: 15px;}
+.add-timeslot .coInputMainBlock .dataBlock.dataBlockRight{float: left;margin-left:15px;margin-bottom: 0px;}
+.add-timeslot .coInputMainBlock .dataBlock #date_input{width: 80px !important;}
+.add-timeslot .coInputMainBlock .dataBlock #date_end_input{width: 80px !important;}
+
+#user-config{padding: 10px;} 
+#user-config h2{font-size: 18px;margin-bottom: 10px;}
+#user-config .row{
+    padding:  5px 0px;
+    font-size:  16px;
+    line-height:  13px;
+}
+#user-config .row input{
+    margin-right: 10px;
+}

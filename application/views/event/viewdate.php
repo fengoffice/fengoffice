@@ -42,9 +42,6 @@ $genid = gen_id();
 
 	//today in gmt 0
 	$today = DateTimeValueLib::now();
-		
-	//user today 
-//	$today->add('h', logged_user()->getTimezone());
 	
 	$currentday = $today->format("j");
 	$currentmonth = $today->format("n");
@@ -86,8 +83,11 @@ $genid = gen_id();
 		}
 		foreach ($tmp_tasks as $task) {
 			$added = false;
+			
+			$tz_value = Timezones::getTimezoneOffsetToApply($task, logged_user());
+			
 			if($task->getDueDate() instanceof DateTimeValue){
-				$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + ($task->getUseDueTime() ? logged_user()->getTimezone() * 3600 : 0));
+				$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + ($task->getUseDueTime() ? $tz_value : 0));
 				if ($dtv->getTimestamp() == mktime(0,0,0, $due_date->getMonth(), $due_date->getDay(), $due_date->getYear())) {
 					if ($task->getUseDueTime() && ($task->getStartDate() instanceof DateTimeValue || $task->getTimeEstimate() > 0)) {
 						$result[] = $task;
@@ -98,7 +98,7 @@ $genid = gen_id();
 				}
 			}
 			if($task->getStartDate() instanceof DateTimeValue){
-				$start_date = new DateTimeValue($task->getStartDate()->getTimestamp() + ($task->getUseStartTime() ? logged_user()->getTimezone() * 3600 : 0));
+				$start_date = new DateTimeValue($task->getStartDate()->getTimestamp() + ($task->getUseStartTime() ? $tz_value : 0));
 				if (!$added && $dtv->getTimestamp() == mktime(0,0,0, $start_date->getMonth(), $start_date->getDay(), $start_date->getYear())) {
 					if ($task->getUseStartTime() && ($task->getDueDate() instanceof DateTimeValue|| $task->getTimeEstimate() > 0)) {
 						$result[] = $task;
@@ -133,9 +133,9 @@ $genid = gen_id();
 	}
 ?>
 <div id="calHiddenFields">
-	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
-	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($companies_array)))) ?>"/>
-	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPreferences)))) ?>"/>
+	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($users_array)))) ?>"/>
+	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($companies_array)))) ?>"/>
+	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPreferences)))) ?>"/>
         <input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
 </div>
 
@@ -167,7 +167,7 @@ $genid = gen_id();
 					
 				<div id="allDayGrid" class="inset grid"  style="height: <?php echo $alldaygridHeight ?>px; margin-bottom: 5px;background:#E8EEF7;margin-right:0px;margin-left:40px; overflow: auto"
 				<?php if (!logged_user()->isGuest()) { ?>
- 					onclick="og.showEventPopup(<?php echo $dtv->getDay() ?>, <?php echo $dtv->getMonth()?>, <?php echo $dtv->getYear()?>, -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv->format($date_format) ?>', '<?php echo $genid?>', '<?php echo ProjectEvents::instance()->getObjectTypeId()?>');">
+ 					onclick="og.showEventPopup(<?php echo $dtv->getDay() ?>, <?php echo $dtv->getMonth()?>, <?php echo $dtv->getYear()?>, -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv->format($date_format) ?>', '<?php echo $genid?>',0, false);">
 				<?php } else echo ">"; ?>
 					<div id="allDay0" class="allDayCell" style="left: 0px; height: <?php echo $alldaygridHeight ?>px;border-left:3px double #DDDDDD !important; position:absolute;width:3px;"></div>
                                         <div id="alldayeventowner" onclick="og.disableEventPropagation(event)">
@@ -183,27 +183,32 @@ $genid = gen_id();
 								$divtype = '';
 								$div_prefix = '';
 								$draw_div = true;
+								
 								if ($event instanceof ProjectMilestone ){
 									$div_prefix = 'd_ms_div_';
 									$subject = clean($event->getObjectName());
 									$img_url = image_url('/16x16/milestone.png');
 									$divtype = '<span class="italic">' . lang('milestone') . '</span> - ';
 									$tipBody = clean($event->getDescription());
+									
 								}elseif ($event instanceof ProjectTask){
 									$start_of_task = false;
 									$end_of_task = false;
+									
+									$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+									$tz_value_due = $event->getUseDueTime() ? $tz_value : 0;
+									$tz_value_start = $event->getUseStartTime() ? $tz_value : 0;
+									
 									if ($event->getDueDate() instanceof DateTimeValue) {
-										$due_date = new DateTimeValue($event->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+										$due_date = new DateTimeValue($event->getDueDate()->getTimestamp() + $tz_value_due);
 										if ($dtv->getTimestamp() == mktime(0,0,0, $due_date->getMonth(), $due_date->getDay(), $due_date->getYear())){
 											$end_of_task = true;
-											$start_of_task = true;
 										}
 									}
 									if ($event->getStartDate() instanceof DateTimeValue) {
-										$start_date = new DateTimeValue($event->getStartDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+										$start_date = new DateTimeValue($event->getStartDate()->getTimestamp() + $tz_value_start);
 										if ($dtv->getTimestamp() == mktime(0,0,0, $start_date->getMonth(), $start_date->getDay(), $start_date->getYear())){
 											$start_of_task = true;
-											$end_of_task = true;
 										}
 									}
 									if ($start_of_task && $end_of_task) {
@@ -224,12 +229,14 @@ $genid = gen_id();
 									$subject = $event->getObjectName();									
 									$divtype = '<span class="italic">' . $tip_title . '</span> - ';
 									$tipBody = lang('assigned to') .': '. clean($event->getAssignedToName()) . (trim(clean($event->getText())) != '' ? '<br><br>' . html_to_text($event->getText()) : '');
+									
 								}elseif ($event instanceof ProjectEvent){
 									$div_prefix = 'd_ev_div_';
 									$subject = clean($event->getObjectName());
 									$img_url = image_url('/16x16/calendar.png');
 									$divtype = '<span class="italic">' . lang('event') . '</span> - ';
-									$tipBody = (trim(clean($event->getDescription())) != '' ? '<br>' . clean($event->getDescription()) : '');									
+									$tipBody = (trim(clean($event->getDescription())) != '' ? '<br>' . clean($event->getDescription()) : '');
+									
 								}elseif ($event instanceof Contact ) {
 									$div_prefix = 'd_bd_div_';
 									$objType = 'contact';
@@ -251,7 +258,11 @@ $genid = gen_id();
 							<div class="noleft <?php echo  $ws_class?>" style="<?php echo  $ws_style?>; border-left:1px solid; border-right:1px solid; border-color:<?php echo $border_color ?>">							
 								<div class="" style="overflow: hidden; padding-bottom: 1px;">
 									<table style="width:100%"><tr><td>
-									<span class="nobr" style="display: block; text-decoration: none;"><a href='<?php echo $event->getViewUrl()?>' class='internalLink' onclick="og.disableEventPropagation(event);"><img src="<?php echo $img_url?>" style="vertical-align:middle;" border='0'> <span style="font-weight:<?php echo $bold?>; color:<?php echo $txt_color ?>!important"><?php echo $subject ?></span></a></span>
+									<?php 
+										$view_url = $event->getViewUrl();
+										Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+									?>
+									<span class="nobr" style="display: block; text-decoration: none;"><a href="<?php echo $view_url ?>" class='internalLink' onclick="og.disableEventPropagation(event);"><img src="<?php echo $img_url?>" style="vertical-align:middle;" border='0'> <span style="font-weight:<?php echo $bold?>; color:<?php echo $txt_color ?>!important"><?php echo $subject ?></span></a></span>
 									<?php if ($event instanceof ProjectEvent) { ?>
 									</td><td align="right">
 									<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin:2px 2px 0 0;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onclick="og.eventSelected(this.checked);og.disableEventPropagation(event);"></input>
@@ -316,7 +327,7 @@ $genid = gen_id();
 														onmouseover="if (!og.selectingCells) og.overCell('<?php echo $div_id?>'); else og.paintSelectedCells('<?php echo $div_id?>');"
 														onmouseout="if (!og.selectingCells) og.resetCell('<?php echo $div_id?>')";
 														onmousedown="og.selectStartDateTime(<?php echo $dtv->getDay() ?>, <?php echo $dtv->getMonth()?>, <?php echo $dtv->getYear()?>, <?php echo date("G",mktime($hour/2))?>, <?php echo ($hour % 2 ==0)?0:30 ?>); og.resetCell('<?php echo $div_id?>'); og.paintingDay=0; og.paintSelectedCells('<?php echo $div_id?>');"
-														onmouseup="og.showEventPopup(<?php echo $dtv->getDay() ?>, <?php echo $dtv->getMonth()?>, <?php echo $dtv->getYear()?>, <?php echo date("G",mktime(($hour+1)/2))?>, <?php echo (($hour+1) % 2 ==0)?0:30 ?>, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv->format($date_format) ?>', '<?php echo $genid?>', '<?php echo ProjectEvents::instance()->getObjectTypeId()?>');">
+														onmouseup="og.showEventPopup(<?php echo $dtv->getDay() ?>, <?php echo $dtv->getMonth()?>, <?php echo $dtv->getYear()?>, <?php echo date("G",mktime(($hour+1)/2))?>, <?php echo (($hour+1) % 2 ==0)?0:30 ?>, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv->format($date_format) ?>', '<?php echo $genid?>', 0,false);">
 													<?php } else { echo ">"; }// to close the opening div tag ?>
 													</div>
 
@@ -461,18 +472,20 @@ $genid = gen_id();
 												
 												$event_duration->add('s', 1);
 												$ev_duration = DateTimeValueLib::get_time_difference($event_start->getTimestamp(), $event_duration->getTimestamp()); 
+												
+												$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
 
 												if ($event instanceof ProjectEvent) {
-													$real_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * logged_user()->getTimezone());
-													$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * logged_user()->getTimezone());
+													$real_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
+													$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
 												} else if ($event instanceof ProjectTask) {
 													if ($event->getStartDate() instanceof DateTimeValue) {
-														$real_start = new DateTimeValue($event->getStartDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+														$real_start = new DateTimeValue($event->getStartDate()->getTimestamp() + $tz_value);
 													} else {
 														$real_start = $event_start;
 													}
 													if ($event->getDueDate() instanceof DateTimeValue) {
-														$real_duration = new DateTimeValue($event->getDueDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+														$real_duration = new DateTimeValue($event->getDueDate()->getTimestamp() + $tz_value);
 													} else {
 														$real_duration = $event_duration;
 													}
@@ -521,7 +534,11 @@ $genid = gen_id();
 														<?php if ($event instanceof ProjectEvent) { ?>
 															<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin-top:2px 0 0 2px;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onclick="og.eventSelected(this.checked);"></input>
 														<?php } ?>
-															<a href='<?php echo $event->getViewUrl()."&amp;view=day&amp;user_id=".$user_filter ?>' class='internalLink' onclick="og.disableEventPropagation(event);" >
+														<?php 
+															$view_url = $event->getViewUrl()."&amp;view=day&amp;user_id=".$user_filter;
+															Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+														?>
+															<a href="<?php echo $view_url ?>" class='internalLink' onclick="og.disableEventPropagation(event);" >
 															<span name="d_ev_div_<?php echo $event->getId()?>_info" style="color:<?php echo $txt_color?>!important;padding-left:5px;"><?php echo $ev_hour_text; ?></span>
 															</a>
 															
@@ -531,8 +548,11 @@ $genid = gen_id();
 																	$subject_toshow = '<span class="bold">'.$event->getAssignedToName().'</span>: '.$subject_toshow;
 																} 
 															?>
-														
-															<a href='<?php echo $event->getViewUrl()."&amp;view=day&amp;user_id=".$user_filter?>'
+														<?php 
+															$view_url = $event->getViewUrl()."&amp;view=day&amp;user_id=".$user_filter;
+															Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+														?>
+															<a href="<?php echo $view_url ?>"
 																onclick="og.disableEventPropagation(event);"
 																class='internalLink'><span style="color:<?php echo $txt_color?>!important; font-weight: <?php  if (isset($bold))echo $bold; ?>;"><?php echo $subject_toshow;?></span></a>
 															

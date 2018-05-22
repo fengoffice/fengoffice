@@ -467,7 +467,7 @@
 	'total billing by user' => '用户的总薪水',
 	'assign billing categories to users' => '分派薪酬分类到用户',
 	'new version notification title' => '新版本',
-	'user ws config option name show dashboard info widget' => '用户工作区信息显示小工具',
+	'user config option name show dashboard info widget' => '用户工作区信息显示小工具',
 	'new account step1 owner' => '步骤1：创建您的公司资料',
 	'new account step update account' => '步骤{0}：更新你的个人账户',
 	'new account step add members' => '步骤{0}：添加团队成员',

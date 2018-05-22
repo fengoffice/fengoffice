@@ -22,7 +22,8 @@
     	'config_handler_class' => DATA_TYPE_STRING, 
     	'is_system' => DATA_TYPE_BOOLEAN, 
     	'option_order' => DATA_TYPE_INTEGER, 
-    	'dev_comment' => DATA_TYPE_STRING
+    	'dev_comment' => DATA_TYPE_STRING, 
+    	'options' => DATA_TYPE_STRING
     );
   
     /**

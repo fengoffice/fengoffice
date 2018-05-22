@@ -6,7 +6,7 @@
                   <ul class="breadcrumb-list-popover">
                       {{#each breadcrumbs}}
                         <li class="breadcrumb-object-type-title">
-                          {{lang @key}}                         
+                          {{@key}}                         
                         </li>
                         {{#each this}}
                         	<li>

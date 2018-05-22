@@ -179,6 +179,22 @@ Hook::register("fengoffice");
  *  	- &$ignored  
  */
 
+
+function fengoffice_validate_reminder_email($reminder, &$ret) {
+	if ($reminder instanceof ObjectReminder) {
+		$object = $reminder->getObject();
+		$user = $reminder->getUser();
+		if ($user instanceof Contact && $object instanceof ContentDataObject) {
+			
+			// don't send reminders to people that is not subscribed.
+			if (!$object->isSubscriber($user)) {
+				$reminder->delete();
+				$ret = false;
+			}
+		}
+	}
+}
+
 function fengoffice_reminder_email($reminder, &$ret) {
 	$object = $reminder->getObject();
 	if (!$object instanceof ContentDataObject || $object->isTrashed() || $object->isArchived()) return;

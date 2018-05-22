@@ -18,7 +18,8 @@
     	'object_type_id' => DATA_TYPE_INTEGER,
     	'parent_member_id' => DATA_TYPE_INTEGER, 
     	'depth' => DATA_TYPE_INTEGER, 
-    	'name' => DATA_TYPE_STRING, 
+    	'name' => DATA_TYPE_STRING,  
+    	'description' => DATA_TYPE_STRING,
     	'object_id' => DATA_TYPE_INTEGER,
     	'archived_on' => DATA_TYPE_DATETIME,
     	'archived_by_id' => DATA_TYPE_INTEGER,
@@ -47,8 +48,12 @@
     * @param void
     * @return array
     */
-    function getColumns() {
-      return array_keys(self::$columns);
+    function getColumns($only_names = true) {
+    	if ($only_names) {
+      		return array_keys(self::$columns);
+    	} else {
+      		return self::$columns;
+      	}
     } // getColumns
     
     /**

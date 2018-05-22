@@ -20,13 +20,14 @@
 		$on_submit = "og.ogPermPrepareSendData('$genid');" . $on_submit;
 	}
 	
-	$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+	$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+	$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
 	
 	$categories = array(); Hook::fire('object_edit_categories', $object, $categories);
 	
-	$add_contact_lang = lang('add contact');
-	$new_contact_lang = lang('new contact');
-	$edit_contact_lang = lang('edit contact');
+	$add_contact_lang = $object->getSubmitButtonFormTitle();
+	$new_contact_lang = $object->getAddEditFormTitle();
+	$edit_contact_lang = $object->getAddEditFormTitle();
 	if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0) {
 		$add_contact_lang = lang('add user');
 		$new_contact_lang = lang('new user');
@@ -99,7 +100,7 @@
 				<?php } ?>
 			<?php } ?>
 			
-			<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 			<li><a id="<?php echo $genid?>add_custom_properties_div_tab" href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
@@ -111,8 +112,10 @@
 			<li><a id="<?php echo $genid?>add_linked_objects_div_tab" href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 			<?php } ?>
 			
-			<?php foreach ($categories as $category) { ?>
-			<li><a id="<?php echo $genid . $category['name']?>_tab" href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
+			<li><a id="<?php echo $genid . $category['id']?>_tab" href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 	</ul>
 
@@ -264,88 +267,18 @@
 	
 	<?php
 	//Basic contact data tab
-	render_contact_data_tab($genid, $object, $renderContext, $contact_data);
+	render_contact_data_tab($genid, $object, $renderContext, $contact_data, $main_cp_count);
 	?>
 	
 	
 	<div class="contact_form_container form-tab" id="<?php echo $genid?>additional_data">
-		<div id="<?php echo $genid?>_additional_data" class="additional-data">
-			<div class="information-block no-border-bottom">
-				
-				<div class="input-container">
-					<?php echo label_tag(lang('birthday'), $genid.'profileFormBirthday')?>
-					<span style="float:left;"><?php echo pick_date_widget2('contact[birthday]', array_var($contact_data, 'birthday'), $genid, 265) ?></span>
-				</div>
-				<div class="clear"></div>
-				
-				<div class="input-container">
-					<?php echo label_tag(lang('department'), $genid.'profileFormDepartment') ?>
-					<?php echo text_field('contact[department]', array_var($contact_data, 'department'), array('id' => $genid.'profileFormDepartment', 'maxlength' => 50)) ?>
-				</div>
-				<div class="clear"></div>
-				
-				<div class="input-container">
-		            <div><?php echo label_tag(lang('email address')) ?></div>
-		            <div style="float:left;" id="<?php echo $genid?>_emails_container"></div>
-		            <div class="clear"></div>
-		            <div style="margin:5px 0 10px 200px;">
-		            	<a href="#" onclick="og.addNewEmailInput('<?php echo $genid?>_emails_container')" class="coViewAction ico-add"><?php echo lang('add new email address') ?></a>
-		            </div>
-		        </div>
-	            
-	            <div style="display:none;"><?php echo select_country_widget('country', '', array('id'=>'template_select_country'));?></div>
-	            <div class="input-container">
-		            <div><?php echo label_tag(lang('address')) ?></div>
-		            <div style="float:left;" id="<?php echo $genid?>_addresses_container"></div>
-		            <div class="clear"></div>
-		            <div style="margin:5px 0 10px 200px;">
-		            	<a href="#" onclick="og.addNewAddressInput('<?php echo $genid?>_addresses_container')" class="coViewAction ico-add"><?php echo lang('add new address') ?></a>
-		            </div>
-	            </div>
-	            
-	            <div class="input-container">
-		            <div><?php echo label_tag(lang('webpage')) ?></div>
-		            <div style="float:left;" id="<?php echo $genid?>_webpages_container"></div>
-		            <div class="clear"></div>
-		            <div style="margin:5px 0 10px 200px;">
-		            	<a href="#" onclick="og.addNewWebpageInput('<?php echo $genid?>_webpages_container')" class="coViewAction ico-add"><?php echo lang('add new webpage') ?></a>
-		            </div>
-		        </div>
-	
-	            <div class="input-container">
-					<div><?php echo label_tag(lang('instant messengers')) ?></div>
-					<div style="float:left;" class="im-container">
-						<table class="blank">
-							<tr>
-								<th colspan="2"><?php echo lang('im service') ?></th>
-								<th><?php echo lang('value') ?></th>
-								<th><?php echo lang('primary im service') ?></th>
-							</tr>
-							<?php foreach($im_types as $im_type) { ?>
-							<tr>
-								<td style="vertical-align: middle"><img src="<?php echo $im_type->getIconUrl() ?>" alt="<?php echo $im_type->getName() ?> icon" /></td>
-								<td style="vertical-align: middle"><span style="padding:0 5px;"><?php echo $im_type->getName() ?></span></td>
-								<td style="vertical-align: middle"><?php echo text_field('contact[im_' . $im_type->getId() . ']', array_var($contact_data, 'im_' . $im_type->getId()), array('id' => $genid.'profileFormIm' . $im_type->getId())) ?></td>
-								<td style="vertical-align: middle;text-align: center;"><?php echo radio_field('contact[default_im]', array_var($contact_data, 'default_im') == $im_type->getId(), array('value' => $im_type->getId())) ?></td>
-							</tr>
-							<?php } // foreach ?>
-						</table>
-					</div>
-				</div>
-				<div class="clear"></div>
-			
-				<div class="input-container">
-					<div id="<?php echo $genid ?>add_contact_notes">
-						<?php echo label_tag(lang('notes'), $genid.'profileFormNotes') ?>
-						<div style="float:left;width:600px;" class="notes-container">
-							<?php echo textarea_field('contact[comments]', array_var($contact_data, 'comments'), array('id' => $genid.'profileFormNotes', 'style' => 'width: 100%;', 'rows'=>5)) ?>
-						</div>
-					</div>
-				</div>
-				<div class="clear"></div>
-			</div>
+	<?php
+		tpl_assign('genid', $genid);
+		tpl_assign('contact_data', $contact_data);
+		tpl_assign('new_contact', $object->isNew());
 		
-		</div>
+		$this->includeTemplate(get_template_path("tabs/more_contact_data", "contact"));
+	?>
 	</div>
 	
 	<div class="contact_form_container form-tab" id="<?php echo $genid?>user_data">
@@ -365,8 +298,21 @@
 							<?php echo yes_no_widget('contact[autodetect_time_zone]', $genid.'userFormAutoDetectTimezone', user_config_option('autodetect_time_zone', null, $contact->getId()), 
 								lang('yes'), lang('no'), null, array('onclick' => "og.showSelectTimezone('$genid');$on_autodetect_click")) ?>
 							</div>
-							<div id="<?php echo $genid?>selecttzdiv" <?php if (user_config_option('autodetect_time_zone', null, $contact->getId())) echo 'style="float:left; display:none; "'; ?>>
-								<?php echo select_timezone_widget('contact[timezone]', array_var($contact_data, 'timezone'), array('id' => $genid.'userFormTimezone', 'class' => 'long')) ?>
+		
+							<?php $is_autodetecting_tz = user_config_option('autodetect_time_zone', null, $contact->getId()); ?>
+							<div id="<?php echo $genid?>autodetected_tz_div" class="desc" 
+								style="float:left; padding-top:8px; margin-left: 50px;<?php echo ($is_autodetecting_tz ? '' : 'display:none') ?>"><?php
+								
+								$tz_id = array_var($contact_data, 'user_timezone_id');
+								$zone = Timezones::getTimezoneById($tz_id);
+								if ($zone) {
+									$tz_country = Countries::getCountryNameByCode($zone['country_code']);
+									echo $tz_country . " - " . Timezones::getFormattedDescription($zone);
+								}
+							?></div>
+							
+							<div id="<?php echo $genid?>selecttzdiv" style="float:left; padding-top:5px; <?php if (user_config_option('autodetect_time_zone', null, $contact->getId())) echo 'display:none;'; ?>">
+								<?php echo timezone_selector('contact[user_timezone_id]', array_var($contact_data, 'user_timezone_id'), array('id' => $genid.'userFormTimezone')) ?>
 							</div>
 							
 						</div>
@@ -394,6 +340,7 @@
 				tpl_assign('contact_mail', $contact_mail);
 				tpl_assign('orig_genid', $genid);
 				tpl_assign('new_contact', $object->isNew());
+				
 				$this->includeTemplate(get_template_path("add_contact/access_data_edit","contact"));
 		?>
 			<div class="field role" style="display:none;" id="user_role_div">
@@ -402,12 +349,15 @@
 			</div>
 		</div>
 		<?php } ?>
+		
+		
+		<?php $null = null; Hook::fire('render_additional_user_data_fields', $contact, $null); ?>
 	</div>
 	
 	
-	<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-	<div id='<?php echo $genid ?>add_custom_properties_div' class="form-tab">
-		<?php echo render_object_custom_properties($object, false) ?>
+	<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+	<div id='<?php echo $genid ?>add_custom_properties_div' class="form-tab other-custom-properties-div">
+		<?php echo render_object_custom_properties($object, false, null, 'other') ?>
 		<?php echo render_add_custom_properties($object); ?>
 	</div>
 	<?php } ?>
@@ -423,9 +373,11 @@
 			} else {
 		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
 		<?php } ?>
-		<div id="<?php echo $genid ?>add_subscribers_content">
-		<?php //echo render_add_subscribers($object, $genid); ?>
-		</div>
+		<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
 	</div>
 	
 	
@@ -436,7 +388,7 @@
 	<?php endif; ?>
 	
 	<?php foreach ($categories as $category) { ?>
-	<div id="<?php echo $genid . $category['name'] ?>" class="form-tab">
+	<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
 		<?php echo $category['content'] ?>
 	</div>
 	<?php } ?>
@@ -449,63 +401,9 @@
 
 	<script>
 
-		var is_new_contact = <?php echo $object->isNew() ? 'true' : 'false'?>;
 		$(document).ready(function() {
 					
-			og.addressCount = 0;
-			og.address_types = Ext.util.JSON.decode('<?php echo json_encode($all_address_types)?>');
-
-			og.webpageCount = 0;
-			og.webpage_types = Ext.util.JSON.decode('<?php echo json_encode($all_webpage_types)?>');
-
-			og.emailCount = 0;
-			og.email_types = Ext.util.JSON.decode('<?php echo json_encode($all_email_types)?>');
-
-			if (!is_new_contact) {
-			<?php foreach (array_var($contact_data, 'all_addresses') as $address) { ?>
-				og.addNewAddressInput('<?php echo $genid?>_addresses_container', 'contact', '<?php echo $address->getAddressTypeId()?>', {
-					street: '<?php echo str_replace("'", "\'", str_replace("\n", " ", $address->getStreet()))?>',
-					city: '<?php echo str_replace("'", "\'", $address->getCity())?>',
-					state: '<?php echo str_replace("'", "\'", $address->getState())?>',
-					zip_code: '<?php echo str_replace("'", "\'", $address->getZipCode())?>',
-					country: '<?php echo $address->getCountry()?>',
-					id: '<?php echo $address->getId()?>'
-				});
-			<?php } ?>
 			
-			<?php foreach (array_var($contact_data, 'all_webpages') as $webpage) { ?>
-				og.addNewWebpageInput('<?php echo $genid?>_webpages_container', 'contact', '<?php echo $webpage->getWebTypeId()?>', '<?php echo str_replace("'", "\'", $webpage->getUrl())?>', '<?php echo $webpage->getId()?>');
-			<?php } ?>
-
-			<?php foreach (array_var($contact_data, 'all_emails') as $email) { ?>
-				og.addNewEmailInput('<?php echo $genid?>_emails_container', 'contact', '<?php echo $email->getEmailTypeId()?>', '<?php echo str_replace("'", "\'", $email->getEmailAddress())?>', '<?php echo $email->getId()?>');
-			<?php } ?>
-			}
-
-			
-			for (var i=0; i<og.address_types.length; i++) {
-				if (og.address_types[i].code == 'work') def_address_type = og.address_types[i].id;
-			}
-			for (var i=0; i<og.webpage_types.length; i++) {
-				if (og.webpage_types[i].code == 'work') def_web_type = og.webpage_types[i].id;
-			}
-			for (var i=0; i<og.email_types.length; i++) {
-				if (og.email_types[i].code == 'work') def_email_type = og.email_types[i].id;
-			}
-						
-			<?php if (count(array_var($contact_data, 'all_addresses')) == 0) { ?>
-				og.addNewAddressInput('<?php echo $genid?>_addresses_container', 'contact', def_address_type);
-			<?php } ?>
-			<?php if (count(array_var($contact_data, 'all_webpages')) == 0) { ?>
-				og.addNewWebpageInput('<?php echo $genid?>_webpages_container', 'contact', def_web_type);
-			<?php } ?>
-			<?php if (count(array_var($contact_data, 'all_emails')) == 0) { ?>
-				og.addNewEmailInput('<?php echo $genid?>_emails_container', 'contact', def_email_type);
-			<?php } ?>
-
-			og.addNewTelephoneInput('<?php echo $genid?>_comp_phones_container', 'company', def_phone_type);
-			og.addNewAddressInput('<?php echo $genid?>_comp_addresses_container', 'company', def_address_type);
-			og.addNewWebpageInput('<?php echo $genid?>_comp_webpages_container', 'company', def_web_type);
 			
 			<?php if(isset ($_POST['widget_is_user'])){ ?>
 				$('input[name*="contact[user][create-user]"]').prop("checked",true);
@@ -519,24 +417,7 @@
 			
 			Ext.get('<?php echo $genid ?>profileFormFirstName').focus();
 
-			$("#<?php echo $genid?>tabs").tabs({
-				activate: function( event, ui ) {
-					og.resizeAddressContainer();
-				}
-			});
-
-			og.resizeAddressContainer = function() {
-				setTimeout(function(){
-			    	var container_w = $('.additional-data').width();
-			    	$('.address-input-container').css('width', (container_w - 220)+'px').css('max-width', (container_w - 220)+'px');
-				}, 250);
-		    }
-	    	$(window).resize(function() {
-	    		og.resizeAddressContainer();
-	    	});
-
-
-	    	<?php if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0 && $can_change_permissions) { ?>
+			<?php if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0 && $can_change_permissions) { ?>
 		    	og.renderUserTypeSelector({container_id:"<?php echo $genid?>_user_type_container", input_name:'contact[user][type]', selected_value: <?php echo $user_type?>, id:'<?php echo $genid?>_user_type_sel'});
 
 	    		$("#<?php echo $genid?>_contact_data_role").html($("#user_role_div").html() + '<div class="clear"></div>');
@@ -569,7 +450,7 @@
 	    		$("#user_role_div").remove();
 
 		    	<?php if (count($all_user_groups) > 0) { ?>
-		    		var groups_store_tmp = Ext.util.JSON.decode('<?php echo str_replace("'", "\'", json_encode($all_user_groups));?>');
+		    		var groups_store_tmp = Ext.util.JSON.decode('<?php echo escape_character(json_encode($all_user_groups));?>');
 		    		var groups_store = [];
 		    		for (x in groups_store_tmp) {
 		    			groups_store.push([groups_store_tmp[x].id, groups_store_tmp[x].name]);

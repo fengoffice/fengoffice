@@ -32,7 +32,7 @@ og.PrintCalendar.createPrintWindow = function(genid){
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/event/week.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/event/day.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/calendar_print.css" rel="stylesheet" type="text/css">');
-	printWindow.document.write('<style type="text/css" media="print">div.page {writing-mode: tb-rl;height: 80%;margin: 10% 0%;}</style>');
+	//printWindow.document.write('<style type="text/css" media="print">div.page {writing-mode: tb-rl;height: 80%;margin: 10% 0%;}</style>');
 	printWindow.document.write('</head><body onLoad="self.print()"><div class="page">');
 	return printWindow;
 }

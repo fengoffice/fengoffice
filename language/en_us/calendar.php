@@ -220,7 +220,8 @@
         'list calendar desc' => 'Please select the calendars from which you want to import your events',      
         'check your account' => 'Check your account',
         'success import calendar' => 'The events were successfully imported',
-      
+
+	  	'without title' => 'Without title',
         'all day event' => 'All day',
         'date' => 'Date',
         'time' => 'Time',

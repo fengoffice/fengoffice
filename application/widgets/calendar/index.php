@@ -21,6 +21,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 	$genid = gen_id();
 	
 	require_javascript('og/EventPopUp.js');
+	require_javascript('og/CalendarFunctions.js');
 	
 	//$startday = date("d",mktime()) - (date("N", mktime()) %7);
 	if (user_config_option("start_monday")) {
@@ -32,7 +33,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 	//user_config_option('show_two_weeks_calendar',null,logged_user()->getId())? $my_weeks = 2 : $my_weeks = 1 ;
 	$my_weeks = 2;
 	$endday = $startday + (7 * $my_weeks);
-	$today = DateTimeValueLib::now()->add('h', logged_user()->getTimezone());
+	$today = DateTimeValueLib::now()->add('s', logged_user()->getUserTimezoneValue());
 	$currentday = $today->getDay();
 	$currentmonth = $today->getMonth();
 	$currentyear = $today->getYear();
@@ -48,7 +49,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 	$date_start = new DateTimeValue(mktime(0, 0, 0, $currentmonth, $startday, $currentyear));
 	$date_end = new DateTimeValue(mktime(0, 0, 0, $currentmonth, $endday, $currentyear));
 
-	$tmp_tasks = ProjectTasks::instance()->getRangeTasksByUser($date_start, $date_end, $user_filter, null, false, true);
+	$tmp_tasks = ProjectTasks::instance()->getRangeTasksByUser($date_start, $date_end, $user_filter, null, false, true, 250);
 	$birthdays = Contacts::instance()->getRangeContactsByBirthday($date_start, $date_end);
 	
 	$milestones = ProjectMilestones::getRangeMilestones($date_start, $date_end);
@@ -192,7 +193,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 			
 			$start_value = $dtv->format(user_config_option('date_format'));
 			$popupTitle = lang('add event');
-			$output .= "><div style='z-index:0; min-height:100px; height:100%;cursor:pointer' onclick=\"og.EventPopUp.show(null, {caller:'overview-panel', day:'".$dtv->getDay()."', month:'".$dtv->getMonth()."', year:'".$dtv->getYear()."', type_id:1, hour:'9', minute:'0', durationhour:1, durationmin:0, start_value: '$start_value', start_time:'9:00', title:'".format_datetime($dtv, 'l, j F', logged_user()->getTimezone()) ."', view: 'week', title: '$popupTitle', time_format: '$timeformat', hide_calendar_toolbar: 0},'');\") >
+			$output .= "><div style='z-index:0; min-height:100px; height:100%;cursor:pointer' onclick=\"og.showEventPopup('".$dtv->getDay()."','".$dtv->getMonth()."','".$dtv->getYear()."',9,0,true,'".$start_value."', '".$genid."',1,true);\") >
 			<div class='$daytitle' style='text-align:right'>";
 			//if($day_of_month >= 1){
 				$output .= "<a class='internalLink' href=\"$p\" onclick=\"og.disableEventPropagation(event);\"  style='color:#5B5B5B' >$w</a>";				
@@ -219,8 +220,10 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 						
 						if($event instanceof ProjectEvent ){
 							
-							$event_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * logged_user()->getTimezone());
-							$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * logged_user()->getTimezone());
+							$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+							
+							$event_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
+							$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
 							
 							if ($dtv->getTimestamp() == mktime(0,0,0, $event_start->getMonth(), $event_start->getDay(), $event_start->getYear()) ||
 								$dtv->getTimestamp() == mktime(0,0,0, $event_duration->getMonth(), $event_duration->getDay(), $event_duration->getYear())) {
@@ -261,7 +264,9 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 							}
 						} elseif($event instanceof ProjectMilestone ){
 							$milestone = $event;
-							$due_date = new DateTimeValue($milestone->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+							
+							$due_date = new DateTimeValue($milestone->getDueDate()->getTimestamp());
+							
 							if ($dtv->getTimestamp() == mktime(0,0,0,$due_date->getMonth(),$due_date->getDay(),$due_date->getYear())) {	
 								$count++;
 								if ($count <= 3){
@@ -298,14 +303,18 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 						elseif(is_array($event)){
 							//$task = $event;
 							
+							$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+							$tz_value_due = $event['use_due_time'] ? $tz_value : 0;
+							$tz_value_start = $event['use_start_time'] ? $tz_value : 0;
+							
 							$start_of_task = false;
 							$end_of_task = false;
 							if ($event['due_date'] != EMPTY_DATETIME){
-								$due_date = new DateTimeValue(strtotime($event['due_date']) + logged_user()->getTimezone() * 3600);
+								$due_date = new DateTimeValue(strtotime($event['due_date']) + $tz_value_due);
 								if ($dtv->getTimestamp() == mktime(0,0,0, $due_date->getMonth(), $due_date->getDay(), $due_date->getYear())) $end_of_task = true;
 							}
 							if ($event['start_date'] != EMPTY_DATETIME){
-								$start_date = new DateTimeValue(strtotime($event['start_date']) + logged_user()->getTimezone() * 3600);
+								$start_date = new DateTimeValue(strtotime($event['start_date']) + $tz_value_start);
 								if ($dtv->getTimestamp() == mktime(0,0,0, $start_date->getMonth(), $start_date->getDay(), $start_date->getYear())) $start_of_task = true;
 							}
 							
@@ -413,7 +422,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('upcoming events milestones and tasks'). ' '. lang('in').' '. implode(", ", $mnames);
+		$widget_title = lang('upcoming events milestones and tasks'). ' '. lang('in m').' '. implode(", ", $mnames);
 	}
 	include_once 'template.php';
 

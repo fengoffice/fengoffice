@@ -25,6 +25,12 @@ foreach ($events as $event) {
 		if ( $type=="fast" && array_var($fast_functions, $function) || 
 			 $type=="slow" && !array_var($fast_functions, $function) ||
 			 !$type ) {
+			 	
+			/* @var $event CronEvent */
+			$event = CronEvents::findById($event->getId());
+			if (!$event instanceof CronEvent || $event->getDate()->getTimestamp() > DateTimeValueLib::now()->getTimestamp()) {
+				continue;
+			}
 		
 			$errordate = DateTimeValueLib::now()->add("m", 30);
 			/* setting this date allows to rerun the event in 30 minutes if a fatal error occurs

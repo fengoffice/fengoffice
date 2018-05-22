@@ -56,6 +56,37 @@ class ApiController extends ApplicationController {
     }
     
 	/*
+     * Get an object's timeslots     
+     */
+	private function get_timeslots($request){
+		try {
+            $clean_timeslots = array();
+            $object = Objects::findObject($request['oid']);
+            if ($object instanceof ContentDataObject) {
+	            $timeslots = $object->getTimeslots();
+	            foreach($timeslots as $timeslot) {
+	            	
+	            	$data = $timeslot->getArrayInfo();
+	            	
+	            	$data['paused_desc'] = "";
+	            	$formatted = DateTimeValue::FormatTimeDiff($timeslot->getStartTime(), $timeslot->getEndTime(), "hm", 60, $timeslot->getSubtract());
+	            	if ($timeslot->getSubtract() > 0) {
+	            		$now = DateTimeValueLib::now();
+	            		$data['paused_desc'] = DateTimeValue::FormatTimeDiff($now, $now, "hm", 60, $timeslot->getSubtract());
+	            	}
+	            	$data['formatted'] = $formatted;
+	            	
+	            	$clean_timeslots[] = $data;
+	            }
+            }
+            return $this->response('json', $clean_timeslots);
+            
+        } catch (Exception $exception) {
+            throw $exception;
+        }
+    }
+    
+	/*
      * Get an object's comments     
      */
 	private function get_comments($request){
@@ -100,7 +131,10 @@ class ApiController extends ApplicationController {
 
     //provides all of the members from the dimension member in question
     private function list_members($request) {
-        $service = $request ['srv'];
+    	$service = $request ['srv'];
+        $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
+        $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
+        $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
         
         $members = array();
         $type = ObjectTypes::instance()->findByName($service);
@@ -110,28 +144,28 @@ class ApiController extends ApplicationController {
         }else{
             $dimension_id = Dimensions::findByCode('customer_project')->getId();
         }
-        $ids = array();
-        $dimensionController = new DimensionController();
-        foreach ($dimensionController->initial_list_dimension_members($dimension_id, null, array($typeId)) as $member) {
-            $ids [] = $member['object_id'];
+        $limit_obj = array(
+        		'offset' => $start,
+        		'limit' => $limit,
+        );
+        $extra_conditions = null;
+        if ($name!=""){
+        	$extra_conditions = "AND name LIKE '%".$name."%'";
         }
-
-        if (count($ids)) {
-            $args['conditions'] = " `object_id` IN (" . implode(",", $ids) . ") AND object_type_id = $typeId";
-            $args['order'] = " name ASC";
-            foreach (Members::instance()->findAll($args) as $member) {
-                /* @var $member Member */
-                $memberInfo = array(
-                    'id' => $member->getId(),
-                    'name' => $member->getName(),
-                    'type' => $service,
-                    'path' => $member->getPath()
-                );
-
-                $members[] = $memberInfo;
-            }
+        $params = array('dim_id' => $dimension_id, 'type_id' => $typeId, 'start'=>$start, 'limit'=>$limit, 'extra_conditions' => $extra_conditions);
+        $memberController = new MemberController();
+        $object = $memberController->listing($params);
+        foreach ($object["members"] as $m) {
+        	$member = Members::getMemberById($m['id']);
+        	$memberInfo = array(
+        			'id' => $m['id'],
+        			'name' => $m['name'],
+        			'type' => $service,
+        			'path' => $member->getPath()
+        	);
+        	
+        	$members[] = $memberInfo;
         }
-
         return $this->response('json', $members);
     }
     
@@ -291,7 +325,7 @@ class ApiController extends ApplicationController {
                 if ($task->canChangeStatus(logged_user())) {
                     try {
                         if (isset($request['action']) && $request['action'] == 'complete') {
-                            $task->complete(DateTimeValueLib::now(), logged_user());
+                            $task->completeTask();
                             $task->setPercentCompleted(100);
                             $task->save();
                         } else {
@@ -345,10 +379,9 @@ class ApiController extends ApplicationController {
                             $object->setText($request ['args'] ['description']);
                         }
                         if (!empty($request ['args'] ['due_date'])) {
-                        	if ($request ['args'] ['due_date'] != '' && $request ['args'] ['due_date'] != date_format_tip('dd/mm/yyyy')) {
-                        		$date_format = 'dd/mm/yyyy';
-                        		$object->setDueDate(DateTimeValueLib::dateFromFormatAndString($date_format, $value));
-                        	}                           
+                        	$dd = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['due_date']);
+                        	$dd->add('s', -1*logged_user()->getUserTimezoneValue());
+                       		$object->setDueDate($dd);
                         }
                         if (!empty($request ['args'] ['completed'])) {
                             $object->setPercentCompleted($request ['args'] ['completed']);
@@ -408,6 +441,35 @@ class ApiController extends ApplicationController {
             }
         }
         return $this->response('json', $response);
+    }
+    
+
+
+	private function add_timeslot($request) {
+		$_POST['object_id'] = $request ['args'] ['object_id'];
+		$_REQUEST['object_id'] = $_POST['object_id'];
+		
+		$_POST['timeslot'] = array(
+			'contact_id' => $request ['args'] ['contact_id'],
+			'hours' => $request ['args'] ['hours'],
+			'minutes' => $request ['args'] ['minutes'],
+			'description' => $request ['args'] ['description'],
+		);
+		
+		$controller = new TimeslotController();
+		$controller->add_timespan();
+		
+		return $this->response('json', true);
+    }
+    
+    private function add_comment($request) {
+    	$_GET['object_id'] = $request ['args'] ['id'];
+    	$_POST['comment'] = array('text' => $request ['args'] ['comment']);
+    	
+    	$controller = new CommentController();
+    	$controller->add();
+    	
+    	return $this->response('json', true);
     }
     
     private function active_plugin($request){

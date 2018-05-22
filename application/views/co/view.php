@@ -31,7 +31,7 @@
 				<div class="coViewTitleContainer">
 					<div class="coViewTitle">
 						<table><tr><td>
-						<?php echo isset($title)? $title : lang($object->getObjectTypeName()) . ": " . clean($object->getObjectName());?>
+						<?php echo isset($title)? $title : $object->getObjectTypeNameLang() . ": " . clean($object->getObjectName());?>
 						</td>
 						
 						</tr></table>
@@ -105,12 +105,25 @@
 				tpl_assign('object', $object);
 				$this->includeTemplate(get_template_path($ct[0], $ct[1], array_var($ct, 2)));
 			}
+
+			// Main properties
+			if ($object instanceof ApplicationDataObject)
+				echo render_custom_properties($object, 'visible_by_default');
+
+			//Extra templates to include
+			if (isset($extra_templates_to_include) && is_array($extra_templates_to_include)) {
+				tpl_assign('genid', $genid);
+				foreach ($extra_templates_to_include as $extra_template){
+					$this->includeTemplate($extra_template['path']);		
+				}					
+			}
 			
 			if ($object instanceof ContentDataObject)
 				echo render_co_view_member_path($object);
 			
+			// Other properties
 			if ($object instanceof ApplicationDataObject)
-				echo render_custom_properties($object);
+				echo render_custom_properties($object, 'other');
 			
 			if ($object instanceof ProjectTask || $object instanceof TemplateTask) {
 				tpl_assign('genid', $genid);
@@ -122,12 +135,17 @@
 			
 			$logged_user_pgs = logged_user()->getPermissionGroupIds();
 			if ($object instanceof ContentDataObject && $object->allowsTimeslots()) {
-				echo render_object_timeslots($object, $object->getViewUrl());
+			    $show_timeslot_section = config_option('use_task_work_performed');
+			    if ($show_timeslot_section){
+			        echo render_object_timeslots($object, $object->getViewUrl());
+			    }
+				
 			}
 			
 			
 			
 			if ($object instanceof ProjectTask) {
+				tpl_assign('show_timeslot_section', $show_timeslot_section);
 				$this->includeTemplate(get_template_path('work_performed', 'task'));
 			}
 			

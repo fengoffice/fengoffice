@@ -177,87 +177,82 @@ function intersectCSVs($csv1, $csv2){
 	return implode(',', $final);
 }
 
-function allowed_users_to_assign($context = null) {
+function allowed_users_to_assign($context = null, $filter_by_permissions = true, $return_company_array = true, $for_task_list_filters=false) {
 	if ($context == null) {
 		$context = active_context();
 	}
-	
-	// only companies with users
-	$companies = Contacts::findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", "order" => "first_name, surname"));
 
-	$comp_ids = array("0");
-	$comp_array = array("0" => array('id' => "0", 'name' => lang('without company'), 'users' => array() ));
-	
-	foreach ($companies as $company) {
-		$comp_ids[] = $company->getId();
-		$comp_array[$company->getId()] = array('id' => $company->getId(), 'name' => $company->getObjectName(), 'users' => array() );
-	}
-	
 	if(!can_manage_tasks(logged_user()) && can_task_assignee(logged_user())) {
 		$contacts = array(logged_user());
 	} else if (can_manage_tasks(logged_user())) {
-		$contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ, "AND `is_company`=0 AND `company_id` IN (".implode(",", $comp_ids).")");
+		$contacts = array();
+		$tmp_contacts = array();
+		// for task selectors
+		if ($filter_by_permissions) {
+			//check if context is empty
+			$root_context = true;
+			if (isset($context) && is_array($context)) {
+				foreach ($context as $selection) {
+					if ($selection instanceof Member && $selection->getDimension()->getDefinesPermissions() && $selection->getDimension()->getIsManageable()) {
+						$root_context = false;
+						break;
+					}
+				}
+			}
+			//get users with can_task_assignee permissions
+			if($root_context && $for_task_list_filters){
+				$tmp_contacts = get_users_with_system_permission('can_task_assignee');
+			}else{
+                $for_template_task_assigned_to = array_var($_GET, 'for_template_task_assigned_to');
+
+                $task_object_type_id = ProjectTasks::instance()->getObjectTypeId();
+
+                if($for_template_task_assigned_to){
+                    $task_object_type_id = TemplateTasks::instance()->getObjectTypeId();
+                }
+				$tmp_contacts = allowed_users_in_context($task_object_type_id, $context, ACCESS_LEVEL_READ);
+			}
+		} else {
+			// for template variables selectors
+			$tmp_contacts = Contacts::getAllUsers();
+		}
+		foreach ($tmp_contacts as $c) {
+			if (can_task_assignee($c)) $contacts[] = $c;
+		}
 	} else {
 		$contacts = array();
 	}
-	
+
+	if(!$return_company_array){
+		return $contacts;
+	}
+
+	$comp_array = array();
+	Hook::fire('contact_check_can_view_in_array', null, $contacts);
 	foreach ($contacts as $contact) { /* @var $contact Contact */
-		$pg_ids = implode(',', $contact->getPermissionGroupIds());
-		if ($pg_ids == "") $pg_ids = "0";
-		if ( TabPanelPermissions::instance()->count( array( "conditions" => "permission_group_id IN ($pg_ids) AND tab_panel_id = 'tasks-panel' " )) && can_task_assignee($contact)){
-			$comp_array[$contact->getCompanyId()]['users'][] = array('id' => $contact->getId(), 'name' => $contact->getObjectName(), 'isCurrent' => $contact->getId() == logged_user()->getId());
+		if (!isset($comp_array[$contact->getCompanyId()])) {
+			if ($contact->getCompanyId() == 0) {
+				$comp_array[0] = array('id' => "0", 'name' => lang('without company'), 'users' => array());
+			} else {
+				$comp = Contacts::findById($contact->getCompanyId());
+				$comp_array[$contact->getCompanyId()] = array('id' => $contact->getCompanyId(), 'name' => $comp->getObjectName(), 'users' => array());
+			}
 		}
+		$comp_array[$contact->getCompanyId()]['users'][] = array('id' => $contact->getId(), 'name' => $contact->getObjectName(), 'isCurrent' => $contact->getId() == logged_user()->getId());
 	}
-	foreach ($comp_array as $company_id => &$comp_data) {
-		if (count($comp_data['users']) == 0) {
-			unset($comp_array[$company_id]);
-		}
-	}
+	
 	return array_values($comp_array);
 }
 
 function allowed_users_to_assign_all_mobile($member_id = null) {
-	if ($member_id == null) {
-		$context = active_context();
-	}else{
+	$context = null;
+	if ($member_id != null) {
 		$member = Members::findById($member_id);
 		if ($member instanceof Member){
-			$context[] = $member;
+			$context = array($member);
 		}
 	}
-	
-	// only companies with users
-	$companies = Contacts::findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", "order" => "first_name ASC"));
-
-	$comp_ids = array("0");
-	$comp_array = array("0" => array('id' => "0", 'name' => lang('without company'), 'users' => array() ));
-	
-	foreach ($companies as $company) {
-		$comp_ids[] = $company->getId();
-		$comp_array[$company->getId()] = array('id' => $company->getId(), 'name' => $company->getObjectName(), 'users' => array() );
-	}
-	
-	if(!can_manage_tasks(logged_user()) && can_task_assignee(logged_user())) {
-		$contacts = array(logged_user());
-	} else if (can_manage_tasks(logged_user())) {
-		$contacts = allowed_users_in_context(ProjectTasks::instance()->getObjectTypeId(), $context, ACCESS_LEVEL_READ, "AND `is_company`=0 AND `company_id` IN (".implode(",", $comp_ids).")");
-	} else {
-		$contacts = array();
-	}
-	
-	foreach ($contacts as $contact) { /* @var $contact Contact */
-		$pg_ids = implode(',', $contact->getPermissionGroupIds());
-		if ($pg_ids == "") $pg_ids = "0";
-		if ( TabPanelPermissions::instance()->count( array( "conditions" => "permission_group_id IN ($pg_ids) AND tab_panel_id = 'tasks-panel' " )) && can_task_assignee($contact)){
-			$comp_array[$contact->getCompanyId()]['users'][] = array('id' => $contact->getId(), 'name' => $contact->getObjectName(), 'isCurrent' => $contact->getId() == logged_user()->getId());
-		}
-	}
-	foreach ($comp_array as $company_id => &$comp_data) {
-		if (count($comp_data['users']) == 0) {
-			unset($comp_array[$company_id]);
-		}
-	}
-	return array_values($comp_array);
+	return allowed_users_to_assign($context);
 }
 
 
@@ -438,25 +433,54 @@ function render_object_comments_for_print(ContentDataObject $object) {
  * @param ContentDataObject $object Show custom properties of this object
  * @return null
  */
-function render_object_custom_properties($object, $required, $co_type=null) {
-	tpl_assign('_custom_properties_object', $object);
-	//tpl_assign('required', $required);
-	tpl_assign('co_type', $co_type);
-	return tpl_fetch(get_template_path('object_custom_properties', 'custom_properties'));
+function render_object_custom_properties($object, $required, $co_type=null, $visibility='all') {
+
+	$genid = gen_id();
+	
+	if ($object instanceof ContentDataObject) {
+		
+		$properties = null;
+		/*$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
+		Hook::fire('override_render_properties', $params, $properties);*/
+                $ot = ObjectTypes::findById($object->getObjectTypeId());
+                if ($ot->getType() != 'content_object') {
+                    $params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
+                    Hook::fire('override_render_properties', $params, $properties);
+                }
+
+        if (is_null($properties)) {
+			$properties = array();
+			$ot = ObjectTypes::findById($object->getObjectTypeId());
+			
+			$extra_conditions = "";
+			Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions, true);
+			
+			$cps = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility, $extra_conditions);
+			
+			foreach($cps as $customProp){
+				$html = get_custom_property_input_html($customProp, $object, $genid);
+				$properties[] = array('id' => '', 'html' => $html);
+			}
+		}
+		
+		echo '<div class="custom-properties">';
+		
+		foreach ($properties as $main_property){
+			echo $main_property['html'];
+		}
+		
+		echo '</div>';
+	}
+	
 } // render_object_custom_properties
 
-/**
- * Show object custom properties block
- *
- * @param ContentDataObject $object Show custom properties of this object
- * @return null
- */
-function render_member_custom_properties($member, $required, $visibility='all') {
-	tpl_assign('member', $member);
-	tpl_assign('visibility', $visibility);
-	return tpl_fetch(get_template_path('member_custom_properties', 'custom_properties'));
-} // render_member_custom_properties
 
+function member_has_custom_properties($type_id) {
+	if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+		return count(MemberCustomProperties::getCustomPropertyIdsByObjectType($type_id)) > 0;
+	}
+	return false;
+}
 
 /**
  * Show object timeslots block
@@ -1052,7 +1076,8 @@ function render_add_custom_properties(ContentDataObject $object) {
 	
 	$genid = gen_id();
 	$output = '
-		<div id="'.$genid.'" class="og-add-custom-properties">
+        <label>'.lang('properties').'</label>
+		<div id="'.$genid.'" class="og-add-custom-properties" style="float:left;">
 			<table><tbody><tr>
 			<th>' . lang('name') . '</th>
 			<th>' . lang('value') . '</th>
@@ -1060,6 +1085,7 @@ function render_add_custom_properties(ContentDataObject $object) {
 			</tr></tbody></table>
 			<a href="#" onclick="og.addObjectCustomProperty(this.parentNode, \'\', \'\', true);return false;">' . lang("add custom property") . '</a>
 		</div>
+		<div class="clear"></div>
 		<script>
 		var ti = 30000;
 		og.addObjectCustomProperty = function(parent, name, value, focus) {
@@ -1074,7 +1100,7 @@ function render_add_custom_properties(ContentDataObject $object) {
 			td.innerHTML = \'<input class="value" type="text" name="custom_prop_values[\' + count + \']" value="\' + value + \'" tabindex=\' + (ti + 1) + \'>\';;
 			tr.appendChild(td);
 			var td = document.createElement("td");
-			td.innerHTML = \'<div class="link-ico ico-delete" style="width:16px;height:16px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
+			td.innerHTML = \'<div class="db-ico ico-delete" style="margin-left:2px;height:20px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
 			tr.appendChild(td);
 			tbody.appendChild(tr);
 			if (input && focus)
@@ -1119,8 +1145,9 @@ function render_add_custom_properties(ContentDataObject $object) {
  * Renders an object's custom properties
  * @return string
  */
-function render_custom_properties(ApplicationDataObject $object) {
+function render_custom_properties(ApplicationDataObject $object, $visibility='all') {
 	tpl_assign('__properties_object', $object);
+	tpl_assign('visibility', $visibility);
 	return tpl_fetch(get_template_path('view', 'custom_properties'));
 }
 
@@ -1271,12 +1298,10 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 			if ( $all_dimensions = Dimensions::getAllowedDimensions($content_object_type_id) ) { // Diemsions for this content type
 				foreach ($all_dimensions as $dimension){ // A kind of intersection...
 					if ( isset($user_dimensions[$dimension['dimension_id']] ) ){
-						if( $dimension_options = json_decode($dimension['dimension_options'])){
-							if (isset($dimension_options->useLangs) && $dimension_options->useLangs ) {
-								$dimension['dimension_name'] = lang($dimension['dimension_code']);
-							}
-						}
-						$dimensions[] = $dimension ;
+						$custom_name = DimensionOptions::getOptionValue($dimension['dimension_id'], 'custom_dimension_name');
+						$dimension['name'] = $custom_name && trim($custom_name) != "" ? $custom_name : lang($dimension['code']);
+						
+						$dimensions[] = $dimension;
 					}
 				}
 			}
@@ -1330,20 +1355,26 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 						if (!$dimension['is_manageable']) continue;
 						
 						$is_required = $dimension['is_required'];				
-						$dimension_name = $dimension['dimension_name'] ;				
+						$dimension_name = escape_character($dimension['dimension_name']);				
 						if ($is_required) $dimension_name.= " *" ;
 						
 						if (is_array($simulate_required) && in_array($dimension_id, $simulate_required))
 							$is_required = true;
 						
 						if (!isset($id)) $id = gen_id();
+						
+						if (defined('JSON_NUMERIC_CHECK')) {
+							$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
+						} else {
+							$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
+						}
 					?>
 					var config = {
 							title: '<?php echo $dimension_name ?>',
 							dimensionId: <?php echo $dimension_id ?>,
 							objectTypeId: <?php echo $content_object_type_id ?>,
 							required: <?php echo $is_required ?>,
-							reloadDimensions: <?php echo json_encode( DimensionMemberAssociations::instance()->getDimensionsToReload($dimension_id) ) ; ?>,
+							reloadDimensions: <?php echo $reloadDimensions ?>,
 							isMultiple: <?php echo $dimension['is_multiple'] ?>,
 							selModel: <?php echo ($dimension['is_multiple'])?
 								'new Ext.tree.MultiSelectionModel()':
@@ -1467,6 +1498,9 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			$dimension_info = $dimension;
 		}
 		
+		$custom_name = DimensionOptions::getOptionValue($dimension_info['dimension_id'], 'custom_dimension_name');
+		$dimension_info['dimension_name'] = ($custom_name && trim($custom_name) != "" ? $custom_name : $dimension_info['dimension_name']);
+		
 		$dimension_id  = $dimension_info['dimension_id'];
 		if (is_null($genid)) $genid = gen_id();
 		$selected_members_json = json_encode($selected_members);
@@ -1483,7 +1517,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			<input id='<?php echo $genid . array_var($options, 'pre_hf_id', '') ?>members' name='<?php echo array_var($options, 'pre_hf_id', '') ?>members' type='hidden' ></input> 
 		<?php } ?>
 
-		<div id='<?php echo $component_id ?>-container' class="<?php echo array_var($options, 'pre_class', '')?>single-tree member-chooser-container" ></div>
+		<div id='<?php echo $component_id ?>-container' class="<?php echo array_var($options, 'pre_class', '')?>single-tree member-chooser-container <?php echo array_var($dimension_info, 'is_multiple') ? "multiple-selection" : "single-selection"; ?>" ></div>
 		
 		<script>
 			var memberChooserPanel = new og.MemberChooserPanel({
@@ -1497,7 +1531,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				if ( is_array(array_var($options, 'allowedDimensions')) && array_search($dimension_id, $options['allowedDimensions']) === false ){
 					continue;	 
 				}					
-				$dimension_name = $dimension_info['dimension_name'];
+				$dimension_name = escape_character($dimension_info['dimension_name']);
 				if (!isset($id)) $id = gen_id();
 			?>
 			var select_root = <?php echo (array_var($options, 'select_root') ? '1' : '0') ?>;
@@ -1520,7 +1554,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				width: <?php echo array_var($options, 'width', '385') ?>,
 				listeners: {'tree rendered': function (t) {if (select_root) t.root.select();}}
 			};
-
+		
 			<?php if( isset ($options['root_lang'])) : ?>
 				config.root_lang = <?php echo json_encode($options['root_lang']) ?>;
 			<?php endif; ?>
@@ -1551,6 +1585,10 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			
 			<?php if( isset ($options['loadUrl']) ) : ?>
 				config.loadUrl = '<?php echo $options['loadUrl'] ?>';
+			<?php endif; ?>
+
+			<?php if( isset ($options['filter_by_ids'])) : ?>
+				config.filter_by_ids = '<?php implode(',', $options['filter_by_ids']) ?>' ;
 			<?php endif; ?>
 
 			<?php if( isset($options['use_ajax_member_tree']) && $options['use_ajax_member_tree'] ) {?>
@@ -1640,7 +1678,14 @@ function render_widget_option_input($widget_option, $genid=null) {
 		case 'UserCompanyConfigHandler' :
 			if ($widget_option['widget'] == 'overdue_upcoming') $ot = ObjectTypes::findByName('task');
 			else break;
+			
 			$users = allowed_users_in_context($ot->getId(), array(), ACCESS_LEVEL_READ, '', true);
+			$has_myself = false;
+			foreach ($users as $u) {
+				if ($u->getId() == logged_user()->getId()) $has_myself = true;
+			}
+			if (!$has_myself) array_unshift($users, logged_user());
+			
 			$output .= "<select name='$name' id='".$genid.$name."' onchange='og.on_widget_select_option_change(this);'>";
 			$sel = $widget_option['value'] == 0 ? 'selected="selected"' : '';
 			$output .= "<option value='0' $sel>".lang('everyone')."</option>";
@@ -1658,3 +1703,149 @@ function render_widget_option_input($widget_option, $genid=null) {
 	
 	return $output;
 }
+
+
+function get_dates_for_date_range_config($data_saved) {
+    $st = '';
+    $et = '';
+    $data = array();
+    $now = DateTimeValueLib::now();
+    //$now->advance(logged_user()->getUserTimezoneValue(), true);
+    
+    switch($data_saved->type){
+        case "today":
+            $st = DateTimeValueLib::make(0,0,0,$now->getMonth(),$now->getDay(),$now->getYear());
+            $et = DateTimeValueLib::make(23,59,59,$now->getMonth(),$now->getDay(),$now->getYear());
+            break;
+        case "this_week":
+            $monday = $now->getMondayOfWeek();
+            $nextMonday = $now->getMondayOfWeek()->add('w',1)->add('d',-1);
+            $st = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
+            $et = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());
+            break;
+        case "last_week":
+            $monday = $now->getMondayOfWeek()->add('w',-1);
+            $nextMonday = $now->getMondayOfWeek()->add('d',-1);
+            $st = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
+            $et = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());
+            break;
+        case "this_month":
+            $st = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
+            $et = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);
+            break;
+        case "last_month":
+            $now->add('M',-1);
+            $st = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
+            $et = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);
+            break;
+        case "this_quarter":
+            $current_month = $now->getMonth();
+            $current_year = $now->getYear();            
+            switch ($current_month){
+                case 1:
+                case 2:
+                case 3:
+                    $st = DateTimeValueLib::make(0,0,0,1,1,$current_year);
+                    $et = DateTimeValueLib::make(23,59,59,3,31,$current_year);
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                    $st = DateTimeValueLib::make(0,0,0,4,1,$current_year);                    
+                    $et = DateTimeValueLib::make(23,59,59,6,30,$current_year);
+                    break;
+                case 7:
+                case 8:
+                case 9:
+                    $st = DateTimeValueLib::make(0,0,0,7,1,$current_year);
+                    $et = DateTimeValueLib::make(23,59,59,9,30,$current_year);
+                    break;
+                case 10:
+                case 11:
+                case 12:
+                    $st = DateTimeValueLib::make(0,0,0,10,1,$current_year);
+                    $et = DateTimeValueLib::make(23,59,59,12,31,$current_year);
+                    break;                    
+            }
+            break;
+        case "last_quarter":
+            $current_month = $now->getMonth();
+            $current_year = $now->getYear();            
+            switch ($current_month){
+                case 1:
+                case 2:
+                case 3:
+                    $st = DateTimeValueLib::make(0,0,0,10,1,$current_year)->add('y', -1);
+                    $et = DateTimeValueLib::make(23,59,59,12,31,$current_year)->add('y', -1);
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                    $st = DateTimeValueLib::make(0,0,0,1,1,$current_year);
+                    $et = DateTimeValueLib::make(23,59,59,3,31,$current_year);
+                    break;
+                case 7:
+                case 8:
+                case 9:
+                    $st = DateTimeValueLib::make(0,0,0,4,1,$current_year);
+                    $et = DateTimeValueLib::make(23,59,59,6,30,$current_year);
+                    break;
+                case 10:
+                case 11:
+                case 12:
+                    $st = DateTimeValueLib::make(0,0,0,7,1,$current_year);
+                    $et = DateTimeValueLib::make(23,59,59,9,30,$current_year);
+                    break;
+            }
+            break;
+        case "this_year":
+            $st = DateTimeValueLib::make(0,0,0,1,1,$now->getYear());
+            $et = DateTimeValueLib::make(23,59,59,1,1,$now->getYear())->add('y',1)->add('d',-1);
+            break;
+        case "last_year":
+            $now->add('y',-1);
+            $st = DateTimeValueLib::make(0,0,0,1,1,$now->getYear());
+            $et = DateTimeValueLib::make(23,59,59,1,1,$now->getYear())->add('y',1)->add('d',-1);
+            break;
+        case "range":
+            if ( trim($data_saved->range_start) != '' ) {
+                $st = DateTimeValueLib::makeFromString( trim($data_saved->range_start) );
+                $st = $st->beginningOfDay();
+            }
+            
+            if ( trim($data_saved->range_end) != '' ) {
+                $et = DateTimeValueLib::makeFromString( trim($data_saved->range_end) );
+                $et = $et->endOfDay();
+            }
+            
+            break;
+    }
+    
+    if ($st instanceof DateTimeValue) {
+        $st->add('s',-logged_user()->getUserTimezoneValue());
+    }
+    if ($et instanceof DateTimeValue) {
+        $et->add('s',-logged_user()->getUserTimezoneValue());
+    }
+    $data["from_date"] = $st;
+    $data["to_date"] = $et;
+    
+    return $data;
+    
+    
+}
+
+    function create_contact_from_data($contact_data, $members_ids) {
+        $members_ids = array_unique(array_filter($members_ids));
+        if (count($members_ids) > 0) {
+            $members_encoded = json_encode($members_ids);
+        } else {
+            $members_encoded = "[]";
+        }
+        $_POST = array(
+            'contact' => $contact_data,
+            'members' => $members_encoded,
+        );
+        $contact_controller = new ContactController();
+        return $contact_controller->add();
+    }

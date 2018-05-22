@@ -18,7 +18,7 @@ if (count($active_members) > 0) {
 	foreach ($active_members as $member) {
 		$mnames[] = clean($member->getName());
 	}
-	$widget_title = lang('late tasks and upcoming tasks'). ' '. lang('in').' '. implode(", ", $mnames);
+	$widget_title = lang('late tasks and upcoming tasks'). ' '. lang('in m').' '. implode(", ", $mnames);
 }
 
 $assigned_to_user = null;
@@ -47,17 +47,7 @@ $users = array();
 
 if (count($overdue_upcoming_objects) > 0) {
 	// Render only when the context isnt 'all' and you have perms 
-	$render_add = active_context_members(false) && ProjectTask::canAdd(logged_user(), active_context());
-	
-	if ($render_add) {
-		$users[] = array(0, lang('dont assign'));	
-		foreach ( allowed_users_to_assign() as $company ){
-			foreach ($company['users'] as $user ) {
-				$name  = logged_user()->getId() == $user['id'] ? lang('me') : $user['name'] ;
-				$users[] = array($user['id'], $name);	
-			}
-		}
-	}
-	
+	$render_add = ProjectTask::canAdd(logged_user(), active_context());
+
 	include_once 'template.php';
 }

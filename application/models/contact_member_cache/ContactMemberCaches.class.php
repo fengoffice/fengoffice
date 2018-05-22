@@ -7,6 +7,22 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		return $m;
 	}
 	
+	static function getContactsIdsByMemberId($member_id) {
+		$member_id = mysql_real_escape_string($member_id, DB::connection()->getLink());
+		$sql = "SELECT `contact_id` FROM `".TABLE_PREFIX."contact_member_cache` WHERE member_id = $member_id";
+
+		// Run!
+		$rows = DB::executeAll($sql);
+
+		$users_ids = array();
+
+		foreach($rows as $row) {
+			$users_ids[] = $row['contact_id'];
+		}
+
+		return $users_ids;
+	}
+
 	/**
 	 * 
 	  * @param array $args 
@@ -23,6 +39,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		$start = array_var($args,'start');
 		$limit = array_var($args,'limit');
 		$order = array_var($args,'order', 'id');
+		$order_dir = array_var($args,'order_dir', 'DESC');
 		$dimension = array_var($args,'dimension');
 		$parent_member_id = array_var($args,'parent_member_id',null);
 		$contact_id = array_var($args,'contact_id',null);
@@ -60,7 +77,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 					INNER JOIN  ".TABLE_PREFIX."members m ON cmc.member_id = m.id 					
 					WHERE m.dimension_id = ".$dimension->getId()."
 					$SQL_CONDITION
-					ORDER BY $order DESC 
+					ORDER BY $order $order_dir 
 					$SQL_LIMIT ;
 		";
 		
@@ -127,7 +144,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 			
 			//Get all members	
 			$extra_conditions = " AND id IN (".implode(",",$members_ids).")";
-			$all_members = $dimension->getAllMembers(false, null, true, $extra_conditions, null);
+			$all_members = $dimension->getAllMembers(false, array_var($args,'order',null), false, $extra_conditions, null, array_var($args,'order_dir',null));
 				
 			//Add an extra temp param with the cached parent id
 			foreach ($all_members as $member){
@@ -141,11 +158,15 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 	
 	/**
 	 * This function updates all user inheritance line cache for a member
-	 * @param unknown_type $user
+	 * @param Contact $user
 	 * @param int $member_id
 	 * @param int $parent_member_id - is better for performance if you pass this param
 	 */
 	static function updateContactMemberCache($user, $member_id, $parent_member_id = null) {
+		if(!$user instanceof Contact){
+			return;
+		}
+
 		$contact_member_cache_to_save = array();
 		//Contact Permission Group Ids
 		$contact_pg_ids = ContactPermissionGroups::getPermissionGroupIdsByContactCSV($user->getId());
@@ -173,12 +194,12 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 			//Check Permissions
 			if (ContactMemberPermissions::instance()->contactCanAccessMemberAll($contact_pg_ids, $m['id'], $user, ACCESS_LEVEL_READ, false)) {
 				//new parent for this member
-				$lastParentId = end(array_keys($parentMembersSet));
+				$lastParentId = end($parentMembersSet);
 				if(!$lastParentId){
 					$lastParentId = 0;
 				}
 
-				$parentMembersSet[$m['id']] = true;
+				$parentMembersSet[] = $m['id'];
 				
 				$id = array('contact_id' => $user->getId(), 'member_id' => $m['id']);
 				$contactMemberCache = ContactMemberCaches::getContactMemberCacheById($id);
@@ -189,12 +210,12 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 					$contactMemberCache->save();
 				}else{
 					//create the ContactMemberCache
-					$contact_member_cache_to_save[] = array( $user->getId(), $m['id'], $lastParentId);
+					$contact_member_cache_to_save[$m['id']] = array( $user->getId(), $m['id'], $lastParentId);
 				}				
 			}			
 		}
 		
-		$lastParentId = end(array_keys($parentMembersSet));
+		$lastParentId = end($parentMembersSet);
 		if(!$lastParentId){
 			$lastParentId = 0;
 		}
@@ -215,7 +236,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 				$contactMemberCache->save();
 			}else{
 				//create the ContactMemberCache
-				$contact_member_cache_to_save[] = array( $user->getId(), $member_id, $lastParentId);
+				$contact_member_cache_to_save[$member_id] = array( $user->getId(), $member_id, $lastParentId);
 			}
 			
 			$lastParentId = $member_id;
@@ -223,8 +244,8 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		
 		//CHILDS
 		//Get all member childs recursive
-		$childs = get_all_children_sorted($member_info);
-		
+		$childs = get_all_children_sorted(array($member_info['id']));
+
 		$lastParentIdByDepth = array();
 		if(isset($member) && $member instanceof Member){
 			$cm_depth = $member->getDepth();
@@ -232,17 +253,32 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 			$cm_depth = count($parents) + 1;
 		}
 		$lastParentIdByDepth[$cm_depth] = $lastParentId;
+		
+		// array of member ids to remove from cache for current user
+		$to_delete = array();
 				
 		foreach ($childs as $m) {
 			//Check Permissions
 			if (ContactMemberPermissions::instance()->contactCanAccessMemberAll($contact_pg_ids, $m['id'], $user, ACCESS_LEVEL_READ, false)) {
-				$tempParent = 0;				
-				for ($i = $cm_depth; $i <= $m['depth']; $i++) {
-					if(isset($lastParentIdByDepth[$i-1]) && $lastParentIdByDepth[$i-1] > 0){
-						$tempParent = $lastParentIdByDepth[$i-1];						
-					}					
+				$tempParent = 0;
+
+
+				$real_parents = get_all_parents_sorted($m);
+				foreach($real_parents as $real_parent){
+					if(isset($contact_member_cache_to_save[$real_parent['id']])){
+						$tempParent =  $real_parent['id'];
+						break;
+					}
+
+					$parent_cmc_id = array('contact_id' => $user->getId(), 'member_id' => $real_parent['id']);
+					$parentMemberCache = ContactMemberCaches::getContactMemberCacheById($parent_cmc_id);
+					if($parentMemberCache instanceof ContactMemberCache){
+						$tempParent =  $real_parent['id'];
+						break;
+					}
 				}
-								
+
+
 				$lastParentIdByDepth[$m['depth']] = $m['id'];				
 		
 				$cmc_id = array('contact_id' => $user->getId(), 'member_id' => $m['id']);
@@ -254,19 +290,28 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 					$contactMemberCache->save();
 				}else{
 					//create the ContactMemberCache
-					$contact_member_cache_to_save[] = array( $user->getId(), $m['id'], $tempParent);
+					$contact_member_cache_to_save[$m['id']] = array( $user->getId(), $m['id'], $tempParent);
 				}
 					
 			}else{
 				$lastParentIdByDepth[$m['depth']] = 0;
+				
+				// fill this array with members that the user does not have permissions
+				$to_delete[] = $m['id'];
 			}
+		}
+		
+		// delete member ids that user doesn't have permissions from this user's cache
+		$to_delete = array_filter($to_delete);
+		if (count($to_delete) > 0) {
+			DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_cache WHERE contact_id=".$user->getId()." AND member_id IN (".implode(',',$to_delete).")");
 		}
 		
 		// Insert new rows
 		$table = TABLE_PREFIX."contact_member_cache";
 		$cols = array("contact_id", "member_id", "parent_member_id") ;
 		if(count($contact_member_cache_to_save) > 0){
-			massiveInsert($table, $cols, $contact_member_cache_to_save);
+			massiveInsert($table, $cols, array_values($contact_member_cache_to_save),5000, " ON DUPLICATE KEY UPDATE contact_id=contact_id;");
 		}
 		
 	}
@@ -303,7 +348,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 			$dimensions = Dimensions::findAll();
 			$dimensions_ids = array();
 			foreach ($dimensions as $dimension) {
-				if ($dimension->getDefinesPermissions()) {
+				if ($dimension->getDefinesPermissions() && $dimension->getCode() != 'feng_persons') {
 					$dimensions_ids[] = $dimension->getId();
 				}
 			}

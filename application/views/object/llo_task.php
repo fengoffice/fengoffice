@@ -20,7 +20,10 @@ $attr = $linked_object->isCompleted() ? 'style="text-decoration:line-through"' :
 		<span><?php echo clean($linked_object->getObjectName()) ?></span>
 	</a></td>
 	
-	<td><?php echo format_datetime($linked_object->getUpdatedOn(), $date_format, logged_user()->getTimezone());?></td>
+	<td><?php 
+		$tz_offset = Timezones::getTimezoneOffsetToApply($linked_object);
+		echo format_datetime($linked_object->getUpdatedOn(), $date_format, $tz_offset/3600);
+	?></td>
 	
 	<td style="text-align:right;">
 		<?php if ($linked_objects_object->canUnlinkObject(logged_user(), $linked_object)) { 

@@ -229,6 +229,7 @@ return array(
     'field ProjectTasks object_subtype' => 'Object subtype',
 	'field ProjectTasks percent_completed' => 'Percent completed',
 	'field ProjectTasks original_task_id' => 'Original task id',
+    'field ProjectTasks status' => 'Status',
 
 	// User fields
     'field Users username' => 'Username', 
@@ -306,5 +307,10 @@ return array(
 	'field Contacts home_address' => 'Home address',
 	'field Contacts work_address' => 'Work address',
 	'field Contacts other_address' => 'Other address',
+    
+    
+        // Time fields 
+        'field Objects total_worked_time' => 'Total worked time', 
+        'field Objects status' => 'Status',
 );
 

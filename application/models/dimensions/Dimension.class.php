@@ -7,8 +7,9 @@
  */
 class Dimension extends BaseDimension {
 	
+	private $options_cache = array();
 	
-	function getAllMembers($only_ids = false, $order = null, $filter_deleted_objects = false, $extra_conditions = "", $limit = null) {
+	function getAllMembers($only_ids = false, $order = null, $filter_deleted_objects = false, $extra_conditions = "", $limit = null, $order_dir = null) {
 		$contactsType = ObjectTypes::instance()->findByName('person');
 		if ($contactsType) {
 			$contactsTypeId = $contactsType->getId();
@@ -20,8 +21,21 @@ class Dimension extends BaseDimension {
 		if (!is_null($order)) { 
 			$parameters['order'] = $order;
 		}
-		if (!is_null($limit)) { 
-			$parameters['limit'] = $limit;
+		if (!is_null($order_dir)) { 
+			$parameters['order_dir'] = $order_dir;
+		}
+		
+		if (!is_null($limit)) {
+			if (is_array($limit)) {
+				if (isset($limit['offset'])) {
+					$parameters['offset'] = $limit['offset'];
+				}
+				if (isset($limit['limit'])) {
+					$parameters['limit'] = $limit['limit'];
+				}
+			} else if (is_numeric($limit)) {
+				$parameters['limit'] = $limit;
+			}
 		}
 		
 		if ($filter_deleted_objects){
@@ -165,6 +179,7 @@ class Dimension extends BaseDimension {
 	}
 	
 	/**
+	 * @deprecated Use Dimension::getOptionValue($name) instead.
 	 * @param bool True to get JSON decoded. false to get plain text
 	 */
 	function getOptions($decoded = false ) {
@@ -190,19 +205,44 @@ class Dimension extends BaseDimension {
 	}
 	
 	function useLangs() {
-		$options = $this->getOptions(true);
-		return (isset($options->useLangs) && $options->useLangs);
+		return intval($this->getOptionValue('useLangs'));
 	}
 	
 	/**
 	 * @see BaseDimension::getName()
 	 */
 	function getName() {
-		if ($this->useLangs()) {
-			return lang($this->getCode());
-		}else{
-			return parent::getName();
+		
+		$custom_name = $this->getOptionValue('custom_dimension_name');
+		if ($custom_name && trim($custom_name) != "") {
+			
+			$name = $custom_name;
+			
+		} else {
+			if ($this->useLangs()) {
+				$name = lang($this->getCode());
+			} else {
+				$name = parent::getName();
+			}
+			Hook::fire("edit_dimension_name", array('dimension' => $this), $name);
 		}
+		
+		return $name;
+	}
+	
+	
+	function getOptionValue($name) {
+		
+		if (!isset($this->options_cache[$name])) {
+			$value = DimensionOptions::getOptionValue($this->getId(), $name);
+			$this->options_cache[$name] = $value;
+		}
+		return $this->options_cache[$name];
+	}
+	
+	function setOptionValue($name, $value) {
+		DimensionOptions::setOptionValue($this->getId(), $name, $value);
+		$this->options_cache[$name] = $value;
 	}
 
 }

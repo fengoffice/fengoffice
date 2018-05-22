@@ -8,7 +8,10 @@ og.eventManager.addListener('replace all empty breadcrumb',function(){
 	}
 	
 	var copy = og.emptyBreadcrumbsToRefresh.slice(0);
-	var members = og.getMembersFromServer(og.emptyBreadcrumbsToRefresh,callback,copy);
+	
+	if(copy.length > 0){
+		var members = og.getMembersFromServer(og.emptyBreadcrumbsToRefresh,callback,copy);
+	}	
 
 	//empty the array after refresh
 	og.emptyBreadcrumbsToRefresh.length = 0;
@@ -383,9 +386,13 @@ og.replaceAllEmptyBreadcrumbForThisMember = function(dimension_id ,member, extra
 		var new_target_id = 'bread-crumb-'+ Ext.id() + member.id;
 		var container_to_fill = $(all_targets[j]).data("container-to-fill");
 		var show_link = $(all_targets[j]).data("show-link");
-		$(all_targets[j]).parent().html('<span id="'+new_target_id+'" class="bread-crumb-'+ member.id +' member-path real-breadcrumb og-wsname-color-'+ member.color +'" data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'"></span>');
+		var exclude_parents_path = $(all_targets[j]).data("exclude-parents-path");
+		var epp = exclude_parents_path ? '1' : '0';
 		
-		og.insertBreadcrumb(member.id,new_target_id,false);
+		$(all_targets[j]).parent().html('<span id="'+new_target_id+'" class="bread-crumb-'+ member.id +' member-path real-breadcrumb og-wsname-color-'+ member.color +
+				'" data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'" data-exclude-parents-path="'+epp+'"></span>');
+		
+		og.insertBreadcrumb(member.id,new_target_id,false,null,exclude_parents_path);
 	}	
 }
 
@@ -393,11 +400,12 @@ og.replaceAllEmptyBreadcrumbForThisMember = function(dimension_id ,member, extra
  * this function return empty spams for each breadcrumb, so later we can update them with the correct width.
  * after the returned html is inserted on the dom you have to fire the event 'replace all empty breadcrumb'
  * */
-og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_link) {
+og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_link,exclude_parents_path, allow_associated_dimensions) {
 	var all_bread_crumbs = "";
 	if (typeof show_link == "undefined" || show_link == null ) {
 		var show_link = true;
 	}
+	var epp = exclude_parents_path ? '1' : '0';
 	
 	//all_bread_crumbs += '<span class="obj-breadcrumb-container">';
 	for (x in dims) {
@@ -407,15 +415,26 @@ og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_l
 		}
 		var dim = {};
 		var empty_bread_crumbs = "";
-		var members = dims[x];
+		var members_by_ot = dims[x];
 		
-		for (id in members) {
-			if (isNaN(id)) continue;
-									
-			//return a target to reload on the callback after get the member from the server if is necesary
-			empty_bread_crumbs += '<span class="member-path"><span class="bread-crumb-'+ id +' empty-bread-crumb member-path" data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'"></span></span>';
-			if(og.emptyBreadcrumbsToRefresh.indexOf(id) == -1){  
-				og.emptyBreadcrumbsToRefresh.push(id);
+		// don't show associated dimensions in content objects general breadcrumb
+		if (!allow_associated_dimensions && dims[x].is_assoc_dim) continue;
+		
+		for (ot_id in members_by_ot) {
+			if (ot_id == 'opt') continue;
+			
+			var members = members_by_ot[ot_id];
+			if (!members) continue;
+			for (idx=0; idx<members.length; idx++) {
+				id = members[idx];
+				if (isNaN(id)) continue;
+				
+				//return a target to reload on the callback after get the member from the server if is necesary
+				empty_bread_crumbs += '<span class="member-path"><span class="bread-crumb-'+ id +' empty-bread-crumb member-path" '+
+					'data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'" data-exclude-parents-path="'+epp+'"></span></span>';
+				if(og.emptyBreadcrumbsToRefresh.indexOf(id) == -1){
+					og.emptyBreadcrumbsToRefresh.push(id);
+				}
 			}
 		}
 		
@@ -435,11 +454,12 @@ og.insertBreadcrumb = function(member_id,target,from_callback) {
 	target = "#"+target;
 	var container_to_fill = $(target).data("container-to-fill");
 	var show_link = $(target).data("show-link");
+	var exclude_parents_path = $(target).data("exclude-parents-path");
 	
 	/*SINGLE BREADCRUMB SECTION*/
 	var extra_params = {										
 			};	
-	var members = og.getMemberTextsFromOgDimensions(member_id, true);
+	var members = og.getMemberTextsFromOgDimensions(member_id, !exclude_parents_path);
 	
 	//title must have all parents members names
 	var title = '';
@@ -458,6 +478,9 @@ og.insertBreadcrumb = function(member_id,target,from_callback) {
 		
 	//calculate the container width and check if thers more elements in the same container
 	var container_width = $(target).closest(container_to_fill).width();//.parent().parent() .closest(container_to_fill)
+	if ($(target).closest(container_to_fill).css('max-width') !== 'none') {
+		container_width = parseFloat($(target).closest(container_to_fill).css('max-width'));
+	}
 	var real_container_width = container_width;
 	var container_current_childs = $(target).parent().siblings();
 	var container_current_childs_width = 0;
@@ -499,6 +522,13 @@ og.insertBreadcrumb = function(member_id,target,from_callback) {
 			var onclick = "return false;";
 			if (og.additional_on_dimension_object_click[m.ot]) {
 				onclick = og.additional_on_dimension_object_click[m.ot].replace('<parameters>', m.id);
+			} else {
+				if (m.dim) {
+					var dim_tree = Ext.getCmp("dimension-panel-" + m.dim);
+					if (dim_tree) {
+						onclick = "og.memberTreeExternalClick('"+ dim_tree.dimensionCode +"', "+ m.id +");";
+					}
+				}
 			}  
 			
 			member_name = '<a onclick="'+onclick+';" href="#">'+ m.text +'</a>';
@@ -592,7 +622,9 @@ og.checkMultiMemberBreadcrumb = function(target, container_width) {
 				plural = "s";
 			}			
 			object_types_totals_text += "<span class='ctmBadge'>"+total+"</span> ";
-			object_types_totals_text += lang(og.objectTypes[prop].name+plural)+" ";						
+			if (og.objectTypes[prop] && og.objectTypes[prop].name) {
+				object_types_totals_text += og.objectTypes[prop].c_name+plural+" ";						
+			}
  	    }
 		object_types_totals_text += "</button>";
 		
@@ -651,8 +683,9 @@ og.initBreadcrumbsBtns = function(btns){
 	   		var ot = $(member_paths[j]).data("object-type");
 	   		if(typeof ot == "undefined"){
 	   			continue;
-	   		}	   		
-	   		var ot_name = og.objectTypes[ot].name+"s";
+	   		}
+	   		if (!og.objectTypes[ot]) continue;
+	   		var ot_name = og.objectTypes[ot].c_name;
 	   		
 	   		if(typeof tmp_ot[ot_name] == "undefined"){
 	   			tmp_ot[ot_name] = new Array();

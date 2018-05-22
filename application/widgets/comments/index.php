@@ -2,6 +2,7 @@
 
 	$limit = 10;
 	$result = Comments::instance()->listing(array(
+		"check_permissions_col" => "e.rel_object_id",
 		"order" => "created_on",
 		"order_dir" => "desc",
 		"start" => 0,
@@ -19,7 +20,7 @@
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('latest comments'). ' '. lang('in').' '. implode(", ", $mnames);
+		$widget_title = lang('latest comments'). ' '. lang('in m').' '. implode(", ", $mnames);
 	}
 		
 	$total = $result->total;

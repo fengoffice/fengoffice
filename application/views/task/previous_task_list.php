@@ -11,7 +11,7 @@
 <div class="commentsTitle"><?php echo lang('previous tasks') ?></div>
 <?php if (is_array($previous_tasks) && count($previous_tasks) > 0) { ?>
 
-<div class="adminMainBlock">
+<div class="adminMainBlock" style="padding-left:0;">
 <table><tr>
 		<th><?php echo lang('task') ?></th>
 		<?php if(!$object instanceof TemplateTask){?>
@@ -76,7 +76,9 @@
 				}
 			}
 		?></td>
-		<td><a class="internalLink coViewAction ico-delete" href="<?php echo get_url('taskdependency', 'remove', array('pt' => $ptask->getId(), 't' => $object->getId())) ?>">&nbsp;</a></td>
+		<td><?php if ($object->canEdit(logged_user())) { ?>
+			<a class="internalLink coViewAction ico-delete" href="<?php echo get_url('taskdependency', 'remove', array('pt' => $ptask->getId(), 't' => $object->getId())) ?>">&nbsp;</a>
+		<?php } ?></td>
 	</tr>
 <?php } ?>
 </table>
@@ -84,6 +86,10 @@
 
 <?php } ?>
 
-<a onclick="<?php echo $picker_func ?>" href="#" class="coViewAction ico-add"><?php echo lang('add previous task')?></a>
+<?php if ($object->canEdit(logged_user())) { ?>
+<div style="margin-top:5px;">
+	<a onclick="<?php echo $picker_func ?>" href="#" class="coViewAction ico-add"><?php echo lang('add previous task')?></a>
+</div>
+<?php } ?>
 
 <div class="desc"><?php echo lang('this task has x previous open tasks', $incomplete_previous); ?></div>

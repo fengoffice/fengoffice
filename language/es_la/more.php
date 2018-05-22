@@ -69,8 +69,16 @@ return array(
 		'system module mails-panel hint' => 'El correo de Feng Office es un cliente de correo electrónico plenamente operativo e integrado. Como su correo tradicional, pero con la ventaja de encontrarse dentro de Feng Office.',
 		'system module time-panel hint' => 'El sistema permite realizar el seguimiento de las horas empleadas para cada área de trabajo, subespacio, tarea y usuario. Las prestaciones de creación de informes permiten la sencilla producción de una lista de horas para cualquier periodo de tiempo, usuario y área de trabajo.',
 		'system module gantt hint' => 'Con el Diagrama de Gantt usted podrá representar fases y actividades de una estructura de deslose de proyectos y del flujo que debería tener.',
+		'system module income-panel hint' => 'El módulo de facturación le permite administrar las facturas de su empresa.',
+		'system module purchase-order-panel hint' => 'Permite administrar las órdenes de compra de su empresa.',
+		'system module purchase-order hint' => 'Permite administrar las órdenes de compra de su empresa.',
 		
 		'system dimension customer_project hint' => 'Le permite organizar todos sus clientes y proyectos con toda su información relacionada.',
 		'system dimension workspaces hint' => 'Las áreas de trabajo le permiten a los individuos y equipos organizar sus datos y tareas, y compartirlos con otras personas.',
 		'system dimension tags hint' => 'Le permite asignar etiquetas a cualquier objeto del sistema.',
+
+		'done apply changes' => 'Aplicar cambios',
+		'config category desc organization data' => 'Aquí puede administrar los datos de su organización.',
+
+    'custom system member module hint' => 'Ver lista de {0} en tab separado.',
 );

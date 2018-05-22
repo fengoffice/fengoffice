@@ -140,4 +140,17 @@
 			return $result;
 		}
 	}
+	
+	function get_mysql_date_format_from_config_option() {
+		$date_format = user_config_option('date_format');
+		$mysql_date_format = "";
+		for($i=0; $i<strlen($date_format); $i++) {
+			$char = $date_format[$i];
+			if (in_array($char, array('d','m','Y'))) {
+				$mysql_date_format .= "%";
+			}
+			$mysql_date_format .= $char;
+		}
+		return $mysql_date_format;
+	}
 ?>

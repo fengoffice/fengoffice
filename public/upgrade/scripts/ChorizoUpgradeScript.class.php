@@ -120,7 +120,7 @@ class ChorizoUpgradeScript extends ScriptUpgraderScript {
 						('mails panel', 'mails_per_page', '50', 'IntegerConfigHandler', '0', '0', NULL),
 						('general', 'access_member_after_add', '1', 'BoolConfigHandler', '0', '1300', NULL),
 						('general', 'access_member_after_add_remember', '0', 'BoolConfigHandler', '0', '1301', NULL),
-						('general', 'sendEmailNotification', '1', 'BoolConfigHandler', '1', '0', 'Send email notification to new user'),
+						('general', 'sendEmailNotification', '1', 'BoolConfigHandler', '0', '0', 'Send email notification to new user'),
  						('general', 'viewContactsChecked', '1', 'BoolConfigHandler', '1', '0', 'in people panel is view contacts checked'),
  						('general', 'viewUsersChecked', '1', 'BoolConfigHandler', '0', '0', 'in people panel is view users checked'),
  						('general', 'viewCompaniesChecked', '1', 'BoolConfigHandler', '1', '0', 'in people panel is view companies checked'),

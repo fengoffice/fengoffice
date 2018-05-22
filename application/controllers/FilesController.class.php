@@ -169,7 +169,19 @@ class FilesController extends ApplicationController {
 
 		ApplicationReadLogs::createLog($file, ApplicationReadLogs::ACTION_DOWNLOAD);
 
-		download_from_repository($file->getLastRevision()->getRepositoryId(), $file->getTypeString(), $file->getFilename(), !$inline);
+		//check file extension
+		$file_name = $file->getFilename();
+		$file_name_extension = get_file_extension($file->getFilename());
+		$file_type = $file->getFileType();
+		if($file_type instanceof FileType){
+			$file_type_extension = $file->getFileType()->getExtension();
+			if($file_name_extension != $file_type_extension){
+				$file_name_info = pathinfo($file_name);
+				$file_name = $file_name_info['filename']. '.' . $file_type_extension;
+			}
+		}
+
+		download_from_repository($file->getLastRevision()->getRepositoryId(), $file->getTypeString(), $file_name, !$inline);
 		die();
 	} // download_file
 	
@@ -179,8 +191,13 @@ class FilesController extends ApplicationController {
 	 * @param $id the repository id of the file
 	 * @return file url
 	 */
-	function get_public_file(){
-		$id = array_var($_GET, 'id', 0);
+	function get_public_file($id=null){
+
+	    if (!isset($id)){
+	        $id = array_var($_GET, 'id', 0);
+	    }
+
+		
 		if (FileRepository::isInRepository($id) && FileRepository::getFileAttribute($id, 'public', false)) {
 			$type = FileRepository::getFileAttribute($id,'type');
 			download_from_repository($id, $type, $id, false);
@@ -204,11 +221,11 @@ class FilesController extends ApplicationController {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			die();
-		} // if
+		}
 		session_commit();
 		download_from_repository($file->getLastRevision()->getRepositoryId(), $file->getTypeString(), $file->getFilename(), !$inline);
 		die();
-	} // download_file
+	} // download_image
 
 	
 	function checkout_file()
@@ -298,7 +315,20 @@ class FilesController extends ApplicationController {
 			return;
 		} // if
 		session_commit();
-		download_from_repository($revision->getRepositoryId(),$revision->getTypeString(), $file->getFilename(), !$inline);
+
+		//check file extension
+		$file_name = $file->getFilename();
+		$file_name_extension = get_file_extension($file->getFilename());
+		$file_type = $revision->getFileType();
+		if($file_type instanceof FileType){
+			$file_type_extension = $file_type->getExtension();
+			if($file_name_extension != $file_type_extension){
+				$file_name_info = pathinfo($file_name);
+				$file_name = $file_name_info['filename']. '.' . $file_type_extension;
+			}
+		}
+
+		download_from_repository($revision->getRepositoryId(),$revision->getTypeString(), $file_name, !$inline);
 		die();
 	} // download_revision
 
@@ -337,9 +367,12 @@ class FilesController extends ApplicationController {
 				
 				$url = array_var($file_data, 'url', '');
 				if ($url && strpos($url, ':') === false) {
-					$url = $this->protocol ."://". $url;
+					if (str_starts_with($url, '\\\\')) {
+						$url = "file:///". $url;
+					} else {
+						$url = $this->protocol ."://". $url;
+					}
 					$file->setUrl($url);
-					
 				}
 				
 				DB::beginWork();
@@ -363,7 +396,9 @@ class FilesController extends ApplicationController {
 				//link it!
 				$object_controller = new ObjectController();
 				$object_controller->add_subscribers($file);
-				$object_controller->add_to_members($file, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($file, $member_ids);
+				}
 				$object_controller->link_to_new_object($file);
 				$object_controller->add_subscribers($file);
 				$object_controller->add_custom_properties($file);
@@ -491,7 +526,11 @@ class FilesController extends ApplicationController {
 				} else if ($file->getType() == ProjectFiles::TYPE_WEBLINK) {
 					$url = array_var($file_data, 'url', '');
 					if ($url && strpos($url, ':') === false) {
-						$url = $this->protocol ."://". $url;
+						if (str_starts_with($url, '\\\\')) {
+							$url = "file:///". $url;
+						} else {
+							$url = $this->protocol ."://". $url;
+						}
 						$file->setUrl($url);
 						$file->save();
 					}
@@ -510,7 +549,7 @@ class FilesController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
 				//Add properties
-				if (!$skipSettings){
+				if (!$skipSettings && !is_null($member_ids)){
 					$object_controller->add_to_members($file, $member_ids);
 				}
 
@@ -520,9 +559,9 @@ class FilesController extends ApplicationController {
 				$object_controller->add_custom_properties($file);
 				
 				DB::commit();
-				
+
+				set_user_config_option('notify_myself_too', array_var($file_data, 'notify_myself_too'));
 				if (array_var($file_data, 'notify_myself_too')) {
-					set_user_config_option('notify_myself_too', 1);
 					logged_user()->notify_myself = true;
 				}
 				
@@ -599,6 +638,12 @@ class FilesController extends ApplicationController {
 			}else{
 				$file->setDefaultSubject('');
 			}
+			
+			// files added as email attachments must be archived
+			if (array_var($file_data, 'composing_mail') && $upload_option == -1) {
+				$file->getObject()->setColumnValue('archived_by_id', logged_user()->getId());
+				$file->getObject()->setColumnValue('archived_on', DateTimeValueLib::now());
+			}
 		
 			DB::beginWork();
 			
@@ -612,7 +657,6 @@ class FilesController extends ApplicationController {
 			}
 					
 			$object_controller = new ObjectController();
-			//$member_ids = json_decode(array_var($_POST, 'members'));
 		
 			if (count($member_ids) > 0 || !array_var($file_data, 'composing_mail')) {
 				$object_controller->add_to_members($file, $member_ids);
@@ -630,8 +674,8 @@ class FilesController extends ApplicationController {
 			}
 			DB::commit();
 			
+			set_user_config_option('notify_myself_too', array_var($file_data, 'notify_myself_too'));
 			if (array_var($file_data, 'notify_myself_too')) {
-				set_user_config_option('notify_myself_too', 1);
 				logged_user()->notify_myself = true;
 			}
 			
@@ -694,6 +738,15 @@ class FilesController extends ApplicationController {
 				$upload_id = array_var($file_data, 'upload_id');
 				$uploaded_file = array_var($_SESSION, $upload_id, array());
 				$member_ids = json_decode(array_var($_POST, 'members'));
+				
+				$notAllowedMember = '';
+				$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).')'));
+				if(!$file->canAdd(logged_user(), $members, $notAllowedMember )) {
+					if (str_starts_with($notAllowedMember, '-- req dim --')) $err_msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
+					else trim($notAllowedMember) == "" ? $err_msg = lang('you must select where to keep', lang('the file')) : $err_msg = lang('no context permissions to add',lang("files"),$notAllowedMember );
+					
+					throw new Exception($err_msg);
+				}
 				
 				//files ids to return
 				$file_ids = array();
@@ -810,6 +863,9 @@ class FilesController extends ApplicationController {
 					// set updated on
 					$file->setUpdatedById(logged_user()->getId());
 					$file->setUpdatedOn(DateTimeValueLib::now());
+					if ($file->isCheckedOut()){
+						$file->checkIn();
+					}
 					$file->save();
 				}
 				$file->subscribeUser(logged_user());
@@ -824,7 +880,11 @@ class FilesController extends ApplicationController {
 				} else if ($file->getType() == ProjectFiles::TYPE_WEBLINK) {
 					$url = array_var($file_data, 'url', '');
 					if ($url && strpos($url, ':') === false) {
-						$url = $this->protocol . $url;
+						if (str_starts_with($url, '\\\\')) {
+							$url = "file:///". $url;
+						} else {
+							$url = $this->protocol ."://". $url;
+						}
 						$file->setUrl($url);
 						$file->save();
 					}
@@ -1024,7 +1084,7 @@ class FilesController extends ApplicationController {
 	}
 	
 	
-	private function upload_document_image($url, $filename, $img_num) {
+	public function upload_document_image($url, $filename, $img_num) {
 		$file_dt = array();
 		$file_content = file_get_contents(html_entity_decode($url));
 		$extension = get_file_extension($url);
@@ -1733,17 +1793,24 @@ class FilesController extends ApplicationController {
 		$order = array_var($_GET,'sort');
 		$order_dir = array_var($_GET,'dir');
 		$page = (integer) ($start / $limit)+1;
-		$hide_private = !logged_user()->isMemberOfOwnerCompany();
 		$type = array_var($_GET,'type');
 		$user = array_var($_GET,'user');
+		$dim_order = null;
+		$cp_order = null;
+		
+		$ids = array();
+		$exploded = explode(',', array_var($_GET, 'objects'));
+		foreach ($exploded as $exp) {
+			if (is_numeric($exp)) $ids[] = $exp;
+		}
 
 		// if there's an action to execute, do so 
 		if (array_var($_GET, 'action') == 'delete') {
-			$ids = explode(',', array_var($_GET, 'objects'));
+			
 			$succ = 0; $err = 0;
 			foreach ($ids as $id) {
 				$file = ProjectFiles::findById($id);
-				if (isset($file) && $file->canDelete(logged_user())) {
+				if ($file instanceof ProjectFile && $file->canDelete(logged_user())) {
 					try{
 						DB::beginWork();
 						$file->trash();
@@ -1770,10 +1837,11 @@ class FilesController extends ApplicationController {
 			}
 
 		} else if (array_var($_GET, 'action') == 'markasread') {
-			$ids = explode(',', array_var($_GET, 'objects'));
+			
 			$succ = 0; $err = 0;
 				foreach ($ids as $id) {
-				$file = ProjectFiles::findById($id);
+					$file = ProjectFiles::findById($id);
+					if (!$file instanceof ProjectFile) continue;
 					try {
 						$file->setIsRead(logged_user()->getId(),true);
 						$succ++;
@@ -1786,10 +1854,11 @@ class FilesController extends ApplicationController {
 				flash_error(lang("error markasread files", $err));
 			}
 		}else if (array_var($_GET, 'action') == 'markasunread') {
-			$ids = explode(',', array_var($_GET, 'objects'));
+			
 			$succ = 0; $err = 0;
 				foreach ($ids as $id) {
-				$file = ProjectFiles::findById($id);
+					$file = ProjectFiles::findById($id);
+					if (!$file instanceof ProjectFile) continue;
 					try {
 						$file->setIsRead(logged_user()->getId(),false);
 						$succ++;
@@ -1804,12 +1873,13 @@ class FilesController extends ApplicationController {
 		}
 		 else if (array_var($_GET, 'action') == 'zip_add') {
 			$this->zip_add();
+			
 		} else if (array_var($_GET, 'action') == 'archive') {
-			$ids = explode(',', array_var($_GET, 'ids'));
+			
 			$succ = 0; $err = 0;
 			foreach ($ids as $id) {
 				$file = ProjectFiles::findById($id);
-				if (isset($file) && $file->canEdit(logged_user())) {
+				if ($file instanceof ProjectFile && $file->canEdit(logged_user())) {
 					try{
 						DB::beginWork();
 						$file->archive();
@@ -1836,8 +1906,11 @@ class FilesController extends ApplicationController {
 		$select_columns = null;
 		$extra_conditions = "";
 		if (strpos($order, 'p_') == 1 ){
-			$cpId = substr($order, 3);
+			$cp_order = substr($order, 3);
 			$order = 'customProp';
+		} else if (str_starts_with($order, "dim_")) {
+			$dim_order = substr($order, 4);
+			$order = 'dimensionOrder';
 		}
 		if ($order == ProjectFiles::ORDER_BY_POSTTIME) {
 			$order = '`created_on`';
@@ -1851,20 +1924,9 @@ class FilesController extends ApplicationController {
 				'e_field' => 'object_id',
 			);
 			$extra_conditions .= " AND `jt`.`object_id` = (SELECT max(`x`.`object_id`) FROM ".TABLE_PREFIX."project_file_revisions `x` WHERE `x`.`file_id` = `e`.`object_id`)";
-		}else if ($order == 'customProp') {
-			$order = 'IF(ISNULL(jt.value),1,0),jt.value';
-			$join_params['join_type'] = "LEFT ";
-			$join_params['table'] = "".TABLE_PREFIX."custom_property_values";
-			$join_params['jt_field'] = "object_id";
-			$join_params['e_field'] = "object_id";
-			$join_params['on_extra'] = "AND custom_property_id = ".$cpId;
-			$extra_conditions .= " AND ( custom_property_id = ".$cpId. " OR custom_property_id IS NULL)";
-			$select_columns = array("DISTINCT o.*", "e.*");
 		} else {
 			$order = '`name`';
 		} // if
-		
-		$extra_conditions .= $hide_private ? 'AND `is_visible` = 1' : '';
 		
 		// filter attachments of other people if not filtering
 		$tmp_mids = array();
@@ -1874,12 +1936,18 @@ class FilesController extends ApplicationController {
 				if ($d instanceof Dimension && $d->getIsManageable()) $tmp_mids[] = $selection->getId();
 			}
 		}
+		/*
 		if (count($tmp_mids) == 0) {
 			if (Plugins::instance()->isActivePlugin('mail')) {
-				$extra_conditions .= " AND IF(e.mail_id=0, true, EXISTS (SELECT mac.contact_id FROM ".TABLE_PREFIX."mail_account_contacts mac 
+				$persons_dim_id = Dimensions::findByCode('feng_persons')->getId();
+				$extra_conditions .= " AND IF(e.mail_id=0, true, 
+					EXISTS (SELECT omm.object_id FROM ".TABLE_PREFIX."object_members omm 
+							INNER JOIN ".TABLE_PREFIX."members mm ON mm.id=omm.member_id WHERE mm.dimension_id<>'$persons_dim_id')
+						OR
+					EXISTS (SELECT mac.contact_id FROM ".TABLE_PREFIX."mail_account_contacts mac 
 					WHERE mac.contact_id=o.created_by_id AND mac.account_id=(SELECT mc.account_id FROM ".TABLE_PREFIX."mail_contents mc WHERE mc.object_id=e.mail_id)))";
 			}
-		}
+		}*/
 		
 		Hook::fire("listing_extra_conditions", null, $extra_conditions);
 		
@@ -1889,6 +1957,8 @@ class FilesController extends ApplicationController {
 		$objects = ProjectFiles::instance()->listing(array(
 			"order"=>$order,
 			"order_dir" => $order_dir,
+			"dim_order" => $dim_order,
+			"cp_order" => $cp_order,
 			"extra_conditions"=> $extra_conditions,
 			"show_only_member_objects" => user_config_option('show_only_member_files'),
 			'count_results' => false,
@@ -1909,6 +1979,9 @@ class FilesController extends ApplicationController {
 			"objType" => ProjectFiles::instance()->getObjectTypeId(),
 			"files" => array(),
 		);
+		foreach ($objects as $k => $v) {
+			if ($k != 'total' && $k != 'objects') $listing[$k] = $v;
+		}
 		
 		if (is_array($objects->objects)) {
 			$index = 0;
@@ -1942,25 +2015,15 @@ class FilesController extends ApplicationController {
 				}
 				
 				$ids[] = $o->getId();
-				$values = array(
+				$values = $o->getObject()->getArrayInfo();
+				
+				$more_values = array(
 					"id" => $o->getId(),
 					"ix" => $index++,
-					"object_id" => $o->getId(),
-					"ot_id" => $o->getObjectTypeId(),
-					"name" => $o->getObjectName(),
-					"type" => $o->getTypeString(),
 					"mimeType" => $o->getTypeString(),
-					"createdBy" => clean($o->getCreatedByDisplayName()),
-					"createdById" => $o->getCreatedById(),
-					"dateCreated" => $o->getCreatedOn() instanceof DateTimeValue ? ($o->getCreatedOn()->isToday() ? format_time($o->getCreatedOn()) : format_datetime($o->getCreatedOn())) : '',
-					"dateCreated_today" => $o->getCreatedOn() instanceof DateTimeValue ? $o->getCreatedOn()->isToday() : 0,
-					"updatedBy" => clean($o->getUpdatedByDisplayName()),
-					"updatedById" => $o->getUpdatedById(),
-					"dateUpdated" => $o->getUpdatedOn() instanceof DateTimeValue ? ($o->getUpdatedOn()->isToday() ? format_time($o->getUpdatedOn()) : format_datetime($o->getUpdatedOn())) : '',
-					"dateUpdated_today" => $o->getUpdatedOn() instanceof DateTimeValue ? $o->getUpdatedOn()->isToday() : 0,
+					"type" => $o->getTypeString(),
 					"icon" => $o->getTypeIconUrl(),
 					"size" => format_filesize($o->getFileSize()),
-					"url" => $o->getOpenUrl(),
 					"manager" => get_class($o->manager()),
 					"checkedOutByName" => $coName,
 					"checkedOutById" => $coId,
@@ -1970,7 +2033,9 @@ class FilesController extends ApplicationController {
 					"ftype" => $o->getType(),
 					"url" => $o->getUrl(),
 					"memPath" => json_encode($o->getMembersIdsToDisplayPath()),
+					"genid" => gen_id(),
 				);
+				$values = array_merge($values, $more_values);
 				if ($o->isMP3()) {
 					$values['isMP3'] = true;
 				}
@@ -2087,7 +2152,11 @@ class FilesController extends ApplicationController {
 				if ($file->getType() == ProjectFiles::TYPE_WEBLINK) {
 					$url = array_var($file_data, 'url', '');
 					if ($url && strpos($url, ':') === false) {
-						$url = $this->protocol . $url;
+						if (str_starts_with($url, '\\\\')) {
+							$url = "file:///". $url;
+						} else {
+							$url = $this->protocol ."://". $url;
+						}
 					}
 					$file->setUrl($url);
 					$revision = $file->getLastRevision();
@@ -2116,8 +2185,11 @@ class FilesController extends ApplicationController {
 				} // if
 
 				$member_ids = json_decode(array_var($_POST, 'members'));
+				
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($file, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($file, $member_ids);
+				}
 				$object_controller->link_to_new_object($file);
 				$object_controller->add_subscribers($file);
 				$object_controller->add_custom_properties($file);
@@ -2125,9 +2197,8 @@ class FilesController extends ApplicationController {
 				$file->resetIsRead();
 				
 				DB::commit();
-				
+				set_user_config_option('notify_myself_too', array_var($file_data, 'notify_myself_too'));
 				if (array_var($file_data, 'notify_myself_too')) {
-					set_user_config_option('notify_myself_too', 1);
 					logged_user()->notify_myself = true;
 				}
 				
@@ -2213,7 +2284,11 @@ class FilesController extends ApplicationController {
 	
 				$url = array_var($file_data, 'url', '');
 				if ($url && strpos($url, ':') === false) {
-					$url = $this->protocol ."://". $url;
+					if (str_starts_with($url, '\\\\')) {
+						$url = "file:///". $url;
+					} else {
+						$url = $this->protocol ."://". $url;
+					}
 					$file->setUrl($url);
 					
 				}
@@ -2224,9 +2299,10 @@ class FilesController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 	
 				//link it!
-				$member_ids = json_decode(array_var($_POST, 'members'));
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($file, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($file, $member_ids);
+				}
 				$object_controller->link_to_new_object($file);
 				$object_controller->add_subscribers($file);
 				$object_controller->add_custom_properties($file);
@@ -2490,7 +2566,7 @@ class FilesController extends ApplicationController {
 			return;
 		} // if
 			
-		if(!$file->canDelete(logged_user())) {
+		if(!$file->canEdit(logged_user())) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			return;
@@ -2506,6 +2582,13 @@ class FilesController extends ApplicationController {
 		tpl_assign('revision', $revision);
 		tpl_assign('file', $file);
 		tpl_assign('revision_data', $revision_data);
+		
+
+		// set layout for modal form
+		if (array_var($_REQUEST, 'modal')) {
+			$this->setLayout("json");
+			tpl_assign('modal', true);
+		}
 			
 		if(is_array(array_var($_POST, 'revision'))) {
 			try {
@@ -2518,7 +2601,11 @@ class FilesController extends ApplicationController {
 				ApplicationLogs::createLog($revision, ApplicationLogs::ACTION_EDIT);
 				
 				flash_success(lang('success edit file revision'));
-				ajx_current("back");
+				if (array_var($_REQUEST, 'modal')) {
+					evt_add("reload current panel");
+				} else {
+					ajx_current("back");
+				}
 			} catch(Exception $e) {
 				DB::rollback();
 				flash_error($e->getMessage());
@@ -2812,8 +2899,13 @@ class FilesController extends ApplicationController {
 			flash_error(lang('zip not supported'));
 			return;
 		}
+		$object_ids = array();
+		$exploded = explode(',', array_var($_GET, 'objects'));
+		foreach ($exploded as $exp) {
+			if (is_numeric($exp)) $object_ids[] = $exp;
+		}
 
-		$files = ProjectFiles::findByCSVIds(array_var($_GET, 'objects'), '`type` = 0');
+		$files = ProjectFiles::findByCSVIds(implode(',', $object_ids), '`type` = 0');
 		if (count($files) == 0) {
 			flash_error(lang('no files to compress'));
 			return;

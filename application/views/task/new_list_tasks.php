@@ -56,7 +56,7 @@
 			$data['isread'] = isset($read_objects[$data['id']]);
 		}
 	}
-	
+
 	if (is_array($internalMilestones)) {
 		foreach($internalMilestones as $milestone) {
 			$internal_milestones_array[] = $milestone->getArrayInfo();
@@ -85,7 +85,7 @@
 			if ($user instanceof Contact) $users_array[] = $user->getArrayInfo();
 		}
 	}
-	
+
 	foreach($allUsers as $usr) {
 		$allUsers_array[] = $usr->getArrayInfo();
 	}
@@ -114,6 +114,8 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 og.config.use_milestones = <?php echo config_option('use_milestones') ? 'true' : 'false' ?>;
 og.config.show_notify_checkbox_in_quick_add = <?php echo user_config_option('show_notify_checkbox_in_quick_add') ? 'true' : 'false' ?>;
 og.config.tasks_show_description_on_time_forms = <?php echo user_config_option('tasksShowDescriptionOnTimeForms') ? 'true' : 'false' ?>;
+og.config.tasks_use_date_filters = <?php echo user_config_option('tasksUseDateFilters') ? 'true' : 'false' ?>;
+og.config.tasks_show_assigned_to_name = <?php echo user_config_option('tasksShowAssignedToName') ? 'true' : 'false' ?>;
 og.config.quick_add_task_combos = <?php 
 		$object = "";
 		$dimensions_user = get_user_dimensions_ids();
@@ -132,12 +134,12 @@ og.config.quick_add_task_combos = <?php
 			$dim = Dimensions::instance()->getDimensionById($dimension_id);
 			if($dim instanceof Dimension){
 				if($key!=0) $object .=",";
-				$object .= "{name : '". $dim->getName()."', desc : '".str_replace("'", "\'", lang('add new relation ' . $dim->getCode()))."'}";
+				$object .= "{name : '". escape_character($dim->getName())."', desc : '".escape_character(lang('add new relation ' . $dim->getCode()))."'}";
 			}
 		}		
 		echo "[".$object."]";
 ?>;
-ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
+ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 
 
 
@@ -146,19 +148,19 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 
       
 <div id="taskPanelHiddenFields">
-	<input type="hidden" id="hfProjectTemplates" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($project_templates_array)))) ?>"/>
-	<input type="hidden" id="hfAllTemplates" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($all_templates_array)))) ?>"/>
-	<input type="hidden" id="hfTasks" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($tasks_array)))) ?>"/>
-	<input type="hidden" id="hfIMilestones" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($internal_milestones_array)))) ?>"/>
-	<input type="hidden" id="hfEMilestones" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($external_milestones_array)))) ?>"/>
-	<input type="hidden" id="hfUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
-	<input type="hidden" id="hfAllUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($allUsers_array)))) ?>"/>
-	<input type="hidden" id="hfCompanies" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($companies_array)))) ?>"/>
-	<input type="hidden" id="hfUserPreferences" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPreferences)))) ?>"/>
-	<input type="hidden" id="hfUserPermissions" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPermissions)))) ?>"/>
-	<input type="hidden" id="hfObjectSubtypes" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($object_subtypes_array)))) ?>"/>
-	<input type="hidden" id="hfDependencyCount" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($dependency_count)))) ?>"/>
-	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
+	<input type="hidden" id="hfProjectTemplates" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($project_templates_array)))) ?>"/>
+	<input type="hidden" id="hfAllTemplates" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($all_templates_array)))) ?>"/>
+	<input type="hidden" id="hfTasks" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($tasks_array)))) ?>"/>
+	<input type="hidden" id="hfIMilestones" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($internal_milestones_array)))) ?>"/>
+	<input type="hidden" id="hfEMilestones" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($external_milestones_array)))) ?>"/>
+	<input type="hidden" id="hfUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($users_array)))) ?>"/>
+	<input type="hidden" id="hfAllUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($allUsers_array)))) ?>"/>
+	<input type="hidden" id="hfCompanies" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($companies_array)))) ?>"/>
+	<input type="hidden" id="hfUserPreferences" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPreferences)))) ?>"/>
+	<!--<input type="hidden" id="hfUserPermissions" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPermissions)))) ?>"/>-->
+	<input type="hidden" id="hfObjectSubtypes" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($object_subtypes_array)))) ?>"/>
+	<input type="hidden" id="hfDependencyCount" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($dependency_count)))) ?>"/>
+	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="news" />
 	<input id="<?php echo $genid?>complete_task" type="hidden" name="complete_task" value="yes" />        
 </div>
 
@@ -172,22 +174,20 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 		<div style="font-weight:bold;width:99%;text-align:center;padding:4px;color:#AF8300;"><?php echo lang('too many tasks to display', user_config_option('task_display_limit')) ?></div>
 	</div>
 	<?php } ?>
-		<div id="tasksPanelContainer" style="background-color:white;padding-top:0px;position: absolute;min-width: 100%;">
+		<table id="tasksPanelContainer" style="background-color:white;padding-top:0px;position: absolute;width: 100%;table-layout: fixed;">
 	<?php if(!(isset($tasks) || $userPreferences['groupBy'] == 'milestone')) { ?>
 			<div style="font-size:130%;width:100%;text-align:center;padding-top:10px;color:#777;"><?php echo lang('no tasks to display') ?></div>
 	<?php } ?>			
-		</div>
+		</table>
 	</div>
 </div>
 
 <script type="text/javascript">
 	if (!ogTasks.tasks_object_type_id) ogTasks.tasks_object_type_id = '<?php echo ProjectTasks::instance()->getObjectTypeId() ?>';
-	if (rx__TasksDrag)
-		rx__TasksDrag.initialize();
 
 	ogTasks.userPreferences = Ext.util.JSON.decode(document.getElementById('hfUserPreferences').value);
 
-	ogTasks.userPermissions = Ext.util.JSON.decode(document.getElementById('hfUserPermissions').value);
+	//ogTasks.userPermissions = Ext.util.JSON.decode(document.getElementById('hfUserPermissions').value);
 	
 
 	var mili = 0;
@@ -279,7 +279,7 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 		var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor' + id, {
 			height: height,
 			allowedContent: true,
-			enterMode: CKEDITOR.ENTER_DIV,
+			enterMode: CKEDITOR.ENTER_BR,
 			shiftEnterMode: CKEDITOR.ENTER_BR,
 			disableNativeSpellChecker: false,
 			language: '<?php echo $loc ?>',
@@ -299,14 +299,37 @@ ogTasks.custom_properties = <?php echo json_encode($cp_values)?>;
 					editor.resetDirty();
 				}
 			},
+			fillEmptyBlocks: false,
+			removePlugins: 'scayt,liststyle,magicline',
 			entities_additional : '#39,#336,#337,#368,#369'
 		});
 	}
 	
-	
 
-	
-	
+    ogTasks.additional_groupby_dimensions_member_types = [];
+
+    <?php
+    $enabled_dimension_ids = config_option('enabled_dimensions');
+    $enabled_dimensions = Dimensions::findAll(array('conditions' => '`id` IN ('. implode(",", $enabled_dimension_ids) .')'));
+    foreach ($enabled_dimensions as $enabled_dimension) {
+        $ot_ids = implode(",", DimensionObjectTypes::getObjectTypeIdsByDimension($enabled_dimension->getId()));
+        $dimension_obj_types = ObjectTypes::findAll(array("conditions" => "`id` IN ($ot_ids)"));
+        foreach ($dimension_obj_types as $ot) {
+            if ($ot->getName() != 'project_folder' && $ot->getName() != 'customer_folder') {
+                echo 'ogTasks.additional_groupby_dimensions_member_types.push({dim_id: ' . $enabled_dimension->getId() . ', dim_name:"' . $enabled_dimension->getName() . '", mem_type_id: ' . $ot->getId() . ', mem_type_name:"' . lang($ot->getName()) . '"});';
+
+            }
+        }
+    }
+
+    ?>
+
+
+	Handlebars.registerHelper('isTasksColumnCPVisible', function (cp_id) {
+		if (ogTasks && ogTasks.userPreferences) {
+			return ogTasks.userPreferences['tasksShowCP_'+cp_id] == 1;
+		}
+	});
 	
 </script>
 <?php 

@@ -45,6 +45,25 @@
     	}
     } // editEmailAddress
     
+    
+    
+    /**
+     * Validate data before save
+     *
+     * @access public
+     * @param array $errors
+     * @return void
+     */
+    function validate(&$errors) {
+    
+    	if($this->validatePresenceOf('email_address')) {
+    		if(!is_valid_email(trim($this->getEmailAddress()))) {
+    			$errors[] = lang('invalid email address');
+    		}
+    	}
+    	
+    }
+    
   } // ContactEmail 
 
 ?>

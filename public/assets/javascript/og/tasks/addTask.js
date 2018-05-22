@@ -9,7 +9,7 @@
 //*		Draw add new task form
 //************************************
 
-ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
+ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload){
 	var additionalParams = {};
 	var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 	if (toolbar.filterNamesCompaniesCombo.isVisible()){
@@ -21,9 +21,11 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
 	if (parent_id > 0)
 		additionalParams.parent_id = parent_id;
 	
+	if (reload > 0)
+		additionalParams.reload = 1;
+
 	og.render_modal_form('', {c:'task', a:'add_task', params: additionalParams});
 	return;
-	
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
 	var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 	var filters = bottomToolbar.getFilters();
@@ -69,7 +71,7 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
 	else
 		var containerName = 'ogTasksPanelGroup' + group_id;
 	
-	this.drawTaskForm(containerName, {
+	var task = {
 		parentId: parent_id,
 		milestoneId: milestone_id,
 		member_id: member_id,
@@ -84,7 +86,9 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position){
 		multiAssignment: 0,
 		isEdit: false,
 		position: position
-	});
+	};
+
+	this.drawTaskForm(containerName, task);
 	
 	if(og.config.wysiwyg_tasks){
 		var height = $("#tasks_quick_add_selectors").height();
@@ -137,6 +141,28 @@ ogTasks.checkEnterPress = function (e,id)
 		return false;
 	}
 	return true;
+}
+
+ogTasks.drawAddNewTaskFromData = function(container_id){
+	var task = {
+		name:'',
+        assigned_to_contact_id: 0
+	};
+	$("#"+container_id+" :input").each(function(){
+		var input = $(this);
+		task[input.attr("name")]=input.val();
+		input.val("");
+	});
+
+    var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+    if (toolbar.filterNamesCompaniesCombo.isVisible()){
+        var value = toolbar.filterNamesCompaniesCombo.getValue();
+        if (value) {
+            task['assigned_to_contact_id'] = value;
+        }
+    }
+	
+	og.render_modal_form('', {c:'task', a:'add_task', params: task});
 }
 
 ogTasks.drawTaskForm = function(container_id, data){
@@ -438,7 +464,7 @@ ogTasks.drawTaskForm = function(container_id, data){
 		
 	}
 	
-	var task_cp_vals = ogTasks.custom_properties[data.taskId];
+	var task_cp_vals = null;
 	
 	if (task_cp_vals) {
 		var extra_params = {};
@@ -835,9 +861,27 @@ ogTasks.drawTaskRowAfterEdit = function(data) {
 	}
 }
 
+ogTasks.drawTasksRowsAfterAddEdit = function(data) {
+	if (!data || !data.tasks) return;
+	for ( var j = 0; j < data.tasks.length; j++) {
+		ogTasks.drawTaskRowAfterEdit({'task':data.tasks[j]});
+	}
+}
 
+ogTasks.sortAssignedCombo = function(a, b) {
+	var namea = a[1] ? a[1].toLowerCase() : '';
+	var nameb = b[1] ? b[1].toLowerCase() : '';
+	if (namea < nameb) return -1;
+	if (namea > nameb) return 1;
+	return 0;
+}
 
-ogTasks.buildAssignedToComboStore = function(companies, only_me, groups) {
+ogTasks.buildAssignedToComboStore = function(companies, only_me, groups, for_template_task) {
+	
+	if (!for_template_task && typeof(og.replace_build_assigned_combo_store) == 'function') {
+		return og.replace_build_assigned_combo_store.call(null, companies, only_me, groups);
+	}
+	
 	var usersStore = [];
 	var comp_array = [];
 	var cantU = 0;
@@ -879,13 +923,7 @@ ogTasks.buildAssignedToComboStore = function(companies, only_me, groups) {
 		// sort user list
 		var me = usersStore.shift();
 		if (!only_me) var dont_assign = usersStore.shift();
-		usersStore.sort(function(a, b){
-			var namea = a[1].toLowerCase();
-			var nameb = b[1].toLowerCase();
-			if (namea < nameb) return -1;
-			if (namea > nameb) return 1;
-			return 0;
-		});
+		usersStore.sort(ogTasks.sortAssignedCombo);
 		if (!only_me) usersStore.unshift(dont_assign);
 		usersStore.unshift(me);
 		

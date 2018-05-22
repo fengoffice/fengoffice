@@ -58,6 +58,7 @@ return array(
 
     'send milestone assigned to notification' => 'Send email notification to assignee',
 	'send task assigned to notification' => 'Send email notification to assignee',
+	'send task subscribers notification' => 'Send email notification to subscribers',
 	'send email notification' => 'Send email notification',
 
     'edit company data' => '<a class="internalLink" href="{0}">Edit</a> company data',

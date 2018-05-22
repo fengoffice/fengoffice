@@ -48,7 +48,7 @@ else $timeformat = 'g:i A';
 
 // get actual current day info
 $today = DateTimeValueLib::now();
-$today->add('h', logged_user()->getTimezone());
+$today->add('s', logged_user()->getUserTimezoneValue());
 $currentday = $today->format("j");
 $currentmonth = $today->format("n");
 $currentyear = $today->format("Y");
@@ -70,9 +70,9 @@ foreach($companies as $company)
 ?>
 
 <div id="calHiddenFields">
-	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
-	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($companies_array)))) ?>"/>
-	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPreferences)))) ?>"/>
+	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($users_array)))) ?>"/>
+	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($companies_array)))) ?>"/>
+	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPreferences)))) ?>"/>
 	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
 </div>
 
@@ -162,7 +162,7 @@ foreach($companies as $company)
 					
 					$milestones = ProjectMilestones::getRangeMilestones($date_start, $date_end);
 					if($task_filter != "hide"){
-						$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null),$task_filter);
+						$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null), $task_filter, false, false, 600);
 					}
 					
 					if (user_config_option('show_birthdays_in_calendar')) {
@@ -322,8 +322,9 @@ foreach($companies as $company)
 					?>
 						 		<div id="m<?php echo $dtv->getMonth() ?>_d<?php echo $dtv->getDay() ?>" style='z-index:0; min-height:90px; height:100%; cursor:pointer;<?php echo $extra_style ?>'
 						 		<?php if (!logged_user()->isGuest()) { ?>
-							 		onclick="showMonthEventPopup('<?php echo $dtv->getDay() ?>','<?php echo $dtv->getMonth()?>','<?php echo $dtv->getYear()?>','<?php echo $start_value ?>', '<?php echo $genid ?>');">
+							 		onclick="og.showEventPopup('<?php echo $dtv->getDay() ?>','<?php echo $dtv->getMonth()?>','<?php echo $dtv->getYear()?>',9,0,true,'<?php echo $start_value ?>', '<?php echo $genid ?>',2,true);"
 						 		<?php } ?>
+                                >
 						 			<div class='<?php echo $daytitle?>' style='text-align:right;'>
 							 		<a class='internalLink' href="<?php echo $p ?>" onclick="og.disableEventPropagation(event);return true;"  style='color:#5B5B5B' ><?php echo $w?></a>				
 					<?php
@@ -344,13 +345,16 @@ foreach($companies as $company)
 								
 								$result_evs = array();
 								foreach ($all_events as $ev) {
-									$std = $ev->getStart()->advance(logged_user()->getTimezone() * 3600, false);
+									
+									$tz_value = Timezones::getTimezoneOffsetToApply($ev, logged_user());
+									
+									$std = $ev->getStart()->advance($tz_value, false);
 									if ($ev->getTypeId() == 2) {
 										if ($std->format("Y-m-d") == $dtv->format("Y-m-d")) {
 											$result_evs[] = $ev;
 										}
 									} else {
-										$etd = $ev->getDuration()->advance(logged_user()->getTimezone() * 3600, false);
+										$etd = $ev->getDuration()->advance($tz_value, false);
 										$end_dtv = $dtv->advance(24*3600, false);
 										
 										if ($std->format("Y-m-d H:i:s") < $end_dtv->format("Y-m-d H:i:s") && $etd->format("Y-m-d H:i:s") > $dtv->format("Y-m-d H:i:s")) {
@@ -375,10 +379,12 @@ foreach($companies as $company)
 											$typeofevent = $event->getTypeId();
 											$eventid = $event->getId();
 											
+											$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+											
 											getEventLimits($event, $dtv, $event_start, $event_duration, $end_modified);
 											
-											$real_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * logged_user()->getTimezone());
-											$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * logged_user()->getTimezone());
+											$real_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
+											$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
 											
 											$pre_tf = $real_start->getDay() == $real_duration->getDay() ? '' : 'D j, ';
 											if (!$event->isRepetitive() && $real_start->getDay() != $event_start->getDay()) $subject = "... $subject";
@@ -401,7 +407,12 @@ foreach($companies as $company)
 												<div id="m_ev_div_<?php echo $event->getId() . $id_suffix?>" class="<?php echo "og-wsname-color-$ws_color" ?>" style="border-radius:4px;margin: 1px;padding-left:1px;padding-bottom:0px;<?php echo $extra_style ?>">
 												<div style="border-radius:4px;border: 1px solid;border-color:<?php echo $border_color ?>;">
 													<table style="width:100%;" class="<?php echo "og-wsname-color-$ws_color" ?>"><tr><td>
-													<a href='<?php echo get_url('event', 'view', array('id' => $event->getId(), 'user_id' => $user_filter)); ?>' class='internalLink nobr' onclick="og.disableEventPropagation(event); return true;" <?php echo "style='color:$txt_color;'" ?>>
+													
+												<?php 
+													$view_url = get_url('event', 'view', array('id' => $event->getId(), 'user_id' => $user_filter));
+													Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+												?>
+													<a href="<?php echo $view_url; ?>" class='internalLink nobr' onclick="og.disableEventPropagation(event); return true;" <?php echo "style='color:$txt_color;'" ?>>
 														<img src="<?php echo image_url('/16x16/calendar.png')?>" style="vertical-align: middle;border-width: 0px;">
 														<span style="font-weight: <?php echo $bold ?>"><?php echo (strlen_utf($subject) < 15 ? $subject : substr_utf($subject, 0, 14).'...'); ?></span>															
 													</a>
@@ -465,7 +476,11 @@ foreach($companies as $company)
 													
 								?>
 													<div id="m_ms_div_<?php echo $milestone->getId()?>" class="<?php echo "og-wsname-color-$ws_color" ?>" style="height:20px;margin: 1px;padding-left:1px;padding-bottom:0px;border-radius:4px;border: 1px solid;border-color:<?php echo $border_color ?>;<?php echo $extra_style ?>">
-														<a href='<?php echo $milestone->getViewUrl()?>' class="internalLink nobr" onclick="og.disableEventPropagation(event);return true;" >
+													<?php 
+														$view_url = $milestone->getViewUrl();
+														Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+													?>
+														<a href="<?php echo $view_url?>" class="internalLink nobr" onclick="og.disableEventPropagation(event);return true;" >
 															<img src="<?php echo image_url('/16x16/milestone.png')?>" style="vertical-align: middle;border-width: 0px;">
 															<span><?php echo $cal_text ?></span>
 														</a>
@@ -485,12 +500,17 @@ foreach($companies as $company)
 											$task = $event;
 											$end_of_task = false;
 											$start_of_task = false;
+											
+											$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+											$tz_value_due = $event->getUseDueTime() ? $tz_value : 0;
+											$tz_value_start = $event->getUseStartTime() ? $tz_value : 0;
+											
 											if ($task->getDueDate() instanceof DateTimeValue){
-												$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+												$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + $tz_value_due);
 												if ($dtv->getTimestamp() == mktime(0,0,0, $due_date->getMonth(), $due_date->getDay(), $due_date->getYear())) $end_of_task = true;
 											}
 											if ($task->getStartDate() instanceof DateTimeValue){
-												$start_date = new DateTimeValue($task->getStartDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+												$start_date = new DateTimeValue($task->getStartDate()->getTimestamp() + $tz_value_start);
 												if ($dtv->getTimestamp() == mktime(0,0,0, $start_date->getMonth(), $start_date->getDay(), $start_date->getYear())) $start_of_task = true;
 											}
 											if ($start_of_task || $end_of_task) {
@@ -518,8 +538,12 @@ foreach($companies as $company)
 													$tip_text = purify_html(str_replace("\n", '<br>', $tip_text));													
 													if (strlen_utf($tip_text) > 200) $tip_text = substr_utf($tip_text, 0, strpos($tip_text, ' ', 200)) . ' ...';
 								?>
+													<?php 
+														$view_url = $task->getViewUrl();
+														Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+													?>
 													<div id="m_ta_div_<?php echo $tip_pre.$task->getId()?>" class="<?php echo "og-wsname-color-$ws_color" ?>" style="height:20px;margin: 1px;padding-left:1px;padding-bottom:0px;border-radius:4px;border: 1px solid;border-color:<?php echo $border_color ?>;<?php echo $extra_style ?>">
-														<a href='<?php echo $task->getViewUrl()?>' class='internalLink nobr' onclick="og.disableEventPropagation(event);return true;"  style="border-width:0px">
+														<a href="<?php echo $view_url?>" class='internalLink nobr' onclick="og.disableEventPropagation(event);return true;"  style="border-width:0px">
 															<img src="<?php echo $img_url ?>" style="vertical-align: middle;">
 														 	<span><?php echo $cal_text ?></span>
 														</a>
@@ -548,8 +572,12 @@ foreach($companies as $company)
 													$color = 'B1BFAC';
 													$subject = clean($contact->getObjectName()).' - <span class="italic">'.lang('birthday').'</span>';
 								?>
+													<?php 
+														$view_url = $contact->getViewUrl();
+														Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+													?>
 													<div id="m_bd_div_<?php echo $contact->getId()?>" class="<?php echo "og-wsname-color-$ws_color" ?>" style="height:20px;margin: 1px;padding-left:1px;padding-bottom:0px;border-radius:4px;border: 1px solid;border-color:<?php echo $border_color ?>;<?php echo $extra_style ?>">
-														<a href='<?php echo $contact->getViewUrl()?>' class='internalLink' onclick="og.disableEventPropagation(event);return true;"  style="border-width:0px">
+														<a href="<?php echo $view_url ?>" class='internalLink' onclick="og.disableEventPropagation(event);return true;"  style="border-width:0px">
 															<img src="<?php echo image_url('/16x16/contacts.png')?>" style="vertical-align: middle;">
 														 	<span><?php echo $contact->getObjectName() ?></span>
 														</a>
@@ -617,26 +645,6 @@ foreach($companies as $company)
 
 	Ext.QuickTips.init();
 
-	function showMonthEventPopup(day, month, year, st_val, genid) {
-		
-		og.EventPopUp.show(null, {day: day,
-								month: month,
-								year: year,
-								hour: 9,
-								minute: 0,
-								durationhour: 1,
-								durationmin: 0,
-								start_value: st_val,
-								start_time: '9:00',
-								type_id:2, 
-								view:'month', 
-								title: lang('add event'),
-								time_format: '<?php echo $timeformat ?>',
-								hide_calendar_toolbar: 1,
-								genid: genid,
-								otype: <?php echo ProjectEvents::instance()->getObjectTypeId(); ?>
-								}, '');
-	}
 
 	if (Ext.isIE) document.getElementById('ie_scrollbar_adjust').style.display = 'block';
 	
@@ -647,6 +655,8 @@ foreach($companies as $company)
 		} else {
 			var tbarsh = Ext.get('calendarPanelSecondTopToolbar').getHeight() + Ext.get('calendarPanelTopToolbar').getHeight();
 			var cmt = document.getElementById('calendarMonthTitle');
+			if (!cmt) return;
+			
 			var mainHeight = maindiv.offsetHeight;
 			
 			var divHeight = maindiv.offsetHeight - tbarsh - cmt.offsetHeight;

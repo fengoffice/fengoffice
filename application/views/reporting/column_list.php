@@ -35,7 +35,7 @@
 			);
 		}
 		if(!isset($order_by) || $order_by == '') $order_by = 'updated_on';
-		if (!str_starts_with($acol['id'], "dim_") && $acol['id']!='time' && $acol['id']!='billing') {
+		if (!str_starts_with($acol['id'], "dim_") && !str_starts_with($acol['id'], "dimassoc_") && $acol['id']!='time' && $acol['id']!='billing' && $acol['type']!='calculated') {
 			$options[] = option_tag($acol['name'], $acol['id'], $acol['id'] == $order_by ? array('selected' => 'selected') : null);
 		}
 	}
@@ -51,7 +51,7 @@
 	}
 	// Render Column lists
 	echo label_tag(lang('columns to print'), 'columns');
-	echo doubleListSelect("columns", $list, array('id' => $genid."columns", 'size' => 20));
+	echo doubleListSelect("columns", $list, array('id' => $genid."columns", 'size' => 20), $option_groups);
 	
 	echo '<span class="desc">' . lang('columns to print desc') . '</span>'; 
 ?>

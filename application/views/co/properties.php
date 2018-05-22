@@ -1,4 +1,8 @@
-<?php $date_format = user_config_option('date_format'); ?>
+<?php 
+	$date_format = user_config_option('date_format');
+	$tz_offset = Timezones::getTimezoneOffsetToApply($object);
+	$tz_offset = $tz_offset/3600;
+?>
 <!-- Properties Panel -->
 <table style="width:240px">
 	<col width=12/><col width=216/><col width=12/>
@@ -46,10 +50,10 @@
 					$username = clean($object->getCreatedBy()->getObjectName());
 					
 				if ($object->getObjectCreationTime() && $object->getCreatedOn()->isToday()){
-					$datetime = format_time($object->getCreatedOn());
+					$datetime = format_time($object->getCreatedOn(), null, $tz_offset);
 					echo lang('user date today at bold', $object->getCreatedBy()->getCardUserUrl(), $username, $datetime, clean($object->getCreatedBy()->getObjectName()));
 				} else {
-					$datetime = format_datetime($object->getCreatedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($object->getCreatedOn(), null, $tz_offset);
 					echo lang('user date bold', $object->getCreatedBy()->getCardUserUrl(), $username, $datetime, clean($object->getCreatedBy()->getObjectName()));
 				}
 			} ?></div>
@@ -76,10 +80,10 @@
 						$username = clean($object->getUpdatedBy()->getObjectName());
 						
 					if ($object->getUpdatedOn() && $object->getUpdatedOn()->isToday()){
-						$datetime = format_time($object->getUpdatedOn());
+						$datetime = format_time($object->getUpdatedOn(), null, $tz_offset);
 						echo lang('user date today at bold', $object->getUpdatedBy()->getCardUserUrl(), $username, $datetime, clean($object->getUpdatedBy()->getObjectName()));
 					} else {
-						$datetime = format_datetime($object->getUpdatedOn(), $date_format, logged_user()->getTimezone());
+						$datetime = format_datetime($object->getUpdatedOn(), null, $tz_offset);
 						echo lang('user date bold', $object->getUpdatedBy()->getCardUserUrl(), $username, $datetime, clean($object->getUpdatedBy()->getObjectName()));
 					}
 				} ?></div>
@@ -102,10 +106,10 @@
 				}
 
 				if ($object->getArchivedOn()->isToday()) {
-					$datetime = format_time($object->getArchivedOn());
+					$datetime = format_time($object->getArchivedOn(), null, $tz_offset);
 					echo lang('user date today at bold', $archive_user->getCardUserUrl(), $username, $datetime, clean($archive_user->getObjectName()));
 				} else {
-					$datetime = format_datetime($object->getArchivedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($object->getArchivedOn(), null, $tz_offset);
 					echo lang('user date bold', $archive_user->getCardUserUrl(), $username, $datetime, clean($archive_user->getObjectName()));
 				}
 			}
@@ -128,10 +132,10 @@
 					$username = clean($trash_user->getObjectName());
 
 				if ($object->getTrashedOn()->isToday()){
-					$datetime = format_time($object->getTrashedOn());
+					$datetime = format_time($object->getTrashedOn(), null, $tz_offset);
 					echo lang('user date today at bold', $trash_user->getCardUserUrl(), $username, $datetime, clean($trash_user->getObjectName()));
 				} else {
-					$datetime = format_datetime($object->getTrashedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($object->getTrashedOn(), null, $tz_offset);
 					echo lang('user date bold', $trash_user->getCardUserUrl(), $username, $datetime, clean($trash_user->getObjectName()));
 				}
 			}
@@ -165,10 +169,10 @@
 						$username = clean($checkout_user->getObjectName());
 	
 					if ($object->getCheckedOutOn()->isToday()){
-						$datetime = format_time($object->getCheckedOutOn());
+						$datetime = format_time($object->getCheckedOutOn(), null, $tz_offset);
 						echo lang('user date today at bold', $checkout_user->getCardUserUrl(), $username, $datetime, clean($checkout_user->getObjectName()));
 					} else {
-						$datetime = format_datetime($object->getCheckedOutOn(), $date_format, logged_user()->getTimezone());
+						$datetime = format_datetime($object->getCheckedOutOn(), null, $tz_offset);
 						echo lang('user date bold', $checkout_user->getCardUserUrl(), $username, $datetime, clean($checkout_user->getObjectName()));
 					}
 				}
@@ -191,10 +195,10 @@
 					$username = clean($object->getAssignedBy()->getObjectName());
 						
 				if ($object->getAssignedOn() && $object->getAssignedOn()->isToday()){
-					$datetime = format_time($object->getAssignedOn());
+					$datetime = format_time($object->getAssignedOn(), null, $tz_offset);
 					echo lang('user date today at bold', $object->getAssignedBy()->getCardUserUrl(), $username, $datetime, clean($object->getAssignedBy()->getObjectName()));
 				} else {
-					$datetime = format_datetime($object->getAssignedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($object->getAssignedOn(), null, $tz_offset);
 					echo lang('user date bold', $object->getAssignedBy()->getCardUserUrl(), $username, $datetime, clean($object->getAssignedBy()->getObjectName()));
 				}
 			} ?></div>
@@ -210,10 +214,10 @@
 		<?php 
 													
 				if ($object->getStartDate() && $object->getStartDate()->isToday()){
-					$datetime = format_time($object->getStartDate());
+					$datetime = format_time($object->getStartDate(), null, $tz_offset);
 					echo $datetime;
 				} else {
-					echo format_date($object->getStartDate(), null, logged_user()->getTimezone()).' <b>'.lang('at').'</b> '.format_time($object->getStartDate(), null, logged_user()->getTimezone());
+					echo format_date($object->getStartDate(), null, $tz_offset).' <b>'.lang('at').'</b> '.format_time($object->getStartDate(), null, $tz_offset);
 				}
 			 ?></div>
     	<?php } // if ?>  
@@ -238,10 +242,10 @@
 					$username = clean($object->getUpdatedByDisplayName());
 
 				if ($object->getUpdatedOn()->isToday()){
-					$datetime = format_time($object->getUpdatedOn());
+					$datetime = format_time($object->getUpdatedOn(), null, $tz_offset);
 					echo lang('user date today at bold', $object->getUpdatedBy()->getCardUserUrl(), $username, $datetime, clean($object->getUpdatedByDisplayName()));
 				} else {
-					$datetime = format_datetime($object->getUpdatedOn(), $date_format, logged_user()->getTimezone());
+					$datetime = format_datetime($object->getUpdatedOn(), null, $tz_offset);
 					echo lang('user date bold', $object->getUpdatedBy()->getCardUserUrl(), $username, $datetime, clean($object->getUpdatedByDisplayName()));
 				}
 			}?></div>

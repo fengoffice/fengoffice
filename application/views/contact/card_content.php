@@ -120,6 +120,7 @@ foreach ($all_type_codes as $type_code) {
 			
 			$out = $address->getStreet();
 			if($address->getCity() != '') $out .= ' - ' . $address->getCity();
+			if($address->getZipCode() != '') $out .= ' - ' . $address->getZipCode();
 			if($address->getState() != '') $out .= ' - ' . $address->getState();
 			if($address->getCountry() != '') $out .= ' - ' . $address->getCountryName();
 ?>
@@ -130,14 +131,14 @@ foreach ($all_type_codes as $type_code) {
 <?php 	}
 	}
 	
-	if ($tel_type) {
+	if ($web_type) {
 		foreach ($all_webpages as $webpage) {
 			if ($webpage->getWebTypeId() != $web_type['id']) continue;
 			$any_obj = true;
 			$is_alt = !$is_alt;
 			?>
 			<div class="<?php echo ($is_alt ? 'alt-row' : '')?> info-content-item">
-				<strong><?php echo lang('webpage')?>: </strong><?php echo trim($webpage->getUrl()) ?>
+				<strong><?php echo lang('webpage')?>: </strong><a href="<?php echo $webpage->getFixedUrl() ?>" target="_blank"><?php echo trim($webpage->getUrl()) ?></a>
 			</div>
 	<?php }
 	}
@@ -201,9 +202,9 @@ foreach ($all_type_codes as $type_code) {
 		$is_alt = !$is_alt; ?>
 	<div class="info-type" ><?php echo lang('notes') ?></div>
 	<div class="info-content">
-		<div class="<?php echo ($is_alt ? 'alt-row' : '')?> info-content-item"><?php 
-			echo $contact->getCommentsField(); 
-		?></div>
+		<div class="<?php echo ($is_alt ? 'alt-row' : '')?> info-content-item"><?php
+            echo escape_html_whitespace(convert_to_links(clean($contact->getCommentsField())));
+            ?></div>
 	</div>
 	<div class="clear"></div>
 <?php } ?>
@@ -227,7 +228,8 @@ foreach ($all_type_codes as $type_code) {
 	<div class="info-type" ><?php echo lang('user type') ?></div>
 	<div class="info-content">
 		<div class="<?php echo ($is_alt ? 'alt-row' : '')?> info-content-item"><?php 
-			echo $contact->getUserTypeName(); 
+			echo $contact->getUserTypeName();
+			$null = null; Hook::fire('user_card_user_type_more_info', $contact, $null); 
 		?></div>
 	</div>
 	<div class="clear"></div>

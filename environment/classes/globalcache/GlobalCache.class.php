@@ -13,6 +13,9 @@ class GlobalCache {
 	private static $cache_preference = array('APCWrapper');
 	
 	static function isAvailable() {
+		// @TODO: FIX THE WEB SERVER CACHE USAGE BEFORE ENABLING
+		return false;
+		
 		foreach (self::$cache_preference as $class) {
 			switch ($class) {
 				case 'APCWrapper': if (APCWrapper::isAvailable()) return true;

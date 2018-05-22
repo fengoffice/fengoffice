@@ -1,4 +1,6 @@
 <?php
+	if (!isset($image)) $image = "";
+	
 	if ($company->hasPicture()){
 		$image = '<div class="cardIcon" style="text-align:center;">';
 	
@@ -17,7 +19,7 @@
 	} else {
 	
 		if ($company->canEdit(logged_user())) {
-			$image .= '<a class="internalLink" href="' . $company->getUpdatePictureUrl() .'" title="' . lang('edit picture') . '"><div id="2_iconDiv" class="coViewIconImage ico-large-contact"></div></a>';
+			$image .= '<a class="internalLink" href="' . $company->getUpdatePictureUrl() .'" title="' . lang('edit picture') . '"><div id="2_iconDiv" class="coViewIconImage ico-large-company"></div></a>';
 			tpl_assign("image",$image);
 		}
 	}

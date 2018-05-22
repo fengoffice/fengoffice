@@ -6,6 +6,10 @@ og.reminderDurationTypes = {
 	"10080":"weeks"
 };
 og.addReminder = function(parent, context, type, duration, duration_type, for_subscribers, button) {
+	if (typeof(og.addAdvancedReminder) == 'function') {
+		return og.addAdvancedReminder(parent, context, type, duration, duration_type, for_subscribers, button);
+	}
+	
 	var count = parent.getElementsByTagName("div").length;
 	var div = document.createElement("div");
 	var html = '<select name="reminder_type[' + context + '][' + count + ']">';

@@ -22,7 +22,7 @@
     
     // User validation errors
     'username value required' => 'Username value is required',
-    'username must be unique' => 'Sorry, but selected username is already taken',
+    'username must be unique' => 'Selected username is already taken',
     'email value is required' => 'Email address is required',
     'email address must be unique' => 'Sorry, selected email address is already taken',
     'company value required' => 'User must be part of company / organization',
@@ -211,6 +211,12 @@
   	
   	'failed to authenticate email account' => 'Failed to authenticate email account',
   	'failed to authenticate email account desc' => 'Could not authenticate account "{0}" to send notifications, please make sure that the account\'s username and password are correct.',
+  		
+  	'you cant add member without security permissions' => 'You can\'t add {0} without specifying where is located because you can\'t manage permissions. Please select where to put {0} so the permissions can be inherited.',
+  
+    'token external key value required' => 'Key is required',
+    'token external name value required' => 'Name is required',
+    'token external type value required' => 'Type is required',
   ); // array
 
 ?>

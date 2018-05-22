@@ -8,8 +8,7 @@
 	'config category name documents' => 'berkas',
 	'config category desc documents' => 'kelola konfigurasi',
 	'config option name file_storage_adapter' => 'penyimpanan berkas',
-	'secure smtp connection ssl' => 'ya, gunakan SSL
-',
+	'secure smtp connection ssl' => 'ya, gunakan SSL',
 	'secure smtp connection tls' => 'ya, gunakan TLS',
 	'file storage mysql' => 'base data',
 	'configuration' => 'konfigurasi',

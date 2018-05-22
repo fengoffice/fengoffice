@@ -44,6 +44,7 @@
 	'project started on' => 'Comenzado el',
 	'send milestone assigned to notification' => 'Enviar notificación al usuario asignado vía correo electrónico',
 	'send task assigned to notification' => 'Enviar notificación al usuario asignado vía correo electrónico',
+	'send task subscribers notification' => 'Enviar notificación a los suscriptores vía correo electrónico',
 	'send email notification' => 'Enviar notificación vía correo electrónico',
 	'edit company data' => '<a class="internalLink" href="{0}">Editar</a> datos de la empresa',
 	'company users involved in project' => '{0} usuarios relacionados en {1}',
@@ -292,4 +293,7 @@ Asunto:   {0}<br/>
 	'undo remove subtasks' => 'Restaurar las subtareas removidas',
 	'urgent priority' => 'Urgente',
 	'attachment from email' => 'Adjunto al correo "{0}"',
+    'field workspace color' => 'Color del espacio',
+    'pending pl' => 'Pendientes',
+    'email tab' => 'Correo',
 ); ?>

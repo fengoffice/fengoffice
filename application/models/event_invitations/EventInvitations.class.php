@@ -17,6 +17,9 @@
         function findByEvent($event_id) {
                 return EventInvitations::findAll(array('conditions' => array('`event_id` = ?', $event_id)));
         }
+        function findByEventAndContact($event_id, $contact_id) {
+        	return EventInvitations::findOne(array('conditions' => array('`event_id` = ? AND `contact_id` = ?', $event_id, $contact_id)));
+        }
         function findSyncById($contact) {
         	return EventInvitations::findAll(array('conditions' => array('`synced` = 1 AND `contact_id` = ?',$contact)));
         }

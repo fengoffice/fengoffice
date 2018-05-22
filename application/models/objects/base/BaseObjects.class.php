@@ -25,7 +25,9 @@
     	'trashed_on' => DATA_TYPE_DATETIME, 
     	'trashed_by_id' => DATA_TYPE_INTEGER, 
     	'archived_on' => DATA_TYPE_DATETIME, 
-    	'archived_by_id' => DATA_TYPE_INTEGER
+    	'archived_by_id' => DATA_TYPE_INTEGER,
+	    'timezone_id' => DATA_TYPE_INTEGER,
+	    'timezone_value' => DATA_TYPE_INTEGER,
     );
   
     /**
@@ -34,6 +36,7 @@
     * @return BaseObjects 
     */
     function __construct() {
+		Hook::fire('object_definition', 'Object', self::$columns);
       parent::__construct('Object', 'objects', true);
     } // __construct
     
@@ -92,6 +95,7 @@
     function getAutoIncrementColumn() {
       return 'id';
     } // getAutoIncrementColumn
+    
     
     // -------------------------------------------------------
     //  Finders

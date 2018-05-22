@@ -107,8 +107,29 @@
     function setCanManageTemplates($value) {
       return $this->setColumnValue('can_manage_templates', $value);
     } // setCanManageTemplates() 
-    
-    
+
+    /**
+    * Return value of 'can_instantiate_templates' field
+    *
+    * @access public
+    * @param void
+    * @return string
+    */
+    function getCanInstantiateTemplates() {
+      return $this->getColumnValue('can_instantiate_templates');
+    } // getCanInstantiateTemplates()
+
+
+    /**
+    * Set value of 'can_instantiate_templates' field
+    *
+    * @access public
+    * @param string $value
+    * @return boolean
+    */
+    function setCanInstantiateTemplates($value) {
+      return $this->setColumnValue('can_instantiate_templates', $value);
+    } // setCanInstantiateTemplates()
     
     /**
     * Return value of 'can_manage_time' field
@@ -216,7 +237,15 @@
     
     function setCanViewBilling($value){
 		return $this->setColumnValue('can_view_billing', $value);
-    }    
+    }
+    
+    function getCanManageRepetitivePropertiesOfTasks(){
+        return $this->getColumnValue('can_manage_repetitive_properties_of_tasks');
+    }
+    
+    function setCanManageRepetitivePropertiesOfTasks($value){
+        return $this->setColumnValue('can_manage_repetitive_properties_of_tasks', $value);
+    }
     
   	function getSettedPermissions(){
 		$columns=$this->getColumns();

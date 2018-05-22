@@ -7,6 +7,10 @@ INSERT INTO `<?php echo $table_prefix ?>dimensions` (`code`,`name`,`is_root`,`is
  ('feng_persons', 'People', 1, 0, 0, 1, 1, 99, '{"useLangs":true,"defaultAjax":{"controller":"dashboard", "action": "main_dashboard"},"quickAdd":{"formAction":"?c=contact&a=quick_add"}}', 'not_mandatory' )
  ON DUPLICATE KEY UPDATE id=id;
 
+INSERT INTO <?php echo $table_prefix ?>dimension_options (`dimension_id`, `name`, `value`) VALUES
+ ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='feng_persons'),'useLangs','1')
+ON DUPLICATE KEY UPDATE `value`=`value`;
+
 INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`table_name`,`type`,`icon`,`plugin_id`) VALUES
  ('person', 'Contacts', 'contacts', 'dimension_object', 'contact', (SELECT `id` FROM `<?php echo $table_prefix ?>plugins` WHERE `name`='core_dimensions')),
  ('company', 'Contacts', 'contacts', 'dimension_object', 'company', (SELECT `id` FROM `<?php echo $table_prefix ?>plugins` WHERE `name`='core_dimensions'))

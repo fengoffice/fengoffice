@@ -57,6 +57,7 @@
     		
 			$out = $address->getStreet();
 			if($address->getCity() != '') $out .= ' - ' . $address->getCity();
+			if($address->getZipCode() != '') $out .= ' - ' . $address->getZipCode();
 			if($address->getState() != '') $out .= ' - ' . $address->getState();
 			if($address->getCountry() != '') $out .= ' - ' . $address->getCountryName();
 			
@@ -80,7 +81,7 @@
 			$type = $webpage->getWebpageType();
 			$type_name = $type instanceof WebpageType ? '<span class="bold">'.lang($type->getName()) . ': </span>' : '';
 			
-		?><div><?php echo $type_name ?><a target="_blank" href="<?php echo $webpage->getUrl() ?>"><?php echo clean($webpage->getUrl()) ?></a></div>
+		?><div><?php echo $type_name ?><a target="_blank" href="<?php echo $webpage->getFixedUrl() ?>"><?php echo clean($webpage->getUrl()) ?></a></div>
 		
 <?php   } ?>
 <?php } else { 

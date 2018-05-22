@@ -7,7 +7,7 @@ addLangs({
 	'some text': 'Votre texte',
 	'new slide text': 'Modifiez moi !',
 	'slide {0}': 'Diapositive {0}',
-	'no slide to delete': 'Aucune diapositive à effacer',
+	'no slide to delete': 'Aucune diapositive à effacer!',
 	'click top left button to add a slide': 'Pour ajouter une diapositive, cliquez sur le bouton en haut à gauche ',
 	'no slide to move': 'Aucune diapositive à déplacer',
 	'click to insert a new slide': 'Cliquez pour insérer une nouvelle diapositive',

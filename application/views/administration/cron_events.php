@@ -39,7 +39,7 @@
 			</td>
 			<td class="cronEventsDate">
 				<?php if ($event->getDate() instanceof DateTimeValue) 
-						$date = new DateTimeValue($event->getDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+						$date = new DateTimeValue($event->getDate()->getTimestamp() + logged_user()->getUserTimezoneValue());
 					 else $date = null;
 				?>
 				<table><tbody><tr><td><?php echo pick_date_widget2('cron_events['.$event->getId().'][date]', $date, null, false) ?>

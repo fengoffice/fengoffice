@@ -40,6 +40,9 @@
 		}
 	}
 	ksort($users_with_perms);
+	
+	if (!isset($obj_type_sel)) $obj_type_sel=null;
+	if (!isset($current_dimension)) $current_dimension=null;
 ?>
 
 	<input id="<?php echo $genid ?>hfPerms" type="hidden" value="<?php echo str_replace('"',"'", json_encode($member_permissions));?>"/>
@@ -124,19 +127,43 @@
 
 
 		<div id="<?php echo $genid ?>member_permissions" class="permission-form-container" style="display:none;">
-		  <div id="<?php echo $genid ?>pg_name" style="font-weight:bold;font-size:120%;padding-bottom:5px"></div>
+		  <div id="<?php echo $genid ?>pg_name" class="permissions-target-name"></div>
 	  	  <table>
-		  	<tr style="border-bottom:1px solid #888;margin-bottom:5px">
-		  	<td style="vertical-align:middle">
-		  		<span class="perm_all_checkbox_container">
-					<?php echo checkbox_field($genid . 'pAll', false, array('id' => $genid . 'pAll', 'onclick' => 'og.userPermissions.ogPermAllChecked("' . $genid . '", this.checked)')) ?>
-					<label style="font-weight:bold" for="<?php echo $genid ?>pAll" class="checkbox"><?php echo lang('all') ?></label>   
-		  		</span>
-		  	</td>
-		  	<td align=center style="padding:0 10px;width:100px;"><a href="#" class="internalLink radio-title-3" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 3);return false;"><?php echo lang('read write and delete') ?></a></td>
-		  	<td align=center style="padding:0 10px;width:100px;"><a href="#" class="internalLink radio-title-2" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 2);return false;"><?php echo lang('read and write') ?></a></td>
-		  	<td align=center style="padding:0 10px;width:100px;"><a href="#" class="internalLink radio-title-1" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 1);return false;"><?php echo lang('read only') ?></a></td>
-		  	<td align=center style="padding:0 10px;width:100px;"><a href="#" class="internalLink radio-title-0" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 0);return false;"><?php echo lang('none no bars') ?></a></td></tr>
+		  	<tr class="permissions-title-row">
+			  	<td style="vertical-align:middle"></td>
+			  	<td align=center style="width: 120px;">
+			  		<a href="#" class="internalLink all-radio-sel radio-title-3" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 3);return false;"><?php echo lang('read write and delete') ?></a>
+			  	</td>
+			  	<td align=center style="width: 120px;">
+			  		<a href="#" class="internalLink all-radio-sel radio-title-2" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 2);return false;"><?php echo lang('read and write') ?></a>
+			  	</td>
+			  	<td align=center style="width: 120px;">
+			  		<a href="#" class="internalLink all-radio-sel radio-title-1" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 1);return false;"><?php echo lang('read only') ?></a>
+			  	</td>
+			  	<td align=center style="width: 120px;">
+			  		<a href="#" class="internalLink all-radio-sel radio-title-0" onclick="og.userPermissions.ogPermSetLevel('<?php echo $genid ?>', 0);return false;"><?php echo lang('none no bars') ?></a>
+			  	</td>
+		  	</tr>
+		  	
+			<tr class="permissions-checkall-row">
+				<td><?php echo lang('check all').":"?></td>
+				<td align="center">
+					<input type="checkbox" class="all-radio-sel-chk" id="chk-3" title="<?php echo lang('set rwd permissions for all object types')?>"
+						onchange="og.userPermissions.ogPermSetLevelCheckbox(this, '<?php echo $genid ?>', 3);"/>
+				</td>
+				<td align="center">
+					<input type="checkbox" class="all-radio-sel-chk" id="chk-2" title="<?php echo lang('set rw permissions for all object types')?>"
+						onchange="og.userPermissions.ogPermSetLevelCheckbox(this, '<?php echo $genid ?>', 2);"/>
+				</td>
+				<td align="center">
+					<input type="checkbox" class="all-radio-sel-chk" id="chk-1" title="<?php echo lang('set r permissions for all object types')?>"
+						onchange="og.userPermissions.ogPermSetLevelCheckbox(this, '<?php echo $genid ?>', 1);"/>
+				</td>
+				<td align="center">
+					<input type="checkbox" class="all-radio-sel-chk" id="chk-0" title="<?php echo lang('set none permissions for all object types')?>"
+						onchange="og.userPermissions.ogPermSetLevelCheckbox(this, '<?php echo $genid ?>', 0);"/>
+				</td>
+			</tr>
 		  	
 		<?php 
 			$row_cls = "";
@@ -175,11 +202,12 @@
 				$save_perms_fn = "";
 			}
 		?>
-			<button title="<?php echo lang('cancel')?>" class="add-first-btn" onclick="$('#<?php echo $genid?>_close_link').click();" id="<?php echo $genid?>_cancel_btn" style="margin-right:10px;">
+			<button title="<?php echo lang('cancel')?>" class="add-first-btn" onclick="og.userPermissions.cancelPermissionsModification('<?php echo $genid ?>', og.userPermissions.current_pg_id); og.ExtModal.hide();" 
+				id="<?php echo $genid?>_cancel_btn" style="margin-right:10px;">
 				<img src="public/assets/themes/default/images/16x16/del.png">&nbsp;<?php echo lang('cancel')?>
 			</button>
 			
-			<button title="<?php echo lang('save changes')?>" class="add-first-btn" onclick="<?php echo $save_perms_fn?> og.userPermissions.afterChangingPermissions('<?php echo $genid?>'); $('#<?php echo $genid?>_close_link').click();" id="<?php echo $genid?>_close_btn">
+			<button title="<?php echo lang('save changes')?>" class="add-first-btn" onclick="<?php echo $save_perms_fn?> og.userPermissions.afterChangingPermissions('<?php echo $genid?>'); og.ExtModal.hide();" id="<?php echo $genid?>_close_btn">
 				<img src="public/assets/themes/default/images/16x16/save.png">&nbsp;<?php echo lang('save changes')?>
 			</button>
 			

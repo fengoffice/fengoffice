@@ -16,4 +16,14 @@
 	
 	'and' => 'and',
 	'Any' => 'Any',
+	'color' => 'Color',
+	
+	'modify subtasks dates' => 'Modify subtasks dates?',
+	'success update subtasks dates' => 'Subtasks dates updated successfully.',
+	'do you want to move subtasks due date X and start date Y' => 'Do you want to move the subtasks\' due date {0} and start date {1}?',
+	'do you want to move subtasks due date X' => 'Do you want to move the subtasks\' due date {0}?',
+	'do you want to move subtasks start date X' => 'Do you want to move the subtasks\' start date {0}?',
+	'forward' => 'forward',
+	'backward' => 'backward',
+	'task start or due date has been changed' => 'Task start or due date has been changed.',
 );

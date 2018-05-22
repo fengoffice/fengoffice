@@ -15,4 +15,6 @@
 	'field Objects body_html' => 'Html body',
 	'field Objects body_plain' => 'Plain Body',
 	'classify attachments' => 'Classify attachments',
+    'user config option name default_mail_font_size' => 'Font size by default for emails',
+    'user config option desc default_mail_font_size' => 'Font size by default for write the content of the emails (avoid numbers lower than 8 and greather than 72)',
 );

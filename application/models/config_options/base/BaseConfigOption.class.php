@@ -189,6 +189,28 @@
     
     
     /**
+     * Return value of 'options' field
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getOptions() {
+    	return $this->getColumnValue('options');
+    } // getOptions()
+    
+    /**
+     * Set value of 'options' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setOptions($value) {
+    	return $this->setColumnValue('options', $value);
+    }
+    
+    /**
     * Return manager instance
     *
     * @access protected

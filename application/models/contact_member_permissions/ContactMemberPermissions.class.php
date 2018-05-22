@@ -29,24 +29,28 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 			return true;
 		}
 		
+        //Disable object types
 		$disabled_ots = array();
 		$disableds = DB::executeAll("SELECT object_type_id FROM ".TABLE_PREFIX."tab_panels WHERE object_type_id>0 AND enabled=0");
 		if (is_array($disableds)) {
 			$disabled_ots = array_flat($disableds);
 		}
+		$all_allowed_object_type_ids = DB::executeAll("SELECT id FROM ".TABLE_PREFIX."object_types 
+				WHERE type IN ('content_object','located') AND name NOT IN ('template_milestone', 'template_task', 'report')
+				AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))
+				");
+		$all_allowed_object_type_ids = array_filter(array_flat($all_allowed_object_type_ids));
 		
-		$ws_ot = ObjectTypes::findByName('workspace')->getId();
-		$comment_ot = ObjectTypes::findByName('comment')->getId();
-		$disabled_ots[] = $ws_ot;
-		$disabled_ots[] = $comment_ot;
-		$disabled_ot_cond = "";
-		if (count($disabled_ots) > 0) {
-			$disabled_ot_cond = "AND object_type_id NOT IN (".implode(",",$disabled_ots).")";
+		$allowed_object_type_ids = array_diff($all_allowed_object_type_ids, $disabled_ots);
+		
+		$object_type_type_sql = "";
+		if (count($allowed_object_type_ids) > 0) {
+			$object_type_type_sql = " AND object_type_id IN (".implode(',',$allowed_object_type_ids).")";
 		}
 		
 		if ($access_level == ACCESS_LEVEL_READ) {
 			if (!isset(self::$readable_members["$permission_group_ids"])) {
-				$res = DB::execute("SELECT DISTINCT member_id FROM ".TABLE_PREFIX."contact_member_permissions WHERE permission_group_id IN (" . $permission_group_ids . ") $disabled_ot_cond" );
+				$res = DB::execute("SELECT DISTINCT member_id FROM ".TABLE_PREFIX."contact_member_permissions WHERE permission_group_id IN (" . $permission_group_ids . ") $object_type_type_sql" );
 				$rows = $res->fetchAll();
 				if (is_array($rows)) {
 					self::$readable_members["$permission_group_ids"] = array();
@@ -55,11 +59,11 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 					}
 				}
 			}
-			return in_array($member_id, self::$readable_members["$permission_group_ids"]);						
+			return in_array($member_id, array_var(self::$readable_members, "$permission_group_ids", array()));
 		} else {
 			
 			if (!isset(self::$writable_members["$permission_group_ids"])) {
-				$res = DB::execute("SELECT DISTINCT member_id FROM ".TABLE_PREFIX."contact_member_permissions WHERE can_write=1 AND permission_group_id IN (" . $permission_group_ids . ") $disabled_ot_cond" );
+				$res = DB::execute("SELECT DISTINCT member_id FROM ".TABLE_PREFIX."contact_member_permissions WHERE can_write=1 AND permission_group_id IN (" . $permission_group_ids . ") $object_type_type_sql" );
 				$rows = $res->fetchAll();
 				if (is_array($rows)) {
 					self::$writable_members["$permission_group_ids"] = array();
@@ -68,7 +72,7 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 					}
 				}
 			}
-			return in_array($member_id, self::$writable_members["$permission_group_ids"]);
+			return in_array($member_id, array_var(self::$writable_members, "$permission_group_ids", array()));
 			
 		}
 	}

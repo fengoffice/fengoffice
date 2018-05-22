@@ -15,7 +15,19 @@ $belongs_to_conversation = MailContents::countMailsInConversation($linked_object
 	
 	<td><span class="desc"><?php echo lang('from')?>: </span><?php echo $linked_object->getFrom()?></td>
 	
-	<?php $date_str = $linked_object->getSentDate() instanceof DateTimeValue ? ($linked_object->getSentDate()->isToday() ? format_time($linked_object->getSentDate(), null, logged_user()->getTimezone()) : format_datetime($linked_object->getSentDate(), $date_format, logged_user()->getTimezone())) : lang('n/a') ?>
+	<?php 
+	if ($linked_object->getSentDate() instanceof DateTimeValue) {
+		$tz_offset = Timezones::getTimezoneOffsetToApply($linked_object);
+		
+		if ($linked_object->getSentDate()->isToday()) {
+			$date_str = format_time($linked_object->getSentDate(), null, $tz_offset/3600);
+		} else {
+			$date_str = format_datetime($linked_object->getSentDate(), $date_format, $tz_offset/3600);
+		}
+	} else {
+		$date_str = lang('n/a');
+	}
+	?>
 	<td><span class="desc"><?php echo lang('date')?>: </span><?php echo $date_str ?></td>
 	
 	<td>

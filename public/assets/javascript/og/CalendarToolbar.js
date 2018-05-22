@@ -41,10 +41,20 @@ function changeView(action, day, month, year, u_filter, s_filter, t_filter) {
 		year: year,
 		user_filter: u_filter,
 		status_filter: s_filter,
-                task_filter: t_filter,
+		task_filter: t_filter,
 		view_type: action
 	});
-	og.openLink(url, null);
+	
+	options = null;
+	if (og.calendar_change_view_options_override_fn) {
+		for (var x=0; x<og.calendar_change_view_options_override_fn.length; x++) {
+			var fn = og.calendar_change_view_options_override_fn[x];
+			if (typeof(fn) == 'function') {
+				options = fn.call(null, options);
+			}
+		}
+	}
+	og.openLink(url, options);
 }
 
 
@@ -108,12 +118,12 @@ var markactions = {
 // Toolbar Items
 var topToolbarItems = { 
 	add: new Ext.Action({
+		id: 'new_button_event',
 		text: lang('add event'),
         tooltip: lang('add new event'),
         iconCls: 'ico-new new_button',
+        hidden: og.replace_list_new_action && og.replace_list_new_action.event,
         handler: function() {
-        	/*var date = og.calToolbarDateMenu.picker.getValue();
-			changeView('add', date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);*/
 			og.render_modal_form('', {c:'event', a:'add'});
 		}
 	}),
@@ -210,6 +220,7 @@ var topToolbarItems = {
         iconCls: 'ico-trash',
 		disabled: true,
 		handler: function() {
+			var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
 			var ids = og.getSelectedEventsCsv()+'';
 			var arr_ids = ids.split(',')
 			for(var i = 0; i < arr_ids.length; i++){
@@ -221,7 +232,7 @@ var topToolbarItems = {
 				this.dialog.setTitle(lang('events related'));
 				this.dialog.show();
 			}else{
-				if (confirm(lang('confirm move to trash'))) {
+				if (og.confirmNorification(lang('confirm move to trash'), confirm_trash_config)) {
 					og.openLink(og.getUrl('event', 'delete', {ids: og.getSelectedEventsCsv()}));
 				}
 			}
@@ -284,6 +295,10 @@ og.CalendarTopToolbar = function(config) {
 	og.CalendarTopToolbar.superclass.constructor.call(this, config);
 	
 	if (!og.loggedUser.isGuest) {
+		if (og.replace_list_new_action && og.replace_list_new_action.event) {
+			this.add(og.replace_list_new_action.event);
+		}
+		
 		this.add(topToolbarItems.add);
 		this.addSeparator();
 		this.add(topToolbarItems.edit);

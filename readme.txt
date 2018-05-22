@@ -1,5 +1,5 @@
 
-	About Feng Office 3.2.2.1
+	About Feng Office 3.6.0RC1
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -26,7 +26,7 @@
 	
 	Recommendations:
 	
-	PHP 5.2+
+	PHP 5.4+
 	MySQL 5+ with InnoDB support
 	Apache 2.0+
 	
@@ -95,19 +95,1657 @@
 	- Reece Calendar - http://sourceforge.net/projects/reececalendar
 	- Swift Mailer - http://www.swiftmailer.org
 	- Open Flash Chart - http://teethgrinder.co.uk/open-flash-chart
+	- PHPExcel - https://github.com/PHPOffice/PHPExcel
 	- Slimey - http://slimey.sourceforge.net
 	- FCKEditor - http://www.fckeditor.net
 	- JSSoundKit - http://jssoundkit.sourceforge.net
 	- PEAR - http://pear.php.net
 	- Gelsheet - http://www.gelsheet.org
+	- TimeZoneDB - https://timezonedb.com
 	
 	
 	Changelog
 	=========
+
+	Since 3.5.1.5
+	----------------
+
+    feature: new time form
+    feature: add members in object notifications subject
+    feature: config generate next invoice repetition when printing.
+    feature: invoice Payment Period
+    feature: new linked object view
+    feature: add search input to users list
+    feature: fix report headers
+    feature: time-entries improvements
+    feature: add a new condition unclassified to reports configuration
+    feature: new feature on list of report, now you can create categories for reports
+    feature: new function to create contact from name and mail
+    feature: added bootstrap for internal use
+    feature: managed eventes plugin
+    feature: member custom properties groups on member information widget
+    feature: use property groups for member custom properties in member add/edit forms
+    feature: property groups -> add default group and put all cps in that group
+    feature: show previous and next invoice if they exist when viewing an invoice
+    feature: text filter input in invoices module
+    feature: new managed events plugin
+    feature: new event tickets plugin: event tickets abm and attendees widget
+    feature: modal member add/edit
+    feature: config options to disable the popup dialogs when archiving or trahsing objects
+    feature: allow to set a member template to an existing member
+    feature: show previous and next invoice if they exist when viewing an invoice
+	feature: text filter input in invoices module
+	feature: when grouping reports allow to hide the total element count of each group.
+	feature: allow expenses list to have horizontal scroll.
+	feature: add logic to filter expenses by quarters in expenses widget.
+	feature: expenses widget new configuration add filters.
+	feature: allow boolean custom properties with undefined values.
+
+
+    bugfix: don't use other plugin classes in advanced reports, use hooks.
+    bugfix: reports add css rule word break.
+    bugfix: move event invoice automatic generated name to event_tickets plugin (error 500)
+    bugfix: financial accounts has wrong table specified in model
+    bugfix: performance on sharing table calculation after the user was being edited
+    bugfix: error 500 on templates
+    bugfix: advance reports, report categories not working
+    bugfix: export reports to pdf
+    bugfix: apply permissions to all sub-members on the member edit view.
+    bugfix: report list not working
+    bugfix: automatic calculation of worked time on add time modal
+    bugfix: time list add no filter by date option
+    bugfix: task list tasks displayed twice
+    bugfis: totals on grouped reports
+    bugfix: fix upgrade problem to version 3.5.3 with index in table custom_property_values.
+    bugfix: invoices query failed with message 'Unknown column 'external_id' in 'field list'
+    bugfix: report list not working if advance report is installed
+  	bugfix: main tabs bar resize
+    bugfix: resize was added to columns assigned_to and assigned_by in the task panel
+    bugfix: several missing langs
+    bugfix: subtask render
+    bugfix: query error when ordering tasks list by assigned to
+    bugfix: error 500 fixed when listing customers in api
+    bugfix: missing useHelper in contact controller function
+    bugfix: modify get_public_file function to receive file id as an optional parameter
+    bugfix: modify image cp value when requested using raw_data=true to return the original json value of the db
+    bugfix: fix tasks list group totals when filtering by more than one dimension
+    bugfix: cutom reports dont put empty th if no details are shown, icon column is not rendered
+    bugfix: custom reports without details misalignments
+    bugfix: fix config option handler for members to allow multiple selection
+    bugfix: exclude archived members when giving automatic permissions to new users
+    bugfix: in context widget dont use features of inactive plugins
+    bugfix: fix broken billing tab in timeslot edit
+    bugfix: cant generate first task repetition batch
+    bugfix: problem of padding in button in dashboard
+    bugfix: task list fix for edge cases (yesterday or tomorrow also changing the week, etc), new weeks (Mon-Sun instead of Sun-Sat)
+    bugfix: add generic actions Time tab
+    bugfix: fix widget expenses
+    bugfix: new sharing table logic
+    bugfix: time reports missing task column status
+    bugfix: send mail directly when clicking send mail
+    bugfix: task list filter status today.
+    bugfix: mail account signature change fail
+    bugfix: When edit a member if the name contains & it shows &amp
+    bugfix: list cp rendered with errors.
+    bugfix: template task date variable + minutes not working properly
+    bugfix: invoice report expiration date timezone error
+    bugfix: calendar view don't displays tasks for guest users
+    bugfix: transform users widget in contacts widget
+    bugfix: default payments report includes trashed payments
+    bugfix: invoice line with 0 unit value and total>0 does not sum in general totals
+    bugfix: cant link object to invoices that are not pending
+    bugfix: dont show generate next invoice link if it is already generated
+    bugfix: only the last invoice of the repetition should be shown as repetitive in the invoices list
+    bugfix: conditional tasks new bool cp values support
+    bugfix: cant generate next invoice if user does not have the can_edit_confirmed_invoices permissions and the invoice is printed
+    bugfix: MAIL SIGNATURE font size 24px by default
+    bugfix: invoices when adding a new line use the same currency selected for the invoice
+    bugfix: dont show member history tab if member has no history
+    bugfix: dont show generate next invoice link if it is already generated
+	bugfix: only the last invoice of the repetition should be shown as repetitive in the invoices list
+	bugfix: Filter is remove on change page. Feature - Send file by email without mail plugin.
+	bugfix: escape imap folder names when making queries to the db
+    
+    performance: listing order
+    performance: sharing table
+
+    plugin advanced_core:
+    feature: ticket new filter by custom property
+    bugfix: Fix date format on report headers
+    bugfix: object list function broken by hook custom_properties_filter_get_objects_list_extra_conditions
+    bugfix: Call to a member function getFixedColumnValue on null
+
+    plugin advanced_reports:
+    feature: custom report group by intersection: allow to define specific members to intersect
+
+    plugin advanced_services:
+    bugfix: Hour type changes
+    bugfix: when generating first set of repetions, dont continue after repeat_end date if it is specified
+    bugfix: add transactions for generate x days tasks cron function
+
+    plugin crpm:
+    bugfix: dont create invoice customer if no customer data received
+
+    plugin event_tickets:
+    feature: new event management functions
+
+    plugin income:
+    feature: invoice send via email
+    feature: new config option to make client mandatory or not in invoices
+    feature: address in print view, now show the billing address
+    bugfix: in print view of invoice calling to worng variable for client zip code
+    bugfix: fixed message when delete a income
+    bugfix: image on invoice whe generating pdf
+    bugfix: error 500 when trying to delete invoice from view
+
+    plugin newsletters:
+    feature: use "To" field for each email when configuration has Persons per email: 1
+    
+
+	Since 3.5.1.4
+	----------------
+	feature: always show payment history in payment view
+	feature: expenses temporal status
+	feature: new config option type: date range
+	feature: new config option type: general list
+	feature: new column balance in advanced expenses lists and reports
+	feature: Menu show for tasks is working as email accounts filter, with timeout for each click 
+	feature: Added custom configuration for user for set the font-size of emails
+	bugfix: imap sync, when removing from folder if we dont have the mail uid => query it to the server and perform the removal
+	bugfix: in objects view, the breadcrumbs shows always one workspace in all associated dimensions
+	bugfix: allowed users to assign in task controller does not return the same when called from the reasign users popup
+	bugfix: js error in timeslot add when drawing user combo and logged user doesn't have "can_manage_time"
+	bugfix: Change value "Serie" to plural for keys "series" and "field Object series"
+	
+	Since 3.5.1.3
+	----------------
+	feature: improve combobox on report conditions
+	feature: system config option disable notifications for object type
+	feature: paste email list from excel on mails
+	bugfix: prevent widgets links to be opened on a new tab
+	bugfix: add delete log when deleting mails
+	bugfix: enabled spellcheck in description of add task
+
+	Since 3.5.1.2
+	----------------
+	bugfix: Expense totals fixed when ordering by a dimension column.
+	feature: imap sync plugins.
+	
+	
+	Since 3.5.1.1
+	----------------
+	feature: invoicing - config option to make final consumer mandatory
+	fetaure: invoicing - when changing final consumer value change company id/client document label
+	feature: invoicing - when changing invoice currency to a non default one, show exchange rate input
+	bugfix: invoicing,facturalista - exchange rate is not sent to DGI when currency is not UYU
+	bugfix: display list custom properties in objects view fixed
+	bugfix: missing langs in project widget when projects dimension is disabled
+	bugfix: dont include timeslots of deleted tasks in reports
+	bugfix: adv.services: sometimes night hours are generated in the night start instead of the timeslot start
+	performance: tasks list and task view when system has lots of users
+	
+	Since 3.5.1
+	----------------
+	bugfix: cant add tasks with advanced_services and  not using time in date pickers.
+	bugfix: dont filter files by their associated mail if they are classified.
+	bugfix: dont set the font size in ckeditor's contents.css body rule.
+	feature: imap synchronization plugin (alpha).
+	feature: allow to reclassify mail from the list.
+	
+	Since 3.5.1-rc
+	----------------
+	feature: objects import tool
+	feature: allow to type in user combo box in timeslots add/edit
+	feature: plugin advanced_mail_imap_folders - new dimension for imap folders
+	bugfix: permissions, users can't see documents if they can't see the mail related.
+	bugfix: check that class exists before executing "eval()"
+	bugfix: assigned to notifications are sent to resource users
+	
+	
+	Since 3.5.1-beta4
+	----------------
+	feature: search input in tickets module.
+	feature: config option to exclude associated dimensions from general breadcrumbs.
+	bugfix: dont show associated dimension's member history widget.
+	bugfix: unescaped names in time module.
+	bugfix: task asignee notification on templates.
+	bugfix: in object view the custom properties repeats last value if is empty.
+	
+	Since 3.5.1-beta3
+	----------------
+	feature: invoicing module: allow to set client address and city fields as mandatory when adding an invoice.
+	bugfix: some dimensions members are not selected when clicked in breadcrumbs.
+	bugfix: if dimension is hidden the members are not selected when clicked in breadcrumbs.
+	bugfix: the contact associated to the client is not classified in the client's related members.
+	bugfix: breadcrumbs are not showing the members of the dimensions that have its selector disabled and they are autoclassified.
+	bugfix: template tasks subscribers and assign to permissions.
+	bugfix: Double quotes are not correctly escaped in custom properties description.
+	bugfix: member templates: ensure that new member is in context before rendering the task template paramters form.
+	bugfix: timeslot quick add does not show all users with read permissions on timeslots in the user selector.
+	bugfix: when assigning client permissions deleted user permission groups appears in selector.
+	bugfix: when copying expenses the payments are not copied.
+	feature: advanced_services: allow to define works shift days as dat off.
+	feature: advanced_services: config option to define the hour type member for days off.
+	feature: action to generate first repetitive instances for tasks.
+	feature: users of type "resource" (only to be assignees of tasks and timeslots)
+	
+
+	Since 3.5.1-beta2
+	----------------
+	bugfix: attachments inside other attachments cannot be downloaded sometimes.
+	bugfix: user token is not removed when disabling user.
+	bugfix: in listings when adding a custom property as a column and is not visible by default the system does not remember the users' choice.
+	feature: several improvements in grouped custom reports.
+	advanced_reports: conditions for groups (only for contact_id and assigned_to_contact_id)
+	advanced reports: when grouping by person, allow to add emtpy groups and where to put them (beggining or end)
+	advanced_reports: new condition to filter by classified in or not classified in the selected members
+	bugfix: tasks list group by person filters different than assigned to, are not shown when loading the list.
+	feature: allow to disable custom report parameter when running the report
+	bugfix: advanced_reports: timeslot totals are not correct
+	bugfix: error when filtering tasks list by milestone.
+	bugfuix: report group by date columns was not applying timezone.
+	bugfix: when printing/exporting grouped custom reports only the current page is shown.
+	performace: limit mails search critera with a minimum of 3 characters.
+	feature: add calculated columns to custom reports (for now only 'status' in tasks reports)
+	
+	Since 3.5.1-beta
+	----------------
+	feature: start timeslot from without task.
+	feature: allow to specify end date and time when adding a timeslot.
+	feature: task list group by member type.
+	feature: allow to disable custom report parameter when running the report.
+	advanced reports: new group by: dimension intersection.
+	bugfix: group order in tasks workflow definition.
+    bugfix: not all birthdays were shown in calendar's full week view.
+    bugfix: advanced_reports: timeslot totals are not correct
+    bugfix: report group by date columns was not applying timezone.
+    bugfix: tasks list group by person filters different than assigned to, are not shown when loading the list.
+	bugfix: error when filtering tasks list by milestone.
+    performance: mail search.
+	
+	
+	Since 3.5.0.X
+	----------------
+	feature: new timeslot module.
+	feature: new timeslot list in tasks view.
+	feature: allow to specify paused time when adding a timeslot.
+	bugfix: tasks that dont use time are not shown correctly in calendar
+	
+	
+	Since 3.5.0.9
+	----------------
+	feature: make hierarchical all dimensions in crpm_types plugin.
+	feature: member tool to change its dimension.
+	
+	
+	Since 3.5.0.8
+	----------------
+	feature: advanced reports: new condition type to check the availability of users in contact custom reports.
+	feature: advanced reports: grouped timeslots report.
+	feature: advanced services: render time amount config options as hour:minutes.
+	feature: templates: add fixed time when assigning vairable "date of task creation".
+	bugfix: advanced billing categories list does not filter by context.
+	bugfix: template tasks does not copy the repetition options added in plugins to instantiated tasks.
+	bugfix: repetitive tasks generated from templates are not chained correctly with the rest of the repetitions of the same instantiation.
+	
+	
+	Since 3.5.0.7
+	----------------
+	bugfix: prevent use of browser cache when downloading files.
+	bugfix: when completing a task and the wokflow changes the project/client status the member status history is not saved.
+	
+	Since 3.5.0.6
+	----------------
+	bugfix: phone number form component shares variable with other phone components and causes malfunction when adding new phones in contacts.
+	bugfix: breadcrumbs displayed near name on object lists.
+	bugfix: assigned to logged user by default when creating task from email.
+	bugfix: when editing timeslot starting at 12:00 am and depending in the timezone of the user, sometimes it adds 24 hours.
+	feature: user preference to show the inactive users or not in the contacts list.
+
+	
+	Since 3.5.0.5
+	----------------
+	bugfix: permissions error when trying to view a document associated to an email.
+	bugfix: when instantiating templates the permissions are not checked for the assigned person.
+	
+	Since 3.5.0.4
+    ----------------
+	bugfix: general search is checking permissions for super administrators.
+    bugfix: when trying to complete task with uncompleted dependencies the notification is sent anyways.
+    bugfix: object picker filters after removing the filter (continues to use the active context)
+    bugfix: currency in total tasks time time report not correct
+    feature: add invoice description to the preview.
+    feature: mail account option to specify if the ssl certificate has to be validated
+	feature: pear/net/socket connection function updated to use stream_socket_client() if needed
+
+	Since 3.5.0.3
+    ----------------
+    bugfix: list custom property values are not shown in object view.
+    bugfix: custom properties config to hide in listings is not working. 
+	bugfix: Contact report mysql error when filtering by phone or webpage
+	
+	Since 3.5.0.2
+	----------------
+	bugfix: don't check permissions when auto classifying instantaited tasks from templates
+	feature: in timeslot form optional start time field
+	feature: modal form to add worked hours in tasks
+	featere: config option to choose if show the name or picture of the assigned person
+	
+	Since 3.5.0.1
+	----------------
+	bugfix: template instantiation, text in variable property editor is always instantiated in lowercase
+	bugfix: when tying to classify in a member where you don't have permissions the system doesn't tell you that the object was not classfied.
+	bugfix: when you press 'check mail' it tells you an email has been received but it doesn't show up in your mailbox. You have to refresh the mailbox.
+	
+	Since 3.5.0.0
+	----------------
+	bugfix: disabling clients and projects lists deactivates the plugin
+	bugfix: mime parser does not parse correclty pdf sent as application/octet-stream
+
+	Since 3.5-beta
+    ----------------
+	bugfix: ensure that the last_uid_in_folder is updated correctly always.
+	bugfix: spellcheck on mail ckeditor.
+	bugfix: mail paging toolbar is disabled after search.
+	bugfix: js error when custom dimension names have single quotes.
+	bugfix: template tasks instantiation: conditional tasks with subtasks does not create the subtasks correctly.
+	bugfix: when email attachments are parsed as "Related" they are not included when forwarding.
+	bugfix: when email is classified only in dimensions that doesn't define permissions and user is not the mail account owner, the email cannot be reclassified.
+	bugfix: object_id is not saved in sent_notifications table.
+	feature: advanced services: config option to check the minimum percentage of the work shift that must be worked to allow night hours classification
+	feature: advanced services: work shift break configuration and usage when calculating automatic timeslots.
+
+	Since 3.5-alpha
+	----------------
+	feature: separate timeslots classification from its task
+	bugfix: click in mail subject, from, to and open link in new tab doesn't open the email.
+	bugfix: when downloading image it is an inline image of another document or an email attachment then check the permissions of the container doc or email.
+	
+	Since 3.4.4.X
+	----------------
+	feature: advanced reports allow to include comments below each object line.
+	feature: member relations history, tab in edition and widget.
+	feature: put client/project/workspaces/tags lists in a fixed tab.
+	feature: separate timeslots classification from its task.
+	feature: timeslot custom reports new column "paused time".
+	feature: group reports by date does: put the dates of the same day in the same group
+	feature: advanced services: repetitive tasks by fixed days
+	feature: advanced services: generate first repetitive instnaces when creating a repetitive task.
+	feature: advanced services: config option to define the minimum amount of night hours to classify the timeslots
+	feature: advanced services: night hours administration section, work shifts administration section, contact work shifts assignation
+	feature: advanced services: new member type - station in crpm dim.
+	feature: advanced services: allow custom reports to group by hour types and service types and show these dims as columns
+	feature: advanced services: automatic split of timeslots by hour types.
+	feature: advanced services: config options for normal, extra and holiday hours
+	feature: advanced billing: allow to specify more than one member for each billing category dimensions.
+	feature: advanced billing: modifications for timeslot reports and generation.
+	feature: advanced billing: billing cat with conflict timeslots in a separate section and allow to make custom reports.
+	feature: custom report groups ordered alphabetically
+	feature: set color to mails panel filter buttons when filtering mail listing.
+	feature: set color to current mail folder in mail listing.
+	feature: adv. mail: allow to select more than one account in the mail account filter menu.
+	feature: add/edit timeslot reports: separate task and timeslot columns
+	feature: css improved in grouped reports
+	feature: new redundant column "worked_time" in timeslots
+	feature: config handler to select members
+	feature: marketing channels dimension.
+	feature: config option to allow or not multiple lines in invoice line description.
+	
+	language: nl_nl fixed for "first name" and "surname".
+	language: missing langs in tickets module.
+	
+	bugfix: when email type is text/calendar the ical file is not parsed.
+	bugfix: editors line breaks fixed.
+	bugfix: reload all tasks modified when editing a task and affecting other instantiated repetitions.
+	bugfix: member listing group by "located under" column fixed
+	bugfix: sometimes associated member selectors are filtered by current context.
+	bugfix: timeslot reports replicates task columns.
+	bugfix: reporting timeslots - if ts has no name or desc, use associated task name
+	bugfix: reporting - group by three criterias, in the third sometimes generates separated groups for timeslots in the same group.
+	bugfix: sometimes click on email opens it in a new tab.
+	bugfix: contacts search does not find if searching by name and surname together
+	bugfix: click in mail subject, from, to and open link in new tab doesn't open the email
+	bugfix: in gantt if a task is in more than one group it is displayed only once
+	
+	
+	Since 3.4.4.63
+	----------------
+	bugfix: mail rules that forward text mails does the forwarding as html.
+	
+	Since 3.4.4.62
+	----------------
+	bugfix: sent emails imap synchronization fixed.
+	
+	Since 3.4.4.61
+	----------------
+	bugfix: gantt task dependencies not rendered.
+	bugfix: ensure that the last_uid_in_folder is updated correctly always
+	bugfix: delete mails from server fixes.
+	
+	Since 3.4.4.60
+	----------------
+	bugfix: when email attachments are parsed as "Related" they are not included when forwarding.
+	bugfix: mysql scape on mail list query.
+	bugfix: prevent sending e-invoice twice.
+	
+	Since 3.4.4.59
+	----------------
+	bugfix: templates with tasks and subtasks that are generated through conditional actions does not generate the subtasks correctly.
+	
+	Since 3.4.4.58
+	----------------
+	bugfix: export ticket custom reports to csv and excel does not change the html entities for the characters in the description.
+	bugfix: missing lang in tickets custom report columns.
+	
+	Since 3.4.4.57
+	----------------
+	bugfix: in contacts view - don't show job title data if the custom property is disabled.
+	
+	Since 3.4.4.56
+	----------------
+	bugfix: sometimes when send email btn is pressed it saves a draft.
+	
+	Since 3.4.4.56
+	----------------
+	bugfix: contacts search does not find if searching by name and surname together
+	
+	Since 3.4.4.55
+	----------------
+	bugfix: email download performance when trying to request emails that are not in server.
+	bugfix: sent email message_ids are not saved in mail_contents_imap_folders.
+	
+	Since 3.4.4.54
+	----------------
+	bugfix: when viewing mail its read status is not always reloaded until the complete list is reloaded. 
+	
+	Since 3.4.4.53
+	----------------
+	bugfix: missing langs in tickets notifications.
+	bugfix: ticket description spacing fixed.
+	
+	Since 3.4.4.52
+    ----------------
+    bugfix: added constant to disable verify_peer and verify_peer_name when sending emails using ssl/tls and using php >= 5.6.
+	
+	Since 3.4.4.51
+    ----------------
+    bugfix: in gantt if a task is in more than one group it is shown only once.
+    bugfix: missing lang in project types when the association is multiple.
+    bugfix: member selectors order.
+	bugfix: associated member selectors js error.
+	feature: config option to allow or not multiple lines in invoice line description.
+	
+	Since 3.4.4.50
+    ----------------
+    bugfix: after selecting first multiple associated member you need to click outside and then inside the textbox to load the list.
+    bugfix: disable multiple lines in invoice line description.   
+    feature: invocing module: credit notes must have at least one reference.
+	
+	Since 3.4.4.49
+    ----------------
+    bugfix: change delete member js prompt for a custom modal to avoid the browser to remember the last answer.
+    bugfix: make advanced_core a pre-requisite for expenses plugin.
+    bugfix: member listing group by "located under" column fixed.
+	
+	Since 3.4.4.48
+    ----------------
+    bugfix: when clasifying emails it was always clasifying all the conversation without looking the preference that defines that.
+    bugfix: breadcrumbs in emails must not be shown next to the subject.
+    bugfix: 'created_by_id' in where clause is ambiguous' on calendar widget.
+	
+	Since 3.4.4.47
+    ----------------
+    bugfix: email parser was not recognizing attachments in multipart/related content.
+	bugfix: missing lang in deleted emails notifications.
+	
+	Since 3.4.4.46
+    ----------------
+	feature: create member templates from received emails.
+	bugfix: performance of search component within the mail tab.
+	
+	Since 3.4.4.45
+    ----------------
+	bugfix: error in advanced reports when grouping by created by.
+	
+	Since 3.4.4.44
+    ----------------
+	bugfix: imap check mail function fail when last received mail was deleted from the mail server.
+
+    Since 3.4.4.43
+    ----------------
+    bugfix: imap checking fixed when last received mail is not in server.
+    feature: new plugin "working_cycles"
+    feature: new plugin "modules"
+
+    Since 3.4.4.42
+    ----------------
+    feature: hierarchical client types dimension.
+    bugfix: custom dimension name not used in associated dimensions.
+    bugfix: send mail sometimes saves draft.
+
+    Since 3.4.4.41
+    ----------------
+    bugfix: mail tracking.
+
+    Since 3.4.4.40
+    ----------------
+    bugfix: error parsing Message-ID from mail.
+
+    Since 3.4.4.39
+    ----------------
+    bugfix: unable to set can_update_other_users_invitations and can_link_objects permissions value.
+    bugfix: imap download mails from specific date.
+    bugfix: ambiguous column error when object subtype plugin is active and user group tasks by a date field.
+
+	Since 3.4.4.38
+    ----------------
+    bugfix: imap mail download
+
+	Since 3.4.4.37
+    ----------------
+	feature: mobile api updated
+	
+	Since 3.4.4.36
+    ----------------
+	bugfix: disable mail track
+	
+	Since 3.4.4.35
+    ----------------
+    bugfix: assigned to component does not fill with users
+	bugfix: when no context selected, the add task form is not shown
+
+	Since 3.4.4.34
+    ----------------
+    bugfix: mail contents - imap folder association normalized.
+	
+	Since 3.4.4.33
+    ----------------
+	feature: gantt chart includes dimension columns, custom property columns and basic properties columns
+	
+	Since 3.4.4.32
+    ----------------
+	bugfix: task member group breadcrumb shows wrong parent
+	
+	Since 3.4.4.31
+    ----------------
+    feature: action in document view - send document by email
+    bugfix: cannot open weblinks files from internal network
+    bugfix: tasks drag and drop between milestone groups
+	
+	Since 3.4.4.30
+    ----------------
+    bugfix: if sandbox defined then don't use the purifier to edit html documents.
+	bugfix: when downloading an email whose "from" is marked as "no spam" it is sent to spam folder if has spam level headers greater than the configured level.
+	bugfix: crpm types dimensions are not shown in separate columns.
+	feature: allow to separate clients and projects columns in tasks list.
+	
+	Since 3.4.4.29
+    ----------------
+	bugfix: not all tasks are included in monthly view if they are too many.
+
+	Since 3.4.4.28
+    ----------------
+	bugfix: newsletter cp filters not working
+
+	Since 3.4.4.27
+    ----------------
+	bugfix: don't save same email more than one time if it belongs to more than one imap folder.
+	bugfix: don't send reminders for template objects.
+	
+	Since 3.4.4.26
+    ----------------
+    bugfix: member custom reports pagination when hiding details
+    bugfix: total of rows is not shown in reports when grouping by and hiding details
+	bugfix: name column not forced in reports when grouping by and hiding details
+    bugfix: contact links cannot be clicked
+	bugfix: if contact/company links doesn't have scheme they are treated as relative urls.
+	
+	Since 3.4.4.25
+    ----------------
+    bugfix: check negative spam score when saving mail.
+	bugfix: in notifications subscribers section, the last two users are not separated by spaces.
+	feature: add column status in users list
+	feature: use different background color for inactive users in users list
+	
+	Since 3.4.4.24
+    ----------------
+	bugfix: don't show company name between brackets for companies.
+	bugfix: mail content fix when replying
+	bugfix: error when editing timeslot with advanced billing
+	bugfix: don't show add task form if user doesn't have permissions to add.
+	feature: migrate payment types to object subtypes
+	feature: add checkbox to select all object types in permissions definition interface.
+	
+	Since 3.4.4.23
+    ----------------
+	bugfix: custom reports not filtering by created on.
+	
+	Since 3.4.4.22
+    ----------------
+    bugfix: contacts listing order by last updated fixed.
+	
+	Since 3.4.4.21
+    ----------------
+	bugfix: when user triggers email dowload and has no permissions over the email rule's members the email is not classified there.
+	
+	Since 3.4.4.20
+    ----------------
+	bugfix: grid toolbar dissapears when entering an object, collapsing left panel and then closing the object view
+	
+	Since 3.4.4.19
+    ----------------
+    bugfix: in object view, changes in css of classification widget to use all available width 
+    bugfix: when deleting mail it is not removed from list until reloading
+	
+	Since 3.4.4.18
+    ----------------
+    bugfix: custom reports error when conditions uses "is_user".
+    bugfix: email addresses are not shown in custom reports.
+    bugfix: performance upgraded when grouping custom reports by dimension member types.
+    bugfix: in contacts list when clicking a company goes to other view.
+    bugfix: email custom reports fails when using "to" in conditions.
+    change: dont show payments table when editing expense.
+	
+	Since 3.4.4.17
+    ----------------
+    bugfix: in template instantiation error when calculating date from creation plus more days
+	
+	Since 3.4.4.16
+    ----------------
+    bugfix: when filtering object picker by object type the dimension filter is not applied
+    bugfix: performance issue in permissions table
+    bugfix: grouped reports should put the "unclassified" group in the last place
+    feature: reminders post due date
+    feature: config option to autoselect if milestone should be applied to subtasks
+	
+	Since 3.4.4.15
+    ----------------
+	bugfix: invoice updated_on column empty
+	bugfix: tree panels wrong ordering with lower/upper case members, also with characters with accents. 
+	bugfix: notifications from cron incorrect hostname
+	bugfix: pdf export with accents in filename fixed
+	feature: new dimension "Account executives"
+	feature: show custom properties in tasks list
+	
+	Since 3.4.4.14
+	----------------
+	feature: new address type: postal
+	feature: adminsitration users list using paginated grid filtering by active, inactive or all.
+	feature: new action "Classify only attachments" in email view actions panel.
+	
+	Since 3.4.4.13
+	----------------
+	bugfix: don't filter users without permissions in root in tasks user's filter
+	bugfix: permissions check when adding or removing task dependency
+	bugfix: error 500 logged_user()->getgetUserTimezoneHoursOffset();
+	bugfix: subtype assignation in invoicing module when generating next repetition
+	bugfix: reports pagination when grouped and not showing details
+	feature: more calculated columns in expenses/payments custom reports
+	
+	Since 3.4.4.12
+	----------------
+	bugfix: mail plugin installer and updater must put the max_spam_level in 5
+	bugfix: fixed created date display for objects created before dst change
+	feature: In event view, if event time zone is different than logged user time zone then show the original time with timezone below the calculated time for the logged user.
+	feature: allow to change the time zone of tasks and events
+	
+	Since 3.4.4.11
+    ----------------
+    feature: timezone improvements, dst usage.
+	
+	Since 3.4.4.10
+    ----------------
+	bugfix: user without delete permissions cannot edit file revision comment.
+	bugfix: file revision comment form is not modal
+	bugfix: several expenses fixes and upgrades
+	bugfix: invoice preview include expiration date
+	bugfix: resize objectGrid when resizing containers
+	feature: expenses cache tables for totals
+
+	Since 3.4.4.9
+    ----------------
+	config: notification from name
+	
+	Since 3.4.4.8
+	----------------
+	bugfix: when user does not have the "can manage tasks" permission and completes a task an error message is shown after the completion.
+	bugfix: automatic project status calculation not working
+	bugfix: member selector, when getting child if it has to be replaced sometimes it is not added again
+	
+	Since 3.4.4.7
+	----------------
+	feature: multiple currency integration with invoicing, expenses and advanced billing.
+	feature: electonic-invoice plugins.
+	feature: spam score verification upgraded.
+	feature: mail list - icon to show if it has been replied or forwarded.
+	feature: add fixed totals for invoices.
+	feature: allow to totalize content object's fixed numeric properties.
+	feature: separated list totals for each defined currency in expenses and invoicing.
+	bugfix: expense list and payment list totals does not use standard functions.
+	bugfix: expense and payment reports are not including totals.
+	
+	Since 3.4.4.6
+	----------------
+	bugfix: in member custom reports, when adding a list custom property condition the possible values are not loaded correctly.
+	
+	Since 3.4.4.5
+	----------------
+	bugfix: don't show object print options if object subtypes plugin is not installed
+	bugfix: don't use noreply@fengoffice.com as the from email address in notificacions/reminders
+	bugfix: check if object subtypes plugin is activated before using it in expenses
+	
+	feature: object type hierarchy options
+	feature: when custom properties are more than 10 then split them in two columns in the add/edit form
+	feature: ensure that notifications always has something in the from name.
+	feature: dont send notifications if demo_web plugin is active.
+	feature: add content object id to sent_notifications table
+	feature: dimension association config to autoclassify in parent member's associated member
+	
+	Since 3.4.4.4
+	----------------
+	bugfix: in grouped custom reports when a task is in more than one group then the hours are modified twice by the timezone.
+	bugfix: check that parent exists before copying task info from parent
+	
+	Since 3.4.4.2
+	----------------
+	bugfix: object picker for mail attachments is not filtering correctly
+	bugfix: group by parameters are not shown when adding a custom report
+	bugfix: when adding custom properties, show in lists and show in main tab should be selected by default
+	bugfix: list custom properties edition fails when values have '
+	bugfix: breadcrumbs in object view are not using the standard function
+	bugfix: expenses widget graph
+
+	feature: show payment history in payment edit form and view
+	feature: text filters in expense and payments list
+	feature: expense and payment listings double toolbar
+	feature: add custom property attribute to specify if the property is shown as a column in listings by default
+
+
+	Since 3.4.4.1
+	----------------
+	feature: inherit company addresses and phones in contact reports if contact doesn't have any.
+	bugfix: emails with no message_id header are not downloaded when connecting through imap
+	
+	Since 3.4.4
+	----------------
+	bugfix: upgrade script was setting version to beta.
+	
+	Since 3.4.3.35
+	----------------
+	bugfix: member name length is limited to 160 chars.
+	bugfix: after searching in the member selector, the child nodes are not indented.
+	bugfix: dont show disabled dimensions as listing columns
+	bugfix: in invoicing module when hiding a column, the payments columns are wrong
+	bugfix: after adding member it is always appended to the end of the left panel.
+	
+    language: de_de, fr_ca updated
+    
+    
+    Since 3.4.3.34
+    ----------------
+	feature: copy expense action in expense's view
+	
+	Since 3.4.3.33
+    ----------------
+    bugfix: limit repetitive tasks shown in calendar.
+
+	Since 3.4.3.32
+    ----------------
+    bugfix: executive users cannot edit expenses or link to other objects.
+
+	Since 3.4.3.31
+    ----------------
+    bugfix: when editing a client, the custom properties inputs are duplicated.
+
+	Since 3.4.3.30
+    ----------------
+    bugfix: error message appears when trying to reload uninitialized panel.
+    bugfix: mail account dropdown menu doesn't have scroll.
+	
+	Since 3.4.3.29
+    ----------------
+    bugfix: list bullets not shown in tasks description in IE 11.
+
+	Since 3.4.3.28
+    ----------------
+    bugfix: order of groups in task list when grouped by members.
+
+	Since 3.4.3.27
+    ----------------
+	bugfix: inherit parent milestone and classification when creating sub tasks
+
+    Since 3.4.3.26
+    ----------------
+    bugfix: In contact reports address conditions are not working.
+
+    Since 3.4.3.25
+    ----------------
+    bugfix: task assigned to filter error when "Let users create objects without classifying them" is false.
+
+	Since 3.4.3.24
+    ----------------
+	feature: breadcrumb on task group name for member groups.
+
+    Since 3.4.3.23
+    ----------------
+	bugfix: confidential users are shown in mail account permissions section.
+	
+    Since 3.4.3.22
+    ----------------
+	bugfix: mails signatures were not editable.
+	bugfix: subtasks use parent dates.
+	
+    Since 3.4.3.21
+    ----------------
+    bugfix: when changing member parent the expand/collapse element is not updated.
+    bugfix: if og.openlink function returns an object then when it is called from an "href" in Firefox attribute if fails and no action is performed
+
+    Since 3.4.3.20
+    ----------------
+    bugfix: when writing an email if content is put inside the signature div then it is not saved.
+
+    Since 3.4.3.19
+    ----------------
+    bugfix: sql error when grouping by milestone and filtering by dates on the task list.
+
+    Since 3.4.3.18
+    ----------------
+    bugfix: report pagination does not work when report has conditions.
+    bugfix: client and project list tab title.
+    bugfix: error printing advanced reports.
+    bugfix: inherit parent dates when creating sub tasks.
+    bugfix: milestone order in tasks list.
+    feature: gantt weekend color.
+    feature: allow to order member listings by associated dimensions
+
+    Since 3.4.3.17
+    ----------------
+    bugfix: widget client statistics langs.
+    bugfix: spanish lang 'in'  was  'En'.
+    bugfix: client and project list tab title.
+    bugfix: estimated and worked time widget language fixes.
+	bugfix: completed tasks with worked time message.
+	bugfix: special custom properties langs in member information widget.
+	bugfix: lang fixes in member listing buttons.
+	feature: dont show dimensions that are not selectable in object breadcrumbs.
+	feature: show default color icon in activity widget for members that doesn't have icons.
+	feature: show status with colors in clients list.
+
+    Since 3.4.3.16
+    ----------------
+    config: header texture config.
+    bugfix: notification logo width.
+    bugfix: customer and project widget "view all" not working
+    plugin demo_web: send all spam mails to inbox.
+    bugfix: unread mails widget
+    bugfix: widget late and upcoming tasks add new tasks.
+    bugfix: widget: latest comments.
+    bugfix: clients widget does not show tasks graph
+    bugfix: project and clients statistics widget does not show status meter
+    bugfix: member listing shows custom properties without localization settings
+    bugfix: dont show status property column if status dimension is being used.
+
+    Since 3.4.3.15
+    ----------------
+    bugfix: calendar print
+
+    Since 3.4.3.14
+    ----------------
+    bugfix: performance fixed in tasks list when using subtasks structure and no filters or groups are used.
+
+    Since 3.4.3.13
+    ----------------
+	feature: user preference to select the time column format in custom reports
+
+    Since 3.4.3.12
+    ----------------
+    bugfix: prevent double request when double clicking the export to csv/excel button in custom reports.
+
+    Since 3.4.3.11
+    ----------------
+    bugfix: member templates dont override the associated member with the one defined in the template initial data if the user has changed it when adding a member.
+    
+    Since 3.4.3.10
+    ----------------
+    bugfix: when saving suppliers the secondary email addresses are not saved.
+
+    Since 3.4.3.9
+    ----------------
+    bugfix: mail account filter css error.
+
+    Since 3.4.3.8
+    ----------------
+    bugfix: task and time reporting errors
+    bugfix: css fixes to prevent vertical scroll in body element when using browser zoom
+
+	Since 3.4.3.7
+    ----------------
+	bugfix: mail rules action foward mail.
+
+	Since 3.4.3.6
+	----------------
+	bugfix: custom report reorder fixed when clicking in column header.
+	bugfix: dont process the member search response if it is not from the last request.
+	bugfix: users with mail account permissions cannot see unclassified emails if they are not the account owners.
+	bugfix: cant add clients because of contact custom properties.
+	
+	Since 3.4.3.5
+	----------------
+	feature: cancel prevous search request when the search criteria has changed and the response has not returned yet.
+	feature: tasks workflow - config option to select which dimensions should be copied from the completed task to the next task in workflow.
+	
+	Since 3.4.3.4
+	----------------
+	bugfix: tree nodes show more does not apply associated dimension filters
+	feature: more custom login customizations
+	
+	Since 3.4.3.3
+	----------------
+	bugfix: member reports fixed when using column object_subtype_id and no object subtype is defined.
+	bugfix: fix pdf export process when the exported report is too large.
+	bugfix: dimension search cache is not cleared when associated dimension changes.
+	bugfix: associated dimensions are fully loaded when selecting a member with no associations.
+
+	Since 3.4.3.2
+	----------------
+	bugfix: template tasks conditional actions edition fixed.
+
+	Since 3.4.3.1
+	----------------
+	bugfix: when disabling all the dimension selectors for an object type and editing an object of this type, the members were removed.
+
+	Since 3.4.3.0
+	----------------
+	bugfix: after deleting mail account the account filter of the listing must remove the deleted id
+	bugfix: google calendar sync, exception management.
+	bugfix: classification component for single selection dimensions fixed.
+	bugfix: permission error over file revisions.
+	bugfix: when reopening a task, only the first level of dependencies are reopened.
+	bugfix: task conditional actions are not replicated if the task is generated later in the workflow.
+	bugfix: task workflow boolean conditions fixed.
+	bugfix: when saving template task, the members and workflow should not be copied to subtasks.
+	
+	Since 3.4.3-rc
+	----------------
+	bugfix: if user does not manage permissions then don't let to create members without parent, otherwise no one will see it as user cant assign its permissions.
+	language updates: fr_fr, fr_ca, tr_tr, nl_nl
+	
+	Since 3.4.3-beta
+	----------------
+	bugfix: cut user permissions when changing role must be done only if downgraded and executed in background when possible.
+	bugfix: main custom properties are not shown in main tab
+	
+	Since 3.4.2.x
+	----------------
+	feature: allow to select for every dimension if its selector is shown when adding/editing an object
+	feature: allow associated dimension columns in member reports
+	feature: filter classification components with related dim-members when selecting the main dimension member
+	feature: preload classification components with related dim-members when selecting the main dimension member
+	feature: member listing group by
+	feature: member custom reports group by
+	feature: add relation between samples and countries
+	feature: tasks workflow - new action to change project status
+	feature: expenses plugin: show previous status amounts in listing and view, show payment history in expense view.
+	
+	bugfix: export to excel: sheet title length must have less than 31 characters
+	bugfix: report totals row data alignment fixes
+	bugfix: remove spaces between parameter brackets in translation tool
+	bugfix: cannot delete object subtypes
+	bugfix: Reload dimensions when selecting a member of an associated dimension fixed.
+	bugfix: when ids are stored as string instead of int in the tree the associated dimensions does not filter other trees
+	bugfix: remove strtolower usage from custom property views
+
+	Since 3.4.2.20
+    ----------------
+    bugfix: When completing a repetitive task, sometimes not all original subscribers were added to the next task.
+    bugfix: mail plugin installer does not add default permissions in members where users already have permissions.
+	bugfix: new addToSharingTable function does not adds to the table the mail account owners when adding an email.
+	bugfix: when viewing e-mail company addresses are not recognized when the company is in the system.
+
+	Since 3.4.2.18
+    ----------------
+    feature: document types plugin.
+
+	Since 3.4.2.17
+    ----------------
+	bugfix: updateContactMemberCache prevent error 500 on this function if the parameter user is not a contact.
+	bugfix: dont use member cache for tags listing.
+	
+	Since 3.4.2.16
+    ----------------
+    bugfix: js error when printing total worked time report
+    bugfix: actions button in tasks list does not work in firefox
+
+	Since 3.4.2.15
+    ----------------
+	language: fr_ca language puts the same month abbreviation for June and July. 
+
+	Since 3.4.2.14
+    ----------------
+	bugfix: Mail module not compatible with uuencoeded attachments.
+
+	Since 3.4.2.13
+    ----------------
+	bugfix: if user cannot manage permissions, update contact member cache after adding new member.
+
+	Since 3.4.2.12
+    ----------------
+    bugfix: Cannot select logged user in tasks widget configuration if user doesn't have permissions for tasks without classifying.
+    bugfix: Prevent multiple submit when downloading an email attachment.
+
+	Since 3.4.2.11
+    ----------------
+    bugfix: Language fixes for Nederlands (nl_nl).
+
+	Since 3.4.2.10
+    ----------------
+    bugfix: upgrade from 3.4.1 fixed.
+
+	Since 3.4.2.9
+    ----------------
+    bugfix: table prefix error when sending mails.
+
+	Since 3.4.2.8
+    ----------------
+    bugfix: Reload dimensions when selecting a member of an associated dimension fixed.
+    bugfix: check file extension before download file revision.
+	
+	Since 3.4.2.7
+    ----------------
+    bugfix: google calendar sync error when event doesn't have a name.
+
+	Since 3.4.2.6
+    ----------------
+    bugfix: deleted emails are shown in trash panel.
+
+	Since 3.4.2.5
+    ----------------
+    bugfix: check file extension before download file.
+
+	Since 3.4.2.4
+    ----------------
+    feature: Allow to define additional member permissions in user and group edition.
+
+	Since 3.4.2.3
+    ----------------
+    bugfix: User groups permissions not loaded when editing a member.
+    bugfix: Cannot add additional member permissions to user groups.
+    bugfix: Additional member permissions were not applied to children when "Apply to submembers" is checked.
+
+	Since 3.4.2.2
+    ----------------
+    bugfix: newsletter default account not working.
+
+	Since 3.4.2.1
+    ----------------
+    bugfix: overview error after selecting a member if the data base table prefix is different than fo.
+
+	Since 3.4.2
+    ----------------
+    bugfix: company name length restriction.
+
+	Since 3.4.2-rc2
+	----------------
+	bugfix: dont use JSON_NUMERIC_CHECK constant if not defined (is a php predefined constant).
+	language: nl_nl updated.
+	
+	Since 3.4.2-rc
+	----------------
+	bugfix: member cache construction function fixed.
+	
+	Since 3.4.2-beta2
+	----------------
+	feature: Export custom reports to excel
+	bugfix: fixed object classification after changing member parent.
+	
+	Since 3.4.2-beta
+	----------------
+	bugfix: custom reports pdf export compatibility in windows (need to install wkhtmltopdf)
+	bugfix: custom report print view only shows first page
+	bugfix: custom reports print and csv/pdf export adjustments
+	bugfix: replicate purchase orders permissions over suppliers in the other content objects
+	bugfix: assigned user cannot complete task from task view if doesn't have write permissions
+	feature: filter member reports by associated dimensions (selected in left panel)
+	
+	Since 3.4.1.13
+    ----------------
+    language: fr_fr updated.
+
+    Since 3.4.1.12
+    ----------------
+    bugfix: users widget not working properly.
+
+	Since 3.4.1.11
+    ----------------
+	feature: search filter on mails
+
+	Since 3.4.1.10
+    ----------------
+	performance: email recommendations when sending emails
+	bugfix: active context information widget is not shown when more than one member is in context.
+
+	Since 3.4.1.9
+	----------------
+	bugfix: disabled custom properties are shown in contact form
+	bugfix: cannot export contact/company custom properties
+	bugfix: scroll on mail panel after delete mails
+	
+	Since 3.4.1.8
+	----------------
+	feature: new system permission can instantiate template
+	
+	Since 3.4.1.7
+    ----------------
+    bugfix: prevent infinite loop when calculating repetitive tasks instances for calendars.
+
+	Since 3.4.1.6
+    ----------------
+    bugfix: cannot complete task from task view when user does not have write permissions.
+    language: nl_nl updated.
+
+	Since 3.4.1.5
+    ----------------
+    bugfix: when adding permissions to user by a group in one dimension and by personal permissions in other, the task list is not correct.
+    bugfix: fixed email decoding when entire email is an inline attachment.
+    performance: task assigned selector, subscribers selector, other user selectors.
+
+	Since 3.4.1.4
+    ----------------
+    bugfix: add unique index in object prefixes to avoid duplicated prefixes
+    bugfix: object selector, if custom property filters not defined the list is not initialized
+    bugfix: when checking email prevent querying all the mailbox mails when some mails are not found in server.
+    feature: newsletter errors management improved
+	private plugins updates
+
+	Since 3.4.1.3
+    ----------------
+    bugfix: attached eml attachments are not parsed, and attached .eml cant be downloaded.
+
+	Since 3.4.1.2
+    ----------------
+    bugfix: encoding problem on mail attachments names.
+
+	Since 3.4.1.1
+	----------------
+	bugfix: cannot delete client email.
+	bugfix: client email format is not controlled when editing client.
+	
+	Since 3.4.1
+	----------------
+	bugfix: several reference errors when using previous task on task edit view (affect reminders, multi assignment, repetition, assign to, custom properties, subscription, subtasks, linked objects)
+	bugfix: edit tasks does not send notifications
+	bugfix: when editing mail account, the signature of other users with permissions in the account are deleted.
+	feature: user config option to show/hide date filters in tasks list
+	css updates: key-value object properties input css modifications
+	language: fr_fr language updates
+	
+	Since 3.4.1-rc
+	----------------
+	bugfix: error when adding task with more than 10 custom properties
+	bugfix: error when changing user role and permissions in the same submit.
+	bugfix: timeslot report has wrong time format
+	bugfix: when editing a task and adding subtasks notifications are not sent if parent task assigned to is not changed.
+	language: Türkçe (tr_tr) language updates
+	
+	Since 3.4.1-beta
+	----------------
+	bugfix: in firefox monthly calendar view does not expand the boxes if there are more events to show.
+	bugfix: duplicate mails when to and from are the same mail.
+	bugfix: google calendar sync permission issue when importing events on root.
+	bugfix: in advanced search when cutting results name substr_utf function must be used.
+	bugfix: missing config option for amount of events shown in monthly view.
+	bugfix: events repeating by fixed day aren't shown correctly in monthly view.
+	bugfix: events repeating until date doesn't include the last day in monthly view.
+	
+	Since 3.4.0.x
+    ----------------
+	feature: new calculated column total_worked_time in tasks
+	feature: Tasks list drag & drop between task groups.
+	feature: Tasks list drag & drop to dimension members.
+	feature: Newsletters plugin.
+	feature: Include member custom properties in member reports.
+	feature: Make client sectors dimension multiple and hierarchical.
+	feature: add address and phones info to client dashboard information
+	feature: imap config option preserve emails state (read, unread)
+	feature: Newsletters plugin.
+	
+	Since 3.4.0.29
+    ----------------
+	bugfix: several reference errors when using previous task on task edit view (affect reminders, multi assignment, repetition, assign to, custom properties, subscription, subtasks, linked objects)
+	css updates: object properties input.
+
+	Since 3.4.0.28
+	----------------
+	Config option to use or not the dates filters in tasks 
+	
+	Since 3.4.0.27
+	----------------
+	bugfix: Error when sending notifications after editing tasks
+	
+	Since 3.4.0.26
+	----------------
+	bugfix: Error when upgrading to 3.3.2 with fixed table prefix.
+	
+	Since 3.4.0.25
+	----------------
+	bugfix: Error when changing permissions and role.
+	
+	Since 3.4.0.24
+	----------------
+	bugfix: Non-working days calculation in template instantiation fixes.
+	bugfix: search associated members was being filtered by current context.
+	
+	Since 3.4.0.23
+	----------------
+	bugfix: Private plugins modifications.
+	
+	Since 3.4.0.22
+	----------------
+	bugfix: Contact member cache generation fixed for new users.
+	
+	Since 3.4.0.21
+	----------------
+	bugfix: When editing user and removing a group the member cache was not deleted correctly for some submembers.
+	
+	Since 3.4.0.20
+	----------------
+	bugfix: when searching a child member and then searching the parent member, only the other child members are loaded after expanding the parent.
+	
+	Since 3.4.0.19
+	----------------
+	bugfix: gantt tasks order is not correct.
+	
+	Since 3.4.0.18
+	----------------
+	bugfix: import google calendar event classification fixed.
+	
+	Since 3.4.0.17
+	----------------
+	bugfix: export reports to pdf is adding html content to the file.
+	
+	Since 3.4.0.16
+	----------------
+	bugfix: check mail error when emails uid change on the mail server.
+	bugfix: some user properties are set when adding contact
+	
+	Since 3.4.0.15
+	----------------
+	bugfix: cannot enable email module if it has been disabled.
+	bugfix: email address length is too short.
+	
+	Since 3.4.0.14
+	----------------
+	bugfix: users cannot see other users contact cards if they have a higher role.
+	
+	Since 3.4.0.13
+	----------------
+	bugfix: mail list is not reloading if viewing an email and changing context.
+	bugfix: export contacts to csv;
+	bugfix: create contact from email when sending email was setting user fields.
+    bugfix: additional member permissions - sometimes the checkboxes are checked and the permissions is not set.
+   	
+	Since 3.4.0.12
+	----------------
+	bugfix: get_member_childs function for member tree.
+	bugfix: javascript errors when moving to trash tasks on tasks list.
+	performance: multi tasks action remove member aditional data calculation.
+	
+	Since 3.4.0.10
+	----------------
+	bugfix: instantiate template from email is not working properly.
+	bugfix: javascript error when completing subtask on the tasks list.
+	
+	Since 3.4.0.9
+	----------------
+	performance: remove member aditional data from member lists (project and clients lists)
+	
+	Since 3.4.0.8
+	----------------
+	bugfix: add member custom properties tab render error.
+	
+	Since 3.4.0.7
+	----------------
+	bugfix: error on object list when sorting by custom properties or dimensions.
+	bugfix: comments widget not working.
+	bugfix: prevent json errors on members list. 
+	
+	Since 3.4.0.6
+	----------------
+	bugfix: do not check permissions for super admin on archived objects list.
+	bugfix: users can view other users with lower rol if they don't have can_manage_security.
+	bugfix: root objects permissions.
+	bugfix: classification error on user edit form.
+	
+	Since 3.4.0.5
+	----------------
+	feature: allow to edit precharged subejct and body variables when instantiating a template from an email.
+	feature: allow all day events container to be expanded to show all items.
+	feature: mails panel, when filtering by unread, dont remove mails immediately after marking as read, remove them when leaving the tab or opening an email.
+	feature: constant to remove help links in settings.
+	
+	bugfix: in mail list when several requests are sent to load the list (different filters) only the last response must be loaded.
+	bugfix: when classifying from mail view always return to first page.
+	bugfix: if template parameters has name with capital letters and are saved in lowercase (if browser sent them in lowercase) the parameter is not applied.
+	bugfix: if sunday is a working day, 5 days calendar view should start in sunday.
+	bugfix: encoding error in general search.
+	bugfix: show all childs in memeber trees after expand.
+	bugfix: cannot advance to second page of projects list.
+	bugfix: mail panel grid selections doesn't work fine after marking mail as read and filtering by unread.
+	
+	Since 3.4.0.4
+	----------------
+	bugfix: single member selector does not show filter input in chrome.
+	bugfix: performance improved when checking for new emails.
+	bugfix: tasks toolbar complete button does not prompt to complete subtasks.
+	bugfix: remove rows from mail list when mail is deleted. archived, classified in other place, etc.
+	bugfix: only admins can change timeslot person.
+	bugfix: if pdf file doesn't have extension the preview is not displayed
+	bugfix: when clients and projects are in different dimensions the tasks cannot be grouped by projects
+	
+	Since 3.4.0.3
+	----------------
+	feature: massive task reassignation button in tasks list
+	feature: allow to add/subtract minutes of date variables in task templates.
+	
+	bugfix: member custom properties of type user does not load all users with permissions
+	bugfix: email panel, new emails must be loaded only in first page
+	bugfix: members list custom properties columns, disabled custom properties must not be shown.
+	bugfix: member templates add/edit render empty divs for selectors of disabled dimensions
+	bugfix: let superadmins view and modify confidential users
+	bugfix: when template adds more than one day to a date variable and the resulting date is a non-working day then that amount must be added to keep the gap.
+	bugfix: add subtask from task view.
+
+	Since 3.4.0.2
+	----------------
+	bugfix: when submitting comment disable the button to prevent double comment if pressed twice.
+	bugfix: email list performance improvements.
+
+	Since 3.4.0.1
+	----------------
+	feature: email polling check if there are new mails and add them to the list instead of reloading all the panel
+	feature: in lists allow checkboxes to work with shift key
+	bugfix: breadcrumbs does not appear in expenses report the first time it is executed.
+
+	Since 3.4
+	----------------
+	bugfix: some non-standard characters cause that some workspaces are not shown unless the searchbox is used.
+	bugfix: companies csv export does not use .csv as file extension.
+	bugfix: sql modified for superamins in clients and projects listings.
+	bugfix: in permissions "all" checkbox doesn't work if user is collaborator or guest.
+	bugfix: user subscribers are deleted after user edition.
+	bugfix: mail report fields to, cc, bcc and body doesn't allow 'like' condition.	
+	
+	Since 3.4-rc
+	----------------
+	bugfix: webpages display issue in contacts view.
+	bugfix: tasks list grouped by milestones, if showing empty milestones, when adding/editing task, it is replicated in all emtpy milestones.
+	bugfix: change 'null' for '0' in plugin_id column in installer initial data quieries.
+	
+	Since 3.4-beta
+	----------------
+	bugfix: cannot instantiate template from mail if template has no variables.
+	bugfix: in some languages somtimes the messages widget crashes the overview.
+	
+	Since 3.3.0.11
+	----------------
+	feature: filter by type in archived objects, trash panel and overview list.
+	feature: member info widget improved.
+	feature: objects subtypes plugin, allow to define different types of notes, tasks, etc., each one with different sets of custom properties.
+	feature: custom properties interface improved.
+	feature: expenses - allow expenses report to be exported to csv.
+	feature: expenses - definition of different type of payments, each one with different sets of attributes.
+	feature: expenses - config option to allow to add negative amounts.
+	feature: advanced billing plugin.
+	feature: add to listings the possibility to order by custom properties and dimension members.
+	feature: don't persist attached documents after sending the email.
+	feature: allow to filter time report by associated task status.
+	feature: when completing a task show popup to ask if user wants to complete subtasks too.
+	feature: allow to set user when adding worked time from tasks list.
+	
+	bugfix: when editing an object, don't modify linked objects for objects that logged user doesn't have permissions.
+	bugfix: when editing an object, linked objects are not instantly loaded in the form.
+	bugfix: add/edit mail account - sent emails imap sync fields are not shown in a tab.
+	bugfix: don't show non manageable dimensions in object view (except for clients).
+	bugfix: view/edit company without logo shows person default image.
+	bugfix: when changing company logo it doesn't refresh the preview.
+	bugfix: company logos are not shown in contacts tab list.
+	bugfix: delete contact picture does not delete all sizes
+	bugfix: when all sizes pictures are generated by the upgrade process, they cannot be edited (medium and small sizes).
+	bugfix: plugin installer does not update version if plugin is already scanned.
+	bugfix: single member selector style adjusted to look like multiple member selector.
+	
+	languages updated: tr_tr and fr_ca.
+	
+	
+	Since 3.3.0.10
+	----------------
+	bugfix: pagination in archived and trashed panels.
+	bugfix: user and date information in archived and trashed panels is not shown.
+	bugfix: ckeditor sometimtes puts an overlay that cannot be removed (when pasting links).
+	bugfix: when viewing emails don't show attachments container if there are only inline attachments that are shown in mail body.
+	bugfix: linked objects js error when creating task from email
+	bugfix: repeat by fixed date events sometimes are shown in the next day (when timezone > 0)
+	bugfix: when viewing emails don't show attachments container if there are only inline attachments that are shown in mail body.
+	bugfix: comments text area has a max of 13 lines.
+	bugfix: cannot remove tags from users.
+	bugfix: cannot edit some picture files.
+	bugfix: non administrators can't link objects to template tasks when editing.
+	bugfix: give a proper message when imap extension is not installed.
+	bugfix: permissions components does not have horizontal scrollbar.
+	
+	Since 3.3.0.9
+	----------------
+	bugfix: member panel children display issue fixed.
+	
+	Since 3.3.0.8
+	----------------
+	bugfix: cannot download emails with .docx attachments if zip php extension is not installed.
+	bugfix: when filtering by another dimension member the members that have parents are not included.
+	
+	Since 3.3.0.7
+	----------------
+	bugfix: reminders are always saved to apply all the subscribers.
+	bugfix: reminders are sent to non-subscribed users (when reminders are copied in repetitive tasks)
+	language updates: fr_ca and tr_tr
+
+	Since 3.3.0.6
+	----------------
+	bugfix: Deleting from project listing is not using the member controller delete function.
+	
+	Since 3.3.0.5
+	----------------
+	bugfix: don't add contact member permissions for dimension_object and dimension_group object types.
+	
+	Since 3.3.0.4
+	----------------
+	bugfix: single member selector on firefox.
+	bugfix: send mail error when is called by cron and the sender is not the account owner. 
+	bugfix: email address support.
+	
+	Since 3.3.0.3
+	----------------
+	bugfix: member list order by parent name.
+	bugfix: search on member trees is not working if the node name have html entities.
+	
+	Since 3.3.0.2
+	----------------
+	bugfix: web documents only working for super admins.
+	bugfix: workspaces and tags list not working.
+	bugfix: add new contact/user/company picture error
+	
+	Since 3.3.0.1
+	----------------
+	bugfix: when adding/editing suppliers the associated contact custom properties are not rendered and if there is any required cp the supplier cannot be added.
+	bugfix: clear filter after select on member selectors.
+	bugfix: single member selector
+	bugfix: breadcrumbs js error
+	bugfix: ensure to archive-unarchive associated object or associated member
+	bugfix: filter dimensions by other dimensions does not get the filtered members always.
+	bugfix: ensure that deprecated gantt overview widget is not rendered.
+	bugfix: custom properties address fields renderization crashes when it has enters.
+
+	performance: member tree search.
+	performance: member trees.
+	
+	
+	Since 3.3
+	----------------
+	
+	bugfix: js error and new tab opens when trying to add new invoice and module is not configured.
+	bugfix: tasks list group by dimension not showing tasks without member.
+	bugfix: when no formula status is matched then the last one is assigned.
+	bugfix: super admin can not see other users attachments if the mail is not classified.
+	bugfix: repeating template tasks not working with config option repeating_task.
+	bugfix: purchase orders "ordered by" field must be only users.
+	bugfix: expenses payments numeration
+	
+	lang: Turkish translation
+
+
+	Since 3.3-rc
+	----------------
+	bugfix: contact list image width.
+	bugfix: settings icons misalignments when language is es_es or es_la
+	bugfix: search results not always shows where is the match (e.g.: if match is in a comment)
+	bugfix: template tasks parent id is not set in some cases.
+	bugfix: dont delete .htaccess when cleaning tmp folder using cron events
+	bugfix: set "attach document to notification" default value to "false"
+	bugfix: filters bug in linked objects picker.
+	bugfix: custom report dates are not correct.
+	bugfix: search results not always shows where is the match (e.g.when matched word is in a comment)
+	bugfix: report is shown in permissions screen when reports tab is disabled
+	bugfix: sharing table not updated for user when permissions changed.
+	bugfix: birthday query not correct for leap-years
+	bugfix: dont set user images to expire today.
+	bugfix: incorrect error message when user cannot upload document
+	
+	
+	Since 3.3-beta
+	----------------
+	bugfix: breadcrumbs on mail list.
+	bugfix: template tasks depth.
+	bugfix: some template tasks disappear from template view.
+	bugfix: contact member cache is not recalculated when enabling or disabling modules.
+	bugfix: weblinks names.
+	bugfix: non working days - remove option "leave as they are" and set min amount of days to 1.
+	bugfix: user birthday
+	bugfix: administrator cannot edit user in some cases
+	bugfix: in template user variables: dont filter fixed user variables by context or company
+	bugfix: all prev tasks completed notification cant be sent if company logo file does not exists
+	bugfix: dont show member custom properties if plugin not installed.
+
+	
+	Since 3.2.3.2
+	----------------
+
+	bugfix: dont show object in listings if it is only classified in a person member.
+	bugfix: resize members panel.
+	bugfix: multiline text on street address.
+	bugfix: missing contact data inputs in clients edition when client is a person.
+	bugfix: langs in tasks groups.
+	bugfix: user's widget in dashboard showing contacts.
+	bugfix: php execution in tmp folder must be disabled
+	bugfix: no message is shown when tasks report does not have tasks
+	bugfix: change project_manager to custom property
+	bugfix: related dimensions are reloaded with selected node object type not having an association.
+	bugfix: edit button on members trees
+	bugfix: after change client parent classify contact 
+	bugfix: update parent after adding child node on members trees 
+	bugfix: print tasks list
+	bugfix: don't allow duplicated username
+	bugfix: Error when filtering tasks by tag.
+	bugfix: dont show object in listings if it is only classified in a person member
+	bugfix: do not reload tasks list after complete tasks
+	bugfix: javascript infinite loop on tasks list
+	bugfix: dont force repository files download, keep cache for these files
+	bugfix: mail rules mark as read fail when is called from cron
+	bugfix: when filtering members by another dimension, cannot view filtered member childs
+	bugfix: autoclassify components misaligned in mail account edition
+	bugfix: drag and drop on member tree node
+	bugfix: zip code is not shown in user/contact/company card
+	bugfix: cannot download attachments if email has inline images before the attachments
+	bugfix: checkbox to send notification to assignee does not appear
+	
+	
+	feature: resize columns on tasks list.
+	feature: separate dimensions columns on tasks list.
+	feature: general member listings.
+	fetaure: allow to reorder and disable description and color fields (in custom properties administration).
+	feature: custom properties of type user
+	feature: table to add options for different member types
+	feature: dimension object type option to decide if member is selected or not after its creation
+	feature: description field for all type of members.
+	feature: lab samples plugin and object prefixes modifications
+	feature: dimension options normalization
+	feature: dimension options settings section
+	feature: allow to set custom dimension names
+	feature: allow to enable/disable dimension member types
+	feature: show or hide overview action links checking by current context (e.g.: dont show clients list link if a client is selected)
+	feature: sent notifications history log
+	feature: ability to log in filesystem the error details when sending a notification fails
+	feature: dont reload all panel when task workflow generates new tasks, only add new tasks to the list
+	
+	perfromance: mobile member listing
+	performance: remove object timeslots permissions 
+	performance: close timeslots when completing tasks
+	
+	language: non working days traductions for es_es and es_la
+	
+	usability: time report using 100% width, min-width:750
+		
+	
+	Since 3.2.3.1
+	----------------
+	bugfix: Error when filtering tasks by tag.
+	
+	Since 3.2.3
+	----------------
+	feature: view object history paginated.
+	
+	Since 3.2.3-beta
+	----------------
+	bugfix: fixed addToSharingTable when called from rebuild_sharing_table.php
+	bugfix: unclassified emails are not added to sharing table.
+	bugfix: group totals on tasks list.
+	bugfix: new mail old view from contact list.
+	bugfix: blocking file for uploading new revision.
+	bugfix: when instantiating template from email, assigned users should be filtered using email's members
+	bugfix: ensure that member template tasks are classified in the recently created member.
+	bugfix: when viewing mails, container must be bigger before the resize
+	bugfix: view more french.
+
 	
 	Since 3.2.2
 	----------------
+	bugfix: object prefix is not deleted after deleting object.
+	bugfix: removed trailing commas from javascript objects.
+	bugfix: classify contact after change client parent.
+	bugfix: mail view doesn't reload after classifying mail.
+	bugfix: remember notify my self checkbox in add and edit file. 
+	bugfix: notify myself checkbox view in add and edit file.
+	bugfix: notifications to asignee when creating and editing tasks.
+	bugfix: update parent after adding child node on members trees.
+	bugfix: mail rules history view.
+	bugfix: not possible to upload picture when creating contact or user.
+	bugfix: not showing which tab is selected in the mail panel.
+	bugfix: phone number name with special characters. 
+	bugfix: language and css of installed plugins that are not activated are not included.
+	bugfix: template milestone add is not modal.
+	bugfix: when modifying/trashing several tasks don't make all client/project calculations foreach task, do it once after all modifications
+	bugfix: calculate percent completed on tasks.
+	bugfix: group totals on tasks list.
 	bugfix: Superadmin cannot edit other superadmins.
+	
+	feature: generate template from mail - edit email fields - link mail to generated tasks.
+	feature: calendar new event view when clicking on the calendar.
+	feature: when creating subsecuent tasks (tasks workflow) also creates a task dependency between the completed task and the new ones
+	
+	performance: member trees paginated (left panel and selectors).
+	performance: remove object timeslots permissions.
+	performance: close timeslots when completing tasks.
+	
+	config option: number of previous pending tasks showing next to each task.
+	config option: notification to subscribers when creating and editing tasks.
 	
 	Since 3.2.2-rc
 	----------------
@@ -122,7 +1760,8 @@
 	bugfix: showing which tab is selected in mail panel.
 	bugfix: prevent "duplicate key" message in permission groups table when creating an user.
 	bugfix: some checkboxes are not submitted correctly.
-		
+	
+	
 	Since 3.2.2-alpha
 	----------------
 	fetaure: When editing a task and start or due date is changed, ask the user to advance/rewind the subtasks dates.
@@ -517,7 +2156,7 @@
 	bugfix: Error when adding tasks.
 	bugfix: Cannot delete user group.
 	bugfix: Feng1 to Feng3 upgrade script does not fill the "enabled_dimensions" config option.
-	
+
 	
 	Since 3.1.1
 	----------------

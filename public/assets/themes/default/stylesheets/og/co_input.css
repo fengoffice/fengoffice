@@ -5,6 +5,10 @@
 	color:#666;
 }
 
+#reporting-panel .coInputHeader {
+	margin-bottom: 15px;
+}
+
 .coInputSeparator {
 /*	background-image: url(../../images/layout/shadow.png);
 	height: 6px;
@@ -38,6 +42,10 @@
 .coInputMainBlock .dataBlock {
 	margin: 0 0 12px 0;
 	min-height: 20px;
+}
+
+.coInputMainBlock .dataBlock label {
+	margin-top: 3px;
 }
 
 .dataBlock .og-add-template-object {
@@ -74,8 +82,9 @@
 	padding-left: 17px;
 	margin-left: 10px;
 }
-.coInputMainBlock .dataBlock .ws-color-chooser {
-	margin-left: 200px;
+.coInputMainBlock .ws-color-chooser {
+	margin-left: 0px;
+	display: inline-block;
 }
 
 .coInputTags {
@@ -124,9 +133,15 @@
 .task-data {
 	min-width: 950px;
 }
-.task-data .dataBlock input.checkbox{
-	margin-top: 5px;
+.task-data .dataBlock input.checkbox {
+	margin-top: 4px;
 	margin-left: 10px;
+}
+.task-data .left-section .dataBlock input.checkbox {
+	margin-left: 0px;
+}
+.task-data .left-section label {
+	min-width: 190px;
 }
 
 .coInputLinkedObjects {
@@ -170,4 +185,27 @@
 .im-container table th {
 	text-align: center;
 	padding: 2px 4px;
+}
+
+
+
+.headerToolbarItem {
+    display: inline;
+    margin: 0 5px;
+}
+.headerToolbarItem a.link-ico {
+    font-size: 12px;
+    padding-left: 18px;
+    text-decoration: underline;
+}
+.headerToolbarItem a.link-ico.ico-delete {
+	padding-top: 4px;
+}
+.headerToolbarItem a.link-ico.ico-archive-obj, .headerToolbarItem a.link-ico.ico-unarchive-obj {
+	padding-top: 1px;
+}
+.headerToolbar {
+    text-align: right;
+    margin-top: -12px;
+    margin-right: 20px;
 }

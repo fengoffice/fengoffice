@@ -6,8 +6,8 @@ $genid = gen_id();
 	
 	<div class="title">
 		<div class="titletext"><?php echo lang('modules and dimensions')?></div>
-		<button title="<?php echo lang('close')?>" style="float:left; margin: -10px 0 0 10px;" class="add-first-btn" onclick="og.save_system_modules_changes(this)">
-			<img src="public/assets/themes/default/images/layout/close16.png">&nbsp;<?php echo lang('close')?>
+		<button title="<?php echo lang('done apply changes')?>" style="float:left; margin: -10px 0 0 10px;" class="add-first-btn blue" onclick="og.save_system_modules_changes(this)">
+			<?php echo lang('done apply changes')?>
 		</button>
 		<div class="clear"></div>
 	</div>
@@ -269,22 +269,22 @@ $genid = gen_id();
 		og.original_module_status = {};
 		<?php foreach ($modules as $module) { ?>
 			og.original_module_status['<?php echo $module['id']?>'] = <?php echo $module['enabled'] ? '1' : '0'?>;
-			og.module_hints['<?php echo $module['id']?>'] = '<?php echo $module['hint']?>';
+			og.module_hints['<?php echo $module['id']?>'] = '<?php echo escape_character($module['hint'],null,true)?>';
 		<?php } ?>
 		
 		<?php foreach ($disabled_modules as $module) { ?>
-			og.module_hints['<?php echo $module['id']?>'] = '<?php echo $module['hint']?>';
+			og.module_hints['<?php echo $module['id']?>'] = '<?php echo escape_character(array_var($module, 'hint'),null,true)?>';
 		<?php } ?>
 		<?php foreach ($other_modules as $module) { ?>
-			og.module_hints['<?php echo $module['id']?>'] = '<?php echo $module['hint']?>';
+			og.module_hints['<?php echo $module['id']?>'] = '<?php echo escape_character(array_var($module, 'hint'),null,true)?>';
 		<?php } ?>
 
 		og.dimension_hints = {};
 		<?php foreach ($active_dimensions as $dim) { ?>
-			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo $dim['hint']?>';
+			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo escape_character(array_var($dim, 'hint'),null,true)?>';
 		<?php } ?>
 		<?php foreach ($other_dimensions as $dim) { ?>
-			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo $dim['hint']?>';
+			og.dimension_hints['<?php echo $dim['id']?>'] = '<?php echo escape_character(array_var($dim, 'hint'),null,true)?>';
 		<?php } ?>
 
 		og.order_dimensions();

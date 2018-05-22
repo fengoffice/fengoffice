@@ -245,6 +245,8 @@
 	'field ProjectTasks repeat_m' => 'Mes de repetición',
 	'field ProjectTasks repeat_y' => 'Año de repetición',
 	'field ProjectTasks percent_completed' => 'Porcentaje completado',
+	'field ProjectTasks total_worked_time' => 'Total de tiempo trabajado',
+    'field ProjectTasks status' => 'Estado',
 	'field Users created_by_id' => 'Creado por',
 	'field Users updated_by_id' => 'Actualizado por',
 	'field Users company_id' => 'Organización',
@@ -275,10 +277,22 @@
 	'field Objects trashed_by_id' => 'Eliminado por',
 	'field Objects archived_on' => 'Archivado el',
 	'field Objects archived_by_id' => 'Archivado por',
-
+	'field Objects description' => 'Descripción',
+	'field Objects end_date' => 'Fecha de fin',
+	'field Objects start_date' => 'Fecha de inicio',
+	'field Objects manager_id' => 'Gerente de proyecto',
+	'field Objects status' => 'Estado',
+	'field Objects assigned_by_id' => 'Asignado por',
+	'field Objects cmrr' => 'Cmrr',
+	'field Objects payment_cycle_id' => 'Ciclo de pago',
+	'field Objects status_id' => 'Estado',
+    'field Objects mark_as_started' => 'Marked as started',
+    
 	'is_user' => 'Es usuario',
 	'field Objects is_user' => 'Es usuario',
 	'field Contacts is_user' => 'Es usuario',
+	
+	'field Objects text' => 'Descripción',
 
 	'home_phone' => 'Teléfono personal',
 	'work_phone' => 'Teléfono del trabajo',
@@ -290,6 +304,9 @@
 	'home_address' => 'Dirección personal',
 	'work_address' => 'Dirección del trabajo',
 	'other_address' => 'Otra dirección',
+	'postal_address' => 'Dirección postal',
+	'postal' => 'Postal',
+	
 
 	'field Contacts home_phone' => 'Teléfono personal',
 	'field Contacts work_phone' => 'Teléfono del trabajo',
@@ -301,4 +318,13 @@
 	'field Contacts home_address' => 'Dirección personal',
 	'field Contacts work_address' => 'Dirección del trabajo',
 	'field Contacts other_address' => 'Otra dirección',
+	'field Contacts postal_address' => 'Dirección postal',
+		
+	'field ProjectMilestones assigned_to_company_id' => 'Asignado a empresa',
+	'field ProjectMilestones assigned_to_user_id' => 'Asignado a usuario',
+	
+	'field Timeslots rel_object_id' => 'Tarea',
+    
+    // Time fields 
+    'field Objects total_worked_time' => 'Total de tiempo trabajado',
 );

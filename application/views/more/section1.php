@@ -56,7 +56,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 				
 				switch ($ot->getName()) {
 					case "task":
-						$selector = '#tasksPanel #tasksPanelContent #tasksPanelContainer #ogTasksPanelColNames .tasksActionsBtn.tasksBtn:last'; break;
+						$selector = '.task-list-row-template .btn.btn-xs.btn-primary'; break;
 					case "message": 
 					case "weblink": 
 					case "file":
@@ -90,7 +90,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 				
 					$step = 98;
 					$hint_text = lang('click here to add a new', strtolower(lang($ot->getName())));
-					$acitvate_tab_js = "var panel = Ext.getCmp('".$first_tab_panel->getId()."'); Ext.getCmp('tabs-panel').setActiveTab(panel); og.highlight_link({selector:'$selector', step:$step, time_active:30000, timeout:500, hint_text:'$hint_text', hint_pos:'bottom', animate_opacity:10, reload_panel:true})";
+					$acitvate_tab_js = "var panel = Ext.getCmp('".$first_tab_panel->getId()."'); Ext.getCmp('tabs-panel').setActiveTab(panel); og.highlight_link({selector:'$selector', step:$step, time_active:30000, timeout:500, hint_text:'$hint_text', hint_pos:'right', animate_opacity:10, reload_panel:true})";
 					$add_first_obj_url = "javascript:$acitvate_tab_js";
 					
 					$icon_class = $ot->getName() == 'file' ? 'ico-large-text-html' : 'ico-large-' . $ot->getName();
@@ -101,7 +101,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 							'name' => lang('add your first', strtolower(lang($ot->getName()))),
 							'extra' => '',
 					);
-					if ($add_first_obj_onclick != null) {
+					if (isset($add_first_obj_onclick) && $add_first_obj_onclick != null) {
 						$add_first_obj['onclick'] = $add_first_obj_onclick;
 					}
 					$links[] = $add_first_obj;
@@ -136,12 +136,6 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 	
 	if (can_manage_configuration(logged_user())) {
 		$links[] = array(
-				'ico' => 'ico-large-company',
-				'url' => get_url('administration', 'company'),
-				'name' => lang('organization data'),
-				'extra' => '',
-		);
-		$links[] = array(
 				'ico' => 'ico-large-configuration',
 				'url' => get_url('administration', 'configuration'),
 				'name' => lang('configuration'),
@@ -162,7 +156,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 		$links[] = array(
 				'ico' => 'ico-large-billing',
 				'url' => get_url('billing', 'index'),
-				'name' => lang('billing'),
+				'name' => lang('billing and invoicing'),
 				'extra' => '<a class="internalLink coViewAction ico-add" href="' . get_url('billing', 'add') . '">' . lang('add billing category') . '</a>',
 		);
 	}
@@ -171,22 +165,13 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 		$links[] = array(
 				'ico' => 'ico-large-custom-properties',
 				'url' => get_url('administration', 'custom_properties'),
-				'name' => lang('custom properties'),
+				'name' => lang('object properties'),
 				'extra' => '',
 		);
 	}
+	
 	
 	Hook::fire('render_administration_icons', null, $links);
-	
-	if (can_manage_security(logged_user()) && Plugins::instance()->isActivePlugin('income')) {
-		$links[] = array(
-				'ico' => 'ico-large-income',
-				'url' => get_url('income', 'administration'),
-				'name' => lang('income'),
-				'extra' => '',
-		);
-	}
-	
 	
 	if (defined("PLUGIN_MANAGER") && PLUGIN_MANAGER && can_manage_plugins(logged_user())) {
 		$links[] = array(

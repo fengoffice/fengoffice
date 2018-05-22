@@ -137,9 +137,10 @@
   		}
   		
   		
-  		static function getMembersByObjectAndDimension($object_id, $dimension_id, $extra_conditions = "") {
+  		static function getMembersByObjectAndDimension($object_id, $dimension_id, $extra_conditions = "", $only_ids = false) {
+  			$sel_cols = $only_ids ? "m.id" : "m.*";
   			$sql = "
-  				SELECT m.* 
+  				SELECT $sel_cols 
   				FROM ".TABLE_PREFIX."object_members om 
   				INNER JOIN ".TABLE_PREFIX."members m ON om.member_id = m.id 
   				WHERE 
@@ -151,6 +152,10 @@
   			$result = array();
   			$rows = DB::executeAll($sql);
   			if (!is_array($rows)) return $result;
+  			
+  			if ($only_ids) {
+  				return array_filter(array_flat($rows));
+  			}
   			
   			foreach ($rows as $row) {
   				$member = new Member();
@@ -176,7 +181,7 @@
   				}
   				
   				$sql = "
-  					SELECT om.member_id
+  					SELECT om.member_id, m.object_type_id, om.is_optimization
   					FROM ".TABLE_PREFIX."object_members om
   					INNER JOIN ".TABLE_PREFIX."members m ON om.member_id = m.id
   					$cache_sql
@@ -186,21 +191,35 @@
   					ORDER BY om.member_id
   					$SQL_LIMIT
   				";
-  				$db_res = DB::execute($sql);
-  				$rows = $db_res->fetchAll();
+  				return DB::executeAll($sql);
   			} else {
   				return array();
   			}
-  		
-  			$member_ids = array();
-  			if(count($rows) > 0){
-  				foreach ($rows as $row){
-  					$member_ids[] = $row['member_id'];
-  				}
-  			}
-  				
-  			return $member_ids;
   		}
+
+      /**
+       * Check if an object is in root
+       *
+       * @param integer   $object_id  Object id
+       * @return boolean
+       */
+      static function is_object_in_root($object_id){
+          $enabled_dimensions_sql = "";
+          $enabled_dimensions_ids = implode(',', array_filter(config_option('enabled_dimensions')));
+          if ($enabled_dimensions_ids != "") {
+              $enabled_dimensions_sql = "AND m.dimension_id IN ($enabled_dimensions_ids)";
+          }
+          $sql = "SELECT count(om.member_id) as total_mem FROM ".TABLE_PREFIX."object_members om
+			INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id
+			INNER JOIN ".TABLE_PREFIX."dimensions d ON d.id=m.dimension_id
+			WHERE om.object_id='$object_id' AND om.is_optimization=0
+			AND d.defines_permissions=1 $enabled_dimensions_sql";
+          $r = DB::executeOne($sql);
+
+          $is_classified = $r['total_mem'] > 0;
+
+          return !$is_classified;
+      }
      
   		
   } // ObjectMembers 

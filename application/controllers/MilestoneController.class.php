@@ -90,8 +90,7 @@ class MilestoneController extends ApplicationController {
 		} 
 
 		$milestone_data = array_var($_POST, 'milestone');
-		$now = DateTimeValueLib::now();
-		$due_date = DateTimeValueLib::make(0, 0, 0, array_var($_GET, 'due_month', $now->getMonth()), array_var($_GET, 'due_day', $now->getDay()), array_var($_GET, 'due_year', $now->getYear()));
+		
 		if(!is_array($milestone_data)) {
 			// set layout for modal form
 			if (array_var($_REQUEST, 'modal')) {
@@ -99,23 +98,29 @@ class MilestoneController extends ApplicationController {
 				tpl_assign('modal', true);
 			}
 			$milestone_data = array(
-				'due_date' => $due_date,
+				'due_date' => '',
 				'name' => array_var($_GET, 'name', ''),
 				'assigned_to' => array_var($_GET, 'assigned_to', '0'),
-				'is_template' => array_var($_GET, "is_template", false)
+				'is_template' => array_var($_GET, "is_template", false),
+                                'template_id' => array_var($_GET, 'template_id')
 			); // array
 		} // if
-		
+                
 		//is template milestone?
 		if(array_var($_REQUEST, 'template_milestone') == true){
 			$milestone = new TemplateMilestone();
+                        if (array_var($_REQUEST, 'template_id')) {
+                            $template_id = array_var($_REQUEST, 'template_id');
+                        } else {
+                            $template_id = 0;
+                        }
+                        $milestone->setTemplateId($template_id);
 			$this->setTemplate(get_template_path('add_template_milestone', 'template_milestone'));
 		
 		}else{
 			$milestone = new ProjectMilestone();
 		}
-		
-		
+                
 		tpl_assign('milestone_data', $milestone_data);
 		tpl_assign('milestone', $milestone);
 
@@ -132,13 +137,15 @@ class MilestoneController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
 				if($milestone instanceof TemplateMilestone){
-					$milestone->setSessionId(logged_user()->getId());					
+                                    $milestone->setSessionId(0);
 				}
 				DB::beginWork();
 
 				$milestone->save();
 				$object_controller = new ObjectController();
-			    $object_controller->add_to_members($milestone, $member_ids);
+			    if (!is_null($member_ids)) {
+					$object_controller->add_to_members($milestone, $member_ids);
+			    }
 			    $object_controller->add_subscribers($milestone);
 			    $object_controller->link_to_new_object($milestone);
 				$object_controller->add_custom_properties($milestone);
@@ -179,15 +186,42 @@ class MilestoneController extends ApplicationController {
 
 				} // try
 
-				if ($milestone instanceof TemplateMilestone) {
-					flash_success(lang('success add template', $milestone->getObjectName()));
-				} else {
-					flash_success(lang('success add milestone', $milestone->getObjectName()));
-				}
+				
+				$is_template = $milestone instanceof TemplateMilestone;
+				
 				if (array_var($_REQUEST, 'modal')) {
-					evt_add("reload current panel");
+					
+					ajx_current("empty");
+					$this->setLayout("json");
+					$this->setTemplate(get_template_path("empty"));
+					
+					// reload milestone info because plugins may have updated some task info (for example: name prefix)
+					if ($is_template) {
+						$milestone = TemplateMilestones::findById($milestone->getId());
+						$params = array('msg' => lang('success add milestone', $milestone->getObjectName()), 'milestone' => $milestone->getArrayInfo(), 'reload' => array_var($_REQUEST, 'reload'));
+						if ($milestone instanceof TemplateMilestone) {
+							$params = $object;
+						}
+						print_modal_json_response($params, true, array_var($_REQUEST, 'use_ajx'));
+					} else {
+						$milestone = ProjectMilestones::findById($milestone->getId());
+						flash_success(lang('success add milestone', $milestone->getObjectName()));
+						evt_add("reload current panel");
+					}
+					
+					
+				} else {
+					if ($milestone instanceof TemplateMilestone) {
+						flash_success(lang('success add template', $milestone->getObjectName()));
+					} else {
+						flash_success(lang('success add milestone', $milestone->getObjectName()));
+					}
+					if (array_var($task_data, 'inputtype') != 'taskview') {
+						ajx_current("back");
+					} else {
+						ajx_current("reload");
+					}
 				}
-				ajx_current("back");
 
 			} catch(Exception $e) {
 				DB::rollback();
@@ -277,7 +311,9 @@ class MilestoneController extends ApplicationController {
 				$milestone->save();
 				
 				$object_controller = new ObjectController();
-				$object_controller->add_to_members($milestone, $member_ids);
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($milestone, $member_ids);
+				}
 			    $object_controller->add_subscribers($milestone);
 			    $object_controller->link_to_new_object($milestone);
 				$object_controller->add_custom_properties($milestone);
@@ -301,11 +337,46 @@ class MilestoneController extends ApplicationController {
 					evt_add("template object added", array('object' => $object));
 				}
 				
+				$is_template = $milestone instanceof TemplateMilestone;
+				if (array_var($_REQUEST, 'modal')) {
+						
+					ajx_current("empty");
+					$this->setLayout("json");
+					$this->setTemplate(get_template_path("empty"));
+						
+					// reload milestone info because plugins may have updated some task info (for example: name prefix)
+					if ($is_template) {
+						$milestone = TemplateMilestones::findById($milestone->getId());
+						$params = array('msg' => lang('success edit milestone', $milestone->getObjectName()), 'milestone' => $milestone->getArrayInfo(), 'reload' => array_var($_REQUEST, 'reload'));
+						if ($milestone instanceof TemplateMilestone) {
+							$params = $object;
+						}
+						print_modal_json_response($params, true, array_var($_REQUEST, 'use_ajx'));
+					} else {
+						$milestone = ProjectMilestones::findById($milestone->getId());
+						flash_success(lang('success edit milestone', $milestone->getObjectName()));
+						evt_add("reload current panel");
+					}
+						
+						
+				} else {
+					if ($milestone instanceof TemplateMilestone) {
+						flash_success(lang('success edit template', $milestone->getObjectName()));
+					} else {
+						flash_success(lang('success edit milestone', $milestone->getObjectName()));
+					}
+					if (array_var($task_data, 'inputtype') != 'taskview') {
+						ajx_current("back");
+					} else {
+						ajx_current("reload");
+					}
+				}
+				/*
 				flash_success(lang('success edit milestone', $milestone->getObjectName()));
 				if (array_var($_REQUEST, 'modal')) {
 					evt_add("reload current panel");
 				}
-				ajx_current("back");
+				ajx_current("back");*/
 
 			} catch(Exception $e) {
 				DB::rollback();

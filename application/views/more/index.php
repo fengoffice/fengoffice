@@ -19,6 +19,7 @@ $all_set = array_var($_REQUEST, 'more_settings_expanded');
 	</div>
 <?php } ?>
 
+<?php if (!(defined('REMOVE_HELP') && REMOVE_HELP)) { ?>
 	<div class="more-panel-section">
 		<h1><?php echo lang('quick help')?></h1>
 		<div class="section-content section2">
@@ -28,7 +29,7 @@ $all_set = array_var($_REQUEST, 'more_settings_expanded');
 		?>
 		</div>
 	</div>
-	
+<?php } ?>	
 	<div class="more-panel-section">
 		<h1><?php echo lang('personal settings')?></h1>
 		<div class="section-content section3">

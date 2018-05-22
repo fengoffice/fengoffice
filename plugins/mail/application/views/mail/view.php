@@ -17,7 +17,11 @@ if (isset($email)){
 		}
 	}
 	if ($email->canEdit(logged_user()) && !$email->isTrashed()){
-		add_page_action(lang('classify'), "javascript: og.render_modal_form('', {c:'mail', a:'classify', params: {id: '" .$email->getId(). "'}, focusFirst: false})", 'ico-classify', null, null, true);
+		add_page_action(lang('classify'), "javascript: og.render_modal_form('', {c:'mail', a:'classify', params: {id: '" .$email->getId(). "', from_mail_view:1}, focusFirst: false})", 'ico-classify', null, null, true);
+		
+		if (is_array($attachments) && count($attachments) > 0) {
+			add_page_action(lang('classify only attachments'), "javascript: og.render_modal_form('', {c:'mail', a:'classify', params: {id: '" .$email->getId(). "', from_mail_view:1, only_attachments:1}, focusFirst: false})", 'ico-classify', null, null, true);
+		}
 		
 		if (!$email->isArchived()) {
 			add_page_action(lang('archive'), "javascript:if(confirm(lang('confirm archive object'))) og.openLink('" . $email->getArchiveUrl() ."');", 'ico-archive-obj');
@@ -34,7 +38,7 @@ if (isset($email)){
 	add_page_action(lang('mark as unread'), get_url('mail', 'mark_as_unread', array('id' => $email->getId())), 'ico-mark-as-unread');
 	
 	if ( !logged_user()->isGuest()) {
-		add_page_action(lang('create task from email'), "javascript:og.render_modal_form('', {c:'task', a:'add_task', params: {id:".$email->getId().", from_email:".$email->getId()."}});", 'ico-task', null, null, true);
+		add_page_action(lang('create task from email'), "javascript:og.render_modal_form('', {c:'task', a:'add_task', params: {id:".$email->getId().", from_email:".$email->getId().", assigned_to_contact_id:".logged_user()->getId()."}});", 'ico-task', null, null, true);
 		$ret = null;
 		Hook::fire('additional_email_actions', array('email' => $email), $ret);
 	}
@@ -105,7 +109,8 @@ if (isset($email)){
 	if ($email->getBcc() != '') {		
 		$description .= '<tr><td>' . lang('mail BCC') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getBcc())) . '</td></tr>';
 	}
-	$description .= '<tr><td>' . lang('date') . ':</td><td>' . format_datetime($email->getSentDate(), 'l, j F Y - '.$time_format, logged_user()->getTimezone()) . '</td></tr>';
+	$tz_offset = Timezones::getTimezoneOffsetToApply($email);
+	$description .= '<tr><td>' . lang('date') . ':</td><td>' . format_datetime($email->getSentDate(), 'l, j F Y - '.$time_format, ($tz_offset/3600)) . '</td></tr>';
 	
 	if (user_config_option('view_mail_attachs_expanded')) {
 		$attach_toggle_cls = "toggle_expanded";
@@ -115,34 +120,50 @@ if (isset($email)){
 		$attach_div_style = "display:none;";
 	}
 	
-	if ($email->getHasAttachments() && is_array($attachments) && count($attachments) > 0) {
-		$description .=	'<tr><td colspan=2>	<fieldset>
-		<legend class="'.$attach_toggle_cls.'" onclick="og.toggle(\'mv_attachments\',this)">' . lang('attachments') . '</legend>
-		<div id="mv_attachments" style="'.$attach_div_style.'">
-		<table>';
+	if (is_array($attachments) && count($attachments) > 0) {
+		// check if has to show the container
+		$show_attach_container = false;
 		foreach($attachments as $att) {
 			if (!array_var($att, 'hide')) {
-				$size = $att['size'];//format_filesize(strlen($att["Data"]));
-				$fName = str_starts_with($att["FileName"], "=?") ? iconv_mime_decode($att["FileName"], 0, "UTF-8") : utf8_safe($att["FileName"]);
-				if (trim($fName) == "" && strlen($att["FileName"]) > 0) $fName = utf8_encode($att["FileName"]);
-				$description .= '<tr><td style="padding-right: 10px">';
-				$ext = get_file_extension($fName);
-				$fileType = FileTypes::getByExtension($ext);
-				if (isset($fileType))
-					$icon = $fileType->getIcon();
-				else
-					$icon = "unknown.png";
-				$download_url = get_url('mail', 'download_attachment', array('email_id' => $email->getId(), 'attachment_id' => $c));
-				include_once ROOT . "/library/browser/Browser.php";
-				if (Browser::instance()->getBrowser() == Browser::BROWSER_IE) {
-					$download_url = "javascript:location.href = '$download_url';";
-				}
-	      		$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
-				<td><a target="_self" href="' . $download_url . '">' . clean($fName) . " ($size)" . '</a></td></tr>';
+				$show_attach_container = true;
 			}
-      		$c++;
 		}
-		$description .= '</table></div></fieldset></td></tr>';
+		if ($show_attach_container) {
+			$description .=	'<tr><td colspan=2>	<fieldset>
+			<legend class="'.$attach_toggle_cls.'" onclick="og.toggle(\'mv_attachments\',this)">' . lang('attachments') . '</legend>
+			<div id="mv_attachments" style="'.$attach_div_style.'">
+			<table>';
+			foreach($attachments as $att) {
+				if (!array_var($att, 'hide')) {
+					$size = $att['size'];//format_filesize(strlen($att["Data"]));
+					$fName = str_starts_with($att["FileName"], "=?") ? iconv_mime_decode($att["FileName"], 0, "UTF-8") : utf8_safe($att["FileName"]);
+					if (trim($fName) == "" && strlen($att["FileName"]) > 0) $fName = utf8_encode($att["FileName"]);
+					$description .= '<tr><td style="padding-right: 10px">';
+					
+					$ext = get_file_extension($fName);
+					$fileType = FileTypes::getByExtension($ext);
+					$icon = $fileType instanceof FileType ? $fileType->getIcon() : "unknown.png";
+					
+					$att_id = $c;
+					$inside_attachment = trim(array_var($att, 'inside_attachment', ""));
+					if ($inside_attachment != "") {
+						$att_id = $inside_attachment;
+					}
+					$download_url = get_url('mail', 'download_attachment', array('email_id' => $email->getId(), 'attachment_id' => $att_id));
+					include_once ROOT . "/library/browser/Browser.php";
+					if (Browser::instance()->getBrowser() == Browser::BROWSER_IE) {
+						$download_url = "javascript:location.href = '$download_url';";
+					}
+					
+					$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
+					<td><div id="att-link-container-'.$c.'">
+						<a target="_self" href="' . $download_url . '" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
+					</div></td></tr>';
+				}
+	      		$c++;
+			}
+			$description .= '</table></div></fieldset></td></tr>';
+		}
   } //if
   $description .= '</table></div>';
 		if (($email_count = MailContents::countMailsInConversation($email)) > 1) {
@@ -186,7 +207,7 @@ if (isset($email)){
 					$conversation_block .= '<div class="db-ico ico-user"></div>';
 				}
 				
-				$info_text = $info->getTextBody();
+				$info_text = html_to_text($info->getTextBody());
 				if (strlen_utf($info_text) > 90) $info_text = substr_utf($info_text, 0, 90) . "...";		
 				
 				$view_url = get_url('mail', 'view', array('id' => $info->getId(), 'replace' => 1));
@@ -348,9 +369,9 @@ if (isset($email)){
 			} else {
 				$url = get_url('mail', 'show_html_mail', array('pre' => $tpre, 'r' => gen_id()));
 			}
-			$content .= '<div style="position: relative; left:0; top: 0; width: 100%; height: 100px; background-color: white">';
+			$content .= '<div style="position: relative; left:0; top: 0; width: 100%; height: 600px; background-color: white">';
 			$content .= '<iframe id="'.$genid.'ifr" name="'.$genid.'ifr" style="width:100%;height:100%" frameborder="0" src="'.$url.'" 
-							onload="javascipt:iframe=document.getElementById(\''.$genid.'ifr\'); iframe.parentNode.style.height = Math.min(600, iframe.contentWindow.document.body.scrollHeight + 30) + \'px\' ;">
+							onload="javascipt:iframe=document.getElementById(\''.$genid.'ifr\'); iframe.parentNode.style.height = Math.min(600, iframe.contentWindow.document.body.scrollHeight + 60) + \'px\' ;">
 						</iframe>';
 			'<script>if (Ext.isIE) document.getElementById(\''.$genid.'ifr\').contentWindow.location.reload();</script>';
 			$content .= '<a class="ico-expand" style="display: block; width: 16px; height: 16px; cursor: pointer; position: absolute; right: 20px; top: 2px" title="' . lang('expand') . '" onclick="og.expandDocumentView(this)"></a>
@@ -398,3 +419,45 @@ if (isset($email)){
 </div>
 <?php } else { echo lang('email not available'); } //if ?>
 
+<script>
+	// prevent mails panel full reload after closing this email
+	og.viewing_mail = true;
+	
+	// remove from list the emails that are marked to be removed
+	og.mail.removePendingMailsFromList();
+
+	$(function() {
+
+		og.original_download_attachment_link_href_values = {};
+		
+		$(".download-attachment-link").click(function(e) {
+			if ($(this).attr("disabled") == "disabled") {
+				e.preventDefault();
+				return;
+			}
+			
+			$(this).attr("disabled", "disabled");
+
+			var href_value = $(this).attr('href');
+			var container_id = $(this).parent().attr('id');
+
+			og.original_download_attachment_link_href_values[container_id] = href_value;
+			setTimeout(function() {
+				$(this).attr('href', 'javascript:return false;');
+			}, 10);
+			
+			og.reenable_download_attachment_link(container_id);
+
+			return true;
+		});
+	});
+
+	
+	
+	og.reenable_download_attachment_link = function(elem_id) {
+		setTimeout(function() {
+			$("#"+elem_id+" a").removeAttr("disabled");
+			$("#"+elem_id+" a").attr("href", og.original_download_attachment_link_href_values[elem_id]);			
+		}, 2000);
+	}
+</script>

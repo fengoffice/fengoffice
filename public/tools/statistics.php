@@ -56,7 +56,10 @@ if (isset($_REQUEST['modules']) && $_REQUEST['modules']) {
 if (isset($_REQUEST['logins']) && $_REQUEST['logins']) {
 	$last_logins = array();
 	
-	$db_res = mysql_query("SELECT `created_on`, `object_name`, `rel_object_id` FROM `".TABLE_PREFIX."application_logs` WHERE `action` = 'login' AND `created_on` > ADDDATE(NOW(), INTERVAL -1 MONTH) ORDER BY `rel_object_id`, `created_on` desc", $db_link);
+	$db_res = mysql_query("SELECT `created_on`, `object_name`, `rel_object_id` FROM `".TABLE_PREFIX."application_logs` 
+			WHERE `action` = 'login' AND `created_on` > ADDDATE(NOW(), INTERVAL -15 DAY) 
+			GROUP BY DATE(created_on), rel_object_id
+			ORDER BY `rel_object_id`, `created_on` desc", $db_link);
 	while ($row = mysql_fetch_assoc($db_res)) {
 		$last_logins[] = array(
 			'id' => $row['rel_object_id'],
@@ -91,7 +94,7 @@ if (isset($_REQUEST['activity']) && $_REQUEST['activity']) {
 	$all_statistics['activity'] = $activity;
 	
 	$last_month_activity = array();
-	$db_res = mysql_query("select count(*) as num, DATE(created_on) as created from ".TABLE_PREFIX."application_logs WHERE action in ('add','edit','trash','comment') AND created_on > ADDDATE(NOW(), INTERVAL -1 MONTH) group by created;");
+	$db_res = mysql_query("select count(*) as num, DATE(created_on) as created from ".TABLE_PREFIX."application_logs WHERE created_by_id>0 AND action in ('add','edit','trash','comment') AND created_on > ADDDATE(NOW(), INTERVAL -1 MONTH) group by created;");
 	while ($row = mysql_fetch_assoc($db_res)) {
 		$last_month_activity[] = $row;
 	}

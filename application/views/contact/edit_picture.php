@@ -50,8 +50,8 @@
 	<!-- image uploading form -->
 	  <form action="<?php echo $action ?>" method="post" enctype="multipart/form-data" onsubmit="og.beforePictureSubmit();return og.submit(this)" target="_blank">
 		<?php echo file_field('new picture', null, array('id' => $genid.'uploadImage')) ?>
-		<div><?php echo submit_button(lang('save'), 's', array('id' => $genid.'submit_btn')) ?>
-		<?php echo button(lang('back'), 'b', array('id' => $genid.'back_btn', 'onclick' => "og.beforePictureSubmit();og.goback(this);")) ?></div>
+		<div><?php echo submit_button(lang('save'), 's', array('id' => $genid.'submit_btn', 'onclick'=>'og.ExtModal.hide();return true;')) ?>
+		<?php //echo button(lang('back'), 'b', array('id' => $genid.'back_btn', 'onclick' => "og.beforePictureSubmit();og.goback(this);")) ?></div>
 
 		<!-- hidden inputs -->
 		<input type="hidden" id="<?php echo $genid?>x" name="x" />
@@ -63,115 +63,5 @@
 </div>
 
 </td></tr></table>
-<script>
-	
-	var genid = '<?php echo $genid?>';
-	var is_company = <?php echo array_var($_REQUEST, 'is_company') ? 'true' : 'false' ?>;
 
-	og.setPictureInfo = function(i, e) {
-		$('#'+genid+'x').val(e.x1);
-		$('#'+genid+'y').val(e.y1);
-		$('#'+genid+'w').val(e.width);
-		$('#'+genid+'h').val(e.height);
-	}
-
-	og.beforePictureSubmit = function() {
-		$(".imgareaselect-selection").parent().remove();
-		$(".imgareaselect-outer").remove();
-	}
-
-
-	og.tmpPictureFileUpload = function(genid, config) {
-		var fileInput = document.getElementById(genid + 'uploadImage');
-		var fileParent = fileInput.parentNode;
-		fileParent.removeChild(fileInput);
-		var form = document.createElement('form');
-		form.method = 'post';
-		form.enctype = 'multipart/form-data';
-		form.encoding = 'multipart/form-data';
-		form.action = og.getUrl('contact', 'tmp_picture_file_upload', {'id': genid});
-		form.style.display = 'none';
-		form.appendChild(fileInput);
-		document.body.appendChild(form);
-
-		og.submit(form, {
-			callback: function(d) {
-				form.removeChild(fileInput);
-				fileParent.appendChild(fileInput);
-				document.body.removeChild(form);
-				if (typeof config.callback == 'function') {
-					config.callback.call(config.scope, d);
-				}
-			}
-		});
-	}
-
-	og.set_image_area_selection = function(genid) {
-		
-		setTimeout(function() {
-			var w = $('img#'+genid+'uploadPreview').width();
-			var h = $('img#'+genid+'uploadPreview').height();
-			var min = w > h ? h : w;
-			var size = min < 200 ? min : 200;
-			
-			og.area_sel.setSelection(0, 0, size, size, true);
-			og.area_sel.setOptions({show: true});
-			og.area_sel.update();
-		}, 500);
-	}
-
-	$(document).ready(function() {
-		var p = $("#"+genid+"uploadPreview");
-		//p.focus();
-		
-		// implement imgAreaSelect plug in (http://odyniec.net/projects/imgareaselect/)
-		if (!is_company) {
-			og.area_sel = $('img#'+genid+'uploadPreview').imgAreaSelect({
-				aspectRatio: '1:1',
-				handles: true,
-				instance: true,
-				onSelectEnd: og.setPictureInfo
-			});
-		}
-
-		// prepare instant preview
-		$("#"+genid+"uploadImage").change(function(){
-			// fadeOut or hide preview
-			p.fadeOut();
-
-			$("#"+genid+"current_picture").hide();
-
-			// For browsers with HTML5 compatibility
-			if (window.FileReader) {
-				var fr = new FileReader();
-				fr.readAsDataURL(document.getElementById(genid+"uploadImage").files[0]);
-	
-				fr.onload = function (fevent) {
-			   		p.attr('src', fevent.target.result).fadeIn();
-				};
-				if (!is_company) {
-					og.set_image_area_selection(genid);
-				}
-			} else {
-				// For old browsers (IE 9 or older)
-				og.tmpPictureFileUpload(genid, {
-					callback: function(data) {
-						$("#"+genid+"uploadPreview").attr('src', data.url).fadeIn();
-
-						if (!is_company) {
-							og.area_sel = $('img#'+genid+'uploadPreview').imgAreaSelect({
-								aspectRatio: '1:1',
-								handles: true,
-								instance: true,
-								onSelectEnd: og.setPictureInfo
-							});
-							og.set_image_area_selection(genid);
-						}
-						
-					}
-				});
-			}
-		});
-
-	});
-</script>
+<?php ajx_extra_data(array('genid' => $genid, 'is_company' => array_var($_REQUEST, 'is_company')))?>

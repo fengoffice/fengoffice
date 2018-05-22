@@ -104,7 +104,7 @@
     * @return array
     */
     function getSystemColumns() {
-      return array('object_id', 'object_type_id', 'created_by_id', 'updated_by_id', 'trashed_on', 'trashed_by_id', 'archived_by_id');
+      return array('object_id', 'object_type_id', 'created_by_id', 'updated_by_id', 'trashed_on', 'trashed_by_id', 'archived_by_id', 'timezone_id', 'timezone_value');
     } // getSystemColumns
     
     /**

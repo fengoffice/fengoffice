@@ -49,7 +49,10 @@ abstract class BaseProjectTasks extends ContentDataObjects {
         'use_start_time' => DATA_TYPE_BOOLEAN,
         'original_task_id' => DATA_TYPE_INTEGER,
         'instantiation_id' => DATA_TYPE_INTEGER,
-        'type_content' => DATA_TYPE_STRING
+        'type_content' => DATA_TYPE_STRING,
+        'total_worked_time' => DATA_TYPE_INTEGER,
+	    'mark_as_started'=> DATA_TYPE_BOOLEAN,
+	    
 	);
 
 	/**
@@ -118,7 +121,7 @@ abstract class BaseProjectTasks extends ContentDataObjects {
 	 */
 	function getSystemColumns() {
 		return array_merge(parent::getSystemColumns(), array(
-      		'object_subtype', 'parent_id', 'parents_path',	'depth', 'assigned_to_contact_id', 'completed_by_id', 'milestone_id', 'state', 'started_by_id', 
+      		'object_subtype', 'parent_id', 'parents_path',	'depth', 'assigned_to_contact_id', 'completed_by_id', 'milestone_id', 'state', 'started_by_id', 'started_on',
                 'from_template_id', 'from_template_object_id', 'use_due_time', 'use_start_time', 'original_task_id', 'multi_assignment', 'instantiation_id')
 		);
 	} // getSystemColumns
@@ -133,6 +136,15 @@ abstract class BaseProjectTasks extends ContentDataObjects {
     function getExternalColumns() {
       return array_merge(parent::getExternalColumns(), array('object_subtype', 'assigned_to_contact_id', 'completed_by_id', 'assigned_by_id', 'milestone_id'));
     } // getExternalColumns
+    
+
+    /**
+     * Returns the numeric fields that store a time value
+     * Must be overriden by the specific object classes
+     */
+    function getTimeColumns() {
+    	return array('time_estimate', 'total_worked_time');
+    }
 	
 	/**
     * Return report object title columns

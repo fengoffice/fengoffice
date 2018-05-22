@@ -60,6 +60,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_accounts` (
   `is_imap` int(1) NOT NULL default '0',
   `incoming_ssl` int(1) NOT NULL default '0',
   `incoming_ssl_port` int default '995',
+  `incoming_ssl_verify_peer` tinyint(1) NOT NULL DEFAULT '0',
   `smtp_server` VARCHAR(100) <?php echo $default_collation ?> NOT NULL default '',
   `smtp_use_auth` INTEGER UNSIGNED NOT NULL default 0,
   `smtp_username` VARCHAR(100) <?php echo $default_collation ?>,
@@ -67,6 +68,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_accounts` (
   `smtp_port` INTEGER UNSIGNED NOT NULL default 25,
   `del_from_server` INTEGER NOT NULL default 0,
   `mark_read_on_server` INTEGER NOT NULL default 1,
+  `get_read_state_from_server` BOOLEAN NOT NULL default 1,
   `outgoing_transport_type` VARCHAR(5) <?php echo $default_collation ?> NOT NULL default '',
   `last_checked` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `is_default` BOOLEAN NOT NULL default '0',
@@ -81,6 +83,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_accounts` (
   `sync_ssl_port` int(11) NOT NULL default '993',
   `sync_folder` varchar(100) <?php echo $default_collation ?> NOT NULL,
   `member_id` varchar(100) <?php echo $default_collation ?> NOT NULL,
+  `can_detect_special_folders` tinyint(1) NOT NULL default '0',
   
   PRIMARY KEY  (`id`),
   INDEX `contact_id` (`contact_id`)
@@ -90,6 +93,8 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_account_imap_folder` (
   `account_id` int(10) unsigned NOT NULL default '0',
   `folder_name` varchar(100) <?php echo $default_collation ?> NOT NULL default '',
   `check_folder` tinyint(1) NOT NULL default '0',
+  `last_uid_in_folder` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
+  `special_use` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY  (`account_id`,`folder_name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -120,3 +125,14 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_spam_filters` (
   `spam_state` enum('no spam','spam') COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE = <?php echo $engine ?> <?php echo $default_charset ?>;
+
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_content_imap_folders` (
+  `account_id` int(10) unsigned NOT NULL,
+  `message_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `folder` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
+  `uid` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
+  `object_id` int(10) unsigned NOT NULL default 0,
+  PRIMARY KEY (`account_id`,`folder`,`object_id`),
+  KEY `account_id_folder_object_id` (`account_id`,`folder`,`object_id`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;

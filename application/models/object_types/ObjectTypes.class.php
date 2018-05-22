@@ -18,8 +18,7 @@
   	
   	static function getAllObjectTypes($external_conditions = "") {
   		$object_types = self::findAll(array(
-  				"conditions" => "IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) AND
-			`id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0) $external_conditions"
+  			"conditions" => "IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) $external_conditions"
   		));
   		return $object_types;
   	}
@@ -31,8 +30,7 @@
 		$object_types = self::findAll(array(
 			"conditions" => "`type` IN ('content_object', 'dimension_object') AND 
 			`name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  AND 
-			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) AND
-			`id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0) $external_conditions"
+			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) $external_conditions"
 		));
 		return $object_types;
 	}
@@ -129,10 +127,10 @@
 			EXISTS (
 				SELECT DISTINCT(id) as id  
 				FROM ".TABLE_PREFIX."object_types ot
-				WHERE type IN ('content_object', 'dimension_object', 'comment') 
+				WHERE ot.type IN ('content_object', 'dimension_object', 'comment', 'located') 
 				AND (
-				  plugin_id IS NULL OR plugin_id = 0 OR 
-				  plugin_id IN (
+				  ot.plugin_id IS NULL OR ot.plugin_id = 0 OR 
+				  ot.plugin_id IN (
 				    SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0 
 				  )
 				)

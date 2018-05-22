@@ -13,7 +13,7 @@ og.render_autocomplete_field = function(config) {
 	var limit = config.limit ? config.limit : 1000;
 	
 	var query_server = store.length == 0;
-	
+
 	var textarea = new Ext.form.TextArea({
 		renderTo: render_to,
 		id: 'auto_complete_input_' + comp_id,
@@ -24,10 +24,81 @@ og.render_autocomplete_field = function(config) {
 		width: width,
 		growMax: grow_max,
 		growMin: grow_min,
-		style: {padding: '2px 2px 0'},
+		style: {padding: '2px 2px 0', 'overflow-x': 'hidden'},
 		enableKeyEvents: true,
 		store: store,
 		listeners: {
+			'render': function(comp) {
+
+                $("#"+comp.getId()).bind("paste", function(e){                    
+                    
+                    // disable old event onpaste in textarea
+                    e.stopPropagation();
+    				e.preventDefault();
+
+                    // current textarea value
+                    var currentString = $(this).val();
+                    var separator = ", ";
+                    var newString = ""; 
+                    var pastedData = "";
+                    var search = "";
+
+                    // check if exists "," in the end of current value
+                    if(currentString.lastIndexOf(",") == -1 && currentString != ""){
+                    	newString += separator;
+                    }         
+
+                    // check if the event is not undefined (for IE)
+                    if(e.originalEvent.clipboardData == undefined)
+                    	pastedData = window.clipboardData.getData('text');
+                    else
+                    	pastedData = e.originalEvent.clipboardData.getData('text');
+
+                    
+                    search = pastedData.search("\t");
+                    // if not exists tabulations in postedData
+                    if(search == -1){
+                        pastedData = pastedData.split("\n");
+                    
+	                    for(var i = 0; i <= pastedData.length; i++){
+	                        if(pastedData[i] == "")
+	                            delete pastedData[i];
+
+	                        if(pastedData[i] != undefined){
+	                            newString += pastedData[i] + separator;
+	                            newString = newString.replace("\r", "");
+	                        }
+	                    }
+	                // if exists tabulations
+	                }else if(search != -1){
+
+	                	pastedData = pastedData.split("\t");
+	                	
+
+	                	for(var i = 0; i <= pastedData.length; i++){
+		                        if(pastedData[i] == "")
+		                            delete pastedData[i];
+
+		                        if(pastedData[i] != undefined){
+
+		                            newString += pastedData[i] + separator;
+		                            newString = newString.replace("\n", "");
+		                            newString = newString.replace("\r", "");
+		                        }
+		                    }
+		            // if not exists tabulations
+	                }else{
+	                	newString = pastedData + separator;
+	                }
+	            // Add new emails in textarea
+				$(this).val($(this).val() + newString);
+                } );
+            },
+			'initialize': function(editor) {
+                editor.getEditorBody().onpaste = function () {
+                    //console.log('pasted');
+                }
+            },
 			'autosize': function(comp, width) {
 				var list = Ext.get('auto_complete_list_'+comp_id)
 				if (list) list.setStyle('top', (Ext.get(render_to).getTop() + comp.lastHeight)+'px');
@@ -38,7 +109,7 @@ og.render_autocomplete_field = function(config) {
 					return;
 				}
 				if (e.keyCode == e.ENTER) {
-					if (comp.selectedItem != -1) {
+					if (typeof(comp.selectedItem) != "undefined" && comp.selectedItem != -1) {
 						comp.selectListElement(comp.selectedItem);
 						comp.selectedItem = -1;
 					}
@@ -77,7 +148,7 @@ og.render_autocomplete_field = function(config) {
 							}
 							comp.last_value = value;
 							if (value.length > 2) {
-								og.openLink(og.getUrl('mail', 'get_allowed_addresses'), {
+								og.openLink(og.getUrl('contact', 'get_allowed_addresses'), {
 									post: {name_filter: value},
 									callback: function(success, data) {
 										comp.store = data.addresses;
@@ -146,6 +217,8 @@ og.render_autocomplete_field = function(config) {
 			if (list_container) list_container.setStyle('visibility', visibility);
 		},
 		selectListElement: function(element) {
+			if (!this.current_elements) return;
+			
 			element = this.current_elements[element];
 			this.showHideDropDown(false);
 			if (!element) return;
@@ -174,3 +247,4 @@ og.render_autocomplete_field = function(config) {
 		}
 	});
 }
+

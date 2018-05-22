@@ -154,7 +154,10 @@ class EventController extends ApplicationController {
 	}
 	
 	
-	function getData($event_data){
+	function getData($event_data, $timezone_offset=null){
+		if (is_null($timezone_offset)) {
+			$timezone_offset = logged_user()->getUserTimezoneValue();
+		}
 		// get the day
 			if (array_var($event_data, 'start_value') != '') {
 				$date_from_widget = array_var($event_data, 'start_value');
@@ -260,7 +263,7 @@ class EventController extends ApplicationController {
 			}
 				
 			// calculate timestamp and durationstamp
-			$dt_start = new DateTimeValue(mktime($hour, $minute, 0, $month, $day, $year) - logged_user()->getTimezone() * 3600);
+			$dt_start = new DateTimeValue(mktime($hour, $minute, 0, $month, $day, $year) - $timezone_offset);
 			$timestamp = $dt_start->format('Y-m-d H:i:s');
 			$dt_duration = DateTimeValueLib::make($dt_start->getHour() + $durationhour, $dt_start->getMinute() + $durationmin, 0, $dt_start->getMonth(), $dt_start->getDay(), $dt_start->getYear());
 			$durationstamp = $dt_duration->format('Y-m-d H:i:s');
@@ -359,10 +362,10 @@ class EventController extends ApplicationController {
 				
 		$event_name = array_var($_GET, 'name'); //if sent from pupup
 		
-		//var_dump($event_data) ;
-		$month = isset($_GET['month'])?$_GET['month']:date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600);
-		$day = isset($_GET['day'])?$_GET['day']:date('j', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600);
-		$year = isset($_GET['year'])?$_GET['year']:date('Y', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600);
+		// when adding event use logged user timezone 
+		$month = isset($_GET['month'])?$_GET['month']:date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() );
+		$day = isset($_GET['day'])?$_GET['day']:date('j', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() );
+		$year = isset($_GET['year'])?$_GET['year']:date('Y', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() );
 
 		$user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : logged_user()->getId();
 		
@@ -375,7 +378,7 @@ class EventController extends ApplicationController {
 			// if data sent from quickadd popup (via get) we se it, else default
 			if (isset($_GET['start_time'])) $this->parseTime($_GET['start_time'], $hour, $minute);
 			else {
-				$hour = isset($_GET['hour']) ? $_GET['hour'] : date('G', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600);
+				$hour = isset($_GET['hour']) ? $_GET['hour'] : date('G', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() );
 				$minute = isset($_GET['minute']) ? $_GET['minute'] : round((date('i') / 15), 0) * 15; //0,15,30 and 45 min
 			}
 			if(!user_config_option('time_format_use_24')) {
@@ -385,9 +388,9 @@ class EventController extends ApplicationController {
 				} else $pm = 0;
 			}
 			$event_data = array(
-				'month' => isset($_GET['month']) ? $_GET['month'] : date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600),
-				'year' => isset($_GET['year']) ? $_GET['year'] : date('Y', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600),
-				'day' => isset($_GET['day']) ? $_GET['day'] : date('j', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600),
+				'month' => isset($_GET['month']) ? $_GET['month'] : date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() ),
+				'year' => isset($_GET['year']) ? $_GET['year'] : date('Y', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() ),
+				'day' => isset($_GET['day']) ? $_GET['day'] : date('j', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() ),
 				'hour' => $hour,
 				'minute' => $minute,
 				'pm' => (isset($pm) ? $pm : ""),
@@ -690,9 +693,9 @@ class EventController extends ApplicationController {
 	}
 	
 	private function getActualDateToShow(&$day, &$month, &$year) {
-		$day = isset($_GET['day']) ? $_GET['day'] : (isset($_SESSION['day']) ? $_SESSION['day'] : date('j', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600));
-		$month = isset($_GET['month']) ? $_GET['month'] : (isset($_SESSION['month']) ? $_SESSION['month'] : date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600));
-	    $year = isset($_GET['year']) ? $_GET['year'] : (isset($_SESSION['year']) ? $_SESSION['year'] : date('Y', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600));
+		$day = isset($_GET['day']) ? $_GET['day'] : (isset($_SESSION['day']) ? $_SESSION['day'] : date('j', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() ));
+		$month = isset($_GET['month']) ? $_GET['month'] : (isset($_SESSION['month']) ? $_SESSION['month'] : date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() ));
+	    $year = isset($_GET['year']) ? $_GET['year'] : (isset($_SESSION['year']) ? $_SESSION['year'] : date('Y', DateTimeValueLib::now()->getTimestamp() + logged_user()->getUserTimezoneValue() ));
 	}
 	
 	function setViewVariables($view_type, $user_filter, $status_filter, $task_filter) {
@@ -826,6 +829,9 @@ class EventController extends ApplicationController {
 			ajx_current ( "empty" );
 			return;
 		}
+
+		// use object time zone if it is different than the user's timezone
+		$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
 		
 		$event_data = array_var ( $_POST, 'event' );
 		if (! is_array ( $event_data )) {
@@ -883,8 +889,8 @@ class EventController extends ApplicationController {
 			
 			// if(isset($rend) AND $rend=="9999-00-00") $rend = "";
 			// organize the time and date data for the html select drop downs.
-			$thetime = $event->getStart ()->getTimestamp () + logged_user ()->getTimezone () * 3600;
-			$durtime = $event->getDuration ()->getTimestamp () + logged_user ()->getTimezone () * 3600 - $thetime;
+			$thetime = $event->getStart ()->getTimestamp () + $event->getTimezoneValue();
+			$durtime = $event->getDuration ()->getTimestamp () + $event->getTimezoneValue() - $thetime;
 			$hour = date ( 'G', $thetime );
 			// format time to 24-hour or 12-hour clock.
 			if (! user_config_option ( 'time_format_use_24' )) {
@@ -950,7 +956,22 @@ class EventController extends ApplicationController {
 			 * FIXME or REMOVEME $upd = array_var($_POST, 'updatedon'); if ($upd && $event->getUpdatedOn()->getTimestamp() > $upd && !array_var($_POST,'merge-changes') == 'true') { ajx_current('empty'); evt_add("handle edit concurrence", array( "updatedon" => $event->getUpdatedOn()->getTimestamp(), "genid" => array_var($_POST,'genid') )); return; } if (array_var($_POST,'merge-changes') == 'true') { $this->setTemplate('view_event'); $editedEvent = ProjectEvents::findById($event->getId()); $this->view(); ajx_set_panel(lang ('tab name',array('name'=>$editedEvent->getTitle()))); ajx_extra_data(array("title" => $editedEvent->getTitle(), 'icon'=>'ico-event')); ajx_set_no_toolbar(true); ajx_set_panel(lang ('tab name',array('name'=>$editedEvent->getTitle()))); return; }
 			 */
 			try {
-				$data = $this->getData ( $event_data );
+				
+				$zone_offset = $event->getTimezoneValue();
+				$tz_changed = false;
+				if (array_var($_REQUEST, 'timezone_edited') && array_var($_REQUEST, 'timezone_id')) {
+					$zone_id = array_var($_REQUEST, 'timezone_id');
+					$zone_offset = Timezones::getTimezoneOffset($zone_id);
+					$tz_changed = true;
+				}
+				
+				$data = $this->getData ( $event_data, $zone_offset );
+				
+				if ($tz_changed) {
+					$data['timezone_id'] = $zone_id;
+					$data['timezone_value'] = $zone_offset;
+				}
+				
 				// run the query to set the event data
 				$event->setFromAttributes ( $data );
 				
@@ -1331,8 +1352,10 @@ class EventController extends ApplicationController {
 	    $hour = array_var($_GET, 'hour', 0);
 	    $min = array_var($_GET, 'min', 0);
 	    
-	    if ($hour == -1) $hour = format_date($event->getStart(), 'H', logged_user()->getTimezone() );
-	    if ($min == -1) $min = format_date($event->getStart(), 'i', logged_user()->getTimezone() );
+	    $tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+	    
+	    if ($hour == -1) $hour = format_date($event->getStart(), 'H', ($tz_value/3600) );
+	    if ($min == -1) $min = format_date($event->getStart(), 'i', ($tz_value/3600) );
 	    
 		if ($event->isRepetitive()) {
 			$orig_date = DateTimeValueLib::dateFromFormatAndString('Y-m-d H:i:s', array_var($_GET, 'orig_date'));
@@ -1353,7 +1376,7 @@ class EventController extends ApplicationController {
 		    	$event->setRepeatWnum($wnum);
 		    }
 	    } else {
-		    $new_start = new DateTimeValue(mktime($hour, $min, 0, $month, $day, $year) - logged_user()->getTimezone() * 3600);
+		    $new_start = new DateTimeValue(mktime($hour, $min, 0, $month, $day, $year) - $tz_value);
 	    }
 
 	    $diff = DateTimeValueLib::get_time_difference($event->getStart()->getTimestamp(), $event->getDuration()->getTimestamp());
@@ -1363,11 +1386,11 @@ class EventController extends ApplicationController {
 	    $new_duration->add('m', $diff['minutes']);
 	    
 	    // see if we have to reload
-		$os = format_date($event->getStart(), 'd', logged_user()->getTimezone() );
-		$od = format_date($event->getDuration(), 'd', logged_user()->getTimezone() );
-		$ohm = format_date($event->getDuration(), 'H:i', logged_user()->getTimezone() );
-		$nd = format_date($new_duration, 'd', logged_user()->getTimezone() );
-		$nhm = format_date($new_duration, 'H:i', logged_user()->getTimezone() );
+		$os = format_date($event->getStart(), 'd', ($tz_value/3600) );
+		$od = format_date($event->getDuration(), 'd', ($tz_value/3600) );
+		$ohm = format_date($event->getDuration(), 'H:i', ($tz_value/3600) );
+		$nd = format_date($new_duration, 'd', ($tz_value/3600) );
+		$nhm = format_date($new_duration, 'H:i', ($tz_value/3600) );
 		$different_days = ($os != $od && $ohm != '00:00') || ($day != $nd && $nhm != '00:00');
 	    
         DB::beginWork();
@@ -1412,8 +1435,10 @@ class EventController extends ApplicationController {
 	}
 	
 	private function get_updated_event_data($event) {
-		$new_start = new DateTimeValue($event->getStart()->getTimestamp() + logged_user()->getTimezone() * 3600);
-	    $new_duration = new DateTimeValue($event->getDuration()->getTimestamp() + logged_user()->getTimezone() * 3600);
+		$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+		
+		$new_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
+	    $new_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
 	    $ev_data = array (
 	    	'start' => $new_start->format(user_config_option('time_format_use_24') ? "G:i" : "g:i A"),
 	    	'end' => $new_duration->format(user_config_option('time_format_use_24') ? "G:i" : "g:i A"),

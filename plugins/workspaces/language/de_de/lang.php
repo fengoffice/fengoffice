@@ -15,4 +15,6 @@
 	'user config option desc lp_dim_tags_show_as_column' => 'Schlagworte in eigener Spalte und nicht unmittelbar neben dem Objekt anzeigen.',
 	'add a new member in workspaces' => 'Neuen Arbeitsbereich hinzufügen',
 	'add a new member in tags' => 'Neues Schlagwort hinzufügen',
+	'workspaces list' => 'Liste der Arbeitsbereiche',
+	'tags list' => 'Liste der Schlagworte',
 ); ?>

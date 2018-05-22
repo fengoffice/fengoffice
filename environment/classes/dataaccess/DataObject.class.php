@@ -589,6 +589,15 @@
     		  if($this->mark_timestamps && $this->columnExists('updated_by_id') && !$this->isColumnModified('updated_by_id') && (logged_user() instanceof Contact)) {
     		    $this->setColumnValue('updated_by_id', logged_user()->getId());
     		  } // if
+    		  
+    		  // set object timezone attributes from the creator's timezone attributes
+    		  if($this->columnExists('timezone_id') && !$this->isColumnModified('timezone_id')) {
+    		  	$this->setColumnValue('timezone_id', logged_user()->getUserTimezoneId());
+    		  }
+    		  if($this->columnExists('timezone_value') && !$this->isColumnModified('timezone_value')) {
+    		  	$this->setColumnValue('timezone_value', logged_user()->getUserTimezoneValue());
+    		  }
+    		  
   		  } // if
   		  
   		  // Get auto increment column name

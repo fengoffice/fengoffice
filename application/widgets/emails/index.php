@@ -2,13 +2,8 @@
 if (logged_user()->hasMailAccounts()) { 
 
 	$limit = 10;
-	$result = MailContents::instance()->listing(array(
-		"order" => "sent_date",
-		"order_dir" => "desc",
-		"start" => 0,
-		"limit" => $limit
-	));
-	
+	$result = MailContents::getEmails(null, 'received', "unread", null, null, 0, $limit, "received_date", "DESC");
+
 	$active_members = array();
 	$context = active_context();
 	foreach ($context as $selection) {
@@ -20,7 +15,7 @@ if (logged_user()->hasMailAccounts()) {
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('unread emails'). ' '. lang('in').' '. implode(", ", $mnames);
+		$widget_title = lang('unread emails'). ' '. lang('in m').' '. implode(", ", $mnames);
 	}
 	
 	$total = $result->total;

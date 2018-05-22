@@ -9,9 +9,9 @@ og.ContactManager = function() {
 	this.needRefresh = false;
 	
 	this.fields = [
-        'object_id', 'picture', 'type', 'ot_id', 'name', 'companyId', 'companyName', 'email', 'website', 'jobTitle', 'createdBy', 'createdById', 'createdOn', 'createdOn_today', 'role', 'tags',
-        'department', 'email2', 'email3', 'workWebsite', 'workAddress', 'workPhone1', 'workPhone2', 
-        'homeWebsite', 'homeAddress', 'homePhone1', 'homePhone2', 'mobilePhone','wsIds','workspaceColors','updatedBy','updatedById', 'updatedOn', 'updatedOn_today', 'ix', 'memPath', 'userType', 'contacts', 'users'
+        'object_id', 'picture', 'type', 'ot_id', 'name', 'companyId', 'companyName', 'email', 'website', 'jobTitle', 'createdBy', 'createdById', 'dateCreated', 'dateCreated_today', 'role', 'tags',
+        'department', 'email2', 'email3', 'workWebsite', 'workAddress', 'workPhone1', 'workPhone2', 'jobTitle', 'birthday', 'postalAddress',
+        'homeWebsite', 'homeAddress', 'homePhone1', 'homePhone2', 'mobilePhone','wsIds','workspaceColors','updatedBy','updatedById', 'dateUpdated', 'dateUpdated_today', 'ix', 'memPath', 'userType', 'contacts', 'users'
     ];
 	var cps = og.custom_properties_by_type['contact'] ? og.custom_properties_by_type['contact'] : [];
    	var cp_names = [];
@@ -27,6 +27,13 @@ og.ContactManager = function() {
 	   	}
    	}
    	this.fields = this.fields.concat(additional_fields);
+   	
+   	var dim_names = [];
+   	for (did in og.dimensions_info) {
+		if (isNaN(did)) continue;
+		dim_names.push('dim_' + did);
+	}
+   	this.fields = this.fields.concat(dim_names);
 	
 	if (!og.ContactManager.store) {
 		og.ContactManager.store = new Ext.data.Store({
@@ -59,6 +66,8 @@ og.ContactManager = function() {
 						cmp.getView().focusRow(og.lastSelectedRow.contacts+1);
 						var sm = cmp.getSelectionModel();
 						sm.clearSelections();
+						
+						og.eventManager.fireEvent('after grid panel load', {man:cmp, data:d});
 					}
 					
 					Ext.getCmp('contact-manager').reloadGridPagingToolbar('contact','list_all','contact-manager');
@@ -81,6 +90,9 @@ og.ContactManager = function() {
 	}
 	
     function renderContactName(value, p, r) {
+		if (isNaN(r.data.object_id)) {
+			return '<span class="bold" id="'+r.data.object_id+'">'+ (value ? og.clean(value) : '') +'</span>';
+		}
     	var name = lang('n/a');
 		if (r.data.type == 'company'){
 			name = String.format(
@@ -98,19 +110,8 @@ og.ContactManager = function() {
 					og.clean(r.data.companyName), og.getUrl('contact', 'view_company', {id: r.data.companyId}), og.clean(r.data.companyName));
 			} //end else
 		}
-		/*
-		mem_path = "";
-		var mpath = Ext.util.JSON.decode(r.data.memPath);
-		if (mpath) mem_path = og.getCrumbHtml(mpath, false, og.breadcrumbs_skipped_dimensions);
-		*/
-		mem_path = "";
-		var mpath = Ext.util.JSON.decode(r.data.memPath);
-		if (mpath){ 
-			mem_path = "<div class='breadcrumb-container' style='display: inline-block;min-width: 250px;'>";
-			mem_path += og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', og.breadcrumbs_skipped_dimensions);
-			mem_path += "</div>";
-		}
-		return name + mem_path;
+
+		return name;
     }
     
     function renderCompany(value, p, r) {
@@ -152,10 +153,10 @@ og.ContactManager = function() {
 	
 		var now = new Date();
 		var dateString = '';
-		if (!r.data.updatedOn_today) {
+		if (!r.data.dateUpdated_today) {
 			return lang('last updated by on', userString, value);
 		} else {
-			return lang('last updated by at', userString, value);
+			return userString +", "+ value;
 		}
 	}
 	
@@ -167,10 +168,10 @@ og.ContactManager = function() {
 	
 		var now = new Date();
 		var dateString = '';
-		if (!r.data.createdOn_today) {
+		if (!r.data.dateCreated_today) {
 			return lang('last updated by on', userString, value);
 		} else {
-			return lang('last updated by at', userString, value);
+			return userString +", "+ value;
 		}
 	}
 	
@@ -238,31 +239,46 @@ og.ContactManager = function() {
 	//In case of being userts returns 2 and in case of being companies with contacts 3
 	function getSelectedIdsDeleteContacts() {
 		var selections = sm.getSelections();
-		if (selections.length <= 0) {
+		if (!selections || selections.length <= 0) {
 			return '';
 		} else {
 			var ret = '';
-			var retString = 0;
+			var result = {};
+			var array_types_not_deleted = [];
+			var array_names_not_deleted = [];
+			
 			for (var i=0; i < selections.length; i++) {
-				if(selections[i].data.type == "contact"){
+				if(selections[i].data.type == "contact" || selections[i].data.type == "user"){
 					if(!selections[i].data.userType > 0){
 						ret += "," + selections[i].data.object_id;
-					}else{
-						retString = "user";
+					}else{	
+						if (!isNaN(selections[i].id)){
+							array_types_not_deleted.push('user');
+							array_names_not_deleted.push(selections[i].data.name);	
+						}						
 					}
 				}else{
-					if(selections[i].data.contacts.length < 1 && selections[i].data.users.length < 1){
+					if(selections[i].data.contacts && selections[i].data.contacts.length < 1 && 
+							selections[i].data.users && selections[i].data.users.length < 1){
 						ret += "," + selections[i].data.object_id;
 					}else{
-						retString = "company";
+						if (!isNaN(selections[i].id)){
+							array_types_not_deleted.push('company');
+							array_names_not_deleted.push(selections[i].data.name);
+						}
 					}
 				}
 			}
 			og.lastSelectedRow.contacts = selections[selections.length-1].data.ix;
+			
 			if(ret.substring(1) != ""){
-				return ret.substring(1);
+				result['deleted_ids'] = ret.substring(1);				
 			}
-			return retString;
+			if (array_names_not_deleted.length > 0){
+				result['array_types_not_deleted'] = array_types_not_deleted;
+				result['array_names_not_deleted'] = array_names_not_deleted;
+			}
+			return result;
 		}
 	}
 	this.getSelectedIdsDeleteContacts = getSelectedIdsDeleteContacts;
@@ -294,7 +310,20 @@ og.ContactManager = function() {
 			}
 		} else {
 			actions.editContact.setDisabled(sm.getCount() != 1);
-			actions.delContact.setDisabled(false);
+			var hasSelectedContactOrCompany = false;
+			if (sm.selections.items.length > 0){
+				for(var i =0; i < sm.selections.items.length; i ++){
+					if (sm.selections.items[i].data.userType == '' || sm.selections.items[i].data.userType == 0){
+						hasSelectedContactOrCompany = true;		
+					}
+				}
+			}
+			if (hasSelectedContactOrCompany){
+				actions.delContact.setDisabled(false);	
+			}else{//
+				actions.delContact.setDisabled(true);
+			}
+			
 			actions.archive.setDisabled(false);
 			if (og.additional_group_mailer_send) {
 				og.additional_group_mailer_send[0].setDisabled(false);
@@ -389,6 +418,13 @@ og.ContactManager = function() {
 			hidden: true,
 			renderer: og.clean
         },{
+			id: 'postalAddress',
+			header: lang("postalAddress"),
+			dataIndex: 'postalAddress',
+			width: 120,
+			hidden: true,
+			renderer: og.clean
+        },{
 			id: 'homeWebsite',
 			header: lang("homeWebsite"),
 			dataIndex: 'homeWebsite',
@@ -426,7 +462,7 @@ og.ContactManager = function() {
         },{
 			id: 'updated',
 			header: lang("last updated by"),
-			dataIndex: 'updatedOn',
+			dataIndex: 'dateUpdated',
 			width: 120,
 			hidden: true,
 			renderer: renderDateUpdated,
@@ -434,23 +470,32 @@ og.ContactManager = function() {
         },{
 			id: 'created',
 			header: lang("created by"),
-			dataIndex: 'createdOn',
+			dataIndex: 'dateCreated',
 			width: 120,
 			hidden: true,
 			renderer: renderDateCreated,
 			sortable: true
+		},{
+			id: 'jobTitle',
+			header: lang("job title"),
+			dataIndex: 'jobTitle',
+			width: 120,
+			hidden: true,
+			renderer: og.clean,
+			sortable: true
+		},{
+			id: 'birthday',
+			header: lang("birthday"),
+			dataIndex: 'birthday',
+			width: 120,
+			hidden: true,
+			renderer: og.clean,
+			sortable: true
 		}];
 	// custom property columns
 	var cps = og.custom_properties_by_type['contact'] ? og.custom_properties_by_type['contact'] : [];
-	for (i=0; i<cps.length; i++) {
-		cm_info.push({
-			id: 'cp_' + cps[i].id,
-			header: cps[i].name,
-			dataIndex: 'cp_' + cps[i].id,
-			sortable: true,
-			renderer: og.clean
-		});
-	}
+	this.addCustomPropertyColumns(cps, cm_info, 'contact-manager');
+	
 	// dimension columns
 	for (did in og.dimensions_info) {
 		if (isNaN(did)) continue;
@@ -460,7 +505,7 @@ og.ContactManager = function() {
 				id: 'dim_' + did,
 				header: og.dimensions_info[did].name,
 				dataIndex: 'dim_' + did,
-				sortable: false,
+				sortable: true,
 				renderer: og.renderDimCol
 			});
 			og.breadcrumbs_skipped_dimensions[did] = did;
@@ -476,6 +521,7 @@ og.ContactManager = function() {
 	// create column model
 	var cm = new Ext.grid.ColumnModel(cm_info);
     cm.defaultSortable = false;
+    cm.on('hiddenchange', this.afterColumnShowHide, this);
     
 	displayOptions = {
 		contacts : {
@@ -546,35 +592,47 @@ og.ContactManager = function() {
 			sendItems.push(og.additional_group_mailer_send[i]);
 		}
 	}
+	
+	var addMenuItems = [];
+	addMenuItems.push({text: lang('contact'), iconCls: 'ico-contact-small', handler: function() {
+		//og.render_modal_form('', {c:'contact', a:'add'});
+		var url = og.getUrl('contact', 'add');
+		og.openLink(url);
+	}});
+	
+	if (og.replace_list_new_action && og.replace_list_new_action.contact) {
+		for (var k=0; k<og.replace_list_new_action.contact.menu.items.items.length; k++) {
+			addMenuItems.push(og.replace_list_new_action.contact.menu.items.items[k]);
+		}
+		addMenuItems.push('-');
+	}
+	
+	addMenuItems.push({text: lang('user'), iconCls: 'ico-user', handler: function() {
+		//og.render_modal_form('', {c:'contact', a:'add'});
+		var exe_type = 0;
+		for (id in og.userRoles) {
+			if (og.userRoles[id].code == 'Executive') {
+				exe_type = id;
+				break;
+			}
+		}
+		var url = og.getUrl('contact', 'add', {is_user:1, user_type:exe_type});
+		og.openLink(url);
+	}});
+	
+	addMenuItems.push({text: lang('company'), iconCls: 'ico-company', handler: function() {
+		//og.render_modal_form('', {c:'contact', a:'add_company'});
+		var url = og.getUrl('contact', 'add_company');
+		og.openLink(url);
+	}});
+	
 	actions = {
 		newContact: new Ext.Action({
+			id: 'new_menu_contact',
 			text: lang('new'),
             tooltip: lang('create contact or client company'),
             iconCls: 'ico-new new_button',
-			menu: {items: [
-				{text: lang('contact'), iconCls: 'ico-contact-small', handler: function() {
-					//og.render_modal_form('', {c:'contact', a:'add'});
-					var url = og.getUrl('contact', 'add');
-					og.openLink(url);
-				}},
-				{text: lang('user'), iconCls: 'ico-user', handler: function() {
-					//og.render_modal_form('', {c:'contact', a:'add'});
-					var exe_type = 0;
-					for (id in og.userRoles) {
-						if (og.userRoles[id].code == 'Executive') {
-							exe_type = id;
-							break;
-						}
-					}
-					var url = og.getUrl('contact', 'add', {is_user:1, user_type:exe_type});
-					og.openLink(url);
-				}},
-				{text: lang('company'), iconCls: 'ico-company', handler: function() {
-					//og.render_modal_form('', {c:'contact', a:'add_company'});
-					var url = og.getUrl('contact', 'add_company');
-					og.openLink(url);
-				}}				
-			]}
+			menu: {items: addMenuItems}
 		}),
 		delContact: new Ext.Action({
 			text: lang('move to trash'),
@@ -582,21 +640,52 @@ og.ContactManager = function() {
             iconCls: 'ico-trash',
 			disabled: true,
 			handler: function() {
-				if( getSelectedIdsDeleteContacts()  == "user"){
-					alert((lang('error delete people')));
-				}else{
-					if( getSelectedIdsDeleteContacts()  == "company"){
-					alert(lang('error delete company'));
-					}else{
-						if (confirm(lang('confirm move to trash'))) {
+				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
+				
+				var result = getSelectedIdsDeleteContacts();
+				
+				if (typeof result == 'object'){
+					
+					if (result.deleted_ids != undefined && result.deleted_ids != ""){
+						if (og.confirmNorification(lang('confirm move to trash'), confirm_trash_config)) {
 							this.load({
 							action: 'delete',
-							ids: getSelectedIdsDeleteContacts()						
+							ids: result.deleted_ids						
 							});
-						}				
+						}	
 					}
+				
+					if (result.array_names_not_deleted != undefined && result.array_names_not_deleted.length > 0){
+						
+						var user_names_not_deleted = '';
+						var company_names_not_deleted = '';
+						
+						for (var i=0; i<result.array_names_not_deleted.length; i++){
+							if (result.array_types_not_deleted[i] == 'user'){
+								user_names_not_deleted += result.array_names_not_deleted[i]+'\n';
+							}else if (result.array_types_not_deleted[i] == 'company'){
+								company_names_not_deleted += result.array_names_not_deleted[i]+'\n';
+							}
+						}
+						
+						var message_error = '';
+						
+						if( user_names_not_deleted != ""){
+							message_error +='<br>'+ lang('error delete people parametric', user_names_not_deleted);
+						}
+						if( company_names_not_deleted != ""){
+							message_error +='<br>'+ lang('error delete company parametric', company_names_not_deleted);							
+						}
+						//show error message
+						if (message_error != ''){
+							og.err(message_error);
+							//og.msg(lang("information"), message_error, '', '');
+						}
+					}
+				
+					this.getSelectionModel().clearSelections();
+			
 				}
-				this.getSelectionModel().clearSelections();
 			},
 			scope: this
 		}),
@@ -623,7 +712,9 @@ og.ContactManager = function() {
             iconCls: 'ico-archive-obj',
 			disabled: true,
 			handler: function() {
-				if (confirm(lang('confirm archive selected objects'))) {
+				var confirm_archive_config = parseInt(og.preferences['enableArchiveConfirmation']);
+				
+				if (og.confirmNorification(lang('confirm archive selected objects'), confirm_archive_config)) {
 					this.load({
 						action: 'archive',
 						ids: getSelectedIds()
@@ -742,6 +833,7 @@ og.ContactManager = function() {
 	
 	var tbar = [];
 	if (!og.loggedUser.isGuest) {
+		
 		tbar.push(actions.newContact);
 		tbar.push('-');
 		tbar.push(actions.editContact);
@@ -826,6 +918,9 @@ Ext.extend(og.ContactManager, Ext.grid.GridPanel, {
 			context: og.contextManager.plainContext() 
 			
 		});
+		
+		this.updateColumnModelHiddenColumns();
+		
 		this.store.removeAll();
 		this.store.load({
 			params: Ext.applyIf(params, {

@@ -5,9 +5,10 @@ require_javascript('og/EventPopUp.js');
 require_javascript('og/CalendarPrint.js');
 require_javascript('og/EventRelatedPopUp.js'); 
 $genid = gen_id();
-
+/*
 $max_events_to_show = user_config_option('displayed events amount');
-if (!$max_events_to_show) $max_events_to_show = 3;
+if (!$max_events_to_show) $max_events_to_show = 3;*/
+$max_events_to_show = 300;
 ?>
 
 <script>
@@ -54,7 +55,7 @@ $(function(){
 	$endday = $startday + 7; // end of week
 	
 	$today = DateTimeValueLib::now();
-	$today->add('h', logged_user()->getTimezone());
+	$today->add('s', logged_user()->getUserTimezoneValue());
 	$currentday = $today->format("j");
 	$currentmonth = $today->format("n");
 	$currentyear = $today->format("Y");
@@ -64,13 +65,11 @@ $(function(){
 	
 	$date_start = new DateTimeValue(mktime(0, 0, 0, $month, $startday, $year)); 
 	$date_end = new DateTimeValue(mktime(0, 0, 0, $month, $endday, $year)); 
-//	$date_start->add('h', logged_user()->getTimezone());
-//	$date_end->add('h', logged_user()->getTimezone());
 	
 	$tasks = array();
 	$milestones = ProjectMilestones::getRangeMilestones($date_start, $date_end);
     if($task_filter != "hide"){
-    	$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null), $task_filter);
+    	$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null), $task_filter, false, false, 250);
     }
     
     if (user_config_option('show_birthdays_in_calendar')) {
@@ -126,7 +125,7 @@ $(function(){
 			$today_style[$day_of_week] = 'background-color:#E4EEEE;opacity:0.4;filter: alpha(opacity = 40);z-index=0;';
 		}
 
-		$results[$day_of_week] = ProjectEvents::getDayProjectEvents($dates[$day_of_week], active_context(), $user_filter, $status_filter); 
+		$results[$day_of_week] = ProjectEvents::getDayProjectEvents($dates[$day_of_week], active_context(), $user_filter, $status_filter, false, array('order_dir' => 'DESC')); 
 		if(!$results[$day_of_week]) $results[$day_of_week]=array();
 		foreach ($results[$day_of_week] as $key => $event){
 			if ($event->getTypeId()> 1){
@@ -150,8 +149,14 @@ $(function(){
 			
 			foreach ($tmp_tasks as $task) {
 				$added = false;
+				$tz_value = Timezones::getTimezoneOffsetToApply($task, logged_user());
+				$tz_value_due = $task->getUseDueTime() ? $tz_value : 0;
+				$tz_value_start = $task->getUseStartTime() ? $tz_value : 0;
+				
 				if ($task->getDueDate() instanceof DateTimeValue){
-					$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+					
+					$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + $tz_value_due);
+					
 					if ($dates[$day_of_week]->getTimestamp() == mktime(0,0,0, $due_date->getMonth(), $due_date->getDay(), $due_date->getYear())) {
 						if ($task->getUseDueTime() && ($task->getStartDate() instanceof DateTimeValue || $task->getTimeEstimate() > 0)) {
 							$results[$day_of_week][] = $task;
@@ -163,7 +168,8 @@ $(function(){
 					}
 				}
 				if ($task->getStartDate() instanceof DateTimeValue){
-					$start_date = new DateTimeValue($task->getStartDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+					$start_date = new DateTimeValue($task->getStartDate()->getTimestamp() + $tz_value_start);
+					
 					if (!$added && $dates[$day_of_week]->getTimestamp() == mktime(0,0,0, $start_date->getMonth(), $start_date->getDay(), $start_date->getYear())) {
 						if ($task->getUseStartTime() && ($task->getDueDate() instanceof DateTimeValue|| $task->getTimeEstimate() > 0)) {
 							$results[$day_of_week][] = $task;
@@ -212,7 +218,9 @@ $(function(){
 				}
 			}
 			if (!$starts_this_week && $task->getDueDate() instanceof DateTimeValue) {
-				$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+				$tz_value = Timezones::getTimezoneOffsetToApply($task, logged_user());
+				
+				$due_date = new DateTimeValue($task->getDueDate()->getTimestamp() + $tz_value);
 				$due_dow = $due_date->format('w') + (user_config_option("start_monday") ? -1 : 0);
 				for ($dow = 0; $dow < $due_dow; $dow++) {
 					$dow_ts = mktime(0, 0, 0, $month, $startday + $dow, $year);
@@ -228,6 +236,12 @@ $(function(){
 	$alldaygridHeight = $max_events * PX_HEIGHT / 2 + PX_HEIGHT / 2;//Day events container height= all the events plus an extra free space
         if($alldaygridHeight > 100){
             $alldaygridHeight = 100;
+        } else {
+			if ($max_events < 3) {
+				$alldaygridHeight = 37 + (21 * $max_events);
+			} else {
+				$alldaygridHeight = 100;
+			}
         }
 
 	$users_array = array();
@@ -238,9 +252,9 @@ $(function(){
 		$companies_array[] = $company->getArrayInfo();	
 ?>
 <div id="calHiddenFields">
-	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
-	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($companies_array)))) ?>"/>
-	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($userPreferences)))) ?>"/>
+	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($users_array)))) ?>"/>
+	<input type="hidden" id="hfCalCompanies" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($companies_array)))) ?>"/>
+	<input type="hidden" id="hfCalUserPreferences" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($userPreferences)))) ?>"/>
         <input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
 </div>
 
@@ -343,9 +357,9 @@ $(function(){
 				</div>
 				<div id="allDay<?php echo $day_of_week ?>" class="allDayCell" style="left: <?php echo $width ?>%; height: 100%;border-left:3px double #DDDDDD !important; position:absolute;width:3px;z-index:110;background:#E8EEF7;top:0%;"></div>
 
-				<div id="alldayeventowner_<?php echo $day_of_week ?>" style="width: <?php echo $width_percent ?>%;position:absolute;left: <?php echo $width ?>%; top: 12px;height: <?php echo $alldaygridHeight ?>px;"
+				<div id="alldayeventowner_<?php echo $day_of_week ?>" style="overflow:hidden; height: <?php echo $alldaygridHeight - 31 ?>px; width: <?php echo $width_percent ?>%;position:absolute;left: <?php echo $width ?>%; top: 12px;"
 				<?php if (!logged_user()->isGuest()) { ?>
-					onclick="og.showEventPopup(<?php echo $dtv_temp->getDay() ?>, <?php echo $dtv_temp->getMonth()?>, <?php echo $dtv_temp->getYear()?>, -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv_temp->format($date_format) ?>', '<?php echo $genid?>', '<?php echo ProjectEvents::instance()->getObjectTypeId()?>');">
+					onclick="og.showEventPopup(<?php echo $dtv_temp->getDay() ?>, <?php echo $dtv_temp->getMonth()?>, <?php echo $dtv_temp->getYear()?>, -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $dtv_temp->format($date_format) ?>', '<?php echo $genid?>',0, false);">
 				<?php } else echo ">"; ?>
 
 					<?php	
@@ -370,18 +384,21 @@ $(function(){
 										$start_of_task = false;
 										$end_of_task = false;
 										$is_repe_task = $event->isRepetitive();
+										
+										$tz_value = Timezones::getTimezoneOffsetToApply($task, logged_user());
+										$tz_value_due = $event->getUseDueTime() ? $tz_value : 0;
+										$tz_value_start = $event->getUseStartTime() ? $tz_value : 0;
+										
 										if ($event->getDueDate() instanceof DateTimeValue) {
-											$due_date = new DateTimeValue($event->getDueDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+											$due_date = new DateTimeValue($event->getDueDate()->getTimestamp() + $tz_value_due);
 											if ($dates[$day_of_week]->getTimestamp() == mktime(0,0,0, $due_date->getMonth(), $due_date->getDay(), $due_date->getYear())){
 												$end_of_task = true;
-												$start_of_task = true;
 											}
 										}
 										if ($event->getStartDate() instanceof DateTimeValue) {
-											$start_date = new DateTimeValue($event->getStartDate()->getTimestamp() + logged_user()->getTimezone() * 3600);
+											$start_date = new DateTimeValue($event->getStartDate()->getTimestamp() + $tz_value_start);
 											if ($dates[$day_of_week]->getTimestamp() == mktime(0,0,0, $start_date->getMonth(), $start_date->getDay(), $start_date->getYear())) {
 												$start_of_task = true;
-												$end_of_task = true;
 											}
 										}
 										if ($start_of_task && $end_of_task) {
@@ -435,7 +452,11 @@ $(function(){
 						<div class="noleft <?php echo  $ws_class?>" style="<?php echo  $ws_style?>;border-left:1px solid; border-right:1px solid; border-color:<?php echo $border_color ?>">							
 							<div class="" style="overflow: hidden; padding-bottom: 1px;">
 								<table style="width:100%"><tr><td>
-								<span class="nobr" style="display: block; text-decoration: none;"><a href='<?php echo $event->getViewUrl()."&amp;view=week"?>' class='internalLink'" onclick="og.disableEventPropagation(event);"><img src="<?php echo $img_url?>" style="vertical-align:middle" border='0'> <span style="color:<?php echo $txt_color ?>!important"><?php echo $subject ?></span> </a></span>
+								<?php 
+									$view_url = $event->getViewUrl()."&amp;view=week";
+									Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+								?>
+								<span class="nobr" style="display: block; text-decoration: none;"><a href="<?php echo $view_url?>" class='internalLink'" onclick="og.disableEventPropagation(event);"><img src="<?php echo $img_url?>" style="vertical-align:middle" border='0'> <span style="color:<?php echo $txt_color ?>!important"><?php echo $subject ?></span> </a></span>
 								<?php if ($objType == 'event') { ?>
 								</td><td align="right">
 								<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin:2px 2px 0 0;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onclick="og.eventSelected(this.checked);og.disableEventPropagation(event);"></input>
@@ -469,6 +490,9 @@ $(function(){
 							}
 						}
 					?>
+				</div>
+				<div id="all_ev_show_more_link_<?php echo $day_of_week ?>" class="adc" style="visibility:hidden;bottom:3px; z-index: 5;margin:1px; width: <?php echo $width_percent ?>%; left: <?php echo $width ?>%;text-align:center;position:absolute;">
+					<a href="<?php echo $p?>" class="internalLink"  onclick="og.disableEventPropagation(event);return true;"><?php echo lang('show more');?> </a>
 				</div>
 			<script>
 				var ev_dropzone_allday = new Ext.dd.DropZone('alldayeventowner_<?php echo $day_of_week ?>', {ddGroup:'ev_dropzone_allday'});
@@ -537,7 +561,7 @@ $(function(){
 onmouseover="if (!og.selectingCells) og.overCell('<?php echo $div_id?>'); else og.paintSelectedCells('<?php echo $div_id?>');"
 onmouseout="if (!og.selectingCells) og.resetCell('<?php echo $div_id?>');"
 onmousedown="og.selectStartDateTime(<?php echo $date->getDay() ?>, <?php echo $date->getMonth()?>, <?php echo $date->getYear()?>, <?php echo date("G",mktime($hour/2))?>, <?php echo ($hour % 2 == 0) ? 0 : 30 ?>); og.resetCell('<?php echo $div_id?>'); og.paintingDay = <?php echo $day_of_week ?>; og.paintSelectedCells('<?php echo $div_id?>');"
-onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->getMonth()?>, <?php echo $date->getYear()?>, <?php echo date("G",mktime(($hour+1)/2))?>, <?php echo (($hour+1) % 2 == 0) ? 0 : 30 ?>, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $date->format($date_format) ?>', '<?php echo $genid?>', '<?php echo ProjectEvents::instance()->getObjectTypeId()?>');">
+onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->getMonth()?>, <?php echo $date->getYear()?>, <?php echo date("G",mktime(($hour+1)/2))?>, <?php echo (($hour+1) % 2 == 0) ? 0 : 30 ?>, <?php echo ($use_24_hours ? 'true' : 'false'); ?>,'<?php echo $date->format($date_format) ?>', '<?php echo $genid?>', 0,false);">
 <?php } else echo ">"; ?>
 </div>
 
@@ -681,16 +705,22 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 											$event_duration->add('s', 1);
 											
 											if ($event instanceof ProjectEvent) {
-												$real_start = new DateTimeValue($event->getStart()->getTimestamp() + 3600 * logged_user()->getTimezone());
-												$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + 3600 * logged_user()->getTimezone());
+												
+												$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+												
+												$real_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
+												$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
+
 											} else if ($event instanceof ProjectTask) {
+												$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
+												
 												if ($event->getStartDate() instanceof DateTimeValue) {
-													$real_start = new DateTimeValue($event->getStartDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+													$real_start = new DateTimeValue($event->getStartDate()->getTimestamp() + $tz_value);
 												} else {
 													$real_start = $event_start;
 												}
 												if ($event->getDueDate() instanceof DateTimeValue) {
-													$real_duration = new DateTimeValue($event->getDueDate()->getTimestamp() + 3600 * logged_user()->getTimezone());
+													$real_duration = new DateTimeValue($event->getDueDate()->getTimestamp() + $tz_value);
 												} else {
 													$real_duration = $event_duration;
 												}
@@ -749,11 +779,17 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 							<?php if ($event instanceof ProjectEvent) { ?>
 								<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin:2px 0 0 2px;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onclick="og.eventSelected(this.checked);"></input>
 							<?php } ?>
-								<a href='<?php echo get_url($event instanceof ProjectEvent ? 'event' : 'task', 'view', array(
-										'view' => 'viewweek',
-										'id' => $event->getId(),
-										'user_id' => $user_filter
-									)); ?>'
+							
+							<?php 
+								$view_url = get_url($event instanceof ProjectEvent ? 'event' : 'task', 'view', array(
+									'view' => 'viewweek',
+									'id' => $event->getId(),
+									'user_id' => $user_filter
+								));
+								Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+							?>
+								
+								<a href="<?php echo $view_url ?>"
 								onclick="og.disableEventPropagation(event);"
 								class='internalLink'>
 									<?php if ($width < 13 && str_ends_with($ev_hour_text, "M")) $ev_hour_text = trim(substr($ev_hour_text, 0, -2)); ?>
@@ -800,7 +836,11 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 									}
 								?>
 								<div><?php echo ($height < 50 || $width < 13 ? "<span class='nobr'>" : "")?>
-									<a href='<?php echo get_url($event instanceof ProjectEvent ? 'event' : 'task', 'view', array('view' => 'week', 'id' => $event->getId(), 'user_id' => $user_filter)); ?>'
+								<?php 
+									$view_url = get_url($event instanceof ProjectEvent ? 'event' : 'task', 'view', array('view' => 'week', 'id' => $event->getId(), 'user_id' => $user_filter));
+									Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+								?>
+									<a href="<?php echo $view_url ?>"
 									onclick="og.disableEventPropagation(event);"
 									class='internalLink'><span style="color:<?php echo $txt_color?>!important;padding-left:5px;font-weight: <?php echo $bold;?>"><?php echo $subject_toshow;?></span></a>
 								<?php echo ($height < 50 || $width < 13 ? "</span>" : "")?></div>
@@ -911,6 +951,25 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 	}
 	og.drawCurrentHourLine(today_d, 'w_');
 <?php } ?>
+
+
+
+
+	var genid = '<?php echo $genid ?>';
+	var resizer = new Ext.Resizable('allDayGrid', {
+		handles: 's',
+		minHeight: <?php echo $alldaygridHeight ?>,
+		pinned: true
+	});
+	
+	resizer.on('resize', function() {
+		for (var dow=0; dow<7; dow++) {
+			og.adjustAllDayEventsHeight(genid);
+		}
+	});
+	
+	og.adjustAllDayEventsHeight();
+	
 	// init tooltips
 	Ext.QuickTips.init();
         

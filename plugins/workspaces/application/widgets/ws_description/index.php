@@ -1,6 +1,5 @@
 <?php 
 	$genid = gen_id();
-	$id = get_id();
 	$typeId= ObjectTypes::instance()->findByName("workspace")->getId();
 	
 	//Check if There is a workspace in the active context
@@ -10,10 +9,9 @@
 		if ( $member->getObjectTypeId() == $typeId ) {
 			$id = $member->getObjectId();
 			
-			if ($workspace = Workspaces::instance()->findById($id) ){
-				if ( $workspace->getDescription() ) {
-					include_once 'template.php';
-				}
+			if ($workspace = Workspaces::instance()->findById($id) && trim($member->getDescription()) != ""){
+				$description = $member->getDescription();
+				include_once 'template.php';
 				break ;
 			}
 		} 

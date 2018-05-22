@@ -109,3 +109,67 @@
 		DB::execute("UPDATE ".TABLE_PREFIX."contact_config_options SET default_value='1' WHERE name='lp_dim_workspaces_show_as_column';");
 		DB::execute("UPDATE ".TABLE_PREFIX."contact_config_options SET default_value='1' WHERE name='lp_dim_tags_show_as_column';");
 	}
+	
+	function workspaces_update_11_12() {
+		DB::execute("
+			UPDATE ".TABLE_PREFIX."members SET description=(SELECT p.description FROM ".TABLE_PREFIX."workspaces p WHERE p.object_id=".TABLE_PREFIX."members.object_id)
+			WHERE object_type_id=(SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='workspace');
+		");
+	}
+	
+	function workspaces_update_12_13() {
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."dimension_object_type_options (`dimension_id`, `object_type_id`, `name`, `value`) VALUES
+			 ((SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code`='workspaces'), (SELECT `id` FROM `".TABLE_PREFIX."object_types` WHERE `name`='workspace'),'select_after_creation','1'),
+			 ((SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code`='tags'), (SELECT `id` FROM `".TABLE_PREFIX."object_types` WHERE `name`='tag'),'select_after_creation','1')
+			ON DUPLICATE KEY UPDATE `value`=`value`;
+		");
+	}
+	
+	function workspaces_update_13_14() {
+		if (Plugins::instance()->isActivePlugin('advanced_reports')) {
+			Env::useHelper('default_member_reports', 'advanced_reports');
+		
+			create_default_member_report('workspace');
+		}
+	}
+	
+	function workspaces_update_14_15() {
+	
+		DB::execute("
+			INSERT INTO `".TABLE_PREFIX."tab_panels` (`id`,`title`,`icon_cls`,`refresh_on_context_change`,`default_controller`,`default_action`,`initial_controller`,`initial_action`,`enabled`,`type`,`ordering`,`plugin_id`,`object_type_id`,`url_params`) VALUES
+			 ('workspaces-panel', 'workspaces', 'ico-workspaces', 1, 'member', 'init', '', '', 0, 'system', 20, (SELECT `id` FROM `".TABLE_PREFIX."plugins` WHERE `name`='workspaces'), (SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='workspace'),
+			 	CONCAT('{\"dim_id\":',(SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code`='workspaces'),', \"type_id\":',(SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='workspace'),'}') ),
+			 ('tags-panel', 'tags', 'ico-tags', 1, 'member', 'init', '', '', 0, 'system', 20, (SELECT `id` FROM `".TABLE_PREFIX."plugins` WHERE `name`='workspaces'), (SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='tag'),
+			 	CONCAT('{\"dim_id\":',(SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code`='tags'),', \"type_id\":',(SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='tag'),'}') )
+			ON DUPLICATE KEY UPDATE id=id;
+		");
+	
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id)
+			 SELECT pg.id, 'workspaces-panel' FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.type='roles' AND pg.name IN ('Super Administrator','Administrator','Manager','Executive')
+			ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;
+		");
+	
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id)
+			 SELECT pg.id, 'tags-panel' FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.type='roles' AND pg.name IN ('Super Administrator','Administrator','Manager','Executive')
+			ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;
+		");
+	
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id)
+			 SELECT pg.id, 'workspaces-panel' FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.type='permission_groups' AND pg.contact_id IN (
+				SELECT c.object_id FROM ".TABLE_PREFIX."contacts c WHERE c.user_type IN (SELECT pg.id FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.name IN ('Super Administrator','Administrator','Manager','Executive'))
+			 )
+			ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;
+		");
+	
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id)
+			 SELECT pg.id, 'tags-panel' FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.type='permission_groups' AND pg.contact_id IN (
+				SELECT c.object_id FROM ".TABLE_PREFIX."contacts c WHERE c.user_type IN (SELECT pg.id FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.name IN ('Super Administrator','Administrator','Manager','Executive'))
+			 )
+			ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;
+		");
+	}

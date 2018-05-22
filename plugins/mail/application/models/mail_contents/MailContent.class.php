@@ -155,9 +155,12 @@ class MailContent extends BaseMailContent {
 		if (is_array($rows) && count($rows) > 0) {
 			if ($rows[0]['c'] < 2) {
 				// if no other emails in conversation, delete conversation
-				DB::execute("DELETE FROM `".TABLE_PREFIX."mail_conversations` WHERE `id` = " . DB::escape($this->getCOnversationId()));
+				DB::execute("DELETE FROM `".TABLE_PREFIX."mail_conversations` WHERE `id` = " . DB::escape($this->getConversationId()));
 			}
 		}
+		// delete records from mail_contents_imap_folders
+		DB::execute("DELETE FROM `".TABLE_PREFIX."mail_content_imap_folders` WHERE `object_id` = " . DB::escape($this->getId()));
+		
 		if ($delete_db_record) {
 			return parent::delete();
 		} else {
@@ -407,9 +410,12 @@ class MailContent extends BaseMailContent {
 	function canView(Contact $user) {
 		$account = $this->getAccount();
 		if ($account instanceof MailAccount) {
-			return ($account->getContactId() == logged_user()->getId() || can_read_sharing_table($user, $this->getId(), false));
+			$mac = MailAccountContacts::instance()->findOne(array('conditions' => 'account_id='.$account->getId()." AND contact_id=".logged_user()->getId()));
+			return $mac instanceof MailAccountContact || 
+				$account->getContactId() == logged_user()->getId() || 
+				can_read($user, $this->getMembers(), $this->getObjectTypeId());
 		}else{
-			return can_read_sharing_table($user, $this->getId(), false);
+			return can_read($user, $this->getMembers(), $this->getObjectTypeId());
 		}
 	}
 
@@ -426,17 +432,33 @@ class MailContent extends BaseMailContent {
 		
 		$persons_dim = Dimensions::findByCode('feng_persons');
 		$tmp = array();
+		$members_with_permissions = array();
 		foreach ($members as $m) {
-			if (!$persons_dim instanceof Dimension || $m->getDimensionId() != $persons_dim->getId()) $tmp[] = $m;
+			if (!$persons_dim instanceof Dimension || $m->getDimensionId() != $persons_dim->getId()) {
+				$tmp[] = $m;
+				if ($m->getDimension()->getDefinesPermissions()) $members_with_permissions[] = $m;
+			}
 		}
 		$members = $tmp;
 		
 		if ($account instanceof MailAccount) {
 			// if classified
 			if (count($members) > 0) {
-				return $account->getContactId() == logged_user()->getId() || can_write($user, $members, $this->getObjectTypeId());
+				// if logged user is the account owner then return true
+				if ($account->getContactId() == logged_user()->getId()) {
+					return true;
+				} else {
+					if (count($members_with_permissions) > 0) {
+						// if mail is classified in dimensions that defines permissions execute can_write function
+						return can_write($user, $members, $this->getObjectTypeId());
+					} else {
+						// if mail is classified but none of the members are in dimensions that defines permissions, then everyone with account permissions can edit
+						$macs = MailAccountContacts::instance()->count(array('`account_id` = ? AND `contact_id` = ?', $account->getId(), $user->getId()));
+						return $macs > 0;
+					}
+				}
 			} else {
-				$macs = MailAccountContacts::instance()->count(array('`account_id` = ? AND `contact_id` = ? AND `can_edit` = 1', $account->getId(), $user->getId()));
+				$macs = MailAccountContacts::instance()->count(array('`account_id` = ? AND `contact_id` = ?', $account->getId(), $user->getId()));
 				return $account->getContactId() == logged_user()->getId() || $macs > 0;
 			}
 		}else{
@@ -787,7 +809,7 @@ class MailContent extends BaseMailContent {
 	 * 
 	 * @see ContentDataObject::addToSharingTable()
 	 */
-	function addToSharingTable() {	
+	/*function addToSharingTable() {	
 		parent::addToSharingTable();
 		$id = $this->getId();
 		
@@ -808,7 +830,7 @@ class MailContent extends BaseMailContent {
 			}
 			
 		}
-	}
+	}*/
 	
 	/**
 	 * Use this function to order conversation

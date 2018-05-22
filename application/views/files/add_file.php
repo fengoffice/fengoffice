@@ -30,7 +30,9 @@ if (array_var($_REQUEST, 'modal')) {
 $object = $file;
 $comments_required = config_option('file_revision_comments_required');
 
-$has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+$main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
+$other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
+
 $categories = array();
 Hook::fire('object_edit_categories', $object, $categories);
 ?>
@@ -47,7 +49,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 
   <div class="coInputHeaderUpperRow" id="<?php echo $genid?>_title_label">
 	<div class="coInputTitle" style="margin-top: 2px;">
-		<?php echo $file->isNew() ? lang('upload file') : (isset($checkin) ? lang('checkin file') : lang('edit file properties')) ?>
+		<?php echo $file->isNew() ? $object->getAddEditFormTitle() : (isset($checkin) ? lang('checkin file') : $object->getAddEditFormTitle()) ?>
 	</div>
   </div>
   
@@ -105,7 +107,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 	</div>
 	
 	<div class="coInputButtons" <?php if (!$enableUpload || !$file->isNew() ) { echo 'style="float:right;"'; } ?>>
-		<?php echo submit_button($file->isNew() ? lang('add file') : (isset($checkin) ? lang('checkin file') : lang('save changes')),'s',array('style'=>'margin-top:0px;margin-left:2px;','id' => $genid.'add_file_submit1')) ?>
+		<?php echo submit_button($file->isNew() ? $object->getSubmitButtonFormTitle() : (isset($checkin) ? lang('checkin file') : lang('save changes')),'s',array('style'=>'margin-top:0px;margin-left:2px;','id' => $genid.'add_file_submit1')) ?>
 	</div>
 	<div class="clear"></div>
 	
@@ -144,7 +146,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 		
 			<li><a href="#<?php echo $genid?>file_data"><?php echo lang('file details') ?></a></li>
 			
-			<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
+			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
 			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
 			<?php } ?>
 			
@@ -154,7 +156,9 @@ Hook::fire('object_edit_categories', $object, $categories);
 			<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
 			<?php } ?>
 			
-			<?php foreach ($categories as $category) { ?>
+			<?php foreach ($categories as $category) {
+					if (array_var($category, 'hidden')) continue;
+				?>
 			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
@@ -269,9 +273,9 @@ Hook::fire('object_edit_categories', $object, $categories);
 			<?php
 			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')'); 
 			if ($file->isNew()) {
-				render_member_selectors($file->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners), null, null, false);
+				render_member_selectors($file->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
 			} else {
-				render_member_selectors($file->manager()->getObjectTypeId(), $genid, $file->getMemberIds(), array('listeners' => $listeners), null, null, false);
+				render_member_selectors($file->manager()->getObjectTypeId(), $genid, $file->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
 			} ?>
 			<?php if (!$file->isNew()) {?>
 				<div id="<?php echo $genid ?>addFileFilenameCheck" style="display: none">
@@ -306,16 +310,23 @@ Hook::fire('object_edit_categories', $object, $categories);
 			<?php echo textarea_field('file[description]', array_var($file_data, 'description'), array('rows' => '5', 'style' => 'width: 500px;' , 'id' => $genid.'fileFormDescription')) ?>
 		</div>
 		<div class="clear"></div>
+		
+		<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+		
+		<div class="main-custom-properties-div"><?php
+			if ($main_cp_count) {
+				echo render_object_custom_properties($object, false, null, 'visible_by_default');
+			}
+		?></div>
 	</div>
 
 
 	
 
-	<?php if ($has_custom_properties || config_option('use_object_properties')) { ?>
-	<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
-			<?php echo render_object_custom_properties($object, false) ?>
+	<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
+	<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+			<?php echo render_object_custom_properties($object, false, null, 'other') ?>
       		<?php echo render_add_custom_properties($object); ?>
-		</fieldset>
 	</div>
 	<?php } ?>
 
@@ -328,21 +339,24 @@ Hook::fire('object_edit_categories', $object, $categories);
 					$subscriber_ids[] = logged_user()->getId();
 				}
 			?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content">
-				<?php //echo render_add_subscribers($object, $genid); ?>
+			<div id="<?php echo $genid ?>add_subscribers_content"><?php
+				foreach ($subscriber_ids as $subid) {
+					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
+				} 
+			?></div>
+			
+			<div id="<?php echo $genid ?>configuration_content">
+				<input type="checkbox" name="file[attach_to_notification]" id="<?php echo $genid?>eventAttachNotification" style="margin: 3px; float: left;" 
+					<?php echo array_var($file_data, 'attach_to_notification', user_config_option('attach_to_notification')) ? 'checked="checked"': ''?>/>
+				<label for="<?php echo $genid ?>eventAttachNotification" class="checkbox"><?php echo lang('attach to notification') ?></label>
+				<?php if (ContactConfigOptions::getByName('notify_myself_too') instanceof ContactConfigOption) : ?>
+							
+				<input type="checkbox" name="file[notify_myself_too]" id="<?php echo $genid?>notifyMyselfToo" style="margin: 3px 3px 3px 15px; float: left;"
+					<?php echo user_config_option('notify_myself_too') ? 'checked="checked"': ''?>/>
+				<label for="<?php echo $genid ?>notifyMyselfToo" class="checkbox"><?php echo lang('notify myself too') ?></label>
+				<div class="clear"></div>
+				<?php endif; ?>
 			</div>
-			
-			<input type="checkbox" name="file[attach_to_notification]" id="<?php echo $genid?>eventAttachNotification" style="margin: 3px; float: left;" 
-				<?php echo array_var($file_data, 'attach_to_notification', user_config_option('attach_to_notification')) ? 'checked="checked"': ''?>/>
-			<label for="<?php echo $genid ?>eventAttachNotification" class="checkbox"><?php echo lang('attach to notification') ?></label>
-			<?php if (ContactConfigOptions::getByName('notify_myself_too') instanceof ContactConfigOption) : ?>
-			<div class="clear"></div>
-			
-			<input type="checkbox" name="file[notify_myself_too]" id="<?php echo $genid?>notifyMyselfToo" style="margin: 3px; float: left;"
-				<?php echo user_config_option('notify_myself_too') ? 'checked="checked"': ''?>/>
-			<label for="<?php echo $genid ?>notifyMyselfToo" class="checkbox"><?php echo lang('notify myself too') ?></label>
-			<div class="clear"></div>
-			<?php endif; ?>
 			
 			<div style="width: 400px; align: center; text-align: left;">
 				<table>
@@ -397,7 +411,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 					echo submit_button(lang('save changes'),'s',array("id" => $genid.'add_file_submit2'));
 				}
 			} else { //New file
-				echo submit_button(lang('add file'),'s',array("id" => $genid.'add_file_submit2'));
+				echo submit_button($object->getSubmitButtonFormTitle(),'s',array("id" => $genid.'add_file_submit2'));
 			}
 		?>
 	</div>

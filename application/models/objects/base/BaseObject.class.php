@@ -255,6 +255,21 @@
       return $this->setColumnValue('trashed_by_id', $value);
     } // setTrashedById()  
       
+    
+    function getTimezoneId() {
+    	return $this->getColumnValue('timezone_id');
+    }
+    function setTimezoneId($value) {
+    	return $this->setColumnValue('timezone_id', $value);
+    }
+    
+    function getTimezoneValue() {
+    	return $this->getColumnValue('timezone_value');
+    }
+    function setTimezoneValue($value) {
+    	return $this->setColumnValue('timezone_value', $value);
+    }
+    
     /**
     * Return manager instance
     *
