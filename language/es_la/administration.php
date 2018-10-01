@@ -543,6 +543,7 @@
   		'dimension names desc' => 'En esta sección se puede cambiar el nombre de cada dimensión, si se deja en blanco el campo \'Nombre personalizado\' se utilizará el nombre predeterminado.',
   		'default name' => 'Nombre predeterminado',
   		'custom name' => 'Nombre personalizado',
+  		'custom name plural' => 'Nombre personalizado plural',
   		'custom name placeholder' => 'Escriba aquí para definir un nombre personalizado',
 	'group users' => 'Usuarios del grupo',
 	'timeslot' => 'Tiempo de trabajo',
@@ -647,6 +648,14 @@
     'user config option name show_start_time_action' => 'Reloj',
     'user config option desc show_start_time_action' => 'Habilitar el reloj para registro de tiempo',
     'user config option name automatic_calculation_time'=>'Comportamiento al modificar las horas',
+    'user config option name automatic_calculation_start_time'=>'Comportamiento al modificar las fechas',
     'user config option name show_pause_time_action' => 'Permitir tiempo pausado',
     'config option name show_pause_time_action' => 'Permitir tiempo pausado',
+    'user config option name stop_running_timeslots' => 'Permitir parar registro de tiempos cuando inició uno nuevo',
+
+    'user config option name properties_for_contact_component' => 'Propiedades de contacto para mostrar en los selectores de contacto',
+    'user config option desc properties_for_contact_component' => 'Aquí puede elegir propiedades adicionales que se mostrarán al seleccionar un contacto en cualquier selector de contactos.',
+		
+		'user config option name tasksGroupsPaginationCount' => 'Grupos de tareas por página',
+		'user config option desc tasksGroupsPaginationCount' => 'Número de grupos de tareas a cargar en el listado de tareas al inicializarse y al cargar más grupos.',
 );

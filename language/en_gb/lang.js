@@ -971,4 +971,12 @@ addLangs({
     'timeslot': 'Timeslot',
     'reports': 'Reports',
     'remove filter': 'Remove filter',
+    'add contact':'Add contact',
+    'first name':'First name',
+    'last name':'Last name',
+    'new contact':'New contact',
+    'new contact':'New contact',
+    'unclassified message':'You are about to add an unclassified contact. Keep in mind that when saving this form, the contact will be automatically classified into this member.',
+    'add unclassified contact':'Add unclassified contact',
+    'template name required': 'Template name is required',
 });

@@ -30,8 +30,7 @@ class PanelController extends ApplicationController {
 				 $url_params = trim($row['url_params']) == '' ? array() : json_decode($row['url_params'], true);
 				 
 				 if ( $row['default_controller'] == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {				     
-				     $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id']);
-				     $name_tab .= 's'; //@TODO: change this when plural custom names are added
+				     $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id'], null, true);
 				 }else{
 				     $name_tab = lang($row ['title']);
 				 }

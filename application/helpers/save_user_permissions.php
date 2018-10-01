@@ -34,6 +34,7 @@
 	$users_ids_to_check_filename = array_var($argv, 10);
 	$root_permissions_genid = array_var($argv, 11);
 	$only_member_permissions = array_var($argv, 12) == "1";
+	$is_new_user = array_var($argv, 13) == "1";
 	
 	$permissions = file_get_contents($permissions_filename);
 	$sys_permissions = json_decode(file_get_contents($sys_permissions_filename), true);
@@ -53,7 +54,7 @@
 	
 	// save permissions
 	try {
-		$result = save_permissions($pg_id, $is_guest, $perms, true, false, false, false, array(), $only_member_permissions);
+		$result = save_permissions($pg_id, $is_guest, $perms, true, false, false, false, array(), $only_member_permissions, $is_new_user);
 	} catch (Exception $e) {
 		Logger::log("Error saving permissions (1): ".$e->getMessage()."\n".$e->getTraceAsString());
 	}

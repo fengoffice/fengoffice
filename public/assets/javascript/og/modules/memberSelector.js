@@ -297,8 +297,8 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 	var selected_members = eval(member_ids_input.getValue());
 
 	var main_tree = Ext.getCmp(genid + '-member-chooser-panel-' + dimension_id + '-tree');
-	
-	for (i=0; i<dimensions_to_reload.length; i++) {
+	if (main_tree.filterOnChange) {
+	  for (i=0; i<dimensions_to_reload.length; i++) {
 		var dim_id = dimensions_to_reload[i];
 
 		var dep_genid = "";
@@ -316,7 +316,7 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 		
 		if (selector_object && selector_object.properties[dim_id] && !selector_object.dontFilterThisSelector) {
 			
-			if (selected_members && selected_members.length > 0) {
+			if (selected_members) {
 				// get the selected node
 				var selected_node = null;
 				var k = 0;
@@ -351,6 +351,7 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 			}
 
 		}
+	  }
 	}
 }
 

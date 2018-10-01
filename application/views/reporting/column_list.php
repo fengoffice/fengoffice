@@ -5,35 +5,25 @@
 	
 	// build columm list
 	$list = array();
-	if (is_array($columns)) {
-		foreach ($columns as $colid) {
-			if ($colid != '') {
-				$list[] = array(
-					'id' => $colid,
-					'text' => '',
-					'selected' => true,
-				);
-			}
-		}
-	}
-	
+
 	$options = array();
 	foreach ($allowed_columns as $acol) {
-		$add = true;		
-		foreach ($list as $k => $item) {
-			if ($acol['id'] == $item['id'] ){
-				$list[$k]['text'] = $acol['name'];
-				$add = false;
-				break;
-			}
-		}
-		if ($add) {
+		$selected = false;
+        $order = false;
+        if (is_array($columns)) {
+		    if (in_array($acol['id'],$columns)){
+                $selected = true;
+                $order = array_search($acol['id'], $columns);
+            }
+        }
+
 			$list[] = array(
 				'id' => $acol['id'],
 				'text' => $acol['name'],
-				'selected' => false,
+				'selected' => $selected,
+                'order' => $order
 			);
-		}
+
 		if(!isset($order_by) || $order_by == '') $order_by = 'updated_on';
 		if (!str_starts_with($acol['id'], "dim_") && !str_starts_with($acol['id'], "dimassoc_") && $acol['id']!='time' && $acol['id']!='billing' && $acol['type']!='calculated') {
 			$options[] = option_tag($acol['name'], $acol['id'], $acol['id'] == $order_by ? array('selected' => 'selected') : null);

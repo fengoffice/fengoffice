@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.6.0RC1
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.6.3-rc7
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.6.0RC1');
+		$this->setVersionTo('3.6.3-rc7');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -110,10 +110,11 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				INSERT INTO `".$t_prefix."file_types` (`extension`, `icon`, `is_searchable`, `is_image`) VALUES ('ics', 'ics.png', '0', '0')
 				ON DUPLICATE KEY UPDATE `extension`=`extension`;
 			";
-			
-			$upgrade_script .= "
-				ALTER TABLE `".$t_prefix."tab_panels` ADD COLUMN `url_params` varchar(255) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
-			";
+			if (!$this->checkColumnExists($t_prefix."tab_panels", "url_params", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."tab_panels` ADD COLUMN `url_params` varchar(255) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
+				";
+			}
 		}
 		
 		if (version_compare($installed_version, '3.5-beta') < 0) {
@@ -124,16 +125,19 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 					where t.rel_object_id>0
 				on duplicate key update ".$t_prefix."object_members.object_id=".$t_prefix."object_members.object_id;
 			";
-			
-			$upgrade_script .= "
-				ALTER TABLE `".$t_prefix."config_options` ADD COLUMN `options` varchar(255) COLLATE 'utf8_unicode_ci' DEFAULT '';
-			";
+			if (!$this->checkColumnExists($t_prefix."config_options", "options", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."config_options` ADD COLUMN `options` varchar(255) COLLATE 'utf8_unicode_ci' DEFAULT '';
+				";
+			}
 		}
 		
 		if (version_compare($installed_version, '3.5-beta2') < 0) {
-			$upgrade_script .= "
-				ALTER TABLE `".$t_prefix."timeslots` ADD COLUMN `worked_time` int(10) unsigned NOT NULL DEFAULT 0;
-			";
+			if (!$this->checkColumnExists($t_prefix."timeslots", "worked_time", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."timeslots` ADD COLUMN `worked_time` int(10) unsigned NOT NULL DEFAULT 0;
+				";
+			}
 			
 			$upgrade_script .= "
 				update ".$t_prefix."timeslots set worked_time=GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60);
@@ -144,7 +148,8 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		if (version_compare($installed_version, '3.5.0.3') < 0) {
 			$upgrade_script .= "
 				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
-				('task panel', 'tasksShowAssignedToName', '0', 'BoolConfigHandler', 0, 0, '');
+				('task panel', 'tasksShowAssignedToName', '0', 'BoolConfigHandler', 0, 0, '')
+				ON DUPLICATE KEY UPDATE name=name;
 			";
 		}
 		
@@ -372,22 +377,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				ON DUPLICATE KEY UPDATE name=name;
 			";
 
-            $upgrade_data = '
-                 {
-                     "option": [{
-                             "value": "1",
-                             "text": "config_start_calc"
-                         },
-                         {
-                             "value": "2",
-                             "text": "config_end_calc"
-                         },
-                         {
-                             "value": "3",
-                             "text": "always_show_modal"
-                         }
-                     ]
-                 }';
+            $upgrade_data = '{"option": [{"value": "1","text": "config_start_calc"},{"value": "2","text": "config_end_calc"},{"value": "3","text": "always_show_modal"}]}';
 
            $upgrade_script .= "
 				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
@@ -400,7 +390,6 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				VALUES ('general', 'show_pause_time_action', '1', 'BoolConfigHandler', 0, 0, '')
                 ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
             ";
-                        
         }
 
         if (version_compare($installed_version, '3.6.0-beta.2') < 0) {
@@ -411,6 +400,93 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
             }
         }
         
+        if (version_compare($installed_version, '3.6.1-beta') < 0) {
+            $upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('time panel', 'stop_running_timeslots', '0', 'BoolConfigHandler', '0', '0', '')
+				ON DUPLICATE KEY UPDATE `name`=`name`;
+			";
+        }
+
+        if (version_compare($installed_version, '3.6.1-beta4') < 0) {
+            $upgrade_data = '{"option": [{"value": "1","text": "config_start_calc"},{"value": "2","text": "config_end_calc"},{"value": "3","text": "always_show_modal"}]}';
+
+            $upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+				('time panel', 'automatic_calculation_time', '1', 'ListConfigHandler', 0, 0, '', '".$upgrade_data."')	
+				ON DUPLICATE KEY UPDATE `name`=`name`;
+			";
+
+
+            $upgrade_data = '{"option": [{"value": "1","text": "config_dates_calc"},{"value": "2","text": "config_hours_calc"},{"value": "3","text": "always_show_modal"}]}';
+
+            $upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+				('time panel', 'automatic_calculation_start_time', '0', 'ListConfigHandler', 0, 0, '', '".$upgrade_data."')	
+				ON DUPLICATE KEY UPDATE `name`=`name`;
+			";
+        }
+
+        if (version_compare($installed_version, '3.6.2-beta3') < 0) {
+
+            $upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+				('contact panel', 'properties_for_contact_component', '', 'ContactPropertySelectorConfigHandler', '0', '0','','contact')	
+				ON DUPLICATE KEY UPDATE `name`=`name`;
+			";
+        }
+
+        if (version_compare($installed_version, '3.6.2-beta6') < 0) {
+            if (!$this->checkValueExists($t_prefix."custom_properties","code","prefix_code", $this->database_connection)){
+                $upgrade_script .= "
+				INSERT INTO ".$t_prefix."custom_properties (object_type_id, name, code, `type`,`is_special`,`description`) VALUES
+                    ((SELECT id FROM ".$t_prefix."object_types WHERE name='contact'), 'Prefix', 'prefix_code', 'text', 1, '');
+			";
+            }
+
+
+        }
+
+        if (version_compare($installed_version, '3.6.2-beta23') < 0) {
+            if (!$this->checkColumnExists($t_prefix."searchable_objects", "assoc_member_id", $this->database_connection)) {
+                $upgrade_script .= "
+					ALTER TABLE `".$t_prefix."searchable_objects` ADD `assoc_member_id` int(10) unsigned NOT NULL DEFAULT 0;
+					ALTER TABLE `".$t_prefix."searchable_objects` ADD INDEX `assoc_member_id` (`assoc_member_id`);
+				";
+            }
+        }
+
+        if (version_compare($installed_version, '3.6.2-beta25') < 0) {
+
+            $upgrade_script .= "
+		  		INSERT INTO ".$t_prefix."searchable_objects (rel_object_id, column_name, content)
+		  		SELECT contact_id, CONCAT('email_addres',email_type_id), email_address FROM ".$t_prefix."contact_emails
+		  		ON DUPLICATE KEY UPDATE `rel_object_id`=`rel_object_id`;
+  			";
+
+        }
+        
+        if (version_compare($installed_version, '3.6.3-rc') < 0) {
+        	if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksGroupsPaginationCount", $this->database_connection)) {
+		        $upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+					('task panel', 'tasksGroupsPaginationCount', '5', 'IntegerConfigHandler', 0, 0, '')
+	        		ON DUPLICATE KEY UPDATE name=name;
+	        	";
+        	}
+        }
+        
+        if (version_compare($installed_version, '3.6.3-rc4') < 0) {
+        	if (!$this->checkKeyExists($t_prefix."project_tasks", "start_date", $this->database_connection)) {
+        		$upgrade_script .= "
+			        ALTER TABLE `".$t_prefix."project_tasks`
+			        ADD INDEX `start_date` (`start_date`),
+			        ADD INDEX `due_date` (`due_date`),
+			        ADD INDEX `completed_by_id` (`completed_by_id`);
+				";
+        	}
+        }
+
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 			$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);

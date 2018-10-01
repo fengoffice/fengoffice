@@ -114,6 +114,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 og.config.use_milestones = <?php echo config_option('use_milestones') ? 'true' : 'false' ?>;
 og.config.show_notify_checkbox_in_quick_add = <?php echo user_config_option('show_notify_checkbox_in_quick_add') ? 'true' : 'false' ?>;
 og.config.tasks_show_description_on_time_forms = <?php echo user_config_option('tasksShowDescriptionOnTimeForms') ? 'true' : 'false' ?>;
+og.config.stop_running_timeslots = <?php echo user_config_option('stop_running_timeslots') ? 'true' : 'false' ?>;
 og.config.tasks_use_date_filters = <?php echo user_config_option('tasksUseDateFilters') ? 'true' : 'false' ?>;
 og.config.tasks_show_assigned_to_name = <?php echo user_config_option('tasksShowAssignedToName') ? 'true' : 'false' ?>;
 og.config.quick_add_task_combos = <?php 
@@ -164,7 +165,7 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 	<input id="<?php echo $genid?>complete_task" type="hidden" name="complete_task" value="yes" />        
 </div>
 
-<div id="tasksPanel" class="ogContentPanel" style="background-color:white;background-color:#F0F0F0;height:100%;width:100%;">
+<div id="tasksPanel<?php echo $genid ?>" class="ogContentPanel" style="background-color:white;background-color:#F0F0F0;height:100%;width:100%;">
     
 	<div id="tasksPanelTopToolbar" class="x-panel-tbar" style="width:100%;display:block;background-color:#F0F0F0;"></div>
 	<div id="tasksPanelBottomToolbar" class="x-panel-tbar" style="width:100%;display:block;background-color:#F0F0F0;"></div>
@@ -189,6 +190,13 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 
 	//ogTasks.userPermissions = Ext.util.JSON.decode(document.getElementById('hfUserPermissions').value);
 	
+	// load more task groups when scroll hits the bottom
+	$("#tasksPanelContent").scroll(function(){
+		var ele = document.getElementById('tasksPanelContent');
+		if(ele.scrollHeight - ele.scrollTop === ele.clientHeight){
+			ogTasks.loadMoreGroups();
+		}
+	});
 
 	var mili = 0;
 	if (og.TasksTopToolbar == 'undefined') {
@@ -218,7 +226,10 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 		function resizeTasksPanel(e, id) {
 			var tpc = document.getElementById('tasksPanelContent');
 			if (tpc) {
-				tpc.style.height = (document.getElementById('tasksPanel').clientHeight - 68) + 'px';
+				var tp = document.getElementById('tasksPanel<?php echo $genid?>');
+				if (tp) {
+					tpc.style.height = (tp.clientHeight - 58) + 'px';
+				}
 			} else {
 				og.removeDomEventHandler(window, 'resize', id);
 			}
@@ -230,7 +241,8 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 		}
 		resizeTasksPanel();
 		ogTasks.loadDataFromHF();
-
+		
+		ogTasks.Groups.loaded = true;
 		ogTasks.draw();
 
 	}, mili);
@@ -314,9 +326,20 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
     foreach ($enabled_dimensions as $enabled_dimension) {
         $ot_ids = implode(",", DimensionObjectTypes::getObjectTypeIdsByDimension($enabled_dimension->getId()));
         $dimension_obj_types = ObjectTypes::findAll(array("conditions" => "`id` IN ($ot_ids)"));
+        
+        $no_folder_ots_count = 0;
         foreach ($dimension_obj_types as $ot) {
+        	if ($ot->getName() != 'folder' && $ot->getName() != 'project_folder' && $ot->getName() != 'customer_folder') {
+        		$no_folder_ots_count++;
+        	}
+        }
+        foreach ($dimension_obj_types as $ot) {
+        	$mem_type_name = lang($ot->getName());
+        	if ($no_folder_ots_count == 1 && $ot->getName() != 'folder') {
+        		$mem_type_name = $enabled_dimension->getName();
+        	}
             if ($ot->getName() != 'project_folder' && $ot->getName() != 'customer_folder') {
-                echo 'ogTasks.additional_groupby_dimensions_member_types.push({dim_id: ' . $enabled_dimension->getId() . ', dim_name:"' . $enabled_dimension->getName() . '", mem_type_id: ' . $ot->getId() . ', mem_type_name:"' . lang($ot->getName()) . '"});';
+                echo 'ogTasks.additional_groupby_dimensions_member_types.push({dim_id: ' . $enabled_dimension->getId() . ', dim_name:"' . $enabled_dimension->getName() . '", mem_type_id: ' . $ot->getId() . ', mem_type_name:"' . $mem_type_name . '"});';
 
             }
         }

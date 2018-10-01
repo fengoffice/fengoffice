@@ -55,4 +55,9 @@
 	'archived' => 'Archivados',
 	'unarchived' => 'No archivados',
 	'contacts-panel' => 'Contactos',
+	'load more task groups' => 'Cargar más grupos de tareas...',
+	'fix repetitive tasks' => 'Corregir tareas repetitivas',
+	'warning you have added some repetitive tasks for this template that do not have date variables for their date' => 'Aviso: Usted ha agregado algunas tareas repetitivas las cuales no tienen definida una variable de fecha para asignar en la fecha de repetición.',
+	'yes let me add those variables' => 'Gracias. Permíteme agregar las variables.',
+	'no time now remove repetition' => 'Ahora no. Solo remover las repeticiones por el momento.',
 );

@@ -743,6 +743,7 @@ addLangs({
 	'new email in conversation text': 'Hay correo nuevo en la conversación que está respondiendo. Desea enviar el correo de todos modos o ver el nuevo correo en una nueva pestaña?',
 	'send anyway': 'Enviar de todos modos',
 	'view new email': 'Ver correo nuevo',
+    'confirm delete permanently': '¿Está seguro de que desea borrar permanentemente este objeto?',
 	'confirm delete permanently company': '¿Está seguro de que desea borrar permanentemente esta empresa?\nTodos los usuarios de la empresa también serán borrados.',
 	'confirm move to trash company': '¿Está seguro de que desea borrar esta empresa?\nTodos los usuarios de la empresa también serán borrados.',
 	'apply assignee to subtasks': 'Aplicar asignado a subtareas',
@@ -895,5 +896,12 @@ addLangs({
     'reports': 'Reportes',
     
 	/* custom properties filter */
-	'filter by cp': 'Filtrar por custom property'
+	'filter by cp': 'Filtrar por custom property',
+    'add contact':'Agregar contacto',
+    'first name':'Nombre',
+    'last name':'Apellido',
+    'new contact':'Nuevo contacto',
+    'unclassified message':'Está a punto de agregar un contacto no clasificado. Tenga en cuenta que al guardar este formulario, el contacto se clasificará automáticamente en este miembro.',
+    'add unclassified contact':'Añadir contacto no clasificado',
+	'template name required': 'El nombre de la plantilla es requerido',
 });

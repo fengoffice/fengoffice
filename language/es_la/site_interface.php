@@ -520,7 +520,7 @@
 	'select billing category' => '-- Seleccionar categoría de facturación --',
 	'billing amount' => 'Monto',
 	'hourly billing' => 'Facturación por hora',
-	'fixed billing' => 'Facturación fija',
+	'fixed billing' => 'Total facturable',
 	'show billing information' => 'Mostrar información de facturación',
 	'no billing categories' => 'No hay categorías de facturación.',
 	'no billing categories desc' => 'Si desea habilitar el soporte para facturación basado en tiempos de trabajo, por favor ingrese una nueva categoría de facturación.',

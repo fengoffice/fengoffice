@@ -67,8 +67,9 @@ ogTasks.removeTaskGroup = function(group){
 		}
 	}
 	
-	if($("#ogTasksPanelGroupCont"+group.group_id).length > 0){
-		$("#ogTasksPanelGroupCont"+group.group_id).remove();
+	if($("#ogTasksPanelGroup"+group.group_id).length > 0){
+		$("#ogTasksPanelGroup"+group.group_id).remove();
+		$("#ogTasksPanelGroup"+group.group_id+"Totals").remove();
 	}
 };
 
@@ -79,33 +80,35 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 	var displayCriteria = bottomToolbar.getDisplayCriteria();
 	var drawOptions = topToolbar.getDrawOptions();
 	
-	for (var i = 0; i < data.groups.length; i++){
-		if (!data.groups[i]) continue;
-		var group = ogTasks.getGroup(data.groups[i].group_id);
-		if (!group) continue;
-		
-		if (typeof add_new_tasks != 'undefined'){			
+	if (data && data.groups) {
+		for (var i = 0; i < data.groups.length; i++){
+			if (!data.groups[i]) continue;
+			var group = ogTasks.getGroup(data.groups[i].group_id);
+			if (!group) continue;
 			
-			for (var j = 0; j < data.groups[i].group_tasks.length; j++){
-				var task_data = data.groups[i].group_tasks[j];
-				var task = ogTasksCache.addTasks(task_data);
+			if (typeof add_new_tasks != 'undefined'){
 				
-				ogTasks.addTaskToGroup(group, task, true);							
-			}		
+				for (var j = 0; j < data.groups[i].group_tasks.length; j++){
+					var task_data = data.groups[i].group_tasks[j];
+					var task = ogTasksCache.addTasks(task_data);
+					
+					ogTasks.addTaskToGroup(group, task, true);
+				}
+			}
+			
+			//update group params
+			for (var key in data.groups[i]){
+				if(key != 'group_tasks' && data.groups[i]){
+					group[key] = data.groups[i][key];
+				}
+			}
+			group.rendering = false;
+			
+			//update group totals
+			$("#ogTasksPanelGroup"+group.group_id+"Totals").replaceWith(ogTasks.newTaskGroupTotals(group));
+			
 		}
-		
-		//update group params
-		for (var key in data.groups[i]){							
-			if(key != 'group_tasks' && data.groups[i]){
-				group[key] = data.groups[i][key];
-			}												
-		}
-		group.rendering = false;	
-		
-		//update group totals
-		$("#ogTasksPanelGroup"+group.group_id+"Totals").replaceWith(ogTasks.newTaskGroupTotals(group));	
-		
-	}	
+	}
 };
 
 ogTasks.getGroup = function(id){

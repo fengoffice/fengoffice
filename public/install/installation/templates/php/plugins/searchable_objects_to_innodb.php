@@ -9,8 +9,10 @@ if ($mysql_version && version_compare($mysql_version, '5.6', '>=')) {
 			`column_name` varchar(50) collate utf8_unicode_ci NOT NULL default '',
 			`content` text collate utf8_unicode_ci NOT NULL,
 			`contact_id` int(10) unsigned NOT NULL default '0',
+			`assoc_member_id` int(10) unsigned NOT NULL DEFAULT '0',
 			PRIMARY KEY  (`rel_object_id`,`column_name`),
 			FULLTEXT KEY `content` (`content`),
+			KEY `assoc_member_id` (`assoc_member_id`),
 			KEY `rel_obj_id` (`rel_object_id`)
 		) ENGINE=$database_engine DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 	";

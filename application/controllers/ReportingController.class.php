@@ -762,12 +762,19 @@ class ReportingController extends ApplicationController {
 					if ($order > 0) {
 						$newColumn = new ReportColumn();
 						$newColumn->setReportId($report_id);
-						if(is_numeric($column)){
-							$newColumn->setCustomPropertyId($column);
-						}else{
-							$newColumn->setFieldName($column);
-						}
-						$newColumn->save();
+
+						if (str_starts_with($column,'group_cp_')){
+                            $list_of_terms = explode('_',$column);
+                            $newColumn->setCustomPropertyId($list_of_terms[2]);
+                            $newColumn->setFieldName($column);
+                        }else{
+                            if(is_numeric($column)){
+                                $newColumn->setCustomPropertyId($column);
+                            }else{
+                                $newColumn->setFieldName($column);
+                            }
+                        }
+                        $newColumn->save();
 					}
 				}
 				
@@ -804,7 +811,11 @@ class ReportingController extends ApplicationController {
 				$colIds = array();
 				foreach($columns as $col){
 					if($col->getCustomPropertyId() > 0){
-						$colIds[] = $col->getCustomPropertyId();
+                        if (str_starts_with($col->getFieldName(),'group_cp_')){
+                            $colIds[] = $col->getFieldName();
+                        }else{
+				    		$colIds[] = $col->getCustomPropertyId();
+                        }
 					}else{
 						$colIds[] = $col->getFieldName();
 					}
@@ -833,7 +844,7 @@ class ReportingController extends ApplicationController {
 		}
 	}
 
-	function view_custom_report($report_id = null, $view_attributes = null, $params = null) {
+	function view_custom_report($report_id = null, $view_attributes = null, $params = null,$to_print = false) {
 		
 		if (!$report_id) {
 			$report_id = array_var($_REQUEST, 'id');
@@ -893,6 +904,8 @@ class ReportingController extends ApplicationController {
 			
 		} else {
 			
+			ajx_set_no_toolbar(true);
+			
 			$parametersUrl = '';
 			if ($params) {
 				if (!is_array($params)) $params = json_decode($params, true);
@@ -919,9 +932,10 @@ class ReportingController extends ApplicationController {
 			tpl_assign('description', $report->getDescription());
 			tpl_assign('conditions', $conditions);
 			tpl_assign('parameters', $params);
+			tpl_assign('disabled_params', array_var($_REQUEST, 'disabled_params'));
 			tpl_assign('parameterURL', $parametersUrl);
 			tpl_assign('id', $report_id);
-			tpl_assign('to_print', false);
+			tpl_assign('to_print', $to_print);
 			
 			$this->setTemplate('report_wrapper');
 			tpl_assign('template_name', 'view_custom_report');
@@ -962,12 +976,14 @@ class ReportingController extends ApplicationController {
 		$params_str = array_var($_REQUEST, 'params');
 		if ($params_str) $params = json_decode(str_replace("'", '"',$params_str), true);
 		
+		$disabled_params = array_var($_REQUEST, 'disabled_params');
+		
 		$_GET['limit'] = 0;
 		$_REQUEST['limit'] = 0;
 		$results = $this->view_custom_report($report_id, null, $params);
 		
 		ob_start();
-		custom_report_info_blocks(array('id' => $report_id, 'results' => $results, 'parameters' => $params));
+		custom_report_info_blocks(array('id' => $report_id, 'results' => $results, 'parameters' => $params, 'disabled_params' => $disabled_params));
 		$html = ob_get_clean();
 		
 		$html .= report_table_html($results, $report, '', true);
@@ -1034,9 +1050,11 @@ class ReportingController extends ApplicationController {
 		$params_str = array_var($_REQUEST, 'report_params');
 		if ($params_str) $params = json_decode(str_replace("'", '"',$params_str), true);
 		
+		$disabled_params = array_var($_REQUEST, 'disabled_params');
+		
 		$_GET['limit'] = 0;
 		$_REQUEST['limit'] = 0;
-		$results = $this->view_custom_report($report_id, null, $params);
+		$results = $this->view_custom_report($report_id, null, $params,true);
 		
 		// include all css
 		$html = stylesheet_tag('website.css');
@@ -1044,16 +1062,18 @@ class ReportingController extends ApplicationController {
 		Hook::fire('additional_report_print_css', null, $css_html);
 		if ($css_html) $html .= $css_html;
 		
+		// to avoid thead and tbody overlapping
+		$html .= stylesheet_tag('og/pdf_export.css');
+		
 		// title html
 		$html .= '<div class="report-print-header"><div class="title-container"><h1>'.clean($report->getName()).'</h1></div></div><div class="clear"></div>';
 		
 		ob_start();
-		custom_report_info_blocks(array('id' => $report_id, 'results' => $results, 'parameters' => $params));
+		custom_report_info_blocks(array('id' => $report_id, 'results' => $results, 'parameters' => $params, 'disabled_params' => $disabled_params));
 		$html .= ob_get_clean();
 		
 		// build html
 		$html .= report_table_html($results, $report, '', true);
-		
 		file_put_contents($html_filepath, $html);
 		
 		// convert html to pdf
@@ -1529,7 +1549,6 @@ class ReportingController extends ApplicationController {
 		$option_groups = null;
 		$allowed_columns = $this->get_allowed_columns(array_var($_GET, 'object_type'));
 		$columns = array_var($_GET, 'columns', array());
-		
 		if (array_var($_GET, 'object_type') == Timeslots::instance()->getObjectTypeId()) {
 			$task_ot = ObjectTypes::findByName('task');
 			$task_columns = $this->get_allowed_columns($task_ot->getId());
@@ -1537,7 +1556,8 @@ class ReportingController extends ApplicationController {
 			$ts_group_count = count($allowed_columns);
 			
 			foreach ($task_columns as $t) {
-				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')) continue;
+				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
+						|| in_array($t['id'], array('id','name'))) continue;
 				$allowed_columns[] = $t;
 			}
 			
@@ -1546,18 +1566,22 @@ class ReportingController extends ApplicationController {
 				array('count' => count($allowed_columns) - $ts_group_count, 'name' => lang('task').' '.lang('columns')),
 			);
 		}
+
+
+
+
                 $ret = array($allowed_columns,$option_groups);
                 Hook::fire('get_allow_columns_for_reports', array('object_type' => array_var($_GET, 'object_type'), 'columns' => $columns),$ret);
                 $allowed_columns = $ret[0];
                 $option_groups = $ret[1];
-                
+
+
                 $ret = array($allowed_columns,$option_groups);
                 Hook::fire('get_allow_taxes_row_for_reports', array('object_type' => array_var($_GET, 'object_type'), 'columns' => $columns),$ret);
                 $allowed_columns = $ret[0];
                 $option_groups = $ret[1];
 
-               
-                
+
                 tpl_assign('option_groups', $option_groups);
 		tpl_assign('allowed_columns', $allowed_columns);
 		tpl_assign('columns', explode(',', $columns));
@@ -1625,7 +1649,7 @@ class ReportingController extends ApplicationController {
 			
 			foreach($customProperties as $cp){
 				if ($cp->getType() == 'table') continue;
-				
+                if ($cp->getType() == 'contact') continue;
 				$fields[] = array('id' => $cp->getId(), 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
 			}
 			

@@ -268,11 +268,21 @@ class MoreController extends ApplicationController {
 		}
 	*/	
 		
+		$enabled_object_types = ObjectTypes::getAllObjectTypes();
+		$enabled_object_type_ids = array();
+		foreach ($enabled_object_types as $enabled_ot) {
+			$enabled_object_type_ids[] = $enabled_ot->getId();
+		}
 		
 		$active_dimensions_tmp = Dimensions::findAll(array('order' => 'default_order'));
 		$active_dimensions = array();
 		foreach ($active_dimensions_tmp as $dim) {
 			if ($dim->getCode() == 'feng_persons') continue;
+			
+			// if the plugin that owns the dimension is disabled then no ots are enabled for this dimension and it should be excluded
+			$dot_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dim->getId());
+			$has_enabled_ots = count(array_intersect($dot_ids, $enabled_object_type_ids)) > 0;
+			if (!$has_enabled_ots) continue;
 			
 			$dname = $dim->getName();
 			$active_dimensions[$dim->getCode()] = array(

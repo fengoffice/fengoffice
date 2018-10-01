@@ -1,6 +1,32 @@
-//get all groups from server with a few tasks in each one and draw them
-ogTasks.getGroups = function(){
+// reset pagination offset and groups per page
+ogTasks.resetPaginationVariables = function() {
+	
 	ogTasks.Groups.length = 0;
+	
+	ogTasks.allGroupsLoaded = false;
+	
+	ogTasks.groupsPaginationOffset = 0;
+	
+	if (ogTasks.userPreferences.showTasksListAsGantt) {
+		ogTasks.groupsPaginationCount = 1000;
+	} else {
+		ogTasks.groupsPaginationCount = ogTasks.userPreferences.groupsPaginationCount;
+	}
+}
+
+// load the next page of groups
+ogTasks.loadMoreGroups = function() {
+	if (!ogTasks.allGroupsLoaded && !ogTasks.isLoadingGroups) {
+		
+		// load the groups
+		ogTasks.getGroups();
+		// remove pagination link
+		//$("#tasksPanelGroupsPagination").remove();
+	}
+}
+
+//get all groups from server with a few tasks in each one and draw them
+ogTasks.getGroups = function(dont_reset_groups){
 	var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 	if (!bottomToolbar) return;
 	var filters = bottomToolbar.getFilters();
@@ -16,17 +42,38 @@ ogTasks.getGroups = function(){
 	if (typeof ogTasks.userPreferences.showTasksListAsGantt != 'undefined' && ogTasks.userPreferences.showTasksListAsGantt) {
 		filters.limit = 500;
 	}
+
+	if (typeof(ogTasks.groupsPaginationOffset) != 'undefined') {
+		filters.groups_offset = ogTasks.groupsPaginationOffset;
+	}
+	if (typeof(ogTasks.groupsPaginationCount) != 'undefined') {
+		filters.groups_count = ogTasks.groupsPaginationCount;
+	}
+	
+	ogTasks.isLoadingGroups = true;
 	
 	og.openLink(og.getUrl('task', 'get_tasks_groups_list'), {
 			hideLoading: false,
 			scope: this,
 			post: filters,
 			callback: function(success, data) {
-				ogTasks.Groups.length = 0;
+				
 				if (data.groups) {
+					if (data.groups.length == 0) {
+						ogTasks.isLoadingGroups = false;
+						ogTasks.Groups.loaded = true;
+						ogTasks.allGroupsLoaded = true;
+						return;
+					}
 					for (var i = 0; i < data.groups.length; i++){
+						ogTasks.removeTaskGroup(data.groups[i]);
 						ogTasks.addNewTaskGroup(data, i);
 					}
+				}
+				
+				// update groups pagination offset
+				if (typeof(ogTasks.groupsPaginationOffset) != 'undefined') {
+					ogTasks.groupsPaginationOffset = parseInt(data.new_groups_offset) + parseInt(ogTasks.groupsPaginationCount);
 				}
 				
 				ogTasks.Groups.loaded = true; 
@@ -129,6 +176,8 @@ ogTasks.refreshGroupsTotals = function(group_id){
 	if (typeof group_id != 'undefined'){
 		filters.groupId = group_id;
 	}	
+	
+	filters.only_totals = 1; // dont load all tasks if only refreshing the totals
 	
 	og.openLink(og.getUrl('task', 'get_tasks_groups_list'), {
 			hideLoading: true,

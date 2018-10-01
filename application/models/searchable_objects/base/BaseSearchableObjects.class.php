@@ -18,7 +18,9 @@
     	'rel_object_id' => DATA_TYPE_INTEGER, 
     	'column_name' => DATA_TYPE_STRING, 
     	'content' => DATA_TYPE_STRING, 
-    	'contact_id' => DATA_TYPE_INTEGER);
+    	'contact_id' => DATA_TYPE_INTEGER,
+    	'assoc_member_id' => DATA_TYPE_INTEGER,
+    );
   
     /**
     * Construct

@@ -10,6 +10,9 @@
     }
     if (!isset($genid)) $genid = gen_id();
     $jqid = "#$genid";
+    
+    //$send_notification_to_new_user = user_config_option("sendEmailNotification",1,logged_user()->getId());
+    $send_notification_to_new_user = true;
 ?>
 <script>
 	$(function(){
@@ -104,12 +107,12 @@
 		<div class="user-data" <?php if($contact_mail){echo "style='display:none'";}?>>
 		
 			<label class="checkbox"><?php echo lang('send email notification') ?></label>
-			<input class="checkbox" type="checkbox" name="notify-user" <?php if(user_config_option("sendEmailNotification",1,logged_user()->getId())){echo "checked";}?> id="notify-user"></input>
+			<input class="checkbox" type="checkbox" name="notify-user" <?php if($send_notification_to_new_user){echo "checked";}?> id="notify-user"></input>
 	
 		<div class="clear"></div>
-		<label class="checkbox" ><?php echo lang("specify password?") ?></label><input class="checkbox" type="checkbox" name="contact[user][create-password]" id="create-password"  <?php if(!user_config_option("sendEmailNotification",1,logged_user()->getId())){echo "disabled";}?>></input>
+		<label class="checkbox" ><?php echo lang("specify password?") ?></label><input class="checkbox" type="checkbox" name="contact[user][create-password]" id="create-password"  <?php if(!$send_notification_to_new_user){echo "disabled";}?>></input>
 		<div class="clear"></div>
-		<div class="user-data-password" style="display:<?php if(user_config_option("sendEmailNotification",1,logged_user()->getId())){echo "none";}?>;">
+		<div class="user-data-password" style="display:<?php if($send_notification_to_new_user){echo "none";}?>;">
 			<div class="field password">
 				<label><?php echo lang("password")?>:</label><input name="contact[user][password]" type="password"></input>
 			</div>

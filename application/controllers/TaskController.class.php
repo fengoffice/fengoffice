@@ -1045,6 +1045,7 @@ class TaskController extends ApplicationController {
                     "query_wraper_start" => "SELECT $total_estimated,  SUM(group_time_worked) AS group_time_worked ,COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
                     "query_wraper_end" => ") AS pending_calc",
                     "count_results" => false,
+					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
 
@@ -1062,11 +1063,18 @@ class TaskController extends ApplicationController {
         return $totals;
     }
 
-    private function getDateGroups($date_field, $conditions, $show_more_conditions, $list_subtasks_cond) {
+    private function getDateGroups($date_field, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $groupId = $show_more_conditions['groupId'];
         $start = $show_more_conditions['start'];
         $limit = $show_more_conditions['limit'];
         $groups_conditions = $this->getDateGroupsConditions($date_field);
+        
+        // move to offset
+        if ($groups_count > 0) {
+        	$groups_conditions = array_slice($groups_conditions, $groups_offset, count($groups_conditions));
+        }
+        
+        $groups_with_tasks = 0;
 
         $groups = array();
         foreach ($groups_conditions as $group_conditions) {
@@ -1079,6 +1087,7 @@ class TaskController extends ApplicationController {
                         "select_columns" => array("COUNT(o.id) AS total "),
                         "extra_conditions" => $group_conditions_cond . $list_subtasks_cond,
                         "count_results" => false,
+						"fire_additional_data_hook" => false,
                         "raw_data" => true,
                     ))->objects;
 
@@ -1087,9 +1096,11 @@ class TaskController extends ApplicationController {
                 $group[0]["group_order"] = $group_conditions['group_order'];
                 $group[0]["group_id"] = $group_conditions['id'];
 
-                $tasks_in_group = $this->getTasksInGroup($group_conditions_cond . $list_subtasks_cond, $start, $limit);
-                $group[0]['root_total'] = $tasks_in_group['total_roots_tasks'];
-                $group[0]['group_tasks'] = $tasks_in_group['tasks'];
+                if (!$only_totals) {
+                	$tasks_in_group = $this->getTasksInGroup($group_conditions_cond . $list_subtasks_cond, $start, $limit);
+	                $group[0]['root_total'] = $tasks_in_group['total_roots_tasks'];
+	                $group[0]['group_tasks'] = $tasks_in_group['tasks'];
+                }
 
                 //group totals
                 $totals = $this->getGroupTotals($group_conditions_cond);
@@ -1098,6 +1109,15 @@ class TaskController extends ApplicationController {
                 }
 
                 $groups[] = $group[0];
+                
+                $groups_with_tasks++;
+                // when group count is reached -> finish iteration
+                if ($groups_with_tasks >= $groups_count) {
+                	break;
+                }
+            } else {
+            	// advance offset if group has no tasks
+            	$groups_offset++;
             }
         }
 
@@ -1363,11 +1383,18 @@ class TaskController extends ApplicationController {
         return $date_groups;
     }
 
-    private function getPriorityGroups($conditions, $show_more_conditions, $list_subtasks_cond) {
+    private function getPriorityGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $priority_field = "`priority`";
         $groupId = $show_more_conditions['groupId'];
         $start = $show_more_conditions['start'];
         $limit = $show_more_conditions['limit'];
+        
+        if ($groups_offset < 4) {
+        	$groups_offset += $groups_count;
+        } else {
+        	// dont reload the groups if already loaded
+        	return array();
+        }
 
         $groups = ProjectTasks::instance()->listing(array(
                     "sql_before_columns" => 'DISTINCT ',
@@ -1375,6 +1402,7 @@ class TaskController extends ApplicationController {
                     "extra_conditions" => $conditions . $list_subtasks_cond,
                     "group_by" => " `group_name`",
                     "count_results" => false,
+					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
 
@@ -1384,9 +1412,11 @@ class TaskController extends ApplicationController {
                 continue;
             }
             $group_conditions = " AND " . $priority_field . " = '" . $group['group_id'] . "'";
-            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
-            $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
-            $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+            if (!$only_totals) {
+	            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
+	            $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
+	            $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+            }
 
             $groups[$key]['group_name'] = lang('priority ' . $group['group_id']);
             switch ($group['group_id']) {
@@ -1427,7 +1457,7 @@ class TaskController extends ApplicationController {
         }
     }
 
-    private function getMilestoneGroups($conditions, $show_more_conditions, $list_subtasks_cond, $include_empty_milestones = true) {
+    private function getMilestoneGroups($conditions, $show_more_conditions, $list_subtasks_cond, $include_empty_milestones = true, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $milestone_field = "`milestone_id`";
         $groupId = $show_more_conditions['groupId'];
         $start = $show_more_conditions['start'];
@@ -1446,19 +1476,26 @@ class TaskController extends ApplicationController {
                     "order_dir" => 'ASC',
                     "join_params" => $join_params,
                     "count_results" => false,
+					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
 
+		if ($groups_count > 0) {
+			$groups = array_slice($groups, $groups_offset, count($groups));
+		}
+		
         $more_group_ret = array();
         foreach ($groups as $key => $group) {
             if (!is_null($groupId) && $group['group_id'] != $groupId) {
                 continue;
             }
             $group_conditions = " AND " . $milestone_field . " = '" . $group['group_id'] . "'";
-            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
-            $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
-            $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
-
+            if (!$only_totals) {
+	            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
+	            $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
+	            $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+            }
+            
             if ($group['group_id'] > 0) {
                 $milestone = ProjectMilestones::findById($group['group_id']);
                 $groups[$key]['group_name'] = $milestone->getName();
@@ -1473,8 +1510,10 @@ class TaskController extends ApplicationController {
                 $groups[$key][$total_key] = $total;
             }
 
-            if (!is_null($groupId)) {
-                $more_group_ret[] = $groups[$key];
+            $more_group_ret[] = $groups[$key];
+            
+            if (count($more_group_ret) >= $groups_count) {
+            	return $more_group_ret;
             }
         }
 
@@ -1499,18 +1538,14 @@ class TaskController extends ApplicationController {
                 $empty_group['group_id'] = $empty_milestone['group_id'];
                 $empty_group['group_icon'] = 'ico-milestone';
                 $empty_group['group_tasks'] = array();
-                $groups[] = $empty_group;
+                $more_group_ret[] = $empty_group;
             }
         }
 
-        if (!is_null($groupId)) {
-            return $more_group_ret;
-        } else {
-            return $groups;
-        }
+        return $more_group_ret;
     }
 
-    private function getUsersGroups($user_field, $conditions, $show_more_conditions, $list_subtasks_cond) {
+    private function getUsersGroups($user_field, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $unknown_text = 'unknown';
         switch ($user_field) {
             case 'assigned_to':
@@ -1539,8 +1574,13 @@ class TaskController extends ApplicationController {
                     "extra_conditions" => $conditions . $list_subtasks_cond,
                     "group_by" => " `group_name`",
                     "count_results" => false,
+					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
+        
+        if ($groups_count > 0) {
+        	$groups = array_slice($groups, $groups_offset, count($groups));
+        }
 
         $more_group_ret = array();
         foreach ($groups as $key => $group) {
@@ -1549,9 +1589,11 @@ class TaskController extends ApplicationController {
             }
 
             $group_conditions = " AND " . $user_field . " = '" . $group['group_id'] . "'";
-            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
-            $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
-            $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+            if (!$only_totals) {
+	            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
+	            $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
+	            $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+            }
 
             $contact = Contacts::findById($group['group_id']);
             if ($contact instanceof Contact) {
@@ -1568,22 +1610,28 @@ class TaskController extends ApplicationController {
                 $groups[$key][$total_key] = $total;
             }
 
-            if (!is_null($groupId)) {
-                $more_group_ret[] = $groups[$key];
+            $more_group_ret[] = $groups[$key];
+            
+            if (count($more_group_ret) >= $groups_count) {
+            	break;
             }
         }
 
-        if (!is_null($groupId)) {
-            return $more_group_ret;
-        } else {
-            return $groups;
-        }
+        return $more_group_ret;
+        
     }
 
-    private function getStatusGroups($conditions, $show_more_conditions, $list_subtasks_cond) {
+    private function getStatusGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $groupId = $show_more_conditions['groupId'];
         $start = $show_more_conditions['start'];
         $limit = $show_more_conditions['limit'];
+        
+        if ($groups_offset < 2) {
+        	$groups_offset += $groups_count;
+        } else {
+        	// dont reload the groups if already loaded
+        	return array();
+        }
 
         $groups = ProjectTasks::instance()->listing(array(
                     "sql_before_columns" => 'DISTINCT ',
@@ -1591,6 +1639,7 @@ class TaskController extends ApplicationController {
                     "extra_conditions" => $conditions . $list_subtasks_cond,
                     "group_by" => " `group_name`",
                     "count_results" => false,
+					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
 
@@ -1612,10 +1661,11 @@ class TaskController extends ApplicationController {
             }
 
             if ($group_conditions != "") {
-                $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
-                $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
-                $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
-
+            	if (!$only_totals) {
+	                $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
+	                $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
+	                $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+            	}
                 //group totals
                 $totals = $this->getGroupTotals($conditions . $group_conditions);
                 foreach ($totals as $total_key => $total) {
@@ -1635,7 +1685,7 @@ class TaskController extends ApplicationController {
         }
     }
 
-    private function getDimensionGroups($dim_id, $member_type_id, $conditions, $show_more_conditions, $list_subtasks_cond) {
+    private function getDimensionGroups($dim_id, $member_type_id, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $groupId = $show_more_conditions['groupId'];
         $start = $show_more_conditions['start'];
         $limit = $show_more_conditions['limit'];
@@ -1670,10 +1720,17 @@ class TaskController extends ApplicationController {
                         "order_dir" => " ASC",
                         "join_params" => $join_params,
                         "count_results" => false,
+						"fire_additional_data_hook" => false,
                         "raw_data" => true,
                     ))->objects;
 
-
+            $total_groups = count($groups);
+			// move to offset
+			if ($groups_count > 0) {
+				$groups = array_slice($groups, $groups_offset, count($groups));
+			}
+			$groups_to_return = array();
+			
             foreach ($groups as $key => $group) {
                 if (!is_null($groupId) && $group['group_id'] != $groupId) {
                     continue;
@@ -1681,17 +1738,19 @@ class TaskController extends ApplicationController {
 
 
                 $group_conditions = " AND `jtm`.`id` = " . $group['group_id'];
-
-                $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit, $join_params);
-                $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
-                $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
-
+                if (!$only_totals) {
+	                $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit, $join_params);
+	                $groups[$key]['root_total'] = $tasks_in_group['total_roots_tasks'];
+	                $groups[$key]['group_tasks'] = $tasks_in_group['tasks'];
+                }
+                
                 //group totals
                 $group_time_estimate = ProjectTasks::instance()->listing(array(
                             "select_columns" => array("SUM(time_estimate) AS group_time_estimate "),
                             "extra_conditions" => $conditions . $group_conditions,
                             "join_params" => $join_params,
                             "count_results" => false,
+							"fire_additional_data_hook" => false,
                             "raw_data" => true,
                         ))->objects;
                 $group_time_estimate = $group_time_estimate[0]['group_time_estimate'];
@@ -1718,7 +1777,18 @@ class TaskController extends ApplicationController {
                 if ($group['group_parent']) {
                     $groups[$key]['group_memPath'] = json_encode(array($dim_id => array($group['group_parent_type_id'] => array($group['group_parent']))));
                 }
+                
+                $groups_to_return[] = $groups[$key];
+                
+                if (count($groups_to_return) >= $groups_count) {
+                	return $groups_to_return;
+                }
             }
+        }
+        
+        if ($groups_offset > $total_groups) {
+	        // this means that the unknown group has already been loaded
+        	return $groups_to_return;
         }
 
         //START unknown group
@@ -1744,6 +1814,7 @@ class TaskController extends ApplicationController {
                         "join_params" => $join_params,
                         "count_results" => false,
                         "raw_data" => true,
+						"fire_additional_data_hook" => false,
                         "query_wraper_start" => "SELECT count(*)  AS total  , SUM(time_estimate) AS group_time_estimate FROM (",
                         "query_wraper_end" => " ) AS temporal ",
                     ))->objects;
@@ -1752,35 +1823,45 @@ class TaskController extends ApplicationController {
             $unknown_group['group_time_estimate'] = $unknown_group_totals[0]['group_time_estimate'];
             $unknown_group['estimatedTime'] = str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($unknown_group['group_time_estimate'] * 60), 'hm', 60));
             if (count($unknown_group['group_tasks']) > 0) {
-                $groups[] = $unknown_group;
+                $groups_to_return[] = $unknown_group;
             }
         }
         //END unknown group
 
-        return $groups;
+        return $groups_to_return;
     }
 
-    private function getNothingGroups($conditions, $show_more_conditions, $list_subtasks_cond) {
+    private function getNothingGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $groupId = $show_more_conditions['groupId'];
         $start = $show_more_conditions['start'];
         $limit = $show_more_conditions['limit'];
+        
+        if ($groups_offset < 1) {
+        	$groups_offset += $groups_count;
+        } else {
+        	// dont reload the groups if already loaded
+        	return array();
+        }
 
         $groups = ProjectTasks::instance()->listing(array(
                     "sql_before_columns" => 'DISTINCT ',
                     "select_columns" => array("COUNT(o.id) AS total"),
                     "extra_conditions" => $conditions . $list_subtasks_cond,
                     "count_results" => false,
+					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
 
         $more_group_ret = array();
         foreach ($groups as $key => $group) {
-            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
-
-            if (count($tasks_in_group['tasks']) <= 0) {
-                $groups = array();
-                continue;
-            }
+        	if (!$only_totals) {
+	            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
+	
+	            if (count($tasks_in_group['tasks']) <= 0) {
+	                $groups = array();
+	                continue;
+	            }
+        	}
 
             $group_conditions = "";
             $groups[$key]['group_id'] = "nothing";
@@ -1815,6 +1896,7 @@ class TaskController extends ApplicationController {
                 "join_params" => $join_params,
                 "group_by" => $group_by,
                 "count_results" => false,
+				"fire_additional_data_hook" => false,
                 "raw_data" => true,
                 "only_return_query_string" => true,
             ));
@@ -1865,6 +1947,7 @@ class TaskController extends ApplicationController {
             "order" => $order,
             "order_dir" => $order_dir,
             "count_results" => true,
+			"fire_additional_data_hook" => false,
             "raw_data" => true,
         ));
 
@@ -1921,7 +2004,7 @@ class TaskController extends ApplicationController {
         return $root_nodes_ids;
     }
 
-    private function getGroups($groupBy, $conditions, $show_more_conditions, $include_empty_milestones = true) {
+    private function getGroups($groupBy, $conditions, $show_more_conditions, $include_empty_milestones = true, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $groups = array();
 
         $group_by_date = array('due_date', 'start_date', 'created_on', 'completed_on');
@@ -1935,22 +2018,22 @@ class TaskController extends ApplicationController {
 
         //Group by date
         if (in_array($groupBy, $group_by_date)) {
-            $groups = $this->getDateGroups($groupBy, $conditions, $show_more_conditions, $list_subtasks_cond);
+            $groups = $this->getDateGroups($groupBy, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals, $groups_offset, $groups_count);
             //Group by priority
         } elseif (in_array($groupBy, $group_by_priority)) {
-            $groups = $this->getPriorityGroups($conditions, $show_more_conditions, $list_subtasks_cond);
+            $groups = $this->getPriorityGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals, $groups_offset, $groups_count);
             //Group by users
         } elseif (in_array($groupBy, $group_by_user)) {
-            $groups = $this->getUsersGroups($groupBy, $conditions, $show_more_conditions, $list_subtasks_cond);
+            $groups = $this->getUsersGroups($groupBy, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals, $groups_offset, $groups_count);
             //Group by status
         } elseif (in_array($groupBy, $group_by_status)) {
-            $groups = $this->getStatusGroups($conditions, $show_more_conditions, $list_subtasks_cond);
+            $groups = $this->getStatusGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals, $groups_offset, $groups_count);
             //Group by milestone
         } elseif (in_array($groupBy, $group_by_milestone)) {
-            $groups = $this->getMilestoneGroups($conditions, $show_more_conditions, $list_subtasks_cond, $include_empty_milestones);
+            $groups = $this->getMilestoneGroups($conditions, $show_more_conditions, $list_subtasks_cond, $include_empty_milestones, $only_totals, $groups_offset, $groups_count);
             //Group by nothing
         } elseif (in_array($groupBy, $group_by_nothing)) {
-            $groups = $this->getNothingGroups($conditions, $show_more_conditions, $list_subtasks_cond);
+            $groups = $this->getNothingGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals, $groups_offset, $groups_count);
             //Group by dimension
         } elseif (substr($groupBy, 0, 16) === "dimmembertypeid_") {
             $dim_str = substr($groupBy, 16);
@@ -1962,31 +2045,31 @@ class TaskController extends ApplicationController {
             //If Group by folder check context in order to decide which folder type use
             //Remove this part when the folders are all the same
             $otf = ObjectTypes::findByName('folder');
-            if ($otf->getId() == $member_type_id) {
+            if ($otf instanceof ObjectType && $otf->getId() == $member_type_id) {
                 $acontext = active_context();
 
                 $ot_customer = ObjectTypes::findByName('customer');
-                $ot_customer_id = $ot_customer->getId();
+                $ot_customer_id = $ot_customer instanceof ObjectType ? $ot_customer->getId() : -1;
 
                 $ot_project = ObjectTypes::findByName('project');
-                $ot_project_id = $ot_project->getId();
+                $ot_project_id = $ot_project instanceof ObjectType ? $ot_project->getId() : -1;
 
                 foreach ($acontext as $scontext) {
                     if ($scontext instanceof Member) {
                         $scontext_ot = $scontext->getObjectTypeId();
                         if ($scontext_ot == $ot_project_id) {
                             $ot_project_folder = ObjectTypes::findByName('project_folder');
-                            $member_type_id = $ot_project_folder->getId();
+                            if ($ot_project_folder instanceof ObjectType) $member_type_id = $ot_project_folder->getId();
                         }
                         if ($scontext_ot == $ot_customer_id) {
                             $ot_customer_folder = ObjectTypes::findByName('customer_folder');
-                            $member_type_id = $ot_customer_folder->getId();
+                            if ($ot_customer_folder instanceof ObjectType) $member_type_id = $ot_customer_folder->getId();
                         }
                     }
                 }
             }
 
-            $groups = $this->getDimensionGroups($dim_id, $member_type_id, $conditions, $show_more_conditions, $list_subtasks_cond);
+            $groups = $this->getDimensionGroups($dim_id, $member_type_id, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals, $groups_offset, $groups_count);
         }
 
         return $groups;
@@ -2020,6 +2103,14 @@ class TaskController extends ApplicationController {
         $start = array_var($_REQUEST, 'start', 0);
         $limit = array_var($_REQUEST, 'limit', user_config_option('noOfTasks'));
         $show_more_conditions = array("groupId" => $groupId, "start" => $start, "limit" => $limit);
+        $only_totals = array_var($_REQUEST, 'only_totals');
+        $groups_offset = array_var($_REQUEST, 'groups_offset');
+        $groups_count = array_var($_REQUEST, 'groups_count');
+        // load all groups data when requesting only totals
+        if ($only_totals) {
+        	$groups_offset = 0;
+        	$groups_count = 1000;
+        }
 
         //Groups
         $groupBy = array_var($_REQUEST, 'tasksGroupBy', user_config_option('tasksGroupBy'));
@@ -2028,11 +2119,12 @@ class TaskController extends ApplicationController {
             set_user_config_option('tasksOrderBy', array_var($_REQUEST, 'tasksOrderBy'), logged_user()->getId());
         }
 
-        $groups = $this->getGroups($groupBy, $conditions, $show_more_conditions);
+        $groups = $this->getGroups($groupBy, $conditions, $show_more_conditions, true, $only_totals, $groups_offset, $groups_count);
         if (is_null($groups)) {
             $groups = array();
         }
         $data['groups'] = $groups;
+        $data['new_groups_offset'] = $groups_offset;
         ajx_extra_data($data);
     }
 
@@ -2073,6 +2165,7 @@ class TaskController extends ApplicationController {
             $tasks = ProjectTasks::instance()->listing(array(
                         "extra_conditions" => $conditions,
                         "count_results" => false,
+						"fire_additional_data_hook" => false,
                         "order" => $order_by,
                         "order_dir" => $order_dir,
                         "raw_data" => true,
@@ -2282,6 +2375,7 @@ class TaskController extends ApplicationController {
                 'orderBy' => user_config_option('tasksOrderBy'),
                 'previousPendingTasks' => user_config_option('tasksPreviousPendingTasks', 1),
                 'defaultNotifyValue' => user_config_option('can notify from quick add'),
+                'groupsPaginationCount' => user_config_option('tasksGroupsPaginationCount', 5),
             );
 
                 
@@ -2831,7 +2925,7 @@ class TaskController extends ApplicationController {
                     $parentId = $task->getParentId();
                     $ico = "ico-task";
                     $action = "add";
-                    $object = TemplateController::prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action, $milestoneId, $subTasks, $parentId, $ico);
+                    $object = TemplateController::prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action, $milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId(), $task->isRepetitive());
 
                     $template_task_data = array('object' => $object);
 
@@ -3379,6 +3473,7 @@ class TaskController extends ApplicationController {
                     $parent->setTimeEstimate($totalMinutes);
                     $parent->save();
                 }
+                $task_data['is_template'] = $isTemplateTask;
                 $err_msg = $this->setRepeatOptions($task_data);
                 if ($err_msg) {
                     throw new Exception($err_msg);
@@ -3652,7 +3747,7 @@ class TaskController extends ApplicationController {
                     $parentId = $task->getParentId();
                     $ico = "ico-task";
                     $action = "edit";
-                    $object = TemplateController::prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action, $milestoneId, $subTasks, $parentId, $ico);
+                    $object = TemplateController::prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action, $milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId(), $task->isRepetitive());
 
                     $template_task_data = array('object' => $object);
 

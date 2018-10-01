@@ -585,12 +585,16 @@ tr.list-totals-row td.x-grid3-col.x-grid3-cell.x-grid3-td-name, tr.list-totals-r
 .custom-report-info-block {
 	float: left;
 	margin-right: 20px;
-	margin-bottom: 10px;
+	margin-bottom: 4px;
 	padding-right: 20px;
 	border-right: 1px dotted #aaa;
 }
 .custom-report-info-block.no-border {
 	border: 0px none;
+}
+.custom-report-info-block ul {
+    float: left;
+    margin-right: 10px;
 }
 
 .report-row-tbody.alt {
@@ -615,15 +619,25 @@ tbody.report-data td {
 
 .custom-report.scroll {
 	border-spacing: 0;
-	border: 1px solid #3333;;
+	border: 1px solid #3333;
+	min-width: 100%;
 }
 .custom-report.scroll tbody,
-.custom-report.scroll thead { display: block; }
-.custom-report thead{background-color: #333333;}
+.custom-report.scroll thead {
+	display: block;
+}
+.custom-report.scroll thead {
+	background-color: #333333;
+}
+.custom-report thead tr {
+	background-color: #333333;
+	border-bottom: 2px solid black;
+}
 .custom-report thead tr th {
 	height: 30px;
 	line-height: 30px;
-	word-break: break-all;
+	word-break: break-word; /* for different browsers support */
+	word-break: keep-all; /* for different browsers support */
 }
 .custom-report thead tr th:first-child {
 	padding: 0;
@@ -638,19 +652,19 @@ tbody.report-data td {
 	overflow-y: auto;
 	overflow-x: hidden;
 }
-.custom-report tbody { border-top: 2px solid black;}
+/*.custom-report tbody { border-top: 2px solid black;}*/
 .custom-report tbody td:not(:first-child){padding-left: 5px;padding-right: 15px;min-width: 150px;max-width: 250px;}
 
-.custom-report tbody td:last-child,.custom-report thead th:last-child {
+/*.custom-report tbody td:last-child,.custom-report thead th:last-child {
 	border-right: none;
-}
+}*/
 #reporting-panel .coViewHeader{
 	padding: 0px 0px 5px 15px;
 }
 #reporting-panel .coViewHeader .coViewTitle{
-	max-width: 450px;
+	max-width: 600px;
+	width: 500px;
 	overflow: hidden;
-	word-break: break-all;
 	word-wrap: break-word;
 	text-overflow:ellipsis;
 }
@@ -674,3 +688,19 @@ tbody.report-data td {
 	background-color: #ddd;
 }
 .report-header-button-small:focus{border: none;}
+
+.custom-report-table-heading th {
+	border-right: 1px solid #777;
+	background-color: #333;
+	color: #fff;
+	font-weight: bold;
+	font-size: 14px;
+	padding-right: 10px;
+	padding-left: 10px;
+	height: 35px;
+	vertical-align: middle;
+}
+
+.report-buttons-container {
+	margin: 8px;
+}

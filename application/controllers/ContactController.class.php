@@ -530,10 +530,11 @@ class ContactController extends ApplicationController {
 				$join_params['table'] = TABLE_PREFIX."contact_emails";
 				$join_params['jt_field'] = "contact_id";
 				$join_params['e_field'] = "object_id";
-				$join_params['on_extra'] = " AND is_main =1";
+				//$join_params['on_extra'] = " AND is_main =1";
 				$select_columns = array("DISTINCT o.*", "e.*");
 				//$order = '`email_address`';
-				$order = 'IF(ISNULL(jt.email_address),1,0),jt.email_address';
+				$email_order_dir = strtolower($order_dir) == 'desc' ? "1,0" : "0,1";
+				$order = 'IF(ISNULL(jt.email_address),'.$email_order_dir.'),jt.email_address';
 				break;
 			default:
 				$order = '`name`';
@@ -917,12 +918,14 @@ class ContactController extends ApplicationController {
 	 * @param void
 	 * @return null
 	 */
-	function add() {
-		if (logged_user()->isGuest()) {
-			flash_error(lang('no access permissions'));
-			ajx_current("empty");
-			return;
-		}
+	function add($data = null,$is_api = false) {
+		if (!$is_api){
+            if (logged_user()->isGuest()) {
+                flash_error(lang('no access permissions'));
+                ajx_current("empty");
+                return;
+            }
+        }
 		$this->setTemplate('edit_contact');
 		
 		if (array_var($_GET, 'is_user') || array_var(array_var(array_var($_POST, 'contact'), 'user'), 'create-user')) {
@@ -940,18 +943,27 @@ class ContactController extends ApplicationController {
 				return;
 			}
 		}
-		
-		if (!is_array(array_var($_POST, 'contact'))) {
-			// set layout for modal form
-			if (array_var($_REQUEST, 'modal')) {
-				$this->setLayout("json");
-				tpl_assign('modal', true);
-			}
-		}
-		
+        if (!$is_api){
+            if (!is_array(array_var($_POST, 'contact'))) {
+                // set layout for modal form
+                if (array_var($_REQUEST, 'modal')) {
+                    $this->setLayout("json");
+                    tpl_assign('modal', true);
+                }
+            }
+        }
+
 		$contact = new Contact();		
 		$im_types = ImTypes::findAll(array('order' => '`id`'));
-		$contact_data = array_var($_POST, 'contact');
+
+		if (!$is_api){
+            $contact_data = array_var($_POST, 'contact');
+            $form_submitted = is_array($contact_data);
+        }else{
+            $contact_data = $data;
+            $form_submitted = true;
+        }
+
 		if(!array_var($contact_data,'company_id')){
 			$contact_data['company_id'] = get_id('company_id');
 		}
@@ -1036,10 +1048,14 @@ class ContactController extends ApplicationController {
 		tpl_assign('all_email_types', $all_email_types);
 		
 		// Submit
-		if(is_array(array_var($_POST, 'contact'))) {
+		if($form_submitted) {
 			foreach ($contact_data as $k => &$v) {
 				$v = remove_scripts($v);
 			}
+			
+			// escape all parameters
+			$contact_data = escape_parameters_array($contact_data);
+			
 			ajx_current("empty");
 			try {
 				
@@ -1111,6 +1127,9 @@ class ContactController extends ApplicationController {
 				// save additional emails
 				$this->save_non_main_emails($contact_data, $contact);
 
+				//Save in order to add to searchable objects all emails, phones...
+                $contact->save();
+
 				// autodetect timezone
 				$autotimezone = array_var($contact_data, 'autodetect_time_zone', null);
 				if ($autotimezone !== null) {
@@ -1133,8 +1152,13 @@ class ContactController extends ApplicationController {
 				}
 				$object_controller->link_to_new_object($contact);
 				$object_controller->add_subscribers($contact);
-				$object_controller->add_custom_properties($contact);
-				
+				if(!$is_api){
+                    $object_controller->add_custom_properties($contact);
+                }else{
+                    $cp_data = array_var($contact_data, 'object_custom_properties');
+                    $object_controller->add_custom_properties($contact,$cp_data);
+                }
+
 				foreach($im_types as $im_type) {
 					$value = trim(array_var($contact_data, 'im_' . $im_type->getId()));
 					if($value <> '') {
@@ -1215,20 +1239,35 @@ class ContactController extends ApplicationController {
 					DB::beginWork();
 					
 					$contact = Contacts::findById($contact->getId());
-					save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest());
+					save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest(), array(), false, true);
 					
 					// create member cache for the new user
 					//ContactMemberCaches::updateContactMemberCacheAllMembers($contact);
 					
 					DB::commit();
 				}
-				
-				flash_success(lang('success add contact', $contact->getObjectName()));
-				ajx_current("back");
-				
-				if (array_var($_REQUEST, 'modal')) {
-					evt_add("reload current panel");
-				}
+                if (!$is_api){
+
+                    ajx_extra_data(
+                        array(
+                            "contact_name" => $contact->getObjectName(),
+                            "contact_id" => $contact->getId()
+                        )
+                    );
+
+                    flash_success(lang('success add contact', $contact->getObjectName()));
+                    ajx_current("back");
+
+                    if (array_var($_REQUEST, 'modal')) {
+                        evt_add("reload current panel");
+                    }
+
+                }else{
+				    return array(
+                        "contact_name" => $contact->getObjectName(),
+                        "contact_id" => $contact->getId()
+                    );
+                }
 				
 				// Error...
 			} catch(Exception $e) {
@@ -1267,6 +1306,15 @@ class ContactController extends ApplicationController {
 			$contact_type = "";
 		}
 		$contact = Contacts::getByEmailCheck($email, $id_contact, $contact_type);
+		
+		$return_data = null;
+		Hook::fire('override_check_existing_email', 
+				array('email'=>$email, 'id_contact'=>$id_contact, 'contact_type'=>$contact_type),
+				$return_data);
+		if (is_array($return_data) && isset($return_data['contact'])) {
+			ajx_extra_data($return_data);
+			return;
+		}
 
 		if ($contact instanceof Contact) {
 			ajx_extra_data(array(
@@ -1296,7 +1344,7 @@ class ContactController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		$this->setTemplate('edit_contact');		
+            $this->setTemplate('edit_contact');
 		
 		$contact = Contacts::findById(get_id());
 		if(!($contact instanceof Contact)) {
@@ -1364,6 +1412,10 @@ class ContactController extends ApplicationController {
 			foreach ($contact_data as $k => &$v) {
 				$v = remove_scripts($v);
 			}
+			
+			// escape all parameters
+			$contact_data = escape_parameters_array($contact_data);
+			
 			try {
 				DB::beginWork();
 				$contact_data['email']= trim ($contact_data['email']);
@@ -1829,17 +1881,13 @@ class ContactController extends ApplicationController {
 			
 				DB::beginWork();
 				
-				if (!array_var($_REQUEST, 'is_company')) {
-					if (Browser::instance()->getBrowser() == Browser::BROWSER_IE && intval(Browser::instance()->getVersion()) < 10) {
-						$size = getimagesize($picture['tmp_name']);
-						$w = ($size[0] < $size[1] ? $size[0] : $size[1]);
-						$image_path = process_uploaded_cropped_picture_file($picture, array('x' => 0, 'y' => 0, 'w' => $w, 'h' => $w));
-					} else {
-						$crop_data = array('x' => array_var($_POST, 'x'), 'y' => array_var($_POST, 'y'), 'w' => array_var($_POST, 'w'), 'h' => array_var($_POST, 'h'));
-						$image_path = process_uploaded_cropped_picture_file($picture, $crop_data);
-					}
+				if (Browser::instance()->getBrowser() == Browser::BROWSER_IE && intval(Browser::instance()->getVersion()) < 10) {
+					$size = getimagesize($picture['tmp_name']);
+					$w = ($size[0] < $size[1] ? $size[0] : $size[1]);
+					$image_path = process_uploaded_cropped_picture_file($picture, array('x' => 0, 'y' => 0, 'w' => $w, 'h' => $w));
 				} else {
-					$image_path = $picture['tmp_name'];;
+					$crop_data = array('x' => array_var($_POST, 'x'), 'y' => array_var($_POST, 'y'), 'w' => array_var($_POST, 'w'), 'h' => array_var($_POST, 'h'));
+					$image_path = process_uploaded_cropped_picture_file($picture, $crop_data);
 				}
 				
 				if(!$contact->setPicture($image_path, 'image/png')) {
@@ -1861,17 +1909,13 @@ class ContactController extends ApplicationController {
 					
 			} else {
 				
-				if (!array_var($_REQUEST, 'is_company')) {
-					if (Browser::instance()->getBrowser() == Browser::BROWSER_IE && intval(Browser::instance()->getVersion()) < 10) {
-						$size = getimagesize($picture['tmp_name']);
-						$w = ($size[0] < $size[1] ? $size[0] : $size[1]);
-						$image_path = process_uploaded_cropped_picture_file($picture, array('x' => 0, 'y' => 0, 'w' => $w, 'h' => $w));
-					} else {
-						$crop_data = array('x' => array_var($_POST, 'x'), 'y' => array_var($_POST, 'y'), 'w' => array_var($_POST, 'w'), 'h' => array_var($_POST, 'h'));
-						$image_path = process_uploaded_cropped_picture_file($picture, $crop_data);
-					}
+				if (Browser::instance()->getBrowser() == Browser::BROWSER_IE && intval(Browser::instance()->getVersion()) < 10) {
+					$size = getimagesize($picture['tmp_name']);
+					$w = ($size[0] < $size[1] ? $size[0] : $size[1]);
+					$image_path = process_uploaded_cropped_picture_file($picture, array('x' => 0, 'y' => 0, 'w' => $w, 'h' => $w));
 				} else {
-					$image_path = $picture['tmp_name'];
+					$crop_data = array('x' => array_var($_POST, 'x'), 'y' => array_var($_POST, 'y'), 'w' => array_var($_POST, 'w'), 'h' => array_var($_POST, 'h'));
+					$image_path = process_uploaded_cropped_picture_file($picture, $crop_data);
 				}
 				
 				if ($is_new) {
@@ -4008,16 +4052,47 @@ class ContactController extends ApplicationController {
 		
 		$name_condition = "";
 		$name_filter = trim(array_var($_REQUEST, 'query'));
+
+
+        $columns_filter = user_config_option('properties_for_contact_component');
+        $columns_filter_array = array();
+        if ($columns_filter != ""){
+            $columns_filter_array = explode(',',$columns_filter);
+        }
+
 		if ($name_filter != "") {
-			$name_condition = " AND o.name LIKE '%$name_filter%'";
+			$name_condition = " AND ( o.name LIKE '%$name_filter%'";
+
+            $columns_filter = user_config_option('properties_for_contact_component');
+
+            if (!empty($columns_filter_array)){
+                foreach ($columns_filter_array as $column){
+                    if ($column != " "){
+                        if (!is_numeric($column)){
+                            if ($column == 'email'){
+                                $name_condition .=" OR EXISTS(
+                                    SELECT ce.contact_id FROM ".TABLE_PREFIX."contact_emails ce
+                                    WHERE ce.email_address LIKE '%$name_filter%' AND ce.contact_id=o.id)";
+                            }else{
+                                $name_condition .= " OR e.".$column." LIKE '%$name_filter%'";
+                            }
+                        }else{
+                            $name_condition .=" OR EXISTS(
+                                    SELECT cpv.object_id FROM ".TABLE_PREFIX."custom_property_values cpv
+                                    WHERE cpv.custom_property_id = ".$column." AND value LIKE '%$name_filter%' AND cpv.object_id=o.id)";
+                        }
+                    }
+                }
+            }
+            $name_condition .=") ";
 		}
-		
 		$permissions_checked = false;
 		
 		// by default list only contacts
 		$type_condition = " AND is_company=0";
 		
 		$extra_conditions = "";
+        $unclassified_extra_conditions = "";
 		if ($filters = array_var($_REQUEST, 'filters')) {
 			$filters = json_decode($filters, true);
 			foreach ($filters as $col => $val) {
@@ -4052,7 +4127,12 @@ class ContactController extends ApplicationController {
 						$mem_ids = array_filter(explode(',', $val));
 						if (count($mem_ids) > 0) {
 							$extra_conditions .= " AND EXISTS(
-								SELECT oom.object_id FROM fo_object_members oom
+								SELECT oom.object_id FROM ".TABLE_PREFIX."object_members oom
+								WHERE oom.member_id IN (".implode(',',$mem_ids).") AND oom.object_id=o.id
+							)";
+
+                            $unclassified_extra_conditions .= " AND NOT EXISTS(
+								SELECT oom.object_id FROM ".TABLE_PREFIX."object_members oom
 								WHERE oom.member_id IN (".implode(',',$mem_ids).") AND oom.object_id=o.id
 							)";
 						}
@@ -4067,6 +4147,7 @@ class ContactController extends ApplicationController {
 			Hook::fire('contact_selector_plugin_filters', $plugin_filters, $plugin_conditions);
 			
 			$extra_conditions .= $plugin_conditions;
+            $unclassified_extra_conditions .= $plugin_conditions;
 		}
 		
 		$info = array();
@@ -4081,25 +4162,97 @@ class ContactController extends ApplicationController {
 					$permissions_condition = " AND (o.id=".logged_user()->getId()." OR EXISTS (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND group_id IN (".implode(',',$pg_ids).")))";
 				}
 			}
-			$conditions = "o.trashed_by_id=0 AND o.archived_by_id=0 $name_condition $permissions_condition $type_condition $extra_conditions";
+			$conditions = " o.trashed_by_id=0 AND o.archived_by_id=0 $name_condition $permissions_condition $type_condition $extra_conditions";
 			$query_params = array(
 				'condition' => $conditions,
 				'order' => 'o.name ASC',
 			);
-			
+
+            $conditions_unclassified = " o.trashed_by_id=0 AND o.archived_by_id=0 $name_condition $permissions_condition $type_condition $unclassified_extra_conditions";
+            $query_params_unclassified = array(
+                'condition' => $conditions_unclassified,
+                'order' => 'o.name ASC',
+            );
+
 			$count = Contacts::count($conditions);
-			
 			$limit = 30;
 			
 			$query_params['limit'] = $limit;
 			$contacts = Contacts::findAll($query_params);
 			foreach ($contacts as $c) {
-				$info[] = array(
+				$row = array(
 					"id" => $c->getId(),
 					"name" => $c->getObjectName(),
 				);
+
+				if (!empty($columns_filter_array)){
+                    foreach ($columns_filter_array as  $col){
+                        if ($col != " "){
+                            if (!is_numeric($col)){
+                                if ($col == 'email'){
+                                    $row['name'] .= ' | '.$c->getEmailAddress();
+                                }else{
+                                    $value = $c->getColumnValue($col);
+                                    $row['name'] .= ' | '.$value;
+                                }
+                            }else{
+                                $cpv = CustomPropertyValues::getCustomPropertyValues( $c->getId(), $col);
+                                if(!empty($cpv)){
+                                    $value = $cpv[0]->getValue();
+                                    $row['name'] .= ' | '.$value;
+                                }else{
+                                    $row['name'] .= ' | ';
+                                }
+                            }
+                        }
+                    }
+                }
+                $info[] = $row;
 			}
-			
+
+
+			$is_user = array_var($filters,'is_user');
+            if (!$is_user) {
+                $count_unclassifil = Contacts::count($conditions_unclassified);
+                $limit = 30;
+
+                $query_params_unclassified['limit'] = $limit;
+                $contacts_unclassified = Contacts::findAll($query_params_unclassified);
+                if ($count_unclassifil > 0){
+                    $info[] = array('id' => -1, 'name' => "<div class='task-group-name'>".lang('not classified here')."</div>");
+                }
+                foreach ($contacts_unclassified as $c) {
+                    $row = array(
+                        "id" => $c->getId(),
+                        "name" => $c->getObjectName(),
+                    );
+
+                    if (!empty($columns_filter_array)){
+                        foreach ($columns_filter_array as  $col){
+                            if ($col != " "){
+                                if (!is_numeric($col)){
+                                    if ($col == 'email'){
+                                        $row['name'] .= ' | '.$c->getEmailAddress();
+                                    }else{
+                                        $value = $c->getColumnValue($col);
+                                        $row['name'] .= ' | '.$value;
+                                    }
+                                }else{
+                                    $cpv = CustomPropertyValues::getCustomPropertyValues( $c->getId(), $col);
+                                    if(!empty($cpv)){
+                                        $value = $cpv[0]->getValue();
+                                        $row['name'] .= ' | '.$value;
+                                    }else{
+                                        $row['name'] .= ' | ';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $info[] = $row;
+                }
+            }
+
 			if ($name_filter == "" && $count >= $limit) {
 				//$info[] = array('id' => -1, 'name' => lang('write the first letters of the name or surname of the person to select'));
 				$info[] = array('id' => -2, 'name' => '<a href="#" class="db-ico ico-expand" style="color:blue;text-decoration:underline;padding-left:20px;">'.lang('show more').'</a>');

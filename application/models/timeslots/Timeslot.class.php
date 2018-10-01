@@ -132,6 +132,7 @@ class Timeslot extends BaseTimeslot {
     }
     
     function close($description = null){
+     
     	if ($this->isPaused()) {
     		$this->setEndTime($this->getPausedOn());
     	} else {
@@ -320,10 +321,18 @@ class Timeslot extends BaseTimeslot {
 	 * @param void
 	 * @return boolean
 	 */
-	function save() {
+	function save($old_object_id) {
 		$is_new = $this->isNew();
 		$saved = parent::save();
 		if($saved) {
+            if ($old_object_id){
+                $old_task =  Objects::findObject($old_object_id);
+                if($old_task instanceof ContentDataObject) {
+                    $total_worked_time = $old_task->calculateTotalWorkedTime();
+                    $old_task->saveTotalWorkedTime($total_worked_time,'total_worked_time');
+                }
+            }
+		    
 			$object = $this->getRelObject();
 			if($object instanceof ContentDataObject) {
 				if($is_new) {

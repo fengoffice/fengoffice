@@ -469,6 +469,9 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 	/*height: 18px;*/
 	background-position: left center;	
 }
+.x-btn-text-icon .x-btn-center .x-btn-text.ico-reporting{
+	padding-left: 24px;
+}
 
 .x-grid3-header {
     background-color: white;
@@ -666,7 +669,10 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 #object-picker .x-resizable-over .x-resizable-handle-northwest, #object-picker .x-resizable-pinned .x-resizable-handle-northwest{background: none;background-color: white;opacity: 1;}
 #object-picker .x-resizable-over .x-resizable-handle-west, #object-picker .x-resizable-pinned .x-resizable-handle-west{background: none;background-color: white;opacity: 1;}
 #object-picker .x-resizable-over .x-resizable-handle-south, #object-picker .x-resizable-pinned .x-resizable-handle-south{background: none;background-color: white;opacity: 1;}
-
+.x-resizable-over .x-resizable-handle, .x-resizable-pinned .x-resizable-handle{background: none;background-color: white;opacity: 1;}
+.x-resizable-over .x-resizable-handle, .x-resizable-pinned .x-resizable-handle{background: none;background-color: white;opacity: 1;}
+.x-resizable-over .x-resizable-handle, .x-resizable-pinned .x-resizable-handle{background: none;background-color: white;opacity: 1;}
+.x-resizable-over .x-resizable-handle, .x-resizable-pinned .x-resizable-handle{background: none;background-color: white;opacity: 1;}
 
 #object-picker .x-window-bl .x-btn-text{
     background-color: #4d82cc;
@@ -688,3 +694,5 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 #object-picker .x-panel-btns-ct .x-panel-btns-right table{background: none !important;}
 #object-picker .x-tree-node-expanded .x-tree-node-icon{background: url(../../images/icons-feng-3/16x16/open_folder.png) !important;}
 #object-picker .x-tool.x-tool-toggle.x-tool-collapse-west{background: url(../../images/icons-feng-3/16x16/upload.png) !important;}
+
+.x-combo-list-inner{max-height: 300px;}

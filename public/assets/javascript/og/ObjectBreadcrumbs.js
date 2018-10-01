@@ -418,7 +418,7 @@ og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_l
 		var members_by_ot = dims[x];
 		
 		// don't show associated dimensions in content objects general breadcrumb
-		if (!allow_associated_dimensions && dims[x].is_assoc_dim) continue;
+		if (!allow_associated_dimensions && dims[x] && dims[x].is_assoc_dim) continue;
 		
 		for (ot_id in members_by_ot) {
 			if (ot_id == 'opt') continue;
@@ -617,13 +617,13 @@ og.checkMultiMemberBreadcrumb = function(target, container_width) {
 		object_types_totals_text += "<button class='members-total-colapsed breadcrumbBtn btnPopoverNotInitialized'>";
 		for (var prop in object_types_totals) {
 			var total = object_types_totals[prop];
-			var plural = "";
-			if(total > 1){
-				plural = "s";
-			}			
+			
+			var plural = total > 1;
+			var name_to_show = plural ? og.objectTypes[prop].c_name_plural : og.objectTypes[prop].c_name;
+			
 			object_types_totals_text += "<span class='ctmBadge'>"+total+"</span> ";
 			if (og.objectTypes[prop] && og.objectTypes[prop].name) {
-				object_types_totals_text += og.objectTypes[prop].c_name+plural+" ";						
+				object_types_totals_text += name_to_show +" ";						
 			}
  	    }
 		object_types_totals_text += "</button>";

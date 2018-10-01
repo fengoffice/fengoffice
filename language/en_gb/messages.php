@@ -777,6 +777,8 @@
   	'cannot delete file' => 'You don\'t have permissions to delete file \'{0}\'',
     'config_start_calc'=>'Move the start date/time',
     'config_end_calc'=>'Move the end date/time',
+      'config_dates_calc'=>'Move the dates',
+      'config_hours_calc'=>'Change the times',
     'always_show_modal'=>'Ask me every time',
       'How should we adjust'=>'How should we adjust?',
       'Did you start sooner'=>'Did you start sooner?',
@@ -784,8 +786,15 @@
       'You changed the length of your time record'=>'You changed the length of your time record',
       'Did you start later'=>'Did you start later?',
       'Did you end sooner'=>'Did you end sooner?',
+
+      'How do you prefer' => 'How do you prefer?',
+
+      'Did you want change the date value'=>'Did you want change the date value?',
+      'Did you want change the time value'=>'Did you want change the time value?',
+
       'Remember my selection' => 'Remember my selection',
       'accept'=>'Accept',
+      'not classified here'=>'Not classified here',
   ); // array
 
 ?>

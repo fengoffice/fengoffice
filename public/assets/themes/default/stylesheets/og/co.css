@@ -771,13 +771,17 @@
 	white-space:nowrap;
 	width:1%;
 }
+.og-custom-properties .table-cp td {
+	padding: 2px 4px;
+}
 .og-add-custom-properties th {
-	width: 200px;
 	padding-left: 4px;
 	font-weight: bold;
+	min-width: 100px;
 }
 .og-add-custom-properties th.actions {
-	width: 16px;
+	width: 20px;
+	min-width: 20px;
 }
 .og-add-custom-properties input {
 	width: 200px;
@@ -930,4 +934,7 @@
 	border-right: 1px solid #ccc;
 	border-bottom: 1px solid #ccc;
 	padding-left: 4px;
+}
+.coViewBody .direct-url {
+	margin: 15px 0;
 }

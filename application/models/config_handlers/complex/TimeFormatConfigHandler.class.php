@@ -7,7 +7,10 @@ class TimeFormatConfigHandler extends ConfigHandler {
 		
 		$option_attributes = $this->getValue() == 'friendly' ? array('selected' => 'selected') : null;
 		$options[] = option_tag(lang('friendly date'), 'friendly', $option_attributes);
-		
+
+        $option_attributes = $this->getValue() == 'hh:mm' ? array('selected' => 'selected') : null;
+        $options[] = option_tag('hh:mm', 'hh:mm', $option_attributes);
+
 		$option_attributes = $this->getValue() == 'hours' ? array('selected' => 'selected') : null;
 		$options[] = option_tag(lang('hours'), 'hours', $option_attributes);
 		

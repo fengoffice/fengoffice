@@ -16,7 +16,10 @@ foreach ($fieldValues as $v) {
 }
 
 $count = 0;
-foreach(explode(',', $cp->getValues()) as $value){
+?>
+<div class="custom-properties-wrapper">
+<?php
+    foreach(explode(',', $cp->getValues()) as $value){
 
 	$text = null;
 	if (strpos($value, '@') !== false) {
@@ -47,4 +50,6 @@ foreach(explode(',', $cp->getValues()) as $value){
 }
 
 ?>
+
+</div>
 </div>

@@ -50,8 +50,8 @@
 	<!-- image uploading form -->
 	  <form action="<?php echo $action ?>" method="post" enctype="multipart/form-data" onsubmit="og.beforePictureSubmit();return og.submit(this)" target="_blank">
 		<?php echo file_field('new picture', null, array('id' => $genid.'uploadImage')) ?>
-		<div><?php echo submit_button(lang('save'), 's', array('id' => $genid.'submit_btn', 'onclick'=>'og.ExtModal.hide();return true;')) ?>
-		<?php //echo button(lang('back'), 'b', array('id' => $genid.'back_btn', 'onclick' => "og.beforePictureSubmit();og.goback(this);")) ?></div>
+		<div><?php echo submit_button(lang('save'), 's', array('id' => $genid.'submit_btn', 'onclick'=>'og.ExtModal.hide();return true;', 'class'=>'blue', 'style'=>'display:none;')) ?>
+		<?php echo button(lang('back'), 'b', array('id' => $genid.'back_btn', 'onclick' => "og.beforePictureSubmit();og.goback(this);")) ?></div>
 
 		<!-- hidden inputs -->
 		<input type="hidden" id="<?php echo $genid?>x" name="x" />
@@ -65,3 +65,60 @@
 </td></tr></table>
 
 <?php ajx_extra_data(array('genid' => $genid, 'is_company' => array_var($_REQUEST, 'is_company')))?>
+
+<script>
+/*
+   This logic already exists on og.js, but it works only on a modal screen not in not modal screen
+ */
+ var genid = '<?php echo $genid; ?>';
+ var is_company = '<?php echo array_var($_REQUEST, 'is_company'); ?>';
+
+ var p = $("#"+genid+"uploadPreview");
+
+var area_select_params = {
+	handles: true,
+	instance: true,
+	onSelectEnd: og.setPictureInfo
+}
+// set 1:1 ratio for contacts
+if (!is_company) {
+	area_select_params.aspectRatio = '1:1';
+}
+
+// implement imgAreaSelect plug in (http://odyniec.net/projects/imgareaselect/)
+og.area_sel = $('img#'+genid+'uploadPreview').imgAreaSelect(area_select_params);
+
+ // prepare instant preview
+ $("#"+genid+"uploadImage").change(function(){
+     //	debugger;
+     // fadeOut or hide preview
+     p.fadeOut();
+
+     $("#"+genid+"current_picture").hide();
+
+     $("#"+genid+"submit_btn").show(); // allow save after image is loaded
+
+     // For browsers with HTML5 compatibility
+     if (window.FileReader) {
+         var fr = new FileReader();
+         fr.readAsDataURL(document.getElementById(genid+"uploadImage").files[0]);
+
+         fr.onload = function (fevent) {
+             p.attr('src', fevent.target.result).fadeIn();
+         };
+         og.set_image_area_selection(genid, is_company);
+         
+     } else {
+         // For old browsers (IE 9 or older)
+         og.tmpPictureFileUpload(genid, {
+             callback: function(data) {
+                 $("#"+genid+"uploadPreview").attr('src', data.url).fadeIn();
+                 
+                 og.area_sel = $('img#'+genid+'uploadPreview').imgAreaSelect(area_select_params);
+                 og.set_image_area_selection(genid, is_company);
+                 
+             }
+         });
+     }
+ });
+</script>

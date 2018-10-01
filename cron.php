@@ -28,7 +28,7 @@ foreach ($events as $event) {
 			 	
 			/* @var $event CronEvent */
 			$event = CronEvents::findById($event->getId());
-			if (!$event instanceof CronEvent || $event->getDate()->getTimestamp() > DateTimeValueLib::now()->getTimestamp()) {
+			if (!$event instanceof CronEvent || $event->getDate() instanceof DateTimeValue && $event->getDate()->getTimestamp() > DateTimeValueLib::now()->getTimestamp()) {
 				continue;
 			}
 		

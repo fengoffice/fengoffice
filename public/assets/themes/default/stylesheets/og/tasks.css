@@ -892,3 +892,13 @@ button.add-first-btn.no-tasks-add-task-btn {
     text-overflow: ellipsis;
     overflow: hidden;
 }
+
+.tasks-group-pagination-link-container {
+	margin: 20px 20px 10px;
+	position: absolute;
+}
+.tasks-group-pagination-link-container a {
+	background-position: 0px 6px;
+	font-size: 150%;
+	text-decoration: underline;
+}

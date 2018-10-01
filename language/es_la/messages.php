@@ -710,6 +710,8 @@
         'success deleted token' => 'Token eliminado correctamente',
     'config_start_calc'=>'Mover la hora de inicio',
     'config_end_calc'=>'Mover la hora de fin',
+    'config_dates_calc'=>'Mover las fechas',
+    'config_hours_calc'=>'Cambiar la hora trabajada',
     'always_show_modal'=>'Preguntarme cada vez',
     'How should we adjust'=>'¿Cómo debemos ajustarnos?',
       'Did you start sooner'=>'¿Empezaste antes?',
@@ -717,6 +719,13 @@
       'You changed the length of your time record'=>'Cambiaste la duración de tu registro de tiempo',
       'Did you start later'=>'¿Empezaste más tarde?',
       'Did you end sooner'=>'¿Terminaste antes?',
+
+    'How do you prefer' => '¿Cómo prefieres?',
+
+    'Did you want change the date value'=>'¿Quieres cambiar el valor de la fecha?',
+    'Did you want change the time value'=>'¿Quieres cambiar el valor del tiempo?',
+
       'Remember my selection' => 'Recuerda mi selección',
       'accept'=>'Aceptar',
+    'not classified here'=>'No clasificado aquí',
 ); ?>

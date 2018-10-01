@@ -140,21 +140,30 @@
 	}
 	
 	
-	static function getTypeNameToShowByObjectType($dimension_id, $object_type_id, $ot_name=null) {
-	   $custom_name = trim(DimensionObjectTypeOptions::getOptionValue($dimension_id, $object_type_id, 'custom_object_type_name'));
+	static function getTypeNameToShowByObjectType($dimension_id, $object_type_id, $ot_name=null, $is_plural=false) {
+		$option_name = 'custom_object_type_name';
+		if ($is_plural) {
+			$option_name = 'custom_object_type_name_plural';
+		}
+	   $custom_name = trim(DimensionObjectTypeOptions::getOptionValue($dimension_id, $object_type_id, $option_name));
        
 	   if ($custom_name != '' ){
 	       return $custom_name;
 	   }else{
 	       if (is_null($ot_name)){
-	           $ot_name = lang( ObjectTypes::instance()->findById($object_type_id)->getName());
+	           $ot_name = lang( ObjectTypes::instance()->findById($object_type_id)->getName() . ($is_plural ? 's' : ''));
 	       }
 	       return $ot_name;
 	   }	   
 	}
 	
-	static function getCustomMemberNameToShow($dimension_id, $object_type_id) {
-	    $custom_name = trim(DimensionObjectTypeOptions::getOptionValue($dimension_id, $object_type_id, 'custom_object_type_name'));
+	static function getCustomMemberNameToShow($dimension_id, $object_type_id, $is_plural=false) {
+		
+		$option_name = 'custom_object_type_name';
+		if ($is_plural) {
+			$option_name = 'custom_object_type_name_plural';
+		}
+	    $custom_name = trim(DimensionObjectTypeOptions::getOptionValue($dimension_id, $object_type_id, $option_name));
 	    
 	    $custom_value = '';
 	    if ($custom_name != '' ){

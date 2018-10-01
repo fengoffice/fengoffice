@@ -13,32 +13,33 @@
 
     <?php
     $edit_onclick = "og.render_modal_form('', {c:'member', a:'edit', params: {id:".$member->getId()."}});";
-    $add_attendee = "og.render_modal_form('', {c:'event_ticket', a:'add_multiple'});";
     Hook::fire('active_context_widget_edit_link', $member, $edit_onclick);
 
-    $img_url = '';
-    $customer = Customers::instance()->findById($member->getObjectId());
-    if ($customer instanceof Customer) {
-        $contact = $customer->getContact();
-        if ($contact instanceof Contact) {
-            $img_url = $contact->getPictureUrl('medium');
-        }
+    $member_object_type = ObjectTypes::findById($member->getObjectTypeId());
+    
+    if ($member_object_type->getName() == 'customer') {
+	    $img_url = '';
+	    $customer = Customers::instance()->findById($member->getObjectId());
+	    if ($customer instanceof Customer) {
+	        $contact = $customer->getContact();
+	        if ($contact instanceof Contact) {
+	            $img_url = $contact->getPictureUrl('medium');
+	        }
+	    }
     }
     
-    $member_object_type = ObjectTypes::findById($member->getObjectTypeId());
 
     ?>
     <div class="widget-body" id="<?php echo $genid; ?>_widget_body">
         <div style="float:right;">
-       		<?php if(Plugins::instance()->isActivePlugin("event_tickets") 
-       				&& $member_object_type instanceof ObjectType 
-       				&& $member_object_type->getName() == 'managed_event') {
-       		?>
-            <button class="btn" onclick="<?php echo $add_attendee ?>" title="<?php echo lang('new event registration')?>">
-                <img alt="" style="height: 15px" src="public/assets/themes/default/images/icons-feng-3/16x16/new_color.png">
-                <?php echo lang('new event registration')?>
-            </button>
-            <?php } ?>
+       		
+            <?php 
+            	$buttons_html = "";
+            	Hook::fire("more_active_context_widget_buttons", array("member" => $member), $buttons_html);
+            	if ($buttons_html) {
+            		echo $buttons_html;
+            	}
+            ?>
 
             <button class="btn" style="margin-left:10px;" onclick="<?php echo $edit_onclick ?>" title="<?php echo lang('edit')?>">
                 <img alt="" style="height: 15px" src="public/assets/themes/default/images/icons-feng-3/16x16/edit_color.png">

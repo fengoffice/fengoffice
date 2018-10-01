@@ -433,7 +433,7 @@ function render_object_comments_for_print(ContentDataObject $object) {
  * @param ContentDataObject $object Show custom properties of this object
  * @return null
  */
-function render_object_custom_properties($object, $required, $co_type=null, $visibility='all') {
+function render_object_custom_properties($object, $required, $co_type=null, $visibility='all',$member_parent = 0) {
 
 	$genid = gen_id();
 	
@@ -458,7 +458,7 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 			$cps = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility, $extra_conditions);
 			
 			foreach($cps as $customProp){
-				$html = get_custom_property_input_html($customProp, $object, $genid);
+				$html = get_custom_property_input_html($customProp, $object, $genid,'object_custom_properties',$member_parent);
 				$properties[] = array('id' => '', 'html' => $html);
 			}
 		}
@@ -473,6 +473,54 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 	}
 	
 } // render_object_custom_properties
+
+
+/**
+ * Show object custom properties block with bootstrap style
+ *
+ * @param ContentDataObject $object Show custom properties of this object
+ * @return null
+ */
+function render_object_custom_properties_bootstrap($object, $required, $co_type=null, $visibility='all',$member_parent = 0,$prefix) {
+
+    $genid = gen_id();
+
+    if ($object instanceof ContentDataObject) {
+
+        $properties = null;
+        $ot = ObjectTypes::findById($object->getObjectTypeId());
+        if ($ot->getType() != 'content_object') {
+            $params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
+            Hook::fire('override_render_properties', $params, $properties);
+        }
+
+        if (is_null($properties)) {
+            $properties = array();
+            $ot = ObjectTypes::findById($object->getObjectTypeId());
+
+            $extra_conditions = "";
+            Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions, true);
+
+            $cps = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility, $extra_conditions);
+
+            foreach($cps as $customProp){
+                $html = get_custom_property_input_html($customProp, $object, $genid,$prefix,$member_parent,true);
+                $properties[] = array('id' => '', 'html' => $html);
+            }
+        }
+
+        echo '<div class="custom-properties col-md-12 row">';
+
+        foreach ($properties as $main_property){
+            echo $main_property['html'];
+        }
+
+        echo '</div>';
+    }
+
+} // render_object_custom_properties_bootstrap
+
+
 
 
 function member_has_custom_properties($type_id) {
@@ -1282,6 +1330,16 @@ function has_context_to_render($content_object_type_id) {
 	return false; 
 }
 
+function get_associated_dimensions_to_reload_json($dimension_id) {
+	if (defined('JSON_NUMERIC_CHECK')) {
+		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
+	} else {
+		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
+	}
+	
+	return $reloadDimensions;
+}
+
 /**
  * @param unknown_type $content_object_type_id
  * @param unknown_type $genid
@@ -1363,11 +1421,8 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 						
 						if (!isset($id)) $id = gen_id();
 						
-						if (defined('JSON_NUMERIC_CHECK')) {
-							$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
-						} else {
-							$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
-						}
+						$reloadDimensions = get_associated_dimensions_to_reload_json($dimension_id);
+						
 					?>
 					var config = {
 							title: '<?php echo $dimension_name ?>',
@@ -1569,6 +1624,9 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 
 			<?php if( isset ($options['loadUrl']) ) : ?>
 				config.loadUrl = '<?php echo $options['loadUrl'] ?>';
+				<?php if( isset ($options['loadAdditionalParameters']) ) : ?>
+				config.loadAdditionalParameters = '<?php echo json_encode($options['loadAdditionalParameters']);?>';
+				<?php endif; ?>
 			<?php endif; ?>
 
 			<?php if( array_var($options, 'enableDD')) : ?>
@@ -1624,6 +1682,152 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 <?php 
 	}
 
+
+
+
+function render_single_bootstrap_dimension_tree($dimension, $genid = null, $selected_members = array(), $options = array()) {
+    if ($dimension instanceof Dimension) {
+        $dimension_info = array('dimension_id' => $dimension->getId(), 'dimension_name' => $dimension->getName(), 'is_multiple' => $dimension->getAllowsMultipleSelection());
+    } else {
+        $dimension_info = $dimension;
+    }
+
+    $custom_name = DimensionOptions::getOptionValue($dimension_info['dimension_id'], 'custom_dimension_name');
+    $dimension_info['dimension_name'] = ($custom_name && trim($custom_name) != "" ? $custom_name : $dimension_info['dimension_name']);
+
+    $dimension_id  = $dimension_info['dimension_id'];
+    if (is_null($genid)) $genid = gen_id();
+    $selected_members_json = json_encode($selected_members);
+    if (!isset($options['component_id'])) {
+        $component_id = "$genid-member-chooser-panel-$dimension_id";
+    } else {
+        $component_id = $options['component_id'];
+    }
+
+    ?>
+
+    <?php if( isset($options['use_ajax_member_tree']) && $options['use_ajax_member_tree'] ) {?>
+    <?php }else{ ?>
+        <input id='<?php echo $genid . array_var($options, 'pre_hf_id', '') ?>members' name='<?php echo array_var($options, 'pre_hf_id', '') ?>members' type='hidden' ></input>
+    <?php } ?>
+
+    <div id='<?php echo $component_id ?>-container' class="<?php echo array_var($options, 'pre_class', '')?>single-tree member-chooser-container <?php echo array_var($dimension_info, 'is_multiple') ? "multiple-selection" : "single-selection"; ?>" >
+
+    </div>
+
+    <script>
+        var memberChooserPanel = new og.MemberChooserPanel({
+            renderTo: '<?php echo $component_id ?>-container',
+            id: '<?php echo $component_id ?>',
+            selectedMembers: <?php echo $selected_members_json?>,
+            layout: 'column'
+        }) ;
+
+        <?php
+        if ( is_array(array_var($options, 'allowedDimensions')) && array_search($dimension_id, $options['allowedDimensions']) === false ){
+            continue;
+        }
+        $dimension_name = escape_character($dimension_info['dimension_name']);
+        if (!isset($id)) $id = gen_id();
+        ?>
+        var select_root = <?php echo (array_var($options, 'select_root') ? '1' : '0') ?>;
+        var config = {
+            id: '<?php echo $component_id ?>-tree',
+            genid: '<?php echo $genid ?>',
+            title: '<?php echo $dimension_name ?>',
+            dimensionId: <?php echo $dimension_id ?>,
+            search_placeholder: '<?php echo array_var($options, 'search_placeholder', lang('search') )?>',
+            filterContentType: '<?php echo array_var($options, 'filterContentType', 1)?>',
+            collapsed: <?php echo array_var($options, 'collapsed') ? 'true' : 'false'?>,
+            collapsible: <?php echo array_var($options, 'collapsible') ? 'true' : 'false'?>,
+            all_members: <?php echo array_var($options, 'all_members') ? 'true' : 'false'?>,
+            objectTypeId: '<?php echo array_var($options, 'object_type_id', 0) ?>',
+            isMultiple: '<?php echo array_var($options, 'is_multiple', 0) ?>',
+            selModel: <?php echo (array_var($dimension_info, 'is_multiple'))?
+                'new Ext.tree.MultiSelectionModel()':
+                'new Ext.tree.DefaultSelectionModel()'?>,
+            //height: <?php echo array_var($options, 'height', '270') ?>,
+            width: '100%',
+            listeners: {'tree rendered': function (t) {if (select_root) t.root.select();}}
+        };
+
+        <?php if( isset ($options['root_lang'])) : ?>
+        config.root_lang = <?php echo json_encode($options['root_lang']) ?>;
+        <?php endif; ?>
+
+        <?php if( isset ($options['allowedMemberTypes'])) : ?>
+        config.allowedMemberTypes = <?php echo json_encode($options['allowedMemberTypes']) ?>;
+        <?php endif; ?>
+
+        <?php if( isset ($options['checkBoxes']) && !$options['checkBoxes']) : ?>
+        config.checkBoxes = false;
+        <?php endif; ?>
+
+        <?php if( isset ($options['loadUrl']) ) : ?>
+        config.loadUrl = '<?php echo $options['loadUrl'] ?>';
+        <?php endif; ?>
+
+        <?php if( array_var($options, 'enableDD')) : ?>
+        config.enableDD = true;
+        config.dropConfig = {
+            ddGroup: '<?php echo array_var($options, 'ddGroup')?>',
+            allowContainerDrop: true
+        };
+        config.dragConfig = {
+            ddGroup: '<?php echo array_var($options, 'ddGroup')?>',
+            containerScroll: true
+        };
+        <?php endif; ?>
+
+        <?php if( isset ($options['loadUrl']) ) : ?>
+        config.loadUrl = '<?php echo $options['loadUrl'] ?>';
+        <?php endif; ?>
+
+        <?php if( isset ($options['filter_by_ids'])) : ?>
+        config.filter_by_ids = '<?php implode(',', $options['filter_by_ids']) ?>' ;
+        <?php endif; ?>
+
+        <?php if( isset($options['use_ajax_member_tree']) && $options['use_ajax_member_tree'] ) {?>
+        <?php if( isset($options['select_function'])) {?>
+        config.selectFunction = '<?php echo $options['select_function'] ?>';
+        <?php }else{ ?>
+        config.selectFunction = '<?php echo ""?>';
+        <?php } ?>
+        var tree = new og.MemberTreeAjax ( config );
+        <?php }else{ ?>
+        var tree = new og.MemberChooserTree ( config );
+        <?php } ?>
+
+        <?php if(array_var($options, 'enableDD') && array_var($options, 'enddrag_function')) : ?>
+        tree.on('enddrag', <?php echo array_var($options, 'enddrag_function')?>);
+        <?php endif; ?>
+        <?php if(array_var($options, 'enableDD') && array_var($options, 'beforenodedrop_function')) : ?>
+        tree.on('beforenodedrop', <?php echo array_var($options, 'beforenodedrop_function')?>);
+        <?php endif; ?>
+        <?php if(array_var($options, 'enableDD') && array_var($options, 'startdrag_function')) : ?>
+        tree.on('startdrag', <?php echo array_var($options, 'startdrag_function')?>);
+        <?php endif; ?>
+
+        memberChooserPanel.add(tree);
+        og.can_submit_members = true;
+
+        <?php if (!isset($options['dont_load']) || !$options['dont_load']) : ?>
+        memberChooserPanel.initialized = true;
+        memberChooserPanel.doLayout();
+        <?php endif; ?>
+
+
+
+        var selectorPadre = '#<?php echo $component_id ?>-container';
+        var selectorHijoDiv = '#<?php echo $component_id ?>-tree-current-selected';
+
+        $(selectorPadre).find('input').removeClass().addClass('form-control')
+        $(selectorHijoDiv).addClass('form-control');
+
+    </script>
+
+    <?php
+}
 
 /**
  * @param string  $str

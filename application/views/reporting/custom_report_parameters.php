@@ -26,7 +26,7 @@
 		
 		<?php
 		$ot = ObjectTypes::findById($model);
-		$model = $ot->getHandlerClass(); 
+		$model = $ot->getHandlerClass();
 		foreach($conditions as $condition){
 			if($condition->getCustomPropertyId() > 0){
 				$cp = null;
@@ -39,7 +39,7 @@
 				}
 				if (!$cp) continue;
 				$name = $cp->getName();
-				
+
 			} else {
 				$name = Localization::instance()->lang('field ' . $model . ' ' . $condition->getFieldName());
 				if (!$name) {
@@ -55,15 +55,15 @@
 				if ($firstId == '') $firstId = $condId;
 			?>
 				<td><span class="bold"><?php echo $name ?>&nbsp;</span></td>
-				<td style="text-align:center;"><?php 
+				<td style="text-align:center;"><?php
 					if ($condition->getCondition() == '%') {
 						echo lang('ends with');
 					} else {
 						$cond_label = Localization::instance()->lang($condition->getCondition());
 						if (!$cond_label) $cond_label = $condition->getCondition();
-						
+
 						Hook::fire('custom_report_param_condition_render', array('field' => $condition, 'report' => null, 'report_ot' => $ot), $cond_label);
-						
+
 						echo $cond_label;
 					}
 				?>&nbsp;</td>
@@ -75,7 +75,7 @@
 						<select id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId()."_".clean($cp->getName()) ?>]" tabindex=<?php echo $tiCount?>>
 							<option value="0" ></option>
 							<option value="1" > <?php echo lang('yes') ?>  </option>
-							<option value="-1" > <?php echo lang('no') ?> </option>							
+							<option value="-1" > <?php echo lang('no') ?> </option>
 						</select>
 					<?php }else if($cp->getType() == 'list'){  ?>
 						<select id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId()."_".clean($cp->getName()) ?>]" tabindex=<?php echo $tiCount?>>
@@ -88,39 +88,39 @@
 						<?php echo pick_date_widget2("params[".$condition->getId()."_".clean($cp->getName())."]",$genid,$tiCount)?>
 					<?php }?>
 				</td>
-				
+
 				<td align='center' style="padding-top: 5px;"><?php
 					echo checkbox_field('disabled_params['.$condition->getId().']', null, array('onchange' => 'og.on_custom_report_param_disable(this);'));
 				?></td>
-				
+
 			<?php }else{ ?>
 				<td align='left'>
-				<?php 
+				<?php
 						$model_instance = new $model();
 						$col_type = $model_instance->getColumnType($condition->getFieldName());
-						
+
 						if(in_array($condition->getFieldName(), array_keys($external_fields))){
 				?>
-				
+
 				<div id="<?php echo $genid.$condition->getId(); ?>external_field_combo_container" style="float:left;"></div>
-				
+
 				<script>
 					var external_fields_values = [];
 				    <?php foreach($external_fields[$condition->getFieldName()] as $value){  ?>
-				    		external_fields_values.push(['<?php echo $value['id'] ?>', '<?php echo clean(escape_character($value['name'])) ?>']);
-				    <?php } ?>		
+				    		external_fields_values.push(['<?php echo $value['id'] ?>', '<?php echo clean(escape_character($value['name'],"'",true)) ?>']);
+				    <?php } ?>
 
 				    	var external_fields_store = new Ext.data.SimpleStore({
     		        		fields: ["id", "name"],
     		        		data: external_fields_values
-    					});	 
-						
+    					});
+
 				    	var tsContactCombo = new Ext.form.ComboBox({
 				    		renderTo:'<?php echo $genid.$condition->getId(); ?>external_field_combo_container',
 				    		name: "params[<?php echo $condition->getId(); ?>]",
 				    		id: '<?php echo $genid.$condition->getId(); ?>external_field_combo',
 				    		value: '0',
-				    		store: external_fields_store,				            
+				    		store: external_fields_store,
 				    		mode: 'local',
 				            cls: 'assigned-to-combo',
 				            triggerAction: 'all',
@@ -130,15 +130,15 @@
 				            listClass: 'assigned-to-combo-list',
 				            displayField    : 'name',
 				            valueField        : 'id',
-				            hiddenName : "params[<?php echo $condition->getId(); ?>]",				            
+				            hiddenName : "params[<?php echo $condition->getId(); ?>]",
 				            emptyText: '',
 				            valueNotFoundText: ''
-				    	});				    	
+				    	});
 				</script>
-				
-					
-					
-				<?php 
+
+
+
+				<?php
 						} else {
 							if ($condition->getFieldName() == 'is_user') {
 								$options = array(option_tag(lang('yes'), 1), option_tag(lang('no'), 0));
@@ -157,7 +157,7 @@
 							    }else{
 									$already_rendered = false;
 									Hook::fire('custom_report_param_render', array('field' => $condition, 'report' => null, 'report_ot' => $ot), $already_rendered);
-								
+
 									if (!$already_rendered) {
 								?>
 										<input type="text" id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId() ?>]" />
@@ -168,7 +168,7 @@
 						}
 				?>
 				</td>
-				
+
 				<td align='center' style="padding-top: 5px;"><?php
 					echo checkbox_field('disabled_params['.$condition->getId().']', null, array('onchange' => 'og.on_custom_report_param_disable(this);'));
 				?></td>
@@ -178,8 +178,8 @@
 			unset($cp);
 		} //foreach ?>
 	</table>
-	
-<?php echo submit_button(lang('generate report'),'s',array('tabindex' => $tiCount + 1))?>	
+
+<?php echo submit_button(lang('generate report'),'s',array('tabindex' => $tiCount + 1))?>
 </div>
 
 <style>

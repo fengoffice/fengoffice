@@ -39,4 +39,7 @@
 	'allowing less secure apps to access your account' => 'Permitir el acceso de aplicaicones menos seguras a su cuenta',
 	'if auth problem persists' => 'Si el problema de autenticación persiste, por favor siga las siguientes instrucciones:',
     'after completing the process please try using the fetch imap folders link to check the connection' => 'Luego de completar el proceso por favor utilice el enlace Obtener carpetas imap para verificar la conexión.',
+	'success mail enqueued' => 'El correo ha sido puesto en cola de envío',
+	'config option name send_outbox_emails_in_background' => 'Enviar correos en un proceso en paralelo',
+	'config option desc send_outbox_emails_in_background' => 'Si se habilita esta opción, al enviar correos estos serán puestos en una cola de envío, la cual será procesada por otro proceso en paralelo para enviar los correos en ella.',
 );

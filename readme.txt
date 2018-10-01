@@ -1,5 +1,5 @@
 
-	About Feng Office 3.6.0RC1
+	About Feng Office 3.6.3-rc7
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,11 +106,499 @@
 	
 	Changelog
 	=========
+	
+    Since 3.6.3-rc6
+    ----------------
+    bugfix: error in tasks list when no tasks present
+	
+    Since 3.6.3-rc5
+    ----------------
+    bugfix: fix tempalte task repetition when adding.
+	
+    Since 3.6.3-rc4
+    ----------------
+    bugfix: improve performance of pop3 mail download
+    bugfix: generating next invoice doesn't copy company id
+    bugfix: cannot edit repetitive tasks in templates
+    bugfix: can't edit client organization
+    feature: improve objects_import plugin
+	
+    Since 3.6.3-rc3
+    ----------------
+    bugfix: several fixes in tasks list performance
+	
+    Since 3.6.3-rc2
+    ----------------
+    bugfix: dont redraw all tasks if already rendered after loading more groups
+	
+    Since 3.6.3-rc
+    ----------------
+    bugfix: small fixes to tasks list group pagination.
+    bugfix: in custom reports dont disable the toolbar in report parameters view.
+	
+    Since 3.6.3-beta11
+    ----------------
+    bugfix: cant classify mails with attachments if attachment has / in the name
+	bugfix: error editing workspace if associated content data object does not exist
+	bugfix: dont load all tasks when only refreshing tasks list group totals
+	bugfix: not adding to sharing table unclassified objects to new users
+	bugfix: reorganize custom reports header (conditions block and buttons container)
+	bugfix: report and print from clients tab doesnt use the same order
+	feature: when custom report data is too narrow, expand it to use all the panel width
+	feature: tasks list groups pagination
+	
+    Since 3.6.3-beta10
+    ----------------
+	bugfix: Fix error in application logs query when filtering
+	bugfix: Add margins to the direct-url container in object views
+	bugfix: cant add name in timeslots reports
+	bugfix: worked time column showing wrong data
+	bugfix: dont break report title in the middle of a word
+	bugfix: total estimated cost is not showing
+	bugfix: Remove unnecesary paddings in custom report views
+	bugfix: Fix custom report content height calculation
+	feature: Remove toolbar in custom reports
+	feature: Reorganize custom reports buttons
+	
+    Since 3.6.3-beta9
+    ----------------
+    bugfix: profile picture crop and upload fixes
+    bugfix: cannot edit indicators
+    bugfix: stop running timeslots was only affecting timeslots without task
+    bugfix: cusotm reports associated dimension columns fixed to prevent duplicates
+	
+    Since 3.6.3-beta8
+    ----------------
+    bugfix: fix worked time color in tasks list
+    bugfix: reminders dont tell wich date they have as reference
+    bugfix: templates with lots of tasks and variables cannot be saved and gets broken if input count is greater than 1000
+    bugfix: cannot modify timeslot billing if they are classified in a submember
+	
+    Since 3.6.3-beta7
+    ----------------
+    bugfix: dim columns were added twice and this causes an error when saving them in custom reports
+    feature: return member id and billing data when requesting event ticket data
+	
+    Since 3.6.3-beta6
+    ----------------
+    bugfix: when generating event invoice name put a generic name if the invoice is for more than one event
+	feature: disable events registration when using classes workflow
+	feature: add new object template parameter: summary_of_all_events
+	
+    Since 3.6.3-beta5
+    ----------------
+    bugfix: fix searchable objects installer plugin 
+    bugfix: fix config option values table in installer
+    bugfix: dont use null as def value of primary keys
+    bugfix: fix escape characters for users selector in custom report parameters
+    feature: allow login function to receive parameters and be called by api
+    feature: include billing emails in request event pricing function
+	
+    Since 3.6.3-beta4
+    ----------------
+    bugfix: ensure that invoice is classified in the event of the ticket
+    bugfix: cant search members with ampersand
+    bugfix: Show archived objects in the trashed objects list
+    bugfix: dont show billing tab when editing ts if user doesnt have permissions
+    bugfix: undefined function was being used to set billing category id
+    bugfix: error redeclaring function when including twice cp table
+    bugfix: duplicated tasks are loaded sometimes
+    bugfix: check if member with the same member already exists before trying to create a new one
+    bugfix: invoice classification fixed in class registration
+    bugfix: several modifications to class registration and attendee list
+    feature: include list values and list value labels in list cps definition
+    feature: config option to ignore custom invoice layout when generating invoice
+    
+    Since 3.6.3-beta3
+    ----------------
+    feature: change return value of save_event_tickets_bulk
+    feature: split contact address fields in reports
+    feature: config option to send emails in background
+    feature: email templates
+    bugfix: error 500 on events views when event doesnt have end date
+    bugfix: add a code for return the name of members when requesting price
+    bugfix: fixes in affinity report batch
+    bugfix: error in query to update invoice preview file id
+    bugfix: in web plugin take the installation name from the filesystem path, not from the url
+	
+    Since 3.6.3-beta2
+    ----------------
+    feature: register attendees to multiple events
+    feature: online member registration form conditional improvements
+    bugfix: problems when sending invoice to billing contact
+    bugfix: exclude customer_folder and project_folder from member templates
+    bugfix: when sending outbox in cron send for all users with permissions in the account
+    bugfix: show comments option was only working for tasks reports
+    bugfix: exclude object types of disabled plugins in configuration
 
-	Since 3.5.1.5
-	----------------
+    Since 3.6.3-beta1
+    ----------------
+    bugfix: adding clients from api doesnt save custom properties
+    bugfix: custom property filters are not translated in tickets module
+    bugfix: fixes in affinity members report
+    bugfix: cant save associated members by api
+    bugfix: in tasks workflow, copy the linked objects to the next task
+    bugfix: when showing comments in reports encode date comment part to to prevent errors in view
+    
+    Since 3.6.2.X
+    ----------------
+    feature: Allow to send objects by email (for api use)
+    feature: Allow to create clients by api
 
+	Since 3.6.2-beta41
+    ----------------
+    bugfix: allow MemberChooserTreeLoader to send parameters in post, to avoid making the url too long
+    bugfix: fix custom properties add
+    feature: evx_edition plugin and login page modifications
+    feature: affinity reports plutin
+
+    Since 3.6.2-beta40
+    ----------------
+    bugfix: fixed report totals for calculated columns
+    bugfix: fix obj type hierarchy options query when saving expense
+    bugfix: improved drag and drop in mails tab
+    bugfix: fix table custom properties in forms and views
+    bugfix: missing langs in advanced expenses
+    bugfix: add zipcode to the toString function in contact addresses
+    bugfix: cant add cps for member types that are not dimension objects
+    feature: allow to define plural names in the dimension options section
+
+    Since 3.6.2-beta39
+    ----------------
+    bugfix: Show Custom Properties with scroll mode
+	bugfix: Show bill_billing_rate with currency format in reports
+	bugfix: add option to mark invoice as paid in view
+	bugfix: member type names fixed in task and report selectors
+	bugfix: execute function to ensure that all dim associations have their custom properties after every plugin update
+	bugfix: when creating user always set checked by default the option to send notfication
+	bugfix: init gantt genid and preferences before response comes
+	bugfix: fix verify_peer options when connecting to mail server using tls
+	bugfix: company picture form fixed
+	bugfix: ignore disabled dimensions in tasks list columns
+	bugfix: send and save invoice fixed
+	bugfix: when cp is special and is defined as id@text try to get the lang from the text part
+
+    Since 3.6.2-beta38
+    ----------------
+    feature: separate labor categories dimension (hour types) to other plugin
+    feature: allow to configure if the phone types are shown in reports
+    bugfix: fix misspelled langs in custom property admin
+    
+
+    Since 3.6.2-beta37
+    ----------------
+    bugfix: Custom reports when ordering by due date and due date is the same the order is different when viewing report and when exporting to pdf
+    bugfix: Custom reports export to pdf, second page header overlaps with the data rows
+    bugfix: Fixed status column for projects in custom reports
+    bugfix: wrong langs in projects and missing langs in task reports with show comments
+    bugfix: dont draw ignored conditions info when executing custom reports
+    bugfix: remove duplicated models that were in the views directory
+
+    Since 3.6.2-beta36
+    ----------------
+    bugfix: reload current panel was not called after adding an invoice
+    bugfix: contable report must only include users with padron
+    bugfix: automatic timeslot generation must not classify in common hour type if already classified in holiday hour type.
+    feature: modify new event registration to allow free registrations
+
+    Since 3.6.2-beta35
+    ----------------
+    bugfix: filter member list by context
+    feature: fixed report -> hours by user and intersection of dimensions from advance services plugin
+
+    Since 3.6.2-beta34
+    ----------------
+    bugfix: member list order by cp
+    bugfix: report ignore condition pagination
+    bugfix: show more on member list group is not working
+
+    Since 3.6.2-beta33
+    ----------------
+    bugfix: mail parser encoding error
+
+    Since 3.6.2-beta32
+    ----------------
+    bugfix: fix searchable objects for invoices
+    bugfix: put sent status as invoice sent for confirmed invoices
+
+    Since 3.6.2-beta31
+    ----------------
+    feature: new project phases dimension
+    bugfix: cron error with empty dates on cron events
+    bugfix: task workflow not working
+
+    Since 3.6.2-beta30
+    ----------------
+    bugfix: reports are displayed collapsed
+    bugfix: include the mail that pays online when sending invoice
+
+
+    Since 3.6.2-beta29
+    ----------------
+    bugfix: invoice sent status filter
+    bugfix: report columns order
+    bugfix: When sending invoices if to is sent using GET, check if it is an array before adding to the mail paramters
+
+	Since 3.6.2-beta28
+    ----------------
+    bugfix: report columns order
+    feature: change sent status to a list of values and update the invoice preview
+
+    Since 3.6.2-beta27
+    ----------------
+    bugfix: search box on user list not working
+    bugfix: pdf reports are collapsed
+    bugfix: contact billing info on invoices
+
+    Since 3.6.2-beta26
+    ----------------
+    bugfix: do not check permissions when classifying contacts from member custom property
+    bugfix: check if is a valid datetime value before using the object
+
+	Since 3.6.2-beta25
+    ----------------
+    bugfix: mobile not working, missing api view
+    bugfix: Automatic timeslots must not check permissions when being classified
+    bugfix: lang Cuentaes to Cuentas
+
+    Since 3.6.2-beta24
+    ----------------
+    bugfix: add contact emails to searchable objects
+    bugfix: fixes in context widget
+    bugfix: do not check permissions when classifying contacts from member custom property
+    bugfix: missing lang report category
+    bugfix: error 500 in total worked time report
+    bugfix: company billing info on invoices
+    bugfix: break line on comment column
+
+	Since 3.6.2-beta23
+    ----------------
+    bugfix: force add member associations to searchable objects
+
+    Since 3.6.2-beta22
+    ----------------
+    feature: add member associations to searchable objects
+    bugfix: billing info properties on event registration
+    bugfix: prevent multiple timeslots running
+    performance: performance improvements on permissions
+
+	Since 3.6.2-beta21
+    ----------------
+    bugfix: invoices: migrate payment method columns to custom properties
+
+	Since 3.6.2-beta20
+    ----------------
+    feature: Allow to select properties from selected contact on a custom property (for members)
+    feature: new rate schedules dimension, associated to projects
+    feature: allow to select list custom properties to display on contact selectors
+    feature: show comments on report on a separated column
+    bugfix: prevent blank screen on mail view
+    bugfix: error 500 on member reports
+    bugfix: get user by email function not working properly
+    bugfix: return websites for each contact on the api
+    bugfix: subtask display fails after expand parent task
+    bugfix: report categories are filtered by permissions
+
+    Since 3.6.2-beta19
+    ----------------
+	feature: SAML Single Sign On plugin.
+	bugfix: invoice preview does not use custom invoice template.
+
+    Since 3.6.2-beta18
+    ----------------
+    bugfix: breadcrumbs from related dimensions are not displayed on object lists
+    bugfix: max amount of tickets per event calculation
+    feature: custom reports, allow to define conditions using associated dimension on member reports
+
+    Since 3.6.2-beta17
+    ----------------
+    bugfix: allow to change sent status of invoices on edit form
+    bugfix: check multiple contacts with the same email configuration before creating new members automatically
+    bugfix: wrong ticket type for non-members on event registration
+    bugfix: totals on reports
+    feature: properties groups for content objects view
+    feature: improve contact billing information tab on invoices
+    feature: display all members subtypes when creating new member from dimension tree
+    feature: max amount of tickets per event
+
+    Since 3.6.2-beta16
+    ----------------
+    feature: show contact columns on client reports
+    feature: contact selector on "billing to" tab on invoices form
+    bugfix: wrong total on new event registration
+    bugfix: remove sent status from invoices and add other property for that
+
+    Since 3.6.2-beta15
+    ----------------
+    bugfix: notification config override by hook
+    bugfix: no space between imploded address fields when printing invoice
+    bugfix: bug when saving subtype dependencies, duplicated row in table
+    bugfix: fix report_category_id column, it was added as a tinyint
+    bugfix: fix managed events to allow them to have empty date/time
+    feature: allow more than one contact with the same email
+    feature: was added the ticket type custom properties to event registration
+
+    Since 3.6.2-beta14
+    ----------------
+    feature: multiple email templates for different actions
+    feature: classify invoices on managed event related account
+    bigfix: custom properties on object subtypes not working
+
+	Since 3.6.2-beta13
+    ----------------
+    bugifx: error 500 when ticket type has been deleted
+    bugifx: invoice number was not generated when creating new repetition or from new event registration
+    bugfix: show date and time on field "created on" invoices
+
+    Since 3.6.2-beta12
+    ----------------
+    bugfix: show date and time on field "created on" invoices
+    bugfix: show date and time on field "created on" event tickets
+    bugfix: secondary dimensions must filter primary dimensions
+    bugfix: don't change invocie status to sent if is paid.
+    security: security issues sql injections and xss
+
+	Since 3.6.2-beta11
+    ----------------
+    bugfix: replay to all not working
+    security: remove public/assets/javascript/ckeditor/ck_upload_handler.php
+    security: security issues in api controller
+    feature: allow to assign invoice number in non-pending status
+    feature: new bootstrap style for members tree on "new event registration"
+
+    Since 3.6.2-beta10
+    ----------------
+    bugfix: don't show mail rules recomendation configuration not working
+    bugfix: managed events, filter only by member the git contact selector on "new event registration"
+
+    Since 3.6.2-beta9
+    ----------------
+    feature: classify event invoices in a configurable member of the accounts dimension
+    bugfix: new event registration contact selector scroll
+
+    Since 3.6.2-beta8
+    ----------------
+    bugfix: error adding attendees
+    bugfix: member status on members widget
+    feature: generate report button on attendees tab
+
+    Since 3.6.2-beta7
+    ----------------
+    bugfix: member tree selector performance
+
+    Since 3.6.2-beta6
+    ----------------
+    bugfix: managed events, ticket type name and desc must be escaped before sending data to view
+    bugfix: only group by o.id if query is for content_objects
+
+    Since 3.6.2-beta5
+    ----------------
+    bugfix: SWIFT_DISABLE_VERIFYPEER_SOCKET_OPTION not working
+    bugfix: managed events, attendees classification
+    bugfix: fix custom properties view on members
+    bugfix: don't use timezone in getObjectData if the object doesn't have a timezone
+    bugfix: don't filter related dimensions on members tree
+    bugfix: totals on reports and objects lists
+
+	Since 3.6.2-beta4
+    ----------------
+    bugfix: class roster attendee report
+
+    Since 3.6.2-beta3
+    ----------------
+    feature: class roster attendee report
+
+	Since 3.6.2-beta2
+    ----------------
+    bugfix: error 500 on managed events tab
+    feature: managed events, new contact selector on event registration process to select attendees
+    feature: contact selector select wich properties display
+    feature: advanced billing, new columns on task report "Estimated profit margin" and "Expected profit %"
+    feature: member pricing on ticket types
+
+    Since 3.6.2-beta
+    ----------------
+    bugfix: advance report installer error
+    bugfix: fixes on Billing rate and Cost rate report
+    bugfix: error 500 on reports when income plugin is not installed
+    bugfix: reports column names break word
+    bugfix: totals on reports
+    bugfix: contact custom property combo langs
+    bugfix: newsletter recipients selector
+    feature: was added contact cps to attendees panel
+
+    Since 3.6.1-rc
+    ----------------
+    feature: advance billing on tasks (estimated cost and estimated price)
+    feature: billing information on reports
+    feature: copy members function
+    feature: extend contact custom property selector to allow selecting unclassified contacts
+
+    Since 3.6.1-beta4
+    ----------------
+    bugfix: report column title words break
+    bugfix: can't create timeslots for yesterday
+
+    Since 3.6.1-beta3
+    ----------------
+    bugfix: send invoice doesn't refresh status in pdf
+
+    Since 3.6.1-beta2
+    ----------------
+    feature: allow custom invoice mail template for different installations
+    bugfix: invoices generated in background are not saving the subtype id
+    bugfix: changing event subtype loses dimension associations
+
+	Since 3.6.1-beta
+    ----------------
+    performance: on sharing table calculation after the user was being edited
+    bugfix: move event invoice automatic generated name to event_tickets plugin
+    bugfix: financial accunts has wrong table specified in model
+    bugfix: new event registration member selector fix
+    bugfix: managed event start-end fields fix on submembers
+
+    Since 3.6.0-rc1
+    ----------------
+    feature: contact custom properties now you can add contacts from the combo
+    feature: timeslots now you can select the related task
+    feature: filter events by subtype on listing function
+    feature: objectives description use ckeditor
+    feature: member templates for all member types
+    feature: send invoice by email
+    feature: stop previous timeslot configuration
+
+    Since 3.6.0-rc
+    ----------------
+    bugfix: error 500 on templates
+    bugfix: advance reports, report categories not working
+    bugfix: export reports to pdf
+    bugfix: apply permissions to all sub-members on the member edit view.
+
+    Since 3.6.0-beta.3
+    ----------------
+    bugfix: report list not working
+    bugfix: automatic calculation of worked time on add time modal
+    bugfix: time list add no filter by date option
+    bugfix: task list tasks displayed twice
+    bugfis: totals on grouped reports
+
+    Since 3.6.0-beta.2
+    ----------------
+    bugfix: fix upgrade problem to version 3.5.3 with index in table custom_property_values. 
+    
+    Since 3.6.0-beta.1
+    ----------------
+    bugfix: invoices query failed with message 'Unknown column 'external_id' in 'field list'
+    bugfix: report list not working if advance report is installed
+
+
+    Since 3.6.0-beta
+    ----------------
     feature: new time form
+
+
+	Since 3.5.3
+    ----------------
     feature: add members in object notifications subject
     feature: config generate next invoice repetition when printing.
     feature: invoice Payment Period
@@ -123,43 +611,7 @@
     feature: new function to create contact from name and mail
     feature: added bootstrap for internal use
     feature: managed eventes plugin
-    feature: member custom properties groups on member information widget
-    feature: use property groups for member custom properties in member add/edit forms
-    feature: property groups -> add default group and put all cps in that group
-    feature: show previous and next invoice if they exist when viewing an invoice
-    feature: text filter input in invoices module
-    feature: new managed events plugin
-    feature: new event tickets plugin: event tickets abm and attendees widget
-    feature: modal member add/edit
-    feature: config options to disable the popup dialogs when archiving or trahsing objects
-    feature: allow to set a member template to an existing member
-    feature: show previous and next invoice if they exist when viewing an invoice
-	feature: text filter input in invoices module
-	feature: when grouping reports allow to hide the total element count of each group.
-	feature: allow expenses list to have horizontal scroll.
-	feature: add logic to filter expenses by quarters in expenses widget.
-	feature: expenses widget new configuration add filters.
-	feature: allow boolean custom properties with undefined values.
-
-
-    bugfix: don't use other plugin classes in advanced reports, use hooks.
-    bugfix: reports add css rule word break.
-    bugfix: move event invoice automatic generated name to event_tickets plugin (error 500)
-    bugfix: financial accounts has wrong table specified in model
-    bugfix: performance on sharing table calculation after the user was being edited
-    bugfix: error 500 on templates
-    bugfix: advance reports, report categories not working
-    bugfix: export reports to pdf
-    bugfix: apply permissions to all sub-members on the member edit view.
-    bugfix: report list not working
-    bugfix: automatic calculation of worked time on add time modal
-    bugfix: time list add no filter by date option
-    bugfix: task list tasks displayed twice
-    bugfis: totals on grouped reports
-    bugfix: fix upgrade problem to version 3.5.3 with index in table custom_property_values.
-    bugfix: invoices query failed with message 'Unknown column 'external_id' in 'field list'
-    bugfix: report list not working if advance report is installed
-  	bugfix: main tabs bar resize
+    bugfix: main tabs bar resize
     bugfix: resize was added to columns assigned_to and assigned_by in the task panel
     bugfix: several missing langs
     bugfix: subtask render
@@ -190,22 +642,6 @@
     bugfix: template task date variable + minutes not working properly
     bugfix: invoice report expiration date timezone error
     bugfix: calendar view don't displays tasks for guest users
-    bugfix: transform users widget in contacts widget
-    bugfix: default payments report includes trashed payments
-    bugfix: invoice line with 0 unit value and total>0 does not sum in general totals
-    bugfix: cant link object to invoices that are not pending
-    bugfix: dont show generate next invoice link if it is already generated
-    bugfix: only the last invoice of the repetition should be shown as repetitive in the invoices list
-    bugfix: conditional tasks new bool cp values support
-    bugfix: cant generate next invoice if user does not have the can_edit_confirmed_invoices permissions and the invoice is printed
-    bugfix: MAIL SIGNATURE font size 24px by default
-    bugfix: invoices when adding a new line use the same currency selected for the invoice
-    bugfix: dont show member history tab if member has no history
-    bugfix: dont show generate next invoice link if it is already generated
-	bugfix: only the last invoice of the repetition should be shown as repetitive in the invoices list
-	bugfix: Filter is remove on change page. Feature - Send file by email without mail plugin.
-	bugfix: escape imap folder names when making queries to the db
-    
     performance: listing order
     performance: sharing table
 
@@ -240,7 +676,51 @@
 
     plugin newsletters:
     feature: use "To" field for each email when configuration has Persons per email: 1
-    
+
+
+	Since 3.5.2.X
+    ----------------
+    feature: member custom properties groups on member information widget
+    feature: use property groups for member custom properties in member add/edit forms
+    feature: property groups -> add default group and put all cps in that group
+    feature: show previous and next invoice if they exist when viewing an invoice
+    feature: text filter input in invoices module
+    feature: new managed events plugin
+    feature: new event tickets plugin: event tickets abm and attendees widget
+    feature: modal member add/edit
+    feature: config options to disable the popup dialogs when archiving or trahsing objects
+    feature: allow to set a member template to an existing member
+    bugfix: transform users widget in contacts widget
+    bugfix: default payments report includes trashed payments
+    bugfix: invoice line with 0 unit value and total>0 does not sum in general totals
+    bugfix: cant link object to invoices that are not pending
+    bugfix: dont show generate next invoice link if it is already generated
+    bugfix: only the last invoice of the repetition should be shown as repetitive in the invoices list
+    bugfix: conditional tasks new bool cp values support
+    bugfix: cant generate next invoice if user does not have the can_edit_confirmed_invoices permissions and the invoice is printed
+    bugfix: MAIL SIGNATURE font size 24px by default
+    bugfix: invoices when adding a new line use the same currency selected for the invoice
+    bugfix: dont show member history tab if member has no history
+
+
+	Since 3.5.1.X
+	----------------
+	feature: show previous and next invoice if they exist when viewing an invoice
+	feature: text filter input in invoices module
+	bugfix: dont show generate next invoice link if it is already generated
+	bugfix: only the last invoice of the repetition should be shown as repetitive in the invoices list
+
+	
+	Since 3.5.1.5
+	----------------
+	feature: when grouping reports allow to hide the total element count of each group.
+	feature: allow expenses list to have horizontal scroll.
+	feature: add logic to filter expenses by quarters in expenses widget.
+	feature: expenses widget new configuration add filters.
+	feature: allow boolean custom properties with undefined values.
+	bugfix: Filter is remove on change page. Feature - Send file by email without mail plugin.
+	bugfix: escape imap folder names when making queries to the db
+	
 
 	Since 3.5.1.4
 	----------------

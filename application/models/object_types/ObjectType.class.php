@@ -84,6 +84,21 @@ class ObjectType extends BaseObjectType {
 		}
 		return $action;
 	}
+
+
+	function getPluralObjectTypeName() {
+		return $this->getObjectTypeName(true);
+	}
+	
+	function getObjectTypeName($is_plural) {
+		$dim_ids = DimensionObjectTypes::getDimensionIdsByObjectTypeId($this->getId());
+		if ( is_array($dim_ids) && count($dim_ids) > 0 ) {
+		  	$type_name = trim(Members::getTypeNameToShowByObjectType($dim_ids[0], $this->getId(), null, $is_plural));
+		} else {
+		  	$type_name = lang($this->getName(). ($is_plural ? 's' : ''));
+		}
+		return $type_name;
+	}
 	
 } // ObjectType
 

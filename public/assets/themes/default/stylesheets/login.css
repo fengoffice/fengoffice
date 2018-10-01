@@ -102,6 +102,9 @@ div.options-container {
 	margin-top:10px;
 	text-align:center;
 }
+div.login-options-separator {
+	clear:both;
+}
 
 div.options-links {
 	float:left;

@@ -1,8 +1,8 @@
-<?php 
- 
+<?php
+
 
   abstract class BaseCurrencies extends DataManager {
-  
+
     /**
     * Column name => Column type map
     *
@@ -14,17 +14,16 @@
     	'symbol' => DATA_TYPE_STRING,
     	'name' => DATA_TYPE_STRING,
     	'short_name' => DATA_TYPE_STRING,
-    	'is_default' => DATA_TYPE_BOOLEAN,
-        'external_id' => DATA_TYPE_INTEGER,
+    	'is_default' => DATA_TYPE_BOOLEAN
     );
-  
+
 
     function __construct() {
       parent::__construct('Currency', 'currencies', true);
-    } 
-    
-   
-    
+    }
+
+
+
     /**
     * Return array of object columns
     *
@@ -35,7 +34,7 @@
     function getColumns() {
       return array_keys(self::$columns);
     }
-    
+
     /**
     * Return column type
     *
@@ -50,7 +49,7 @@
         return DATA_TYPE_STRING;
       } // if
     } // getColumnType
-    
+
     /**
     * Return array of PK columns. If only one column is PK returns its name as string
     *
@@ -61,7 +60,7 @@
     function getPkColumns() {
       return 'id';
     } // getPkColumns
-    
+
     /**
     * Return name of first auto_incremenent column if it exists
     *
@@ -72,23 +71,23 @@
     function getAutoIncrementColumn() {
       return 'id';
     } // getAutoIncrementColumn
-    
+
     // -------------------------------------------------------
     //  Finders
     // -------------------------------------------------------
-    
+
     /**
     * Do a SELECT query over database with specified arguments
     *
     * @access public
     * @param array $arguments Array of query arguments. Fields:
-    * 
+    *
     *  - one - select first row
     *  - conditions - additional conditions
     *  - order - order by string
     *  - offset - limit offset, valid only if limit is present
     *  - limit
-    * 
+    *
     * @return one or  objects
     * @throws DBQueryError
     */
@@ -99,7 +98,7 @@
         return Currencies::instance()->find($arguments);
       }
     }
-    
+
 
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'Currencies')) {
@@ -107,8 +106,8 @@
       } else {
         return Currencies::instance()->findAll($arguments);
       }
-    } 
-    
+    }
+
 
     function findOne($arguments = null) {
       if(isset($this) && instance_of($this, 'Currencies')) {
@@ -117,14 +116,14 @@
         return Currencies::instance()->findOne($arguments);
       } // if
     } // findOne
-    
+
     /**
     * Return object by its PK value
     *
     * @access public
     * @param mixed $id
     * @param boolean $force_reload If true cache will be skipped and data will be loaded from database
-    * @return ImType 
+    * @return ImType
     */
     function findById($id, $force_reload = false) {
       if(isset($this) && instance_of($this, 'Currencies')) {
@@ -133,7 +132,7 @@
         return Currencies::instance()->findById($id, $force_reload);
       } // if
     } // findById
-    
+
     /**
     * Return number of rows in this table
     *
@@ -148,7 +147,7 @@
         return Currencies::instance()->count($condition);
       } // if
     } // count
-    
+
     /**
     * Delete rows that match specific conditions. If $conditions is NULL all rows from table will be deleted
     *
@@ -163,12 +162,12 @@
         return Currencies::instance()->delete($condition);
       } // if
     } // delete
-    
+
     /**
-    * This function will return paginated result. Result is an array where first element is 
-    * array of returned object and second populated pagination object that can be used for 
+    * This function will return paginated result. Result is an array where first element is
+    * array of returned object and second populated pagination object that can be used for
     * obtaining and rendering pagination data using various helpers.
-    * 
+    *
     * Items and pagination array vars are indexed with 0 for items and 1 for pagination
     * because you can't use associative indexing with list() construct
     *
@@ -184,8 +183,8 @@
       } else {
         return Currencies::instance()->paginate($arguments, $items_per_page, $current_page);
       }
-    } 
-    
+    }
+
 
     function instance() {
       static $instance;
@@ -194,5 +193,5 @@
       } // if
       return $instance;
     } // instance
-  
+
   }

@@ -570,7 +570,7 @@ function pick_date_widget_timeslot($name, $value = null, $genid = null, $tabinde
 			id: '" . $id . "'," .
             (isset($tabindex) && !is_null($tabindex) ? "tabIndex: '$tabindex'," : "") .
             "value: '" . $dateValue . "',
-                listeners:{'change':function(){og.onchangeDatesInputs()}}
+                listeners:{'change':function(){og.onchangeDatesInputs('$name')}}
                 });
 	</script>
 	";
@@ -636,7 +636,7 @@ function pick_time_widget_timeslot($name, $value = null, $genid = null, $tabinde
 			width: 80," .
             (isset($tabindex) ? "tabIndex: '$tabindex'," : "") .
             "value: '" . $value . "',
-                listeners:{'change':function(){og.onchangeDatesInputs()}}
+                listeners:{'change':function(){og.onchangeDatesInputs('$name')}}
                 });
 	</script>
 	";
@@ -889,9 +889,9 @@ function darkerHtmlColor($htmlColor, $percentage = 20) {
 		if (!$sel)
 			$options1[] = option_tag(array_var($val, 'text'), array_var($val, 'id'));
 		else
-			$options2[] = option_tag(array_var($val, 'text'), array_var($val, 'id'));
+            $options2[array_var($val, 'order')] = option_tag(array_var($val, 'text'), array_var($val, 'id'));
 		
-		$hfields .= '<input id="'.$id.'['.array_var($val, 'id').']" name="'.$name.'['.array_var($val, 'id').']" type="hidden" value="'.($sel ? $order++ : '0').'" />';
+		$hfields .= '<input id="'.$id.'['.array_var($val, 'id').']" name="'.$name.'['.array_var($val, 'id').']" type="hidden" value="'.($sel ? array_var($val, 'order')+1 : '0').'" />';
 		
 		// option groups
 		if ($current_opt_group && $current_opt_group['count'] == $i) {
@@ -923,6 +923,8 @@ function darkerHtmlColor($htmlColor, $percentage = 20) {
 	
 	// 2nd box
 	$attributes['id'] = $id . "_box2";
+
+	ksort($options2);
 	$html .= "<td>" . select_box($name."_box2", $options2, $attributes) . "</td>";
 	
 	$html .= "<td>";

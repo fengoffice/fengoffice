@@ -120,7 +120,7 @@
 			AND IF (
 				(SELECT count(om1.object_id) FROM ".TABLE_PREFIX."object_members om1 
 					INNER JOIN ".TABLE_PREFIX."members m1 ON m1.id=om1.member_id
-					WHERE om1.object_id=o.id AND om1.is_optimization=0 AND m1.dimension_id=$md_id)=0,
+					WHERE om1.object_id=$object_id AND om1.is_optimization=0 AND m1.dimension_id=$md_id)=0,
 				true,
 				EXISTS (
 					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
@@ -129,9 +129,13 @@
 					WHERE
 					m2.dimension_id=$md_id
 					AND cmp.object_type_id = o.object_type_id
-					AND om2.object_id=o.id 
+					AND om2.object_id=$object_id 
 					AND om2.is_optimization=0 
-					AND cmp.permission_group_id=mp.permission_group_id
+					AND cmp.permission_group_id IN (
+						SELECT pg2.id
+		  				FROM ".TABLE_PREFIX."permission_groups pg2
+		  				WHERE pg2.id = mp.permission_group_id
+		  			)
 				)
 			)
 			";
@@ -145,7 +149,7 @@
 
         //Exclude non manageable dimensions and archived members
         $main_select_sql = "
-		SELECT mp.permission_group_id
+		SELECT DISTINCT(mp.permission_group_id)
 		FROM ".TABLE_PREFIX."object_members om
 		INNER JOIN ".TABLE_PREFIX."objects o ON o.id = om.object_id AND o.id = $object_id
 		INNER JOIN ".TABLE_PREFIX."contact_member_permissions mp ON mp.member_id = om.member_id AND mp.object_type_id = o.object_type_id

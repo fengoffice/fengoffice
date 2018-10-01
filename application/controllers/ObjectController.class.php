@@ -61,6 +61,37 @@ class ObjectController extends ApplicationController {
 		ajx_extra_data(array('html' => $html));
 	}
 
+    function render_bootstrap_cps() {
+        ajx_current("empty");
+        $object = Objects::findObject(get_id());
+
+        // if object not found, use a new object with the same object type
+        if (!$object instanceof ContentDataObject) {
+            $object_type = ObjectTypes::findById(get_id('ot_id'));
+            if ($object_type instanceof ObjectType && class_exists($object_type->getHandlerClass()) ) {
+                eval('$ot_manager = '.$object_type->getHandlerClass().'::instance();');
+                if ($ot_manager) {
+                    eval('$object = new '.$ot_manager->getItemClass().'();');
+                    if ($object instanceof ContentDataObject) {
+                        $object->setObjectTypeId($object_type->getId());
+                    }
+                }
+            }
+        }
+
+        $visibility = array_var($_REQUEST, 'visibility', 'all');
+        $selector = array_var($_REQUEST,'selector',null);
+        $prefix = array_var($_REQUEST,'prefix',null);
+        // get custom properties html to render
+        $html = "";
+        if ($object instanceof ContentDataObject) {
+            ob_start();
+            render_object_custom_properties_bootstrap($object, null, null, $visibility,0,$prefix);
+            $html = ob_get_clean();
+        }
+        ajx_extra_data(array('html' => $html,'selector'=>$selector));
+    }
+
 	function add_subscribers(ContentDataObject $object, $subscribers = null, $check_permissions = true) {
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
@@ -220,6 +251,10 @@ class ObjectController extends ApplicationController {
 		$otype = array_var($_GET, 'otype', '');
 		$subscriberIds = explode(",", $uids);
 
+		// dont allow non numeric parameters for otype and subscriber ids
+		$subscriberIds = array_filter($subscriberIds, 'is_numeric');
+		if (!is_numeric($otype)) $otype = 0;
+
 		tpl_assign('object_type_id', $otype);
 		tpl_assign('context', $context);
 		tpl_assign('subscriberIds', $subscriberIds);
@@ -342,9 +377,12 @@ class ObjectController extends ApplicationController {
 			if (count($not_valid_mem_names_array) > 0) {
 				$not_valid_mem_names = implode(', ', $not_valid_mem_names_array);
 
+				$ot = ObjectTypes::findById($object->getObjectTypeId());
+				$ot_name = $ot instanceof ObjectType ? $ot->getPluralObjectTypeName() : '';
+				
 				evt_add("popup", array(
 					'title' => lang("information"),
-					'message' => lang('object could not be classfied in due to permissions', lang('the '.$object->getObjectTypeName()), $not_valid_mem_names, strtolower(lang($object->getObjectTypeName()."s"))),
+					'message' => lang('object could not be classfied in due to permissions', lang('the '.$object->getObjectTypeName()), $not_valid_mem_names, strtolower($ot_name)),
 				));
 			}
 		}
@@ -394,11 +432,12 @@ class ObjectController extends ApplicationController {
 		}
 		$object = $object_original;
 
-		if (is_array($cp_data)) {
+		if (!is_null($cp_data)) {
 			$obj_custom_properties = $cp_data;
 		} else {
 			$obj_custom_properties = array_var($_POST, 'object_custom_properties');
 		}
+
 		$time_cp_values = array_var($obj_custom_properties, "time");
 
 		if (is_array($obj_custom_properties)) {
@@ -549,7 +588,26 @@ class ObjectController extends ApplicationController {
 								}
 							}
 
-						} else {
+						} else if ($custom_property->getType() == 'contact') {
+          
+                            CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
+                            foreach($value as $list_key => $list_val){
+                                if($list_val){
+                                    $custom_property_value = new CustomPropertyValue();
+                                    $custom_property_value->setObjectId($object->getId());
+                                    $custom_property_value->setCustomPropertyId($id);
+                                    $custom_property_value->setValue($list_val);
+                                    $custom_property_value->save();
+                                    $contact = Contacts::findById($list_val);
+                                    $member = Members::findOneByObjectId($object->getObjectId());
+                                    if($member instanceof Member && $contact instanceof Contact) {
+                                        $object_controller = new ObjectController();
+                                        $object_controller->add_to_members($contact, array($member->getId()),null,false);
+                                    }
+                                }
+                            }
+                        
+                        } else {
 							//Save multiple values
 							CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
 							foreach($value as &$val){
@@ -572,7 +630,23 @@ class ObjectController extends ApplicationController {
 							}
 						}
 
-					} else if($custom_property->getType() == 'image') {
+					} else if ($custom_property->getType() == 'contact') {
+                        CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
+                        if (trim($value) != "") {
+                            $custom_property_value = new CustomPropertyValue();
+                            $custom_property_value->setObjectId($object->getId());
+                            $custom_property_value->setCustomPropertyId($id);
+                            $custom_property_value->setValue($value);
+                            $custom_property_value->save();
+                            $contact = Contacts::findById($value);
+                            $member = Members::findOneByObjectId($object->getObjectId());
+                            if($member instanceof Member && $contact instanceof Contact) {
+                                $object_controller = new ObjectController();
+                                $object_controller->add_to_members($contact, array($member->getId()),null,false);
+                            }
+                        }
+                        
+                    } else if($custom_property->getType() == 'image') {
 
 						if (trim($value) != "") {
 							if (file_exists(ROOT."/tmp/$value")) {
@@ -2043,6 +2117,13 @@ class ObjectController extends ApplicationController {
 		$params['filters'] = array();
 		$params['use_definition'] = array_var($_GET, 'use_definition', false);
 
+		if (is_array($params['member_ids'])) {
+			$params['member_ids'] = array_filter($params['member_ids'], 'is_numeric');
+		}
+		if (is_array($params['extra_member_ids'])) {
+			$params['extra_member_ids'] = array_filter($params['extra_member_ids'], 'is_numeric');
+		}
+		
 		if (!in_array(strtoupper($params['orderdir']), array('ASC', 'DESC'))) $params['orderdir'] = 'ASC';
 
 		if ($params['order'] == "dateUpdated") {
@@ -2110,11 +2191,21 @@ class ObjectController extends ApplicationController {
 		$filters = $params['filters'];
 		$show_all_linked_objects = $params['show_all_linked_objects'];
 		$use_definition = $params['use_definition'];
-                $use_object_class_for_get_array_info = (is_null($params['use_object_class_for_get_array_info'])?false:true);
+		$use_object_class_for_get_array_info = (is_null($params['use_object_class_for_get_array_info'])?false:true);
+		
+		//variable to search in searchable_objects table
+		$text_search = $params['text_search'];
+        $text_search_key = $params['text_search_key'];
 
 		$filesPerPage = $params['filesPerPage'];
 		$name_filter = $filters['name'];
 		$object_ids_filter = $filters['object_ids'];
+
+        $only_count_result = array_var($_GET, 'only_result', false);
+        $count_results = array_var($_GET, 'count_results', false);
+        if(isset($params['count_results'])){
+            $count_results = $params['count_results'];
+        }
 
 		/* if there's an action to execute, do so */
 		if (!$show_all_linked_objects){
@@ -2142,6 +2233,11 @@ class ObjectController extends ApplicationController {
 			$template_object_names = "AND ot.name <> 'template_task' AND ot.name <> 'template_milestone'" ;
 		}
 		$result = null;
+
+        $select_fields = "*";
+        if($only_ids){
+            $select_fields = "o.id";
+        }
 
 		$context = active_context();
 
@@ -2185,7 +2281,6 @@ class ObjectController extends ApplicationController {
 			}
 
 		}
-
 		// user filter
 		if (in_array("contact", array_var($filters, 'types', array())) && isset($extra_list_params->is_user)) {
 			$extra_conditions[] = "
@@ -2196,13 +2291,23 @@ class ObjectController extends ApplicationController {
 				$extra_conditions[] = " EXISTS (
 					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
 					WHERE cmp.permission_group_id IN (SELECT x.permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups x WHERE x.contact_id=o.id)
-							AND cmp.member_id='$mem_id'
+							AND cmp.member_id=".DB::escape($mem_id)."
 							AND cmp.object_type_id NOT IN (SELECT tp.object_type_id FROM ".TABLE_PREFIX."tab_panels tp WHERE tp.enabled=0)
 					AND cmp.object_type_id NOT IN (SELECT oott.id FROM ".TABLE_PREFIX."object_types oott WHERE oott.name IN ('comment','template'))
 					AND cmp.object_type_id IN (SELECT oott2.id FROM ".TABLE_PREFIX."object_types oott2 WHERE oott2.type IN ('content_object','dimension_object'))
 				)";
 			}
 		}
+		
+		//text search with searchable_objects
+        if(!empty($text_search) and !is_null($text_search)){
+		    $joins[] = "INNER JOIN ".TABLE_PREFIX."searchable_objects so ON so.rel_object_id=o.id";
+            $extra_conditions[]= " so.`content` like '%{$text_search}%'";
+            $select_fields=" DISTINCT(o.id),o.* ";
+            if(!empty($text_search_key) and !is_null($text_search_key)){
+                $extra_conditions[]= " so.`column_name` like '{$text_search_key}' ";    
+            }
+        }
 
 
 		// Object type filter - exclude template types (if not template picker), filter by required type names (if specified) and match value with objects table
@@ -2254,9 +2359,10 @@ class ObjectController extends ApplicationController {
 		$extra_conditions[] = "
 			o.trashed_on".($trashed ? "<>" : "=")."0";
 		// archived conditions
-		$extra_conditions[] = "
+		if (!$trashed) {
+			$extra_conditions[] = "
 			o.archived_on".($archived ? "<>" : "=")."0";
-
+		}
 
 		// don't include unclassified mails from other accounts
 		if (Plugins::instance()->isActivePlugin('mail')) {
@@ -2288,8 +2394,7 @@ class ObjectController extends ApplicationController {
 				pf.mail_id IN (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE pf.mail_id = sh.object_id AND sh.group_id  IN ($logged_user_pg_ids)))";
 		}
 
-		$only_count_result = array_var($_GET, 'only_result', false);
-		$count_results = array_var($_GET, 'count_results', false);
+		
 
 		// Members filter
 		$sql_members = "";
@@ -2337,10 +2442,7 @@ class ObjectController extends ApplicationController {
 		}
 
 		// Main select
-		$select_fields = "*";
-		if($only_ids){
-			$select_fields = "o.id";
-		}
+		
 		$sql_select = "SELECT ".$select_fields." FROM ".TABLE_PREFIX."objects o ";
 
 		// Joins
@@ -2366,7 +2468,6 @@ class ObjectController extends ApplicationController {
 
 		// Full SQL
 		$sql = "$sql_select $sql_joins $sql_where $sql_order $sql_limit";
-                
 		// Execute query
 		if (!$only_count_result) {
 			$rows = DB::executeAll($sql);
@@ -2374,7 +2475,11 @@ class ObjectController extends ApplicationController {
 
 		// get total items
 		if ($count_results) {
-			$sql_count = "SELECT count(o.id) as total_items FROM ".TABLE_PREFIX."objects o $sql_joins $sql_where";
+            if(!empty($text_search) and !is_null($text_search)){
+                $sql_count = "SELECT count(DISTINCT(o.id)) as total_items FROM ".TABLE_PREFIX."objects o $sql_joins $sql_where";
+            }else{
+                $sql_count = "SELECT count(o.id) as total_items FROM ".TABLE_PREFIX."objects o $sql_joins $sql_where";
+            }
 			$rows_count = DB::executeAll($sql_count);
 			$total_items = $rows_count[0]['total_items'];
 		} else {
@@ -2445,7 +2550,7 @@ class ObjectController extends ApplicationController {
 			if (in_array($ot->getName(), array('template_task','template_milestone','project_folder','customer_folder','file revision','company','person'))) {
 				continue;
 			}
-			$object_types_info[] = array('id' => $ot->getId(), 'name' => clean(lang($ot->getName().'s')));
+			$object_types_info[] = array('id' => $ot->getId(), 'name' => clean($ot->getPluralObjectTypeName()));
 		}
 		$listing['filters'] = array(
 				'types' => $object_types_info,

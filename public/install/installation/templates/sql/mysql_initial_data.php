@@ -92,6 +92,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('reports', 'reports_inherit_company_address', '', 'BoolConfigHandler', '0', '0', NULL),
 	('reports', 'reports_inherit_company_phones', '', 'BoolConfigHandler', '0', '0', NULL),
 	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, '');
+
 		
 INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`) VALUES
 	('zip', 'archive.png', 0, 0),
@@ -210,6 +211,7 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('task panel', 'tasksShowDimensionCols', '', 'StringConfigHandler', 1, 0, ''),
  ('task panel', 'tasksUseDateFilters', '1', 'BoolConfigHandler', 0, 0, ''),
  ('task panel', 'tasksShowAssignedToName', '0', 'BoolConfigHandler', 0, 0, ''),
+ ('task panel', 'tasksGroupsPaginationCount', '5', 'IntegerConfigHandler', 0, 0, ''),
  ('general', 'listingContactsBy', '0', 'BoolConfigHandler', '0', '0', NULL),
  ('general', 'localization', '', 'LocalizationConfigHandler', 0, 100, ''),
  ('general', 'search_engine', 'match', 'SearchEngineConfigHandler', 0, 700, ''),
@@ -312,6 +314,7 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('time panel', 'show_start_time_action', '1', 'BoolConfigHandler', 0, 0, ''),
  ('time panel', 'add_timeslot_view_dimensions_combos', '', 'ManageableDimensionsConfigHandler', '0', '0', 'dimensions ids for skip'),
  ('time panel', 'show_pause_time_action', '1', 'BoolConfigHandler', '0', '0', ''),
+ ('time panel', 'stop_running_timeslots', '0', 'BoolConfigHandler', '0', '0', ''),
  ('general', 'show_context_help', 'until_close', 'ShowContextHelpConfigHandler', '0', '0', NULL),
  ('dashboard', 'show charts widget', '1', 'BoolConfigHandler', 0, 600, ''),
  ('dashboard', 'show dashboard info widget', '1', 'BoolConfigHandler', 0, 900, ''),
@@ -360,25 +363,12 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('reporting', 'report_time_colums_display', 'friendly', 'TimeFormatConfigHandler', 0, 1, '');
 
 INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
-VALUES ("time panel", "automatic_calculation_time", "1", "ListConfigHandler", "0", "0", " ",
-        '
-            {
-                "option": [{
-                    "value": "1",
-                    "text": "config_start_calc"
-                },
-                {
-                    "value": "2",
-                    "text": "config_end_calc"
-                },
-                {
-                    "value": "3",
-                    "text": "always_show_modal"
-                }]
-            }
-        '
-);
- 
+VALUES ("time panel", "automatic_calculation_time", "1", "ListConfigHandler", "0", "0", " ",'{"option": [{"value": "1","text": "config_start_calc"},{"value": "2","text": "config_end_calc"},{"value": "3","text": "always_show_modal"}]}'),
+('contact panel', 'properties_for_contact_component', '', 'ContactPropertySelectorConfigHandler', '0', '0','','contact');
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+('time panel', 'automatic_calculation_start_time', '1', 'ListConfigHandler', '0', '0', ' ', '{"option": [{"value": "1","text": "config_dates_calc"},{"value": "2","text": "config_hours_calc"},{"value": "3","text": "always_show_modal"}]}');
+
 INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`table_name`,`type`,`icon`,`plugin_id`) VALUES
  ('workspace', 'Workspaces', 'workspaces', 'dimension_object', 'workspace', 0),
  ('tag', '', '', 'dimension_group', 'tag', 0),
@@ -398,7 +388,8 @@ INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`t
  ('file revision', 'ProjectFileRevisions', 'project_file_revisions', 'content_object', 'file', 0),
  ('timeslot', 'Timeslots', 'timeslots', 'located', 'time', 0),
  ('template_task', 'TemplateTasks', 'template_tasks', 'content_object', 'task', 0),
- ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0);
+ ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0),
+ ('report_category', 'ReportCategories', 'report_category', 'located', 'reporting', 0);
 
 INSERT INTO `<?php echo $table_prefix ?>address_types` (`name`,`is_system`) VALUES
  ('home', 1),
@@ -676,7 +667,8 @@ INSERT INTO `<?php echo $table_prefix ?>currencies` (`symbol`, `name`, `short_na
 INSERT INTO <?php echo $table_prefix ?>custom_properties (`object_type_id`,`name`,`code`,`type`,`visible_by_default`,`is_special`) VALUES
 ((SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='contact'), 'Job title', 'job_title', 'text', 1, 1);
 
-
+INSERT INTO <?php echo $table_prefix ?>custom_properties (object_type_id, name, code, `type`,`is_special`,`description`) VALUES
+((SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='contact'), 'Prefix', 'prefix_code', 'text', 1, '');
 
 
 INSERT INTO <?php echo $table_prefix ?>dimension_associations_config (association_id, config_name, value)

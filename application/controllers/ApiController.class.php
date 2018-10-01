@@ -135,6 +135,19 @@ class ApiController extends ApplicationController {
         $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
         $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
         $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
+
+        // escape name
+        $name = mysql_real_escape_string($name);
+        // escape service
+        $service = mysql_real_escape_string($service);
+        
+        // allow only numeric in start and limit parameters
+        if (!is_numeric($start)) {
+        	$start = 0;
+        }
+        if (!is_numeric($limit)) {
+        	$limit = null;
+        }
         
         $members = array();
         $type = ObjectTypes::instance()->findByName($service);
@@ -150,7 +163,7 @@ class ApiController extends ApplicationController {
         );
         $extra_conditions = null;
         if ($name!=""){
-        	$extra_conditions = "AND name LIKE '%".$name."%'";
+        	$extra_conditions = "AND mem.name LIKE '%".$name."%'";
         }
         $params = array('dim_id' => $dimension_id, 'type_id' => $typeId, 'start'=>$start, 'limit'=>$limit, 'extra_conditions' => $extra_conditions);
         $memberController = new MemberController();
@@ -225,6 +238,31 @@ class ApiController extends ApplicationController {
             $members = (!empty($request['args']['members']) && count(empty($request['args']['members']))) ? $request['args']['members'] : null;
             $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
             $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
+            
+            // escape order parameters
+            if ($order) {
+            	$order = mysql_real_escape_string($order);
+            	if (!in_array(strtolower($order_dir), array("asc","desc"))) {
+            		$order_dir = "asc";
+            	}
+            } else {
+            	$order_dir = "";
+            }
+            
+            // allow only numeric in $members parameter
+            if ($members && is_array($members)) {
+            	$members = array_filter($members, 'is_numeric');
+            } else {
+            	$members = null;
+            }
+            
+            // allow only numeric in start and limit parameters
+            if (!is_numeric($start)) {
+            	$start = 0;
+            }
+            if (!is_numeric($limit)) {
+            	$limit = null;
+            }
 
             $query_options = array(
                 //'ignore_context' => true,
@@ -237,7 +275,8 @@ class ApiController extends ApplicationController {
             );
 
             // COMMON FILTERS: For all content Types
-            if (!empty($request['args']['created_by_id'])) {
+            // only numeric for created by id
+            if (!empty($request['args']['created_by_id']) && is_numeric($request['args']['created_by_id'])) {
                 $query_options['extra_conditions'] = " AND created_by_id = " . $request['args']['created_by_id'] . " ";
             }
 
@@ -245,14 +284,16 @@ class ApiController extends ApplicationController {
             switch ($service) {
 
                 case 'ProjectTasks' :
-                    if (!empty($request['args']['assigned_to'])) {
+                	// only numeric for assigned to
+                    if (!empty($request['args']['assigned_to']) && is_numeric($request['args']['assigned_to'])) {
                         $query_options['extra_conditions'] = " AND assigned_to_contact_id = " . $request['args']['assigned_to'] . " ";
                     }
 
                     $task_status_condition = "";
                     $now = DateTimeValueLib::now()->format('Y-m-j 00:00:00');
 
-                    if (isset($request['args']['status'])) {
+                    // only numeric for status parameter
+                    if (isset($request['args']['status']) && is_numeric($request['args']['status'])) {
                         $status = (int) $request['args']['status'];
                     } else {
                         $status = 1; // Read Filters Config options in the API? think about this.. 
@@ -298,6 +339,17 @@ class ApiController extends ApplicationController {
                     }
                     break;
             }// Case ProjectTasks
+            
+            
+            $object_managers = DB::executeAll("SELECT handler_class 
+            		FROM ".TABLE_PREFIX."object_types 
+            		WHERE `type` IN ('content_object','dimension_object')");
+            $object_managers = array_flat($object_managers);
+            
+            // allow only object classes in the $service parameter
+            if (!in_array($service, $object_managers)) {
+            	throw new Error("Invalid service");
+            }
 
 
             eval('$service_instance = '.$service.'::instance();');

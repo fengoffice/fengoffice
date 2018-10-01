@@ -40,6 +40,58 @@ abstract class DimensionObject extends ContentDataObject {
 		return '';
 	}
 	
+	
+	/**
+	 * Additional searchable data for dimension_objects
+	 * {@inheritDoc}
+	 * @see ApplicationDataObject::addToSearchableObjects()
+	 */
+	function addToSearchableObjects($wasNew=false) {
+		// call content data objects function
+		parent::addToSearchableObjects($wasNew);
+		
+		// add assocaited member names to searchable objects
+		$member = $this->getSelfMember();
+		if ($member instanceof Member) {
+			$sql_values = array();
+			
+			// get all the associations with other dimensions
+			$associations = DimensionMemberAssociations::getAssociatations($member->getDimensionId(), $member->getObjectTypeId());
+			
+			// foreach assocaition get the associated member ids
+			foreach ($associations as $a) {
+				// ignore persons dimension
+				$persons_dim = Dimensions::findByCode('feng_persons');
+				if ($a->getAssociatedDimensionMemberAssociationId() == $persons_dim->getId()) {
+					continue;
+				}
+				
+				$property_member_ids_csv = MemberPropertyMembers::getAllPropertyMemberIds($a->getId(), $member->getId());
+				
+				if (trim($property_member_ids_csv) != '') {
+					// foreach associated member add its name and id to searchable objects table
+					$property_members = Members::findAll(array("conditions" => "id IN ($property_member_ids_csv)"));
+					foreach ($property_members as $pm) {
+						if ($pm instanceof Member) {
+							$sql_values[] = "('".$this->getId()."','assoc_".$a->getId()."',".DB::escape($pm->getName()).",'".$pm->getId()."')";
+						}
+					}
+				}
+			}
+			
+			// execute the query
+			if (count($sql_values) > 0) {
+				$sql = "INSERT INTO ".TABLE_PREFIX."searchable_objects (rel_object_id, column_name, content, assoc_member_id) VALUES 
+						".implode(',', $sql_values)."
+						ON DUPLICATE KEY UPDATE content=content";
+				
+				DB::execute($sql);
+			}
+		}
+	}
+	
+	
+	
 	function addToSharingTable() {
 		parent::addToSharingTable(); //  Default processing
 		$oid = $this->getId() ;

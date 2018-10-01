@@ -759,6 +759,14 @@ class Member extends BaseMember {
 											}
 											if ($associated_object instanceof ContentDataObject) {
 												$info[$property_id] = $associated_object->getColumnValue($property_id);
+												
+												if ($info[$property_id] instanceof DateTimeValue) {
+													if ($associated_object->getTimezoneId() > 0) {
+														$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+													} else {
+														$info[$property_id] = date(DATE_MYSQL,$info[$property_id]->getTimestamp());
+													}
+												}
 											}
 											break;
 										}
@@ -769,14 +777,21 @@ class Member extends BaseMember {
 					}
 					
 					if (isset($info[$property_id]) && $info[$property_id] instanceof DateTimeValue) {
-						$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+						$apply_timezone = true;
+						if ($mem_object instanceof ContentDataObject && in_array($property_id, $mem_object->getColumns())) {
+							if ($mem_object->getTimezoneId() == 0) $apply_timezone = false;
+						}
+						
+						if ($apply_timezone) {
+							$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+						} else {
+							$info[$property_id] = date(DATE_MYSQL,$info[$property_id]->getTimestamp());
+						}
 					}
 				}
 			}
 		}
-		
 		Hook::fire('additional_member_column_values', array('definition' => $definition, 'member' => $this), $info);
-		
 		return $info;
 	}
 	

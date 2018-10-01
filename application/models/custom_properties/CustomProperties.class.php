@@ -70,7 +70,6 @@ class  CustomProperties extends  BaseCustomProperties {
 			$disabled_cond = "AND is_disabled=0";
 		}
 		$cond = array("`object_type_id` = ? $extra_cond $disabled_cond", $object_type);
-
 		return self::findAll(array(
 			'conditions' => $cond,
 			'order' => 'property_order asc'
@@ -105,6 +104,8 @@ class  CustomProperties extends  BaseCustomProperties {
 		));
 	} //  getCustomPropertyByName
 
+	
+	static private $cp_code_cache = array();
     /**
      * Return one custom property, given the object type and the property code
      *
@@ -113,9 +114,15 @@ class  CustomProperties extends  BaseCustomProperties {
      * @return CustomProperties
      */
 	static function getCustomPropertyByCode($object_type, $custom_property_code) {
-		return self::findOne(array(
-			'conditions' => array("`object_type_id` = ? and `code` = ? ", $object_type, $custom_property_code)
-		));
+		$key = $object_type."-".$custom_property_code;
+		$cp = array_var(self::$cp_code_cache, $key);
+		if (!$cp instanceof CustomProperty) {
+			$cp = self::findOne(array(
+				'conditions' => array("`object_type_id` = ? and `code` = ? ", $object_type, $custom_property_code)
+			));
+			self::$cp_code_cache[$key] = $cp;
+		}
+		return $cp;
 	} //  getCustomPropertyByCode
 
 	/**

@@ -926,6 +926,9 @@ class DimensionController extends ApplicationController {
                 $object_type_id = $object->getObjectTypeId();
             }
         }
+        if (array_var($_REQUEST, 'object_type_id')) {
+            $object_type_id = array_var($_REQUEST, 'object_type_id');
+        }
 
 		render_member_selectors($object_type_id, $genid, null, $options, null, null, false);
 		

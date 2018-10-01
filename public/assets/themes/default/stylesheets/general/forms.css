@@ -713,3 +713,9 @@ a.wiki-link {
 	text-decoration: underline;
 	font-weight: bold;
 }
+#modalQuickContact .coInputName input{
+    display: block;
+    width: 400px;
+    padding: 5px;
+    margin: 10px 0px;
+}

@@ -88,6 +88,7 @@
 	'home phone number' => 'Número de teléfono de casa',
 	'homepage' => 'Sitio web',
 	'address' => 'Dirección',
+    'full address' => 'Dirección completa',
 	'address2' => 'Dirección 2',
 	'city' => 'Ciudad',
 	'state' => 'Estado',
@@ -451,5 +452,5 @@
         'specify paused time' => 'Especificar tiempo pausado',
 	'you have to fill all the date and time fields' => 'Debe ingresar todos los campos de fecha y hora',
 	'start date cannot be greater than due date' => 'La fecha de inicio no puede ser mayor a la fecha de fin',
-
+    'link task'=>'Vincular tarea',
 );

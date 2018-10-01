@@ -7,7 +7,12 @@ function getEventLimits($event, $date, &$event_start, &$event_duration, &$end_mo
 	
 	if ($event instanceof ProjectEvent) {
 		$event_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
-		$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
+
+        if ($event->getDuration() instanceof DateTimeValue ){
+            $event_duration =  new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
+        } else{
+            $event_duration = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value + 3600);
+        }
 	
 	} else if ($event instanceof ProjectTask) {/* @var $event ProjectTask */
 		

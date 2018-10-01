@@ -320,4 +320,6 @@ return array(
     'field Timeslots rel_object_id' => 'Tarea',
     // Time fields 
     'field Objects total_worked_time' => 'Total de tiempo trabajado',
+
+    'field Objects prefix' => 'Prefijo',
 );

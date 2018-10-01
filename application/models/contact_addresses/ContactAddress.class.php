@@ -6,7 +6,7 @@
   * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
   */
   class ContactAddress extends BaseContactAddress {
-  
+
     /**
     * Return Address type
     *
@@ -17,7 +17,7 @@
     function getAddressType() {
       return AddressTypes::findById($this->getAddressTypeId());
     } // getAddressType
-    
+
     /**
     * Return contact
     *
@@ -28,7 +28,7 @@
     function getContact() {
       return Contacts::findById($this->getContactId());
     } // getContact
-    
+
         /**
     * Edit address
     *
@@ -47,8 +47,8 @@
     	$this->setIsMain($isMain);
     	$this->save();
     } // edit
-    
-    
+
+
     /**
 	 * Return name of country
 	 *
@@ -61,17 +61,28 @@
 		return lang('country ' . $this->getCountry());
 		return '';
 	} // getCountryName
-	
-	
+
+
+    function getArrayInfo(){
+	    return array(
+	        'street'=>$this->getStreet(),
+            'city'=>$this->getCity(),
+            'state'=>$this->getState(),
+            'country'=>$this->getCountry(),
+            'zipcode'=>$this->getZipCode(),
+			'parsed'=> $this->toString()
+        );
+    }
+
 	function toString($include_type_label=false) {
 		$address = $this;
 		$out = "";
-		
+
 		if ($include_type_label) {
 			$address_type = $address->getAddressType();
 			if ($address_type instanceof AddressType) $out .= lang($address_type->getName()).": ";
 		}
-		
+
 		$out .= $address->getStreet();
 		if($address->getCity() != '') {
 			$out .= ' - ' . $address->getCity();
@@ -79,13 +90,16 @@
 		if($address->getState() != '') {
 			$out .= ' - ' . $address->getState();
 		}
+		if($address->getZipCode() != '') {
+			$out .= ' - ' . $address->getZipCode();
+		}
 		if($address->getCountry() != '') {
 			$out .= ' - ' . $address->getCountryName();
 		}
 		return $out;
 	}
-	
-	
+
+
 	/**
 	 * Validate before save
 	 *
@@ -102,7 +116,7 @@
 			}
 		}
 	} // validate
-    
-  } // ContactAddress 
+
+  } // ContactAddress
 
 ?>

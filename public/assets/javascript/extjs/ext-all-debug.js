@@ -10092,6 +10092,7 @@ Ext.extend(Ext.dd.DragSource, Ext.dd.DDProxy, {
     
     onValidDrop : function(target, e, id){
         this.hideProxy();
+
         if(this.afterValidDrop){
             
             this.afterValidDrop(target, e, id);

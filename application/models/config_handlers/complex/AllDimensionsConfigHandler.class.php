@@ -21,7 +21,7 @@
        $value =  $this->getValue();
        $dimensions  = Dimensions::instance()->findAll(array('conditions' => "`code` != 'feng_persons'"));
        
-       $onchange_fn = array_Var($additional_params, 'onchange_fn');
+       $onchange_fn = array_var($additional_params, 'onchange_fn');
        
        $out = '' ;
        foreach ($dimensions as $dim) { /* @var $dim Dimension */
@@ -56,9 +56,14 @@
     } // rawToPhp
     
 	function phpToRaw($value) {
-		if (is_array($value) && count($value)) {
-			$value = array_filter($value);
-			return implode(',', $value);
+		if (is_array($value)) {
+			// don't save anything that is not numeric
+			$value = array_filter($value, 'is_numeric');
+			if (count($value) > 0) {
+				return implode(',', $value);
+			} else {
+				return "";
+			}
 		}else{
 			return $value;
 		}

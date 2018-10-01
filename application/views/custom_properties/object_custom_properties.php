@@ -3,7 +3,6 @@ require_javascript("og/CustomProperties.js");
 
 $object_type_id = $_custom_properties_object instanceof TemplateTask ? ProjectTasks::instance()->getObjectTypeId() : $_custom_properties_object->getObjectTypeId();
 $ot = ObjectTypes::findById($object_type_id);
-
 $extra_conditions = "";
 Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $object_type_id, 'object' => $_custom_properties_object), $extra_conditions, true);
 
@@ -360,6 +359,7 @@ if(count($cps) > 0){
 					  og.renderContactSelector({
 						genid: "'.$genid.'",
 						id: "cp'.$customProp->getId().'",
+						object_id:"",
 						name: "'.$name.'",
 						render_to: "contacts_combo_container-cp'.$customProp->getId().'",
 						selected: '.$value.',
@@ -367,6 +367,7 @@ if(count($cps) > 0){
 						empty_text: "'. $emtpy_text .'",
 						listClass: "custom-prop",
 						listAlign: "tr-br",
+						cp_type: "'.$customProp->getType().'",
 						filters: '.$filters_str.'
 					  });
 					});

@@ -536,12 +536,24 @@ class ProjectEvent extends BaseProjectEvent {
 	
 	
 	function getArrayInfo() {
+		$formatTime = user_config_option('time_format_use_24') ? 'G:i' : 'g:i A';
+		$format = user_config_option('date_format').' '.$formatTime;
+		
+		$start_formatted = "";
+		if ($this->getStart() instanceof DateTimeValue) {
+			$start_formatted = $this->getTimezoneId()>0 ? format_datetime($this->getStart()) : $this->getStart()->format($format);
+		}
+		$duration_formatted = "";
+		if ($this->getDuration() instanceof DateTimeValue) {
+			$duration_formatted = $this->getTimezoneId()>0 ? format_datetime($this->getDuration()) : $this->getDuration()->format($format);
+		}
+		
 		return array(
 			'id' => $this->getId(),
 			'object_id' => $this->getId(),
 			'name' => $this->getObjectName(),
-			'start' => format_datetime($this->getStart()),
-			'duration' => format_datetime($this->getDuration()),
+			'start' => $start_formatted,
+			'duration' => $duration_formatted,
 			'description' => $this->getDescription(),
 			'type' => $this->getObjectTypeName(),
 		);

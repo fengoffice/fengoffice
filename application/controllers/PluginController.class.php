@@ -52,6 +52,8 @@ class PluginController extends ApplicationController {
 				if ($plg->isInstalled() && $plg->updateAvailable()){
 					$name = $plg->getName();
 					$plg->update();
+					
+					DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
 				}
 			}
 		} catch (Exception $e) {
@@ -105,6 +107,9 @@ class PluginController extends ApplicationController {
 				$this->executeInstaller($name);
 				$plg->setIsInstalled(1);
 				$plg->save();
+				
+				DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
+				
 			} catch (Exception $e) {
 				if ($from_post) {
 					ajx_extra_data(array('errorMessage' => "Error installing plugin '$name': " . $e->getMessage()));

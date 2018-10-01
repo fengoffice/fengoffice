@@ -15,6 +15,12 @@ og.eventManager.addListener('template object added',function(data){
 	}
 });
 
+og.eventManager.addListener('ask user to fix template repetitive tasks', function(data){
+	if (data.template_id && data.tasks) {
+		og.askUserToFixRepetitiveTemplateTasks(data);
+	}
+});
+
 og.eventManager.addListener('reload member restrictions', 
  	function (genid){ 
 		App.modules.addMemberForm.drawDimensionRestrictions(genid, document.getElementById(genid + 'dimension_id').value);

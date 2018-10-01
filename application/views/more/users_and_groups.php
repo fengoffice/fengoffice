@@ -104,7 +104,6 @@ user_group_columns.push({
 	name: 'disabled',
 	is_system: true
 });
-
 var grid_id = '<?php echo $genid?>_users_groups_grid';
 
 // buttons
@@ -153,7 +152,8 @@ var filters = {
 if (og.additional_list_actions && og.additional_list_actions.users) {
     user_group_tbar_items.push('-');
     for (var i=0; i<og.additional_list_actions.users.length; i++) {
-        user_group_tbar_items.push(og.additional_list_actions.users[i]);
+        //user_group_tbar_items.push(og.additional_list_actions.users[i]);
+        user_group_tbar_items.push(og.build_text_filter_toolbar_item(grid_id));
     }
 }
 

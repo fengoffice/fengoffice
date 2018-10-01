@@ -362,51 +362,84 @@ ogTasks.updateDependantTasks = function(task_id, add){
 	}
 }
 
-ogTasks.executeAction = function(actionName, ids, options){
-	if (!ids)
-		var ids = this.getSelectedIds();
-	
-	og.openLink(og.getUrl('task', 'multi_task_action'), {
-		method: 'POST',
-		post: {
-			"ids": ids.join(','),
-			"action" : actionName,
-			"options": options
-		},
-		callback: function(success, data) {
-			if (success && ! data.errorCode) {
-				for (var i = 0; i < data.tasks.length; i++){
-					var tdata = data.tasks[i];
-					var task = ogTasksCache.addTasks(tdata);
-					if (actionName == 'delete' || actionName == 'archive'){
-						
-						//update dependants 
-						if (actionName == 'delete'){
-							ogTasks.updateDependantTasks(task.id,false);
-						}
-						
-						//remove task from cache	
-						ogTasksCache.removeTask(task);
-						ogTasks.removeTaskFromView(task);
-					}else{						
-						ogTasks.UpdateTask(task.id,false);	
-					}
-				}
+ogTasks.executeAction = function(actionName, ids, options,partent){
+
+    if (actionName == 'start_work'){
+        if(partent != undefined){
+            var listOfRunningTime = $(partent).find('.og-timeslot-work-started, .og-timeslot-work-paused')
+            if (listOfRunningTime.length > 0 && og.config.stop_running_timeslots){
+                listOfRunningTime.each(function (index) {
+                    var data_id = $(this).parent().find('a:first').attr('data-id');
+
+                    ogTasks.closeTimeslot([data_id],function (status) {
+                        if (status){
+                            ogTasks.executeActionFinal(actionName,ids,options,function () {
+                            });
+                        }
+                    })
+                })
+            }else{
+                ogTasks.executeActionFinal(actionName,ids,options,function () {
+                });
+            }
+        }else{
+            ogTasks.executeActionFinal(actionName,ids,options,function () {
+            })
+        }
+    }else{
+        ogTasks.executeActionFinal(actionName,ids,options,function () {
+        })
+    }
+
+}
+
+ogTasks.executeActionFinal = function(actionName, ids, options,callback){
+
+    if (!ids)
+        var ids = this.getSelectedIds();
+
+    og.openLink(og.getUrl('task', 'multi_task_action'), {
+        method: 'POST',
+        post: {
+            "ids": ids.join(','),
+            "action" : actionName,
+            "options": options
+        },
+        callback: function(success, data) {
+            if (success && ! data.errorCode) {
+                for (var i = 0; i < data.tasks.length; i++){
+                    var tdata = data.tasks[i];
+                    var task = ogTasksCache.addTasks(tdata);
+                    if (actionName == 'delete' || actionName == 'archive'){
+
+                        //update dependants
+                        if (actionName == 'delete'){
+                            ogTasks.updateDependantTasks(task.id,false);
+                        }
+
+                        //remove task from cache
+                        ogTasksCache.removeTask(task);
+                        ogTasks.removeTaskFromView(task);
+                    }else{
+                        ogTasks.UpdateTask(task.id,false);
+                    }
+                }
                 if (actionName == 'delete' || actionName == 'archive'){
                     var task = data.tasks[data.tasks.length-1];
                     ogTasks.drawElbows(task.parentId);
                 }
-				
-				var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
-				topToolbar.updateCheckedStatus();
-				
-				ogTasks.refreshGroupsTotals();
-			} else {
-			
-			}
-		},
-		scope: this
-	});
+
+                var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
+                topToolbar.updateCheckedStatus();
+
+                ogTasks.refreshGroupsTotals();
+                callback(success);
+            } else {
+                callback(false);
+            }
+        },
+        scope: this
+    });
 }
 
 ogTasks.setAllCheckedValue = function(checked){

@@ -39,7 +39,6 @@ og.addCPNumericValue = function(id, genid, is_member_cp) {
 	var base_id = genid + "listValues" + id;
 	
 	var count = $("#" + base_id + " .cp-val").length;
-	console.log(count);
 
 	$("#" + base_id + " .ico-add").remove();
 	$("#" + base_id + " #value" + (count - 1)).append('<a href="#" class="link-ico ico-delete" onclick="og.removeCPNumericValue('+id+', \''+genid+'\','+(count-1)+',0)" ></a>');
@@ -63,7 +62,6 @@ og.addCPTextValue = function(id, genid, is_member_cp) {
 	var base_id = genid + "listValues" + id;
 	
 	var count = $("#" + base_id + " .cp-val").length;
-	console.log(count);
 
 	$("#" + base_id + " .ico-add").remove();
 	$("#" + base_id + " #value" + (count - 1)).append('<a href="#" class="link-ico ico-delete" onclick="og.removeCPTextValue('+id+', \''+genid+'\','+(count-1)+',0)" ></a>');

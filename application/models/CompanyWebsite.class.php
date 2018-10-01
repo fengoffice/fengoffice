@@ -113,7 +113,7 @@ final class CompanyWebsite {
                 $username = urldecode($_REQUEST['username']);
                 $password = $_REQUEST['password'];
                 if (preg_match(EMAIL_FORMAT, $username)) {
-                        $contact = Contacts::getByEmail($username);
+                        $contact = Contacts::getByEmail($username, null, true);
                 } else {
                         $contact = Contacts::getByUsername($username);
                 }

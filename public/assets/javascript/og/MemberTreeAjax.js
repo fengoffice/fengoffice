@@ -11,7 +11,7 @@ og.MemberTreeAjax = function(config) {
 				fn: function(f){
 					f.el.on('keyup', function(e) {
 						var from_server = true;
-						
+
 						//check history date
 						if(this.tbar.history != undefined){
 							var now = new Date();
@@ -136,10 +136,6 @@ og.MemberTreeAjax = function(config) {
 						}
 					}
 				}
-				// send the selected members to filter by them in case there are dimension associations
-				if (current_selected_member_ids.length > 0) {
-					parameters.selected_member_ids = current_selected_member_ids;
-				}
 				
 	        	og.openLink(og.getUrl('dimension', 'get_member_childs', parameters), {
 	    			hideLoading:true, 
@@ -211,11 +207,11 @@ og.MemberTreeAjax = function(config) {
 			node.ownerTree.body.removeClass("have-focus");
 			node.ownerTree.body.hide();
 		},
-		render: function(tree){			
+		render: function(tree){
 			this.body.setVisibilityMode(Ext.Element.DISPLAY);
 			this.body.toggle();
 			this.body.addClass("collapsible-body");
-			
+
 			var tree = this;
 			$("#" + tree.id + '-textfilter').attr("placeholder", tree.initialConfig.search_placeholder);
 			
@@ -244,6 +240,7 @@ og.MemberTreeAjax = function(config) {
 						var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
 						$("#"+tree.body.id).css({top: top+'px'});
 						if(!tree.initialized){
+                            tree.initialized = true;
 							tree.init();
 						}
 				 	}, 300);
@@ -281,6 +278,7 @@ og.MemberTreeAjax = function(config) {
 							var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
 							$("#"+tree.body.id).css({top: top+'px'});
 							if(!tree.initialized){
+                                tree.initialized = true;
 								tree.init();
 							}
 					 	}, 300);
@@ -530,7 +528,7 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 							continue;
 						}
 					}
-					
+
 				    var new_node = this.createNode(mem);
 				    		    
 				    var node_parent = this.getNodeById(mem.parent);

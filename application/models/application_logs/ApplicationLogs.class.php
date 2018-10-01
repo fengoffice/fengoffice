@@ -277,7 +277,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		// if logged user is guest dont show other users logs
 		if (logged_user()->isGuest()) {
-			$extra_conditions .= " AND `created_by_id`=".logged_user()->getId();
+			$extra_conditions .= " AND `created_by_id`=".logged_user()->getId()." ";
 		}
 		
 		$joins_sql = "";

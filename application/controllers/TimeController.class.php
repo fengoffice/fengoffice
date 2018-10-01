@@ -76,20 +76,20 @@ class TimeController extends ApplicationController {
 
         $timeslot_data = array_var($_POST, 'timeslot');
         if (!is_array($timeslot_data)) {
-
             $timeslot = new Timeslot();
             $timeslot->setContactId(array_var($_REQUEST, "contact_id", logged_user()->getId()));
             $timeslot->setRelObjectId(array_var($_REQUEST, "object_id"));
             $dont_reload = array_var($_REQUEST, "dont_reload");
 
             
-             $show_paused_time = user_config_option('show_pause_time_action');
+            $show_paused_time = user_config_option('show_pause_time_action');
             if (!config_option('show_pause_time_action')) {
                 $show_paused_time = 0;
             }
             $preferences = array(
               'show_paused_time'=> $show_paused_time,
-              'automatic_calculation_time'=> user_config_option('automatic_calculation_time')
+              'automatic_calculation_time'=> user_config_option('automatic_calculation_time'),
+              'automatic_calculation_start_time'=> user_config_option('automatic_calculation_start_time')
             );
             // load preferences
             tpl_assign('time_preferences',$preferences);
@@ -395,7 +395,7 @@ class TimeController extends ApplicationController {
             $object_controller = new ObjectController();
             $object_controller->add_custom_properties($timeslot);
             if (!is_null($member_ids)) {
-                $object_controller->add_to_members($timeslot, $member_ids);
+                $object_controller->add_to_members($timeslot, $member_ids, null, false);
             }
 
             if ($use_transaction) {
@@ -467,6 +467,8 @@ class TimeController extends ApplicationController {
             tpl_assign('timeslot', $timeslot);
             tpl_assign('edit_mode',1);
         } else {
+            $timeslot->setRelObjectId(array_var($_REQUEST, "object_id"));
+            
             // FORM SENT...
             //context permissions or members
             $member_ids = json_decode(array_var($_POST, 'members', array()));
@@ -573,7 +575,7 @@ class TimeController extends ApplicationController {
                 $old_member_ids = array_flat(DB::executeAll("SELECT om.member_id FROM `" . TABLE_PREFIX . "object_members` om
 					inner join " . TABLE_PREFIX . "members m on om.member_id=m.id
 					inner join " . TABLE_PREFIX . "dimensions d on d.id=m.dimension_id
-					where om.object_id=" . $timeslot->getId() . " and d.is_manageable;"));
+					where om.object_id=" . $timeslot->getId() . " and d.is_manageable and om.is_optimization=0;"));
 
                 //Only admins can change timeslot user
                 if (!array_var($timeslot_data, 'contact_id') && !logged_user()->isAdminGroup()) {
@@ -607,7 +609,9 @@ class TimeController extends ApplicationController {
                 
                 DB::beginWork();
                 $transacion_started = true;
-                $timeslot->save();
+    
+                $old_object_id = array_var($_REQUEST, "old_object_id");
+                $timeslot->save($old_object_id);
 
                 $member_ids = json_decode(array_var($_POST, 'members', ''));
                 $object_controller = new ObjectController();

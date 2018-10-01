@@ -864,6 +864,7 @@ addLangs({
     'send anyway': 'Send anyway',
     'view new email': 'View new email',
     'apply assignee to subtasks': 'Apply assignee to subtasks',
+    'confirm delete permanently': 'Are you sure you want to permanently delete the selected item?',
 
     'confirm delete permanently company': 'Are you sure you want to permanently delete this company?\nNote that all company users will also be deleted.',
     'confirm move to trash company': 'Are you sure you want to delete this company?\nNote that all company users will also be deleted.',
@@ -993,4 +994,11 @@ addLangs({
     'timeslot': 'Timeslot',
     'reports': 'Reports',
     'remove filter': 'Remove filter',
+    'add contact':'Add contact',
+    'first name':'First name',
+    'last name':'Last name',
+    'new contact':'New contact',
+    'unclassified message':'You are about to add an unclassified contact. Keep in mind that when saving this form, the contact will be automatically classified into this member.',
+    'add unclassified contact':'Add unclassified contact',
+    'template name required': 'Template name is required',
 });

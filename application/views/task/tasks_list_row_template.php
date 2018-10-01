@@ -267,7 +267,7 @@
         <span id="{{genid}}{{tgId}}timespan{{user_paused_time}}">{{user_paused_time}}</span>
       </div>
 
-      <a href='#' class="task-single-div" onclick='ogTasks.closeTimeslot([{{task.id}}])'>
+      <a href='#' class="task-single-div" onclick='ogTasks.closeTimeslot([{{task.id}}])' data-id="{{task.id}}">
         <div class='ogTasksTimeClock ico-time-stop task-action-icon' title='{{lang 'close_work'}}'></div>
       </a>
 
@@ -282,7 +282,7 @@
       {{/if}}
     {{else}}
       {{#if can_add_timeslots}}
-      <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}])">
+      <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}],'','#tasksPanelContainer')">
         <div title="{{lang 'start_work'}}" class="ogTasksTimeClock ico-time task-action-icon"></div>
       </a>
       {{/if}}

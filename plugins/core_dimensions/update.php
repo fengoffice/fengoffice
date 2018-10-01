@@ -285,3 +285,12 @@ function core_dimensions_update_13_14() {
 	DB::execute("UPDATE ".TABLE_PREFIX."report_columns SET field_name='fixed_billing' WHERE field_name='billing';");
 }
 
+function core_dimensions_update_14_15() {
+	// add reports to sharing table for all users, because after the listing permissions changes in a recent version, they were not regenerated
+	$reports = Reports::findAll();
+	foreach ($reports as $report) {
+		/* @var $report Report */
+		$report->addToSharingTable();
+	}
+}
+

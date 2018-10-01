@@ -431,4 +431,5 @@ return array(
 		'set r permissions for all object types' => 'Set read-only permissions to all object types.',
 		'set none permissions for all object types' => 'Remove permissions in all object types',
     'specify paused time' => 'Specify paused time',
+    'link task'=>'Link Task',
 );

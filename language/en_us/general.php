@@ -109,6 +109,7 @@ return array(
         'home phone number' => 'Home',
         'settings' => 'Settings',
         'homepage' => 'Homepage',
+        'full address' => 'Full address',
         'address' => 'Address',
         'address2' => 'Address 2',
         'street' => 'Street',
@@ -475,5 +476,5 @@ return array(
 	'specify end date' => 'Specify end date',
         'specify paused time' => 'Specify paused time',
 	'start date cannot be greater than due date' => 'Start date cannot be greater than due date',
-    
+    'link task'=>'Link Task',
 );

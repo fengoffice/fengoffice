@@ -384,8 +384,13 @@ foreach($companies as $company)
 											getEventLimits($event, $dtv, $event_start, $event_duration, $end_modified);
 											
 											$real_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
-											$real_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
-											
+
+                                            if ($event->getDuration() instanceof DateTimeValue ){
+                                                $real_duration =  new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
+                                            } else{
+                                                $real_duration = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value + 3600);
+                                            }
+
 											$pre_tf = $real_start->getDay() == $real_duration->getDay() ? '' : 'D j, ';
 											if (!$event->isRepetitive() && $real_start->getDay() != $event_start->getDay()) $subject = "... $subject";
 											

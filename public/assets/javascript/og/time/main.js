@@ -504,3 +504,13 @@ ogTimeManager.renderUserCombo = function(genid){
 	}
 	return null;
 }
+
+ogTimeManager.start_new_clock = function () {
+
+
+    execute_action: function (action, id) {
+        og.openLink(og.getUrl('timeslot', action, {id: id}));
+    }
+
+
+}

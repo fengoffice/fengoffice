@@ -522,7 +522,7 @@ og.TasksTopToolbar = function(config) {
 	}
 	
 	// dimension columns
-	for (did in og.dimensions) {
+	for (did in og.dimensions_info) {
 		if (isNaN(did)) continue;
 		
 		tmp_menu_items = ogTasks.createDimensionColumnMenuItems(did);
@@ -644,9 +644,11 @@ function ogTasksWaitTimeOutAndDraw (){
 	//draw table with tasks again and hide window with selects to show
 	og.task_show_by_select_timeout = setTimeout(function(){
 		
-		ogTasks.redrawGroups = false;
+		var tp = Ext.getCmp("tasks-panel");
+        if (tp) tp.reset();
+		/*ogTasks.redrawGroups = false;
 		ogTasks.draw();
-		ogTasks.redrawGroups = true;
+		ogTasks.redrawGroups = true;*/
 		
 		var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
 		topToolbar.items.get('table-show-columns-task').menu.hide();

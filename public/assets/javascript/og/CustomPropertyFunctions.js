@@ -71,8 +71,16 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 
 	var template = $('<tbody></tbody>');
 	
-	var cp_count = og.admin_cp_count[genid] || 0;
-	id_suffix = id_suffix || '';
+	if (!og.admin_cp_count) og.admin_cp_count = {};
+	if (!og.admin_cp_count[genid]) og.admin_cp_count[genid] = 0;
+	
+	if (!og.custom_props_table_genids) og.custom_props_table_genids = [];
+	if (og.custom_props_table_genids.indexOf(genid) == -1) {
+		og.custom_props_table_genids.push(genid);
+	}
+	
+	var cp_count = og.admin_cp_count[genid];
+	if (!id_suffix) id_suffix = id_suffix;
 
 	var container_id = "cp-container-" + cp_count + id_suffix;
 

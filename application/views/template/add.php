@@ -9,7 +9,8 @@
 	$categories = array();
 	Hook::fire('object_edit_categories', $object, $categories);
 ?>
-<form id="templateForm" style='height:100%;background-color:white' class="internalForm" action="<?php echo $cotemplate->isNew() ? get_url('template', 'add') : $cotemplate->getEditUrl() ?>" method="post" enctype="multipart/form-data" onsubmit="return og.templateConfirmSubmit('<?php echo $genid ?>') && og.handleMemberChooserSubmit('<?php echo $genid; ?>', <?php echo $cotemplate->manager()->getObjectTypeId() ?>);">
+<form id="templateForm" style='height:100%;background-color:white' class="internalForm" action="<?php echo $cotemplate->isNew() ? get_url('template', 'add') : $cotemplate->getEditUrl() ?>" method="post" enctype="multipart/form-data" 
+onsubmit="return og.submitTemplateForm();">
 
 <div id = "templateConteiner" class="template">
 <div class="coInputHeader">
@@ -136,6 +137,10 @@
 		if(data.action == "edit"){
 			//refresh name			
 			$('#template-object-name'+data.id).text(data.name);
+			$('#template-object-name'+data.id).parent().children(".ico-recurrent").remove();
+			if (parseInt(data.is_repetitive) > 0) {
+				$('#template-object-name'+data.id).parent().append('&nbsp;<span class="link-ico ico-recurrent"></span>');
+			}
 
 			//refresh milestone
 			if($('#subTasksDiv'+data.milestone_id).length && $('#subTasksDiv'+data.milestone_id).has($('#objectDiv'+data.id)).length == 0){
@@ -287,5 +292,41 @@
 			og.openLink(og.getUrl('milestone', 'edit', {id: id, template_milestone:1}), {caller:'new_task_template'});
 		}
 	}
-	
+
+	// removes all property inputs from the form and builds an unique input with all the values in a json string
+	og.submitTemplateForm = function() {
+		if ($("#<?php echo $genid; ?>templateFormName").val() == '') {
+			og.err(lang('template name required'));
+			return false;
+		}
+		
+		if (og.templateConfirmSubmit('<?php echo $genid ?>') && og.handleMemberChooserSubmit('<?php echo $genid; ?>', <?php echo $cotemplate->manager()->getObjectTypeId() ?>)) {
+
+			var all_prop_inputs = {};
+			
+			$('[name^="prop"]').each(function(){
+				all_prop_inputs[$(this).attr('name')] = $(this).val();
+			});
+			$('[name^="prop"]').remove();
+			
+			$('[name^="objectProperties"]').each(function(){
+				all_prop_inputs[$(this).attr('name')] = $(this).val();
+			});
+			$('[name^="objectProperties"]').remove();
+			
+			$('[name^="objects"]').each(function(){
+				all_prop_inputs[$(this).attr('name')] = $(this).val();
+			});
+			$('[name^="objects"]').remove();
+			
+			$('<input>').attr({
+			    type: 'hidden',
+			    id: 'all_prop_inputs',
+			    name: 'all_prop_inputs',
+			    value: Ext.util.JSON.encode(all_prop_inputs),
+			}).appendTo('form');
+			
+			return true;
+		}
+	}
 </script>

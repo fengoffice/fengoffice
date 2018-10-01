@@ -6,7 +6,7 @@
   * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
   */
   class ContactTelephone extends BaseContactTelephone {
-  
+
     /**
     * Return Telephone type
     *
@@ -17,8 +17,8 @@
     function getTelephoneType() {
       return TelephoneTypes::findById($this->getTelephoneTypeId());
     } // getTelephoneType
-    
-    
+
+
     /**
     * Return contact
     *
@@ -29,7 +29,18 @@
     function getContact() {
       return Contacts::findById($this->getContactId());
     } // getContact
-    
+
+    function getArrayInfo(){
+      if (is_null($this->getTelephoneType())){
+          return array();
+      }else{
+          return array(
+              'type'=>$this->getTelephoneType()->getName(),
+              'number'=>$this->getNumber()
+          );
+      }
+    }
+
     /**
     * edit phone number
     *
@@ -43,7 +54,7 @@
       		$this->save();
     	}
     } // editNumber
-    
-  } // ContactTelephone 
+
+  } // ContactTelephone
 
 ?>

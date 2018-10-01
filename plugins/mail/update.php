@@ -387,5 +387,13 @@
 			");
 	}
 	
+	function mail_update_26_27() {
+		DB::execute("
+			INSERT INTO `".TABLE_PREFIX."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+			('mail module', 'send_outbox_emails_in_background', '0', 'BoolConfigHandler', 0, 0, '')
+			ON DUPLICATE KEY UPDATE name=name;
+		");
+	}
+	
 	
 	

@@ -40,15 +40,20 @@
   		else return null;
     }
     
-    static function getAllAddressTypesInfo() {
+    static function getAllAddressTypesInfo($use_id_as_key = false) {
     	$types = AddressTypes::findAll();
     	$result = array();
     	foreach ($types as $type) {
-    		$result[] = array('id' => $type->getId(), 'code' => $type->getName(), 'name' => lang($type->getName()));
+            if($use_id_as_key){
+                $result[$type->getId()] = array('id' => $type->getId(), 'code' => $type->getName(), 'name' => lang($type->getName()));
+            }else{
+    		    $result[] = array('id' => $type->getId(), 'code' => $type->getName(), 'name' => lang($type->getName()));
+            }
     	}
     	 
     	return $result;
     }
+
     
   } // AddressTypes 
 

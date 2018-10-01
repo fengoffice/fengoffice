@@ -37,7 +37,7 @@
 	                $first = true;
 	                $cp_html_cp .= '<tr class="cp-info '.$tr_cls.'"><td style="width:160px;"><span class="bold">'.$cp_name.': </span></td><td>';
 	                
-	                $cp_html_vals = get_custom_property_value_for_listing($cp, $object, $cp_values);
+	                $cp_html_vals = get_custom_property_value_for_listing($cp, $object, $cp_values, false, array('table_html'=>true));
 	                
 	                $cp_html_cp .= $cp_html_vals;
 	                $cp_html_cp .= '</td></tr>';

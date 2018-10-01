@@ -269,14 +269,14 @@ og.MemberTree = function(config) {
 				var parameters = {
 					member: node.id,
 					limit: limit,
-					offset: node.last_childs_offset
+					offset: node.last_childs_offset,
+					ignore_context_filters: !this.filterOnChange
 				};
 				
 	        	og.openLink(og.getUrl('dimension', 'get_member_childs', parameters), {
 	    			hideLoading:true, 
 	    			hideErrors:true,
 	    			callback: function(success, data){
-	    				
 	    				var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
 	    				if (dimension_tree) {
 		    				dimension_tree.addMembersToTree(data.members, data.dimension);
@@ -377,7 +377,7 @@ og.MemberTree = function(config) {
 		        if(node.childNodes.length < node.attributes.realTotalChilds && node.attributes.expandable && !node.attributes.gettingChildsFromServer){
 		        	node.ownerTree.innerCt.mask();
 		        	node.attributes.gettingChildsFromServer = true;
-		        	og.openLink(og.getUrl('dimension', 'get_member_childs', {member:node.id}), {
+		        	og.openLink(og.getUrl('dimension', 'get_member_childs', {member:node.id, ignore_context_filters: !this.filterOnChange}), {
 		    			hideLoading:true, 
 		    			hideErrors:true,
 		    			callback: function(success, data){
@@ -549,7 +549,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 
 	// ******* ATTRIBUTES ******** //
 	
-	filterOnChange: true,
+	filterOnChange: false,
 	
 	filterTree: function(text, from_server) {
 		if(from_server == undefined){

@@ -895,6 +895,7 @@ class ProjectTask extends BaseProjectTask {
 				"select_columns" => array("e.`object_id`"),
 				"extra_conditions" => $condition,
 				"count_results" => false,
+				"fire_additional_data_hook" => false,
 				"raw_data" => true,
 		))->objects;
 		for ($i = 0; $i < count($subtasks_rows); $i++){

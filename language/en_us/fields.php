@@ -322,6 +322,8 @@ return array(
 	'field Contacts postal_address' => 'Postal address',
 		
 	'field Timeslots rel_object_id' => 'Task',
-	
+
+    'field Objects prefix' => 'Prefix',
+
 );
 

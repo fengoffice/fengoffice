@@ -6,6 +6,21 @@ og.MemberChooserTree = function(config) {
 	}else{
 		var objectTypeQuery = '';
 	}
+	base_params = null;
+	if (config.loadAdditionalParameters) {
+		var load_additional_params = Ext.util.JSON.decode(config.loadAdditionalParameters);
+		if (load_additional_params && load_additional_params.length > 0) {
+			base_params = {};
+			for (x in load_additional_params) {
+				var input_id = load_additional_params[x];
+				var input_name = $("#"+input_id).attr('name');
+				var input_val = $("#"+input_id).val();
+				if (input_name && input_val) {
+					base_params[input_name] = input_val;
+				}
+			}
+		}
+	}
 	Ext.applyIf(config, {
 		isMultiple: false,
 		collapsible: true,
@@ -21,6 +36,7 @@ og.MemberChooserTree = function(config) {
 				(og.config.member_selector_page_size ? '&limit='+og.config.member_selector_page_size : '')+
 				'&allowedMemberTypes='+Ext.encode(config.allowedMemberTypes)+
 				'&avoid_session=1',
+			baseParams: base_params,
 			ownerTree: this 
 		}),
 		checkBoxes: true,

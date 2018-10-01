@@ -17,6 +17,7 @@ function render_report_header_button_small($button_data) {
             array(
         'id' => array_var($button_data, 'id', ''),
         'type' => 'button',
+        'title' => array_var($button_data, 'title', ''),
         'onclick' => array_var($button_data, 'onclick', 'return true;'),
         'class' => "report-header-button-small " . array_var($button_data, 'iconcls')
     ));
@@ -145,7 +146,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 	$external_columns = $report->getReportExternalColumns();
 	
 	?>
-	<table class="report custom-report scroll">
+    <table class="report <?php echo $to_print ? '':'custom-report scroll' ?>">
         <thead>
 		<tr class="header-custom-report custom-report-table-heading">
 	<?php
@@ -204,9 +205,12 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
                         $types = array_var($columns,'types');
 			foreach ($columns['order'] as $col) {
 				if ($col == 'object_type_id') continue;
-				
+
+
+
 				$value = array_var($row, $col);
 				$type = array_var($columns['types'], $col);
+
                                 $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
 		?>
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
@@ -354,14 +358,11 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 	}
 	
 	ob_start();
-	
 	Hook::fire('modify_custom_report_results', array('report' => $report), $results);
-	
 	$groups = $results['grouped_rows'];
-	
 	$add_thead_cls = $report->getColumnValue("hide_group_details") ? "no-details" : "";
 	?>
-	<table class="report custom-report scroll" style="<?php echo $to_print ? 'display:inherit;':'' ?>" >
+	<table class="report <?php echo $to_print ? '':'custom-report scroll' ?>" style="<?php echo $to_print ? '':'' ?>" >
         <thead>
 		<tr class="custom-report-table-heading <?php echo $add_thead_cls ?>">
 		<?php if (!$report->getColumnValue("hide_group_details")) { ?>
@@ -373,12 +374,14 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 		foreach ($columns['order'] as $col) {
 			if($col != 'link') {
 				if ($after_link) {
-					echo "<th colspan='2'>";
+					//echo "<th colspan='2'>";
+					echo "<th>";
 					$after_link = false;
 				} else {
 					echo "<th>";
 				}
 			  	echo clean(array_var($columns['names'], $col));
+                echo ' '.get_format_value_to_header($col, $report->getReportObjectTypeId());
 				echo "</th>";
 			} else {
 				$after_link = true;
@@ -387,15 +390,15 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 		?>
 		</tr>
         </thead>
-	    <tbody style="<?php echo $to_print ? 'display:inherit;':'' ?>">
+	    <tbody style="<?php echo $to_print ? '':'' ?>">
         <?php
 	foreach($groups as $g) {
-        echo_report_group_html($g, $results, $report, 0);
+	    echo_report_group_html($g, $results, $report, 0);
     }
-	
+
 	echo "<tr><td>&nbsp;</td></tr>";
 	$null=null;
-	Hook::fire('render_additional_report_rows', array('results' => $results, 'report' => $report), $null);
+	Hook::fire('render_additional_report_rows', array('results' => $results, 'report' => $report,'final_total' => true), $null);
 	
 	?>
     </tbody>
@@ -585,7 +588,15 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 			
 			if (isset($gb_keys[0])) {
 				$k0 = $row[$gb_keys[0]['k']];
-				$n0 = isset($row[$gb_keys[0]['k']."_toorder"]) ? $row[$gb_keys[0]['k']."_toorder"] : $row[$gb_keys[0]['n']];
+				//$n0 = isset($row[$gb_keys[0]['k']."_toorder"]) ? $row[$gb_keys[0]['k']."_toorder"] : $row[$gb_keys[0]['n']].'_'.$row[$gb_keys[0]['k']];
+				if (isset($row[$gb_keys[0]['k']."_toorder"])){
+                    $n0 = $row[$gb_keys[0]['k']."_toorder"];
+                }else{
+                    $n0 = $row[$gb_keys[0]['n']].'_'.$row[$gb_keys[0]['k']];
+                    if ($row[$gb_keys[0]['n']] == ''){
+                        $n0 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+                    }
+                }
 				if ($gb_keys[0]['is_date'] && $formatDate){
 				   // $n0 = gmdate('Y-m-d', strtotime($k0));
                     $n0 =  format_date(new DateTimeValue(strtotime($k0)),null,0);
@@ -620,7 +631,17 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                 
 				if (isset($gb_keys[1])) {
 					$k1 = $row[$gb_keys[1]['k']];
-					$n1 = isset($row[$gb_keys[1]['k']."_toorder"]) ? $row[$gb_keys[1]['k']."_toorder"] : $row[$gb_keys[1]['n']];
+					//$n1 = isset($row[$gb_keys[1]['k']."_toorder"]) ? $row[$gb_keys[1]['k']."_toorder"] : $row[$gb_keys[1]['n']].'_'.$row[$gb_keys[1]['k']];
+
+                    if (isset($row[$gb_keys[1]['k']."_toorder"])){
+                        $n1 = $row[$gb_keys[1]['k']."_toorder"];
+                    }else{
+                        $n1 = $row[$gb_keys[1]['n']].'_'.$row[$gb_keys[1]['k']];
+                        if ($row[$gb_keys[1]['n']] == ''){
+                            $n1 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+                        }
+                    }
+
 					
 					if ($gb_keys[1]['is_date']){
 					    //$n1 = gmdate('Y-m-d', strtotime($k1));
@@ -631,8 +652,6 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 						$n1 = get_cp_contact_name($gb_keys, 1, $row, $cp_contact_cache);
 						$row[$gb_keys[1]['n']] = $n1;
 					}
-					
-					if ($n1 == '') $n1 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
                     
                     if (!isset($grouped_temp[$n0]['groups'][$n1])) {
                         if ($gb_keys[1]['is_date']){
@@ -658,7 +677,16 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                     
 					if (isset($gb_keys[2])) {
 						$k2 = $row[$gb_keys[2]['k']];
-						$n2 = isset($row[$gb_keys[2]['k']."_toorder"]) ? $row[$gb_keys[2]['k']."_toorder"] : $row[$gb_keys[2]['n']];
+						//$n2 = isset($row[$gb_keys[2]['k']."_toorder"]) ? $row[$gb_keys[2]['k']."_toorder"] : $row[$gb_keys[2]['n']];
+
+                        if (isset($row[$gb_keys[2]['k']."_toorder"])){
+                            $n2 = $row[$gb_keys[2]['k']."_toorder"];
+                        }else{
+                            $n2 = $row[$gb_keys[2]['n']].'_'.$row[$gb_keys[2]['k']];
+                            if ($row[$gb_keys[2]['n']] == ''){
+                                $n2 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+                            }
+                        }
 						
 						if ($gb_keys[2]['is_date']){
 						    //$n2 = gmdate('Y-m-d', strtotime($k2));
@@ -708,6 +736,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 	}
 	
 	// ensure the correct group order
+    // This function is assigning formatting to the data
+    // @ToDo - remove all formatting from this function and put it on the "view layer"
 	foreach ($grouped_temp as $k0 => &$v0) {
 		if (isset($v0['groups'])) {
 			foreach ($v0['groups'] as $k1 => &$v1) {
@@ -716,6 +746,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					
 					if (isset($gb_keys[2]['is_date']) && $gb_keys[2]['is_date'] && $formatDate) {
 						foreach ($v1['groups'] as $k2 => &$v2) {
+						    // This is where formatting is applied (in this case, to the date values).
+                            // We need to remove this from here and move to the view/rendering class.
 							$v2['name'] = format_date(new DateTimeValue(strtotime($v2['name'])), null, 0);
 						}
 					}
@@ -744,7 +776,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 }
 
 
-function build_report_conditions_html($report_id, $parameters=array(), $conditions=null) {
+function build_report_conditions_html($report_id, $parameters=array(), $conditions=null, $disabled_params=array()) {
 	$report = Reports::findById($report_id);
 	if (!$report instanceof Report) return "";
 	
@@ -752,11 +784,11 @@ function build_report_conditions_html($report_id, $parameters=array(), $conditio
 		$conditions = ReportConditions::getAllReportConditions($report->getId());
 	}
 	
-	return build_report_conditions_html_main($report, $parameters, $conditions);
+	return build_report_conditions_html_main($report, $parameters, $conditions, $disabled_params);
 }
 
 
-function build_report_conditions_html_main($report, $parameters=array(), $conditions=array()) {
+function build_report_conditions_html_main($report, $parameters=array(), $conditions=array(), $disabled_params=array()) {
 
 	$object_type = ObjectTypes::findById($report->getReportObjectTypeId());
 	
@@ -766,13 +798,21 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 	$conditionHtml = "";
 	
 	if (count($conditions) > 0) {
-	   
+		$conditions_per_block = ceil(count($conditions) / 2);
+		if ($conditions_per_block < 4) $conditions_per_block = 4;
+		$conditions_count = 0;
+		
+		$disabled_param_ids = array_keys($disabled_params);
+		
 	    $date_format_tip = date_format_tip(user_config_option('date_format'));
 	    $model = $object_type instanceof ObjectType ? $object_type->getHandlerClass() : "Objects";
 	    eval('$managerInstance = ' . $model . "::instance();");
 	    
 		foreach ($conditions as $condition) {
-		    
+			// dont print ignored conditions
+		    if (in_array($condition->getId(), $disabled_param_ids)) {
+		    	continue;
+		    }
 		    //if coltype not in array types, it push to array for then check if the type is date to format
 		    if (!array_key_exists($condition->getFieldName(), $types)){
 		        if ($condition->getCustomPropertyId() > 0) {
@@ -821,7 +861,6 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 				$paramValue = array_var($parameters, $paramName, '');
 			}
 			$value = $condition->getIsParametrizable() ? clean($paramValue) : clean($condition->getValue());
-				
 			$externalCols = $managerInstance->getExternalColumns();
 			if(in_array($condition->getFieldName(), $externalCols)){
 				$value = clean(Reports::instance()->getExternalColumnValue($condition->getFieldName(), $value, $managerInstance));
@@ -840,7 +879,6 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 
 			$cond_html = null;
 			Hook::fire('custom_report_cond_html', array('field' => $condition, 'report' => $report, 'report_ot' => $object_type, 'value' => $paramValue), $cond_html);
-			
 			$already_rendered = false;
 			if ($cond_html) {
 				$conditionHtml .= $cond_html;
@@ -849,6 +887,10 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 			
 			if (!$already_rendered && $value != '' && $value != $date_format_tip) {
 				$conditionHtml .= '<li>' . $name . ' ' . ($condition->getCondition() != '%' ? $condition->getCondition() : lang('ends with') ) . ' ' . format_value_to_print($condition->getFieldName(), $value, $coltype, '', '"', user_config_option('date_format')) . '</li>';
+				$conditions_count++;
+				if ($conditions_count % $conditions_per_block == 0) {
+					$conditionHtml .= '</ul><ul>';
+				}
 			}
 		}
 	}
@@ -863,8 +905,8 @@ function custom_report_info_blocks($params) {
 	$id = array_var($params, 'id');
 	$results = array_var($params, 'results');
 	$rep_params = array_var($params, 'parameters');
-
-	$conditionHtml = build_report_conditions_html($id, $rep_params);
+	$disabled_params = array_var($params, 'disabled_params');
+	$conditionHtml = build_report_conditions_html($id, $rep_params, null, $disabled_params);
 	?>
 	
 <?php if ($conditionHtml != "") : ?>
@@ -890,7 +932,12 @@ function custom_report_info_blocks($params) {
 </div>
 <?php endif; ?>
 
-<?php $ret=null; Hook::fire('more_report_header_info', array('report_id' => $id, 'results' => $results), $ret);?>
+<?php 
+	if (is_numeric($id) && $id > 0) {
+		$ret=null; 
+		Hook::fire('more_report_header_info', array('report_id' => $id, 'results' => $results), $ret);
+	}
+?>
 
 <div class="custom-report-info-block no-border">
 	<h5><?php echo lang('report date')?>:</h5>
@@ -953,11 +1000,12 @@ function build_report_conditions_sql($parameters) {
 	$params = array_var($parameters, 'params');
 	
 	$disabled_p = array_var($_REQUEST, 'disabled_params');
+    if (!is_array($disabled_p)) $disabled_p = json_decode($disabled_p, true);
 	$disabled_params = array();
 	if (is_array($disabled_p)) {
 		foreach ($disabled_p as $k => $v) if ($v) $disabled_params[] = $k;
 	}
-	
+
 	$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	
 	$model = $ot->getHandlerClass();

@@ -10,6 +10,8 @@ function workspaces_total_task_timeslots_group_by_criterias($args, &$ret) {
 
 
 function workspaces_custom_reports_additional_columns($args, &$ret) {
+	// the dim columns are added by this plugin too
+	if (Plugins::instance()->isActivePlugin('advanced_reports')) return;
 	
 	$ot = array_var($args, 'object_type');
 	if ($ot instanceof ObjectType && in_array($ot->getType(), array('dimension_object','dimension_group'))) return;

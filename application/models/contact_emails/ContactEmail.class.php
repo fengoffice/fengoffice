@@ -2,11 +2,11 @@
 
   /**
   * ContactEmail class
-  * 
+  *
   * @author Ilija Studen <ilija.studen@gmail.com>
   */
   class ContactEmail extends BaseContactEmail {
-  
+
     /**
     * Return Email type
     *
@@ -17,8 +17,8 @@
     function getEmailType() {
       return EmailTypes::findById($this->getEmailTypeId());
     } // getEmailType
-    
-    
+
+
     /**
     * Return contact
     *
@@ -29,8 +29,8 @@
     function getContact() {
       return Contacts::findById($this->getContactId());
     } // getContact
-    
-    
+
+
     /**
     * Edit Email address
     *
@@ -44,9 +44,15 @@
       		$this->save();
     	}
     } // editEmailAddress
-    
-    
-    
+
+      function getArrayInfo(){
+        return array(
+            'type'=>$this->getEmailType()->getName(),
+            'email'=>$this->getEmailAddress()
+        );
+      }
+
+
     /**
      * Validate data before save
      *
@@ -55,15 +61,15 @@
      * @return void
      */
     function validate(&$errors) {
-    
+
     	if($this->validatePresenceOf('email_address')) {
     		if(!is_valid_email(trim($this->getEmailAddress()))) {
     			$errors[] = lang('invalid email address');
     		}
     	}
-    	
+
     }
-    
-  } // ContactEmail 
+
+  } // ContactEmail
 
 ?>

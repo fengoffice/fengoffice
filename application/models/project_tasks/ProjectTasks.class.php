@@ -226,6 +226,7 @@ class ProjectTasks extends BaseProjectTasks {
 			"start"=> 0,
 			"limit"=>$limit, 
 			"extra_conditions"=>$conditions, 
+			"fire_additional_data_hook" => false,
 			"order"=>  array('due_date', 'priority') , 
 			"order_dir" => "ASC"
 		));
@@ -249,6 +250,7 @@ class ProjectTasks extends BaseProjectTasks {
 		$tasks_result = self::instance()->listing(array(
 			"limit" => $limit, 
 			"extra_conditions" => $conditions_tasks, 
+			"fire_additional_data_hook" => false,
 			"order"=>  array('due_date', 'priority'), 
 			"order_dir" => "ASC"
 		));
@@ -258,6 +260,7 @@ class ProjectTasks extends BaseProjectTasks {
 			$milestones_result = ProjectMilestones::instance()->listing(array(
 				"limit" => $limit, 
 				"extra_conditions" => $conditions_milestones, 
+				"fire_additional_data_hook" => false,
 				"order" => array('due_date'), 
 				"order_dir" => "ASC"
 			));

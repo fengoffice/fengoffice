@@ -49,9 +49,9 @@
 	'field Objects description' => 'Description',
 	'field Objects paused_on' => 'Paused on',
 	'field Objects subtract' => 'Paused time',
-	'field Objects fixed_billing' => 'Fixed billing',
-	'field Objects hourly_billing' => 'Hourly billing',
-	'field Objects is_fixed_billing' => 'Is fixed billing',
+	'field Objects fixed_billing' => 'Total billable',
+	'field Objects hourly_billing' => 'Billing rate (hr)',
+	'field Objects is_fixed_billing' => 'Is total billable',
 	'field Objects billing_id' => 'Billing id',
 	'field Objects id' => 'Id',
 	'field Objects name' => 'Name',
@@ -70,6 +70,9 @@
   	'field ProjectTasks type_content' => 'Type content',
   	'report date' => 'Report date',
   	'ignore this condition' => 'Ignore this condition',
+  	'csv' => 'CSV',
+  	'pdf' => 'PDF',
+  	'excel' => 'Excel',
   );
   
 ?>

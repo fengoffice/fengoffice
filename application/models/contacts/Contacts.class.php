@@ -67,12 +67,47 @@ class Contacts extends BaseContacts {
 	 * @param string $email
 	 * @return Contact
 	 */
-	static function getByEmail($email, $id_contact = 0) {
-		$contact_email = ContactEmails::findOne(array('conditions' => array("`email_address` = ? AND `contact_id` <> ? AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0", $email, $id_contact)));
+	static function getByEmail($email, $id_contact = 0, $only_users = false) {
+		$is_user_cond = "";
+		if ($only_users) {
+			$is_user_cond = "AND (SELECT c2.user_type FROM ".TABLE_PREFIX."contacts c2 WHERE c2.object_id=contact_id)>0";
+		}
+		if (is_null($id_contact)) {
+			$id_contact = "0";
+		}
+		$contact_email = ContactEmails::findOne(array(
+				'conditions' => array(
+						"`email_address` = ? AND `contact_id` <> ? 
+						AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0
+						$is_user_cond", 
+						$email, $id_contact
+				)
+		));
 		if (!is_null($contact_email))
 			return self::findById($contact_email->getContactId());
 		return null;
 	} // getByEmail
+	
+	
+	/**
+	 * Return Contact object by first name and surname
+	 *
+	 * @param string $email
+	 * @return Contact
+	 */
+	static function getByFirstnameAndSurname($first_name, $surname, $email=null) {
+		$email_cond = "";
+		if (!is_null($email)) {
+			$email_cond = " AND EXISTS (
+					SELECT ce.id FROM ".TABLE_PREFIX."contact_emails ce 
+					WHERE ce.email_address=".DB::escape($email)." AND ce.contact_id=e.object_id
+			)";
+		}
+		$contact = Contacts::findOne(array(
+				"conditions" => array("first_name=? AND surname=? $email_cond", $first_name, $surname)
+		));
+		return $contact;
+	} // getByFirstnameAndSurname
         
         /**
 	 * Return Contact object by email
@@ -256,7 +291,19 @@ class Contacts extends BaseContacts {
 			'contact[email2]' => lang('email address 2'),
 			'contact[email3]' => lang('email address 3'),
 			'contact[job_title]' => lang('job title'),
-			'contact[department]' => lang('department')
+			'contact[department]' => lang('department'),
+
+            'contact[birthday]' => lang('birthday'),
+            'contact[comments]' => lang('comments'),
+            'contact[all_phones]' => lang('phone'),
+            'contact[all_addresses]' => lang('full address'),
+            'contact[all_addresses|street]' => lang('street'),
+            'contact[all_addresses|city]' => lang('city'),
+            'contact[all_addresses|state]' => lang('state'),
+            'contact[all_addresses|zip_code]' => lang('zip_code'),
+            'contact[all_addresses|country]' => lang('country'),
+			'contact[all_webpages]' => lang('website'),
+            'contact[all_emails]' => lang('emails'),
 		);
 	}
 	
@@ -325,6 +372,13 @@ class Contacts extends BaseContacts {
 	 * @param unknown_type $id
 	 */
 	static function validateUniqueEmail ($email, $id = null, $contact_type = "") {
+		
+		$do_validate_unique_mail = true;
+		Hook::fire('validate_contact_unique_mail', null, $do_validate_unique_mail);
+		if (!$do_validate_unique_mail) {
+			return true;
+		}
+		
 		$email = trim($email);
 		if ($id) {
 			$id_cond = " AND o.id <> $id ";
@@ -456,6 +510,46 @@ class Contacts extends BaseContacts {
 			else return lang('n/a');
 		}
 	}
+
+	static function getReportColumns(){
+        return array(
+            'department',
+            'birthday',
+            'comments',
+            'all_phones',
+            'all_addresses',
+            'all_addresses|street',
+            'all_addresses|city',
+            'all_addresses|state',
+            'all_addresses|zip_code',
+            'all_addresses|country',
+            'all_webpages',
+            'all_emails',
+        );
+    }
+
+    /**
+     * List of columns for contact type custom properties subgroups
+     * @return array
+     */
+    static function getReportColumnsCustomPropertyAssc(){
+        return array(
+            'department' ,
+            'job_title',
+            'birthday' ,
+            'comments',
+            'all_phones',
+            'all_addresses',
+            'all_addresses|street',
+            'all_addresses|city',
+            'all_addresses|state',
+            'all_addresses|zip_code',
+            'all_addresses|country',
+            'all_webpages',
+            'all_emails',
+        );
+    }
+
 	
 } // Contacts
 

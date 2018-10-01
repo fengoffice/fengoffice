@@ -50,7 +50,7 @@ abstract class ContentDataObjects extends DataManager {
 	function getTimeColumns() {
 		return array();
 	}
-	
+
 	/**
 	 * Return system columns
 	 *
@@ -427,6 +427,7 @@ abstract class ContentDataObjects extends DataManager {
 		$include_deleted = (bool) array_var($args,'include_deleted');
 		$join_with_searchable_objects = array_var($args, 'join_with_searchable_objects');
 		$select_columns = array_var($args, 'select_columns');
+		$fire_additional_data_hook = array_var($args, 'fire_additional_data_hook', true);
 		
 		//text filter param
 		$text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
@@ -771,6 +772,7 @@ abstract class ContentDataObjects extends DataManager {
 			
 		    if(!$only_count_results){
 				// Execute query and build the resultset
+				if ($this->getObjectTypeId()==5) Logger::log_r($sql);
 		    	$rows = DB::executeAll($sql);
 		    	
 		    	if ($return_raw_data) {
@@ -813,7 +815,9 @@ abstract class ContentDataObjects extends DataManager {
 						'start' => $start, 'limit' => $limit, 'totalCount' => $result->total, 'member_ids' => $members);
 				
 				$more_data = null;
-				Hook::fire('object_listing_additional_data', $params, $more_data);
+				if ($fire_additional_data_hook) {
+					Hook::fire('object_listing_additional_data', $params, $more_data);
+				}
 				if ($more_data) {
 					foreach ($more_data as $key => $value) {
 						$result->$key = $value;
@@ -984,6 +988,7 @@ abstract class ContentDataObjects extends DataManager {
     	if ($order && $order_dir){
     		if (!is_array($order)){
                 $order_conditions = "ORDER BY $order $order_dir";
+                $order_conditions .= ", o.name $order_dir";
             } else {
     			$i = 0;
     			foreach($order as $o){
@@ -1306,7 +1311,35 @@ abstract class ContentDataObjects extends DataManager {
 	    
 	    $array_cp_info = array();
 	    foreach($cps as $cp){
-	        $array_cp_info["cp_".$cp->getId()]= array('id' => $cp->getId(), 'type'=>$cp->getType(), 'label'=>$cp->getName(),'code'=>$cp->getCode());
+	    	$cp_info = array(
+	        		'id' => $cp->getId(),
+	        		'type' => $cp->getType(),
+	        		'label' => $cp->getName(),
+	        		'code' => $cp->getCode(),
+	        );
+	    	if ($cp->getType() == 'list') {
+	    		$list_values = explode(',', $cp->getValues());
+	    		
+	    		$list_value_labels = array();
+	    		foreach ($list_values as $list_value) {
+	    			$lang_value = Localization::instance()->lang($list_value);
+	    			if (is_null($lang_value)) {
+	    				$exp = explode('@', $cp_list_value);
+	    				if (count($exp) == 2) {
+	    					$lang_value = Localization::instance()->lang($exp[1]);
+	    					if (is_null($lang_value)) {
+	    						$lang_value = $exp[1];
+	    					}
+	    				} else {
+	    					$lang_value = $list_value;
+	    				}
+	    			}
+	    			$list_value_labels[$list_value] = $lang_value;
+	    		}
+
+	    		$cp_info['list_values'] = $list_value_labels;
+	    	}
+	        $array_cp_info["cp_".$cp->getId()] = $cp_info;
 	    }
 
 	    $result = array();

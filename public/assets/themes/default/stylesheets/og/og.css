@@ -1879,7 +1879,7 @@ a.underline {
 }
 .custom-properties .cp-list-multiple-option-container {
 	min-width: 120px;
-	float: left;
+  /*	float: left; */
 }
 .custom-properties span.cp-list-multiple-option {
 	margin: 0 5px;
@@ -2004,3 +2004,33 @@ table.og-custom-properties.main td {
 	line-height: 25px;
 	font-size: 14px;
 }
+
+.x-combo-list-item .task-group-name {
+	font-weight: bold;
+	padding-top: 4px;
+	padding-bottom: 2px;
+	border-bottom: 1px solid #aaa;
+}
+
+/****** Styles of custom properties wrapper ****/
+.custom-properties-wrapper {
+	width:400px;
+	height:115px;
+	overflow: scroll;
+	margin-left: -8px;
+	padding: 5px;
+	border: 1px solid #d0caca;
+}
+/******* Styles of wrapper image of users ****/
+
+div[id$="uploadPreviewContainer"] {
+	background-color: transparent;
+}
+
+
+
+
+.row-padding-bottom{padding-bottom: 20px;}
+.coInputMainBlock .dimension-selector-container.bootstrap-dimension-selector-container{padding: 0;margin: 0;}
+.bootstrap-dimension-selector-container table tr td .empty-text{font-size: 1rem;line-height: 1.5;}
+.bootstrap-dimension-selector-container table tr td .completePath span.member-path span{font-size: 1rem !important;line-height: 1.5 !important;}

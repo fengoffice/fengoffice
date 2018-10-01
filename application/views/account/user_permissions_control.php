@@ -54,12 +54,18 @@ foreach ( $dimensions as $dimension ) {
 <?php
 	$forced_members_param = "";
 	if (isset($is_new_user) && $is_new_user) {
-		$forced_members_param = "&new_user=1&forced_members=".json_encode(array_keys($member_permissions));
+		$forced_members_param = "&new_user=1";
+		?>
+		<input type="hidden" name="forced_members"
+			id="<?php echo $genid?>forced_members_<?php echo $dimension->getId()?>" 
+			value="<?php echo json_encode(array_keys($member_permissions)); ?>">
+		<?php
 	} 
 	// tree with members where user has permissions
 	echo render_single_dimension_tree ( $dimension, $genid, null, array( 
 		'select_root' => false, 'component_id' => $genid . '_with_permissions_' . $dimension->getId(), 'dont_load' => !$dimension->getIsManageable(),
 		'loadUrl' => 'index.php?c=dimension&a=dimension_tree_for_permissions&ajax=true&dimension_id='.$dimension->getId().'&only_with_perm=1&pg='.$pg_id."$forced_members_param",
+		'loadAdditionalParameters' => array($genid."forced_members_".$dimension->getId()),
 		'enableDD' => true, 'ddGroup' => $genid.'_dimension_'.$dimension->getId(), 'width' => '300'
 	));
 ?>
@@ -70,12 +76,18 @@ foreach ( $dimensions as $dimension ) {
 <?php 
 	$excluded_members_param = "";
 	if (isset($is_new_user) && $is_new_user) {
-		$excluded_members_param = "&new_user=1&excluded_members=".json_encode(array_keys($member_permissions));
+		$excluded_members_param = "&new_user=1";
+		?>
+		<input type="hidden" name="excluded_members" 
+			id="<?php echo $genid?>excluded_members_<?php echo $dimension->getId()?>" 
+			value="<?php echo json_encode(array_keys($member_permissions)); ?>">
+		<?php
 	}
 	// tree with members where user doesn't have permissions
 	echo render_single_dimension_tree ( $dimension, $genid, null, array(
 		'select_root' => false, 'component_id' => $genid . '_without_permissions_' . $dimension->getId(), 'dont_load' => !$dimension->getIsManageable(),
 		'loadUrl' => 'index.php?c=dimension&a=dimension_tree_for_permissions&ajax=true&dimension_id='.$dimension->getId().'&only_without_perm=1&pg='.$pg_id."$excluded_members_param",
+		'loadAdditionalParameters' => array($genid."excluded_members_".$dimension->getId()),
 		'enableDD' => true, 'ddGroup' => $genid.'_dimension_'.$dimension->getId(), 'width' => '300'
 	));
 ?>

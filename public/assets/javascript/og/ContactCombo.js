@@ -4,6 +4,7 @@ og.ContactCombo = Ext.extend(Ext.form.ComboBox, {
 		if (!this.hasFocus) {
 			return;
 		}
+                og.ContactCombo.addQuickContactButton(this);
 		if (this.store.getCount() > 0) {
 			this.expand();
 			this.restrictHeight();
@@ -83,7 +84,7 @@ og.renderContactSelector = function(config) {
 	var render_to = config.render_to;
 	var is_multiple = config.is_multiple;
     var custom_selected_class = config.custom_selected_class;
-    var no_style_in_selected = config.no_style_in_selected
+    var no_style_in_selected = config.no_style_in_selected;
 	var selected = config.selected;
 	var selected_name = config.selected_name;
 	var onchange_fn = config.onchange_fn;
@@ -98,11 +99,13 @@ og.renderContactSelector = function(config) {
 	if (config.filters) {
 		if (!url_params) url_params = {};
 		url_params['filters'] = Ext.util.JSON.encode(config.filters);
+        url_params['object_id'] = Ext.util.JSON.encode(config.id);
 	}
 
 	if (config.plugin_filters) {
 		if (!url_params) url_params = {};
 		url_params['plugin_filters'] = Ext.util.JSON.encode(config.plugin_filters);
+        url_params['object_id'] = Ext.util.JSON.encode(config.id);
 	}
 
 	var selector_filters = config.filters;
@@ -121,6 +124,11 @@ og.renderContactSelector = function(config) {
 	var list_class = (config.listClass ? config.listClass : '') + ' ' + genid;
 	var list_align = (config.listAlign ? config.listAlign : 'tl-bl');
 
+	if(config.is_bootstrap){
+        config.width = '100%';
+	}else{
+        config.width = !isNaN(config.width) ? config.width : 300;
+	}
 	var contactsCombo = new og.ContactCombo({
 		renderTo: genid + render_to,
 		name: name + 'combo',
@@ -130,7 +138,7 @@ og.renderContactSelector = function(config) {
 		store: store,
 		displayField: 'name',
         mode: 'remote',
-        width: !isNaN(config.width) ? config.width : 300,
+        width: config.width,
 		listWidth: config.listWidth ? config.listWidth : 'auto',
         listClass: list_class,
         listAlign: list_align,
@@ -142,12 +150,15 @@ og.renderContactSelector = function(config) {
         tabIndex: tabindex,
         emptyText: config.empty_text ? config.empty_text : (lang('select contact') + '...'),
         valueNotFoundText: '',
-        inline_selector: config.inline_selector
+        inline_selector: config.inline_selector,
+        cp_type:config.cp_type,
+		is_bootstrap:config.is_bootstrap
 	});
 	contactsCombo.doQuery('', true);
 
 	contactsCombo.on('focus', function(combo) {
-		if (combo) combo.expand();
+            og.ContactCombo.addQuickContactButton(this);
+            if (combo) combo.expand();
 	});
 
 	contactsCombo.on('beforeselect', function(combo, record, index){
@@ -200,9 +211,27 @@ og.renderContactSelector = function(config) {
     			types: ['contact'],
     			selected_type: 'contact'
     		});
-		} else {
-			og.selectContactFromCombo(record.data.id, record.data.name, combo, genid+render_to, genid+id, onchange_fn, is_multiple,custom_selected_class,no_style_in_selected);
-		}
+            } else if(record.data.id == -3){
+                    // focus on text input
+                    setTimeout(function(){
+                        combo.emptyText = '';
+			combo.clearValue();
+			combo.focus();
+                    }, 50);
+                    var quickConfig = {
+                        combo:combo,
+                        genid_r:genid+render_to,
+                        gendid:genid+id,
+                        onchange:onchange_fn,
+                        multiple:is_multiple,
+                        class:custom_selected_class,
+                        style:no_style_in_selected
+                    }
+                    og.renderModalQuickContact(config.memberId,combo.id,genid+render_to,genid+id,is_multiple);
+                    return true;
+            }else {
+		        og.selectContactFromCombo(record.data.id, record.data.name, combo, genid+render_to, genid+id, onchange_fn, is_multiple,custom_selected_class,no_style_in_selected,record.json.unclassified);
+            }
 
 	});
 
@@ -243,12 +272,12 @@ og.renderContactSelector = function(config) {
 	}
 }
 
-og.selectContactFromCombo = function(contact_id, contact_name, combo, container_id, hf_id, onchange_fn, is_multiple,custom_selected_class,no_style_in_selected) {
+og.selectContactFromCombo = function(contact_id, contact_name, combo, container_id, hf_id, onchange_fn, is_multiple,custom_selected_class,no_style_in_selected,unclassified) {
 
 	if(no_style_in_selected==null){
         no_style_in_selected=false;
-	}
-	// set hidden field values
+    }
+    // set hidden field values
 	if (is_multiple){
 
 		//check if all contact was deleted from combo, change the name for doing the pivot
@@ -302,27 +331,48 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
         style="";
     }
 
-	if (!is_multiple){
-		var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="'+style+'"><div style="float:left;margin-right:5px;">'+ contact_name + '</div>' +
-		'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" style="padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
-	}else{
+    if (combo.initialConfig.is_bootstrap) {
+        var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="font-size: 1rem;white-space: nowrap;'+style+'">' +
+			'<label>'+ contact_name + '</label>' +
+            '<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');' +
+			'og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" ' +
+			'class="link-ico ico-delete multiple-cp-contact-a-remove" ' +
+			'style="padding-left:18px;font-size: 0.75rem;padding-top: 1px;padding-bottom: 19px;">'+remove_text+'</a>' +
+			'</div>';
+    }else{
 
-		var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="white-space: nowrap;'+style+'"><div class="multiple-cp-contact-div-name">'+ contact_name + '</div>' +
-		'<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" class="link-ico ico-delete multiple-cp-contact-a-remove">'+remove_text+'</a></div>';
+		if (!is_multiple){
+			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="'+style+'"><div style="float:left;margin-right:5px;">'+ contact_name + '</div>' +
+			'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" style="padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
+		}else{
+
+			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="white-space: nowrap;'+style+'"><div class="multiple-cp-contact-div-name">'+ contact_name + '</div>' +
+			'<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" class="link-ico ico-delete multiple-cp-contact-a-remove">'+remove_text+'</a></div>';
+		}
 	}
 
 	//fill div with names contact selected and option to remove it.
 	var div_id = hf_id+'_labels';
 
-	if (document.getElementById(div_id)){
-		document.getElementById(div_id).insertAdjacentHTML( 'beforeend', html);
-	}else{
-		Ext.get(container_id).insertHtml('beforeEnd', html);
-	}
 
 	if (typeof(onchange_fn) == 'function') {
 		onchange_fn(contact_id);
 	}
+
+	if(unclassified){
+        og.elementToAddUnclassified = html;
+        og.ExtModal.show({
+            title:lang('add unclassified contact'),
+            html:og.contentModalAddUnclassified(container_id,div_id)
+        })
+    }else{
+        if (document.getElementById(div_id)){
+            document.getElementById(div_id).insertAdjacentHTML( 'beforeend', html);
+        }else{
+            Ext.get(container_id).insertHtml('beforeEnd', html);
+        }
+    }
+
 }
 
 //remove id from array of contact_ids and remove label
@@ -362,4 +412,93 @@ og.showContactCombo = function(id) {
 		combo.show();
 		combo.doQuery(' ', true);
 	}
+}
+
+og.renderModalQuickContact = function (member,combo_id,render,gen,multiple){
+    og.ExtModal.show({
+        title:lang('new contact'),
+        html:og.contentModalQuickContact(member,combo_id,render,gen,multiple)
+    })
+}
+
+og.contentModalQuickContact = function (member,combo_id,render,gen,multiple){
+
+    var method = "og.addQuickContactFromModal('"+member+"','"+combo_id+"','"+render+"','"+gen+"',"+multiple+")";
+    var button_content = lang("add contact");
+    var placeholder_f_name = lang("first name");
+    var placeholder_l_name = lang("last name");
+    var placeholder_e_mail = lang("email address");
+    return '<div id="modalQuickContact" class="coInputHeader">'
+	+'<div class="coInputName">'
+	+'<input id="profileFormFirstName" tabindex="2001" maxlength="50" placeholder="'+placeholder_f_name+' *" class="title short" type="text" name="contact[first_name]" value="">'
+        +'<input id="profileFormSurname" tabindex="2002" maxlength="50" placeholder="'+placeholder_l_name+' *" class="title short" type="text" name="contact[surname]" value="">'
+        +'<input id="profileFormEmail" tabindex="2003" maxlength="90" placeholder="'+placeholder_e_mail+'" class="title short" type="text" name="contact[email]" value=""></div>'
+	+'<div class="coInputButtons" style="float:  none;width: 100%;">'
+	+'<button style="margin-top:0px;margin-left:10px;float: right;" id="submit" class="submit " type="submit" accesskey="s" onclick="'+method+'">'+button_content+'</button></div>'
+        +'<input type="hidden" name="contact[new_contact_from_mail_div_id]" value="">'
+        +'<input type="hidden" name="contact[hf_contacts]" value="">'
+        +'<div class="clear"></div>'
+        +'<div class="clear"></div>'
+        +'</div>'
+};
+
+og.addQuickContactFromModal = function (member,combo_id,render,gen,multiple){
+    var modalQuickContact = $('#modalQuickContact');
+    var name = modalQuickContact.find('#profileFormFirstName').val();
+    var surname = modalQuickContact.find('#profileFormSurname').val();
+    var email = modalQuickContact.find('#profileFormEmail').val();
+
+    og.openLink(og.getUrl('contact','add',{}),{
+       hideLoading: true,
+       post:{'contact[first_name]':name,'contact[surname]':surname,'contact[email]':email,'members':'['+member+']'},
+       callback: function(success, data) {
+           if (success){
+               var combo = Ext.getCmp(combo_id);
+               og.selectContactFromCombo(data.contact_id,data.contact_name,combo,render,gen,'',multiple);
+               og.ExtModal.hide();
+           }
+       }
+    });
+}
+
+og.ContactCombo.addQuickContactButton = function (object){
+    if (object.cp_type == "contact"){
+        var flag = true;
+        var data = {'id':-3, 'name':'<a href="#" class="db-ico ico-expand ico-task" style="color:blue;text-decoration:underline;padding-left:20px;">'+lang('add contact')+'</a>'};
+        if(object.store.getCount()>0){
+            object.store.each(function(D){
+                if(D.data.id == data.id){
+                    flag = false;
+                }
+            })
+        };
+        if(flag){
+            var r = new Ext.data.Record(data, 0);
+            object.store.insert(0,r);
+        }
+    }
+}
+
+og.contentModalAddUnclassified = function (container_id,div_id){
+
+    var method = "og.addUnclassifiedContactFromModal('"+container_id+"','"+div_id+"')";
+    var button_content = lang("accept");
+    return '<div id="modalQuickContact" class="coInputHeader">'
+        +'<div class="coInputName">'
+        +'<p class="coInputName" style="max-width: 510px;text-align:  justify;font-size: 17px;">'+lang('unclassified message')+'</p>'
+        +'</div>'
+        +'<div class="coInputButtons" style="float:  none;width: 100%;">'
+        +'<button style="margin-top:0px;margin-left:10px;float: right;" id="submit" class="submit " type="submit" accesskey="s" onclick="'+method+'">'+button_content+'</button></div>'
+        +'<div class="clear"></div>'
+        +'<div class="clear"></div>'
+        +'</div>';
+};
+
+og.addUnclassifiedContactFromModal = function (container_id, div_id) {
+    if (document.getElementById(div_id)){
+        document.getElementById(div_id).insertAdjacentHTML( 'beforeend', og.elementToAddUnclassified);
+    }else{
+        Ext.get(container_id).insertHtml('beforeEnd', og.elementToAddUnclassified);
+    }
+    og.ExtModal.hide();
 }

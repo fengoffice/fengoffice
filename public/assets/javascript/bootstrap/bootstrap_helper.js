@@ -15,10 +15,17 @@ og.bootstrap_helper = {
      * @param json_object config all the configuration required for the function og.renderContactSelector
      */
     renderContactCombo: function (config) {
-        config.custom_selected_class='col-md-6';
+        config.custom_selected_class='col-md-12 row';
         config.no_style_in_selected=true;
+        config.is_bootstrap=true;
         og.renderContactSelector(config);
-        console.info(config.id);
-        $($("#" + config.id).children()[0]).removeClass().removeAttr("style");
+
+
+
+        $($("#" + config.id).children()[0]).removeClass().removeAttr("style").addClass("col-md-12 col-no-padding");
+
+        $($("#"+ config.id).children()[0]).find('img').remove();
+        $($("#"+ config.id).children()[0]).find('input').removeClass().removeAttr("style").addClass('form-control');
+
     },
 }

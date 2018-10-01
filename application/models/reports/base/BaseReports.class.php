@@ -26,7 +26,7 @@
     /**
     * Construct
     *
-    * @return Report 
+    * @return Report
     */
     function __construct() {
 	  Hook::fire('object_definition', 'Report', self::$columns);

@@ -1003,20 +1003,25 @@ class Contact extends BaseContact {
 						$fields[] = 'email';
 					}
 					
-					$conditions = "email_address=".DB::escape($main_email);
-					$type_condition = "";
-					if (!config_option('check_unique_mail_contact_comp')) {
-						$type_condition = " AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0";
-					}
-					if (!$this->isNew()) {
-						$conditions .= " AND contact_id <> ".$this->getId();
-					}
-					$conditions .= $type_condition;
+					$do_validate_unique_mail = true;
+					Hook::fire('validate_contact_unique_mail', $this, $do_validate_unique_mail);
 					
-					$em = ContactEmails::instance()->findOne(array('conditions' => $conditions));
-					if($em instanceof ContactEmail) {
-						$errors[] = lang('email address must be unique');
-						$fields[] = 'email';
+					if ($do_validate_unique_mail) {
+						$conditions = "email_address=".DB::escape($main_email);
+						$type_condition = "";
+						if (!config_option('check_unique_mail_contact_comp')) {
+							$type_condition = " AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0";
+						}
+						if (!$this->isNew()) {
+							$conditions .= " AND contact_id <> ".$this->getId();
+						}
+						$conditions .= $type_condition;
+						
+						$em = ContactEmails::instance()->findOne(array('conditions' => $conditions));
+						if($em instanceof ContactEmail) {
+							$errors[] = lang('email address must be unique');
+							$fields[] = 'email';
+						}
 					}
 				}
 			}
@@ -1531,9 +1536,18 @@ class Contact extends BaseContact {
         } else {
             $name = $this->getReverseDisplayName();
         }
-    	$info = array('id' => $this->getId(), 'name' => $name, 'cid' => $this->getCompanyId(), 'img_url' => $this->getPictureUrl(), 'role' => $this->getUserType());
-    	if ($this->getId() == logged_user()->getId()) $info['isCurrent'] = 1;
-    	return $info;
+        $info = array(
+            'id' => $this->getId(),
+            'name' => $name,
+            'cid' => $this->getCompanyId(),
+            'img_url' => $this->getPictureUrl(),
+            'role' => $this->getUserType(),
+            'address'=>array_map(function($value){return $value->getArrayInfo();},$this->getAllAddresses()),
+            'email'=>array_map(function($value){return $value->getArrayInfo();},$this->getAllEmails()),
+            'phone'=>array_map(function($value){return $value->getArrayInfo();},$this->getAllPhones())
+        );
+        if ($this->getId() == logged_user()->getId()) $info['isCurrent'] = 1;
+        return $info;
     }
     
     
@@ -1700,8 +1714,16 @@ class Contact extends BaseContact {
 				$w = $ratio * $h;
 			}
 			
-			$new_image = $image->resize($w, $h, false);
-			$new_image->saveAs($tmp_filename);
+			$data = file_get_contents($source_file);
+			$vImg = imagecreatefromstring($data);
+			$dstImg = imagecreatetruecolor($w, $h);
+			// save transparency
+			imagealphablending($dstImg, FALSE);
+			imagesavealpha($dstImg, TRUE);
+			
+			imagecopyresampled($dstImg, $vImg, 0, 0, 0, 0, $w, $h, $image->getWidth(), $image->getHeight());
+			imagepng($dstImg, $tmp_filename);
+			imagedestroy($dstImg);
 			
 			$repo_id = FileRepository::addFile($tmp_filename, array('type' => 'image/png', 'public' => true));
 			
@@ -2136,7 +2158,7 @@ class Contact extends BaseContact {
 	
 	
 	
-	function getFixedColumnValue($column_name) {
+	function getFixedColumnValue($column_name, $raw_data=false) {
 		$value = null;
 		switch ($column_name) {
 			case 'email':
@@ -2152,9 +2174,13 @@ class Contact extends BaseContact {
 				$value = ContactWebpages::instance()->findAll(array("conditions" => array("contact_id=?",$this->getId())));
 				break;
 			case 'company_id':
-				if ($this->getCompanyId() > 0) {
-					$comp = $this->getCompany();
-					if ($comp instanceof Contact) $value = $comp->getObjectName();
+				if ($raw_data) {
+					$value = $this->getCompanyId();
+				} else {
+					if ($this->getCompanyId() > 0) {
+						$comp = $this->getCompany();
+						if ($comp instanceof Contact) $value = $comp->getObjectName();
+					}
 				}
 				break;
 			case 'picture_file':

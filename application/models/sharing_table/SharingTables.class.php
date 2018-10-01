@@ -164,7 +164,7 @@ class SharingTables extends BaseSharingTables {
                 $insert_root_object_ids_sql = $this->get_root_object_ids_sql($object_type_id, $pg_id.' AS group_id, o.id', $pg_id);
                 $insert_sql = "INSERT INTO ".TABLE_PREFIX."sharing_table (group_id, object_id)  
                                $insert_root_object_ids_sql 
-                               ON DUPLICATE KEY UPDATE object_id=object_id";
+                               ON DUPLICATE KEY UPDATE ".TABLE_PREFIX."sharing_table.object_id=".TABLE_PREFIX."sharing_table.object_id";
                 DB::execute($insert_sql);
             }else{
                 $root_object_ids_sql = $this->get_root_object_ids_sql($object_type_id, 'o.id', $pg_id);

@@ -1912,7 +1912,7 @@ class Notifier {
 				$msg = $e->getMessage();
 				if (strpos($msg, 'Failed to authenticate') !== false) {
 					$from_k = array_keys($from);
-					$usu = Contacts::getByEmail($from_k[0]);
+					$usu = Contacts::getByEmail($from_k[0], null, true);
 					
 					$rem = ObjectReminders::instance()->findOne(array('conditions' => "context='eauthfail ". $from_k[0]."'"));
 					if (!$rem instanceof ObjectReminder && $usu instanceof Contact) {

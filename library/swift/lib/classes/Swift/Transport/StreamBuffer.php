@@ -257,7 +257,16 @@ class Swift_Transport_StreamBuffer extends Swift_ByteStream_AbstractFilterableIn
         
         // hack to prevent ssl/tls connection errors when using php >= 5.6
         if (defined('SWIFT_DISABLE_VERIFYPEER_SOCKET_OPTION') && SWIFT_DISABLE_VERIFYPEER_SOCKET_OPTION) {
-            if ((!empty($this->_params['protocol']) && $this->_params['protocol'] == 'tls') || (!empty($this->_params['protocol']) && $this->_params['protocol'] == 'ssl')) {
+        	
+        	$disable_verify_peer_settings = false;
+        	if (isset($this->_params['tls']) && $this->_params['tls'] || isset($this->_params['ssl']) && $this->_params['ssl']) {
+        		$disable_verify_peer_settings = true;
+        	}
+        	if ((!empty($this->_params['protocol']) && $this->_params['protocol'] == 'tls') || (!empty($this->_params['protocol']) && $this->_params['protocol'] == 'ssl')) {
+        		$disable_verify_peer_settings = true;
+        	}
+        	
+            if ($disable_verify_peer_settings) {
                 $options['ssl']['verify_peer'] = FALSE;
 		        $options['ssl']['verify_peer_name'] = FALSE;
 	        }

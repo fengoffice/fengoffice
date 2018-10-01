@@ -871,9 +871,13 @@
     'user config option name show_start_time_action' => 'Clock',
     'user config option desc show_start_time_action' => 'Enable the clock for time recording',
     'user config option name automatic_calculation_time'=>'Behavior when modifying hours',
+	  'user config option name automatic_calculation_start_time'=>'Behavior when modifying dates',
     'user config option name show_pause_time_action' => 'Allow paused time',
     'config option name show_pause_time_action' => 'Allow paused time',
-      
+      'user config option name stop_running_timeslots' => 'Allow stop timeslots recording when you started a new one',
+
+      'user config option name properties_for_contact_component' => 'Contact properties to display on contact selectors',
+      'user config option desc properties_for_contact_component' => 'Here you can choose additional properties to be displayed when selecting a contact on any contact selector.',
   ); // array
 
 ?>

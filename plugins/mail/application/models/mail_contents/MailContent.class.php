@@ -372,11 +372,11 @@ class MailContent extends BaseMailContent {
 	} // getPrintUrl
 	
 	function getSenderName() {
-		$user = Contacts::getByEmail($this->getFrom());
+		$user = Contacts::getByEmail($this->getFrom(), null, true);
 		if ($user instanceof Contact && $user->canSeeUser(logged_user())) {
 			return $user->getObjectName();
 		} else {
-			$contact = Contacts::getByEmail($this->getFrom());
+			$contact = Contacts::getByEmail($this->getFrom(), null, true);
 			if ($contact instanceof Contact && $contact->canView(logged_user())) {
 				return $contact->getObjectName();
 			}
@@ -385,11 +385,11 @@ class MailContent extends BaseMailContent {
 	}
 	
 	function getSenderUrl() {
-		$user = Contacts::getByEmail($this->getFrom());
+		$user = Contacts::getByEmail($this->getFrom(), null, true);
 		if ($user instanceof Contact && $user->canSeeUser(logged_user())) {
 			return $user->getCardUrl();
 		} else {
-			$contact = Contacts::getByEmail($this->getFrom());
+			$contact = Contacts::getByEmail($this->getFrom(), null, true);
 			if ($contact instanceof Contact && $contact->canView(logged_user())) {
 				return $contact->getCardUrl();
 			}

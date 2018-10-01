@@ -536,6 +536,7 @@ og.ObjectSelector = function(config, object_id, object_id_no_select, ignore_cont
 							url: og.getUrl('dimension', 'linked_object_filters', {
 								context: og.contextManager.plainContext(),
 								object_id: config.object_id ,
+                                object_type_id: config.object_type_id ,
 								show_associated_dimension_filters: config.show_associated_dimension_filters
 							})
 						},

@@ -19,6 +19,65 @@ class TemplateController extends ApplicationController {
 		$templates=COTemplates::instance()->findAll();
 		tpl_assign('templates', $templates);
 	}
+	
+	
+	private function verify_repetitive_tasks_have_date_params(COTemplate $template) {
+		
+		$tasks_with_missing_properties = array();
+		
+		$template_tasks = TemplateTasks::findAll(array(
+			"conditions" => "(repeat_forever > 0 OR repeat_num > 0 OR repeat_end > 0) AND template_id=".$template->getId()
+		));
+		
+		foreach ($template_tasks as $template_task) {
+			/* @var $template_task TemplateTask */
+			$repeat_by = $template_task->getRepeatBy(); // due_date or start_date
+			$template_obj_prop = TemplateObjectProperties::findOne(array(
+				"conditions" => array("template_id=? AND object_id=? AND property=?", $template->getId(), $template_task->getId(), $repeat_by)
+			));
+			
+			if (!$template_obj_prop instanceof TemplateObjectProperty) {
+				$tasks_with_missing_properties[] = $template_task;
+			}
+		}
+		
+		return $tasks_with_missing_properties;
+	}
+	
+	function remove_repetition_from_inconsistent_template_tasks() {
+		$template_id = array_var($_REQUEST, 'template_id');
+		$template = COTemplates::findById($template_id);
+		if ($template instanceof COTemplate) {
+			$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($template);
+			if (count($tasks_with_missing_properties) > 0) {
+				try {
+					DB::beginWork();
+					
+					foreach ($tasks_with_missing_properties as $t) {
+						/* @var $t TemplateTask */
+						$t->setRepeatForever(0);
+						$t->setRepeatNum(0);
+						$t->setRepeatEnd(0);
+						$t->setRepeatD(0);
+						$t->setRepeatM(0);
+						$t->setRepeatY(0);
+						$t->setRepeatBy('');
+						$t->save();
+					}
+					
+					DB::commit();
+					flash_success('repetition removed from tasks successfully');
+					ajx_current("back");
+					
+				} catch (Exception $e) {
+					DB::rollback();
+					flash_error($e->getMessage());
+					ajx_current("empty");
+				}
+			}
+		}
+	}
+	
 
 	function add() {
 		if (!can_manage_templates(logged_user())) {
@@ -53,9 +112,13 @@ class TemplateController extends ApplicationController {
 			$cotemplate->setFromAttributes($template_data);
 			$object_ids = array();
 			try {
+				$decoded_prop_inputs = json_decode($_POST['all_prop_inputs'], true);
+				
 				DB::beginWork();
 				$cotemplate->save();
-				$objects = array_var($_POST, 'objects');
+				
+				$objects = $this->get_prop_input_decoded($decoded_prop_inputs, 'objects');
+				
 				if(!empty($objects)){
 					foreach ($objects as $objid) {
 						$object = Objects::findObject($objid);
@@ -69,12 +132,13 @@ class TemplateController extends ApplicationController {
 	// 					COTemplates::validateObjectContext($object, $member_ids);
 					}
 				}
-				$objectPropertyValues = array_var($_POST, 'propValues');
-				$propValueParams = array_var($_POST, 'propValueParam');
-				$propValueOperation = array_var($_POST, 'propValueOperation');
-				$propValueAmount = array_var($_POST, 'propValueAmount');
-				$propValueUnit = array_var($_POST, 'propValueUnit');
-				$propValueTime = array_var($_POST, 'propValueTime');
+				
+				$objectPropertyValues = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValues');
+				$propValueParams = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueParam');
+				$propValueOperation = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueOperation');
+				$propValueAmount = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueAmount');
+				$propValueUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueUnit');
+				$propValueTime = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueTime');
 				
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
@@ -139,12 +203,23 @@ class TemplateController extends ApplicationController {
 //				evt_add('reload tab panel', 'tasks-panel');
 				
 				DB::commit();
-				ApplicationLogs::createLog($cotemplate, ApplicationLogs::ACTION_ADD);
-				flash_success(lang("success add template"));
-				if (array_var($_POST, "add_to")) {
-					ajx_current("start");
+				
+				$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($cotemplate);
+				if (count($tasks_with_missing_properties) > 0) {
+					ajx_current("empty");
+					$tasks_array = array();
+					foreach ($tasks_with_missing_properties as $t) {
+						$tasks_array[] = array('id' => $t->getId(), 'name' => $t->getName());
+					}
+					evt_add("ask user to fix template repetitive tasks", array('template_id' => $cotemplate->getId(), 'tasks' => $tasks_array));
 				} else {
-					ajx_current("back");
+					ApplicationLogs::createLog($cotemplate, ApplicationLogs::ACTION_ADD);
+					flash_success(lang("success add template"));
+					if (array_var($_POST, "add_to")) {
+						ajx_current("start");
+					} else {
+						ajx_current("back");
+					}
 				}
 			} catch (Exception $e) {
 				DB::rollback();
@@ -174,8 +249,9 @@ class TemplateController extends ApplicationController {
 	 */
 	function add_template_object_to_view($template_id) {
 		$objects = array();
-		$tasks_conditions = array('conditions' => '`template_id` = '.$template_id,  "order" => "depth,name");
-		$milestones_conditions = array('conditions' => '`template_id` = '.$template_id,  "order" => "name");
+		$template_objects_cond = " AND EXISTS (SELECT * FROM ".TABLE_PREFIX."template_objects tobj WHERE tobj.object_id=o.id AND tobj.template_id='$template_id')";
+		$tasks_conditions = array('conditions' => '`template_id` = '.$template_id . $template_objects_cond,  "order" => "depth,name");
+		$milestones_conditions = array('conditions' => '`template_id` = '.$template_id . $template_objects_cond,  "order" => "name");
 		$tasks = TemplateTasks::findAll($tasks_conditions);			
 		$milestones = TemplateMilestones::findAll($milestones_conditions);	
 				
@@ -201,13 +277,13 @@ class TemplateController extends ApplicationController {
 			$parentId = $task->getParentId();
 			$ico = "ico-task";
 			$action = "add";
-			$objects[] = $this->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId());
+			$objects[] = $this->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId(), $task->isRepetitive());
 		}
 		
 		return $objects;
 	}
 		
-	function prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId = null , $subTasks = null, $parentId = null, $ico = null, $objectTypeId=0) {
+	function prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId = null , $subTasks = null, $parentId = null, $ico = null, $objectTypeId=0, $is_repetitive=0) {
 		$object = array(
 				"object_id" => $objectId,
 				"object_type_id" => $objectTypeId,
@@ -219,7 +295,8 @@ class TemplateController extends ApplicationController {
 				"sub_tasks" => $subTasks,
 				"ico" => $ico,
 				"parent_id" => $parentId,
-				"action" => $action
+				"action" => $action,
+				"is_repetitive" => $is_repetitive ? "1" : "0",
 		);
 			
 		return $object;
@@ -246,7 +323,26 @@ class TemplateController extends ApplicationController {
 	}
 	
 	
-	
+	private function get_prop_input_decoded($decoded_prop_inputs, $prefix) {
+		$decoded_var = array();
+		
+		foreach ($decoded_prop_inputs as $key => $value) {
+			if (str_starts_with($key, $prefix)) {
+				preg_match_all("/\[(.*?)\]/", $key, $matches);
+				$subkeys = $matches[1];
+				if (!isset($decoded_var[$subkeys[0]])) {
+					$decoded_var[$subkeys[0]] = array();
+				}
+				if (isset($subkeys[1])) {
+					$decoded_var[$subkeys[0]][$subkeys[1]] = $value;
+				} else {
+					$decoded_var[$subkeys[0]] = $value;
+				}
+			}
+		}
+		
+		return $decoded_var;
+	}
 	
 	function edit() {
 		if (!can_manage_templates(logged_user())) {
@@ -285,12 +381,16 @@ class TemplateController extends ApplicationController {
 		} else {
 			$cotemplate->setFromAttributes($template_data);
 			try {
+				$decoded_prop_inputs = json_decode($_POST['all_prop_inputs'], true);
+				
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				DB::beginWork();
 				$tmp_objects = $cotemplate->getObjects();
 				$cotemplate->removeObjects();
 				$cotemplate->save();
-				$objects = array_var($_POST, 'objects');
+				
+				$objects = $this->get_prop_input_decoded($decoded_prop_inputs, 'objects');
+				
 				foreach ($objects as $objid) {
 					
 					$object = Objects::findObject($objid);
@@ -305,12 +405,13 @@ class TemplateController extends ApplicationController {
 				}
 
 				TemplateObjectProperties::deletePropertiesByTemplate(get_id());
-				$objectPropertyValues = array_var($_POST, 'propValues');
-				$propValueParams = array_var($_POST, 'propValueParam');
-				$propValueOperation = array_var($_POST, 'propValueOperation');
-				$propValueAmount = array_var($_POST, 'propValueAmount');
-				$propValueUnit = array_var($_POST, 'propValueUnit');
-				$propValueTime = array_var($_POST, 'propValueTime');
+				
+				$objectPropertyValues = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValues');
+				$propValueParams = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueParam');
+				$propValueOperation = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueOperation');
+				$propValueAmount = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueAmount');
+				$propValueUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueUnit');
+				$propValueTime = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueTime');
 				
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
@@ -379,13 +480,25 @@ class TemplateController extends ApplicationController {
 				}
 								
 				DB::commit();
-				ApplicationLogs::createLog($cotemplate, ApplicationLogs::ACTION_EDIT);
-				flash_success(lang("success edit template"));
-				ajx_current("back");
+				
+				$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($cotemplate);
+				if (count($tasks_with_missing_properties) > 0) {
+					ajx_current("empty");
+					$tasks_array = array();
+					foreach ($tasks_with_missing_properties as $t) {
+						$tasks_array[] = array('id' => $t->getId(), 'name' => $t->getName());
+					}
+					evt_add("ask user to fix template repetitive tasks", array('template_id' => $cotemplate->getId(), 'tasks' => $tasks_array));
+				} else {
+				
+					ApplicationLogs::createLog($cotemplate, ApplicationLogs::ACTION_EDIT);
+					flash_success(lang("success edit template"));
+					ajx_current("back");
+				}
 			} catch (Exception $e) {
 				DB::rollback();
 				flash_error($e->getMessage());
-				ajx_current("empty");
+				ajx_current("back");
 			}
 		}
 				
@@ -666,6 +779,10 @@ class TemplateController extends ApplicationController {
 			foreach( $template_object_members as $object_member ) {
 				$object_members[] = $object_member->getId();
 			}
+			
+			// add the members that must be autocassified using dimension associations according to the current set of members
+			Env::useHelper('dimension');
+			append_related_members_to_autoclassify($object_members);
 			
 			$controller->add_to_members($copy, $object_members, null, false);
 			

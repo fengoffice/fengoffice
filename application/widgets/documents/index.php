@@ -8,6 +8,8 @@ if ($panel instanceof TabPanel && $panel->getEnabled()) {
 		"order" => "updated_on",
 		"order_dir" => "desc",
 		"start" => 0,
+		"fire_additional_data_hook" => false,
+		"count_results" => false,
 		"limit" => $limit
 	));
 	$active_members = array();

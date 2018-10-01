@@ -406,15 +406,14 @@ og.allUsers =  <?php echo clean(str_replace('"',"'", escape_character(json_encod
 $object_types = ObjectTypes::getAllObjectTypes();
 
 foreach ($object_types as $ot) {
-    $dim_ids = DimensionObjectTypes::getDimensionIdsByObjectTypeId($ot->getId());
-    if ( is_array($dim_ids) && count($dim_ids) > 0 ) {
-        $c_name = trim(Members::getTypeNameToShowByObjectType($dim_ids[0], $ot->getId()));
-    }else{
-        $c_name = lang($ot->getName());
-    }
+    
+	$c_name = $ot->getPluralObjectTypeName();
+    $c_name_plural = $ot->getPluralObjectTypeName();
+	
 	$types[$ot->getId()] = array(
 		"name" => $ot->getName(),
 	    "c_name" => $c_name,
+	    "c_name_plural" => $c_name_plural,
 		"icon" => $ot->getIconClass(),
 		"type" => $ot->getType()
 	);
@@ -487,7 +486,7 @@ setInterval(function() {
 			callback: function(success, data) {
 
 				//reload og.dimensions
-				if (data.reload_dims) {
+				if (data && data.reload_dims) {
 					ogMemberCache.reset_dimensions_cache();										
 				}
 			}
@@ -567,11 +566,7 @@ og.dimensionPanels = [
 		if (!$first) echo ",";
 		$first = false;
 		
-		if (defined('JSON_NUMERIC_CHECK')) {
-			$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()), JSON_NUMERIC_CHECK );
-		} else {
-			$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension->getId()) );
-		}
+		$reloadDimensions = get_associated_dimensions_to_reload_json($dimension->getId());
 		
 		?>
 		{	
@@ -590,7 +585,8 @@ og.dimensionPanels = [
 			hidden: <?php echo (int) ! $dimension->getIsRoot(); ?>,
 			isManageable: <?php echo (int) $dimension->getIsManageable() ?>,
 			quickAdd: <?php echo ( intval($dimension->getOptionValue('quickAdd')) ) ? 'true' : 'false'  ?>,
-			minHeight: 10
+			minHeight: 10,
+			filterOnChange: true
 			//animate: false,
 			//animCollapse: false
 			

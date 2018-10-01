@@ -220,9 +220,15 @@ class AdministrationController extends ApplicationController {
 		
 		$object_types = array();
 		$ordered_object_types = array();
-		$object_types_tmp = ObjectTypes::instance()->findAll(array("conditions" => "`type` IN ('$ot_types_str') AND `name` <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'file revision'", "order" => "name"));
+		// get all object types, exclude object types of disabled plugins
+		$object_types_tmp = ObjectTypes::instance()->findAll(array(
+			"conditions" => "`type` IN ('$ot_types_str') 
+				AND IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true)
+				AND `name` <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'file revision'", 
+			"order" => "name"	
+		));
 		foreach ($object_types_tmp as $ot) {
-			$ordered_object_types[$ot->getId()] = lang($ot->getName() . "s");
+			$ordered_object_types[$ot->getId()] = $ot->getPluralObjectTypeName();
 			$object_types[$ot->getId()] = $ot->getName();
 		}
 		asort($ordered_object_types, SORT_STRING);

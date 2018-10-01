@@ -223,8 +223,12 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 							$tz_value = Timezones::getTimezoneOffsetToApply($event, logged_user());
 							
 							$event_start = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value);
-							$event_duration = new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
-							
+                            if ($event->getDuration() instanceof DateTimeValue ){
+                                $event_duration =  new DateTimeValue($event->getDuration()->getTimestamp() + $tz_value);
+                            } else{
+                                $event_duration = new DateTimeValue($event->getStart()->getTimestamp() + $tz_value + 3600);
+                            }
+
 							if ($dtv->getTimestamp() == mktime(0,0,0, $event_start->getMonth(), $event_start->getDay(), $event_start->getYear()) ||
 								$dtv->getTimestamp() == mktime(0,0,0, $event_duration->getMonth(), $event_duration->getDay(), $event_duration->getYear())) {
 									

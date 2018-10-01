@@ -46,9 +46,16 @@ class TimeslotController extends ApplicationController {
 		if ($object instanceof ContentDataObject) {
 			$timeslot->setRelObjectId($object_id);
 		}
+        
+         $allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
 		
 		try{
 			DB::beginWork();
+            
+            foreach ($allOpenTimeslot as $time){
+               $this->internal_close($time);
+            }
+			
 			$timeslot->save();
 			
 			$object_controller = new ObjectController();
@@ -57,6 +64,7 @@ class TimeslotController extends ApplicationController {
 			} else {
 				$object_controller->add_to_members($timeslot, active_context_members(false));
 			}
+			
 			
 			DB::commit();
 			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_OPEN);
@@ -224,7 +232,38 @@ class TimeslotController extends ApplicationController {
 			ajx_current("empty");
 			flash_error($e->getMessage());
 		}
-	} 
+	}
+	
+	function internal_close($time){
+	    
+	    $config = user_config_option('stop_running_timeslots');
+	    if ($config){
+            $date = format_date(null,DATE_MYSQL);
+            $time->getEndTime($date);
+            $time->close();
+        
+            //Billing
+            if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
+                $user = Contacts::findById($time->getContactId());
+                $billing_category_id = $user->getDefaultBillingId();
+                $bc = BillingCategories::findById($billing_category_id);
+                if ($bc instanceof BillingCategory) {
+                    $time->setBillingId($billing_category_id);
+                    $hourly_billing = $bc->getDefaultValue();
+                    $time->setHourlyBilling($hourly_billing);
+                    $time->setFixedBilling(number_format($hourly_billing * $hours, 2));
+                    $time->setIsFixedBilling(false);
+                }
+            }
+            $time->save();
+            
+            $object = $time->getRelObject();
+            if($object instanceof ProjectTask) {
+                $object->calculatePercentComplete();
+            }
+            
+        }
+    }
 	
 	function pause() {
 

@@ -58,6 +58,7 @@ return array(
 	"og/ContactCombo.js",
 	"og/Reminders.js",
 	"og/ReportPrint.js",
+	"og/CustomProperties.js",
 	"h5f.min.js",
 	"og/main.js",
 	"og/SearchSelector.js",

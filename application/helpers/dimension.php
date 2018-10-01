@@ -1,6 +1,55 @@
 <?php
 require_javascript('og/modules/addMessageForm.js');
 
+function append_related_members_to_autoclassify(&$object_member_ids) {
+	
+	$object_members = array();
+	if (is_array($object_member_ids) && count($object_member_ids) > 0) {
+		$object_members = Members::findAll(array("conditions" => "id IN (".implode(',', $object_member_ids).")"));
+	}
+	$assoc_member_ids = array();
+	
+	foreach ($object_members as $selection) {
+		// get the related members that are defined to autoclassify in its association config
+		$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($selection->getDimensionId(), $selection->getObjectTypeId());
+		foreach ($associations as $a) {
+			
+			$autoclassify_in_related = (bool)DimensionAssociationsConfigs::getConfigValue($a->getId(), 'autoclassify_in_property_member');
+			if ($autoclassify_in_related) {
+				
+				$tmp = MemberPropertyMembers::getAllPropertyMemberIds($a->getId(), $selection->getId());
+				$tmp = array_filter(explode(',', $tmp));
+				if (is_array($tmp) && count($tmp) > 0) {
+					$assoc_member_ids = array_merge($assoc_member_ids, $tmp);
+				}
+			}
+		}
+	}
+	$assoc_member_ids = array_unique(array_filter($assoc_member_ids));
+	
+	if (count($assoc_member_ids) > 0) {
+		$assoc_members = Members::findAll(array("conditions" => "id IN (".implode(',', $assoc_member_ids).")"));
+		$to_append = array();
+		// append only if there is no other member of its dimension already set in the original array
+		foreach ($assoc_members as $assoc_member) {
+			$append_it = true;
+			foreach ($object_members as $object_member) {
+				if ($object_member->getDimensionId() == $assoc_member->getDimensionId() && $object_member->getObjectTypeId() == $assoc_member->getObjectTypeId()) {
+					$append_it = false;
+					break;
+				}
+			}
+			if ($append_it) {
+				$to_append[] = $assoc_member->getId();
+			}
+		}
+		
+		if (count($to_append) > 0) {
+			$object_member_ids = array_merge($object_member_ids, $to_append);
+		}
+	}
+}
+
 function render_member_selectors($content_object_type_id, $genid = null, $selected_member_ids = null, $options = array(), $skipped_dimensions = null, $simulate_required = null, $default_view = true) {
 	if (is_numeric($content_object_type_id)) {
 		if (is_null($genid)) $genid = gen_id();
@@ -182,7 +231,12 @@ function render_single_member_selector(Dimension $dimension, $genid = null, $sel
 	$related_member_id = array_var($options, 'related_member_id', 0);
 	
 	// Render view
-	include get_template_path("components/multiple_dimension_selector", "dimension");
+
+    if (array_var($options, 'is_bootstrap')){
+        include get_template_path("components/bootstrap_multiple_dimension_selector", "dimension");
+    }else{
+	    include get_template_path("components/multiple_dimension_selector", "dimension");
+    }
 }
 
 function update_all_childs_depths($member, $old_parent_id) {
@@ -217,16 +271,24 @@ function update_all_childs_depths($member, $old_parent_id) {
 
 
 
-function save_associated_dimension_members($params) {
-
+function save_associated_dimension_members($params,$is_api = false,$data_api = null) {
 	$member = array_var($params, 'member');
+
+
 	if (!$member instanceof Member) return;
 
 	$request = array_var($params, 'request');
-	$associated_members = array_var($request, 'associated_members', array());
-	
+	if ($is_api){
+        $associated_members = array_var($data_api, 'associated_members', array());
+    }else{
+	    $associated_members = array_var($request, 'associated_members', array());
+    }
+
 	$is_new = array_var($params, 'is_new');
-	
+
+	//Esto va en un hook
+    Hook::fire('new_members_api', array('member' => $member,'is_api'=>$is_api), $associated_members);
+
 	foreach ($associated_members as $assoc_id => $assoc_mem_ids_str) {
 		$assoc_mem_ids = json_decode($assoc_mem_ids_str, true);
 		
@@ -549,3 +611,21 @@ function get_members_info_for_object_list($object_ids) {
 	return $member_names;
 }
 
+/**
+ * @param $dimension_id
+ * @param $object_type_id
+ * @param $associated_id
+ * @return int
+ */
+function get_associated_dimensions($dimension_id,$object_type_id,$associated_id){
+
+    $all_dimensions = DimensionMemberAssociations::getAssociatations($dimension_id,$object_type_id);
+    foreach ($all_dimensions as $dim){
+        if ($dim instanceof DimensionMemberAssociation){
+            if($dim->getAssociatedObjectType() == $associated_id){
+                return $dim->getId();
+            };
+        }
+    }
+
+}

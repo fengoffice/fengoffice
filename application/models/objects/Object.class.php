@@ -86,6 +86,8 @@ class Object extends BaseObject {
 			$info['dateArchived'] = $dateArchived;
 		}
 		
+		Hook::fire('general_object_array_info_additional_columns', array('object' => $this), $info);
+		
 		return $info;
 	}
 	

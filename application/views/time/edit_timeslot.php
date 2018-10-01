@@ -4,7 +4,7 @@
 	$object = $timeslot;
 	
 	$categories = array();
-	Hook::fire('object_edit_categories', $object, $categories);
+	Hook::fire('object_edit_categories', $object, $categories); // se genera el tab de billings
 	
 	// on submit functions
 	if (array_var($_REQUEST, 'modal')) {
@@ -168,7 +168,44 @@
                   
                     <?php 
                         echo render_object_custom_properties($timeslot, null, null, 'visible_by_default');
-                    ?> 
+                    ?>
+
+
+
+                    <div class="dataBlock">
+                        <?php echo label_tag(lang('task')) ?>
+                    
+
+                    <div id="contene" class="linked-objects-container">
+                        <?php
+                            $object_id = $timeslot->getRelObjectId();
+                            if ($object_id){
+                                $showLinkObjectTask = 'display:none;';
+                                
+                                $object_id = $timeslot->getRelObject()->getObjectId();
+                                $object_name = $timeslot->getRelObject()->getObjectName();
+                            }else{
+                                $showObjectTask = 'display:none;';
+                            }
+                        ?>
+                        
+                        <a id="<?php echo $genid ?>before" class="add-linked-object " href="#" onclick="og.openObjectTaskPicker()" style="<?php echo $showLinkObjectTask ?>"><span class="action-ico ico-task"><?php echo lang('link task') ?></span></a>
+
+                            
+                            <div class="template-object-actions og-add-template-object ico-task" style="<?php echo $showObjectTask ?>">
+                                <input id="object_id" type="hidden" name="object_id" value="<?php echo $object_id ?>" />
+                                <input type="hidden" name="old_object_id" value="<?php echo $object_id ?>" />
+                                <span class="name"><?php echo $object_name ?></span>
+                                <a href="#" onclick="og.removeObjectTask(this.parentNode)" class="internalLink coViewAction ico-delete"><?php echo lang('remove') ?></a>
+                            </div>
+                                    
+                    </div>
+
+                    </div>
+
+
+
+
                 </div>
 
                 <div id="<?php echo $genid ?>add_timeslot_related_to" class="editor-container form-tab">
@@ -247,8 +284,8 @@
             <label class="pull-left" style="margin-left: 10px"><?php echo lang('Remember my selection'); ?></label>
             <div class="clearfix"></div>
         </div>
-        <button class="pull-right submit" onclick="og.applyTimeAction();" style="font-size: 16px;"><?php echo lang('accept'); ?></button>
-        
+        <button class="pull-right submit" onclick="og.rollbackInputs();" style="font-size: 16px;"><?php echo lang('cancel'); ?></button>
+        <button class="pull-right submit add" onclick="og.applyTimeAction();" style="font-size: 16px;margin-right: 5px;"><?php echo lang('accept'); ?></button>
         <div class="clearfix"></div>
     </div>
 </div>
@@ -272,14 +309,39 @@
             <label class="pull-left" style="margin-left: 10px"><?php echo lang('Remember my selection'); ?></label>
             <div class="clearfix"></div>
         </div>
-        <button class="pull-right submit" onclick="og.applyTimeAction();" style="font-size: 16px;"><?php echo lang('accept'); ?></button>
-        
+        <button class="pull-right submit" onclick="og.rollbackInputs();" style="font-size: 16px;"><?php echo lang('cancel'); ?></button>
+        <button class="pull-right submit add" onclick="og.applyTimeAction();" style="font-size: 16px;margin-right: 5px;"><?php echo lang('accept'); ?></button>
+        <div class="clearfix"></div>
+    </div>
+</div>
+
+<div id="modal-config-hours" style="display: none;">
+    <h2><?php echo lang('How do you prefer'); ?></h2>
+    <div class="row">
+        <input class="pull-left" type="radio" name="user_config" value="dates" checked=""/>
+        <label><?php echo lang('Did you want change the date value'); ?></label>
+        <div class="clearfix"></div>
+    </div>
+    <div class="row">
+        <input class="pull-left" type="radio" name="user_config" value="times"/>
+        <label><?php echo lang('Did you want change the time value'); ?></label>
+        <div class="clearfix"></div>
+    </div>
+    <div>
+        <div class="pull-left" style="line-height: 13px;margin-top: 33px;">
+            <input class="pull-left" type="checkbox" id="remember"/>
+            <label class="pull-left" style="margin-left: 10px"><?php echo lang('Remember my selection'); ?></label>
+            <div class="clearfix"></div>
+        </div>
+        <button class="pull-right submit" onclick="og.rollbackDates();" style="font-size: 16px;"><?php echo lang('cancel'); ?></button>
+        <button class="pull-right submit add" onclick="og.applyDatesAction();" style="font-size: 16px;margin-right: 5px;"><?php echo lang('accept'); ?></button>
         <div class="clearfix"></div>
     </div>
 </div>
 
 <script>   
     var edit_mode = "<?php echo $edit_mode; ?>";
+    var edit_hours_mode = "<?php echo 0; ?>";
     var gen_id = "<?php echo $genid; ?>";
     var time_preferences =JSON.parse('<?php echo json_encode($time_preferences); ?>');
     var div;
@@ -354,14 +416,14 @@
                         basecls: 'user-config-timeslots',
                         html: '<div id="user-config" class="user-config-timeslots-container">'+div+'</div>'
                     });
-                    $modal.on('close', function (){og.rollbackInputs()});
+                    $modal.on('close', og.rollbackInputs);
                     break;
             }
         }else{
             og.changeStartDate();
         }
-    };
-    
+    }
+
     /**
      * Apply the change who the user decided
      */
@@ -382,12 +444,43 @@
             time_preferences.automatic_calculation_time = actionValue;
             var url = og.getUrl('account', 'update_user_preference', {name: 'automatic_calculation_time', value:actionValue});
             og.openLink(url,{hideLoading:true});
-            
         }
         og.updateLastTimeValue();
         og.ExtModal.hide();
-        
+
     };
+
+    /**
+     * Apply the change who the user decided
+     */
+    og.applyDatesAction = function (){
+        action = $('#user-config').find('input:radio[name="user_config"]:checked').val();
+       // debugger;
+        var actionValue = "3";
+        if(action == 'dates'){
+            actionValue = "1";
+            if(og.whoNeedChange == 2){
+                og.changeEndDate();
+            }else{
+                og.changeStartDate();
+            };
+        }
+        if(action == 'times'){
+            actionValue = "2";
+            og.changeTimesInputs();
+        }
+        remember = $('#user-config').find('#remember').is(":checked")? 1 : 0;
+        if(remember){
+            // use ajax to remember the user's selection
+            time_preferences.automatic_calculation_start_time = actionValue;
+            var url = og.getUrl('account', 'update_user_preference', {name: 'automatic_calculation_start_time', value:actionValue});
+            og.openLink(url,{hideLoading:true});
+        }
+        og.updateLastTimeValue();
+        og.ExtModal.hide();
+
+    };
+
     
     /**
      * Change automatic the start date
@@ -447,7 +540,7 @@
         
         end_date = $('#date_end_input');
         end_time = $('#end_time_input');
-        
+
         var now;
         if(end_date.val() == og.preferences.date_format_tip || end_time.val() =="hh:mm"){
             now = new Date();
@@ -482,52 +575,99 @@
         }
         end_date.val(d.dateFormat(og.preferences.date_format));
         start_date.val(now.dateFormat(og.preferences.date_format));
-        
+
     };
-    
-    og.onchangeDatesInputs = function (){
-       worked_time = $('#worked_time').val();
-       worked_minute = $('#worked_minute').val();
-       
-       paused_time = $('#paused_time').val();
-       paused_minute = $('#paused_minute').val();
-        
-       start_date = $('#date_input');
-       start_time = $('#start_time_input');
-       
-       end_date = $('#date_end_input');
-       end_time = $('#end_time_input');
-       
-       if(start_time.val() == 'hh:mm'){
-           return true;
-       }
-       if(end_time.val() == 'hh:mm'){
-           return true;
-       }
-           
+
+
+    og.changeTimesInputs = function(){
+        worked_time = $('#worked_time').val();
+        worked_minute = $('#worked_minute').val();
+
+        paused_time = $('#paused_time').val();
+        paused_minute = $('#paused_minute').val();
+
+        start_date = $('#date_input');
+        start_time = $('#start_time_input');
+
+        end_date = $('#date_end_input');
+        end_time = $('#end_time_input');
+
+        if(start_time.val() == 'hh:mm'){
+            return true;
+        }
+        if(end_time.val() == 'hh:mm'){
+            return true;
+        }
+
         var start_aux = og.getDateArray(start_date.val(),start_time.val());
         var end_aux = og.getDateArray(end_date.val(),end_time.val());
         DateOne = new Date(start_aux[0],start_aux[1],start_aux[2],start_aux[3],start_aux[4]);
         DateTwo = new Date(end_aux[0],end_aux[1],end_aux[2],end_aux[3],end_aux[4]);
 
         var time_diff = DateTwo.getTime() - DateOne.getTime();
-           
+
         if(paused_time != ""){
             time_diff -= (parseInt(paused_time) * og._minutes);
         }
         if(paused_minute !=""){
             time_diff -= (parseInt(paused_minute) * og._hours);
         }
-           
+
         var final_minutes = (time_diff/og._minutes) % 60;
         var final_hours = parseInt((time_diff/og._minutes) / 60);
-           
+
         $('#worked_time').val(final_hours);
         $('#worked_minute').val(final_minutes);
-       
+    };
+
+    og.whoNeedChange = 0;
+    og.onchangeDatesInputs = function (whoShow) {   //---------------------------------------------------------------------------------------------------------------------------------
+
+        if(whoShow == 'timeslot[end_date]'){
+            og.whoNeedChange = 1;
+        }else{
+            og.whoNeedChange = 2;
+        }
+
+        div = $('#modal-config-hours').html();
+
+        var action = 0;
+        if(time_preferences.automatic_calculation_start_time != 0){
+            if(time_preferences.automatic_calculation_start_time == 1){
+                action = 2;
+                if(whoShow == 'timeslot[end_date]'){
+                    action = 1;
+                }
+            }
+            if(time_preferences.automatic_calculation_start_time == 2){
+                action = 3;
+            }
+        }
+
+        switch (action) {
+            case 1:
+                og.changeStartDate();
+                break;
+            case 2:
+                og.changeEndDate();
+                break;
+            case 3:
+                og.changeTimesInputs();
+                break;
+            default :
+                $modal = og.ExtModal.show({
+                    title: '<?php echo lang("You changed the length of your time record"); ?>',
+                    basecls: 'user-config-timeslots',
+                    html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
+                });
+                $modal.on('close', og.rollbackInputs);
+                break;
+        }
+
+
     };
     
-    
+        
     og.updateLastTimeValue = function (){
         
         worked_time = $('#worked_time').val();
@@ -568,8 +708,62 @@
         worked_minute = $('#worked_minute').val(og._lastMinutesInputValue);
         paused_time = $('#paused_time').val(og._lastPausedHoursInputValue);
         paused_minute = $('#paused_minute').val(og._lastPausedMinutesInputValue);
+
+        og.ExtModal.hide();
     };
 
+    og.rollbackDates = function(){
+
+    }
+
+    
+    og.openObjectTaskPicker = function () {
+        og.ObjectPicker.show(function (objs) {
+            if (objs && objs.length > 0) {
+                var obj = objs[0].data;
+                if (obj.type != 'task') {
+                    og.msg(lang("error"), lang("object type not supported"), 4, "err");
+                } else {
+                    og.addObjectTask(obj.object_id,obj.name);
+                }
+            }
+        },'',{
+            types: ['task'],
+            selected_type: 'task'
+        });
+    };
+    
+    og.addObjectTask = function (object_id, object_name) {
+
+        
+        var Link = $('.add-linked-object:first');
+        var Object = $('.og-add-template-object:first');
+        
+        Object.find('#object_id').val(object_id);
+        Object.find('.name').text(object_name);
+        
+        Link.hide()
+        Object.show();
+        
+    };
+
+    og.removeObjectTask = function (element) {
+
+        var Link = $('.add-linked-object:first');
+        var Object = $('.og-add-template-object:first');
+        
+        Object.hide();
+        Link.show();
+        
+        Object.find('#object_id').val(0);
+        Object.find('.name').text('');
+        
+    }
+    
+    
+    
+    
+    
     var users_store = [];
 <?php foreach ($users as $u) { ?>
                 users_store.push(['<?php echo $u->getId() ?>', '<?php echo clean(escape_character($u->getObjectName())) ?>']);

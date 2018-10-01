@@ -40,4 +40,7 @@
 	'check connection data link description' => 'After filling the account configuration fields you can test the connection with the email server.',
     'user config option name default_mail_font_size' => 'Font size by default for emails',
     'user config option desc default_mail_font_size' => 'Font size by default for write the content of the emails (avoid numbers lower than 8 and greather than 72)',
+	'success mail enqueued' => 'Email successfully enqueued for sending',
+	'config option name send_outbox_emails_in_background' => 'Send emails in background',
+	'config option desc send_outbox_emails_in_background' => 'If this option is enabled the emails will be sent in a separate process, allowing the user to work faster. Emails will be put in outbox and sent by a process triggered in background.',
 );

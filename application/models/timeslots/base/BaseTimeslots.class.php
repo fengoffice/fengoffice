@@ -240,7 +240,7 @@
         return Timeslots::instance()->paginate($arguments, $items_per_page, $current_page);
       } // if
     } // paginate
-    
+
     /**
     * Return manager instance
     *

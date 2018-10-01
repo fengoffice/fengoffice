@@ -80,7 +80,16 @@ og.reports.printReport = function(genid, title, report_id) {
 og.reports.printNoPaginatedReport = function(genid, title) {
 	var printWindow = og.reports.createPrintWindow(title);
 
+	var has_scroll = $('#' + genid + 'report_container .report.custom-report').hasClass('scroll');
+	if (has_scroll) {
+		$('#' + genid + 'report_container .report.custom-report').removeClass('scroll');
+	}
+	
 	printWindow.document.write(document.getElementById(genid + 'report_container').innerHTML);
+	
+	if (has_scroll) {
+		$('#' + genid + 'report_container .report.custom-report').addClass('scroll');
+	}
 	
 	og.reports.closePrintWindow(printWindow);
 }
@@ -102,6 +111,12 @@ og.reports.go_to_custom_report_page = function(params) {
 
 	// initial parameters
 	var report_config = $.parseJSON(str);
+	for(prop in report_config){
+		if(typeof report_config[prop] == 'object' ){
+            report_config[prop] = Ext.util.JSON.encode(report_config[prop]);
+		}
+	}
+
 	
 	// more params
 	var more_params_el = $(params.link).closest("form").children("[name='params']");
@@ -116,7 +131,7 @@ og.reports.go_to_custom_report_page = function(params) {
 	report_config.offset = offset;
 	report_config.limit = limit;
 	report_config.replace = 1;
-	
+
 	og.openLink(og.getUrl(report_config.c, report_config.a, report_config));
 	
 }

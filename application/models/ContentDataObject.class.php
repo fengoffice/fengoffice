@@ -597,6 +597,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		
 		$copy->copy_custom_properties($this);
 		
+		Hook::fire('after_content_data_object_copy', array('object' => $this), $copy);
+		
 		return $copy ;
 	}
 	
@@ -605,10 +607,31 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		
 		$cp_values = CustomPropertyValues::findAll(array('conditions' => 'object_id = '.$object_from->getId()));
 		foreach ($cp_values as $cp_value) {
+			$cp = CustomProperties::getCustomProperty($cp_value->getCustomPropertyId());
 			$new_cp_value = new CustomPropertyValue();
 			$new_cp_value->setObjectId($this->getId());
 			$new_cp_value->setCustomPropertyId($cp_value->getCustomPropertyId());
-			$new_cp_value->setValue($cp_value->getValue());
+			
+			if ($cp->getType() == 'image') {
+				
+				if ($cp_value->getValue() != "") {
+					$json = json_decode($cp_value->getValue(), true);
+					
+					$original_repo_id = $json['repository_id'];
+					$file_content = FileRepository::getFileContent($original_repo_id);
+					$tmp_name = gen_id();
+					file_put_contents(ROOT."/tmp/$tmp_name", $file_content);
+					
+					$repo_id = FileRepository::addFile(ROOT."/tmp/$tmp_name", array('type' => $type, 'public' => true));
+					$json['repository_id'] = $repo_id;
+					
+					$new_cp_value->setValue(json_encode($json));
+					@unlink(ROOT."/tmp/$genid");
+				}
+				
+			} else {
+				$new_cp_value->setValue($cp_value->getValue());
+			}
 			$new_cp_value->save();
 		}
 	}
@@ -1470,18 +1493,35 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if ($this->hasOpenTimeslots($user))
 			throw new Error("Cannot add timeslot: user already has an open timeslot");
 
-		$timeslot = new Timeslot();
 
-		$dt = DateTimeValueLib::now();
-		$timeslot->setStartTime($dt);
-		$timeslot->setContactId($user->getId());
-		$timeslot->setRelObjectId($this->getObjectId());
+
+        if (user_config_option('stop_running_timeslots')) {
+            $allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
+            if (!empty($allOpenTimeslot)) {
+				$time_c = new TimeslotController();
+                foreach ($allOpenTimeslot as $time) {
+                	try{
+                		$time_c->internal_close($time);
+                	}catch(Exception $ex){
+                		Logger::log_r("Error closing running timeslot: ".$ex->getMessage());
+                	}
+                }
+            }
+        }
+
+        $timeslot = new Timeslot();
+
+        $dt = DateTimeValueLib::now();
+        $timeslot->setStartTime($dt);
+        $timeslot->setContactId($user->getId());
+        $timeslot->setRelObjectId($this->getObjectId());
 
 		$timeslot->save();
 		
 		$object_controller = new ObjectController();
 		$object_controller->add_to_members($timeslot, $this->getMemberIds());
-                return $timeslot;
+		
+		return $timeslot;
 	}
 
 	function hasOpenTimeslots($user = null){
@@ -2099,7 +2139,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				// object property
 				$info[$property_id] = $this->getColumnValue($property_id);
 				if ($info[$property_id] instanceof DateTimeValue) {
-					$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+					if ($this->getTimezoneId() > 0) {
+						$info[$property_id] = format_datetime($info[$property_id], DATE_MYSQL);
+					} else {
+						$info[$property_id] = date(DATE_MYSQL,$info[$property_id]->getTimestamp());
+					}
 				}
 			}
 		}
@@ -2116,7 +2160,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return null;
 	}
 	
-	function getFixedColumnValue($column_name) {
+	function getFixedColumnValue($column_name, $raw_data=false) {
 		return $this->getColumnValue($column_name);
 	}
 	

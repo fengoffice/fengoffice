@@ -3955,7 +3955,13 @@ og.addTableCustomPropertyRow = function(parent, focus, values, col_count, ti, cp
 
 	var field_name = is_member_cp ? 'member_custom_properties' : 'object_custom_properties';
 
-	var count = parent.getElementsByTagName("tr").length;
+	if (og.table_cps_last_row_id[cpid]) {
+		var count = og.table_cps_last_row_id[cpid];
+	} else {
+		var count = $(parent).find("table tbody tr").length;
+	}
+	og.table_cps_last_row_id[cpid] = count + 1;
+
 	var tbody = parent.getElementsByTagName("tbody")[0];
 	var tr = document.createElement("tr");
 	ti = ti + col_count * count;
@@ -3989,7 +3995,7 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id) {
   	for (var i=0; i<d_associations.length; i++) {
 	  	var assoc = d_associations[i];
 
-  		if (assoc.allows_default_selection) {
+  		if (assoc && assoc.allows_default_selection) {
 
 	  		og.openLink(og.getUrl('dimension', 'get_default_associated_members', {member_id: member_id, assoc_id:assoc.id, dim_id:assoc.assoc_dimension_id}), {
 		  		hideLoading: true,
@@ -4053,6 +4059,11 @@ og.is_associated_dimension = function(dimension_id) {
 	return false;
 }
 
+og.gridBooleanColumnRenderer = function(value, p, r) {
+	if (r.data.id == '__total_row__' || r.data.object_id <= 0) return '';
+
+	return value ? lang('yes') : lang('no');
+}
 
 og.gridObjectNameRenderer = function(value, p, r) {
 	if (r.data.id == '__total_row__' || r.data.object_id <= 0) return '<span id="__total_row__">'+value+'</span>';
@@ -4764,7 +4775,7 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		name: "timeslot[start_time]",
 		renderTo: config.genid + "start_time",
 		tabIndex: start_time_tindex + 1
-	});
+ 	});
 
 	$("#"+ config.genid +"add_ts_start_time_min").keydown(function(event){
 		var gid = $(this).attr('id').replace("add_ts_start_time_min", "");
@@ -4886,15 +4897,19 @@ og.tmpPictureFileUpload = function(genid, config) {
 	});
 }
 
-og.set_image_area_selection = function(genid) {
-
-	setTimeout(function() {
+og.set_image_area_selection = function(genid, is_company) {
+ 	setTimeout(function() {
 		var w = $('img#'+genid+'uploadPreview').width();
 		var h = $('img#'+genid+'uploadPreview').height();
-		var min = w > h ? h : w;
-		var size = min < 200 ? min : 200;
+		// set 1:1 ratio for initial selection if is a contact
+		if (!is_company) {
+			var min = w > h ? h : w;
+			var size = min < 200 ? min : 200;
+			w = size;
+			h = size;
+		}
 
-		og.area_sel.setSelection(0, 0, size, size, true);
+		og.area_sel.setSelection(0, 0, w, h, true);
 		og.area_sel.setOptions({show: true});
 		og.area_sel.update();
 	}, 500);
@@ -4955,6 +4970,7 @@ og.updatePictureFile = function (url) {
 									aspectRatio: '1:1',
 									handles: true,
 									instance: true,
+									type: Blob,
 									onSelectEnd: og.setPictureInfo
 								});
 								og.set_image_area_selection(genid);
@@ -4967,6 +4983,7 @@ og.updatePictureFile = function (url) {
 		}
 	});
 }
+
 
 /**
  * Return array [year,month,day,hour,minute] 

@@ -329,3 +329,9 @@
   opacity: 1;
   filter: alpha(opacity=100);
 }
+.col-no-padding{
+  padding: 0 !important;
+}
+.feng-bootstrap .custom-properties{
+  margin-top: 1rem;
+}

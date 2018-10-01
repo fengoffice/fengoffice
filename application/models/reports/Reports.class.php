@@ -200,7 +200,6 @@ class Reports extends BaseReports {
         $report = self::getReport($id);
         $show_archived = false;
         if ($report instanceof Report) {
-
             $ot = ObjectTypes::findById($report->getReportObjectTypeId());
             $table = $ot->getTableName();
 
@@ -254,7 +253,6 @@ class Reports extends BaseReports {
                     'join_type' => 'inner'
                 );
             }
-            
             if ($ot->getHandlerClass() == 'IncomeInvoices') {
                 $join_params = array(
                     'table' => TABLE_PREFIX . "currencies",
@@ -264,6 +262,10 @@ class Reports extends BaseReports {
                 );
                 $select_columns = array('o.*,e.*', 'jt.id as cur_id');
             }
+
+            // add object_billing join
+            Hook::fire('get_additional_sql_join', array('object_class' => $ot->getHandlerClass()),$join_params);
+            Hook::fire('get_additional_sql_select', array('object_class' => $ot->getHandlerClass()),$select_columns);
 
             $original_order_by_col = $order_by_col;
             $cp_order = null;
@@ -335,11 +337,11 @@ class Reports extends BaseReports {
                 $order_by_asc = $report->getIsOrderByAsc();
 
             if ($ot->getName() == 'task' && !SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
-                $allConditions .= " AND assigned_to_contact_id = " . logged_user()->getId();
+                $allConditions .= " AND  assigned_to_contact_id = " . logged_user()->getId();
             }
 
             if ($ot->getName() == 'timeslot') {
-                $allConditions .= " AND (e.rel_object_id=0 OR (SELECT aux.trashed_by_id FROM " . TABLE_PREFIX . "objects aux WHERE aux.id=e.rel_object_id)=0) ";
+                $allConditions .= " AND   (e.rel_object_id=0 OR (SELECT aux.trashed_by_id FROM " . TABLE_PREFIX . "objects aux WHERE aux.id=e.rel_object_id)=0) ";
             }
 
             Hook::fire('custom_report_extra_conditions', array('report' => $report), $allConditions);
@@ -358,10 +360,10 @@ class Reports extends BaseReports {
             );
             $results = null;
             Hook::fire('execute_object_custom_report', $report_options, $results);
-            
+
             if (is_null($results)) {
                 $results = array();
-
+                Hook::fire('additional_totals_column_as_array', array('object_type' => $ot), $select_columns);
                 if ($managerInstance) {
                     if ($order_by_col == "order") {
                         $order_by_col = "`$order_by_col`";
@@ -385,7 +387,6 @@ class Reports extends BaseReports {
                     if ($show_archived) {
                         $listing_parameters["archived"] = true;
                     }
-
                     $result = $managerInstance->listing($listing_parameters);
                 } else {
                     // TODO Performance Killer
@@ -410,11 +411,9 @@ class Reports extends BaseReports {
                 $results['pagination'] = Reports::getReportPagination($id, $params, $original_order_by_col, $order_by_asc, $offset, $limit, $totalResults);
             }
 
-
             $dimensions_cache = array();
 
             $results['columns'] = array('names' => array(), 'order' => array(), 'types' => array());
-            
             foreach ($report_columns as $column) {
                 if ($column->getCustomPropertyId() == 0) {
                     $field = $column->getFieldName();
@@ -464,11 +463,12 @@ class Reports extends BaseReports {
 
                         Hook::fire('custom_reports_fixed_additional_columns_def', array('object_type' => $ot, 'field' => $field), $results);
                     }
-                    
+
                     Hook::fire('get_columns_to_header_report', array('field' => $field),$results);
                     Hook::fire('get_taxes_columns_to_header_report', array('field' => $field),$results);
-                
+
                 } else {
+
                     $cp = CustomProperties::getCustomProperty($column->getCustomPropertyId());
                     if ($cp instanceof CustomProperty) {
                         $results['columns']['names'][$column->getCustomPropertyId()] = $cp->getName();
@@ -478,6 +478,7 @@ class Reports extends BaseReports {
                 }
 
             }
+            Hook::fire('get_more_columns_to_header_report', array('object_type' => $ot,'report'=>$report),$results);
 
             $report_rows = array();
             foreach ($objects as &$object) {/* @var $object Object */
@@ -496,7 +497,6 @@ class Reports extends BaseReports {
                     if ($column->getCustomPropertyId() == 0) {
 
                         $field = $column->getFieldName();
-
                         if (str_starts_with($field, 'dim_')) {
                             $dim_id = str_replace("dim_", "", $field);
                             if (!array_var($dimensions_cache, $dim_id) instanceof Dimension) {
@@ -628,9 +628,11 @@ class Reports extends BaseReports {
                                 }
                             }
 
+
+
                             Hook::fire('get_value_columns_to_body_report', array('field' => $field,'object'=>$object),$value);
                             Hook::fire('get_taxes_value_columns_to_body_report', array('field' => $field,'object'=>$object),$value);
-                        
+
                             Hook::fire('custom_reports_override_column_format', array('field' => $field, 'manager' => $managerInstance, 'object' => $object,'report'=>$report), $value);
                             $row_values[$field] = $value;
 
@@ -715,8 +717,8 @@ class Reports extends BaseReports {
                             }
                         }
 
-                       
-                        
+
+
                     } else {
 
                         $colCp = $column->getCustomPropertyId();
@@ -729,12 +731,13 @@ class Reports extends BaseReports {
                 }
                 $row_values['id'] = $object->getId();
 
+                Hook::fire("report_results_more_columns_value", array('report' => $report, 'object'=>$object), $row_values);
 
                 if ($use_obj_id_as_row_key) {
                     $report_rows[$object->getId()] = $row_values;
                 } else {
                     $report_rows[] = $row_values;
-                }         
+                }
             }
             if (!$to_print) {
                 if (is_array($results['columns']['names'])) {
@@ -747,7 +750,7 @@ class Reports extends BaseReports {
             }
 
             $results['rows'] = $report_rows;
-            
+
             Hook::fire("report_results_more_data", array('report' => $report, 'objects' => $objects), $results);
         }
 
@@ -778,7 +781,7 @@ class Reports extends BaseReports {
                 foreach ($row as $col => $value) {
                     $cp = CustomProperties::getCustomProperty($col);
                     if ($cp instanceof CustomProperty && $cp->getIsMultipleValues()) {
-                        
+
                     }
                 }
             }
@@ -831,7 +834,7 @@ class Reports extends BaseReports {
             $off = $limit * ($totalPages - 1);
             $nav .= '<a class="internalLink" href="#" onclick="og.reports.go_to_custom_report_page({offset:' . $off . ', limit:' . $limit . ', link:this});">' . $a_nav[3] . '</a>';
         }
-        return $nav . "<br/><span class='desc'>&nbsp;" . lang('total') . ": $totalPages " . lang('pages') . '</span>';
+        return '<div class="pagination-div">'. $nav . "&nbsp;<span class='desc'>&nbsp;" . lang('total') . ": $totalPages " . lang('pages') . '</span></div>';
     }
 
     private static $external_columns = array('user_id', 'contact_id', 'assigned_to_contact_id', 'assigned_by_id', 'completed_by_id', 'approved_by_id', 'milestone_id', 'company_id', 'rel_object_id');

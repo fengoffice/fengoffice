@@ -156,8 +156,11 @@
 .add-timeslot .coInputMainBlock .dataBlock .inputMinutes{width: 28px;text-indent: 1px;}
 .add-timeslot .coInputMainBlock .dataBlock .specify-link{margin-left: 15px;}
 .add-timeslot .coInputMainBlock .dataBlock.dataBlockRight{float: left;margin-left:15px;margin-bottom: 0px;}
+.add-timeslot .coInputMainBlock .dataBlock.dataBlockRight label{min-width: 125px;}
 .add-timeslot .coInputMainBlock .dataBlock #date_input{width: 80px !important;}
 .add-timeslot .coInputMainBlock .dataBlock #date_end_input{width: 80px !important;}
+.add-timeslot .coInputMainBlock .dataBlock textarea{width: 552px;}
+
 
 #user-config{padding: 10px;} 
 #user-config h2{font-size: 18px;margin-bottom: 10px;}
@@ -169,3 +172,30 @@
 #user-config .row input{
     margin-right: 10px;
 }
+
+#user-config button.submit{margin-left: 10px;}
+#user-config button.submit.add{
+    background-color: #4d82cc;
+    border-color: #5d92dc;
+    color: #fff;
+}
+
+.add-timeslot .dataBlock .og-add-template-object{
+    max-width: 500px;
+}
+
+.add-timeslot .template-object-actions .name{
+    display: inline-block;
+    min-width: 100px;
+    margin: 0px;
+    padding: 0px;
+    vertical-align: middle;
+    padding-left: 24px;
+    max-width: 250px;
+    width: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.add-timeslot .template-object-actions .coViewAction{padding: 2px 0pt 2px 20px;}

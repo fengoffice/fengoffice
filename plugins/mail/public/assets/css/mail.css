@@ -51,3 +51,12 @@ blockquote {
 .mail-account-item label {
 	max-width: 650px;
 }
+.mail-event-data-table td {
+	padding: 2px;
+	border-top: 1px solid #999;
+	border-left: 1px solid #999;
+}
+.mail-event-data-table {
+	border-bottom: 1px solid #999;
+	border-right: 1px solid #999;
+}

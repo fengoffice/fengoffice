@@ -10,24 +10,32 @@ if (!isset($allow_export)) $allow_export = true;
     <input id="params_<?php echo $genid ?>" name="params" type="hidden" value="<?php echo str_replace('"',"'", json_encode($parameters))?>"/>
     <input id="report_id_<?php echo $genid ?>" name="report_id" type="hidden" value="<?php echo $id ?>"/>
     
-<div class="report" style="padding:7px">
+<div class="report" style="padding:0px">
 <table style="min-width:600px">
 <tr>
 	<td rowspan=2 colspan="2" class="coViewHeader" style="width:auto;">
 		<!--<div id="iconDiv" class="coViewIconImage ico-large-report" style="float:left;"></div>-->
-
-		<div class="coViewTitleContainer pull-left">
-			<div class="coViewTitle">
-                <?php echo $title ?>
-            </div>
-            <p class="coViewDesc">
-                <?php  if ($description != '') echo clean($description); ?>
-            </p>
-                <?php if (is_numeric($id) && $id > 0) { // is a custom report ?>
+		<table><tr>
+		  <td>
+			<div class="coViewTitleContainer pull-left">
+				<div class="coViewTitle">
+	                <?php echo $title ?>
+	            </div>
+				
+	            <p class="coViewDesc">
+	                <?php  if ($description != '') echo clean($description); ?>
+	            </p>
+	        </div>
+          </td><td style="min-width:400px;">
+			<div class="report-buttons-container pull-left">
+                <?php 
+                
+                if (is_numeric($id) && $id > 0) { // is a custom report ?>
+                
                     <?php if (!isset($disable_print) || !$disable_print) {
 
                             render_report_header_button_small(array(
-                                'name' => 'print', 'text' => lang("print view"), 'onclick' => "og.reports.printReport('$genid','".escape_character($title)."', '$id');return false;", 'iconcls' => "ico-print"
+                                'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printReport('$genid','".escape_character($title)."', '$id');return false;", 'iconcls' => "ico-print"
                             ));
 
                         }
@@ -35,11 +43,11 @@ if (!isset($allow_export)) $allow_export = true;
                         if ($allow_export) {
 
                             render_report_header_button_small(array(
-                                'name' => 'exportCSV', 'text' => lang("export csv"), 'onclick' => "og.submit_csv_form('$genid', this);return false;", 'iconcls' => "ico-text"
+                                'name' => 'exportCSV', 'text' => lang("csv"), 'title' => lang("export csv"), 'onclick' => "og.submit_csv_form('$genid', this);return false;", 'iconcls' => "ico-text"
                             ));
 
                             render_report_header_button_small(array(
-                                'name' => 'exportPDFOptions', 'text' => lang("export pdf"), 'onclick' => "og.openPDFOptions('$genid');", 'iconcls' => "ico-application-pdf"
+                                'name' => 'exportPDFOptions', 'text' => lang("pdf"), 'title' => lang("export pdf"), 'onclick' => "og.openPDFOptions('$genid');", 'iconcls' => "ico-application-pdf"
                             ));
 
                             $null=null; Hook::fire('additional_custom_report_export_actions', array('genid' => $genid, 'report_id' => $id), $null);
@@ -49,24 +57,39 @@ if (!isset($allow_export)) $allow_export = true;
                       } else { // predefined report
 
                         render_report_header_button_small(array(
-                            'name' => 'print', 'text' => lang("print view"), 'onclick' => "og.reports.printNoPaginatedReport('$genid','".escape_character($title)."', '$id');return false;", 'iconcls' => "ico-print"
+                            'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printNoPaginatedReport('$genid','".escape_character($title)."', '$id');return false;", 'iconcls' => "ico-print"
                         ));
 
                         render_report_header_button_small(array(
-                            'name' => 'exportCSV', 'text' => lang("export csv"), 'onclick' => "og.submit_fixed_report_csv_form('$genid', this);return false;", 'iconcls' => "ico-text"
+                            'name' => 'exportCSV', 'text' => lang("csv"), 'title' => lang("export csv"), 'onclick' => "og.submit_fixed_report_csv_form('$genid', this);return false;", 'iconcls' => "ico-text"
                         ));
 
 
-                      } ?>
+                      }
 
-			<input name="parameters" type="hidden" value="<?php echo str_replace('"',"'", json_encode($post))?>"/>
-			<input name="context" type="hidden" value="" id="<?php echo $genid?>_plain_context"/>
-            <div class="clear"></div>
-		</div>
-        <div class="pull-left" style="padding: 8px 20px 0px;">
+
+                      // close button
+                      $on_close_click = "og.closeView();";
+                      if (array_var($_REQUEST, 'go_to_tab')) {
+                      	$on_close_click .= "var tab = Ext.getCmp('".array_var($_REQUEST, 'go_to_tab')."'); if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);" ;
+                      }
+                      render_report_header_button_small(array(
+                      		'name' => 'print', 'text' => lang("close"), 'title' => lang("close"), 'onclick' => $on_close_click, 'iconcls' => "ico-back"
+                      ));
+                ?>
+            </div>
+		  </td>
+		</tr></table>
+		
+		<input name="parameters" type="hidden" value="<?php echo str_replace('"',"'", json_encode($post))?>"/>
+		<input name="context" type="hidden" value="" id="<?php echo $genid?>_plain_context"/>
+		<div class="clear"></div>
+		
+		
+        <div class="pull-left" style="padding: 0px 12px 0px;">
             <?php
             if (!isset($genid)) $genid = gen_id();
-            custom_report_info_blocks(array('id' => $id, 'results' => $results, 'parameters' => $parameters));
+            custom_report_info_blocks(array('id' => $id, 'results' => $results, 'parameters' => $parameters, 'disabled_params' => $disabled_params));
             ?>
             <?php if (!isset($id)) $id= ''; ?>
             <input type="hidden" name="id" value="<?php echo $id ?>" />

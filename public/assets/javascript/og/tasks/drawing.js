@@ -13,6 +13,7 @@
 ogTasks.draw = function () {
     //first load the groups from server
     if (!ogTasks.Groups.loaded) {
+    	ogTasks.resetPaginationVariables();
         ogTasks.getGroups();
         return;
     }
@@ -38,15 +39,24 @@ ogTasks.draw = function () {
 
     //Drawing
     var sb = new StringBuffer();
-    sb.append(ogTasks.newTaskFormTopList());
-
+    var header_html = ogTasks.newTaskFormTopList();
+    if ($("#ogTasksPanelColNamesThead").length == 0) {
+	    sb.append(header_html);
+    }
     //Draw all groups
+    var first_group_to_draw_index = -1;
     for (var i = 0; i < this.Groups.length; i++) {
-        sb.append(this.drawGroup(displayCriteria, drawOptions, this.Groups[i]));
+    	var gr_html = this.drawGroup(displayCriteria, drawOptions, this.Groups[i]);
+        if (gr_html) {
+        	if (first_group_to_draw_index == -1) {
+        		first_group_to_draw_index = i;
+        	}
+        	sb.append(gr_html);
+        }
     }
 
     //Message
-    if (this.Groups.length == 0) {
+    if (this.Groups.length == 0 && ogTasks.groupsPaginationOffset == 0) {
         var context_names = og.contextManager.getActiveContextNames();
         if (context_names.length == 0) context_names.push(lang('all'));
 
@@ -54,15 +64,27 @@ ogTasks.draw = function () {
             '<div class="inner-message">' + lang('no tasks to display', '"' + context_names.join('", "') + '"') + '</div>' +
             '</td></tr>');
     }
+    if (this.Groups.length == 0) {
+    	ogTasks.allGroupsLoaded = true;
+    }
+    /*
+    if (this.Groups.length >= ogTasks.groupsPaginationCount) {
+    	sb.append('</div><div id="tasksPanelGroupsPagination" class="tasks-group-pagination-link-container">' +
+    			'<a href="#" onclick="ogTasks.loadMoreGroups();return false;">' +
+    			lang('load more task groups') +
+    			'</a></div>');
+    }*/
 
     var container = document.getElementById('tasksPanelContainer');
     if (container) {
-        container.innerHTML = '';
-        container.innerHTML = sb.toString();
+    	if (ogTasks.groupsPaginationOffset == 0) {
+    		container.innerHTML = '';
+    	}
+        container.innerHTML += sb.toString();
     }
     ogTasks.initColResize();
     if (this.Groups.length != 0) {
-        ogTasks.drawAllGroupsTasks();
+        ogTasks.drawAllGroupsTasks(first_group_to_draw_index);
     }
 
     ogTasks.initDragDrop();
@@ -130,6 +152,7 @@ ogTasks.loadAllDescriptions = function (task_ids) {
 //*		Draw group
 //************************************
 ogTasks.drawGroup = function (displayCriteria, drawOptions, group) {
+	if ($("#ogTasksPanelGroup" + group.group_id).length > 0) return '';
     group.view = [];
     if (displayCriteria.group_by == 'milestone') {
         var sb = new StringBuffer();
@@ -318,7 +341,7 @@ ogTasks.hideShowGroups = function (group_id) {
 
         for (var i = 0; i < this.Groups.length; i++) {
             if (this.Groups[i].group_id != group_id) {
-                var groupEl = document.getElementById('ogTasksPanelGroupCont' + this.Groups[i].group_id);
+                var groupEl = document.getElementById('ogTasksPanelGroup' + this.Groups[i].group_id);
                 if (groupEl)
                     groupEl.style.display = group.solo ? 'none' : 'block';
             }
@@ -419,7 +442,7 @@ ogTasks.drawGroupNextTask = function (group, drawOptions, displayCriteria) {
     }
 
 
-    $("#tasksPanel").parent().css('overflow', 'hidden');
+    $("#tasksPanel"+og.genid).parent().css('overflow', 'hidden');
 
     var btns = $(".tasksActionsBtn").toArray();
     og.initPopoverBtns(btns);
@@ -440,6 +463,7 @@ ogTasks.drawGroupNextTask = function (group, drawOptions, displayCriteria) {
             if (ogTasks.Groups.group_interval_iteration == ogTasks.Groups.length) {
                 ogTasks.initColResize();
                 og.eventManager.fireEvent('replace all empty breadcrumb', null);
+				ogTasks.isLoadingGroups = false;
             }
         }
     }
@@ -459,10 +483,14 @@ ogTasks.drawGroupTasks = function (group) {
     }, 50);
 };
 
-ogTasks.drawAllGroupsTasks = function () {
+ogTasks.drawAllGroupsTasks = function (first_group_to_draw_index) {
     og.loading();
 
-    ogTasks.Groups.group_interval_iteration = 0;
+    if (!first_group_to_draw_index || first_group_to_draw_index < 0) {
+    	ogTasks.Groups.group_interval_iteration = 0;
+    } else {
+    	ogTasks.Groups.group_interval_iteration = first_group_to_draw_index;
+    }
 
     var group = ogTasks.Groups[ogTasks.Groups.group_interval_iteration];
 
@@ -483,7 +511,7 @@ ogTasks.drawTask = function (task, drawOptions, displayCriteria, group_id, level
         level: level
     };
 
-    var html = this.drawTaskRow(task, drawOptions, displayCriteria, group_id, level);
+    var html = this.drawTaskRow(task, drawOptions, displayCriteria, group_id, level, returnHtml);
 
     if (typeof returnHtml != 'undefined') {
         return html;
@@ -589,14 +617,21 @@ ogTasks.reDrawTask = function (task) {
     }
 
     og.eventManager.fireEvent('replace all empty breadcrumb', null);
-    ogTasks.drawElbows($("[data-task-id="+task.parentId+"]").first().attr('data-parent-id'));
-    ogTasks.removeTaskToRefreshElbows(task.parentId);
-
+    
+    // draw parent task's elbows
+    if (task.parentId > 0) {
+    	ogTasks.drawElbows(task.parentId);
+    }
 }
 
-ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, level) {
+ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, level, returnHtml) {
     var sb = new StringBuffer();
     var tgId = "T" + task.id + 'G' + group_id;
+    
+    // check if task has been already rendered in this group, dont check this if only the html is to return and update the current row container
+    if (!returnHtml && $("#tasksPanel"+ og.genid +" #ogTasksPanelTask"+ task.id +"G"+ group_id).length > 0) {
+    	return;
+    }
 
     //checkbox container class by priority
     var priorityColor = "priority-default";
@@ -678,10 +713,14 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
                 break;
             }
         }
+        // ignore disabled dimensions
+        if (og.config.enabled_dimensions.indexOf(did+"") == -1) {
+        	continue;
+        }
 
         var dim_mem_path = "";
         if (typeof mpath[did] != "undefined") {
-            dim_mem_path = og.getEmptyCrumbHtml(dim_mpath, ".task-breadcrumb-container", null, null, exclude_parents_path);
+            dim_mem_path = og.getEmptyCrumbHtml(dim_mpath, ".task-breadcrumb-container", null, null, exclude_parents_path,true);
         }
 
         var key = 'lp_dim_' + did + '_show_as_column';
@@ -850,7 +889,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
     for (var key in ogTasks.TotalCols) {
         var row_field = ogTasks.TotalCols[key].row_field;
         var color = '#888';
-        if (row_field == 'worked_time_string' && task.TimeEstimate != '0' && task.pending_time < task.worked_time) {
+        if (row_field == 'worked_time_string' && task.TimeEstimate != '0' && task.TimeEstimate < task.worked_time) {
             color = '#f00';
         }
         row_total_cols.push({text: task[row_field], color: color});
@@ -935,7 +974,6 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
             });
         }
     }
-
     //instantiate the template
     var html = ogTasks.task_list_row_template(data);
 
@@ -943,7 +981,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
     return sb.toString();
 }
 
-ogTasks.closeTimeslot = function (tId) {
+ogTasks.closeTimeslot = function (tId,callback) {
     if (og.config.tasks_show_description_on_time_forms) {
         //get template
         var source = $("#small-task-timespan-template").html();
@@ -978,14 +1016,14 @@ ogTasks.closeTimeslot = function (tId) {
                 parameters[form_params[i].name] = form_params[i].value;
             }
 
-            ogTasks.executeAction("close_work", tId, parameters['timeslot[description]']);
+            ogTasks.executeActionFinal("close_work", tId, parameters['timeslot[description]'],callback);
 
             ogTasks.closeModal();
 
             event.preventDefault();
         });
     } else {
-        ogTasks.executeAction("close_work", tId);
+        ogTasks.executeActionFinal("close_work", tId,'',callback);
     }
 }
 
@@ -1039,10 +1077,8 @@ ogTasks.removeTaskToRefreshElbows = function (parent_id) {
     $("[data-parent-id=" + parent_id + "]").each(function (index,element) {
         var $element = $(element);
         var current_task_id = $element.attr("data-task-id");
-        console.info("current_task_id: "+current_task_id);
         //check if the element have childs
         if ($("[data-parent-id=" + current_task_id + "]").length > 0) {
-            console.info("this task id have childs: "+current_task_id);
             ogTasks.removeTaskToRefreshElbows(current_task_id);
         }
         $element.remove();
@@ -1959,10 +1995,10 @@ ogTasks.createDimensionColumnMenuItem = function (did, label, menu_key, option_n
                     og.breadcrumbs_skipped_dimensions[d] = 0;
                 }
             }
-
-            ogTasks.redrawGroups = false;
-            ogTasks.draw();
-            ogTasks.redrawGroups = true;
+            
+            var tp = Ext.getCmp("tasks-panel");
+            if (tp) tp.reset();
+            
         }
     };
 

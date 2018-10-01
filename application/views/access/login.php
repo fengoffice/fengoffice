@@ -56,7 +56,12 @@ foreach ($css as $c) {
 
 <div class="form-container">
 
-<?php $null=null; Hook::fire('login_form_before_inputs', $null, $null)?>
+<?php 
+$draw_inputs = true;
+$null=null; Hook::fire('login_form_before_inputs', $null, $draw_inputs);
+
+if ($draw_inputs) {
+?>
 
   <div class="input">
     <label for="loginUsername"><?php echo lang('email or username') ?></label>
@@ -86,7 +91,7 @@ foreach ($css as $c) {
 		<?php echo submit_button(lang('login')) ?>
 		<span class="forgot-pass"><a class="internalLink" href="<?php echo get_url('access', 'forgot_password') ?>"><?php echo lang('forgot password') ?></a></span>
 	</div>
-	<div style="clear:both;"></div>
+	<div class="login-options-separator"></div>
 	<div class="options-container">
 		<div class="remember-div">
 			<?php echo checkbox_field('login[remember]', array_var($login_data, 'remember') == 'checked', array('id' => 'loginRememberMe')) ?>
@@ -97,7 +102,8 @@ foreach ($css as $c) {
 			<a id="hideOptionsLink" style="display:none" href="javascript:hideMoreOptions()"><?php echo lang ('hide options'); ?></a>
 		</div>
 	</div>
-  	
+<?php } // if $draw_inputs ?>
+
   	<?php $null=null; Hook::fire('login_form_after_inputs', $null, $null)?>
   	
 </div>
@@ -116,6 +122,8 @@ foreach ($css as $c) {
 	</div>
 </div>
 
+<?php if ($draw_inputs) { ?>
 <script>
 document.getElementById('loginUsername').focus();
 </script>
+<?php } ?>

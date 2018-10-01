@@ -89,11 +89,7 @@
 	if (str_ends_with($listeners_str, ",")) $listeners_str = substr($listeners_str, 0, -1);
 	$listeners_str .= "}";
 	
-	if (defined('JSON_NUMERIC_CHECK')) {
-		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
-	} else {
-		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
-	}
+	$reloadDimensions = get_associated_dimensions_to_reload_json($dimension_id);
 	
 	?>
 

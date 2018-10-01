@@ -450,6 +450,10 @@ if (isset($email)){
 
 			return true;
 		});
+
+		// prevent: when viewing some mails a blank screen is shown
+		// @TODO: FIX THIS
+		Ext.getCmp('tabs-panel').getActiveTab().show();
 	});
 
 	

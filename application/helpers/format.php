@@ -236,8 +236,7 @@ function date_format_tip($format) {
 }
 
 
-	function format_value_to_print($col, $value, $type, $obj_type_id, $textWrapper='', $dateformat='Y-m-d', $tz_offset=null) {
-		
+	function format_value_to_print($col, $value, $type, $obj_type_id, $textWrapper='', $dateformat='Y-m-d', $tz_offset=null,$is_gruped = false) {
 		$is_time_column = false;
 		
 		$ot = ObjectTypes::findById($obj_type_id);
@@ -246,19 +245,30 @@ function date_format_tip($format) {
 			if ($manager) {
 				
 				$time_cols = $manager->getTimeColumns();
+
+				Hook::fire('additional_column_timeslots',array('ot'=>$ot),$time_cols);
+
 				if (in_array($col, $time_cols)) {
 					$format = user_config_option('report_time_colums_display');
 					$is_time_column = true;
-					
-					if ($ot->getName() == 'timeslot' && $col == 'subtract') {
-						$value = round($value/60);
-					}
-					
-					switch ($format) {
+
+                    if ($ot->getName() == 'timeslot' && $col == 'subtract') {
+                        $value = round($value/60);
+                    }
+                    if ($ot->getName() == 'timeslot' && ($col == 'time_estimate' || $col == 'bill_total_price' || $col == 'bill_total_cost') && !$is_gruped) { // don't show value per line, only in totals
+                        $value = '--';
+                    }
+
+                    switch ($format) {
 						case 'seconds': $formatted = $value * 60; break;
 						case 'minutes': $formatted = $value; break;
 						case 'hours': $formatted = $value / 60; break;
-						default: 
+                        case 'hh:mm':
+
+                            $formatted = sprintf('%02d', intval($value / 60)).':'.sprintf('%02d', $value % 60);
+
+                            break;
+						default:
 							$formatted = '';
 							if (!is_numeric($value)) {
 								$formatted = $value;
@@ -270,8 +280,8 @@ function date_format_tip($format) {
 				}
 			}
 		}
-		
 		if (!$is_time_column) {
+
 		  switch ($type) {
 			case DATA_TYPE_STRING: 
 				if(preg_match(EMAIL_FORMAT, strip_tags($value))){
@@ -330,7 +340,7 @@ function date_format_tip($format) {
 						$formatted = $value;						
 					}
 					if (!isset($formatted)) {
-						$formatted = format_date($dtVal, $dateformat);
+						$formatted = format_date($dtVal, $dateformat,0);
 					}
 				} else $formatted = '';
 				break;
@@ -364,9 +374,47 @@ function date_format_tip($format) {
 		
 		return $formatted;
 	}
-	
-	
-	function get_custom_property_value_for_listing($cp, $obj, $cp_vals=null, $raw_data=false) {
+
+
+function get_format_value_to_header($col, $obj_type_id)
+{
+    $formatted = '';
+    $ot = ObjectTypes::findById($obj_type_id);
+    if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
+        eval('$manager = ' . $ot->getHandlerClass() . "::instance();");
+        if ($manager) {
+
+            $time_cols = $manager->getTimeColumns();
+
+            Hook::fire('additional_column_timeslots', array('ot' => $ot), $time_cols);
+
+            if (in_array($col, $time_cols)) {
+                $format = user_config_option('report_time_colums_display');
+
+                switch ($format) {
+                    case 'seconds':
+                        $formatted = '';
+                        break;
+                    case 'minutes':
+                        $formatted = '';
+                        break;
+                    case 'hours':
+                        $formatted = '';
+                        break;
+                    case 'hh:mm':
+                        $formatted = '(hh:mm)';
+                        break;
+                    default:
+                        $formatted = '';
+                        break;
+                }
+            }
+        }
+    }
+    return $formatted;
+}
+
+	function get_custom_property_value_for_listing($cp, $obj, $cp_vals=null, $raw_data=false, $options=array()) {
 		$object_id = $obj instanceof ContentDataObject ? $obj->getId() : $obj;
 		
 		if (is_null($cp_vals)) {
@@ -392,10 +440,16 @@ function date_format_tip($format) {
 				}
 				$rows[] = $row;
 			}
-				
-			$formatted = "";
-			foreach ($rows as $row) {
-				$formatted .= ($formatted == "" ? "" : " - ") . implode(', ', $row);
+			
+			if (array_var($options, 'table_html')) {
+				tpl_assign('cp', $cp);
+				tpl_assign('rows', $rows);
+				$formatted = tpl_fetch(get_template_path('table_cp_view', 'custom_properties'));
+			} else {
+				$formatted = "";
+				foreach ($rows as $row) {
+					$formatted .= ($formatted == "" ? "" : " - ") . implode(', ', $row);
+				}
 			}
 				
 			$val_to_show .= $formatted;
@@ -424,7 +478,20 @@ function date_format_tip($format) {
 				}
 				
 				if ($cp->getType() == 'list' && $cp->getIsSpecial() && $cp_val instanceof CustomPropertyValue) {
-					$lang_value = Localization::instance()->lang($cp_val->getValue());
+					$cp_list_values = explode(',', $cp->getValues());
+					if (in_array($cp_val->getValue(), $cp_list_values)) {
+						$lang_value = Localization::instance()->lang($cp_val->getValue());
+					} else {
+						foreach ($cp_list_values as $cp_list_value) {
+							$exp = explode('@', $cp_list_value);
+							if (count($exp) == 2 && $exp[0] == $cp_val->getValue()) {
+								$lang_value = Localization::instance()->lang($exp[1]);
+								if (!is_null($lang_value)) {
+									$lang_value = $exp[1];
+								}
+							}
+						}
+					}
 					if (!is_null($lang_value)) {
 						$cp_val->setValue($lang_value);
 					}
@@ -447,12 +514,15 @@ function date_format_tip($format) {
 							}
 						}
 						
-						$tmp_date = DateTimeValueLib::dateFromFormatAndString($format_from, $cp_date_value);
-						
+						try {
+							$tmp_date = DateTimeValueLib::dateFromFormatAndString($format_from, $cp_date_value);
+						} catch (Exception $e) {
+							$tmp_date = null;
+						}
 						if ($cp_val->getValue() == "" || str_starts_with($cp_val->getValue(), EMPTY_DATE)) {
 							$formatted = "";
 						} else {
-							$formatted = $tmp_date->format($format);
+							if ($tmp_date instanceof DateTimeValue) $formatted = $tmp_date->format($format);
 						}
 						$cp_val->setValue($formatted);
 					}
@@ -518,7 +588,7 @@ function date_format_tip($format) {
 		return $val_to_show;
 	}
 	
-	function get_member_custom_property_value_for_listing($cp, $member_id, $cp_vals=null, $raw_data=false) {
+	function get_member_custom_property_value_for_listing($cp, $member_id, $cp_vals=null, $raw_data=false, $options=array()) {
 		if (is_null($cp_vals)) {
 			$cp_vals = MemberCustomPropertyValues::getMemberCustomPropertyValues($member_id, $cp->getId());
 		}
@@ -543,9 +613,15 @@ function date_format_tip($format) {
 				$rows[] = $row;
 			}
 		
-			$formatted = "";
-			foreach ($rows as $row) {
-				$formatted .= ($formatted == "" ? "" : " - ") . implode(', ', $row);
+			if (array_var($options, 'table_html')) {
+				tpl_assign('cp', $cp);
+				tpl_assign('rows', $rows);
+				$formatted = tpl_fetch(get_template_path('table_cp_view', 'custom_properties'));
+			} else {
+				$formatted = "";
+				foreach ($rows as $row) {
+					$formatted .= ($formatted == "" ? "" : " - ") . implode(', ', $row);
+				}
 			}
 		
 			$val_to_show .= $formatted;

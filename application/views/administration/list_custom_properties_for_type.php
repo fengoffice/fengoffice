@@ -6,8 +6,8 @@
   if (!isset($save_js_function)) {
   	$save_js_function = "og.saveObjectTypeCustomProperties('$genid');";
   }
-
-  $type_name = (lang($object_type->getName().'s'));
+  
+  $type_name = $object_type->getPluralObjectTypeName();
 
   $null = null;
   Hook::fire("custom_properties_form_page_actions", array("ot" => $object_type), $null);

@@ -138,13 +138,16 @@ function get_url($controller_name = null, $action_name = null, $params = null, $
 	}
 
 	$url_params = array('c=' . $controller, 'a=' . $action);
-
 	if(is_array($params)) {
 		foreach($params as $param_name => $param_value) {
 			if(is_bool($param_value)) {
 				$url_params[] = $param_name . '=1';
 			} else {
-				$url_params[] = $param_name . '=' . urlencode($param_value);
+                if (is_array($param_value)) {
+                    $url_params[] = http_build_query([$param_name => $param_value]);
+                } else {
+                    $url_params[] = $param_name . '=' . urlencode($param_value);
+                }
 			}
 		}
 	}
@@ -935,7 +938,7 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 	}
 	$contact->save();
 	if (is_valid_email(array_var($user_data, 'email'))) {
-		$user = Contacts::getByEmail(array_var($user_data, 'email'));
+		$user = Contacts::getByEmail(array_var($user_data, 'email'), null, true);
 		if(!$user)
 			$contact->addEmail(array_var($user_data, 'email'), 'personal', true);
 	}
@@ -1161,7 +1164,7 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 	
 	if($save_permissions){
 		//save_permissions($contact->getPermissionGroupId(), $contact->isGuest());
-		save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest());
+		save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest(), array(), false, true);
 	}
 	Hook::fire('after_user_add', $contact, $null);
 	
@@ -1183,7 +1186,7 @@ function send_notification($user_data, $contact_id){
 		if (array_var($user_data, 'send_email_notification') && $contact->getEmailAddress()) {
 			if (array_var($user_data, 'password_generator', 'link') == 'link') {
 				// Generate link password
-				$user = Contacts::getByEmail(array_var($user_data, 'email'));
+				$user = Contacts::getByEmail(array_var($user_data, 'email'), null, true);
 				$token = sha1(gen_id() . (defined('SEED') ? SEED : ''));
 				$timestamp = time() + 60*60*24;
 				set_user_config_option('reset_password', $token . ";" . $timestamp, $user->getId());
@@ -2054,10 +2057,19 @@ function process_uploaded_cropped_picture_file($picture, $crop_data) {
 				$nw = $nw / $p;
 				$nh = $nh / $p;
 			}
+			
+			// dont proces the image if there aren't changes in width and height
+			if ($w == $nw && $h == $nh) {
+				return $picture['tmp_name'];
+			}
 
 			$data = file_get_contents($picture['tmp_name']);
 			$vImg = imagecreatefromstring($data);
 			$dstImg = imagecreatetruecolor($nw, $nh);
+			// save transaparency
+			imagealphablending($dstImg, FALSE);
+			imagesavealpha($dstImg, TRUE);
+			
 			imagecopyresampled($dstImg, $vImg, 0, 0, $x, $y, $nw, $nh, $w, $h);
 			imagepng($dstImg, $path);
 			imagedestroy($dstImg);
@@ -2545,10 +2557,26 @@ function get_time_info($timestamp) {
 //escapes a character from a string, escapes ' by default, or all characters according to $all
 function escape_character($string, $char="'", $all = false) {
 	if ($all){
-		return addslashes($string);
+		return mysql_real_escape_string($string);
 	}else{
 		return str_replace($char, "\\".$char, $string);
 	}
+}
+
+function escape_parameters_array($parameters_to_escape) {
+	$escaped = array();
+	
+	if (is_array($parameters_to_escape)) {
+		foreach ($parameters_to_escape as $k => $v) {
+			if (is_array($v)) {
+				$escaped[$k] = escape_parameters_array($v);
+			} else {
+				$escaped[$k] = mysql_real_escape_string($v);
+			}
+		}
+	}
+	
+	return $escaped;
 }
 
 

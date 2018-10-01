@@ -640,7 +640,7 @@
 	}
 	
 	
-	function save_permissions($pg_id, $is_guest = false, $permissions_data = null, $save_cmps = true, $update_sharing_table = true, $fire_hook = true, $update_contact_member_cache = true, $users_ids_to_check = array(), $only_member_permissions=false) {
+	function save_permissions($pg_id, $is_guest = false, $permissions_data = null, $save_cmps = true, $update_sharing_table = true, $fire_hook = true, $update_contact_member_cache = true, $users_ids_to_check = array(), $only_member_permissions=false, $is_new_user=false) {
 	    $return_info = array();
 
 		if (is_null($permissions_data)) {
@@ -777,6 +777,10 @@
                                     $root_perm_cmp->setCanWrite($value >= 2);
                                     $root_perm_cmp->setCanDelete($value >= 3);
                                     $root_perm_cmp->save();
+                                    
+                                    if ($is_new_user && !in_array($rp_ot, $root_permissions_sharing_table_add)) {
+                                    	$root_permissions_sharing_table_add[] = $rp_ot;
+                                    }
                                 }
 							}
 						}
@@ -1464,7 +1468,7 @@
 	
 	
 	
-	function save_user_permissions_background($user, $pg_id, $is_guest=false, $users_ids_to_check = array(), $only_member_permissions=false) {
+	function save_user_permissions_background($user, $pg_id, $is_guest=false, $users_ids_to_check = array(), $only_member_permissions=false, $is_new_user=false) {
 		
 		// system permissions
 		$sys_permissions_data = array_var($_POST, 'sys_perm');
@@ -1494,7 +1498,7 @@
 		
 		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background()){
 			//pclose(popen("start /B ". $command, "r"));
-			save_permissions($pg_id, $is_guest, null, true, true, true, true, $users_ids_to_check, $only_member_permissions);
+			save_permissions($pg_id, $is_guest, null, true, true, true, true, $users_ids_to_check, $only_member_permissions, $is_new_user);
 		} else {
 
 			// save permissions in background
@@ -1518,7 +1522,8 @@
 			
 			$only_mem_perm_str = $only_member_permissions ? "1" : "0";
 			$is_guest_str = $is_guest ? "1" : "0";
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/save_user_permissions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." $pg_id $is_guest_str $perm_filename $sys_filename $mod_filename $rp_filename $usrcheck_filename $rp_genid $only_mem_perm_str";
+			$new_user_str = $is_new_user ? "1" : "0";
+			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/save_user_permissions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." $pg_id $is_guest_str $perm_filename $sys_filename $mod_filename $rp_filename $usrcheck_filename $rp_genid $only_mem_perm_str $new_user_str";
 			exec("$command > /dev/null &");
 			
 			//Test php command

@@ -70,9 +70,15 @@ og.TasksBottomToolbar = function(config) {
         		ogTasks.expandedGroups = [];
 				
         		var url = og.getUrl('account', 'update_user_preference', {name: 'tasksGroupBy', value:record.data.value});
-				og.openLink(url,{hideLoading:true});
-				
-				ogTasks.draw();
+				og.openLink(url, {
+					hideLoading:true,
+					callback: function(success, data) {
+						var tp = Ext.getCmp("tasks-panel");
+				        if (tp) tp.reset();
+					}
+				});
+
+				//ogTasks.draw();
         	}
         }
     });
@@ -104,9 +110,15 @@ og.TasksBottomToolbar = function(config) {
 				
 				ogTasks.redrawGroups = true;
 				var url = og.getUrl('account', 'update_user_preference', {name: 'tasksOrderBy', value:record.data.value});
-				og.openLink(url,{hideLoading:true});
 				
-				ogTasks.draw();
+				og.openLink(url, {
+					hideLoading:true,
+					callback: function(success, data) {
+						var tp = Ext.getCmp("tasks-panel");
+				        if (tp) tp.reset();
+					}
+				});
+				//ogTasks.draw();
         	}
         }
     });
@@ -228,6 +240,7 @@ og.TasksBottomToolbar = function(config) {
 setTimeout(function() {
     og.openLink(og.getUrl('task', 'users_for_tasks_list_filter'), {
     	callback: function(success, data) {
+    		if (!data) return;
 
     		var currentUser = '';
     		var usersArray = data.users;

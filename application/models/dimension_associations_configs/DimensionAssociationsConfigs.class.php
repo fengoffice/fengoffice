@@ -5,7 +5,23 @@
   */
   class DimensionAssociationsConfigs extends BaseDimensionAssociationsConfigs {
     
-  	
+  	/**
+  	 * Adds the minimum set of config options that all dimension associations must have
+  	 */
+  	static function ensureAllAssociationsHaveConfigOptions() {
+  		DB::execute("
+  			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value)
+				SELECT id, 'autoclassify_in_property_member', '1'
+				FROM ".TABLE_PREFIX."dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM ".TABLE_PREFIX."dimensions WHERE code='feng_persons')
+			ON DUPLICATE KEY UPDATE value=value;
+  		");
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value)
+				SELECT id, 'allow_remove_from_property_member', '1'
+				FROM ".TABLE_PREFIX."dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM ".TABLE_PREFIX."dimensions WHERE code='feng_persons')
+			ON DUPLICATE KEY UPDATE value=value;
+  		");
+  	}
   	
   	static function getConfigValue($association_id, $config_name) {
   		

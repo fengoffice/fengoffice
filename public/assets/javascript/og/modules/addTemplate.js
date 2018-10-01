@@ -114,6 +114,61 @@ og.toggleTemplateSubtasks = function(taskId){
 	}
 }
 */
+
+
+og.askUserToFixRepetitiveTemplateTasks = function(data) {
+	var template_id = data.template_id;
+	var tasks = data.tasks;
+
+	
+	var info = lang('warning you have added some repetitive tasks for this template that do not have date variables for their date');
+
+	var tasks_list_html = '<br /><div class="bold">'+lang('tasks')+':</div><ul>';
+	for (var i=0; i<tasks.length; i++) {
+		var t = tasks[i];
+		if (!t) continue;
+		tasks_list_html += '<li><span class="link-ico ico-task">'+ t.name +'</span></li>';
+	}
+	tasks_list_html += '</ul>';
+	
+	var div = document.createElement('div');
+	div.style = "border-radius: 5px; background-color: #fff; padding: 10px; width: 500px;";
+	var genid = Ext.id();
+	
+	div.innerHTML = '<div><label class="coInputTitle">'+lang('fix repetitive tasks')+'</label></div>'+
+		'<div id="'+genid+'_question">'+ info + '<br />' + tasks_list_html + '</div>'+
+		'<div id="'+genid+'_buttons">'+
+		'<button class="yes submit blue" style="width:100%;">'+lang('yes let me add those variables')+'</button>'+
+		'<button class="no submit blue" style="width:100%;">'+lang('no time now remove repetition')+'</button>'+
+		'</div><div class="clear"></div>';
+
+	var modal_params = {
+		'escClose': false,
+		'overlayClose': false,
+		'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'" style="display:none;"></a>',
+		'onShow': function (dialog) {
+			$("#"+genid+"_close_link").addClass("modal-close-img");
+			$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
+			$("#"+genid+"_question").css('margin', '10px 0');
+			$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+				Ext.getCmp('tabs-panel').getActiveTab().back();
+				og.openLink(og.getUrl('template', 'edit', {id:template_id}), {});
+				$('.modal-close').click();
+			});
+			$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+				og.openLink(og.getUrl('template', 'remove_repetition_from_inconsistent_template_tasks'), {post: {
+					template_id: template_id
+				}});
+				$('.modal-close').click();
+			});
+	    }
+	};
+	setTimeout(function() {
+		$.modal(div, modal_params);
+	}, 100);
+	
+}
+
 og.addObjectToTemplate = function(target, obj, dont_draw_milestone_combo) {
 	target = $('#'+target);
 	
@@ -130,8 +185,8 @@ og.addObjectToTemplate = function(target, obj, dont_draw_milestone_combo) {
 		'<div style="float: left;" class="db-ico '+obj.ico+'"></div>' +
 		'<div class="template-text-ellipsis">' +
 			'<a id="template-object-name' + obj.object_id + '" href="#" class="internalLink" onclick="og.viewTempObj('+obj.object_id+',  \''+obj.type+'\')">'+og.clean(obj.name)+'</a>' +
+			(parseInt(obj.is_repetitive) > 0 ? '&nbsp;<span class="link-ico ico-recurrent"></span>' : '') +
 		'</div>';
-			
 	var divActions = document.createElement('div');
 	divActions.className = "template-object-actions";
 

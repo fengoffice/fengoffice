@@ -40,6 +40,13 @@ class Timeslots extends BaseTimeslots {
           'order' => '`e`.`start_time`'
           ));
 	}
+    
+    static function getAllOpenTimeslotByObjectByUser($user) {
+        return self::find(array(
+            'conditions' => array('`e`.`end_time`= ? AND `o`.`created_by_id` = ? ', EMPTY_DATETIME,$user->getId()),
+            'order' => '`e`.`start_time`'
+        ));
+    }
 
 
 	private $cached_timeslots = null;
@@ -264,9 +271,9 @@ class Timeslots extends BaseTimeslots {
 		$parent_cols = parent::getColumnsToAggregateInTotals();
 		$cols = array(
 			'worked_time' => array('operation' => 'sum', 'format' => 'time'),
-			'subtract' => array('operation' => 'sum', 'format' => 'time'),
-			'fixed_billing' => array('operation' => 'sum', 'format' => 'money', 'currency_id_col' => 'rate_currency_id', 'group_by' => 'rate_currency_id'),
-		);
+            'subtract' => array('operation' => 'sum', 'format' => 'time'),
+            'fixed_billing' => array('operation' => 'sum', 'format' => 'money', 'currency_id_col' => 'rate_currency_id', 'group_by' => 'rate_currency_id'),
+        );
 		
 		return array_merge($parent_cols, $cols);
 	}

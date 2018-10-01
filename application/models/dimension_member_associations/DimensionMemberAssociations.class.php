@@ -44,11 +44,13 @@
   	
   	/** 
   	 * Returns an array with the dimensions to reload foreach member type that belongs to this dimension
+  	 * Use only the reverse associations (associated dim -> main dim), so only secondary dimensions filter main dimensions
   	 */
 	function getDimensionsToReloadByObjectType($dimension_id) {
 		
-		$sql = "SELECT `associated_dimension_id` as dim_id, `object_type_id` as ot_id FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $dimension_id
-				UNION SELECT `dimension_id` as dim_id, `associated_object_type_id` as ot_id  FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `associated_dimension_id` = $dimension_id";
+		$sql = "SELECT `dimension_id` as dim_id, `associated_object_type_id` as ot_id  
+				FROM `".TABLE_PREFIX."dimension_member_associations` 
+				WHERE `associated_dimension_id` = $dimension_id";
 		
 		$rows = DB::executeAll($sql);
 		

@@ -718,7 +718,10 @@ CREATE TABLE `<?php echo $table_prefix ?>project_tasks` (
   KEY `milestone_id` (`milestone_id`),
   KEY `priority` (`priority`),
   KEY `assigned_to` USING HASH (`assigned_to_contact_id`),
-  KEY `total_worked_time` (`total_worked_time`)
+  KEY `total_worked_time` (`total_worked_time`),
+  KEY `start_date` (`start_date`),
+  KEY `due_date` (`due_date`),
+  KEY `completed_by_id` (`completed_by_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>workspaces` (
@@ -734,8 +737,10 @@ CREATE TABLE `<?php echo $table_prefix ?>searchable_objects` (
   `column_name` varchar(50) <?php echo $default_collation ?> NOT NULL default '',
   `content` text <?php echo $default_collation ?> NOT NULL,
   `contact_id` int(10) unsigned NOT NULL default '0',
+  `assoc_member_id` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY  (`rel_object_id`,`column_name`),
   FULLTEXT KEY `content` (`content`),
+  KEY `assoc_member_id` (`assoc_member_id`),
   KEY `rel_obj_id` (`rel_object_id`)
 ) ENGINE=MyISAM <?php echo $default_charset ?>;
 
@@ -1035,7 +1040,7 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_config_option_values` (
   `option_id` int(10) unsigned NOT NULL default '0',
   `contact_id` int(10) unsigned NOT NULL default '0',
   `value` text <?php echo $default_collation ?>,
-  `member_id` INT( 10 ) UNSIGNED NULL DEFAULT '0',
+  `member_id` INT( 10 ) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  ( `option_id` , `contact_id` , `member_id` )
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 

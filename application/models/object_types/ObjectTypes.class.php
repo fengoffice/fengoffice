@@ -119,6 +119,13 @@
 		}
 	}
 	
+	static function getPluralObjectTypeName($object_type_id) {
+		$ot = ObjectTypes::findById($object_type_id);
+		if ($ot instanceof ObjectType) {
+			return $ot->getPluralObjectTypeName();
+		}
+		return '';
+	}
 	
 	
 	static function getListableObjectsSqlCondition($extra_conditions = "") {

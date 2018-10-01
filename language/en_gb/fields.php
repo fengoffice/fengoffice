@@ -312,5 +312,7 @@ return array(
         // Time fields 
         'field Objects total_worked_time' => 'Total worked time', 
         'field Objects status' => 'Status',
+
+    'field Objects prefix' => 'Prefix',
 );
 
