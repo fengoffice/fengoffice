@@ -558,22 +558,24 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 	}
 	
 	/* @var $ot ObjectType */
-	eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
-	if ($managerInstance) {
-		foreach ($gb_keys as &$gbk) {
-			if (str_starts_with($gbk['k'], '_group_id_fp_')) {
-				$col = str_replace('_group_id_fp_', '', $gbk['k']);
-				if (in_array($managerInstance->getColumnType($col), array(DATA_TYPE_DATETIME, DATA_TYPE_DATE))) {
-					$gbk['is_date'] = true;
-				}
-			} else if (str_starts_with($gbk['k'], '_group_id_cp_')) {
-				$cp_id = str_replace('_group_id_cp_', '', $gbk['k']);
-				$cp = CustomProperties::findById($cp_id);
-				if ($cp instanceof CustomProperty && ($cp->getType()=='contact' || $cp->getType()=='user')) {
-					$gbk['cp_contact'] = $cp_id;
-				}
-				if ($cp instanceof CustomProperty && ($cp->getType()=='date' || $cp->getType()=='datetime')) {
-					$gbk['is_date'] = true;
+	if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
+		eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
+		if ($managerInstance) {
+			foreach ($gb_keys as &$gbk) {
+				if (str_starts_with($gbk['k'], '_group_id_fp_')) {
+					$col = str_replace('_group_id_fp_', '', $gbk['k']);
+					if (in_array($managerInstance->getColumnType($col), array(DATA_TYPE_DATETIME, DATA_TYPE_DATE))) {
+						$gbk['is_date'] = true;
+					}
+				} else if (str_starts_with($gbk['k'], '_group_id_cp_')) {
+					$cp_id = str_replace('_group_id_cp_', '', $gbk['k']);
+					$cp = CustomProperties::findById($cp_id);
+					if ($cp instanceof CustomProperty && ($cp->getType()=='contact' || $cp->getType()=='user')) {
+						$gbk['cp_contact'] = $cp_id;
+					}
+					if ($cp instanceof CustomProperty && ($cp->getType()=='date' || $cp->getType()=='datetime')) {
+						$gbk['is_date'] = true;
+					}
 				}
 			}
 		}

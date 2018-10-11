@@ -165,6 +165,13 @@ button.add-new-user-btn {
 	margin: 3px!important;
 }
 
+.coInputHeader .coInputButtons button.submit.disabled,
+.coInputHeader .coInputButtons button.submit.disabled:hover {
+	background-color: #ddd;
+    color: #999;
+    border: 1px solid #ccc;
+}
+
 .coInputHeader .coInputButtons button.submit:hover,
 .coInputMainBlock button.submit:hover, 
 .adminConfiguration .adminMainBlock button.submit:hover,

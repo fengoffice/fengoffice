@@ -8,7 +8,9 @@ Hook::fire('timeslot_list_additional_actions', $additional_actions_params, $addi
 
 $show_billing = can_manage_billing(logged_user());
 
-$current_filters = array_var($_SESSION, 'current_time_module_filters', array());
+$current_filters_json = user_config_option('current_time_module_filters');
+$current_filters = $current_filters_json == "" ? array() : json_decode($current_filters_json, true);
+
 $active_members = array();
 foreach (active_context() as $selection) {
     if ($selection instanceof Member)
@@ -17,7 +19,6 @@ foreach (active_context() as $selection) {
 $can_add_timeslots = can_add_timeslots(logged_user(), $active_members);
 ?>
 
-<div id="timePanelOverTbar" class="x-panel-tbar" style="width:100%;display:block;background-color:#F0F0F0;"></div>
 <div id="timePanel" class="ogContentPanel" style="height:100%;">
 
     <div id="<?php echo $grid_id ?>_container" style="height:100%;"></div>
@@ -367,7 +368,7 @@ if (is_array($add_columns)) {
     var user_options = [[0, lang('everyone')]];
     
     var period_options = [[0, lang('no filter')],[1, lang('today')],[2, lang('this week')],[3, lang('last week+')],[4, lang('this month')],[5, lang('last month+')],[6, lang('select dates...')]];
-    var period_ini_val = '<?php echo array_var($current_filters, 'period_filter', '1') ?>';
+    var period_ini_val = '<?php echo array_var($current_filters, 'period_filter') ?>';
     
 <?php foreach ($users as $user) { ?>
         user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user->getObjectName())) ?>']);
@@ -386,11 +387,11 @@ if (is_array($add_columns)) {
     }
 
     var filters = {
-        type_filter: {type: 'list', label: '&nbsp;' + lang('type') + ': ', options: type_options, width: 200, value: type_ini_val, initial_val: type_ini_val},
-        user_filter: {type: 'list', label: '&nbsp;' + lang('person') + ': ', options: user_options, width: 150, value: user_ini_val, initial_val: user_ini_val},
-        period_filter: {type: 'period', label: '&nbsp;' + lang('Time period') + ': ', options: period_options, value: period_ini_val, initial_val: period_ini_val},
-        from_filter: {type: 'date', label:{id:'label_from_filter',hidden:hidden_from,text: '&nbsp;' + lang('from date') + ': '}, value: '<?php echo array_var($current_filters, 'from_filter') ?>',hidden:hidden_from},
-        to_filter: {type: 'date', label: {id:'label_to_filter',hidden:hidden_to,text:'&nbsp;' + lang('to date') + ': '}, value: '<?php echo array_var($current_filters, 'to_filter') ?>',hidden:hidden_to}
+        type_filter: {type: 'list', label: '&nbsp;' + lang('type') + ': ', options: type_options, width: 200, value: type_ini_val, initial_val: type_ini_val, secondToolbar:true},
+        user_filter: {type: 'list', label: '&nbsp;' + lang('person') + ': ', options: user_options, width: 150, value: user_ini_val, initial_val: user_ini_val, secondToolbar:true},
+        period_filter: {type: 'period', label: '&nbsp;' + lang('Time period') + ': ', options: period_options, value: period_ini_val, initial_val: period_ini_val, secondToolbar:true},
+        from_filter: {type: 'date', label:{id:'label_from_filter',hidden:hidden_from,text: '&nbsp;' + lang('from date') + ': '}, value: '<?php echo array_var($current_filters, 'from_filter') ?>',hidden:hidden_from, secondToolbar:true},
+        to_filter: {type: 'date', label: {id:'label_to_filter',hidden:hidden_to,text:'&nbsp;' + lang('to date') + ': '}, value: '<?php echo array_var($current_filters, 'to_filter') ?>',hidden:hidden_to, secondToolbar:true}
     };
     
     var store_parameters = {
@@ -402,12 +403,6 @@ if (is_array($add_columns)) {
     store_parameters['period_filter'] = '<?php echo array_var($current_filters, 'period_filter'); ?>';
     store_parameters['from_filter'] = '<?php echo array_var($current_filters, 'from_filter') ?>';
     store_parameters['to_filter'] = '<?php echo array_var($current_filters, 'to_filter') ?>';
-
-    var topTbar = new Ext.Toolbar({
-        style: 'border:0px none;',
-        items: timeslots_tbar_items,
-        renderTo: 'timePanelOverTbar'
-    })
 
 
     var sm = new Ext.grid.CheckboxSelectionModel({
@@ -437,7 +432,7 @@ if (is_array($add_columns)) {
         checkbox_sel_model: true,
         fixed_height: true,
         columns: timeslots_columns,
-        //tbar_items: timeslots_tbar_items,
+        tbar_items: timeslots_tbar_items,
         tbar_right_items: timeslots_tbar_right_items,
         quick_add_row: <?php echo $can_add_timeslots ? '1' : '0' ?>,
         quick_add_row_fn: og.add_timeslot_module_quick_add_row,

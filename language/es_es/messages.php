@@ -727,4 +727,6 @@
       'Remember my selection' => 'Recuerda mi selección',
       'accept'=>'Aceptar',
     'not classified here'=>'No clasificado aquí',
+  	'x members deleted' => '{1} {0} eliminados exitosamente.',
+  	'x members deleted y members not deleted' => '{1} {0} eliminados exitosamente, {2} {0} no eliminados.',
 ); ?>

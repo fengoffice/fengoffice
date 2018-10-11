@@ -766,15 +766,30 @@ class TimeController extends ApplicationController {
                 $extra_conditions .= " AND e.start_time <= '" . $to_date->toMySQL() . "'";
             }
         }
+        
+        $co = ContactConfigOptions::getByName('current_time_module_filters');
+        if (!$co instanceof ContactConfigOption) {
+        	$co = new ContactConfigOption();
+        	$co->setFromAttributes(array(
+        		'category_name' => 'system',
+        		'name' => 'current_time_module_filters',
+        		'default_value' => '',
+        		'config_handler_class' => 'StringConfigHandler',
+        		'is_system' => '1',
+        		'dev_comment' => '',
+        		'options' => '',
+        	));
+        	$co->save();
+        }
 
-        if (!isset($_SESSION['current_time_module_filters']))
-            $_SESSION['current_time_module_filters'] = array();
-        $_SESSION['current_time_module_filters']['type_filter'] = $type_filter;
-        $_SESSION['current_time_module_filters']['user_filter'] = $user_filter;
-        $_SESSION['current_time_module_filters']['period_filter'] = $period_filter;
-        $_SESSION['current_time_module_filters']['from_filter'] = $from_filter;
-        $_SESSION['current_time_module_filters']['to_filter'] = $to_filter;
-
+        $current_time_module_filters = array();
+        $current_time_module_filters['type_filter'] = $type_filter;
+        $current_time_module_filters['user_filter'] = $user_filter;
+        $current_time_module_filters['period_filter'] = $period_filter;
+        $current_time_module_filters['from_filter'] = $from_filter;
+        $current_time_module_filters['to_filter'] = $to_filter;
+        
+        set_user_config_option('current_time_module_filters', json_encode($current_time_module_filters), logged_user()->getId());
 
         switch ($order) {
             case 'updatedOn':

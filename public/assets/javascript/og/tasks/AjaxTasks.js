@@ -63,7 +63,6 @@ ogTasks.getGroups = function(dont_reset_groups){
 						ogTasks.isLoadingGroups = false;
 						ogTasks.Groups.loaded = true;
 						ogTasks.allGroupsLoaded = true;
-						return;
 					}
 					for (var i = 0; i < data.groups.length; i++){
 						ogTasks.removeTaskGroup(data.groups[i]);

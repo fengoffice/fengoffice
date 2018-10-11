@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.6.3-rc7
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.6.3.5
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.6.3-rc7');
+		$this->setVersionTo('3.6.3.5');
 	} // __construct
 
 	function getCheckIsWritable() {

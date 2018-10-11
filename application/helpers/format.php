@@ -486,7 +486,7 @@ function get_format_value_to_header($col, $obj_type_id)
 							$exp = explode('@', $cp_list_value);
 							if (count($exp) == 2 && $exp[0] == $cp_val->getValue()) {
 								$lang_value = Localization::instance()->lang($exp[1]);
-								if (!is_null($lang_value)) {
+								if (is_null($lang_value)) {
 									$lang_value = $exp[1];
 								}
 							}

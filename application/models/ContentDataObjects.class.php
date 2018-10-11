@@ -772,7 +772,6 @@ abstract class ContentDataObjects extends DataManager {
 			
 		    if(!$only_count_results){
 				// Execute query and build the resultset
-				if ($this->getObjectTypeId()==5) Logger::log_r($sql);
 		    	$rows = DB::executeAll($sql);
 		    	
 		    	if ($return_raw_data) {

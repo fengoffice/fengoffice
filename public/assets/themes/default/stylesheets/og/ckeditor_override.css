@@ -1,6 +1,10 @@
 .cke_editable {
 	font-size: 14px;
 	line-height: normal;
+	height: 90%;
+}
+html {
+	height: 95%;
 }
 .cke_editable p {
 	margin: 2px 0;

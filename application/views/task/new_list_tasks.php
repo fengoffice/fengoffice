@@ -242,7 +242,6 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 		resizeTasksPanel();
 		ogTasks.loadDataFromHF();
 		
-		ogTasks.Groups.loaded = true;
 		ogTasks.draw();
 
 	}, mili);

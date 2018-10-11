@@ -2375,7 +2375,7 @@ class TaskController extends ApplicationController {
                 'orderBy' => user_config_option('tasksOrderBy'),
                 'previousPendingTasks' => user_config_option('tasksPreviousPendingTasks', 1),
                 'defaultNotifyValue' => user_config_option('can notify from quick add'),
-                'groupsPaginationCount' => user_config_option('tasksGroupsPaginationCount', 5),
+                'groupsPaginationCount' => user_config_option('tasksGroupsPaginationCount'),
             );
 
                 

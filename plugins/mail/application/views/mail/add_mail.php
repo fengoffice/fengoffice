@@ -40,7 +40,7 @@ sig.actualTextSignature = '';
 sig.actualHtmlSignature = '';
 
 </script>
-<div id="<?php echo $genid ?>main_div" style="height:100%; overflow-y: hidden;">
+<div id="<?php echo $genid ?>main_div" style="height:100%;">
 <form style="height:100%;background-color:white;" id="<?php echo $genid ?>form" name="frmMail"  class="internalForm" action="<?php echo $mail->getSendMailUrl()?>" method="post"  onsubmit="return og.checkFrom() && og.mailSetBody('<?php echo $genid ?>')">
 <input type="hidden" name="instanceName" value="<?php echo $genid?>" />
 <input type="hidden" name="mail[body]" value="" />
@@ -280,7 +280,7 @@ sig.actualHtmlSignature = '';
 
 </div>
 
-<div id="<?php echo $genid ?>mail_body_container" style="height: 100%; overflow-y: auto">
+<div id="<?php echo $genid ?>mail_body_container" style="height: 100%;">
     <?php
     $display = ($type == 'html') ? 'none' : 'block';
     $display_fck = ($type == 'html') ? 'block' : 'none';
@@ -415,6 +415,7 @@ og.resizeMailDiv = function() {
 		headerdiv = document.getElementById(genid+'header_div');
 		if (maindiv != null && headerdiv != null) {
 			var divHeight = maindiv.offsetHeight - headerdiv.offsetHeight;
+			if (divHeight < 250) divHeight =  250;
 			document.getElementById(genid+'mail_div').style.height = divHeight + 'px';
 
 			var h = document.getElementById(genid + 'mail_body_container').offsetHeight;

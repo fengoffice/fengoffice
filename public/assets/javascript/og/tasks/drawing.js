@@ -464,6 +464,11 @@ ogTasks.drawGroupNextTask = function (group, drawOptions, displayCriteria) {
                 ogTasks.initColResize();
                 og.eventManager.fireEvent('replace all empty breadcrumb', null);
 				ogTasks.isLoadingGroups = false;
+				// if there is no scrollbar and there are more task groups to load -> load them
+				var task_content_div = $("#tasksPanelContent").get(0);
+				if (!ogTasks.allGroupsLoaded && task_content_div && task_content_div.scrollHeight == task_content_div.clientHeight) {
+					ogTasks.loadMoreGroups();
+				}
             }
         }
     }

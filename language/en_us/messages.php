@@ -806,6 +806,9 @@
       'Remember my selection' => 'Remember my selection',
       'accept'=>'Accept',
       'not classified here'=>'Not classified here',
+
+  	'x members deleted' => '{1} {0} deleted succesfully.',
+  	'x members deleted y members not deleted' => '{1} {0} deleted succesfully, {2} {0} not deleted.',
   ); // array
 
 ?>

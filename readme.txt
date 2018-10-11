@@ -1,5 +1,5 @@
 
-	About Feng Office 3.6.3-rc7
+	About Feng Office 3.6.3.5
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,42 @@
 	
 	Changelog
 	=========
+	
+    Since 3.6.3.4
+    ----------------
+	bugfix: fix scroll and resize of mail composing view
+	bugfix: fix no filter in time module period filter
+	
+    Since 3.6.3.3
+    ----------------
+	bugfix: cant delete payments
+	bugfix: fix tickets installer
+	bugfix: add payment from inside quota does not select quota
+	bugfix: new payment menu from insied quota position is wrong
+	bugfix: error when executing dimension group reports
+	bugfix: fix js error in risks module
+	bugfix: fix risks installer
+
+    Since 3.6.3.2
+    ----------------
+    bugfix: fix customer widget
+    bugfix: minor adjustments in invoices module
+    bugfix: persist time module filters
+    bugfix: fix time module toolbar, panel height and totals row.
+    bugfix: allow to delete multiple members in member list
+	
+    Since 3.6.3.1
+    ----------------
+    bugfix: escape line detail when editing invoice
+    bugfix: use default value as it is in config option for task groups pagination count
+    bugfix: several fixes in invoicing module
+    bugfix: dont show unknown status in clients widget, dont show status if cp is disabled
+    bugfix: filter disabled cps in get cp columns function
+    bugfix: fix scroll pagination when scrollbar does not appear
+	
+    Since 3.6.3-rc7
+    ----------------
+    bugfix: cannot paste using right click menu in notes.
 	
     Since 3.6.3-rc6
     ----------------

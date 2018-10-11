@@ -1448,13 +1448,75 @@ class MemberController extends ApplicationController {
 		}
 	}
 	
-	function delete() {
+	function delete_multiple() {
 		if(!can_manage_dimension_members(logged_user())) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			return;
 		}
-		$member = Members::findById(get_id());
+		
+		$member_ids_csv = array_var($_REQUEST, 'id');
+		$member_ids = explode(',', $member_ids_csv);
+		$member_ids = array_filter($member_ids, 'is_numeric');
+		
+		// get object type name
+		$member_type_name = 'members';
+		if (count($member_ids) > 0) {
+			$tmp_member = Members::findById($member_ids[0]);
+			if ($tmp_member instanceof Member) {
+				$ot = ObjectTypes::findById($tmp_member->getObjectTypeId());
+				if ($ot instanceof ObjectType) {
+					$member_type_name = $ot->getPluralObjectTypeName();
+				}
+			}
+		}
+			
+		$deleted_count = 0;
+		$not_deleted_count = 0;
+		
+		try {
+			DB::beginWork();
+			
+			foreach ($member_ids as $member_id) {
+				$ok = $this->delete($member_id);
+				if ($ok) $deleted_count++;
+				else $not_deleted_count++;
+			}
+			
+			DB::commit();
+			
+		} catch (Exception $e) {
+			DB::rollback();
+			flash_error($e->getMessage());
+			ajx_current("empty");
+			return;
+		}
+		
+		if ($not_deleted_count == 0) {
+			flash_success(lang('x members deleted', $member_type_name, $deleted_count));
+		} else {
+			flash_success(lang('x members deleted y members not deleted', $member_type_name, $deleted_count, $not_deleted_count));
+		}
+		
+		ajx_current("reload");
+	}
+	
+	function delete($id = null) {
+		if(!can_manage_dimension_members(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
+		}
+		
+		if (is_null($id)) {
+			$member = Members::findById(get_id());
+			$show_messages = true;
+			$use_transaction = true;
+		} else {
+			$member = Members::findById($id);
+			$show_messages = false;
+			$use_transaction = false;
+		}
 		if (!$member instanceof Member) {
 			ajx_current("empty");
 			return;
@@ -1470,7 +1532,9 @@ class MemberController extends ApplicationController {
 		
 		try {
 			
-			DB::beginWork();
+			if ($use_transaction) {
+				DB::beginWork();
+			}
 			
 			if (!$member->canBeDeleted($error_message)) {
 				throw new Exception($error_message);
@@ -1522,8 +1586,13 @@ class MemberController extends ApplicationController {
 				evt_add("try to select member", array('dimension_id' => $dim_id, 'id' => $parent_id));
 			}
 			
-			DB::commit();
-			flash_success(lang('success delete member', $member->getName()));
+			if ($use_transaction) {
+				DB::commit();
+			}
+			
+			if ($show_messages) {
+				flash_success(lang('success delete member', $member->getName()));
+			}
 			if (get_id('start')) {
 				ajx_current("start");
 			} else {
@@ -1533,9 +1602,16 @@ class MemberController extends ApplicationController {
 					ajx_current("reload");
 				}
 			}
+			return true;
 		} catch (Exception $e) {
-			DB::rollback();
-			flash_error($e->getMessage());
+			if ($use_transaction) {
+				DB::rollback();
+			} else {
+				throw $e;
+			}
+			if ($show_messages) {
+				flash_error($e->getMessage());
+			}
 			ajx_current("empty");
 		}
 	}

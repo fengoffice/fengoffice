@@ -1875,6 +1875,7 @@ class ObjectController extends ApplicationController {
 		$grouped = array();
 		$cp_rows = DB::executeAll("SELECT cp.id, cp.name as cp_name, cp.code as cp_code, ot.name as obj_type, cp.visible_by_default as visible_def, cp.type as cp_type, cp.values as cp_values, cp.default_value as cp_default_value, cp.is_special as cp_special, cp.show_in_lists
 				FROM ".TABLE_PREFIX."custom_properties cp INNER JOIN ".TABLE_PREFIX."object_types ot on ot.id=cp.object_type_id 
+				WHERE cp.is_disabled=0
 				ORDER BY ot.name");
 
 		if (is_array($cp_rows)) {

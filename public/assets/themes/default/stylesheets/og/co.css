@@ -938,3 +938,7 @@
 .coViewBody .direct-url {
 	margin: 15px 0;
 }
+
+.coViewAction.disabled {
+	color: #999;
+}

@@ -328,7 +328,7 @@ og.MemberManager = function(config) {
 		} else {
 			var ret = '';
 			for (var i=0; i < selections.length; i++) {
-				ret += "," + selections[i].data.object_id;
+				ret += "," + selections[i].data.member_id;
 			}
 			return ret.substring(1);
 		}
@@ -539,7 +539,7 @@ og.MemberManager = function(config) {
 			disabled: true,
 			handler: function() {
 				if (confirm(lang('delete member warning', lang(this.object_type_name)))) {
-					var url = og.getUrl('member', 'delete', {id:getFirstSelectedMemberId()});
+					var url = og.getUrl('member', 'delete_multiple', {id:this.getSelectedIds()});
 					og.openLink(url, null);
 				}
 			},
