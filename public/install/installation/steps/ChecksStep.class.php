@@ -42,31 +42,38 @@ class ChecksStep extends ScriptInstallerStep {
 		); // array
 
 		$this->check_extensions = array(
-        'mysql', 'gd', 'simplexml'
+        'mysqli', 'gd', 'simplexml'
         ); // array
 	} // __construct
 
+	
 	/**
 	 * Transform PHP notation like 8M, to bytes
 	 *
-	 * @param unknown_type $val
-	 * @return unknown
+	 * @param string $val
+	 * @return int (it should be)
 	 */
 	function return_bytes($val) {
 		$val = trim($val);
 		if($val && strlen($val)){
-			$last = strtolower($val[strlen($val)-1]);
-			switch($last) {
+			//changed for PHP7 compatibility
+			//$last = strtolower($val[strlen($val)-1]);
+			$last_char = substr($val,  -1);
+			$val_num = substr($val,0, -1);
+			switch($last_char) {
 				// The 'G' modifier is available since PHP 5.1.0
 				case 'g':
-					$val *= 1024;
+				case 'G':
+				    $val_num *= 1024;
 				case 'm':
-					$val *= 1024;
+				case 'M':
+					$val_num *= 1024;
 				case 'k':
-					$val *= 1024;
+				case 'K':
+					$val_num *= 1024;
 			}
 		}
-		return $val;
+		return $val_num;
 	}
 
 

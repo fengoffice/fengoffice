@@ -161,19 +161,19 @@
 			$bookId = $this->bookId ;
 			//PEPE
 			if (
-				@mysql_query("DELETE FROM `" . table('cells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-				@mysql_query("DELETE FROM `" . table('mergedCells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-				@mysql_query("DELETE FROM `" . table('rows') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-				@mysql_query("DELETE FROM `" . table('columns') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-				@mysql_query("DELETE FROM `" . table('sheets') . "` WHERE `BookId` = $bookId") &&
-				@mysql_query("DELETE FROM `" . table('fontStyles') . "` WHERE `BookId` = $bookId") &&
-				@mysql_query("DELETE FROM `" . table('books') . "` WHERE `BookId` = $bookId" ))
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('cells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('mergedCells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('rows') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('columns') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('sheets') . "` WHERE `BookId` = $bookId") &&
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('fontStyles') . "` WHERE `BookId` = $bookId") &&
+			    @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('books') . "` WHERE `BookId` = $bookId" ))
 			{
 				//throw new Success('Book deleted succesfully!',"{'BookId':$bookId}");
 			} else {
 				$error = new GsError(302,"Error deleting book.");
 				if($error->isDebugging()){
-					$err = str_replace("'", '"', mysql_error());
+				    $err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 					$error->addContentElement("BookId",$bookId);
 					$error->addContentElement("MySql Error",$err);
 				}
@@ -185,8 +185,8 @@
 		public function load($BookId) {
 			//$sql = "select * from books where BookId=$BookId ";
 			$sql = "select * from ".table('books'). " where BookId=$BookId ";
-			$result =  mysql_query($sql);
-			if ($row = mysql_fetch_object($result)) {
+			$result =  mysqli_query(DB::connection()->getLink(), $sql);
+			if ($row = mysqli_fetch_object($result)) {
 				$this->bookId = $row->BookId;
 				$this->bookName = $row->BookName;
 				$this->userId = $row->UserId ;
@@ -199,9 +199,9 @@
 			$sql = "select FontStyleId,BookId,FontId,FontSize,FontBold,FontItalic,FontUnderline,FontColor,FontVAlign,FontHAlign
 					from ".table('fontStyles'). "
 					where BookId=$BookId";
-			$result = mysql_query($sql);
+			$result = mysqli_query(DB::connection()->getLink(), $sql);
 
-			while ($row = mysql_fetch_object($result)){
+			while ($row = mysqli_fetch_object($result)){
 				//$fontStyleId = null,$bookId=null, $fontId =null, $fontSize =null ,  $fontBold =null, $fontItalic=null, $fontUnderline = null,$fontColor = null
 				$fontStyle = 	new FontStyle(	$row->FontStyleId,
 												$row->BookId,
@@ -221,8 +221,8 @@
 
 		function loadLayoutStyles($BookId = null) {
 			$sql = "select * from". table("layoutStyles") ."where BookId = ".$BookId ;
-			$result = mysql_query($sql) ;
-			while ($row = mysql_fetch_object($result)){
+			$result = mysqli_query(DB::connection()->getLink(), $sql) ;
+			while ($row = mysqli_fetch_object($result)){
 				$layoutStyle = new LayoutStyle();
 				$layoutStyle->bookId = $BookId;
 				$layoutStyle->backgroundColor = $row->BackgroundColor ;
@@ -238,17 +238,17 @@
 
 		function loadSheets($BookId) {
 			$sql = "select SheetId from ".table('sheets'). " where BookId=$BookId" ;
-			$result =  mysql_query($sql);
+			$result =  mysqli_query(DB::connection()->getLink(), $sql);
 			if (!$result) {
 				$error = new GsError(302,"Error loading book.");
 				if($error->isDebugging()){
-					$err = str_replace("'", '"', mysql_error());
+				    $err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 					$error->addContentElement("BookId",$BookId);
 					$error->addContentElement("MySql Error",$err);
 				}
 				throw $error;					
 			}			
-			while ($row = mysql_fetch_object($result)){
+			while ($row = mysqli_fetch_object($result)){
 				$sheet = new Sheet();
 				$sheet->load($row->SheetId);
 				$this->addSheet($sheet);
@@ -274,26 +274,26 @@
 
 			if (isset($this->bookId)) { // Edit book..
 				//Check if the the id is correct..
-				$res = mysql_query("SELECT BookId FROM ".table('books'). " where BookId=$this->bookId");
+			    $res = mysqli_query(DB::connection()->getLink(), "SELECT BookId FROM ".table('books'). " where BookId=$this->bookId");
 				if(!$res){
 					$error = new GsError(302,"Error loading book.");
 					if($error->isDebugging()){
 						$error->addContentElement("BookId",$BookId);
-						$err = str_replace("'", '"', mysql_error());
+						$err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 						$error->addContentElement("MySql Error",$err);
 					}
 					throw $error;					
 					$hasErrors = true;
 				}
 
-				$row = mysql_fetch_object($res);
+				$row = mysqli_fetch_object($res);
 				if (!$row) {
 					//ERROR: trying to save a book that does exist. Must have null value the bookid
-					if(!mysql_query($sql)){
+				    if(!mysqli_query(DB::connection()->getLink(), $sql)){
 						$error = new GsError(302,"Error saving book. Book don't exists");
 						if($error->isDebugging()){
 							$error->addContentElement("BookId",$BookId);
-							$err = str_replace("'", '"', mysql_error());
+							$err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 							$error->addContentElement("MySql Error",$err);
 						}
 						throw $error;					
@@ -302,17 +302,17 @@
 				}else {
 				// OK: Delete.. and save it again
 					$update = true;
-					mysql_query("START TRANSACTION");
+					mysqli_query(DB::connection()->getLink(), "START TRANSACTION");
 					$book_tmp = new Book();
 					$book_tmp->load($this->bookId);
 					$book_tmp->delete(true);
 
 
-					if(!mysql_query($sql)){
+					if(!mysqli_query(DB::connection()->getLink(), $sql)){
 						$error = new GsError(302,"Error saving book. Book don't exists");
 						if($error->isDebugging()){
 							$error->addContentElement("BookId",$BookId);
-							$err = str_replace("'", '"', mysql_error());
+							$err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 							$error->addContentElement("MySql Error",$err);
 						}
 						throw $error;					
@@ -325,15 +325,15 @@
 				//SAVE AS...
 				
 				$sql = "INSERT INTO ".table('books'). " (BookName, UserId) VALUES ('$this->bookName',$this->userId)";
-				$query = mysql_query($sql);
+				$query = mysqli_query(DB::connection()->getLink(), $sql);
 				if($query)
-					$this->bookId= mysql_insert_id();
+				    $this->bookId= mysqli_insert_id(DB::connection()->getLink());
 				else{
 					
 					$error = new GsError(302,"Error saving book.");
 					if($error->isDebugging()){
 						$error->addContentElement("BookId",$BookId);
-						$err = str_replace("'", '"', mysql_error());
+						$err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 						$error->addContentElement("MySql Error",$err);
 					}
 					throw $error;					
@@ -370,9 +370,9 @@
 				//so check for errors and commit if ok
 				 
 				if (!$hasErrors)
-					mysql_query("COMMIT");
+				    mysqli_query(DB::connection()->getLink(), "COMMIT");
 				else 
-					mysql_query("ROLLBACK") ;	
+				    mysqli_query(DB::connection()->getLink(), "ROLLBACK");
 			}	
 			return $hasErrors;
 		}

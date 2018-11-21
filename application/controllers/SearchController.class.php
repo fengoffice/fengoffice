@@ -133,7 +133,7 @@ class SearchController extends ApplicationController {
 		$search_pieces= explode(" ", $search_for);
 		$search_string = "";
 		
-		$search_string = mysql_real_escape_string($search_for, DB::connection()->getLink());
+		$search_string = mysqli_real_escape_string(DB::connection()->getLink(), $search_for);
 		
 		$this->search_for = $search_for;
 		$limit = $this->limit;
@@ -222,10 +222,10 @@ class SearchController extends ApplicationController {
 						
 					}
 				}else{
-					$value = mysql_real_escape_string($condValue, DB::connection()->getLink());
+				    $value = mysqli_real_escape_string(DB::connection()->getLink(), $condValue);
 				}			
-				$condition_condition = mysql_real_escape_string(array_var($condition, 'condition'), DB::connection()->getLink());
-				$condition_field_name = mysql_real_escape_string(array_var($condition, 'field_name'), DB::connection()->getLink());
+				$condition_condition = mysqli_real_escape_string(array_var(DB::connection()->getLink(), $condition, 'condition'));
+				$condition_field_name = mysqli_real_escape_string(array_var(DB::connection()->getLink(), $condition, 'field_name'));
 				$conditionLocal = "like";
 				tpl_assign('type_object', $type_object);
 				//CREO QUE ESTO ESTA MAL
@@ -496,7 +496,7 @@ class SearchController extends ApplicationController {
 		}
 				
 		$search_string = trim(array_var($_REQUEST, 'query', ''));
-		$search_string = mysql_real_escape_string($search_string, DB::connection()->getLink());
+		$search_string = mysqli_real_escape_string(DB::connection()->getLink(), $search_string);
 		$start = array_var($_REQUEST, 'start' , 0);
 		$orig_limit = array_var($_REQUEST, 'limit');
 		$limit = $orig_limit + 1;

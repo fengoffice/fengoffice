@@ -515,7 +515,7 @@ function pick_date_widget($name, $value = null, $year_from = null, $year_to = nu
 
 // pick_date_widget
 
-function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null, $display_date_info = true, $id = null) {
+function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null, $display_date_info = true, $id = null, $listeners = array()) {
     require_javascript('og/DateField.js');
 
     $date_format = user_config_option('date_format');
@@ -528,6 +528,23 @@ function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null
     if (!$id)
         $id = $genid . $name . "Cmp";
     $daterow = '';
+
+    $listeners_str = "";
+    if (is_array($listeners) && count($listeners) > 0) {
+    	$listeners_str = "
+    		listeners: {";
+    	$i=0;
+    	foreach ($listeners as $ev => $fn) {
+    		$i++;
+    		$listener_config = "'$ev' : $fn" . ($i < count($listeners) ? "," : "");
+    		$listeners_str .= "
+    			$listener_config";
+    	}
+    	$listeners_str .= "
+    		},
+    		";
+    }
+    
     // 	if ($display_date_info)
     // 		$daterow = "<td style='padding-top:4px;font-size:80%'><span class='desc'>&nbsp;(" . date_format_tip($date_format) . ")</span></td>";
     $html = "<table class='date-picker'><tr><td><span id='" . $genid . $name . "'></span></td>$daterow</tr></table>
@@ -538,45 +555,14 @@ function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null
 			emptyText: '" . date_format_tip($date_format) . "',
 			id: '" . $id . "'," .
             (isset($tabindex) && !is_null($tabindex) ? "tabIndex: '$tabindex'," : "") .
+            $listeners_str .
             "value: '" . $dateValue . "'
-                });
+		});
 	</script>
 	";
-
     return $html;
 }
 
-function pick_date_widget_timeslot($name, $value = null, $genid = null, $tabindex = null, $display_date_info = true, $id = null) {
-    require_javascript('og/DateField.js');
-
-    $date_format = user_config_option('date_format');
-    if ($genid == null)
-        $genid = gen_id();
-    $dateValue = '';
-    if ($value instanceOf DateTimeValue) {
-        $dateValue = $value->format($date_format);
-    }
-    if (!$id)
-        $id = $genid . $name . "Cmp";
-    $daterow = '';
-    // 	if ($display_date_info)
-    // 		$daterow = "<td style='padding-top:4px;font-size:80%'><span class='desc'>&nbsp;(" . date_format_tip($date_format) . ")</span></td>";
-    $html = "<table class='date-picker'><tr><td><span id='" . $genid . $name . "'></span></td>$daterow</tr></table>
-	<script>
-		var dtp" . gen_id() . " = new og.DateField({
-			renderTo:'" . $genid . $name . "',
-			name: '" . $name . "',
-			emptyText: '" . date_format_tip($date_format) . "',
-			id: '" . $id . "'," .
-            (isset($tabindex) && !is_null($tabindex) ? "tabIndex: '$tabindex'," : "") .
-            "value: '" . $dateValue . "',
-                listeners:{'change':function(){og.onchangeDatesInputs('$name')}}
-                });
-	</script>
-	";
-
-    return $html;
-}
 
 // pick_date_widget
 
@@ -594,7 +580,7 @@ function pick_time_widget($name, $value = null) {
 
 // pick_time_widget
 
-function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null, $format = null, $id = null) {
+function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null, $format = null, $id = null, $listeners = null) {
     if ($format == null)
         $format = (user_config_option('time_format_use_24') ? 'G:i' : 'g:i A');
     if ($value instanceof DateTimeValue) {
@@ -602,6 +588,23 @@ function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null
     }
     if (!$id)
         $id = $genid . $name . "Cmp";
+    
+	$listeners_str = "";
+	if (is_array($listeners) && count($listeners) > 0) {
+		$listeners_str = "
+			listeners: {";
+		$i=0;
+		foreach ($listeners as $ev => $fn) {
+			$i++;
+			$listener_config = "'$ev' : $fn" . ($i < count($listeners) ? "," : "");
+			$listeners_str .= "
+				$listener_config";
+		}
+		$listeners_str .= "
+			},
+			";
+	}
+	
     $html = "<table class='time-picker'><tr><td><div id='" . $genid . $name . "'></div></td></tr></table>
 	<script>
 		var tp" . gen_id() . " = new Ext.form.TimeField({
@@ -609,35 +612,12 @@ function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null
 			name: '" . $name . "',
 			format: '" . $format . "',
 			emptyText: 'hh:mm',
-                        id: '" . $id . "',
+			id: '" . $id . "',
 			width: 80," .
+			$listeners_str .
             (isset($tabindex) ? "tabIndex: '$tabindex'," : "") .
-            "value: '" . $value . "'});
-	</script>
-	";
-    return $html;
-}
-function pick_time_widget_timeslot($name, $value = null, $genid = null, $tabindex = null, $format = null, $id = null) {
-    if ($format == null)
-        $format = (user_config_option('time_format_use_24') ? 'G:i' : 'g:i A');
-    if ($value instanceof DateTimeValue) {
-        $value = $value->format($format);
-    }
-    if (!$id)
-        $id = $genid . $name . "Cmp";
-    $html = "<table class='time-picker'><tr><td><div id='" . $genid . $name . "'></div></td></tr></table>
-	<script>
-		var tp" . gen_id() . " = new Ext.form.TimeField({
-			renderTo:'" . $genid . $name . "',
-			name: '" . $name . "',
-			format: '" . $format . "',
-			emptyText: 'hh:mm',
-                        id: '" . $id . "',
-			width: 80," .
-            (isset($tabindex) ? "tabIndex: '$tabindex'," : "") .
-            "value: '" . $value . "',
-                listeners:{'change':function(){og.onchangeDatesInputs('$name')}}
-                });
+            "value: '" . $value . "'
+		});
 	</script>
 	";
     return $html;

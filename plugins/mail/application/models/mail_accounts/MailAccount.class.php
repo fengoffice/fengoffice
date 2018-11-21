@@ -30,7 +30,7 @@ class MailAccount extends BaseMailAccount {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('name')) {
 			$errors[] = lang('mail account name required');
 		} // if

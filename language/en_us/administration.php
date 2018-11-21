@@ -109,7 +109,7 @@
     'config option desc untitled_notes' => 'Allows creating notes without a title required',
     'config option name repeating_task' => 'Repeating task',
     'config option desc repeating_task' => 'Repeating tasks will be shown individually, and not as one single task',
-    'config option name working_days' => 'Working days',
+    'config option name working_days' => 'Working days of the week',
     'config option desc working_days' => 'Here you may select which are the working days of your company. This is useful for the calendar and repeating tasks.',
     'config option name wysiwyg_messages' => 'Description of messages with WYSIWYG',
     'config option desc wysiwyg_messages' => 'Enable this option so that you can write your notes description using rich text format.',

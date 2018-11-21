@@ -27,7 +27,10 @@ function workspaces_custom_reports_additional_columns($args, &$ret) {
 	}
 }
 
-function workspaces_total_tasks_times_csv_columns($cols, &$cols) {
+//stech - remove first def of column for php7
+//function workspaces_total_tasks_times_csv_columns($cols, &$cols) {
+function workspaces_total_tasks_times_csv_columns(&$cols) {
+
 	$dimension = Dimensions::findByCode('workspaces');
 	$cols[] = $dimension->getName();
 }

@@ -385,7 +385,7 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('file_id')) {
 			$errors[] = lang('file revision file_id required');
 		} // if

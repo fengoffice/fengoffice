@@ -36,7 +36,7 @@ abstract class DimensionObject extends ContentDataObject {
 		}	
 	}
 	
-	function getIconClass(){
+	function getIconClass($large = false){
 		return '';
 	}
 	

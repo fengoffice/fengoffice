@@ -1551,11 +1551,53 @@ class MemberController extends ApplicationController {
 			
 			$affectedObjectsRows = DB::executeAll("SELECT distinct(object_id) AS object_id FROM ".TABLE_PREFIX."object_members where member_id = ".$member->getId()." AND is_optimization = 0") ;
 			if (is_array($affectedObjectsRows) && count($affectedObjectsRows) > 0) {
-				$ids_str = "";
+				// build an array with all the affected object ids
+				$all_affeceted_object_ids = array();
 				foreach ( $affectedObjectsRows as $row ) {
-					$oid = $row['object_id'];
-					$ids_str .= ($ids_str == "" ? "" : ",") . $oid;
+					$all_affeceted_object_ids[] = $row['object_id'];
 				}
+				
+				/** 
+				 * Calculate which objects cannot be trashed
+				 * 1) users
+				 * 2) objects classified in other members of dimensions that defines permissions
+				 */
+				$object_ids_to_keep_sql = "
+					SELECT om.object_id 
+					FROM ".TABLE_PREFIX."object_members om 
+					INNER JOIN ".TABLE_PREFIX."members m on m.id=om.member_id
+					INNER JOIN ".TABLE_PREFIX."dimensions d on d.id=m.dimension_id
+					INNER JOIN ".TABLE_PREFIX."objects o on o.id=om.object_id
+					LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id
+					WHERE 
+						om.member_id<>".$member->getId()." AND om.is_optimization=0
+						AND d.defines_permissions=1 AND d.code<>'feng_persons'
+						AND (c.user_type IS NULL OR c.user_type>0)
+				";
+				$object_ids_to_keep = array_flat(DB::executeAll($object_ids_to_keep_sql));
+				
+				// calculate the object ids that can be trashed
+				$object_ids_to_trash = array_diff($all_affeceted_object_ids, $object_ids_to_keep);
+				
+				if (count($object_ids_to_trash) > 0) {
+					$now_str = DateTimeValueLib::now()->toMySQL();
+					// mark objects as trashed
+					DB::execute("UPDATE ".TABLE_PREFIX."objects 
+						SET trashed_by_id=".logged_user()->getId().",
+							trashed_on='$now_str'
+						WHERE id IN (".implode(',', $object_ids_to_trash).")");
+					
+					// add entries in application_logs for each trashed object
+					$app_logs_columns = array('taken_by_id', 'rel_object_id', 'object_name', 'created_on', 'created_by_id', 'action', 'log_data');
+					$app_logs_rows = array();
+					foreach ($object_ids_to_trash as $oid) {
+						$app_logs_rows[] = array(logged_user()->getId(), $oid, '', $now_str, logged_user()->getId(), 'trash', 'trashed when deleting member '.$member->getId());
+					}
+					massiveInsert(TABLE_PREFIX."application_logs", $app_logs_columns, $app_logs_rows, 500);
+				}
+
+				// recalculate sharing table for all the affected objects
+				$ids_str = implode(',', $all_affeceted_object_ids);
 				add_multilple_objects_to_sharing_table($ids_str, logged_user());
 			}
 			

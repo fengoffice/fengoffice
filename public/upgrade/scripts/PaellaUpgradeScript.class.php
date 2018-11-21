@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.6.3.5
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.0-alpha
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.6.3.5');
+		$this->setVersionTo('3.7.0-alpha2');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -57,9 +57,9 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	 * @return boolean
 	 */
 	function execute() {
-		if (!@mysql_ping($this->database_connection)) {
-			if ($dbc = mysql_connect(DB_HOST, DB_USER, DB_PASS)) {
-				if (mysql_select_db(DB_NAME, $dbc)) {
+		if (!@mysqli_ping($this->database_connection)) {
+			if ($dbc = mysqli_connect(DB_HOST, DB_USER, DB_PASS)) {
+				if (mysqli_select_db($dbc, DB_NAME)) {
 					$this->printMessage('Upgrade script has connected to the database.');
 				} else {
 					$this->printMessage('Failed to select database ' . DB_NAME);
@@ -76,10 +76,10 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		//  Check MySQL version
 		// ---------------------------------------------------
 
-		$mysql_version = mysql_get_server_info($this->database_connection);
+		$mysql_version = mysqli_get_server_info($this->database_connection);
 		if($mysql_version && version_compare($mysql_version, '4.1', '>=')) {
 			$constants['DB_CHARSET'] = 'utf8';
-			@mysql_query("SET NAMES 'utf8'", $this->database_connection);
+			@mysqli_query($this->database_connection, "SET NAMES 'utf8'");
 			tpl_assign('default_collation', $default_collation = 'collate utf8_unicode_ci');
 			tpl_assign('default_charset', $default_charset = 'DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci');
 		} else {
@@ -486,10 +486,29 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
         	}
         }
+        
+        if (version_compare($installed_version, '3.6.3.6') < 0) {
+        	// fix broken config options
+        	$config_option_options = '{"option": [{"value": "1","text": "config_start_calc"},{"value": "2","text": "config_end_calc"},{"value": "3","text": "always_show_modal"}]}';
+        	$upgrade_script .= "
+				UPDATE ".$t_prefix."contact_config_options
+				SET `options`='$config_option_options',
+					`default_value`='config_start_calc'
+				WHERE name='automatic_calculation_time';
+        	";
+        }
+        
+
+        // remove repeating_task config option
+        if (version_compare($installed_version, '3.6.3.17') < 0) {
+        	$upgrade_script .= "
+        		DELETE FROM ".TABLE_PREFIX."config_options WHERE name='repeating_task';
+        	";
+        }
 
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
-			$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+			$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 			return false;
 		}
 		$this->printMessage("Database schema transformations executed (total queries: $total_queries)");

@@ -115,7 +115,7 @@ class BillingCategory extends BaseBillingCategory {
 	 * @param array $error
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('default_value')) {
 			$errors[] = lang('BillingCategory default_value required');
 		} // if

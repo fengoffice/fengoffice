@@ -956,7 +956,7 @@ class Contact extends BaseContact {
 	 * @param array $errors
 	 * @return void
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		
 		if ($this->getIsCompany()){
 			

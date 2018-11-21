@@ -186,17 +186,17 @@ function feng_upg_autoload($load_class_name) {
 		$loader->addDir(ROOT . '/library');
 		
 		//TODO Pepe: No tengo la conexion ni las clases de DB en este momento.. me conecto derecho 
-		$temp_link  = mysql_connect(DB_HOST, DB_USER, DB_PASS) ;
-		mysql_select_db(DB_NAME) ;
-		$res = mysql_query("SELECT name FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1 AND is_activated = 1;");
-		while ($row = mysql_fetch_object($res)) {	
+		$temp_link = mysqli_connect(DB_HOST, DB_USER, DB_PASS) ;
+		mysqli_select_db(DB_NAME) ;
+		$res = mysqli_query($temp_link, "SELECT name FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1 AND is_activated = 1;");
+		while ($row = mysqli_fetch_object($res)) {	
 			$plugin_name =  strtolower($row->name) ;
 			$dir  = ROOT . '/plugins/'.$plugin_name.'/application' ;
 			if (is_dir($dir)) {
 				$loader->addDir($dir); 
 			}
 		}
-		mysql_close($temp_link);
+		mysqli_close($temp_link);
 		
 		
 		$loader->setIndexFilename(ROOT . '/cache/autoloader.php');

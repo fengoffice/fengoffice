@@ -86,7 +86,7 @@
     * @param void
     * @return string 
     */
-    function getTableName() {
+    function getTableName($escape = false) {
       return $this->getColumnValue('table_name');
     } // getTableName()
     

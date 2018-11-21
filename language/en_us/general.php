@@ -261,7 +261,7 @@ return array(
   	'new task repetition generated' => 'New task repetition successfully generated',
     'repeat on saturdays' => 'Repeat on Saturdays',
     'repeat on sundays' => 'Repeat on Sundays',
-    'repeat working days' => 'Repeat working days',
+    'repeat working days' => 'Repeat only in the workable days set in system configuration',
 	'reminders will not apply to repeating events' => 'Warning: reminders will not apply to repeating events',
 
 	'move all to right' => 'Move all to the right',
@@ -477,4 +477,5 @@ return array(
         'specify paused time' => 'Specify paused time',
 	'start date cannot be greater than due date' => 'Start date cannot be greater than due date',
     'link task'=>'Link Task',
+	'repeat by date warning' => 'You need to specify start or due date before marking a task as repetitive',
 );

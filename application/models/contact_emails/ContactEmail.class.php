@@ -60,7 +60,7 @@
      * @param array $errors
      * @return void
      */
-    function validate(&$errors) {
+    function validate($errors) {
 
     	if($this->validatePresenceOf('email_address')) {
     		if(!is_valid_email(trim($this->getEmailAddress()))) {

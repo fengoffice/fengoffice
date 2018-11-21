@@ -123,17 +123,17 @@ if($task_list->getAssignedTo()){
 
 
 
-<?php if ($task_list->isRepetitive()) { ?>
+<?php if ($last_task_of_repetition instanceof ProjectTask && $last_task_of_repetition->isRepetitive()) { ?>
 	<div style="font-weight:bold">
 	<?php 
 		echo '<br>' . lang('this task repeats'). '&nbsp;';
-		if ($task_list->getRepeatForever()) echo lang('forever');
-		else if ($task_list->getRepeatNum()) echo lang('n times', $task_list->getRepeatNum());
-		else if ($task_list->getRepeatEnd()) echo lang('until x', format_date($task_list->getRepeatEnd()));
+		if ($last_task_of_repetition->getRepeatForever()) echo lang('forever');
+		else if ($last_task_of_repetition->getRepeatNum()) echo lang('n times', $last_task_of_repetition->getRepeatNum());
+		else if ($last_task_of_repetition->getRepeatEnd()) echo lang('until x', format_date($last_task_of_repetition->getRepeatEnd()));
 		echo ", " . lang ('every') . " ";
-		if ($task_list->getRepeatD() > 0) echo lang('n days', $task_list->getRepeatD()) . ".";
-		else if ($task_list->getRepeatM() > 0) echo lang('n months', $task_list->getRepeatM()) . ".";
-		else if ($task_list->getRepeatY() > 0) echo lang('n years', $task_list->getRepeatY()) . ".";
+		if ($last_task_of_repetition->getRepeatD() > 0) echo lang('n days', $last_task_of_repetition->getRepeatD()) . ".";
+		else if ($last_task_of_repetition->getRepeatM() > 0) echo lang('n months', $last_task_of_repetition->getRepeatM()) . ".";
+		else if ($last_task_of_repetition->getRepeatY() > 0) echo lang('n years', $last_task_of_repetition->getRepeatY()) . ".";
 	?>
 	</div>
 <?php }

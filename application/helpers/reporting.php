@@ -305,7 +305,28 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 					foreach ($columns['order'] as $col) {
 						if ($col == 'object_type_id') continue;
 						
-						$value = array_var($row, $col);
+						if (strrpos($col, '|') !== false) {
+							$exploded = explode('|', $col);
+							$mem_ids = array();
+							foreach ($exploded as $k=>$exp) {
+								if ($k == count($exploded)-1) $value = $exp;
+								else $mem_ids[] = $exp;
+							}
+							$col = substr_utf($col, strrpos($col, '|')+1);
+							
+							$o = Objects::findObject($item_data['mid']);
+							if ($o instanceof ContentDataObject) {
+								$obj_mem_ids = $o->getMemberIds();
+								$intersect = array_intersect($mem_ids, $obj_mem_ids);
+								if (count($intersect) == count($mem_ids)) {
+									$value = array_var($row, $col);
+								}
+							}
+							
+						} else {
+							$value = array_var($row, $col);
+						}
+						
 						$type = array_var($columns['types'], $col);
 						$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
 				?>
@@ -581,6 +602,9 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 		}
 	}
 	
+	$date_format = user_config_option('date_format');
+	$mysql_date_format_re = "/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/";
+	
 	$cp_contact_cache = array();
 	
 	$grouped_temp = array();
@@ -600,9 +624,13 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                     }
                 }
 				if ($gb_keys[0]['is_date'] && $formatDate){
-				   // $n0 = gmdate('Y-m-d', strtotime($k0));
-                    $n0 =  format_date(new DateTimeValue(strtotime($k0)),null,0);
-                    $row[$gb_keys[0]['n']] = $n0;
+					//$n0 = gmdate('Y-m-d', strtotime($k0));
+					if (preg_match($mysql_date_format_re, $k0)) {
+						$n0 =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k0),null,0);
+					} else {
+						$n0 =  format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k0),null,0);
+					}
+                	$row[$gb_keys[0]['n']] = $n0;
 				}
 				else if (array_var($gb_keys[0], 'cp_contact')) {
 					$n0 = get_cp_contact_name($gb_keys, 0, $row, $cp_contact_cache);
@@ -613,7 +641,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 				
 				if (!isset($grouped_temp[$n0])) {
 				    if ($gb_keys[0]['is_date'] && $formatDate){
-                        $date = format_date(new DateTimeValue(strtotime($k0)),null,0);
+				    	$date = $n0;
                         $grouped_temp[$n0] = array(
                             'id' =>  $date,
                             'name' => $k0 ? $k0 : lang('unclassified'),
@@ -647,7 +675,11 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					
 					if ($gb_keys[1]['is_date']){
 					    //$n1 = gmdate('Y-m-d', strtotime($k1));
-                        $n1 =  format_date(new DateTimeValue(strtotime($k1)),null,0);
+						if (preg_match($mysql_date_format_re, $k1)) {
+							$n1 =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k1),null,0);
+						} else {
+                        	$n1 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k1),null,0);
+						}
 					    $row[$gb_keys[1]['n']] = $n1;					    
 					} 
 					else if (array_var($gb_keys[1], 'cp_contact')) {
@@ -657,7 +689,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                     
                     if (!isset($grouped_temp[$n0]['groups'][$n1])) {
                         if ($gb_keys[1]['is_date']){
-                            $date = format_date(new DateTimeValue(strtotime($k1)),null,0);
+							$date = $n1;
                             $grouped_temp[$n0]['groups'][$n1] = array(
                                 'id' =>  $k0."_".$date,
                                 'name' => $k1 ? $k1 : lang('unclassified'),
@@ -670,10 +702,6 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                                 'name' => $row[$gb_keys[1]['n']] ? $row[$gb_keys[1]['n']] : lang('unclassified'),
                                 'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'],
                             );
-                        }
-                    }else{
-                        if ($gb_keys[1]['is_date']){
-                            $k1 = $date = format_date(new DateTimeValue(strtotime($k1)),null,0);
                         }
                     }
                     
@@ -692,7 +720,11 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 						
 						if ($gb_keys[2]['is_date']){
 						    //$n2 = gmdate('Y-m-d', strtotime($k2));
-                            $n2 =  format_date(new DateTimeValue(strtotime($k2)),null,0);
+							if (preg_match($mysql_date_format_re, $k2)) {
+								$n2 =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k2),null,0);
+							} else {
+                            	$n2 =  format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2),null,0);
+							}
 						    $row[$gb_keys[2]['n']] = $n2;
 						}
 						else if (array_var($gb_keys[2], 'cp_contact')) {
@@ -705,7 +737,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 						if (!isset($grouped_temp[$n0]['groups'][$n1]['groups'][$n2])) {
                             if ($gb_keys[2]['is_date']){
                                 
-                                $date = format_date(new DateTimeValue(strtotime($k2)),null,0);
+                                //$date = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2),null,0);
+                                $date = $n2;
                                 $grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
                                     'id' => $k0."_".$k1."_".$date,
                                     'name' => $k2 ? $k2 : lang('unclassified'),
@@ -750,20 +783,32 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 						foreach ($v1['groups'] as $k2 => &$v2) {
 						    // This is where formatting is applied (in this case, to the date values).
                             // We need to remove this from here and move to the view/rendering class.
-							$v2['name'] = format_date(new DateTimeValue(strtotime($v2['name'])), null, 0);
+							if (preg_match($mysql_date_format_re, $v2['name'])) {
+								$v1['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v2['name']),null,0);
+							} else {
+								$v2['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v2['name']), null, 0);
+							}
 						}
 					}
 				}
 				
 				if (isset($gb_keys[1]['is_date']) && $gb_keys[1]['is_date'] && $formatDate) {
-					$v1['name'] = format_date(new DateTimeValue(strtotime($v1['name'])), null, 0);
+					if (preg_match($mysql_date_format_re, $v1['name'])) {
+						$v1['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v1['name']),null,0);
+					} else {
+						$v1['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v1['name']), null, 0);
+					}
 				}
 			}
 			ksort($v0['groups']);
 		}
 		
 		if (isset($gb_keys[0]['is_date']) && $gb_keys[0]['is_date'] && $formatDate) {
-			$v0['name'] = format_date(new DateTimeValue(strtotime($v0['name'])), null, 0);
+			if (preg_match($mysql_date_format_re, $v2['name'])) {
+				$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
+			} else {
+				$v0['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v0['name']), null, 0);
+			}
 		}
 	}
 	ksort($grouped_temp);
@@ -804,7 +849,8 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 		if ($conditions_per_block < 4) $conditions_per_block = 4;
 		$conditions_count = 0;
 		
-		$disabled_param_ids = array_keys($disabled_params);
+		$disabled_param_ids = isset($disabled_params) ? array_keys($disabled_params) : null;
+		if (!is_array($disabled_param_ids)) $disabled_param_ids = array();
 		
 	    $date_format_tip = date_format_tip(user_config_option('date_format'));
 	    $model = $object_type instanceof ObjectType ? $object_type->getHandlerClass() : "Objects";

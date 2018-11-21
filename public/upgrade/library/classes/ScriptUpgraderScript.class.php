@@ -136,7 +136,7 @@ abstract class ScriptUpgraderScript {
 		$total_queries = count($queries);
 		foreach($queries as $query) {
 			if(trim($query)) {
-				if(mysql_query(trim($query), $connection)) {
+			    if(mysqli_query($connection, trim($query))) {
 					$executed_queries++;
 				} else {
 					return false;
@@ -157,8 +157,8 @@ abstract class ScriptUpgraderScript {
 	 * @return boolean
 	 */
 	function checkColumnExists($table_name, $col_name, $connection) {
-		$res = mysql_query("DESCRIBE `$table_name`", $connection);
-		while($row = mysql_fetch_array($res)) {
+	    $res = mysqli_query($connection, "DESCRIBE `$table_name`");
+		while($row = mysqli_fetch_array($res)) {
 			if ($row['Field'] == $col_name) return true;
 		}
 		return false;
@@ -174,8 +174,8 @@ abstract class ScriptUpgraderScript {
 	 * @return boolean
 	 */
 	function checkKeyExists($table_name, $key_name, $connection) {
-		$res = mysql_query("SHOW KEYS FROM `$table_name`");
-		while($row = mysql_fetch_array($res)) {
+	    $res = mysqli_query($connection, "SHOW KEYS FROM `$table_name`");
+		while($row = mysqli_fetch_array($res)) {
 			if ($row['Key_name'] == $key_name) return true;
 		}
 		return false;
@@ -190,8 +190,8 @@ abstract class ScriptUpgraderScript {
 	 * @return boolean
 	 */
 	function checkTableExists($table_name, $connection) {
-		$res = mysql_query("SHOW TABLES", $connection);
-		while ($row = mysql_fetch_array($res)) {
+	    $res = mysqli_query($connection, "SHOW TABLES");
+		while ($row = mysqli_fetch_array($res)) {
 			if ($row[0] == $table_name) return true;
 		}
 		return false;
@@ -208,8 +208,8 @@ abstract class ScriptUpgraderScript {
 	 * @return boolean
 	 */
 	function checkValueExists($table_name, $col_name, $value, $connection) {
-		$res = mysql_query("SELECT * FROM `$table_name` WHERE `$table_name`.`$col_name` = '$value' LIMIT 1", $connection);
-		while($row = mysql_fetch_array($res)) {
+	    $res = mysqli_query($connection, "SELECT * FROM `$table_name` WHERE `$table_name`.`$col_name` = '$value' LIMIT 1");
+		while($row = mysqli_fetch_array($res)) {
 			return true;
 		}
 		return false;

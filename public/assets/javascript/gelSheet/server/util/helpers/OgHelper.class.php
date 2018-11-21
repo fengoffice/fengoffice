@@ -170,9 +170,9 @@ class OgHelper {
 			WHERE fr.file_id  = $ogFileId AND so.column_name = 'filecontent'
 			ORDER by revision_number DESC LIMIT 1
 		"; 
-		$res = @mysql_query($sql);
+		$res = @mysqli_query(DB::connection()->getLink(), $sql);
 		if ($res) { 
-			$row  = @mysql_fetch_object($res) ;
+			$row  = @mysqli_fetch_object($res) ;
 			if (is_numeric($row->bookId)) return $row->bookId ;
 		}
 		return null ; 	

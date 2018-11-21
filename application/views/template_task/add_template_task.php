@@ -525,7 +525,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 						</script>
 						<div style="padding-top: 4px;">
 							<?php echo lang('repeat by') . ' ' ?>
-							<select name="task[repeat_by]">
+							<select name="task[repeat_by]" id="<?php echo $genid?>_rep_by">
 								<option value="start_date" id="<?php echo $genid ?>rep_by_start_date"<?php if (array_var($task_data, 'repeat_by') == 'start_date') echo ' selected="selected"'?>><?php echo lang('field ProjectTasks start_date')?></option>
 								<option value="due_date" id="<?php echo $genid ?>rep_by_due_date"<?php if (array_var($task_data, 'repeat_by') == 'due_date') echo ' selected="selected"'?>><?php echo lang('field ProjectTasks due_date')?></option>
 							</select>
@@ -537,9 +537,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			<tr id="<?php echo $genid ?>repeat_days" style="display: none;">
 				<td>
 				<table>
-					<tr><td><input class="checkbox" type="checkbox" value="1" name="task[repeat_saturdays]" /> <?php echo lang('repeat on saturdays')?></td></tr>
-					<tr><td><input class="checkbox" type="checkbox" value="1" name="task[repeat_sundays]" /> <?php echo lang('repeat on sundays')?></td></tr>
+					<?php if (!Plugins::instance()->isActivePlugin('crpm')) { ?>
 					<tr><td><input class="checkbox" type="checkbox" value="1" name="task[working_days]" /> <?php echo lang('repeat working days')?></td></tr>
+					<?php } ?>
 					<?php
 						$html = "";
 						Hook::fire('form_repeat_by_more_checkboxes', array('object' => $object), $html);

@@ -90,8 +90,8 @@ class DimensionController extends ApplicationController {
         $sql = "SELECT DISTINCT `".TABLE_PREFIX."object_members`.`member_id`,`".TABLE_PREFIX."application_logs`.`id`
 				FROM `".TABLE_PREFIX."application_logs`, `".TABLE_PREFIX."object_members`, `".TABLE_PREFIX."members`
 				WHERE (`".TABLE_PREFIX."application_logs`.`rel_object_id` = `".TABLE_PREFIX."object_members`.`object_id`) 
-					  AND (`".TABLE_PREFIX."object_members`.`member_id` = `".TABLE_PREFIX."members`.`id` AND `".TABLE_PREFIX."members`.`object_type_id` = '".mysql_real_escape_string($object_type_id)."')
-				ORDER BY `".TABLE_PREFIX."application_logs`.`id` DESC LIMIT ".mysql_real_escape_string($logs_amount_range);
+					  AND (`".TABLE_PREFIX."object_members`.`member_id` = `".TABLE_PREFIX."members`.`id` AND `".TABLE_PREFIX."members`.`object_type_id` = '".mysqli_real_escape_string(DB::connection()->getLink(), $object_type_id)."')
+				ORDER BY `".TABLE_PREFIX."application_logs`.`id` DESC LIMIT ".mysqli_real_escape_string(DB::connection()->getLink(), $logs_amount_range);
         $members_to_filter = DB::executeAll($sql);
         $member_amount = 0;
         //if the dimension members in the search are below the minimum amount to be displayed, show all dimension members the user can access to
@@ -474,7 +474,7 @@ class DimensionController extends ApplicationController {
 				
 				$search_name_cond = "";
 				if(!$random){
-					$name = mysql_real_escape_string($name);
+				    $name = mysqli_real_escape_string(DB::connection()->getLink(), $name);
 					$search_name_cond = " AND name LIKE '%".$name."%'";
 				}
 				

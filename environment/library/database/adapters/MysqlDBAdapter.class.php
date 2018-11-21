@@ -3,8 +3,9 @@
   /**
   * DB access for MySQL
   *
-  * @version 1.0
-  * @author Ilija Studen <ilija.studen@gmail.com>
+  * @version 3.7
+  * @author Ilija Studen
+  * @author Feng Office
   */
   class MysqlDBAdapter extends AbstractDBAdapter {
   
@@ -26,13 +27,13 @@
       
       $link = $persist ? 
         @mysql_pconnect($host, $user, $pass) :
-        @mysql_connect($host, $user, $pass);
+        @mysqli_connect($host, $user, $pass);
         
       if(!is_resource($link)) {
         throw new DBConnectError($host, $user, $pass, $database);
       } // if
       
-      if(!@mysql_select_db($database, $link)) {
+      if(!@mysqli_select_db($link, $database)) {
         throw new DBConnectError($host, $user, $pass, $database);
       } // if
       
@@ -45,7 +46,7 @@
     
     function close() {
     	if ($this->isResource($this->link)) {
-    		@mysql_close($this->getLink());
+    		@mysqli_close($this->getLink());
     	}
     }
     
@@ -64,7 +65,7 @@
 		if (!$this->isResource($this->link)) {
     		$this->connect($this->getParams());
     	}
-    	return @mysql_query($sql, $this->link);
+    	return @mysqli_query($this->link, $sql);
     } // executeQuery
     
     /**
@@ -108,7 +109,7 @@
     * @return integer
     */
     function affectedRows() {
-      return mysql_affected_rows($this->link);
+      return mysqli_affected_rows($this->link);
     } // affectedRows
     
     /**
@@ -119,7 +120,7 @@
     * @return integer
     */
     function lastInsertId() {
-      return mysql_insert_id($this->link);
+      return mysqli_insert_id($this->link);
     } // lastInsertId
     
     /**
@@ -130,7 +131,7 @@
     * @return string
     */
     function lastError() {
-      return mysql_error($this->link);
+      return mysqli_error($this->link);
     } // lastError
     
     /**
@@ -141,7 +142,7 @@
     * @return integer
     */
     function lastErrorCode() {
-      return mysql_errno($this->link);
+      return mysqli_errno($this->link);
     } // lastErrorCode
     
     /**
@@ -288,10 +289,10 @@
       }
 
       if(is_object($unescaped) && ($unescaped instanceof DateTimeValue)) {
-        return "'" . mysql_real_escape_string($unescaped->toMySQL(), $this->link) . "'";
+          return "'" . mysqli_real_escape_string($this->link, $unescaped->toMySQL()) . "'";
       } // if
       
-      return "'" . mysql_real_escape_string($unescaped, $this->link) . "'";
+      return "'" . mysqli_real_escape_string($this->link, $unescaped) . "'";
     } // escapeValue
     
     /**
@@ -302,7 +303,7 @@
     * @return array
     */
     function fetchRow($resource) {
-      return mysql_fetch_assoc($resource);
+      return mysqli_fetch_assoc($resource);
     } // fetchRow
     
     /**
@@ -313,7 +314,7 @@
     * @return integer
     */
     function numRows($resource) {
-      return mysql_num_rows($resource);
+      return mysqli_num_rows($resource);
     } // numRows
     
     /**
@@ -324,7 +325,7 @@
     * @return boolean
     */
     function freeResult($resource) {
-      return mysql_free_result($resource);
+      return mysqli_free_result($resource);
     } // freeResult
     
   } // MysqlDBAdapter

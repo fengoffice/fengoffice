@@ -737,7 +737,7 @@ class ProjectFile extends BaseProjectFile {
 	 * @param array $error
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		$extension = get_file_extension(basename($this->getFilename()));
 		$known_type = FileTypes::getByExtension($extension);
 		

@@ -255,7 +255,11 @@
 		
 	</div>
 	
-	<?php Hook::fire("render_object_properties", $object, $ret = 0);?>
+	<?php 
+	   $function = "render_object_properties";
+	   $ret = 0;
+	   Hook::fire($function, $object, $ret);
+	?>
 		</td>
 	</tr>
 	

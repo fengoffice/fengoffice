@@ -35,8 +35,10 @@
  	 * @param unknown_type $options
  	 * @author Pepe
  	 */
-	static function getObjects($context = null, $start = null, $limit = null, $order = null, $order_dir = null, $trashed = false, $archived = false, $filters = null, $start = 0 , $limit=null, $obj_type_types=null){
-
+    
+    //When upgrading to PHP7, realized that this has variable $start two times
+	//static function getObjects($context = null, $start = null, $limit = null, $order = null, $order_dir = null, $trashed = false, $archived = false, $filters = null, $start = 0 , $limit=null, $obj_type_types=null){
+    static function getObjects($context = null, $start = null, $limit = null, $order = null, $order_dir = null, $trashed = false, $archived = false, $filters = null, $start2 = 0 , $limit2=null, $obj_type_types=null){
 		switch ($order) {
 			case 'name' :
 					$order = 'o.name' ;

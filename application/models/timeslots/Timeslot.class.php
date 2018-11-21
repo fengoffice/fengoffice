@@ -48,7 +48,7 @@ class Timeslot extends BaseTimeslot {
 	 * @param void
 	 * @return integer
 	 */
-	function getTimeslotNum() {
+	function getTimeslotNum(Timeslot $timeslot) {
 		if(is_null($this->timeslot_num)) {
 			$object = $this->getRelObject();
 			$this->timeslot_num = $object instanceof ContentDataObject ? $object->getTimeslotNum($this) : 0;
@@ -316,11 +316,16 @@ class Timeslot extends BaseTimeslot {
 	// ---------------------------------------------------
 
 	/**
-	 * Save the object
+	 * Save the timeslot
+	 * It requires a parameter, which is not compatible with ContentDataObject function save() (Which has no parameteres)
+	 * Why modify the task when saving a timeslot? It should be modified in the calling function.
+	 * 
+	 * Commenting to see if we can replace all instances and simplify.
 	 *
-	 * @param void
+	 * @param $old_object_id It refers to the timeslot  
 	 * @return boolean
 	 */
+	/**
 	function save($old_object_id) {
 		$is_new = $this->isNew();
 		$saved = parent::save();
@@ -346,6 +351,33 @@ class Timeslot extends BaseTimeslot {
 				SET worked_time=GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60)
 				WHERE object_id=".$this->getId());
 		return $saved;
+	}
+	
+	*/
+	
+	/**
+	 * Save the timeslot
+	 *
+	 * @return boolean
+	 */
+	function save() {
+	    $is_new = $this->isNew();
+	    $saved = parent::save();
+	    
+	    if($saved) {	        
+	        $object = $this->getRelObject();
+	        if($object instanceof ContentDataObject) {
+	            if($is_new) {
+	                $object->onAddTimeslot($this);
+	            } else {
+	                $object->onEditTimeslot($this);
+	            }
+	        }
+	    }
+	    DB::execute("UPDATE ".TABLE_PREFIX."timeslots
+				SET worked_time=GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60)
+				WHERE object_id=".$this->getId());
+	    return $saved;
 	}
 
 	/**

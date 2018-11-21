@@ -136,7 +136,7 @@ abstract class ContentDataObjects extends DataManager {
 	 * @author Pepe
 	 */
 	/*
-	function paginate($arguments = null, $items_per_page = 10, $current_page = 1) {
+	function paginate($arguments = null, $items_per_page = 10, $current_page = 1, $count = null) {
 	
 		
 		if (isset ( $this ) && instance_of ( $this, 'ContentDataObjects' )) {
@@ -372,7 +372,7 @@ abstract class ContentDataObjects extends DataManager {
 	}
 	
 	/**
-	 * Fermormance FIX: getContentObjects replacement
+	 * Permormance FIX: getContentObjects replacement
 	 * @param array $args 
 	 *		order = null  -  may be performance killer depending on the order criteria  
 	 * 		order_dir = null 
@@ -390,16 +390,20 @@ abstract class ContentDataObjects extends DataManager {
 	 *  	 
 	 */
 	public function listing($args = array()) {
-		$result = new stdClass;
-		$result->objects =array();
-		$result->total =array();
-		$type_id  = self::getObjectTypeId();
+
+	    //Initialization of variables
+	    $result = new stdClass;
+		$result->objects = array();
+		$result->total = array();
+		$type_id = self::getObjectTypeId();
+		$members = array ();
 		$SQL_BASE_JOIN = '';
 		$SQL_SEARCHABLE_OBJ_JOIN = '';
 		$SQL_EXTRA_JOINS = '';
 		$SQL_TYPE_CONDITION = 'true';
 		$SQL_FOUND_ROWS = '';
         $SQL_BEFORE_COLUMNS = '';
+        $SQL_GROUP_BY = '';
 
         if (isset($args['sql_before_columns'])) {
             $SQL_BEFORE_COLUMNS = $args['sql_before_columns'];
@@ -417,6 +421,7 @@ abstract class ContentDataObjects extends DataManager {
 		}else{
 			$only_count_results = false;
 		}
+		
 		
 		$return_raw_data = array_var($args,'raw_data');
 		$start = array_var($args,'start');
@@ -580,10 +585,16 @@ abstract class ContentDataObjects extends DataManager {
 			
 			$SQL_CONTEXT_CONDITION = "om.member_id IN (" . implode ( ',', $members ) . ") $exclusive_in_member";
 			
-			if (trim($args['group_by']) != "") {
-				$args['group_by'] .= ", ";
+			//Fixing: Undefined index
+			
+			if (isset($args['group_by'])) {
+			    if (trim($args['group_by']) != "") {
+			        $args['group_by'] .= ", ";
+			    }
+			    $args['group_by'] .= "om.object_id HAVING COUNT(DISTINCT(om.member_id)) = ".count($members);
 			}
-			$args['group_by'] .= "om.object_id HAVING COUNT(DISTINCT(om.member_id)) = ".count($members);
+			
+			
 			
 
 		}else{
@@ -772,6 +783,7 @@ abstract class ContentDataObjects extends DataManager {
 			
 		    if(!$only_count_results){
 				// Execute query and build the resultset
+				if ($this->getObjectTypeId()==5) Logger::log_r($sql);
 		    	$rows = DB::executeAll($sql);
 		    	
 		    	if ($return_raw_data) {

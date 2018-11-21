@@ -54,7 +54,7 @@ class Comment extends BaseComment {
 	 * @param void
 	 * @return integer
 	 */
-	function getCommentNum() {
+	function getCommentNum($comment) {
 		if(is_null($this->comment_num)) {
 			$object = $this->getRelObject();
 			$this->comment_num = $object instanceof ContentDataObject ? $object->getCommentNum($this) : 0;
@@ -183,7 +183,7 @@ class Comment extends BaseComment {
 	 * @param array $error
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('text')) {
 			$errors[] = lang('comment text required');
 		} // if

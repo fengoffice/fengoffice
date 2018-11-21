@@ -24,7 +24,7 @@ class Column extends CellContainer {
 	 */
 	public function load($sheetId,$index) {
 		$sql = "select * from ".table('columns'). " where SheetId=$sheetId and ColumnIndex=$index" ;
-		$result =  mysql_query($sql);
+		$result =  mysqli_query(DB::connection()->getLink(), $sql);
 	}
 
 	/**
@@ -34,7 +34,7 @@ class Column extends CellContainer {
 	 */
 	public function save($SheetId) {
 		$sql = sprintf("insert into ".table('columns'). "(SheetId,ColumnIndex,ColumnSize,FontStyleId,LayoutStyleId,LayerStyleId) VALUES (%d,%d,%d,%d,%d,%d)",$this->sheetId,$this->index,$this->size,$this->fontStyleId,$this->layoutStyleId,$this->layerStyleId);
-		$result =  mysql_query($sql);
+		$result =  mysqli_query(DB::connection()->getLink(), $sql);
 		return $result;
 	}
 

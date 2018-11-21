@@ -217,7 +217,7 @@ class ProjectChart extends BaseProjectChart {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if($this->validatePresenceOf('title')) {
 			if(!$this->validateUniquenessOf('title')) $errors[] = lang('chart title unique');
 		} else {

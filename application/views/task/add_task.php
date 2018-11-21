@@ -175,8 +175,12 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		
 		<div class="dataBlock">
     		<?php echo label_tag(lang('start date')) ?>
+    		
+    		<?php 
+    			$sd_listeners = array("change" => "function(){ og.init_rep_by_selectbox('".$genid."'); }");
+    		?>
     	
-			<div style="float:left;"><?php echo pick_date_widget2('task_start_date', array_var($task_data, 'start_date'), $genid, 60, true, $genid.'start_date') ?></div>
+			<div style="float:left;"><?php echo pick_date_widget2('task_start_date', array_var($task_data, 'start_date'), $genid, 60, true, $genid.'start_date', $sd_listeners) ?></div>
 			<?php if (config_option('use_time_in_task_dates')) { ?>
 			<div style="float:left;margin-left:10px;"><?php echo pick_time_widget2('task_start_time', $task->getUseStartTime() ? array_var($task_data, 'start_date') : user_config_option('work_day_start_time'), $genid, 65, null, $genid.'start_date_time') ?></div>
 			<?php } ?>
@@ -185,8 +189,12 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		</div>
 		<div class="dataBlock">	
 			<?php echo label_tag(lang('due date')) ?>
-    	
-    		<div style="float:left;"><?php echo pick_date_widget2('task_due_date', array_var($task_data, 'due_date'), $genid, 70, true, $genid.'due_date'); ?></div>
+    		
+    		<?php 
+    			$dd_listeners = array("change" => "function(){ og.init_rep_by_selectbox('".$genid."'); }");
+    		?>
+    		
+    		<div style="float:left;"><?php echo pick_date_widget2('task_due_date', array_var($task_data, 'due_date'), $genid, 70, true, $genid.'due_date', $dd_listeners); ?></div>
     		<?php if (config_option('use_time_in_task_dates')) { ?>
     		<div style="float:left;margin-left:10px;"><?php echo pick_time_widget2('task_due_time', $task->getUseDueTime() ? array_var($task_data, 'due_date') : user_config_option('work_day_end_time'), $genid, 75, null, $genid.'due_date_time'); ?></div>
     		<?php } ?>
@@ -507,7 +515,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				</tr>
 				<tr>
 					<td>
-						<div id="<?php echo $genid ?>repeat_options" style="width: 400px; align: center; text-align: left; <?php echo $hide ?>">
+						<div id="<?php echo $genid ?>repeat_options" style="align: center; text-align: left; <?php echo $hide ?>">
 							<div>
 								<?php echo lang('CAL_EVERY') . " " .text_field('task[occurance_jump]', array_var($task_data, 'rjump', '1'), array('size' => '2', 'id' => $genid.'occ_jump', 'maxlength' => '100', 'style'=>'width:25px')) ?>
 								<span id="<?php echo $genid ?>word"></span>
@@ -555,10 +563,11 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 							</script>
 							<div style="padding-top: 4px;">
 								<?php echo lang('repeat by') . ' ' ?>
-								<select name="task[repeat_by]">
+								<select name="task[repeat_by]" id="<?php echo $genid?>_rep_by">
 									<option value="start_date" id="<?php echo $genid ?>rep_by_start_date"<?php if (array_var($task_data, 'repeat_by') == 'start_date') echo ' selected="selected"'?>><?php echo lang('field ProjectTasks start_date')?></option>
 									<option value="due_date" id="<?php echo $genid ?>rep_by_due_date"<?php if (array_var($task_data, 'repeat_by') == 'due_date') echo ' selected="selected"'?>><?php echo lang('field ProjectTasks due_date')?></option>
 								</select>
+								<span id="<?php echo $genid?>_rep_by_warning" class="form-message error" style="display:none;"><?php echo lang('repeat by date warning')?></span>
 							</div>
 						</div>
 					</td>
@@ -567,9 +576,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<tr id="<?php echo $genid ?>repeat_days" style="display: none;">
 					<td>
 					<table>
-						<tr><td><input class="checkbox" type="checkbox" value="1" name="task[repeat_saturdays]" /> <?php echo lang('repeat on saturdays')?></td></tr>
-						<tr><td><input class="checkbox" type="checkbox" value="1" name="task[repeat_sundays]" /> <?php echo lang('repeat on sundays')?></td></tr>
+						<?php if (!Plugins::instance()->isActivePlugin('crpm')) { ?>
 						<tr><td><input class="checkbox" type="checkbox" value="1" name="task[working_days]" /> <?php echo lang('repeat working days')?></td></tr>
+						<?php } ?>
 						<?php
 							$html = "";
 							Hook::fire('form_repeat_by_more_checkboxes', array('object' => $object), $html);
@@ -865,12 +874,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}else{
 				og.viewDays(true);
 			}
-			
 		}
 		
 	}
-
-
+	og.init_rep_by_selectbox('<?php echo $genid; ?>');
 
 	og.reload_task_form_selectors = function(is_new, render_add_subscribers) {
 		render_add_subscribers = (typeof render_add_subscribers == "undefined") ? true : render_add_subscribers;

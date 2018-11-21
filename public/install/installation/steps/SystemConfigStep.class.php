@@ -1,14 +1,18 @@
 <?php
 
 /**
- * Third step of Feng Office installation -> user is required to enter
- * database connection settings. Script tries the connection params and
- * if correct saves them in /config/config.php file
+ * Third step of Feng Office installation
+ * 
+ * User is required to enter database connection settings.
+ * Script tries the connection params and if correct saves them in /config/config.php file
+ * 
+ * @todo Improve messages for errors and exceptions.
  *
  * @package ScriptInstaller
  * @subpackage installation
- * @version 1.0
- * @author Ilija Studen <ilija.studen@gmail.com>
+ * @version 3.7
+ * @author Ilija Studen
+ * @author Feng Office
  */
 class SystemConfigStep extends ScriptInstallerStep {
 
@@ -17,14 +21,14 @@ class SystemConfigStep extends ScriptInstallerStep {
 	 *
 	 * @var resource
 	 */
-	private $database_connection;
+    private $database_connection;
 
 	/**
 	 * Construct the ConfigStep
 	 *
 	 * @access public
 	 * @param void
-	 * @return ConfigStep
+	 * @return int (ConfigStep)
 	 */
 	function __construct() {
 		$this->setName('Configuration');
@@ -83,23 +87,36 @@ class SystemConfigStep extends ScriptInstallerStep {
 			$absolute_url    = (string) array_var($config_form_data, 'absolute_url');
 			$plugins		 = array_var($config_form_data, 'plugins');
 			$connected = false;
-			$this->database_connection = @mysql_connect($database_host, $database_user, $database_pass);
-			if ($this->database_connection) {
-				$connected = @mysql_select_db($database_name, $this->database_connection);
+
+			//Connect to MySQL
+			$this->database_connection = mysqli_connect($database_host, $database_user, $database_pass);
+
+			//Connect to Database, or create it if it doesn't exist.
+			if ($this->database_connection) {			    
+			    $connected = mysqli_select_db($this->database_connection, $database_name);
 				if (!$connected) {
-					$error = @mysql_error();
-					$errno = @mysql_errno();
-					if ($errno == 1049 && strpos($database_name, '`') === false) {
+				    $error = mysqli_error($this->database_connection);
+				    $errno = mysqli_errno($this->database_connection);
+										
+				    if (($errno == 1049 || $errno == 1044) && strpos($database_name, '`') === false) {
+					    
 						// database doesn't exist. Try to create it.
-						if (@mysql_query('CREATE DATABASE `' . $database_name . '`', $this->database_connection)) {
-							$connected = @mysql_select_db($database_name, $this->database_connection);
-						}
+				        if (mysqli_query($this->database_connection, 'CREATE DATABASE ' . $database_name)) {
+					        $connected = mysqli_select_db($this->database_connection, $database_name);
+					    } else {
+					        //$error = mysqli_error($database_connection);
+					        //$errno = mysqli_errno($database_connection);
+					        $this->addError('Database does not exist. Failed trying to create it. Error: '. $error . ' - Error number: ' . $errno);
+					    }
 					}
 				}
 			} else {
-				$error = @mysql_error();
+			    $error = mysqli_error($this->database_connection);
+			    $errno = mysqli_errno($this->database_connection);
+			    $this->addError('Could not connect to MySQL: '. $error . ' - Error number: ' . $errno);
 			}
 
+			//If connected to database ... what is this?
 			if($connected) {
 				$this->addToStorage('database_type', $database_type);
 				$this->addToStorage('database_host', $database_host);
@@ -112,7 +129,9 @@ class SystemConfigStep extends ScriptInstallerStep {
 				$this->addToStorage('plugins'		, $plugins);
 				return true;
 			} else {
-				$this->addError('Failed to connect to database with data you provided: ' . $error);
+			    $error = mysqli_error($this->database_connection);
+			    $errno = mysqli_errno($this->database_connection);
+			    $this->addError('Failed to connect to database with data: ' . $error . ' - Error number: ' . $errno);
 			} // if
 		} // if
 
@@ -129,7 +148,7 @@ class SystemConfigStep extends ScriptInstallerStep {
 	 */
 	function breakExecution($error_message) {
 		$this->addToChecklist($error_message, false);
-		if(is_resource($this->database_connection)) @mysql_query('ROLLBACK', $this->database_connection);
+		if(is_resource($this->database_connection)) @mysqli_query($this->database_connection, 'ROLLBACK');
 		$this->setContentFromTemplate('finish.php');
 		return false;
 	} // breakExecution
@@ -168,6 +187,9 @@ class SystemConfigStep extends ScriptInstallerStep {
 			return true;
 		} // if
 
+		//Connect to MySQL
+		$this->database_connection = mysqli_connect($database_host, $database_user, $database_pass);
+		
 		// Make it work on PHP 5.0.4
 		$sql = str_replace(array("\r\n", "\r"), array("\n", "\n"), $sql);
 
@@ -181,7 +203,7 @@ class SystemConfigStep extends ScriptInstallerStep {
 		$total_queries = count($queries);
 		foreach($queries as $query) {
 			if(trim($query)) {
-				if(@mysql_query(trim($query))) {
+			    if(@mysqli_query($this->database_connection, trim($query))) {
 					$executed_queries++;
 				} else {
 					return false;

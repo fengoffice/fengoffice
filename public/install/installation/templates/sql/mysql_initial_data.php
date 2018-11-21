@@ -142,20 +142,20 @@ INSERT INTO `<?php echo $table_prefix ?>im_types` (`name`, `icon`) VALUES
 
 
 INSERT INTO `<?php echo $table_prefix ?>cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES
-	('purge_trash', '1', '1440', '1', '1', '0000-00-00 00:00:00'),
-	('send_reminders', '1', '10', '0', '1', '0000-00-00 00:00:00'),
-	('send_password_expiration_reminders', '1', '1440', '1', '1', '0000-00-00 00:00:00'),
-	('send_notifications_through_cron', '1', '1', '0', '0', '0000-00-00 00:00:00'),
-	('delete_mails_from_server', '1', '1440', '1', '1', '0000-00-00 00:00:00'),
-	('clear_tmp_folder', '1', '1440', '1', '1', '0000-00-00 00:00:00'),
-	('check_upgrade', '1', '1440', '1', '0', '0000-00-00 00:00:00'),
-	('import_google_calendar', '1', '10', '0', '0', '0000-00-00 00:00:00'),
-	('export_google_calendar', '1', '10', '0', '0', '0000-00-00 00:00:00'),
-	('sharing_table_partial_rebuild', '1', '1440', '1', '1', '0000-00-00 00:00:00'),
-	('check_sharing_table_flags', '1', '10', '1', '1', '0000-00-00 00:00:00'),
-	('clean_object_selector_temp_selection', '1', '360', '1', '1', '0000-00-00 00:00:00'),
-	('send_outbox_mails', '1', '1', '1', '1', '0000-00-00 00:00:00'),
-	('rebuild_contact_member_cache', '1', '1440', '1', '1', '0000-00-00 00:00:00');
+	('purge_trash', '1', '1440', '1', '1', '1900-01-01 00:00:00'),
+	('send_reminders', '1', '10', '0', '1', '1900-01-01 00:00:00'),
+	('send_password_expiration_reminders', '1', '1440', '1', '1', '1900-01-01 00:00:00'),
+	('send_notifications_through_cron', '1', '1', '0', '0', '1900-01-01 00:00:00'),
+	('delete_mails_from_server', '1', '1440', '1', '1', '1900-01-01 00:00:00'),
+	('clear_tmp_folder', '1', '1440', '1', '1', '1900-01-01 00:00:00'),
+	('check_upgrade', '1', '1440', '1', '0', '1900-01-01 00:00:00'),
+	('import_google_calendar', '1', '10', '0', '0', '1900-01-01 00:00:00'),
+	('export_google_calendar', '1', '10', '0', '0', '1900-01-01 00:00:00'),
+	('sharing_table_partial_rebuild', '1', '1440', '1', '1', '1900-01-01 00:00:00'),
+	('check_sharing_table_flags', '1', '10', '1', '1', '1900-01-01 00:00:00'),
+	('clean_object_selector_temp_selection', '1', '360', '1', '1', '1900-01-01 00:00:00'),
+	('send_outbox_mails', '1', '1', '1', '1', '1900-01-01 00:00:00'),
+	('rebuild_contact_member_cache', '1', '1440', '1', '1', '1900-01-01 00:00:00');
 	
 INSERT INTO `<?php echo $table_prefix ?>object_reminder_types` (`name`) VALUES
   ('reminder_email'),
@@ -172,8 +172,8 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_categories` (`name`, `is_
 	('reporting', 0, 0, 15);
 	
 INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES 
- ('task panel','tasksDateStart','0000-00-00 00:00:00','DateTimeConfigHandler',1,0,'date from to filter out task list'),
- ('task panel','tasksDateEnd','0000-00-00 00:00:00','DateTimeConfigHandler',1,0,'the date up to filter the list of tasks'),
+ ('task panel','tasksDateStart','1900-01-01 00:00:00','DateTimeConfigHandler',1,0,'date from to filter out task list'),
+ ('task panel','tasksDateEnd','1900-01-01 00:00:00','DateTimeConfigHandler',1,0,'the date up to filter the list of tasks'),
  ('task panel', 'show_notify_checkbox_in_quick_add', '1', 'BoolConfigHandler', 1, 0, 'Show notification checkbox in quick add task view'),
  ('task panel', 'can notify from quick add', '1', 'BoolConfigHandler', 0, 0, 'Notification checkbox default value'),
  ('task panel', 'can notify subscribers', '1', 'BoolConfigHandler', 0, 0, 'Notification checkbox default value'),
@@ -345,8 +345,8 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('general', 'contacts_per_page', '50', 'IntegerConfigHandler', '0', '1200', NULL),
  ('listing preferences', 'breadcrumb_member_count', '5', 'IntegerConfigHandler', '0', '5', NULL),
  ('general', 'timeReportDate', '4', 'IntegerConfigHandler', 1, 0, ''),
- ('general', 'timeReportDateStart', '0000-00-00 00:00:00', 'DateTimeConfigHandler', 1, 0, ''),
- ('general', 'timeReportDateEnd', '0000-00-00 00:00:00', 'DateTimeConfigHandler', 1, 0, ''),
+ ('general', 'timeReportDateStart', '1900-01-01 00:00:00', 'DateTimeConfigHandler', 1, 0, ''),
+ ('general', 'timeReportDateEnd', '1900-01-01 00:00:00', 'DateTimeConfigHandler', 1, 0, ''),
  ('general', 'timeReportPerson', '0', 'IntegerConfigHandler', 1, 0, ''),
  ('general', 'timeReportTimeslotType', '2', 'IntegerConfigHandler', 1, 0, ''),
  ('general', 'timeReportGroupBy', '0,0,0', 'StringConfigHandler', 1, 0, ''),
@@ -664,11 +664,11 @@ WHERE `name`='give_member_permissions_to_new_users';
 INSERT INTO `<?php echo $table_prefix ?>currencies` (`symbol`, `name`, `short_name`, `is_default`) VALUES
 ('$', 'Dollar', 'USD', 0);
 
-INSERT INTO <?php echo $table_prefix ?>custom_properties (`object_type_id`,`name`,`code`,`type`,`visible_by_default`,`is_special`) VALUES
-((SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='contact'), 'Job title', 'job_title', 'text', 1, 1);
+INSERT INTO <?php echo $table_prefix ?>custom_properties (`object_type_id`,`name`,`code`,`type`,`visible_by_default`,`is_special`,`description`, `values`, `default_value`) VALUES
+((SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='contact'), 'Job title', 'job_title', 'text', 1, 1, '', '', '');
 
-INSERT INTO <?php echo $table_prefix ?>custom_properties (object_type_id, name, code, `type`,`is_special`,`description`) VALUES
-((SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='contact'), 'Prefix', 'prefix_code', 'text', 1, '');
+INSERT INTO <?php echo $table_prefix ?>custom_properties (object_type_id, name, code, `type`,`is_special`,`description`, `values`, `default_value`) VALUES
+((SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='contact'), 'Prefix', 'prefix_code', 'text', 1, '', '', '');
 
 
 INSERT INTO <?php echo $table_prefix ?>dimension_associations_config (association_id, config_name, value)

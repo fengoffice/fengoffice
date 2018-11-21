@@ -4,8 +4,9 @@
  * This function holds open database connections and provides interface to them. It is also used
  * for SQL logging
  *
- * @version 1.0
- * @author Ilija Studen <ilija.studen@gmail.com>
+ * @version 3.7
+ * @author Ilija Studen
+ * @author Feng Office 
  */
 final class DB {
 

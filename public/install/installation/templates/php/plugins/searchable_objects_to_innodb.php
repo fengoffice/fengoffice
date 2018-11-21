@@ -1,5 +1,5 @@
 <?php
-$mysql_version = mysql_get_server_info($this->database_connection);
+$mysql_version = mysqli_get_server_info($this->database_connection);
 if ($mysql_version && version_compare($mysql_version, '5.6', '>=')) {
 	
 	// create searchable_objects as InnoDB
@@ -18,7 +18,7 @@ if ($mysql_version && version_compare($mysql_version, '5.6', '>=')) {
 	";
 	
 	if(!$this->executeMultipleQueries($sql_string, $total_queries, $executed_queries, $this->database_connection)) {
-		return $this->breakExecution('Failed to import database construction. MySQL said: ' . mysql_error($this->database_connection));
+		return $this->breakExecution('Failed to import database construction. MySQL said: ' . mysqli_error($this->database_connection));
 	}
 	
 	// switch table names and delete old table. 
@@ -28,7 +28,7 @@ if ($mysql_version && version_compare($mysql_version, '5.6', '>=')) {
 		DROP TABLE `".$database_prefix."searchable_objects_old`;
 	";
 	if(!$this->executeMultipleQueries($sql_string, $total_queries, $executed_queries, $this->database_connection)) {
-		return $this->breakExecution('Failed to import database construction. MySQL said: ' . mysql_error($this->database_connection));
+		return $this->breakExecution('Failed to import database construction. MySQL said: ' . mysqli_error($this->database_connection));
 	}
 	
 }

@@ -10,8 +10,10 @@
   * a lot of problems and errors in that situation; they will be gone as soon as your run the 
   * upgrade script.
   *
-  * @author Ilija Studen <ilija.studen@gmail.com>
+  * @author Ilija Studen
+  * @author Feng Office
+  * 
   */
-  return '3.6.3.5';
+  return '3.7.0-alpha2';
   
 ?>

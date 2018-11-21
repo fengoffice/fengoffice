@@ -1,8 +1,8 @@
 <?php
 
-	function clear_page_actions(){
-		return PageActions::instance()->clearActions();
-	}
+  function clear_page_actions(){
+	return PageActions::instance()->clearActions();
+  }
 
   /**
   * Return all page actions

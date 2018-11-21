@@ -1,16 +1,17 @@
 <?php
 
   /**
-  * First step in aC installation process - Welcome message
+  * First step in Feng Office installation process - Welcome message
   *
   * @package ScriptInstaller
   * @subpackage installation
   * @author Ilija Studen <ilija.studen@gmail.com>
+  * @author FengOffice team <development@fengoffice.com>
   */
   class WelcomeStep extends ScriptInstallerStep {
   
     /**
-    * Construct the WelcomeStep
+    * Construct the Welcome Step
     *
     * @access public
     * @param void

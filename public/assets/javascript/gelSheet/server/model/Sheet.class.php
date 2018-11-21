@@ -197,18 +197,18 @@
 
 			if ($recursive){
 				$sql="delete from ".table('cells'). " where SheetId = $this->sheetId";
-				mysql_query($sql);
+				mysqli_query(DB::connection()->getLink(), $sql);
 			}
 
 			$sql="delete from ".table('sheets'). " where SheetId = $this->sheetId";
-			mysql_query($sql);
+			mysqli_query(DB::connection()->getLink(), $sql);
 
 		}
 
 		private function loadColumns(){
 			$sql = "select * from ".table('columns'). " where SheetId=$this->sheetId" ;
-			$result =  mysql_query($sql);
-			while ($row = mysql_fetch_object($result)){
+			$result =  mysqli_query(DB::connection()->getLink(), $sql);
+			while ($row = mysqli_fetch_object($result)){
 				$col = new Column($row->SheetId, $row->ColumnIndex,$row->ColumnSize,$row->FontStyleId, $row->LayerStyleId,$row->LayoutStyleId);
 
 				$this->addColumn($col);
@@ -218,8 +218,8 @@
 
 		private function loadRows(){
 			$sql = "select * from ".table('rows'). " where SheetId=$this->sheetId" ;
-			$result =  mysql_query($sql);
-			while ($row = mysql_fetch_object($result)){
+			$result =  mysqli_query(DB::connection()->getLink(), $sql);
+			while ($row = mysqli_fetch_object($result)){
 				$nrow = new Row($row->SheetId, $row->RowIndex,$row->RowSize,$row->FontStyleId, $row->LayerStyleId,$row->LayoutStyleId);
 
 				$this->addRow($nrow);
@@ -233,8 +233,8 @@
 			$cnf['path']['Cell'] 	= "model/Cell.class.php";
 
 			$sql = "select * from ".table('cells'). " where SheetId=$this->sheetId" ;
-			$result =  mysql_query($sql);
-			while ($row = mysql_fetch_object($result)){
+			$result =  mysqli_query(DB::connection()->getLink(), $sql);
+			while ($row = mysqli_fetch_object($result)){
 				$cell = new Cell($row->SheetId,$row->DataColumn,$row->DataRow,$row->CellFormula,$row->FontStyleId, $row->LayoutStyleId, $row->CellValue);
 				$this->addCell($cell);
 			}
@@ -244,8 +244,8 @@
 
 			$sql = "select * from ".table('sheets'). " where SheetId=$SheetId ";
 			//$connection  = new Connection();
-			$result =  mysql_query($sql);
-			if($sheet = mysql_fetch_object($result)) {
+			$result =  mysqli_query(DB::connection()->getLink(), $sql);
+			if($sheet = mysqli_fetch_object($result)) {
 				$this->sheetId = $sheet->SheetId;
 				$this->bookId = $sheet->BookId;
 				$this->sheetName = $sheet->SheetName ;
@@ -265,16 +265,16 @@
 
 				$sql = "INSERT INTO ".table('sheets'). " (SheetId, BookId, SheetName, SheetIndex) VALUES (%d,%d,'%s',%d)";
 				$sql = sprintf($sql,$this->sheetId,$this->bookId,$this->sheetName,$this->sheetIndex);
-				if (!mysql_query($sql))
+				if (!mysqli_query(DB::connection()->getLink(), $sql))
 					return true; //has Errors
 			} else {
 				$sql = "INSERT INTO ".table('sheets'). " (BookId, SheetName, SheetIndex) VALUES (%d,'%s',%d)";
 				$sql = sprintf($sql , $this->bookId , $this->sheetName , $this->sheetIndex);
 
-				$result = mysql_query($sql);
+				$result = mysqli_query(DB::connection()->getLink(), $sql);
 				if(!$result)
 					return true;
-				$this->sheetId = mysql_insert_id();
+					$this->sheetId = mysqli_insert_id(DB::connection()->getLink());
 			}
 
 			foreach ($this->cells as $row => $col_array) {

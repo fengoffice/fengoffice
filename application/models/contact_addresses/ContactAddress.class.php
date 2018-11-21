@@ -106,7 +106,7 @@
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		$mandatory_fields = config_option('mandatory_address_fields');
 		if (is_array($mandatory_fields)) {
 			foreach ($mandatory_fields as $mfield) {

@@ -226,7 +226,7 @@
 	'this task repeats' => 'Esta tarea se repite',
 	'repeat on saturdays' => 'Repetir los sábados',
 	'repeat on sundays' => 'Repetir los domingos',
-	'repeat working days' => 'Repitir los días laborables',
+	'repeat working days' => 'Repitir los días laborables definidos en la configuación del sistema',
 	'forever' => 'para siempre',
 	'n times' => '{0} veces',
 	'until x' => 'hasta {0}',
@@ -453,4 +453,5 @@
 	'you have to fill all the date and time fields' => 'Debe ingresar todos los campos de fecha y hora',
 	'start date cannot be greater than due date' => 'La fecha de inicio no puede ser mayor a la fecha de fin',
     'link task'=>'Vincular tarea',
+	'repeat by date warning' => 'Es necesario especificar la fecha de inicio o fecha límite para poder configurar esta tarea como repetitiva',
 );

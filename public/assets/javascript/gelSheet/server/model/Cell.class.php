@@ -193,8 +193,8 @@ class Cell {
 
 		$sql = "select * from cell where SheetId=$SheetId ";
 		$connection  = new Connection();
-		$result =  mysql_query($sql);
-		if ($cell = mysql_fetch_object($result) )	{
+		$result =  mysqli_query($sql);
+		if ($cell = mysqli_fetch_object($result) )	{
 			this->SheetId = $cell->SheetId ;
 			this->DataColumn = $cell->SheetId;
 			this->CellFormula = $cell->CellFormula ;
@@ -220,12 +220,12 @@ class Cell {
 							$this->layoutStyleId,
 							addslashes($this->cellValue)
 						);
-		$result = mysql_query($sql) ;				
+		$result = mysqli_query(DB::connection()->getLink(), $sql) ;				
 		if (!$result) {
 			$error = new  GsError(345, "Error saving") ;
 			if ($error->isDebugging()){
 				$error->addContentElement("descrption","Saving cell" ); 
-				$error->addContentElement("MySqlError",mysql_error() ); 
+				$error->addContentElement("MySqlError",mysqli_error(DB::connection()->getLink()) ); 
 				$error->addContentElement("MySqlQuery",$sql ); 
 			}
 			throw $error ; 

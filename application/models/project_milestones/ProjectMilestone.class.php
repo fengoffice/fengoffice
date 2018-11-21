@@ -348,7 +348,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	 * @param array $errors
 	 * @return boolean
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->getObject()->validatePresenceOf('name')) $errors[] = lang('milestone name required');
 		if(!$this->validatePresenceOf('due_date')) $errors[] = lang('milestone due date required');
 	} // validate
@@ -390,7 +390,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	 * @param void
 	 * @return boolean
 	 */
-	function trash($trashDate = null) {
+	function trash($trashDate = null, $fire_hook = true) {
 		try {
 			DB::execute("UPDATE " . ProjectTasks::instance()->getTableName(true) . " SET `milestone_id` = '0' WHERE `milestone_id` = " . DB::escape($this->getId()));
 			return parent::trash($trashDate);

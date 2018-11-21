@@ -222,7 +222,7 @@ define('DIMENSION_PERMISSION_QUERY_METHOD_NOT_MANDATORY', 'not_mandatory');
     * @param integer $current_page Current page number
     * @return array
     */
-    function paginate($arguments = null, $items_per_page = 10, $current_page = 1) {
+    function paginate($arguments = null, $items_per_page = 10, $current_page = 1, $count = null) {
       if(isset($this) && instance_of($this, 'Dimensions')) {
         return parent::paginate($arguments, $items_per_page, $current_page);
       } else {

@@ -28,25 +28,27 @@ class TimeController extends ApplicationController {
         $users = array();
         $context = active_context();
         if (!can_manage_time(logged_user())) {
-            if (can_add(logged_user(), $context, Timeslots::instance()->getObjectTypeId()))
-                $users = array(logged_user());
+        	$users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
         } else {
             if (logged_user()->isMemberOfOwnerCompany()) {
                 $users = Contacts::getAllUsers();
             } else {
                 $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
             }
-            // filter users by permissions only if any member is selected.
-            $selected_members = active_context_members(false);
-            if (count($selected_members) > 0) {
-                $tmp_users = array();
-                foreach ($users as $user) {
-                    if (can_read($user, $context, Timeslots::instance()->getObjectTypeId()))
-                        $tmp_users[] = $user;
-                }
-                $users = $tmp_users;
-            }
         }
+		
+		// filter users by permissions only if any member is selected.
+		$selected_members = active_context_members(false);
+		if (count($selected_members) > 0) {
+			$tmp_users = array();
+			foreach ($users as $user) {
+				if (can_read($user, $context, Timeslots::instance()->getObjectTypeId())) {
+					$tmp_users[] = $user;
+				}
+			}
+			$users = $tmp_users;
+		}
+		
 
         /*
           $required_dimensions = DimensionObjectTypeContents::getRequiredDimensions(Timeslots::instance()->getObjectTypeId());
@@ -315,24 +317,20 @@ class TimeController extends ApplicationController {
 
             //use current time
             if (!$startTimeHours && array_var($parameters, "use_current_time")) {
-                $currentStartTime = DateTimeValueLib::now();
-                $currentStartTime->setDay($startTime->getDay());
-                $currentStartTime->setMonth($startTime->getMonth());
-                $currentStartTime->setYear($startTime->getYear());
-
-                $currentEndTime = DateTimeValueLib::now();
-                $currentEndTime->setDay($endTime->getDay());
-                $currentEndTime->setMonth($endTime->getMonth());
-                $currentEndTime->setYear($endTime->getYear());
-
+            	
+            	$now = DateTimeValueLib::now();
+            	$endTime->setHour($now->getHour());
+            	$endTime->setMinute($now->getMinute());
+            	$endTime->setSecond($now->getSecond());
+                
+                $currentStartTime = new DateTimeValue($endTime->getTimestamp());
                 $currentStartTime = $currentStartTime->add('h', -$hoursToAdd);
-
+                
                 $startTime = $currentStartTime;
-                $endTime = $currentEndTime;
             }
             $timeslot_data['start_time'] = $startTime;
             $timeslot_data['end_time'] = $endTime;
-            $timeslot_data['description'] = html_to_text($timeslot_data['description']);
+            $timeslot_data['description'] = $timeslot_data['description'];
             $timeslot_data['name'] = $timeslot_data['description'];
             $timeslot_data['rel_object_id'] = $object_id;
             $timeslot = new Timeslot();
@@ -789,8 +787,10 @@ class TimeController extends ApplicationController {
         $current_time_module_filters['from_filter'] = $from_filter;
         $current_time_module_filters['to_filter'] = $to_filter;
         
-        set_user_config_option('current_time_module_filters', json_encode($current_time_module_filters), logged_user()->getId());
-
+        if (array_var($_REQUEST, 'current') == 'time-panel') {
+        	set_user_config_option('current_time_module_filters', json_encode($current_time_module_filters), logged_user()->getId());
+        }
+        
         switch ($order) {
             case 'updatedOn':
                 $order = '`updated_on`';
@@ -907,8 +907,9 @@ class TimeController extends ApplicationController {
                     if ($add_cls)
                         $info['add_cls'] .= $add_cls;
 
-                    $add_columns = "";
-                    Hook::fire("view_timeslot_render_more_columns", $msg, $add_columns);
+                    $add_columns = array();
+                    $function = "view_timeslot_render_more_columns";
+                    Hook::fire($function, $msg, $add_columns);
                     foreach ($add_columns as $col_id => $val) {
                         if (!isset($info[$col_id]))
                             $info[$col_id] = $val;

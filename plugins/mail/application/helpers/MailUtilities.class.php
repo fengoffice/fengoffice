@@ -397,7 +397,8 @@ class MailUtilities {
 			}
 			$mail->setCc($cc);
 
-			$from_name = trim(array_var(array_var(array_var($parsedMail, 'From'), 0), 'name'));
+			$parsedmail_from_name = array_var(array_var(array_var($parsedMail, 'From'), 0), 'name');
+			$from_name = trim($parsedmail_from_name);
 			$from_encoding = detect_encoding($from_name);
 
 			if ($from_name == ''){

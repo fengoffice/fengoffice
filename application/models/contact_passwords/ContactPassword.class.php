@@ -36,7 +36,7 @@ class ContactPassword extends BaseContactPassword {
 	 * @param array $errors
 	 * @return void
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 
 		if (!isset($this->perform_validation) || $this->perform_validation) {
 

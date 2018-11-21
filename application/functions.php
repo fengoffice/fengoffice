@@ -33,17 +33,17 @@ function feng__autoload($load_class_name) {
 		$loader->addDir(ROOT . '/library');
 		
 		//TODO Pepe: No tengo la conexion ni las clases de DB en este momento.. me conecto derecho 
-		$temp_link  = mysql_connect(DB_HOST, DB_USER, DB_PASS) ;
-		mysql_select_db(DB_NAME) ;
-		$res = mysql_query("SELECT name FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1;");
-		while ($row = mysql_fetch_object($res)) {	
+		$temp_link  = mysqli_connect(DB_HOST, DB_USER, DB_PASS) ;
+		mysqli_select_db($temp_link, DB_NAME) ;
+		$res = mysqli_query($temp_link, "SELECT name FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1;");
+		while ($row = mysqli_fetch_object($res)) {	
 			$plugin_name =  strtolower($row->name) ;
 			$dir  = ROOT . '/plugins/'.$plugin_name.'/application' ;
 			if (is_dir($dir)) {
 				$loader->addDir($dir); 
 			}
 		}
-		mysql_close($temp_link);
+		mysqli_close($temp_link);
 		
 		
 		$loader->setIndexFilename(CACHE_DIR . '/autoloader.php');
@@ -1866,8 +1866,8 @@ function make_post_async($url, $params)	{
  */
 function get_table_columns($table_name) {
 	$cols = array();
-	$res = mysql_query("DESCRIBE `$table_name`", DB::connection()->getLink());
-	while($row = mysql_fetch_array($res)) {
+	$res = mysqli_query(DB::connection()->getLink(), "DESCRIBE `$table_name`");
+	while($row = mysqli_fetch_array($res)) {
 		$cols[] = $row['Field'];
 	}
 	return $cols;
@@ -1883,8 +1883,8 @@ function get_table_columns($table_name) {
  * @return boolean
  */
 function check_column_exists($table_name, $col_name) {
-	$res = mysql_query("DESCRIBE `$table_name`", DB::connection()->getLink());
-	while($row = mysql_fetch_array($res)) {
+    $res = mysqli_query(DB::connection()->getLink(), "DESCRIBE `$table_name`");
+	while($row = mysqli_fetch_array($res)) {
 		if ($row['Field'] == $col_name) return true;
 	}
 	return false;
@@ -1899,8 +1899,8 @@ function check_column_exists($table_name, $col_name) {
  * @return boolean
  */
 function checkTableExists($table_name) {
-	$res = mysql_query("SHOW TABLES", DB::connection()->getLink());
-	while ($row = mysql_fetch_array($res)) {
+    $res = mysqli_query(DB::connection()->getLink(), "SHOW TABLES");
+	while ($row = mysqli_fetch_array($res)) {
 		if ($row[0] == $table_name) return true;
 	}
 	return false;
@@ -2557,7 +2557,7 @@ function get_time_info($timestamp) {
 //escapes a character from a string, escapes ' by default, or all characters according to $all
 function escape_character($string, $char="'", $all = false) {
 	if ($all){
-		return mysql_real_escape_string($string);
+	    return mysqli_real_escape_string(DB::connection()->getLink(), $string);
 	}else{
 		return str_replace($char, "\\".$char, $string);
 	}
@@ -2571,7 +2571,7 @@ function escape_parameters_array($parameters_to_escape) {
 			if (is_array($v)) {
 				$escaped[$k] = escape_parameters_array($v);
 			} else {
-				$escaped[$k] = mysql_real_escape_string($v);
+			    $escaped[$k] = mysqli_real_escape_string(DB::connection()->getLink(), $v);
 			}
 		}
 	}
@@ -2627,9 +2627,9 @@ function check_member_custom_prop_exists($table_prefix, $cp_code, $ot_name) {
 
 	$ot_subquery = "SELECT id FROM ".$table_prefix."object_types WHERE name='$ot_name'";
 	$sql = "SELECT count(id) as total FROM ".$table_prefix."member_custom_properties WHERE code='$cp_code' AND object_type_id = ($ot_subquery)";
-	$mysql_res = mysql_query($sql);
+	$mysql_res = mysqli_query(DB::connection()->getLink(), $sql);
 	if ($mysql_res) {
-		$rows = mysql_fetch_assoc($mysql_res);
+		$rows = mysqli_fetch_assoc($mysql_res);
 		if (is_array($rows) && count($rows) > 0) {
 			$exists_cp = $rows['total'] > 0;
 		}

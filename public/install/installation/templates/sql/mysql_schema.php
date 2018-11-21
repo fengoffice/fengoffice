@@ -48,7 +48,7 @@ CREATE TABLE `<?php echo $table_prefix ?>members` (
   `object_id` int(10) unsigned,
   `order` int(10) unsigned NOT NULL default '0',
   `color` int(10) unsigned NOT NULL default '0',
-  `archived_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `archived_on` datetime NOT NULL,
   `archived_by_id` int(10) unsigned default NULL,
   PRIMARY KEY  (`id`),
   KEY `by_parent` USING HASH (`parent_member_id`),
@@ -71,7 +71,7 @@ CREATE TABLE `<?php echo $table_prefix ?>member_property_members` (
   `member_id` int(10) unsigned NOT NULL,
   `property_member_id` int(10) unsigned NOT NULL,
   `is_active` tinyint(1) unsigned NOT NULL default '0',
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `created_by_id` int(10) unsigned default NULL,
   PRIMARY KEY  (`id`),
   INDEX `member_id_property_member_id` (`member_id`, `property_member_id`),
@@ -173,13 +173,13 @@ CREATE TABLE `<?php echo $table_prefix ?>objects` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `object_type_id` int(10) unsigned NOT NULL,
   `name` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `created_by_id` int(10) unsigned default NULL,	
-  `updated_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `updated_on` datetime NOT NULL,
   `updated_by_id` int(10) unsigned default NULL,
-  `trashed_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `trashed_on` datetime NOT NULL,
   `trashed_by_id` int(10) unsigned default NULL,
-  `archived_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `archived_on` datetime NOT NULL,
   `archived_by_id` int(10) unsigned default NULL,
   `timezone_id` int(10) unsigned NOT NULL,
   `timezone_value` int(10) NOT NULL,
@@ -199,7 +199,7 @@ CREATE TABLE `<?php echo $table_prefix ?>plugins` (
   `is_installed` tinyint(1) unsigned NOT NULL default '0',
   `is_activated` tinyint(1) unsigned NOT NULL default '0',
   `priority` smallint unsigned NOT NULL default '0',
-  `activated_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `activated_on` datetime NOT NULL,
   `activated_by_id` int(10) unsigned default NULL,
   `version` int(10) unsigned default '1',
   PRIMARY KEY  (`id`), 
@@ -401,12 +401,12 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_im_values` (
 CREATE TABLE `<?php echo $table_prefix ?>contact_external_tokens` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `contact_id` int(10) unsigned NOT NULL,
-  `token` text <?php echo $default_collation ?> default '',
+  `token` text <?php echo $default_collation ?>,
   `type` varchar(50) <?php echo $default_collation ?> NOT NULL default '',  
   `external_key` varchar(255) <?php echo $default_collation ?> default '',
   `external_name` varchar(255) <?php echo $default_collation ?> default '',
-  `created_date` datetime NOT NULL default '0000-00-00 00:00:00',
-  `expired_date` datetime default '0000-00-00 00:00:00',
+  `created_date` datetime NOT NULL,
+  `expired_date` datetime,
   PRIMARY KEY  (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -450,7 +450,7 @@ CREATE TABLE `<?php echo $table_prefix ?>application_logs` (
   `taken_by_id` int(10) unsigned default NULL,
   `rel_object_id` int(10) NOT NULL default '0',
   `object_name` text <?php echo $default_collation ?>,
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `created_by_id` int(10) unsigned default NULL,
   `action` enum('upload','open','close','delete','edit','add','trash','untrash','subscribe','unsubscribe','tag','comment','link','unlink','login','logout','untag','archive','unarchive','move','copy','read','download','checkin','checkout') <?php echo $default_collation ?> default NULL,
   `is_private` tinyint(1) unsigned NOT NULL default '0',
@@ -530,7 +530,7 @@ CREATE TABLE `<?php echo $table_prefix ?>file_types` (
 CREATE TABLE `<?php echo $table_prefix ?>linked_objects` (
   `rel_object_id` int(10) unsigned NOT NULL default '0',
   `object_id` int(10) unsigned NOT NULL default '0',
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `created_by_id` int(10) unsigned default NULL,
   PRIMARY KEY(`rel_object_id`,`object_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -548,7 +548,7 @@ CREATE TABLE `<?php echo $table_prefix ?>object_reminders` (
   `type` VARCHAR(40) NOT NULL default '',
   `context` varchar(40) NOT NULL default '',
   `minutes_before` int(10) default NULL,
-  `date` datetime NOT NULL default '0000-00-00 00:00:00',
+  `date` datetime NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `type_date` (`type`,`date`),
   KEY `obj_date` (`object_id`,`date`)
@@ -626,8 +626,8 @@ CREATE TABLE `<?php echo $table_prefix ?>project_files` (
   `description` text <?php echo $default_collation ?>,
   `is_locked` tinyint(1) unsigned NOT NULL default '0',
   `is_visible` tinyint(1) unsigned NOT NULL default '0',
-  `expiration_time` datetime NOT NULL default '0000-00-00 00:00:00',
-  `checked_out_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `expiration_time` datetime NOT NULL,
+  `checked_out_on` datetime NOT NULL,
   `checked_out_by_id` int(10) unsigned DEFAULT 0,
   `was_auto_checked_out` tinyint(1) unsigned NOT NULL default '0',
   `type` int(1) NOT NULL DEFAULT 0,
@@ -660,9 +660,9 @@ CREATE TABLE `<?php echo $table_prefix ?>project_messages` (
 CREATE TABLE `<?php echo $table_prefix ?>project_milestones` (
   `object_id` int(10) unsigned NOT NULL,
   `description` text <?php echo $default_collation ?>,
-  `due_date` datetime NOT NULL default '0000-00-00 00:00:00',
+  `due_date` datetime NOT NULL,
   `is_urgent` BOOLEAN NOT NULL default '0',
-  `completed_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `completed_on` datetime NOT NULL,
   `completed_by_id` int(10) unsigned default NULL,
   `is_template` BOOLEAN NOT NULL default '0',
   `from_template_id` int(10) NOT NULL default '0',
@@ -678,13 +678,13 @@ CREATE TABLE `<?php echo $table_prefix ?>project_tasks` (
   `parents_path` varchar(255) NOT NULL default '',
   `depth` int(2) unsigned NOT NULL default '0',
   `text` text <?php echo $default_collation ?>,
-  `due_date` datetime NOT NULL default '0000-00-00 00:00:00',
-  `start_date` datetime NOT NULL default '0000-00-00 00:00:00',
+  `due_date` datetime NOT NULL,
+  `start_date` datetime NOT NULL,
   `assigned_to_contact_id` int(10) unsigned default NULL,
   `assigned_on` datetime default NULL,
   `assigned_by_id` int(10) unsigned default NULL,
   `time_estimate` int(10) unsigned NOT NULL default '0',
-  `completed_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `completed_on` datetime NOT NULL,
   `completed_by_id` int(10) unsigned default NULL,
   `started_on` DATETIME DEFAULT NULL,
   `started_by_id` INTEGER UNSIGNED NOT NULL,
@@ -695,7 +695,7 @@ CREATE TABLE `<?php echo $table_prefix ?>project_tasks` (
   `is_template` BOOLEAN NOT NULL default '0',
   `from_template_id` int(10) NOT NULL default '0',
   `from_template_object_id` int(10) unsigned DEFAULT '0',
-  `repeat_end` DATETIME NOT NULL default '0000-00-00 00:00:00',
+  `repeat_end` DATETIME NOT NULL,
   `repeat_forever` tinyint(1) NOT NULL,
   `repeat_num` int(10) unsigned NOT NULL default '0',
   `repeat_d` int(10) unsigned NOT NULL,
@@ -779,11 +779,11 @@ CREATE TABLE  `<?php echo $table_prefix ?>project_chart_params` (
 CREATE TABLE  `<?php echo $table_prefix ?>timeslots` (
   `object_id` int(10) unsigned NOT NULL auto_increment,
   `rel_object_id` int(10) unsigned NOT NULL,
-  `start_time` datetime NOT NULL default '0000-00-00 00:00:00',
-  `end_time` datetime NOT NULL default '0000-00-00 00:00:00',
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
   `contact_id` int(10) unsigned NOT NULL,
   `description` text <?php echo $default_collation ?> NOT NULL,
-  `paused_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `paused_on` datetime NOT NULL,
   `subtract` int(10) unsigned NOT NULL default '0',
   `fixed_billing` DECIMAL(20,3) NOT NULL default '0',
   `hourly_billing` DECIMAL(20,3) NOT NULL default '0',
@@ -803,7 +803,7 @@ CREATE TABLE `<?php echo $table_prefix ?>read_objects` (
   `rel_object_id` int(10) unsigned NOT NULL default '0',
   `contact_id` int(10) unsigned NOT NULL default '0',
   `is_read` int(1) NOT NULL default '0',
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   PRIMARY KEY  (`rel_object_id`,`contact_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -839,7 +839,7 @@ CREATE TABLE `<?php echo $table_prefix ?>cron_events` (
 	`delay` int(10) unsigned NOT NULL default 0,
 	`is_system` boolean NOT NULL default '0',
 	`enabled` boolean NOT NULL default '1',
-	`date` datetime NOT NULL default '0000-00-00 00:00:00',
+	`date` datetime NOT NULL,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `uk_name` (`name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -852,7 +852,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>billing_categories` (
   `report_name` varchar(100) <?php echo $default_collation ?> default '',
   `created_on` datetime default NULL,
   `created_by_id` int(10) unsigned NOT NULL default '0',
-  `updated_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `updated_on` datetime NOT NULL,
   `updated_by_id` int(10) unsigned default NULL,
  PRIMARY KEY  (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -931,7 +931,7 @@ CREATE TABLE `<?php echo $table_prefix ?>queued_emails` (
   `subject` text <?php echo $default_collation ?>,
   `body` text <?php echo $default_collation ?>,
   `attachments` text,
-  `timestamp` datetime NOT NULL default '0000-00-00 00:00:00',
+  `timestamp` datetime NOT NULL,
   `object_id` int(10) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -990,7 +990,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>application_read_logs` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `taken_by_id` int(10) NOT NULL default '0',
   `rel_object_id` int(10) NOT NULL default '0',
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `created_by_id` int(10) unsigned default NULL,
   `action` enum('read','download') <?php echo $default_collation ?> default NULL,
   PRIMARY KEY  (`id`),
@@ -1000,7 +1000,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>application_read_logs` (
 
 CREATE TABLE  `<?php echo $table_prefix ?>administration_logs` (
   `id` int(10) unsigned NOT NULL auto_increment,
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `title` varchar(50) NOT NULL default '',
   `log_data` text NOT NULL,
   `category` enum('system','security') NOT NULL,
@@ -1049,9 +1049,9 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>project_co_types` (
   `object_manager` varchar(45) <?php echo $default_collation ?> NOT NULL,
   `name` varchar(45) <?php echo $default_collation ?> NOT NULL,
   `created_by_id` int(10) unsigned NOT NULL,
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `updated_by_id` int(10) unsigned NOT NULL,
-  `updated_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `updated_on` datetime NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `object_manager` (`object_manager`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -1079,7 +1079,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>historic_values` (
   `object_id` int(10) unsigned NOT NULL,
   `name` varchar(50) <?php echo $default_collation ?> NOT NULL default '',
   `value` varchar(50) <?php echo $default_collation ?> NOT NULL default '',
-  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `created_on` datetime NOT NULL,
   `created_by_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`object_id`,`created_on`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -1175,13 +1175,13 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>template_tasks` (
   `parents_path` varchar(255) NOT NULL default '',
   `depth` int(2) unsigned NOT NULL default '0',
   `text` text <?php echo $default_collation ?>,
-  `due_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `start_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `due_date` datetime NOT NULL,
+  `start_date` datetime NOT NULL,
   `assigned_to_contact_id` int(10) unsigned DEFAULT NULL,
   `assigned_on` datetime DEFAULT NULL,
   `assigned_by_id` int(10) unsigned DEFAULT NULL,
   `time_estimate` int(10) unsigned NOT NULL DEFAULT '0',
-  `completed_on` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `completed_on` datetime NOT NULL,
   `completed_by_id` int(10) unsigned DEFAULT NULL,
   `started_on` datetime DEFAULT NULL,
   `started_by_id` int(10) unsigned NOT NULL,
@@ -1192,7 +1192,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>template_tasks` (
   `is_template` tinyint(1) NOT NULL DEFAULT '0',
   `from_template_id` int(10) NOT NULL DEFAULT '0',
   `from_template_object_id` int(10) unsigned DEFAULT '0',
-  `repeat_end` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `repeat_end` datetime NOT NULL,
   `repeat_forever` tinyint(1) NOT NULL,
   `repeat_num` int(10) unsigned NOT NULL DEFAULT '0',
   `repeat_d` int(10) unsigned NOT NULL,
@@ -1219,9 +1219,9 @@ CREATE TABLE `<?php echo $table_prefix ?>template_milestones` (
   `session_id` int(10) DEFAULT NULL,
   `object_id` int(10) unsigned NOT NULL,
   `description` text <?php echo $default_collation ?>,
-  `due_date` datetime NOT NULL default '0000-00-00 00:00:00',
+  `due_date` datetime NOT NULL,
   `is_urgent` BOOLEAN NOT NULL default '0',
-  `completed_on` datetime NOT NULL default '0000-00-00 00:00:00',
+  `completed_on` datetime NOT NULL,
   `completed_by_id` int(10) unsigned default NULL,
   `is_template` BOOLEAN NOT NULL default '0',
   `from_template_id` int(10) NOT NULL default '0',
@@ -1246,7 +1246,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>contact_member_cache` (
   `contact_id` int(10) UNSIGNED NOT NULL,
   `member_id` int(10) UNSIGNED NOT NULL,
   `parent_member_id` int(10) UNSIGNED NOT NULL default '0',
-  `last_activity` DATETIME NOT NULL default '0000-00-00 00:00:00',
+  `last_activity` DATETIME NOT NULL,
   PRIMARY KEY  (`contact_id` , `member_id`),
   KEY `by_contact` USING HASH (`contact_id`),
   KEY `by_parent` USING HASH (`parent_member_id`),
@@ -1264,7 +1264,7 @@ CREATE TABLE `<?php echo $table_prefix ?>template_instantiated_parameters` (
 CREATE TABLE `<?php echo $table_prefix ?>sent_notifications` (
  `id` int(10) NOT NULL AUTO_INCREMENT,
  `queued_email_id` int(10) NOT NULL DEFAULT 0,
- `sent_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+ `sent_date` datetime NOT NULL,
  `to` text <?php echo $default_collation ?>,
  `cc` text <?php echo $default_collation ?>,
  `bcc` text <?php echo $default_collation ?>,
@@ -1272,7 +1272,7 @@ CREATE TABLE `<?php echo $table_prefix ?>sent_notifications` (
  `subject` text <?php echo $default_collation ?>,
  `body` text <?php echo $default_collation ?>,
  `attachments` text <?php echo $default_collation ?>,
- `timestamp` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+ `timestamp` datetime NOT NULL,
  `object_id` int(10) NOT NULL DEFAULT 0,
  PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -1283,14 +1283,14 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>currencies` (
   `name` VARCHAR(128) NOT NULL,
   `short_name` VARCHAR(50) NOT NULL,
   `is_default` BOOLEAN NOT NULL,
-    `external_id` INTEGER UNSIGNED NOT NULL,
+    `external_id` INTEGER UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>object_selector_temp_values` (
   `user_id` int(11) NOT NULL DEFAULT 0,
   `identifier` varchar(255) <?php echo $default_collation ?> NOT NULL,
-  `updated_on` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `updated_on` datetime NOT NULL,
   `value` text <?php echo $default_collation ?> NOT NULL,
   PRIMARY KEY (`user_id`,`identifier`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;

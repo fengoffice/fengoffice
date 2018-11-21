@@ -144,8 +144,8 @@ final class ScriptUpgrader {
 			} // foreach
 			
 			// connect to database
-			if ($dbc = mysql_connect(DB_HOST, DB_USER, DB_PASS)) {
-				if (mysql_select_db(DB_NAME, $dbc)) {
+			if ($dbc = mysqli_connect(DB_HOST, DB_USER, DB_PASS)) {
+			    if (mysqli_select_db($dbc, DB_NAME)) {
 					$this->printMessage('Upgrade script has connected to the database.');
 				} else {
 					$this->printMessage('Failed to select database ' . DB_NAME);
@@ -157,10 +157,10 @@ final class ScriptUpgrader {
 			} // if
 
 			// check MySQL version
-			$mysql_version = mysql_get_server_info($dbc);
+			$mysql_version = mysqli_get_server_info($dbc);
 			if ($mysql_version && version_compare($mysql_version, "4.1", '>=')) {
 				$constants['DB_CHARSET'] = 'utf8';
-				@mysql_query("SET NAMES 'utf8'", $dbc);
+				@mysqli_query($dbc, "SET NAMES 'utf8'");
 				tpl_assign('default_collation', $default_collation = 'collate utf8_unicode_ci');
 				tpl_assign('default_charset', $default_charset = 'DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci');
 			} else {
@@ -183,11 +183,11 @@ final class ScriptUpgrader {
 				PRIMARY KEY  (`id`)
 				) ENGINE=InnoDB $default_charset;";
 
-			if (@mysql_query($test_table_sql, $dbc)) {
+			if (@mysqli_query($dbc, $test_table_sql)) {
 				$this->printMessage('Test query has been executed. Its safe to proceed with database migration.');
-				@mysql_query("DROP TABLE `$test_table_name`", $dbc);
+				@mysqli_query($dbc, "DROP TABLE `$test_table_name`");
 			} else {
-				$this->printMessage('Failed to executed test query. MySQL said: ' . mysql_error($dbc), true);
+				$this->printMessage('Failed to executed test query. MySQL said: ' . mysqli_error($dbc), true);
 				return false;
 			} // if
 			
@@ -218,7 +218,7 @@ final class ScriptUpgrader {
 			@unlink(INSTALLATION_PATH . "/cache/autoloader.php");
 			
 			if (isset($last_correct_version)) {
-				@mysql_query("UPDATE `".TABLE_PREFIX."config_options` SET `value` = 0 WHERE `name` = 'upgrade_last_check_new_version'");
+			    @mysqli_query($dbc, "UPDATE `".TABLE_PREFIX."config_options` SET `value` = 0 WHERE `name` = 'upgrade_last_check_new_version'");
 				tpl_assign('version', $last_correct_version);
 				return file_put_contents(INSTALLATION_PATH . '/config/installed_version.php', tpl_fetch(get_template_path('installed_version')));
 			}

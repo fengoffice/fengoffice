@@ -93,8 +93,8 @@
 
 		public function getBooks(){
 			$sql = "select * from ".table('books');
-			$result= mysql_query($sql);
-			while($row = mysql_fetch_object($result)){
+			$result= mysqli_query(DB::connection()->getLink(), $sql);
+			while($row = mysqli_fetch_object($result)){
 				$books[] = array(
 					'bookId'	=>	$row->bookId	,
 					'bookName'	=> 	$row->bookName
@@ -105,21 +105,21 @@
 
 		
 		function deleteBook($bookId) {
-			if (@mysql_query("START TRANSACTION") &&
-					@mysql_query("DELETE FROM `" . table('cells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-					@mysql_query("DELETE FROM `" . table('mergedCells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-					@mysql_query("DELETE FROM `" . table('rows') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-					@mysql_query("DELETE FROM `" . table('columns') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
-					@mysql_query("DELETE FROM `" . table('sheets') . "` WHERE `BookId` = $bookId") &&
-					@mysql_query("DELETE FROM `" . table('fontStyles') . "` WHERE `BookId` = $bookId") &&
-					@mysql_query("DELETE FROM `" . table('books') . "` WHERE `BookId` = $bookId") &&
-					@mysql_query("COMMIT")) {
+		    if (@mysqli_query(DB::connection()->getLink(), "START TRANSACTION") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('cells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('mergedCells') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('rows') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('columns') . "` WHERE `SheetId` IN (SELECT `SheetId` FROM `" . table('sheets') . "` WHERE `BookId` = $bookId)") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('sheets') . "` WHERE `BookId` = $bookId") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('fontStyles') . "` WHERE `BookId` = $bookId") &&
+		        @mysqli_query(DB::connection()->getLink(), "DELETE FROM `" . table('books') . "` WHERE `BookId` = $bookId") &&
+		        @mysqli_query(DB::connection()->getLink(), "COMMIT")) {
 //				echo "{'Error':0,'Message':'Book $bookId deleted succesfully','Data':{'BookId':".$bookId."}}";
 //				throw new Success('Book deleted succesfully',"{'BookId':$bookId}");
 			} else {
 				$error = new GsError(302,"Error deleting book.");
 				if($error->isDebugging()){
-					$err = str_replace("'", '"', mysql_error());
+				    $err = str_replace("'", '"', mysqli_error(DB::connection()->getLink()));
 					$error->addContentElement("BookId",$bookId);
 					$error->addContentElement("MySql Error",$err);
 				}

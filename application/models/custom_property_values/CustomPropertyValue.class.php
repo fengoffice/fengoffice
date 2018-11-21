@@ -22,7 +22,7 @@ class CustomPropertyValue extends BaseCustomPropertyValue {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		$cp = CustomProperties::getCustomProperty($this->getCustomPropertyId());
 		if($cp instanceof CustomProperty){
 			if($cp->getIsRequired() && ($this->getValue() == '')){

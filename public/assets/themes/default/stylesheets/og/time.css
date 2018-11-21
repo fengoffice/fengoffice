@@ -199,3 +199,9 @@
 }
 
 .add-timeslot .template-object-actions .coViewAction{padding: 2px 0pt 2px 20px;}
+
+
+.object-grid.x-grid-panel .x-grid3-cell-inner.x-grid3-col-description {
+	white-space: pre-wrap;
+	line-height: 16px;
+}

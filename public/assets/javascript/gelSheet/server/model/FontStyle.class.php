@@ -33,9 +33,9 @@ class FontStyle extends Model  {
 	public function getFontName(){
 
 		$sql= "SELECT * FROM ". table('fonts') ." WHERE FontId= $this->fontId";
-		$result= mysql_query($sql);
+		$result= mysqli_query(DB::connection()->getLink(), $sql);
 
-		if ($row = mysql_fetch_object($result)) {
+		if ($row = mysqli_fetch_object($result)) {
 			return $row->FontName;
 		}
 		else{
@@ -54,7 +54,7 @@ class FontStyle extends Model  {
 
 	public function delete($recursive = false) {
 		$sql = "DELETE  FROM ".table('fontStyles'). " where fontStyleId=$this->fontStyleId";
-		return mysql_query($sql);
+		return mysqli_query(DB::connection()->getLink(), $sql);
 	}
 
 

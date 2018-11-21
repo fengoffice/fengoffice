@@ -1,24 +1,26 @@
 <?php
-	require_javascript("og/CSVCombo.js");
-	require_javascript("og/DateField.js");
+	// This "class" draws the task list (Correct?)
 	
+    //Javascript files required
+    require_javascript("og/CSVCombo.js");
+	require_javascript("og/DateField.js");
 	if (config_option('use tasks dependencies')) {
 		require_javascript('og/tasks/task_dependencies.js');
 	}
-
 	if(config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')){
 		require_javascript('multi_assignment.js', 'crpm');
 	}
 
+	// Set localization
 	$loc = user_config_option('localization');
 	if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
-	$genid = gen_id();
-	
+	//initialize varialbes
+	$genid = gen_id(); //generates a random id
 	$all_templates_array = array();
 	$project_templates_array = array();
-	$templates_array = array();
-	$project_templates_array = array();
+	$all_templates = array();
+	$project_templates = array();
 	$tasks_array = array();
 	$internal_milestones_array = array();
 	$external_milestones_array = array();
@@ -70,14 +72,17 @@
 	}
 	
 	$user_ids = array();
-	foreach($users as $user) {
-		$user_info = $user->getArrayInfo();
-		if ($user->getId() == logged_user()->getId()) {
-			$user_info['isCurrent'] = true;
-		}
-		$user_ids[$user->getId()] = $user->getId();
-		$users_array[] = $user_info;
+	if (is_array($users)) {
+    	foreach($users as $user) {
+    		$user_info = $user->getArrayInfo();
+    		if ($user->getId() == logged_user()->getId()) {
+    			$user_info['isCurrent'] = true;
+    		}
+    		$user_ids[$user->getId()] = $user->getId();
+    		$users_array[] = $user_info;
+    	}
 	}
+	
 	// add assigned users to users array
 	foreach ($assigned_users as $auser) {
 		if (!in_array($auser, $user_ids)) {
@@ -86,12 +91,16 @@
 		}
 	}
 
-	foreach($allUsers as $usr) {
-		$allUsers_array[] = $usr->getArrayInfo();
+	if (is_array($allUsers)) {
+    	foreach($allUsers as $usr) {
+    		$allUsers_array[] = $usr->getArrayInfo();
+    	}
 	}
 	
-	foreach($companies as $company) {
-		$companies_array[] = $company->getArrayInfo();
+	if (is_array($companies)) {
+    	foreach($companies as $company) {
+    		$companies_array[] = $company->getArrayInfo();
+    	}
 	}
 	
 	foreach($object_subtypes as $ot) {
@@ -193,9 +202,19 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 	// load more task groups when scroll hits the bottom
 	$("#tasksPanelContent").scroll(function(){
 		var ele = document.getElementById('tasksPanelContent');
-		if(ele.scrollHeight - ele.scrollTop === ele.clientHeight){
+
+		var margin = ele.scrollHeight / 5; // 20% of container height
+
+		var pixels_left_to_hit_bottom = ele.scrollHeight - ele.scrollTop - ele.clientHeight;
+
+		// load more groups if the pixels left to hit bottom is less than 20% of container height
+		if (pixels_left_to_hit_bottom < margin) {
 			ogTasks.loadMoreGroups();
-		}
+		}			
+		/*
+		if(ele.scrollHeight - ele.scrollTop < ele.clientHeight){
+			ogTasks.loadMoreGroups();
+		}*/
 	});
 
 	var mili = 0;

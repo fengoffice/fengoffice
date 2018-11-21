@@ -529,7 +529,7 @@ class ObjectController extends ApplicationController {
 							$value = $newValues;
 						} else {
 							$value = str_replace($date_format_tip, "", $value);
-							if (trim($value) != '' && trim($val) != $date_format_tip) {
+							if (trim($value) != '' && trim($value) != $date_format_tip) {
 
 								$dtv = DateTimeValueLib::dateFromFormatAndString($date_format, $value);
 								if ($custom_property->getType() == 'datetime') {
@@ -1558,7 +1558,7 @@ class ObjectController extends ApplicationController {
 			try {
 				$object = Objects::findObject($id);
 				if ($object instanceof ContentDataObject && $object->canDelete(logged_user())) {
-					$object->trash();
+					$object->trash(null, false);
 					Hook::fire('after_object_trash', $object, $null );
 					ApplicationLogs::createLog($object, ApplicationLogs::ACTION_TRASH, null, true);
 					$count++;
@@ -2140,7 +2140,7 @@ class ObjectController extends ApplicationController {
 			$params['orderdir'] = "";
 		}
 
-		$name_filter = mysql_real_escape_string( array_var($_GET, 'name') );
+		$name_filter = mysqli_real_escape_string(DB::connection()->getLink(), array_var($_GET, 'name') );
 		$linked_obj_filter = array_var($_GET, 'linkedobject');
 		$object_ids_filter = '';
 		$show_all_linked_objects = false;
@@ -2359,6 +2359,13 @@ class ObjectController extends ApplicationController {
 		// trashed conditions
 		$extra_conditions[] = "
 			o.trashed_on".($trashed ? "<>" : "=")."0";
+		
+		// only show objects trashed by the logged user (if not superadmin)
+		if ($trashed && logged_user() instanceof Contact && !logged_user()->isAdministrator()) {
+			$extra_conditions[] = "
+				o.trashed_by_id=".logged_user()->getId();
+		}
+		
 		// archived conditions
 		if (!$trashed) {
 			$extra_conditions[] = "
@@ -2416,7 +2423,7 @@ class ObjectController extends ApplicationController {
 				$members = $extra_member_ids;
 			}
 		}
-		if (isset($members) && is_array($members) && count($members) > 0 && !(isset($template_id) && $template_id > 0)) {
+		if (isset($members) && is_array($members) && count($members) > 0 && !isset($template_id) ) {
 			$sql_members = "
 				AND (EXISTS (SELECT om.object_id
 					FROM  ".TABLE_PREFIX."object_members om
@@ -2433,7 +2440,7 @@ class ObjectController extends ApplicationController {
 		// --
 
 		// Permissions filter
-		if (logged_user()->isAdministrator() || isset($template_id) && $template_id > 0) {
+		if (logged_user()->isAdministrator() || isset($template_id)) {
 			// editing template items do not check permissions
 			$sql_permissions = "";
 		} else {

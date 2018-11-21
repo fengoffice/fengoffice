@@ -119,12 +119,14 @@
                                 <tr>
                                     <td>
                                         <?php 
-                                            echo pick_date_widget_timeslot('timeslot[date]', $date, $genid, null, false,'date_input');
+                                        	$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[date]'); }");
+                                            echo pick_date_widget2('timeslot[date]', $date, $genid, null, false,'date_input', $listeners);
                                         ?>
                                     </td>
                                     <td style="padding-left: 5px">
                                         <?php 
-                                            echo pick_time_widget_timeslot('timeslot[start_time]', $timeslot->isNew() ? null : $date, $genid,null,false,'start_time_input');
+                                        	$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[start_time]'); }");
+                                            echo pick_time_widget2('timeslot[start_time]', $timeslot->isNew() ? null : $date, $genid,null,false,'start_time_input', $listeners);
                                         ?>
                                     </td>
                                     <td style="padding-left: 5px">
@@ -145,12 +147,14 @@
                             <tr>
                                 <td>
                                     <?php 
-                                        echo pick_date_widget_timeslot('timeslot[end_date]', $end_date, $genid, null, false,'date_end_input');
+                                        $listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_date]'); }");
+                                        echo pick_date_widget2('timeslot[end_date]', $end_date, $genid, null, false,'date_end_input', $listeners);
                                     ?>
                                 </td>
                                 <td style="padding-left: 5px">
                                     <?php 
-                                        echo pick_time_widget_timeslot('timeslot[end_time]', $timeslot->isNew() ? null : $end_date, $genid,null,false,'end_time_input');
+                                    	$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_time]'); }");
+                                        echo pick_time_widget2('timeslot[end_time]', $timeslot->isNew() ? null : $end_date, $genid,null,false,'end_time_input', $listeners);
                                     ?>
                                 </td>
                             </tr>
@@ -179,6 +183,7 @@
                     <div id="contene" class="linked-objects-container">
                         <?php
                             $object_id = $timeslot->getRelObjectId();
+                            $showObjectTask = '';
                             if ($object_id){
                                 $showLinkObjectTask = 'display:none;';
                                 
@@ -269,13 +274,13 @@
 <div id="modal-config-more" style="display: none;">
     <h2><?php echo lang('How should we adjust'); ?></h2>
     <div class="row">
-        <input class="pull-left" type="radio" name="user_config" value="start" checked=""/>
-        <label class="pull-left"><?php echo lang('Did you start sooner'); ?></label>
+        <input class="pull-left" type="radio" name="user_config" value="start" checked="" id="{genid}user_config_start_sooner"/>
+        <label class="pull-left" for="{genid}user_config_start_sooner"><?php echo lang('Did you start sooner'); ?></label>
         <div class="clearfix"></div>
     </div>
     <div class="row">
-        <input class="pull-left" type="radio" name="user_config" value="end"/>
-        <label class="pull-left"> <?php echo lang('Did you end later'); ?></label>
+        <input class="pull-left" type="radio" name="user_config" value="end" id="{genid}user_config_end_later"/>
+        <label class="pull-left" for="{genid}user_config_end_later"> <?php echo lang('Did you end later'); ?></label>
         <div class="clearfix"></div>
     </div>
     <div>
@@ -294,13 +299,13 @@
 <div id="modal-config-less" style="display: none;">
     <h2><?php echo lang('How should we adjust'); ?></h2>
     <div class="row">
-        <input class="pull-left" type="radio" name="user_config" value="start" checked=""/>
-        <label><?php echo lang('Did you start later'); ?></label>
+        <input class="pull-left" type="radio" name="user_config" value="start" checked="" id="{genid}user_config_start_later"/>
+        <label for="{genid}user_config_start_later"><?php echo lang('Did you start later'); ?></label>
         <div class="clearfix"></div>
     </div>
     <div class="row">
-        <input class="pull-left" type="radio" name="user_config" value="end"/>
-        <label><?php echo lang('Did you end sooner'); ?></label>
+        <input class="pull-left" type="radio" name="user_config" value="end" id="{genid}user_config_end_sooner"/>
+        <label for="{genid}user_config_end_sooner"><?php echo lang('Did you end sooner'); ?></label>
         <div class="clearfix"></div>
     </div>
     <div>
@@ -318,13 +323,13 @@
 <div id="modal-config-hours" style="display: none;">
     <h2><?php echo lang('How do you prefer'); ?></h2>
     <div class="row">
-        <input class="pull-left" type="radio" name="user_config" value="dates" checked=""/>
-        <label><?php echo lang('Did you want change the date value'); ?></label>
+        <input class="pull-left" type="radio" name="user_config" value="dates" checked="" id="{genid}user_config_change_date"/>
+        <label for="{genid}user_config_change_date"><?php echo lang('Did you want change the date value'); ?></label>
         <div class="clearfix"></div>
     </div>
     <div class="row">
-        <input class="pull-left" type="radio" name="user_config" value="times"/>
-        <label><?php echo lang('Did you want change the time value'); ?></label>
+        <input class="pull-left" type="radio" name="user_config" value="times" id="{genid}user_config_change_time"/>
+        <label for="{genid}user_config_change_time"><?php echo lang('Did you want change the time value'); ?></label>
         <div class="clearfix"></div>
     </div>
     <div>
@@ -340,7 +345,7 @@
 </div>
 
 <script>   
-    var edit_mode = "<?php echo $edit_mode; ?>";
+    var edit_mode = "<?php echo $edit_mode;  //this variable is undefined ?>";
     var edit_hours_mode = "<?php echo 0; ?>";
     var gen_id = "<?php echo $genid; ?>";
     var time_preferences =JSON.parse('<?php echo json_encode($time_preferences); ?>');
@@ -397,10 +402,12 @@
         og._actualTimeValue = horas_restar+minutos_restar;
         
         if(og._actualTimeValue > og._lastTimeValue){
-            div= $('#modal-config-more').html();
+            div= $('#modal-config-more').html().replace(/\{genid\}/ig, Ext.id());
         }else{
-            div= $('#modal-config-less').html();
+            div= $('#modal-config-less').html().replace(/\{genid\}/ig, Ext.id());
         }
+
+        og._lastTimeValue = og._actualTimeValue;
         
         if(edit_mode){
             switch(time_preferences.automatic_calculation_time){
@@ -502,6 +509,8 @@
         }
         hours = now.getHours();
         minutes = now.getMinutes(); 
+
+        og._actualTimeValue = og._lastTimeValue;
         
         var d = new Date(now.getTime()-(og._actualTimeValue));
         var final_minutes = d.getMinutes();
@@ -550,6 +559,8 @@
         }
         hours = now.getHours();
         minutes = now.getMinutes(); 
+        
+        og._actualTimeValue = og._lastTimeValue;
         
         var d = new Date(now.getTime()+(og._actualTimeValue));
         var final_minutes = d.getMinutes();
@@ -621,7 +632,7 @@
     };
 
     og.whoNeedChange = 0;
-    og.onchangeDatesInputs = function (whoShow) {   //---------------------------------------------------------------------------------------------------------------------------------
+    og.onchangeDatesInputs = function (whoShow) {
 
         if(whoShow == 'timeslot[end_date]'){
             og.whoNeedChange = 1;
@@ -629,7 +640,7 @@
             og.whoNeedChange = 2;
         }
 
-        div = $('#modal-config-hours').html();
+        div = $('#modal-config-hours').html().replace(/\{genid\}/ig, Ext.id());
 
         var action = 0;
         if(time_preferences.automatic_calculation_start_time != 0){
@@ -655,12 +666,15 @@
                 og.changeTimesInputs();
                 break;
             default :
-                $modal = og.ExtModal.show({
-                    title: '<?php echo lang("You changed the length of your time record"); ?>',
-                    basecls: 'user-config-timeslots',
-                    html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
-                });
-                $modal.on('close', og.rollbackInputs);
+            	var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
+        		if (end_date_visible) {
+	                $modal = og.ExtModal.show({
+	                    title: '<?php echo lang("You changed the length of your time record"); ?>',
+	                    basecls: 'user-config-timeslots',
+	                    html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
+	                });
+	                $modal.on('close', og.rollbackInputs);
+        		}
                 break;
         }
 

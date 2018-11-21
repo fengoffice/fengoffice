@@ -22,7 +22,7 @@ class Row extends CellContainer {
 	 */
 	public function load($sheetId,$index) {
 		$sql = "select * from ".table('rows'). " where SheetId=$sheetId and ColumnIndex=$index" ;
-		$result =  mysql_query($sql);
+		$result =  mysqli_query(DB::connection()->getLink(), $sql);
 	}
 
 	/**
@@ -32,7 +32,7 @@ class Row extends CellContainer {
 	 */
 	public function save($SheetId) {
 		$sql = sprintf("insert into ".table('rows'). "(SheetId,RowIndex,RowSize,FontStyleId,LayoutStyleId,LayerStyleId) VALUES (%d,%d,%d,%d,%d,%d)",$this->sheetId,$this->index,$this->size,$this->fontStyleId,$this->layoutStyleId,$this->layerStyleId);
-		$result =  mysql_query($sql);
+		$result =  mysqli_query(DB::connection()->getLink(), $sql);
 		return $result;
 	}
 

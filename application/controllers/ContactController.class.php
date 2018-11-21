@@ -3,8 +3,10 @@
 /**
  * Contact controller
  *
- * @version 1.0
- * @author Marcos Saiz <marcos.saiz@fengoffice.com>
+ * @version 3.7
+ * @author Marcos Saiz
+ * @author Feng Office
+ * 
  */
 class ContactController extends ApplicationController {
 
@@ -2749,7 +2751,7 @@ class ContactController extends ApplicationController {
                                                 unset($contact_data['photo_tmp_filename']);
                                             }
                                             if (isset($contact_data['company_name'])) {
-                                                $company = Contacts::findOne(array("conditions" => "`first_name` = '".mysql_real_escape_string($contact_data['company_name'])."'"));
+                                                $company = Contacts::findOne(array("conditions" => "`first_name` = '".mysqli_real_escape_string(DB::connection()->getLink(), $contact_data['company_name'])."'"));
                                                 if ($company == null) {                                                        
                                                         $company = new Contact();
                                                         $company->setObjectName($contact_data['company_name']);
@@ -4321,7 +4323,7 @@ class ContactController extends ApplicationController {
 	function get_allowed_addresses() {
 		$extra_conds = null;
 		if ($filter = array_var($_POST, 'name_filter')) {
-			$filter = mysql_real_escape_string($filter, DB::connection()->getLink());
+		    $filter = mysqli_real_escape_string(DB::connection()->getLink(), $filter);
 			$addresses = $this->getAllowedAddresses($filter);
 		} else {
 			$addresses = array();

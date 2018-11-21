@@ -346,7 +346,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	 * @param array $errors
 	 * @return boolean
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->getObject()->validatePresenceOf('name')) $errors[] = lang('milestone name required');
 		if(!$this->validatePresenceOf('due_date')) $errors[] = lang('milestone due date required');
 	} // validate

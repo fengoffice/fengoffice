@@ -421,7 +421,7 @@ og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_l
 		if (!allow_associated_dimensions && dims[x] && dims[x].is_assoc_dim) continue;
 		
 		for (ot_id in members_by_ot) {
-			if (ot_id == 'opt') continue;
+			if (isNaN(ot_id)) continue;
 			
 			var members = members_by_ot[ot_id];
 			if (!members) continue;

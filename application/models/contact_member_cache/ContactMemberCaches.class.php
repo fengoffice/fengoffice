@@ -8,7 +8,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 	}
 	
 	static function getContactsIdsByMemberId($member_id) {
-		$member_id = mysql_real_escape_string($member_id, DB::connection()->getLink());
+		$member_id = mysqli_real_escape_string($member_id, DB::connection()->getLink());
 		$sql = "SELECT `contact_id` FROM `".TABLE_PREFIX."contact_member_cache` WHERE member_id = $member_id";
 
 		// Run!
@@ -57,7 +57,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		}
 		
 		if (!is_null($member_name)) {
-			$member_name = mysql_real_escape_string($member_name, DB::connection()->getLink());
+			$member_name = mysqli_real_escape_string($member_name, DB::connection()->getLink());
 			$SQL_CONDITION .= " AND m.name LIKE '%".$member_name."%'";
 		}
 		

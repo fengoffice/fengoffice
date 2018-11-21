@@ -257,7 +257,10 @@ class Timeslots extends BaseTimeslots {
 				FROM `".TABLE_PREFIX."timeslots`
 				WHERE `rel_object_id` =  ". $object_id ." 
 				AND `end_time` > ".DB::escape(EMPTY_DATETIME).";";
-		return array_var(DB::executeOne($sql), "total");
+		
+		$result = DB::executeOne($sql);
+		$name = "total";
+		return array_var($result, $name);
 	}
 	
 	static function getTotalSecondsWorkedOnObject($object_id) {//getTotalSecondsWorkedOnObject

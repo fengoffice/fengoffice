@@ -1,6 +1,7 @@
 <?php 
-	$extra_header = isset($mail_conversation_block) && $mail_conversation_block != '';
-	Hook::fire("render_page_actions", $object, $ret = 0);
+	//$extra_header = isset($mail_conversation_block) && $mail_conversation_block != '';
+    $ret = 0;
+	Hook::fire("render_page_actions", $object, $ret);
 	$coId = $object->getObjectId(); 
 	if (!isset($iconclass))
 		$iconclass = "ico-large-" . $object->getObjectTypeName();

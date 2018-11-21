@@ -86,7 +86,7 @@ class Google_Config
           // https://developers.google.com/console
           'client_id' => '882360446644-9ui7gju7k6cmj4ti6ilgp054h5glvfp9.apps.googleusercontent.com',
           'client_secret' => 'vVImW-aIa5avv2zh-EUK5zCq',
-          'redirect_uri' => 'http://u5.fengoffice.com/login_google2/index.php',
+          'redirect_uri' => 'http://www.fengoffice.com/login_google2/index.php',
 
           // Simple API access key, also from the API console. Ensure you get
           // a Server key, and not a Browser key.

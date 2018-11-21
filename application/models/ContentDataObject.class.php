@@ -808,7 +808,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 	
 	/**
-	 * This function will return number of all comments
+	 * This function returns the total number of comments on the object
 	 *
 	 * @param void
 	 * @return integer
@@ -845,7 +845,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Comment $comment
 	 * @return integer
 	 */
-	function getCommentNum(Comment $comment) {
+	function getCommentNum($comment) {
 		$comments = $this->getComments();
 		if(is_array($comments)) {
 			$counter = 0;
@@ -989,7 +989,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Contact $user
 	 * @return boolean
 	 */
-	function subscribeUser(Contact $user) {
+	//function subscribeUser(Contact $user) {
+	function subscribeUser($user) {
 		if($this->isNew()) {
 			throw new Error('Can\'t subscribe user to object that is not saved');
 		} // if
@@ -1013,7 +1014,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param Contact $user
 	 * @return boolean
 	 */
-	function unsubscribeUser(Contact $user) {
+	function unsubscribeUser($user) {
 		$subscription = ObjectSubscriptions::findById(array(
         'object_id' => $this->getId(),
         'contact_id' => $user->getId()
@@ -1191,7 +1192,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	/**
 	 * Sets as unread for everyone except logged user
-	 * @return unknown_type
+	 * @return null
 	 */
 	function resetIsRead() {
 		$conditions = "`rel_object_id` = " . $this->getId();
@@ -1417,8 +1418,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			}
 		}*/
 		
-	   
-	    Hook::fire("after_classify_object", array('members'=> $members_array, 'object'=>$this, 'is_multiple_classify'=> $is_multiple));
+		$hook_return = null;
+	    Hook::fire("after_classify_object", array('members'=> $members_array, 'object'=>$this, 'is_multiple_classify'=> $is_multiple), $hook_return);
 		
 
 		if ($this->isCommentable()) {

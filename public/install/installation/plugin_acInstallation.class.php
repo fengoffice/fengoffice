@@ -21,7 +21,7 @@ final class acInstallation {
 	 *
 	 * @var string
 	 */
-	private $database_type = 'mysql';
+	private $database_type = 'mysqli';
 
 	/**
 	 * Database host
@@ -109,8 +109,8 @@ final class acInstallation {
 		$default_localization = $this->getDefaultLocalization();
 
 		$connected = false;
-		if($this->database_connection = @mysql_connect($database_host, $database_user, $database_pass)) {
-			$connected = @mysql_select_db($database_name, $this->database_connection);
+		if($this->database_connection = @mysqli_connect($database_host, $database_user, $database_pass)) {
+		    $connected = @mysqli_select_db($this->database_connection, $database_name);
 		} // if
 
 		if($connected) {
@@ -152,10 +152,10 @@ final class acInstallation {
 		tpl_assign('engine', $database_engine);
 
 		// Check MySQL version
-		$mysql_version = mysql_get_server_info($this->database_connection);
+		$mysql_version = mysqli_get_server_info($this->database_connection);
 		if($mysql_version && version_compare($mysql_version, '4.1', '>=')) {
 			$constants['DB_CHARSET'] = 'utf8';
-			@mysql_query("SET NAMES 'utf8'", $this->database_connection);
+			@mysqli_query($this->database_connection, "SET NAMES 'utf8'");
 			tpl_assign('default_collation', 'collate utf8_unicode_ci');
 			tpl_assign('default_charset', 'DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci');
 		} else {
@@ -163,7 +163,7 @@ final class acInstallation {
 			tpl_assign('default_charset', '');
 		} // if
 
-		@mysql_query('BEGIN WORK', $this->database_connection);
+		@mysqli_query($this->database_connection, 'BEGIN WORK');
 
 		// Database construction
 		$total_queries = 0;
@@ -171,7 +171,7 @@ final class acInstallation {
 		if($this->executeMultipleQueries(tpl_fetch(get_template_path('sql/mysql_schema.php')), $total_queries, $executed_queries)) {
 			$this->printMessage("Tables created in '$database_name'. (Executed queries: $executed_queries)");
 		} else {
-			return $this->breakExecution('Failed to import database construction. MySQL said: ' . mysql_error($this->database_connection));
+			return $this->breakExecution('Failed to import database construction. MySQL said: ' . mysqli_error($this->database_connection));
 		} // if
 
 		// Initial data
@@ -180,7 +180,7 @@ final class acInstallation {
 		if($this->executeMultipleQueries(tpl_fetch(get_template_path('sql/mysql_initial_data.php')), $total_queries, $executed_queries)) {
 			$this->printMessage("Initial data imported into '$database_name'. (Executed queries: $executed_queries)");
 		} else {
-			return $this->breakExecution('Failed to import initial data. MySQL said: ' . mysql_error($this->database_connection));
+			return $this->breakExecution('Failed to import initial data. MySQL said: ' . mysqli_error($this->database_connection));
 		} // if
 		
 		//Execute plugin sql files
@@ -192,7 +192,7 @@ final class acInstallation {
 				if($this->executeMultipleQueries(tpl_fetch(get_template_path("sql/plugins/$file")), $total_queries, $executed_queries)) {
 					$this->printMessage("Plugin executed: $file. (Executed queries: $executed_queries)");
 				} else {
-					return $this->breakExecution('Failed to execute plugin: '. $file . '. MySQL said: ' . mysql_error($this->database_connection));
+					return $this->breakExecution('Failed to execute plugin: '. $file . '. MySQL said: ' . mysqli_error($this->database_connection));
 				} // if
 			}
 		}
@@ -203,7 +203,7 @@ final class acInstallation {
 		
 		
 		
-		@mysql_query('COMMIT', $this->database_connection);
+		@mysqli_query($this->database_connection, 'COMMIT');
 
 		
 		if ($this->writeConfigFile($constants)) {
@@ -235,7 +235,7 @@ final class acInstallation {
 	function breakExecution($error_message) {
 		$this->printMessage($error_message, true);
 		if(is_resource($this->database_connection)) {
-			@mysql_query('ROLLBACK', $this->database_connection);
+		    @mysqli_query($this->database_connection, 'ROLLBACK');
 		} // if
 		return false;
 	} // breakExecution
@@ -264,8 +264,8 @@ final class acInstallation {
 	 * @return boolean
 	 */
 	function haveInnoDbSupport() {
-		if($result = mysql_query("SHOW VARIABLES LIKE 'have_innodb'", $this->database_connection)) {
-			if($row = mysql_fetch_assoc($result)) {
+	    if($result = mysqli_query($this->database_connection, "SHOW VARIABLES LIKE 'have_innodb'")) {
+			if($row = mysqli_fetch_assoc($result)) {
 				return strtolower(array_var($row, 'Value')) == 'yes';
 			} // if
 		} // if
@@ -307,7 +307,7 @@ final class acInstallation {
 		$total_queries = count($queries);
 		foreach($queries as $query) {
 			if(trim($query)) {
-				if(@mysql_query(trim($query))) {
+			    if(@mysqli_query($this->database_connection, trim($query))) {
 					$executed_queries++;
 				} else {
 					return false;
@@ -553,7 +553,7 @@ final class acInstallation {
 	 * @param array of string $pluginNames
 	 */
 	function installPlugins($pluginNames) {
-		@mysql_query('BEGIN WORK');
+	    @mysqli_query($this->database_connection, 'BEGIN WORK');
 		
 		tpl_assign('table_prefix', $this->table_prefix);
 		tpl_assign('engine', $this->database_engine);
@@ -565,12 +565,12 @@ final class acInstallation {
 					$pluginInfo = include_once $path;
 					//0. Check if exists in plg table
 					$sql = "SELECT id FROM ". $this->table_prefix."plugins WHERE name = '$name' ";
-					$res = @mysql_query($sql);
+					$res = @mysqli_query($this->database_connection, $sql);
 					if (!$res) {
-						@mysql_query('ROLLBACK');
+					    @mysqli_query($this->database_connection, 'ROLLBACK');
 						return false;
 					}
-					$plg_obj =  mysql_fetch_object($res);
+					$plg_obj =  mysqli_fetch_object($res);
 					if (!$plg_obj){
 						//1. Insert into PLUGIN TABLE
 						$cols = "name, is_installed, is_activated";
@@ -580,12 +580,12 @@ final class acInstallation {
 							$values = array_var($pluginInfo,'id').", ".$values ;
 						}
 						$sql = "INSERT INTO ". $this->table_prefix ."plugins ($cols) VALUES ($values) "; 
-						if (@mysql_query($sql)){
-							$id = @mysql_insert_id() ;
+						if (@mysqli_query($this->database_connection, $sql)){
+						    $id = @mysqli_insert_id($this->database_connection) ;
 							$pluginInfo['id'] = $id  ;
 						}else{
-							echo "ERROR: ".mysql_error();
-							@mysql_query('ROLLBACK');
+						    echo "ERROR: ".mysqli_error($this->database_connection);
+							@mysqli_query($this->database_connection, 'ROLLBACK');
 							return false ;
 						}
 					}else {
@@ -606,14 +606,14 @@ final class acInstallation {
 									 	'".array_var($type,"icon")."', 
 										$id
 									)";
-								if (@mysql_query($sql)){
-									$pluginInfo['types'][$k]['id'] = @mysql_insert_id() ;
-									$type['id'] =  @mysql_insert_id() ;
+							     if (@mysqli_query($this->database_connection, $sql)){
+								    $pluginInfo['types'][$k]['id'] = @mysqli_insert_id($this->database_connection) ;
+									$type['id'] =  @mysqli_insert_id($this->database_connection);
 									
 								}else{
 									echo $sql."<br/>";
-									echo mysql_error()."<br/>";
-									@mysql_query('ROLLBACK');
+									echo mysqli_error($this->database_connection)."<br/>";
+									@mysqli_query($this->database_connection, 'ROLLBACK');
 									return false;
 								}
 								
@@ -655,10 +655,10 @@ final class acInstallation {
 										".array_var($tab,'object_type_id')."
 									)";
 										
-								if (!@mysql_query($sql)){
+										if (!@mysqli_query($this->database_connection, $sql)){
 									echo $sql ;
-									echo mysql_error();
-									@mysql_query('ROLLBACK');
+									echo mysqli_error($this->database_connection);
+									@mysqli_query($this->database_connection, 'ROLLBACK');
 									$this->breakExecution();
 									return false ;
 								}
@@ -671,10 +671,10 @@ final class acInstallation {
 									)
 								 	VALUES ( 1,'".array_var($tab,'id')."' ),  ( 2,'".array_var($tab,'id')."' )  ON DUPLICATE KEY UPDATE permission_group_id = permission_group_id ";
 								
-								if (!@mysql_query($sql)){
+								if (!@mysqli_query($this->database_connection, $sql)){
 									echo $sql ;
-									echo mysql_error();
-									@mysql_query('ROLLBACK');
+									echo mysqli_error($this->database_connection);
+									@mysqli_query($this->database_connection, 'ROLLBACK');
 									$this->breakExecution();
 									return false ;
 								}
@@ -690,10 +690,10 @@ final class acInstallation {
 						if($this->executeMultipleQueries(tpl_fetch($schema_creation), $total_queries, $executed_queries)) {
 							$this->printMessage("Schema created for plugin $name ");	
 						}else{
-							$this->breakExecution("Error while creating schema for plugin $name".mysql_error());
+						    $this->breakExecution("Error while creating schema for plugin $name".mysqli_error($this->database_connection));
 							DB::rollback();
 							return false;
-							//$this->printMessage("Error while creating schema for plugin $name".mysql_error());
+							//$this->printMessage("Error while creating schema for plugin $name".mysqli_error($this->database_connection));
 						}
 					} 
 
@@ -703,10 +703,10 @@ final class acInstallation {
 						$total_queries = 0;
 						$executed_queries = 0;
 						if($this->executeMultipleQueries(tpl_fetch($schema_query), $total_queries, $executed_queries)) {
-							$this->printMessage("Initial data loaded for plugin  '$name'.".mysql_error());	
+						    $this->printMessage("Initial data loaded for plugin  '$name'.".mysqli_error($this->database_connection));	
 						}else{
-							echo mysql_error();
-							$this->breakExecution("Error while loading inital data for plugin '$name'.".mysql_error());
+						    echo mysqli_error($this->database_connection);
+							$this->breakExecution("Error while loading inital data for plugin '$name'.".mysqli_error($this->database_connection));
 							DB::rollback();
 							return false;
 						}	
@@ -727,14 +727,14 @@ final class acInstallation {
 						if($this->executeMultipleQueries(implode("\n", $queries), $total_queries, $executed_queries)) {
 							$this->printMessage("File install.php processed for plugin $name ");
 						}else{
-							echo mysql_error();
-							$this->breakExecution("Error while executing install.php for plugin '$name'.".mysql_error());
+						    echo mysqli_error($this->database_connection);
+						    $this->breakExecution("Error while executing install.php for plugin '$name'.".mysqli_error($this->database_connection));
 							DB::rollback();
 							return false;
 						}
 					}
 					
-					@mysql_query('COMMIT');
+					@mysqli_query($this->database_connection, 'COMMIT');
 				}
 			}
 			return true ;

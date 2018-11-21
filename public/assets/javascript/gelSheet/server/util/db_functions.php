@@ -46,15 +46,15 @@ function db_prefix_tables($sql) {
 
 function db_query($sql){
 	$newSQL = db_prefix_tables($sql);
-	return mysql_query ( $newSQL );
+	return mysqli_query (DB::connection()->getLink(), $newSQL );
 }
 
 function db_fetch_object($result) {
-	return mysql_fetch_object($result);
+	return mysqli_fetch_object($result);
 }
 
 function db_fetch_array($result) {
-	return mysql_fetch_assoc($result);
+	return mysqli_fetch_assoc($result);
 }
 
 /**************************************/

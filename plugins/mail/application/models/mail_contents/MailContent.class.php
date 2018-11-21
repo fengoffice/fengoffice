@@ -126,7 +126,7 @@ class MailContent extends BaseMailContent {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('uid')) {
 			$errors[] = lang('uid required');
 		}
@@ -777,7 +777,7 @@ class MailContent extends BaseMailContent {
 	 * @param void
 	 * @return array
 	 */
-	function getComments() {
+	function getComments($include_trahsed = false) {
 		return Comments::getCommentsByObjectIds(implode(',',$this->getConversationMailIds(true)));
 	} // getComments
 	

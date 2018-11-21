@@ -137,9 +137,9 @@ class ApiController extends ApplicationController {
         $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
 
         // escape name
-        $name = mysql_real_escape_string($name);
+        $name = DB::escape_string($name);
         // escape service
-        $service = mysql_real_escape_string($service);
+        $service = DB::escape_string($service);
         
         // allow only numeric in start and limit parameters
         if (!is_numeric($start)) {
@@ -241,7 +241,7 @@ class ApiController extends ApplicationController {
             
             // escape order parameters
             if ($order) {
-            	$order = mysql_real_escape_string($order);
+                $order = DB::escape_string($order);
             	if (!in_array(strtolower($order_dir), array("asc","desc"))) {
             		$order_dir = "asc";
             	}

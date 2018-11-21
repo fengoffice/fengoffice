@@ -143,7 +143,7 @@ class MailContents extends BaseMailContents {
 			INNER JOIN ". TABLE_PREFIX ."objects o ON o.id = mc.object_id
 			INNER JOIN ". TABLE_PREFIX ."mail_datas md ON md.id = mc.object_id
 			WHERE `conversation_id` = '$conversation_id' $deleted AND `account_id` = " . $mail->getAccountId()." 
-				AND in_reply_to_id='".mysql_real_escape_string($mail->getMessageId())."'";
+				AND in_reply_to_id='".mysqli_real_escape_string(DB::connection()->getLink(), $mail->getMessageId())."'";
 		$row = DB::executeOne($sql);
 		
 		if ($row) {
@@ -232,7 +232,7 @@ class MailContents extends BaseMailContents {
 		));
 	} // getProjectMails
 
-	function delete($condition) {
+	function delete($condition = null) {
 		if(isset($this) && instance_of($this, 'MailContents')) {
 			// Delete contents from filesystem
 			$sql = "SELECT `content_file_id` FROM ".self::instance()->getTableName(true)." WHERE $condition";

@@ -34,8 +34,8 @@ function complete_migration_print($text) {
 }
 
 function complete_migration_check_table_exists($table_name, $connection) {
-	$res = mysql_query("SHOW TABLES", $connection);
-	while ($row = mysql_fetch_array($res)) {
+    $res = mysqli_query($connection, "SHOW TABLES");
+	while ($row = mysqli_fetch_array($res)) {
 		if ($row[0] == $table_name) return true;
 	}
 	return false;

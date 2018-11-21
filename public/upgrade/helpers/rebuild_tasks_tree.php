@@ -10,9 +10,9 @@
   		$upgrade_script = '';
 	  	//START calculte the depth and the parents_path for each task
 	  	$tasks_with_parents_sql = "SELECT e.object_id, e.parent_id FROM ".$table_name." e WHERE `parent_id` > 0";
-	  	$res = mysql_query($tasks_with_parents_sql , $database_connection);
+	  	$res = mysqli_query($database_connection, $tasks_with_parents_sql);
 	  	$tasks_with_parents_rows = array();
-	  	while($row = mysql_fetch_assoc($res)){
+	  	while($row = mysqli_fetch_assoc($res)){
 	  		$tasks_with_parents_rows[] = $row;
 	  	}
 	  		

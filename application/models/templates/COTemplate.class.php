@@ -188,7 +188,7 @@ class COTemplate extends BaseCOTemplate {
 	 * @param array $errors
 	 * @return boolean
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('name')) $errors[] = lang('template name required');
 	} // validate
 

@@ -535,7 +535,7 @@ foreach ($actions as $action) {
 		if ($acc instanceof MailAccount) {
 			?>
 			og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
-			og.emailFilters.accountName = '<?php echo mysql_real_escape_string($acc->getName()) ?>';
+			og.emailFilters.accountName = '<?php echo mysqli_real_escape_string(DB::connection()->getLink(), $acc->getName()) ?>';
 			<?php
 		} else { 
 			?>

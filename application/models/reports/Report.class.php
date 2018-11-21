@@ -27,7 +27,7 @@
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(trim($this->getObjectName()) == ''){
 			$errors[] = lang('report name required');
 		}

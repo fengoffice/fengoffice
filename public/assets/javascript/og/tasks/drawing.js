@@ -690,6 +690,8 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
 
     //dimesions breadcrumbs
     var dim_classification = new Array();
+    //remove empty values from show_dimension_cols
+    drawOptions.show_dimension_cols = drawOptions.show_dimension_cols.filter(function (x) { return (x != '') });
     for (var x = 0; x < drawOptions.show_dimension_cols.length; x++) {
         did = drawOptions.show_dimension_cols[x];
         var dim_mpath = {};

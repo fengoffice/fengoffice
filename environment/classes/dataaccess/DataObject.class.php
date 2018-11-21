@@ -11,16 +11,17 @@
   * This class supports PKs over multiple fields
   *
   * @package System
-  * @version 1.0.1
+  * @version 3.7
   * @author Ilija Studen <ilija.studen@gmail.com>
-  * @copyright 2005 by Ilija Studen
+  * @author Feng Office
+  * @copyright 2005 by Ilija Studen, Feng Office
   */
   abstract class DataObject {
     
   	/**
   	 * Indicates if the 'create' and 'update' timestamps will be set on the save() method.
   	 *
-  	 * @var unknown_type
+  	 * @var boolean
   	 */
   	private $mark_timestamps = true;
   	

@@ -1407,7 +1407,8 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 						if (is_array($skipped_dimensions) && in_array($dimension_id, $skipped_dimensions)) continue;
 						
 						if ( is_array(array_var($options, 'allowedDimensions')) && array_search($dimension_id, $options['allowedDimensions']) === false ){
-							continue;	 
+						    //removed for PHP7 compatiblity:
+						    //continue;
 						}
 
 						if (!$dimension['is_manageable']) continue;
@@ -1584,7 +1585,8 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			
 			<?php			 
 				if ( is_array(array_var($options, 'allowedDimensions')) && array_search($dimension_id, $options['allowedDimensions']) === false ){
-					continue;	 
+					//continue;
+				    return false;
 				}					
 				$dimension_name = escape_character($dimension_info['dimension_name']);
 				if (!isset($id)) $id = gen_id();
@@ -1725,7 +1727,8 @@ function render_single_bootstrap_dimension_tree($dimension, $genid = null, $sele
 
         <?php
         if ( is_array(array_var($options, 'allowedDimensions')) && array_search($dimension_id, $options['allowedDimensions']) === false ){
-            continue;
+            //continue;
+            return false;
         }
         $dimension_name = escape_character($dimension_info['dimension_name']);
         if (!isset($id)) $id = gen_id();

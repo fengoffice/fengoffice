@@ -237,7 +237,7 @@ class ProjectEvent extends BaseProjectEvent {
 	 * @param array $errors
 	 * @return boolean
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->getObject()->validatePresenceOf('name')) $errors[] = lang('event subject required');
 		if(!$this->validateMaxValueOf('description',3000)) $errors[] = lang('event description maxlength');
 		if(!$this->getObject()->validateMaxValueOf('name', 100)) $errors[] = lang('event subject maxlength');

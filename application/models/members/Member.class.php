@@ -298,7 +298,7 @@ class Member extends BaseMember {
 		return true;
 	}
 	
-	function validate(&$errors) {
+	function validate($errors) {
 		if (!array_var($this->skip_validations, 'presence of name')) {
 			if (!$this->validatePresenceOf('name')) $errors[] = lang('name required');
 		}

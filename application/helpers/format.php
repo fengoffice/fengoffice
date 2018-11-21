@@ -258,7 +258,10 @@ function date_format_tip($format) {
                     if ($ot->getName() == 'timeslot' && ($col == 'time_estimate' || $col == 'bill_total_price' || $col == 'bill_total_cost') && !$is_gruped) { // don't show value per line, only in totals
                         $value = '--';
                     }
-
+                    // apply config option format only for reports
+                    if (array_var($_GET,'c') != 'reporting') {
+                    	$format = 'friendly';
+                    }
                     switch ($format) {
 						case 'seconds': $formatted = $value * 60; break;
 						case 'minutes': $formatted = $value; break;

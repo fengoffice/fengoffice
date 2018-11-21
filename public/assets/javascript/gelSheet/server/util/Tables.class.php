@@ -19,7 +19,7 @@ class Tables {
 
 	public function __construct() {
 		
-		$this->base= new Connection();	
+		$this->base = new Connection();	
 		
 	}
 	
@@ -32,7 +32,7 @@ class Tables {
 		$sql= "CREATE DATABASE IF NOT EXISTS opengoo;
 			   USE opengoo;";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`books`;
 			CREATE TABLE  `excel`.`books` (
@@ -42,7 +42,7 @@ class Tables {
 	  		PRIMARY KEY  (`BookId`)
 			) ENGINE=InnoDB AUTO_INCREMENT=248 DEFAULT CHARSET=latin1 COMMENT='System Workbooks';";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`cells`;
 			CREATE TABLE  `excel`.`cells` (
@@ -55,7 +55,7 @@ class Tables {
 	  		PRIMARY KEY  (`SheetId`,`DataColumn`,`DataRow`)
 			) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Sheet data';";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`fontStyles`;
 			CREATE TABLE  `excel`.`fontStyles` (
@@ -70,7 +70,7 @@ class Tables {
 	  		PRIMARY KEY  (`FontStyleId`)
 			) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;";
 	
-		mysql_query($sql);		
+		mysqli_query($this->base, $sql);		
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`fonts`;
 			CREATE TABLE  `excel`.`fonts` (
@@ -79,7 +79,7 @@ class Tables {
 	  		PRIMARY KEY  (`FontId`)
 			) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;";
 	
-		mysql_query($sql);		
+		mysqli_query($this->base, $sql);		
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`sheets`;
 			CREATE TABLE  `excel`.`sheets` (
@@ -90,7 +90,7 @@ class Tables {
 	  		PRIMARY KEY  (`SheetId`)
 			) ENGINE=InnoDB AUTO_INCREMENT=1022 DEFAULT CHARSET=latin1 COMMENT='Workbooks Sheets';";
 	
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`userbooks`;
 			CREATE TABLE  `excel`.`userbooks` (
@@ -100,7 +100,7 @@ class Tables {
 	  		PRIMARY KEY  (`UserBookId`)
 			) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "DROP TABLE IF EXISTS `excel`.`users`;
 			CREATE TABLE  `excel`.`users` (
@@ -113,7 +113,7 @@ class Tables {
 	  		PRIMARY KEY  (`UserId`)
 			) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COMMENT='Sytem Users';";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "LOCK TABLES `fonts` WRITE;
 			INSERT INTO `excel`.`fonts` VALUES  (1,'Arial'),
@@ -124,14 +124,14 @@ class Tables {
  			(6,'Tahoma');
 			UNLOCK TABLES;";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		$sql= "LOCK TABLES `fontStyles` WRITE;
 			INSERT INTO `excel`.`fontStyles` VALUES  (1,247,0,'10.0',0,0,0,'#00000'),
  			(2,247,0,'10.0',0,0,0,'#00000');
 			UNLOCK TABLES;";
 		
-		mysql_query($sql);
+		mysqli_query($this->base, $sql);
 		
 		
 		

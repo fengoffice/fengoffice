@@ -213,6 +213,10 @@ class Notifier {
 	}
 	
 	static function objectNotification($object, $people, $sender, $notification, $description = null, $descArgs = null, $properties = array(), $links = array()) {
+
+		if (in_array($object->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
+			return;
+		}
 		
 		Hook::fire('filter_object_notification_people', array('object' => $object, 'notification' => $notification) , $people);
 		
@@ -549,6 +553,12 @@ class Notifier {
 					$from = self::prepareEmailAddress($senderemail, $sendername);
 					if (!$toemail) continue;
 					
+					//this is not used. Why is it here?
+					//$from = self::prepareEmailAddress($senderemail, $sendername);
+					//PHP7 fix:
+					//Previously: if (!$toemail) continue;
+					if (!$toemail) return;
+					
 					$subject = htmlspecialchars_decode(langA("$notification notification $type", $descArgs));
 
 					if ($object instanceof ProjectFile && $object->getDefaultSubject() != ""){
@@ -586,7 +596,13 @@ class Notifier {
 		foreach($all_subscribers as $subscriber) {
 			$subscribers[] = $subscriber;
 		}
-		self::objectNotification($comment, $subscribers, logged_user(), 'new');
+		
+		$object = $comment->getRelObject();
+		if (!$object instanceof ContentDataObject) return;
+		
+		if (!in_array($object->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
+			self::objectNotification($comment, $subscribers, logged_user(), 'new');
+		}
 		
 	} // newObjectComment
 	
@@ -626,7 +642,9 @@ class Notifier {
 		Localization::instance()->loadSettings($locale, ROOT . '/language');
 		
 		$toemail = $user->getEmailAddress();
-		if (!$toemail) continue;
+		//PHP7 fix:
+		//Previously: if (!$toemail) continue;
+		if (!$toemail) return;
 		
 		self::queueEmail(
 			null,
@@ -676,7 +694,9 @@ class Notifier {
 		Localization::instance()->loadSettings($locale, ROOT . '/language');
 		
 		$toemail = $user->getEmailAddress();
-		if (!$toemail) continue;
+		//PHP7 fix:
+		//Previously: if (!$toemail) continue;
+		if (!$toemail) return;
 		
 		self::queueEmail(
 			null,
@@ -715,7 +735,10 @@ class Notifier {
 		$locale = $user->getLocale();
 		Localization::instance()->loadSettings($locale, ROOT . '/language');
 		$toemail = $user->getEmailAddress();
-		if (!$toemail) continue;
+		//PHP7 fix:
+		//Previously: if (!$toemail) continue;		
+		if (!$toemail) return;
+		
 		self::queueEmail(
 			null,
 			array(self::prepareEmailAddress($toemail, $user->getObjectName())),
@@ -749,7 +772,10 @@ class Notifier {
 		$locale = $user->getLocale();
 		Localization::instance()->loadSettings($locale, ROOT . '/language');
 		$toemail = $user->getEmailAddress();
-		if (!$toemail) continue;
+		//PHP7 fix:
+		//Previously: if (!$toemail) continue;
+		if (!$toemail) return;
+		
 		self::queueEmail(
 			null,
 			array(self::prepareEmailAddress($toemail, $user->getObjectName())),
@@ -837,6 +863,10 @@ class Notifier {
 	 * @throws NotifierConnectionError
 	 */
 	static function notifEvent(ProjectEvent $object, $people, $notification, $sender) {
+		
+		if (in_array($object->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
+			return;
+		}
 		
 		Hook::fire('filter_object_notification_people', array('object' => $object, 'notification' => $notification) , $people);
 		
@@ -989,7 +1019,10 @@ class Notifier {
                                 tpl_assign('description_title', $description_title);//description_title
                                 
 				$toemail = $user->getEmailAddress();
-				if (!$toemail) continue;
+				//PHP7 fix:
+				//Previously: if (!$toemail) continue;
+				if (!$toemail) return;
+				
 				$emails[] = array(
 					"object_id" => $object->getId(),
 					"to" => array(self::prepareEmailAddress($toemail, $user->getObjectName())),
@@ -1063,7 +1096,10 @@ class Notifier {
 
 			tpl_assign('date', $date);
 			$toemail = $user->getEmailAddress();
-			if (!$toemail) continue;
+			//PHP7 fix:
+			//Previously: if (!$toemail) continue;
+			if (!$toemail) return;
+			
 			self::queueEmail(
 				$event->getId(),
 				array(self::prepareEmailAddress($toemail, $user->getObjectName())),
@@ -1143,6 +1179,11 @@ class Notifier {
 	 * @throws NotifierConnectionError
 	 */
 	function taskAssigned(ProjectTask $task) {
+
+		if (in_array($task->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
+			return;
+		}
+		
 		if($task->isCompleted()) {
 			return true; // task has been already completed...
 		}
@@ -1301,6 +1342,11 @@ class Notifier {
 
         
 	function workEstimate(ProjectTask $task) {
+
+		if (in_array($task->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
+			return;
+		}
+		
 		tpl_assign('task_assigned', $task);
 		
 		if(!($task->getAssignedTo() instanceof Contact)) {
@@ -2018,6 +2064,11 @@ class Notifier {
 	 * @param $object The task that has been completed
 	 */
 	static function notifyDependantTaskAssignedUsersOfTaskCompletion($object) { /* @var $object ProjectTask */
+		
+		if (in_array($object->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
+			return;
+		}
+		
 		$emails = array();
 		// get dependant tasks
 		$dependant_tasks = ProjectTaskDependencies::getDependantTasks($object->getId());

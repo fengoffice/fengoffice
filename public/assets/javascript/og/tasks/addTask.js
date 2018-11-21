@@ -1149,3 +1149,23 @@ ogTasks.undoRemoveSubtasks = function(genid) {
 		$(inputs[i]).val(0);
 	}
 }
+
+
+
+// if no start date defined, then set it to repeat by due date if it is defined
+og.init_rep_by_selectbox = function(genid) {
+	var sd = Ext.getCmp(genid + "start_date").getValue();
+	var dd = Ext.getCmp(genid + "due_date").getValue();
+	if (!dd || !sd) {
+		if (!dd && !sd) {
+			$("#" + genid + "_rep_by_warning").show();
+		} else {
+			$("#" + genid + "_rep_by_warning").hide();
+			if (!dd) {
+				$("#" + genid + "_rep_by").val("start_date");
+			} else if (!sd) {
+				$("#" + genid + "_rep_by").val('due_date');
+			}
+		}
+	}
+}

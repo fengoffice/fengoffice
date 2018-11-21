@@ -61,14 +61,14 @@
 				$id =1;
 				//$sql= "SELECT BookId, BookName, BookCreatedOn, UserName FROM ".table("books")." b INNER JOIN ".table("users")." u ON b.UserId = u.UserId WHERE b.UserId= $id";
 				$sql= "SELECT BookId, BookName,  UserName FROM ".table("books")." b INNER JOIN ".table("users")." u ON b.UserId = u.UserId WHERE b.UserId= $id";
-				$result= mysql_query($sql);
+				$result= mysqli_query(DB::connection()->getLink(), $sql);
 				//echo " # ".$sql." # ";
 	
 				$books= array();
 				
 				if ($format == 'json') {
 					$json = "";
-					while ($row= mysql_fetch_object($result)){
+					while ($row= mysqli_fetch_object($result)){
 						$json .= ",{'id':'$row->BookId','name':'$row->BookName','date':'$row->BookCreatedOn','user':'$row->UserName'}";
 						//$books [] = $row->BookId;
 					}
@@ -83,7 +83,7 @@
 		<TotalResults>1</TotalResults>
 		<TotalPages>1</TotalPages>
 XML;
-					while ($row = mysql_fetch_object($result)) {
+					while ($row = mysqli_fetch_object($result)) {
 						$bookId = $row->BookId ;
 						$bookName = $row->BookName ;
 						$created = '14/05/2008'; //TODO Take this from db
@@ -114,11 +114,11 @@ XML;
 
 			$sql= "SELECT * FROM ".table("users")."";
 
-			$result= mysql_query($sql);
+			$result= mysqli_query(DB::connection()->getLink(), $sql);
 
 			$users= array();
 
-			while ($row= mysql_fetch_row($result)){
+			while ($row= mysqli_fetch_row($result)){
 
 				$users[] = array(
 					'userId'	=>	$row->userId	,

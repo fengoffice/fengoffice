@@ -7,6 +7,8 @@
 	$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
     Hook::fire('override_render_properties_for_view', $params, $properties_html);
 	
+    //initializing cp_html
+    $cp_html = '';
     if (!is_null($properties_html)) {
         $cp_html = $properties_html;
         

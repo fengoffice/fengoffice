@@ -26,7 +26,7 @@
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		// TODO: check for circular references
 	}
     

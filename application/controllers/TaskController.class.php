@@ -2321,6 +2321,13 @@ class TaskController extends ApplicationController {
                 array_pop($tasks);
             }
 
+            
+            //These variables were not initialized before tp_assign.
+            //But why are they passed? Are they used?
+            $users='';
+            $allUsers='';
+            $companies='';
+            
             tpl_assign('object_subtypes', array());
             tpl_assign('internalMilestones', $internalMilestones);
             tpl_assign('externalMilestones', $externalMilestones);
@@ -2438,7 +2445,14 @@ class TaskController extends ApplicationController {
 
         //read object for this user
         $task_list->setIsRead(logged_user()->getId(), true);
+        
+        $last_task_of_repetition = null;
+        $last_related_task_id = ProjectTasks::getLastRepetitiveTaskId($task_list->getId());
+        if ($last_related_task_id > 0) {
+        	$last_task_of_repetition = ProjectTasks::findById($last_related_task_id);
+        }
 
+        tpl_assign('last_task_of_repetition', $last_task_of_repetition);
         tpl_assign('task_list', $task_list);
 
         $this->addHelper('textile');
@@ -2807,7 +2821,7 @@ class TaskController extends ApplicationController {
                 }
 
                 if ($task instanceof TemplateTask) {
-                    $task->setSessionId(0);
+                    $task->setSessionId(logged_user()->getId());
                 }
 
                 DB::beginWork();
@@ -2873,17 +2887,13 @@ class TaskController extends ApplicationController {
 
                 $object_controller->add_reminders($task);
 
-                if (config_option('repeating_task') == 1 && $task instanceof ProjectTask) {
-                    $opt_rep_day['saturday'] = false;
-                    $opt_rep_day['sunday'] = false;
-                    if (array_var($task_data, 'repeat_saturdays', false)) {
-                        $opt_rep_day['saturday'] = true;
-                    }
-                    if (array_var($task_data, 'repeat_sundays', false)) {
-                        $opt_rep_day['sunday'] = true;
-                    }
+                if ($task instanceof ProjectTask) {
+                    $generated_count = $this->repetitive_task($task, array());
 
-                    $this->repetitive_task($task, $opt_rep_day);
+                    // reload all tasks, to ensure that all new tasks are shown
+                    if ($generated_count > 0) {
+                    	$_REQUEST['reload'] = true;
+                    }
                 }
 
                 if (config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) {
@@ -3513,9 +3523,24 @@ class TaskController extends ApplicationController {
 
                 DB::beginWork();
                 
-                if ($can_manage_repetitive_properties_of_tasks && isset($last_repetitive_task) && $last_repetitive_task instanceof ProjectTask) {
-                    $this->updateLastTaskRepetitive($last_repetitive_task, $task);
-                    $this->resetRepeatProperties($task);
+                if ($can_manage_repetitive_properties_of_tasks) {
+                	if (isset($last_repetitive_task) && $last_repetitive_task instanceof ProjectTask) {
+                		// current task is not the last of the repetition
+	                    $this->updateLastTaskRepetitive($last_repetitive_task, $task);
+	                    $this->resetRepeatProperties($task);
+                	} else if ($last_related_task_id > 0 && !$last_repetitive_task instanceof ProjectTask) {
+                		// current task is the last of the repetition
+                		// get the unmodified task from the database
+                		$old_original_task = ProjectTasks::findById($task->getId(), true);
+                		// generate the next repetition to keep the "template" of the rep.
+                		$last_repetitive_task = $this->generate_new_repetitive_instance($old_original_task);
+                		// clear current task's repetition options
+                		if ($last_repetitive_task instanceof ProjectTask) {
+	                		$task->clearRepeatOptions();
+                		}
+                		// reload all tasks, to ensure that all new tasks are shown
+                		$_REQUEST['reload'] = true;
+                	}
                 }
 
                 $task->save();
@@ -3666,17 +3691,11 @@ class TaskController extends ApplicationController {
                     $task->save();
                 }
 
-                if (config_option('repeating_task') == 1 && $task instanceof ProjectTask) {
-                    $opt_rep_day['saturday'] = false;
-                    $opt_rep_day['sunday'] = false;
-                    if (array_var($task_data, 'repeat_saturdays', false)) {
-                        $opt_rep_day['saturday'] = true;
+                if ($task instanceof ProjectTask) {
+                    $generated_count = $this->repetitive_task($task, array());
+                    if ($generated_count > 0) {
+                    	$_REQUEST['reload'] = true;
                     }
-                    if (array_var($task_data, 'repeat_sundays', false)) {
-                        $opt_rep_day['sunday'] = true;
-                    }
-
-                    $this->repetitive_task($task, $opt_rep_day);
                 }
 
                 if (isset($_POST['type_related'])) {
@@ -4024,29 +4043,33 @@ class TaskController extends ApplicationController {
         $correct_the_days = true;
         Hook::fire('check_working_days_to_correct_repetition', array('task' => $task), $correct_the_days);
         if ($correct_the_days) {
-            $new_st_date = $this->correct_days_task_repetitive($new_st_date, $opt_rep_day['saturday'], $opt_rep_day['sunday']);
-            $new_due_date = $this->correct_days_task_repetitive($new_due_date, $opt_rep_day['saturday'], $opt_rep_day['sunday']);
+            $new_st_date = $this->correct_days_task_repetitive($new_st_date);
+            $new_due_date = $this->correct_days_task_repetitive($new_due_date);
         }
 
         return array('st' => $new_st_date, 'due' => $new_due_date);
     }
 
-    function generate_new_repetitive_instance() {
-        ajx_current("empty");
-        $task = ProjectTasks::findById(get_id());
+    function generate_new_repetitive_instance($task = null) {
+        $use_transaction = false;
+        if (is_null($task)) {
+        	ajx_current("empty");
+        	$use_transaction = true;
+        	$task = ProjectTasks::findById(get_id());
+        }
         if (!($task instanceof ProjectTask)) {
             flash_error(lang('task dnx'));
             return;
         } // if
 
         if (!$task->isRepetitive()) {
-            flash_error(lang('task not repetitive'));
+            if ($use_transaction) {
+            	flash_error(lang('task not repetitive'));
+            }
             return;
         }
 
-        $opt_rep_day = array('saturday' => false, 'sunday' => false);
-
-        $this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date);
+        $this->getNextRepetitionDates($task, array(), $new_st_date, $new_due_date);
 
         $daystoadd = 0;
         $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date);
@@ -4085,19 +4108,26 @@ class TaskController extends ApplicationController {
                 $subt->save();
             }
 
-            DB::beginWork();
+            if ($use_transaction) {
+            	DB::beginWork();
+            }
 
             $new_task->save();
             $task->save();
 
-            DB::commit();
-            flash_success(lang("new task repetition generated"));
+            if ($use_transaction) {
+	            DB::commit();
+	            flash_success(lang("new task repetition generated"));
+            }
 
             ajx_current("back");
         } catch (Exception $e) {
-            DB::rollback();
-            flash_error($e->getMessage());
+        	if ($use_transaction) {
+            	DB::rollback();
+	            flash_error($e->getMessage());
+        	}
         }
+        return $new_task;
     }
 
     /**
@@ -4901,7 +4931,7 @@ class TaskController extends ApplicationController {
 
         if ($task_data['previous_dd'] instanceof DateTimeValue && $task_data['new_dd'] instanceof DateTimeValue) {
 
-            if ($task_data['new_sd']->getTimestamp() > 0) {
+            if ($task_data['new_dd']->getTimestamp() > 0) {
 
                 $diff = abs($task_data['previous_dd']->getTimestamp() - $task_data['new_dd']->getTimestamp());
 
@@ -5031,13 +5061,9 @@ class TaskController extends ApplicationController {
         }
     }
 
-    function correct_days_task_repetitive($date, $repeat_saturday = false, $repeat_sunday = false) {
+    function correct_days_task_repetitive($date) {
         if ($date != "") {
             $working_days = explode(",", config_option("working_days"));
-            if ($repeat_saturday)
-                $working_days[] = 6;
-            if ($repeat_sunday)
-                $working_days[] = 0;
             if (!in_array(date("w", $date->getTimestamp()), $working_days)) {
                 $date = $date->add('d', 1);
                 $this->correct_days_task_repetitive($date);

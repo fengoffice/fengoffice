@@ -5,8 +5,10 @@ define('ADMIN_SESSION_TIMEOUT', 3600);
 /**
  * Administration controller
  *
- * @version 1.0
+ * @version 3.7
  * @author Ilija Studen <ilija.studen@gmail.com>
+ * @author Feng Office 
+ * 
  */
 class AdministrationController extends ApplicationController {
 
@@ -885,7 +887,11 @@ class AdministrationController extends ApplicationController {
 		
 		foreach ($_POST['tabs'] as $id => $tab) {
 			$ordering = (int) $tab['ordering'];
-			$title = mysql_real_escape_string($tab['title']);
+			
+			//Replaced for PHP7 (Note by @Conrado: I don't know if it will work yet)
+			//$title = mysqli_real_escape_string($tab['title']);
+			$title = DB::escape_string($tab['title']);
+			
 			$enabled = (array_var($tab, 'enabled') == "on") ? 1 : 0;
 			
 			if ($tp = TabPanels::instance()->findById($id)){

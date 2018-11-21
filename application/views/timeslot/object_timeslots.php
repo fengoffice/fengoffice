@@ -133,9 +133,11 @@
     });
 
 <?php
-	$add_columns = "";
+	$add_columns = array();
 	$dummy_ts = new Timeslot();
+	
 	Hook::fire("view_timeslot_render_more_columns", $dummy_ts, $add_columns);
+
 	foreach ($add_columns as $col_id => $val) {
 		$align = in_array($dummy_ts->getColumnType($col_id), array(DATA_TYPE_FLOAT, DATA_TYPE_INTEGER)) ? 'right' : 'left';
 	?>

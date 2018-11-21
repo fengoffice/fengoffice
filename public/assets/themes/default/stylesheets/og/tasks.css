@@ -376,6 +376,9 @@ button.add-first-btn.no-tasks-add-task-btn {
 .task-percent-completed-bar-container:hover .percent_num {
     display: block;
 }
+.task-percent-completed-bar-container .nobr td {
+	padding: 0;
+}
 
 .task-list-col-names-template{
     line-height: 28px;

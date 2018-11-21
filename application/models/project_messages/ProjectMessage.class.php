@@ -198,7 +198,7 @@ class ProjectMessage extends BaseProjectMessage {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('name')) {
 			$errors[] = lang('message title required');
 		} 

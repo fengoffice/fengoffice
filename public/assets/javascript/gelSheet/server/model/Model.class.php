@@ -55,11 +55,11 @@ class Model {
 		// genero el sql ;
 		$sql = "INSERT INTO $tablename ".$sql_into." VALUES " .$sql_values ;
 		
-		if  ( !mysql_query($sql) ) {
+		if  ( !mysqli_query(DB::connection()->getLink(), $sql) ) {
 			$err = new GsError(234,"Error saving book") ;
 			if ( $err->isDebugging() ) {
 				$err->addContentElement("Table" , $tablename ) ;
-				$err->addContentElement("SQL Error" , mysql_error() ) ;
+				$err->addContentElement("SQL Error" , mysqli_error(DB::connection()->getLink()) ) ;
 				$err->addContentElement("SQL: ", $sql ) ;
 			}	
 			throw $err ; 
@@ -74,8 +74,8 @@ class Model {
 		$idvalue = ( $id != null ) ? $id : $this->$idname ;
 		
 		$sql = "SELECT * FROM  $tablename WHERE $idname=$idvalue LIMIT 1";
-		$result =  mysql_query($sql);
-		if ($row = mysql_fetch_object($result)) {
+		$result =  mysqli_query(DB::connection()->getLink(), $sql);
+		if ($row = mysqli_fetch_object($result)) {
 			foreach (get_class_vars($classname) as $attribute => $null ) {
 				$dbfield = ucfirst($attribute);
 				$this->$attribute = $row->$dbfield ;

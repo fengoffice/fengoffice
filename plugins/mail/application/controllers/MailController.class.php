@@ -1440,8 +1440,9 @@ class MailController extends ApplicationController {
 					if (is_array($part['Headers'])) {
 
 						if (isset($part['Headers']['content-id:']) && $part['Headers']['content-id:'] == "<$part_name>") {
-							$filename = isset($part['FileName']) ? $part['FileName'] : $part_name;
-							$filename = $enc_conv->convert(detect_encoding($filename), "UTF-8", $filename, false);
+							/*$filename = isset($part['FileName']) ? $part['FileName'] : $part_name;
+							$filename = $enc_conv->convert(detect_encoding($filename), "UTF-8", $filename, false);*/
+							$filename = gen_id() . "_attachment";
 							$file_content = $part['Body'];
 							$handle = fopen(ROOT."$tmp_folder/$filename", "wb");
 							fwrite($handle, $file_content);

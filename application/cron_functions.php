@@ -44,10 +44,11 @@ function send_reminders() {
 	$sent = 0;
 	$ors = ObjectReminders::getDueReminders();
 	foreach ($ors as $or) {
-	    $object = $or->getObject();
+		$object = $or->getObject();
 	    //Check disabled object types notificactions.
 	    if(!$object instanceof ContentDataObject || ($object instanceof ContentDataObject && in_array($object->getObjectTypeId(),config_option("disable_notifications_for_object_type")))){
-	        return;
+	        $or->delete();
+	        continue;
 	    }
 		$function = $or->getType();
 		try {

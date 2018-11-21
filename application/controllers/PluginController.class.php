@@ -337,7 +337,7 @@ static function executeInstaller($name) {
 				$total_queries = 0;
 				$executed_queries = 0;
 				executeMultipleQueries ( tpl_fetch ( $schema_query ), $total_queries, $executed_queries );
-				Logger::log ( "Initial data loaded for plugin  '$name'." . mysql_error () );
+				Logger::log ( "Initial data loaded for plugin  '$name'." . mysqli_error(DB::connection()->getLink()) );
 			}
 			
 			$install_script = ROOT . "/plugins/$name/install/install.php";
@@ -353,7 +353,7 @@ static function executeInstaller($name) {
 				$total_queries = 0;
 				$executed_queries = 0;
 				executeMultipleQueries ( implode("\n", $queries), $total_queries, $executed_queries );
-				Logger::log ( "File install.php processed for plugin  '$name'." . mysql_error () );
+				Logger::log ( "File install.php processed for plugin  '$name'." . mysqli_error(DB::connection()->getLink()) );
 			}
 			
 			DB::execute("UPDATE ".TABLE_PREFIX."plugins SET is_installed=1 WHERE name='$name'");

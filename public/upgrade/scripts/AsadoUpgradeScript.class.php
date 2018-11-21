@@ -62,10 +62,10 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 		//  Check MySQL version
 		// ---------------------------------------------------
 
-		$mysql_version = mysql_get_server_info($this->database_connection);
+		$mysql_version = mysqli_get_server_info($this->database_connection);
 		if($mysql_version && version_compare($mysql_version, '4.1', '>=')) {
 			$constants['DB_CHARSET'] = 'utf8';
-			@mysql_query("SET NAMES 'utf8'", $this->database_connection);
+			@mysqli_query($this->database_connection, "SET NAMES 'utf8'");
 			tpl_assign('default_collation', $default_collation = 'collate utf8_unicode_ci');
 			tpl_assign('default_charset', $default_charset = 'DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci');
 		} else {
@@ -104,7 +104,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 			if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 				$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 			} else {
-				$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+			    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 				return false;
 			}
 			
@@ -306,7 +306,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 			}
@@ -333,7 +333,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 			}
@@ -370,7 +370,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 					UPDATE ".$t_prefix."dimension_object_type_contents SET is_multiple = 1 WHERE content_object_type_id = (SELECT id FROM ".$t_prefix."object_types WHERE name='mail');
 				";
 				
-				if (@mysql_fetch_row(@mysql_query(("SELECT id from ".$t_prefix."plugins WHERE name = 'workspaces'")))) {
+				if (@mysqli_fetch_row(@mysqli_query($this->database_connection, "SELECT id from ".$t_prefix."plugins WHERE name = 'workspaces'"))) {
 					$upgrade_script.="INSERT INTO ".$t_prefix."widgets(name, title, plugin_id, default_section,default_order) 
 						VALUES ('ws_description', 'workspace description',(SELECT id from ".$t_prefix."plugins WHERE name = 'workspaces'), 'left',-100)
 						ON DUPLICATE KEY update name = name ;";
@@ -380,19 +380,19 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 				
 				
-				if ($obj = @mysql_fetch_object(@mysql_query("SELECT id FROM ".$t_prefix."object_types WHERE name = 'workspace' " ))) {
+				if ($obj = @mysqli_fetch_object(@mysqli_query($this->database_connection, "SELECT id FROM ".$t_prefix."object_types WHERE name = 'workspace' " ))) {
 					$wsTypeId = $obj->id ;
-					$res = @mysql_query("SELECT * FROM ".$t_prefix."members WHERE dimension_id = (SELECT id FROM ".$t_prefix."dimensions WHERE code='workspaces')" ) ; 
-					while ( $m = @mysql_fetch_object($res) ) {
-						@mysql_query("INSERT INTO ".$t_prefix."objects (object_type_id, name) VALUES ($wsTypeId, '".$m->name."' )" );
-						if ( $id = @mysql_insert_id()){
-							@mysql_query("INSERT INTO ".$t_prefix."workspaces (object_id) VALUES ($id)");
-							@mysql_query("UPDATE ".$t_prefix."members SET object_id=$id WHERE id = $m->id ");
+					$res = @mysqli_query($this->database_connection, "SELECT * FROM ".$t_prefix."members WHERE dimension_id = (SELECT id FROM ".$t_prefix."dimensions WHERE code='workspaces')" ) ; 
+					while ( $m = @mysqli_fetch_object($res) ) {
+					    @mysqli_query($this->database_connection, "INSERT INTO ".$t_prefix."objects (object_type_id, name) VALUES ($wsTypeId, '".$m->name."' )" );
+					    if ( $id = @mysqli_insert_id($this->database_connection)){
+					        @mysqli_query($this->database_connection, "INSERT INTO ".$t_prefix."workspaces (object_id) VALUES ($id)");
+					        @mysqli_query($this->database_connection, "UPDATE ".$t_prefix."members SET object_id=$id WHERE id = $m->id ");
 						}
 					}
 				}
@@ -419,7 +419,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 			}
@@ -493,7 +493,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 			}
@@ -534,7 +534,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 			}
@@ -547,7 +547,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 				if($this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 					$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 				} else {
-					$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysql_error(), true);
+				    $this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 					return false;
 				}
 			}

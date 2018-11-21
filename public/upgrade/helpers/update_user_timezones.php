@@ -3,11 +3,11 @@
 function _tz_upgrade_db_execute($sql, $database_connection) {
 	$rows = array();
 	
-	$result = mysql_query($sql, $database_connection);
+	$result = mysqli_query($database_connection, $sql);
 	if ($result) {
 		if (gettype($result) == 'boolean') return;
 		
-		while($r = mysql_fetch_assoc($result)) {
+		while($r = mysqli_fetch_assoc($result)) {
 			$rows[] = $r;
 		}
 	}

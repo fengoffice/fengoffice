@@ -204,7 +204,7 @@ class Workspace extends BaseWorkspace {
 	 * @param array $errors
 	 * @return null
 	 */
-	function validate(&$errors) {
+	function validate($errors) {
 		if(!$this->validatePresenceOf('name')) {
 			$errors[] = lang('message title required');
 		} 
@@ -235,7 +235,7 @@ class Workspace extends BaseWorkspace {
     	);
     }
     
-    function getIconClass() {
+    function getIconClass($large = false) {
     	$d = Dimensions::findByCode('workspaces');
     	$m = Members::findOneByObjectId($this->getId(), $d->getId());
     	

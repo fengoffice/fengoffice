@@ -11,9 +11,13 @@
 	
 	<tr>
 		<td id="<?php echo $genid ?>_obj_actions" class="coViewBody" style="border:1px solid #ccc;" colspan=2> <?php
-		if (count(PageActions::instance()->getActions()) > 0 ) { ?>
+
+		$page_actions = PageActions::instance();
+		$pactions = $page_actions->getActions();
+		
+		if (count($pactions) > 0 ) { ?>
 			<div id="actionsDialog1"> <?php
-				$pactions = PageActions::instance()->getActions();
+				//$pactions = PageActions::instance()->getActions();
 				$shown = 0;
 				foreach ($pactions as $action) {
 					if ($action->isCommon) {
@@ -28,7 +32,6 @@
 				}//foreach ?>
 			</div> <?php
 			
-			$count = count($pactions);
 			foreach ($pactions as $action) {
 				if (!$action->isCommon) {			 		
 			 		if ($action->getTarget() != '') { ?>
@@ -40,7 +43,9 @@
 				}
 			} // foreach			
 		 }
-		 PageActions::clearActions(); ?>
+		 $page_actions->clearActions();
+		 //PageActions::clearActions();
+		 ?>
 		</td>
 	</tr>
 	<tr>

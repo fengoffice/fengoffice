@@ -32,7 +32,8 @@ class Connection{
 		$contents->addContent ( "User", $this->user );
 		$contents->addContent ( "Password", $this->password );
 		$contents->addContent ( "Schema", $this->schema );
-		$contents->addContent ( "MySQL Error", mysql_error () );
+		//@Conrado: Trying to prepare for PHP7. I don't know if this will work. Connection might need to be received on @param 
+		$contents->addContent ( "MySQL Error", mysqli_error(DB::connection()->getLink()) );
 		return $contents;
 	}
 	
@@ -73,7 +74,7 @@ class Connection{
 	 * Conecta con la base de datos
 	 */
 	public function connect(){			
-		$this->enlace = @mysql_connect ( $this->host, $this->user, $this->password );
+		$this->enlace = @mysqli_connect($this->host, $this->user, $this->password);
 		
 		if (! $this->enlace){
 			$error = new Error ( 101, "Could not connecto to Databse Server.");
@@ -83,7 +84,7 @@ class Connection{
 			throw $error;
 		}
 			
-		$result = mysql_select_db ( $this->schema );
+		$result = mysqli_select_db ( $this->schema );
 		
 		if (! $result) {
 			$error = new Error ( 102, "Can not find select Schema" );
@@ -100,7 +101,7 @@ class Connection{
 	 */
 	public function disconnect(){
 		if($this->enlace)
-			mysql_close($this->enlace);
+			mysqli_close($this->enlace);
 	}
 	 /**  Setea la base de datos de la conecion
 	 */

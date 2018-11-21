@@ -61,16 +61,12 @@ UPDATE `<?php echo $table_prefix ?>tab_panels` SET default_action = 'main_dashbo
 
 
 
-INSERT INTO <?php echo $table_prefix ?>widgets(`name`, `title`, `plugin_id`, `default_section`,`default_order`,`icon_cls`) VALUES
- ('workspaces', 'workspaces', (SELECT id from <?php echo $table_prefix ?>plugins WHERE name = 'workspaces'), 'left', 3, 'ico-workspace')
+INSERT INTO <?php echo $table_prefix ?>widgets(`name`, `title`, `plugin_id`, `default_section`,`default_order`,`icon_cls`,`path`, `default_options`) VALUES
+ ('workspaces', 'workspaces', (SELECT id from <?php echo $table_prefix ?>plugins WHERE name = 'workspaces'), 'left', 3, 'ico-workspace', '', '')
 ON DUPLICATE KEY update name = name;
 
-INSERT INTO <?php echo $table_prefix ?>dimension_object_type_contents (dimension_id,dimension_object_type_id,content_object_type_id,is_required,is_multiple) VALUES 
- ((SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='feng_persons'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='person'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'),0,1),
- ((SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='feng_persons'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='company'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'),0,1),
- ((SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='workspaces'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='workspace'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'),0,1),
- ((SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='tags'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='tag'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'),0,1)
-ON DUPLICATE KEY UPDATE dimension_id=dimension_id;
+
+-- DELETED INSERT INTO <?php echo $table_prefix ?>dimension_object_type_contents
 
 INSERT INTO `<?php echo $table_prefix ?>dimension_member_associations` (`dimension_id`,`object_type_id`,`associated_dimension_id`, `associated_object_type_id`, `is_required`,`is_multiple`, `keeps_record`) VALUES
 ((SELECT id from <?php echo $table_prefix ?>dimensions WHERE code = 'workspaces'),(SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name = 'workspace'),(SELECT id from <?php echo $table_prefix ?>dimensions WHERE code = 'feng_persons'),(SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name = 'person'),0,1,0),
