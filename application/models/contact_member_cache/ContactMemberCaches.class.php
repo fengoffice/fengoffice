@@ -57,7 +57,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		}
 		
 		if (!is_null($member_name)) {
-			$member_name = mysqli_real_escape_string($member_name, DB::connection()->getLink());
+			$member_name = mysqli_real_escape_string(DB::connection()->getLink(), $member_name);
 			$SQL_CONDITION .= " AND m.name LIKE '%".$member_name."%'";
 		}
 		

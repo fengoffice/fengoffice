@@ -1001,4 +1001,5 @@ addLangs({
     'unclassified message':'You are about to add an unclassified contact. Keep in mind that when saving this form, the contact will be automatically classified into this member.',
     'add unclassified contact':'Add unclassified contact',
     'template name required': 'Template name is required',
+    'template': 'Template'
 });

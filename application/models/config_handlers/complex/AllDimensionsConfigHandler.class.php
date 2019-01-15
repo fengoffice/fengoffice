@@ -20,11 +20,13 @@
     function do_render($control_name, $additional_params=array()) {
        $value =  $this->getValue();
        $dimensions  = Dimensions::instance()->findAll(array('conditions' => "`code` != 'feng_persons'"));
+       $enabled_dimension_ids = config_option('enabled_dimensions');
        
        $onchange_fn = array_var($additional_params, 'onchange_fn');
        
        $out = '' ;
        foreach ($dimensions as $dim) { /* @var $dim Dimension */
+       		if (!in_array($dim->getId(), $enabled_dimension_ids)) continue;
 			$checked = array_search($dim->getId(), $value) !== false;
 			
 			$attr = array('id' => 'all_dim_'.$dim->getId());

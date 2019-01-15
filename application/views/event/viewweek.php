@@ -367,6 +367,9 @@ $(function(){
 						$count = 0;
 						if(is_array(array_var($alldayevents,$day_of_week))){
 							foreach ($alldayevents[$day_of_week] as $event){
+								
+								Hook::fire('override_calendar_object_data', $event, $event);
+											
 								$count++;
 								if($count <= $max_events_to_show){
 									$tipBody = '';
@@ -601,6 +604,8 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 										}
 										$occup = array(); //keys: hora - pos
 										foreach ($results[$day_of_week] as $event){
+											
+											Hook::fire('override_calendar_object_data', $event, $event);
 											
 											getEventLimits($event, $dates[$day_of_week], $event_start, $event_duration, $end_modified);
 											

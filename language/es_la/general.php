@@ -408,8 +408,6 @@
 	'write the first letters of the name or surname of the person to select' => 'Escriba las primeras letras del nombre o apellido de la persona a seleccionar o ',
 	'click here to select one from a list' => 'Click aquí para seleccionar de una lista',
 	
-	'select contact' => 'Seleccione un contacto',
-	'select user' => 'Seleccione un usuario',
 	'click to select country' => 'Click aquí para selccionar país',
 		
 	'completed by name on' => 'Completado por {0} el {1}',

@@ -1969,6 +1969,7 @@ ogTasks.createDimensionColumnMenuItem = function (did, label, menu_key, option_n
         text: label,
         value: menu_key,
         checked: checked,
+        hideOnClick: false,
         checkHandler: function () {
             if (this.option_name.indexOf("gantt") == 0) {
                 var dim_index = ogTasks.ganttPreferences.ganttShowDimensionCols.indexOf(this.value);
@@ -1992,7 +1993,7 @@ ogTasks.createDimensionColumnMenuItem = function (did, label, menu_key, option_n
             }
 
             var url = og.getUrl('account', 'update_user_preference', {name: this.option_name, value: opt_val});
-            og.openLink(url, {hideLoading: true});
+            //og.openLink(url, {hideLoading: true});
 
             if (this.value.indexOf("-") == -1 && this.option_name.indexOf("gantt") == -1) {
                 var d = this.value.toString();
@@ -2003,9 +2004,9 @@ ogTasks.createDimensionColumnMenuItem = function (did, label, menu_key, option_n
                 }
             }
             
-            var tp = Ext.getCmp("tasks-panel");
-            if (tp) tp.reset();
-            
+            //var tp = Ext.getCmp("tasks-panel");
+            //if (tp) tp.reset();
+            ogTasksMakeRequestAndReloadWithTimeout(url);
         }
     };
 

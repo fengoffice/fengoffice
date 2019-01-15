@@ -1,5 +1,5 @@
 
-	About Feng Office 3.7.0-alpha2
+	About Feng Office 3.7.0.5
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -107,9 +107,196 @@
 	Changelog
 	=========
 	
+	Since 3.7.0.4
+	-----------------
+	bugfix: fix member templates additional urls hook
+	bugfix: fix plugin installers for php7
+	feature: config option to append member names for objects in calendar views
+	
+	Since 3.7.0.3
+	-----------------
+	bugfix: Add items column to quotas list
+	bugfix: Make items dimension as mandatory for quotas and not selectable in payments
+	feature: In payments list filter new payment menu by selection in divisions dimension
+	feature: In quota's view payments list filter new payment menu by selection in divisions dimension
+	
+	Since 3.7.0.2
+	-----------------
+	feature: allow object subtypes to be managed by dimensions
+	feature: improve payment quota selector to filter items by the selected quota division
+	feature: improve filtering of quota selector by the member associated to the payment subtrype
+	
+	Since 3.7.0.1
+	-----------------
+	bugfix: fix member name with additional props after add and edit
+	bugfix: cant use conditions of objects table columns (created_on, updated_on) in custom reports
+	bugfix: dont use only work address to copy to the invoice
+	bugfix: fix no zeros control in date inputs (include year without zeros)
+	bugfix: fix member parent js errors when removing item in parent member selector
+	bugfix: When deleting member dont include the trashed objects in the "can be deleted" verification
+	bugfix: Sort alphabetically the member templates in the "new" menu of the dimensions panel
+	bugfix: missing lang 'template'
+	bugfix: when adding members to trees under a parent ensure that they are sorted alphabetically
+	feature: focus in text input when showing popup window to delete member
+	
+	Since 3.7.0.0
+	-----------------
+	bugfix: fix member reports totals
+	bugfix: config option was in wrong plugin installer
+	bugfix: fix repeat option for fixed week days
+	bugfix: hack in pear socket class to prevent ssl connection errors since php5.6
+	bugfix: update payment mandatory fields
+	bugfix: dimensions config handler must only show enabled dimensions
+	feature: add timeslots to dimension options
+	feature: use quota name for payments
+	feature: new dimension object type config option to override the member names in trees
+	
+	Since 3.7.0-beta7
+	-----------------
+	bugfix: tasks list doesnt stop timeslots in view, when completing
+	bugfix: add not minified ext lang file for sv_se
+	
+	Since 3.7.0-beta6
+	-----------------
+	bugfix: fix add/edit client form position when hiding contact inputs
+	bugfix: ensure that reporting contact config options are inserted in the upgrade script
+	bugfix: fix member selectors in quota form
+	bugfix: use a timeout when selecting columns to show in tasks list
+	feature: initialize associated dimension selectors with active context
+	
+	Since 3.7.0-beta5
+	-----------------
+	bugfix: dont use expense column in payments if expenses are not used
+	bugfix: fix content object listing query group by
+	
+	Since 3.7.0-beta4
+	-----------------
+	feature: allow to specify number of hours in invoice lines when generating invoices automatically from tasks/timeslots
+	bugfix: in time tab open ts report in reports tab, to use the css of that tab
+	
+	Since 3.7.0-beta3
+	-----------------
+	bugfix: fix member form custom properties alignment
+	bugfix: fix missing langs
+	bugfix: disable workday cp by default
+	
+	Since 3.7.0-beta2
+	-----------------
+	bugfix: cant set or change project parent
+	bugfix: cant complete tasks in php7
+	
+	Since 3.7.0-beta
+	-----------------
+	bugfix: can't save client custom properties if advanced_core plugin is not activated
+	bugfix: can't instantiate templates from tasks list
+	
+	Since 3.7.0-alpha
+	-----------------
+	bugfix: override extjs datefield validation function to ensure that correct format is used when typing dates without zeros
+	feature: New clients and contacts section in configuration
+	feature: Allow to specify if all clients created will have contact information
+	feature: Include "Located under" in dimension members properties, to change its order in add/edit form
+	
     Since 3.6.3.x
     ----------------
     feature: PHP7 compatibility.
+    
+    Since 3.6.3.19
+    ----------------
+    bugfix: fix in breadcrumbs with associated dimensions
+    bugfix: required dimension associations were not being checked
+	
+	Since 3.6.3.18
+    ----------------
+    bugfix: dont reload tasks list if not needed
+    bugfix: improvements in payments list and view with quota
+	
+	Since 3.6.3.17
+    ----------------
+	bugfix: improvements in tasks repetition form
+	
+	Since 3.6.3.16
+    ----------------
+	bugfix: changes in tasks repetition variables
+	
+	Since 3.6.3.15
+    ----------------
+    bugfix: fix member reports conditions by associated dimension
+	
+	Since 3.6.3.14
+    ----------------
+    bugfix: fix custom reports totals for time columns when not using usual format
+	
+	Since 3.6.3.13
+    ----------------
+	bugfix: fix reports detail lines when grouping by intersection of dimensions and showing groups as columns
+	bugfix: set newsletters contacts selector object type to contact
+	bugfix: fix timeslot add and current_time variable
+	
+    Since 3.6.3.12
+    ----------------
+    bugfix: fix invoice logo width
+	
+    Since 3.6.3.11
+    ----------------
+    feature: new quota dropdown selector
+    bugfix: disabling tasks notifications not always working
+    bugfix: improve tasks list load more groups, do it when less than 20% of the scrollbar is left
+    bugfix: fix persons filter in time module when no context is selected
+	
+    Since 3.6.3.10
+    ----------------
+    bugfix: several changes in advanced expenses with quota and payments
+	
+    Since 3.6.3.9
+    ----------------
+    bugfix: fix task dependency selector in templates
+    bugfix: fix member templates when removing member association
+	bugfix: dont remove enters in description when adding timeslot
+	
+    Since 3.6.3.8
+    ----------------
+    bugfix: performance issue in imap sync when sending to trash in bulk
+	
+    Since 3.6.3.7
+    ----------------
+    bugfix: fix grouped reports when grouping by date
+	
+    Since 3.6.3.6
+    ----------------
+    bugfix: fix calendar sync configuration
+    bugfix: in grouped reports use date format to parse dates when grouping rows by a date property
+    bugfix: trim web plugin notiification config connection values to ensure they are parsed correctly
+    bugfix: fix time list filters
+    bugfix: dont use the attachment name when wrinting to tmp folder only for view
+	
+    Since 3.6.3.5
+    ----------------
+    bugfix: improve timeslots add/edit
+    bugfix: show description cols with pre-wrap in timeslots lists
+	
+    Since 3.6.3.4
+    ----------------
+	bugfix: fix scroll and resize of mail composing view
+	bugfix: fix no filter in time module period filter
+	
+    Since 3.6.3.3
+    ----------------
+	bugfix: cant delete payments
+	bugfix: fix tickets installer
+	bugfix: add payment from inside quota does not select quota
+	bugfix: new payment menu from insied quota position is wrong
+	bugfix: error when executing dimension group reports
+	bugfix: fix js error in risks module
+	bugfix: fix risks installer
+
+    Since 3.6.3.2
+    ----------------
+    bugfix: fix customer widget
+    bugfix: minor adjustments in invoices module
+    bugfix: persist time module filters
+    bugfix: fix time module toolbar, panel height and totals row.
+    bugfix: allow to delete multiple members in member list
 	
     Since 3.6.3.1
     ----------------

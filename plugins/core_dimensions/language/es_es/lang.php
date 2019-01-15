@@ -6,6 +6,8 @@
 	'feng_persons' => 'Contactos',
 	'add a new member in feng_persons' => 'Agregar una nueva persona',
 	'contracted_services' => 'Servicios contratados',
+	'select contact' => 'Seleccione un contacto',
+	'select user' => 'Seleccione un usuario',
 	
 	'apply to all submembers' => 'Aplicar los permisos seleccionados en {0} debajo de \'{1}\'',
 	'apply to all members' => 'Aplicar los permisos seleccionados en todos los {0}',

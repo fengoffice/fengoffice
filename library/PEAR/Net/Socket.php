@@ -192,6 +192,19 @@ class Net_Socket extends PEAR {
         }
 
         if ($options && function_exists('stream_context_create')) {
+        	
+        	// hack to prevent ssl/tls connection errors when using php >= 5.6
+        	$disable_verify_peer_settings = false;
+			if (str_sstr_starts_with($this->addr, "ssl:") || str_sstr_starts_with($this->addr, "tls:")) {
+				$disable_verify_peer_settings = true;
+			}
+			if ($disable_verify_peer_settings) {
+				$options['ssl']['verify_peer'] = FALSE;
+				$options['ssl']['verify_peer_name'] = FALSE;
+				$options['ssl']['ciphers'] = 'RSA:!COMPLEMENTOFALL';
+			}
+        	// -------------
+        	
             $context = stream_context_create($options);
 
             // Since PHP 5 fsockopen doesn't allow context specification

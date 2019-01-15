@@ -253,7 +253,7 @@ function render_custom_property_by_type($custom_property, $configs) {
     }
 	$html = '<div class="input-container" style="'.$style.'">';
 	$html .= label_tag($configs['label'], $configs['genid'] . 'cp' . $custom_property->getId(), $custom_property->getIsRequired(), array('style' => 'display:inline-block;'), $custom_property->getType() == 'boolean'?'':':');
-	if (isset($configs['member'])) $html .= '<br>';
+	//if (isset($configs['member'])) $html .= '<br>';
 	
 	switch ($custom_property->getType()) {
 		case 'text':

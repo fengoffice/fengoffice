@@ -1,12 +1,12 @@
 <?php
-	// This "class" draws the task list (Correct?)
-	
     //Javascript files required
     require_javascript("og/CSVCombo.js");
 	require_javascript("og/DateField.js");
+	
 	if (config_option('use tasks dependencies')) {
 		require_javascript('og/tasks/task_dependencies.js');
 	}
+
 	if(config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')){
 		require_javascript('multi_assignment.js', 'crpm');
 	}
@@ -19,8 +19,8 @@
 	$genid = gen_id(); //generates a random id
 	$all_templates_array = array();
 	$project_templates_array = array();
-	$all_templates = array();
-	$project_templates = array();
+	$templates_array = array();
+	$project_templates_array = array();
 	$tasks_array = array();
 	$internal_milestones_array = array();
 	$external_milestones_array = array();

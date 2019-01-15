@@ -4194,6 +4194,7 @@ class TaskController extends ApplicationController {
                 $more_tasks[] = $new_task->getArrayInfo();
             }
 
+            Timeslots::instance()->clearTimeslotsCache($task->getId());
             ajx_extra_data(array("task" => $task->getArrayInfo(), 'subtasks' => $subt_info, 'more_tasks' => $more_tasks));
 
             if (array_var($_GET, 'quick', false) && !$reload_view) {

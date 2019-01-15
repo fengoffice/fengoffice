@@ -343,6 +343,9 @@ class DimensionController extends ApplicationController {
 			array_pop($memberList);
 		}
 		
+		// updates the name of the members using the configuration if exists
+		build_member_list_text_to_show_in_trees($memberList);
+		
 		$tree = buildTree($memberList, "parent", "children", "id", "name", $checkedField);
 		
 		ajx_current("empty");
@@ -421,6 +424,9 @@ class DimensionController extends ApplicationController {
 			array_pop($memberList);
 		}
 		
+		// updates the name of the members using the configuration if exists
+		build_member_list_text_to_show_in_trees($memberList);
+		
 		$tree = buildTree($memberList, "parent", "children", "id", "name", $checkedField);
 	
 		ajx_current("empty");
@@ -477,6 +483,9 @@ class DimensionController extends ApplicationController {
 				    $name = mysqli_real_escape_string(DB::connection()->getLink(), $name);
 					$search_name_cond = " AND name LIKE '%".$name."%'";
 				}
+				
+				// if there is a member type configured to show any other properties with the name, then search by them too
+				append_other_properties_search_conditions($dimension, $name, $search_name_cond);
 				
 				$member_type_cond = "";
 				if (count($allowed_member_types) > 0) {
@@ -540,8 +549,20 @@ class DimensionController extends ApplicationController {
 					$params["extra_condition"] .= "$ids_filter_sql AND m.object_type_id IN (".implode(',', $allowed_member_types).")";
 				}
 				
+				// if there is a member type configured to show any other properties with the name, then search by them too
+				$additional_query_string_conditions = "";
+				append_other_properties_search_conditions($dimension, $name, $additional_query_string_conditions);
+				if (trim($additional_query_string_conditions) != "") {
+					$additional_query_string_conditions = str_replace(TABLE_PREFIX."members.", "m.", $additional_query_string_conditions);
+					unset($params["member_name"]);
+					$params["extra_condition"] .= " $additional_query_string_conditions";
+				}
+				
 				$memberList = ContactMemberCaches::getAllMembersWithCachedParentId($params);
 			}
+			
+			// updates the name of the members using the configuration if exists
+			build_member_list_text_to_show_in_trees($memberList);
 			
 			//show more
 			$show_more = false;
@@ -714,6 +735,9 @@ class DimensionController extends ApplicationController {
 				
 				$members = $this->buildMemberList($parents, $mem->getDimension(),  null, null, null, null);
 				
+				// updates the name of the members using the configuration if exists
+				build_member_list_text_to_show_in_trees($members);
+				
 				ajx_extra_data(array("member_id" => $mem_id));
 				ajx_extra_data(array("members" => $members));
 				ajx_extra_data(array('dimension_id' => $mem->getDimensionId()));
@@ -816,6 +840,7 @@ class DimensionController extends ApplicationController {
 					"depth" => $m->getDepth(),
 					"to_show" => $m->getName() . ($path != "" ? " ($path)" : ""),
 					"dim" => $m->getDimensionId(),
+					"object_type_id" => $m->getObjectTypeId(),
 					"ico" => "ico-color".$m->getColor() . " " . $m->getIconClass(),
 				);
 			} else {

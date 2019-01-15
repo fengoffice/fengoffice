@@ -318,7 +318,11 @@ if (is_array($add_columns)) {
             text: '<?php echo lang('generate report') ?>',
             id: 'ts_print_btn',
             handler: function () {
-                og.openLink(og.getUrl('reporting', 'total_task_times_p'));
+            	var tab = Ext.getCmp('reporting-panel');
+				if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);
+                og.openLink(og.getUrl('reporting', 'total_task_times_p'), {
+                    caller: 'reporting-panel'
+                });
             }
         })
     };

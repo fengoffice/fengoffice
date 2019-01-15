@@ -1544,7 +1544,133 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 	return $tree  ;
 }
 
-
+	function build_member_list_text_to_show_in_trees(&$memberList) {
+		
+		$option_values = array();
+		
+		foreach ($memberList as &$member_data) {
+			
+			if ($member_data instanceof Member) {
+				$ot_id = $member_data->getObjectTypeId();
+				$dim_id = $member_data->getDimensionId();
+				$member_id = $member_data->getId();
+				$object_id = $member_data->getObjectId();
+			} else {
+				$ot_id = $member_data['object_type_id'];
+				$dim_id = $member_data['dimension_id'];
+				$member_id = $member_data['id'];
+				$object_id = $member_data['object_id'];
+			}
+			
+			if (!isset($option_values[$ot_id])) {
+				$opt_val = DimensionObjectTypeOptions::getOptionValue($dim_id, $ot_id, 'text_to_show_in_trees');
+				if (!$opt_val) $opt_val = " ";
+				$option_values[$ot_id] = $opt_val;
+			}
+			
+			if ($option_values[$ot_id] && trim($option_values[$ot_id]) != '') {
+				$option_decoded = json_decode($option_values[$ot_id], true);
+				
+				$prop_values_array = array();
+				foreach ($option_decoded['properties'] as $col) {
+					$is_member_column = $member_data instanceof Member ? Members::instance()->columnExists($col) : array_key_exists($col, $member_data);
+					if ($is_member_column) {
+						$prop_values_array[] = $member_data instanceof Member ? $member_data->getColumnValue($col) : array_var($member_data, $col);
+						
+					} else if (str_starts_with($col, "cp_")) {
+						$cp_id = str_replace("cp_", "", $col);
+						
+						if ($object_id > 0) {
+							// is dimension_object
+							$cp_val_obj = CustomPropertyValues::getCustomPropertyValue($object_id, $cp_id);
+							$cp_val = $cp_val_obj instanceof CustomPropertyValue ? $cp_val_obj->getValue() : '';
+						} else {
+							// is dimension_group
+							if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+								$cp_val_obj = MemberCustomPropertyValues::getMemberCustomPropertyValue($member_id, $cp_id);
+								$cp_val = $cp_val_obj instanceof MemberCustomPropertyValue ? $cp_val_obj->getValue() : '';
+							}
+						}
+						if ($cp_val) {
+							$prop_values_array[] = $cp_val;
+						}
+					}
+				}
+				$prop_values_array = array_filter($prop_values_array);
+				
+				$separator = trim(array_var($option_decoded, 'separator', '-'));
+				if ($separator == "") {
+					$separator = " ";
+				} else {
+					$separator = " $separator ";
+				}
+				
+				if (count($prop_values_array) > 0) {
+					if ($member_data instanceof Member) {
+						$member_data->setName(implode($separator, $prop_values_array));
+					} else {
+						$member_data['name'] = implode($separator, $prop_values_array);
+						$member_data['text'] = $member_data['name'];
+					}
+				}
+				
+			}
+		}
+		
+	}
+	
+	
+	function append_other_properties_search_conditions(Dimension $dimension, $query_string, &$search_name_cond) {
+		
+		$option_values = DimensionObjectTypeOptions::getOptionValuesForAllObjectTypes($dimension->getId(), 'text_to_show_in_trees');
+		
+		if (is_array($option_values) && count($option_values) > 0) {
+			$conditions = array();
+			
+			foreach ($option_values as $option_value) {
+				/* @var $option_value DimensionObjectTypeOption */
+				$raw_val = $option_value->getValue();
+				
+				if (trim($raw_val) != "") {
+					$option_decoded = json_decode($raw_val, true);
+					
+					if (isset($option_decoded['properties']) && count($option_decoded['properties']) > 0) { 
+						foreach ($option_decoded['properties'] as $col) {
+							if (Members::instance()->columnExists($col)) {
+								$conditions[] = "$col LIKE '%".$query_string."%'";
+						
+							} else if (str_starts_with($col, "cp_")) {
+								$cp_id = str_replace("cp_", "", $col);
+								$ot = ObjectTypes::instance()->findById($option_value->getObjectTypeId());
+						
+								if ($ot->getType() == 'dimension_object') {
+									$conditions[] = "EXISTS (
+										SELECT `value` FROM ".TABLE_PREFIX."custom_property_values cpv
+										WHERE cpv.custom_property_id='$cp_id' AND `value` LIKE '%".$query_string."%'
+										AND cpv.object_id=".TABLE_PREFIX."members.object_id
+									)
+									";
+								} else {
+									if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+										$conditions[] = "EXISTS (
+											SELECT `value` FROM ".TABLE_PREFIX."member_custom_property_values cpv
+											WHERE cpv.custom_property_id='$cp_id' AND `value` LIKE '%".$query_string."%'
+											AND cpv.member_id=".TABLE_PREFIX."members.id
+										)
+										";
+									}
+								}
+							}
+						}
+						
+						if (count($conditions) > 0) {
+							$search_name_cond = " AND (" . implode(" OR ", $conditions) . ")";
+						}
+					}
+				}
+			}
+		}
+	}
 
 
 	function render_single_dimension_tree($dimension, $genid = null, $selected_members = array(), $options = array()) {

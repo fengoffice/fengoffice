@@ -215,10 +215,7 @@ final class acInstallation {
 		}
 
 		$this->installPlugins($plugins);
-		$this->printMessage(print_r($plugins, true));
-		
-		
-		
+				
 		
 		@mysqli_query($this->database_connection, 'COMMIT');
 

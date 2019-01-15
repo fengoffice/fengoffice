@@ -24,6 +24,33 @@ Ext.tree.DefaultSelectionModel.override({
     handleMouseDown: Ext.emptyFn
 });*/
 
+Ext.form.DateField.override({
+	parseDate : function(value){
+        if(!value || Ext.isDate(value)){
+            return value;
+        }
+        var v = Date.parseDate(value, this.format);
+        // if current format couldn't be used, try with the same format without zeros
+		if (!v) {
+        	var no_zeros_format = this.format.replace('d','j').replace('m','n');
+        	v = Date.parseDate(value, no_zeros_format);
+        	if (!v) {
+        		var no_zeros_format_y = no_zeros_format.replace('Y','y')
+        		v = Date.parseDate(value, no_zeros_format_y);
+        	}
+        }
+        if(!v && this.altFormats){
+            if(!this.altFormatsArray){
+                this.altFormatsArray = this.altFormats.split("|");
+            }
+            for(var i = 0, len = this.altFormatsArray.length; i < len && !v; i++){
+                v = Date.parseDate(value, this.altFormatsArray[i]);
+            }
+        }
+        return v;
+    }
+});
+
 Ext.grid.CheckboxSelectionModel.override({
 	handleMouseDown: function(grid, rowIndex, e) {
 		var t = e.getTarget();

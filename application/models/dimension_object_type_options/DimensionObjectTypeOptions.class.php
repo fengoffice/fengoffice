@@ -31,4 +31,11 @@ class DimensionObjectTypeOptions extends BaseDimensionObjectTypeOptions {
 		$option->save();
 	}
 	
+	
+	static function getOptionValuesForAllObjectTypes($dimension_id, $name) {
+	
+		return self::findAll(array('conditions' => array('dimension_id=? AND name=?', $dimension_id, $name)));
+		
+	}
+	
 } // DimensionObjectTypeOptions 

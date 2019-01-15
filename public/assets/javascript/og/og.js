@@ -2864,7 +2864,7 @@ og.dimensionTreeDoLayout = function(genid, dim_id) {
 
 
 og.onParentMemberRemove = function (genid){
-	document.getElementById(genid + "memberParent").value = 0;
+	$("#" + genid + "memberParent").val(0);
 }
 /*
 og.onParentMemberSelect = function (genid, container_id, dimension_id, item){
@@ -2895,12 +2895,12 @@ og.onParentMemberSelect = function (genid, dimension_id, member_id){
 	member_selector.remove_all_selections(genid);
 	if (!member_id) {
 		// remove member
-		document.getElementById(genid + "memberParent").value = 0;
+		$("#" + genid + "memberParent").val(0);
 		return;
 	}
 
 
-	document.getElementById(genid + "memberParent").value = member_id;
+	$("#" + genid + "memberParent").val(member_id);
 	member_selector.add_relation(dimension_id, genid, member_id,false);
 	og.prev_parent = member_id;
 
@@ -3506,6 +3506,10 @@ og.deleteMember = function(delete_url, ot_name){
 		title: lang('delete')+' '+ot_name,
 		width: 400
 	});
+	// focus in the input field
+	setTimeout(function() {
+		$("#" + gen + "_keyword").focus();
+	}, 10);
 }
 
 

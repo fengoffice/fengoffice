@@ -94,13 +94,13 @@
 
         var fixedSubtract = <?php echo ($pagination ? (!isset($results['group_by_criterias']) ? '28' : '10') : '0') ?>;
         
-        <?php if (!$pagination) { ?>
+        
 		var tbodyWidth = $(".report.custom-report tbody").width();
 		var formWidth = $("#form<?php echo $genid ?>").width();
 		if (tbodyWidth > formWidth) { // space for scrollbar needed
 			fixedSubtract += 28;
 		}
-		<?php } ?>
+		
         
         var total = totalHeight - totalHeaderReport - reportHeadersHeight - paginationHeight - fixedSubtract;
         

@@ -626,6 +626,7 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 	},
 	
 	addMembersToTree: function(members,dimension_id) {
+    	var all_parent_nodes_involved = [];
 		var dimension_tree = this;
 		for (var prop in members) {  
 			var mem = members[prop];
@@ -654,10 +655,21 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 					node_exist.setText(mem.text);
 				}							
 			}
+            if (node_parent) {
+            	all_parent_nodes_involved[node_parent.id] = node_parent;
+            }
 			
 			//add member to og.dimensions
 			og.addMemberToOgDimensions(dimension_id,mem);						
-		}   
+		}
+        
+        // sort child nodes alphabetically
+        for (var i in all_parent_nodes_involved) {
+        	var pn = all_parent_nodes_involved[i];
+        	if (pn && typeof(pn) == 'object') {
+        		pn.sort(og.sortNodesFn);
+        	}
+        }
 	},
 	
 	createNode: function (attr) {

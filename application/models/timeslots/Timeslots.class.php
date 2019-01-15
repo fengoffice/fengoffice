@@ -62,6 +62,16 @@ class Timeslots extends BaseTimeslots {
 		}
 		return array_var($this->cached_timeslots, $object_id, array());
 	}
+	
+	function clearTimeslotsCache($object_id=null) {
+		if ($object_id) {
+			if (is_array($this->cached_timeslots) && isset($this->cached_timeslots[$object_id])) {
+				unset($this->cached_timeslots[$object_id]);
+			}
+		} else {
+			$this->cached_timeslots = null;
+		}
+	}
 
 	/**
 	 * Return number of timeslots for specific object

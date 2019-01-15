@@ -1093,7 +1093,7 @@ function build_report_conditions_sql($parameters) {
 			}
 			
 			if ($model_instance) {
-				$col_type = $model_instance->getColumnType($condField->getFieldName());
+				$col_type = $model_instance->getCOColumnType($condField->getFieldName());
 			}
 			
 

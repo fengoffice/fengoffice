@@ -586,16 +586,14 @@ abstract class ContentDataObjects extends DataManager {
 			$SQL_CONTEXT_CONDITION = "om.member_id IN (" . implode ( ',', $members ) . ") $exclusive_in_member";
 			
 			//Fixing: Undefined index
-			
-			if (isset($args['group_by'])) {
-			    if (trim($args['group_by']) != "") {
-			        $args['group_by'] .= ", ";
-			    }
-			    $args['group_by'] .= "om.object_id HAVING COUNT(DISTINCT(om.member_id)) = ".count($members);
+			if (!isset($args['group_by'])) {
+				$args['group_by'] = "";
 			}
-			
-			
-			
+		    if (trim($args['group_by']) != "") {
+		        $args['group_by'] .= ", ";
+		    }
+		    
+		    $args['group_by'] .= "om.object_id HAVING COUNT(DISTINCT(om.member_id)) = ".count($members);
 
 		}else{
 			//show only objects that are on root
@@ -783,7 +781,7 @@ abstract class ContentDataObjects extends DataManager {
 			
 		    if(!$only_count_results){
 				// Execute query and build the resultset
-				if ($this->getObjectTypeId()==5) Logger::log_r($sql);
+				
 		    	$rows = DB::executeAll($sql);
 		    	
 		    	if ($return_raw_data) {

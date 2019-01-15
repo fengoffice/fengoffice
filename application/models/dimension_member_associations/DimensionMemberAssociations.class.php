@@ -108,8 +108,10 @@
   	}
   	
 	static function getRequiredAssociatations($dimension_id, $object_type_id, $only_ids = false) {
+		$enabled_dimensions = config_option('enabled_dimensions');
+		$enabled_dims_cond = " AND associated_dimension_id IN (".implode(',', $enabled_dimensions).") ";
   		return self::findAll(array(
-  			"conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND is_required = 1", $dimension_id, $object_type_id),
+  			"conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND is_required = 1 $enabled_dims_cond", $dimension_id, $object_type_id),
   			"id" => $only_ids,
   		));
   	}

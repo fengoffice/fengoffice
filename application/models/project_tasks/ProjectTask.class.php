@@ -464,7 +464,7 @@ class ProjectTask extends BaseProjectTask {
 
 		
 		if(user_config_option('close timeslot open')){
-			$timeslots = Timeslots::getOpenTimeslotsByObject($this->getId());
+			$timeslots = Timeslots::instance()->getOpenTimeslotsByObject($this->getId());
 			if ($timeslots){
 				foreach ($timeslots as $timeslot){
 					if ($timeslot->isOpen())

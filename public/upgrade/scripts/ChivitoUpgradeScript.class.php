@@ -195,7 +195,7 @@ class ChivitoUpgradeScript extends ScriptUpgraderScript {
 			if(defined('DB_CHARSET') && trim(DB_CHARSET)) {
 				DB::execute("SET NAMES ?", DB_CHARSET);
 			} // if
-			$res = mysqli_query(($this->database_connection, "SELECT `value` FROM `".TABLE_PREFIX."config_options` WHERE `name` = 'file_storage_adapter'");
+			$res = mysqli_query($this->database_connection, "SELECT `value` FROM `".TABLE_PREFIX."config_options` WHERE `name` = 'file_storage_adapter'");
 			$row = mysqli_fetch_assoc($res);
 			$adapter = $row['value'];
 			if ($adapter == 'mysql') {

@@ -14,6 +14,6 @@
   * @author Feng Office
   * 
   */
-  return '3.7.0-alpha2';
+  return '3.7.0.5';
   
 ?>

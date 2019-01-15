@@ -174,6 +174,8 @@ $genid = gen_id();
 						<?php	
 							$top=0;
 							foreach ($alldayevents as $event){	
+								
+								Hook::fire('override_calendar_object_data', $event, $event);
 							
 								$bold = "bold";
 								if ($event instanceof Contact || $event->getIsRead(logged_user()->getId())){
@@ -346,6 +348,8 @@ $genid = gen_id();
 												$cells[$i][1] = 0;
 											}
 											foreach ($result as $event){
+												
+												Hook::fire('override_calendar_object_data', $event, $event);
 
 												getEventLimits($event, $dtv, $event_start, $event_duration, $end_modified);
 

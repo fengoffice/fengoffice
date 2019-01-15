@@ -270,7 +270,12 @@ class Member extends BaseMember {
 			$child_ids[] = $this->getId();
 			$child_ids_str = implode(",", $child_ids);
 			
-			$objects_in_member = ObjectMembers::instance()->findAll(array('conditions' => 'member_id = '.$this->getId()));
+			$not_trashed_condition = " AND NOT EXISTS (
+					SELECT o.id FROM ".TABLE_PREFIX."objects o 
+					WHERE o.id=".TABLE_PREFIX."object_members.object_id AND o.trashed_by_id>0
+			) ";
+			
+			$objects_in_member = ObjectMembers::instance()->findAll(array('conditions' => 'member_id = '.$this->getId() . $not_trashed_condition));
 			if (!$objects_in_member || count($objects_in_member) == 0) {
 				return true;
 			} else {

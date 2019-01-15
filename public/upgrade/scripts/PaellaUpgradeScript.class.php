@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.0-alpha
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.0.5
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.7.0-alpha2');
+		$this->setVersionTo('3.7.0.5');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -504,6 +504,21 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         	$upgrade_script .= "
         		DELETE FROM ".TABLE_PREFIX."config_options WHERE name='repeating_task';
         	";
+        }
+        
+
+        // remove repeating_task config option
+        if (version_compare($installed_version, '3.7.0-beta7') < 0) {
+        	if (!$this->checkValueExists($t_prefix."contact_config_categories", "name", "reporting", $this->database_connection)) {
+	        	$upgrade_script .= "
+	        		INSERT INTO `".$t_prefix."contact_config_categories` (`name`, `is_system`, `type`, `category_order`) VALUES 
+					('reporting', 0, 0, 15);
+	        	";
+	        	$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+					('reporting', 'report_time_colums_display', 'friendly', 'TimeFormatConfigHandler', 0, 1, '');
+	        	";
+        	}
         }
 
 		// Execute all queries

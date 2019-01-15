@@ -276,6 +276,14 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 
 
 	if (!$member instanceof Member) return;
+	
+	$required_associations = DimensionMemberAssociations::getRequiredAssociatations($member->getDimensionId(), $member->getObjectTypeId());
+	$required_associations_object = array();
+	$required_associations_present = array();
+	foreach ($required_associations as $a) {
+		$required_associations_present[$a->getId()] = false;
+		$required_associations_object[$a->getId()] = $a;
+	}
 
 	$request = array_var($params, 'request');
 	if ($is_api){
@@ -328,11 +336,30 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 			
 			save_default_associated_member_selections($a->getId(), $member->getId(), $default_selection);
 		}
-	
+		
+		if (count($assoc_mem_ids) > 0) {
+			$required_associations_present[$a->getId()] = true;
+		}
+		
 		$null = null;
 		Hook::fire('after_associating_members', array('member' => $member, 'association' => $a, 'is_new' => $is_new,
 				'rel_dim' => $rel_dimension, 'rel_ot' => $rel_ot, 'assoc_member_ids' => $assoc_mem_ids), $null);
 		
+	}
+	
+	// check if all required associated dimensions have a value
+	foreach ($required_associations_present as $aid => $present) {
+		if (!$present) {
+			$assoc = $required_associations_object[$aid];
+			if ($assoc->getIsMultiple()) {
+				$assoc_dim = Dimensions::findById($assoc->getColumnValue('associated_dimension_id'));
+				$property_name = $assoc_dim instanceof Dimension ? $assoc_dim->getName() : 'dimension';
+			} else {
+				$assoc_ot = ObjectTypes::findById($assoc->getColumnValue('associated_object_type_id'));
+				$property_name = $assoc_ot instanceof ObjectType ? $assoc_ot->getObjectTypeName() : 'property';
+			}
+			throw new Exception(lang('custom property value required', $property_name));
+		}
 	}
 	
 	$null = null;
@@ -350,6 +377,7 @@ function render_associated_dimensions_selectors($params) {
 	$is_new = array_var($params, 'is_new');
 	
 	$enabled_dimensions = config_option('enabled_dimensions');
+	$initial_values = array();
 	
 	if (Plugins::instance()->isActivePlugin("member_templates") && get_id('template_id') > 0) {
 		$member_template = MemberTemplates::findById(get_id('template_id'));
@@ -361,6 +389,16 @@ function render_associated_dimensions_selectors($params) {
 				if ($a instanceof DimensionMemberAssociation) {
 					$initial_values[$a->getAssociatedDimensionMemberAssociationId()] = $ini_assoc->getAssociatedMemberId();
 				}
+			}
+		}
+	}
+	
+	// initialize associated dimensions with active context
+	if ($is_new) {
+		$active_context = active_context();
+		foreach ($active_context as $selection) {
+			if ($selection instanceof Member && !isset($initial_values[$selection->getDimensionId()])) {
+				$initial_values[$selection->getDimensionId()] = $selection->getId();
 			}
 		}
 	}
@@ -409,6 +447,10 @@ function render_associated_dimensions_selectors($params) {
 				if (is_null($label)) {
 					$label = $dimension->getName();
 				}
+			}
+			
+			if ($dim_association->getIsRequired()) {
+				$label .= " *";
 			}
 			
 			$hf_name = 'associated_members['.$dim_association->getId().']';

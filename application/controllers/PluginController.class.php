@@ -347,7 +347,7 @@ static function executeInstaller($name) {
 				include_once $install_script;
 				$function_name = $name."_get_additional_install_queries";
 				if (function_exists($function_name)) {
-					$queries = $function_name(TABLE_PREFIX);
+					$queries = $function_name(DB::connection()->getLink(), TABLE_PREFIX);
 				}
 			
 				$total_queries = 0;

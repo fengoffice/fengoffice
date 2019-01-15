@@ -41,6 +41,7 @@ class Trash {
 					LIMIT $limit";
 			
 			$rows = DB::executeAll($sql);
+			if (!is_array($rows)) $rows = array();
 			
 			foreach ($rows as $row) {
 				try {

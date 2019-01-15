@@ -67,7 +67,7 @@ WHERE permission_group_id IN (
   WHERE name IN ('Super Administrator','Administrator', 'Manager', 'Executive' ,'Account Owner')
 );
 
-INSERT INTO `<?php echo $table_prefix ?>cron_events` (name, recursive, delay, is_system, enabled) VALUES ('check_mail', 1, 10, 0, 1) ON DUPLICATE KEY UPDATE name=name;
+INSERT INTO `<?php echo $table_prefix ?>cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES ('check_mail', 1, 10, 0, 1, now()) ON DUPLICATE KEY UPDATE `name`=`name`;
 
 INSERT INTO <?php echo $table_prefix ?>dimension_object_type_contents (dimension_id,dimension_object_type_id,content_object_type_id,is_required,is_multiple) VALUES 
  ((SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='feng_persons'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='person'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'),0,1),

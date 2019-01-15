@@ -42,10 +42,10 @@
 	$new_member_text = $object_type_name ? ($member->isNew() ? lang('add') : lang('edit')) . strtolower(" $object_type_name") : lang('new member');
 
     $main_properties = array();
-    Hook::fire('render_member_properties', array('member' => $member, 'visible_by_default' => true), $main_properties);
+    Hook::fire('render_member_properties', array('member' => $member, 'visible_by_default' => true, 'genid' => $genid), $main_properties);
 
     $more_properties = array();
-    Hook::fire('render_member_properties', array('member' => $member, 'visible_by_default' => false), $more_properties);
+    Hook::fire('render_member_properties', array('member' => $member, 'visible_by_default' => false, 'genid' => $genid), $more_properties);
 
     $categories = array();
 	Hook::fire('member_edit_categories', array('member' => $member, 'genid' => $genid), $categories);
@@ -197,7 +197,7 @@
 				$render = true;
 				Hook::fire('member_add_render_parent_selector', array('member' => $member), $render);
 				
-				if ($render) {
+				if (!Plugins::instance()->isActivePlugin('advanced_core') && $render) {
 					render_single_member_selector($current_dimension, $genid, $selected_members, array('is_multiple' => false, 'label' => lang('located under'),
 					'width'=>400, 'allow_non_manageable' => true, 'dont_filter_this_selector' => true,
 					'select_function' => 'og.onParentMemberSelect', 'listeners' => array('on_remove_relation' => "og.onParentMemberRemove('".$genid."');")), false);

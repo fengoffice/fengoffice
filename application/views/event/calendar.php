@@ -370,6 +370,8 @@ foreach($companies as $company)
 									$count = 0;
 									foreach($result_evs as $event){
 										
+										Hook::fire('override_calendar_object_data', $event, $event);
+										
 										$ws_color = $event->getObjectColor($event instanceof ProjectEvent ? 1 : 12);
 										cal_get_ws_color($ws_color, $ws_style, $ws_class, $txt_color, $border_color);
 										
@@ -460,6 +462,8 @@ foreach($companies as $company)
 										}
 									}
 									foreach($result as $event){
+										
+										Hook::fire('override_calendar_object_data', $event, $event);
 										
 										$ws_color = $event->getObjectColor($event instanceof ProjectEvent ? 1 : 12);
 										cal_get_ws_color($ws_color, $ws_style, $ws_class, $txt_color, $border_color);
