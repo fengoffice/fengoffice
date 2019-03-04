@@ -97,7 +97,7 @@
 				<td align='left'>
 				<?php
 						$model_instance = new $model();
-						$col_type = $model_instance->getCOColumnType($condition->getFieldName());
+						$col_type = $model_instance->getColumnType($condition->getFieldName());
 
 						if(in_array($condition->getFieldName(), array_keys($external_fields))){
 				?>

@@ -343,7 +343,8 @@ og.preferences = {
 	'can_modify_navigation_panel': <?php echo user_config_option('can_modify_navigation_panel') ? '1' : '0' ?>,
 	'show_birthdays_in_calendar': <?php echo user_config_option('show_birthdays_in_calendar') ? '1' : '0' ?>,
 	'enableArchiveConfirmation': <?php echo user_config_option('enable_archive_confirmation') ? '1' : '0' ?>,
-	'enableTrashConfirmation': <?php echo user_config_option('enable_trash_confirmation') ? '1' : '0' ?>
+	'enableTrashConfirmation': <?php echo user_config_option('enable_trash_confirmation') ? '1' : '0' ?>,
+	'trash_objects_in_member_after_delete': <?php echo user_config_option('trash_objects_in_member_after_delete') ? '1' : '0' ?>,
 };
 
 og.userRoles = {};

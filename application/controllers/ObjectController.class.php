@@ -475,7 +475,7 @@ class ObjectController extends ApplicationController {
 		}
 
 		foreach ($required_custom_props as $req_cp) {
-			if (!isset($obj_custom_properties[$req_cp->getId()])) {
+			if (!isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "") {
 				throw new Exception(lang('custom property value required', $req_cp->getName()));
 			}
 		}

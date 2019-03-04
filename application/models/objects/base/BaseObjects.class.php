@@ -36,8 +36,8 @@
     * @return BaseObjects 
     */
     function __construct() {
-		Hook::fire('object_definition', 'Object', self::$columns);
-      parent::__construct('Object', 'objects', true);
+		Hook::fire('object_definition', 'FengObject', self::$columns);
+      parent::__construct('FengObject', 'objects', true);
     } // __construct
     
     // -------------------------------------------------------
@@ -160,7 +160,7 @@
     * @access public
     * @param mixed $id
     * @param boolean $force_reload If true cache will be skipped and data will be loaded from database
-    * @return Object 
+    * @return FengObject 
     */
     function findById($id, $force_reload = false) {
       if(isset($this) && instance_of($this, 'Objects')) {

@@ -1037,6 +1037,18 @@ function parse_custom_report_group_by($group_by, $group_by_options = array()) {
 
 
 
+function group_report_conditions($report_conditions) {
+	
+	$grouped_conditions = array();
+	foreach ($report_conditions as $cond) {
+		$grouped_conditions[] = array($cond);
+	}
+	
+	Hook::fire('modify_report_group_conditions', array('report_conditions' => $report_conditions), $grouped_conditions);
+	
+	return $grouped_conditions;
+}
+
 
 function build_report_conditions_sql($parameters) {
 	
@@ -1061,239 +1073,264 @@ function build_report_conditions_sql($parameters) {
 	if ($model) {
 		$model_instance = new $model();
 	}
-	
-	$allConditions = "";
-	
-	$conditionsFields = array_var($parameters, 'conditionsFields', ReportConditions::getAllReportConditionsForFields($report->getId()));
-	$conditionsCp = array_var($parameters, 'conditionsCp', ReportConditions::getAllReportConditionsForCustomProperties($report->getId()));
+
+	$dateFormat = user_config_option('date_format');
+	$date_format_tip = date_format_tip($dateFormat);
 	
 	$show_archived = false;
 	
-	if(count($conditionsFields) > 0){
-		foreach($conditionsFields as $condField){
-			if($condField->getFieldName() == "archived_on"){
-				$show_archived = true;
-			}
-
-			$skip_condition = false;
-			if ($condField->getIsParametrizable() && in_array($condField->getId(), $disabled_params)) $skip_condition = true;
-			
-			//status is calculated, so compare with completed_on field
-			if ($ot->getName() == 'task' && $condField->getFieldName() == "status") {
-			    
-			    if (!$skip_condition) {
-			        if (isset($params[$condField->getId() . "_status"])) {
-			            $val = $params[$condField->getId() . "_status"];
-			        } else {
-			            $val = $condField->getValue();
-			        }
-			        $allConditions .= in_array($val, array(0, '0')) ? " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " " : " AND `e`.`completed_on` != " . DB::escape(EMPTY_DATETIME) . " ";
-			    }
-			    continue;
-			}
-			
-			if ($model_instance) {
-				$col_type = $model_instance->getCOColumnType($condField->getFieldName());
-			}
-			
-
-			if (isset($params[$condField->getId()])) {
-				$value = $params[$condField->getId()];
-				if ($col_type == DATA_TYPE_DATE || $col_type == DATA_TYPE_DATETIME) {
-					$dateFormat = user_config_option('date_format');
-				}
-				if ($value == date_format_tip($dateFormat)) $value = "";
-					
-			} else {
-				$value = $condField->getValue();
-				$dateFormat = 'm/d/Y';
-			}
-			
-			$possible_columns = $model_instance->getColumns();
-			if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
-				$possible_columns = array_merge($possible_columns, Members::getColumns());
-			} else {
-				$possible_columns = array_merge($possible_columns, Objects::getColumns());
-			}
-			
-			if (in_array($condField->getFieldName(), $possible_columns)) {
-				
-				$allConditions .= ' AND ';
+	$all_report_conditions = ReportConditions::getAllReportConditions($report->getId());
+	$all_conditions_grouped = group_report_conditions($all_report_conditions);
+	
+	$all_group_conditions_sql = array();
+	
+	foreach ($all_conditions_grouped as $group_conditions) {
 		
-				if (!$skip_condition) {
-					$field_name = $condField->getFieldName();
-						
-					if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
-						if (in_array($condField->getFieldName(), Members::getColumns())) {
-							$field_name = 'm`.`'.$condField->getFieldName();
+		$group_conditions_sql = array();
+		
+		foreach($group_conditions as $condField) {
 			
-						} else  if (in_array($condField->getFieldName(), Objects::getColumns())) {
-							$field_name = 'o`.`'.$condField->getFieldName();
-						}
-					} else {
-						if (in_array($condField->getFieldName(), Objects::getColumns())) {
-							$field_name = 'o`.`'.$condField->getFieldName();
-						} else {
-							$field_name = 'e`.`'.$condField->getFieldName();
-						}
-					}
-					
-					if($condField->getCondition() == 'like' || $condField->getCondition() == 'not like'){
-						$value = '%'.$value.'%';
-					}
+			$current_condition = "";
+			
+			if ($condField->getCustomPropertyId() == 0) {
+				
+				if($condField->getFieldName() == "archived_on"){
+					$show_archived = true;
+				}
+				
+				$skip_condition = false;
+				if ($condField->getIsParametrizable() && in_array($condField->getId(), $disabled_params)) $skip_condition = true;
+				
+				//status is calculated, so compare with completed_on field
+				if ($ot->getName() == 'task' && $condField->getFieldName() == "status") {
+				    
+				    if (!$skip_condition) {
+				        if (isset($params[$condField->getId() . "_status"])) {
+				            $val = $params[$condField->getId() . "_status"];
+				        } else {
+				            $val = $condField->getValue();
+				        }
+				        $current_condition .= in_array($val, array(0, '0')) ? " `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " " : " `e`.`completed_on` != " . DB::escape(EMPTY_DATETIME) . " ";
+				    }
+				    continue;
+				}
+				
+				if ($model_instance) {
+					$col_type = $model_instance->getColumnType($condField->getFieldName());
+				}
+				
+				
+				if (isset($params[$condField->getId()])) {
+					$value = $params[$condField->getId()];
 					if ($col_type == DATA_TYPE_DATE || $col_type == DATA_TYPE_DATETIME) {
-						if ($value == date_format_tip($dateFormat)) {
-							$value = EMPTY_DATE;
-						} else {
-							$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
-							$value = $dtValue->format('Y-m-d');
-						}
+						$dateFormat = user_config_option('date_format');
 					}
-					if($condField->getCondition() != '%'){
-						if ($col_type == DATA_TYPE_INTEGER || $col_type == DATA_TYPE_FLOAT) {
-							$allConditions .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
+					if ($value == date_format_tip($dateFormat)) $value = "";
+						
+				} else {
+					$value = $condField->getValue();
+					$dateFormat = 'm/d/Y';
+				}
+				
+				$possible_columns = $model_instance->getColumns();
+				if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
+					$possible_columns = array_merge($possible_columns, Members::getColumns());
+				} else {
+					$possible_columns = array_merge($possible_columns, Objects::getColumns());
+				}
+				
+				if (in_array($condField->getFieldName(), $possible_columns)) {
+					
+					//$allConditions .= ' AND ';
+			
+					if (!$skip_condition) {
+						$field_name = $condField->getFieldName();
+							
+						if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
+							if (in_array($condField->getFieldName(), Members::getColumns())) {
+								$field_name = 'm`.`'.$condField->getFieldName();
+				
+							} else  if (in_array($condField->getFieldName(), Objects::getColumns())) {
+								$field_name = 'o`.`'.$condField->getFieldName();
+							}
 						} else {
-							if ($condField->getCondition()=='=' || $condField->getCondition()=='<=' || $condField->getCondition()=='>='){
-								if ($col_type == DATA_TYPE_DATETIME || $col_type == DATA_TYPE_DATE) {
-									$equal = 'datediff('.DB::escape($value).', `'.$field_name.'`)=0';
-								} else {
-									$equal = '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
-								}
-								switch($condField->getCondition()){
-									case '=':
-										$allConditions .= $equal;
-										break;
-									case '<=':
-									case '>=':
-										$allConditions .= '(`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value).' OR '.$equal.') ';
-										break;
-								}
+							if (in_array($condField->getFieldName(), Objects::getColumns())) {
+								$field_name = 'o`.`'.$condField->getFieldName();
 							} else {
-								$allConditions .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
+								$field_name = 'e`.`'.$condField->getFieldName();
 							}
 						}
-					} else {
-						$allConditions .= '`'.$field_name.'` like '.DB::escape("%$value");
-					}
-					
-				} else $allConditions .= ' true';
-	
-			} else {
-				if ($model_instance instanceof Contacts) {
-					
-					$allConditions .= " AND ". Reports::get_extra_contact_column_condition($condField->getFieldName(), $condField->getCondition(), $value);
-				
-				} else if (Plugins::instance()->isActivePlugin('mail') && $model_instance instanceof MailContents) {
-					
-					if (in_array($condField->getFieldName(), array('to', 'cc', 'bcc', 'body_plain', 'body_html'))){
-						$pre = '';
-						$post = '';
-						$oper = $condField->getCondition();
-						if ($oper == '%') {
-							$oper = 'like';
-							$pre = '%';
-						} else if($oper == 'like' || $oper == 'not like') {
-							$pre = '%';
-							$post = '%';
+						
+						if($condField->getCondition() == 'like' || $condField->getCondition() == 'not like'){
+							$value = '%'.$value.'%';
 						}
-						$allConditions .= ' AND jt.`'.$condField->getFieldName().'` '.$oper.' '.DB::escape($pre. $value .$post);
-					}
-				}
-				
-				Hook::fire('report_conditions_extra_fields', array('field' => $condField, 'report' => $report, 'report_ot' => $ot, 'value' => $value, 'disabled_params' => $disabled_params), $allConditions);
-			}
-		}
-	}
-	
-	if(count($conditionsCp) > 0){
-		$dateFormat = user_config_option('date_format');
-		$date_format_tip = date_format_tip($dateFormat);
-	
-		foreach($conditionsCp as $condCp){
-			if (in_array($ot->getType(), array('dimension_group'))) {
-				if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
-					$cp = MemberCustomProperties::getCustomProperty($condCp->getCustomPropertyId());
-				} else {
-					continue;
-				}
-			} else {
-				$cp = CustomProperties::getCustomProperty($condCp->getCustomPropertyId());
-			}
-	
-			$skip_condition = false;
-				
-			//Parametric field
-			if(isset($params[$condCp->getId()."_".$cp->getName()])){
-				$value = $params[$condCp->getId()."_".$cp->getName()];
-                if ($cp->getType() == 'date' || $cp->getType() == 'datetime') {
-                    $dateFormat = user_config_option('date_format');
-                }
-                if ($value == date_format_tip($dateFormat)) $value = "";
-			}else{
-				$value = $condCp->getValue();
-                if ($cp->getType() == 'date') {
-                    $dateFormat = 'm/d/Y';
-                }elseif ($cp->getType() == 'datetime') {
-                    $dateFormat = 'm/d/Y H:i:s';
-                }
-			}
-			
-			if ($condCp->getIsParametrizable() && in_array($condCp->getId(), $disabled_params)) $skip_condition = true;
-			
-			if (!$skip_condition) {
-				$current_condition = ' AND ';
-				$close_bracket = false;
-				if (in_array($ot->getType(), array('dimension_group'))) {
-					if (!$value) {
-						$close_bracket = true;
-						$current_condition .= "(NOT EXISTS (SELECT member_id FROM ".TABLE_PREFIX."member_custom_property_values cpv WHERE cpv.member_id=m.id AND cpv.custom_property_id = ".$condCp->getCustomPropertyId().") 
-							OR m.id IN ( SELECT member_id as id FROM ".TABLE_PREFIX."member_custom_property_values cpv WHERE ";
-					} else {
-						$current_condition .= 'm.id IN ( SELECT member_id as id FROM '.TABLE_PREFIX.'member_custom_property_values cpv WHERE ';
-					}
-				} else {
-					if (!$value) {
-						$close_bracket = true;
-						$current_condition .= "(NOT EXISTS (SELECT object_id FROM ".TABLE_PREFIX."custom_property_values cpv WHERE cpv.object_id=o.id AND cpv.custom_property_id = ".$condCp->getCustomPropertyId().") 
-							OR o.id IN ( SELECT object_id as id FROM ".TABLE_PREFIX."custom_property_values cpv WHERE ";
-					} else {
-						$current_condition .= 'o.id IN ( SELECT object_id as id FROM '.TABLE_PREFIX.'custom_property_values cpv WHERE ';
-					}
-				}
-				$current_condition .= ' cpv.custom_property_id = '.$condCp->getCustomPropertyId();
+						if ($col_type == DATA_TYPE_DATE || $col_type == DATA_TYPE_DATETIME) {
+							if ($value == date_format_tip($dateFormat)) {
+								$value = EMPTY_DATE;
+							} else {
+								$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
+								$value = $dtValue->format('Y-m-d');
+							}
+						}
+						if($condField->getCondition() != '%'){
+							if ($col_type == DATA_TYPE_INTEGER || $col_type == DATA_TYPE_FLOAT) {
+								$current_condition .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
+							} else {
+								if ($condField->getCondition()=='=' || $condField->getCondition()=='<=' || $condField->getCondition()=='>='){
+									if ($col_type == DATA_TYPE_DATETIME || $col_type == DATA_TYPE_DATE) {
+										$equal = 'datediff('.DB::escape($value).', `'.$field_name.'`)=0';
+									} else {
+										$equal = '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
+									}
+									switch($condField->getCondition()){
+										case '=':
+											$current_condition .= $equal;
+											break;
+										case '<=':
+										case '>=':
+											$current_condition .= '(`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value).' OR '.$equal.') ';
+											break;
+									}
+								} else {
+									$current_condition .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
+								}
+							}
+						} else {
+							$current_condition .= '`'.$field_name.'` like '.DB::escape("%$value");
+						}
+						
+					} else $current_condition .= ' true';
 					
-				if($condCp->getCondition() == 'like' || $condCp->getCondition() == 'not like'){
-					$value = '%'.$value.'%';
-				}
-				if ($cp->getType() == 'date' || $cp->getType() == 'datetime') {
-
-					if ($value == $date_format_tip) continue;
-					$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
-
-                    if ($cp->getType() == 'date') {
-                        $value = $dtValue->format('Y-m-d');
-                    } elseif ($cp->getType() == 'datetime') {
-                        $value = $dtValue->format('Y-m-d H:i:s');
-                    }
-                }
-				if($condCp->getCondition() != '%'){
-					if ($cp->getType() == 'numeric' && is_numeric($value)) {
-						$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.$value;
-					}else if ($cp->getType() == 'boolean') {						
-					    $current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.$value;					    
-					}else{
-						$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.DB::escape($value);
+				} else {
+					if ($model_instance instanceof Contacts) {
+						
+						$current_condition .= " AND ". Reports::get_extra_contact_column_condition($condField->getFieldName(), $condField->getCondition(), $value);
+					
+					} else if (Plugins::instance()->isActivePlugin('mail') && $model_instance instanceof MailContents) {
+						
+						if (in_array($condField->getFieldName(), array('to', 'cc', 'bcc', 'body_plain', 'body_html'))){
+							$pre = '';
+							$post = '';
+							$oper = $condField->getCondition();
+							if ($oper == '%') {
+								$oper = 'like';
+								$pre = '%';
+							} else if($oper == 'like' || $oper == 'not like') {
+								$pre = '%';
+								$post = '%';
+							}
+							$current_condition .= ' AND jt.`'.$condField->getFieldName().'` '.$oper.' '.DB::escape($pre. $value .$post);
+						}
 					}
-				}else{
-					$current_condition .= ' AND cpv.value like '.DB::escape("%$value");
+					
+					Hook::fire('report_conditions_extra_fields', array('field' => $condField, 'report' => $report, 'report_ot' => $ot, 'value' => $value, 'disabled_params' => $disabled_params), $current_condition);
 				}
-				$current_condition .= ')';
-				if ($close_bracket) $current_condition .= ')';
 				
-				$allConditions .= $current_condition;
+				
+			} else {
+				
+				$condCp = $condField;
+				if (in_array($ot->getType(), array('dimension_group'))) {
+					if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+						$cp = MemberCustomProperties::getCustomProperty($condCp->getCustomPropertyId());
+					} else {
+						continue;
+					}
+				} else {
+					$cp = CustomProperties::getCustomProperty($condCp->getCustomPropertyId());
+				}
+				
+				$skip_condition = false;
+				
+				//Parametric field
+				if(isset($params[$condCp->getId()."_".$cp->getName()])){
+					$value = $params[$condCp->getId()."_".$cp->getName()];
+					if ($cp->getType() == 'date' || $cp->getType() == 'datetime') {
+						$dateFormat = user_config_option('date_format');
+					}
+					if ($value == date_format_tip($dateFormat)) $value = "";
+				}else{
+					$value = $condCp->getValue();
+					if ($cp->getType() == 'date') {
+						$dateFormat = 'm/d/Y';
+					}elseif ($cp->getType() == 'datetime') {
+						$dateFormat = 'm/d/Y H:i:s';
+					}
+				}
+					
+				if ($condCp->getIsParametrizable() && in_array($condCp->getId(), $disabled_params)) $skip_condition = true;
+					
+				if (!$skip_condition) {
+					//$current_condition = ' AND ';
+					$close_bracket = false;
+					if (in_array($ot->getType(), array('dimension_group'))) {
+						if (!$value) {
+							$close_bracket = true;
+							$current_condition .= "(NOT EXISTS (SELECT member_id FROM ".TABLE_PREFIX."member_custom_property_values cpv WHERE cpv.member_id=m.id AND cpv.custom_property_id = ".$condCp->getCustomPropertyId().")
+							OR m.id IN ( SELECT member_id as id FROM ".TABLE_PREFIX."member_custom_property_values cpv WHERE ";
+						} else {
+							$current_condition .= 'm.id IN ( SELECT member_id as id FROM '.TABLE_PREFIX.'member_custom_property_values cpv WHERE ';
+						}
+					} else {
+						if (!$value) {
+							$close_bracket = true;
+							$current_condition .= "(NOT EXISTS (SELECT object_id FROM ".TABLE_PREFIX."custom_property_values cpv WHERE cpv.object_id=o.id AND cpv.custom_property_id = ".$condCp->getCustomPropertyId().")
+							OR o.id IN ( SELECT object_id as id FROM ".TABLE_PREFIX."custom_property_values cpv WHERE ";
+						} else {
+							$current_condition .= 'o.id IN ( SELECT object_id as id FROM '.TABLE_PREFIX.'custom_property_values cpv WHERE ';
+						}
+					}
+					$current_condition .= ' cpv.custom_property_id = '.$condCp->getCustomPropertyId();
+						
+					if($condCp->getCondition() == 'like' || $condCp->getCondition() == 'not like'){
+						$value = '%'.$value.'%';
+					}
+					if ($cp->getType() == 'date' || $cp->getType() == 'datetime') {
+						
+						if ($value == $date_format_tip) continue;
+						$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
+						
+						if ($cp->getType() == 'date') {
+							$value = $dtValue->format('Y-m-d');
+						} elseif ($cp->getType() == 'datetime') {
+							$value = $dtValue->format('Y-m-d H:i:s');
+						}
+					}
+					if($condCp->getCondition() != '%'){
+						if ($cp->getType() == 'numeric' && is_numeric($value)) {
+							$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.$value;
+						}else if ($cp->getType() == 'boolean') {
+							$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.$value;
+						}else{
+							$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.DB::escape($value);
+						}
+					}else{
+						$current_condition .= ' AND cpv.value like '.DB::escape("%$value");
+					}
+					$current_condition .= ')';
+					if ($close_bracket) $current_condition .= ')';
+				}
+			}
+			
+			if ($current_condition != '') {
+				$group_conditions_sql[] = $current_condition;
 			}
 		}
+		
+		$all_group_conditions_sql[] = $group_conditions_sql;
+		
 	}
+	
+	
+	$allConditions = "";
+	
+	foreach ($all_group_conditions_sql as $group_conditions_sql) {
+		if (count($group_conditions_sql) > 0) {
+			
+			$allConditions .= " AND (" . implode(' OR ', $group_conditions_sql) . ")";
+		}
+	}
+	
 	
 	if (!$show_archived) {
 		if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
@@ -1302,7 +1339,7 @@ function build_report_conditions_sql($parameters) {
 			$allConditions .= " AND o.archived_by_id=0 ";
 		}
 	}
-
+	
 	return array(
 			'all_conditions' => $allConditions,
 	);

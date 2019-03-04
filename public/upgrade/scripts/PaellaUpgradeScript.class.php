@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.0.5
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.1.1
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.7.0.5');
+		$this->setVersionTo('3.7.1.1');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -521,6 +521,22 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         	}
         }
 
+        if (version_compare($installed_version, '3.7.1-rc') < 0) {
+        	if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "trash_objects_in_member_after_delete", $this->database_connection)) {
+        		$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+					('general', 'trash_objects_in_member_after_delete', '0', 'BoolConfigHandler', 1, 0, '');
+	        	";
+        	}
+        }
+        
+        if (version_compare($installed_version, '3.7.1-rc2') < 0) {
+        	$upgrade_script .= "
+        		UPDATE ".$t_prefix."contact_config_options SET `default_value`='0' WHERE `name`='trash_objects_in_member_after_delete';
+        	";
+        }
+        
+        
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 			$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);

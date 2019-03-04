@@ -20,7 +20,7 @@
     	'field_name' => DATA_TYPE_STRING,
     	'condition' => DATA_TYPE_STRING,
     	'value' => DATA_TYPE_STRING,
-    	'is_parametrizable' => DATA_TYPE_BOOLEAN
+    	'is_parametrizable' => DATA_TYPE_BOOLEAN,
     );
   
     /**
@@ -29,6 +29,7 @@
     * @return ReportCondition 
     */
     function __construct() {
+	  Hook::fire('object_definition', 'ReportCondition', self::$columns);
       parent::__construct('ReportCondition', 'report_conditions', true);
     } // __construct
     

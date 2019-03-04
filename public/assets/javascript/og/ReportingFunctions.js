@@ -6,6 +6,7 @@ og.loadReportingFlags = function(){
 	modified = false;
 	selectedObjTypeIndex = -1;
 	fieldValues = {};
+	og.last_report_group_id = 0;
 };
 
 og.enterCondition = function(id) {
@@ -74,7 +75,7 @@ og.reportTask = function(genid, order_by, order_by_asc, cols){
 	}
 };
 
-og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_parametrizable, is_for_time_report, only_cps, hide_param_field){ //param is_for_time_report only used for time reporting
+og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_parametrizable, is_for_time_report, only_cps, hide_param_field, group_id){ //param is_for_time_report only used for time reporting
 	var time_report = is_for_time_report;	
 	var type_el = document.getElementById(genid + 'report[report_object_type_id]');
 	
@@ -93,16 +94,35 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 		var get_object_fields = 'get_object_fields_custom_properties';
 		var type = "ProjectTasks";
 	}
-
+	
 	var condDiv = Ext.getDom(genid);
-	var count = condDiv.childNodes.length;
-	var classname = "";
-	if (count % 2 != 0) {
-		classname = "odd";
+	
+	var use_condition_groups = true;
+	if (typeof(group_id) == 'undefined') {
+		use_condition_groups = false;
 	}
+	
+	if (group_id=='0') {
+		og.last_report_group_id++;
+		group_id = og.last_report_group_id;
+	} else {
+		if (og.last_report_group_id < group_id) {
+			og.last_report_group_id = group_id;
+		}
+	}
+
+	var condGroup = document.getElementById(genid + '_group_' + group_id);
+	var addGroupWrapper = true;
+	if (condGroup) addGroupWrapper = false;
+	
+	var count = $("#"+genid+" .condition-div").length;
+	var classname = "condition-div";
+	
 	var style = 'style="width:130px;padding-right:10px;"';
 	var table = '<table onmouseover="og.enterCondition(' + count + ')" onmouseout="og.leaveCondition(' + count + ')"><tr>' +
-	'<td><input id="conditions[' + count + '][id]" name="conditions[' + count + '][id]" type="hidden" value="{0}"/></td>' +
+	'<td><input id="conditions[' + count + '][id]" name="conditions[' + count + '][id]" type="hidden" value="{0}"/>' +
+	(use_condition_groups ? '<input type="hidden" name="conditions[' + count + '][group_id]" value="' + group_id + '" />' : '') +
+	'</td>' +
 	'<td><input id="conditions[' + count + '][deleted]" name="conditions[' + count + '][deleted]" type="hidden" value="0"/></td>' +
 	'<td ' + style + ' id="tdFields' + count + '"></td>' +
 	'<td ' + style + ' id="tdConditions' + count + '"></td>' +
@@ -118,15 +138,39 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 	'<td id="tdDelete' + count + '" style="display:none;"><b>' + lang('condition deleted') +
 	'</b><a class="internalLink" href="javascript:og.undoDeleteCondition(' + count + ',\'' + genid + '\')">&nbsp;(' + lang('undo') + ')</a></td>' +
   	'</tr></table>';
+	
+	// add "OR" condition link
+	if (use_condition_groups) {
+		$('#'+genid+'_glink_'+group_id).remove();
+		var or_link_onclick = "og.addCondition('"+genid+"', 0, 0, '', '', '', false, null, null, null, '"+group_id+"');this.remove();";
+		table += '<div style="margin-top:5px">'+
+			'<a href="#" id="'+genid+'_glink_'+group_id+'" class="link-ico ico-add" onclick="'+or_link_onclick+'">'+ lang('add or condition') +'</a></div>';
+	}
 
 	table = String.format(table, id, value, (is_parametrizable == 1 ? "checked" : ""));
+	
+	if (use_condition_groups && addGroupWrapper) {
+		var condGroup = document.createElement('div');
+		condGroup.id = genid + '_group_' + group_id;
+		condGroup.innerHTML = '';
+		condGroup.className = 'group-of-conditions';
+		if (condDiv.innerHTML != '') $(condDiv).append('<div class="bold">'+lang('and').toUpperCase()+'</div>');
+		condDiv.appendChild(condGroup);
+	}
 
 	var newCondition = document.createElement('div');
 	newCondition.id = "Condition" + count;
 	newCondition.style.padding = "5px";
 	newCondition.className = classname;
 	newCondition.innerHTML = table;
-	condDiv.appendChild(newCondition);
+	if (use_condition_groups && condGroup) {
+		if (condGroup.innerHTML != '') $(condGroup).append('<div class="bold" style="padding-left: 5px;">'+lang('or').toUpperCase()+'</div>');
+		condGroup.appendChild(newCondition);
+	} else {
+		condDiv.appendChild(newCondition);
+	}
+	
+	
 	og.openLink(og.getUrl('reporting', get_object_fields, {object_type: type, noaddcol:1}), {
 		callback: function(success, data) {
 			if (success) {
@@ -177,7 +221,7 @@ og.undoDeleteCondition = function(id, genid){
 	$("#" + genid + " #tdDelete" + id).css('display', 'none');
 	$("#" + genid + " [name='conditions[" + id + "][deleted]']").val(0);
 	$("#" + genid + " #delete" + id).show();
-	var conditionDiv = Ext.getDom(genid);
+	/*var conditionDiv = Ext.getDom(genid);
 	for(var i=0; i < conditionDiv.childNodes.length; i++){
 		var nextCond = conditionDiv.childNodes.item(i);
 		if(nextCond.id == ('Condition' + id)){
@@ -189,7 +233,7 @@ og.undoDeleteCondition = function(id, genid){
 	  		}
 	  		return;
 		}
-	}
+	}*/
 };
 
 og.fieldChanged = function(id, condition, value, genid, object_type_id){
@@ -384,9 +428,10 @@ og.changeParametrizable = function(id){
 };
 
 og.validateReport = function(genid){
-	var cpConditions = Ext.getDom(genid);
-	for(var i=0; i < cpConditions.childNodes.length; i++){
-		var deleted = document.getElementById('conditions[' + i + '][deleted]').value;
+	var conditions = $("#"+genid+" .condition-div");
+	for(var i=0; i < conditions.length; i++){
+		var is_del_el = document.getElementById('conditions[' + i + '][deleted]');
+		var deleted = is_del_el ? is_del_el.value : '0';
 		var isparam_el = document.getElementById('conditions[' + i + '][is_parametrizable]');
 		var parametrizable = isparam_el && isparam_el.checked;
 		if(deleted == "0" && !parametrizable){

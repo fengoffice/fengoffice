@@ -73,7 +73,16 @@ final class DB {
 	} // connect
 
 	static function close() {
-		self::connection()->close();
+	    try {
+	        if (!is_null(self::connection()))
+    		  self::connection()->close();
+	    } catch (Exception $e) {
+	        if (defined('LOG_SQL_ERRORS') && LOG_SQL_ERRORS) {
+	            Logger::log("SQL ERROR: " . $e->getMessage());
+	
+	        }
+	        throw $e;
+	    }
 	}
 
 	/**

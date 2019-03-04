@@ -1,11 +1,13 @@
 <?php
 
 /**
- * Object class
+ * FengObject class
  *
- * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
+ * @author Diego Castiglioni
+ * @author Conrado Vina
+ * 
  */
-class Object extends BaseObject {
+class FengObject extends BaseObject {
 	
 	private $object_type = null;
 	

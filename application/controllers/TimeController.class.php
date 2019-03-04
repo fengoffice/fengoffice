@@ -659,7 +659,7 @@ class TimeController extends ApplicationController {
         } // try
     }
 
-    function list_all() {
+    function list_all($only_return_objects = false) {
         ajx_current("empty");
 
         // Get all variables from request
@@ -852,6 +852,10 @@ class TimeController extends ApplicationController {
             "select_columns" => $select_columns
         ));
         $messages = $res->objects;
+        
+        if ($only_return_objects) {
+        	return $messages;
+        }
 
         // get active timeslots to put in the top of the list (only in the first page)
         if (!$only_closed && $start == 0) {

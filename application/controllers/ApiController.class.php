@@ -136,10 +136,15 @@ class ApiController extends ApplicationController {
         $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
         $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
 
-        // escape name
-        $name = DB::escape_string($name);
-        // escape service
-        $service = DB::escape_string($service);
+        //Escape name - replace special character ' with \' 
+        $name = escape_character($name);
+        //This was wrong. Delete:
+        //$name = DB::escape($name);
+        
+        // escape service - replace special character ' with \'
+        $service = escape_character($service);
+        //This was wrong. Delete:
+        //$service = DB::escape($service);
         
         // allow only numeric in start and limit parameters
         if (!is_numeric($start)) {
@@ -151,16 +156,27 @@ class ApiController extends ApplicationController {
         
         $members = array();
         $type = ObjectTypes::instance()->findByName($service);
-        $typeId = $type->getId();
+        
+        //Debugging. Delete:
+        //Logger::log_r("Service: ". $service);
+        
+        if (!is_null($type))
+          $typeId = $type->getId();
+        
         if($service == "workspace"){
             $dimension_id = Dimensions::findByCode('workspaces')->getId();
         }else{
+            //@TODO - check if the dimensions are split (There could
+            //@TODO - Bring any and all dimensions that are relevant to the installation 
             $dimension_id = Dimensions::findByCode('customer_project')->getId();
         }
-        $limit_obj = array(
-        		'offset' => $start,
-        		'limit' => $limit,
-        );
+        
+// This we'll delete soon.      
+//         $limit_obj = array(
+//         		'offset' => $start,
+//         		'limit' => $limit,
+//         );
+        
         $extra_conditions = null;
         if ($name!=""){
         	$extra_conditions = "AND mem.name LIKE '%".$name."%'";
@@ -241,7 +257,7 @@ class ApiController extends ApplicationController {
             
             // escape order parameters
             if ($order) {
-                $order = DB::escape_string($order);
+                $order = DB::escape($order);
             	if (!in_array(strtolower($order_dir), array("asc","desc"))) {
             		$order_dir = "asc";
             	}

@@ -61,4 +61,8 @@
 	'warning you have added some repetitive tasks for this template that do not have date variables for their date' => 'Warning: You have added some repetitive tasks for this template that do not have date variables for their date.',
 	'yes let me add those variables' => 'Oh, thank you. Let me add those variables.',
 	'no time now remove repetition' => 'Oh, OK. No time now. Just remove the repetition for now.',
+	'trash objects in member' => 'Send to trash can the objects classified in this {0}',
+	'trash objects in member desc' => 'If you use this option then the objects that are classified only in this {0} will be sent to trash.',
+
+	'add or condition' => 'Add \'OR\' condition',
 );

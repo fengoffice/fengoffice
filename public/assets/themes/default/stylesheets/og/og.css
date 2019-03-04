@@ -1228,6 +1228,10 @@ select.select_milestone, select.select_task_list, select.select_message {
 	z-index: 1010;
 }
 
+.quick-add-row .single-tree .collapsible-body {
+	overflow: auto !important;
+}
+
 .single-tree .member-chooser {
 	width: 230px;
 }

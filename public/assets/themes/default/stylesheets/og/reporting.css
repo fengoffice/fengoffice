@@ -704,3 +704,9 @@ tbody.report-data td {
 .report-buttons-container {
 	margin: 8px;
 }
+
+
+.group-of-conditions {
+	border: 1px solid #ccc
+}
+

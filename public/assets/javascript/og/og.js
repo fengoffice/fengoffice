@@ -3479,6 +3479,13 @@ og.expandAllChildNodes = function(node) {
 
 og.doDeleteMember = function(gen, delete_url) {
 	var delMessage = $("#"+gen+"_keyword").val();
+	var trashObjects = $("#"+gen+"_trash_objects_in_member").val();
+	if (trashObjects && parseInt(trashObjects) > 0) {
+		delete_url += "&trash_objects_in_member=1";
+		og.preferences.trash_objects_in_member_after_delete = 1;
+	} else {
+		og.preferences.trash_objects_in_member_after_delete = 0;
+	}
 	if (delMessage && (delMessage.toUpperCase() == "DELETE")) {
 		og.openLink(delete_url);
 		$('#_close_link').click();
@@ -3496,6 +3503,16 @@ og.deleteMember = function(delete_url, ot_name){
 					'<label>'+ lang('confirm delete with keyword') +'</label>'+
 					'<input type="text" name="keyword" id="'+ gen +'_keyword" style="width:100%;">'+
 				'</div><div class="clear"></div>'+
+
+				'<div style="margin: 10px 10px 0 0;">'+
+					'<label>'+ lang('trash objects in member', ot_name) +'</label>'+
+					'<select name="trash_objects_in_member" id="'+ gen +'_trash_objects_in_member">'+
+						'<option value="1">'+lang('yes')+'</option>'+
+						'<option value="0">'+lang('no')+'</option>'+
+					'</select>'+
+					'<div class="desc">'+lang('trash objects in member desc', ot_name)+'</div>'+
+				'</div><div class="clear"></div>'+
+				
 				'<div style="float:right;">'+
 					'<button class="submit blue" onclick="og.doDeleteMember(\''+gen+'\',\''+delete_url+'\')">'+ lang('delete') +'</button>&nbsp;'+
 					'<button class="submit" onclick="og.ExtModal.hide();">'+ lang('cancel') +'</button>'+
@@ -3509,6 +3526,7 @@ og.deleteMember = function(delete_url, ot_name){
 	// focus in the input field
 	setTimeout(function() {
 		$("#" + gen + "_keyword").focus();
+		$("#" + gen + "_trash_objects_in_member").val(og.preferences.trash_objects_in_member_after_delete);
 	}, 10);
 }
 

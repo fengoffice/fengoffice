@@ -560,10 +560,8 @@ class ReportingController extends ApplicationController {
 						foreach ($allowed_columns as $ac){
 							if ($condition['field_name'] == $ac['id']){
 								$newCondition = new ReportCondition();
+								$newCondition->setFromAttributes($condition);
 								$newCondition->setReportId($newReport->getId());
-								$newCondition->setCustomPropertyId($condition['custom_property_id']);
-								$newCondition->setFieldName($condition['field_name']);
-								$newCondition->setCondition($condition['condition']);
 								
 								$condValue = array_key_exists('value', $condition) ? $condition['value'] : '';
 								if($condition['field_type'] == 'boolean'){
@@ -715,11 +713,9 @@ class ReportingController extends ApplicationController {
 						$newCondition->delete();
 						continue;
 					}
+					$newCondition->setFromAttributes($condition);
 					$newCondition->setReportId($report_id);
-					$custom_prop_id = isset($condition['custom_property_id']) ? $condition['custom_property_id'] : 0;
-					$newCondition->setCustomPropertyId($custom_prop_id);
-					$newCondition->setFieldName($condition['field_name']);
-					$newCondition->setCondition($condition['condition']);
+					
 					if($condition['field_type'] == 'boolean'){
 					    $newCondition->setValue(array_key_exists('value', $condition) ? $condition['value'] : '0');
 					}else if($condition['field_type'] == 'date' || $condition['field_type'] == 'datetime'){

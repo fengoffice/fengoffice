@@ -533,7 +533,7 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 					start: start,
 					limit: og.config['files_per_page']
 				}),
-		//		callback: typeof(params.load_callback)=='function' ? params.load_callback : null
+				callback: typeof(params.load_callback)=='function' ? params.load_callback : null
 			});
 		}
 	},

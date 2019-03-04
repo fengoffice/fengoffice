@@ -29,7 +29,7 @@
        		if (!in_array($dim->getId(), $enabled_dimension_ids)) continue;
 			$checked = array_search($dim->getId(), $value) !== false;
 			
-			$attr = array('id' => 'all_dim_'.$dim->getId());
+			$attr = array('id' => $this->getConfigOption()->getName().'_all_dim_'.$dim->getId());
 			
 			if ($onchange_fn != "") {
 				$attr['onchange'] = "$onchange_fn(this, ".$dim->getId().");";
@@ -37,7 +37,7 @@
 			
 	       	$out .= '<div class="dimension" >';
 	       	$out .= checkbox_field($control_name.'['.$dim->getId().']', $checked, $attr );
-	       	$out .= label_tag($dim->getName(), 'all_dim_'.$dim->getId(), false, null, '');
+	       	$out .= label_tag($dim->getName(), $this->getConfigOption()->getName().'_all_dim_'.$dim->getId(), false, null, '');
 	       	$out .= '</div >';
        }
       

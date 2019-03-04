@@ -192,7 +192,9 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	// refresh member_ids input
 	var sel_members_str = "";
 	for (dim_id in member_selector[genid].sel_context) {
-		sel_members_str += (sel_members_str=="" ? "" : ",") + member_selector[genid].sel_context[dim_id].join(',');
+		if (member_selector[genid].sel_context[dim_id] && member_selector[genid].sel_context[dim_id].length > 0) {
+			sel_members_str += (sel_members_str=="" ? "" : ",") + member_selector[genid].sel_context[dim_id].join(',');
+		}
 	}
 	sel_members_str = "["+ sel_members_str +"]";
 	

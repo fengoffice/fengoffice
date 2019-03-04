@@ -889,8 +889,7 @@ class AdministrationController extends ApplicationController {
 			$ordering = (int) $tab['ordering'];
 			
 			//Replaced for PHP7 (Note by @Conrado: I don't know if it will work yet)
-			//$title = mysqli_real_escape_string($tab['title']);
-			$title = DB::escape_string($tab['title']);
+			$title = DB::escape($tab['title']);
 			
 			$enabled = (array_var($tab, 'enabled') == "on") ? 1 : 0;
 			

@@ -10,13 +10,13 @@
 abstract class ContentDataObject extends ApplicationDataObject {
 	
 	/**
-	 * @var Object
+	 * @var FengObject
 	 */
 	var $object;
 	
-	var $memberIds = null ;
+	var $memberIds = null;
 	
-	var $members = null ;
+	var $members = null;
 	
 	/**
 	 * 
@@ -25,7 +25,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	var $summary_field = "name";
 	
 	function __construct() {
-		$this->object = new Object();
+		$this->object = new FengObject();
 		$this->object->setObjectTypeId($this->manager()->getObjectTypeId());
 		if ($this->is_searchable) {
 			$this->searchable_columns[] = 'object_id';
@@ -93,9 +93,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	/**
 	 * 
 	 * Enter description here ...
-	 * @param Object $object
+	 * @param FengObject $object
 	 */
-	function setObject(Object $object) {
+	function setObject(FengObject $object) {
 		$this->object = $object;
 	}
 	

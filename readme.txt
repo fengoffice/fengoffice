@@ -1,5 +1,5 @@
 
-	About Feng Office 3.7.0.5
+	About Feng Office 3.7.1.1
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -49,7 +49,7 @@
 	Installation
 	============
 	
-	1. Download Feng Office - http://fengoffice.com/web/community/
+	1. Download Feng Office - http://www.fengoffice.com/web/community/downloads.php
 	2. Unpack and upload to your web server
 	3. Direct your browser to the public/install directory and follow the installation procedure
 	
@@ -107,49 +107,72 @@
 	Changelog
 	=========
 	
-	Since 3.7.0.4
-	-----------------
-	bugfix: fix member templates additional urls hook
-	bugfix: fix plugin installers for php7
-	feature: config option to append member names for objects in calendar views
 	
-	Since 3.7.0.3
+	Since 3.7.1.0
 	-----------------
-	bugfix: Add items column to quotas list
-	bugfix: Make items dimension as mandatory for quotas and not selectable in payments
-	feature: In payments list filter new payment menu by selection in divisions dimension
-	feature: In quota's view payments list filter new payment menu by selection in divisions dimension
+	bugfix: fix advanced_core update script
+	bugfix: fix advanced reports hooks to work with new report conditions algorithm
+	bugfix: fix object subtypes hooks to work correctly with the new class FengObject instead of Object
+	bugfix: Replaced wrong function escape_string with correct one escape
+	bugfix: fix clients column value shown in tasks list when task is in a project under a sub-client
 	
-	Since 3.7.0.2
+	Since 3.7.1-rc
 	-----------------
-	feature: allow object subtypes to be managed by dimensions
-	feature: improve payment quota selector to filter items by the selected quota division
-	feature: improve filtering of quota selector by the member associated to the payment subtrype
+	feature: allow to use "and" and "or" conditions in custom reports
+	bugfix: fix remembering the option to delete objects when deleting member
+	bugfix: when deleting member and not its objects they were deleted anyways
+	bugfix: default value of option to delete objects when deleting member should be 'no'
 	
-	Since 3.7.0.1
+	Since 3.7.1-beta
 	-----------------
-	bugfix: fix member name with additional props after add and edit
-	bugfix: cant use conditions of objects table columns (created_on, updated_on) in custom reports
-	bugfix: dont use only work address to copy to the invoice
-	bugfix: fix no zeros control in date inputs (include year without zeros)
-	bugfix: fix member parent js errors when removing item in parent member selector
-	bugfix: When deleting member dont include the trashed objects in the "can be deleted" verification
-	bugfix: Sort alphabetically the member templates in the "new" menu of the dimensions panel
-	bugfix: missing lang 'template'
-	bugfix: when adding members to trees under a parent ensure that they are sorted alphabetically
-	feature: focus in text input when showing popup window to delete member
+	feature: when deleting member ask user to delete objects or not
+	feature: hide payment name in add/edit form only for macro facultad
+	bugfix: Mobile was not working after 3.7.0 (PHP 7.0 support). 'Escape' functions 'escape_string' were not valid.
+	bugfix: fix member selector hidden input format when adding and removing members from template tasks
+	bugfix: Prevents an error when the DB connection is not established.
+	bugfix: PHP 7.2 now reserves the word 'object', so it can be used as a class name.
+	bugfix: fix getColumnType function for most of the content objects added by plugins
+	bugfix: check if member can have parents before rendering the 'located under' component
+	bugfix: fix typo in pear/net/socket library
+	bugfix: Link to old download page was not working. Updated to new download page.
 	
-	Since 3.7.0.0
+	Since 3.7.1-alpha4
 	-----------------
-	bugfix: fix member reports totals
-	bugfix: config option was in wrong plugin installer
-	bugfix: fix repeat option for fixed week days
-	bugfix: hack in pear socket class to prevent ssl connection errors since php5.6
-	bugfix: update payment mandatory fields
-	bugfix: dimensions config handler must only show enabled dimensions
-	feature: add timeslots to dimension options
-	feature: use quota name for payments
-	feature: new dimension object type config option to override the member names in trees
+	feature: add pdf support to payment receipt images in add/edit form and receipt view
+	feature: show in red the payment receipts that are greater than their expense's cost
+	feature: autocomplete payment receipt name using date and expense category
+	feature: disable submit button while uploading payment receipt image
+	bugfix: when editing expense using the 'add new item' button in the items grid, add a new empty item line
+	bugfix: add link to expense in payment receipt view
+	bugfix: fix feature that puts client name in calendar objects to also check member hierarchy
+
+	Since 3.7.1-alpha3
+	-----------------
+	feature: Add "Description" field to payment receipts
+	feature: Allow to upload image of the payment receipt
+	feature: Allow to add payment receipt from expense view
+	feature: Allow to add new item from expense view's items grid
+	feature: Add view for payment receipts
+	
+	Since 3.7.1-alpha2
+	-----------------
+	feature: when adding/editing expenses improve the way that product types are filtered
+	feature: when adding/editing expenses allow product type selection to fill member selectors
+	bugfix: Fix view for expenses, including items grid
+	bugfix: Improvements in format of payment receipts list view
+	bugfix: Set default payment receipt date to today
+	bugfix: can't edit payment receipt
+	bugfix: payment receipt doesn't save custom properties, subscribers, linked objects and members
+	bugfix: In payment receipt add/edit put the expense selector first
+	bugfix: Several fixes in installer
+	
+	Since 3.7.1-alpha
+	-----------------
+	bugfix: fix member template quick add urls
+	
+	Since 3.7.0.x
+	-----------------
+	feature: new expenses module for evx.
 	
 	Since 3.7.0-beta7
 	-----------------
