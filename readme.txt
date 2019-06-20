@@ -1,5 +1,5 @@
 
-	About Feng Office 3.7.1.1
+	About Feng Office 3.7.2.16
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -26,7 +26,7 @@
 	
 	Recommendations:
 	
-	PHP 5.4+
+	PHP 7.1+
 	MySQL 5+ with InnoDB support
 	Apache 2.0+
 	
@@ -39,7 +39,7 @@
 	
 	Alternatively, if you just want to test Feng Office and you don't care about security
 	issues with your files, you can download XAMPP, which includes all that is needed
-	by Feng Office (Apache, PHP 5, MySQL) in a single download.
+	by Feng Office (Apache, PHP 7, MySQL) in a single download.
 	You can configure MySQL to support InnoDB by commenting or removing
 	the line 'skip-innodb' in the file '<INSTALL_DIR>/etc/my.cnf'.
 	
@@ -68,7 +68,7 @@
 	=======
 	
 	There currently are two kind of upgrades:
-	1- From 2.X to 2.X (or from 1.X to 1.X)
+	1- From 3.X to 3.X (or from 2.X to 2.X, or 1.X to 1.X)
 	2- From 1.X to 2.X
 	
 	Either way, we strongly suggest reading the following article in our Wiki for further information:
@@ -107,14 +107,232 @@
 	Changelog
 	=========
 	
-	
-	Since 3.7.1.0
+	Since 3.7.2.15
 	-----------------
-	bugfix: fix advanced_core update script
-	bugfix: fix advanced reports hooks to work with new report conditions algorithm
-	bugfix: fix object subtypes hooks to work correctly with the new class FengObject instead of Object
-	bugfix: Replaced wrong function escape_string with correct one escape
-	bugfix: fix clients column value shown in tasks list when task is in a project under a sub-client
+	feature: allow to sort member trees by member type before alphabetically
+	bugfix: when uploading a new doc and already exists, by default select the option to upload as a new revision
+	bugfix: fix permissions tree in users form to include timeslots in permissions query
+	bugfix: fix error in contacts report grouped by folder and with or conditions in classification
+	
+	Since 3.7.2.14
+	-----------------
+	feature: allow to view the sent emails in newsletter view
+	bugfix: verify that sharing table group_id key does not exists before executing the query to add it
+	bugfix: fix newsletter sent contacts popup list
+	bugfix: fix plugin folder name for additional member permissions plugin
+	
+	Since 3.7.2.13
+	-----------------
+	bugfix: fix error in custom reports with advanced billing columns
+	bugfix: fix timeslots form start date calculations
+	bugfix: prevent trailing/starting white spaces in template object property variable values
+	bugfix: fix product types filtering
+	bugfix: fix hour_types installer
+	bugfix: autoselect project's client in quick-add row when filtering timeslots list by project
+	bugfix: fix ignoring labor categories when creating subtasks using multi assignment
+	bugfix: fix 7th day rule in overtime calculations after registering 10 overtime hours
+	
+	Since 3.7.2.12
+	-----------------
+	bugfix: ignore some properties when checking if only classification has been changed
+	bugfix: ignore persons dimension in application log details
+	
+	Since 3.7.2.11
+	-----------------
+	feature: config option to ignore some dimensions when applying classification to subtasks
+	feature: overtime calculations, classify as overtime the 7th consecutive day of work no matter the amount of hours
+	bugfix: fix group name coulumn text when exporting to excel/csv a grouped report without details
+	
+	Since 3.7.2.10
+	-----------------
+	bugifx: fix week start/end calculation when adding a timeslot for next week or more in the future
+	bugfix: when exporting to excel the time columns were not using the custom format
+	bugfix: fix overtime calculations, ignore non-worked timeslots
+	bugfix: when splitting timeslots the task id was not copied to the new ones
+	
+	Since 3.7.2.9
+	-----------------
+	feature: overtime calculations plugin
+	bugfix: fix getting controller by classname in member controller
+	bugfix: fix langs for billing category column in timeslot reports
+	bugfix: fix timeslots totals query, make it independent of currency if there is only 1 currency in the system
+	
+	Since 3.7.2.8
+	-----------------
+	bugfix: fix notifications manager config options saving
+	bugdix: dont send email when only description is changed if not selected in config option
+	
+	Since 3.7.2.7
+	-----------------
+	feature: when invoicing timeslots classify them in the invoiced status member
+	bugfix: dont inherit members from parent task if dimension is not multiple and subtask has already a member of that dimension
+	
+	Since 3.7.2.6
+	-----------------
+	bugfix: fix task list filters when filtering by subscribed by user and completed tasks
+	bugfix: fix notifications manager config options and user new template for due date reminders
+	fearure: make overtime_hours dimension hierarchical
+	
+	Since 3.7.2.5
+	-----------------
+	feature: new section in dimension options to define the default value for each dimension
+	feature: new user preference to define the dimension that dictates color to show for each object in the calendar
+	feature: new plugin that adds the dimension "Overtime hours"
+	feature: new plugin that adds the dimension "Billing rates"
+	bugfix: several fixes in timesheet status dimension plugin
+	bugfix: notification manager fixes in consolidation
+	bugfix: dont include unsubscribed contacts when sending newsletters
+	
+	Since 3.7.2.4
+	-----------------
+	feature: config option to exclude add,open,close task from consolidation
+	
+	Since 3.7.2.3
+	-----------------
+	feature: First version of the "status dimension for timesheets" plugin aka: status_dimension_timesheet
+	bugfix: modifications to evx widgets plugin
+	bugfix: fix error when adding project phase
+	bugfix: fixes in notifications manager
+	bugfix: prevent enqueue newsletter emails for persons that are not subscribed to newsletters (using cp subs_newsletter)
+	
+	Since 3.7.2.2
+	-----------------
+	feature: default labor category for users in timestlots module
+	bugfix: fix timeslots list totals when filtering by more than one member
+	bugfix: autopopulate project's associated members when adding timeslots and selecting a project
+	bugfix: fix column of unclassified worked time when grouping results by a dimension and showing the group in columns
+	bugfix: fix sum of timeslot report custom properties when grouping by user
+	bugfix: fix timeslots start time lang
+	bugfix: fix email system setup config options saving
+
+	Since 3.7.2.1
+	-----------------
+	bugfix: fix notification manager when consolidating comments and open/close
+	
+	Since 3.7.2.0
+	-----------------
+	feature: add contact cps to report group lines when grouping by contact
+	feature: allow to add project cp columns in timeslot reports/Reports
+	feature: when grouping timeslot reports by project, put the same name as in the trees (using configuration if present)
+	
+	Since 3.7.2-rc11
+	-----------------
+	feature: add invoicing status filter to time tab
+	bugfix: fix report condition input for invoicing status
+	
+	Since 3.7.2-rc10
+	-----------------
+	bugfix: notifications manager fixes
+	
+	Since 3.7.2-rc9
+	-----------------
+	bugfix: notifications manager fixes
+	
+	Since 3.7.2-rc8
+	-----------------
+	feature: add contact custom properties to timeslot custom reports
+	bugfix: fix expenses plugin pre requisites
+	bugfix: Fixed typo
+	
+	Since 3.7.2-rc7
+	-----------------
+	bugfix: fix member add/edit when using templates and member subtypes
+	bugfix: fix evx projects widget list height
+	
+	Since 3.7.2-rc6
+	-----------------
+	bugfix: fix copy task, was not copying members
+	bugfix: show all users in calendar filter when not filtering by any member
+	bugfix: fix auto heights in evx projects widget
+
+	Since 3.7.2-rc5
+	-----------------
+	feature: evx_widgets plugin version alpha
+	feature: associate member templates with member subtypes
+	bugfix: use plural title for projects and clients widgets
+	bugfix: fix old billing categories, they were not saving the currency
+	
+	Since 3.7.2-rc4
+	-----------------
+	bugfix: fixes in notifications manager
+
+	Since 3.7.2-rc3
+	-----------------
+	feature: update notification manager
+	
+	Since 3.7.2-rc2
+	-----------------
+	bugfix: fix time module date filters
+	
+	Since 3.7.2-rc
+	-----------------
+	feature: allow getArrayInfo function to return members data for tasks
+	bugfix: allow mobile to show project name with custom properties
+	bugfix: list of clients should work for single or divided dimension in mobile.
+	bugfix: show custom properties in timeslot lists
+	bugfix: group_by_sql wasn't initialized.
+	
+	Since 3.7.2-beta6
+	-----------------
+	bugfix: fix listing query for trashed objects
+	bugfix: fix permissions for internal collaborators in time module
+	bugfix: fix abm of emails in client form
+	bugfix: fix text custom property edition when adding zeros before the text and the text can be casted to number
+	bugfix: fix height calculation in custom reports
+	bugfix: fix additional text in member trees feature when expanding member childs
+	
+	Since 3.7.2-beta5
+	-----------------
+	bugfix: fix clients email edition, main email was not modified correctly
+	
+	Since 3.7.2-beta4
+	-----------------
+	feature: notifications manager improvements
+	
+	Since 3.7.2-beta3
+	-----------------
+	bugfix: dont show disabled dimensions in config option handlers
+	feature: notifications manager improvements
+	
+	Since 3.7.2-alpha5
+	-----------------
+	bugfix: dont check module permissions automatically when giving permissions in a member
+	bugfix: fix object billing calculations after instantiating task templates
+	bugfix: fix dimension panel filtering when expanding a project and filtering by any of the associated dimensions
+	bugfix: fix user selector for custom properties
+	bugfix: Function had a duplicate variable '$ignored' in its parameters.
+	bugfix: type was incorrectly set as dimension_object instead of dimension_group
+	bugfix: Missing lang for hint
+	bugfix: Improved wording for new feature.
+	bugfix: Fixed. Misspelled class. Constructor wasn't working.
+	bugfix: Fixed. Issues when upgrading a PHP 7 installation. 
+
+	Since 3.7.2-alpha4
+	-----------------
+	change: Removed the property "status" for Payment Receipt. Replacing with a dimension.
+	feature: Showing name of client for tasks in calendar view - in all views (weekly, monthly, daily).
+	fix: Warnings for declarations of functions not compatible with parent Class.
+	fix: Several small fixes on coding style
+
+	Since 3.7.2-alpha3
+	-----------------
+	feature: update dimension association between projects and rate schedules to allow selection of related members
+	feature: when selecting a member autoselect the related members if the association is marked with 'allows_default_selection'
+
+	Since 3.7.2-alpha2
+	-----------------
+	bugfix: error 500 when deleting payment receipts
+	bugfix: show billable column as yes/no instead of true/false
+	
+	Since 3.7.2-alpha
+	-----------------
+	feature: new billable column for expenses and receipts
+	feature: system permission to enable adding hours in time tab
+	
+	Since 3.7.1.x
+	-----------------
+	feature: new plugin notifications_manager
+	feature: modifications to object_templates plugin to work with notifications_manager
 	
 	Since 3.7.1-rc
 	-----------------

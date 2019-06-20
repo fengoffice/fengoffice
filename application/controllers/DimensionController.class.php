@@ -652,6 +652,7 @@ class DimensionController extends ApplicationController {
 		$offset = array_var($_REQUEST, 'offset', 0);
 		$limit = array_var($_REQUEST, 'limit', 100);
 		$ignore_context_filters = array_var($_REQUEST, 'ignore_context_filters');
+		if ($ignore_context_filters == 'false') $ignore_context_filters = false;
 		$new_limit = $limit + 1;
 		
 		if ((function_exists('logged_user') && logged_user() instanceof Contact && ContactMemberPermissions::contactCanAccessMemberAll(implode(',', logged_user()->getPermissionGroupIds()), $mem_id, logged_user(), ACCESS_LEVEL_READ))) {
@@ -714,6 +715,9 @@ class DimensionController extends ApplicationController {
 				
 				// build resultant member list
 				$members = $this->buildMemberList($childs, $mem->getDimension(),  null, null, null, null);
+				
+				// updates the name of the members using the configuration if exists.
+				build_member_list_text_to_show_in_trees($members);
 				
 				ajx_extra_data(array("members" => $members, "dimension" => $mem->getDimensionId(), "member_id" => $mem->getId(), "more_nodes_left" => $more_nodes_left));			
 			}
@@ -831,6 +835,14 @@ class DimensionController extends ApplicationController {
 				if ($dot) $memberOptions = $dot->getOptions(true);
 			}
 			
+			// use sort by name or by member type and name
+			$use_member_type_order = user_config_option('sort_member_trees_by_member_type');
+			$sort_key = strtolower(htmlentities($m->getName()));
+			if ($use_member_type_order) {
+				$sort_key = $m->getObjectTypeId() . $sort_key;
+			}
+			$sort_key = str_pad($m->getDepth(), 20, "0", STR_PAD_LEFT) . $sort_key . $m->getId();
+			
 			if ($return_only_name) {
 				$path = trim($m->getPath());
 				$member = array(
@@ -842,6 +854,7 @@ class DimensionController extends ApplicationController {
 					"dim" => $m->getDimensionId(),
 					"object_type_id" => $m->getObjectTypeId(),
 					"ico" => "ico-color".$m->getColor() . " " . $m->getIconClass(),
+					"sort_key" => $sort_key,
 				);
 			} else {
 				//Do not use contact member cache for superadmins
@@ -875,7 +888,8 @@ class DimensionController extends ApplicationController {
 					"object_type_id" => $m->getObjectTypeId(),
 					"expandable" => $haveChilds,
 					"realTotalChilds" => $totalChilds,
-					"allow_childs" => $m->allowChilds()
+					"allow_childs" => $m->allowChilds(),
+					"sort_key" => $sort_key,
 				);
 				// Member Actions
 				if (can_manage_dimension_members(logged_user())){
@@ -915,8 +929,7 @@ class DimensionController extends ApplicationController {
 		// re-sort by parent and name
 		$tmp_members = array();
 		foreach ($members as $m) {
-			$key = strtolower(htmlentities(array_var($m, 'name')));
-			$tmp_members[str_pad(array_var($m, 'depth'), 20, "0", STR_PAD_LEFT) . $key . array_var($m, 'id')] = $m;
+			$tmp_members[$m['sort_key']] = $m;
 		}
 		
 		ksort($tmp_members, SORT_STRING);
@@ -1087,7 +1100,7 @@ class DimensionController extends ApplicationController {
 			
 		} else {
 			// only use available object types
-			$ots = ObjectTypes::getAvailableObjectTypes();
+			$ots = ObjectTypes::getAvailableObjectTypesWithTimeslots();
 			$available_ots_csv = "";
 			foreach ($ots as $ot) {
 				$available_ots_csv .= ($available_ots_csv == "" ? "" : ",") . $ot->getId();
@@ -1207,13 +1220,29 @@ class DimensionController extends ApplicationController {
 		}
 	}
 	
+	function get_associated_members() {
+		ajx_current("empty");
+		$member_id = array_var($_REQUEST, 'member_id');
+		$dimension_id = array_var($_REQUEST, 'dim_id');
+		$assoc_id = array_var($_REQUEST, 'assoc_id');
+		$genid = array_var($_REQUEST, 'genid');
 	
+		if (!is_numeric($member_id) || !is_numeric($dimension_id) || !is_numeric($assoc_id)) {
+			return;
+		}
+	
+		$sel_member_ids = explode(',', MemberPropertyMembers::instance()->getAllPropertyMemberIds($assoc_id, $member_id));
+		$sel_member_ids = array_filter($sel_member_ids);
+		
+		ajx_extra_data(array('dimension_id' => $dimension_id, 'member_ids' => $sel_member_ids, 'genid' => $genid));
+	}
 	
 	function get_default_associated_members() {
 		ajx_current("empty");
 		$member_id = array_var($_REQUEST, 'member_id');
 		$dimension_id = array_var($_REQUEST, 'dim_id');
 		$assoc_id = array_var($_REQUEST, 'assoc_id');
+		$genid = array_var($_REQUEST, 'genid');
 		
 		if (!is_numeric($member_id) || !is_numeric($dimension_id) || !is_numeric($assoc_id)) {
 			return;
@@ -1227,7 +1256,7 @@ class DimensionController extends ApplicationController {
 			$sel_member_ids = array_flat($rows);
 		}
 		
-		ajx_extra_data(array('dimension_id' => $dimension_id, 'member_ids' => $sel_member_ids));
+		ajx_extra_data(array('dimension_id' => $dimension_id, 'member_ids' => $sel_member_ids, 'genid' => $genid));
 	}
 	
 	
@@ -1243,6 +1272,9 @@ class DimensionController extends ApplicationController {
 		if (is_numeric($dim_id)) {
 			$dim = Dimensions::findById($dim_id);
 			tpl_assign('dim', $dim);
+			if (isset($_REQUEST['genid'])) {
+				tpl_assign('selector_genid', $_REQUEST['genid']);
+			}
 		}
 	}
 }

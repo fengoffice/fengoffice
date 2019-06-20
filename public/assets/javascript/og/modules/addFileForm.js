@@ -177,11 +177,14 @@ og.showFileExists = function(genid, fileInfo){
  	while(table.rows.length>0) 
     	table.deleteRow(table.rows.length-1);
  	
- 	for (var i = 0; i < fileInfo.files.length; i++)
- 		og.addFileOption(table, fileInfo.files[i], genid);
+ 	checked = true;
+ 	for (var i = 0; i < fileInfo.files.length; i++) {
+ 		og.addFileOption(table, fileInfo.files[i], genid, checked);
+ 		checked = false;
+ 	}
 }
 
-og.addFileOption = function(table, file, genid){
+og.addFileOption = function(table, file, genid, checked){
 	var row = table.insertRow(table.rows.length);
 	var cell = row.insertCell(0);
 	cell.style.paddingRight='4px';
@@ -197,6 +200,7 @@ og.addFileOption = function(table, file, genid){
 		}
 		el.id = file.id + "chk" + genid;
 		el.className = "checkbox";
+		if (checked) el.checked = 'checked';
 		el.value = file.id;
 		el.enabled = file.can_edit && (!file.is_checked_out || (file.is_checked_out && file.can_check_in));
 		cell.appendChild(el);
@@ -229,7 +233,7 @@ og.addFileOption = function(table, file, genid){
 	var workspaces = '';
 	
 	
-	div.innerHTML = addMessage + fileLink + workspaces;
+	div.innerHTML = '<label for="'+file.id + "chk" + genid+'">' + addMessage + fileLink + workspaces + '</label>';
 	cell.appendChild(div);
 	
 	var cell = row.insertCell(2);
@@ -241,9 +245,9 @@ og.addFileOption = function(table, file, genid){
 	if (newDate.getFullYear() != currDate.getFullYear()) {
 		dateToShow = newDate.format("j M Y");
 	} else {
-		dateToShow = newDate.format("j M");
+		dateToShow = newDate.format("j M g:i A");
 	}
-	cell.innerHTML = lang("created by on", file.created_by_name, dateToShow);
+	cell.innerHTML = '<span style="font-size:90%;">'+lang("created by on", file.created_by_name, dateToShow)+'</span>';
 	
 	var cell = row.insertCell(3);
 	cell.style.paddingLeft = '10px';

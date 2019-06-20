@@ -1,7 +1,9 @@
 <div style="padding:7px">
 <div class="contact">
 <?php
-	$otname = $contact->getIsCompany() ? 'company' : 'contact';
+//    if(isset($contact) && ($contact instanceof Contact)) {
+    
+    $otname = $contact->getIsCompany() ? 'company' : 'contact';
 	if ($contact->hasPicture()){
 		$image = '<div class="cardIcon" style="text-align:center;">';
 		
@@ -55,6 +57,7 @@
   	$this->includeTemplate(get_template_path('view', 'co'));
   	
   	clear_page_actions();
+//    }
 ?>
 
 </div>

@@ -189,7 +189,6 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 		if (!is_null($label_value)) $label = $label_value;
 	}
 
-
     $default_value = null;
 	Hook::fire("custom_property_input_default_value", array('customProp' => $customProp, 'object' => $object), $default_value);
 	
@@ -486,6 +485,19 @@ function render_address_custom_property_field($custom_property, $configs) {
 	return $html;
 }
 
+
+/**
+ * This function render the custom properties of type contact.
+ * It returns the html text that will be included in the form.
+ * 
+ * It is important to note that the possible values (the list of contacts or list of users) are not retrieved directly here,
+ * but are popuated in the public/assets/javascript/og/ContactCombo.js javascript class.
+ * This is something that should be improved
+ * 
+ * @param CustomProperty $custom_property
+ * @param array $configs
+ * @return string
+ */
 function render_contact_custom_property_field($custom_property, $configs) {
 	$genid = $configs['genid'];
 	$name = $configs['name'];
@@ -497,7 +509,7 @@ function render_contact_custom_property_field($custom_property, $configs) {
 	
 	$cp_value = null;
 	Hook::fire('custom_property_field_initial_value', array('cp' => $custom_property, 'configs' => $configs), $cp_value);
- 
+	
 	if (is_null($cp_value)) {
 	    if($is_multiple){
 	        $array_cp_values = array();	        
@@ -517,7 +529,6 @@ function render_contact_custom_property_field($custom_property, $configs) {
 		$value = $cp_value->getValue();
 		$contact = Contacts::findById($value);
 	}else{
-	    
 	    $contacts = array();
 	    if (isset($array_cp_values) && count($array_cp_values) > 0){
 	        foreach ($array_cp_values as $val){
@@ -540,6 +551,7 @@ function render_contact_custom_property_field($custom_property, $configs) {
 	}
 
 	$ot = ObjectTypes::findById($custom_property->getObjectTypeId());
+	
 	if ($ot->getType() == 'dimension_object') {
 		$obj_member = null;
 		if ($configs['object_id'] > 0) {
@@ -559,6 +571,8 @@ function render_contact_custom_property_field($custom_property, $configs) {
 		
 		if ($custom_property->getType() == 'user') {
 			if ($configs['member_is_new']) {
+			    //We need to explain this here
+			    //What does it do? Should it be configurable?
 				$filters['has_permissions'] = $configs['parent_member_id'];
 			} else {
 				$filters['has_permissions'] = $configs['member_id'];
@@ -573,10 +587,12 @@ function render_contact_custom_property_field($custom_property, $configs) {
 			}
 		}
 		
-		Hook::fire('member_contact_cp_filters', array(
-			'cp' => $custom_property, 'member' => $configs['member'], 
-			'is_new' => $configs['member_is_new'], 'ot' => $ot
-		), $filters);
+		if (isset($configs['member'])) {		    
+    		Hook::fire('member_contact_cp_filters', array(
+    			'cp' => $custom_property, 'member' => $configs['member'], 
+    			'is_new' => $configs['member_is_new'], 'ot' => $ot
+    		), $filters);
+		}
 		
 	}
 	
@@ -610,6 +626,9 @@ function render_contact_custom_property_field($custom_property, $configs) {
         if ($configs["member_parent"] == "") {
             $configs["member_parent"] = 0;
         }
+        
+        
+    
 	$html .= '<script>
 			$(function(){
 			  og.renderContactSelector({

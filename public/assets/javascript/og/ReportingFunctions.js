@@ -464,7 +464,7 @@ og.validateReport = function(genid){
 		var item = columns[j];
 		if (item.type == 'hidden' && item.name.indexOf('columns') == 0) {
 			var item = columns[j];
-			if(item.value == 1){
+			if(item.value > 0){
 				colSelected = true;
 				break;
 			}

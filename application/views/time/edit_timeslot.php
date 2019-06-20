@@ -500,19 +500,28 @@
         end_date = $('#date_end_input');
         end_time = $('#end_time_input');
         
-        var now;
+		var start_date_aux = og.getDateArray(start_date.val(), start_time.val());
         if(end_date.val() == og.preferences.date_format_tip || end_time.val() =="hh:mm"){
-            now = new Date();
+            var now = new Date(start_date_aux[0],start_date_aux[1],start_date_aux[2],start_date_aux[3],start_date_aux[4]);
         }else{
             var end_date_aux = og.getDateArray(end_date.val(),end_time.val());
-            now = new Date(end_date_aux[0],end_date_aux[1],end_date_aux[2],end_date_aux[3],end_date_aux[4]);
+            var now = new Date(start_date_aux[0],start_date_aux[1],start_date_aux[2],end_date_aux[3],end_date_aux[4]);
         }
+        
         hours = now.getHours();
         minutes = now.getMinutes(); 
 
         og._actualTimeValue = og._lastTimeValue;
+
+        var h = $('#worked_time').val();
+        var m = $('#worked_minutes').val();
+        if (isNaN(h)) h = 0;
+        if (isNaN(m)) m = 0;
+        var worked_milis = (h * 60 + m) * 60 * 1000;
         
-        var d = new Date(now.getTime()-(og._actualTimeValue));
+        //var d = new Date(now.getTime()-(og._actualTimeValue));
+        var d = new Date(now.getTime() - worked_milis);
+        
         var final_minutes = d.getMinutes();
         var final_end_minutes = now.getMinutes();
         if(d.getMinutes() < 10){
@@ -559,10 +568,17 @@
         }
         hours = now.getHours();
         minutes = now.getMinutes(); 
+
+        var h = $('#worked_time').val();
+        var m = $('#worked_minutes').val();
+        if (isNaN(h)) h = 0;
+        if (isNaN(m)) m = 0;
+        var worked_milis = (h * 60 + m) * 60 * 1000;
         
         og._actualTimeValue = og._lastTimeValue;
         
-        var d = new Date(now.getTime()+(og._actualTimeValue));
+        var d = new Date(now.getTime() + worked_milis);
+        
         var final_minutes = d.getMinutes();
         var final_end_minutes = now.getMinutes();
         if(d.getMinutes() < 10){
@@ -809,6 +825,16 @@
                         assignedto = document.getElementById('<?php echo $genid ?>timeslot_contact_id');
                         if (assignedto) assignedto.value = combo.getValue();
                         assigned_user = combo.getValue();
+
+                        if (og.on_ts_contact_combo_select && og.on_ts_contact_combo_select.length > 0) {
+                            var params = {genid: '<?php echo $genid?>', selected_user_id: combo.getValue(), combo: combo, task_id:'<?php echo $timeslot->getRelObjectId()?>'};
+                            for (x in og.on_ts_contact_combo_select) {
+                                var fn = og.on_ts_contact_combo_select[x];
+                            	if (typeof(fn) == 'function') {
+		                        	fn.call(null, params)
+		                        }
+                            }
+                        }
                     });
 <?php } ?>
     });

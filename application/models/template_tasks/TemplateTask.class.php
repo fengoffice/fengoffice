@@ -548,6 +548,7 @@ class TemplateTask extends BaseTemplateTask {
 		$new_task->setTypeContent($this->getTypeContent());
 		$new_task->setFromTemplateObjectId($this->getId());
 		
+		$ptask = null;
 		if ($this->getParentId() > 0) {
 			$ptask = ProjectTasks::findOne(array("conditions" => "from_template_id = ".$this->getTemplateId()." AND from_template_object_id = ".$this->getParentId()." AND instantiation_id='$instantiation_id'"));
 		}

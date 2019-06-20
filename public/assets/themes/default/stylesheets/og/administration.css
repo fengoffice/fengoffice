@@ -417,3 +417,9 @@ div.checkbox-config-option {
 .listing-admin .adminMainBlock .alt {
 	background-color: #efefef;
 }
+
+.configOptionControl .dimension {
+    float: left;
+    max-width: 200px;
+    min-width: 200px;
+}

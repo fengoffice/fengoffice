@@ -836,9 +836,11 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 									} else {
 										$subject_toshow = strlen($subject) < $to_show_len ? $subject : substr($subject, 0, $to_show_len-3)."...";
 									}
-									if ($event instanceof ProjectTask && $event->getAssignedToContactId() > 0) {
-										$subject_toshow = '<span class="bold">'.$event->getAssignedToName().'</span><br />'.$subject_toshow;
-									}
+									//This section commented by Conrado - to have it work for the new configuration:
+									//where we can show client name or other attributes on the calendar
+									//if ($event instanceof ProjectTask && $event->getAssignedToContactId() > 0) {
+									//	$subject_toshow = '<span class="bold">'.$event->getAssignedToName().'</span><br />'.$subject_toshow;
+									//}
 								?>
 								<div><?php echo ($height < 50 || $width < 13 ? "<span class='nobr'>" : "")?>
 								<?php 

@@ -127,6 +127,8 @@ class TimeController extends ApplicationController {
             if ($rel_obj instanceof ContentDataObject) {
                 $pre_selected_member_ids = $rel_obj->getMemberIds();
             }
+            Hook::fire('preselected_time_form_member_ids', array('object' => $timeslot), $pre_selected_member_ids);
+            
             tpl_assign('pre_selected_member_ids', $pre_selected_member_ids);
 
             tpl_assign('dont_reload', $dont_reload);
@@ -356,6 +358,8 @@ class TimeController extends ApplicationController {
                         $timeslot->setFixedBilling($hourly_billing * $hoursToAdd);
                         $timeslot->setIsFixedBilling(false);
                     }
+					$currency_info = Currencies::getDefaultCurrencyInfo();
+					$timeslot->setRateCurrencyId($currency_info['id']);
                 }
             } else {
                 $timeslot->setForceRecalculateBilling(true);
@@ -716,54 +720,73 @@ class TimeController extends ApplicationController {
             default: break;
         }
 
-        if ($user_filter)
+        if ($user_filter) {
             $extra_conditions .= " AND contact_id='$user_filter' ";
-
+        }
+        
+        $now = DateTimeValueLib::now();
+        $now->advance(logged_user()->getUserTimezoneValue(), true);
+        
+        $from_date = null;
+		$to_date = null;
+                
         switch ($period_filter){
             case 0:
-                $from_filter = null ;
-                $to_filter = null;
                 break;
             case 1: // today
-                $from_filter = date(user_config_option('date_format'));
-                $to_filter = date(user_config_option('date_format'));
+            	$from_date = DateTimeValueLib::make(0,0,0,$now->getMonth(),$now->getDay(),$now->getYear());
+            	$to_date = DateTimeValueLib::make(23,59,59,$now->getMonth(),$now->getDay(),$now->getYear());
                 break;
             case 2: // this week
-                $from_filter = date(user_config_option('date_format'),  strtotime('monday this week'));
-                $to_filter = date(user_config_option('date_format'),  strtotime('sunday this week'));
+            	$monday = $now->getMondayOfWeek();
+            	$nextMonday = $now->getMondayOfWeek()->add('w',1)->add('d',-1);
+            	$from_date = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
+            	$to_date = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());
                 break;
             case 3: // last week
-                $from_filter = date(user_config_option('date_format'),  strtotime('monday last week'));
-                $to_filter = date(user_config_option('date_format'),  strtotime('sunday last week'));
+            	$monday = $now->getMondayOfWeek()->add('w',-1);
+            	$nextMonday = $now->getMondayOfWeek()->add('d',-1);
+            	$from_date = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
+            	$to_date = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());
                 break;
             case 4: // this month
-                $from_filter = date(user_config_option('date_format'),  strtotime('first day of this month'));
-                $to_filter = date(user_config_option('date_format'),  strtotime('last day of this month'));
+				$from_date = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
+				$to_date = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);
                 break;
             case 5: // last month
-                $from_filter = date(user_config_option('date_format'),  strtotime('first day of last month'));
-                $to_filter = date(user_config_option('date_format'),  strtotime('last day of last month'));
+				$now->add('M',-1);
+				$from_date = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
+				$to_date = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);
                 break;
+			case 6: //Date interval
+				$from_date = getDateValue($from_filter);
+				if ($from_date instanceof DateTimeValue) {
+					$from_date = $from_date->beginningOfDay();
+				}
+				
+				$to_date = getDateValue($to_filter);
+				if ($to_date instanceof DateTimeValue) {
+					$to_date = $to_date->endOfDay();
+				}
+				break;
             default :
                 break;
         }
         
         
         
-        if ($from_filter) {
-            $from_date = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $from_filter);
-            if ($from_date instanceof DateTimeValue) {
-                $from_date->beginningOfDay();
-                $extra_conditions .= " AND e.start_time >= '" . $from_date->toMySQL() . "'";
-            }
-        }
-        if ($to_filter) {
-            $to_date = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $to_filter);
-            if ($to_date instanceof DateTimeValue) {
-                $to_date->endOfDay();
-                $extra_conditions .= " AND e.start_time <= '" . $to_date->toMySQL() . "'";
-            }
-        }
+		if ($from_date instanceof DateTimeValue) {
+			$from_date->beginningOfDay();
+			$extra_conditions .= " AND e.start_time >= '" . $from_date->toMySQL() . "'";
+		}
+		if ($to_date instanceof DateTimeValue) {
+			$to_date->endOfDay();
+			$extra_conditions .= " AND e.start_time <= '" . $to_date->toMySQL() . "'";
+		}
+		
+		
+		Hook::fire('additional_timeslots_tab_filters', $_REQUEST, $extra_conditions);
+		
         
         $co = ContactConfigOptions::getByName('current_time_module_filters');
         if (!$co instanceof ContactConfigOption) {
@@ -786,6 +809,8 @@ class TimeController extends ApplicationController {
         $current_time_module_filters['period_filter'] = $period_filter;
         $current_time_module_filters['from_filter'] = $from_filter;
         $current_time_module_filters['to_filter'] = $to_filter;
+        
+        Hook::fire('additional_timeslots_tab_filters_config', $_REQUEST, $current_time_module_filters);
         
         if (array_var($_REQUEST, 'current') == 'time-panel') {
         	set_user_config_option('current_time_module_filters', json_encode($current_time_module_filters), logged_user()->getId());
@@ -851,10 +876,10 @@ class TimeController extends ApplicationController {
             "join_params" => $join_params,
             "select_columns" => $select_columns
         ));
-        $messages = $res->objects;
+        $result_timeslots = $res->objects;
         
         if ($only_return_objects) {
-        	return $messages;
+            return $result_timeslots;
         }
 
         // get active timeslots to put in the top of the list (only in the first page)
@@ -863,12 +888,12 @@ class TimeController extends ApplicationController {
                         "extra_conditions" => " AND end_time = '" . EMPTY_DATETIME . "' AND contact_id = " . logged_user()->getId()
                     ))->objects;
             foreach ($active_timeslots as $active_ts) {
-                array_unshift($messages, $active_ts);
+                array_unshift($result_timeslots, $active_ts);
             }
         }
 
         // Prepare response object
-        $object = $this->prepareObject($messages, $start, $limit, $res);
+        $object = $this->prepareObject($result_timeslots, $start, $limit, $res);
         ajx_extra_data($object);
         tpl_assign("listing", $object);
     }

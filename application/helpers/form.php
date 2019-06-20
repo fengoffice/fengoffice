@@ -790,7 +790,7 @@ function timezone_selector_hidden($object, $genid, $attributes = null) {
     $formatted = Timezones::getFormattedDescription($object->getTimezoneId(), true);
     $formatted_offset = Timezones::getFormattedOffset($object->getTimezonevalue());
 
-    $html .= "";
+    $html = "";
     if (!array_var($attributes, 'hide_label')) {
         $html .= "<label style='height:25px;'>" . lang('timezone') . "</label>";
     }

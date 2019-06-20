@@ -122,7 +122,7 @@ class Reports extends BaseReports {
                 return "o.id IN (select ce.contact_id from " . TABLE_PREFIX . "contact_addresses ce where ce.contact_id=o.id " . $type_cond . " and (
 					ce.street " . $cond . " or ce.city " . $cond . " or ce.state " . $cond . " or ce.country " . $cond . " or ce.zip_code " . $cond . "))";
             default:
-                return 'true';
+                return '';
                 break;
         }
     }
@@ -203,6 +203,7 @@ class Reports extends BaseReports {
             $ot = ObjectTypes::findById($report->getReportObjectTypeId());
             $table = $ot->getTableName();
 
+            $contact_ot = ObjectTypes::findByName('contact');
 
             $hook_parameters = array(
                 'report' => $report,
@@ -273,20 +274,31 @@ class Reports extends BaseReports {
 
             if (in_array($order_by_col, self::$external_columns)) {
                 $order_by_col = 'name_order';
-                $join_params = array(
-                    'table' => Objects::instance()->getTableName(),
-                    'jt_field' => 'id',
-                    'e_field' => $original_order_by_col,
-                    'join_type' => 'left'
-                );
+                $original_order_by_col = "e.$original_order_by_col";
+                
                 $select_columns = array();
+                if (is_null($join_params)) {
+	                $join_params = array(
+	                    'table' => Objects::instance()->getTableName(),
+	                    'jt_field' => 'id',
+	                    'e_field' => $original_order_by_col,
+	                    'join_type' => 'left'
+	                );
+	                $select_columns[] = 'jt.name as name_order';
+                } else {
+                	if (!isset($join_params['on_extra'])) $join_params['on_extra'] = '';
+                	$join_params['on_extra'] .= "
+                		INNER JOIN ".TABLE_PREFIX."objects order_table ON order_table.id = $original_order_by_col
+                	";
+                	$select_columns[] = 'order_table.name as name_order';
+                }
                 $tmp_cols = $managerInstance->getColumns();
                 foreach ($tmp_cols as $col)
                     $select_columns[] = "e.$col";
                 $tmp_cols = Objects::instance()->getColumns();
                 foreach ($tmp_cols as $col)
                     $select_columns[] = "o.$col";
-                $select_columns[] = 'jt.name as name_order';
+                
             } else {
                 if (in_array($order_by_col, $managerInstance->getColumns())) {
                     $original_order_by_col = "e.$order_by_col";
@@ -304,10 +316,18 @@ class Reports extends BaseReports {
 
                         //only when report have group by
                         if ($report->getColumnValue('group_by', '') != '') {
+                        	
+                        	$join_str = null;
+                        	if ($ot->getName() == 'timeslot' && $cp->getObjectTypeId() == $contact_ot->getId()) {
+                        		$join_str = " LEFT JOIN " . TABLE_PREFIX . "custom_property_values cpropval ON cpropval.object_id=e.contact_id
+					        		AND (cpropval.custom_property_id=" . $cp->getId() . " OR cpropval.custom_property_id IS NULL) ";
+                        	}
 
-                            $join_str = " LEFT JOIN " . TABLE_PREFIX . "custom_property_values cpropval ON cpropval.object_id=o.id
-					                       AND (cpropval.custom_property_id=" . $cp->getId() . " OR cpropval.custom_property_id IS NULL) ";
-
+                        	if (!$join_str) {
+                            	$join_str = " LEFT JOIN " . TABLE_PREFIX . "custom_property_values cpropval ON cpropval.object_id=o.id
+					        		AND (cpropval.custom_property_id=" . $cp->getId() . " OR cpropval.custom_property_id IS NULL) ";
+                        	}
+                        	
                             //if is grouping by CP numeric, convert value to INTEGER to order correctly by numeric
                             if ($cp->getType() == 'numeric') {
                                 $cp_concat_string = "CONVERT(cpropval.value,SIGNED INTEGER)";
@@ -345,7 +365,7 @@ class Reports extends BaseReports {
             }
 
             Hook::fire('custom_report_extra_conditions', array('report' => $report), $allConditions);
-
+            
             $report_options = array(
                 'report' => $report,
                 'order' => $original_order_by_col,
@@ -725,7 +745,31 @@ class Reports extends BaseReports {
                         $cp = CustomProperties::getCustomProperty($colCp);
                         if ($cp instanceof CustomProperty) { /* @var $cp CustomProperty */
 
-                            $row_values[$cp->getId()] = get_custom_property_value_for_listing($cp, $object);
+                        	if ($ot->getName() == 'timeslot' && $cp->getObjectTypeId() == $contact_ot->getId()) {
+                        		$object_contact = Contacts::findById($object->getContactId());
+                        		$row_values[$cp->getId()] = get_custom_property_value_for_listing($cp, $object_contact);
+                        		
+                        	} else if ($ot->getName() == 'timeslot' && $cp->getObjectTypeId() != Timeslots::instance()->getObjectTypeId()) {
+                        		$cp_ot = ObjectTypes::findById($cp->getObjectTypeId());
+                        		if ($cp_ot instanceof ObjectType && $cp_ot->getType() == 'dimension_object') {
+                        			$obj_members = $object->getMembers();
+                        			$member = null;
+                        			foreach ($obj_members as $m) {
+                        				if ($m instanceof Member && $m->getObjectTypeId() == $cp->getObjectTypeId()) {
+                        					$member = $m;
+                        					break;
+                        				}
+                        			}
+                        			if ($member instanceof Member) {
+                        				$member_object = Objects::findObject($member->getObjectId());
+                        				if ($member_object instanceof ContentDataObject) {
+                        					$row_values[$cp->getId()] = get_custom_property_value_for_listing($cp, $member_object);
+                        				}
+                        			}
+                        		}
+                        	} else {
+	                            $row_values[$cp->getId()] = get_custom_property_value_for_listing($cp, $object);
+                        	}
                         }
                     }
                 }

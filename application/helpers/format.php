@@ -259,13 +259,13 @@ function date_format_tip($format) {
                         $value = '--';
                     }
                     // apply config option format only for reports
-                    if (array_var($_GET,'c') != 'reporting') {
+                    if (array_var($_GET,'c') != 'reporting' && array_var($_GET,'c') != 'excel_export') {
                     	$format = 'friendly';
                     }
                     switch ($format) {
 						case 'seconds': $formatted = $value * 60; break;
 						case 'minutes': $formatted = $value; break;
-						case 'hours': $formatted = $value / 60; break;
+						case 'hours': $formatted = number_format($value / 60, 2); break;
                         case 'hh:mm':
 
                             $formatted = sprintf('%02d', intval($value / 60)).':'.sprintf('%02d', $value % 60);
@@ -337,7 +337,7 @@ function date_format_tip($format) {
 				} else if ($value != 0) { 
 					if (str_ends_with($value, "00:00:00")) $dateformat .= " H:i:s";
 					try {
-                                                $date_format = user_config_option('date_format');
+                        $date_format = user_config_option('date_format');
 						$dtVal = DateTimeValueLib::dateFromFormatAndString($date_format, $value);
 					} catch (Exception $e) {
 						$formatted = $value;						
@@ -358,13 +358,13 @@ function date_format_tip($format) {
 					}
 					if ($dtVal instanceof DateTimeValue) {
 						if ($obj_type_id == ProjectEvents::instance()->getObjectTypeId() || $obj_type_id == ProjectTasks::instance()->getObjectTypeId()) {
-							if (is_null($tz_offset)) {
+							if (is_null($tz_offset) && logged_user() instanceof Contact) {
 								$tz_offset = logged_user()->getUserTimezoneValue();
 							}
 							$dtVal->advance($tz_offset, true);
 						}
 						if ($obj_type_id == ProjectEvents::instance()->getObjectTypeId() && ($col == 'start'|| $col == 'duration')) $formatted = format_datetime($dtVal);
-						else $formatted = format_date($dtVal, null, 0);
+						else $formatted = format_datetime($dtVal, null, 0);
 					}
 				} else $formatted = '';
 				break;

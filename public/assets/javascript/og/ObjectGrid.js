@@ -59,6 +59,8 @@ og.ObjectGrid = function(config, ignore_context) {
 				this.fields.push(col.name);
 			}
 		}
+	} else {
+		config.columns = [];
 	}
 	// default actions column
 	if (typeof(config.add_default_actions_column) != "undefined") {
@@ -77,7 +79,23 @@ og.ObjectGrid = function(config, ignore_context) {
 	}
 	this.fields = this.fields.concat(cp_names);
 	
-	var dim_names = [];
+
+	
+	//Added by Conrado 2019 - Used by a plugin (we should probably change all plugins and make this more generic
+//	if (config.dimension_columns) {
+//		for (did in config.dimension_columns) {
+//			if (isNaN(did)) continue;
+//			dim_names.push('dim_' + did);
+//	} else {
+//		//This was the original implementation
+//		//But it returns all the dimensions, always, and not the ones associated to the object type
+//		for (did in og.dimensions_info) {
+//			if (isNaN(did)) continue;
+//			dim_names.push('dim_' + did);
+//		}
+//	}
+	
+	var dim_names = [];	
 	for (did in og.dimensions_info) {
 		if (isNaN(did)) continue;
 		dim_names.push('dim_' + did);
@@ -263,6 +281,7 @@ og.ObjectGrid = function(config, ignore_context) {
 	
 	cm_info.push({
 		id: 'name',
+		//@ToDo The main ID column might not always be called "Name". This should be an attribute of the column.
 		header: lang("name"),
 		dataIndex: 'name',
 		fixed: config.name_fixed | false,
@@ -290,10 +309,21 @@ og.ObjectGrid = function(config, ignore_context) {
 			}
 		}
 	}
-	// custom property columns
+	
+
+	// This seems to not be working
+	// How does this work?
+	
+	// This variable stores all the custom properties defined for the object.
 	var cps = og.custom_properties_by_type[config.type_name] ? og.custom_properties_by_type[config.type_name] : [];
+	
+	//This goes to public/assets/javascript/og/overrides/extfix.js
+	//This is where the columns that will be displayed (or not) for custom properties are defined
+	//It is currently using the state saved by ExtJS.
+	//Ideally, this should be persisted in the DB.
 	this.addCustomPropertyColumns(cps, cm_info, grid_id);
 	
+	//unless the UX specifically excludes the columns for dimensions, this is where the dimensions are loaded... 
 	if (!config.skip_dimension_columns) {
 		// dimension columns
 		for (did in og.dimensions_info) {

@@ -1065,9 +1065,20 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>', {id:'<?php echo $st->getId()?>', name:'<?php echo $st_name?>', assigned_to:'<?php echo $st->getAssignedToContactId()?>'});
 			<?php
 				}
-			} else {?>
-				ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>');
+			} else {
+				/*if (isset($task_data['subtasks'])) {
+					foreach ($task_data['subtasks'] as $st) {
+						$st_name = clean(escape_character($st->getObjectName()));
+						$st_name = preg_replace('/\s+/', ' ', trim($st_name)); // remove enters
+					?>
+						ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>', {id:'<?php echo $st->getId()?>', name:'<?php echo $st_name?>', assigned_to:'<?php echo $st->getAssignedToContactId()?>'});
+					<?php
+					}
+				} else {*/
+			?>
+					ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>');
 			<?php
+				//}
 			}
 			?>
 		

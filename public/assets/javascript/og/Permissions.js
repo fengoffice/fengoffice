@@ -127,10 +127,12 @@ og.ogPermValueChanged = function(genid, dim_id, obj_type){
 	perm.w = (value >= 2);
 	perm.r = (value >= 1);
 
+	/* this is commented to prevent module permissions automatic check -> let the user do it if it is necessary
 	if (perm.r) {
 		module_check = document.getElementById(genid + 'mod_perm['+perm.o+']');
 		if(module_check && !module_check.checked) module_check.checked = true; 
 	}
+	*/
 
 	og.markMemberPermissionModified(genid, dim_id, member_id);
 
@@ -196,10 +198,12 @@ og.ogPermSetLevel = function(genid, dim_id, level){
 
 		og.ogSetCheckedValue(document.getElementsByName(genid + "rg_" + dim_id + "_" + member_perms[i].o), level);
 
+		/* this is commented to prevent module permissions automatic check -> let the user do it if it is necessary
 		if (member_perms[i].r) {
 			module_check = document.getElementById(genid + 'mod_perm['+member_perms[i].o+']');
 			if(module_check && !module_check.checked) module_check.checked = true; 
 		}
+		*/
 	}
 
 	og.markMemberPermissionModified(genid, dim_id, member_id);
@@ -281,10 +285,12 @@ og.ogPermApplyToSubmembers = function(genid, dim_id, from_root_node){
 					var perm = {o: member_perms[j].o, d: member_perms[j].d, w: member_perms[j].w, r: member_perms[j].r, modified:true};
 					
 					og.addPermissionsForMember(genid, node.submember_ids[i], perm);
+					/* this is commented to prevent module permissions automatic check -> let the user do it if it is necessary
 					if (member_perms[j].r) {
 						module_check = document.getElementById(genid + 'mod_perm['+member_perms[j].o+']');
 						if(module_check && !module_check.checked) module_check.checked = true; 
 					}
+					*/
 				}
 				og.markMemberPermissionModified(genid, dim_id, node.submember_ids[i]);
 			}

@@ -130,6 +130,8 @@ class TimeslotController extends ApplicationController {
 					$timeslot->setFixedBilling(number_format($hourly_billing * $hours, 2));
 					$timeslot->setIsFixedBilling(false);
 				}
+				$currency_info = Currencies::getDefaultCurrencyInfo();
+				$timeslot->setRateCurrencyId($currency_info['id']);
 			}
 
 			try{
@@ -460,6 +462,8 @@ class TimeslotController extends ApplicationController {
 					if ($timeslot->getBillingId() == 0 && ($timeslot->getHourlyBilling() > 0 || $timeslot->getFixedBilling() > 0)){
 						$timeslot->setBillingId($timeslot->getUser()->getDefaultBillingId());
 					}
+					$currency_info = Currencies::getDefaultCurrencyInfo();
+					$timeslot->setRateCurrencyId($currency_info['id']);
 				}
 				
 				DB::beginWork();

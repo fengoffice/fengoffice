@@ -261,9 +261,23 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 	$i = 0;
 	foreach ($group_data as $gd) {
 		if (!$report->getColumnValue("hide_group_details")) {
+			
+			$gd_name = $gd['name'];
+			$original_gkey = end(explode(',', $gd['original_gkey']));
+			
+			if (str_starts_with($original_gkey, "_group_id_dim_")) {
+				$gd_id = end(explode('_', $gd['id']));
+				$mem = Members::findById($gd_id);
+				if ($mem instanceof Member) {
+					$mems = array($mem);
+					build_member_list_text_to_show_in_trees($mems);
+					$gd_name = $mems[0]->getName();
+				}
+			}
+			
 			// dont show the last group header if it is shown as columns
 			if (!$report->getColumnValue('show_last_group_as_column') || $level < max(array_keys(array_var($results, 'group_totals', array())))) {
-			    echo '<tr><th colspan="'.count($columns['order']).'" class="report-group-heading-'.$level.' indent-'.$level.'">'.$gd['name'].'</th></tr>';
+			    echo '<tr><th colspan="'.count($columns['order']).'" class="report-group-heading-'.$level.' indent-'.$level.'">'.$gd_name.'</th></tr>';
 			}
 		} else {
 			// when hiding details dont show the title and show the totals before the subgroups
@@ -302,6 +316,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 			?>
 				<tr class="report-data" <?php echo ($isAlt ? ' style="background-color:#F4F8F9"' : "");?>>
 				<?php
+					$columns_set = array();
 					foreach ($columns['order'] as $col) {
 						if ($col == 'object_type_id') continue;
 						
@@ -320,8 +335,16 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 								$intersect = array_intersect($mem_ids, $obj_mem_ids);
 								if (count($intersect) == count($mem_ids)) {
 									$value = array_var($row, $col);
+									$columns_set[$col] = true;
+								} else {
+									// the unclassified column (when showing last group as columns)
+									if (count($mem_ids) == 1 && $mem_ids[0] == 0 && !isset($columns_set[$col])) {
+										$value = array_var($row, $col);
+										$columns_set[$col] = true;
+									}
 								}
 							}
+							if (str_starts_with($value, "cp_")) $value = '';
 							
 						} else {
 							$value = array_var($row, $col);
@@ -1204,7 +1227,8 @@ function build_report_conditions_sql($parameters) {
 				} else {
 					if ($model_instance instanceof Contacts) {
 						
-						$current_condition .= " AND ". Reports::get_extra_contact_column_condition($condField->getFieldName(), $condField->getCondition(), $value);
+						$contacts_condition = Reports::get_extra_contact_column_condition($condField->getFieldName(), $condField->getCondition(), $value);
+						$current_condition .= ($contacts_condition == '' ? '' : " AND ") . $contacts_condition;
 					
 					} else if (Plugins::instance()->isActivePlugin('mail') && $model_instance instanceof MailContents) {
 						

@@ -1,9 +1,10 @@
 <?php
 
   /**
-  * Dimensions
+  * Dimensions Model
   *
-  * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
+  * @author Feng Office
+  * 
   */
   class Dimensions extends BaseDimensions {
     
@@ -19,6 +20,15 @@
   		return $dim;
   	}
     
+  	
+  	/**
+  	 *
+  	 * Returns list of Dimensions associated to a dimension (and? or? both?) object types
+  	 * @param $associated_dimension_id
+  	 * @param $associated_object_type
+  	 * @param $get_properties
+  	 * 
+  	 */
   	static function getAssociatedDimensions($associated_dimension_id, $associated_object_type, $get_properties = true) {
   		
   		if ($get_properties) {
@@ -56,6 +66,15 @@
 		if ($enabled_dimensions_ids != "") {
 			$enabled_dimensions_sql = "AND d.id IN ($enabled_dimensions_ids)";
 		}
+		
+		//@ToDo: If advanced_core is activated, filter out the 'hidden' (not related) dimensions to the object_type
+		//Hook: 
+		//INNER JOIN fo_dimension_content_object_options dcoo ON d.id = dcoo.dimension_id
+		//and dcoo.content_object_type_id = $content_object_type_id
+		//and dcoo.option = "hide_member_selector_in_forms"
+		//and dcoo.value = 0
+		    
+		
 		$sql = "
 			SELECT
 				dotc.dimension_id AS dimension_id,
@@ -72,7 +91,7 @@
 				INNER JOIN ".TABLE_PREFIX."object_types t ON t.id = dotc.dimension_object_type_id
 			
 			WHERE 
-				content_object_type_id = $content_object_type_id
+				dotc.content_object_type_id = $content_object_type_id
 				$enabled_dimensions_sql
 			GROUP BY dimension_id
 			ORDER BY is_required DESC, d.default_order ASC, dimension_name ASC

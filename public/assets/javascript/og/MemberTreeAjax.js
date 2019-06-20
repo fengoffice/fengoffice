@@ -497,7 +497,7 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 		    		// let text start with last char in order to set this node as the last one
 		    		return last_char + last_char + last_char + node.text;
 		    	}
-		    	return og.replaceStringAccents(node.text).toLowerCase();
+		    	return og.replaceStringAccents(node.attributes.sort_key).toLowerCase();
 		    }
 		});
 		

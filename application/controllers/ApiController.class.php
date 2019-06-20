@@ -61,25 +61,71 @@ class ApiController extends ApplicationController {
 	private function get_timeslots($request){
 		try {
             $clean_timeslots = array();
-            $object = Objects::findObject($request['oid']);
-            if ($object instanceof ContentDataObject) {
-	            $timeslots = $object->getTimeslots();
-	            foreach($timeslots as $timeslot) {
-	            	
-	            	$data = $timeslot->getArrayInfo();
-	            	
-	            	$data['paused_desc'] = "";
-	            	$formatted = DateTimeValue::FormatTimeDiff($timeslot->getStartTime(), $timeslot->getEndTime(), "hm", 60, $timeslot->getSubtract());
-	            	if ($timeslot->getSubtract() > 0) {
-	            		$now = DateTimeValueLib::now();
-	            		$data['paused_desc'] = DateTimeValue::FormatTimeDiff($now, $now, "hm", 60, $timeslot->getSubtract());
-	            	}
-	            	$data['formatted'] = $formatted;
-	            	
-	            	$clean_timeslots[] = $data;
-	            }
+            
+            if (!is_null($request['oid'])) {
+                Logger::log_r("oid is NOT null in get_timeslots \n");
+                // If the request has an Object id, retrieve the timeslots of that task.
+                $object = Objects::findObject($request['oid']);
+                if ($object instanceof ContentDataObject) {
+    	            $timeslots = $object->getTimeslots();
+    	            foreach($timeslots as $timeslot) {
+    	            	
+    	            	$data = $timeslot->getArrayInfo();
+    	            	
+    	            	$data['paused_desc'] = "";
+    	            	$formatted = DateTimeValue::FormatTimeDiff($timeslot->getStartTime(), $timeslot->getEndTime(), "hm", 60, $timeslot->getSubtract());
+    	            	if ($timeslot->getSubtract() > 0) {
+    	            		$now = DateTimeValueLib::now();
+    	            		$data['paused_desc'] = DateTimeValue::FormatTimeDiff($now, $now, "hm", 60, $timeslot->getSubtract());
+    	            	}
+    	            	$data['formatted'] = $formatted;
+    	            	
+    	            	$clean_timeslots[] = $data;
+    	            }
+                }
+                return $this->response('json', $clean_timeslots);
+            } else {
+                Logger::log_r("oid IS NULL in get_timeslots \n");
+                //Return all the timeslots for that request
+                //$timeslots = Timeslots::getGeneralTimeslots($context);
+                
+                $arguments = array();
+                Timeslots::instance()->findAll($arguments);
+                //$timeslots = Timeslots::instance()->listing(array(
+                //    "join_ts_with_task" => false
+                    
+                    //,
+
+//                     "order" => $order,
+//                     "order_dir" => $order_dir,
+//                     "dim_order" => $dim_order,
+//                     "cp_order" => $cp_order,
+//                     "start" => $start,
+//                     "limit" => $limit,
+//                     "ignore_context" => $ignore_context,
+//                     "extra_conditions" => $extra_conditions,
+//                     "count_results" => false,
+//                     "only_count_results" => $only_count_result,
+//                     "join_params" => $join_params,
+//                     "select_columns" => $select_columns
+                //));
+                foreach($timeslots as $timeslot) {
+                    
+                    $data = $timeslot->getArrayInfo();
+                    
+                    $data['paused_desc'] = "";
+                    $formatted = DateTimeValue::FormatTimeDiff($timeslot->getStartTime(), $timeslot->getEndTime(), "hm", 60, $timeslot->getSubtract());
+                    if ($timeslot->getSubtract() > 0) {
+                        $now = DateTimeValueLib::now();
+                        $data['paused_desc'] = DateTimeValue::FormatTimeDiff($now, $now, "hm", 60, $timeslot->getSubtract());
+                    }
+                    $data['formatted'] = $formatted;
+                    
+                    $clean_timeslots[] = $data;
+                }
+                return $this->response('json', $clean_timeslots);
+                
             }
-            return $this->response('json', $clean_timeslots);
             
         } catch (Exception $exception) {
             throw $exception;
@@ -106,28 +152,6 @@ class ApiController extends ApplicationController {
             throw $exception;
         }    
     }
-
-//    private function list_members($request) {
-//            $service = $request ['srv'];
-//
-//            $members = array();
-//            $type = ObjectTypes::instance()->findByName($service);
-//            $typeName = $type->getName();
-//            $typeId = $type->getId();
-//            foreach (Members::instance()->findAll(array("conditions"=>"object_type_id = $typeId")) as $member){
-//                    /* @var $member Member */
-//                    $memberInfo = array(
-//                            'id'=>$member->getId(),
-//                            'name'=>$member->getName(),
-//                            'type'=>'project',
-//                            'path' => $member->getPath()
-//                    );
-//
-//                    $members[] = $memberInfo;
-//            }
-//            return $this->response ( 'json', $members );
-//
-//    }
 
     //provides all of the members from the dimension member in question
     private function list_members($request) {
@@ -163,12 +187,19 @@ class ApiController extends ApplicationController {
         if (!is_null($type))
           $typeId = $type->getId();
         
-        if($service == "workspace"){
-            $dimension_id = Dimensions::findByCode('workspaces')->getId();
-        }else{
-            //@TODO - check if the dimensions are split (There could
-            //@TODO - Bring any and all dimensions that are relevant to the installation 
-            $dimension_id = Dimensions::findByCode('customer_project')->getId();
+        switch ($service){
+            case "workspace":
+                $dimension_id = Dimensions::findByCode('workspaces')->getId();
+                break;
+            case "customer":
+                //$dimension_id = Dimensions::findByCode('customers')->getId();
+                Env::useHelper('functions', 'crpm');
+                $dimension_id = get_customers_dimension()->getId();
+                break;
+            //@TODO - Bring any and all dimensions that are relevant to the installation
+            default:
+                $dimension_id = Dimensions::findByCode('customer_project')->getId();
+                break;
         }
         
 // This we'll delete soon.      
@@ -184,6 +215,10 @@ class ApiController extends ApplicationController {
         $params = array('dim_id' => $dimension_id, 'type_id' => $typeId, 'start'=>$start, 'limit'=>$limit, 'extra_conditions' => $extra_conditions);
         $memberController = new MemberController();
         $object = $memberController->listing($params);
+
+        // updates the name of the members using the configuration if exists.
+        build_member_list_text_to_show_in_trees($object["members"]);
+        
         foreach ($object["members"] as $m) {
         	$member = Members::getMemberById($m['id']);
         	$memberInfo = array(
@@ -191,6 +226,9 @@ class ApiController extends ApplicationController {
         			'name' => $m['name'],
         			'type' => $service,
         			'path' => $member->getPath()
+        	//@TODO If name should have custom property concatenated 
+        	//@TODO If requested - also return custom Properties
+        	
         	);
         	
         	$members[] = $memberInfo;
@@ -246,9 +284,13 @@ class ApiController extends ApplicationController {
      * @throws Exception
      */
     private function listing($request) {
-        try {
+        try {            
             $service = $request['srv'];
 
+            //Debugging
+            //Logger::log_r("API function: listing. Service is: ". $service . "\n");
+            
+            
             $order = (!empty($request['args']['order'])) ? $request['args']['order'] : null;
             $order_dir = (!empty($request['args']['order_dir'])) ? $request['args']['order_dir'] : null;
             $members = (!empty($request['args']['members']) && count(empty($request['args']['members']))) ? $request['args']['members'] : null;
@@ -256,8 +298,10 @@ class ApiController extends ApplicationController {
             $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
             
             // escape order parameters
-            if ($order) {
-                $order = DB::escape($order);
+            if ($order) {                
+                //Wasn't necessary (was actually breaking the system). Delete in future version
+                //$order = DB::escape($order);
+                
             	if (!in_array(strtolower($order_dir), array("asc","desc"))) {
             		$order_dir = "asc";
             	}

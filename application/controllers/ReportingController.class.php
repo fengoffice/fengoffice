@@ -1550,16 +1550,34 @@ class ReportingController extends ApplicationController {
 			$task_columns = $this->get_allowed_columns($task_ot->getId());
 			
 			$ts_group_count = count($allowed_columns);
-			
+			$task_columns_count = 0;
+
 			foreach ($task_columns as $t) {
 				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
 						|| in_array($t['id'], array('id','name'))) continue;
-				$allowed_columns[] = $t;
+						$allowed_columns[] = $t;
+						$task_columns_count++;
+			}
+			
+			$contact_ot = ObjectTypes::findByName('contact');
+			$contact_columns = $this->get_allowed_columns($contact_ot->getId());
+			
+			$contact_columns_count = 0;
+			foreach ($contact_columns as $t) {
+				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
+						|| in_array($t['id'], array('id','name'))) continue;
+				
+				// only custom properties for now
+				if (is_numeric($t['id'])) { 
+					$allowed_columns[] = $t;
+					$contact_columns_count++;
+				}
 			}
 			
 			$option_groups = array(
 				array('count' => $ts_group_count, 'name' => lang('timeslot').' '.lang('columns')),
-				array('count' => count($allowed_columns) - $ts_group_count, 'name' => lang('task').' '.lang('columns')),
+				array('count' => $task_columns_count, 'name' => lang('task').' '.lang('columns')),
+				array('count' => $contact_columns_count, 'name' => lang('contact').' '.lang('columns')),
 			);
 		}
 

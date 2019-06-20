@@ -428,7 +428,7 @@ class ProjectTasks extends BaseProjectTasks {
 	}
 	
 	
-	static function getArrayInfo($raw_data, $full = false){
+	static function getArrayInfo($raw_data, $full = false, $include_members_data = false){
 		$desc = "";
 		if ($full) {
 			if(config_option("wysiwyg_tasks")){
@@ -464,6 +464,24 @@ class ProjectTasks extends BaseProjectTasks {
 			'percentCompleted' => (int)$raw_data['percent_completed'],			
 			'memPath' => str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())))
 		);
+		if ($include_members_data && count($member_ids) > 0) {
+			$task_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
+			$members_data = array();
+			foreach ($task_members as $m) {
+				/* @var $m Member */
+				$m_data = array(
+						'id' => $m->getId(),
+						'name' => $m->getName(),
+						'dimension_id' => $m->getDimensionId()
+				);
+				$m_ot = ObjectTypes::findById($m->getObjectTypeId());
+				if ($m_ot instanceof ObjectType) {
+					$m_data['object_type_name'] = $m_ot->getName();
+				}
+				$members_data[] = $m_data;
+			}
+			$result['members_data'] = $members_data;
+		}
 		
 		if(isset($raw_data['isread'])){
 			$result['isread'] = $raw_data['isread'];

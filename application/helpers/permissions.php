@@ -1343,13 +1343,14 @@
                 // users with permissions in root
                 if (config_option('let_users_create_objects_in_root')) {
 
-                    $users_with_permissions = Contacts::findAll(array("conditions" => "
-					disabled=0 AND permission_group_id IN (
-						SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
-						INNER JOIN ".TABLE_PREFIX."permission_groups pg ON pg.id=cmp.permission_group_id
-						WHERE cmp.member_id=0 AND cmp.object_type_id='$object_type_id' AND pg.type='permission_groups'
-					)
-				"));
+                    /*$users_with_permissions = Contacts::findAll(array("conditions" => "
+						disabled=0 AND permission_group_id IN (
+							SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
+							INNER JOIN ".TABLE_PREFIX."permission_groups pg ON pg.id=cmp.permission_group_id
+							WHERE cmp.member_id=0 AND cmp.object_type_id='$object_type_id' AND pg.type='permission_groups'
+						)
+					"));*/
+                	$users_with_permissions = Contacts::getAllUsers($extra_conditions);
                 }
             }
 

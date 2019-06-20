@@ -64,7 +64,9 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 				if ( isset($user_dimensions[$dimension['dimension_id']] ) ){
 					$custom_name = DimensionOptions::getOptionValue($dimension['dimension_id'], 'custom_dimension_name');
 					$dimension['dimension_name'] = $custom_name && trim($custom_name) != "" ? $custom_name : lang($dimension['dimension_code']);
-					
+ 					
+					//Added for debugging
+					//Logger::log_r("Dimension: ".$dimension['dimension_name']."\n");
 					$dimensions[] = $dimension;
 				}
 			}

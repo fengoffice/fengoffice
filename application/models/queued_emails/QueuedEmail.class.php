@@ -8,7 +8,9 @@
 class QueuedEmail extends BaseQueuedEmail {
 
 	function save() {
-		$this->setTimestamp(DateTimeValueLib::now());
+		if (!$this->getTimestamp() instanceof DateTimeValue) {
+			$this->setTimestamp(DateTimeValueLib::now());
+		}
 		parent::save();
 	}
 

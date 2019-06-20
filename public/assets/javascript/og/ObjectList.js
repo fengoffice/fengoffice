@@ -39,9 +39,13 @@ og.ObjectList = function(config, ignore_context) {
 }
 
 Ext.extend(og.ObjectList, Ext.Window, {
+	accept: function() {
+		this.fireEvent('objects_list_ok_btn', this.grid.getSelectedIds());
+		this.close();
+	},
 	cancel: function() {
 		this.close();
-	},	
+	},
 	load: function() {
 		this.grid.load();
 	}

@@ -278,7 +278,14 @@
       // Prepare SQL
       $sql = "SELECT $distinct" . $columns_string . " FROM " . $this->getTableName(true) . " $where_string $order_by_string $limit_string";
 
+       
+      //Logger::log_r("Table name: \n");
+      //Logger::log_r($this->getTableName());
+      //Logger::log_r("SQL = \n");
+      //Logger::log_r($sql);
+
       // Run!
+      //Logger::log_r("DataManger.find. SQL sentence is: \n".$sql."\n");
       $rows = DB::executeAll($sql);
 
       // Empty?
@@ -317,6 +324,7 @@
     function findAll($arguments = null) {
       if(!is_array($arguments)) $arguments = array();
       $arguments['one'] = false;
+      //Logger::log_r("Entering findAll in DataManager. \n. Arguments:".implode("|",$arguments)."\n");
       $ret = $this->find($arguments);
       if (is_array($ret)) {
       	return $ret;

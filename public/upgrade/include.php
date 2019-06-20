@@ -30,7 +30,11 @@
   require_once INSTALLATION_PATH . '/environment/functions/general.php';
   require_once INSTALLATION_PATH . '/environment/functions/files.php';
   require_once INSTALLATION_PATH . '/environment/functions/utf.php';
-  require_once INSTALLATION_PATH . '/environment/classes/Error.class.php';
+  
+  //This was giving an error in PHP7. PHP7 loads the declaration on a previously required file. 
+  if (!class_exists('Error')) {
+  	require_once INSTALLATION_PATH . '/environment/classes/Error.class.php';
+  }
   require_once INSTALLATION_PATH . '/environment/classes/errors/filesystem/FileDnxError.class.php';
   require_once INSTALLATION_PATH . '/environment/classes/errors/filesystem/DirDnxError.class.php';
   require_once INSTALLATION_PATH . '/environment/classes/container/IContainer.class.php';

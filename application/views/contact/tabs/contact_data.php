@@ -149,7 +149,7 @@
 			<?php } ?>
 	</div>
 
-	<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+	<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object, 'genid' => $genid), $null);?>
 	
 	<?php if ($render_custom_prop) { ?>
 	<div class="main-custom-properties-div"><?php

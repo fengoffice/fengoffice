@@ -39,11 +39,36 @@
       $data = $this->getConfigOption()->getOptions();
       $possible_values = json_decode($data);
       
-      $options[] = option_tag("", "");
-      foreach ($possible_values->option as $option) {
+      if (!isset($possible_values->no_empty_value) || !$possible_values->no_empty_value) {
+      	$options[] = option_tag("", "");
+      }
+      
+      $all_options = $possible_values->option;
+      
+      if (isset($possible_values->dynamic_options)) {
+      	$table_name = TABLE_PREFIX . $possible_values->dynamic_options;
+      	
+      	if (checkTableExists($table_name)) {
+      		$rows = DB::executeAll("SELECT `id`, `name` FROM `$table_name`");
+      		if (is_array($rows)) {
+      			foreach ($rows as $row) {
+      				$op = new stdClass();
+      				$op->value = $row['id'];
+      				$op->text = $row['name'];
+      				$all_options[] = $op;
+      			}
+      		}
+      	}
+      }
+      
+      foreach ($all_options as $option) {
           
-	  $option_attributes = $this->getValue() == $option->value ? array('selected' => 'selected') : null;
-	  $options[] = option_tag(lang($option->text), $option->value, $option_attributes);
+		$option_attributes = $this->getValue() == $option->value ? array('selected' => 'selected') : null;
+		
+		$option_text = Localization::instance()->lang($option->text);
+		if (!$option_text) $option_text = $option->text;
+		
+		$options[] = option_tag($option_text, $option->value, $option_attributes);
       }
       
       $attributes = array('id' => 'list_' . $this->getConfigOption()->getName());

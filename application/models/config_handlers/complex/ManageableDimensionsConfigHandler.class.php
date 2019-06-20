@@ -16,9 +16,12 @@
     function render($control_name) {
        $value =  $this->getValue();
        $dimensions  = Dimensions::instance()->findAll(array('conditions' => '`is_manageable` = 1'));
+       $enabled_dimension_ids = config_option('enabled_dimensions');
+       
        $permission_group_ids = ContactPermissionGroups::getPermissionGroupIdsByContactCSV(logged_user()->getId(),false);
        $out = '' ;
        foreach ($dimensions as $dim) { /* @var $dim Dimension */
+       		if (!in_array($dim->getId(), $enabled_dimension_ids)) continue;
 			
        		if (!$dim->getDefinesPermissions() || !$dim->deniesAllForContact($permission_group_ids)) {
 	       		if  (array_search($dim->getId(), $value) !== false ){

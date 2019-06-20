@@ -90,7 +90,7 @@ class ObjectType extends BaseObjectType {
 		return $this->getObjectTypeName(true);
 	}
 	
-	function getObjectTypeName($is_plural) {
+	function getObjectTypeName($is_plural = false) {
 		$dim_ids = DimensionObjectTypes::getDimensionIdsByObjectTypeId($this->getId());
 		if ( is_array($dim_ids) && count($dim_ids) > 0 ) {
 		  	$type_name = trim(Members::getTypeNameToShowByObjectType($dim_ids[0], $this->getId(), null, $is_plural));

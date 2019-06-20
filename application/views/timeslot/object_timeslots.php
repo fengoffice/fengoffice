@@ -217,7 +217,7 @@ if (can_delete(logged_user(), $__timeslots_object->getMembers(), Timeslots::inst
     var timeslots_grid = new og.ObjectGrid({
     	renderTo: grid_id + '_container',
     	url: og.getUrl('time', 'list_all'),
-    	type_name: 'none',
+    	type_name: 'timeslot',
     	response_objects_root: 'timeslots',
     	grid_id: grid_id,
     	nameRenderer: og.task_timeslots_grid.name_renderer,

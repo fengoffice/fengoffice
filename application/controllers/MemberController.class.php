@@ -937,11 +937,11 @@ class MemberController extends ApplicationController {
 		}
 		if (!$t instanceof ObjectType) return null;
 		
-		$class_name = ucfirst($t->getName())."Controller";
+		$class_name = Env::getControllerClass($t->getName());
 		$controller_exists = controller_exists($t->getName(), $t->getPluginId());
 		
 		if ($controller_exists) {
-			Env::useController(ucfirst($t->getName()));
+			Env::useController($t->getName());
 			eval('$controller = new '.$class_name.'();');
 		}
 		if ($controller_exists && $t->getHandlerClass()!='' && $controller && method_exists($controller, $method)) {
@@ -2230,6 +2230,10 @@ class MemberController extends ApplicationController {
 				/* @var $obj ContentDataObject */
 				$obj = Objects::findObject($oid);
 				if ($obj instanceof ContentDataObject && $obj->canAddToMember(logged_user(), $member, active_context())) {
+					// to use when saving the application log
+					$old_content_object = ContentDataObjects::generateOldContentObjectData($obj);
+					$obj->old_content_object = $old_content_object;
+					// --
 					
 					$prev_classification[$obj->getId()] = $obj->getMemberIds();
 					
@@ -2303,6 +2307,10 @@ class MemberController extends ApplicationController {
 					/* @var $obj ContentDataObject */
 					$obj = Objects::findObject($oid);
 					if ($obj instanceof ContentDataObject) {
+						// to use when saving the application log
+						$old_content_object = ContentDataObjects::generateOldContentObjectData($obj);
+						$obj->old_content_object = $old_content_object;
+						// --
 						
 						$db_res = DB::execute("SELECT group_concat(om.member_id) as old_members FROM ".TABLE_PREFIX."object_members om INNER JOIN ".TABLE_PREFIX."members m ON om.member_id=m.id WHERE m.dimension_id=".$dim_id." AND om.object_id=".$obj->getId());
 						$row = $db_res->fetchRow();

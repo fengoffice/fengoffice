@@ -600,7 +600,12 @@ class TaskController extends ApplicationController {
 
                 $task->setDontMakeCalculations(true); // all the calculations should be after all tasks are saved
                 $all_tasks[] = $task;
-
+                
+                // to use when saving the application log
+                $old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+            	$task->old_content_object = $old_content_object;
+            	// --
+            	
                 switch ($action) {
                     case 'complete':
                         if ($task->canEdit(logged_user())) {
@@ -937,10 +942,10 @@ class TaskController extends ApplicationController {
                             $subs[] = $row['object_id'];
                         unset($res20, $subs_rows, $row);
                         if (count($subs) > 0) {
-                            $task_filter_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `o`.`id` IN(" . implode(',', $subs) . ")";
+                            $task_filter_condition = ($status==1 ? "" : " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME)) . " AND `o`.`id` IN(" . implode(',', $subs) . ")";
                         }
                     } else {
-                        $task_filter_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `o`.`id` = -1";
+                        $task_filter_condition = ($status==1 ? "" : " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME)) . " AND `o`.`id` = -1";
                     }
                 }
                 break;
@@ -1852,10 +1857,11 @@ class TaskController extends ApplicationController {
                     "raw_data" => true,
                 ))->objects;
 
-        $more_group_ret = array();
+        //$more_group_ret = array();
         foreach ($groups as $key => $group) {
         	if (!$only_totals) {
-	            $tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
+        	    $tasks_in_group = $this->getTasksInGroup($conditions . $list_subtasks_cond, $start, $limit);
+	            //$tasks_in_group = $this->getTasksInGroup($conditions . $group_conditions . $list_subtasks_cond, $start, $limit);
 	
 	            if (count($tasks_in_group['tasks']) <= 0) {
 	                $groups = array();
@@ -2697,7 +2703,9 @@ class TaskController extends ApplicationController {
                     $task_data['milestone_id'] = $parent_task->getMilestoneId();
 
                     //copy clasification
-                    $task_data['selected_members_ids'] = $parent_task->getMemberIds();
+                    $parent_member_ids = $parent_task->getMemberIds();
+                    Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => $parent_task), $parent_member_ids);
+                    $task_data['selected_members_ids'] = $parent_member_ids;
                 }
             }
 
@@ -2811,6 +2819,7 @@ class TaskController extends ApplicationController {
                     if ($parent instanceof ProjectTask) {
                         $task->setParentId($id);
                         $member_ids = $parent->getMemberIds();
+                        Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => $parent), $member_ids);
                     }
                 }
 
@@ -2909,7 +2918,9 @@ class TaskController extends ApplicationController {
 
                 // save subtasks added in 'subtasks' tab
                 DB::beginWork();
-                $sub_tasks_to_log = $this->saveSubtasks($task, array_var($task_data, 'subtasks'), $member_ids);
+                $sub_member_ids = $member_ids;
+                Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => $parent), $sub_member_ids);
+                $sub_tasks_to_log = $this->saveSubtasks($task, array_var($task_data, 'subtasks'), $sub_member_ids);
                 DB::commit();
 
                 foreach ($sub_tasks_to_log['add'] as $st_to_log) {
@@ -2980,7 +2991,8 @@ class TaskController extends ApplicationController {
                 if ((array_var($task_data, 'send_notification_subscribers'))) {
                     $isSilent = false;
                 }
-                ApplicationLogs::createLog($task, ApplicationLogs::ACTION_ADD, null, $isSilent, null, null, $exclude_from_notification);
+                //$task->old_content_object = new ProjectTask();
+                ApplicationLogs::createLog($task, ApplicationLogs::ACTION_ADD, null, $isSilent, true, null, $exclude_from_notification);
 
                 if (array_var($_REQUEST, 'modal')) {
 
@@ -3167,6 +3179,9 @@ class TaskController extends ApplicationController {
         $dd = $task->getDueDate() instanceof DateTimeValue ? $task->getDueDate()->advance($task->getTimezoneValue(), false) : null;
         $sd = $task->getStartDate() instanceof DateTimeValue ? $task->getStartDate()->advance($task->getTimezoneValue(), false) : null;
 
+        /*$subtasks = ProjectTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
+        foreach ($subtasks as &$st) $st->setId(0);*/
+        
         $task_data = array(
             'milestone_id' => $task->getMilestoneId(),
             'title' => $title,
@@ -3180,6 +3195,8 @@ class TaskController extends ApplicationController {
             'text' => $task->getText(),
             'copyId' => $task->getId(),
             'percent_completed' => $task->getPercentCompleted(),
+        	'selected_members_ids' => $task->getMemberIds(),
+        	//'subtasks' => $subtasks,
         ); // array
         $newtask = new ProjectTask();
         if ($task->getUseStartTime()) {
@@ -3425,6 +3442,9 @@ class TaskController extends ApplicationController {
             }
 
             try {
+            	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+            	//$task->old_content_object = $old_content_object;
+            	
                 try {
                     $task_data['due_date'] = getDateValue(array_var($_POST, 'task_due_date'));
                     $task_data['start_date'] = getDateValue(array_var($_POST, 'task_start_date'));
@@ -3630,6 +3650,8 @@ class TaskController extends ApplicationController {
                 if ($task instanceof ProjectTask) {
                     if (!is_array($member_ids) || count($member_ids) == 0)
                         $member_ids = array(0);
+                    
+                    Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => $parent), $member_ids);
                     $members = Members::findAll(array('conditions' => "id IN (" . implode(',', $member_ids) . ")"));
                     $task->apply_members_to_subtasks($members, true);
                 }
@@ -3808,6 +3830,7 @@ class TaskController extends ApplicationController {
                 if ((array_var($task_data, 'send_notification_subscribers'))) {
                     $isSilent = false;
                 }
+                $task->old_content_object = $old_content_object;
                 ApplicationLogs::createLog($task, ApplicationLogs::ACTION_EDIT, false, false, true, $log_info, $exclude_from_notification);
 
                 //flash_success(lang('success edit task list', $task->getObjectName()));
@@ -4169,6 +4192,11 @@ class TaskController extends ApplicationController {
         } // if
 
         try {
+        	// to use when saving the application log
+        	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+        	$task->old_content_object = $old_content_object;
+        	// --
+        	
             $reload_view = false;
             DB::beginWork();
 
@@ -4293,6 +4321,11 @@ class TaskController extends ApplicationController {
         } // if
 
         try {
+        	// to use when saving the application log
+        	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+        	$task->old_content_object = $old_content_object;
+        	// --
+        	
             DB::beginWork();
             $log_info = $task->openTask();
 
@@ -4435,6 +4468,11 @@ class TaskController extends ApplicationController {
             return;
         }
 
+        // to use when saving the application log
+        $old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+        $task->old_content_object = $old_content_object;
+        // --
+        
         $tochange = array_var($_GET, 'tochange', '');
 
         $conserve_times = array_var($_GET, 'conserve_times', 0);
@@ -4498,6 +4536,9 @@ class TaskController extends ApplicationController {
             DB::beginWork();
             $task->save();
             DB::commit();
+            
+            ApplicationLogs::createLog($task, ApplicationLogs::ACTION_EDIT, false, false, true);
+            
         } catch (Exception $e) {
             DB::rollback();
             flash_error(lang('error change date'));
@@ -4779,7 +4820,12 @@ class TaskController extends ApplicationController {
                     /* @var $task ProjectTask */
 
                     if ($task->canEdit(logged_user())) {
-
+                    	
+                    	// to use when saving the application log
+                    	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+                    	$task->old_content_object = $old_content_object;
+                    	// --
+                    	
                         switch ($attribute) {
                             case 'assigned_to':
                                 $user = Contacts::findById($new_value);
@@ -5100,7 +5146,11 @@ class TaskController extends ApplicationController {
 
 
         try {
-
+        	// to use when saving the application log
+        	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
+        	$task->old_content_object = $old_content_object;
+        	// --
+        	
             DB::beginWork();
 
             $task->changeMarkAsStarted();

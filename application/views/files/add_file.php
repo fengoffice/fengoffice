@@ -181,7 +181,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 				<h2><?php echo lang("uploading file") ?></h2>
 			</div>
 
-			<div id="<?php echo $genid ?>addFileFilenameExists" style="display: none">
+			<div id="<?php echo $genid ?>addFileFilenameExists" style="display: none; margin-bottom:15px; padding-bottom:10px; border-bottom:1px dotted #ccc;">
 				<h2><?php echo lang("duplicate filename")?></h2>
 				<p><?php echo lang("filename exists") ?></p>
 				<div style="padding-top: 10px">
@@ -191,7 +191,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 							<?php echo radio_field('file[upload_option]',true, array("id" => $genid . 'radioAddFileUploadAnyway', "value" => -1)) ?>
 						</td>
 						<td>
-							<?php echo lang('upload anyway')?>
+							<label for="<?php echo $genid . 'radioAddFileUploadAnyway'?>"><?php echo lang('upload anyway')?></label>
 						</td>
 					</tr>
 				</table>

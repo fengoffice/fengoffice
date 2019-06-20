@@ -589,6 +589,17 @@ abstract class ApplicationDataObject extends DataObject {
 		}
 	} // getLinkedObjects
 	
+	function getAllLinkedObjectIds() {
+		$ids = array();
+		$linked_objects = $this->getAllLinkedObjects();
+		
+		foreach ($linked_objects as $lo) {
+			$ids[] = $lo->getId();
+		}
+		
+		return $ids;
+	}
+	
 	function copyLinkedObjectsFrom($object) {
 		$linked_objects = $object->getAllLinkedObjects();
 		if (is_array($linked_objects)) {

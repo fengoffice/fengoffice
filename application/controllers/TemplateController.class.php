@@ -155,10 +155,10 @@ class TemplateController extends ApplicationController {
 							$templateObjPropValue->setProperty($property);
 							$propValue = '';
 							if(isset($propValueParams[$objInfo][$property])){
-								$param = $propValueParams[$objInfo][$property];
-								$operation = $propValueOperation[$objInfo][$property];
-								$amount = $propValueAmount[$objInfo][$property];
-								$unit = $propValueUnit[$objInfo][$property];
+								$param = trim($propValueParams[$objInfo][$property]);
+								$operation = trim($propValueOperation[$objInfo][$property]);
+								$amount = trim($propValueAmount[$objInfo][$property]);
+								$unit = trim($propValueUnit[$objInfo][$property]);
 								$propValue = '{'.$param.'}'.$operation.$amount.$unit;
 								
 								if (isset($propValueTime[$objInfo])) {
@@ -426,10 +426,10 @@ class TemplateController extends ApplicationController {
 							$templateObjPropValue->setProperty($property);
 							$propValue = '';
 							if(isset($propValueParams[$objInfo][$property])){
-								$param = $propValueParams[$objInfo][$property];
-								$operation = array_var($propValueOperation[$objInfo], $property);
-								$amount = array_var($propValueAmount[$objInfo], $property);
-								$unit = array_var($propValueUnit[$objInfo], $property);
+								$param = trim($propValueParams[$objInfo][$property]);
+								$operation = trim(array_var($propValueOperation[$objInfo], $property));
+								$amount = trim(array_var($propValueAmount[$objInfo], $property));
+								$unit = trim(array_var($propValueUnit[$objInfo], $property));
 								$propValue = '{'.$param.'}'.$operation.$amount.$unit;
 								
 								if (isset($propValueTime[$objInfo])) {
@@ -807,6 +807,9 @@ class TemplateController extends ApplicationController {
 				}
 			}
 			
+			// save the new generated object again (now with all the data saved, such as members, etc) 
+			// to ensure that all the additional calculated data can be calculated correctly (such as object billings)
+			$copy->save();
 		}
 
 		foreach ($copies as $c) {

@@ -25,7 +25,7 @@ class Notifier {
 	 */
 	static public $exchange_compatible = null;
 	
-	function notifyAction($object, $action, $log_data, $exclude_contacts_ids = null) {
+	function notifyAction($object, $action, $log_data, $exclude_contacts_ids = null, $log_object = null) {
 
 		//Check disabled object types notificactions.
 		if(in_array($object->getObjectTypeId(),config_option("disable_notifications_for_object_type"))){
@@ -62,6 +62,10 @@ class Notifier {
 			// notify users assigned to tasks depending on this tasks that this task has been completed
 			self::notifyDependantTaskAssignedUsersOfTaskCompletion($object);
 			
+		}
+		
+		if ($log_object instanceof ApplicationLog) {
+			$object->last_application_log = $log_object;
 		}
 		
 		if (!is_array($subscribers) || count($subscribers) == 0) return;
@@ -246,6 +250,23 @@ class Notifier {
 			}
 			$senderid = 0;
 		}
+		
+
+
+		$hook_params = array(
+				'notification' => $notification,
+				'people' => $people,
+				'object' => $object,
+				'sendername' => $sendername,
+				'senderemail' => $senderemail,
+				'senderid' => $senderid,
+		);
+		$continue = true;
+		Hook::fire('override_object_notification', $hook_params, $continue);
+		if (!$continue) {
+			return;
+		}
+		
 		
 		$type = $object->getObjectTypeName();
 		$typename = lang($object->getObjectTypeName());
@@ -1197,6 +1218,23 @@ class Notifier {
 		$quit = false;
 		Hook::fire('filter_object_notification_single_user', array('user' => $task->getAssignedTo()), $quit);
 		if ($quit) return;
+
+
+
+
+		$hook_params = array(
+				'notification' => 'task_assigned',
+				'people' => $task->getSubscribers(),
+				'object' => $task,
+				'sendername' => $task->getUpdatedByDisplayName(),
+				'senderemail' => $task->getUpdatedBy()->getEmailAddress(),
+				'senderid' => $task->getUpdatedById(),
+		);
+		$continue = true;
+		Hook::fire('override_object_notification', $hook_params, $continue);
+		if (!$continue) {
+			return;
+		}
 		
 		tpl_assign('task_assigned', $task);
 
@@ -1359,6 +1397,26 @@ class Notifier {
 		$quit = false;
 		Hook::fire('filter_object_notification_single_user', array('user' => $task->getAssignedTo()), $quit);
 		if ($quit) return;
+
+
+
+
+		$hook_params = array(
+				'notification' => 'work_estimate',
+				'people' => $task->getSubscribers(),
+				'object' => $task,
+				'sendername' => $task->getUpdatedByDisplayName(),
+				'senderemail' => $task->getUpdatedBy()->getEmailAddress(),
+				'senderid' => $task->getUpdatedById(),
+		);
+		$continue = true;
+		Hook::fire('override_object_notification', $hook_params, $continue);
+		if (!$continue) {
+			return;
+		}
+		
+		
+		
 
 		$locale = $task->getAssignedTo()->getLocale();
 		Localization::instance()->loadSettings($locale, ROOT . '/language');
@@ -1703,9 +1761,10 @@ class Notifier {
 		return $result;
 	} // sendEmail
 	
-	static function queueEmail($object_id, $to, $cc, $bcc, $from, $subject, $body = false, $type = 'text/html', $encoding = '8bit', $attachments = array()) {
+	static function queueEmail($object_id, $to, $cc, $bcc, $from, $subject, $body = false, $type = 'text/html', $encoding = '8bit', $attachments = array(), $ts = null) {
 		
 		$queue_this_email = true;
+		$email_data = array('object_id'=>$object_id, 'to'=>$to, 'cc'=>$cc, 'bcc'=>$bcc, 'from'=>$from, 'subject'=>$subject, 'body'=>$body, 'type'=>$type, 'encoding'=>$encoding, 'attachments'=>$attachments);
 		Hook::fire('put_email_in_queue', $email_data, $queue_this_email);
 		if (!$queue_this_email) {
 			return;
@@ -1751,8 +1810,17 @@ class Notifier {
 			if ($qm->columnExists('attachments')) {
 				$qm->setColumnValue('attachments', json_encode($attachments));
 			}
+			if ($ts != null) {
+				$qm->setTimestamp($ts);
+			}
 			// related object id
 			$qm->setObjectId($object_id);
+			
+			if (is_array($queue_this_email)) {
+				foreach ($queue_this_email as $col => $val) {
+					$qm->setColumnValue($col, $val);
+				}
+			}
 			
 			$qm->save();
 		} else {

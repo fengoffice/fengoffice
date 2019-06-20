@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.1.1
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.2.16
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -27,7 +27,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	 * @var array
 	 */
 	private $check_extensions = array(
-		'mysql', 'gd', 'simplexml'
+		'mysqli', 'gd', 'simplexml'
 	); // array
 
 	 /**
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.7.1.1');
+		$this->setVersionTo('3.7.2.16');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -232,9 +232,11 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
         	}
         	
-        	$upgrade_script .= "
-				ALTER TABLE `".$t_prefix."sharing_table` ADD INDEX `group_id` (`group_id`);
-			";
+        	if (!$this->checkKeyExists($t_prefix."sharing_table", "group_id", $this->database_connection)) {
+	        	$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."sharing_table` ADD INDEX `group_id` (`group_id`);
+				";
+        	}
         }
 
         if (version_compare($installed_version, '3.5.3-beta2') < 0) {
@@ -536,6 +538,25 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         	";
         }
         
+        if (version_compare($installed_version, '3.7.2-alpha2') < 0) {
+        	$upgrade_script .= "
+        		CREATE TABLE IF NOT EXISTS `".$t_prefix."application_log_details` (
+				  `application_log_id` int NOT NULL,
+				  `property` varchar(128) COLLATE 'utf8_unicode_ci' NOT NULL,
+				  `old_value` text COLLATE 'utf8_unicode_ci' NOT NULL,
+				  `new_value` text COLLATE 'utf8_unicode_ci' NOT NULL,
+				  PRIMARY KEY (`application_log_id`,`property`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+        	";
+        }
+        
+        if (version_compare($installed_version, '3.7.2.4') < 0) {
+        	if (!$this->checkColumnExists($t_prefix."contacts", "default_hour_type_id", $this->database_connection)) {
+	        	$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."contacts` ADD `default_hour_type_id` int(10) unsigned NOT NULL DEFAULT 0;
+				";
+        	}
+        }
         
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {

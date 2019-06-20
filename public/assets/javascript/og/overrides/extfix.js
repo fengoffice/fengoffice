@@ -329,6 +329,7 @@ Ext.grid.GridPanel.override({
 			cm.fireEvent('configchange');
 		}
 	},
+	
 	afterColumnShowHide: function(col_model, col_index, is_hidden) {
 		var col = col_model.config[col_index];
 		if (col.id && col.id.indexOf('cp_') == 0 && this.hiddenColumnIds) {
@@ -340,6 +341,7 @@ Ext.grid.GridPanel.override({
 			}
 		}
     },
+    
 	addCustomPropertyColumns: function(cps, cm_info, grid_id) {
 		this.hiddenColumnIds = [];
 		
@@ -357,6 +359,7 @@ Ext.grid.GridPanel.override({
 					}
 				}
 			}
+			
 			// if no state is present for this column then use the show in lists field of the cp
 			var is_hidden = (state_col == null) ? parseInt(cps[i].show_in_lists) == 0 : state_col.hidden;
 			if (is_hidden) {

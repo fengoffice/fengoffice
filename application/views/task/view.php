@@ -48,7 +48,7 @@ if (isset($task_list) && $task_list instanceof ProjectTask) {
 		    if ($can_manage_repetitive_properties_of_tasks)
 			 add_page_action(lang('generate repetitition'), get_url("task", "generate_new_repetitive_instance", array("id" => $task_list->getId())), 'ico-recurrent', null, null, true);
 		} else {
-			add_page_action(lang('copy task'), get_url("task", "copy_task", array("id" => $task_list->getId())), 'ico-copy');
+			add_page_action(lang('copy task'), "javascript:og.render_modal_form('', {c:'task', a:'copy_task', params: {id:".$task_list->getId()."}});", 'ico-copy', null, null, true);
 		}
 		if (can_manage_templates(logged_user())) {
 			add_page_action(lang('add to a template'), get_url("template", "add_to", array("manager" => 'ProjectTasks', "id" => $task_list->getId())), 'ico-template');
@@ -56,6 +56,10 @@ if (isset($task_list) && $task_list instanceof ProjectTask) {
 	} // if
 	
 	add_page_action(lang('print'), get_url('task', 'print_task', array("id" => $task_list->getId())), 'ico-print', '_blank');
+	
+
+	$null = null;
+	Hook::fire("view_task_add_actions", array('task' => $task_list), $null);
 	
 	//FIXME Fix reorder subtasks
 	/*if($task_list->canReorderTasks(logged_user()) && is_array($task_list->getOpenSubTasks())) {

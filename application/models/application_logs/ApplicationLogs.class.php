@@ -45,6 +45,15 @@ class ApplicationLogs extends BaseApplicationLogs {
 	 */
 	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '', $exclude_contacts_ids = null) {
 		
+		$object_differences = null;
+		if ($action == ApplicationLogs::ACTION_ADD || isset($object->old_content_object) && $object->old_content_object instanceof ContentDataObject) {
+			if ($action == ApplicationLogs::ACTION_ADD && !isset($object->old_content_object)) {
+				$class_name = $object->manager()->getItemClass();
+				$object->old_content_object = new $class_name;
+			}
+			$object_differences = ApplicationLogDetails::calculateSavedObjectDifferences($object, $object->old_content_object);
+		}
+		
 		$args = array (
 			'action' => &$action,
 			'is_private' => &$is_private,
@@ -71,14 +80,6 @@ class ApplicationLogs extends BaseApplicationLogs {
 		} else {
 			$is_silent = (boolean) $is_silent;
 		} // if
-
-		if (!$is_silent) {
-			try {
-				Notifier::notifyAction($object, $action, $log_data, $exclude_contacts_ids);
-			} catch (Exception $ex) {
-				Logger::log($ex->getMessage());
-			}
-		}
 		
 		$log = new ApplicationLog();
 		if (logged_user() instanceof Contact) {
@@ -103,7 +104,19 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		if($save) {
 			$log->save();
+			
+			if ($object_differences && count($object_differences) > 0) {
+				ApplicationLogDetails::saveObjectDifferences($log, $object_differences);
+			}
 		} // if
+
+		if (!$is_silent) {
+			try {
+				Notifier::notifyAction($object, $action, $log_data, $exclude_contacts_ids, $log);
+			} catch (Exception $ex) {
+				Logger::log($ex->getMessage());
+			}
+		}
 		
 		return $log;
 	} // createLog

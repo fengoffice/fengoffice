@@ -4006,7 +4006,7 @@ og.addTableCustomPropertyRow = function(parent, focus, values, col_count, ti, cp
 }
 
 
-og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id) {
+og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, current_associated_members) {
 	var d_associations = [];
   	for (var ot in og.dimension_member_associations[dimension_id]) {
 	  	for (var j=0; j<og.dimension_member_associations[dimension_id][ot].length; j++) {
@@ -4018,27 +4018,49 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id) {
 	  	var assoc = d_associations[i];
 
   		if (assoc && assoc.allows_default_selection) {
+  			
+  			var action_name = 'get_default_associated_members';
+  			if (current_associated_members) {
+  				action_name = 'get_associated_members';
+  			}
 
-	  		og.openLink(og.getUrl('dimension', 'get_default_associated_members', {member_id: member_id, assoc_id:assoc.id, dim_id:assoc.assoc_dimension_id}), {
+	  		og.openLink(og.getUrl('dimension', action_name, {member_id: member_id, assoc_id:assoc.id, dim_id:assoc.assoc_dimension_id, genid:genid}), {
 		  		hideLoading: true,
 		  		callback: function(success, data) {
+			  		var hf = Ext.get(data.genid + member_selector[data.genid].hiddenFieldName);
+			  		
+			  		if (!hf.dom.form) {
+			  			var dep_genid = data.genid;
+			  		} else {
+			  			
+			  			var form_id = hf.dom.form.id;
+			  			
+			  			var dep_genid = "";
+			  			var selector_inputs = $("#" + form_id + ' .dimension-panel-textfilter');
+			  			for (var x=0; x<selector_inputs.length; x++) {
+			  				var sel_id = selector_inputs[x].id;
+			  				var key = "-member-chooser-panel-"+ data.dimension_id +"-tree-textfilter";
+			  				if (sel_id.indexOf(key) >= 0) {
+			  					dep_genid = selector_inputs[x].id.substring(0, selector_inputs[x].id.indexOf("-"));
+			  					break;
+			  				}
+			  			}
+			  			if (dep_genid == '') dep_genid = data.genid;
+			  		}
 
-			  		var hf = Ext.get(genid + member_selector[genid].hiddenFieldName);
-			  		var form_id = hf.dom.form.id;
-
-			  		var dep_genid = "";
-					var selector_inputs = $("#" + form_id + ' .dimension-panel-textfilter');
-					for (var x=0; x<selector_inputs.length; x++) {
-						var sel_id = selector_inputs[x].id;
-						var key = "-member-chooser-panel-"+ data.dimension_id +"-tree-textfilter";
-						if (sel_id.indexOf(key) >= 0) {
-							dep_genid = selector_inputs[x].id.substring(0, selector_inputs[x].id.indexOf("-"));
-							break;
+					if (member_selector[dep_genid] && (!member_selector[dep_genid].sel_context[data.dimension_id] || member_selector[dep_genid].sel_context[data.dimension_id].length == 0) 
+							&& member_selector[dep_genid].properties[data.dimension_id]) {
+						// add the relations
+						for (var z=0; z<data.member_ids.length; z++) {
+				  			member_selector.add_relation(data.dimension_id, dep_genid, data.member_ids[z], false, true);
 						}
-					}
-
-					for (var z=0; z<data.member_ids.length; z++) {
-			  			member_selector.add_relation(data.dimension_id, dep_genid, data.member_ids[z], true);
+						// hide emtpy text
+						if (data.member_ids.length > 0) {
+							if (!member_selector[dep_genid].properties[data.dimension_id].isMultiple) {
+								$("#"+dep_genid+"-member-chooser-panel-"+data.dimension_id+"-tree-current-selected .empty-text").hide();
+							}
+						}
+						
 					}
 		  		}
 		  	});
@@ -4529,6 +4551,7 @@ og.quick_add_row_combo_input = function(config) {
 	var combo_config = {
 		renderTo: config.renderTo,
     	id: config.id,
+    	genid: config.genid,
     	name: config.name,
     	store: new Ext.data.SimpleStore({
 	        fields: ['value', 'text'],
@@ -4602,12 +4625,13 @@ og.quick_add_row_column_tabindex = function(grid, column) {
 
 og.quick_add_row_member_selector = function(dim_id, genid, hf_name, sel_mem_ids, is_multiple, select_current_context) {
 	if (dim_id > 0) {
-		if (!hf_name) hf_name = 'members_' + dim_id;
+		if (!hf_name) hf_name = 'members_';// + dim_id;
 		if (!sel_mem_ids) sel_mem_ids = '';
 		if (!is_multiple) is_multiple = 0;
 		if (typeof(select_current_context) == 'undefined') select_current_context = true;
 
 		og.openLink(og.getUrl('dimension', 'render_member_selector', {
+			genid: genid,
 			context: og.contextManager.plainContext(),
 			dim_id: dim_id,
 			is_multiple: is_multiple,
@@ -4767,15 +4791,29 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		}
 	}
 
+	
+	var user_combo_listeners = {};
+	if (og.time_quick_add_user_combo_listeners) {
+		for (x in og.time_quick_add_user_combo_listeners) {
+			user_combo_listeners[x] = og.time_quick_add_user_combo_listeners[x];
+		}
+	}
+	
 	// user selector
 	var user_combo = og.quick_add_row_combo_input({
 		id: config.genid + 'add_ts_contact_id',
+		genid: config.genid,
 		name: "timeslot[contact_id]",
 		options: config.quick_add_row_user_options,
 		initial_val: og.loggedUser.id,
 		renderTo: config.genid + "usercombo",
-		tabIndex: og.quick_add_row_column_tabindex(grid, 'name')
+		tabIndex: og.quick_add_row_column_tabindex(grid, 'name'),
+		listeners: user_combo_listeners
 	});
+	// trigger selection listeners with the initial value
+	if (user_combo.initialConfig.listeners && typeof(user_combo.initialConfig.listeners.select) == 'function') {
+		user_combo.initialConfig.listeners.select.call(null, user_combo);
+	}
 
 	var start_time_tindex = og.quick_add_row_column_tabindex(grid, 'start_time');
 	// start date selector
@@ -5074,6 +5112,10 @@ og.getDateArray = function (date, time) {
 
         default:
             break;
+    }
+    if (time == 'hh:mm') {
+    	var now_time = new Date();
+    	time = now_time.format('H:i');
     }
     var auxTime = time.split(' ');
     var times = auxTime[0].split(':');

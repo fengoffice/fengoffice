@@ -17,6 +17,11 @@ foreach (active_context() as $selection) {
         $active_members[] = $selection;
 }
 $can_add_timeslots = can_add_timeslots(logged_user(), $active_members);
+
+if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_add_timeslots_in_time_tab')) {
+	$can_add_timeslots = false;
+}
+
 ?>
 
 <div id="timePanel" class="ogContentPanel" style="height:100%;">
@@ -408,6 +413,22 @@ if (is_array($add_columns)) {
     store_parameters['from_filter'] = '<?php echo array_var($current_filters, 'from_filter') ?>';
     store_parameters['to_filter'] = '<?php echo array_var($current_filters, 'to_filter') ?>';
 
+    var all_current_filters = Ext.util.JSON.decode('<?php echo json_encode($current_filters) ?>');
+    // filters added by plugin
+    if (og.additional_timeslots_tab_filters) {
+        for (filter_code in og.additional_timeslots_tab_filters) {
+	        var f = og.additional_timeslots_tab_filters[filter_code];
+	        if (!f || typeof(f) == 'function') continue;
+
+	        if (all_current_filters[filter_code]) {
+				f.value = all_current_filters[filter_code];
+				f.initial_val = all_current_filters[filter_code];
+	        }
+	        filters[filter_code] = f;
+	    	store_parameters[filter_code] = f.initial_val;
+        }
+    }
+
 
     var sm = new Ext.grid.CheckboxSelectionModel({
         listeners: {
@@ -427,7 +448,7 @@ if (is_array($add_columns)) {
         genid: '<?php echo $genid ?>',
         renderTo: grid_id + '_container',
         url: og.getUrl('time', 'list_all'),
-        type_name: 'none',
+        type_name: 'timeslot',
         response_objects_root: 'timeslots',
         grid_id: grid_id,
         nameRenderer: og.module_timeslots_grid.name_renderer,

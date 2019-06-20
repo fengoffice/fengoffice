@@ -493,6 +493,10 @@ class ObjectController extends ApplicationController {
 						break;
 					}
 				}
+				if ($id == 49) {
+					Logger::log_r("CP VALUE");
+					Logger::log_r($value);
+				}
 
 				$object = $object_original;
 				// if custom property does not belong to the object, look for an associated object for current cp
@@ -679,16 +683,21 @@ class ObjectController extends ApplicationController {
 					    if($custom_property->getType() == 'boolean'){
 						    $value = in_array($value, array(0, '')) ? false : $value;
 						}
+						
 						$cpv = CustomPropertyValues::getCustomPropertyValue($object->getId(), $id);
-						if($cpv instanceof CustomPropertyValue){
-							$custom_property_value = $cpv;
+						if ($cpv instanceof CustomPropertyValue) {
+							DB::execute("
+								UPDATE ".TABLE_PREFIX."custom_property_values 
+								SET `value`=".DB::escape($value)."
+								WHERE `id` = ".$cpv->getId().";
+							");
 						} else {
-							$custom_property_value = new CustomPropertyValue();
-							$custom_property_value->setObjectId($object->getId());
-							$custom_property_value->setCustomPropertyId($id);
+							DB::execute("
+								INSERT INTO ".TABLE_PREFIX."custom_property_values (`object_id`, `custom_property_id`, `value`) VALUES
+								(".$object->getId().", $id, ".DB::escape($value).")
+								ON DUPLICATE KEY UPDATE `value`=".DB::escape($value).";
+							");
 						}
-						$custom_property_value->setValue($value);
-						$custom_property_value->save();
 					}
 
 					$not_searchable_types = CustomProperties::instance()->getNonSearchableColumnTypes();
@@ -2284,6 +2293,8 @@ class ObjectController extends ApplicationController {
 		}
 		// user filter
 		if (in_array("contact", array_var($filters, 'types', array())) && isset($extra_list_params->is_user)) {
+			$joins[] = " LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id";
+			
 			$extra_conditions[] = "
 				c.user_type ".($extra_list_params->is_user == 1 ? ">" : "=" )." 0";
 

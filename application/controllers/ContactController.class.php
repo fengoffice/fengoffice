@@ -4161,7 +4161,10 @@ class ContactController extends ApplicationController {
 				if (logged_user()->isAdministrator()) {
 					$permissions_condition = "";
 				} else {
-					$permissions_condition = " AND (o.id=".logged_user()->getId()." OR EXISTS (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND group_id IN (".implode(',',$pg_ids).")))";
+					$permissions_condition = "";
+					if (array_var($filters, 'has_permissions')) {
+						$permissions_condition = " AND (o.id=".logged_user()->getId()." OR EXISTS (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND group_id IN (".implode(',',$pg_ids).")))";
+					}
 				}
 			}
 			$conditions = " o.trashed_by_id=0 AND o.archived_by_id=0 $name_condition $permissions_condition $type_condition $extra_conditions";

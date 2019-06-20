@@ -1620,7 +1620,7 @@ class ProjectTask extends BaseProjectTask {
 	 * End task templates
 	 */
 
-	function getArrayInfo($full = false){
+	function getArrayInfo($full = false, $include_members_data = false){
 		$task = $this;
 		$col_names = $task->getColumns();
 		$ob_col_names = $task->getObject()->getColumns();
@@ -1642,7 +1642,7 @@ class ProjectTask extends BaseProjectTask {
 		//is read
 		$raw_data['isread'] = $task->getIsRead(logged_user()->getId());
 		$raw_data['mark_as_started'] = $task->getMarkAsStarted();
-		return ProjectTasks::getArrayInfo($raw_data, $full);		
+		return ProjectTasks::getArrayInfo($raw_data, $full, $include_members_data);
 	}
 	
 	function isRepetitive() {
@@ -1674,8 +1674,34 @@ class ProjectTask extends BaseProjectTask {
 	function apply_members_to_subtasks($members, $recursive = false) {
 		if (!is_array($members) || count($members)==0) return;
 		
-		foreach ($this->getSubTasks() as $subtask) {
-			$subtask->addToMembers($members);
+		foreach ($this->getSubTasks() as $subtask) {/* @var $subtask ProjectTask */
+			// dont apply members of dimensions with single selection and subtask has already one of them
+			$members_to_apply = array();
+			foreach ($members as $m) {/* @var $m Member */
+				$dim = $m->getDimension();
+				$dotc = DimensionObjectTypeContents::findOne(array("conditions" => array(
+					"dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?",
+					$dim->getId(), $m->getObjectTypeId(), ProjectTasks::instance()->getObjectTypeId()
+				)));
+				if ($dotc->getIsMultiple()) {
+					$members_to_apply[] = $m;
+				} else {
+					// check if subtask as one in this dimension
+					$subtask_members = $subtask->getMembers();
+					$has_one = false;
+					foreach ($subtask_members as $sm) {
+						if ($sm->getDimensionId() == $dim->getId()) {
+							$has_one = true;
+							break;
+						}
+					}
+					if (!$has_one) {
+						$members_to_apply[] = $m;
+					}
+				}
+			}
+			
+			$subtask->addToMembers($members_to_apply);
 			Hook::fire ('after_add_to_members', $subtask, $members);
 			if ($recursive) {
 				$subtask->apply_members_to_subtasks($members, $recursive);

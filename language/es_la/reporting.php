@@ -60,7 +60,7 @@
 	'field Objects billing' => 'Facturación',
         'field Objects mark_as_started' => 'Marcada como iniciada',
         'field Objects worked_time' => 'Tiempo trabajado',
-	'field Timeslots start_time' => 'Fecha del tiempo de trabajo',
+	'field Timeslots start_time' => 'Fecha de inicio',
   	'field Timeslots worked_time' => 'Tiempo trabajado',
 	'field ProjectTasks assigned_by_id' => 'Asignado por',
 	'field ProjectTasks type_content' => 'Tipo de contenido',

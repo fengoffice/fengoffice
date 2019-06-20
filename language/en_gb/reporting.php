@@ -63,7 +63,7 @@
   	'field Objects billing' => 'Billing',
         'field Objects worked_time' => 'Worked time',
         'field Timeslots worked_time' => 'Worked time',
-  	'field Timeslots start_time' => 'Timeslot date',
+  	'field Timeslots start_time' => 'Start time',
   
   	'field ProjectTasks assigned_by_id' => 'Assigned by',
   	'field ProjectTasks type_content' => 'Type content',

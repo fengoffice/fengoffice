@@ -68,7 +68,7 @@ member_selector.init = function(genid) {
 		og.eventManager.fireEvent('replace all empty breadcrumb', null);
 	}});
 	
-	if (selected_member_ids.length == 0) {
+	if (!selected_member_ids || selected_member_ids.length == 0) {
 		var idshf = document.getElementById(genid+'subscribers_ids_hidden');
 		if (idshf) og.reload_subscribers(genid, member_selector[genid].otid, idshf.value);
 	}	
@@ -210,6 +210,9 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	if (!dont_reload_dep_selectors) {
 		member_selector.reload_dependant_selectors(dimension_id, genid);
 	}
+	
+	// automatic selection of associated members of related dimensions
+	og.selectDefaultAssociatedMembers(genid, dimension_id, member.id, true);
 }
 
 member_selector.remove_relation = function(dimension_id, genid, member_id, dont_reload) {

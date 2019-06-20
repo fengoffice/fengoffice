@@ -191,7 +191,7 @@ abstract class ContentDataObjects extends DataManager {
     *  - offset - limit offset, valid only if limit is present
     *  - limit
     * 
-    * @return one or many objects
+    * @return array
     * @throws DBQueryError
     */
     function find($arguments = null) {
@@ -696,7 +696,7 @@ abstract class ContentDataObjects extends DataManager {
 				)";
 			}
 			
-			$permissions_condition .= " AND (
+			$permissions_condition .= " AND IF (o.object_type_id=".MailContents::instance()->getObjectTypeId().", true, (
 				EXISTS (
 					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
 					WHERE cmp.member_id=0 AND cmp.permission_group_id=".logged_user()->getPermissionGroupId()." AND cmp.object_type_id = o.object_type_id
@@ -708,7 +708,7 @@ abstract class ContentDataObjects extends DataManager {
 						inner join ".TABLE_PREFIX."dimensions dims on dims.id = mems.dimension_id
 					WHERE omems.object_id=o.id and dims.defines_permissions=1 and dims.is_manageable=1
 				) $no_perm_dims_cond
-			)";
+			))";
 		  }
 			/********************************************************************************************************/
 			
@@ -773,6 +773,8 @@ abstract class ContentDataObjects extends DataManager {
                 ";
             }
 			
+            //For debugging purposes:
+            //Logger::log_r("At ContentDataObject listing() function: listing. SQL is: \n". $sql . "\n");
 			
 			if ($only_return_query_string) {
 				return $sql;
@@ -849,16 +851,16 @@ abstract class ContentDataObjects extends DataManager {
 	
 	/**
 	 * @deprecated by listing(args) 
-	 * @param unknown_type $context
-	 * @param unknown_type $object_type
-	 * @param unknown_type $order
-	 * @param unknown_type $order_dir
-	 * @param unknown_type $extra_conditions
-	 * @param unknown_type $join_params
-	 * @param unknown_type $trashed
-	 * @param unknown_type $archived
-	 * @param unknown_type $start
-	 * @param unknown_type $limit
+	 * param unknown_type $context
+	 * param unknown_type $object_type
+	 * param unknown_type $order
+	 * param unknown_type $order_dir
+	 * param unknown_type $extra_conditions
+	 * param unknown_type $join_params
+	 * param unknown_type $trashed
+	 * param unknown_type $archived
+	 * param unknown_type $start
+	 * param unknown_type $limit
 	 */
 	static function getContentObjects($context, $object_type, $order=null, $order_dir=null, $extra_conditions=null, $join_params=null, $trashed=false, $archived=false, $start = 0 , $limit=null){
 		$table_name = $object_type->getTableName();
@@ -1126,14 +1128,14 @@ abstract class ContentDataObjects extends DataManager {
     /**
      * @deprecated
      * Enter description here ...
-     * @param unknown_type $dm_conditions
-     * @param unknown_type $dimension
-     * @param unknown_type $member_ids
-     * @param unknown_type $object_type_id
-     * @param unknown_type $pg_ids
-     * @param unknown_type $operator
-     * @param unknown_type $selection_members
-     * @param unknown_type $all
+     * param unknown_type $dm_conditions
+     * param unknown_type $dimension
+     * param unknown_type $member_ids
+     * param unknown_type $object_type_id
+     * param unknown_type $pg_ids
+     * param unknown_type $operator
+     * param unknown_type $selection_members
+     * param unknown_type $all
      */
     static function prepareQuery($dm_conditions, $dimension, $member_ids, $object_type_id, $pg_ids, $operator, $selection_members, $all = false){
     	$permission_conditions ="";
@@ -1382,6 +1384,26 @@ abstract class ContentDataObjects extends DataManager {
 	
 	function getAssociatedObjectManagers() {
 		return array();
+	}
+	
+	
+	static function generateOldContentObjectData(ContentDataObject $object) {
+
+		$old_content_object = $object->manager()->findById($object->getId(), true);
+		$old_content_object->member_ids = $object->getMemberIds();
+		$old_content_object->linked_object_ids = $object->getAllLinkedObjectIds();
+		$old_content_object->subscriber_ids = $object->getSubscriberIds();
+		
+		$cps = CustomProperties::getAllCustomPropertiesByObjectType($object->getObjectTypeId());
+		
+		$cp_values = array();
+		foreach ($cps as $cp) {
+			$cpval = CustomPropertyValues::instance()->getCustomPropertyValue($object->getId(), $cp->getId());
+			$cp_values[$cp->getId()] = $cpval instanceof CustomPropertyValue ? $cpval->getValue() : '';
+		}
+		$old_content_object->custom_properties = $cp_values;
+		
+		return $old_content_object;
 	}
 	
 }

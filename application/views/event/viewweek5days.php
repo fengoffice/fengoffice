@@ -824,7 +824,9 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 								<?php
 									$subject_toshow = $subject;
 									if ($event instanceof ProjectTask && $event->getAssignedToContactId() > 0) {
-										$subject_toshow = '<span class="bold">'.$event->getAssignedToName().'</span><br />'.$subject_toshow;
+										//Changed to prioritize the display of the task name
+										//$subject_toshow = '<span class="bold">'.$event->getAssignedToName().'</span><br />'.$subject_toshow;
+									    $subject_toshow = '<span class="bold">'.$subject_toshow.'</span><br />'.$event->getAssignedToName();
 									} 
 								?>
 								<?php 

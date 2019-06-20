@@ -104,7 +104,7 @@
         
         var total = totalHeight - totalHeaderReport - reportHeadersHeight - paginationHeight - fixedSubtract;
         
-        $("#form<?php echo $genid ?> tbody").height(total);
+        $("#form<?php echo $genid ?> .custom-report.scroll tbody").height(total);
     });
 
     

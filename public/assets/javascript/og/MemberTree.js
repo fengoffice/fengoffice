@@ -270,7 +270,8 @@ og.MemberTree = function(config) {
 					member: node.id,
 					limit: limit,
 					offset: node.last_childs_offset,
-					ignore_context_filters: !this.filterOnChange
+					ignore_context_filters: !this.filterOnChange,
+					context: og.contextManager.plainContext()
 				};
 				
 	        	og.openLink(og.getUrl('dimension', 'get_member_childs', parameters), {
@@ -684,7 +685,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    		// let text start with last char in order to set this node as the last one
 		    		return last_char + last_char + last_char + node.text;
 		    	}
-		    	return og.replaceStringAccents(node.text).toLowerCase();
+		    	return og.replaceStringAccents(node.attributes.sort_key).toLowerCase();
 		    }
 		});
 		
@@ -1047,6 +1048,6 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 
 og.sortNodesFn = function(node1, node2) {
 	if (node1 && node2) {
-		return node1.text.toLowerCase().localeCompare(node2.text.toLowerCase());
+		return node1.attributes.sort_key.toLowerCase().localeCompare(node2.attributes.sort_key.toLowerCase());
 	}
 }

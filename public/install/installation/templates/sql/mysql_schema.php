@@ -236,7 +236,7 @@ CREATE TABLE `<?php echo $table_prefix ?>system_permissions` (
   `can_update_other_users_invitations` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_link_objects` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_instantiate_templates` tinyint(1) unsigned NOT NULL default '0',
-  `can_manage_repetitive_properties_of_tasks` tinyint(1) unsigned NOT NULL default '0',  
+  `can_manage_repetitive_properties_of_tasks` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`permission_group_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -335,7 +335,8 @@ CREATE TABLE `<?php echo $table_prefix ?>contacts` (
   `personal_member_id` int(10) unsigned,
   `disabled` tinyint(1) NOT NULL default 0,
   `default_billing_id` int(10) NOT NULL default 0,
-  `user_timezone_id` int(10) unsigned NOT NULL default 0,
+  `user_timezone_id` int(10) unsigned NOT NULL default 0,  
+  `default_hour_type_id` int(10) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (`object_id`),
   KEY `first_name` USING BTREE (`first_name`,`surname`),
   KEY `surname` USING BTREE (`surname`,`first_name`),
@@ -462,6 +463,16 @@ CREATE TABLE `<?php echo $table_prefix ?>application_logs` (
   KEY `object` (`rel_object_id`,`created_on`,`is_silent`),
   KEY `member` (`member_id`,`created_on`,`is_silent`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>application_log_details` (
+  `application_log_id` int NOT NULL,
+  `property` varchar(128) <?php echo $default_collation ?>,
+  `old_value` text <?php echo $default_collation ?>,
+  `new_value` text <?php echo $default_collation ?>,
+  PRIMARY KEY (`application_log_id`,`property`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
 
 CREATE TABLE `<?php echo $table_prefix ?>comments` (
   `object_id` int(10) unsigned NOT NULL auto_increment,
