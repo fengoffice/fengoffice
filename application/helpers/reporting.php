@@ -75,22 +75,31 @@ function report_values_to_arrays_plain($results, $report, $with_header = true) {
 	$all_data_rows = array();
 	foreach($rows as $row) {
 		$values_array = array();
-	
+		$tz_offset = array_var($row, 'tz_offset');
 		foreach ($columns['order'] as $col) {
 			if ($col == 'object_type_id' || $col == 'link') continue;
 	
 			$value = array_var($row, $col);
-				
-			$val_type = array_var($types, $col);
+			
+			$val_type = array_var($columns['types'], $col, DATA_TYPE_STRING);
 			$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
-				
-			if ($val_type == 'DATETIME') {
-				$formatted_val = $value;
+			$date_custom = $report->getColumnValue('date_format');
+			$date_format = $date_custom != '' ? $date_custom : $date_format;
+			
+			if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+				if($value == ''){
+					$formatted_val = ' ';
+				} else {
+					$value = formatToDateTimeValue($value);
+					$val_type = pickDateOrDatetimeValueType($row, $report);
+					$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+				}
 			} else {
-				$tz_offset = array_var($row, 'tz_offset');
+				if (is_numeric($value) && $val_type == DATA_TYPE_STRING) $value .= " ";
 				$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
 			}
-			if ($formatted_val == '--') $formatted_val = "";
+
+			if ($formatted_val == '--' || $formatted_val == ' ') $formatted_val = "";
 				
 			$formatted_val = strip_tags($formatted_val);
 				
@@ -120,7 +129,7 @@ function report_table_csv($results, $report) {
 	
 	$all_csv_rows = array();
 	foreach ($all_data_rows as $r) {
-                Hook::fire('set_custom_format_value_date',array('report'=>$report), $r);
+        //Hook::fire('set_custom_format_value_date',array('report'=>$report), $r);
 		$r = str_replace(array("\r\n","\r","\n"), " ", $r);
 		foreach ($r as &$ritem) $ritem = html_entity_decode($ritem);
 		
@@ -216,17 +225,23 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
 		<?php 
 				$val_type = ($col == 'link' ? '' : array_var($types, $col));
-                                $date_custom = $report->getColumnValue('date_format');
 				$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
-                                if ($date_custom != '') {
-                                    $date_format = $date_custom;
-                                }
-				if ($val_type == 'DATETIME') {
-					echo $value;
-				} else {
-					$tz_offset = array_var($row, 'tz_offset');
-					echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+				$date_custom = $report->getColumnValue('date_format');
+                $date_format = $date_custom != '' ? $date_custom : $date_format;
+				
+				if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+					if($value == ''){
+						echo $value;
+						continue;
+					} else {
+						$value = formatToDateTimeValue($value);
+						$val_type = pickDateOrDatetimeValueType($row, $report);
+					}
 				}
+
+				$tz_offset = array_var($row, 'tz_offset');
+				echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+
 		?>
 			</td>
 		<?php
@@ -263,10 +278,12 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 		if (!$report->getColumnValue("hide_group_details")) {
 			
 			$gd_name = $gd['name'];
-			$original_gkey = end(explode(',', $gd['original_gkey']));
+			$exp_orig_key = explode(',', $gd['original_gkey']);
+			$original_gkey = end($exp_orig_key);
 			
 			if (str_starts_with($original_gkey, "_group_id_dim_")) {
-				$gd_id = end(explode('_', $gd['id']));
+			    $exp_id = explode('_', $gd['id']);
+				$gd_id = end($exp_id);
 				$mem = Members::findById($gd_id);
 				if ($mem instanceof Member) {
 					$mems = array($mem);
@@ -353,16 +370,26 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 						$type = array_var($columns['types'], $col);
 						$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
 				?>
-					<td style="<?php echo ($col == 'link' ? 'width:16px;padding:0 0 0 2px;border-right:0 none;' : '') ?>" <?php echo $numeric_type ? 'class="right"' : ''?>>
+					<td style="<?php echo ($col == 'link' ? 'width:16px;border-right:0 none;' : '') ?>" <?php echo $numeric_type ? 'class="right"' : ''?>>
 				<?php 
-						$val_type = ($col == 'link' ? '' : array_var($types, $col));
+						$val_type = ($col == 'link' ? '' : array_var($columns['types'], $col));
 						$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
-						if ($val_type == 'DATETIME') {
-							echo $value;
-						} else {
-							$tz_offset = array_var($row, 'tz_offset');
-							echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+						$date_custom = $report->getColumnValue('date_format');
+						$date_format = $date_custom != '' ? $date_custom : $date_format;
+
+						if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+							if($value == ''){
+								echo $value;
+								continue;
+							} else {
+								$value = formatToDateTimeValue($value);
+								$val_type = pickDateOrDatetimeValueType($row, $report);
+							}
 						}
+						
+						$tz_offset = array_var($row, 'tz_offset');
+						echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+						
 				?>
 					</td>
 				<?php
@@ -406,7 +433,7 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 	$groups = $results['grouped_rows'];
 	$add_thead_cls = $report->getColumnValue("hide_group_details") ? "no-details" : "";
 	?>
-	<table class="report <?php echo $to_print ? '':'custom-report scroll' ?>" style="<?php echo $to_print ? '':'' ?>" >
+	<table class="report custom-report <?php echo $to_print ? 'to-print' : 'scroll' ?>" style="<?php echo $to_print ? '':'' ?>" >
         <thead>
 		<tr class="custom-report-table-heading <?php echo $add_thead_cls ?>">
 		<?php if (!$report->getColumnValue("hide_group_details")) { ?>
@@ -414,21 +441,12 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
         <?php } ?>
 		<?php
 		$columns = array_var($results, 'columns');
-		$after_link = false;
 		foreach ($columns['order'] as $col) {
 			if($col != 'link') {
-				if ($after_link) {
-					//echo "<th colspan='2'>";
-					echo "<th>";
-					$after_link = false;
-				} else {
-					echo "<th>";
-				}
+				echo "<th>";
 			  	echo clean(array_var($columns['names'], $col));
                 echo ' '.get_format_value_to_header($col, $report->getReportObjectTypeId());
 				echo "</th>";
-			} else {
-				$after_link = true;
 			}
 		}
 		?>
@@ -466,10 +484,23 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 		
 		if (!$report->getColumnValue('show_last_group_as_column') || $level < max(array_keys(array_var($results, 'group_totals', array())))) {
 			$row_vals = array();
-			
 			$first = true;
 			foreach ($columns as $c) {
-				$row_vals[] = $first ? $gd['name'] : "";
+				
+				$gd_name = $gd['name'];
+				$original_gkey = end(explode(',', $gd['original_gkey']));
+					
+				if (str_starts_with($original_gkey, "_group_id_dim_")) {
+					$gd_id = end(explode('_', $gd['id']));
+					$mem = Members::findById($gd_id);
+					if ($mem instanceof Member) {
+						$mems = array($mem);
+						build_member_list_text_to_show_in_trees($mems);
+						$gd_name = $mems[0]->getName();
+					}
+				}
+				
+				$row_vals[] = $first ? $gd_name : "";
 				$first = false;
 			}
 			$all_rows[] = $row_vals;
@@ -486,7 +517,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 
 			$rows = array_var($results, 'rows');
 			$pagination = array_var($results, 'pagination');
-
+			$tz_offset = array_var($row, 'tz_offset');
 			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
 
 			if (!$report->getColumnValue("hide_group_details")) {
@@ -501,17 +532,24 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 						if ($col == 'object_type_id' || $col == 'link') continue;
 
 						$value = array_var($row, $col);
-						$val_type = array_var($types, $col);
+						$val_type = array_var($columns['types'], $col);
 						$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
-
-						if ($val_type == 'DATETIME') {
-							$formatted_val = $value;
+						$date_custom = $report->getColumnValue('date_format');
+						$date_format = $date_custom != '' ? $date_custom : $date_format;
+						
+						if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+							if($value == ''){
+								$formatted_val = ' ';
+							} else {
+								$value = formatToDateTimeValue($value);
+								$val_type = pickDateOrDatetimeValueType($row, $report);
+								$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+							}
 						} else {
-							$tz_offset = array_var($row, 'tz_offset');
 							$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
 						}
 
-						if ($formatted_val == '--') $formatted_val = "";
+						if ($formatted_val == '--' || $formatted_val == ' ') $formatted_val = "";
 						$formatted_val = strip_tags($formatted_val);
 						$item_values[] = $formatted_val;
 
@@ -1134,6 +1172,7 @@ function build_report_conditions_sql($parameters) {
 				            $val = $condField->getValue();
 				        }
 				        $current_condition .= in_array($val, array(0, '0')) ? " `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " " : " `e`.`completed_on` != " . DB::escape(EMPTY_DATETIME) . " ";
+				        $group_conditions_sql[] = $current_condition;
 				    }
 				    continue;
 				}
@@ -1265,10 +1304,21 @@ function build_report_conditions_sql($parameters) {
 				}
 				
 				$skip_condition = false;
+
+				$isset_cp_condition = false;
+				$cp_condition_value = null;
+				foreach ($params as $cond_key => $cond_value) {
+					$exploded_key = explode('_', $cond_key);
+					if ($exploded_key[0] == $condCp->getId()) {
+						$isset_cp_condition = true;
+						$cp_condition_value = $cond_value;
+						break;
+					}
+				}
 				
 				//Parametric field
-				if(isset($params[$condCp->getId()."_".$cp->getName()])){
-					$value = $params[$condCp->getId()."_".$cp->getName()];
+				if ($isset_cp_condition) {
+					$value = $cp_condition_value;
 					if ($cp->getType() == 'date' || $cp->getType() == 'datetime') {
 						$dateFormat = user_config_option('date_format');
 					}
@@ -1368,3 +1418,20 @@ function build_report_conditions_sql($parameters) {
 			'all_conditions' => $allConditions,
 	);
 }
+
+
+function pickDateOrDatetimeValueType($row, $report){
+	if($row['object_type_id'] == ObjectTypes::findByName('task')->getId()){
+		if(array_var($row, 'start_date') && !ProjectTasks::findById($row['id'])->getUseStartTime()){
+			return 'DATE';
+		}
+		if(array_var($row, 'due_date') && !ProjectTasks::findById($row['id'])->getUseDueTime()){
+			return 'DATE';
+		}
+	}
+	if ($report->getColumnValue('dont_show_time')){
+		return 'DATE';
+	}
+	return 'DATETIME';
+}
+

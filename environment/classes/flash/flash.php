@@ -48,8 +48,8 @@
   /**
    * Returns and removes variable from flash.
    *
-   * @param unknown_type $name
-   * @return unknown
+   * @param string $name
+   * @return mixed
    */
   function flash_pop($name) {
   	$ret = Flash::instance()->getVariable($name);

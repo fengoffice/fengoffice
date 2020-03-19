@@ -3,7 +3,7 @@
 class ApplicationLogDetails extends BaseApplicationLogDetails {
 
 	
-	static function calculateSavedObjectDifferences(ContentDataObject $object, ContentDataObject $old_object) {
+	static function calculateSavedObjectDifferences($object, $old_object) {
 		
 		if ($object instanceof Member) {
 			$object = Objects::findObject($object->getObjectId());
@@ -14,6 +14,11 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		
 		$manager = $object->manager();
 		$object_columns = array_merge(array('name'), $manager->getColumns());
+		
+		if (!isset($old_object->member_ids)) $old_object->member_ids = array();
+		if (!isset($old_object->subscriber_ids)) $old_object->subscriber_ids = array();
+		if (!isset($old_object->linked_object_ids)) $old_object->linked_object_ids = array();
+		if (!isset($old_object->custom_properties)) $old_object->custom_properties = array();
 		
 		// member ids
 		$old_member_ids = array_filter($old_object->member_ids);
@@ -66,7 +71,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		
 		// compare custom properties
 		foreach ($custom_properties as $cp) {
-			if ($cp_values[$cp->getId()] != $old_cp_values[$cp->getId()]) {
+			if (array_var($cp_values, $cp->getId()) != array_var($old_cp_values, $cp->getId())) {
 				$differences['cp_' . $cp->getId()] = array(
 					'property' => 'cp_' . $cp->getId(),
 					'old_value' => $old_cp_values[$cp->getId()],
@@ -150,7 +155,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 	}
 	
 	
-	static function buildLogDetailsHtml(ApplicationLog $log) {
+	static function buildLogDetailsHtml(ApplicationLog $log, $email_type) {
 		
 		$html = '';
 		$all_details = self::findAll(array('conditions' => 'application_log_id = '.$log->getId()));
@@ -163,36 +168,115 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		
 		foreach ($all_details as $detail) {
 			/* @var $detail ApplicationLogDetail */
-			
+
 			$log_text = '';
 			
 			switch ($detail->getProperty()) {
-				case 'classification':
-					$new_ids = explode(',', $detail->getNewValue());
-					$old_ids = explode(',', $detail->getOldValue());
 
-					$added_ids = array_diff($new_ids, $old_ids);
-					$removed_ids = array_diff($old_ids, $new_ids);
-
-					if (count($added_ids) > 0) {
-						$member_names = '';
-						$members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$added_ids).')'));
-						foreach ($members as $m) {
-							$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
-						}
-						$log_text .= "Added classification in: $member_names";
-					}
-					if (count($removed_ids) > 0) {
-						$member_names = '';
-						$members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$removed_ids).')'));
-						foreach ($members as $m) {
-							$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
-						}
-						$log_text .= ($log_text==''?'':'<br/>') . "Removed classification in: $member_names";
-					}
-					
+				case 'move_direction_non_working_days':
 					break;
-					
+				case 'assigned_to_contact_id':
+					$config_options = user_config_option('user_assigned_to_task');
+					if (!is_array($config_options)) {
+						$config_options = explode(',', $config_options);
+					}
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$newId = $detail->getNewValue();
+						$oldId = $detail->getOldValue();
+						$newContactObj = Contacts::findOne(array('conditions' => array('object_id = ?', $newId)));
+						$oldContactObj = Contacts::findOne(array('conditions' => array('object_id = ?', $oldId)));
+						$newContact = $newContactObj instanceof Contact ? $newContactObj->getDisplayName() : '';
+						$oldContact = $oldContactObj instanceof Contact ? $oldContactObj->getDisplayName() : '';
+						if (isset($oldContact)){
+							$log_text .= 'Assigned to: <span class="log-detail--old-value">' . $oldContact . '</span> <span class="log-detail--new-value">' . $newContact . '</span>';
+						} else {
+							$log_text .= 'Assigned to: <span class="log-detail--new-value">' . $newContact . '</span>';
+						}
+					} 
+					break;
+
+				case 'text':
+					$config_options = user_config_option('description_changed');
+					if (!is_array($config_options)) {
+						$config_options = explode(',', $config_options);
+					}
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$newDescription = trim($detail->getNewValue(), '<br />&nbsp;');
+						if ($newDescription != ''){
+							$log_text .= 'Description: <span class="log-detail--description">"' . $newDescription . '"</span>';
+						} else {
+							$log_text .= 'Description: " "';
+						}
+					}
+					break;
+
+				case 'start_date':
+				case 'due_date':
+					$config_options = user_config_option('start_or_due_date_modified');
+					if (!is_array($config_options)) {
+						$config_options = explode(',', $config_options);
+					}
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
+					}
+					break;
+
+				case 'classification':
+					$config_options = user_config_option('classification_changed');
+					if (!is_array($config_options)) {
+						$config_options = explode(',', $config_options);
+					}
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$new_ids = explode(',', $detail->getNewValue());
+						$old_ids = explode(',', $detail->getOldValue());
+
+						$added_ids = array_diff($new_ids, $old_ids);
+						$removed_ids = array_diff($old_ids, $new_ids);
+
+						if (count($added_ids) > 0) {
+							$member_names = '';
+							$members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$added_ids).')'));
+							foreach ($members as $m) {
+								$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
+							}
+							$log_text .= "Added classification: <span class='log-detail--new-value'>" . $member_names . "</span>";
+						}
+						if (count($removed_ids) > 0) {
+							$member_names = '';
+							$members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$removed_ids).')'));
+							foreach ($members as $m) {
+								$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
+							}
+							if($member_names != ''){
+								$log_text .= ($log_text==''?'':'<br/>') . "Removed classification: <span class='log-detail--new-value'>" . $member_names . "</span>";
+							}
+						}
+					}
+					break;
+				case 'name':
+					$config_options = explode(',', user_config_option('name_changed'));
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
+					}
+					break;	
+				case 'time_estimate':
+					$config_options = explode(',', user_config_option('time_estimate_changed'));
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
+					}
+					break;
+				case 'percent_completed':
+					$config_options = explode(',', user_config_option('percent_completed_changed'));
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
+					}
+					break;
+				case 'priority':
+					$config_options = explode(',', user_config_option('priority_changed'));
+					if($email_type == '' || in_array($email_type, $config_options)){
+						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
+					}
+					break;			
 				case 'linked_objects':
 					$new_ids = explode(',', $detail->getNewValue());
 					$old_ids = explode(',', $detail->getOldValue());
@@ -242,29 +326,13 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 							if ($old_value == $new_value) break;
 						}
 						
-						if ($detail->getOldValue() != '') {
-							$log_text = "Changed the property " . $cp->getName() . ' from "' . $old_value . '"' . ' to "' . $new_value . '"';
+						if ($detail->getOldValue() != '') { 
+							$log_text .= $field_name . ': <span class="log-detail--old-value">' . $old_value . '</span> ' . '<span class="log-detail--new-value">' . $new_value . '</span>';
 						} else {
-							$log_text = $cp->getName() . ' (previously empty) is now defined as: "' . $new_value . '"';
+							$log_text .= $field_name . ': <span class="log-detail--new-value">' . $new_value . '</span>';
 						}
 					} else if (in_array($detail->getProperty(), $co_columns) && !in_array($detail->getProperty(), $system_columns)) {
-						
-						$old_value = format_value_to_print($detail->getProperty(), $detail->getOldValue(), $manager->getColumnType($detail->getProperty()), $object->getObjectTypeId());
-						$new_value = format_value_to_print($detail->getProperty(), $detail->getNewValue(), $manager->getColumnType($detail->getProperty()), $object->getObjectTypeId());
-
-						if ($old_value == '--') $old_value = '';
-						if ($new_value == '--') $new_value = '';
-						
-						$field_name = Localization::instance()->lang('field '.$object_type->getHandlerClass().' '.$detail->getProperty());
-						if (is_null($field_name)) $field_name = Localization::instance()->lang('field Objects '.$detail->getProperty());
-						if (is_null($field_name)) $field_name = Localization::instance()->lang($detail->getProperty());
-						if (is_null($field_name)) $field_name = $detail->getProperty();
-						
-						if ($old_value != '') {
-							$log_text = "Changed the property " . $field_name . ' from "' . $old_value . '"' . ' to "' . $new_value . '"';
-						} else {
-							$log_text = $field_name . ' (previously empty) is now defined as: "' . $new_value . '"';
-						}
+						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
 					}
 			}
 			
@@ -274,11 +342,30 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		}
 		
 		if ($logs_html != '') {
-			$html .= '<div class="logs-group"><div class="log-header">' . format_datetime($log->getCreatedOn()) .' - '. $log_user_name .':</div><ul>'. $logs_html .'</ul></div>';
+			$html .= '<div class="logs-group"><div class="log-header">' . format_datetime($log->getCreatedOn()) .' by '. $log_user_name .':</div><ul class="log-details">'. $logs_html .'</ul></div>';
 		}
 		
 		return $html;
 		
+	}
+
+	static function buildDetailHtml($detail, $object, $manager, $object_type){
+		$old_value = format_value_to_print($detail->getProperty(), $detail->getOldValue(), $manager->getColumnType($detail->getProperty()), $object->getObjectTypeId());
+		$new_value = format_value_to_print($detail->getProperty(), $detail->getNewValue(), $manager->getColumnType($detail->getProperty()), $object->getObjectTypeId());
+
+		if ($old_value == '--') $old_value = '';
+		if ($new_value == '--') $new_value = '';
+		
+		$field_name = Localization::instance()->lang('field '.$object_type->getHandlerClass().' '.$detail->getProperty());
+		if (is_null($field_name)) $field_name = Localization::instance()->lang('field Objects '.$detail->getProperty());
+		if (is_null($field_name)) $field_name = Localization::instance()->lang($detail->getProperty());
+		if (is_null($field_name)) $field_name = $detail->getProperty();
+		
+		if ($old_value != '') {
+			return $field_name . ': <span class="log-detail--old-value">' . $old_value . '</span> ' . '<span class="log-detail--new-value">' . $new_value . '</span>';
+		} else {
+			return $field_name . ': <span class="log-detail--new-value">' . $new_value . '</span>';
+		}
 	}
 
 } // ApplicationLogDetails

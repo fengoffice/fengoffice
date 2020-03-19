@@ -3,7 +3,7 @@
 /**
  *  TemplateObjectProperties class
  *
- * @author Pablo Kamil
+ * @author Feng Office
  */
 class TemplateObjectProperties extends BaseTemplateObjectProperties {
 	
@@ -16,8 +16,10 @@ class TemplateObjectProperties extends BaseTemplateObjectProperties {
 	 */
 	static function getPropertiesByTemplateObject($template_id, $object_id) {
 		return self::findAll(
-			array('conditions' => array('`template_id` = ? AND `object_id` = ?', $template_id, $object_id) )
+			array('conditions' => array('`template_id` = ? AND `object_id` = ?', $template_id, $object_id), 'order' => 'property' )
 		);
+		
+		//@todo - sort by name - and the name depends on whether it is a custom property or a standard property 
 	}
 	
 	/**

@@ -119,7 +119,7 @@ function ajx_set_no_back($nb = true) {
 
 /**
  * Executes some javascript before leaving a content
- * @param $js: javascript code to execute
+ * @param $js: string javascript code to execute
  */
 function ajx_on_leave($js) {
 	AjaxResponse::instance()->onleave = $js;
@@ -161,7 +161,7 @@ function require_javascript($url, $plugin = null) {
 
 /**
  * Start an inline javascript
- * @return unknown_type
+ * @return 
  */
 function start_script() {
 	if (is_ajax_request()) ob_start();
@@ -169,7 +169,7 @@ function start_script() {
 
 /**
  * End an inline javascript
- * @return unknown_type
+ * @return 
  */
 function end_script() {
 	if (is_ajax_request()) {
@@ -180,7 +180,7 @@ function end_script() {
 
 /**
  * Add an inline javascript
- * @return unknown_type
+ * @return 
  */
 function add_inline_script($script) {
 	if (is_ajax_request()) {

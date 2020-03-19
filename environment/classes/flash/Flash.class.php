@@ -35,7 +35,7 @@
     *
     * @access public
     * @param void
-    * @return FlashService
+    * @return Flash FlashService
     */
     function __construct() {
       $this->readFlash();
@@ -130,7 +130,7 @@
     *
     * @access public
     * @param void
-    * @return FlashService
+    * @return Flash FlashService
     */
     static function &instance() {
       static $instance;

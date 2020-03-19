@@ -314,7 +314,7 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 			conditions += '</select>';
 			$("#" + genid + " #tdConditions" + id).html(conditions);
 			
-		}else if(fieldType == "external"){
+		}else if(fieldType == "external" || fieldType == "contact" || fieldType == "user"){
 			
 			var objectTypeSel = document.getElementById('objectTypeSel');
 			og.openLink(og.getUrl('reporting', 'get_external_field_values', {external_field: fields[selField].value, report_type: objectTypeSel[objectTypeSel.selectedIndex].value}), {

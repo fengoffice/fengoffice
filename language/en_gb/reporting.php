@@ -47,6 +47,7 @@
 	'field Objects contact_id' => 'Person',
 	'field Objects description' => 'Description',
 	'field Objects paused_on' => 'Paused on',
+	'field Objects move_direction_non_working_days' => 'Move direction',
 	'field Objects subtract' => 'Paused time',
 	'field Objects fixed_billing' => 'Total billable',
 	'field Objects hourly_billing' => 'Billing rate (hr)',

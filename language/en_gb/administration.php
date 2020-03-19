@@ -1,6 +1,6 @@
 <?php
 
-  return array(
+return array(
   
     // ---------------------------------------------------
     //  Administration tools
@@ -859,25 +859,27 @@
 	'user config option name attach_to_notification' => 'Attach documents to notifications',
 	'user config option desc attach_to_notification' => 'When enabled, by default, the option to send the document within the notifications is checked.',
       
-  		'invalid parent member' => 'Cannot save \'{0}\' under \'{1}\'',
-  		
-        'file extension prevention uploading' => 'File extension prevention uploading',
-        'file extension' => 'File extension',
-        'allow' => 'Allow',
-        'success file extension' => 'Prevention upload successfully modified.',
-        'file extension no allow' => 'Your Administrator does not allow this file extension. Please use a different format.',
-        'file extension no allow classify' => 'You can not classify attachment \'{0}\'. Your Administrator does not allow this file extension.',
+	'invalid parent member' => 'Cannot save \'{0}\' under \'{1}\'',
+	
+    'file extension prevention uploading' => 'File extension prevention uploading',
+    'file extension' => 'File extension',
+    'allow' => 'Allow',
+    'success file extension' => 'Prevention upload successfully modified.',
+    'file extension no allow' => 'Your Administrator does not allow this file extension. Please use a different format.',
+    'file extension no allow classify' => 'You can not classify attachment \'{0}\'. Your Administrator does not allow this file extension.',
       
     'user config option name show_start_time_action' => 'Clock',
     'user config option desc show_start_time_action' => 'Enable the clock for time recording',
-    'user config option name automatic_calculation_time'=>'Behavior when modifying hours',
-	  'user config option name automatic_calculation_start_time'=>'Behavior when modifying dates',
+    'user config option name automatic_calculation_time'=>'Behaviour when modifying hours',
+    'user config option desc automatic_calculation_time'=>'When you change the worked hours (or paused time) of a time tracking record, what would you prefer the system do?',
+	'user config option name automatic_calculation_start_time'=>'Behaviour when modifying dates',
+    'user config option desc automatic_calculation_start_time'=>'When you change the start or end date of a time tracking record, what would you prefer the system do?',
     'user config option name show_pause_time_action' => 'Allow paused time',
     'config option name show_pause_time_action' => 'Allow paused time',
-      'user config option name stop_running_timeslots' => 'Allow stop timeslots recording when you started a new one',
+    'user config option name stop_running_timeslots' => 'Allow stop timeslots recording when you started a new one',
 
-      'user config option name properties_for_contact_component' => 'Contact properties to display on contact selectors',
-      'user config option desc properties_for_contact_component' => 'Here you can choose additional properties to be displayed when selecting a contact on any contact selector.',
-  ); // array
+    'user config option name properties_for_contact_component' => 'Contact properties to display on contact selectors',
+    'user config option desc properties_for_contact_component' => 'Here you can choose additional properties to be displayed when selecting a contact on any contact selector.',
+); // array
 
 ?>

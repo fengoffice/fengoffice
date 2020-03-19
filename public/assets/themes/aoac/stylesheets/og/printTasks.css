@@ -1,0 +1,20 @@
+h1 {
+	font-size:120%;
+}
+
+td {
+	font-size:70%;
+}
+
+body {
+	color: #333333;
+	font-family:verdana,arial,helvetica,sans-serif;
+}
+
+.task {
+	border-bottom:1px dotted #888;
+}
+table {
+	border-collapse:collapse;
+	border-spacing:0px;
+}

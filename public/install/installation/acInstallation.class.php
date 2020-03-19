@@ -623,7 +623,7 @@ final class acInstallation {
 					
 					
 					//2. IF Plugin defines types, INSERT INTO ITS TABLE
-					if (count(array_var($pluginInfo,'types'))){
+					if (count(array_var($pluginInfo,'types',array()))){
 						foreach ($pluginInfo['types'] as $k => $type ) {
 							if (isset($type['name'])) {
 								$sql = "
@@ -651,7 +651,7 @@ final class acInstallation {
 						}
 					}
 					//2. IF Plugin defines tabs, INSERT INTO ITS TABLE
-					if (count(array_var($pluginInfo,'tabs'))){
+					if (count(array_var($pluginInfo,'tabs',array()))){
 						foreach ($pluginInfo['tabs'] as $k => $tab ) {
 							if (isset($tab['title'])) {
 								$type_id = array_var($type,"id") ;

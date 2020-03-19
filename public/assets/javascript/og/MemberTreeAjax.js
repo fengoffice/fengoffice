@@ -497,7 +497,13 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 		    		// let text start with last char in order to set this node as the last one
 		    		return last_char + last_char + last_char + node.text;
 		    	}
-		    	return og.replaceStringAccents(node.attributes.sort_key).toLowerCase();
+		    	if (node.attributes && node.attributes.sort_key) {
+		    		return og.replaceStringAccents(node.attributes.sort_key).toLowerCase();
+		    	} else if (node.sort_key) {
+		    		return og.replaceStringAccents(node.sort_key).toLowerCase();
+		    	} else {
+		    		return og.replaceStringAccents(node.text).toLowerCase();
+		    	}
 		    }
 		});
 		
@@ -551,7 +557,11 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 			if (filtering_by_ids) {
 				options.filter_by_ids = filtering_by_ids;
 			}
-			og.initialMemberTreeAjaxLoad(this, 500, 0, options);
+			var limit = 500;
+			if (og.config.member_selector_page_size) {
+				limit = og.config.member_selector_page_size;
+			}
+			og.initialMemberTreeAjaxLoad(this, limit, 0, options);
 		}
 	} ,
 

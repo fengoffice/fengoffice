@@ -426,7 +426,7 @@ if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('upcoming events milestones and tasks'). ' '. lang('in m').' '. implode(", ", $mnames);
+		$widget_title = lang('upcoming events milestones and tasks');
 	}
 	include_once 'template.php';
 

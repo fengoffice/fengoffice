@@ -1,16 +1,28 @@
 <?php
 
   class MultipleListConfigHandler extends ConfigHandler {
-  
-    /**
+	
+	/**
     * Render form control
     *
     * @param string $control_name
     * @return string
     */
-    function render($control_name) {
-      $genid = gen_id();
-      
+	function render($control_name){
+		$hide_label = false;
+		return MultipleListConfigHandler::renderUsingHideLabel($control_name, $hide_label);
+	}
+
+    /**
+    * Render form control using hide_label param
+    *
+	* @param string $control_name
+	* @param boolean $hide_label
+    * @return string
+    */
+    function renderUsingHideLabel($control_name, $hide_label) {
+	  $genid = gen_id();
+	  
       $data = $this->getConfigOption()->getOptions();
       $possible_values = explode(",", $data);
       $current_values = $this->getValue();
@@ -50,8 +62,10 @@
       	}
       	
       	$checked = array_search($option_id, $current_values) !== false;
-      	$out .= '<div class="checkbox-config-option">';
-      	$out .= label_tag($option_text, $genid.'_'.$control_name.'_'.$option_id, false, array('style' => 'cursor:pointer;'), '');
+		$out .= '<div class="checkbox-config-option">';
+		if(!$hide_label){
+			$out .= label_tag($option_text, $genid.'_'.$control_name.'_'.$option_id, false, array('style' => 'cursor:pointer;'), '');
+		}
       	$out .= checkbox_field($control_name . '[' . $option_id . ']', $checked, array('id' => $genid.'_'.$control_name.'_'.$option_id));
       	$out .= '</div >';
       	

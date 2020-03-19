@@ -22,6 +22,8 @@ if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_add_timeslot
 	$can_add_timeslots = false;
 }
 
+$add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row');
+
 ?>
 
 <div id="timePanel" class="ogContentPanel" style="height:100%;">
@@ -345,7 +347,31 @@ if (is_array($add_columns)) {
     timeslots_tbar_items.push(botonera.print);
 
 
-<?php foreach ($additional_actions as $add_action) { ?>
+<?php foreach ($additional_actions as $add_action) { 
+		if (array_var($add_action, 'type') == 'menu') {
+?>
+			var menu_items = [];
+<?php foreach ($add_action['items'] as $item) { ?>
+			menu_items.push(new Ext.Action({
+				iconCls: '<?php echo array_var($item, 'cls') ?>',
+				text: '<?php echo array_var($item, 'text') ?>',
+				handler: function() {
+				<?php if (isset($item['onclick'])) { ?>
+					eval("<?php echo $item['onclick'] ?>");
+				<?php } else if (isset($item['url'])) { ?>
+					og.openLink("<?php echo $item['url'] ?>");
+				<?php } ?>
+				}
+			}));
+<?php } ?>
+			var menu_action = new Ext.Action({
+				text: '<?php echo array_var($add_action, 'text') ?>',
+				menu: menu_items
+			});
+			timeslots_tbar_items.push(menu_action);
+<?php
+		} else {
+?>
         timeslots_tbar_items.push(new Ext.Button({
             iconCls: '<?php echo array_var($add_action, 'cls') ?>',
             text: '<?php echo array_var($add_action, 'text') ?>',
@@ -357,7 +383,9 @@ if (is_array($add_columns)) {
     <?php } ?>
             }
         }));
-<?php } ?>
+        
+<?php 	}
+	  } ?>
 
 
     // toolbar buttons to the right
@@ -459,7 +487,7 @@ if (is_array($add_columns)) {
         columns: timeslots_columns,
         tbar_items: timeslots_tbar_items,
         tbar_right_items: timeslots_tbar_right_items,
-        quick_add_row: <?php echo $can_add_timeslots ? '1' : '0' ?>,
+        quick_add_row: <?php echo $add_quick_add_row ? '1' : '0' ?>,
         quick_add_row_fn: og.add_timeslot_module_quick_add_row,
         quick_add_row_user_options: add_row_user_options,
         add_default_actions_column: false,

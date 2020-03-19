@@ -144,34 +144,44 @@ og.FileManager = function() {
 		return String.format('<div class="{0}" />', classes);
 	}
 
-	function renderDateUpdated(value, p, r) {
+	/* Go to https://docs.sencha.com/extjs/2.3.0/#!/api/Ext.grid.ColumnModel 
+	and search for setRenderer() function to reference renderer functions 
+	behavior */
+
+	function renderUpdatedBy(value, metadata, row) {
 		if (!value) {
 			return "";
 		}
-		var userString = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>', r.data.updatedBy, og.getUrl('contact', 'card', {id: r.data.updatedById}));
-	
-		var now = new Date();
-		var dateString = '';
-		if (!r.data.dateUpdated_today) {
-			return lang('last updated by on', userString, value);
-		} else {
-			return userString +", "+ value;
-		}
+		var username = value;
+		var linkToUser = og.getUrl('contact', 'card', {id: row.data.updatedById});
+
+		var result = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>',
+								   username,
+								   linkToUser);			
+
+		return result;
 	}
-	
-	function renderDateCreated(value, p, r) {
+
+	function renderUpdatedOn(value, metadata, row) {
+		return value ? value : "";
+	}
+
+	function renderCreatedBy(value, metadata, row) {
 		if (!value) {
 			return "";
 		}
-		var userString = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>', r.data.createdBy, og.getUrl('contact', 'card', {id: r.data.createdById}));
-	
-		var now = new Date();
-		var dateString = '';
-		if (!r.data.dateCreated_today) {
-			return lang('last updated by on', userString, value);
-		} else {
-			return userString +", "+ value;
-		}
+		var username = value;
+		var linkToUser = og.getUrl('contact', 'card', {id: row.data.createdById});
+
+		var result = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>',
+									username,
+									linkToUser);
+								  
+		return result;
+	}
+
+	function renderCreatedOn(value, metadata, row) {
+		return value ? value : "";
 	}
 
 	function renderCheckout(value, p, r) {
@@ -387,19 +397,34 @@ og.FileManager = function() {
 			width: 120,
 			hidden: true
 		},{
-			id: 'updated',
+			id: 'updatedBy',
 			header: lang("last updated by"),
-			dataIndex: 'dateUpdated',
+			dataIndex: 'updatedBy',
 			width: 120,
-			renderer: renderDateUpdated,
+			renderer: renderUpdatedBy,
 			sortable: true
         },{
-			id: 'created',
+			id: 'updatedOn',
+			header: lang("last updated on"),
+			dataIndex: 'dateUpdated',
+			width: 120,
+			renderer: renderUpdatedOn,
+			sortable: true
+        },{
+			id: 'createdBy',
 			header: lang("created by"),
+			dataIndex: 'createdBy',
+			width: 120,
+			hidden: true,
+			renderer: renderCreatedBy,
+			sortable: true
+		},{
+			id: 'createdOn',
+			header: lang("created on"),
 			dataIndex: 'dateCreated',
 			width: 120,
 			hidden: true,
-			renderer: renderDateCreated,
+			renderer: renderCreatedOn,
 			sortable: true
 		},{
 			id: 'status',

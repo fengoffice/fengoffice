@@ -81,7 +81,7 @@ function core_dimensions_after_add_to_members($object, &$added_members) {
 	}
 	
 	$context = active_context();
-	if(count($context) > 0){
+	if(is_array($context) && count($context) > 0){
 		foreach ($context as $selection) {
 			if ($selection instanceof Member && $selection->getDimension()->getCode() == 'feng_persons') {
 				$object->addToMembers(array($selection));
@@ -95,7 +95,7 @@ function core_dimensions_after_add_to_members($object, &$added_members) {
 /**
  * 
  * Instantiates dimension asociations for the contact member in feng_persons and the members where the contact belongs to.
- * @param $contact The contact
+ * @param $contact Contact
  * @param $contact_member Member of the contact
  * @param $all_members Members where the object belongs
  */
@@ -173,8 +173,8 @@ function core_dim_create_member_associations(Contact $contact, $contact_member, 
 /**
  * 
  * After editing permissions refresh associations and object_members for the contact owner of the permission_group modified
- * @param $pg_id Permission group id
- * @param $ignored Ignored
+ * @param $pg_id int Permission group id
+ * @param $ignored null
  */
 function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
 	$pg = PermissionGroups::findById($pg_id);
@@ -344,8 +344,8 @@ function core_dimensions_after_insert($object, &$ignored) {
 }
 
 /**
- * @param unknown_type $object
- * @param unknown_type $ignored
+ * @param unknown_type ContentDataObject $object
+ * @param unknown_type null $ignored
  */
 function core_dimensions_after_update($object, &$ignored) {
 	static $objectsProcessed = array();

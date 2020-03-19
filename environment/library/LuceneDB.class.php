@@ -9,6 +9,7 @@ final class LuceneDB {
 	 *
 	 * @return Zend_Search_Lucene_Interface
 	 */
+	/*
 	static function GetIndex(){
 		if (!self::$index) {
 			try {
@@ -49,11 +50,11 @@ final class LuceneDB {
         	
         return true;
 	}
-	
+	*/
 	/**
 	 * Searches for objets
 	 *
-	 * @param unknown_type $conditions
+	 * @param mixed $conditions
 	 * @return array
 	 */
 	static function findClean($conditions){

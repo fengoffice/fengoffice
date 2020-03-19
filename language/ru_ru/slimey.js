@@ -67,4 +67,3 @@ addLangs({
 	"new slideshow": "Новая презентация",
 	"second slide": "Второй слайд"
 });
-

@@ -85,7 +85,7 @@ member_selector.autocomplete_select = function(dimension_id, genid, combo, recor
 	}
 }
 
-member_selector.add_relation = function(dimension_id, genid, member_id, show_actions, dont_reload_dep_selectors) {
+member_selector.add_relation = function(dimension_id, genid, member_id, show_actions, dont_reload_dep_selectors, dont_select_assoc_members) {
 	if (typeof member_id == "undefined") {
 		var combo = Ext.getCmp(genid + 'add-member-input-dim' + dimension_id);
 		var member = combo.selected_member;
@@ -212,7 +212,9 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	}
 	
 	// automatic selection of associated members of related dimensions
-	og.selectDefaultAssociatedMembers(genid, dimension_id, member.id, true);
+	if (!dont_select_assoc_members) {
+		og.selectDefaultAssociatedMembers(genid, dimension_id, member.id, true);
+	}
 }
 
 member_selector.remove_relation = function(dimension_id, genid, member_id, dont_reload) {

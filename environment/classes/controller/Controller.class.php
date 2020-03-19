@@ -199,7 +199,7 @@
     *
     * @access private
     * @param void
-    * @return arrays
+    * @return array
     */
     function getReservedActionNames() {
       static $names;

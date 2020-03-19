@@ -6,4 +6,16 @@
 	'add new relation tags' => 'Связать с меткой',
 	'filter by workspaces' => 'Отфильтровать по Рабочему пространству',
 	'filter by tags' => 'Отфильтровать по метке',
+	'add new workspace' => 'Добавить новый {0}',
+	'add your first workspace' => 'Добавить первый {0}',
+	'the workspaces' => 'проекты',
+	'the workspace' => 'проект',
+	'filter by workspaces' => 'Отфильтровать используя проекты',
+	'you have no workspaces yet' => 'У вас пока нет проектов',
+	'worked' => 'Oтработано',
+	'this task has x previous open task' => 'Эта задача имеет {0} открытых подзадач',
+	'new due date' => 'Новое время завершения',
+	'Due' => 'Время завершения',
+	'time period' => 'Период времени',
+
 ); ?>

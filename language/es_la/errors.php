@@ -155,5 +155,6 @@
 	'you cant add member without security permissions' => 'No se puede agregar {0} sin especificar su ubicación porque usted no puede asignar permisos. Por favor seleccione donde ubicar {0} para que los permisos puedan ser heredados.',
         'token external key value required' => 'Key es requerido',
         'token external name value required' => 'Name es requerido',
-        'token external type value required' => 'Type es requerido',
+		'token external type value required' => 'Type es requerido',
+		'you dont have permissions to add this object in members' => 'Usted no tiene permisos para agregar este {0} en {1}',
 ); ?>

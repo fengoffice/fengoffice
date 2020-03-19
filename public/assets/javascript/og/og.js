@@ -1210,7 +1210,7 @@ og.dashExpand = function(genid, expand_id){
 		else widget.slideOut('t', {useDisplay:true, duration:.3});
 
 		var expander = document.getElementById(genid + 'expander');
-		expander.className = (setExpanded) ? "dash-expander ico-dash-expanded":"dash-expander ico-dash-collapsed";
+		if (expander) expander.className = (setExpanded) ? "dash-expander ico-dash-expanded":"dash-expander ico-dash-collapsed";
 	}
 };
 
@@ -2901,7 +2901,7 @@ og.onParentMemberSelect = function (genid, dimension_id, member_id){
 
 
 	$("#" + genid + "memberParent").val(member_id);
-	member_selector.add_relation(dimension_id, genid, member_id,false);
+	member_selector.add_relation(dimension_id, genid, member_id, false, false, true);
 	og.prev_parent = member_id;
 
 	og.userPermissions.reload_member_permissions(genid, dimension_id, member_id);
@@ -3647,8 +3647,11 @@ og.onAssociatedMemberTypeSelect = function (genid, dimension_id, member_id, hf_i
 
 	member_selector.add_relation(dimension_id, genid, member_id, false);
 	document.getElementById(genid + hf_id).value = "["+member_id+"]";
-
-	og.selectDefaultAssociatedMembers(genid, dimension_id, member_id);
+	
+	// dont select associated members of an associated member
+	if (member_selector[genid].hiddenFieldName.indexOf("associated_members[") == -1) {
+		og.selectDefaultAssociatedMembers(genid, dimension_id, member_id);
+	}
 }
 
 
@@ -3657,7 +3660,10 @@ og.onAssociatedMemberTypeSelectMultiple = function (genid, dimension_id, member_
 	member_selector.add_relation(dimension_id, genid, member_id, true);
 	document.getElementById(genid + hf_id).value = Ext.util.JSON.encode(member_selector[genid].sel_context[dimension_id]);
 
-	og.selectDefaultAssociatedMembers(genid, dimension_id, member_id);
+	// dont select associated members of an associated member
+	if (member_selector[genid].hiddenFieldName.indexOf("associated_members[") == -1) {
+		og.selectDefaultAssociatedMembers(genid, dimension_id, member_id);
+	}
 }
 
 og.onAssociatedMemberTypeRemoveMultiple = function (genid, dimension_id, hf_id){
@@ -3780,7 +3786,10 @@ og.addViewMoreNode = function(pnode, tree_id, callback) {
 			if (pnode) pnode.appendChild(view_more_node);
 		}
 
-
+		// remove anchor from this node to prevent hiding the list after clicking the anchor, leave only the "view more" text
+		if (view_more_node.ui && view_more_node.ui.anchor && view_more_node.ui.anchor.parentNode) {
+			view_more_node.ui.anchor.parentNode.innerHTML = " " + og.clean(lang('view more') + " ...");
+		}
 	}
 }
 
@@ -4048,11 +4057,29 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 			  			if (dep_genid == '') dep_genid = data.genid;
 			  		}
 
-					if (member_selector[dep_genid] && (!member_selector[dep_genid].sel_context[data.dimension_id] || member_selector[dep_genid].sel_context[data.dimension_id].length == 0) 
+					if (member_selector[dep_genid] /*&& (!member_selector[dep_genid].sel_context[data.dimension_id] || member_selector[dep_genid].sel_context[data.dimension_id].length == 0)*/ 
 							&& member_selector[dep_genid].properties[data.dimension_id]) {
 						// add the relations
 						for (var z=0; z<data.member_ids.length; z++) {
-				  			member_selector.add_relation(data.dimension_id, dep_genid, data.member_ids[z], false, true);
+							
+							// if already selected then do nothing
+							var hf_input = document.getElementById(dep_genid + member_selector[dep_genid].hiddenFieldName);
+							var json_sel_ids = Ext.util.JSON.decode(hf_input.value);
+							if (json_sel_ids.indexOf(parseInt(data.member_ids[z])) != -1) {
+								continue;
+							}
+							
+							// remove old selection in this dimension
+							member_selector.remove_all_dimension_selections(dep_genid, data.dimension_id);
+							
+							if (og.dimensions && og.dimensions[data.dimension_id] && og.dimensions[data.dimension_id][data.member_ids[z]]) {
+								// if member data already in cache -> use it and select the member
+								member_selector.add_relation(data.dimension_id, dep_genid, data.member_ids[z], false, true);
+							} else {
+								// go to server and get the member data and then select the member
+								var tmp_data = {member_id: data.member_ids[z], dimension_id: data.dimension_id, genid:dep_genid};
+								og.getMemberFromServer(data.member_ids[z], og.member_selector_add_relation, tmp_data);
+							}
 						}
 						// hide emtpy text
 						if (data.member_ids.length > 0) {
@@ -4066,6 +4093,10 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 		  	});
   		}
   	}
+}
+
+og.member_selector_add_relation = function(ignored1, ignored2, data) {
+	member_selector.add_relation(data.dimension_id, data.genid, data.member_id);
 }
 
 
@@ -4142,7 +4173,8 @@ og.getDateToolbarFilterComponent = function (config) {
         menu: new og.drawDateMenuPicker({
             id: config.name,
             items: [new Ext.menu.Item({
-                    id: uid + config.name + '_remove',
+                    //id: uid + config.name + '_remove',
+            		id: config.name + '_remove',
                     text: lang('remove filter'),
                     iconCls: 'ico-delete',
                     hidden: true,
@@ -4172,7 +4204,7 @@ og.getDateToolbarFilterComponent = function (config) {
     
     
     if (config.value)
-        Ext.getCmp(uid + config.name + '_remove').show();
+        Ext.getCmp(config.name + '_remove').show();
 
     return action_btn;
 }
@@ -4428,6 +4460,7 @@ og.submit_pdf_form = function(genid) {
 	var params = og.get_report_parameters_of_form(genid);
 	params['exportPDF'] = true;
 	params['pdfPageLayout'] = $("#"+genid+"pdfPageLayout").val();
+	params['pdfPageSize'] = $("#"+genid+"pdfPageSize").val();
 
 	var report_id = $("#report_id_"+genid).val();
 	og.openLink(og.getUrl('reporting', 'export_custom_report_pdf', {id: report_id}), {
@@ -4623,23 +4656,36 @@ og.quick_add_row_column_tabindex = function(grid, column) {
 }
 
 
+/**
+ * This function renders the member selector for each member visible in the time module quick-add row
+ * It receives the context
+ * @param dim_id It's the dimension that will be rendered
+ * @param genid is the unique id of the input component
+ * @param hf_name is the name of the hidden field, which is the one sent back to the backend on the submit request
+ * @param sel_mem_ids
+ * @param is_multiple
+ * @param select_current_context
+ * 
+ */
 og.quick_add_row_member_selector = function(dim_id, genid, hf_name, sel_mem_ids, is_multiple, select_current_context) {
 	if (dim_id > 0) {
-		if (!hf_name) hf_name = 'members_';// + dim_id;
+		if (!hf_name) hf_name = 'members_input_' + dim_id;
 		if (!sel_mem_ids) sel_mem_ids = '';
 		if (!is_multiple) is_multiple = 0;
 		if (typeof(select_current_context) == 'undefined') select_current_context = true;
+		
+		var selector_config = {
+				genid: genid,
+				context: og.contextManager.plainContext(),
+				dim_id: dim_id,
+				is_multiple: is_multiple,
+				hide_label: true,
+				hf_name: hf_name,
+				selected_member_ids: sel_mem_ids,
+				select_current_context: select_current_context
+		};
 
-		og.openLink(og.getUrl('dimension', 'render_member_selector', {
-			genid: genid,
-			context: og.contextManager.plainContext(),
-			dim_id: dim_id,
-			is_multiple: is_multiple,
-			hide_label: true,
-			hf_name: hf_name,
-			selected_member_ids: sel_mem_ids,
-			select_current_context: select_current_context
-		}), {
+		og.openLink(og.getUrl('dimension', 'render_member_selector', selector_config), {
 			preventPanelLoad: true,
 			hideLoading: true,
 			callback: function(success, data) {
@@ -4664,7 +4710,7 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 	var member_ids = [];
 
 	$(add_row).find('input, select').each(function() {
-		if ($(this).attr('name').indexOf('members_') == 0) {
+		if ($(this).attr('name').indexOf('members_input_') == 0) {
 			var mem_ids = Ext.util.JSON.decode($(this).val());
 			member_ids = member_ids.concat(mem_ids);
 		} else {
@@ -4681,6 +4727,13 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 
 	return params;
 }
+
+/**
+ * This functions clears the input fields for:
+ *	 - Description
+ *	 - Time
+ * All other values are left as they were, because we assume that they will change much less.
+ */
 og.clean_timeslot_module_quick_add_params = function (grid) {
     var params = {'dont_reload': true, 'members': '[]'};
     var add_row = grid.getView().getRow(0);
@@ -4708,7 +4761,9 @@ og.add_timeslot_module_quick_add_submit = function(grid_id, first_input_column) 
 			if (success && data.timeslot) {
 				data.timeslot.type = 'timeslot';
 				var record = new Ext.data.Record(data.timeslot, data.timeslot.id);
-                                og.clean_timeslot_module_quick_add_params(grid);
+                                
+				og.clean_timeslot_module_quick_add_params(grid);
+				
 				// add new timeslot to the top of the grid
 				grid.store.insert(1, record);
 
@@ -4720,6 +4775,9 @@ og.add_timeslot_module_quick_add_submit = function(grid_id, first_input_column) 
 						$("#"+grid.genid+"add_ts_" + first_input_column).focus();
 					}, 200);
 				}
+				
+				// reload totals row if needed
+				grid.reloadTotalsRow();
 			}
 		}
 	});
@@ -5113,6 +5171,8 @@ og.getDateArray = function (date, time) {
         default:
             break;
     }
+    
+    //
     if (time == 'hh:mm') {
     	var now_time = new Date();
     	time = now_time.format('H:i');

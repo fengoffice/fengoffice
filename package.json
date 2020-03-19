@@ -1,0 +1,37 @@
+{
+  "name": "fo-internal",
+  "version": "1.0.0",
+  "description": "About Feng Office 3.8.0.9\r \t================================",
+  "main": "index.js",
+  "scripts": {
+    "build-babel": "babel src -d public/assets/javascript/og/react",
+    "start": "rm -rf ./public/assets/javascript/react_production && webpack --watch --mode=development",
+    "build": "rm -rf ./public/assets/javascript/react_production && webpack --mode=production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fengoffice/FO_Internal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fengoffice/FO_Internal/issues"
+  },
+  "homepage": "https://github.com/fengoffice/FO_Internal#readme",
+  "dependencies": {
+    "react": "^16.11.0",
+    "react-dom": "^16.11.0",
+    "recharts": "^1.8.5"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.6.4",
+    "@babel/core": "^7.6.4",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/preset-env": "^7.6.3",
+    "@babel/preset-react": "^7.6.3",
+    "babel-loader": "^8.0.6",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9"
+  }
+}

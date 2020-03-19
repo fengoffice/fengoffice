@@ -147,7 +147,9 @@
 			
 			if ($object instanceof ProjectTask) {
 				tpl_assign('show_timeslot_section', $show_timeslot_section);
+				?><div id="<?php echo $genid ?>_work_performed_summary"><?php 
 				$this->includeTemplate(get_template_path('work_performed', 'task'));
+				?></div><?php
 			}
 			
 			

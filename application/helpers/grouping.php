@@ -2,8 +2,7 @@
 
 
 	function getGroup($groups, $member_id, $group_type, $all_pgroup_ids) {
-		if (!$member_id) return null;
-
+		if (!$member_id && $groups[0]['group']['name'] != lang('unclassified')) return null;
 		if (count($all_pgroup_ids) > 0) {
 			$pg_id = array_shift($all_pgroup_ids);
 			return getGroup($groups[$pg_id]['subgroups'], $member_id, $group_type, $all_pgroup_ids);
@@ -190,6 +189,8 @@
 			$grouped = groupObjectsByAssocObjColumnValue($objects, array_var($gb_criteria, 'value'), array_var($gb_criteria, 'fk'), $parent_group);
 		} else if (array_var($gb_criteria, 'type') == 'custom_prop') {
 			$grouped = groupObjectsByCustomPropertyValue($objects, array_var($gb_criteria, 'value'), $parent_group);
+		} else if (array_var($gb_criteria, 'type') == 'first_level_task_only') {
+			$grouped = groupObjectsByColumnValue($objects, 'rel_object_id', $parent_group, true);
 		}
 		return $grouped;
 	}
@@ -212,13 +213,26 @@
 	}
 	
 	
-	function groupObjectsByColumnValue($objects, $column, &$parent_group = null) {
+	function groupObjectsByColumnValue($objects, $column, &$parent_group = null, $only_first_level_task = false) {
 		
 		$groups = array();
 		$grouped_objects = array();
 		
 		foreach ($objects as $obj) {
 			$gb_val = $obj->getColumnValue($column);
+			
+			if ($gb_val > 0 && $only_first_level_task) {
+				$tmp_task = ProjectTasks::findById($gb_val);
+				while ($tmp_task instanceof ProjectTask) {
+					if ($tmp_task->getParentId() > 0) {
+						$gb_val = $tmp_task->getParentId();
+					} else {
+						break;
+					}
+					$tmp_task = ProjectTasks::findById($gb_val);
+				}
+			}
+			
 			$group = null;
 			foreach ($groups as $g) {
 				if (array_var($g, 'id') === $gb_val) $group = $g;
@@ -229,15 +243,18 @@
 				if ($column == 'priority') {
 					$name = lang('priority '.$gb_val);
 				} else {
-					$related_object = Objects::findObject($obj->getColumnValue($column));
+					$related_object = Objects::findObject($gb_val);
 					if ($related_object instanceof ContentDataObject) {
 						$name = $related_object->getObjectName();
 					} else {
 						$name = lang('unclassified');
 					}
 				}
-				
-				$group = array('group' => array('id' => $gb_val, 'name' => $name, 'pid' => 0, 'group_type' => 'column'), 'subgroups' => array());
+				$group_type = 'column';
+				if ($only_first_level_task) {
+					$group_type = 'first_level_task_only';
+				}
+				$group = array('group' => array('id' => $gb_val, 'name' => $name, 'pid' => 0, 'group_type' => $group_type), 'subgroups' => array());
 				$groups[$gb_val] = $group;
 			}
 			

@@ -402,6 +402,10 @@ a.button {
 	background-color: #d9d9d9;
 	cursor: pointer;
 }
+#quick-form.menu ul.quick-menu-list li.quick-menu-item a {
+	display: inline-block;
+	width: 100%;
+}
 
 
 #quick-form .close {

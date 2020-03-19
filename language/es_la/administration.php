@@ -648,7 +648,9 @@
     'user config option name show_start_time_action' => 'Reloj',
     'user config option desc show_start_time_action' => 'Habilitar el reloj para registro de tiempo',
     'user config option name automatic_calculation_time'=>'Comportamiento al modificar las horas',
+    'user config option desc automatic_calculation_time'=>'Cuando modificas el tiempo trabajo (o pausado), ¿qué prefieres que haga el sistema?',
     'user config option name automatic_calculation_start_time'=>'Comportamiento al modificar las fechas',
+    'user config option desc automatic_calculation_start_time'=>'Cuando modificas la fecha de inicio o de fin de un registro de horas trabajadas, ¿qué prefiere que haga el sistema?',
     'user config option name show_pause_time_action' => 'Permitir tiempo pausado',
     'config option name show_pause_time_action' => 'Permitir tiempo pausado',
     'user config option name stop_running_timeslots' => 'Permitir parar registro de tiempos cuando inició uno nuevo',
@@ -656,6 +658,17 @@
     'user config option name properties_for_contact_component' => 'Propiedades de contacto para mostrar en los selectores de contacto',
     'user config option desc properties_for_contact_component' => 'Aquí puede elegir propiedades adicionales que se mostrarán al seleccionar un contacto en cualquier selector de contactos.',
 		
+		'config option name use_time_quick_add_row' => 'Habilitar ingreso rápido en el módulo de horas',
+		
 		'user config option name tasksGroupsPaginationCount' => 'Grupos de tareas por página',
 		'user config option desc tasksGroupsPaginationCount' => 'Número de grupos de tareas a cargar en el listado de tareas al inicializarse y al cargar más grupos.',
+		
+		
+		'user config option name decimals_separator' => 'Separador de decimales',
+		'user config option desc decimals_separator' => 'Símbolo que separa los dígitos decimales en los montos',
+		'user config option name thousand_separator' => 'Separador de miles',
+		'user config option desc thousand_separator' => 'Símbolo que separa los miles en los montos',
+		'user config option name decimal_digits' => 'Dígitos decimales',
+		'user config option desc thousand_separator' => 'Cantidad de dígitos decimales a mostrar',
+		
 );

@@ -43,10 +43,22 @@ class ApiController extends ApplicationController {
      */
     private function get_object($request) {
         try {
-            $tasks = Objects::findObject($request['oid']);
+            $object = Objects::findObject($request['oid']);
             /* @var $tasks ProjectTask */
-            if ($tasks->canView(logged_user())) {
-                return $this->response('json', $tasks->getArrayInfo(true));
+            if ($object->canView(logged_user())) {
+            	
+            	if ($object instanceof ProjectTask) {
+            		$object_data = $object->getArrayInfo(true, true);
+            	} else {
+            		if ($object instanceof Timeslot) {
+            			$object_data = $object->getArrayInfo(false, true);
+            		} else {
+		            	$object_data = $object->getArrayInfo();
+            		}
+	            	$object_data['members_data'] = build_api_members_data($object);
+            	}
+            	
+                return $this->response('json', $object_data);
             } else {
                 $this->response('json', false);
             }
@@ -63,7 +75,6 @@ class ApiController extends ApplicationController {
             $clean_timeslots = array();
             
             if (!is_null($request['oid'])) {
-                Logger::log_r("oid is NOT null in get_timeslots \n");
                 // If the request has an Object id, retrieve the timeslots of that task.
                 $object = Objects::findObject($request['oid']);
                 if ($object instanceof ContentDataObject) {
@@ -83,49 +94,9 @@ class ApiController extends ApplicationController {
     	            	$clean_timeslots[] = $data;
     	            }
                 }
-                return $this->response('json', $clean_timeslots);
-            } else {
-                Logger::log_r("oid IS NULL in get_timeslots \n");
-                //Return all the timeslots for that request
-                //$timeslots = Timeslots::getGeneralTimeslots($context);
-                
-                $arguments = array();
-                Timeslots::instance()->findAll($arguments);
-                //$timeslots = Timeslots::instance()->listing(array(
-                //    "join_ts_with_task" => false
-                    
-                    //,
-
-//                     "order" => $order,
-//                     "order_dir" => $order_dir,
-//                     "dim_order" => $dim_order,
-//                     "cp_order" => $cp_order,
-//                     "start" => $start,
-//                     "limit" => $limit,
-//                     "ignore_context" => $ignore_context,
-//                     "extra_conditions" => $extra_conditions,
-//                     "count_results" => false,
-//                     "only_count_results" => $only_count_result,
-//                     "join_params" => $join_params,
-//                     "select_columns" => $select_columns
-                //));
-                foreach($timeslots as $timeslot) {
-                    
-                    $data = $timeslot->getArrayInfo();
-                    
-                    $data['paused_desc'] = "";
-                    $formatted = DateTimeValue::FormatTimeDiff($timeslot->getStartTime(), $timeslot->getEndTime(), "hm", 60, $timeslot->getSubtract());
-                    if ($timeslot->getSubtract() > 0) {
-                        $now = DateTimeValueLib::now();
-                        $data['paused_desc'] = DateTimeValue::FormatTimeDiff($now, $now, "hm", 60, $timeslot->getSubtract());
-                    }
-                    $data['formatted'] = $formatted;
-                    
-                    $clean_timeslots[] = $data;
-                }
-                return $this->response('json', $clean_timeslots);
-                
             }
+            
+            return $this->response('json', $clean_timeslots);
             
         } catch (Exception $exception) {
             throw $exception;
@@ -212,10 +183,18 @@ class ApiController extends ApplicationController {
         if ($name!=""){
         	$extra_conditions = "AND mem.name LIKE '%".$name."%'";
         }
-        $params = array('dim_id' => $dimension_id, 'type_id' => $typeId, 'start'=>$start, 'limit'=>$limit, 'extra_conditions' => $extra_conditions);
+        $params = array(
+        		'dim_id' => $dimension_id, 
+        		'type_id' => $typeId, 
+        		'start' => $start, 
+        		'limit' => $limit, 
+        		'extra_conditions' => $extra_conditions,
+        		'exclude_associations_data' => true,
+        );
+        
         $memberController = new MemberController();
         $object = $memberController->listing($params);
-
+        
         // updates the name of the members using the configuration if exists.
         build_member_list_text_to_show_in_trees($object["members"]);
         
@@ -343,6 +322,14 @@ class ApiController extends ApplicationController {
             // TYPE DEPENDENT FILTERS :
             switch ($service) {
 
+                case 'Timeslots' :
+                	// only numeric for assigned to
+                    if (!empty($request['args']['assigned_to']) && is_numeric($request['args']['assigned_to'])) {
+                        $query_options['extra_conditions'] = " AND contact_id = " . $request['args']['assigned_to'] . " ";
+                    }
+
+                	break;
+                	
                 case 'ProjectTasks' :
                 	// only numeric for assigned to
                     if (!empty($request['args']['assigned_to']) && is_numeric($request['args']['assigned_to'])) {
@@ -403,7 +390,7 @@ class ApiController extends ApplicationController {
             
             $object_managers = DB::executeAll("SELECT handler_class 
             		FROM ".TABLE_PREFIX."object_types 
-            		WHERE `type` IN ('content_object','dimension_object')");
+            		WHERE `type` IN ('content_object','dimension_object','located')");
             $object_managers = array_flat($object_managers);
             
             // allow only object classes in the $service parameter
@@ -420,7 +407,13 @@ class ApiController extends ApplicationController {
                 if ($service == "ProjectTasks") {
                     array_push($temp_objects, $object->getArrayInfo(1,true));
                 } else {
-                    array_push($temp_objects, $object->getArrayInfo());
+                	if ($object instanceof Timeslot) {
+                		$object_data = $object->getArrayInfo(false, true);
+                	} else {
+                		$object_data = $object->getArrayInfo();
+                	}
+                	$object_data['members_data'] = build_api_members_data($object);
+                    array_push($temp_objects, $object_data);
                 }
             }
 
@@ -460,10 +453,13 @@ class ApiController extends ApplicationController {
             if ($object = Objects::findObject($id)) {
                 if ($object->canDelete(logged_user())) {
                     try {
+                    	DB::beginWork();
                         $object->trash();
                         Hook::fire('after_object_trash', $object, $null);
                         $response = true;
+                        DB::commit();
                     } catch (Exception $e) {
+                    	DB::rollback();
                         $response = false;
                     }
                 }
@@ -504,6 +500,24 @@ class ApiController extends ApplicationController {
                         if (!empty($request ['args'] ['priority'])) {
                             $object->setPriority($request ['args'] ['priority']);
                         }
+                    }
+                    break;
+
+                case 'timeslot' :
+                    if ($request ['args'] ['id']) {
+                        $object = Timeslots::instance()->findByid($request ['args'] ['id']);
+                    } else {
+                        $object = null;
+                    }
+                    if ($object instanceof Timeslot) {
+                        if (!empty($request ['args'] ['description'])) {
+                            $object->setObjectName($request ['args'] ['description']);
+                            $object->setDescription($request ['args'] ['description']);
+                        }
+                    	$worked_minutes = $request['args']['hours']*60 + $request['args']['minutes'];
+                    	$end_time = new DateTimeValue($object->getStartTime()->getTimestamp());
+                    	$end_time->add('m', $worked_minutes);
+                    	$object->setEndTime($end_time);
                     }
                     break;
 
@@ -568,9 +582,32 @@ class ApiController extends ApplicationController {
 			'description' => $request ['args'] ['description'],
 		);
 		
-		$controller = new TimeslotController();
-		$controller->add_timespan();
-		
+		if ($_REQUEST['object_id']) {
+			$controller = new TimeslotController();
+			$controller->add_timespan();
+		} else {
+			
+			$parameters = array();
+			$parameters['members'] = json_encode(array_var($request['args'], 'members', array()));
+			$parameters['timeslot'] = array(
+				'hours' => $request ['args'] ['hours'],
+				'minutes' => $request ['args'] ['minutes'],
+//				'date' => DateTimeValueLib::now(),
+//				'start_time' => $start_time,
+				'description' => $request ['args'] ['description'],
+				'contact_id' => $request ['args'] ['contact_id'],
+			);
+			$controller = new TimeController();
+			$timeslot = $controller->add_timeslot($parameters);
+			
+			$modified = false;
+			Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
+			
+			if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
+				Env::useHelper('functions', 'advanced_billing');
+				calculate_timeslot_rate_and_cost($timeslot);
+			}
+		}
 		return $this->response('json', true);
     }
     
@@ -599,7 +636,7 @@ class ApiController extends ApplicationController {
      * Response formated API results
      * @param response type
      * @param response content
-     * @return formated API result
+     * @return string API result
      * @throws Exception
      */
     private function response($type = NULL, $response) {

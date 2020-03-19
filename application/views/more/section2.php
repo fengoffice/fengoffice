@@ -64,7 +64,7 @@ $right_links[] = array(
 	'onclick' => 'document.getElementById(\'sup_form\').submit(); return false;',
 	'name' => lang('open a support ticket'),
 	'target' => '_blank',
-	'additional_html' => '<form target="_blank" id="sup_form" action="http://www.fengoffice.com/web/inc/_session_recover.php" method="post" style="display:none;">
+	'additional_html' => '<form target="_blank" id="sup_form" action="https://www.fengoffice.com/web/inc/_session_recover.php" method="post" style="display:none;">
 			<input type="hidden" name="infobar_email" value="'.$email.'" />
 			<input type="hidden" name="infobar_token" value="'.$token.'" />
 			<input type="hidden" name="infobar_redirect" value="support/tickets.php" />

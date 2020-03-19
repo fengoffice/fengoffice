@@ -20,7 +20,7 @@
     *
     * @access public
     * @param void
-    * @return InvalidEmailAddress
+    * @return InvalidEmailAddressError
     */
     function __construct($email, $message = null) {
       if(is_null($message)) $message = "Email address '$email' is not valid";

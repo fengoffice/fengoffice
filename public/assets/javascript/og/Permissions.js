@@ -1098,12 +1098,13 @@ og.userPermissions.afterChangingPermissions = function(genid) {
 	og.userPermissions.current_pg_id = 0;
 }
 
-og.userPermissions.showPermissionsPopup = function(container, genid) {
+og.userPermissions.showPermissionsPopup = function(container, genid, user_type) {
 	var id = $(container).attr('id');
 	var pg_id = id.substr(id.lastIndexOf('_') + 1);
 	
 	var name = $("#username_"+pg_id).html();
 	var is_guest = $("#" + genid + "_is_guest_" + pg_id).val() > 0;
+	if (!user_type) user_type = $("#" + genid + "_user_type_" + pg_id).val();
 	
 	var dim_id = $("#" + genid + "_dim_id").val();
 	var tree = Ext.getCmp("dimension-panel-"+dim_id);
@@ -1114,6 +1115,8 @@ og.userPermissions.showPermissionsPopup = function(container, genid) {
 	}
 	
 	og.userPermissions.onUserSelect(genid, {id:pg_id, n:name, isg:is_guest});
+	
+	og.userPermissions.showHidePermissionsRadioButtonsByRole(genid, user_type);
 
 	og.userPermissions.current_pg_id = pg_id;
 	
@@ -1154,6 +1157,7 @@ og.userPermissions.showHidePermissionsRadioButtonsByRole = function(genid, role_
 		var ot = ot_radios[j].id.substring(ot_radios[j].id.lastIndexOf('_')+1);
 		object_types.push(ot);
 	}
+	var dim_id = $("#" + genid + "_dim_id").val();
 	
 	if (!max_perms) { // user groups => show all radiobuttons
 		for (var i=0; i<object_types.length; i++) {
@@ -1227,7 +1231,7 @@ og.userPermissions.reload_member_permissions = function (genid, dimension_id, pa
 og.userPermissions.drawUserListItem = function(genid, item, noclick) {
 	var el = document.getElementById(genid + '_pg_' + item.pg_id);
 	if (!el) {
-		var html = '<li class="user-data" id="'+genid+'_pg_'+item.pg_id+'" onclick="og.userPermissions.showPermissionsPopup(this, \''+genid+'\');">';
+		var html = '<li class="user-data" id="'+genid+'_pg_'+item.pg_id+'" onclick="og.userPermissions.showPermissionsPopup(this, \''+genid+'\','+item.role_id+');">';
 		
 		if (item.type == 'group') {
 			html += '<div class="coViewIconImage ico-large-group"></div>';

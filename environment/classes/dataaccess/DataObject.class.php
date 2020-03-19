@@ -145,7 +145,7 @@
   	* @access public
   	* @param array $errors
   	* @return boolean
-  	* @throws ModelValidationError
+  	* @throws Error ModelValidationError
   	*/
   	function validate($errors) {
   	  return true;

@@ -8,7 +8,7 @@ class Event {
 	 * Add an event
 	 *
 	 * @param string $name
-	 * @param unknown $data
+	 * @param mixed $data
 	 */
 	function addEvent($name, $data) {
 		$this->events[] = array(

@@ -18,7 +18,7 @@ abstract class ContentDataObjects extends DataManager {
 	}
 	
 	function getObjectTypeId() {
-		if (!$this instanceof ContentDataObjects || is_null($this->object_type_name)) {
+		if (!isset($this) || is_null($this->object_type_name)) {
 			return null;
 		}		
 		if (is_null($this->object_type_id)) {
@@ -431,6 +431,7 @@ abstract class ContentDataObjects extends DataManager {
 		$ignore_context = array_var($args,'ignore_context');
 		$include_deleted = (bool) array_var($args,'include_deleted');
 		$join_with_searchable_objects = array_var($args, 'join_with_searchable_objects');
+		$use_like_in_searchable_objects = array_var($args, 'use_like_in_searchable_objects');
 		$select_columns = array_var($args, 'select_columns');
 		$fire_additional_data_hook = array_var($args, 'fire_additional_data_hook', true);
 		
@@ -449,14 +450,26 @@ abstract class ContentDataObjects extends DataManager {
 		    //if text_filter starts or ends with special characters, remove it for do the query.
 		    $text_filter = str_replace( array( '-', '+', '~' , '(', ')','<','>','*','"' ), ' ', $text_filter);
 		    
-		    if(str_word_count($text_filter, 0) > 1){
-		        $text_filter_extra_conditions .= "
-								AND MATCH (so.content) AGAINST ('\"$text_filter\"' IN BOOLEAN MODE)
-						    ";
-		    }else{
-		        $text_filter_extra_conditions  .= "
-								AND MATCH (so.content) AGAINST ('$text_filter*' IN BOOLEAN MODE)
-						    ";
+		    if ($use_like_in_searchable_objects || is_numeric($text_filter)) {
+		    	if (is_numeric($text_filter)) {
+		    		$text_filter_str = "$text_filter";
+		    	} else {
+		    		$text_filter_str = "$text_filter%";
+		    	}
+		    	$text_filter_extra_conditions .= "
+					AND so.content like '$text_filter_str'
+				";
+		    	
+		    } else {
+			    if(str_word_count($text_filter, 0) > 1){
+			        $text_filter_extra_conditions .= "
+									AND MATCH (so.content) AGAINST ('\"$text_filter\"' IN BOOLEAN MODE)
+							    ";
+			    }else{
+			        $text_filter_extra_conditions  .= "
+									AND MATCH (so.content) AGAINST ('$text_filter*' IN BOOLEAN MODE)
+							    ";
+			    }
 		    }
 		}
 		
@@ -581,19 +594,30 @@ abstract class ContentDataObjects extends DataManager {
 		}
 		if (!empty($members) && count($members)) {
 			
-			$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=o.id ";
-			
-			$SQL_CONTEXT_CONDITION = "om.member_id IN (" . implode ( ',', $members ) . ") $exclusive_in_member";
+			//$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=o.id ";
+			$i = 0;
+			foreach ($members as $mem_id) {
+				$t_alias = 'om';
+				if ($i > 0) $t_alias .= $i;
+				$SQL_BASE_JOIN .= "
+					LEFT JOIN ".TABLE_PREFIX."object_members $t_alias ON ${t_alias}.object_id=o.id AND ${t_alias}.member_id=$mem_id ";
+				$i++;
+				
+				$SQL_CONTEXT_CONDITION .= ($SQL_CONTEXT_CONDITION == '' ? '' : " AND ");
+				$SQL_CONTEXT_CONDITION .= "${t_alias}.member_id = $mem_id";
+			}
+			//$SQL_CONTEXT_CONDITION = "om.member_id IN (" . implode ( ',', $members ) . ") $exclusive_in_member";
 			
 			//Fixing: Undefined index
 			if (!isset($args['group_by'])) {
 				$args['group_by'] = "";
 			}
-		    if (trim($args['group_by']) != "") {
+		    /*if (trim($args['group_by']) != "") {
 		        $args['group_by'] .= ", ";
 		    }
 		    
 		    $args['group_by'] .= "om.object_id HAVING COUNT(DISTINCT(om.member_id)) = ".count($members);
+		    */
 
 		}else{
 			//show only objects that are on root
@@ -647,14 +671,21 @@ abstract class ContentDataObjects extends DataManager {
 			$check_permissions_col = "o.id";
 		}
 		
+		$mail_ot_id = -1;
+		if (Plugins::instance()->isActivePlugin('mail')) {
+			$mail_ot = ObjectTypes::findByName('mail');
+			if ($mail_ot instanceof ObjectType) $mail_ot_id = $mail_ot->getId();
+		}
+		$report_ot_id = ObjectTypes::findByName('report')->getId();
+		
 		if (logged_user() instanceof Contact) {
 			$uid = logged_user()->getId();
 			// Build Main SQL
 			$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
 			
 			$permissions_condition = " true ";
-			if (!logged_user()->isAdministrator() || $this instanceof MailContents) {
-				if ($this instanceof MailContents) {
+			if (!logged_user()->isAdministrator() || self::getObjectTypeId() == $mail_ot_id) {
+				if (self::getObjectTypeId() == $mail_ot_id) {
 					$permissions_condition = "(
 						$check_permissions_col IN (
 							SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
@@ -666,6 +697,12 @@ abstract class ContentDataObjects extends DataManager {
 							SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
 							WHERE macc.contact_id=$uid
 						)
+					) ";
+				} else if (self::getObjectTypeId() == $report_ot_id) {
+					$permissions_condition = "(e.ignore_context=1 OR ".$check_permissions_col." IN (
+						SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+						WHERE ".$check_permissions_col." = sh.object_id
+						AND sh.group_id  IN ($logged_user_pgs))
 					) ";
 				} else {
 					$permissions_condition = $check_permissions_col." IN (
@@ -684,9 +721,13 @@ abstract class ContentDataObjects extends DataManager {
 			 * 		2 - Or it belongs to at least a member in a dimension that does not defines permissions
 			 * 		3 - Or user has permissions to read objects without classification 
 			 */
-		  if (!$type instanceof ObjectType || !$type->getName()=='mail') {
+		  if (!$type instanceof ObjectType || $type->getName() != 'mail') {
 			$without_perm_dim_ids = Dimensions::findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
 			$no_perm_dims_cond = "";
+			$no_perm_reports_cond = "";
+			if ($type instanceof ObjectType && $type->getName() == 'report') {
+				$no_perm_reports_cond = " OR e.ignore_context=1";
+			}
 			
 			if (count($without_perm_dim_ids) > 0) {
 				$no_perm_dims_cond = " OR EXISTS (
@@ -696,7 +737,7 @@ abstract class ContentDataObjects extends DataManager {
 				)";
 			}
 			
-			$permissions_condition .= " AND IF (o.object_type_id=".MailContents::instance()->getObjectTypeId().", true, (
+			$permissions_condition .= " AND IF (o.object_type_id=".$mail_ot_id.", true, (
 				EXISTS (
 					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
 					WHERE cmp.member_id=0 AND cmp.permission_group_id=".logged_user()->getPermissionGroupId()." AND cmp.object_type_id = o.object_type_id
@@ -707,13 +748,14 @@ abstract class ContentDataObjects extends DataManager {
 						inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
 						inner join ".TABLE_PREFIX."dimensions dims on dims.id = mems.dimension_id
 					WHERE omems.object_id=o.id and dims.defines_permissions=1 and dims.is_manageable=1
-				) $no_perm_dims_cond
+				) $no_perm_dims_cond $no_perm_reports_cond
 			))";
 		  }
 			/********************************************************************************************************/
-			
-			if (!$this instanceof MailContents && logged_user()->isAdministrator() || 
-					($this instanceof Contacts && $this->object_type_name == 'contact' && can_manage_contacts(logged_user()))) {
+		  
+		    $contact_ot_id = ObjectTypes::findByName('contact')->getId();
+			if (self::getObjectTypeId() != $mail_ot_id && logged_user()->isAdministrator() || 
+					(self::getObjectTypeId() == $contact_ot_id && can_manage_contacts(logged_user()))) {
 				$permissions_condition = "true";
 			}
 			/*
@@ -805,10 +847,10 @@ abstract class ContentDataObjects extends DataManager {
 					$total = DB::executeOne($sql_total);
 					$result->total = $total['total'];	
 				}else{
-					if  ( count($result->objects) >= $limit ) {
+					if ( is_array($result->objects) && count($result->objects) >= $limit ) {
 						$result->total = 10000000;
 					}else{
-						$result->total = $start + count($result->objects);
+						$result->total = $start + (is_array($result->objects) ? count($result->objects) : 0);
 					}
 				}
 				
@@ -946,17 +988,21 @@ abstract class ContentDataObjects extends DataManager {
     		}else{
     			$join_type = "INNER";
     		}
-	    	
-    		if (array_var($join_params, 'e_field')) {
+			
+			if(array_var($join_params, 'e_field') && array_var($join_params, 'get_object_data')){
+				$on_cond = "`o`.`".$join_params['e_field']."` = `jt`.`".$join_params['jt_field']."`";
+			} else if (array_var($join_params, 'e_field')) {
 	      		$on_cond = "`e`.`".$join_params['e_field']."` = `jt`.`".$join_params['jt_field']."`";
 	      		if (array_var($join_params, 'on_extra')) {
 	      			$on_cond = "`e`.`".$join_params['e_field']."` = `jt`.`".$join_params['jt_field']."` ".$join_params['on_extra'];
 	      		}
 	      	} else if (array_var($join_params, 'j_sub_q')) {
 	      		$on_cond = "`jt`.`".$join_params['jt_field']."` = (" . array_var($join_params, 'j_sub_q') . ")";
-	      	}
-    		$join_conditions = $join_type." JOIN `".$join_params['table']."` `jt` ON " . $on_cond;
-    	}
+			  }
+
+			$join_conditions = $join_type." JOIN `".$join_params['table']."` `jt` ON " . $on_cond;
+			
+		}
     	return $join_conditions;
     }
     

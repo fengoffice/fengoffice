@@ -701,6 +701,16 @@ class AccessController extends ApplicationController {
 				  )
 				ON DUPLICATE KEY UPDATE member_id=0;");
 				
+				DB::execute("
+					INSERT INTO `".TABLE_PREFIX."objects` (`object_type_id`, `name`, `created_on`, `created_by_id`, `updated_on`, `updated_by_id`, `trashed_by_id`, `archived_by_id`, `trashed_on`, `archived_on`) VALUES
+					((SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='report'), 'task time report', NOW(), ".$administrator->getId().", NOW(), ".$administrator->getId().", 0, 0, 0, 0);
+				");
+				DB::execute("
+					INSERT INTO `".TABLE_PREFIX."reports` (`object_id`, `description`, `report_object_type_id`, `order_by`, `is_order_by_asc`, `ignore_context`, `is_default`, `code`, `function_url`) VALUES
+					((SELECT max(id) FROM ".TABLE_PREFIX."objects WHERE object_type_id=(SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='report')), 'task time report description', (SELECT id FROM ".TABLE_PREFIX."object_types WHERE name='timeslot'), '', 1, 1, 1, 'total_task_times_report', '?c=reporting&a=total_task_times_p');
+				");
+				
+				$null = null;
 				Hook::fire('after_user_add', $administrator, $null);
 				
 				DB::commit();

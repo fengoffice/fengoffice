@@ -26,6 +26,10 @@
 	border: 0px;
 }
 
+#header #logo_company_margin_top {
+	height: 55px;
+}
+
 #header .header-content-right {
 	float: right;
 	margin-right: 15px;
@@ -453,10 +457,10 @@ div.left-column-wrapper {
 
 div.right-column {
     float: left;
-    margin-left: -470px;
+    margin-left: -480px;
     padding-left: 15px;
     padding-right: 15px;
-    width: 440px;
+    width: 450px;
 }
 
 .contact div.right-column {
@@ -467,7 +471,7 @@ div.right-column {
 
 
 div.left-column {
-    margin-right: 470px;
+    margin-right: 495px;
     min-width: 200px;
     padding-right: 10px;
 }
@@ -637,6 +641,10 @@ div.layout-container.contact .right-column {
 .dashboard-container.view-container {
 	border: none!important;
 	box-shadow: none!important;
+	min-height: 100vh;
+	padding: 20px 40px 0 30px;
+	background: #f9f9f9;
+	margin: 0;
 }
 
 /** End Contact Fluid layotu */
@@ -671,12 +679,6 @@ div.layout-container.contact .right-column {
 	margin-right: 5px ;
 }
 
-.late-objects-widget .widget-header {
-	color: white;
-	background-color: #DD4444;
-	border-color: #CC1111;
-}
-
 .late-objects-widget .widget-body div.right {
 	text-align: right;
 	margin: 5px 2px;
@@ -704,12 +706,6 @@ div.layout-container.contact .right-column {
 	white-space: nowrap;
 	overflow:hidden;
 	text-overflow:ellipsis;
-}
-
-.completed-tasks .widget-header {
-	color: white;
-	background-color: #2D592C;
-	border-color: #2D592C;
 }
 
 .modal-container{

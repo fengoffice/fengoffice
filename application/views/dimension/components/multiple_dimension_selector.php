@@ -79,7 +79,7 @@
 	if (!member_selector['<?php echo $genid; ?>'].properties) member_selector['<?php echo $genid; ?>'].properties = {};
 	member_selector['<?php echo $genid; ?>'].hiddenFieldName = '<?php echo $hidden_field_name; ?>';
 	member_selector['<?php echo $genid; ?>'].otid = '<?php echo $content_object_type_id; ?>';
-	
+
 	<?php if (isset($dont_filter_this_selector)) { ?>
 	member_selector['<?php echo $genid; ?>'].dontFilterThisSelector = <?php echo $dont_filter_this_selector ? '1' : '0'?>,
 	<?php } ?>

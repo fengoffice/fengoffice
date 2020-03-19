@@ -14,7 +14,7 @@ class Hook {
 	 * 
 	 * @param $function It's the name of the function.
 	 * @param $argument It's the argument (Or set of arguments?) to be.
-	 * @param $ret holds the result of the function call.
+	 * @param $ret mixed holds the result of the function call.
 	 * 
 	 */
 	static function fire($function, $argument, &$ret) {

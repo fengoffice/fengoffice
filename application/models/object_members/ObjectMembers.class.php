@@ -93,7 +93,7 @@
   			}
   				
   			$member_ids = array();
-  			if(count($rows) > 0){
+  			if(is_array($rows) && count($rows) > 0){
   				foreach ($rows as $row){
   					$member_ids[] = $row['member_id'];
   				}

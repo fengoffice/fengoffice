@@ -217,6 +217,7 @@
     'token external key value required' => 'Key is required',
     'token external name value required' => 'Name is required',
     'token external type value required' => 'Type is required',
+  	'you dont have permissions to add this object in members' => 'You don\'t have permissions to add this {0} in {1}',
   ); // array
 
 ?>

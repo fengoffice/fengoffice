@@ -11,7 +11,7 @@
 
 
 	$project = active_project();
-	$contacts = ProjectContacts::getContactsByProject($project);
+	$contacts = array();//ProjectContacts::getContactsByProject($project);
 	//if (can_manage_contacts(logged_user())){
 		if (count($contacts) > 0){
 			?><div class='endSeparatorDiv'>

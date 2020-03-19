@@ -70,6 +70,7 @@
 					<span id="username_<?php echo $user->getPermissionGroupId()?>" class="bold"><?php echo $user->getObjectName()?></span>
 					<input id="<?php echo $genid ?>_is_guest_<?php echo $user->getPermissionGroupId()?>" name="is_guest" type="hidden" value="<?php echo ($user->isGuest() ? '1' : '0')?>"/>
 					<input id="<?php echo $genid ?>_user_id_<?php echo $user->getPermissionGroupId()?>" name="user_id" type="hidden" value="<?php echo $user->getId()?>"/>
+					<input id="<?php echo $genid ?>_user_type_<?php echo $user->getPermissionGroupId()?>" name="user_type" type="hidden" value="<?php echo $user->getUserType()?>"/>
 					
 					<?php if ($user->getCompanyId() > 0) { ?>
 					<div class="desc"><?php echo $user->getCompany()->getObjectName(); ?></div>

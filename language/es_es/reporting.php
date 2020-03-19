@@ -68,4 +68,6 @@
   	'csv' => 'CSV',
   	'pdf' => 'PDF',
   	'excel' => 'Excel',
+  	'page size' => 'Tamaño de página',
+	'first level task only' => 'Solo tareas del primer nivel',
 ); ?>

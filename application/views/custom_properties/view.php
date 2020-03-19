@@ -25,7 +25,6 @@
 	        }
 			
             $tr_cls = "";
-	        $cp_html .= '<table style="width:100%;" class="og-custom-properties main">';
 	        
 	        foreach ($custom_properties as $cp) {
 	            if ($cp->getType() == 'color' || $cp->getCode() == 'calculate the status automatically_special') {
@@ -49,8 +48,12 @@
 	                    $tr_cls = $tr_cls == "" ? altRow : "";
 	                }
 	            }
-	        }
-	        $cp_html .= '</table>';
+			}
+			$cp_html_final = '';
+			if(trim($cp_html) != "") {
+				$cp_html_final .= '<table style="width:100%;" class="og-custom-properties main">' . $cp_html . '</table>';
+			}
+			$cp_html = $cp_html_final;
 			
 	    }
     }

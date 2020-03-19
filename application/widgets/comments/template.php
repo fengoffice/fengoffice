@@ -38,7 +38,7 @@
 										<span class="comment-title"><?php echo clean($comment->getObjectName());?></span>
 									</a>
 								</td>
-								<td class="datecomment-breadcrumb-container">
+								<!--<td class="datecomment-breadcrumb-container">
 									<div class="comment-breadcrumb-container">
 									<span class="breadcrumb"></span>
 									</div>
@@ -46,7 +46,7 @@
 										var crumbHtml = <?php echo $crumbJs?> ;
 										$("#comment-<?php echo $comment->getId()?> .breadcrumb").html(crumbHtml);
 									</script>
-								</td>
+								</td>-->
 								<?php if ($comment->getUpdatedBy() instanceof Contact) { ?>
 								<td class="desc date-container">
 									<?php

@@ -27,6 +27,7 @@ class MemberController extends ApplicationController {
 		
 		$config = array(
 			'object_type_id' => array_var($_REQUEST, 'type_id'),
+			'object_subtype_id' => array_var($_REQUEST, 'subtype_id'),
 			'dimension_id' => array_var($_REQUEST, 'dim_id'),
 			'dimension_code' => $dim instanceof Dimension ? $dim->getCode() : '',
 			'object_type_name' => $ot instanceof ObjectType ? $ot->getName() : '',
@@ -357,7 +358,6 @@ class MemberController extends ApplicationController {
 	
 	function listing($parameters = null) {
 		$return_the_list = true;
-	
 		// if parameters not specified => use the request
 		if (is_null($parameters)) {
 			ajx_current("empty");
@@ -383,6 +383,7 @@ class MemberController extends ApplicationController {
 		$use_definition = array_var($parameters, 'use_definition');
 		$cp_filters = array_var($parameters, 'cp_filters');
         $sub_type_object = array_var($parameters, 'sub_type_object');
+        $exclude_associations_data = array_var($parameters, 'exclude_associations_data');
 
         // text search filter parameters
         $join_with_searchable_objects = array_var($parameters, 'join_with_searchable_objects');
@@ -405,7 +406,10 @@ class MemberController extends ApplicationController {
 		
 	
 		// dimension associations params
-		$assoc_params = $this->build_listing_associated_dimensions_parameters($dimension, $member_type_id,'mem',$filter_members_id);
+		$assoc_params = array();
+		if (!$exclude_associations_data) {
+			$assoc_params = $this->build_listing_associated_dimensions_parameters($dimension, $member_type_id,'mem',$filter_members_id);
+		}
 		//$dimension_associations = array_var($assoc_params, 'assocs');
 		//$associated_dimension_ids = array_var($assoc_params, 'dims');
 		//$associated_member_ids = array_var($assoc_params, 'assoc_members');

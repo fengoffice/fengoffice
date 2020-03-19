@@ -1,5 +1,5 @@
 
-	About Feng Office 3.7.2.16
+	About Feng Office 3.8.1.23
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,474 @@
 	
 	Changelog
 	=========
+	
+	Since 3.8.1.23
+	-----------------
+	bugfix: fix several installer issues with default values when mysql is too strict
+	bugfix: fix some installer issues after fixed reports were reconfigured in the database
+	bugfix: fix several installer issues in plugins that were not using mysqli functions
+	bugfix: fix automatic task repetitions generation when there are duplicated threads of tasks
+	bugfix: show unclassified timeslots when grouped by workspaces
+	bugfix: show tasks status, timeslot type and group by options in the timesheets report header
+	bugfix: fix bugs in 'Due date reminder' notifications
+	bugfix: fix notification when a new task is assigned to the user
+	bugfix: consolidate all the changes and additions to the task and notify the user that new task is assigned to
+	
+	
+	Since 3.8.1.22
+	-----------------
+	bugfix: fix bugs in 'Due date reminder' notifications
+	bugfix: fix upgrade script for timesheets report
+	bugfix: fix tasks list dimension column names when using custom names for member types
+	bugfix: dont check certificate in web plugin wget command
+	bugfix: fix error 500 when editing task and template no longer exist
+	bugfix: fix timesheets report csv export, it was not showing workspaces column
+	bugfix: fix timesheets report when using timeslots type variable
+ 
+	
+	Since 3.8.1.21
+	-----------------
+	bugfix: fix budget report form when expense categories plugin is not installed
+	bugfix: close pdf modal form after the file is downloaded
+	bugfix: Fix subtasks repetitiveness
+	bugfix: fix missing lang internal projects
+	bugfix: fix custom reports cp conditions when cp is user or contact
+	
+	Since 3.8.1.20
+	-----------------
+	feature: Several improvements in Budget report phase
+	feature: add 'monto a rendir' column to payments list
+	feature: Integration with new Excel export library PhpSpreadsheet
+	feature: set member selectors as single selection in billing definitions
+	bugfix: don't use phpexcel primitives directly when arranging totals, can't assume which library is being used
+	bugfix: fix budget report pdf export to set the company logo as a public file so pdf lib has no problems to include it
+	bugfix: Fix custom report options to format date
+	bugfix: Fix css when printing reports made in plugins. Add a parameter to hide the default report header when printing a fixed report
+	bugfix: fix adv reports installer to set a def value in one columns
+	bugfix: Fix upgrade scripts when some columns not exist
+	bugfix: Stop sending move_direction status in notifications
+
+	
+	Since 3.8.1.19
+	-----------------
+	bugfix: change the way that web plugin makes the requests
+	bugfix: use a variable to set the page size of member selector components to improve performance
+	bugfix: fix the view more tree node in member selector components
+	bugfix: in function httprequest use https when no shema is sent
+	bugfix: custom reports were not allowing to show contact cps columns
+	bugfix: fix duplicated users in users list when they have more than one email address
+	bugfix: fix tipoCambio field when sending e-invoice with currency different than uyu
+	bugfix: fix get project tasks function for the budget report
+	
+	Since 3.8.1.18
+	-----------------
+	feature: New budget report
+	feature: make PM report recursive to every level
+	feature: support multiple projects in PM report
+	feature: increase memory limit for the excel export process
+	bugfix: fix timesheets report grouping when using first level tasks only and other subgroups
+	bugfix: fix facturalista invoice line name length to be less than 80 chars
+	bugfix: fix facturalista glosa field for discounts, max 50 chars
+	bugfix: fix financials widget, it was not budgeting the tasks without due date
+	bugfix: fix core upgrade script to prevent error when adv_reports is not installed
+	bugfix: fix custom report edition, wrong permissions check and error message shown
+	bugfix: fix newsletters recipient status lists and sending process
+	
+	Since 3.8.1.17
+	-----------------
+	feature: add "Previous tasks" as a new possible column in tasks custom reports
+	feature: allow user to edit report name and change report's category
+	feature: add column 'Email' to the Settings->Users list
+	feature: allow to use multi assignment feature to generate subtasks when editing a task
+	bugfix: fix multi assignment feature in tasks.
+	bugfix: fix timesheets report alignment and structure
+	bugfix: fix installer default datetime values in objects table
+	bugfix: format long numbers in the react charts in Y-Axis
+	bugfix: fix notification manager bug that sent 2 notification emails when the user is assigned
+	bugfix: fix notification manager bug that didn't send notifications when name, classification or description were changed in the document.
+	bugfix: keep the previous default behaviour when assigning country to einvoice
+	bugfix: fix multiple address component renderer, it was not working correctly in cps, country and type selectors wrong
+	
+	Since 3.8.1.16
+	-----------------
+	feature: remember pdf options when exporting reports to pdf
+	feature: language improvements for expenses plugin
+	bugfix: fix payment receipts date filters
+	bugfix: Fix start date and due date in subtasks repetitions
+	
+	Since 3.8.1.15
+	-----------------
+	feature: add client number in the destino field for facturalista class
+	feature: Unify PM reports
+	feature: allow to exclude internal projects in PM report
+	feature: allow to group default timesheets report by only the first level tasks
+	bugfix: fix PM report project information headers
+	bugfix: don't include disabled dimensions in default timesheets report group by options
+	
+	Since 3.8.1.14
+	-----------------
+	bugfix: fix trash function, it was not setting trash date
+	bugfix: fix tasks list group totals, dont use total_worked_time column, it is not calculated correctly in some cases
+	bugfix: fix project management report totals
+	feature: add language files for facturalista plugin
+	feature: make references mandatory for debit notes
+	
+	Since 3.8.1.13
+	-----------------
+	feature: new type of invoice: Debit note. Also supports e-invoice
+	bugfix: fix missing lang when trying to delete tickets
+	bugfix: add daily and weekly summary records to the notifications manager installer
+	bugfix: fix dependencies bug when completing a task and system asks to complete subtasks
+	bugfix: minor change to cps included in new projects widget
+	
+	Since 3.8.1.12
+	-----------------
+	bugfix: realign and resize misaligned icons
+	bugfix: update the presentation of the notification triggers
+	bugfix: fix notification summaries generation queries to prevent fatal errors and error management inside the function
+	bugfix: fix fatal error when assuming that the result of findOne is always a Contact
+	bugfix: fix facturalista hardcoded country when generating e-invoice
+	bugfix: fix notifications manager summaries generator
+	bugfix: fix string formatting for reports and some special characters
+	bugfix: fix error 500 when emtying trash
+	
+	Since 3.8.1.11
+	-----------------
+	feature: Add two new columns to the "Project management report"
+	feature: Add config options to the general configuration for the time in tasks
+	bugfix: fix date filters in pm report
+	bugfix: fix night hours calculation in advanced services plugin
+	bugfix: fix objective edition
+	bugfix: fix code warnings in add/edit objective form and fix description component localization
+	bugfix: Fix template task generator
+	bugfix: Fix saving cropped picture
+	bugfix: fix tasks table default datetime values to prevent query errors for too strict mysql configurations
+	bugfix: when completing a repetitive task the new repetition is not loaded in the list
+	
+	Since 3.8.1.10
+	-----------------
+	bugfix: fix get next repetitions date function call
+	bugfix: Remove width limitation for the breadcrumb buttons
+	feature: Notification manager improvements
+	
+	Since 3.8.1.9
+	-----------------
+	bugfix: fix invoice generation from tasks and timeslots
+	bugfix: fix payment receipt view error 500 when uploaded document is not in the repository
+	bugfix: Fix search selector and permission group selector to flip or fit the list position when it goes beyond the screen
+	bugfix: Fix permissions issue in payment's quota selector and fix custom lang of payment system permission
+	bugfix: improve search for numeric values
+	bugfix: add quota amounts to searchable objects
+	bugfix: non-admin users add custom reports without permissions and can't see them
+	
+	Since 3.8.1.8
+	-----------------
+	feature: allow to configure format for currency amounts (decimal digits, decimal and thousand separators)
+	
+	Since 3.8.1.7
+	-----------------
+	bugfix: fix payments search
+	bugfix: fix cloning or adding to a template a task with subtype
+	bugfix: minor language updates
+	
+	Since 3.8.1.6
+	-----------------
+	bugfix: Fix widgets css in the dashboard
+	bugfix: cron event to generate repetitive task instances was not enabled by default
+	bugfix: role member was not applied to the repetitions after a template is instantiated
+	
+	Since 3.8.1.5
+	-----------------
+	feature: Add move direction to the repetitive tasks with non-working days
+	feature: improvements to project management reports
+	bugfix: fix repetitions issue that duplicates last task
+	
+	Since 3.8.1.4
+	-----------------
+	feature: Minor style updates for dashboard widgets
+	bugfix: never send tipoCambio=0 in facturalista plugin
+	bugfix: fix template instantiation for repertitve tasks when due date depends on a parameter
+	
+	Since 3.8.1.3
+	-----------------
+	bugfix: modify quota selector text to show more detailed information
+	
+	Since 3.8.1.2
+	-----------------
+	feature: remove date field from payments view, add/edit form and list in a separated plugin
+	feature: new report option to show only date value for datetime columns
+	bugfix: fix payments totals calculations in old expenses plugin
+	bugfix: Fix generated dates in repetitive tasks created by templates
+	bugfix: dont show financials and earned vs labor widgets if no context is selected, they may have performance issues with high volume of data
+	bugfix: dont autoselect related members after selecting a related member in members add/edit form
+
+	Since 3.8.1.1
+	-----------------
+	bugfix: assigned user's default role must be assigned when instantiating tasks from template
+
+	Since 3.8.1.0
+	-----------------
+	feature: UI improvements on widgets
+	
+	Since 3.8.0.x
+	-----------------
+	feature: new project and evx widgets
+	feature: integration with react
+	
+	
+	Since 3.8.0.16
+	-----------------
+	feature: config option to use or not the time module's quick add row
+	
+	Since 3.8.0.15
+	-----------------
+	feature: new plugin roles_dimension
+	
+	
+	Since 3.8.0.14
+	-----------------
+	bugfix: evx project widget installation query fixed
+	bugfix: minor fixes to project management report
+	bugfix: fix number format for expenses getArrayInfo function
+	bugfix: fix excel export rounding when number string is too long
+	bugfix: fix search query for non-administrators
+	
+	
+	Since 3.8.0.13
+	-----------------
+	bugfix: fix general search error 500
+	bugfix: Fix error message to show when user doesn't have perimssions to add an object in a context.
+	bugfix: modify property groups hooks to return data as an array if needed, add project information to project management report
+	feature: new expenses progress widget
+	
+	
+	Since 3.8.0.12
+	-----------------
+	feature: allow project management report to be exported to pdf, excel and csv
+	bugfix: fix plugin installer/updater helper query that adds the located_under property to the default group
+	
+	
+	Since 3.8.0.11
+	-----------------
+	feature: new project reports plugin
+	feature: Make minutes input field have bigger width depending on the font style it was cutting the number of minutes
+	feature: add alignment option to property groups, to use in widgets and reports
+	
+	
+	Since 3.8.0.10
+	-----------------
+	bugfix: When classifying an object in the related members of a project, check if it isn’t already classified in a member of the associated dimension, if it is classified in one then don’t reclassify.
+	bugfix: fix advanced services timeslots generation, they were not using the task’s start date and that leads to errors in further timeslots hour type calculations
+	bugfix: fix the user permissions popup caps when selecting the user from the searchbox
+	bugfix: dont generate the next repetition when editing the last repetitive task 
+	
+	
+	Since 3.8.0.9
+	-----------------
+	bugfix: Tasks list print: When filtering by pending the print view was including completed subtasks
+	bugfix: Tasks list print: The print view was not including all tasks in the list
+	bugfix: Tasks list print: Print view css was not the same as the tasks list
+	bugfix: Tasks list print: In dimension member columns only one member per dimension was printed
+	bugfix: Minor fixes in function comments and verifications in array variables before iterating or counting
+	bugfix: fix contact edition: when removing all members it wasnt doing anything
+	bugfix: fix members add/edit form to include the parent selector when advanced core is installed and member cps plugin is not
+	bugfix: set expense item name as the description when name is empty in getArrayInfo function
+	bugfix: fix custom property sum operator when making the query for report group totals
+	bugfix: fix pdf generation command syntax when defining the command location in config.php
+	bugfix: fix isDate helper function to check the date value with the one defined in the user preferences
+	
+	
+	Since 3.8.0.8
+	-----------------
+	feature: add supplier custom properties to expenses custom reports
+	feature: Make 'close' button visible in template variables window
+	feature: Make list of templates sorted when user wants to add new task
+	bugfix: Fix the repetitive task date generator
+	bugfix: fix switch break command in advanced reports hook
+	bugfix: minor syntax fixes and function documentation fixes, also removed some unexistent classes usage (legacy from Feng 1.x)
+	bugfix: fix listing function when mail plugin is not installed
+	bugfix: Fix advanced search query
+	bugfix: fix notifications manager hook definition
+	bugfix: Alert the user if the date field is empty in the template instantiation
+	bugfix: fix templates task workflow section, the template tasks couldn't be added to the workflow
+	bugfix: Make repetitive tasks consider working days
+	bugfix: Fix filters functionality in tickets module
+	
+	
+	Since 3.8.0.7
+	-----------------
+	feature: Create new sortable columns in the Contacts, Notes and Tickets
+	bugfix: fix custom reports navigation when cp conditions has special characters
+	bugfix: Fix template repetitie tasks due date and start date generator
+	bugfix: Fix link to the google fonts
+	bugfix: fix evx_edition plugin installer
+	bugfix: fix user's default hour type selector, it was selecting every member of other dimension components in the form
+	bugfix: fix tasks list query, bug introduced in the last release
+	
+	Since 3.8.0.6
+	-----------------
+	feature: Added new columns to notes module
+	feature: Added new columns to the Contact Module
+	feature: dont show the group totals for one specific report (identified by its code in the reports table)
+	feature: add 'observaciones' column to one specific custom report (identified by a code defined in the reports table)
+	feature: Create new columns 'Created By', 'Created on', 'Updated by', 'Updated on' in the Documents module
+	feature: added hook to autoclassify in project's related members after adding timeslot from mobile
+	feature: Modifications for compatibility and new features added to the mobile app
+	bugfix: fix newsletter contact selector to include all the contact dimensions
+	bugfix: remove 'worked time' text from intersection column headers in custom reports
+	language: New translations to ru_ru language
+	
+	Since 3.8.0.5
+	-----------------
+	bugfix: filter quota selector by active context
+	bugfix: fix evx projects widget table header for description column
+	
+	Since 3.8.0.4
+	-----------------
+	bugfix: remove old expense reports from new expenses plugin
+	bugfix: fix user history permissions to allow other users with higher or equal rank to view it
+	feature: add new bulk actions button to time module: put as pending
+	feature: new plugin for calculated billing rates
+
+	Since 3.8.0.3
+	-----------------
+	bugfix: fix timeslots permission validations when editing and deleting
+	bugfix: fix overtime report total
+
+	Since 3.8.0.2
+	-----------------
+	bugfix: fix error when executing overtime report without date, add user filter to overtime report
+	bugfix: fix client members depth when removing parent
+	
+	Since 3.8.0.1
+	-----------------
+	bugfix: fix generic listing query when filtering by more than one member, was affecting listing totals
+	bugfix: hide permission radio buttons if the user role doesnt allow them to be set
+	bugfix: task custom reports are not filtering by status=completed
+	
+	Since 3.8
+	-----------------
+	feature: new timesheet approval plugin
+	bugfix: recalculate task percent completed after adding or deleting timeslot
+	bugfix: recalculate task percent completed after deleting timeslot
+	
+	Since 3.8-rc
+	-----------------
+	bugfix: modify evx project widget alignments
+	bugfix: override member type name with subtype name in member forms
+	bugfix: fix worked time calculation after deleting timeslots and reload the worked time summary in tasks view
+	bugfix: Fix headers misalignment in custom reports pdf export
+	bugfix: Fix excel export in custom reports to include the project number in project's name
+	bugfix: fix duplicated project number in projects tree
+	
+	Since 3.8-beta
+	-----------------
+	bugfix: fix object prefixes in repetitve tasks, in the repetitions the prefix was being duplicated
+	bugfix: fix templates instantiation to avoid forcing today date when user does not enter a date parameter
+	bugfix: fix template params instantiation when dates are a non working day
+	bugfix: bugfix: dont let template tasks to fall in an invalid week day (according to the enabled weekdays defined in the original task)
+	bugfix: fix template objects prop comparison, fix timeslots status after generating invoice
+	
+	Since 3.8-alpha6
+	-----------------
+	feature: Added function add_custom_property, quick and simple method to add a single custom property
+	feature: custom properties for tasks can now be instantiated by templates
+	feature: new method to group timeslots in invoices (by person and hour type)
+	feature: The name of the template properties is now calculated on the getTemplateObjectProperties function
+	feature: Added a hook call to add custom properties as template properties
+	bugfix: fix userbox position in header when clicking it
+	bugfix: Return template properties sorted by the property name
+	language: langs for new income config options
+	
+	Since 3.8-alpha5
+	-----------------
+	bugfix: improve documents widget css for new theme
+	bugfix: Fix header and widget margins for new theme
+	bugfix: dont override current associated members when changing the parent member
+	
+	Since 3.8-alpha2
+	-----------------
+	feature: new overtime_reports plugin
+	
+	Since 3.8-alpha1
+	-----------------
+	feature: new theme and css modifications
+	feature: modifications to evx widgets
+	
+	Since 3.7.2.26
+	-----------------
+	feature: Keep reference of the original timeslot when splitting it by overtime hours dimension
+	feature: Improved messages and translations for time input
+	bugfix: fix the timeslots form to prevent start date reset if you modify the start date before the worked hours
+	bugfix: modify the recalculate_next_days function to make the recalculations 4 weeks forward instead of 1 week
+	bugfix: fix custom reports when they are grouped and show some custom properties related to the contacts
+	bugfix: fix overtime calculations when paused time > 0
+	bugfix: fix quick add row to reload totals row after adding a new timeslot
+	bugfix: fix overtime calculations for timeslots starting at 00:00hs
+	bugfix: fix get_contact_worked_time function to use the original timeslot id in related timeslots
+	bugfix: Make the recalculations by merging the related timeslots and splitting only the original one
+	bugfix: Fix the week filters to start on sundays and end on saturdays
+	bugfix: After generating new timeslots add all of them to the list
+	bugfix: fix several errors in overtime calculations due to timezone usage
+	bugfix: Improved UX when entering and editing timeslots
+	bugfix: Simplified the code for automatic changes to the time, start dates, and end dates in the form.
+	
+	Since 3.7.2.25
+	-----------------
+	bugfix: fix error count when selecting all timeslots and sending them to trash
+	bugfix: fix timeslots quick add member selectors when autocompleting related dimensions and hooks usage to set other members
+	bugfix: Improvements in the way the start date and start time are calculated and saved
+	bugfix: fix automatic generation of repetitions after moving featuro to crpm plugin
+	
+	Since 3.7.2.24
+	-----------------
+	bugfix: more fixes in overtime calculations, after deleting timeslots
+	bugfix: when deleting member ensure that registries in billing_definition_members are deleted too
+	bugfix: fix member selectors when autoselecting related members and they are not in og.dimensions cache
+	bugfix: fix overtime calculations to prevent project override
+	
+	Since 3.7.2.23
+	-----------------
+	feature: allow to choose pdf page size when exporting custom report to pdf
+	
+	Since 3.7.2.22
+	-----------------
+	bugfix: fix timezone usage in timeslots listing date filters
+	bugfix: fix column width and font size when exporting custom reports to pdf
+	
+	Since 3.7.2.21
+	-----------------
+	bugfix: fix required custom property control when cp type is user and is multiple
+	bugfix: fix pdf export in custom reports
+	bugfix: fix permissions in timeslots when adding from a task
+	
+	Since 3.7.2.20
+	-----------------
+	bugfix: recalculate posterior timeslots when changing one before
+	
+	Since 3.7.2.19
+	-----------------
+	bugfix: fix automatic status calculation for projects
+	bugfix: remove restriction of quota unicity in context
+	
+	Since 3.7.2.18
+	-----------------
+	feature: make configurable the amount of decimal digits in product types and expense totals
+	bugfix: serveral fixes in payment receipt reports
+	bugfix: fix expenses subtab font size bug
+	
+	Since 3.7.2.17
+	-----------------
+	bugfix: several fixes for expense items custom reports
+	bugfix: trying to view an expense item (from a report) throws an error
+	bugfix: fix js error when searching in left panel trees
+	bugfix: use 3 decimal digits in product type amounts
+
+	Since 3.7.2.16
+	-----------------
+	bugfix: fix overtime calculations to prevent double pay type member assingment
+	bugfix: dont show timeslot's billing tab if overtime calculations plugin is active
+	bugfix: fix installer sql syntax error
 	
 	Since 3.7.2.15
 	-----------------

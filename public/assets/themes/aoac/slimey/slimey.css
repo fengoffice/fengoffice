@@ -1,0 +1,139 @@
+/*
+ *  Slimey - SLIdeshow Microformat Editor - http://slimey.sourceforge.net
+ *  Copyright (C) 2007 - 2008 Ignacio de Soto
+ *
+ *  Editor styles
+ */
+
+/* <default layout> */
+.slimeyNavigation {
+	float: left;
+	clear: left;
+}
+.slimeyToolbar {
+	float: left;
+}
+.slimeyEditor {
+	float: left;
+}
+/* </default layout> */
+
+
+/* <navigation> */
+.slimeyNavigation {
+	width: 190px;
+    padding: 2px;
+	overflow: auto;
+	border-right: 1px solid #aaaaaa;
+}
+.slidePreview, .slidePreviewSel, .slidePreviewH {
+	position: absolute;
+	left: 2px;
+	top: 2px;
+    width: 160px;
+    height: 120px;
+    overflow: hidden;
+}
+.slidePreview *, .slidePreviewSel *, .slidePreviewH * {
+	cursor: default !important;
+}
+.slidePreview {
+	border: 1px solid #000000;
+}
+.slidePreviewSel {
+    border: 1px solid #ff9900;
+}
+.slidePreviewH {
+    border: 1px solid #0099ff;
+}
+.slideBorder, .slideBorderH, .slideBorderSel {
+	position: relative;
+	width: 166px;
+	height: 126px;
+}
+.slideBorder {
+	background: transparent;
+}
+.slideBorderSel {
+    background: #ff9900;
+}
+.slideBorderH {
+    background: #0099ff;
+}
+.previewSpacer, .previewSpacerH {
+    width: 164px;
+    height: 20px;
+	padding: 1px;
+    cursor: pointer;
+}
+.previewSpacerH {
+    background-color: #ddeeff;
+    border: 1px solid #0099ff;
+	padding: 0px;
+}
+/* </navigation> */
+
+ /* <editor> */
+ .resizeHandle {
+	width: 8px;
+	height: 8px;
+	font-size: 1px;
+	line-height: 1px;
+	background-color: #0000ff;
+	cursor: se-resize;
+}
+.slimeyElement {
+	padding: 2px !important;
+}
+.slimeyHighlightedElement {
+	margin: 0px;
+	border: 2px solid #ff9900 !important;
+}
+.slimeySelectedElement {
+	margin: 0px;
+	border: 2px dotted #00ff00 !important;
+}
+/* </editor> */
+
+/* <toolbar> */
+.slimeyToolbar {
+	border-bottom: 1px solid #aaaaaa;
+}
+/* </toolbar> */
+
+
+/* <content style> */
+.slimeyEditor, .slidePreview, .slidePreviewSel, .slidePreviewH {
+	background-color: #ffffff;
+}
+.slimeyEditor *, .slidePreview *, .slidePreviewSel *, .slidePreviewH * {
+	line-height: 1;
+}
+.slimeyEditor ul, #slimeyEditor ol, .slidePreview ul, .slidePreview ol,
+.slidePreviewSel ul, .slidePreviewSel ol, .slidePreviewH ul, .slidePreviewH ol {
+	padding-left: 8%;
+	margin-left: 0px;
+}
+.slidePreview, .slidePreviewSel, .slidePreviewH {
+    font-size: 5px;
+    font-family: sans-serif;
+}
+.slidePreview *, .slidePreviewSel *, .slidePreviewH * {
+    font-size: 100%;
+}
+.slidePreview h1, .slidePreviewSel h1, .slidePreviewH h1 {
+    font-size: 150%;
+}
+.slidePreview h2, .slidePreviewSel h2, .slidePreviewH h2 {
+    font-size: 120%;
+}
+.slidePreview ol, .slidePreview ul, .slidePreview dir, .slidePreviewSel ol, .slidePreview ul, .slidePreview dir, .slidePreviewH ol, .slidePreview ul {
+    margin-left: 5px;
+}
+.slimeyEditor ul li {
+	list-style: disc !important;
+}
+.slimeyEditor ol li {
+	list-style: decimal !important;
+}
+/* </content style> */

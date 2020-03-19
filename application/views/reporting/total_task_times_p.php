@@ -110,7 +110,7 @@
 					<select id="<?php echo $genid ?>group_by_<?php echo $i ?>" name="report[group_by_<?php echo $i ?>]" )">
 						<option value="0"<?php if ($gbVal == null) echo ' selected="selected"' ?>><?php echo lang('none') ?></option>
 						<option value="rel_object_id"<?php if ($gbVal == "rel_object_id") echo ' selected="selected"' ?>><?php echo lang('task')?></option>
-						<option value="contact_id"<?php if ($gbVal == "contact_id") echo ' selected="selected"' ?>><?php echo lang('person')?></option>
+						<option value="contact_id"<?php if ($gbVal == "contact_id") echo ' selected="selected"' ?>><?php echo lang('user')?></option>
 						<option value="priority"<?php if ($gbVal == "priority") echo ' selected="selected"' ?>><?php echo lang('priority')?></option>
 						<option value="milestone_id"<?php if ($gbVal == "milestone_id") echo ' selected="selected"' ?>><?php echo lang('milestone')?></option>
 						<?php
@@ -131,6 +131,7 @@
 						<option value="0"<?php if ($gbVal == null) echo ' selected="selected"' ?>><?php echo lang('none') ?></option>
 						<option value="contact_id"<?php if ($gbVal == "contact_id") echo ' selected="selected"' ?>><?php echo lang('user')?></option>
 						<option value="rel_object_id"<?php if ($gbVal == "rel_object_id") echo ' selected="selected"' ?>><?php echo lang('task')?></option>
+						<option value="first_level_task_only"<?php if ($gbVal == "first_level_task_only") echo ' selected="selected"' ?>><?php echo lang('first level task only')?></option>
 						<?php
 							$gbs = array();
 							Hook::fire('total_task_timeslots_group_by_criterias', null, $gbs);

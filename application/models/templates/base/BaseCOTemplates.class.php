@@ -4,7 +4,7 @@
 /**
  * COTemplates class
  *
- * @author Ignacio de Soto <ignacio.desoto@fengoffice.com>
+ * @author FengOffice
  */
 abstract class BaseCOTemplates extends ContentDataObjects {
 

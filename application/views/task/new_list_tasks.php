@@ -35,7 +35,14 @@
 			$all_templates_array[] = $template->getArrayInfo();
 		}
 	}
-	
+
+	// Function to compare strings from templates
+	function compare_strings($a, $b) {
+		return strcmp($a["t"], $b["t"]);
+	}
+	// Sort templates by name
+	usort($all_templates_array, "compare_strings");
+
 	if (isset($project_templates) && !is_null($project_templates)) {
 		foreach($project_templates as $template) {
 			$project_templates_array[] = $template->getArrayInfo();

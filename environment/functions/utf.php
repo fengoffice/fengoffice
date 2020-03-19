@@ -20,7 +20,7 @@ function substr_utf($string, $start = 0, $length = false) {
  * Return UTF safe string lenght
  *
  * @access public
- * @param strign $string
+ * @param string $string
  * @return integer
  */
 function strlen_utf($string) {

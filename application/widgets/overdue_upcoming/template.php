@@ -11,7 +11,7 @@
 		<div class="dash-expander ico-dash-expanded" id="<?php echo $genid; ?>expander"></div>
 	</div>
 	
-	<div class="widget-body" id="<?php echo $genid; ?>_widget_body">
+	<div class="widget-body widget-overdue-upcoming-tasks__body" id="<?php echo $genid; ?>_widget_body">
 	<?php if (isset($overdue_upcoming_objects) && count($overdue_upcoming_objects)) : ?>
 		<table id="dashTableMS" class="widget-table" style="width:100%; margin-bottom: 10px;">
 
@@ -68,14 +68,14 @@
 							$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.nobr' ) "; 
 			    		?>
 			    		<a class="internalLink" href="#" onclick="og.openLink('<?php echo $object->getViewUrl() ?>');" title="<?php echo clean($object->getObjectName()) ?>">
-							<?php if ($object instanceof ProjectTask && $object->getAssignedToContactId() > 0) echo "<span class='bold'>". clean($object->getAssignedToName()).": </span>"; ?>
+							<?php /* if ($object instanceof ProjectTask && $object->getAssignedToContactId() > 0) echo "<span class='bold'>". clean($object->getAssignedToName()).": </span>"; */?>
 							<?php echo clean($object->getObjectName()) ?>
 						</a>
-			    		<span id="object_crumb_<?php echo $object->getId()?>"></span>
+			    		<!--<span id="object_crumb_<?php echo $object->getId()?>"></span>
 			    		<script>
 							var crumbHtml = <?php echo $crumbJs?>;
 							$("#object_crumb_<?php echo $object->getId()?>").html(crumbHtml);
-						</script>
+						</script>-->
 						<?php if ($object instanceof ProjectTask) :
 								$text = strlen_utf($object->getText()) > 100 ? substr_utf(html_to_text($object->getText()), 0, 100) . "..." : strip_tags($object->getText());
 								$text = remove_scripts($text);
@@ -91,7 +91,7 @@
 		<?php endforeach; ?>
 		</table>
 		
-		<div class="view-all-container">
+		<div class="view-all-container widget-overdue-upcoming-tasks__view-all-container">
 			<a href="#" onmousedown="og.openLink(og.getUrl('task', 'new_list_tasks'), {caller:'tasks-panel'});" onclick="Ext.getCmp('tabs-panel').activate('tasks-panel');">
 				<?php if ($show_more) echo lang('view all');?>
 			</a>

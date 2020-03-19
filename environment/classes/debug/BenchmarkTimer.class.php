@@ -306,7 +306,7 @@
   * @return string
   */
   function benchmark_timer_total_execution_time() {
-    $timer =& BenchmarkTimer::instance();
+    $timer = BenchmarkTimer::instance();
     return $timer->TimeElapsed();
   } // benchmark_timer_total_execution_time
   
@@ -319,7 +319,7 @@
   * @return mixed
   */
   function benchmark_timer_display($full = true) {
-    $timer =& BenchmarkTimer::instance();
+    $timer = BenchmarkTimer::instance();
     $timer->display($full);
   } // benchmark_timer_display
   

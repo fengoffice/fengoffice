@@ -126,6 +126,15 @@ class TimeController extends ApplicationController {
             $rel_obj = $timeslot->getRelObject();
             if ($rel_obj instanceof ContentDataObject) {
                 $pre_selected_member_ids = $rel_obj->getMemberIds();
+            } else {
+            	$pre_selected_member_ids = active_context_members(false);
+            	$all_assoc_member_ids = array();
+            	foreach ($pre_selected_member_ids as $mid) {
+            		$assoc_ids = MemberPropertyMembers::getAllAssociatedMemberIds($mid, true);
+            		$assoc_ids = array_flat($assoc_ids);
+            		$all_assoc_member_ids = array_unique(array_merge($all_assoc_member_ids, $assoc_ids));
+            	}
+            	$pre_selected_member_ids = array_unique(array_merge($pre_selected_member_ids, $all_assoc_member_ids));
             }
             Hook::fire('preselected_time_form_member_ids', array('object' => $timeslot), $pre_selected_member_ids);
             
@@ -208,7 +217,7 @@ class TimeController extends ApplicationController {
         } else {
             $object_id = array_var($parameters, "object_id", false);
         }
-
+        
         ajx_current("empty");
         $timeslot_data = array_var($parameters, 'timeslot');
        
@@ -301,35 +310,72 @@ class TimeController extends ApplicationController {
 
             $logged_user_tz_hours_offset = logged_user()->getUserTimezoneValue() / 3600;
 
+            //Get the Date of the timeslot
+            //We start with simply the date (not the exact start hour+minutes)
             $startTime = getDateValue(array_var($timeslot_data, 'date'));
+
+            //Case 1. If the date is not set, we'll use current time (minus the total hours worked/logged) as the default.
             if (!$startTime instanceof DateTimeValue) {
                 $startTime = DateTimeValueLib::now();
                 $startTime->add('h', -$hoursToAdd);
+                //This was here for debugging purposes (leaving as an example for future use, if needed)
+                //Logger::log_r("StartTime is: ".$startTime->toICalendar());
+            } else {                
+                //We now get the Hours and minutes entered by the user (if entered)
+                $startTimeHours = getTimeValue(array_var($timeslot_data, 'start_time'));
+                
+                //Case 2. If start hours+minutes were entered by the user, we set the hours and minutes.
+                if ($startTimeHours) {
+                	
+                    $startTime->setHour($startTimeHours['hours']);
+                    $startTime->setMinute($startTimeHours['mins']);
+                    //We take the timezone into consideration, adding the timezone offset.
+                    $startTime->add('h', -$logged_user_tz_hours_offset);
+                    
+                } else {
+                    //Case 3. The start hours+minutes were not entered
+                    //We'll use the current time as default. But this is a bit tricky due to the potential timezone differences
+                    $starthoursandminutes = DateTimeValueLib::now();
+                    
+                    $startTime->setHour($starthoursandminutes->getHour());
+                    $startTime->setMinute($starthoursandminutes->getMinute());
+                      
+                    //If the date the user selected is today, then that's easy.
+                    //It's very similar to case 1 (See above). 
+                    if ($startTime->getDay() == $starthoursandminutes->getDay()) {
+                    	
+                        $starthoursandminutes->add('h', -$hoursToAdd);
+                        $startTime->setHour($starthoursandminutes->getHour());
+                        $startTime->setMinute($starthoursandminutes->getMinute());
+                        $startTime->add('h', -$logged_user_tz_hours_offset);
+                        
+                    } else {
+                        //Case 4. If the date the user selected is not today, there might be a conflict
+                        //This process is to fix the date, when the timezone falls in a different day than the gmt
+                        //Because the user intended for the timeslot's start to fall on the date they entered.
+                        
+                        //We check whether the GMT and the user TZ both have the same day.
+                        $dateinGMT = $startTime->getDay();
+                        $startTime->add('h', $logged_user_tz_hours_offset);
+                        $dateinUserTZ = $startTime->getDay(); //we offset here - we'll fix below
+                        $diffInDays = $dateinGMT-$dateinUserTZ;
+                        
+                        //Roll back the offset
+                        $startTime->add('h', -$logged_user_tz_hours_offset);
+                        
+                        //If there is a difference, we'll correct the day.
+                        $startTime->add('d', $diffInDays);
+                        
+                        $startTime->setHour($starthoursandminutes->getHour());
+                        $startTime->setMinute($starthoursandminutes->getMinute());
+                    }
+                }
             }
-
-            $startTimeHours = getTimeValue(array_var($timeslot_data, 'start_time'));
-            if ($startTimeHours) {
-                $startTime->setHour($startTimeHours['hours']);
-                $startTime->setMinute($startTimeHours['mins']);
-                $startTime->add('h', -$logged_user_tz_hours_offset);
-            }
-
+            
+            //Now we set the EndTime
             $endTime = new DateTimeValue($startTime->getTimestamp());
             $endTime->add('h', $hoursToAdd);
-
-            //use current time
-            if (!$startTimeHours && array_var($parameters, "use_current_time")) {
-            	
-            	$now = DateTimeValueLib::now();
-            	$endTime->setHour($now->getHour());
-            	$endTime->setMinute($now->getMinute());
-            	$endTime->setSecond($now->getSecond());
-                
-                $currentStartTime = new DateTimeValue($endTime->getTimestamp());
-                $currentStartTime = $currentStartTime->add('h', -$hoursToAdd);
-                
-                $startTime = $currentStartTime;
-            }
+            
             $timeslot_data['start_time'] = $startTime;
             $timeslot_data['end_time'] = $endTime;
             $timeslot_data['description'] = $timeslot_data['description'];
@@ -337,8 +383,7 @@ class TimeController extends ApplicationController {
             $timeslot_data['rel_object_id'] = $object_id;
             $timeslot = new Timeslot();
 
-
-
+            
             //Only admins can change timeslot user
             if (!array_var($timeslot_data, 'contact_id', false) || !SystemPermissions::userHasSystemPermission(logged_user(), 'can_manage_time')) {
                 $timeslot_data['contact_id'] = logged_user()->getId();
@@ -408,7 +453,7 @@ class TimeController extends ApplicationController {
             $show_billing = can_manage_billing(logged_user());
             ajx_extra_data(array("timeslot" => $timeslot->getArrayInfo($show_billing, true, true), "real_obj_id" => $timeslot->getRelObjectId()));
 
-            return true;
+            return $timeslot;
         } catch (Exception $e) {
             if ($use_transaction) {
                 DB::rollback();
@@ -424,6 +469,12 @@ class TimeController extends ApplicationController {
             flash_error(lang('timeslot dnx'));
             ajx_current("empty");
             return;
+        }
+        
+        if (!can_add(logged_user(), $timeslot->getMembers(), Timeslots::instance()->getObjectTypeId())) {
+        	flash_error(lang('no access permissions'));
+        	ajx_current("empty");
+        	return;
         }
         
         $show_paused_time = user_config_option('show_pause_time_action');
@@ -465,6 +516,8 @@ class TimeController extends ApplicationController {
                 if (can_add(logged_user(), $context, Timeslots::instance()->getObjectTypeId()))
                     $users = array(logged_user());
             }
+
+            Hook::fire('modify_timeslot_before_edit', array('request' => $_REQUEST), $timeslot);
 
             tpl_assign('timeslot', $timeslot);
             tpl_assign('edit_mode',1);
@@ -652,9 +705,9 @@ class TimeController extends ApplicationController {
 
         try {
             DB::beginWork();
-            $timeslot->delete();
+            $timeslot->trash();
             DB::commit();
-            ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_DELETE);
+            ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_TRASH);
 
             ajx_extra_data(array("timeslotId" => get_id()));
         } catch (Exception $e) {
@@ -738,16 +791,16 @@ class TimeController extends ApplicationController {
             	$to_date = DateTimeValueLib::make(23,59,59,$now->getMonth(),$now->getDay(),$now->getYear());
                 break;
             case 2: // this week
-            	$monday = $now->getMondayOfWeek();
-            	$nextMonday = $now->getMondayOfWeek()->add('w',1)->add('d',-1);
-            	$from_date = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
-            	$to_date = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());
+            	$sunday = $now->getMondayOfWeek()->add('d',-1);
+            	$nextSunday = $now->getMondayOfWeek()->add('w',1)->add('d',-2);
+            	$from_date = DateTimeValueLib::make(0,0,0,$sunday->getMonth(),$sunday->getDay(),$sunday->getYear());
+            	$to_date = DateTimeValueLib::make(23,59,59,$nextSunday->getMonth(),$nextSunday->getDay(),$nextSunday->getYear());
                 break;
             case 3: // last week
-            	$monday = $now->getMondayOfWeek()->add('w',-1);
-            	$nextMonday = $now->getMondayOfWeek()->add('d',-1);
-            	$from_date = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
-            	$to_date = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());
+            	$sunday = $now->getMondayOfWeek()->add('w',-1)->add('d',-1);
+            	$nextSunday = $now->getMondayOfWeek()->add('d',-2);
+            	$from_date = DateTimeValueLib::make(0,0,0,$sunday->getMonth(),$sunday->getDay(),$sunday->getYear());
+            	$to_date = DateTimeValueLib::make(23,59,59,$nextSunday->getMonth(),$nextSunday->getDay(),$nextSunday->getYear());
                 break;
             case 4: // this month
 				$from_date = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
@@ -774,16 +827,16 @@ class TimeController extends ApplicationController {
         }
         
         
-        
 		if ($from_date instanceof DateTimeValue) {
 			$from_date->beginningOfDay();
+			$from_date->advance(-1 * logged_user()->getUserTimezoneValue(), true);
 			$extra_conditions .= " AND e.start_time >= '" . $from_date->toMySQL() . "'";
 		}
 		if ($to_date instanceof DateTimeValue) {
 			$to_date->endOfDay();
+			$to_date->advance(-1 * logged_user()->getUserTimezoneValue(), true);
 			$extra_conditions .= " AND e.start_time <= '" . $to_date->toMySQL() . "'";
 		}
-		
 		
 		Hook::fire('additional_timeslots_tab_filters', $_REQUEST, $extra_conditions);
 		
@@ -988,16 +1041,22 @@ class TimeController extends ApplicationController {
                 $err = 0;
                 for ($i = 0; $i < count($attributes["ids"]); $i++) {
                     $id = $attributes["ids"][$i];
+                    if (!is_numeric($id)) continue;
+                    
                     $message = Timeslots::findById($id);
+                    if (!$message instanceof Timeslot) continue;
+                    
                     if ($message instanceof Timeslot && $message->canDelete(logged_user())) {
                         try {
+                        	$do_rollback_if_error = true;
                             DB::beginWork();
                             $message->trash();
                             DB::commit();
+                            $do_rollback_if_error = false;
                             ApplicationLogs::createLog($message, ApplicationLogs::ACTION_TRASH);
                             $succ++;
                         } catch (Exception $e) {
-                            DB::rollback();
+                            if ($do_rollback_if_error) DB::rollback();
                             $err++;
                         }
                     } else {
@@ -1017,7 +1076,11 @@ class TimeController extends ApplicationController {
                 $err = 0;
                 for ($i = 0; $i < count($attributes["ids"]); $i++) {
                     $id = $attributes["ids"][$i];
+                    if (!is_numeric($id)) continue;
+                    
                     $message = Timeslots::findById($id);
+                    if (!$message instanceof Timeslot) continue;
+                    
                     if ($message instanceof Timeslot && $message->canEdit(logged_user())) {
                         try {
                             DB::beginWork();
@@ -1051,4 +1114,3 @@ class TimeController extends ApplicationController {
 }
 
 // TimeController
-

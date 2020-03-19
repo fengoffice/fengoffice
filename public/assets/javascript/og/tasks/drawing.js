@@ -1457,11 +1457,15 @@ ogTasks.initTasksList = function () {
 
         var key = 'lp_dim_' + did + '_show_as_column';
         if (og.preferences['listing_preferences'][key]) {
+        	var col_name = og.dimensions_info[did].name;
+        	if (ot_id) {
+        		col_name = og.objectTypes[ot_id].c_name_plural ? og.objectTypes[ot_id].c_name_plural : lang(og.objectTypes[ot_id].name + 's');
+        	}
             tasks_list_cols.push(
                 {
                     id: 'task_clasification' + drawOptions.show_dimension_cols[x],
                     css_class: 'task_clasification',
-                    title: ot_id ? lang(og.objectTypes[ot_id].name + 's') : og.dimensions_info[did].name,
+                    title: col_name,
                     data: 'data-resizable=1',
                     group_total_field: '',
                     col_width: 'auto'

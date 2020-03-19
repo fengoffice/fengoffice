@@ -7,9 +7,6 @@
   * of its features is automatinc caching of loaded data.
   *
   * @package System
-  * @version 1.0
-  * @author Ilija Studen <ilija.studen@gmail.com>
-  * @copyright 2005 by Ilija Studen
   */
   abstract class DataManager {
   
@@ -236,7 +233,7 @@
     *  - offset - limit offset, valid only if limit is present
     *  - limit
     * 
-    * @return one or many objects
+    * @return mixed one or many objects
     * @throws DBQueryError
     */
     function find($arguments = null) {

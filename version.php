@@ -9,11 +9,8 @@
   * ant that means that you are not actualy using new version. You'll most probably end up with 
   * a lot of problems and errors in that situation; they will be gone as soon as your run the 
   * upgrade script.
-  *
-  * @author Ilija Studen
-  * @author Feng Office
   * 
   */
-  return '3.7.2.16';
+  return '3.8.1.24';
   
 ?>

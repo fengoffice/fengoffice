@@ -1,0 +1,425 @@
+.permissions-help {
+	margin-left: 30px;
+	margin-bottom: 5px;
+	color: #666666;
+}
+
+.adminHeader {
+    padding: 10px 15px;
+	border-bottom: 1px solid #CCCCCC;
+	/*border-bottom: 1px solid #99BBE8;*/
+	padding-bottom:5px;
+	/*background: #D0DEF0;*/
+	background: #F0F0F0;
+}
+
+.adminHeaderUpperRow {
+	margin: 3px;
+	/*border-bottom: 2px solid #99BBE8;*/
+	border-bottom: 2px solid #CCCCCC;
+    position: relative;
+    padding-bottom: 2px;
+}
+
+.adminSeparator {
+	background-image: url(../../images/layout/shadow.png);
+	height: 6px;
+	width:100%;
+}
+
+.adminTitle {
+  	font-size: 150%;
+  	font-weight: bolder;
+  	display: inline;
+}
+
+.adminMainBlock {
+	padding: 5px 15px;
+	background-color:white;
+}
+
+/* templates */
+
+.bg-ico {
+	background-repeat: no-repeat;
+	background-position: 10px center;
+	padding-left: 34px;
+}
+
+.og-add-template-object {
+	position: relative;
+	background-repeat: no-repeat;
+	padding-left: 24px;
+	width: 500px;
+	vertical-align:'middle';
+	line-height: 20px;
+}
+
+.og-add-template-object .namecontainer{
+	width: 470px;
+}
+.og-add-template-object .name {
+	width: 300px;
+	overflow: hidden;
+}
+
+.removeDiv {
+	position: absolute;
+	line-height: 25px;
+	right: 0;
+	top: 0;
+	cursor: pointer;
+}
+
+.cronEventsTable > tbody > tr > td, .cronEventsTable > tbody > tr > th {
+	padding: 2px 5px;
+	text-align: center;
+}
+.cronEventsTable td.cronEventsName {
+	text-align: left;
+}
+
+/* <upgrade> */
+.adminUpgrade {
+	height: 100%;
+	background-color: white;
+	border-top: 1px solid #CCC;
+}
+.adminUpgrade h2 {
+	border: 1px solid #CCC;
+	background-color: #E3EEF3;
+	padding: 5px;
+	color: black;
+	text-decoration: none;
+	margin: 10px 0;
+	font-size: 120%;
+}
+.adminUpgrade h3 {
+	color: black;
+	text-decoration: none;
+	font-size: 100%;
+}
+.adminUpgrade > * {
+	padding: 20px;
+}
+.availableVersions {
+	background-color: white;
+}
+.availableVersion {
+	margin-bottom: 20px;
+	border: 1px solid #CCC;
+	background-color: #EEF3FF;
+	padding: 10px;
+}
+.releaseNotes {
+	background-color: white;
+	margin-top: 10px;
+	margin-bottom: 20px;
+	border: 1px solid #CCC;
+	padding: 10px;
+	height: 150px;
+	overflow: auto;
+	white-space: pre-wrap;
+}
+.downloadLinks .desc {
+	margin-left: 20px;
+}
+/* </upgrade> */
+.configCategoryOtpion {
+	padding: 5px;
+}
+.configCategory, .userWsConfigCategory {
+	padding: 10px 5px;
+}
+.configCategory.alt, .userWsConfigCategory.alt {
+	background-color: #eef5f5;
+}
+
+.adminListing {
+	width: 100%;
+}
+
+.adminListing td, .adminListing th {
+	text-align: center;
+	padding: 2px 10px;
+}
+
+.abm-members-name {
+	display: inline;
+}
+
+.member-item-archived {
+	background-color: #eee;
+	color: #555;
+	font-style: italic;
+}
+
+/*********** Plg Manager *************/
+.plugin-manager table.plugin-list {
+	width: 100% ;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	border: 1px solid #E8E8E8;
+}
+
+.plugin-manager th {
+	font-size: 125%;
+	font-weight: bold;
+}
+
+.plugin-manager th, .plugin-manager  td {
+    padding: 5px;
+    vertical-align: middle;
+}
+
+.plugin-manager th, .plugin-manager .plugin-row  td {
+    padding: 10px 5px;
+}
+
+.plugin-manager .check-column {
+	width: 25px ;
+}
+
+.plugin-manager .plugin-row {
+	border-top: 1px solid #eee;
+}
+.plugin-manager tr.active.installed {
+
+}
+.plugin-manager tr.inactive{
+	color: #666;
+}
+.plugin-manager .update-container {
+	background-color: #FFFBE4;
+	border: 1px solid #DDD;
+	border-radius: 4px;
+	padding: 5px 10px;
+	font-weight: bold ;
+	margin-bottom: 5px;
+    margin-top: -5px;
+}
+
+.plugin-manager .title {
+	background: url(../../images/48x48/plugins.png) no-repeat;
+	margin-bottom: 16px;
+    padding-left: 48px;
+    padding-top: 20px;
+    border: none; 
+}
+
+.plugin-manager tfoot {
+	display:none ;
+}
+
+a.help-sign {
+	background-color: #8b8b8b;
+	border-radius: 10px;
+	color: #FFFFFF;
+	font-weight: bold;
+	padding: 1px 5px;
+	vertical-align: text-bottom;
+	margin-left: 5px;
+}
+.edit-form-tabs .ui-tabs-panel.ui-widget-content a.help-sign {
+	color: #FFFFFF;
+}
+
+a.help-sign:hover {
+	opacity: 0.7;
+	filter: alpha(opacity=70);
+}
+
+input.disabled {
+	opacity: 0.6;
+	filter: alpha(opacity=60);
+}
+
+
+/** EDIT MEMBER FORM **/
+
+
+form.edit-member .member-chooser {
+	margin: 0px;
+}
+
+form.edit-member label {
+	margin: 0px 0 0px;
+}
+
+form.edit-member .dimension-memberfields div.type-boolean {
+	vertical-align: middle;
+	margin: 5px 0 ;
+}
+
+form.edit-member .dimension-memberfields div.type-boolean label,
+form.edit-member .dimension-memberfields div.type-boolean input
+{
+	display:inline ;
+	margin-right: 5px;
+}
+
+form.edit-member .dimension-memberfields div.type-boolean input{
+	margin-top: 3px; 
+}
+
+form.edit-member .dimension-selector-container {
+	min-width: 600px;
+}
+
+
+div.edit-mem-alt {
+	background-color: #E0F0FA;
+}
+/****/
+
+
+tr.add-member-table-row:hover {
+	font-weight: bold;
+	letter-spacing: -1px;
+	background-color: #D6F4D9;
+}
+
+div.checkbox-config-option {
+	float:left;
+	margin-right: 15px;
+	min-width: 130px;
+}
+
+.adminMainBlock h1 {
+	font-weight: normal;
+	font-size: 125%;
+	margin: 10px 0;
+	color: #444;
+}
+.adminMainBlock div.description {
+	font-weight: normal;
+	margin: 5px 0 10px;
+}
+.adminMainBlock table.bordered {
+	border: 1px solid #d7e5f5;
+}
+.adminMainBlock table.bordered td {
+	padding: 3px 5px;
+	vertical-align: bottom;
+}
+.adminMainBlock table.bordered tr.bordered-top {
+	border-top: 1px solid #d7e5f5;
+}
+.dimensionOptionsConfiguration .adminMainBlock .section {
+	/*border-top: 1px solid #ddd;*/
+	padding: 10px 0;
+}
+
+
+
+
+.custom-properties-admin.object-type .custom-property-list {
+	width: 100%;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container .handle, .ddhandle {
+	background: transparent url(../../images/rx/grid_drag.png) repeat-y !important;
+	padding-left:10px;
+	cursor: move;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container input[disabled="disabled"] {
+	color: black;
+	border: 0;
+	background-color: transparent;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.header {
+	line-height: 20px;
+	background-color: #4f4f4f;
+	color: #d1d1d1;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.header th {
+	background-color: #4f4f4f;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.bottom-row td {
+	padding-bottom: 8px;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.top-row td {
+	padding-top: 8px;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list .alt {
+	background-color: #efefef;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list .disabled {
+	background-color: #FFDEAD;
+}
+
+.custom-properties-admin.object-type .custom-property-list td {
+	padding: 0px 2px;
+	line-height: 25px;
+}
+.custom-properties-admin.object-type .custom-property-list tr.top-row td.order {
+	font-size: 25px;
+	padding-top: 20px;
+	text-align: center;
+}
+.custom-properties-admin.object-type .custom-property-list td.actions a {
+	text-decoration: underline;
+}
+
+.custom-properties-admin .add-new-cp-link-container {
+	margin-top: 20px;
+}
+
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list .ui-sortable-helper {
+	opacity: 0.85;
+	filter: alpha(opacity=85);
+	border-radius: 2px;
+}
+
+.custom-properties-admin ul.object-type-list li {
+	padding: 8px;
+}
+.custom-properties-admin ul.object-type-list li a {
+	text-decoration: underline;
+}
+.custom-properties-admin .cp-admin-container {
+	float: left;
+	width: 49%;
+	border-right: 1px dotted #ccc;
+}
+.custom-properties-admin ul.object-type-list li.odd {
+	background-color: #eeeef3;
+}
+.custom-properties-admin .cp-admin-container.member-cps-container {
+	
+}
+
+.listing-admin ul li {
+	padding: 8px;
+}
+.listing-admin ul li a {
+	text-decoration: underline;
+}
+
+.listing-admin table {
+	min-width: 600px;
+}
+
+.listing-admin .actions {
+	margin-top: 15px;
+}
+
+.listing-admin .adminMainBlock tr.header th {
+	line-height: 20px;
+	background-color: #4f4f4f;
+	color: #d1d1d1;
+}
+
+.listing-admin .adminMainBlock .alt {
+	background-color: #efefef;
+}
+
+.configOptionControl .dimension {
+    float: left;
+    max-width: 200px;
+    min-width: 200px;
+}

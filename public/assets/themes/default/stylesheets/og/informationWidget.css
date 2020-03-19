@@ -1,0 +1,60 @@
+/** 
+   Style information widget
+*/
+
+.information-widget-body{
+    padding: 0 30px 30px 30px;
+}
+
+.information-widget-group{
+    width: 100%;
+    margin-bottom: 25px;
+    line-height: 2.5;
+}
+
+.information-widget-group:last-child{
+    margin-bottom: 0px;
+}
+
+.information-widget--left-side {
+    float: left;
+    width: 48%;
+    margin-top: 30px;
+    min-width: 380px;
+    margin-right: 4%;
+}
+
+.information-widget--right-side {
+    float: left;
+    width: 48%;
+    margin-top: 30px;
+    min-width: 380px;
+}
+
+.information-widget-group-header{
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+}
+
+
+/** 
+   Style table 
+*/
+.information-widget-group-table{
+}
+
+.information-widget-table-row{
+}
+
+.information-widget-table-definition{
+    padding-right: 30px;
+    color: #666;
+    width: 160px;
+    min-width: 160px;
+}
+
+.information-widget-table-value{
+}
+
+

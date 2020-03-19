@@ -297,7 +297,8 @@ class Timeslot extends BaseTimeslot {
 	 * @return boolean
 	 */
 	function canEdit(Contact $user) {
-		return ($user->getId() == $this->getContactId() || can_manage_time($user));
+		return can_write($user, $this->getMembers(), $this->getObjectTypeId());
+		//return ($user->getId() == $this->getContactId() || can_manage_time($user));
 	}
 
 	/**
@@ -308,7 +309,8 @@ class Timeslot extends BaseTimeslot {
 	 * @return boolean
 	 */
 	function canDelete(Contact $user) {
-		return ($user->getId() == $this->getContactId() || can_manage_time($user));
+		return can_delete($user, $this->getMembers(), $this->getObjectTypeId());
+		//return ($user->getId() == $this->getContactId() || can_manage_time($user));
 	}
 
 	// ---------------------------------------------------
@@ -396,6 +398,13 @@ class Timeslot extends BaseTimeslot {
 		}
 		return $deleted;
 	}
+	
+	function trash($trashDate = NULL, $fire_hook = true) {
+		parent::trash($trashDate, $fire_hook);
+
+		$object = $this->getRelObject();
+		if ($object instanceof ProjectTask) $object->calculatePercentComplete();
+	}
 
 	// ---------------------------------------------------
 	//  ApplicationDataObject implementation
@@ -423,7 +432,7 @@ class Timeslot extends BaseTimeslot {
 		return $this->getViewUrl();
 	}
 
-	function getArrayInfo($return_billing = false, $time_detail = false, $permissions_detail = false) {
+	function getArrayInfo($return_billing = false, $time_detail = false, $permissions_detail = false, $mem_path = true) {
 		$task_name = '';
 		
 		$user = Contacts::findById($this->getContactId());
@@ -444,12 +453,17 @@ class Timeslot extends BaseTimeslot {
 			'uname' => $displayname,
 			'lastupdated' => $general_info['dateUpdated'],
 			'lastupdatedby' => $general_info['updatedBy'],
-			'memPath' => json_encode($this->getMembersIdsToDisplayPath()),
 			'otid' => Timeslots::instance()->getObjectTypeId(),
 			'description' => $this->getDescription(),
 			'rel_object_id' => $this->getRelObjectId(),
 			'rel_object_name' => '',
+			'worked_time' => $this->getColumnValue('worked_time'),
+			'worked_hours' => round($this->getColumnValue('worked_time') / 60, 2),
 		);
+		
+		if ($mem_path) {
+			$result['memPath'] = json_encode($this->getMembersIdsToDisplayPath());
+		}
 		
 		if ($time_detail) {
 			$result['start_time'] = $this->getStartTime() instanceof DateTimeValue ? format_datetime($this->getStartTime()) : '';
@@ -482,6 +496,8 @@ class Timeslot extends BaseTimeslot {
 			if ($this->getFixedBilling() > 0) {
 				$c = Currencies::getCurrency($this->getRateCurrencyId());
 				$c_symbol = $c instanceof Currency ? $c->getSymbol() : '';
+				$result['rate_currency_id'] = $this->getRateCurrencyId();
+				$result['rate_currency_sym'] = $c_symbol;
 				$result['fixed_billing'] = format_money_amount($this->getFixedBilling(), $c_symbol);
 			}
 		}

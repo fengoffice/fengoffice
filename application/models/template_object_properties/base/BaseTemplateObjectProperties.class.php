@@ -3,7 +3,7 @@
 /**
  * BaseTemplateObjectProperties class
  *
- * @author Pablo Kamil
+ * @author FengOffice
  */
 abstract class BaseTemplateObjectProperties extends DataManager {
 

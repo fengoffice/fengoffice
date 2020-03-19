@@ -88,7 +88,8 @@
 			foreach ($member_path as $dim_id => $mem_ids) {
 				if (in_array($dim_id, $separate_dimensions)) continue;
 		  		$sep = '<span class="print-breadcrumb">-</span>';
-				foreach ($mem_ids as $mem_id) {
+		  		foreach ($mem_ids as $mem_ids_array) { // member ids are grouped by object_type
+		  		  foreach ($mem_ids_array as $mem_id) {
 					if (!is_numeric($mem_id)) {
 						$exp = explode(',',$mem_id);
 						$mids = array();
@@ -106,6 +107,7 @@
 							$dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-'.$mem->getColor().'">'.$this_mem_path.'</span>';
 						}
 					}
+		  		  }
 				}
 			}
 		  	?>
@@ -124,12 +126,14 @@
 		  			$mem_ids = array_var($dim_member_path, $dim_col);
 		  			if (is_array($mem_ids) && count($mem_ids) > 0) {
 		  				$sep = '<span class="print-breadcrumb">-</span>';
-						foreach ($mem_ids as $mem_id) {
-							$mem = Members::getMemberById($mem_id);
-							if ($mem instanceof Member) {
-								$this_mem_path = $mem->getPathToPrint($sep, '<span class="print-breadcrumb">', '</span>');
-								$this_mem_path .= ($this_mem_path=="" ? "" : $sep) .'<span class="print-breadcrumb wide">'. $mem->getName() .'</span>';
-								$dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-'.$mem->getColor().'">'.$this_mem_path.'</span>';
+						foreach ($mem_ids as $mem_ids_array) { // member ids are grouped by object_type
+							foreach ($mem_ids_array as $mem_id) {
+								$mem = Members::getMemberById($mem_id);
+								if ($mem instanceof Member) {
+									$this_mem_path = $mem->getPathToPrint($sep, '<span class="print-breadcrumb">', '</span>');
+									$this_mem_path .= ($this_mem_path=="" ? "" : $sep) .'<span class="print-breadcrumb wide">'. $mem->getName() .'</span>';
+									$dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-'.$mem->getColor().'">'.$this_mem_path.'</span>';
+								}
 							}
 						}
 					}
@@ -203,8 +207,6 @@
 		
 		</tr>
       <?php } // foreach task ?>
-    </td>
-  </tr>
 </tbody>
 
 <?php /*

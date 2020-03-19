@@ -15,7 +15,7 @@ if (logged_user()->hasMailAccounts()) {
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('unread emails'). ' '. lang('in m').' '. implode(", ", $mnames);
+		$widget_title = lang('unread emails');
 	}
 	
 	$total = $result->total;

@@ -9,6 +9,7 @@ if (!isset($hide_label)) $hide_label = false;
 if (!isset($selected_member_ids)) $selected_member_ids = array();
 if (!isset($select_current_context)) $select_current_context = true;
 if (!isset($select_context_associated_members)) $select_context_associated_members = true;
+if (!isset($label)) $label = null;
 
 if (!is_array($selected_member_ids)) $selected_member_ids = explode(',', $selected_member_ids);
 
@@ -28,6 +29,8 @@ if ($select_current_context) {
 		}
 	}
 }
+$selected_member_ids = array_filter($selected_member_ids);
+
 render_single_member_selector($dim, $selector_genid, $selected_member_ids, $selector_params, false);
 
 ?>

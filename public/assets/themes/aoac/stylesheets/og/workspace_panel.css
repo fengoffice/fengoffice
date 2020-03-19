@@ -1,0 +1,125 @@
+.ext-el-mask {
+	background:#dadadb;
+}
+.ico-workspace, .ico-ws, .ico-workspaces {
+	background-image: url(../../images/icons-feng-3/16x16/workspace.png) !important;
+}
+.ico-workspaces {
+/*	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -617px !important;*/
+}
+.ico-workspace-add {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -600px !important;
+}
+.ico-workspace-del {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -418px !important;
+}
+.ico-workspace-edit {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -340px !important;
+}
+.ico-workspace-refresh {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -299px !important;
+}
+.ico-color0, .ico-color1, .ico-color2, .ico-color3, .ico-color4, .ico-color5, .ico-color6, .ico-color7, .ico-color8, .ico-color9, .ico-color10, .ico-color11, .ico-color12, .ico-color13, .ico-color14, .ico-color15, .ico-color16, .ico-color17, .ico-color18, .ico-color19, .ico-color20, .ico-color21, .ico-color22, .ico-color23, .ico-color24 {
+	height: 16px;
+	background-image: none !important;
+}
+.ico-color0 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1119px !important;
+}
+.ico-color1 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1099px !important;
+}
+.ico-color2 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1079px !important;
+}
+.ico-color3 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1059px !important;
+}
+.ico-color4 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1039px !important;
+}
+.ico-color5 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1019px !important;
+}
+.ico-color6 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -999px !important;
+}
+.ico-color7 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -979px !important;
+}
+.ico-color8 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -959px !important;
+}
+.ico-color9 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -939px !important;
+}
+.ico-color10 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -919px !important;
+}
+.ico-color11 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -899px !important;
+}
+.ico-color12 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -879px !important;
+}
+.ico-color13 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -859px !important;
+}
+.ico-color14 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -839px !important;
+}
+.ico-color15 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -819px !important;
+}
+.ico-color16 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -799px !important;
+}
+.ico-color17 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -779px !important;
+}
+.ico-color18 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -759px !important;
+}
+.ico-color19 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -739px !important;
+}
+.ico-color20 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -719px !important;
+}
+.ico-color21 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -699px !important;
+}
+.ico-color22 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -679px !important;
+}
+.ico-color23 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -659px !important;
+}
+.ico-color24 {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -639px !important;
+}
+
+
+
+
+
+
+.x-tree {
+	background:#fff !important;
+}
+.workspace-item {
+	border:1px solid #fff;
+	margin:3px;
+}
+.workspace-item .x-tree-ec-icon {
+	display:none;
+}
+.x-tree-selected {
+	border:1px dotted #a3bae9;
+	background:#DFE8F6;
+}
+.x-tree-node .x-tree-selected a span{
+	background:transparent;
+	color:#15428b;
+	font-weight:bold;
+}

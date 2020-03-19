@@ -607,10 +607,11 @@ class Reports extends BaseReports {
                                         }
                                     }
 
+                                    $dt = new DateTimeValue($value->getTimestamp());
                                     if ($add_timezone_offset) {
-                                        $value->add('s', $tz_offset);
+                                        $dt->add('s', $tz_offset);
                                     }
-                                    $value = $value->format($dateFormat);
+                                    $value = $dt->format($dateFormat);
 
                                     if (!isset($dates_cache))
                                         $dates_cache = array();

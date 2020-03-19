@@ -593,8 +593,10 @@ abstract class ApplicationDataObject extends DataObject {
 		$ids = array();
 		$linked_objects = $this->getAllLinkedObjects();
 		
-		foreach ($linked_objects as $lo) {
-			$ids[] = $lo->getId();
+		if ($linked_objects != null) {
+    		foreach ($linked_objects as $lo) {
+    			$ids[] = $lo->getId();
+    		}
 		}
 		
 		return $ids;

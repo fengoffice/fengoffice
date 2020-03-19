@@ -273,7 +273,9 @@
 	'user config option name mail_account_err_check_interval' => 'Интервал проверки учетных записей почты на ошибки',
 	'user config option desc mail_account_err_check_interval' => 'Интервал между каждой проверки учетной записи почты (0 для отключения)',
 	'user config option desc classify_mail_with_conversation' => 'Если включено, принятая почта классифицируется по проектам (если письмо относится к этому проекту).',
+	'billing and invoicing' => 'Счета и чеки',
 	'user config option name date_format' => 'Формат даты',
 	'user config option name task_display_limit' => 'Макс. кол-во задач для отображения',
 	'user config option name start_monday' => 'Начинать неделю с Понедельника',
+	'object properties' => 'Характеристики объекта'
 ); ?>

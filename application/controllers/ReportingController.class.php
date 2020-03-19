@@ -267,6 +267,7 @@ class ReportingController extends ApplicationController {
 			$_SESSION['total_task_times_report_data'] = $report_data;
 		}
 		
+		//Logger::log_r($report_data);
 		
 		if (array_var($_GET, 'export') == 'csv' || (isset($csv) && $csv == true)){
 			$context = build_context_array(array_var($_REQUEST, 'context'));
@@ -393,8 +394,10 @@ class ReportingController extends ApplicationController {
 				
 			}
 		}
+
+		$timeslot_type = array_var($report_data, 'timeslot_type');
 		
-		if ($timeslot_type != 1) {
+		if ($timeslotType != 1) {
 			$task_status = array_var($report_data, 'task_status', 'all');
 			if ($task_status == 'pending') {
 				$extra_conditions .= " AND IF(e.rel_object_id=0, true, (SELECT pt.completed_by_id FROM ".TABLE_PREFIX."project_tasks pt WHERE pt.object_id=e.rel_object_id)=0) ";
@@ -402,6 +405,14 @@ class ReportingController extends ApplicationController {
 				$extra_conditions .= " AND IF(e.rel_object_id=0, true, (SELECT pt.completed_by_id FROM ".TABLE_PREFIX."project_tasks pt WHERE pt.object_id=e.rel_object_id)>0) ";
 			}
 		}
+
+		if ($timeslot_type != 1) {
+			$task_status = lang(array_var($report_data, 'task_status', 'all'));
+		} else {
+			$task_status = null;
+		}
+
+
 		
 		$timeslots = Timeslots::getTaskTimeslots($context, null, $user, $st, $et, array_var($report_data, 'task_id', 0), $group_by, null, null, null, $timeslotType, $extra_conditions);
 		
@@ -417,11 +428,68 @@ class ReportingController extends ApplicationController {
 			if (in_array($text, array('contact_id', 'rel_object_id'))) $gb_criterias[] = array('type' => 'column', 'value' => $text);
 			else if (in_array($text, array('milestone_id', 'priority'))) $gb_criterias[] = array('type' => 'assoc_obj', 'fk' => 'rel_object_id', 'value' => $text);
 			else if (str_starts_with($text, 'dim_')) $gb_criterias[] = array('type' => 'dimension', 'value' => str_replace_first('dim_', '', $text));
+			else if ($text == 'first_level_task_only') $gb_criterias[] = array('type' => 'first_level_task_only', 'value' => $text);
 		}
 		$grouped_timeslots = groupObjects($gb_criterias, $timeslots);
 		
+		switch($timeslot_type){
+			case 0:
+				$timeslot_type = lang('task timeslots');
+				break;
+			case 1:
+				$timeslot_type = lang('time timeslots');
+				break;
+			case 2:
+				$timeslot_type = lang('all timeslots');
+				break;
+		}
+
+		$timeslots_grouped_by = array();
+		if ($timeslot_type == lang('task timeslots')){
+			$gbs = array();
+			Hook::fire('total_task_timeslots_group_by_criterias', null, $gbs);
+			$group_names = array(array_var($report_data, 'group_by_1'), array_var($report_data, 'group_by_2'), array_var($report_data, 'group_by_3'));
+			foreach($group_names as $group_name){
+				if($group_name == 'rel_object_id') {
+					$timeslots_grouped_by[] = lang('task');
+				} elseif($group_name == 'contact_id') {
+					$timeslots_grouped_by[] = lang('user');
+				} elseif($group_name == 'priority') {
+					$timeslots_grouped_by[] = lang('priority');
+				} elseif($group_name == 'milestone_id') {
+					$timeslots_grouped_by[] = lang('milestone');
+				} else {
+					foreach($gbs as $gb) {
+						if($group_name == $gb['val']){
+							$timeslots_grouped_by[] = $gb['name'];
+						}
+					}
+				}
+			}
+
+		} elseif($timeslot_type == lang('time timeslots') || $timeslot_type == lang('all timeslots')) {
+			$gbs = array();
+			Hook::fire('total_task_timeslots_group_by_criterias', null, $gbs);
+			$group_names = array(array_var($report_data, 'alt_group_by_1'), array_var($report_data, 'alt_group_by_2'), array_var($report_data, 'alt_group_by_3'));
+			foreach($group_names as $group_name){
+				if($group_name == 'rel_object_id') {
+					$timeslots_grouped_by[] = lang('task');
+				} elseif ($group_name == 'contact_id') {
+					$timeslots_grouped_by[] = lang('user');
+				} elseif ($group_name == 'first_level_task_only') {
+					$timeslots_grouped_by[] = lang('first level task only');
+				} else {
+					foreach($gbs as $gb) {
+						if($group_name == $gb['val']){
+							$timeslots_grouped_by[] = $gb['name'];
+						}
+					}
+				}
+			}
+		}
+		$timeslots_grouped_by = implode(", ", $timeslots_grouped_by);
+
 		tpl_assign('columns', $columns);
-		tpl_assign('timeslotsArray', array());                        
 		tpl_assign('grouped_timeslots', $grouped_timeslots);
 		if (array_var($report_data, 'date_type') == 6) {
 			$st->advance(logged_user()->getUserTimezoneValue(), true);
@@ -430,6 +498,9 @@ class ReportingController extends ApplicationController {
 		tpl_assign('start_time', $st);
 		tpl_assign('end_time', $et);
 		tpl_assign('user', $user);
+		tpl_assign('timeslots_grouped_by', $timeslots_grouped_by);
+		tpl_assign('task_status', $task_status);
+		tpl_assign('timeslot_type', $timeslot_type);
 		tpl_assign('post', $report_data);
 		tpl_assign('title', lang('task time report'));
 		tpl_assign('allow_export', false);
@@ -775,7 +846,7 @@ class ReportingController extends ApplicationController {
 				}
 				
 				$object_controller = new ObjectController();
-				if (!is_null($member_ids)) {
+				if (!is_null($member_ids) && count($member_ids) > 0) {
 					$object_controller->add_to_members($report, $member_ids);
 				}
 					
@@ -840,6 +911,62 @@ class ReportingController extends ApplicationController {
 		}
 	}
 
+	function edit_default_report(){
+
+		if (logged_user()->isGuest()) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
+		}
+		$report_id = array_var($_GET, 'id');
+		$report = Reports::getReport($report_id);
+
+		if(!$report->canEdit(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
+		} 
+
+		if(is_array(array_var($_POST, 'report'))) {
+			try{
+				ajx_current("empty");
+				$report_data = array_var($_POST, 'report');
+				foreach ($report_data as $k => &$v) {
+					$v = remove_scripts($v);
+				}
+
+				DB::beginWork();
+				$report->setObjectName($report_data['name']);
+				$report->setDescription($report_data['description']);
+				$report->save();
+				
+				DB::commit();
+				flash_success(lang('custom report updated'));
+				ajx_current('back');
+
+			} catch(Exception $e) {
+				DB::rollback();
+				flash_error($e->getMessage());
+				ajx_current("empty");
+			} // try
+		} else {
+			$this->setTemplate('edit_default_report');
+			tpl_assign('url', get_url('reporting', 'edit_default_report', array('id' => $report_id)));
+			if($report instanceof Report){
+				tpl_assign('id', $report_id);
+				$report_data = array(
+					'name' => Localization::instance()->lang_exists($report->getObjectName()) ? lang($report->getObjectName()) : $report->getObjectName(),
+					'description' => Localization::instance()->lang_exists($report->getDescription()) ? lang($report->getDescription()) : $report->getDescription(),
+					'order_by' => $report->getOrderBy(),
+					'order_by_asc' => $report->getIsOrderByAsc(),
+					'ignore_context' => $report->getIgnoreContext(),
+				);
+				tpl_assign('report_data', $report_data);
+			}
+			tpl_assign('object', $report);
+		}
+	}
+
 	function view_custom_report($report_id = null, $view_attributes = null, $params = null,$to_print = false) {
 		
 		if (!$report_id) {
@@ -879,6 +1006,13 @@ class ReportingController extends ApplicationController {
 			
 		} else {
 			$externalCols = array();
+		}
+		
+		$cps = CustomProperties::getAllCustomPropertiesByObjectType($report->getReportObjectTypeId());
+		foreach ($cps as $cp) {
+			if ($cp->getType() == 'contact' || $cp->getType() == 'user') {
+				$externalCols[] = $cp->getId();
+			}
 		}
 		
 		tpl_assign('object_type', $ot);
@@ -1074,8 +1208,9 @@ class ReportingController extends ApplicationController {
 		
 		// convert html to pdf
 		$orientation = array_var($_REQUEST, 'pdfPageLayout') == 'L' ? 'Landscape' : 'Portrait';
+		$page_size = array_var($_REQUEST, 'pdfPageSize');
 		
-		$pdf_data = convert_to_pdf($html, $orientation, str_replace(" ", "_", $report->getObjectName()));
+		$pdf_data = convert_to_pdf($html, $orientation, str_replace(" ", "_", $report->getObjectName()), $page_size);
 		$real_pdf_filename = $pdf_data['name'];
 		
 		ajx_extra_data(array("filename" => $real_pdf_filename, 'size' => $pdf_data['size']));
@@ -1416,8 +1551,8 @@ class ReportingController extends ApplicationController {
 	 * Splits a value in pieces of maximum length = $length.
 	 * The split point is the last position of a space char that is before the piece length 
 	 *
-	 * @param $value: value to split
-	 * @param $length: max length of each piece
+	 * @param $value: string value to split
+	 * @param $length: int max length of each piece
 	 * @return array containing the pieces after splitting the value
 	 */
 	function split_column_value($value, $length) {
@@ -1630,7 +1765,16 @@ class ReportingController extends ApplicationController {
 
 	private function get_ext_values($field, $ot_id = null){
 		$values = array(array('id' => '', 'name' => lang('none')));
-		if($field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'completed_by_id'
+		$contact_cp = false;
+		$user_cp = false;
+		if (is_numeric($field)) {
+			$cp = CustomProperties::getCustomProperty($field);
+			if ($cp instanceof CustomProperty) {
+				if ($cp->getType() == 'contact') $contact_cp = true;
+				if ($cp->getType() == 'user') $user_cp = true;
+			}
+		}
+		if($user_cp || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'completed_by_id'
 			|| $field == 'approved_by_id'){
 			$users = Contacts::getAllUsers();
 			Hook::fire('filter_report_external_user_col_values', array('field' => $field, 'ot_id' => $ot_id), $users);
@@ -1648,6 +1792,11 @@ class ReportingController extends ApplicationController {
 			foreach ($companies as $comp) {
 				$values[] = array('id' => $comp->getId(), 'name' => $comp->getObjectName());
 			}
+		} else if ($contact_cp) {
+			$contacts = Contacts::instance()->listing(array('extra_conditions' => ' AND is_company=0 '))->objects;
+			foreach ($contacts as $contact) {
+				$values[] = array('id' => $contact->getId(), 'name' => $contact->getObjectName());
+			}
 		}
 		
 		Hook::fire('custom_reports_get_possible_external_column_values', array('field' => $field, 'ot_id' => $ot_id), $values);
@@ -1663,12 +1812,13 @@ class ReportingController extends ApplicationController {
 			
 			foreach($customProperties as $cp){
 				if ($cp->getType() == 'table') continue;
-                if ($cp->getType() == 'contact') continue;
+                //if ($cp->getType() == 'contact') continue;
 				$fields[] = array('id' => $cp->getId(), 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
 			}
 			
 			$ot = ObjectTypes::findById($object_type);
 			if (class_exists($ot->getHandlerClass())) {
+				$managerInstance = null;
 				eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
 				$objectColumns = $managerInstance->getColumns();
 				$externalFields = $managerInstance->getExternalColumns();
@@ -1861,7 +2011,7 @@ class ReportingController extends ApplicationController {
 				lang('time') .' ('.lang('hours').')'
 		);
 		Hook::fire('total_tasks_times_csv_columns', $column_titles, $column_titles);
-	
+		
 		foreach ($column_titles as $ct) {
 			$text .= $ct . ';';
 		}
@@ -1885,7 +2035,7 @@ class ReportingController extends ApplicationController {
 			$lastStop = $ts->getEndTime() != null ? $ts->getEndTime() : ($ts->isPaused() ? $ts->getPausedOn() : DateTimeValueLib::now());
 			$mystring = DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "m", 60, $ts->getSubtract());
 			$resultado = preg_replace("[^0-9]", "", $mystring);
-			$resultado = round(($resultado/60),5);
+			$resultado = is_numeric($resultado) ? round(($resultado/60),5) : 0;
 			$text .= $resultado;
 			$sub_total += $resultado;
 				

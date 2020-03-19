@@ -21,7 +21,7 @@
     * @access public
     * @param string $dir_path
     * @param string $message
-    * @return DirNotWritable
+    * @return DirNotWritableError
     */
     function __construct($dir_path, $message = null) {
       if(is_null($message)) $message = "Directory '$dir_path' is not writable by PHP";

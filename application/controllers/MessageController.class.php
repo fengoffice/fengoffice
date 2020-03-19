@@ -47,6 +47,9 @@ class MessageController extends ApplicationController {
 		);
 		$dim_order = null;
 		$cp_order = null;
+		$join_params = array();
+		$select_columns = array('*');
+		$extra_conditions = "";
 		
 		//Resolve actions to perform
 		$actionMessage = array();
@@ -67,24 +70,48 @@ class MessageController extends ApplicationController {
 			$dim_order = substr($order, 4);
 			$order = 'dimensionOrder';
 		}
-		$join_params = array();
-		$select_columns = array('*');
-		$extra_conditions = "";
 
+		// Order by  specified column
 		switch ($order){
-			case 'updatedOn':
+			case 'dateUpdated':
 				$order = '`updated_on`';
 				break;
-			case 'createdOn':
+			case 'dateCreated':
 				$order = '`created_on`';
 				break;
 			case 'name':
 				$order = '`name`';
 				break;
+			case 'updatedBy':
+				$order = '`jt`.`name`';
+				$join_params = array(
+					'join_type' => 'INNER',
+					'table' => Objects::instance()->getTableName(),
+					'jt_field' => 'id',
+					'e_field' => 'updated_by_id',
+					'get_object_data' => true
+				);
+				break;
+			case 'createdBy':
+				$order = '`jt`.`name`';
+				$join_params = array(
+					'join_type' => 'INNER',
+					'table' => Objects::instance()->getTableName(),
+					'jt_field' => 'id',
+					'e_field' => 'created_by_id',
+					'get_object_data' => true
+				);
+				break;
 			default:
 				$order = '`updated_on`';  
 				break;
 		}
+
+		// Check if get_object_data exist in $join_params, assign $select_columns
+	  if(array_var($join_params, 'get_object_data')){
+			$select_columns = array('DISTINCT(o.id), o.*, e.*, jt.name jt_name');
+		}
+
 		if (!$order_dir){
 			switch ($order){
 				case 'name': $order_dir = 'ASC'; break;

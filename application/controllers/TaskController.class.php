@@ -181,7 +181,7 @@ class TaskController extends ApplicationController {
                             $line++;
                         }
                     }
-                    Hook::fire('save_subtasks', $task, $subtasks);
+                    Hook::fire('save_subtasks', array('task' => $task, 'is_new' => true), $subtasks);
 
                     $subtasks = ProjectTasks::findAll(array(
                                 'conditions' => '`parent_id` = ' . DB::escape($task->getId())
@@ -233,7 +233,6 @@ class TaskController extends ApplicationController {
         $tasks_data = array_var($_POST, 'tasks');
 
         foreach ($tasks_data as $task_data) {
-            //alert_r($task_data);
             $task_id = array_var($task_data, 'id');
 
             $task = ProjectTasks::findById($task_id);
@@ -610,7 +609,8 @@ class TaskController extends ApplicationController {
                     case 'complete':
                         if ($task->canEdit(logged_user())) {
 
-                            $log_info = $task->completeTask();
+                        	$result = $task->completeTask();
+                            $log_info = $result['log_info'];
                             $application_logs[] = array($task, ApplicationLogs::ACTION_CLOSE, false, false, true, substr($log_info, 0, -1));
 
                             $has_pending_sub = false;
@@ -1038,12 +1038,17 @@ class TaskController extends ApplicationController {
         $join_params['on_extra'] = $join_on_extra;
 
         $total_estimated = "SUM(time_estimate) AS group_time_estimate ";
+        $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM fo_timeslots tt 
+			INNER JOIN fo_objects oo ON oo.id=tt.object_id
+			WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0) ";
+        $total_worked = $total_worked_subquery . "AS group_time_worked ";
+        //" total_worked_time AS group_time_worked"
 
         //querys returning total worked time, total estimated time and total pending time
         //time worked is the addition of all timeslots minus the addition of all pauses
         //time estimated is the addition of the substractions of estimated and worked, grouping by task to substract
         $group_totals = ProjectTasks::instance()->listing(array(
-                    "select_columns" => array("time_estimate", " total_worked_time AS group_time_worked", "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
+        		"select_columns" => array("time_estimate", $total_worked, "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
                     "join_params" => $join_params,
                     "extra_conditions" => $conditions,
                     "group_by" => "e.`object_id`",
@@ -1055,9 +1060,11 @@ class TaskController extends ApplicationController {
                 ))->objects;
 
         $group_time_estimate = $group_totals[0]['group_time_estimate'];
-        $group_time_pending = $group_totals[0]['group_time_pending'];
+        //$group_time_pending = $group_totals[0]['group_time_pending'];
         $group_time_worked = $group_totals[0]['group_time_worked'];
         $group_time_worked = is_null($group_time_worked) ? 0 : $group_time_worked;
+        $group_time_pending = $group_time_estimate - $group_time_worked;
+        if ($group_time_pending < 0) $group_time_pending = 0;
 
         $totals['estimatedTime'] = str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_estimate * 60), 'hm', 60));
         $totals['worked_time'] = $group_time_worked;
@@ -1911,10 +1918,12 @@ class TaskController extends ApplicationController {
             // have their parent in the current group with the same conditions
             $sub_listing_sql = str_replace(array("`e`.", "e."), "e2.", $listing_sql);
             $sub_listing_sql = str_replace("project_tasks e", "project_tasks e2", $sub_listing_sql);
-
+			
+			/* these 2 lines have been commented because this is not necessary, as they are in a subquery, and sometimes were the provoking a bug
             $sub_listing_sql = str_replace(array("`om`.", "om."), "om2.", $sub_listing_sql);
             $sub_listing_sql = str_replace("object_members om", "object_members om2", $sub_listing_sql);
             $sub_listing_sql = str_replace("object_members tom", "object_members tom2", $sub_listing_sql);
+            */
 
             $sub_listing_sql = str_replace("e2.parents_path", "e.parents_path", $sub_listing_sql);
 
@@ -2509,9 +2518,10 @@ class TaskController extends ApplicationController {
         if (array_var($_REQUEST, 'tasksOrderBy', false)) {
             set_user_config_option('tasksOrderBy', array_var($_REQUEST, 'tasksOrderBy'), logged_user()->getId());
         }
-
-        $groups = $this->getGroups($groupBy, $conditions, $show_more_conditions);
-
+        
+        $gr_offset = 0;
+        $groups = $this->getGroups($groupBy, $conditions, $show_more_conditions, true, false, $gr_offset, 99999);
+        
         if (is_null($groups)) {
             $groups = array();
         }
@@ -2522,7 +2532,7 @@ class TaskController extends ApplicationController {
             foreach ($group['group_tasks'] as $task) {
                 if (count(array_var($task, 'subtasksIds')) > 0) {
                     $t = ProjectTasks::findById($task['id']);
-                    $all_subtasks_info = $t->getAllSubtaskInfoInHierarchy();
+                    $all_subtasks_info = $t->getAllSubtaskInfoInHierarchy($conditions);
                     $subtasks[$task['id']] = $all_subtasks_info;
                 }
             }
@@ -2907,7 +2917,7 @@ class TaskController extends ApplicationController {
 
                 if (config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) {
                     $subtasks = array_var($_POST, 'multi_assignment');
-                    Hook::fire('save_subtasks', $task, $subtasks);
+                    Hook::fire('save_subtasks', array('task' => $task, 'is_new' => true), $subtasks);
                 }
 
 
@@ -3033,6 +3043,9 @@ class TaskController extends ApplicationController {
 
                 $null = null;
                 Hook::fire('after_task_controller_add_task', array('task' => $task), $null);
+                
+                return $task;
+                
             } catch (Exception $e) {
                 DB::rollback();
                 if (array_var($_REQUEST, 'modal')) {
@@ -3551,7 +3564,7 @@ class TaskController extends ApplicationController {
                 	} else if ($last_related_task_id > 0 && !$last_repetitive_task instanceof ProjectTask) {
                 		// current task is the last of the repetition
                 		// get the unmodified task from the database
-                		$old_original_task = ProjectTasks::findById($task->getId(), true);
+                	/*	$old_original_task = ProjectTasks::findById($task->getId(), true);
                 		// generate the next repetition to keep the "template" of the rep.
                 		$last_repetitive_task = $this->generate_new_repetitive_instance($old_original_task);
                 		// clear current task's repetition options
@@ -3559,7 +3572,7 @@ class TaskController extends ApplicationController {
 	                		$task->clearRepeatOptions();
                 		}
                 		// reload all tasks, to ensure that all new tasks are shown
-                		$_REQUEST['reload'] = true;
+                		$_REQUEST['reload'] = true;*/
                 	}
                 }
 
@@ -3751,12 +3764,13 @@ class TaskController extends ApplicationController {
                     }
                 }
 
+                
+                // Save the subtasks added/edited in the multi assignment section of the form
                 if (config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) {
-                    if (array_var($task_data, 'multi_assignment_aplly_change') == 'subtask') {
-                        $null = null;
-                        Hook::fire('edit_subtasks', $task, $null);
-                    }
+                	$subtasks = array_var($_POST, 'multi_assignment');
+                	Hook::fire('save_subtasks', array('task' => $task, 'is_new' => false), $subtasks);
                 }
+                
 
                 //for calculate member status we save de task again after the object have the members
                 $task->save();
@@ -4030,9 +4044,13 @@ class TaskController extends ApplicationController {
     //  Tasks
     // ---------------------------------------------------
 
-    function getNextRepetitionDates($task, $opt_rep_day, &$new_st_date, &$new_due_date) {
+    //function that generate repetiion dates
+    function getNextRepetitionDates($task, $opt_rep_day, &$new_st_date, &$new_due_date, $repetition_params) {
         $new_due_date = null;
         $new_st_date = null;
+        $original_st_date = array_var($repetition_params, 'original_st_date');
+        $original_due_date = array_var($repetition_params, 'original_due_date');
+        $count = array_var($repetition_params, 'count');
 
         if ($task->getStartDate() instanceof DateTimeValue) {
             $new_st_date = new DateTimeValue($task->getStartDate()->getTimestamp());
@@ -4048,12 +4066,20 @@ class TaskController extends ApplicationController {
                 $new_due_date = $new_due_date->add('d', $task->getRepeatD());
             }
         } else if ($task->getRepeatM() > 0) {
-            if ($new_st_date instanceof DateTimeValue) {
-                $new_st_date = $new_st_date->add('M', $task->getRepeatM());
-            }
-            if ($new_due_date instanceof DateTimeValue) {
-                $new_due_date = $new_due_date->add('M', $task->getRepeatM());
-            }
+                if ($new_st_date instanceof DateTimeValue) {
+                    if (isset($original_st_date) && isset($count)) {
+                        $new_st_date = getMonthlyRepetitionDate($task, $new_st_date, $original_st_date, $count);
+                    } else {
+                        $new_st_date = $new_st_date->add('M', $task->getRepeatM());
+                    }
+                }
+                if ($new_due_date instanceof DateTimeValue) {
+                    if(isset($original_due_date) && isset($count)) {
+                        $new_due_date = getMonthlyRepetitionDate($task, $new_due_date, $original_due_date, $count);
+                    } else {
+                        $new_due_date = $new_due_date->add('M', $task->getRepeatM());
+                    }
+                }  
         } else if ($task->getRepeatY() > 0) {
             if ($new_st_date instanceof DateTimeValue) {
                 $new_st_date = $new_st_date->add('y', $task->getRepeatY());
@@ -4092,7 +4118,7 @@ class TaskController extends ApplicationController {
             return;
         }
 
-        $this->getNextRepetitionDates($task, array(), $new_st_date, $new_due_date);
+        $this->getNextRepetitionDates($task, array(), $new_st_date, $new_due_date, array());
 
         $daystoadd = 0;
         $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date);
@@ -4200,7 +4226,9 @@ class TaskController extends ApplicationController {
             $reload_view = false;
             DB::beginWork();
 
-            $log_info = $task->completeTask();
+            $result = $task->completeTask();
+            $log_info = $result['log_info'];
+            $new_task = $result['new_task'];
 
             DB::commit();
             ApplicationLogs::createLog($task, ApplicationLogs::ACTION_CLOSE, false, false, true, substr($log_info, 0, -1));
@@ -4265,7 +4293,8 @@ class TaskController extends ApplicationController {
 
             foreach ($subtasks as $sub) {
                 if ($sub->getCompletedById() == 0 && $sub->canChangeStatus(logged_user())) {
-                    $log_info[$sub->getId()] = $sub->completeTask($options);
+                	$sub_result = $sub->completeTask($options);
+                	$log_info[$sub->getId()] = $sub_result['log_info'];
                     $completed_tasks[] = $sub;
                 }
             }
@@ -4682,6 +4711,7 @@ class TaskController extends ApplicationController {
         return null;
     }
 
+
     /**
      * Generates the repetitive instances of a task
      * @param ProjectTask $task: Task to replicate
@@ -4690,33 +4720,76 @@ class TaskController extends ApplicationController {
      */
     function repetitive_task($task, $opt_rep_day, $forced_repeat_end = null) {
         $generated_count = 0;
+
+        $working_days_only = 1; // True
+        $move_direction = $task->getMoveDirectionNonWorkingDays() ? $task->getMoveDirectionNonWorkingDays() : 'advance';
+        // Get template ID for the repetitive task
+        $template_id = $task->getColumnValue('from_template_id');
+        // Use template data, if tasks created by template
+        if($template_id){
+            // Get template
+            $template = COTemplates::instance()->findById($template_id);
+            
+            if ($template instanceof COTemplate) {
+	            // Get data form  use_only_working_days column for the template, expecting either 1 or 0
+	            $working_days_only = $template->getColumnValue('use_only_working_days');
+	            // Get data from nw_days_todo_action column for the template, expecting "advance" or "move_back"
+	            $move_direction = $template->getColumnValue('nw_days_todo_action');
+            }
+            
+            // check if due or start dates depends on any template parameter, if so then use the parameter as the original date
+            $original_dates = find_original_dates_for_template_repetitive_task($task);
+            if (array_var($original_dates, 'original_due_date') instanceof DateTimeValue) {
+            	$original_due_date = array_var($original_dates, 'original_due_date');
+            }
+            if (array_var($original_dates, 'original_st_date') instanceof DateTimeValue) {
+            	$original_st_date = array_var($original_dates, 'original_st_date');
+            }
+            
+        }
         if ($task->isRepetitive() && (!$task->getRepeatForever() || $forced_repeat_end instanceof DateTimeValue )) {
             $last_task = null;
             if ($task->getRepeatNum() > 0) {
 
-                if ($task->getStartDate() instanceof DateTimeValue)
-                    $original_st_date = $task->getStartDate();
-                if ($task->getDueDate() instanceof DateTimeValue)
-                    $original_due_date = $task->getDueDate();
-
+            	if (!isset($original_st_date)) {
+	                if ($task->getStartDate() instanceof DateTimeValue){
+	                    $original_st_date = $task->getStartDate();
+	                } else {
+	                    $original_st_date = NULL;
+	                }
+            	}
+            	if (!isset($original_due_date)) {
+	                if ($task->getDueDate() instanceof DateTimeValue){
+	                    $original_due_date = $task->getDueDate();
+	                } else {
+	                    $original_due_date = NULL;
+	                }
+            	}
+                $repetition_params = array(
+                    'original_st_date' => $original_st_date,
+                    'original_due_date' => $original_due_date
+                );
                 $task->setRepeatNum($task->getRepeatNum() - 1);
                 while ($task->getRepeatNum() > 0) {
-                    $this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date);
+                    $repetition_params['count'] = $generated_count;
+                    $this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date, $repetition_params);
 
-                    $daystoadd = 0;
-                    $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date);
-                    Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
-                    if ($daystoadd > 0) {
-                        if ($new_st_date)
-                            $new_st_date->add('d', $daystoadd);
-                        if ($new_due_date)
-                            $new_due_date->add('d', $daystoadd);
+                    if($working_days_only == 1) {
+                        $daystoadd = 0;
+                        $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date, 'move_direction' => $move_direction);
+                        Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
+                        if ($daystoadd != 0) {
+                            if ($new_st_date)
+                                $new_st_date->add('d', $daystoadd);
+                            if ($new_due_date)
+                                $new_due_date->add('d', $daystoadd);
+                        }
                     }
 
                     $task->setRepeatNum($task->getRepeatNum() - 1);
 
                     // generate completed task
-                    $last_task = $task->cloneTask($new_st_date, $new_due_date, true, false);
+                    $last_task = $task->cloneTask($new_st_date, $new_due_date, true, true, 0, $generated_count);
                     // set next values for repetetive task
                     if ($task->getStartDate() instanceof DateTimeValue)
                         $task->setStartDate($new_st_date);
@@ -4746,23 +4819,47 @@ class TaskController extends ApplicationController {
                 $new_st_date = "";
                 $new_due_date = "";
 
+                // Safe original due date in the variable
+                if (!isset($original_due_date)) {
+	                if ($task->getDueDate() instanceof DateTimeValue) {
+	                    $original_due_date = new DateTimeValue($task->getDueDate()->getTimestamp());
+	                } else {
+	                    $original_due_date = NULL;
+	                }
+                }
+                //Safe original start date in the variable
+                if (!isset($original_st_date)) {
+	                if ($task->getStartDate() instanceof DateTimeValue) {
+	                	$original_st_date = new DateTimeValue($task->getStartDate()->getTimestamp());
+	                } else {
+	                    $original_st_date = NULL;
+	                }
+                }
+                $repetition_params = array(
+                    'original_st_date' => $original_st_date,
+                    'original_due_date' => $original_due_date
+                );
                 while ($task->getRepeatBy() == 'start_date' && ($new_st_date == "" || $new_st_date->getTimestamp() <= $task_end->getTimestamp()) ||
                 $task->getRepeatBy() == 'due_date' && ($new_due_date == "" || $new_due_date->getTimestamp() <= $task_end->getTimestamp())) {
+                    $repetition_params['count'] = $generated_count;
+                    // @TODO change getNextRepetiotionDates to return new dates in an array
+                    // $new_dates = $this -> getNextRepetitionDates()
+                    $this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date, $repetition_params);
 
-                    $this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date);
-
-                    $daystoadd = 0;
-                    $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date);
-                    Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
-                    if ($daystoadd > 0) {
-                        if ($new_st_date)
-                            $new_st_date->add('d', $daystoadd);
-                        if ($new_due_date)
-                            $new_due_date->add('d', $daystoadd);
-                    }
+                    if($working_days_only == 1) {
+                        $daystoadd = 0;
+                        $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date, 'move_direction' => $move_direction);
+                        Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
+                        if ($daystoadd != 0) {
+                            if ($new_st_date)
+                                $new_st_date->add('d', $daystoadd);
+                            if ($new_due_date)
+                                $new_due_date->add('d', $daystoadd);
+                        }
+                    }   
                     
                     // generate completed task
-                    $last_task = $task->cloneTask($new_st_date,$new_due_date,true, false);
+                    $last_task = $task->cloneTask($new_st_date,$new_due_date,true, true, 0, $generated_count);
                     // set next values for repetetive task
                     if ($task->getStartDate() instanceof DateTimeValue ) $task->setStartDate($new_st_date);
                     if ($task->getDueDate() instanceof DateTimeValue ) $task->setDueDate($new_due_date);
@@ -5175,8 +5272,22 @@ class TaskController extends ApplicationController {
             flash_error($e->getMessage());
         } // try
     }
+    
+    
+    
+    function render_task_work_performed_summary() {
+    	ajx_current("empty");
+    	$html = '';
+    	
+    	$object = ProjectTasks::findById(get_id());
+    	if ($object instanceof ProjectTask) {
+    		tpl_assign('object', $object);
+    		tpl_assign('show_timeslot_section', true);
+    		$html = tpl_fetch(get_template_path('work_performed', 'task'));
+    	}
+    	ajx_extra_data(array('html' => $html));
+    }
 
 }
 
 // TaskController
-?>

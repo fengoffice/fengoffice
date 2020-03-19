@@ -23,7 +23,7 @@ if ($panel instanceof TabPanel && $panel->getEnabled()) {
 		foreach ($active_members as $member) {
 			$mnames[] = clean($member->getName());
 		}
-		$widget_title = lang('documents'). ' '. lang('in m').' '. implode(", ", $mnames);
+		$widget_title = lang('documents');
 	}
 	
 	$total = $result->total;

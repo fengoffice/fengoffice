@@ -138,10 +138,10 @@ class ObjectController extends ApplicationController {
 			Hook::fire ('after_add_subscribers', array('object' => $object, 'user_ids' => $user_ids), $null);
 
 			if ($log_info != "") {
-				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_SUBSCRIBE, false, true, true, $log_info);
+				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_SUBSCRIBE, false, false, true, $log_info);
 			}
 			if ($log_info_unsubscribe != "") {
-				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, true, true, $log_info_unsubscribe);
+				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, false, true, $log_info_unsubscribe);
 			}
 		}else{
 			$subscribers_to_remove = $object->getSubscriberIds();
@@ -220,6 +220,8 @@ class ObjectController extends ApplicationController {
 		$object = Objects::findObject($objectId);
 		$old_users = $object->getSubscriberIds();
 		$this->add_subscribers($object);
+		/* Unnecessary addition to the ApplicationLogs
+		*
 		$users = $object->getSubscriberIds();
 		$new = array();
 		foreach ($users as $user) {
@@ -227,8 +229,11 @@ class ObjectController extends ApplicationController {
 				$new[] = $user;
 			}
 		}
-		ApplicationLogs::createLog($object, ApplicationLogs::ACTION_SUBSCRIBE, false, false, true, implode(",", $new));
-
+		
+		if(count($new) > 0){
+			ApplicationLogs::createLog($object, ApplicationLogs::ACTION_SUBSCRIBE, false, false, true, implode(",", $new));
+		}
+		*/
 		flash_success(lang('subscription modified successfully'));
 	}
 
@@ -288,7 +293,7 @@ class ObjectController extends ApplicationController {
 			if ($dot->getIsRequired()){
 				$required_dimension_ids[] = $dot->getDimensionId();
 			}
-		}
+		}		
 		$required_dimensions = Dimensions::findAll(array("conditions" => "id IN (".implode(",",$required_dimension_ids).") OR is_required=1"));
 
 		// If not entered members
@@ -317,14 +322,20 @@ class ObjectController extends ApplicationController {
 		  if ((!can_add($user, $check_allowed_members ? $object->getAllowedMembersToAdd($user, $manageable_members):$manageable_members, $object->getObjectTypeId()))
 			&& !($object instanceof TemplateTask || $object instanceof TemplateMilestone || ($object instanceof Contact && $object->isUser()))) {
 
+				$mem_names = array();
+				$ot_name = $object->getObjectTypeNameLang();
+				foreach ($manageable_members as $man_mem) $mem_names[] = $man_mem->getName();
+				throw new Exception(lang('you dont have permissions to add this object in members', $ot_name, implode(', ',$mem_names)));
+			/*
 			$dinfos = DB::executeAll("SELECT id, name, code, options FROM ".TABLE_PREFIX."dimensions WHERE is_manageable = 1");
 			$dimension_names = array();
 			foreach ($dinfos as $dinfo) {
 				if (in_array($dinfo['id'], config_option('enabled_dimensions'))) {
 					$dimension_names[] = json_decode($dinfo['options'])->useLangs ? lang($dinfo['code']) : $dinfo['name'];
 				}
-			}
+			}			
 			throw new Exception(lang('must choose at least one member of', implode(', ', $dimension_names)));
+			*/
 			ajx_current("empty");
 			return;
 		  }
@@ -336,7 +347,8 @@ class ObjectController extends ApplicationController {
 		/* @var $object ContentDataObject */
 		$validMembers = $check_allowed_members ? $object->getAllowedMembersToAdd($user, $enteredMembers, $not_valid_members) : $enteredMembers;
 
-		foreach($required_dimensions as $rdim){
+		
+		foreach($required_dimensions as $rdim){		    
 			$exists = false;
 			foreach ($validMembers as $m){
 				if ($m->getDimensionId() == $rdim->getId()) {
@@ -417,12 +429,27 @@ class ObjectController extends ApplicationController {
 		}
 	}
 
+	/**
+	 * Add a single custom property of an object into the database.
+	 *
+	 * @param ContentDataObject $object
+	 * @param integer $cp_id the Custom Property ID
+	 * @param $cp_value string This will be of different type, d
+	 * 
+	 */
+	function add_custom_property($object_original, $cp_id, $cp_value) {
+	    $cp_data = array(
+	        $cp_id => $cp_value,
+	    );
+	    $this->add_custom_properties($object_original, $cp_data);
+	}
+	    
 
 	/**
 	 * Adds the custom properties of an object into the database.
 	 *
 	 * @param $object
-	 * @return unknown_type
+	 * 
 	 */
 	function add_custom_properties($object_original, $cp_data=null) {
 		if (logged_user()->isGuest()) {
@@ -432,6 +459,9 @@ class ObjectController extends ApplicationController {
 		}
 		$object = $object_original;
 
+		//Debug: 
+		//Logger::log_r("Object Id: ".$object->getId()."Object Name: ".$object->getName());
+		
 		if (!is_null($cp_data)) {
 			$obj_custom_properties = $cp_data;
 		} else {
@@ -474,8 +504,18 @@ class ObjectController extends ApplicationController {
 			}
 		}
 
-		foreach ($required_custom_props as $req_cp) {
-			if (!isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "") {
+		foreach ($required_custom_props as $req_cp) {/* @var $req_cp CustomProperty */
+			$not_set = false;
+			if ($req_cp->getIsMultipleValues()) {
+				if ($req_cp->getType() == 'user' && $obj_custom_properties[$req_cp->getId()] == 'Select user') {
+					$obj_custom_properties[$req_cp->getId()] = null;
+				}
+				$empty_array = count($obj_custom_properties[$req_cp->getId()]) == 0;
+				$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || $empty_array;
+			} else {
+				$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "";
+			}
+			if ($not_set) {
 				throw new Exception(lang('custom property value required', $req_cp->getName()));
 			}
 		}
@@ -1330,7 +1370,7 @@ class ObjectController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		} // if
-		if($isUser && (logged_user()->getId() != $id && !logged_user()->isAdministrator())) {
+		if($isUser && (logged_user()->getId() != $id && logged_user()->getUserType() > $obj->getUserType())) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			return;
@@ -2201,11 +2241,14 @@ class ObjectController extends ApplicationController {
 		$filters = $params['filters'];
 		$show_all_linked_objects = $params['show_all_linked_objects'];
 		$use_definition = $params['use_definition'];
-		$use_object_class_for_get_array_info = (is_null($params['use_object_class_for_get_array_info'])?false:true);
+		//$use_object_class_for_get_array_info = (is_null($params['use_object_class_for_get_array_info'])?false:true);
+		$use_object_class_for_get_array_info = isset($params['use_object_class_for_get_array_info']) ? $params['use_object_class_for_get_array_info'] : false;
 		
 		//variable to search in searchable_objects table
-		$text_search = $params['text_search'];
-        $text_search_key = $params['text_search_key'];
+		//$text_search = isset($params['text_search']);
+		$text_search = isset($params['text_search']) ? $params['text_search'] : '';
+        //$text_search_key = $params['text_search_key'];
+		$text_search_key = isset($params['text_search_key']) ? $params['text_search_key'] : '';
 
 		$filesPerPage = $params['filesPerPage'];
 		$name_filter = $filters['name'];
@@ -2227,12 +2270,17 @@ class ObjectController extends ApplicationController {
 
 		$template_objects = false;
 
-		if(in_array("template_task", array_var($filters, 'types', array())) || in_array("template_milestone", array_var($filters, 'types', array()))){
+		//if(in_array("template_task", array_var($filters, 'types', array())) || in_array("template_milestone", array_var($filters, 'types', array()))){
+		if (in_array("template_task", $filters['types']) || in_array("template_milestone", $filters['types'])){
 			$template_id = 0;
 			$template_objects = true;
 			if(isset($extra_list_params->template_id)){
 				$template_id = $extra_list_params->template_id;
 			}
+			if(isset($extra_list_params->id_no_select)) {
+				$id_no_select = $extra_list_params->id_no_select;
+			}
+			
 			$tmpl_task = TemplateTasks::findById(intval($id_no_select));
 			if($tmpl_task instanceof TemplateTask){
 				$template_extra_condition = "o.id IN (SELECT object_id from ".TABLE_PREFIX."template_tasks WHERE `template_id`=".$tmpl_task->getTemplateId()." OR `template_id`=0 AND `session_id`=".logged_user()->getId()." )";
@@ -2524,7 +2572,7 @@ class ObjectController extends ApplicationController {
 						$info_elem = $instance->getObjectData();
 
 					} else {
-						if($use_object_class_for_get_array_info===false){
+						if($use_object_class_for_get_array_info==false){
                             $info_elem = $instance->getObject()->getArrayInfo($trashed, $archived);
                         }else{
                             $info_elem = $instance->getArrayInfo($trashed, $archived);

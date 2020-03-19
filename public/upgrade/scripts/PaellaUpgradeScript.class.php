@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.7.2.16
+ * Paella upgrade script will upgrade FengOffice 3.4.4.64 to FengOffice 3.8.x
  *
  * @package ScriptUpgrader.scripts
  * @version 1.0
@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.7.2.16');
+		$this->setVersionTo('3.8.1.24');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -557,6 +557,155 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
         	}
         }
+        
+        if (version_compare($installed_version, '3.8.0.17') < 0) {
+        	if (!$this->checkValueExists($t_prefix."config_options", "name", "use_time_quick_add_row", $this->database_connection)) {
+	        	$upgrade_script .= "
+	                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('general', 'use_time_quick_add_row', '1', 'BoolConfigHandler', 0, 0, '')
+	                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+	            ";
+        	}
+        }
+        
+        if (version_compare($installed_version, '3.8.1.6') < 0) {
+        	// fix default values for datetime columns in tasks table, to prevent errors if mysql is configured too strict
+        	$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."project_tasks`
+				CHANGE `due_date` `due_date` datetime NOT NULL,
+				CHANGE `start_date` `start_date` datetime NOT NULL,
+				CHANGE `completed_on` `completed_on` datetime NOT NULL,
+				CHANGE `repeat_end` `repeat_end` datetime NOT NULL;
+			";
+        	
+        	if (!$this->checkColumnExists($t_prefix."project_tasks", "move_direction_non_working_days", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_tasks` ADD `move_direction_non_working_days` varchar(255) DEFAULT 'advance';
+				";
+        	}
+        }
+        
+        if (version_compare($installed_version, '3.8.1.9') < 0) {
+        	if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "decimals_separator", $this->database_connection)) {
+        		$upgrade_script .= "
+					INSERT INTO `".TABLE_PREFIX."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+			        ('general', 'decimals_separator', '.', 'ListConfigHandler', '0', '0', ' ', '{\"option\": [{\"value\": \".\",\"text\": \".\"},{\"value\": \",\",\"text\": \",\"}]}'),
+			        ('general', 'thousand_separator', ',', 'ListConfigHandler', '0', '0', ' ', '{\"option\": [{\"value\": \".\",\"text\": \".\"},{\"value\": \",\",\"text\": \",\"}]}'),
+					('general', 'decimal_digits', '2', 'IntegerConfigHandler', '0', '0', ' ', '');
+				";
+        	}
+        }
+		
+		if (version_compare($installed_version, '3.8.1.12') < 0) {
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "use_task_estimated_time", $this->database_connection)) {
+				$upgrade_script .= "
+                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+				VALUES ('general', 'use_task_estimated_time', '1', 'BoolConfigHandler', 0, 0, '')
+                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+            ";
+			}
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "use_task_pending_time", $this->database_connection)) {
+				$upgrade_script .= "
+                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+				VALUES ('general', 'use_task_pending_time', '1', 'BoolConfigHandler', 0, 0, '')
+                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+            ";
+			}
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "use_task_percent_completed", $this->database_connection)) {
+				$upgrade_script .= "
+                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+				VALUES ('general', 'use_task_percent_completed', '1', 'BoolConfigHandler', 0, 0, '')
+                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+            ";
+			}
+		}
+        
+
+		if (version_compare($installed_version, '3.8.1.17') < 0) {
+			$upgrade_script .= "
+				ALTER TABLE ".$t_prefix."contact_config_options MODIFY `options` varchar(1000);
+				";
+			
+			$upgrade_data = '{"option": [{"value": "Portrait","text": "config_pdf_layout_portrait"},{"value": "Landscape","text": "config_pdf_layout_landscape"}]}';
+
+			$upgrade_script .= "
+				 INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+				 ('reporting', 'pdf_page_layout', 'Portrait', 'ListConfigHandler', 0, 0, '', '".$upgrade_data."')	
+				 ON DUPLICATE KEY UPDATE `name`=`name`;
+			 ";
+
+			$upgrade_data = '{"option": [{"value": "A0","text": "config_pdf_size_A0"},{"value": "A1","text": "config_pdf_size_A1"},{"value": "A2","text": "config_pdf_size_A2"},{"value": "A3","text": "config_pdf_size_A3"},{"value": "A4","text": "config_pdf_size_A4"},{"value": "A5","text": "config_pdf_size_A5"},{"value": "Legal","text": "config_pdf_size_legal"},{"value": "Letter","text": "config_pdf_size_letter"}]}';
+
+			$upgrade_script .= "
+				 INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+				 ('reporting', 'pdf_page_size', 'A4', 'ListConfigHandler', 0, 0, '', '".$upgrade_data."')	
+				 ON DUPLICATE KEY UPDATE `name`=`name`;
+			 ";
+		}
+
+
+		if (version_compare($installed_version, '3.8.1.18') < 0) {
+			
+			// prevent mysql errors with default values when settings are too strict
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."objects`
+				CHANGE `created_on` `created_on` datetime NOT NULL AFTER `name`,
+				CHANGE `updated_on` `updated_on` datetime NOT NULL AFTER `created_by_id`,
+				CHANGE `trashed_on` `trashed_on` datetime DEFAULT NULL AFTER `updated_by_id`,
+				CHANGE `archived_on` `archived_on` datetime DEFAULT NULL AFTER `trashed_by_id`,
+				CHANGE `timezone_id` `timezone_id` int(10) unsigned NOT NULL DEFAULT '0' AFTER `archived_by_id`,
+				CHANGE `timezone_value` `timezone_value` int(10) NOT NULL DEFAULT '0' AFTER `timezone_id`;
+			";
+			
+			
+			if (!$this->checkColumnExists($t_prefix."reports", "function_url", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."reports` ADD `function_url` varchar(255) DEFAULT '' AFTER `code`;
+				";
+			}
+			
+			$gb_options_col = "";
+			$gb_options_val = "";
+			if ($this->checkColumnExists($t_prefix."reports", "group_by_options", $this->database_connection)) {
+				$gb_options_col .= ", group_by_options";
+				$gb_options_val .= ", ''";
+			}
+			if ($this->checkColumnExists($t_prefix."reports", "date_format", $this->database_connection)) {
+				$gb_options_col .= ", date_format";
+				$gb_options_val .= ", ''";
+			}
+
+			$upgrade_script .= "
+			INSERT INTO `".$t_prefix."objects` (`object_type_id`, `name`, `created_on`, `created_by_id`, `updated_on`, `updated_by_id`, `trashed_by_id`, `archived_by_id`) VALUES
+			((SELECT id FROM ".$t_prefix."object_types WHERE name='report'), 'task time report', NOW(), 0, NOW(), 0, 0, 0);
+			";
+
+			$upgrade_script .= "
+			INSERT INTO `".$t_prefix."reports` (`object_id`, `description`, `report_object_type_id`, `order_by`, `is_order_by_asc`, `ignore_context`, `is_default`, `code`, `function_url` $gb_options_col) VALUES
+			((SELECT max(id) FROM ".$t_prefix."objects WHERE object_type_id=(SELECT id FROM ".$t_prefix."object_types WHERE name='report')), 'task time report description', (SELECT id FROM ".$t_prefix."object_types WHERE name='timeslot'), '', 1, 1, 1, 'total_task_times_report', '?c=reporting&a=total_task_times_p' $gb_options_val);
+			";
+		}
+		
+		
+		if (version_compare($installed_version, '3.8.1.21') < 0) {
+			
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."objects` SET `trashed_on`=0 WHERE `trashed_on` IS NULL;
+			";
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."objects` SET `archived_on`=0 WHERE `archived_on` IS NULL;
+			";
+		}
+		
+		if (version_compare($installed_version, '3.8.1.24') < 0) {
+			
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."project_tasks` ADD INDEX `original_task_id` (`original_task_id`);
+			";
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."config_options` CHANGE `options` `options` varchar(511) COLLATE 'utf8_unicode_ci' DEFAULT '';
+			";
+		}
         
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {

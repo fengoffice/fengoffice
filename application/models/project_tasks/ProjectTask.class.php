@@ -328,7 +328,7 @@ class ProjectTask extends BaseProjectTask {
 	 * Private function to check whether a task is asigned to user or company user
 	 *
 	 * @param Contact $user
-	 * @return unknown
+	 * @return boolean
 	 */
 	private function isAsignedToUserOrCompany(Contact $user){
 		return ($user->getId() == $this->getAssignedToContactId());
@@ -505,6 +505,7 @@ class ProjectTask extends BaseProjectTask {
 			}
 		}
 		
+		$new_task = null;
 		// if task is repetitive, generate a complete instance of this task and modify repeat values
 		if ($this->isRepetitive()) {
 			$task_controller = new TaskController();
@@ -512,7 +513,7 @@ class ProjectTask extends BaseProjectTask {
 			
 			// calculate next repetition date
 			$opt_rep_day = array('saturday' => false, 'sunday' => false);
-			$new_dates = $task_controller->getNextRepetitionDates($this, $opt_rep_day, $new_st_date, $new_due_date);
+			$new_dates = $task_controller->getNextRepetitionDates($this, $opt_rep_day, $new_st_date, $new_due_date, array());
 		
 			// if this is the last task of the repetetition, complete it, do not generate a new instance
 			if ($this->getRepeatNum() > 0) {
@@ -535,14 +536,15 @@ class ProjectTask extends BaseProjectTask {
 				$new_due = array_var($new_dates, 'due');
 				
 				$daystoadd = 0;
-				$params = array('task' => $this, 'new_st_date' => $new_st, 'new_due_date' => $new_due);
+				$move_direction = $task->getMoveDirectionNonWorkingDays() ? $task->getMoveDirectionNonWorkingDays() : 'advance';
+				$params = array('task' => $this, 'new_st_date' => $new_st, 'new_due_date' => $new_due, 'move_direction' => $move_direction);
 				Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
 				
-				if ($daystoadd > 0) {
+				if ($daystoadd != 0) {
 					if ($new_st) $new_st->add('d', $daystoadd);
 					if ($new_due) $new_due->add('d', $daystoadd);
 				}
-				
+
 				// generate new pending task
 				$new_task = $this->cloneTask($new_st, $new_due);
 				
@@ -554,6 +556,7 @@ class ProjectTask extends BaseProjectTask {
 				$this->setRepeatM(0);
 				$this->setRepeatY(0);
 				$this->setRepeatBy("");
+				// ajx_current('reload');
 			}
 		}
 		
@@ -564,7 +567,7 @@ class ProjectTask extends BaseProjectTask {
 		$null = null;
 		Hook::fire("after_task_complete", array('task' => $this), $null);
 		
-		return $log_info;
+		return array('log_info' => $log_info, 'new_task' => $new_task);
 	} // completeTask
 
 	/**
@@ -624,7 +627,7 @@ class ProjectTask extends BaseProjectTask {
 		}
 	}
 	
-	function cloneTask($new_st_date='',$new_due_date='',$copy_status = false,$copy_repeat_options = true,$parent_subtask=0) {
+	function cloneTask($new_st_date='',$new_due_date='',$copy_status = false,$copy_repeat_options = true,$parent_subtask=0, $count = null) {
 
 		$new_task = new ProjectTask();
 		
@@ -667,9 +670,12 @@ class ProjectTask extends BaseProjectTask {
 			$new_task->setCompletedOn($this->getCompletedOn());
 		}
 		if ($copy_repeat_options) {
+			if(is_null($count)){
+				$new_task->setRepeatNum($this->getRepeatNum());
+			}
 			$new_task->setRepeatEnd($this->getRepeatEnd());
+			$new_task->setMoveDirectionNonWorkingDays($this->getMoveDirectionNonWorkingDays());
 			$new_task->setRepeatForever($this->getRepeatForever());
-			$new_task->setRepeatNum($this->getRepeatNum());
 			$new_task->setRepeatBy($this->getRepeatBy());
 			$new_task->setRepeatD($this->getRepeatD());
 			$new_task->setRepeatM($this->getRepeatM());
@@ -698,7 +704,16 @@ class ProjectTask extends BaseProjectTask {
 		
 		$sub_tasks = $this->getAllSubTasks();
 		foreach ($sub_tasks as $st) {
-			$new_dates = $this->getNextRepetitionDatesSubtask($st,$new_task, $new_st_date, $new_due_date);
+			$new_dates = $this->getNextRepetitionDatesSubtask($st,$new_task, $new_st_date, $new_due_date, $count);
+			$daystoadd = 0;
+			$params = array('task' => $new_task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date, 'move_direction' => $new_task->getMoveDirectionNonWorkingDays());
+			Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
+			if ($daystoadd != 0) {
+				if ($new_st_date)
+					$new_st_date->add('d', $daystoadd);
+				if ($new_due_date)
+					$new_due_date->add('d', $daystoadd);
+			}
 			if ($st->getParentId() == $this->getId()) {
 				$new_st = $st->cloneTask(array_var($new_dates, 'st'),array_var($new_dates, 'due'),$copy_status, $copy_repeat_options, $new_task->getId());
 				if ($copy_status) {
@@ -723,12 +738,13 @@ class ProjectTask extends BaseProjectTask {
 		$this->setRepeatD(0);
 		$this->setRepeatM(0);
 		$this->setRepeatY(0);
+		$this->setMoveDirectionNonWorkingDays('advance');
 	}
         
-	private function getNextRepetitionDatesSubtask($subtask, $task, &$new_st_date, &$new_due_date) {
+	private function getNextRepetitionDatesSubtask($subtask, $task, &$new_st_date, &$new_due_date, $count = null) {
 		$new_due_date = null;
 		$new_st_date = null;
-                
+		$count = is_null($count) ? 1 : $count + 1;       
 		if ($subtask->getStartDate() instanceof DateTimeValue ) {
 			$new_st_date = new DateTimeValue($subtask->getStartDate()->getTimestamp());
 		}
@@ -737,44 +753,53 @@ class ProjectTask extends BaseProjectTask {
 		}
 		if ($task->getRepeatD() > 0) {
 			if ($new_st_date instanceof DateTimeValue) {
-				$new_st_date = $new_st_date->add('d', $task->getRepeatD());
+				$new_st_date = $new_st_date->add('d', $task->getRepeatD()*$count);
 			}                        
 			if ($new_due_date instanceof DateTimeValue) {
-				$new_due_date = $new_due_date->add('d', $task->getRepeatD());
+				$new_due_date = $new_due_date->add('d', $task->getRepeatD()*$count);
 			}
 		} else if ($task->getRepeatM() > 0) {
 			if ($new_st_date instanceof DateTimeValue) {
-				$new_st_date = $new_st_date->add('M', $task->getRepeatM());
+				$new_st_date = $new_st_date->add('M', $task->getRepeatM()*$count);
 			}
 			if ($new_due_date instanceof DateTimeValue) {
-				$new_due_date = $new_due_date->add('M', $task->getRepeatM());
+				$new_due_date = $new_due_date->add('M', $task->getRepeatM()*$count);
 			}
 		} else if ($task->getRepeatY() > 0) {
 			if ($new_st_date instanceof DateTimeValue) {
-				$new_st_date = $new_st_date->add('y', $task->getRepeatY());
+				$new_st_date = $new_st_date->add('y', $task->getRepeatY()*$count);
 			}
 			if ($new_due_date instanceof DateTimeValue) {
-				$new_due_date = $new_due_date->add('y', $task->getRepeatY());
+				$new_due_date = $new_due_date->add('y', $task->getRepeatY()*$count);
 			}
 		}
 
 		$correct_the_days = true;
 		Hook::fire('check_working_days_to_correct_repetition', array('task' => $subtask), $correct_the_days);
 		if ($correct_the_days) {
-			$new_st_date = $this->correct_days_task_repetitive($new_st_date);
-			$new_due_date = $this->correct_days_task_repetitive($new_due_date);
+			$new_st_date = $this->correct_days_task_repetitive($new_st_date, $task);
+			$new_due_date = $this->correct_days_task_repetitive($new_due_date, $task);
 		}
 		
 		return array('st' => $new_st_date, 'due' => $new_due_date);
 	}
         
-        function correct_days_task_repetitive($date){
+        function correct_days_task_repetitive($date, $task){
             if($date != ""){
-                $working_days = explode(",",config_option("working_days"));
-                if(!in_array(date("w",  $date->getTimestamp()), $working_days)){
-                    $date = $date->add('d', 1);
-                    $this->correct_days_task_repetitive($date);
-                }
+				$task_move_direction = $task->getMoveDirectionNonWorkingDays() ? $task->getMoveDirectionNonWorkingDays() : 'advance';
+				$move_direction = $task_move_direction == 'advance' ? 1 : -1;
+				$rep_fixed_days_str = trim($task->getColumnValue('repeat_fixed_days'));
+				if ($rep_fixed_days_str != '') {
+					$working_days = explode(",",$rep_fixed_days_str);
+					$d = new DateTimeValue($date->getTimestamp());
+					$d->add('s', $task->getTimezoneValue());
+					$dw = $d->format('w');
+					while(!in_array($dw, $working_days)){
+						$date = $d->add('d', $move_direction);
+						$dw = $d->format('w');
+					}
+					$date = $d->add('s', $task->getTimezoneValue() * (-1));
+				}
             }
             return $date;
         }
@@ -799,7 +824,7 @@ class ProjectTask extends BaseProjectTask {
 	 *
 	 * @param string $text
 	 * @param Contact $assigned_to_user
-	 * @param Company $assigned_to_company
+	 * @param Contact $assigned_to_company
 	 * @return ProjectTask
 	 * @throws DAOValidationError
 	 */
@@ -833,7 +858,7 @@ class ProjectTask extends BaseProjectTask {
 	 * Detach subtask from this task
 	 *
 	 * @param ProjectTask $task
-	 * @param ProjectTaskList $attach_to If you wish you can detach and attach task to
+	 * @param ProjectTask $attach_to If you wish you can detach and attach task to
 	 *   other list with one save query
 	 * @return null
 	 */
@@ -887,9 +912,9 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return array
 	 */
-	function getSubTasksIds() {
+	function getSubTasksIds($extra_conditions = "") {
 		$subtasks_ids = array();
-		$condition = ' AND `parent_id` = ' . DB::escape($this->getId());
+		$condition = $extra_conditions . ' AND `parent_id` = ' . DB::escape($this->getId());
 				
 		$subtasks_rows = ProjectTasks::instance()->listing(array(
 				"select_columns" => array("e.`object_id`"),
@@ -898,8 +923,11 @@ class ProjectTask extends BaseProjectTask {
 				"fire_additional_data_hook" => false,
 				"raw_data" => true,
 		))->objects;
-		for ($i = 0; $i < count($subtasks_rows); $i++){
-			$subtasks_ids[] = (int)$subtasks_rows[$i]['object_id'];
+		
+		if (is_array($subtasks_rows)) {
+			for ($i = 0; $i < count($subtasks_rows); $i++){
+				$subtasks_ids[] = (int)$subtasks_rows[$i]['object_id'];
+			}
 		}
 		
 		return $subtasks_ids;
@@ -962,9 +990,9 @@ class ProjectTask extends BaseProjectTask {
 	/**
 	 * Gets all subtasks info recursively
 	 */
-	function getAllSubtaskInfoInHierarchy() {
+	function getAllSubtaskInfoInHierarchy($conditions = "") {
 		$subtasks = array();
-		$this->getAllSubtaskInfoInHierarchyRecursive($subtasks, 1);
+		$this->getAllSubtaskInfoInHierarchyRecursive($subtasks, 1, $conditions);
 	
 		return $subtasks;
 	}
@@ -972,14 +1000,14 @@ class ProjectTask extends BaseProjectTask {
 	/**
 	 * Private function to get the subtasks info recursively
 	 */
-	private function getAllSubtaskInfoInHierarchyRecursive(&$subtasks, $depth=0) {
-		$subtasks_ids = $this->getSubTasksIds();
+	private function getAllSubtaskInfoInHierarchyRecursive(&$subtasks, $depth=0, $conditions = "") {
+		$subtasks_ids = $this->getSubTasksIds($conditions);
 		foreach ($subtasks_ids as $sub_id) {
 			$sub = ProjectTasks::findById($sub_id);
 			if ($sub instanceof ProjectTask) {
 				$subtasks[$sub_id] = $sub->getArrayInfo();
 				$subtasks[$sub_id]['depth'] = $depth;
-				$sub->getAllSubtaskInfoInHierarchyRecursive($subtasks, $depth+1);
+				$sub->getAllSubtaskInfoInHierarchyRecursive($subtasks, $depth+1, $conditions);
 			}
 		}
 	}
@@ -1529,7 +1557,7 @@ class ProjectTask extends BaseProjectTask {
 	/**
 	 * Return object for task listing
 	 *
-	 * @return unknown
+	 * @return array
 	 */
 	function getDashboardObject(){
     	if($this->getUpdatedById() > 0 && $this->getUpdatedBy() instanceof Contact){
@@ -1620,7 +1648,7 @@ class ProjectTask extends BaseProjectTask {
 	 * End task templates
 	 */
 
-	function getArrayInfo($full = false, $include_members_data = false){
+	function getArrayInfo($full = false, $include_members_data = false, $include_mem_path = true){
 		$task = $this;
 		$col_names = $task->getColumns();
 		$ob_col_names = $task->getObject()->getColumns();
@@ -1642,7 +1670,7 @@ class ProjectTask extends BaseProjectTask {
 		//is read
 		$raw_data['isread'] = $task->getIsRead(logged_user()->getId());
 		$raw_data['mark_as_started'] = $task->getMarkAsStarted();
-		return ProjectTasks::getArrayInfo($raw_data, $full, $include_members_data);
+		return ProjectTasks::getArrayInfo($raw_data, $full, $include_members_data, $include_mem_path);
 	}
 	
 	function isRepetitive() {
@@ -1662,7 +1690,7 @@ class ProjectTask extends BaseProjectTask {
 	/**
 	 * Stops notifying user of comments and due date
 	 *
-	 * @param unknown_type $user
+	 * @param Contact $user
 	 */
 	function unsubscribeUser($user) {
 		parent::unsubscribeUser($user);

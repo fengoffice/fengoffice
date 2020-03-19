@@ -51,7 +51,8 @@ abstract class BaseProjectTasks extends ContentDataObjects {
         'instantiation_id' => DATA_TYPE_INTEGER,
         'type_content' => DATA_TYPE_STRING,
         'total_worked_time' => DATA_TYPE_INTEGER,
-	    'mark_as_started'=> DATA_TYPE_BOOLEAN,
+		'mark_as_started'=> DATA_TYPE_BOOLEAN,
+		'move_direction_non_working_days' => DATA_TYPE_STRING,
 	    
 	);
 

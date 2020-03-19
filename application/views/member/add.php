@@ -15,6 +15,10 @@
 		if ($p instanceof Member) $member_color = $p->getColor();
 	}
 	
+	if ($member instanceof Member && $member->isNew()) {
+		$member->setObjectTypeId($obj_type_sel);
+	}
+	
 	$object_type_selected = $obj_type_sel > 0 ? ObjectTypes::findById($obj_type_sel) : null;
 	if ($member instanceof Member) {
 	    $object_type_name = $member->getTypeNameToShow();
@@ -22,11 +26,30 @@
 		$object_type_name = $object_type_selected instanceof ObjectType ? lang($object_type_selected->getName()) : null;
 	}
 	
+	$member_ot = ObjectTypes::findById($member->getObjectTypeId());
+	$dim_obj = null;
+	if ($member_ot->getType() == 'dimension_object') {
+		if (!$member->isNew()) {
+			$dim_obj = Objects::findObject($member->getObjectId());
+		} else {
+			if (class_exists($member_ot->getHandlerClass())) {
+				eval('$ot_manager = '.$member_ot->getHandlerClass().'::instance();');
+				if (isset($ot_manager) && $ot_manager instanceof ContentDataObjects) {
+					eval('$dim_obj = new '.$ot_manager->getItemClass().'();');
+					if ($dim_obj instanceof ContentDataObject) {
+						$dim_obj->setNew(true);
+						$dim_obj->setObjectTypeId($member->getObjectTypeId());
+					}
+				}
+			}
+		}
+		if ($dim_obj) {
+			Hook::fire('override_get_object_type_name', $dim_obj, $object_type_name);
+		}
+	}
+	
 	$object_type_name = ucwords($object_type_name);
 	
-	if ($member instanceof Member && $member->isNew()) {
-		$member->setObjectTypeId($obj_type_sel);
-	}
 	if($member instanceof Member && !$member->isNew()) {
 		$ot = ObjectTypes::findById($member->getObjectTypeId());
 		$ot_name = lang($ot->getName());
@@ -50,25 +73,8 @@
     $categories = array();
 	Hook::fire('member_edit_categories', array('member' => $member, 'genid' => $genid), $categories);
 	
-	$member_ot = ObjectTypes::findById($member->getObjectTypeId());
 	
-	$dim_obj = null;
-	if ($member_ot->getType() == 'dimension_object') {
-		if (!$member->isNew()) {
-			$dim_obj = Objects::findObject($member->getObjectId());
-		} else {
-			if (class_exists($member_ot->getHandlerClass())) {
-				eval('$ot_manager = '.$member_ot->getHandlerClass().'::instance();');
-				if (isset($ot_manager) && $ot_manager instanceof ContentDataObjects) {
-					eval('$dim_obj = new '.$ot_manager->getItemClass().'();');
-					if ($dim_obj instanceof ContentDataObject) {
-						$dim_obj->setNew(true);
-						$dim_obj->setObjectTypeId($member->getObjectTypeId()); 
-					}
-				}
-			} 
-		}
-	}
+	
 	
 	$form_action = $member == null || $member->isNew() ? get_url('member', 'add') : get_url('member', 'edit', array("id" => $member->getId()));
 	
@@ -197,7 +203,11 @@
 				$render = true;
 				Hook::fire('member_add_render_parent_selector', array('member' => $member), $render);
 				
-				if (!Plugins::instance()->isActivePlugin('advanced_core') && $render) {
+				$render_parent_selector = true;
+				if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+					if (Plugins::instance()->isActivePlugin('advanced_core')) $render_parent_selector = false;
+				}
+				if ($render_parent_selector && $render) {
 					render_single_member_selector($current_dimension, $genid, $selected_members, array('is_multiple' => false, 'label' => lang('located under'),
 					'width'=>400, 'allow_non_manageable' => true, 'dont_filter_this_selector' => true,
 					'select_function' => 'og.onParentMemberSelect', 'listeners' => array('on_remove_relation' => "og.onParentMemberRemove('".$genid."');")), false);

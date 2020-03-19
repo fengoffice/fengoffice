@@ -233,6 +233,8 @@
 	'parameters' => 'Paramètres',
 	'user config option name amount_objects_to_show' => 'Nombre d\'objets liés à afficher',
 	'user config option desc amount_objects_to_show' => 'Définit le nombre d\'objets liés à afficher sur les vues des objets.',
+	'user ws config category name contact panel' => 'Options de contacts',
+	'user ws config category name reporting' => 'Options de rapport',
 	'user config option name show_two_weeks_calendar' => 'Afficher deux semaines au calendrier',
 	'user config option desc show_two_weeks_calendar' => 'Paramétrer le widget calendrier pour afficher deux semaines',
 	'user config option name attach_docs_content' => 'Joindre des fichiers au message',

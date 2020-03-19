@@ -42,7 +42,7 @@ ogTasks.createPrintWindow = function(){
 	printWindow.document.write('<LINK href="' + og.hostName + '/public/assets/themes/default/stylesheets/og/printTasks.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<LINK href="' + og.hostName + '/public/assets/themes/default/stylesheets/og/tasks.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/website.css" rel="stylesheet" type="text/css">');
-	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/ogmin.css" rel="stylesheet" type="text/css">');
+	//printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/ogmin.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/general/rewrites.css" rel="stylesheet" type="text/css">');
 	
 	printWindow.document.write('</head><body onLoad="self.print()">');

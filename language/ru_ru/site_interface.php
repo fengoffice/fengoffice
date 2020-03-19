@@ -590,4 +590,8 @@
 	'show all possibilites' => 'Показать все возможности',
 	'remove all filters' => 'Снять все фильтры',
 	'plugins' => 'Плагины',
+	'add previous task' => 'Добавить предыдущую задачу',
+	'this task has x previous open tasks' => 'Эта задача имеет {0} предыдущих открытых подзадач',
+	'mark as started this task' => 'Отметить как начатый',
+	'unmark as started this task' => 'Снять отметку начатый',
 ); ?>

@@ -210,7 +210,7 @@
     *
     * @access public
     * @param string $variable_name
-    * @param $default This value is returned if $variable_name is not found
+    * @param $default mixed This value is returned if $variable_name is not found
     *   in storage
     * @return mixed
     */

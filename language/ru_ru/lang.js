@@ -152,6 +152,7 @@ addLangs({
 	'calendar': 'Календарь',
 	'tasks': 'Задачи',
 	'web pages': 'Web-ссылки',
+	'web document': 'Web документ',
 	'documents': 'Документы',
 	'account': 'Учётная запись',
 	'search': 'Поиск',
@@ -745,7 +746,7 @@ addLangs({
 	'only this event': 'Только это событие',
 	'this event alone and all to come forward': 'Это и все последующие события',
 	'all events related': 'Все связанные события',
-	'add new workspace': 'Добавить новое Рабочее пространство',
+	'add new workspace': 'Добавить новый {0}',
 	'edit selected workspace': 'Редактировать выбранное Рабочее пространство',
 	'delete selected workspace_': 'Удалить выбранное Рабочее пространство',
 	'filter members': 'фильтр по...',
@@ -753,5 +754,17 @@ addLangs({
 	'sync': 'Синхрон.',
 	'delete calendar': 'Удалить календарь?',
 	'persons': 'Пользователи',
-	'archived': 'Заархивировано'
+	'archived': 'Заархивировано',
+	'classified under': 'Классификация',
+	'mark as started this task': 'Отметить как начатый',
+	'unmark as started this task': 'Снять отметку начатый',
+	'worked time': 'Отработанное время',
+	'time period': 'Период времени',
+	'due' : 'Время завершения',
+	'due m' : 'Время завершения',
+	'from date' : 'От',
+	'to date' : 'До',
+	'reports' : 'Отчеты',
+
+
 });

@@ -154,5 +154,6 @@
     
     'token external key value required' => 'Key es requerido',
     'token external name value required' => 'Name es requerido',
-    'token external type value required' => 'Type es requerido',
+	'token external type value required' => 'Type es requerido',
+	'you dont have permissions to add this object in members' => 'Usted no tiene permisos para agregar este {0} en {1}',
 );

@@ -117,7 +117,7 @@ function installed_version() {
 
 /**
  * Deletes a directory and all of its contents
- * @return unknown_type
+ * 
  */
 function unlink_dir($dir) {
 	$dh = @opendir($dir);

@@ -1,0 +1,10 @@
+/* styles to avoid thead and tbody overlapping when exporting custom reports to pdf */
+thead {
+	display: table-header-group;
+}
+tfoot {
+	display: table-row-group;
+}
+tr {
+	page-break-inside: avoid;
+}

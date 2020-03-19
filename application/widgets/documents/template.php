@@ -7,7 +7,7 @@
 		<div class="dash-expander ico-dash-expanded" id="<?php echo $genid; ?>expander"></div>
 	</div>
 	
-	<div class="widget-body" id="<?php echo $genid; ?>_widget_body">
+	<div class="widget-body widget-documents__body" id="<?php echo $genid; ?>_widget_body">
 		<ul>
 			<?php 
 			$row_cls = "";
@@ -21,19 +21,25 @@
 				$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.document-breadcrumb-container' ) ";//document-row
 			?>
 				<li id="<?php echo "document-".$document->getId()?>" class="document-row co-row <?php echo $row_cls ?>" style="background: url(<?php echo $iconUrl?>) no-repeat left 4px; ">
-					<a href="<?php echo $document->getViewUrl() ?>"><span class="document-title"><?php echo clean($document->getName());?></span></a>
-					<div class="document-breadcrumb-container">
-					<span class="breadcrumb"></span>
+					<div class="doc-text-container">
+						<a class="document-title-link" href="<?php echo $document->getViewUrl() ?>"><span class="document-title"><?php echo clean($document->getName());?></span></a>
+					</div>
+					<!-- COMMENT OUT BREADCRUMB
+					<div class="doc-text-container">
+						<div class="document-breadcrumb-container">
+						<span class="breadcrumb"></span>&nbsp;
+						</div>
 					</div>
 					<script>
 						var crumbHtml = <?php echo $crumbJs?> ;
 						$("#document-<?php echo $document->getId()?> .breadcrumb").html(crumbHtml);
-					</script>
-					<?php if ($document->getUpdatedBy() instanceof Contact) { ?>
-					<div class="desc date-container"><?php 
+					</script> -->
+					
+					<?php /*if ($document->getUpdatedBy() instanceof Contact) { */?>
+					<!--<div class="desc date-container"><?php 
 						echo lang('last updated by').' '.lang('user date', $document->getUpdatedBy()->getCardUserUrl(), clean($document->getUpdatedByDisplayName()), lcfirst(friendly_date($document->getUpdatedOn())), clean($document->getUpdatedByDisplayName()));
-					?></div>
-					<?php } ?>
+					?></div>-->
+					<?php /* } */?>
 				</li>
 			<?php endforeach; ?>
 		</ul>	

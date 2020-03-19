@@ -1,5 +1,5 @@
 og.reports = {};
-og.reports.createPrintWindow = function(title) {
+og.reports.createPrintWindow = function(title, hide_report_header) {
 	var disp_setting = "toolbar=yes,location=no,directories=yes,menubar=yes,scrollbars=yes,";
 	var printWindow = window.open("","",disp_setting);
 	
@@ -7,8 +7,18 @@ og.reports.createPrintWindow = function(title) {
 	printWindow.document.write('<html><head><title>' + title + '</title>');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/website.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/general/rewrites.css" rel="stylesheet" type="text/css">');
+	
+	if (og.reports.additional_print_window_css) {
+		for (var i=0; i<og.reports.additional_print_window_css.length; i++) {
+			printWindow.document.write('<link href="' + og.hostName + og.reports.additional_print_window_css[i] + '" rel="stylesheet" type="text/css">');
+		}
+	}
+	
 	printWindow.document.write('</head><body onLoad="self.print()" id="body" style="padding:10px;">');
-	printWindow.document.write(og.reports.buildReportHeader(title));
+	
+	if (!hide_report_header) {		
+		printWindow.document.write(og.reports.buildReportHeader(title));
+	}
 	return printWindow;
 }
 
@@ -77,8 +87,8 @@ og.reports.printReport = function(genid, title, report_id) {
 	});
 }
 
-og.reports.printNoPaginatedReport = function(genid, title) {
-	var printWindow = og.reports.createPrintWindow(title);
+og.reports.printNoPaginatedReport = function(genid, title, hide_report_header) {
+	var printWindow = og.reports.createPrintWindow(title, hide_report_header);
 
 	var has_scroll = $('#' + genid + 'report_container .report.custom-report').hasClass('scroll');
 	if (has_scroll) {

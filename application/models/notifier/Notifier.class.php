@@ -79,7 +79,7 @@ class Notifier {
 			self::objectNotification($object, $subscribers, logged_user(), 'closed');
 		} else if ($action == ApplicationLogs::ACTION_OPEN) {
 			self::objectNotification($object, $subscribers, logged_user(), 'open');
-		} else if ($action == ApplicationLogs::ACTION_SUBSCRIBE) {
+		} else if ($action == ApplicationLogs::ACTION_SUBSCRIBE || $action == ApplicationLogs::ACTION_UNSUBSCRIBE) {
 			$contactIds = $log_data;
 			$contactIds = explode(',', $contactIds);
 			foreach ($contactIds as $k => &$contactId) {
@@ -91,8 +91,12 @@ class Notifier {
 			}else {
 				$contacts = array();
 			}
-		
-			self::objectNotification($object, $contacts, logged_user(), 'subscribed');
+			if ($action == ApplicationLogs::ACTION_SUBSCRIBE){
+				$notification_type =  'subscribed';
+			} else{
+				$notification_type =  'unsubscribed';
+			}
+			self::objectNotification($object, $contacts, logged_user(), $notification_type);
 		} else if ($action == ApplicationLogs::ACTION_COMMENT) {
 			self::newObjectComment($object, $subscribers);
 		} else if ($action == ApplicationLogs::ACTION_UPLOAD) {

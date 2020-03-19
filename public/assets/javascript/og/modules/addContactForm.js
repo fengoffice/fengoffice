@@ -229,6 +229,9 @@ og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignor
 	if (!og.addressCount[container_id]) og.addressCount[container_id] = 0;
 	var tcount = og.addressCount[container_id];
 	
+	// remove special characters from id
+	pre_id = pre_id.replace("[","_").replace("]","_");
+	
 	var id = pre_id + 'Address_' + tcount;
 	if (!ignore_pre_id) {
 		var name = pre_id + '[address][' + tcount + ']';

@@ -49,20 +49,20 @@
 }
 
 .report-group-heading-0 {
-	border: 1px solid #bbb;
+	/*border: 1px solid #bbb;*/
 	border-bottom:2px solid #888;
 	font-size:150%;
 	font-weight:bold;
 	margin-top: 10px;
 }
 .report-group-heading-1 {
-	border: 1px solid #bbb;
+	border-bottom: 1px solid #999;
 	font-size:125%;
 	font-weight:bold;
 	margin-top: 8px;
 }
 .report-group-heading-2, .report-group-heading-all {
-	border: 1px solid #bbb;
+	border-bottom: 1px solid #999;
 	font-size:110%;
 	font-weight:bold;
 	margin-top: 8px;
@@ -73,7 +73,7 @@
 }
 .reporting-table-heading th {
 	padding: 4px;
-	font-size: 11px;
+	font-size: 12px;
 }
 
 .reporting-table {
@@ -82,7 +82,7 @@
 
 .reporting-table td {
 	padding: 4px;
-	font-size: 11px;
+	font-size: 12px;
 }
 .reporting-table td.date {
 	width: 70px;
@@ -471,7 +471,12 @@
 	float: none;
 }
 
-
+tbody.report-group-footer td {
+	font-size: 100%;
+    padding: 15px 3px 15px;
+    border-top: 1px solid #aaa;
+    margin-top: 15px;
+}
 
 th.report-group-heading-0 {
     padding-top: 11px;
@@ -710,3 +715,17 @@ tbody.report-data td {
 	border: 1px solid #ccc
 }
 
+table.report.custom-report {
+	font-size: 13px;
+}
+
+table.report.custom-report.to-print th, table.report.custom-report.to-print td {
+	min-width: 80px;
+}
+
+table.report.custom-report.to-print {
+	font-size: 12px;
+}
+table.report.custom-report.to-print tr.custom-report-table-heading th {
+	font-size: 13px;
+}

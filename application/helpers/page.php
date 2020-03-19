@@ -335,7 +335,7 @@ class PageDescription {
 	 *
 	 * @access public
 	 * @param null
-	 * @return type
+	 * @return string type
 	 */
 	function getMeta() {
 		return $this->meta;

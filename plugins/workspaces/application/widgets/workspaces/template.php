@@ -65,7 +65,7 @@ $add_button_text = count($data_ws) > 0 ? lang('add new workspace',$c_name) : lan
 			<div class="separator"></div>
 		<?php endif; ?>		
 		<?php if ($no_objects_text != '') : ?><div class="no-obj-widget-msg"><?php echo $no_objects_text ?></div><?php endif; ?>
-		<button title="<?php echo $add_button_text ?>" class="ws-more-details add-first-btn" style="float:<?php echo $section?>;">
+		<button title="<?php echo $add_button_text ?>" class="ws-more-details add-first-btn" style="float:<?php echo $section?>; margin-top: 10px;">
 			<img src="public/assets/themes/default/images/16x16/add.png"/>&nbsp;<?php echo $add_button_text ?>
 		</button>
 		<div class="clear"></div>

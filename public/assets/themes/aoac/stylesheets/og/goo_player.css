@@ -1,0 +1,61 @@
+@CHARSET "UTF-8";
+
+.gooplayer-panel td {
+	padding: 10px;
+}
+.gooplayer-info td {
+	padding: 0px;
+	padding-left: 10px;
+}
+.gooplayer .x-toolbar {
+	padding: 2px;
+}
+.gooplayer-info .gooplayer-name {
+	font-weight: bold;
+	padding: 0px;
+}
+.ico-previous {
+	background-image: url(../../images/16x16/previous.png) !important;
+}
+.ico-play {
+	background-image: url(../../images/16x16/play.png) !important;
+}
+.ico-pause {
+	background-image: url(../../images/16x16/pause.png) !important;
+}
+.ico-stop {
+	background-image: url(../../images/16x16/stop.png) !important;
+}
+.ico-next {
+	background-image: url(../../images/16x16/next.png) !important;
+}
+.ico-mute {
+	background-image: url(../../images/16x16/sound.png) !important;
+}
+.ico-unmute {
+	background-image: url(../../images/16x16/muted.png) !important;
+}
+.ico-load-from-ws {
+	background-image: url(../../images/16x16/load_from_ws.png) !important;
+}
+.ico-playlist-clear {
+	background-image: url(../../images/16x16/playlist_clear.png) !important;
+}
+.ico-playlist-load {
+	background-image: url(../../images/16x16/playlist_refresh.png) !important;
+}
+.ico-playlist-save {
+	background-image: url(../../images/16x16/save.png) !important;
+}
+.ico-shuffle {
+	background-image: url(../../images/16x16/random.png) !important;
+}
+.ico-loop {
+	background-image: url(../../images/16x16/repeat.png) !important;
+}
+.ico-gooplayer {
+	background-image: url(../../images/16x16/gooplayer.png) !important;
+}
+.ico-queue {
+	background-image: url(../../images/16x16/queue.png) !important;
+}

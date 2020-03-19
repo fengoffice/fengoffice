@@ -220,11 +220,11 @@ function select_box($name, $options, $attributes = null) {
 
 /**
  * 
- * @param $name Control name
+ * @param $name string Control name
  * @param $options Array of array(value, text)
- * @param $selected Selected value string
+ * @param $selected mixed Selected value string
  * @param $attributes
- * @return unknown_type
+ * @return string The generated html for the component
  */
 function simple_select_box($name, $options, $selected = null, $attributes = null) {
     if (is_array($attributes)) {
@@ -248,11 +248,11 @@ function simple_select_box($name, $options, $selected = null, $attributes = null
 
 /**
  * 
- * @param $name Control name
+ * @param $name string Control name
  * @param $options Array of array(value, text)
- * @param $selected Selected value string
+ * @param $selected mixed Selected value string
  * @param $attributes
- * @return unknown_type
+ * @return string The generated html for the component
  */
 function multiple_select_box($name, $options, $selected = array(), $attributes = null) {
     if (is_array($attributes)) {
@@ -279,11 +279,11 @@ function multiple_select_box($name, $options, $selected = array(), $attributes =
 }
 
 /**
- * @param unknown_type $table
- * @param unknown_type $column
- * @param unknown_type $name
- * @param unknown_type $selected
- * @param unknown_type $attributes
+ * @param string $table
+ * @param string $column
+ * @param string $name
+ * @param mixed $selected
+ * @param array $attributes
  */
 function enum_select_box($manager, $column, $name, $selected = null, $attributes = null) {
     eval('$table = ' . $manager . '::instance()->getTableName ();');
@@ -985,10 +985,10 @@ function checkAddressInputMandatoryFields($address_info, $field_name, &$error_ms
 
 /**
  * Renders pagination for view history lists
- * @param $base_url: view history url of the object
- * @param $pagination_obj: pagination information
- * @param $page_param_prefix: prefix for the "page" parameter (view or mod)
- * @param $other_list_current_page: current page of the other list, if viewing modification list this param must contain the current read logs page and viceversa
+ * @param $base_url: string view history url of the object
+ * @param $pagination_obj: stdClass pagination information
+ * @param $page_param_prefix: string prefix for the "page" parameter (view or mod)
+ * @param $other_list_current_page: int current page of the other list, if viewing modification list this param must contain the current read logs page and viceversa
  */
 function render_view_history_pagination($base_url, $pagination_obj, $page_param_prefix, $other_list_current_page) {
     $current_page = array_var($pagination_obj, 'current_page');
@@ -1310,5 +1310,37 @@ function hour_field($name, $value = null, $attributes = array()) {
 function minute_field($name, $value = null, $attributes = array()) {
     if ($value == 0)
         $value = '';
-    return text_field($name, $value, $attributes);
+    
+    //Default type of field: text field
+    $field = text_field($name, $value, $attributes);
+    Hook::fire('override_minute_field', array('name' => $name, 'value' => $value, 'attributes' => $attributes), $field);
+    return $field;
 }
+
+
+
+function render_color_selector($name, $value = 1, $id = null, $genid = null) {
+	tpl_assign("genid", $genid);
+	tpl_assign("input_name", $name);
+	tpl_assign("input_id", $id);
+	tpl_assign("selected_color", $value);
+	
+	$html = tpl_fetch(get_template_path("color_selector", "widget"));
+	
+	echo $html;
+}
+
+
+
+function render_dropdown_links_list($links, $trigger_id, $title = "", $genid = null) {
+	tpl_assign("genid", $genid);
+	tpl_assign("links", $links);
+	tpl_assign("trigger_id", $trigger_id);
+	tpl_assign("title", $title);
+
+	$html = tpl_fetch(get_template_path("dropdown_links_list", "dashboard"));
+
+	echo $html;
+}
+
+

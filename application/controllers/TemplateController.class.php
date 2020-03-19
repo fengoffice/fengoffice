@@ -373,8 +373,12 @@ class TemplateController extends ApplicationController {
 				'description' => $cotemplate->getDescription(),
 			); // array
 			foreach($cotemplate->getObjects() as $obj){
-				$object_properties[$obj->getObjectId()] = TemplateObjectProperties::getPropertiesByTemplateObject(get_id(), $obj->getObjectId());
+			    
+			    $object_template_properties = TemplateObjectProperties::getPropertiesByTemplateObject(get_id(), $obj->getObjectId());
+			        
+			    $object_properties[$obj->getObjectId()] = $object_template_properties;
 			}
+			
 			
 			//delete old temporaly template tasks
 			self::deleteOldTemporalyTemplateObj();
@@ -788,7 +792,7 @@ class TemplateController extends ApplicationController {
 			
 			// set property values as defined in template
 			instantiate_template_task_parameters($object, $copy, $parameterValues);
-			
+						
 			// subscribe assigned to
 			if ($copy instanceof ProjectTask) {
 				foreach($copy->getOpenSubTasks(false) as $m_task){
@@ -921,9 +925,20 @@ class TemplateController extends ApplicationController {
 		if(is_array(array_var($_POST, 'parameterValues'))){
 			ajx_current("back");
 			
+			$params = array_var($_POST, 'parameterValues');
 			$template_id = get_id();
 			$error = null;
 			Hook::fire('before_instantiate_paramters', array('id' => $template_id, 'params' => array_var($_POST, 'parameterValues')), $error);
+
+			foreach ($params as $param_name => $val) {
+				$tp = TemplateParameters::findOne(array('conditions' => array("template_id=? AND name=?", $template_id, $param_name)));
+				if ($tp instanceof TemplateParameter && $tp->getColumnValue('is_required') && !$val) {
+					$error = lang('custom property value required', $param_name);
+				} else if ($tp instanceof TemplateParameter && $tp->getColumnValue('type') == 'date' && !isDate($val)) {
+					$error = lang('custom property value required', $param_name);
+				}
+			}
+
 			if ($error) {
 				flash_error($error);
 				ajx_current("empty");
@@ -932,6 +947,7 @@ class TemplateController extends ApplicationController {
 			
 			$this->instantiate();
 			
+			
 		}else{
 			$id = get_id();
 
@@ -939,7 +955,7 @@ class TemplateController extends ApplicationController {
 			if($add_mem_id = get_id('member_id')){
 				$additional_member_ids[] = $add_mem_id;
 				
-				// ensure that new member is in context before rendering the template paramters form
+				// ensure that new member is in context before rendering the template parameters form
 				if (!in_array($add_mem_id, active_context_members(false))) {
 					$current_context = active_context();
 					$add_mem = Members::findById($add_mem_id);
@@ -977,6 +993,10 @@ class TemplateController extends ApplicationController {
 		}
 	}
 
+	/**
+	 * @TODO: check if this function is used somewhere and fix it or delete it
+	 * @deprecated
+	 */
 	function assign_to_ws() {
 		if (!can_manage_templates(logged_user())) {
 			flash_error(lang("no access permissions"));
@@ -990,7 +1010,7 @@ class TemplateController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		$selected = WorkspaceTemplates::getWorkspacesByTemplate($template_id);
+	//	$selected = WorkspaceTemplates::getWorkspacesByTemplate($template_id);
 		tpl_assign('workspaces', logged_user()->getWorkspaces());
 		tpl_assign('selected', $selected);
 		tpl_assign('cotemplate', $cotemplate);
@@ -998,10 +1018,10 @@ class TemplateController extends ApplicationController {
 		if ($checked != null) {
 			try {
 				DB::beginWork();
-				WorkspaceTemplates::deleteByTemplate($template_id);
+	//			WorkspaceTemplates::deleteByTemplate($template_id);
 				$wss = Projects::findByCSVIds($checked);
 				foreach ($wss as $ws){
-					$obj = new WorkspaceTemplate();
+	//				$obj = new WorkspaceTemplate();
 					$obj->setWorkspaceId($ws->getId());
 					$obj->setTemplateId($template_id);
 					$obj->setInludeSubWs(false);
@@ -1020,20 +1040,21 @@ class TemplateController extends ApplicationController {
 
 	function get_object_properties(){
 		$obj_id = get_id();
-		$obj = Objects::findObject($obj_id);		
-		$props = array();
+		$obj = Objects::findObject($obj_id);
 		$manager = $obj->manager();
 		$objectProperties = $manager->getTemplateObjectProperties();
-		/**
-		 * Allow to add/edit/delete template object properties
-		 */
-		Hook::fire('get_template_object_properties', $type, $objectProperties);
 		
-		foreach($objectProperties as $property){
-			$props[] = array('id' => $property['id'], 'name' => lang('field ProjectTasks '.$property['id']), 'type' => $property['type']);
-		}
+		/*
+		//sort array $props:
+		usort($props, function ($prop1, $prop2) {
+		    // Warning: this does not work with older php versions
+		    return $prop1['name'] <=> $prop2['name'];
+		});
+		*/
+		
 		ajx_current("empty");
-		ajx_extra_data(array('properties' => $props));
+		//ajx_extra_data(array('properties' => $props));
+		ajx_extra_data(array('properties' => $objectProperties));
 	}
 	
 	

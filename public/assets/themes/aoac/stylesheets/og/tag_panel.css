@@ -1,0 +1,26 @@
+.ext-el-mask {
+	background:#dadadb;
+}
+
+.ico-tags {
+	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -219px !important;*/
+}
+.x-tree {
+	background:#fff !important;
+}
+.tag-item {
+	border:1px solid #fff;
+	margin:3px;
+}
+.tag-item .x-tree-ec-icon {
+	display:none;
+}
+.x-tree-selected {
+	border:1px dotted #a3bae9;
+	background:#DFE8F6;
+}
+.x-tree-node .x-tree-selected a span{
+	background:transparent;
+	color:#15428b;
+	font-weight:bold;
+}

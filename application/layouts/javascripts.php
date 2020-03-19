@@ -2,7 +2,6 @@
 $suffix = (defined('DEBUG_JS') && DEBUG_JS) ? "-debug" : "";
 
 
-
 return array(
 	"jquery/jquery.js",
 	"jquery/jquery.tools.min.js",
@@ -44,10 +43,12 @@ return array(
 	"og/UserGroupPicker.js",
 	"og/Permissions.js",
 	"og/layout.js",
-	"og/modules/dashboardComments.js",
-	"og/modules/addMemberForm.js",
-	"og/modules/memberSelector.js",
-	"og/modules/addContactForm.js",
+    "og/modules/addContactForm.js",
+    "og/modules/addMemberForm.js",
+    "og/modules/colorSelector.js",
+    "og/modules/dashboardComments.js",
+    "og/modules/memberSelector.js",
+    "og/modules/timeslots.js",
 	"og/ofc.js",
 	"og/Breadcrumbs.js",
 	"og/ObjectBreadcrumbs.js",
@@ -82,6 +83,6 @@ return array(
 	"../jquery-colResizable/colResizable-1.5.source.js",
 	"jstz/jstz.min.js",
     "bootstrap/popper.min.js",
-    "bootstrap/bootstrap_helper.js",
+	"bootstrap/bootstrap_helper.js"
 );
 

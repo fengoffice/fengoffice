@@ -31,8 +31,8 @@
 }
 
 .dash-expander {
-	height:16px;
-	width:16px;
+	height: 20px;
+	width: 20px;
 	cursor:pointer;
 }
 
@@ -64,27 +64,39 @@
 .ico-arrowleft {
 	/*background-image: url(../../images/16x16/arrowleft.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/arrowleft.png) !important;
+	background-repeat: no-repeat;
+	background-size: 15px;
 }
 .ico-2arrowleft {
 	/*background-image: url(../../images/16x16/2arrowleft.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/2arrowleft.png) !important;
+	background-repeat: no-repeat;
+	background-size: 15px;
 }
 .ico-arrowright {
 	/*background-image: url(../../images/16x16/arrowright.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/arrowright.png) !important;
+	background-repeat: no-repeat;
+	background-size: 15px;
 }
 .ico-2arrowright {
 	/*background-image: url(../../images/16x16/2arrowright.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/2arrowright.png) !important;
+	background-repeat: no-repeat;
+	background-size: 15px;
 }
 .ico-2arrowrightsmall {
 	background-image: url(../../images/icons-feng-3/16x16/2arrowrightsmall.png) !important;
 }
 .ico-arrowup {
 	background-image: url(../../images/icons-feng-3/16x16/arrowup.png) !important;
+	background-repeat: no-repeat;
+	background-size: 15px;
 }
 .ico-arrowdown {
 	background-image: url(../../images/icons-feng-3/16x16/arrowdown.png) !important;
+	background-repeat: no-repeat;
+	background-size: 15px;
 }
 .ico-archive-obj {
 	/*background: transparent url(../../images/16x16/archive_obj.png) no-repeat !important;*/
@@ -190,6 +202,10 @@
 	background-image: url(../../images/icons-feng-3/16x16/complete_color.png) !important;
 	background-size: 16px 16px!important;	
 }
+.ico-complete-grey {
+	background-image: url(../../images/icons-feng-3/16x16/complete.png) !important;
+	background-size: 16px 16px!important;	
+}
 
 .ico-reopen {
 	/*background-image: url(../../images/16x16/reopen.png) !important;*/
@@ -208,11 +224,11 @@
 
 .ico-dash-expanded {
 	float: right;
-	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -19px !important;
+	background: url(../../images/svg/chevron-thin-down.svg) no-repeat;
 }
 .ico-dash-collapsed {
 	float: right;
-	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -1155px !important;
+	background: url(../../images/svg/chevron-thin-right.svg) no-repeat;
 }
 .ico-delete {
 	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -498px !important;*/
@@ -410,7 +426,7 @@
 	/*background-image: url(../../images/16x16/picture.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/picture.png) !important;
 }
-.ico-properties {
+.ico-properties, .ico-summary {
 	/*background-image: url(../../images/16x16/properties.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/details.png) !important;
 }
@@ -665,7 +681,7 @@
 	height: 16px;
 	background-repeat: no-repeat;
 	padding-left:23px;
-	padding-top:2px;
+	/*padding-top:2px;*/
 	padding-bottom:3px;
 }
 
@@ -1901,9 +1917,11 @@ a.underline {
 	font-style: italic;
 	background-color: rgb(232, 241, 224);
 }
+.view-more-node .tree-name-container {
+	padding: 1px 3px 1px 2px;
+}
 
 .breadcrumb-container{
-	max-width: 250px;
 	display: inline-block;
     line-height: 25px;
     overflow: hidden;
@@ -1961,7 +1979,7 @@ a.underline {
 }
 .x-tab-panel.subtab ul.x-tab-strip-top span.x-tab-strip-text {
 	padding: 1px;
-	font-size: 13px;
+	font-size: 13px !important;
 	color: #888888;
 }
 .x-tab-panel.subtab ul.x-tab-strip-top li.x-tab-strip-active span.x-tab-strip-text {

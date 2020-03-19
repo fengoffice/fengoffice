@@ -188,12 +188,25 @@
 		if (isset($parsed_date['H'])) $hour = $parsed_date['H'];
 		else if (isset($parsed_date['G'])) $hour = $parsed_date['G'];
 		else if (isset($parsed_date['h'])) {
-			$pm = (isset($parsed_date['a']) && $parsed_date['a'] = 'pm') || (isset($parsed_date['A']) && $parsed_date['A'] = 'PM');
-			$hour = $parsed_date['h'] + ($pm ? 12 : 0);
+			$pm = (isset($parsed_date['a']) && $parsed_date['a'] == 'pm') || (isset($parsed_date['A']) && $parsed_date['A'] == 'PM');
+			if($parsed_date['h'] == 12 && !$pm){
+				$hour = $parsed_date['h'] + 12;
+			} else if($parsed_date['h'] == 12 && $pm) {
+				$hour = $parsed_date['h'];
+			} else {
+				$hour = $parsed_date['h'] + ($pm ? 12 : 0);
+			}
+			
 		}
 		else if (isset($parsed_date['g'])) {
-			$pm = (isset($parsed_date['a']) && $parsed_date['a'] = 'pm') || (isset($parsed_date['A']) && $parsed_date['A'] = 'PM');
-			$hour = $parsed_date['g'] + ($pm ? 12 : 0);
+			$pm = (isset($parsed_date['a']) && $parsed_date['a'] == 'pm') || (isset($parsed_date['A']) && $parsed_date['A'] == 'PM');
+			if($parsed_date['g'] == 12 && !$pm){
+				$hour = $parsed_date['g'] + 12;
+			} else if($parsed_date['g'] == 12 && $pm) {
+				$hour = $parsed_date['g'];
+			} else {
+				$hour = $parsed_date['g'] + ($pm ? 12 : 0);
+			}
 		}
 		else $hour = "0";
 		

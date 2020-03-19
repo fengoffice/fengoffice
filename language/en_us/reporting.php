@@ -8,7 +8,8 @@
   	'general reports' => 'General reports',
   	'no custom reports' => 'There are no custom reports for \'{0}\' with the selected relations',
   	'add custom report' => 'Add a custom report',
-  	'edit custom report' => 'Edit custom report',
+	'edit custom report' => 'Edit custom report',
+	'edit report' => 'Edit report',
   	'new custom report' => 'New custom report',
   	'add report' => 'Add report',
   	'object type' => 'Object Type',
@@ -47,6 +48,7 @@
 	'field Objects end_time' => 'End Time',
 	'field Objects contact_id' => 'Person',
 	'field Objects description' => 'Description',
+	'field Objects move_direction_non_working_days' => 'Move direction if non working day',
 	'field Objects paused_on' => 'Paused on',
 	'field Objects subtract' => 'Paused time',
 	'field Objects fixed_billing' => 'Total billable',
@@ -73,6 +75,8 @@
   	'csv' => 'CSV',
   	'pdf' => 'PDF',
   	'excel' => 'Excel',
+  	'page size' => 'Page size',
+  	'first level task only' => 'First level task only',
   );
   
 ?>

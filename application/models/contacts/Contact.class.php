@@ -1552,28 +1552,53 @@ class Contact extends BaseContact {
     
     
     /**
-	 * Return path to the picture file. This function just generates the path, does not check if file really exists
-	 *
-	 * @access public
-	 * @param void
-	 * @return string
-	 */
-	function getPicturePath($size = 'small') {
-		switch ($size) {
-			case 'small':
-				if (FileRepository::isInRepository($this->getPictureFileSmall())) {
-					return PublicFiles::getFilePath($this->getPictureFileSmall());
-				}
-			case 'medium':
-				if (FileRepository::isInRepository($this->getPictureFileMedium())) {
-					return PublicFiles::getFilePath($this->getPictureFileMedium());
-				}
-			case 'large':
-				if (FileRepository::isInRepository($this->getPictureFile())) {
-					return PublicFiles::getFilePath($this->getPictureFile());
-				}
-		}
-	} // getPicturePath
+     * Return path to the picture file. This function just generates the path, does not check if file really exists
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getPicturePath($size = 'small') {
+    	switch ($size) {
+    		case 'small':
+    			if (FileRepository::isInRepository($this->getPictureFileSmall())) {
+    				return PublicFiles::getFilePath($this->getPictureFileSmall());
+    			}
+    		case 'medium':
+    			if (FileRepository::isInRepository($this->getPictureFileMedium())) {
+    				return PublicFiles::getFilePath($this->getPictureFileMedium());
+    			}
+    		case 'large':
+    			if (FileRepository::isInRepository($this->getPictureFile())) {
+    				return PublicFiles::getFilePath($this->getPictureFile());
+    			}
+    	}
+    }
+    
+    
+    /**
+     * Return path to the picture file. This function just generates the path, does not check if file really exists
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getPictureFileContent($size = 'small') {
+    	switch ($size) {
+    		case 'small':
+    			if (FileRepository::isInRepository($this->getPictureFileSmall())) {
+    				return FileRepository::getFileContent($this->getPictureFileSmall());
+    			}
+    		case 'medium':
+    			if (FileRepository::isInRepository($this->getPictureFileMedium())) {
+    				return FileRepository::getFileContent($this->getPictureFileMedium());
+    			}
+    		case 'large':
+    			if (FileRepository::isInRepository($this->getPictureFile())) {
+    				return FileRepository::getFileContent($this->getPictureFile());
+    			}
+    	}
+    }// getPicturePath
     
 	
     function getPictureUrl($size = 'small') {

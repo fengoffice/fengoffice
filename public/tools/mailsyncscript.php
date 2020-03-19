@@ -28,7 +28,7 @@
 			if (isset ($email_address) && isset ($user_name)){
 				$user_conditions = array("conditions" => array("`username`='".$user_name."'"));
 			
-				$user = Users::findOne($user_conditions);
+				$user = Contacts::findOne($user_conditions);
 			
 				if (!isset ($user)){	
 					echo(lang('cant find user'));

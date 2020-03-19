@@ -1,0 +1,35 @@
+
+.tasks-pie-chart{
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+
+.tasks-widget-customized-legend{
+    font-size: 14px;
+    line-height: 2;
+    color: #333;
+}
+
+.tasks-widget-legend-row {
+    display: flex;
+    align-items: center;
+}
+
+.tasks-widget-legend-icon {
+    padding-right: 5px;
+}
+
+.tasks-widget-legend-name {
+    padding-right: 20px;
+    font-weight: 400;
+    color: #888;
+    display: flex;
+    align-items: center;
+}
+
+.tasks-widget-legend-value {
+    margin-left: auto;
+    text-align: right;
+    font-weight: 600;
+}

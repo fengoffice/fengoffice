@@ -24,7 +24,7 @@
     }
 </style>
 <script>
-
+<?php if (!$to_print) { ?>
     $().ready(function() {
 
         // Change the selector if needed
@@ -107,7 +107,7 @@
         $("#form<?php echo $genid ?> .custom-report.scroll tbody").height(total);
     });
 
-    
+<?php } ?>    
 
     
 </script>

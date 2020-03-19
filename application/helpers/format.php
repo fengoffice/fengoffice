@@ -163,8 +163,17 @@ function friendly_date(DateTimeValue $date, $timezone = null) {
 		}
 	}
 }
-  
-  /**
+
+
+function formatToDateTimeValue($value){
+	$user_date_format = user_config_option('date_format');
+	$time_format = user_config_option('time_format_use_24') ? 'G:i' : 'g:i A';
+	$value = DateTimeValueLib::dateFromFormatAndString("$user_date_format $time_format", $value);
+	return $value;
+}
+
+
+/**
  * truncate string and add ellipsis
  *
  * Type:     modifier<br>
@@ -235,6 +244,32 @@ function date_format_tip($format) {
 	return $result;
 }
 
+	function format_time_column_value($value, $format=null) {
+		if ($format == null) {
+			$format = user_config_option('report_time_colums_display');
+		}
+		$formatted = '';
+		switch ($format) {
+			case 'seconds': $formatted = $value * 60; break;
+			case 'minutes': $formatted = $value; break;
+			case 'hours': $formatted = number_format($value / 60, 2); break;
+			case 'hh:mm':
+		
+				$formatted = sprintf('%02d', intval($value / 60)).':'.sprintf('%02d', $value % 60);
+		
+				break;
+			default:
+				$formatted = '';
+				if (!is_numeric($value)) {
+					$formatted = $value;
+				} else if($value > 0) {
+					$formatted = DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($value * 60), 'hm', 60);
+				}
+				break;
+		}
+		return $formatted;
+	}
+
 
 	function format_value_to_print($col, $value, $type, $obj_type_id, $textWrapper='', $dateformat='Y-m-d', $tz_offset=null,$is_gruped = false) {
 		$is_time_column = false;
@@ -262,24 +297,7 @@ function date_format_tip($format) {
                     if (array_var($_GET,'c') != 'reporting' && array_var($_GET,'c') != 'excel_export') {
                     	$format = 'friendly';
                     }
-                    switch ($format) {
-						case 'seconds': $formatted = $value * 60; break;
-						case 'minutes': $formatted = $value; break;
-						case 'hours': $formatted = number_format($value / 60, 2); break;
-                        case 'hh:mm':
-
-                            $formatted = sprintf('%02d', intval($value / 60)).':'.sprintf('%02d', $value % 60);
-
-                            break;
-						default:
-							$formatted = '';
-							if (!is_numeric($value)) {
-								$formatted = $value;
-							} else if($value > 0) {
-								$formatted = DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($value * 60), 'hm', 60);
-							}
-							break;
-					}
+                    $formatted = format_time_column_value($value, $format);
 				}
 			}
 		}
@@ -293,7 +311,8 @@ function date_format_tip($format) {
 					if ($col == 'is_user') {
 						$formatted = ($value == 1 ? lang('yes') : lang('no'));
 					} else {
-						if (strpos($value, "\xA0") !== false) $value = preg_replace('/\xA0/s', ' ', $value);
+						$value = trim($value);
+						if (strpos($value, "\xA0") !== false) $value = str_replace('\xA0', ' ', $value);
 						$value = utf8_safe($value);
 						$formatted = $textWrapper . $value . $textWrapper;
 					}
@@ -348,11 +367,12 @@ function date_format_tip($format) {
 				} else $formatted = '';
 				break;
 			case DATA_TYPE_DATETIME:
+				$time_format = user_config_option('time_format_use_24') ? 'G:i' : 'g:i A';
 				if ($value instanceof DateTimeValue) {
-					$formatted = $value->format("$dateformat H:i:s");
+					$formatted = $value->format("$dateformat $time_format");
 				} else if ($value != 0) {
 					try {
-						$dtVal = DateTimeValueLib::dateFromFormatAndString("$dateformat H:i:s", $value);
+						$dtVal = DateTimeValueLib::dateFromFormatAndString("$dateformat $time_format", $value);
 					} catch (Exception $e) {
 						$formatted = $value;
 					}
@@ -755,13 +775,19 @@ function get_format_value_to_header($col, $obj_type_id)
 	}
 	
 	
-	function format_money_amount($number, $symbol = '$', $decimals = 2) {
+	function format_money_amount($number, $symbol = '$', $decimals = null) {
+		
+		if (is_null($decimals)) {
+			$decimals = user_config_option('decimal_digits');
+		}
+		$decimals_separator = user_config_option('decimals_separator');
+		$thousand_separator = user_config_option('thousand_separator');
 		
 		$sign = "";
 		if ($number < 0) {
 			$sign = "- ";
 		}
-		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals);
+		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
 		
 		return $formatted;
 	}

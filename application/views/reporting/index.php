@@ -23,16 +23,6 @@
 	$ignored = null;
 	Hook::fire('modify_report_pages', $ignored, $reports_by_type); // To add, edit or remove report pages
 	
-	$default_reports = array(
-		'task time report' => array('url' => get_url('reporting','total_task_times_p'), 'name' => lang('task time report'), 'description' => lang('task time report description')),
-	);
-	
-	Hook::fire('modify_default_reports', $ignored, $default_reports); // To add, edit or remove default reports
-	
-	
-	Hook::fire('add_report_categories', $ignored, $report_categories);
-	Hook::fire('add_reports_by_category', $ignored, $reports_by_category);
-	
 	require_javascript("og/ReportingFunctions.js");
 ?>
 
@@ -49,35 +39,6 @@
 	<td style="background-color:white;">
 	
 		<div style="padding:15px 20px 50px;">
-		
-			<div class="report-list-section">
-				<div class="title"><?php echo lang('general reports') ?></div>
-				<?php
-				foreach ($default_reports as $def_report) {
-				?>
-				<div class="report-name">
-					<a href="<?php echo array_var($def_report, 'url') ?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php echo array_var($def_report, 'name') ?></a>
-					<div class="desc"><?php echo array_var($def_report, 'description') ?></div>
-				</div>
-
-				<?php } ?>
-			</div>
-			<?php 
-			if (is_array($report_categories) && count($report_categories) > 0) {
-				foreach ($report_categories as $cat => $cat_name) { ?>
-			<div class="report-list-section">
-				<div class="title"><?php echo $cat_name ?></div>
-				<?php foreach ($reports_by_category[$cat] as $report) { ?>
-				<div class="report-name">
-					<a href="<?php echo array_var($report, 'url') ?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php echo array_var($report, 'name') ?></a>
-					<div class="desc"><?php echo array_var($report, 'description') ?></div>
-				</div>
-				<?php } ?>
-			</div>
-			<?php
-				}
-			}
-			?>
 			
 			<div class="report-list-section">
 				<div class="title"><?php echo lang('custom reports') ?></div>
@@ -88,30 +49,40 @@
 				if (!is_array($reports) || count($reports) == 0) continue;
 				foreach($reports as $report) {?>
 				<div class="report-name">
-					<a href="<?php echo get_url('reporting','view_custom_report', array('id' => $report->getId()))?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php 
-						echo $report->getObjectName();
-					?></a>
-					
-					<div style="float:right;">
-					<?php if ($report->canEdit(logged_user())) { ?>
-					<a style="margin-right:5px;font-weight:normal;" class="internalLink coViewAction ico-edit" href="<?php echo get_url('reporting','edit_custom_report', array('id' => $report->getId()))?>"><?php echo lang('edit') ?></a>
+					<?php if($report->getFunctionUrl()){?>
+						<a href="<?php echo ROOT_URL.$report->getFunctionUrl() ?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php 
+						echo Localization::instance()->lang_exists($report->getObjectName()) ? lang($report->getObjectName()) : $report->getObjectName();
+						?></a>
+					<?php } else { ?>
+						<a href="<?php echo get_url('reporting','view_custom_report', array('id' => $report->getId()))?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php 
+							echo $report->getObjectName();
+						?></a>
 					<?php } ?>
-					<?php if ($report->canDelete(logged_user())) { ?>
-					<a style="margin-right:5px;font-weight:normal;" class="internalLink coViewAction ico-delete" href="javascript:og.deleteReport(<?php echo $report->getId() ?>)"><?php echo lang('delete') ?></a>
+	
+						<div style="float:right;">
+							<?php if ($report->canEdit(logged_user())) { ?>
+							<a style="margin-right:5px;font-weight:normal;" class="internalLink coViewAction ico-edit" href="<?php echo $report->getFunctionUrl() ? get_url('reporting','edit_default_report', array('id' => $report->getId())) : get_url('reporting','edit_custom_report', array('id' => $report->getId())) ?>"><?php echo lang('edit') ?></a>
+							<?php } ?>
+							<?php if ($report->canDelete(logged_user())) { ?>
+							<a style="margin-right:5px;font-weight:normal;" class="internalLink coViewAction ico-delete" href="javascript:og.deleteReport(<?php echo $report->getId() ?>)"><?php echo lang('delete') ?></a>
+							<?php } ?>
+						</div>
+
+						<div style="float:right; max-width:700px; margin-right:25px; font-weight:normal;" id="report-<?php echo $report->getId();?>">
+							<span class="breadcrumb"></span>
+							<script>
+								<?php $crumbOptions = json_encode($report->getMembersIdsToDisplayPath());
+									$crumbJs = " og.getEmptyCrumbHtml($crumbOptions) ";?>
+									var crumbHtml = <?php echo $crumbJs;?>;
+									$("#report-<?php echo $report->getId()?> .breadcrumb").html(crumbHtml);
+							</script>
+						</div>
+												
+                                                <?php if($report->getFunctionUrl()){?>
+						<div class="desc"><?php echo Localization::instance()->lang_exists($report->getDescription()) ? lang($report->getDescription()) : $report->getDescription(); ?></div>
+					<?php } else { ?>
+						<div class="desc"><?php echo $report->getDescription() ?></div>
 					<?php } ?>
-					</div>
-					
-					<div style="float:right; max-width:700px; margin-right:25px; font-weight:normal;" id="report-<?php echo $report->getId();?>">
-						<span class="breadcrumb"></span>
-						<script>
-							<?php $crumbOptions = json_encode($report->getMembersIdsToDisplayPath());
-							$crumbJs = " og.getEmptyCrumbHtml($crumbOptions) ";?>
-							var crumbHtml = <?php echo $crumbJs;?>;
-							$("#report-<?php echo $report->getId()?> .breadcrumb").html(crumbHtml);
-						</script>
-					</div>
-					
-					<div class="desc"><?php echo $report->getDescription() ?></div>
 
 				</div>
 				

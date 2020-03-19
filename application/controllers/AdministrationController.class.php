@@ -796,7 +796,7 @@ class AdministrationController extends ApplicationController {
 							$type->save();
 						} else {
 							eval('$man_instance = ' . $manager . "::instance();");
-							if ($man_instance instanceof ProjectDataObjects && array_var($subtype, 'id', 0) > 0) {
+							if ($man_instance instanceof ContentDataObjects && array_var($subtype, 'id', 0) > 0) {
 								$objects = $man_instance->findAll(array('conditions' => "`object_subtype`=".array_var($subtype, 'id', 0)));
 								if (is_array($objects)) {
 									foreach ($objects as $obj) {

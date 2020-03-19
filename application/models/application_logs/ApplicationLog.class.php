@@ -171,7 +171,7 @@ class ApplicationLog extends BaseApplicationLog {
 				$type = $object->getObjectTypeName() ;
 			}
 			
-			$object_link = '<a style="font-weight:bold" href="' . $object->getObjectUrl() . '">&nbsp;'.
+			$object_link = '<a href="' . $object->getObjectUrl() . '">&nbsp;'.
 			'<span style="padding: 2px 0 3px 24px;" class="link-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($object->getObjectName()).'</a>';
 		} else{
 			$type = null;
@@ -203,7 +203,7 @@ class ApplicationLog extends BaseApplicationLog {
 					foreach ($user_ids as $usid) {
 						$su = Contacts::findById($usid);
 						if ($su instanceof Contact)
-							$users_str .= '<a style="font-weight:bold" href="'.$su->getObjectUrl().'">&nbsp;<span style="padding: 0 0 3px 18px;" class="db-ico ico-unknown ico-user"/>'.clean($su->getObjectName()).'</a>, ';
+							$users_str .= '<a style="font-weight:bold" href="'.$su->getObjectUrl().'">&nbsp;<span style="padding: 0 0 3px 24px;" class="db-ico ico-unknown ico-user"/>'.clean($su->getObjectName()).'</a>, ';
 					}
 					if (count($user_ids) == 1) {
 						$users_text = substr(trim($users_str), 0, -1);
@@ -237,7 +237,7 @@ class ApplicationLog extends BaseApplicationLog {
 							$acc .= "-";
 						}			
 					}
-					$linked_object_link = '<a style="font-weight:bold" href="' . $linked_object->getObjectUrl() . '">&nbsp;<span style="padding: 1px 0 3px 18px;" class="db-ico ico-unknown ico-'.$linked_object->getObjectTypeName() . $icon_class . '"/>'.clean($linked_object->getObjectName()).'</a>';
+					$linked_object_link = '<a href="' . $linked_object->getObjectUrl() . '">&nbsp;<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-'.$linked_object->getObjectTypeName() . $icon_class . '"/>'.clean($linked_object->getObjectName()).'</a>';
 				} else $linked_object_link = '';
 				if ($object) {
 					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);
@@ -317,11 +317,11 @@ class ApplicationLog extends BaseApplicationLog {
 				$type = $object->getObjectTypeName() ;
 			}
 			if (($type != 'Time') || ($type == 'Time' && $object->getRelObjectId() != 0)){
-				$object_link = '<br /><a style="font-weight:bold" href="' . $object->getObjectUrl() . '">'.
+				$object_link = '<br /><a href="' . $object->getObjectUrl() . '">'.
 				'<span style="padding: 2px 0 3px 24px;" class="link-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($object->getObjectName()).'</a>';
 			} else {
 				//if it is a general timeslot
-				$object_link = '<span style="padding: 1px 0 3px 18px; font-weight:bold;" class="db-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($object->getObjectName());
+				$object_link = '<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($object->getObjectName());
 			}
 		} elseif ($object instanceof Member){
 			$object_type = ObjectTypes::findById($object->getObjectTypeId());
@@ -350,7 +350,7 @@ class ApplicationLog extends BaseApplicationLog {
 			$icon_class .= " ico-color" . $object->getColor();
 			
 			$object_link =  '<br /><a class="internalLink" href="javascript:void(0);" onclick="'.$onclick.'">'.
-					'<span style="padding: 1px 0 3px 18px;" class="db-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($this->getObjectName()).'</a>';
+					'<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-' . $type . $icon_class . '"/>'.clean($this->getObjectName()).'</a>';
 			
 			return lang('activity ' . $this->getAction(), lang('the '.$type," "), $userName , $object_link);
 		} else {
@@ -390,7 +390,7 @@ class ApplicationLog extends BaseApplicationLog {
 					foreach ($user_ids as $usid) {
 						$su = Contacts::findById($usid);
 						if ($su instanceof Contact) {
-							$users_str .= '<a style="font-weight:bold" href="'.$su->getObjectUrl().'">&nbsp;<span style="padding: 0 0 3px 18px;" class="db-ico ico-unknown ico-user"/>'.clean($su->getObjectName()).'</a>, ';
+							$users_str .= '<a style="font-weight:bold" href="'.$su->getObjectUrl().'">&nbsp;<span style="padding: 0 0 3px 24px;" class="db-ico ico-unknown ico-user"/>'.clean($su->getObjectName()).'</a>, ';
 						}
 					}
 					if (count($user_ids) == 1) {
@@ -431,7 +431,7 @@ class ApplicationLog extends BaseApplicationLog {
 							$acc .= "-";
 						}
 					}
-					$linked_object_link = '<a style="font-weight:bold" href="' . $linked_object->getObjectUrl() . '">&nbsp;<span style="padding: 1px 0 3px 18px;" class="db-ico ico-unknown ico-'.$linked_object->getObjectTypeName() . $icon_class . '"/>'.clean($linked_object->getObjectName()).'</a>';
+					$linked_object_link = '<a href="' . $linked_object->getObjectUrl() . '">&nbsp;<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-'.$linked_object->getObjectTypeName() . $icon_class . '"/>'.clean($linked_object->getObjectName()).'</a>';
 				}
 				if ($object instanceof ContentDataObject) {
 					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()," "), $userName, $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);

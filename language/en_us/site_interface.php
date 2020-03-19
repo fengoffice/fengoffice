@@ -741,7 +741,7 @@ return array(
    'web pages' => 'Web Links',	
 
 
-	'previous tasks' => 'Previous tasks that must be completed before this task',
+	'previous tasks' => 'Previous tasks',
 	'add previous task' => 'Add previous task',
 	'previous tasks must be completed before completion of this task' => 'Previous tasks must be completed before the completion of this task',
 	'task depends on incomplete tasks' => 'This task has previous open tasks',

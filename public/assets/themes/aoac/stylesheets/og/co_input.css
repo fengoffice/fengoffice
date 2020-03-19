@@ -1,0 +1,269 @@
+.coInputHeader {
+    padding: 5px 15px;
+	padding-bottom:5px;
+	background: #FFF;
+	color:#666;
+}
+
+#reporting-panel .coInputHeader {
+	margin-bottom: 15px;
+}
+
+.coInputSeparator {
+/*	background-image: url(../../images/layout/shadow.png);
+	height: 6px;
+	width:100%;*/
+}
+
+
+.coInputHeaderUpperRow {
+	/*margin: 3px;
+	border-bottom: 2px solid #CCCCCC;
+    position: relative;
+    padding-bottom: 2px;*/
+    margin-bottom: 10px;
+}
+
+.coInputTitle {
+  	font-size: 150%;
+  	font-weight: bolder;
+  	min-width: 550px;
+}
+
+.coInputName, .coInputButtons {
+	float: left;
+}
+
+.coInputMainBlock {
+	padding: 5px 15px;
+	background-color:white;
+}
+
+.coInputMainBlock .dataBlock {
+	margin: 0 0 12px 0;
+	min-height: 20px;
+}
+
+.coInputMainBlock .dataBlock label {
+	margin-top: 3px;
+}
+
+.dataBlock .og-add-template-object {
+	float: left;
+	padding-left: 0;
+	max-width: 260px;
+}
+.dataBlock .og-add-template-object .parent-task-name {
+	float: left;
+	max-width: 250px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.dataBlock .og-add-template-object .previous-task-name {
+	float: left;
+	max-width: 360px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.dataBlock .og-add-template-object.previous-task {
+	float: none;
+	clear: both;
+	max-width: 460px;
+	margin: 3px;
+}
+.dataBlock .removeDiv {
+	position: relative;
+	float: left;
+	line-height: 17px;
+}
+.dataBlock .removeDiv.link-ico {
+	padding-left: 17px;
+	margin-left: 10px;
+}
+.coInputMainBlock .ws-color-chooser {
+	margin-left: 0px;
+	display: inline-block;
+}
+
+.coInputTags {
+	position:absolute;
+	top:-3px;
+	right:0px;
+}
+
+.coInputMainBlock label {
+	float: left;
+	min-width: 200px;
+}
+
+.coInputMainBlock .report-conditions label {
+	float: none;
+}
+
+.coInputMainBlock label.yes_no {
+	float: none;
+}
+
+.coInputMainBlock .permissions-container label {
+	float: none;
+}
+
+.coInputMainBlock .context-selector-container {
+	/*padding: 15px 0 0;*/
+}
+
+.billing .coInputMainBlock label {
+	float: none;
+}
+
+.task-data .left-section, .task-data .right-section {
+	float: left;
+}
+.task-data .left-section {
+	min-width: 465px;
+	max-width: 620px;
+	border-right:1px solid #ccc;	
+}
+.task-data .right-section {
+	min-width: 465px;
+	padding-left: 10px;	
+}
+.task-data {
+	min-width: 950px;
+}
+.task-data .dataBlock input.checkbox {
+	margin-top: 4px;
+	margin-left: 10px;
+}
+.task-data .left-section .dataBlock input.checkbox {
+	margin-left: 0px;
+}
+.task-data .left-section label {
+	min-width: 190px;
+}
+
+.coInputLinkedObjects {
+	display:table-cell;
+	float:right;
+	width: 200px;
+	border: solid 1px;
+	padding: 3px;
+	height: 100%;
+	margin-left:10px;
+}
+
+
+/* Messages */
+
+.message .coInputHeader {
+  	/*color: #99BBE8;*/
+}
+
+.event .coInputHeader {
+    text-align: left;
+  	/*color: #99BBE8;*/
+}
+
+.event .coInputMainBlock {
+	padding: 5px 15px;
+	background-color:white;
+	text-align:left;
+}
+
+.custom-btn-wrapper .x-btn-left, .custom-btn-wrapper .x-btn-right, .custom-btn-wrapper .x-btn-center{
+	background: none  !important;
+}
+
+.im-container {
+	border: 1px solid #ddd;
+}
+.im-container table td {
+	padding: 0px 4px;
+}
+.im-container table th {
+	text-align: center;
+	padding: 2px 4px;
+}
+
+
+
+.headerToolbarItem {
+    display: inline;
+    margin: 0 5px;
+}
+.headerToolbarItem a.link-ico {
+    font-size: 12px;
+    padding-left: 18px;
+    text-decoration: underline;
+}
+.headerToolbarItem a.link-ico.ico-delete {
+	padding-top: 4px;
+}
+.headerToolbarItem a.link-ico.ico-archive-obj, .headerToolbarItem a.link-ico.ico-unarchive-obj {
+	padding-top: 1px;
+}
+.headerToolbar {
+    text-align: right;
+    margin-top: -12px;
+    margin-right: 20px;
+}
+
+
+
+/******** New color selector css ********/
+table.color-selector {
+	max-width: 200px;
+}
+table.color-selector td {
+	padding: 0px;
+	margin: 0px;
+}
+table.color-selector td .color-selector-sample {
+	margin: 2px;
+}
+.color-selector-sample {
+	width: 40px;
+	height: 20px;
+	padding: 4px;
+	text-align: center;
+	border-radius: 2px;
+	font-weight: bold;
+	cursor: pointer
+}
+.popover-content .modal-close-img {
+	margin: 0;
+	margin-left: 20px;
+}
+.popover-content .title-container {
+	margin-bottom: 5px;
+	text-align: left;
+}
+.popover-content .title-container .title {
+	font-size: 125%;
+	color: #555;
+	font-weight: bold;
+	margin-left: 5px;
+}
+/******** End color selector css ********/
+
+/******** Dropdown links list (with popover) css ********/
+.popover-content .dropdown-links {
+	margin: 5px;
+}
+
+.popover-content .dropdown-links li {
+	margin: 10px 0;
+}
+
+.popover-content .dropdown-links li a {
+	width: 100%;
+	display: inline-block;
+	text-decoration: underline;
+	color: #176fb9;
+}
+.popover-content .dropdown-links li a:hover {
+	opacity: 0.75;
+}
+/******** End Dropdown links list (with popover) css ********/

@@ -93,7 +93,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	<input id="<?php echo $genid?>control_dates" type="hidden" name="control_dates" value="false" />
 	<input id="<?php echo $genid?>template_id" type="hidden" name="template_id" value="<?php echo $template_id ?>" />
 	<input id="<?php echo $genid?>additional_tt_params" type="hidden" name="additional_tt_params" value="<?php echo str_replace('"', "'", $additional_tt_params)?>" />
-        
+    <input id="<?php echo $genid?>task_id" type="hidden" name="task_id" value="<?php echo $task->isNew() ? '0': $task->getId() ?>" />
 	
 
 	

@@ -832,8 +832,30 @@ abstract class BaseProjectTask extends ContentDataObject {
 	function getMarkAsStarted() {
 	    return $this->getColumnValue('mark_as_started');
 	} // getMarkAsStarted()
+
+	/**
+	 * Return value of 'move_direction_non_working_days' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return string
+	 */
+	function getMoveDirectionNonWorkingDays() {
+	    return $this->getColumnValue('move_direction_non_working_days');
+	}
 	
-        /**
+	/**
+	 * Set value of 'move_direction_non_working_days field
+	 *
+	 * @access public
+	 * @param string $value
+	 * @return boolean
+	 */
+	function setMoveDirectionNonWorkingDays($value) {
+	    return $this->setColumnValue('move_direction_non_working_days', $value);
+	}
+	
+    /**
 	 * Return manager instance
 	 *
 	 * @access protected

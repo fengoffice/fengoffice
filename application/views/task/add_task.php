@@ -209,29 +209,29 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}
 		?>
     	<div class="clear"></div>
-		
-		<div class="dataBlock" id='<?php echo $genid ?>add_task_time_div'>
-		<?php
-			echo label_tag(lang('estimated time'));
-			$totalTime = array_var($task_data, 'time_estimate', 0);
-			$minutes = $totalTime % 60;
-			$hours = ($totalTime - $minutes) / 60;
-      	?>
-			<?php echo lang("hours") ?>:&nbsp;
-			<?php echo text_field("task[time_estimate_hours]", $hours, array('id' => 'ogTasksPanelATHours', 'style' => 'width:30px')) ?>
-			<span style="margin-left:10px"><?php echo lang("minutes") ?>:&nbsp;</span>
-			<select name="task[time_estimate_minutes]" size="1" id="ogTasksPanelATMinutes">
+		<?php if(config_option('use_task_estimated_time')){?>
+			<div class="dataBlock" id='<?php echo $genid ?>add_task_time_div'>
 			<?php
-				$minutes = ($totalTime % 60);
-				$minuteOptions = array(0,5,10,15,20,25,30,35,40,45,50,55);
-				for($i = 0; $i < 12; $i++) {
-					echo "<option value=\"" . $minuteOptions[$i] . "\"";
-					if($minutes == $minuteOptions[$i]) echo ' selected="selected"';
-					echo ">" . $minuteOptions[$i] . "</option>\n";
-				}
-			?></select>
-		</div>
-		
+				echo label_tag(lang('estimated time'));
+				$totalTime = array_var($task_data, 'time_estimate', 0);
+				$minutes = $totalTime % 60;
+				$hours = ($totalTime - $minutes) / 60;
+			?>
+				<?php echo lang("hours") ?>:&nbsp;
+				<?php echo text_field("task[time_estimate_hours]", $hours, array('id' => 'ogTasksPanelATHours', 'style' => 'width:30px')) ?>
+				<span style="margin-left:10px"><?php echo lang("minutes") ?>:&nbsp;</span>
+				<select name="task[time_estimate_minutes]" size="1" id="ogTasksPanelATMinutes">
+				<?php
+					$minutes = ($totalTime % 60);
+					$minuteOptions = array(0,5,10,15,20,25,30,35,40,45,50,55);
+					for($i = 0; $i < 12; $i++) {
+						echo "<option value=\"" . $minuteOptions[$i] . "\"";
+						if($minutes == $minuteOptions[$i]) echo ' selected="selected"';
+						echo ">" . $minuteOptions[$i] . "</option>\n";
+					}
+				?></select>
+			</div>
+		<?php } ?>
 		
 		
 		<div class="dataBlock">
@@ -239,15 +239,15 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php echo select_task_priority('task[priority]', array_var($task_data, 'priority', ProjectTasks::PRIORITY_NORMAL)) ?>
 			<div class="clear"></div>
 		</div>
-		
-		<?php if(array_var($task_data, 'time_estimate') == 0){?>
-		<div class="dataBlock">
-		<?php echo label_tag(lang('percent completed')) ?>
-		<?php echo input_field('task[percent_completed]', array_var($task_data, 'percent_completed', 0), array('class' => 'short')) ?>
-			<div class="clear"></div>
-		</div>
-		<?php }?>
-		
+		<?php if(config_option('use_task_percent_completed')){ ?>
+			<?php if(array_var($task_data, 'time_estimate') == 0){?>
+				<div class="dataBlock">
+				<?php echo label_tag(lang('percent completed')) ?>
+				<?php echo input_field('task[percent_completed]', array_var($task_data, 'percent_completed', 0), array('class' => 'short')) ?>
+					<div class="clear"></div>
+				</div>
+			<?php } ?>
+		<?php } ?>
 		<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
 		
 
@@ -585,6 +585,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 							if ($html) echo $html;
 						?>
 					</table>
+					<div style="padding-top: 4px;">
+						<select name="task[move_direction_non_working_days]" id="<?php echo $genid?>_move_direction">
+							<option value="advance" id="<?php echo $genid ?>move_direction_advance" <?php if (array_var($task_data, 'move_direction_non_working_days') == 'advance') echo ' selected="selected"'?>><?php echo lang('advance') ?></option>
+							<option value="move_back" id="<?php echo $genid ?>move_direction_backward"<?php if (array_var($task_data, 'move_direction_non_working_days') == 'move_back') echo ' selected="selected"'?>><?php echo lang('move backwards') ?></option>
+						</select>
+						<?php echo lang('by one day until a working day is found') ?>
+					</div>
 					</td>
 				</tr>
 			  </table>
@@ -621,6 +628,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		</div>
 		<?php } ?>
 		
+		<?php if (!config_option('multi_assignment')) { ?>
 		<div class="subtasks-div sub-section-div">
 			<h2><?php echo lang('subtasks')?></h2>
 			<div id="<?php echo $genid ?>add_task_subtasks_div">
@@ -640,6 +648,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	  		
 	  		</div>
 		</div>
+		<?php } ?>
   	</div>
   	
   		
@@ -938,16 +947,23 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	//User combo
 	og.drawAssignedToSelectBox([], false, []);
 	if(<?php echo $task->isNew() ? '0' : '1'?>){
+		// parse the mem path string
 		var mempath = Ext.util.JSON.decode('<?php echo json_encode($task->getMembersIdsToDisplayPath()) ?>');
 
 		var task_members_json = {};
+		// iterate the mempath object, key = dimension_id, value = member ids grouped by member type id
 		for (var dim_id in mempath) {
 			task_members_json[dim_id] = [];
+			// get the members grouped by type
 			ots_data = mempath[dim_id];
+			// foreach member type, proecess the members
 			for (var ot_id in ots_data) {
 				if (!isNaN(ot_id) && ots_data[ot_id] && ots_data[ot_id].length > 0) {
+					// process the members of the current member tpye
 					for (var x in ots_data[ot_id]) {
+						// get the member id
 						var m = ots_data[ot_id][x];
+						// add the member id to the result
 						task_members_json[dim_id].push(m);
 					}
 				}
@@ -985,15 +1001,6 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		}
 	}
 
-	<?php if ($task->isNew()){ ?>
-		COUNT_LINE = 1;
-	<?php	if (count($multi_assignment) > 0) {
-				foreach($multi_assignment as $assignment){ ?>
-					addMultiAssignment('<?php echo $genid ?>','<?php echo $assignment['assigned_to_contact_id'] ?>' , '<?php echo $assignment['name'] ?>', '<?php echo $assignment['time_estimate_hours'] ?>', '<?php echo $assignment['time_estimate_minutes'] ?>');		
-	<?php		}
-			}
-		}
-	?>
 
 	og.pickParentTask = function(before) {
 		og.ObjectPicker.show(function (objs) {

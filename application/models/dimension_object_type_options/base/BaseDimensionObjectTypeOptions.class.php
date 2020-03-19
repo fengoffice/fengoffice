@@ -3,7 +3,7 @@
   /**
   * BaseDimensionObjectTypeOptions class
   *
-  * @author Alvaro Torterola <alvaro.torterola@fengoffice.com>
+  * @author Feng Office
   */
   abstract class BaseDimensionObjectTypeOptions extends DataManager {
   

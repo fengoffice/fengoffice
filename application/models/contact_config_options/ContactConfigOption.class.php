@@ -190,6 +190,18 @@
       return $handler->render($control_name);
     } // render
     
+    /**
+    * Render this control using hide label param
+    *
+    * @param string $control_name
+    * @param boolean $hide_label
+    * @return string
+    */
+    function renderUsingHideLabel($control_name, $hide_label){
+      $handler = $this->getConfigHandler();
+      return $handler->renderUsingHideLabel($control_name, $hide_label);
+    }
+
     function save(){
     	parent::save();
     	ContactConfigOptions::instance()->updateConfigOptionCache($this);

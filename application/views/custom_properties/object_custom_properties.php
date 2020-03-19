@@ -286,7 +286,7 @@ if(count($cps) > 0){
 
 				case 'address':
 						$html = '<div id="'.$genid.'addresscontainer-cp'.$customProp->getId().'" class="address-input-container custom-property"></div>';
-						$html .= "<div style='display:none;'>" . select_country_widget('template_country', '', array('id'=>'template_select_country')) . "</div>";
+						$html .= "<div style='display:none;'>" . select_country_widget('template_country', '', array('id' => 'template_select_country')) . "</div>";
 						$html .= "<script>$(function(){";
 							
 						$all_address_types = AddressTypes::getAllAddressTypesInfo();

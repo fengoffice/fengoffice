@@ -24,7 +24,7 @@ class Timeslots extends BaseTimeslots {
 			$userCondition = ' AND `contact_id` = '. $user->getId();
 
 		return self::findAll(array(
-          'conditions' => array('`rel_object_id` = ?' . $userCondition, $object->getObjectId()),
+          'conditions' => array('`rel_object_id` = ? AND o.trashed_by_id=0' . $userCondition, $object->getObjectId()),
           'order' => '`e`.`start_time`'
           ));
 	}
@@ -36,14 +36,14 @@ class Timeslots extends BaseTimeslots {
 			$userCondition = ' AND `user_id` = '. $user->getId();
 
 		return self::findOne(array(
-          'conditions' => array('`rel_object_id` = ? AND `end_time`= ? ' . $userCondition, $object->getObjectId(), EMPTY_DATETIME), 
+          'conditions' => array('`rel_object_id` = ? AND `end_time`= ? AND o.trashed_by_id=0 ' . $userCondition, $object->getObjectId(), EMPTY_DATETIME), 
           'order' => '`e`.`start_time`'
           ));
 	}
     
     static function getAllOpenTimeslotByObjectByUser($user) {
         return self::find(array(
-            'conditions' => array('`e`.`end_time`= ? AND `o`.`created_by_id` = ? ', EMPTY_DATETIME,$user->getId()),
+            'conditions' => array('`e`.`end_time`= ? AND `o`.`created_by_id` = ? AND o.trashed_by_id=0 ', EMPTY_DATETIME,$user->getId()),
             'order' => '`e`.`start_time`'
         ));
     }
@@ -54,7 +54,7 @@ class Timeslots extends BaseTimeslots {
 	function getOpenTimeslotsByObject($object_id) {
 		if (!isset($this->cached_timeslots) || $this->cached_timeslots == null) {
 			$this->cached_timeslots = array();
-			$cached_ts = self::findAll(array('conditions' => array('`end_time`= ? ', EMPTY_DATETIME), 'order' => 'start_time'));
+			$cached_ts = self::findAll(array('conditions' => array('`end_time`= ? AND o.trashed_by_id=0 ', EMPTY_DATETIME), 'order' => 'start_time'));
 			foreach ($cached_ts as $ct) {
 				if (!isset($this->cached_timeslots[$ct->getRelObjectId()])) $this->cached_timeslots[$ct->getRelObjectId()] = array();
 				$this->cached_timeslots[$ct->getRelObjectId()][] = $ct;
@@ -82,7 +82,7 @@ class Timeslots extends BaseTimeslots {
 	static function countTimeslotsByObject(ContentDataObject $object, $user = null) {
 		$userCondition = '';
 		if ($user)
-			$userCondition = ' AND `contact_id` = '. $user->getId();
+			$userCondition = ' AND trashed_by_id=0 AND `contact_id` = '. $user->getId();
 
 		return self::count(array('`rel_object_id` = ? ' . $userCondition, $object->getObjectId()));
 	} // countTimeslotsByObject
@@ -94,7 +94,7 @@ class Timeslots extends BaseTimeslots {
 	 * @return boolean
 	 */
 	static function dropTimeslotsByObject(ContentDataObject $object) {
-		$timeslots = self::findAll(array('conditions' => array('`rel_object_id` = ?', $object->getObjectId())));
+		$timeslots = self::findAll(array('conditions' => array('`rel_object_id` = ? AND o.trashed_by_id=0 ', $object->getObjectId())));
 		foreach ($timeslots as $timeslot) {
 			$timeslot->delete();
 		}
@@ -264,9 +264,11 @@ class Timeslots extends BaseTimeslots {
 	
 	static function getTotalMinutesWorkedOnObject($object_id) {
 		$sql = " SELECT SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60) as total
-				FROM `".TABLE_PREFIX."timeslots`
+				FROM `".TABLE_PREFIX."timeslots` ts
+				INNER JOIN `".TABLE_PREFIX."objects` o ON o.id=ts.object_id
 				WHERE `rel_object_id` =  ". $object_id ." 
-				AND `end_time` > ".DB::escape(EMPTY_DATETIME).";";
+				AND `end_time` > ".DB::escape(EMPTY_DATETIME)."
+				AND o.trashed_by_id=0;";
 		
 		$result = DB::executeOne($sql);
 		$name = "total";

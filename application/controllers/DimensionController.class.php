@@ -3,8 +3,7 @@
 /**
  * Dimension controller
  *
- * @version 1.0
- * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
+ * @author Feng Office
  */
 class DimensionController extends ApplicationController {
 
@@ -262,7 +261,7 @@ class DimensionController extends ApplicationController {
 				$filter_by_mem_ids_csv = implode(',', array_filter($filter_by_mem_ids));
 				
 				foreach ($associations as $assoc){ /* @var $assoc DimensionMemberAssociation */
-					if ($assoc->getDimensionId() == $dimension->getId()) {
+				    if ($assoc->getDimensionId() == $dimension->getId()) {
 						$tmp_ids_csv = MemberPropertyMembers::getAllMemberIds($assoc->getId(), $filter_by_mem_ids_csv);
 					} else {
 						$tmp_ids_csv = MemberPropertyMembers::getAllPropertyMemberIds($assoc->getId(), $filter_by_mem_ids_csv);
@@ -777,13 +776,22 @@ class DimensionController extends ApplicationController {
 	function buildMemberList($all_members, $dimension,  $allowed_member_type_ids, $allowed_object_type_ids, $item_object, $object_type_id, $return_only_name=false) {
 		$dot_array = array(); // Dimension Object Types array (cache)
 		$membersset = array();
+		
+		//The dimension id is used a lot of times
+		$dimension_id = $dimension->getId();
+		
 		foreach ($all_members as $m) {
 			$membersset[$m->getId()] = true;
 		}
+
+		// Step 1) Calculate each member's name (it may have some properties set to be shown as part of the name)
+		build_member_list_text_to_show_in_trees($all_members); // it sets the new name for each member (with cp prefix, etc.) if needed
+		
 		$members = array();
-		foreach ($all_members as $m) {
-			/* @var  $m Member */
-	//		if ($m->getArchivedById() > 0) continue;
+		
+		//Step 2) For every member that will be listed...
+		foreach ($all_members as $m) { /* @var  $m Member */
+	        
 			if ($object_type_id != null){
 				$selectable = in_array($m->getObjectTypeId(), $allowed_object_type_ids) ? true : false;
 				if ($selectable && isset($item_object)) {
@@ -792,12 +800,12 @@ class DimensionController extends ApplicationController {
 			}else{
 				$selectable = true ;
 			}
-			if ( count($allowed_member_type_ids) && !in_array($m->getObjectTypeId(), $allowed_member_type_ids) ) {
+			if ( is_array($allowed_member_type_ids) && count($allowed_member_type_ids) && !in_array($m->getObjectTypeId(), $allowed_member_type_ids) ) {
 				continue;	
 			}
 			$tempParent = $m->getParentMemberId();
 			
-			//check if have parent member id from Contact Member Cache
+			//Check if it has a parent member id from Contact Member Cache
 			if(isset($m->cached_parent_member_id)){
 				$tempParent = $m->cached_parent_member_id;
 			}else{
@@ -820,18 +828,18 @@ class DimensionController extends ApplicationController {
 			$memberOptions = '';
 			
 			// SET member options (dimension object types table)
-			// CHeck dot cache, if not set goto database and add to cache
-			if ( empty($dot_array[$dimension->getId()]) || empty ($dot_array[$dimension->getId()][$m->getObjectTypeId()]) ) {
-				$dot = DimensionObjectTypes::instance()->findOne(array("conditions" =>"dimension_id = ".$dimension->getId() ." AND object_type_id = ".$m->getObjectTypeId()));
+			// Check Dimension Object Type (DOT) cache, if not set, go to the database and add to cache
+			if ( empty($dot_array[$dimension_id]) || empty ($dot_array[$dimension_id][$m->getObjectTypeId()]) ) {
+				$dot = DimensionObjectTypes::instance()->findOne(array("conditions" =>"dimension_id = ".$dimension_id ." AND object_type_id = ".$m->getObjectTypeId()));
 				if ($dot instanceof DimensionObjectType){
 					if (empty($dot_array['dimension_id'])) {
-						$dot_array[$dimension->getId()] = array();
+						$dot_array[$dimension_id] = array();
 					}
-					$dot_array[$dimension->getId()][$m->getObjectTypeId()] = $dot;
+					$dot_array[$dimension_id][$m->getObjectTypeId()] = $dot;
 				}
 			}
-			if ( !empty($dot_array[$dimension->getId()]) || ($dot_array[$dimension->getId()][$m->getObjectTypeId()]) instanceof DimensionObjectType ) {
-				$dot =  $dot_array[$dimension->getId()][$m->getObjectTypeId()];
+			if ( !empty($dot_array[$dimension_id]) || ($dot_array[$dimension_id][$m->getObjectTypeId()]) instanceof DimensionObjectType ) {
+				$dot =  $dot_array[$dimension_id][$m->getObjectTypeId()];
 				if ($dot) $memberOptions = $dot->getOptions(true);
 			}
 			
@@ -839,7 +847,11 @@ class DimensionController extends ApplicationController {
 			$use_member_type_order = user_config_option('sort_member_trees_by_member_type');
 			$sort_key = strtolower(htmlentities($m->getName()));
 			if ($use_member_type_order) {
-				$sort_key = $m->getObjectTypeId() . $sort_key;
+			    //Old version used the ObjectTypeId to sort: 
+			    //$sort_key = $m->getObjectTypeId() . $sort_key;
+			    $option_name = 'order_in_dimension';
+			    $object_type_order = trim(DimensionObjectTypeOptions::getOptionValue($dimension_id, $m->getObjectTypeId(), $option_name));
+			    $sort_key = $object_type_order . $sort_key;
 			}
 			$sort_key = str_pad($m->getDepth(), 20, "0", STR_PAD_LEFT) . $sort_key . $m->getId();
 			

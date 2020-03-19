@@ -44,9 +44,6 @@
 	min-height: 20px;
 }
 
-.coInputMainBlock .dataBlock label {
-	margin-top: 3px;
-}
 
 .dataBlock .og-add-template-object {
 	float: left;
@@ -96,6 +93,7 @@
 .coInputMainBlock label {
 	float: left;
 	min-width: 200px;
+	padding-right: 20px;
 }
 
 .coInputMainBlock .report-conditions label {
@@ -209,3 +207,61 @@
     margin-top: -12px;
     margin-right: 20px;
 }
+
+
+
+/******** New color selector css ********/
+table.color-selector {
+	width: 80px;
+}
+table.color-selector td {
+	padding: 0px;
+	margin: 0px;
+}
+table.color-selector td .color-selector-sample {
+	margin: 2px;
+}
+.color-selector-sample {
+	width: 40px;
+	height: 20px;
+	padding: 4px;
+	text-align: center;
+	border-radius: 2px;
+	font-weight: bold;
+	cursor: pointer
+}
+.popover-content .modal-close-img {
+	margin: 0;
+	margin-left: 20px;
+}
+.popover-content .title-container {
+	margin-bottom: 5px;
+	text-align: left;
+}
+.popover-content .title-container .title {
+	font-size: 125%;
+	color: #555;
+	font-weight: bold;
+	margin-left: 5px;
+}
+/******** End color selector css ********/
+
+/******** Dropdown links list (with popover) css ********/
+.popover-content .dropdown-links {
+	margin: 5px;
+}
+
+.popover-content .dropdown-links li {
+	margin: 10px 0;
+}
+
+.popover-content .dropdown-links li a {
+	width: 100%;
+	display: inline-block;
+	text-decoration: underline;
+	color: #176fb9;
+}
+.popover-content .dropdown-links li a:hover {
+	opacity: 0.75;
+}
+/******** End Dropdown links list (with popover) css ********/

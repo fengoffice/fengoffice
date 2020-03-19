@@ -12,7 +12,8 @@ if(isset($context)){
 	}	
 }
 
-foreach ($members as $member) {
+if (count($members) == 1){
+	$member = $members[0];
 	
 	$prop_html = "";
 	Hook::fire("render_widget_member_information", $member, $prop_html);
@@ -72,8 +73,8 @@ foreach ($members as $member) {
 		}
 	  }
 	}
-
-	if (trim($prop_html . $cp_html . $assoc_mem_html) != "") {
+	//Logger::log($cp_html);
+	if (trim($cp_html) != "") {
 		include 'template.php';
 	}
 }

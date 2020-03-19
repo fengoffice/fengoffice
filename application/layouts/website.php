@@ -3,7 +3,7 @@
 <html>
 <head>
 	<title><?php echo clean(CompanyWebsite::instance()->getCompany()->getFirstName()) . ' - ' . PRODUCT_NAME ?></title>
-	
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
 	<?php $favicon_name = 'favicon.ico';
 		Hook::fire('change_favicon', null, $favicon_name); ?>
 	<?php echo link_tag(with_slash(ROOT_URL).$favicon_name, "rel", "shortcut icon") ?>
@@ -115,6 +115,12 @@
     		line-height: 150%;
 		}
 	</style>
+	<?php echo add_javascript_to_page("react_production/vendors~showEarnedValueWidget~showExpensesProgressWidget~showFinancialsWidget~showProjectStatisticsW~f4ed70e4.js")?>
+	<?php echo add_javascript_to_page("react_production/showFinancialsWidget.js")?>
+	<?php echo add_javascript_to_page("react_production/showEarnedValueWidget.js")?>
+	<?php echo add_javascript_to_page("react_production/showExpensesProgressWidget.js")?>
+	<?php echo add_javascript_to_page("react_production/showProjectStatisticsWidget.js")?>
+	<?php echo add_javascript_to_page("react_production/showWorkedHoursWidget.js")?>
 </head>
 <body id="body" <?php echo render_body_events() ?>>
 
@@ -138,7 +144,7 @@ $show_owner_company_name_header = config_option("show_owner_company_name_header"
 	  <table style="width:100%;"><tr><td id="left-header-cell">
 		<div style="float: left;" class="header-content-left">
 			<div id="logodiv" onclick="og.Breadcrumbs.resetSelection();">
-				<div style="height: 55px;" id="logo_company_margin_top">
+				<div id="logo_company_margin_top">
 					<img src="<?php echo ($use_owner_company_logo) ? owner_company()->getPictureUrl('large') : get_product_logo_url() ?>" name="img_company_margin" id="img_company_margin" style="display: none;"/>
 					<script>
 						$('#img_company_margin').load(function() {
@@ -766,6 +772,16 @@ foreach ($jss as $onejs) {
 	?>og.loadedScripts['<?php echo get_javascript_url($onejs . $revision) ?>'] = true;<?php 
 }
 ?>
+
+
+
+//listener to hide jquery popovers when clicking outside
+$('html').on('click', function(e) {
+	if (typeof $(e.target).data('original-title') == 'undefined' && !$(e.target).parents().is('.popover.in')) {
+		$('[data-original-title]').popover('hide');
+	}
+});
+
 
 </script>
 <?php include_once(Env::getLayoutPath("listeners"));?>

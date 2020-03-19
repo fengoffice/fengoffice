@@ -47,7 +47,16 @@
     			og.openLink(og.getUrl('time', 'delete_timeslot', {id:tid}), {
     				callback: function(success, data) {
     					var g = Ext.getCmp(og.task_timeslots_grid.grid_id);
-    					if (g) g.reset();
+    					if (g) {
+    						og.openLink(og.getUrl('task','render_task_work_performed_summary',{id:g.store.baseParams.rel_object_id}), {
+        						callback: function(success,data){
+            						if (data && data.html) {
+            							$("#<?php echo $genid ?>_work_performed_summary").html(data.html);
+            						}
+            					}
+    						});
+    					}
+        				if (g) g.reset();
     				}
     			});
     		}

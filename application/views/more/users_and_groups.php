@@ -86,6 +86,11 @@ user_group_columns.push({
 	sortable: true
 });
 user_group_columns.push({
+	name: 'email',
+	header: lang('email'),
+	sortable: true
+});
+user_group_columns.push({
 	name: 'company',
 	header: lang('company'),
 	sortable: true

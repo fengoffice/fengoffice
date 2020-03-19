@@ -13,7 +13,7 @@ class ContactWidgetOptions extends BaseContactWidgetOptions {
 	
 	function getDefaultOptions($widget) {
 		$infos = array();
-		$options = $this->findAll(array('conditions' => array('contact_id=0 AND widget_name=?',$widget)));
+		$options = $this->findAll(array('conditions' => array('is_system=0 AND contact_id=0 AND widget_name=?',$widget)));
 		foreach ($options as $option) {
 			$infos[] = $option->getArrayInfo();
 		}

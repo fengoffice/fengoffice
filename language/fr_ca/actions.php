@@ -184,4 +184,5 @@
 	'year' => 'Année',
 	'dont filter' => 'Ne pas filtrer',
 	'select all' => 'Sélectionner tous',
+	'edit external tokens' => 'Gérer les jetons externes',
 ); ?>

@@ -3,7 +3,7 @@
   /**
    * Info: if you want to rebuild all depths and parents paths you have to reset them before call this function
   * @access public
-  * @param $table_name the table that you want to use (only project_tasks and template_tasks tables can be used)
+  * @param $table_name string the table that you want to use (only project_tasks and template_tasks tables can be used)
   * @return string with sql querys to execute
   */
   function rebuild_tasks_depth_and_parents_path($table_name, $database_connection) {

@@ -1,0 +1,107 @@
+
+.abm-members-name {
+	float: left;
+}
+
+input[type=checkbox] {
+	border: 0px none;
+	width: 13px !important;
+	height: 13px;
+}
+
+.single-tree-container .x-panel-body.x-panel-body-noheader.x-column-layout-ct {
+	overflow: hidden !important;
+}
+
+.x-tab-strip-active  {
+	/* background: yellow;*/
+	border-bottom: 2px solid #F0F0F0;
+	margin-bottom: -2px !important
+}
+
+
+.widget {
+	/* Shadow for ie7 */
+	#zoom: 1;
+	#filter: progid:DXImageTransform.Microsoft.Shadow(color='#CCCCCC', Direction=135, Strength=6);
+}
+
+.widget-body {
+	border-left: 1px solid #FAFAFA;
+}
+
+div.user-box-actions {
+	width: 252px;
+	float: left ; 
+}
+
+input[type=checkbox], input[type=radio], input[type=radio]:hover {
+	padding: 0;
+	border: 0px none;
+}
+
+#menu-panel .x-tree-node .feng-node-actions {
+	margin-top: -20px;  
+}
+
+button.add-first-btn {
+    min-width: 200px !important;
+}
+
+.login-footer {
+	left: 0;	
+}
+
+div.login-body div.input {
+	margin: 20px 0;
+}
+div.login-body div.input label {
+	display: block;
+	float: left;
+}
+div.login-body div.input input, div.login-body div.form-container input[type!=checkbox] {
+	padding-top: 10px;
+	height: 25px;
+	border: 2px solid #ddd;
+}
+div.login-body div.input select {
+	margin-top: 10px;
+}
+div.login-body div.form-container button[type=submit] {
+	border: 2px solid #589128;
+}
+div.login-body div.form-container button[type=submit]:hover {
+	border: 2px solid #3D6A27;
+}
+
+ul.x-tab-strip li:hover {
+	filter: alpha(opacity=10);
+	background: #e7e7e7;
+}
+
+.add-factor-container {
+	margin-top: 15px;
+}
+
+.factors-status {
+	border: 1px solid #ccc;
+	margin: 10px 0;
+	padding: 10px;
+}
+
+.big-checkbox input[type=checkbox] {
+	display: block !important;
+	margin-top:5px;
+}
+
+.big-checkbox label, .big-checkbox label:after {
+	display:none;
+}
+
+#header .header-content-right .gen-search{
+	top: 20%!important; 	
+}
+
+.options_menu .gen-search {
+	width: 60%;
+}

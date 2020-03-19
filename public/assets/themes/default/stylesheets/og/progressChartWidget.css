@@ -1,0 +1,67 @@
+/* Style worked hours widget */
+.progress-widget-container{
+    text-align: left;
+    margin: 0;
+}
+
+
+/* Style  progress-info-container divs*/
+.progress-info-container{
+    margin: 0px 0 45px 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    color: #888888;
+    font-family: 'Open-sans', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    
+}
+
+
+/* Style progress-total */ 
+.progress-total {
+    line-height: 1.4;
+    text-align: center;
+}
+
+.progress-total__icon{
+    height: 15px;
+    width: 15px;
+    padding-right: 5px;
+}
+
+.progress-total__icon--completed{
+    fill: #20a1f8;
+}
+
+.progress-total__icon--green{
+    fill: #0cbe9b;
+}
+
+.progress-total__icon--estimated{
+    fill: #888888;
+}
+
+.progress-total__number{
+    font-size: 26px;
+    font-weight: 600;
+    color: #4a4a4a;
+}
+
+.progress-widget__currency-symbol {
+    font-size: 20px;
+}
+
+.progress-total__unit{
+    /*font-weight: 600;*/
+    padding-left: 5px;
+    /*color: #4a4a4a;*/
+}
+
+
+/* Chart style */
+.progress-widget-chart {
+    margin: 25px 0;
+}
+

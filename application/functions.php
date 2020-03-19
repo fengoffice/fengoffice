@@ -6,8 +6,6 @@
 // ---------------------------------------------------
 
 
-
-
 /**
  * Gets called, when an undefined class is being instanciated
  *d
@@ -208,7 +206,11 @@ function get_sandbox_url($controller_name = null, $action_name = null, $params =
  * @return string
  */
 function product_name() {
-	return PRODUCT_NAME;
+	$product_name = PRODUCT_NAME;
+	
+	Hook::fire('override_product_name', null, $product_name);
+	
+	return $product_name;
 } // product_name
 
 /**
@@ -354,7 +356,7 @@ function prepare_company_website_controller(PageController $controller, $layout 
  *
  * @access public
  * @param void
- * @return Company
+ * @return Contact
  */
 function owner_company() {
 	return CompanyWebsite::instance()->getCompany();
@@ -626,9 +628,14 @@ function user_config_option($option, $default = null, $user_id = null, $options_
 	return $option_value;
 } // user_config_option
 
+/**
+ * @deprecated
+ * This function has to be fixed
+ */
 function user_has_config_option($option_name, $user_id = 0, $workspace_id = 0) {
 	//FIXME
 	return;
+	/*
 	if (!$user_id && logged_user() instanceof User) {
 		$user_id = logged_user()->getId();
 	} else {
@@ -641,10 +648,15 @@ function user_has_config_option($option_name, $user_id = 0, $workspace_id = 0) {
 		'user_id' => $user_id,
 		'workspace_id' => $workspace_id));
 	return $value instanceof UserWsConfigOptionValue;
+	*/
 }
 
+/**
+ * @deprecated
+ * This function has to be fixed
+ */
 function default_user_config_option($option, $default = null) {
-	return UserWsConfigOptions::getDefaultOptionValue($option, $default);
+	//return UserWsConfigOptions::getDefaultOptionValue($option, $default);
 }
 
 
@@ -1263,7 +1275,7 @@ function html_to_text($html) {
  * Returns an array with the enum values of an enum column
  * @param string $table: name of the table to check
  * @param string $column: name of the enum column to retrieve its values
- * @return An array with the enum values of an enum column.
+ * @return array with the enum values of an enum column.
  */
 function get_enum_values($table, $column) {
 	$sql = "SHOW COLUMNS FROM `$table` LIKE '$column';";
@@ -1947,7 +1959,7 @@ function pdf_convert_and_download($html_filename, $download_filename=null, $orie
 	}
 }
 
-function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid) {
+function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page_size="A4") {
 	$pdf_filename = null;
 	
 	if(is_exec_available()){
@@ -1966,15 +1978,20 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid) {
 		
 		$temp_pdf_name = ROOT."/tmp/".$temp_genid.".pdf";
 		
+		if (!in_array($page_size, array("A0","A1","A2","A3","A4","A5","Letter","Legal"))) {
+			$page_size = "A4";
+		}
+		
 		//convert to pdf in background
 		if (substr(php_uname(), 0, 7) == "Windows") {
 			
 			if (!defined('WKHTMLTOPDF_PATH')) define('WKHTMLTOPDF_PATH', "C:\\Program Files\\wkhtmltopdf\\bin\\");
 			$command_location = with_slash(WKHTMLTOPDF_PATH) . "wkhtmltopdf";
 			
-			$command = "\"$command_location\" -s A4 --encoding utf8 -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+			$command = "\"$command_location\" -s $page_size --encoding utf8 -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		} else {
-			$command = "wkhtmltopdf -s A4 --encoding utf8 -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+		    $command_location = (defined('WKHTMLTOPDF_PATH') ? with_slash(WKHTMLTOPDF_PATH) : "");
+		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		}
 		exec($command, $result, $return_var);
 		
@@ -2007,9 +2024,9 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid) {
 
 
 /**
- * @param $picture: uploaded file data (taken from $_FILES)
+ * @param $picture: string uploaded file data (taken from $_FILES)
  * @param $crop_data: array with new x-y coords, width and height
- * @return The path to the new generated image 
+ * @return string The path to the new generated image 
  **/
 function process_uploaded_cropped_picture_file($picture, $crop_data) {
 
@@ -2059,9 +2076,9 @@ function process_uploaded_cropped_picture_file($picture, $crop_data) {
 			}
 			
 			// dont proces the image if there aren't changes in width and height
-			if ($w == $nw && $h == $nh) {
+			/*if ($w == $nw && $h == $nh) {
 				return $picture['tmp_name'];
-			}
+			}*/
 
 			$data = file_get_contents($picture['tmp_name']);
 			$vImg = imagecreatefromstring($data);
@@ -2278,13 +2295,102 @@ function save_default_associated_member_selections($association_id, $member_id, 
 	}
 }
 
+/**
+ * When generating repetitive task instances, we need to know the original start and due date.
+ * If the repetitive task has been instantiated using a template we need to check if due or start date depends on any parameter.
+ * If so then return the paramter value at the moment of the instantiation as the original date
+ * @param ProjectTask $task
+ * @return array
+ */
+function find_original_dates_for_template_repetitive_task(ProjectTask $task) {
+	
+	$result = array();
+	
+	$template_id = $task->getColumnValue('from_template_id');
+	if ($task->getOriginalTaskId() > 0) {
+		$first_task = ProjectTasks::findById($task->getOriginalTaskId());
+	} else {
+		$first_task = $task;
+	}
+	
+	$due_date_property = null;
+	$st_date_property = null;
+	
+	$template_props = TemplateObjectProperties::getPropertiesByTemplateObject($first_task->getFromTemplateId(), $first_task->getFromTemplateObjectId());
+	foreach ($template_props as $t_prop) {
+		/* @var $t_prop TemplateObjectProperty */
+		if ($t_prop->getProperty() == 'due_date') {
+			$due_date_property = $t_prop;
+		}
+		if ($t_prop->getProperty() == 'start_date') {
+			$st_date_property = $t_prop;
+		}
+	}
+	
+	if ($due_date_property instanceof TemplateObjectProperty) {
+		$parameter_value = $due_date_property->getValue();
+		$result['original_due_date'] = get_instantiated_date_template_parameter($first_task, $parameter_value);
+	}
+	
+	if ($st_date_property instanceof TemplateObjectProperty) {
+		$parameter_value = $st_date_property->getValue();
+		$result['original_st_date'] = get_instantiated_date_template_parameter($first_task, $parameter_value);
+	}
+	
+	return $result;
+}
 
-function instantiate_template_task_parameters(TemplateTask $object, ProjectTask $copy, $parameterValues = array()) {
+/**
+ * Returns the original date parameter entered by the user when instantiating the template.
+ * It also adds to the resultant date the amount of time specified in the template variable
+ * @param ProjectTask $first_task
+ * @param string $parameter_value
+ * @return DateTimeValue|NULL
+ */
+function get_instantiated_date_template_parameter($first_task, $parameter_value) {
+	$original_date = null;
+	
+	$param = substr($parameter_value, 1, strpos($parameter_value, '}') - 1);
+	
+	$instantiated_param_row = DB::executeOne("
+		SELECT `value` FROM ".TABLE_PREFIX."template_instantiated_parameters
+		WHERE template_id=".$first_task->getFromTemplateId()."
+			AND instantiation_id=".$first_task->getInstantiationId()."
+			AND parameter_name='$param';
+	");
+	$instantiated_param_value = trim($instantiated_param_row['value']);
+	
+	if ($instantiated_param_value != '') {
+		try {
+			$original_date = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $instantiated_param_value);
+		} catch (Exception $e) {
+			// ignore error and continue
+		}
+	}
+	
+	if ($original_date instanceof DateTimeValue) {
+		$dateUnit = substr($parameter_value, strlen($parameter_value) - 1); // i, d, w or m (for days, weeks or months, i for minutes)
+		if($dateUnit == 'm') $dateUnit = 'M';
+		if($dateUnit == 'i') $dateUnit = 'm';
+		$operator = '+';
+		if (strpos($parameter_value, '+') === false) {
+			$operator = '-';
+		}
+		
+		$dateNum = (int) substr($parameter_value, strpos($parameter_value,$operator), strlen($parameter_value) - 2);
+		$original_date->add($dateUnit, $dateNum);
+	}
+	
+	return $original_date;
+}
+
+
+function instantiate_template_task_parameters(TemplateTask $object, ProjectTask $copy, $parameterValues = array()) {  
 	
 	$objProp = TemplateObjectProperties::getPropertiesByTemplateObject($object->getTemplateId(), $object->getId());
 	$manager = $copy->manager();
 	
-	foreach($objProp as $property) {
+	foreach($objProp as $property) { 
 	
 		$propName = $property->getProperty();
 		$value = $property->getValue();
@@ -2337,7 +2443,6 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
                     }
 				} else {
 					$date_str = $parameterValues[$dateParam];
-					
 					$result = null;
 					Hook::fire('before_instantiate_template_date_param', array('object' => $object, 'copy' => $copy, 'date_str' => $date_str), $result);
 					if (is_array($result)) {
@@ -2347,7 +2452,8 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 					
 					$date = getDateValue($date_str);
 					if (!$date instanceof DateTimeValue) {
-						$date = DateTimeValueLib::now();
+						// dont set any date if user didn't specify one in the parameters
+						continue;
 					}
 				}
                 
@@ -2389,8 +2495,7 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 				}
 				$dateNum = (int) substr($value, strpos($value,$operator), strlen($value) - 2);
 				
-				Hook::fire('template_param_date_calculation', array('op' => $operator, 'date' => $date, 'unit' => $dateUnit, 
-						'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
+				Hook::fire('template_param_date_calculation', array('op' => $operator, 'date' => $date, 'unit' => $dateUnit, 'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
 				
 				$value = $date->add($dateUnit, $dateNum);
 				
@@ -2429,9 +2534,9 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 
 /**
  * Copies related data from an object to another (members, linked_objects, custom_properties, subscribers, reminders and comments)
- * @param $object: Original object to copy data
+ * @param $object: ContentDataObject Original object to copy data
  * @param $copy: Object to be modified with the data of the $orignal object
- * @param $options: set which type of data will not be copied
+ * @param $options: array set which type of data will not be copied
  */
 function copy_additional_object_data($object, &$copy, $options=array()) {
 	if (!$object instanceof ContentDataObject || !$copy instanceof ContentDataObject) {
@@ -2635,4 +2740,39 @@ function check_member_custom_prop_exists($table_prefix, $cp_code, $ot_name) {
 		}
 	}
 	return $exists_cp;
+}
+
+
+function build_api_members_data(ContentDataObject $object) {
+	$members = $object->getMembers();
+	$members_data = array();
+	foreach ($members as $m) {
+		/* @var $m Member */
+		$m_data = array(
+				'id' => $m->getId(),
+				'name' => $m->getName(),
+				'dimension_id' => $m->getDimensionId()
+		);
+		$m_ot = ObjectTypes::findById($m->getObjectTypeId());
+		if ($m_ot instanceof ObjectType) {
+			$m_data['object_type_name'] = $m_ot->getName();
+		}
+		$members_data[] = $m_data;
+	}
+	
+	return $members_data;
+}
+
+
+/**
+ * Function to check if $string starts with $startString
+ * 
+ * @param string $string is the complete string
+ * @param string $startString is the string that may be the first part of $string 
+ * @return boolean 
+ */
+function startsWith($string, $startString)
+{
+    $len = strlen($startString);
+    return (substr($string, 0, $len) == $startString);
 }

@@ -3,7 +3,7 @@
 /**
  * BaseCOTemplate class
  *
- * @author Ignacio de Soto <ignacio.desoto@gmail.com>
+ * @author FengOffice
  */
 abstract class BaseCOTemplate extends ContentDataObject {
 

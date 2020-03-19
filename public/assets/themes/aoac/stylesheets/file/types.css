@@ -1,0 +1,347 @@
+
+.ico-folder, .ico-customer_folder, .ico-project_folder {
+	/*background-image: url(../../extjs/images/default/tree/folder-open.gif) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important;
+}
+.x-tree-node-icon.ico-folder, .x-tree-node-icon.ico-customer_folder, .x-tree-node-icon.ico-project_folder, .x-tree-node-icon.ico-project {
+	background-position: 0 0px !important;
+}
+.x-tree-node-icon.ico-company {
+	background: url("../../images/16x16/all_16_16_vertical.png") no-repeat scroll 0 -539px transparent !important
+}
+
+.ico-emails {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -437px !important;
+}
+.ico-mailcontent, .ico-email, .ico-mail, .x-tab-strip-text.ico-mail{
+	/*background: transparent url(../../images/16x16/mail_mark_unread.png) no-repeat !important;*/
+	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
+	background-position: 0 center !important;
+}
+
+.ico-email{
+	background-image: url(../../images/icons-feng-3/16x16/email.png) !important;
+	background-size: 16px 16px!important;
+	background-repeat: no-repeat;
+}
+
+.ico-emailunclassified {
+	/*background-image: url(../../images/16x16/types/classify.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/classify.png) !important;
+}
+.ico-weblinks, .ico-weblink, .ico-webpages, .ico-webpage, .ico-projectwebpage{
+	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -77px !important;*/
+	background-image: url(../../images/icons-feng-3/24x22/links.png) !important;
+	background-position: 0 center !important;
+}
+
+.ico-weblink, .ico-webpage{
+	background-image: url(../../images/icons-feng-3/16x16/links.png) !important;
+	background-size: 16px 16px!important;
+	background-repeat: no-repeat;
+}
+
+/*.ico-projecttask, .ico-task {
+	background: transparent url(../../images/16x16/tasks.png) no-repeat !important;
+}*/
+.ico-projectevent, .ico-event {
+	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 0px !important;*/
+	background: url("../../images/icons-feng-3/16x16/today.png") no-repeat !important;
+}
+.ico-contact {
+	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -520px !important;*/
+	background-image: url(../../images/icons-feng-3/24x22/contacts.png) !important;
+	background-position: 0 center !important;
+	background-size: 20px 20px !important;
+	width: 20px;
+	background-repeat: no-repeat;
+}
+.x-tree-node-icon.ico-contact {
+	background-image: url(../../images/icons-feng-3/16x16/contacts.png) !important;
+	background-size: 17px 17px !important;
+}
+.x-tree-node-icon.ico-mail {
+	background-image: url(../../images/icons-feng-3/16x16/email.png) !important;
+	background-size: 17px 17px !important;
+}
+.ico-company {
+	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -540px !important;
+}
+.ico-projectmessage, .ico-message {
+	/*background: transparent url(../../images/16x16/message.png) no-repeat !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/notes.png) !important;
+	background-size: 16px 16px !important;
+}
+.ico-message-rfc822 {
+	background-image: url(../../images/16x16/types/message.png) !important;
+}
+.ico-projectfile, .ico-file {
+	/*background: url("../../images/16x16/types/file.png") no-repeat scroll 0 0 transparent;*/
+	background: url(../../images/icons-feng-3/16x16/doc.png) no-repeat !important;
+}
+.ico-user, .ico-users {
+	/*background-image: url(../../images/16x16/types/user.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/contacts.png) !important;
+}
+.ico-contact-small {
+	/*background-image: url(../../images/16x16/types/user.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/contacts.png) !important;
+}
+.ico-group, .ico-groups {
+	/*background-image: url(../../images/16x16/types/group.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/group.png) !important;
+}
+
+.ico-application {
+	background-image: url(../../images/16x16/types/application.png) !important;
+}
+.ico-application-pdf {
+	background-image: url(../../images/16x16/types/application-pdf.png) !important;
+}
+.ico-application-vnd_ms-excel, .sprd {
+	background-image: url(../../images/16x16/types/application-vnd.ms-excel.png) !important;
+}
+.ico-application-vnd_ms-powerpoint, .prsn {
+	background-image: url(../../images/16x16/types/application-vnd.ms-powerpoint.png) !important;
+}
+.ico-application-vnd_ms-word, .ico-application-msword, .txt {
+	background-image: url(../../images/16x16/types/application-vnd.ms-word.png) !important;
+}
+.ico-application-xspf-xml {
+	background-image: url(../../images/16x16/types/application-xspf-xml.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_chart {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.chart.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_database {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.database.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_formula {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.formula.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_graphics {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.graphics.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_image {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.image.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_presentation {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.presentation.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_presentation-template {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.presentation-template.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_spreadsheet {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.spreadsheet.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_spreadsheet-template {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.spreadsheet-template.png) !important;
+}
+.ico-application-vnd_oasis_opendocument_text {
+	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.text.png) !important;
+}
+.ico-application-vnd_openxmlformats-officedocument_spreadsheetml_sheet {
+	background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.spreadsheetml.sheet.png) !important;
+}
+.ico-application-vnd_openxmlformats-officedocument_wordprocessingml_document {
+	background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.wordprocessingml.document.png) !important;
+}
+.ico-application-vnd_rn-realmedia {
+	background-image: url(../../images/16x16/types/video.png) !important;
+}
+.ico-application-x-compressed {
+	background-image: url(../../images/16x16/types/application-zip.png) !important;
+}
+.ico-application-x-zip-compressed {
+	background-image: url(../../images/16x16/types/application-zip.png) !important;
+}
+.ico-application-zip {
+	background-image: url(../../images/16x16/types/application-zip.png) !important;
+}
+.ico-audio {
+	background-image: url(../../images/16x16/types/audio.png) !important;
+}
+.ico-audio-mpeg {
+	background-image: url(../../images/16x16/types/audio.png) !important;
+}
+.ico-image {
+	background-image: url(../../images/16x16/types/image.png) !important;
+}
+.ico-image-jpg {
+	background-image: url(../../images/16x16/types/image.png) !important;
+}
+.ico-image-jpeg {
+	background-image: url(../../images/16x16/types/image.png) !important;
+}
+.ico-image-bmp {
+	background-image: url(../../images/16x16/types/image.png) !important;
+}
+.ico-image-gif {
+	background-image: url(../../images/16x16/types/image.png) !important;
+}
+.ico-text {
+	background-image: url(../../images/16x16/types/text.png) !important;
+}
+.ico-text-plain {
+	background-image: url(../../images/16x16/types/text.png) !important;
+}
+.ico-txt {
+	background-image: url(../../images/16x16/types/text.png) !important;
+}
+.ico-text-html {
+	/*background-image: url(../../images/16x16/types/text-html.png) !important;*/
+	background-image: url(../../images/icons-feng-3/16x16/doc.png) !important;
+}
+.ico-text-xml {
+	background-image: url(../../images/16x16/types/text-xml.png) !important;
+}
+.ico-video {
+	background-image: url(../../images/16x16/types/video.png) !important;
+}
+.ico-webfile {
+	background-image: url(../../images/16x16/types/webfile.png) !important;
+}
+
+
+.ico-large-unknown {
+	background-image: url(../../images/48x48/types/unknown.png) !important;
+}
+/*.ico-large-milestone {
+	background-image: url(../../images/48x48/types/milestone.png) !important;
+}
+.ico-large-email {
+	background-image: url(../../images/48x48/types/email.png) !important;
+}
+.ico-large-emailunclassified {
+	background-image: url(../../images/48x48/types/classify.png) !important;
+}
+.ico-large-weblink, .ico-large-webpage {
+	background-image: url(../../images/48x48/types/webpage.png) !important;
+}
+.ico-large-task {
+	background-image: url(../../images/48x48/types/task.png) !important;
+}
+.ico-large-event {
+	background-image: url(../../images/48x48/types/event.png) !important;
+}
+.ico-large-contact {
+	background-image: url(../../images/48x48/types/contact.png) !important;
+}
+.ico-large-company {
+	background-image: url(../../images/48x48/types/company.png) !important;
+}
+.ico-large-message {
+	background-image: url(../../images/48x48/types/message.png) !important;
+}
+.ico-large-file {
+	background-image: url(../../images/48x48/types/file.png) !important;
+}
+.ico-large-user {
+	background-image: url(../../images/48x48/types/user.png) !important;
+}*/
+
+.ico-large-application {
+	background-image: url(../../images/48x48/types/application.png) !important;
+}
+.ico-large-application-pdf {
+	background-image: url(../../images/48x48/types/application-pdf.png) !important;
+}
+.ico-large-application-vnd_ms-excel, .sprd {
+	background-image: url(../../images/48x48/types/application-vnd.ms-excel.png) !important;
+}
+.ico-large-application-vnd_ms-powerpoint, .prsn {
+	background-image: url(../../images/48x48/types/application-vnd.ms-powerpoint.png) !important;
+}
+.ico-large-application-vnd_ms-word, .ico-large-application-msword, .txt {
+	background-image: url(../../images/48x48/types/application-vnd.ms-word.png) !important;
+}
+.ico-large-application-xspf+xml {
+	background-image: url(../../images/48x48/types/application-xspf+xml.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_chart {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.chart.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_database {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.database.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_formula {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.formula.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_graphics {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.graphics.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_image {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.image.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_presentation {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.presentation.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_presentation-template {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.presentation-template.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_spreadsheet {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.spreadsheet.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_spreadsheet-template {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.spreadsheet-template.png) !important;
+}
+.ico-large-application-vnd_oasis_opendocument_text {
+	background-image: url(../../images/48x48/types/application-vnd.oasis.opendocument.text.png) !important;
+}
+.ico-large-application-vnd_openxmlformats-officedocument_spreadsheetml_sheet {
+	background-image: url(../../images/48x48/types/application-vnd.openxmlformats-officedocument.spreadsheetml.sheet.png) !important;
+}
+.ico-large-application-vnd_openxmlformats-officedocument_wordprocessingml_document {
+	background-image: url(../../images/48x48/types/application-vnd.openxmlformats-officedocument.wordprocessingml.document.png) !important;
+}
+.ico-large-application-vnd_rn-realmedia {
+	background-image: url(../../images/48x48/types/video.png) !important;
+}
+.ico-large-application-x-zip-compressed {
+	background-image: url(../../images/48x48/types/application-zip.png) !important;
+}
+.ico-large-application-zip {
+	background-image: url(../../images/48x48/types/application-zip.png) !important;
+}
+.ico-large-audio {
+	background-image: url(../../images/48x48/types/audio.png) !important;
+}
+.ico-large-image {
+	background-image: url(../../images/48x48/types/image.png) !important;
+}
+.ico-large-image-jpg {
+	background-image: url(../../images/48x48/types/image.png) !important;
+}
+.ico-large-image-jpeg {
+	background-image: url(../../images/48x48/types/image.png) !important;
+}
+.ico-large-image-bmp {
+	background-image: url(../../images/48x48/types/image.png) !important;
+}
+.ico-large-image-gif {
+	background-image: url(../../images/48x48/types/image.png) !important;
+}
+.ico-large-text {
+	background-image: url(../../images/48x48/types/text.png) !important;
+}
+.ico-large-text-plain {
+	background-image: url(../../images/48x48/types/text.png) !important;
+}
+.ico-large-txt {
+	background-image: url(../../images/48x48/types/text.png) !important;
+}
+.ico-large-text-html {
+	background-image: url(../../images/48x48/types/text-html.png) !important;
+}
+.ico-large-text-xml {
+	background-image: url(../../images/48x48/types/text-xml.png) !important;
+}
+.ico-large-video {
+	background-image: url(../../images/48x48/types/video.png) !important;
+}
+.ico-large-webfile {
+	background-image: url(../../images/48x48/types/webfile.png) !important;
+}
+
+
+}

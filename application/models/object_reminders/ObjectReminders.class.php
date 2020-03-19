@@ -52,10 +52,9 @@ class ObjectReminders extends BaseObjectReminders {
 		}
 		$yesterday = DateTimeValueLib::now();
 		$yesterday = $yesterday->add('d', -1);
-		
-		$template_cond = " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=object_id) NOT IN (
+		/*$template_cond = " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=object_id) NOT IN (
 				SELECT ot.id FROM ".TABLE_PREFIX."object_types ot WHERE ot.name IN ('template_task','template_milestone')
-		)";
+		)";*/
 		
 		return ObjectReminders::findAll(array(
 			'conditions' => array(

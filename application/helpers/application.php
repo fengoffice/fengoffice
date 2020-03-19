@@ -442,11 +442,11 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 		$properties = null;
 		/*$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
 		Hook::fire('override_render_properties', $params, $properties);*/
-                $ot = ObjectTypes::findById($object->getObjectTypeId());
-                if ($ot->getType() != 'content_object') {
-                    $params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
-                    Hook::fire('override_render_properties', $params, $properties);
-                }
+		$ot = ObjectTypes::findById($object->getObjectTypeId());
+		if ($ot->getType() != 'content_object') {
+			$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
+			Hook::fire('override_render_properties', $params, $properties);
+		}
 
         if (is_null($properties)) {
 			$properties = array();
@@ -1292,7 +1292,7 @@ function filter_assigned_to_select_box($list_name, $project = null, $selected = 
  * Renders context help in a view, only if description_key is a valid lang.
  * If helpTemplate is null, default template is used
  *
- * @param $view View where the context help will be placed
+ * @param $view string View where the context help will be placed
  * @param string $description_key Key of the description to show, if not exists help will not be shown.
  * @param string $option_name
  * @param string $helpTemplate
@@ -1341,12 +1341,12 @@ function get_associated_dimensions_to_reload_json($dimension_id) {
 }
 
 /**
- * @param unknown_type $content_object_type_id
- * @param unknown_type $genid
- * @param unknown_type $selected_members
- * @param unknown_type $options
- * @param unknown_type $skipped_dimensions
- * @param unknown_type $simulate_required
+ * @param int $content_object_type_id
+ * @param string $genid
+ * @param array $selected_members
+ * @param array $options
+ * @param array $skipped_dimensions
+ * @param bool $simulate_required
  */
 function render_dimension_trees($content_object_type_id, $genid = null, $selected_members = null, $options = array(), $skipped_dimensions = null, $simulate_required = null) { 
 		if (is_numeric($content_object_type_id)) {
@@ -1571,11 +1571,15 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			if ($option_values[$ot_id] && trim($option_values[$ot_id]) != '') {
 				$option_decoded = json_decode($option_values[$ot_id], true);
 				
+				// use this tmp member object (with the raw data from the database) to prevent that the name has been overriden by previous iterations
+				$tmp_mem = Members::findById($member_id, true);
+				
 				$prop_values_array = array();
 				foreach ($option_decoded['properties'] as $col) {
 					$is_member_column = $member_data instanceof Member ? Members::instance()->columnExists($col) : array_key_exists($col, $member_data);
 					if ($is_member_column) {
-						$prop_values_array[] = $member_data instanceof Member ? $member_data->getColumnValue($col) : array_var($member_data, $col);
+						
+						$prop_values_array[] = $tmp_mem->getColumnValue($col);
 						
 					} else if (str_starts_with($col, "cp_")) {
 						$cp_id = str_replace("cp_", "", $col);
@@ -1960,8 +1964,8 @@ function render_single_bootstrap_dimension_tree($dimension, $genid = null, $sele
 
 /**
  * @param string  $str
- * @param lenght $length
- * @param end $end
+ * @param int $length
+ * @param int $end
  */
 function wrap_text($str, $length = 20, $end='...'){
 	if (function_exists('mb_strlen')) {
@@ -2030,6 +2034,9 @@ function render_widget_option_input($widget_option, $genid=null) {
 			break;
 		case 'BooleanConfigHandler' :
 			$output .= yes_no_widget($name, $genid.$name, $widget_option['value'], lang('yes'), lang('no'), null, array('onchange' => 'og.on_widget_radio_option_change(this);'));
+			break;
+		case 'ColorSelectorConfigHandler' :
+			$output .= render_color_selector($name, $widget_option['value'], $widget_option['widget']."_".$widget_option['option'], $genid);
 			break;
 		default: break;
 	}
@@ -2167,6 +2174,70 @@ function get_dates_for_date_range_config($data_saved) {
     
     
 }
+
+function get_timeslots_from_grid_parameters() {
+	$timeslots = null;
+
+	if (array_var($_GET, 'timeslot_ids')) {
+		// if user has selected some timeslots
+		$timeslot_ids = explode(',', array_var($_GET, 'timeslot_ids'));
+
+		$ids = array();
+		foreach ($timeslot_ids as $tid) {
+			if (is_numeric($tid)) $ids[] = $tid;
+		}
+
+		$timeslots = array();
+		if (count($ids) > 0) {
+			$timeslots = Timeslots::findAll(array('conditions' => "id IN (" . implode(',', $ids) . ")"));
+		}
+
+	} else if (array_var($_GET, 'all_timeslots')) {
+
+		$client_ot = ObjectTypes::findByName('customer');
+		$project_ot = ObjectTypes::findByName('project');
+		$client_ot_id = $client_ot instanceof ObjectType ? $client_ot->getId() : 0;
+		$project_ot_id = $project_ot instanceof ObjectType ? $project_ot->getId() : 0;
+
+		// if no timeslots selected, check if any client or project is selected
+		$active_context = active_context();
+
+		$client_or_project_ids = array();
+		foreach ($active_context as $selection) {
+			if ($selection instanceof Member) {
+				if (in_array($selection->getObjectTypeId(), array($client_ot_id, $project_ot_id))) {
+					$client_or_project_ids[] = $selection->getId();
+				}
+			}
+		}
+
+		if (count($client_or_project_ids) == 0) {
+
+			flash_error(lang('you need to be in a client or a project in order to perform this action'));
+			ajx_current("empty");
+			return;
+
+		} else {
+
+			// override some of the time list request variables
+			// the other parameters sent in the $_REQUEST variable are the time grid filters
+			$_REQUEST['limit'] = 999999999;
+			$_REQUEST['invoice_status_filter'] = 'pending';
+
+			// get the same timeslots that the list is showing, with the limit increased and invoicing_status=pending
+			$time_controller = new TimeController();
+			$timeslots = $time_controller->list_all(true);
+
+		}
+
+	} else {
+		return;
+	}
+
+	return $timeslots;
+}
+
+
 
     function create_contact_from_data($contact_data, $members_ids) {
         $members_ids = array_unique(array_filter($members_ids));

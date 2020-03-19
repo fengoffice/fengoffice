@@ -3,9 +3,7 @@
 /**
  * Abstract class that implements methods that share all content objects
  *
- *
- * @version 1.0
- * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
+ * @author FengOffice
  */
 abstract class ContentDataObject extends ApplicationDataObject {
 	
@@ -144,12 +142,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @return string 
 	 */
 	function getObjectTypeId() {
-		return $this->object->getObjectTypeId();
+		return $this->object ? $this->object->getObjectTypeId() : '';
 	} // getObjectTypeId()
 	
 	
 	function getObjectTypeName(){
-		return $this->object->getObjectTypeName();
+		return $this->object ? $this->object->getObjectTypeName() : '';
 	}// getObjectTypeName()
 	
 
@@ -173,7 +171,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @return string 
 	 */
 	function getObjectName() {
-		return $this->object->getName();
+		return $this->object ? $this->object->getName() : '';
 	} // getName()
 
 	function getName() {
@@ -1276,8 +1274,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if ($this instanceof Contact && ($this->isOwnerCompany() || $this->isAccountOwner()) ){
 			return false;
 		}
-		if(!isset($trashDate))
+		if (!$this->getObject() instanceof FengObject) {
+			return false;
+		}
+		if(!$trashDate instanceof DateTimeValue) {
 			$trashDate = DateTimeValueLib::now();
+		}
 		if ($this->getObject()->columnExists('trashed_on')) {
 			$this->getObject()->setColumnValue('trashed_on', $trashDate);
 		}
@@ -1675,6 +1677,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$total_worked_time = $this->calculateTotalWorkedTime();
 			$twt_column = array_var($params, 'total_worked_time_column');
 			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+			if ($this instanceof ProjectTask) $this->calculatePercentComplete();
 		}
 		return true;
 	}
@@ -1690,6 +1693,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$total_worked_time = $this->calculateTotalWorkedTime();
 			$twt_column = array_var($params, 'total_worked_time_column');
 			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+			if ($this instanceof ProjectTask) $this->calculatePercentComplete();
 		}
 		return true;
 	}
@@ -1705,6 +1709,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$total_worked_time = $this->calculateTotalWorkedTime();
 			$twt_column = array_var($params, 'total_worked_time_column');
 			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
+			if ($this instanceof ProjectTask) $this->calculatePercentComplete();
 		}
 		return true;
 	}
@@ -1718,7 +1723,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if ($this->allowsTimeslots()) {
 			
 			$sql = "SELECT (SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60)) as total_minutes 
-					FROM ".TABLE_PREFIX."timeslots ts WHERE ts.rel_object_id=".$this->getId();
+					FROM ".TABLE_PREFIX."timeslots ts 
+					INNER JOIN ".TABLE_PREFIX."objects o ON o.id=ts.object_id 
+					WHERE ts.rel_object_id=".$this->getId()." AND o.trashed_by_id=0";
 			
 			$row = DB::executeOne($sql);
 			return array_var($row, 'total_minutes');
@@ -1995,7 +2002,6 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 	
 
-
 	function addToRelatedMembers($members, $from_form = false){
 		$related_member_ids = array();
 		
@@ -2024,6 +2030,32 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$aconfig = $a->getConfig();
 				$classify_it = false;
 				$include_parents_in_query = false;
+				
+				// first of all: check if this object is already classified in a member of the associated dimension
+				// if so, then ignore this association, else continue with the process
+				$is_already_classified_in_assoc_dim = false;
+				// check in the members sent by the form
+				foreach ($members as $m) {
+					if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
+						$is_already_classified_in_assoc_dim = true;
+						break;
+					}
+				}
+				if (!$is_already_classified_in_assoc_dim) {
+					// check in the members of the object in the database
+					$object_members = $this->getMembers();
+					foreach ($object_members as $m) {
+						if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
+							$is_already_classified_in_assoc_dim = true;
+							break;
+						}
+					}
+				}
+				if ($is_already_classified_in_assoc_dim) {
+					$classify_it = false;
+					continue;
+				}
+				// --
 				
 				// classify only if 'autoclassify_in_property_member' option is set for this association
 				if (array_var($aconfig, 'autoclassify_in_property_member')) {

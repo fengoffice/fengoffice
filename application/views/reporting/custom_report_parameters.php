@@ -67,7 +67,7 @@
 						echo $cond_label;
 					}
 				?>&nbsp;</td>
-			<?php if(isset($cp)){ ?>
+			<?php if(isset($cp) && !in_array($cp->getType(), array('contact','user'))){ ?>
 				<td align='left'>
 					<?php if($cp->getType() == 'text' || $cp->getType() == 'numeric'){ ?>
 						<input type="text" id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId()."_".clean($cp->getName()) ?>]" tabindex=<?php echo $tiCount?>/>

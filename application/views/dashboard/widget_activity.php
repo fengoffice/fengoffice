@@ -45,7 +45,7 @@
 	$first = null;
 		
 	foreach ($activities as $act) {
-		$user = Users::findById($act->getCreatedById());
+		$user = Contacts::findById($act->getCreatedById());
 		$object = Objects::findObject($act->getRelObjectId());
 		if (!$user || !$object) continue;
 /*		if ($user && $object && $act->getAction() != 'login' && $act->getAction() != 'logout' 
@@ -71,13 +71,13 @@
 		$activity_data = $act->getActivityData();
 		
 		$act_data = array('avatar' => $avatar_url, 'date' => $date, 'act_data' => $activity_data);
-		
+	/*	
 		if ($act->getRelObjectManager() != 'Comments') {
 			$obj_wss = WorkspaceObjects::getWorkspacesByObject($act->getRelObjectManager(), $act->getRelObjectId());
 		} else {
 			$obj_wss = WorkspaceObjects::getWorkspacesByObject(get_class($object->getObject()->manager()), $object->getObject()->getId());
 		}
-		
+	*/	
 		$object_ws = null;
 		$break = false;
 		foreach ($obj_wss as $obj_ws) {

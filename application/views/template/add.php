@@ -198,15 +198,16 @@ onsubmit="return og.submitTemplateForm();">
 			?>
 			var tt_ot = '<?php echo TemplateTasks::instance()->getObjectTypeId() ?>';
 			if (!og.template_obj_properties[tt_ot]) og.template_obj_properties[tt_ot] = {properties: []};
-			
-			og.template_obj_properties[tt_ot].properties.push({
+
+ 			og.template_obj_properties[tt_ot].properties.push({
 				id: '<?php echo $prop['id'] ?>',
-				name: '<?php echo lang('field ProjectTasks '.$prop['id']) ?>',
+				name: '<?php echo $prop['name'] ?>',
 				type: '<?php echo $prop['type'] ?>'
-			});
+ 			});
+			
 			<?php 
 		}
-		
+				
 		foreach ($template_mile_props as $prop) {
 			?>
 			var tm_ot = '<?php echo TemplateMilestones::instance()->getObjectTypeId() ?>';
@@ -230,12 +231,8 @@ onsubmit="return og.submitTemplateForm();">
 		if ($companies_to_assign && array_var($companies_to_assign, 'companies')) { ?>
 			og.template_allowed_users_to_assign = Ext.util.JSON.decode('<?php echo escape_character(json_encode($companies_to_assign['companies']))?>');
 	<?php 
-		} ?>
-
-
-
-
-	<?php 
+		} 
+		
 	if (is_array($objects)) {	
 		foreach ($objects as $o) {	?>			
 			og.redrawTemplateObjectsLists(<?php echo json_encode($o)?>);			

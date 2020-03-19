@@ -28,7 +28,7 @@ og.TasksTopToolbar = function(config) {
 									og.openLink(url);
 								}else{
 									og.render_modal_form('', {c:'template', a:'instantiate_parameters', params: {id: tid}, 
-										overlayClose:false, escClose:false, hideCloseIcon:true
+										overlayClose:false, escClose:false, hideCloseIcon:false
 									});
 								}
 							}

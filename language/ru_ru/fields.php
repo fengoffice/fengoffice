@@ -244,4 +244,6 @@
 	'field ProjectTasks percent_completed' => 'Процентов завершено',
 	'field ProjectTasks original_task_id' => 'Первоначальный идентификатор задачи',
 	'field Contacts is_company' => 'Компания',
+	'field ProjectTasks total_worked_time' => 'Общее отработанное время',
+	'field Objects total_worked_time' => 'Общее отработанное время',
 ); ?>

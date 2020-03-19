@@ -452,4 +452,5 @@
 	'start date cannot be greater than due date' => 'La fecha de inicio no puede ser mayor a la fecha de fin',
     'link task'=>'Vincular tarea',
 	'repeat by date warning' => 'Es necesario especificar la fecha de inicio o fecha límite para poder configurar esta tarea como repetitiva',
+	'pick a color' => 'Seleccione un color',
 );

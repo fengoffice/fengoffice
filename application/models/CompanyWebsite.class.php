@@ -135,7 +135,8 @@ final class CompanyWebsite {
                     	'token' => $contact->getToken(), 
                     	'username' => $contact->getUsername(),
                     	'user_id' =>  $contact->getId(),
-                    	'company' => owner_company()->getName()
+                    	'company' => owner_company()->getName(),
+                    	'tz_offset' => $contact->getUserTimezoneValue()
                     );
                     echo json_encode($temp);
                     exit;

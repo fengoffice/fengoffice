@@ -7,8 +7,7 @@
   * @author Ilija Studen <ilija.studen@gmail.com>
   */
 
-  return array(
-  
+return array(  
     // Empty, dnx et
     'object dnx' => 'The object does not exist',
     'no mail accounts set' => 'There are no email accounts through which to send an email, please create an email account first',
@@ -777,24 +776,26 @@
   	'cannot delete file' => 'You don\'t have permissions to delete file \'{0}\'',
     'config_start_calc'=>'Move the start date/time',
     'config_end_calc'=>'Move the end date/time',
-      'config_dates_calc'=>'Move the dates',
-      'config_hours_calc'=>'Change the times',
+    'config_dates_calc'=>'Move the opposite date (keep the same input time)',
+    'config_hours_calc'=>'Change the worked time',
     'always_show_modal'=>'Ask me every time',
-      'How should we adjust'=>'How should we adjust?',
-      'Did you start sooner'=>'Did you start sooner?',
-      'Did you end later'=>'Did you end later?',
-      'You changed the length of your time record'=>'You changed the length of your time record',
-      'Did you start later'=>'Did you start later?',
-      'Did you end sooner'=>'Did you end sooner?',
+    'How should we adjust'=>'How should we adjust?',
+    'Did you start sooner'=>'Did you start sooner?',
+    'Did you end later'=>'Did you end later?',
+    'You changed the length of your time record'=>'You changed the length of your time record',
+    'You changed a date in your time record'=>'You changed a date in your time record',
+    'Did you start later'=>'Did you start later?',
+    'Did you end sooner'=>'Did you end sooner?',
 
-      'How do you prefer' => 'How do you prefer?',
+    'What do you prefer' => 'What do you prefer?',
 
-      'Did you want change the date value'=>'Did you want change the date value?',
-      'Did you want change the time value'=>'Did you want change the time value?',
+    'Did you want change the date value'=>'Did you want change the date value?',
+    'Did you want change the time value'=>'Did you want change the time value?',
 
-      'Remember my selection' => 'Remember my selection',
-      'accept'=>'Accept',
-      'not classified here'=>'Not classified here',
-  ); // array
+    'Remember my selection' => 'Remember my selection',
+    'accept'=>'Accept',
+    'not classified here'=>'Not classified here',
+    
+); // array
 
 ?>

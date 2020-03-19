@@ -4,8 +4,15 @@ Hook::register ( "workspaces" );
 function workspaces_total_task_timeslots_group_by_criterias($args, &$ret) {
 	$wdimension = Dimensions::findByCode ( 'workspaces' );
 	$tdimension = Dimensions::findByCode ( 'tags' );
-	$ret[] = array('val' => 'dim_'.$wdimension->getId(), 'name' => $wdimension->getName());
-	$ret[] = array('val' => 'dim_'.$tdimension->getId(), 'name' => $tdimension->getName());
+	
+	$enabled_dimension_ids = config_option('enabled_dimensions');
+	
+	if (in_array($wdimension->getId(), $enabled_dimension_ids)) {
+		$ret[] = array('val' => 'dim_'.$wdimension->getId(), 'name' => $wdimension->getName());
+	}
+	if (in_array($tdimension->getId(), $enabled_dimension_ids)) {
+		$ret[] = array('val' => 'dim_'.$tdimension->getId(), 'name' => $tdimension->getName());
+	}
 }
 
 
@@ -27,9 +34,7 @@ function workspaces_custom_reports_additional_columns($args, &$ret) {
 	}
 }
 
-//stech - remove first def of column for php7
-//function workspaces_total_tasks_times_csv_columns($cols, &$cols) {
-function workspaces_total_tasks_times_csv_columns(&$cols) {
+function workspaces_total_tasks_times_csv_columns($ignored, &$cols) {
 
 	$dimension = Dimensions::findByCode('workspaces');
 	$cols[] = $dimension->getName();

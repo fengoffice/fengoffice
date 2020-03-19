@@ -36,7 +36,7 @@
     * @param string $var Variable name
     * @param string $value Variable value
     * @return null
-    * @throws InvalidInstanceException
+    * @throws Exception
     */
     public function set($var, $value) {
       
@@ -45,7 +45,7 @@
       
       // Check value instance...
       if(!($value instanceof $class)) {
-        throw new InvalidInstanceException('$value', $value, $class);
+        throw new Exception('$value', $value, $class);
       } // if
       
       // Set var...

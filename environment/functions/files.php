@@ -50,7 +50,7 @@ function file_is_writable($path) {
  * @access public
  * @param string $file
  * @param integer $line
- * @param midex $default Returned if file or line does not exists
+ * @param mixed $default Returned if file or line does not exists
  * @return string
  */
 function get_file_line($file, $line, $default = null) {

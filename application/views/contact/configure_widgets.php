@@ -33,13 +33,19 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'top') continue;
 				$altRow = $altRow == '' ? 'odd' : '';
+				$title = Localization::instance()->lang_exists($widget['title']) ? lang($widget['title']) : $widget['title'];
+				
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
-				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
+				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo $title ?>
 				<?php if (is_array(array_var($widget, 'options')) && count(array_var($widget, 'options')) > 0) {
 						foreach ($widget['options'] as $option) {
 				?><div style="padding-left:30px;padding-top:5px;" class="option"><?php 
-					echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					if ($option['option'] == 'color') {
+						echo '- '.lang('color') . ": ";
+					} else {
+						echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					}
 					echo render_widget_option_input($option);
 				?></div>
 				<?php 	}
@@ -71,13 +77,18 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'left') continue;
 				$altRow = $altRow == '' ? 'odd' : '';
+				$title = Localization::instance()->lang_exists($widget['title']) ? lang($widget['title']) : $widget['title'];
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
-				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
+				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo $title ?>
 				<?php if (is_array(array_var($widget, 'options')) && count(array_var($widget, 'options')) > 0) {
 						foreach ($widget['options'] as $option) {
 				?><div style="padding-left:30px;padding-top:5px;" class="option"><?php 
-					echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					if ($option['option'] == 'color') {
+						echo '- '.lang('color') . ": ";
+					} else {
+						echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					}
 					echo render_widget_option_input($option);
 				?></div>
 				<?php 	}
@@ -109,13 +120,18 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'right') continue;
 				$altRow = $altRow == '' ? 'odd' : '';
+				$title = Localization::instance()->lang_exists($widget['title']) ? lang($widget['title']) : $widget['title'];
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
-				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
+				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo $title ?>
 				<?php if (is_array(array_var($widget, 'options')) && count(array_var($widget, 'options')) > 0) {
 						foreach ($widget['options'] as $option) {
 				?><div style="padding-left:30px;padding-top:5px;" class="option"><?php 
-					echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					if ($option['option'] == 'color') {
+						echo '- '.lang('color') . ": ";
+					} else {
+						echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					}
 					echo render_widget_option_input($option);
 				?></div>
 				<?php 	}
@@ -147,13 +163,18 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 			foreach ( $widgets_info as $widget ) : 
 				if ($widget['section'] != 'none') continue;
 				$altRow = $altRow == '' ? 'odd' : '';
+				$title = Localization::instance()->lang_exists($widget['title']) ? lang($widget['title']) : $widget['title'];
 			?>
 			<tr class="<?php echo ($widget['section'] != 'none'?'enabled':'disabled')." $altRow"?>">
-				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo lang($widget['title'])?>
+				<td><span style="padding:1px 0 3px 18px;" class="db-ico <?php echo $widget['icon']?>"></span><?php echo $title?>
 				<?php if (is_array(array_var($widget, 'options')) && count(array_var($widget, 'options')) > 0) {
 						foreach ($widget['options'] as $option) {
 				?><div style="padding-left:30px;padding-top:5px;" class="option"><?php 
-					echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					if ($option['option'] == 'color') {
+						echo '- '.lang('color') . ": ";
+					} else {
+						echo '- '.lang('widget_'.$option['widget'].'_'.$option['option']) . ": ";
+					}
 					echo render_widget_option_input($option);
 				?></div>
 				<?php 	}

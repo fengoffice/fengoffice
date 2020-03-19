@@ -23,8 +23,17 @@
 		return $this->plugin ;
 	}
 	
+	function getTitle() {
+		$name = $this->getColumnValue('title');
+		Hook::fire('override_widget_name', $this, $name);
+		return $name;
+	}
+	
 	function getPath() {
 		$name = $this->getName();
+		if (strpos($name, "|") !== false) {
+			$name = substr($name, 0, strpos($name, "|"));
+		}
 		if ($this->path) {
 			return $this->path;
 		}elseif (parent::getPath()) {
@@ -51,6 +60,18 @@
 		}
 	}
 	
+	function getContactOptionValue($option_name) {
+		$option = ContactWidgetOptions::instance()->getContactOption($this->getName(), logged_user()->getId(), $option_name);
+		if (empty($option)) {
+			$option = ContactWidgetOptions::instance()->getDefaultOption($this->getName(), $option_name);
+		}
+		
+		$value = '';
+		if (!empty($option)) {
+			$value = $option['value'];
+		}
+		return $value;
+	}
 	
 	function getContactWidgetSettings($contact) {
 		if (!$contact instanceof Contact) $contact = logged_user();

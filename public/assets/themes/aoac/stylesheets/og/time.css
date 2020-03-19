@@ -1,0 +1,207 @@
+.TMTimespanHeader {
+	font-size:120%;
+	font-weight:bold;
+	color:white;
+	width:100%;
+	background-color:#80AEF0;
+}
+
+.TMTimespanEditHeader {
+	font-size:120%;
+	font-weight:bold;
+	color:white;
+	width:100%;
+	background-color:#BF9715;
+}
+
+.TMActiveTasksHeader {
+	font-size:120%;
+	font-weight:bold;
+	color:white;
+	width:100%;
+	background-color:#F7CD4D;
+	padding:3px 7px;
+}
+
+.TMTimespanAddNew {
+	color:#333;
+	background-color: #DAE3F0;
+	width:100%;
+	float:left;
+}
+
+.TMTimespanAddNew .selector-body, .TMTimespanEdit .selector-body{
+	width: 170px!important;
+	margin-bottom: 4px;
+}
+
+.TMTimespanAddNew .member-name-input, .TMTimespanEdit .member-name-input{
+	width: 145px!important;
+}
+
+.TMTimespanEdit .submit-btns{
+	/*clear: left;*/
+}
+
+.TMTimespanSelectorHeight {
+	height: 50px;
+}
+
+
+.TMTimespanDesc {
+	overflow-y: auto; 
+	word-wrap: break-word; 
+	tabindex:250; 
+	display:inline-block; 
+	border: solid 1px #CCCCCC; 
+	min-height: 35px; 
+	max-height: 12em;
+	width: 100%;
+	background: white;
+}
+
+.TMTimespanDesc:focus {
+	outline: 0;
+	border: solid 1px black; 
+}
+
+.TMTimespanRealSelector {
+	/*height: 22px !important;*/	
+}
+
+.TMTimespanEdit {
+	color:#333;
+	background-color: #FFF7C8;
+	width:100%;
+	float:left;
+}
+
+.TMTimespanContents {
+	color:#666;
+}
+
+.TMActiveTasksContents {
+	color:#666;
+}
+
+.TMTimespanEdit select, .TMTimespanAddNew select {
+	/*height: 21px;*/
+}
+
+.TMTimespanEdit .context-switcher {
+	disply:block;	 
+}
+
+.context-switcher .context-header {
+	margin-bottom: 5px;
+}
+.context-switcher .context-header label {
+	cursor: pointer ;	 
+	text-decoration: underline;	
+	color: #003562;
+	display: inline;
+}
+
+.time-breadcrumb-container{
+    display: inline;
+    line-height: 30px;
+    float: left;
+    width: 200px;
+    height: 100%;
+    min-height: 10px;
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}
+
+
+.x-grid3-row.open-timeslot, .x-grid3-row.open-timeslot.x-grid3-row-over {
+	background: #FDFFCC;
+}
+.x-grid3-row.open-timeslot .task-single-div, .x-grid3-row.open-timeslot .task-action-icon {
+	display: inline-block;
+}
+.x-grid3-row.open-timeslot .open-ts-clock {
+	float: left;
+	margin-top: 6px;
+	margin-right: 5px;
+	font-weight: bold;
+}
+
+
+.x-grid3-row.quick-add-row, .x-grid3-row.quick-add-row.x-grid3-row-over {
+	background: #d6ecd6;
+}
+.x-grid3-col.x-grid3-cell button.add-first-btn.blue:focus {
+	background-color: #2d62ac;
+}
+.x-grid3-col.x-grid3-cell button.add-first-btn {
+	height: 26px;
+	padding-right: 4px;
+	padding-left: 22px;
+	background-position: 2px center;
+	background-repeat: no-repeat;
+	min-width: 50px;
+	font-size: 13px;
+}
+.timeslot .dataBlock textarea{
+    white-space: pre;
+    white-space: pre-wrap;
+}
+
+.add-timeslot{}
+.add-timeslot a{text-decoration: underline;}
+.add-timeslot .coInputMainBlock label{min-width: 130px;}
+.add-timeslot .coInputMainBlock .input-container label{width: 130px;}
+.add-timeslot .coInputMainBlock .dataBlock .inputHours{width: 40px;text-indent: 3px;}
+.add-timeslot .coInputMainBlock .dataBlock .inputMinutes{width: 28px;text-indent: 1px;}
+.add-timeslot .coInputMainBlock .dataBlock .specify-link{margin-left: 15px;}
+.add-timeslot .coInputMainBlock .dataBlock.dataBlockRight{float: left;margin-left:15px;margin-bottom: 0px;}
+.add-timeslot .coInputMainBlock .dataBlock.dataBlockRight label{min-width: 125px;}
+.add-timeslot .coInputMainBlock .dataBlock #date_input{width: 80px !important;}
+.add-timeslot .coInputMainBlock .dataBlock #date_end_input{width: 80px !important;}
+.add-timeslot .coInputMainBlock .dataBlock textarea{width: 552px;}
+
+
+#user-config{padding: 10px;} 
+#user-config h2{font-size: 18px;margin-bottom: 10px;}
+#user-config .row{
+    padding:  5px 0px;
+    font-size:  16px;
+    line-height:  13px;
+}
+#user-config .row input{
+    margin-right: 10px;
+}
+
+#user-config button.submit{margin-left: 10px;}
+#user-config button.submit.add{
+    background-color: #4d82cc;
+    border-color: #5d92dc;
+    color: #fff;
+}
+
+.add-timeslot .dataBlock .og-add-template-object{
+    max-width: 500px;
+}
+
+.add-timeslot .template-object-actions .name{
+    display: inline-block;
+    min-width: 100px;
+    margin: 0px;
+    padding: 0px;
+    vertical-align: middle;
+    padding-left: 24px;
+    max-width: 250px;
+    width: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.add-timeslot .template-object-actions .coViewAction{padding: 2px 0pt 2px 20px;}
+
+
+.object-grid.x-grid-panel .x-grid3-cell-inner.x-grid3-col-description {
+	white-space: pre-wrap;
+	line-height: 16px;
+}

@@ -88,6 +88,28 @@ final class ScriptUpgrader {
 				return;
 			}
 			
+			// Check if config has "mysql" as db adapter, if so then change it to "mysqli"
+			$config_file_handle = fopen(INSTALLATION_PATH . '/config/config.php', 'r');
+			$update_config_contents = false;
+			if ($config_file_handle) {
+				$all_config_lines = "";
+				while ((($line = fgets($config_file_handle)) !== false)) {
+					if (strpos($line, 'DB_ADAPTER') !== false) {
+						if (strpos($line, '"mysql"') !== false || strpos($line, "'mysql'") !== false) {
+							$update_config_contents = true;
+							$line = str_replace('mysql', 'mysqli', $line);
+						}
+					}
+					$all_config_lines .= $line;
+				}
+				fclose($config_file_handle);
+			}
+			if ($update_config_contents) {
+				file_put_contents(INSTALLATION_PATH . '/config/config.php', $all_config_lines);
+				$this->printMessage('Updated DB_ADAPTER setting to mysqli in config/config.php');
+			}
+			// --
+			
 			// include config file
 			$config_is_set = @include_once INSTALLATION_PATH . '/config/config.php';
 			if (!$config_is_set) {

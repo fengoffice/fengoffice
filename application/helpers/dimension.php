@@ -673,3 +673,23 @@ function get_associated_dimensions($dimension_id,$object_type_id,$associated_id)
     }
 
 }
+
+
+
+
+
+function get_object_members_by_type($object, $object_type_id) {
+	if (!$object instanceof ContentDataObject) return array();
+
+	$result = array();
+	
+	$members = $object->getMembers();
+	foreach ($members as $m) {
+		if ($m->getObjectTypeId() == $object_type_id) {
+			$result[] = $m;
+		}
+	}
+	
+	return $result;
+}
+

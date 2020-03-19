@@ -59,6 +59,8 @@ class MoreController extends ApplicationController {
 			case 'status':
 				$order_sql = "ORDER BY c.disabled $order_dir, c.first_name ASC, c.surname ASC";
 				break;
+			case 'email':
+				$order_sql = "ORDER BY c_emails.email_address $order_dir, c.first_name ASC, c.surname ASC";
 			default:
 				$order_sql = "ORDER BY c.first_name $order_dir, c.surname $order_dir";
 		}
@@ -83,11 +85,12 @@ class MoreController extends ApplicationController {
 		Hook::fire('user_and_groups_additional_filters_query', array('params' => $_GET), $filter_conditions);
 		
 		$columns_sql = "c.object_id, c.first_name, c.surname, c.last_activity, p.name as role, c.disabled,
-					comp.first_name as comp_fname, comp.surname as comp_surname, c.picture_file_small";
+		c_emails.email_address, comp.first_name as comp_fname, comp.surname as comp_surname, c.picture_file_small";
 		
 		$main_sql = "FROM ".TABLE_PREFIX."contacts c
 				INNER JOIN ".TABLE_PREFIX."permission_groups p ON p.id=c.user_type
 				LEFT JOIN ".TABLE_PREFIX."contacts comp ON comp.object_id=c.company_id
+				LEFT JOIN ".TABLE_PREFIX."contact_emails c_emails ON c_emails.contact_id=c.object_id AND c_emails.is_main=1
 				WHERE c.user_type>0 $filter_conditions";
 		
 		$order_limit_sql = "
@@ -105,10 +108,10 @@ class MoreController extends ApplicationController {
 			foreach ($rows as $r) {
 				$dtval = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $r['last_activity']);
 				$picture_url = trim($r['picture_file_small'])!='' ? get_url('files', 'get_public_file', array('id' => $r['picture_file_small'])) : get_image_url('default-avatar.png');
-				
 				$users_data[] = array(
 						'object_id' => $r['object_id'],
 						'name' => trim($r['first_name'].' '.$r['surname']),
+						'email' => $r['email_address'],
 						'role' => $r['role'],
 						'last_activity' => format_datetime($dtval),
 						'company' => trim($r['comp_fname'].' '.$r['comp_surname']),

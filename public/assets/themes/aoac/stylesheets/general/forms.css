@@ -1,0 +1,732 @@
+label {
+ /* margin: 3px 0;
+  font-weight: bolder;*/
+  display: block;
+}
+
+label.checkbox, label.yes_no {
+  display: inline;
+  /*position: static;
+  top: -2px;
+  margin-left: 5px;*/
+  position: relative;
+  top: -2px;
+  cursor: pointer;
+}
+
+label.checkbox, label.yes_no {
+  top: 1px;
+}
+
+label.yes_no {
+  font-weight: normal;
+}
+
+span.label_required {
+  color: red;
+}
+
+input, textarea, select {
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  padding: 3px;
+  font-size: 13px;
+  background: white;
+  margin: 0;
+}
+
+select {
+  padding: 2px;
+}
+
+input:hover, textarea:hover, select:hover {
+  border: 1px solid deepskyblue;
+}
+
+input:focus, textarea:focus, select:focus {
+  border: 1px solid black;
+}
+
+fieldset {
+  margin: 10px 0;
+  padding: 10px;
+  padding-top: 5px;
+  border: 1px solid #ccc;
+}
+
+fieldset .inputfs{
+  width: 530px;
+}
+
+fieldset legend {
+  font-size: 120%;
+  font-weight: bolder;
+}
+
+/*input { width: 200px; }*/
+input.short { width: 50px; }
+input.medium { width: 150px; }
+input.long { width: 97%; /*99%;*/ }
+input.title { width: 530px; }
+
+.coInputName input.title {
+	width: 530px;
+	height: 28px;
+	font-size: 130%;
+}
+.coInputName input.title.short, .simplemodal-data .coInputHeader .coInputName input.title.short {
+	width: 200px;
+}
+
+textarea.textfield {
+	height: 15px !important;
+	overflow: hidden;
+}
+
+input.checkbox, input.yes_no {
+  border: 0;
+  width: auto;
+  background: transparent;
+}
+
+legend label.checkbox {
+  font-weight: bolder;
+}
+
+textarea.long {
+  width: 67%; /* 99% */
+  height: 60px;
+}
+
+textarea.huge {
+  width: 97%; /* 99% */
+  height: 180px;
+}
+
+textarea.short {
+  width: 360px;
+  height: 70px;
+}
+
+textarea.shortTags {
+  width: 200px;
+  height: 16px;
+}
+
+textarea.comment {
+  width: 488px;
+  height: 150px;
+}
+
+textarea.editor {
+  width: 97%;/*99%;*/
+  height: 300px;
+}
+
+button.submit, button[reset].submit {
+  margin-top: 10px;
+  padding: 5px 10px;
+  font-size: 18px;
+  height: 36px;
+  cursor: pointer;
+  background: none repeat scroll 0 0 #f8f8f8;
+  border-color: #c4c4c4;
+  border-radius: 2px;
+  border-style: solid; 
+  border-width: 1px;
+  color: #333;
+  box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
+  -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+  -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+}
+
+.ui-widget button {
+	font-size: 18px !important;
+}
+
+button.submit:HOVER, button[reset].submit:HOVER {
+  background: none repeat scroll 0 0 #f0f0f0; 
+}
+
+.coInputHeader .coInputButtons button.submit,
+.coInputMainBlock button.submit,
+.adminConfiguration .adminMainBlock button.submit,
+button.tasksActionsBtn.tasksBtn.addBtn,
+button.x-btn-text.blue,
+#mails-panel button.x-btn-text.mail.blue,
+button.submit.blue, 
+button.add-first-btn.blue {
+	background-color: #4d82cc;
+	border-color: #5d92dc;
+	color: #fff;
+}
+button.add-new-user-btn {
+	background-position: left 5px center!important;
+	margin: 3px!important;
+}
+
+.coInputHeader .coInputButtons button.submit.disabled,
+.coInputHeader .coInputButtons button.submit.disabled:hover {
+	background-color: #ddd;
+    color: #999;
+    border: 1px solid #ccc;
+}
+
+.coInputHeader .coInputButtons button.submit:hover,
+.coInputMainBlock button.submit:hover, 
+.adminConfiguration .adminMainBlock button.submit:hover,
+button.tasksActionsBtn.tasksBtn.addBtn:hover,
+button.x-btn-text.blue:hover,
+#mails-panel button.x-btn-text.mail.blue:hover,
+button.submit.blue:hover, 
+button.add-first-btn.blue:hover {
+	background-color: #5d92dc;
+}
+
+.x-toolbar.x-small-editor button.add-first-btn {
+	height: 26px;
+	padding-right: 4px;
+    padding-left: 22px;
+	background-position-x: 2px;
+	min-width: 50px;
+}
+
+
+/*Buttons common*/
+.btn {
+	width: auto;
+	height: auto;
+    vertical-align: middle;
+    font-size: 18px;
+	float: left;
+	cursor: pointer;	
+	background: none repeat scroll 0 0 #f8f8f8;
+    border-color: #c4c4c4;
+    border-radius: 2px;
+    border-style: solid; 
+    border-width: 1px;
+    color: #333;
+    text-shadow: none;
+    box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
+    -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+    -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+    white-space: nowrap;
+}
+
+
+/*Buttons sizes*/
+.btn-lg{
+  padding: 10px 16px;
+  font-size: 18px;
+  line-height: 22px;
+  border-radius: 6px;
+}
+.btn-sm{
+  padding: 5px 10px;
+  padding-left: 4px;
+  font-size: 13px;
+  line-height: 1.26;
+  border-radius: 3px;
+}
+.btn-xs{
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 2px;
+}
+
+/*Buttons colors*/
+.btn-primary {
+  color: #ffffff;
+  background-color: #337ab7;
+  border-color: #2e6da4;
+}
+.btn-primary:focus,
+.btn-primary.focus {
+  color: #ffffff;
+  background-color: #286090;
+  border-color: #122b40;
+}
+.btn-primary:hover {
+  color: #ffffff;
+  background-color: #286090;
+  border-color: #204d74;
+}
+
+span.required {
+  color: red;
+}
+
+form div.formBlock {
+  margin: 10px 0 15px 0px;
+  padding: 0 0 0 10px;
+}
+
+form div.formBlock label {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+#formErrors {
+  background: red;
+  color: white;
+  padding: 5px 10px;
+}
+
+#formErrors ul li {
+}
+
+/** Options block, best to put it into fieldset **/
+
+.objectOption {
+  margin-top: 5px;
+}
+
+.objectOption .optionLabel {
+  float: left;
+  display: block;
+  width: 140px;
+}
+
+.objectOption .optionLabel label {
+  margin: 0;
+  padding: 0;
+}
+
+.objectOption div.optionControl {
+  margin-left: 140px;
+}
+
+.objectOption div.optionDesc {
+  clear: left;
+  font-size: 10px;
+  padding: 0 5px 5px 5px;
+  color: #333;
+}
+
+.fieldDescription {
+  clear: left;
+  font-size: 10px;
+  padding: 0 5px 5px 5px;
+  color: #333;
+}
+
+.textedit {
+	width: 100%;
+	height: 100%;
+	padding: 0px;
+	margin: 0px;
+	position: absolute;
+	border: 0px !important;
+}
+
+/** Permissions **/
+.permissionWrapper {
+	padding: 20px;
+}
+	
+.permissionHeader {
+	margin: 10px 20px;
+	border-bottom: 1px solid #AAAAAA;
+}
+
+.permissionHeader a {
+	margin-left: 10px;
+}
+
+.permissionHeader span {
+	margin-left: 10px;
+}
+
+.permissionMore {
+	margin: 10px 100px;
+}
+
+.permissionMore td {
+	padding: 2px 7px;
+}
+
+.checkBoxListItem {
+	width: 150px;
+	height: 20px;
+	padding-left: 10px;
+  	float: left;
+  	overflow: hidden;
+}
+
+a.button {
+	padding: 3px ;
+	border: 1px solid #CCC;
+    font-size: 11px;
+	color: #000 ;
+	font-weight: normal ;
+}
+
+
+/** QUICK FORMS **/
+#quick-form {
+	padding: 10px ;
+	border: 1px solid #CCC;
+	box-shadow: 0 0 16px 0 #CCC;
+	background: white ;
+	display:none;
+	position:absolute;
+	min-height: 15px ;
+	min-width: 30px;
+	color: #666 ;
+	z-index: 99999;
+	
+}
+
+#quick-form.menu {
+	padding: 0;
+	border: 1px solid #CCC;
+	box-shadow: 0 0 0 0 #CCC;
+	display:none;
+	position:absolute;
+	min-height: 15px;
+	min-width: 50px;
+	color: #666;
+	z-index: 99999;
+}
+#quick-form.menu #close_ico, #quick-form.menu #close_text {
+	display: none;
+}
+#quick-form.menu ul.quick-menu-list {
+	background: #EEE;
+}
+#quick-form.menu ul.quick-menu-list li.quick-menu-item {
+	padding: 5px 10px;
+}
+#quick-form.menu ul.quick-menu-list li.quick-menu-item:hover {
+	background-color: #d9d9d9;
+	cursor: pointer;
+}
+#quick-form.menu ul.quick-menu-list li.quick-menu-item a {
+	display: inline-block;
+	width: 100%;
+}
+
+
+#quick-form .close {
+    background: url("../../images/12x12/close-icon-1.png") 0 0 ;
+    cursor: pointer;
+    height: 12px;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    width: 12px;
+}
+
+#quick-form .close:hover {
+    background-position: 0 36px;
+}
+
+#quick-form div.action {
+	margin-top: 2px;
+}
+
+#quick-form a.more {
+	margin: 2px 0 0 5px;
+	float: right;
+}
+
+#quick-form input {
+	border-radius: 2px;
+	padding: 3px 5px ;
+	margin-bottom: 3px;
+	border: 1px solid #CCC;
+	clear: both ;
+}
+
+#quick-form input.x-form-text {
+	padding: 0 5px;
+	width: 75px!important;
+}
+
+#quick-form input[type=text], #quick-form input[type=email] {
+	width:95%;
+}
+
+#quick-form select {
+	clear: both ;
+}
+
+#quick-form .field {
+	margin-bottom: 0 ;
+}	
+
+#quick-form .access-data {	
+	padding: 0 ;
+}
+
+#quick-form a.more.coViewAction.ico-edit {
+	padding-top: 0px;
+}
+
+/** QUICK FORMS CONFIG**/
+#quick-form-config {
+	padding: 10px ;
+	border: 1px solid #CCC;
+	box-shadow: 0 0 16px 0 #CCC;
+	background: white ;
+	display:none;
+	position:absolute;
+	min-height: 15px ;
+	min-width: 30px;
+	color: #666 ;
+	z-index: 99999;
+	
+}
+
+#quick-form-config .close {
+    background: url("../../images/12x12/close-icon-1.png") 0 0 ;
+    cursor: pointer;
+    height: 12px;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    width: 12px;
+}
+
+#quick-form-config .close:hover {
+    background-position: 0 36px;
+}
+
+#quick-form-config a.more  {
+	margin: 10px 0 0 5px;
+	float: right;
+}
+
+#quick-form-config input  {
+	border-radius: 2px;
+	padding: 3px 5px ;
+	margin-bottom: 3px;
+	border: 1px solid #CCC;
+	clear: both ;
+}
+
+#quick-form-config select {
+	clear: both ;
+}
+
+#quick-form-config  .field {
+	margin-bottom: 0 ;
+}	
+
+#quick-form-config .access-data {	
+	padding: 0 ;
+}	
+
+.access-data {
+	padding: 10px ;
+}
+.access-data label.checkbox, .access-data input.checkbox {
+	float: left ;	 
+	clear: none !important;
+}
+.access-data .password, .access-data .repeat {
+	float:left; 
+	margin-right: 10px ;
+}
+.access-data .password input, .access-data .repeat input {
+	width: 90px ;
+}
+.access-data label.checkbox {
+	margin-right: 5px;
+	margin-top: 2px;  		
+}
+
+input.field-error{
+	box-shadow: 0px 0px 2px 1px #FF0000;
+}
+
+div.field {
+	min-height: 25px ;
+}
+
+div.field-error-msg {
+	color: red; 
+	font-size: 10px;
+	margin: 5px 10px;
+}
+
+div.add-person-form div.field label {
+	width: 100px;
+	float: left;
+}
+
+div.non-registered-person-form div.field label {
+	margin-right: 4px;
+	float: left;
+	width: auto;
+}
+
+div.non-registered-person-form select {
+	width: 300px;
+	float: right;	
+}
+
+div.non-registered-person-form div.field input {
+	float: right;
+}
+
+div.add-person-form div.field label.checkbox {
+	width: auto;
+}
+
+.edit-form-tabs {
+	margin: 15px 0;
+}
+.edit-form-tabs.ui-tabs {
+	padding: 0px;
+}
+
+.edit-form-tabs .ui-tabs-panel.ui-widget-content a {
+	color: #003562;
+}
+
+.edit-form-tabs .ui-tabs-panel.ui-widget-content .breadcrumb-container a {
+	color: inherit;
+}
+
+.edit-form-tabs .editor-container {
+	
+}
+
+.edit-form-tabs .form-tab.ui-tabs-panel {
+	border: 1px solid #bbb;
+	border-top: 0px none;
+	padding: 15px;
+	min-height: 250px;
+}
+
+.edit-form-tabs.ui-tabs.ui-widget.ui-widget-content {
+	border: 0px none;
+}
+.edit-form-tabs.ui-tabs.ui-widget.ui-widget-content ul.ui-tabs-nav {
+	background: none;
+	border: 0px none;
+	border-bottom: 1px solid #bbb;
+	padding-left: 0px;
+}
+.edit-form-tabs.ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
+.edit-form-tabs.ui-tabs .ui-tabs-nav li.ui-state-disabled .ui-tabs-anchor,
+.edit-form-tabs.ui-tabs .ui-tabs-nav li.ui-tabs-loading .ui-tabs-anchor {
+	outline: none;
+}
+
+.edit-form-tabs.ui-tabs .ui-corner-all, .edit-form-tabs.ui-tabs .ui-corner-top, .edit-form-tabs.ui-tabs .ui-corner-right, .edit-form-tabs.ui-tabs .ui-corner-tr,
+.edit-form-tabs.ui-tabs .ui-corner-all, .edit-form-tabs.ui-tabs .ui-corner-top, .edit-form-tabs.ui-tabs .ui-corner-left, .edit-form-tabs.ui-tabs .ui-corner-tl,
+.edit-form-tabs.ui-tabs .ui-corner-all, .edit-form-tabs.ui-tabs .ui-corner-bottom, .edit-form-tabs.ui-tabs .ui-corner-right, .edit-form-tabs.ui-tabs .ui-corner-br,
+.edit-form-tabs.ui-tabs .ui-corner-all, .edit-form-tabs.ui-tabs .ui-corner-bottom, .edit-form-tabs.ui-tabs .ui-corner-left, .edit-form-tabs.ui-tabs .ui-corner-bl {
+	border-radius: 0px;
+}
+
+.edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-state-default {
+	background: #e6e6e6;
+}
+.edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-tabs-active {
+	background: #fff;
+}
+
+.edit-form-tabs .permissions-container.form-tab fieldset {
+	border: 0px none;
+    padding: 5px 10px 10px 0;
+}
+.edit-form-tabs .permissions-container.form-tab fieldset legend {
+	border-bottom: 1px solid #ccc;
+	width: 100%;
+}
+.edit-form-tabs .permissions-container.form-tab fieldset .user-system-permissions, .edit-form-tabs .permissions-container.form-tab fieldset .user-module-permissions {
+	padding-left: 20px;
+}
+.edit-form-tabs .permissions-container .user-system-permissions label, .edit-form-tabs .permissions-container .user-module-permissions label {
+	font-weight: normal;
+}
+.edit-form-tabs .permissions-container.form-tab {
+	overflow-x: hidden !important;
+}
+
+
+.simplemodal-data form {
+	min-width: 800px;
+	border-radius: 5px;
+}
+.simplemodal-data .coInputHeader {
+	padding-top: 15px;
+	border-radius: 5px 5px 0 0;
+}
+.simplemodal-data .coInputMainBlock {
+	padding-bottom: 10px;
+	border-radius: 0 0 5px 5px;
+}
+.simplemodal-data .coInputMainBlock .edit-form-tabs {
+	margin: 0px;
+}
+.simplemodal-data .coInputHeader .coInputHeaderUpperRow {
+	margin: 7px 10px 10px 0;
+	float: left;
+}
+.simplemodal-data .coInputHeader .coInputHeaderUpperRow .coInputTitle {
+	min-width: 100px;
+}
+.simplemodal-data .coInputHeader .coInputName input.title {
+	width: 450px;
+}
+.simplemodal-data .edit-form-tabs.ui-tabs .og-add-subscribers {
+	max-height: 450px;
+	overflow-y: auto;
+}
+
+.webpage .coInputMainBlock input.title {
+	width:490px;
+}
+
+
+.field-with-error {
+	border: 1px solid #cc4444;
+	box-shadow: 0 0 5px 0 #aa4444;
+}
+
+.user-typegroup-selector {
+	margin-right: 5px;
+	float: left;
+}
+.user-type-selector {
+	float: left;
+}
+
+.coInputMainBlock .user-groups-container .user-group {
+	border: 1px dotted #ccc;
+	border-radius: 4px;
+	background-color: #f9f9f9;
+	min-width: 200px;
+	padding: 5px;
+	margin: 5px;
+	float:left;
+}
+.coInputMainBlock .user-groups-container .user-group .remove-link {
+	float: right;
+}
+.coInputMainBlock .user-groups-container .user-groups-selector {
+	padding: 5px;
+	margin-top: 20px;
+}
+.coInputMainBlock .user-groups-container .user-groups-selector-container {
+	margin-top: 5px;
+}
+
+select.country-selector option[value=""] {
+	color: #777;
+}
+a.wiki-link {
+	text-decoration: underline;
+	font-weight: bold;
+}
+#modalQuickContact .coInputName input{
+    display: block;
+    width: 400px;
+    padding: 5px;
+    margin: 10px 0px;
+}

@@ -10,6 +10,7 @@ og.MemberManager = function(config) {
 	this.dimension_id = config.dimension_id;
 	this.dimension_code = config.dimension_code;
 	this.object_type_id = config.object_type_id;
+	this.object_subtype_id = config.object_subtype_id;
 	this.object_type_name = config.object_type_name;
 	this.groups_info = null;
 	
@@ -87,6 +88,7 @@ og.MemberManager = function(config) {
 				id: 'id',
 				dimension_id: 'dimension_id',
 				object_type_id: 'object_type_id',
+				object_subtype_id: 'object_subtype_id',
 				dimension_name: 'dimension_name',
 				groups_info: 'groups_info',
 				fields: this.fields
@@ -108,6 +110,7 @@ og.MemberManager = function(config) {
 					this.groups_info = d.groups_info;
 					this.dimension_id = d.dimension_id;
 					this.object_type_id = d.object_type_id;
+					this.object_subtype_id = d.object_subtype_id ? d.object_subtype_id : 0;
 					
 					var man = Ext.getCmp('member-manager-' + d.dimension_id + '-' + d.object_type_id);
 					og.eventManager.fireEvent('after grid panel load', {man:man, data:d});
@@ -663,7 +666,8 @@ Ext.extend(og.MemberManager, Ext.grid.GridPanel, {
 		this.store.baseParams = {
 			context: og.contextManager.plainContext(),
 			dim_id: this.dimension_id,
-			type_id: this.object_type_id
+			type_id: this.object_type_id,
+			subtype_id: this.object_subtype_id
 	    };
 		
 		if (og.member_list_grouping) {

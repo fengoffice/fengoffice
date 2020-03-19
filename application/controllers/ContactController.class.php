@@ -1535,9 +1535,9 @@ class ContactController extends ApplicationController {
 					$member_ids_to_add = array_merge($member_ids_to_add, $no_perm_members_ids);
 				}
 				
-				if (count($member_ids_to_add) > 0) {
-					$object_controller->add_to_members($contact, $member_ids_to_add);
-				}
+				//if (count($member_ids_to_add) > 0) {
+				$object_controller->add_to_members($contact, $member_ids_to_add);
+				//}
 				
 				if ($newCompany) $object_controller->add_to_members($company, $member_ids);
 				$object_controller->link_to_new_object($contact);

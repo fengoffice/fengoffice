@@ -26,7 +26,7 @@ if (isset($task_list) && ($task_list instanceof ProjectTask || $task_list instan
 	?>
 
 <div style="padding: 7px">
-<input id="<?php echo $genid?>template_task" type="hidden" name="template_task" value="<?php echo array_var($_GET, 'template_task', false)?>" />
+<input id="<?php //echo $genid?>template_task" type="hidden" name="template_task" value="<?php echo array_var($_GET, 'template_task', false)?>" />
 <div class="tasks"><?php
 
 /*

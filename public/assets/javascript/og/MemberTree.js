@@ -685,7 +685,13 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    		// let text start with last char in order to set this node as the last one
 		    		return last_char + last_char + last_char + node.text;
 		    	}
-		    	return og.replaceStringAccents(node.attributes.sort_key).toLowerCase();
+		    	if (node.attributes && node.attributes.sort_key) {
+		    		return og.replaceStringAccents(node.attributes.sort_key).toLowerCase();
+		    	} else if (node.sort_key) {
+		    		return og.replaceStringAccents(node.sort_key).toLowerCase();
+		    	} else {
+		    		return og.replaceStringAccents(node.text).toLowerCase();
+		    	}
 		    }
 		});
 		
@@ -1048,6 +1054,12 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 
 og.sortNodesFn = function(node1, node2) {
 	if (node1 && node2) {
-		return node1.attributes.sort_key.toLowerCase().localeCompare(node2.attributes.sort_key.toLowerCase());
+		if (node1.attributes && node1.attributes.sort_key && node2.attributes && node2.attributes.sort_key) {
+			return node1.attributes.sort_key.toLowerCase().localeCompare(node2.attributes.sort_key.toLowerCase());
+		} else if (node1.sort_key && node2.sort_key) {
+			return node1.sort_key.toLowerCase().localeCompare(node2.sort_key.toLowerCase());
+		} else {
+			return node1.text.toLowerCase().localeCompare(node2.text.toLowerCase());
+		}
 	}
 }

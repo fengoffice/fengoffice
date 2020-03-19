@@ -352,6 +352,7 @@ class GroupController extends ApplicationController {
 				if (!isset($tmp_roles[$user_type_id])) $tmp_roles[$user_type_id] = PermissionGroups::findById($user_type_id);
 				$rol = array_var($tmp_roles, $user_type_id);
 				if ($rol instanceof PermissionGroup) {
+					$data['role_id'] = $rol->getId();
 					$data['role'] = trim($rol->getName());
 					if (in_array($rol->getName(), array('Guest', 'Guest Customer'))) {
 						$data['is_guest'] = '1';

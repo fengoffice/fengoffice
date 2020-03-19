@@ -3,7 +3,7 @@
   /**
   * MemberPropertyMembers
   *
-  * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
+  * @author Feng Office
   */
   class MemberPropertyMembers extends BaseMemberPropertyMembers {
     
@@ -119,6 +119,7 @@
     		foreach ($rows as $row){
     			$aid = $row['association_id'];
     			$a = DimensionMemberAssociations::findById($aid);
+    			if (!$a instanceof DimensionMemberAssociation) continue;
     			if ($a->getAssociatedDimensionMemberAssociationId() == $persons_dim) continue;
     			
     			if (!isset($member_ids[$aid])) $member_ids[$aid] = array();

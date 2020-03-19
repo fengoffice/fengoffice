@@ -4,7 +4,7 @@
  * Add an event
  *
  * @param string $name
- * @param unknown_type $data
+ * @param array $data
  */
 function evt_add($name, $data=array()) {
 	$events = flash_get("events");

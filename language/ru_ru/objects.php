@@ -47,6 +47,7 @@
 	'load file' => 'Файл загружен',
 	'time' => 'Время',
 	'reporting' => 'Отчеты',
+	'reports' => 'Отчеты',
 	'modify object subscribers' => 'Изменить подписчиков',
 	'subscription modified successfully' => 'Подписчики успешно изменены',
 	'owner company' => 'Моя организация',

@@ -32,7 +32,7 @@
           <td class="milestoneCheckbox"><?php echo checkbox_link($assigned_milestone->getCompleteUrl(), false) ?></td>
           <td class="milestoneText">
 <?php $assigned_to = $assigned_milestone->getAssignedTo() ?>
-<?php if($assigned_to instanceof Company) { ?>
+<?php if($assigned_to instanceof Contact) { ?>
             <span class="assignedTo"><?php echo clean($assigned_to->getName()) ?>:</span> 
 <?php } elseif($assigned_to instanceof User) { ?>
             <span class="assignedTo"><?php echo clean($assigned_to->getObjectName()) ?>:</span> 
@@ -61,7 +61,7 @@
           <td class="taskCheckbox"><?php echo checkbox_link($assigned_task->getCompleteUrl(), false, lang('mark task as completed')) ?></td>
           <td class="taskText">
 <?php $assigned_to = $assigned_task->getAssignedTo() ?>
-<?php if($assigned_to instanceof Company) { ?>
+<?php if($assigned_to instanceof Contact) { ?>
             <span class="assignedTo"><?php echo clean($assigned_to->getName()) ?>:</span>
 <?php } elseif($assigned_to instanceof User) { ?>
             <span class="assignedTo"><?php echo clean($assigned_to->getObjectName()) ?>:</span>

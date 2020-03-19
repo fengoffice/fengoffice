@@ -62,6 +62,7 @@ return array(
         'late' => 'Late',
         'upcoming' => 'Upcoming',
 		'upcoming tasks w' => 'Upcoming',
+
         'today' => 'Today',
         'yesterday' => 'Yesterday',
         'tomorrow' => 'Tomorrow',
@@ -258,11 +259,14 @@ return array(
 	'generate repetitition' => 'Generate task repetition',
 	'end of task' => 'End of Task',
 	'start of task' => 'Start of Task',
-  	'new task repetition generated' => 'New task repetition successfully generated',
+	'new task repetition generated' => 'New task repetition successfully generated',
+	'by one day until a working day is found' => 'by one day until a working day is found',
     'repeat on saturdays' => 'Repeat on Saturdays',
     'repeat on sundays' => 'Repeat on Sundays',
     'repeat working days' => 'Repeat only in the workable days set in system configuration',
 	'reminders will not apply to repeating events' => 'Warning: reminders will not apply to repeating events',
+	'advance' => 'Advance',
+	'move backwards' => 'Move backwards',
 
 	'move all to right' => 'Move all to the right',
 	'move to right' => 'Move to the right',
@@ -384,6 +388,7 @@ return array(
 	'widget_calendar_filter_by_myself' => 'Show only my events',
 
 	'activity_feed' => 'Activity Feed',
+	'active_context_info' => 'Entity Information',
 	'completed tasks list' => 'Completed tasks',
 	'crpm_people' => 'People',
 	'estimated_worked_time' => 'Estimated and worked time',
@@ -476,4 +481,7 @@ return array(
 	'start date cannot be greater than due date' => 'Start date cannot be greater than due date',
     'link task'=>'Link Task',
 	'repeat by date warning' => 'You need to specify start or due date before marking a task as repetitive',
+	'pick a color' => 'Pick a color',
+	'you need to be in a client or a project in order to perform this action' => 'You need to be in a client or a project in order to perform this action',
+	'remove filters' => 'Remove filters',
 );

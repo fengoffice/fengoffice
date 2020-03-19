@@ -568,6 +568,31 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 		}
 	},
 	
+	reloadTotalsRow: function(params) {
+		if (!params) params = {};
+		
+		// use current filters and other parameters
+		Ext.apply(params, this.store_params);
+		
+		var objects_grid_id = this.id;
+		// call the controller to retrieve the totals
+		og.openLink(og.getUrl(this.store_params.url_controller, this.store_params.url_action, params), {
+			callback: function(success, data) {
+				var g = Ext.getCmp(objects_grid_id);
+				if (g && typeof(g.addTotalsRow) == 'function' && data && data.totals) {
+					
+					var totals_row_record = g.store.getById("#__total_row__");
+					if (totals_row_record) {
+						// remove previous total row
+						g.store.remove(totals_row_record);
+					}
+					// add the totals row
+					g.addTotalsRow(data, true);
+				}
+			}
+		})
+	},
+	
 	activate: function() {
 		if (this.needRefresh) {
 			this.load({start:0});

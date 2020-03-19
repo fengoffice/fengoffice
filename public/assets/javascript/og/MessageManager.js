@@ -8,7 +8,7 @@ og.MessageManager = function () {
     this.needRefresh = false;
 
     this.fields = [
-        'object_id', 'type', 'ot_id', 'name', 'text', 'is_today',
+        'object_id', 'type', 'ot_id', 'name', 'text', 'is_today', 'createdBy', 'dateCreated',
         'updatedBy', 'updatedById', 'dateUpdated', 'ix', 'isRead', 'memPath'
     ];
     var cps = og.custom_properties_by_type['message'] ? og.custom_properties_by_type['message'] : [];
@@ -129,7 +129,47 @@ og.MessageManager = function () {
     function renderIcon(value, p, r) {
         return '<div class="db-ico ico-message"></div>';
     }
+    /* Go to https://docs.sencha.com/extjs/2.3.0/#!/api/Ext.grid.ColumnModel 
+	and search for setRenderer() function to reference renderer functions 
+	behavior */
+    
+	function renderUpdatedBy(value, metadata, row) {
+		if (!value) {
+			return "";
+		}
+		var username = og.clean(value);
+		var linkToUser = og.getUrl('contact', 'card', {id: row.data.updatedById});
 
+		var result = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>',
+								   username,
+								   linkToUser);			
+
+		return result;
+	}
+
+	function renderUpdatedOn(value, metadata, row) {
+		return value ? value : "";
+	}
+
+	function renderCreatedBy(value, metadata, row) {
+		if (!value) {
+			return "";
+		}
+		var username = og.clean(value);
+		var linkToUser = og.getUrl('contact', 'card', {id: row.data.createdById});
+
+		var result = String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>',
+									username,
+									linkToUser);
+								  
+		return result;
+	}
+
+	function renderCreatedOn(value, metadata, row) {
+		return value ? value : "";
+	}
+	
+    /*
     function renderDate(value, p, r) {
         if (!value) {
             return "";
@@ -142,7 +182,7 @@ og.MessageManager = function () {
             return userString + ", " + value;
         }
     }
-
+    */
     function getSelectedIds() {
         var selections = sm.getSelections();
         if (selections.length <= 0) {
@@ -237,14 +277,44 @@ og.MessageManager = function () {
             width: 250,
             renderer: renderName,
             sortable: true
-        }, {
+        },{
+			id: 'updatedBy',
+			header: lang("last updated by"),
+			dataIndex: 'updatedBy',
+			width: 120,
+            renderer: renderUpdatedBy,
+            sortable: true
+        },{
+			id: 'updatedOn',
+			header: lang("last updated on"),
+			dataIndex: 'dateUpdated',
+			width: 120,
+			renderer: renderUpdatedOn,
+			sortable: true
+        },{
+			id: 'createdBy',
+			header: lang("created by"),
+			dataIndex: 'createdBy',
+			width: 120,
+			hidden: true,
+            renderer: renderCreatedBy,
+            sortable: true
+		},{
+			id: 'createdOn',
+			header: lang("created on"),
+			dataIndex: 'dateCreated',
+			width: 120,
+			hidden: true,
+			renderer: renderCreatedOn,
+			sortable: true
+		}/*{
             id: 'updatedOn',
             header: lang("last updated by"),
             dataIndex: 'dateUpdated',
             width: 50,
             sortable: true,
             renderer: renderDate
-        }
+        }*/
     ];
 
     // custom property columns

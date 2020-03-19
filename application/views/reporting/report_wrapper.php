@@ -127,11 +127,33 @@ if (!isset($allow_export)) $allow_export = true;
 		<?php echo lang('report pdf options') ?>
 	</div>
 	
+	
+	<?php 
+		// Get config options to set default pdf layout and pdf size
+		$pdf_layout = user_config_option('pdf_page_layout');
+		$pdf_page_size = user_config_option('pdf_page_size');
+		if($pdf_page_size == '') $pdf_page_size = 'A4';
+	?>
+
 	<div class="dataBlock">
 		<label><?php echo lang('report pdf page layout') ?></label>
 		<select name="pdfPageLayout" id="{gen_id}pdfPageLayout">
-			<option value="P"><?php echo lang('report pdf vertical') ?></option>
-			<option value="L"><?php echo lang('report pdf landscape') ?></option>
+			<option value="P" <?php if($pdf_layout == 'Portrait') echo 'selected' ?>><?php echo lang('report pdf vertical') ?></option>
+			<option value="L" <?php if($pdf_layout == 'Landscape') echo 'selected' ?>><?php echo lang('report pdf landscape') ?></option>
+		</select>
+	</div>
+	
+	<div class="dataBlock">
+		<label><?php echo lang('page size') ?></label>
+		<select name="pdfPageSize" id="{gen_id}pdfPageSize">
+			<option value="A0"<?php if($pdf_page_size == 'A0') echo 'selected' ?>>A0</option>
+			<option value="A1"<?php if($pdf_page_size == 'A1') echo 'selected' ?>>A1</option>
+			<option value="A2" <?php if($pdf_page_size == 'A2') echo 'selected' ?>>A2</option>
+			<option value="A3" <?php if($pdf_page_size == 'A3') echo 'selected' ?>>A3</option>
+			<option value="A4" <?php if($pdf_page_size == 'A4') echo 'selected' ?>>A4</option>
+			<option value="A5" <?php if($pdf_page_size == 'A5') echo 'selected' ?>>A5</option>
+			<option value="Legal" <?php if($pdf_page_size == 'Legal') echo 'selected' ?>>Legal</option>
+			<option value="Letter" <?php if($pdf_page_size == 'Letter') echo 'selected' ?>>Letter</option>
 		</select>
 	</div>
 	

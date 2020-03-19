@@ -8,14 +8,14 @@ if($current_member instanceof Member){
 <div class="widget-activity widget dashTableActivity">
 
 	<div class="widget-header dashHeader">
-            <div style="overflow:hidden; float: left; width: 90%; text-overflow: ellipsis; white-space: nowrap;" class="widget-title" onclick="og.dashExpand('<?php echo $genid?>');"><?php echo (isset($widget_title)) ? $widget_title : lang("activity");?></div>                
-			<div class="dash-expander ico-dash-expanded" id="<?php echo $genid; ?>expander" onclick="og.dashExpand('<?php echo $genid?>');"></div>
-            <div style="z-index:1; width:16px; float: right; margin-right: 5px; margin-top: 1px;" id="<?php echo $genid; ?>configFilters" onclick="og.quickForm({ type: 'configFilter', genid: '<?php echo $genid; ?>', members:'<?php echo $member_id ?>'});">
+			<div style="overflow:hidden; float: left; width: 90%; text-overflow: ellipsis; white-space: nowrap;" class="widget-title" onclick="og.dashExpand('<?php echo $genid?>');"><?php echo (isset($widget_title)) ? $widget_title : lang("activity");?></div>
+			<div style="z-index:1; width:16px; margin-right: 10px;" id="<?php echo $genid; ?>configFilters" onclick="og.quickForm({ type: 'configFilter', genid: '<?php echo $genid; ?>', members:'<?php echo $member_id ?>'});">
             	<img src="public/assets/themes/default/images/16x16/administration.png"/>
-            </div>
+            </div>          
+			<div class="dash-expander ico-dash-expanded" id="<?php echo $genid; ?>expander" onclick="og.dashExpand('<?php echo $genid?>');"></div>
 	</div>
 	
-	<div class="widget-body" id="<?php echo $genid; ?>_widget_body">
+	<div class="widget-body widget-activity__body" id="<?php echo $genid; ?>_widget_body">
 		<ul>
             <table style="width:100%;" cellpadding="0" cellspacing="0" id="dashTableActivity">
 			<?php 
@@ -42,25 +42,31 @@ if($current_member instanceof Member){
             	$style = "style='display:none'";
             }
 			?>
-				<tr class="activity-row <?php echo $class?>" id="<?php echo "activity-".$c?>" <?php echo $style?>>
+				<tr class="widget-activity__row <?php echo $class?>" id="<?php echo "activity-".$c?>" <?php echo $style?>>
 					<td style="width:50px;">
 						<div style="float: left; margin-top:10px; min-width:40px;">
-					<?php if ($user instanceof Contact) : ?>
-							<img src="<?php echo $user->getPictureUrl() ?>" style="max-width:40px;max-height:40px"/>
-					<?php endif; ?>
+							<?php if ($user instanceof Contact) : ?>
+									<img src="<?php echo $user->getPictureUrl() ?>" style="max-width:40px;max-height:40px"/>
+							<?php endif; ?>
 						</div>
-					</td><td>
-						<div style="float: left; margin-top:10px; margin-left: 10px;width: 100%;" class="activity-info">
-							<div><?php echo $acts['act_data'][$k] ?><div class="activity-breadcrumb-container" style="margin-top:4px;"><span class="breadcrumb"></div></span></div>
-							<script>
-                        	
-                        	var crumbHtml  =  <?php echo $crumbJs?>;
-                        	$("#activity-<?php echo $c?> .breadcrumb").html(crumbHtml);
-                        	</script>
-						</div>
-					</td><td style="min-width:100px;vertical-align:bottom;">
-						<div class="desc date-container"><?php echo $acts['date'][$k] ?></div>
 					</td>
+					<td>
+						<div style="float: left; margin-top:10px; margin-left: 10px;width: 100%;" class="activity-info">
+							<div><?php echo $acts['act_data'][$k] ?>
+								<!-- Comment out BREADCRUMB
+									<div class="activity-breadcrumb-container" style="margin-top:4px;"><span class="breadcrumb"></span></div>-->
+							</div>
+							<!-- Comment out JS for BREADCRUMB
+								<script>
+								var crumbHtml  =  <?php echo $crumbJs?>;
+								$("#activity-<?php echo $c?> .breadcrumb").html(crumbHtml);
+                        	</script>
+							-->
+						</div>
+					</td>
+					<!--<td style="min-width:100px;vertical-align:bottom;">
+						<div class="desc date-container"><?php echo $acts['date'][$k] ?></div>
+					</td>-->
 				</tr>
 			<?php endforeach; ?>
 			<?php if (count($acts['data']) > $total) :?>

@@ -5,7 +5,7 @@ class SearchController extends ApplicationController {
 	
 	/**
 	 * Debug mode (Dev only)
-	 * @var unknown_type
+	 * @var int unknown_type
 	 */
 	var $debug = 0 ;
 	
@@ -22,7 +22,7 @@ class SearchController extends ApplicationController {
 	
 	/**
 	 * Search string
-	 * @var unknown_type
+	 * @var string unknown_type
 	 */
 	var $search_for ;
 	
@@ -30,19 +30,19 @@ class SearchController extends ApplicationController {
         
         /**
 	 * Search dimension
-	 * @var unknown_type
+	 * @var int
 	 */
 	var $search_dimension ;
 	
 	/**
 	 * Page size
-	 * @var unknown_type
+	 * @var int
 	 */
 	var $limit = 10;
 	
 	/**
 	 * Start integer
-	 * @var unknown_type
+	 * @var int
 	 */
 	var $start = 0 ;
 	
@@ -68,7 +68,7 @@ class SearchController extends ApplicationController {
 	 
 	/**
 	 * Max content size to show on results view
-	 * @var unknown_type
+	 * @var int
 	 */
 	var $contentSize = 200;
 	
@@ -93,7 +93,7 @@ class SearchController extends ApplicationController {
 	
 	/**
 	 * Max number of links to show on pagination
-	 * @var unknown_type
+	 * @var int
 	 */
 	var $maxPageLinks = 5 ;
 	
@@ -224,8 +224,8 @@ class SearchController extends ApplicationController {
 				}else{
 				    $value = mysqli_real_escape_string(DB::connection()->getLink(), $condValue);
 				}			
-				$condition_condition = mysqli_real_escape_string(array_var(DB::connection()->getLink(), $condition, 'condition'));
-				$condition_field_name = mysqli_real_escape_string(array_var(DB::connection()->getLink(), $condition, 'field_name'));
+				$condition_condition = mysqli_real_escape_string(DB::connection()->getLink(), array_var($condition, 'condition'));
+				$condition_field_name = mysqli_real_escape_string(DB::connection()->getLink(), array_var($condition, 'field_name'));
 				$conditionLocal = "like";
 				tpl_assign('type_object', $type_object);
 				//CREO QUE ESTO ESTA MAL
@@ -236,7 +236,7 @@ class SearchController extends ApplicationController {
 				if (($condition['custom_property_id'] == 'phone_number') ){
 					$condition_field_name = 'number';
 					$joincp = 'JOIN  '.TABLE_PREFIX.'contact_telephones ct ON ct.contact_id = so.rel_object_id';
-				};				
+				};		
 				if (($condition['custom_property_id'] == 'email_address') ){
 					$condition_field_name = 'email_address';
 					$joincp = 'JOIN  '.TABLE_PREFIX.'contact_emails ce ON ce.contact_id = so.rel_object_id';
@@ -250,13 +250,12 @@ class SearchController extends ApplicationController {
 					$joincp = 'JOIN  '.TABLE_PREFIX.'contact_im_values cim ON cim.contact_id = so.rel_object_id';
 				};
 				
-				if ($condition_condition == "=" or $condition_condition == ">" or $condition_condition == "<" or $condition_condition == "<>" or $condition_condition == ">=" or $condition_condition == "<="){
+				if ($condition_condition == "=" || $condition_condition == ">" || $condition_condition == "<" || $condition_condition == "<>" || $condition_condition == ">=" || $condition_condition == "<="){
 					$conditionLocal = $condition_condition;
 				};	
 				if($condition_field_name == "id"){
 					$condition_field_name = "o`.`id" ;
 				};			
-				
 				if($condition_condition == "like"){
 					$where_condiition .= " AND `" . $condition_field_name . "` " . "like" . " '%" . $value . "%' ";
 					$con = "like '%" . $value . "%' ";
@@ -269,6 +268,9 @@ class SearchController extends ApplicationController {
 				}else if($condition_condition == "not like"){
 					$where_condiition .= " AND `" . $condition_field_name . "` " . "not like" . " '%" . $value . "%' ";
 					$con = "not like '%" . $value . "%' ";
+				}else if($condition_condition == "=" || $condition_condition == ">" || $condition_condition == "<" || $condition_condition == "<>" || $condition_condition == ">=" || $condition_condition == "<="){
+					$where_condiition .= " AND " . $condition_field_name . " " . $condition_condition . " '" . $value . "' ";
+					$con = $condition_condition . " '" . $value . "' ";
 				}else{					
 					$where_condiition .= " AND `" . $condition_field_name . "` " . $conditionLocal . " '" . $value . "' ";
 					$con = $conditionLocal . " '" . $value . "' ";
@@ -282,7 +284,6 @@ class SearchController extends ApplicationController {
 					$where_condiition = $addressCondiition;
 					$joincp = 'JOIN  '.TABLE_PREFIX.'contact_addresses ca ON ca.contact_id = so.rel_object_id';
 				};
-				
 				
 				if (isset($condition['custom_property_id'])){
 				    $custom_prop_id = $condition['custom_property_id'];
@@ -624,7 +625,7 @@ class SearchController extends ApplicationController {
 	
 	/**
 	 * Build pagination based on $total, $limit and $search_results
-	 * @param unknown_type $search_results
+	 * @param array $search_results
 	 */
 	private function buildPagination($search_results) {
 		$start = $this->start;
@@ -652,8 +653,8 @@ class SearchController extends ApplicationController {
 	 * Map parameters and make some grouping, orders limits not done in DB
 	 * 
 	 * @param unknown_type array of int 
-	 * @param unknown_type $filtered_results
-	 * @param unknown_type $total
+	 * @param array $filtered_results
+	 * @param int $total
 	 */
 	private function prepareResults($ids, &$filtered_results, $limit, $all_search_results=array()) {
 		$return = array();
@@ -730,7 +731,7 @@ class SearchController extends ApplicationController {
 	
 	/**
 	 * Emphaisis around search keywords
-	 * @param unknown_type $content
+	 * @param string $content
 	 */
 	private function highlightResult($text) {
 		$pieces = explode(" ", $this->search_for);
@@ -743,7 +744,7 @@ class SearchController extends ApplicationController {
     
     /**
      * Emphaisis around one search keywords and 
-     * @param unknown_type $content
+     * @param string $content
      */
     private function highlightOneResult($text) {
     	$text = html_to_text($text);
@@ -784,8 +785,8 @@ class SearchController extends ApplicationController {
 	
 	/**
 	 * Cut results
-	 * @param unknown_type $content
-	 * @param unknown_type $size
+	 * @param string $content
+	 * @param int $size
 	 */
 	private function cutResult($content, $size = 200  ) {
 		$position = strpos($content,$this->search_for);

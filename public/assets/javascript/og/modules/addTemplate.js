@@ -191,7 +191,7 @@ og.addObjectToTemplate = function(target, obj, dont_draw_milestone_combo) {
 	divActions.className = "template-object-actions";
 
 	var divhtml =
-		'<a id="toggleTemplatePropertys'+obj.object_id+'" href="#" onclick="og.toggleTemplatePropertys('+obj.object_id+')" class="toggle_collapsed">'+ lang("edit variables") + '</a>'+
+		'<a id="toggleTemplateProperties'+obj.object_id+'" href="#" onclick="og.toggleTemplateProperties('+obj.object_id+')" class="toggle_collapsed">'+ lang("edit variables") + '</a>'+
 		"<a href='#' class='internalLink coViewAction ico-edit' onclick='"+"og.editTempObj("+obj.object_id+", \""+obj.type+"\")"+"'>" + lang('edit') + '</a>';
 	if (obj.type == 'template_task') {
 		divhtml += '<a href="#" onclick="og.openLink(og.getUrl(\'task\', \'add_task\', {template_task:1, parent_id:'+ obj.object_id +', template_id:'+og.actual_template_id+'}), {caller:\'new_task_template\'})" class="internalLink ico-add coViewAction">'+lang("add sub task")+'</a>';
@@ -289,10 +289,10 @@ og.toggleTemplateSubtasks = function(object_id){
 	
 }
 
-og.toggleTemplatePropertys = function(object_id){
+og.toggleTemplateProperties = function(object_id){
 	$('[id^=propertyDiv' + object_id +']').toggle();
-	$('[id^=toggleTemplatePropertys' + object_id +'] a').toggleClass('toggle_collapsed');
-	$('[id^=toggleTemplatePropertys' + object_id +'] ').toggleClass('toggle_expanded');		
+	$('[id^=toggleTemplateProperties' + object_id +'] a').toggleClass('toggle_collapsed');
+	$('[id^=toggleTemplateProperties' + object_id +'] ').toggleClass('toggle_expanded');		
 }
 
 og.removeObjectFromTemplate = function(div, obj_id) {
@@ -414,7 +414,6 @@ og.addTemplateObjectProperty = function(obj_id, count, property, value, object_t
 
 
 og.requestAndRenderTemplateObjectPropertySelector = function(obj_id, total, value, property, object_type_id) {
-	
 	// if properties already loaded then render the component directly
 	if (object_type_id && og.template_obj_properties && og.template_obj_properties[object_type_id]) {
 		
@@ -624,7 +623,7 @@ og.objectPropertyChanged = function(obj_id, count, value){
 
 og.datePropertyTypeSelOnChange = function(input, obj_id, prop) {
 	var display = $(input).val() == 'task_creation' ? '' : 'none';
-	$('#prop_value_time_container_'+ obj_id +'_'+ prop).css('display', display);
+	//$('#prop_value_time_container_'+ obj_id +'_'+ prop).css('display', display);
 }
 
 og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
@@ -664,13 +663,14 @@ og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
 				'<option value="w">'+ lang('weeks') + '</option><option value="m">'+ lang('months') + '</option></select>';
 			
 			if (og.config.use_time_in_task_dates) {
-				html += '&nbsp;<span id="prop_value_time_container_'+ obj_id +'_'+ prop +'"></span>';
+				//html += '&nbsp;<span id="prop_value_time_container_'+ obj_id +'_'+ prop +'"></span>';
 			}
 			
 			datePropTD.innerHTML = html;
 			
 			if (og.config.use_time_in_task_dates) {
 				if (!value_time) value_time = '';
+				/*
 				var dueTime = new Ext.form.TimeField({
 					renderTo:'prop_value_time_container_'+ obj_id +'_'+ prop,
 					id: 'propValueTime[' + obj_id + '][' + prop + ']',
@@ -679,9 +679,10 @@ og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
 					format: (og.preferences['time_format_use_24'] == 1 ? 'G:i' : 'g:i A'),
 					emptyText: 'hh:mm',
 					value: value_time
-				});
-				$('#prop_value_time_container_'+ obj_id +'_'+ prop +' .x-form-field-wrap').css('display', 'inline-block').css('vertical-align','top');
-				
+									*/
+				//});
+				//$('#prop_value_time_container_'+ obj_id +'_'+ prop +' .x-form-field-wrap').css('display', 'inline-block').css('vertical-align','top');
+
 				og.datePropertyTypeSelOnChange(document.getElementById('propValueParam[' + obj_id + '][' + prop + ']'), obj_id, prop);
 			}
 		}
@@ -715,7 +716,7 @@ og.renderAssignedToTemplatePropertySelector = function(companies, obj_id, count,
 }
 
 
-og.integerPropertyTypeSel = function(count, obj_id, callback){
+og.integerPropertyTypeSel = function(count, obj_id, callback){	
 	var integerPropTD = document.getElementById('integerPropTD[' + obj_id + '][' + count + ']');
 	var integerPropTypeSel = document.getElementById('integerPropType[' + obj_id + '][' + count + ']');
 	var selectedPropTypeIndex = integerPropTypeSel.selectedIndex;

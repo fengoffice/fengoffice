@@ -117,7 +117,7 @@
 		* - Generates the array in PHP code and saves it as index file
 		*
 		* @access private
-		* @param param_type $param_name
+		* @param string $param_name
 		* @throws Exception
 		*/
 		private function createCache() {
@@ -219,7 +219,7 @@
 		/**
 		* Add directory that need to be scaned
 		*
-		* @param stirng $path Direcotry path
+		* @param string $path Direcotry path
 		* @return null
 		*/
 		function addDir($path) {

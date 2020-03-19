@@ -110,7 +110,7 @@ function _tz_upgrade_user_and_company_timezones($table_prefix, $database_connect
 /**
  * Update config option with the default timezone
  * @param string $table_prefix
- * @param db_connection $database_connection
+ * @param db_connection object $database_connection
  */
 function _tz_upgrade_default_system_timezone($table_prefix, $database_connection) {
 	$zone_id = null;
@@ -149,7 +149,7 @@ function _tz_upgrade_default_system_timezone($table_prefix, $database_connection
 /**
  * Update object timezone id and offset with the timezone of its creator
  * @param string $table_prefix
- * @param db_connection $database_connection
+ * @param object db_connection $database_connection
  */
 function _tz_upgrade_objects_timezone($table_prefix, $database_connection) {
 	

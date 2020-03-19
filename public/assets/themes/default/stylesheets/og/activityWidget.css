@@ -1,0 +1,9 @@
+.widget-activity__body {
+    padding: 0 30px 30px 30px;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.activity-info {
+    padding-bottom: 10px;
+}

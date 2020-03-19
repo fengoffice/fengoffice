@@ -188,8 +188,8 @@ class FilesController extends ApplicationController {
 	
 	/**
 	 * get a public file
-	 * @param $id the repository id of the file
-	 * @return file url
+	 * @param int $id the repository id of the file
+	 * @return string file url
 	 */
 	function get_public_file($id=null){
 
@@ -615,7 +615,7 @@ class FilesController extends ApplicationController {
 	 * @param $file_data
 	 * @param $uploaded_file
 	 * @param $member_ids
-	 * @return file id
+	 * @return string file id
 	 */
 	function add_file_from_multi($file_data, $uploaded_file, $member_ids, $upload_option) {
 		try {
@@ -2104,7 +2104,11 @@ class FilesController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		} // if
-			
+		
+		// to use when saving the application log
+		$old_content_object = ContentDataObjects::generateOldContentObjectData($file);
+		$file->old_content_object = $old_content_object;
+		
 		$file_data = array_var($_POST, 'file');
 		if(!is_array($file_data)) {
 			// set layout for modal form
@@ -2201,7 +2205,7 @@ class FilesController extends ApplicationController {
 				if (array_var($file_data, 'notify_myself_too')) {
 					logged_user()->notify_myself = true;
 				}
-				
+
 				ApplicationLogs::createLog($file, ApplicationLogs::ACTION_EDIT);
 				
 				if (array_var($file_data, 'notify_myself_too')) {

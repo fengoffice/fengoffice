@@ -1,10 +1,9 @@
 <?php
 
 /**
- * OTemplates, generated on Sat, 04 Mar 2006 12:50:11 +0100 by
- * DataObject generation tool
+ * COTemplates
  *
- * @author Ignacio de Soto <ignacio.desoto@gmail.com>
+ * @author FengOffice
  */
 class COTemplates extends BaseCOTemplates {
 
@@ -116,9 +115,7 @@ class COTemplates extends BaseCOTemplates {
 		return $tpls ;
 	}
 	
-	
-
-	
+		
 	/**
 	 * @deprecated
 	 * 

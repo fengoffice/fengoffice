@@ -152,5 +152,67 @@
 			$mysql_date_format .= $char;
 		}
 		return $mysql_date_format;
-	}
+  }
+  
+  
+  /**
+  * Helper function to check if the value is a valid date,
+  * returns true or false
+  *
+  * @access public
+  * @param string or date
+  * @return boolean
+  */
+  function isDate($value) {
+    if (!$value) {
+        return false;
+    }
+    
+    try {
+        // use this function to get a DateTimeValue object depending on the date format defined in the user preferences
+        $dt_value = getDateValue($value);
+        
+        return $dt_value instanceof DateTimeValue;
+    } catch (Exception $e) {
+        return false;
+    }
+  }
+
+  /**
+  *  Helper function to generate monthly repetition date
+  * returns newly generated date
+  *
+  * @access public
+  * @return DateTimeValue
+  */
+  function getMonthlyRepetitionDate($task, $new_date, $original_date, $count){
+    $day = $original_date->format('d');
+    $new_month = $original_date->format('m') + ($count+1)*$task->getRepeatM();
+    $year = $original_date->format('Y');
+
+    // Check the month number, increase the year if needed
+    if($new_month%12 == 0) {
+        $year += (int)($new_month/12) - 1;
+        $month = 12;
+    } else {
+        $year += (int)($new_month/12);
+        $month = $new_month%12;
+    }
+
+    // Check if day exist(troubleshoot last day of the month)
+    while(!checkdate($month, $day, $year)) {
+        $day -=  1;
+    }
+    
+    // Set day to 1, to avoid month adjustments
+    $new_date->setDay(1);
+
+    // Set year, month and day
+    $new_date->setYear($year);
+    $new_date->setMonth($month);
+    $new_date->setDay($day);
+
+    return $new_date;
+}
+
 ?>

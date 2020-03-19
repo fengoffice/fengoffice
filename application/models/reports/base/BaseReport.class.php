@@ -169,6 +169,28 @@
     }
     
     /**
+     * Return value of 'function_url' field
+     *
+     * @access public
+     * @param void
+     * @return boolean
+     */
+    function getFunctionUrl() {
+    	return $this->getColumnValue('function_url');
+    }
+    
+    /**
+     * Set value of 'function_url' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setFunctionUrl($value) {
+    	return $this->setColumnValue('function_url', $value);
+    }
+
+    /**
     * Return manager instance
     *
     * @access protected

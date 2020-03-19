@@ -89,7 +89,7 @@
   	
   	
   	function can_add_timeslots($user, $members) {
-  		return (can_manage_time($user) || can_access($user, $members, Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE));
+  		return can_access($user, $members, Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
   	}
   	
   	/**
@@ -1318,9 +1318,9 @@
 	 * Returns the users with permissions for the object type $object_type for the context $context
 	 * 
 	 * @param $object_type_id Object Type
-	 * @param $context Context
+	 * @param $context array Context
 	 * @param $access_level (ACCESS_LEVEL_READ, ACCESS_LEVEL_WRITE, ACCESS_LEVEL_DELETE)
-	 * @param $extra_conditions Extra conditions to add to the users query
+	 * @param $extra_conditions string Extra conditions to add to the users query
 	 * @param $to_assign true if this function is called to fill the "assigned to" combobox when editing a task
 	 */
 	function allowed_users_in_context($object_type_id, $context = null, $access_level = ACCESS_LEVEL_READ, $extra_conditions = "", $for_tasks_filter = false, $include_member_childs = false) {

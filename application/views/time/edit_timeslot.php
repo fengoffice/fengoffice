@@ -113,20 +113,27 @@
                             <?php 
                                 echo label_tag(lang('start date'));
                                 $tz_offset = Timezones::getTimezoneOffsetToApply($timeslot);
-                                $date = $timeslot->isNew() ? DateTimeValueLib::now() : new DateTimeValue($timeslot->getStartTime()->getTimestamp() + $tz_offset);		
+                                if ($timeslot->isNew()) {
+                                	$date = DateTimeValueLib::now();
+                                	$date->add('s', $tz_offset);
+                                } else {
+	                                $date = new DateTimeValue($timeslot->getStartTime()->getTimestamp() + $tz_offset);
+                                }
                             ?>
                             <table>
                                 <tr>
                                     <td>
                                         <?php 
-                                        	$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[date]'); }");
+                                            $listeners = array('change' => "function(){ og.onchangeStartDate(); }");
+                                        	//$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[date]'); }");
                                             echo pick_date_widget2('timeslot[date]', $date, $genid, null, false,'date_input', $listeners);
                                         ?>
                                     </td>
                                     <td style="padding-left: 5px">
                                         <?php 
-                                        	$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[start_time]'); }");
-                                            echo pick_time_widget2('timeslot[start_time]', $timeslot->isNew() ? null : $date, $genid,null,false,'start_time_input', $listeners);
+                                            $listeners = array('change' => "function(){ og.onchangeStartDate(); }");
+                                        	//$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[start_time]'); }");
+                                            echo pick_time_widget2('timeslot[start_time]', $date, $genid,null,false,'start_time_input', $listeners);
                                         ?>
                                     </td>
                                     <td style="padding-left: 5px">
@@ -147,13 +154,15 @@
                             <tr>
                                 <td>
                                     <?php 
-                                        $listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_date]'); }");
+                                        $listeners = array('change' => "function(){ og.onchangeEndDate(); }");
+                                        //$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_date]'); }");
                                         echo pick_date_widget2('timeslot[end_date]', $end_date, $genid, null, false,'date_end_input', $listeners);
                                     ?>
                                 </td>
                                 <td style="padding-left: 5px">
                                     <?php 
-                                    	$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_time]'); }");
+                                    	$listeners = array('change' => "function(){ og.onchangeEndDate(); }");
+                                    	//$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_time]'); }");
                                         echo pick_time_widget2('timeslot[end_time]', $timeslot->isNew() ? null : $end_date, $genid,null,false,'end_time_input', $listeners);
                                     ?>
                                 </td>
@@ -321,7 +330,7 @@
 </div>
 
 <div id="modal-config-hours" style="display: none;">
-    <h2><?php echo lang('How do you prefer'); ?></h2>
+    <h2><?php echo lang('What do you prefer'); ?></h2>
     <div class="row">
         <input class="pull-left" type="radio" name="user_config" value="dates" checked="" id="{genid}user_config_change_date"/>
         <label for="{genid}user_config_change_date"><?php echo lang('Did you want change the date value'); ?></label>
@@ -346,6 +355,10 @@
 
 <script>   
     var edit_mode = "<?php echo $edit_mode;  //this variable is undefined ?>";
+
+    // Note: IDE does not reflect it, but the following line is fully commented out 
+    // var edit_mode = "<?php echo $timeslot->isNew(); ?>";
+
     var edit_hours_mode = "<?php echo 0; ?>";
     var gen_id = "<?php echo $genid; ?>";
     var time_preferences =JSON.parse('<?php echo json_encode($time_preferences); ?>');
@@ -360,13 +373,36 @@
         $(input).hide();
         $('#' + genid + "paused_time_container").slideToggle(100);
     }
+
+	//[Conrado 8/2019] Would this work?
+	//The idea here is to know the initial values, to see if/how we need to edit them 
+    og._original_worked_time = $('#worked_time').val();
+    og._original_worked_minute = $('#worked_minute').val();
+        
+    og._original_paused_time = $('#paused_time').val();
+    og._original_paused_minute = $('#paused_minute').val();
     
+
+	og._original_start_date = $('#date_input');
+    og._original_start_time = $('#start_time_input');
+    
+    og._original_end_date = $('#date_end_input');
+    og._original_end_time = $('#end_time_input');
+    
+    //The idea here is to keep track of the things that were edited in this session, and in what order.
+    og._start_time_edited_in_session = 0;
+    og._end_time_edited_in_session = 0;
+    og._worked_or_paused_time_edited_in_session = 0;    
+
+    
+    //These are the multipliers used to calculate the number of miliseconds that make up a minute, an hour, a day, and a year
     og._minutes = 1000 * 60;
     og._hours = og._minutes * 60;
     og._days = og._hours * 24;
     og._years = og._days * 365;
+    
     og._lastTimeValue = 0;
-    og._actualTimeValue = 0;
+    og._newTimeValue = 0;
     
     og._lastHoursInputValue = 0;
     og._lastMinutesInputValue = 0;
@@ -374,45 +410,52 @@
     og._lastPausedMinutesInputValue = 0;
     
     /**
-     * Automatic calculation when the time input change yours values
+     * Process triggered when the user changes the value in the (worked) time input
+     * 
      */
     og.onchangeTimesInputs = function (self){
+
+    	//This didn't seem necessary so far.
+        	
+        //Step 1) Capture the "new" work (and pause) values entered by the user
         worked_time = $('#worked_time').val();
         worked_minute = $('#worked_minute').val();
         
         paused_time = $('#paused_time').val();
         paused_minute = $('#paused_minute').val();
         
-        
-        var horas_restar = 0;
-        if(worked_time > 0 && worked_time != ''){
-            horas_restar = og._hours * worked_time;
-        }
-        if(paused_time > 0 && paused_time != ''){
-            horas_restar += og._hours * paused_time;
-        }
-        var minutos_restar = 0;
-        if(worked_minute > 0 && worked_minute != ''){
-            minutos_restar = og._minutes * worked_minute;
-        }
-        if(paused_minute > 0 && paused_minute != ''){
-            minutos_restar += og._minutes * paused_minute;
-        }
-        
-        og._actualTimeValue = horas_restar+minutos_restar;
-        
-        if(og._actualTimeValue > og._lastTimeValue){
+        //Step 2) Convert them into a timeValue (total number of milliseconds)
+        //@ToDo - review: is this necessary?
+        og._newTimeValue = timeslots.turn_into_total_milliseconds(worked_time, worked_minute, paused_time, paused_minute);
+        		
+        //Step 3) I still haven't checked why this is needed 
+        if(og._newTimeValue > og._lastTimeValue){
             div= $('#modal-config-more').html().replace(/\{genid\}/ig, Ext.id());
         }else{
             div= $('#modal-config-less').html().replace(/\{genid\}/ig, Ext.id());
         }
 
-        og._lastTimeValue = og._actualTimeValue;
+        //Step 3.2) Update the variables
+        og._lastTimeValue = og._newTimeValue;
+        og._worked_or_paused_time_edited_in_session = Math.max(og._start_time_edited_in_session, og._end_time_edited_in_session) + 1;
         
+        //Step 4) Determine whether the start date or the end date should be modified
+        //or if it needs to be asked to the user
+        
+        //If the settings are for the system to edit the end time, and the end time wasn't edited after editing the start time
+		if (time_preferences.automatic_calculation_time == 2 && og._end_time_edited_in_session <= og._start_time_edited_in_session) {
+			og.changeEndDate();
+		} else {
+	        //In every other case, edit the start-time
+			og.changeStartDate();			
+		}
+        
+        /* old version        
         if(edit_mode){
             switch(time_preferences.automatic_calculation_time){
                 case "1":
                     og.changeStartDate();
+                    //og.changeStartDate() and og._start_time_edited_in_session == 
                     break;
                 case "2":
                     og.changeEndDate();
@@ -429,10 +472,13 @@
         }else{
             og.changeStartDate();
         }
+        */
+
     }
 
     /**
-     * Apply the change who the user decided
+     * Apply the change the the user selected on the pop-up questions
+     * 
      */
     og.applyTimeAction = function (){
         action = $('#user-config').find('input:radio[name="user_config"]:checked').val();
@@ -454,11 +500,11 @@
         }
         og.updateLastTimeValue();
         og.ExtModal.hide();
-
     };
 
     /**
-     * Apply the change who the user decided
+     * Apply the change (start time, end time and/or worked time) that the user chose on the pop-up question
+     * 
      */
     og.applyDatesAction = function (){
         action = $('#user-config').find('input:radio[name="user_config"]:checked').val();
@@ -466,7 +512,7 @@
         var actionValue = "3";
         if(action == 'dates'){
             actionValue = "1";
-            if(og.whoNeedChange == 2){
+            if(og.whichFieldMustChange == 2){
                 og.changeEndDate();
             }else{
                 og.changeStartDate();
@@ -490,18 +536,60 @@
 
     
     /**
-     * Change automatic the start date
+     * 
+     * Automatically change the start date.
+     *
+	 * When the user changes the worked time (or paused time) and/or the end date+time, the start date might change. 
+     * This will depend on what settings the user has in its configuration, and/or whether it is configured to prompt a question to the user.
      */
     og.changeStartDate = function () {
-        
+
+        //Step 1) get the current values
         start_date = $('#date_input');
         start_time = $('#start_time_input');
         
         end_date = $('#date_end_input');
         end_time = $('#end_time_input');
+
+        worked_time = $('#worked_time').val();
+        worked_minute = $('#worked_minute').val();
         
+        paused_time = $('#paused_time').val();
+        paused_minute = $('#paused_minute').val();
+		
+        //If the end_time or end_date are empty, it should be set as "now" by default.
+		var now = new Date(); //Current time
+        if(end_time.val() =="hh:mm" ) {
+            end_time.val(timeslots.format_hours_and_minutes(now));
+        }
+        if(end_date.val() == og.preferences.date_format_tip) {
+            end_date.val(now.dateFormat(og.preferences.date_format)); 
+        }
+
+        //Step 2) We turn the end_date into a Date object
+        var end_date_aux = og.getDateArray(end_date.val(), end_time.val());
+        var end_date_and_time = new Date(end_date_aux[0], end_date_aux[1], end_date_aux[2], end_date_aux[3], end_date_aux[4]);
+        
+        //Step 3) We sum up the worked time and paused time as milliseconds
+        var total_milliseconds = timeslots.turn_into_total_milliseconds(worked_time, worked_minute, paused_time, paused_minute);
+        //console.log("Total miliseconds: "+total_milliseconds);
+        
+        //Step 4) We deduct the worked hours + paused hours from the end date, to get the start date
+        var start_date_and_time = end_date_and_time.getTime() - total_milliseconds;
+        var startDate = new Date(start_date_and_time);
+        
+        start_date.val(startDate.dateFormat(og.preferences.date_format));
+        start_time.val(timeslots.format_hours_and_minutes(startDate));
+          
+        
+        /*
+        
+        PREVIOUS VERSION - DELETE
 		var start_date_aux = og.getDateArray(start_date.val(), start_time.val());
+
+		//If the end_date is empty, it should be set as "now" by default.
         if(end_date.val() == og.preferences.date_format_tip || end_time.val() =="hh:mm"){
+            //This is wrong.
             var now = new Date(start_date_aux[0],start_date_aux[1],start_date_aux[2],start_date_aux[3],start_date_aux[4]);
         }else{
             var end_date_aux = og.getDateArray(end_date.val(),end_time.val());
@@ -511,7 +599,9 @@
         hours = now.getHours();
         minutes = now.getMinutes(); 
 
-        og._actualTimeValue = og._lastTimeValue;
+        //This is wrong - right?
+        //Conrado 8/2019 - commented out
+        //og._newTimeValue = og._lastTimeValue;
 
         var h = $('#worked_time').val();
         var m = $('#worked_minutes').val();
@@ -519,7 +609,7 @@
         if (isNaN(m)) m = 0;
         var worked_milis = (h * 60 + m) * 60 * 1000;
         
-        //var d = new Date(now.getTime()-(og._actualTimeValue));
+        //var d = new Date(now.getTime()-(og._newTimeValue));
         var d = new Date(now.getTime() - worked_milis);
         
         var final_minutes = d.getMinutes();
@@ -545,20 +635,58 @@
         }
         start_date.val(d.dateFormat(og.preferences.date_format));
         end_date.val(now.dateFormat(og.preferences.date_format));
-        
+        */
     };
 
     /**
-     * Change automatic the end date
+     * Automatically change the end date
+	 * When the user changes the worked time (or paused time) and/or the start date+time, the start date might change 
+     * This will depend on what settings the user has in its configuration, and/or whether it is configured to prompt a question to the user.     
      */
     og.changeEndDate = function () {
         
+        //Step 1) get the current values
         start_date = $('#date_input');
         start_time = $('#start_time_input');
         
         end_date = $('#date_end_input');
         end_time = $('#end_time_input');
 
+        worked_time = $('#worked_time').val();
+        worked_minute = $('#worked_minute').val();
+        
+        paused_time = $('#paused_time').val();
+        paused_minute = $('#paused_minute').val();
+		
+
+        //Step 2) Check if the start_time or start_date are empty. If either is empty we use the changeStartDate function
+        //(It doesn make sense to "change the End Date", because we don't have a firm start date).
+        if ( 
+             //(end_time.val() =="hh:mm" ) 							||
+             //(end_date.val() == og.preferences.date_format_tip) 	||
+             (start_time.val() =="hh:mm" ) 							||
+             (start_date.val() == og.preferences.date_format_tip) ) {
+        	og.changeStartDate();
+        } else {
+
+            //Step 3) We turn the start_date into a Date object
+            var start_date_aux = og.getDateArray(start_date.val(), start_time.val());
+            var start_date_and_time = new Date(start_date_aux[0], start_date_aux[1], start_date_aux[2], start_date_aux[3], start_date_aux[4]);
+            
+            //Step 4) We sum up the worked time and paused time as milliseconds
+            var total_milliseconds = timeslots.turn_into_total_milliseconds(worked_time, worked_minute, paused_time, paused_minute);
+            //console.log("In changeEndDate() - Total miliseconds: "+total_milliseconds);
+            
+            //Step 5) We deduct the worked hours + paused hours from the end date, to get the start date
+            var end_date_and_time = start_date_and_time.getTime() + total_milliseconds;
+            var endDate = new Date(end_date_and_time);
+
+            //Step 6) We input the new values on the fields
+            end_date.val(endDate.dateFormat(og.preferences.date_format));
+            end_time.val(timeslots.format_hours_and_minutes(endDate));
+        } 
+        
+        /* Old version
         var now;
         if(end_date.val() == og.preferences.date_format_tip || end_time.val() =="hh:mm"){
             now = new Date();
@@ -575,7 +703,7 @@
         if (isNaN(m)) m = 0;
         var worked_milis = (h * 60 + m) * 60 * 1000;
         
-        og._actualTimeValue = og._lastTimeValue;
+        og._newTimeValue = og._lastTimeValue;
         
         var d = new Date(now.getTime() + worked_milis);
         
@@ -603,57 +731,126 @@
         end_date.val(d.dateFormat(og.preferences.date_format));
         start_date.val(now.dateFormat(og.preferences.date_format));
 
+        */
+
     };
 
-
+    /**
+     * Automatically change the length of worked time
+     */
     og.changeTimesInputs = function(){
-        worked_time = $('#worked_time').val();
-        worked_minute = $('#worked_minute').val();
-
-        paused_time = $('#paused_time').val();
-        paused_minute = $('#paused_minute').val();
-
+        //Step 1) get the current values
         start_date = $('#date_input');
         start_time = $('#start_time_input');
-
+        
         end_date = $('#date_end_input');
         end_time = $('#end_time_input');
 
-        if(start_time.val() == 'hh:mm'){
-            return true;
+        worked_time = $('#worked_time').val();
+        worked_minute = $('#worked_minute').val();
+        
+        paused_time = $('#paused_time').val();
+        paused_minute = $('#paused_minute').val();
+
+        //Step 2) Check if both start time and end time are entered
+        if ( (end_time.val()   != "hh:mm" ) 						&&
+             (end_date.val()   != og.preferences.date_format_tip) 	&&
+             (start_time.val() != "hh:mm" ) 						&&
+             (start_date.val() != og.preferences.date_format_tip) ) {
+
+			//Step 3) We turn the start and end times into Date objects
+            var start_aux = og.getDateArray(start_date.val(),start_time.val());
+            var end_aux = og.getDateArray(end_date.val(),end_time.val());
+            DateOne = new Date(start_aux[0],start_aux[1],start_aux[2],start_aux[3],start_aux[4]);
+            DateTwo = new Date(end_aux[0],end_aux[1],end_aux[2],end_aux[3],end_aux[4]);
+
+            //Step 4) We calculate the difference between start and end date, and turn it into hours and minutes 
+            var time_diff = DateTwo.getTime() - DateOne.getTime();
+
+            if(paused_time != ""){
+                time_diff -= (parseInt(paused_time) * timeslots._minutes_multiplier);
+            }
+            if(paused_minute !=""){
+                time_diff -= (parseInt(paused_minute) * timeslots._hours_multiplier);
+            }
+
+            var final_minutes = (time_diff/timeslots._minutes_multiplier) % 60;
+            var final_hours = parseInt((time_diff/timeslots._minutes_multiplier) / 60);
+
+            $('#worked_time').val(final_hours);
+            $('#worked_minute').val(final_minutes);
+    			
+        } else {
+            //If any of those is empty, we can't "change the worked time", because we don't have enough elements
+        	og.changeStartDate();
         }
-        if(end_time.val() == 'hh:mm'){
-            return true;
-        }
 
-        var start_aux = og.getDateArray(start_date.val(),start_time.val());
-        var end_aux = og.getDateArray(end_date.val(),end_time.val());
-        DateOne = new Date(start_aux[0],start_aux[1],start_aux[2],start_aux[3],start_aux[4]);
-        DateTwo = new Date(end_aux[0],end_aux[1],end_aux[2],end_aux[3],end_aux[4]);
-
-        var time_diff = DateTwo.getTime() - DateOne.getTime();
-
-        if(paused_time != ""){
-            time_diff -= (parseInt(paused_time) * og._minutes);
-        }
-        if(paused_minute !=""){
-            time_diff -= (parseInt(paused_minute) * og._hours);
-        }
-
-        var final_minutes = (time_diff/og._minutes) % 60;
-        var final_hours = parseInt((time_diff/og._minutes) / 60);
-
-        $('#worked_time').val(final_hours);
-        $('#worked_minute').val(final_minutes);
     };
 
-    og.whoNeedChange = 0;
-    og.onchangeDatesInputs = function (whoShow) {
+    og.onchangeStartDate = function () {
+		switch (time_preferences.automatic_calculation_start_time) {
+		case '1': //Change the opposite date
+            og.changeEndDate();
+            break;
+		case '2': //Change the worked time
+            og.changeTimesInputs();
+            break;
+		case '3': //Ask me every time
+        	var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
+    		if (end_date_visible) {
+                $modal = og.ExtModal.show({
+                    title: '<?php echo lang("You changed a date in your time record"); ?>',
+                    basecls: 'user-config-timeslots',
+                    html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
+                });
+                $modal.on('close', og.rollbackInputs);
+    		}
+		default:
+            og.changeEndDate();
+        	break;
+		}
+    }
 
-        if(whoShow == 'timeslot[end_date]'){
-            og.whoNeedChange = 1;
+    og.onchangeEndDate = function () {
+		var option = time_preferences.automatic_calculation_start_time;
+		//console.log('option: '+option);
+		switch (option) {
+    		case '1': //Change the opposite date
+    			//console.log('onchangeEndDate -> Change the start date');
+                og.changeStartDate();
+                break;
+    		case '2': //Change the worked time
+    			//console.log('onchangeEndDate -> Change the worked time');
+                og.changeTimesInputs();
+                break;
+    		case '3': //Ask me every time
+    			//console.log('onchangeEndDate -> Ask me every time');
+    			var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
+        		if (end_date_visible) {
+                    $modal = og.ExtModal.show({
+                        title: '<?php echo lang("You changed a date in your time record"); ?>',
+                        basecls: 'user-config-timeslots',
+                        html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
+                    });
+                    $modal.on('close', og.rollbackInputs);
+        		}
+        		break;
+    		default:
+    			//console.log('onchangeEndDate -> Default -> changeStartDate()');
+                og.changeStartDate();
+            	break;
+    		}        
+    }
+
+    //This global variable seems necessary to carry the user selection across functions
+    og.whichFieldMustChange = 0;
+    
+    og.onchangeDatesInputs = function (whichField) {
+
+        if(whichField == 'timeslot[end_date]'){
+            og.whichFieldMustChange = 1;
         }else{
-            og.whoNeedChange = 2;
+            og.whichFieldMustChange = 2;
         }
 
         div = $('#modal-config-hours').html().replace(/\{genid\}/ig, Ext.id());
@@ -662,7 +859,7 @@
         if(time_preferences.automatic_calculation_start_time != 0){
             if(time_preferences.automatic_calculation_start_time == 1){
                 action = 2;
-                if(whoShow == 'timeslot[end_date]'){
+                if(whichField == 'timeslot[end_date]'){
                     action = 1;
                 }
             }

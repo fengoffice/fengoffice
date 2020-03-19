@@ -260,7 +260,7 @@ function is_iframe_request() {
  *
  * @param string $csv
  * @param $value
- * @return unknown
+ * @return bool
  */
 function in_csv(string $csv, $value){
 	$arr = explode(',',$csv);
@@ -392,7 +392,7 @@ function is_valid_email($user_email) {
  * Verify the syntax of the given URL.
  *
  * @access public
- * @param $url The URL to verify.
+ * @param $url string The URL to verify.
  * @return boolean
  */
 function is_valid_url($url) {
@@ -662,7 +662,7 @@ function purify_html($html) {
 }
 /**
  * 
- * @return the real Clients IP
+ * @return string the real Clients IP
  */
 function get_ip_address()
 {
@@ -720,7 +720,7 @@ function HttpRequest( $url, $method = 'GET', $data = NULL, $additional_headers =
 	# in compliance with the RFC 2616 post data will not redirected
 	$method = strtoupper($method);
 	$url_parsed = @parse_url($url);
-	if (!@$url_parsed['scheme']) $url_parsed = @parse_url('http://'.$url);
+	if (!@$url_parsed['scheme']) $url_parsed = @parse_url('https://'.$url);
 	extract($url_parsed);
 	if(!is_array($data)) {
 		$data = NULL;

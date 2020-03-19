@@ -647,6 +647,9 @@ class TemplateTask extends BaseTemplateTask {
 		if($new_due_date != "") {
 			if ($new_task->getDueDate() instanceof DateTimeValue) $new_task->setDueDate($new_due_date);
 		}
+		
+		$new_task->getObject()->setColumnValue('object_subtype_id', $project_task->getColumnValue('object_subtype_id'));
+		
 		$new_task->save();
 		
 		// Copy members, linked_objects, custom_properties, subscribers, reminders and comments

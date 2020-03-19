@@ -428,7 +428,7 @@ class ProjectTasks extends BaseProjectTasks {
 	}
 	
 	
-	static function getArrayInfo($raw_data, $full = false, $include_members_data = false){
+	static function getArrayInfo($raw_data, $full = false, $include_members_data = false, $include_mem_path = true){
 		$desc = "";
 		if ($full) {
 			if(config_option("wysiwyg_tasks")){
@@ -462,9 +462,13 @@ class ProjectTasks extends BaseProjectTasks {
 			'createdById' => (int)$raw_data['created_by_id'],
 			'otype' => $raw_data['object_subtype'],
 			'percentCompleted' => (int)$raw_data['percent_completed'],			
-			'memPath' => str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())))
+		//	'memPath' => str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())))
 		);
+		if ($include_mem_path && count($member_ids) > 0) {
+			$result['memPath'] = str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())));
+		}
 		if ($include_members_data && count($member_ids) > 0) {
+			
 			$task_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
 			$members_data = array();
 			foreach ($task_members as $m) {

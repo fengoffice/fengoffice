@@ -2,9 +2,8 @@
 
 /**
  * COTemplate class
- * Generated on Sat, 04 Mar 2006 12:50:11 +0100 by DataObject generation tool
  *
- * @author Ignacio de Soto <ignacio.desoto@gmail.com>
+ * @author FengOffice
  */
 class COTemplate extends BaseCOTemplate {
 
