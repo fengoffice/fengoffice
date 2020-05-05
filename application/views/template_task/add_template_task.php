@@ -863,7 +863,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		COUNT_LINE = 1;
 	<?php	if (count($multi_assignment) > 0) {
 				foreach($multi_assignment as $assignment){ ?>
-					addMultiAssignment('<?php echo $genid ?>','<?php echo $assignment['assigned_to_contact_id'] ?>' , '<?php echo $assignment['name'] ?>', '<?php echo $assignment['time_estimate_hours'] ?>', '<?php echo $assignment['time_estimate_minutes'] ?>');		
+					addMultiAssignment('<?php echo $genid ?>','<?php echo $assignment['assigned_to_contact_id'] ?>' , '<?php echo clean(str_replace("\n", "", $assignment['name'])) ?>', '<?php echo $assignment['time_estimate_hours'] ?>', '<?php echo $assignment['time_estimate_minutes'] ?>');		
 	<?php		}
 			}
 		}

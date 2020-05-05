@@ -58,7 +58,7 @@ class ObjectReminders extends BaseObjectReminders {
 		
 		return ObjectReminders::findAll(array(
 			'conditions' => array(
-				"`date` > ? AND `date` < ?" . $extra . $template_cond, $yesterday, DateTimeValueLib::now(),
+				"`date` > ? AND `date` < ?" . $extra, $yesterday, DateTimeValueLib::now(),
 			),
 			'order' => "date desc",
 			'limit' => config_option('cron reminder limit', 100)

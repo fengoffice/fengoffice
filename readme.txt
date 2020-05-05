@@ -1,5 +1,5 @@
 
-	About Feng Office 3.8.1.23
+	About Feng Office 3.8.1.32
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,89 @@
 	
 	Changelog
 	=========
+	
+	Since 3.8.1.31
+	-----------------
+	feature: allow excel report headers to wrap text
+	bugfix: several fixes to fidelis's reports and their excel export functions
+	bugfix: Show correct user name in the email subject when comment is added
+	
+	Since 3.8.1.30
+	-----------------
+	feature: expenses amount inputs formatted with thousand and decimal separators
+	bugfix: fix plugin queries to run with mysqli
+	bugfix: dont include js flash objects
+	bugfix: mail linked objects were repeating some linked objects
+	bugfix: fix expenses bug introduced in last version that broke the widgets
+	
+	Since 3.8.1.29
+	-----------------
+	feature: set association between projects and clients as not multiple
+	feature: Add option to select what is shown as columns in budget report: Subprojecs or Phases
+	feature: Develop expenses api
+	bugfix: fix money format in expenses list amounts
+	bugfix: fix some upgrade scripts to check extension mysqli and not mysql
+	bugfix: ensure that no user is trashed when deleting member and its objects
+	bugfix: remove hardcoded table prefix from some queries
+	bugfix: Don't generate budget report if project is not selected
+
+	Since 3.8.1.28
+	-----------------
+	bugfix: several fixes in upgrade scripts
+	bugfix: fix client creation from api, give the default permissions depending on defined settings
+	bugfix: fix multiassignment when subtask name has an enter
+	bugfix: fix invoices trash function warnings
+	bugfix: allow to change actions column width in mail module
+	bugfix: ensure that all dimension associations have their default config options after updating plugins
+	
+	Since 3.8.1.27
+	-----------------
+	feature: allow ckeditor to embeed youtube videos in documents
+	feature: modify text_to_show_in_trees logic to allow associated dimension members to be shown as member name's prefix
+	bugfix: Fix vulnerabilities reported by github
+	bugfix: when deleting invoice related timeslot invoicing status must be rolled back 
+	bugfix: remove the default_selection checkboxes from the multiple member selector selected members list
+	bugfix: fix required custom properties verification
+	bugfix: fix attachments popup to include all documents where the user has perissions, no matter if it came from an email, if it is classified where user has permissions it must be listed
+	bugfix: fix address custom property inputs
+	bugfix: fix product types table collation in the installer
+	bugfix: minor fixes in customer and mail controllers
+
+	
+	Since 3.8.1.26
+	-----------------
+	feature: Add subscribers column to reports
+	bugfix: Fix workspaces subtypes edition
+	bugfix: fix mail deletion when file is not in repository
+	bugfix: fix exception management when deleting file revisions
+	bugfix: fix multi assignment hook, when editing a task the subtasks classification was overriden
+	bugfix: fix expenses trash purge hooks
+	bugfix: fix empty trash for administrators
+	bugfix: prevent errors in upgrade when setting datetime columns to 0 and sql mode does not allow
+	bugfix: fix automatic repetitive task generation to not notify the subscribed users to the generated tasks
+	bugfix: Fix overreaching lines in the notifications
+	bugfix: Reload the page when repetitive tasks are created
+	bugfix: Fix bug in the calculation of repetitive task due date or start date and config option "days range to replicate tasks"
+	
+	Since 3.8.1.25
+	-----------------
+	bugfix: fix notifications manager bug, summary was still being sent for people that disabled all triggers for the summary in their user preferences
+	bugfix: fix crpm installer
+	bugfix: fix Contacts class getEmailAddress method query
+	bugfix: Fix bug that halted sending the 'Due date reminder' notification (#514)
+	bugfix: added new mail tempate variables: completed_by and completed_on to object_templates and notifications_manager plugins
+	bugfix: fix task complete function, it was not using the latest object's data to generate the notification
+	
+	Since 3.8.1.24
+	-----------------
+	bugfix: exclude trashed timeslots from Timeslots class functions
+	bugfix: fixes to web plugin and http requests
+	bugfix: modify upgrade process to update db adapter to mysqli if needed
+	bugfix: fix installer with fixed reports
+	bugfix: fix core reports list for new reporting system for fixed reports
+	bugfix: Show custom property name in the notifications (#506)
+	bugfix: Display percent completed, re-classify the timeslot when changing timeslot's task
+	bugfix: Update warnings in 'Work progress' widget, show list of linked tasks that missing info
 	
 	Since 3.8.1.23
 	-----------------

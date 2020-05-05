@@ -965,10 +965,11 @@
         
         var Link = $('.add-linked-object:first');
         var Object = $('.og-add-template-object:first');
-        
         Object.find('#object_id').val(object_id);
         Object.find('.name').text(object_name);
-        
+
+        og.set_timeslot_members_by_task(object_id);
+
         Link.hide()
         Object.show();
         
@@ -986,6 +987,53 @@
         Object.find('.name').text('');
         
     }
+
+    og.set_timeslot_members_by_task =  function(task_id) {
+		if (task_id) {
+			og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
+				hideLoading: true,
+				callback: function(success, data) {
+					if (data.task) {
+                        // remove all members from timeslot
+                        member_selector.remove_all_selections(gen_id);
+                        // parse the mem path string
+                        var mempath = Ext.util.JSON.decode(data.task.memPath);
+                        var task_members_json = {};
+                        // iterate the mempath object, key = dimension_id, value = member ids grouped by member type id
+
+                        for (var dim_id in mempath) {
+                            task_members_json[dim_id] = [];
+                            // get the members grouped by type
+                            ots_data = mempath[dim_id];
+                            // foreach member type, process the members
+                            for (var ot_id in ots_data) {
+                                if (!isNaN(ot_id) && ots_data[ot_id] && ots_data[ot_id].length > 0) {
+                                    // process the members of the current member tpye
+                                    for (var x in ots_data[ot_id]) {
+                                        // get the member id
+                                        var m = ots_data[ot_id][x];
+                                        // add the member id to the result
+                                        task_members_json[dim_id].push(m);
+                                    }
+                                }
+                            }
+                        }
+
+                        for(var dim_id in task_members_json){
+                            var member_ids = task_members_json[dim_id];
+                            for (var i=0; i<member_ids.length; i++) {
+                                if(typeof member_ids[i] != 'function'){
+                                    var mem_id = member_ids[i];
+                                    member_selector.add_relation(dim_id, gen_id, mem_id);
+                                }
+                            }     
+                        }
+                        	
+					}
+				}
+			});
+		}
+	}
     
     
     

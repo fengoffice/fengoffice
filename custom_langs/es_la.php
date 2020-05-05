@@ -8,8 +8,8 @@
 	'add budgeted payment' => 'Agregar gasto presupuestado',
 	'add executed payment' => 'Agregar gasto ejecutado',
 	'cannot delete executed expense' => 'No es posible eliminar un gasto ejecutado.',
-	'can_edit_executed_payments' => 'Puede editar gastos ejecutados',
-	'can_edit_executed_payments description' => 'Si esta opción está habilitada el usuario podrá modificar gastos que hayan sido ejecutados.',
+	'can_edit_executed_payments' => 'Puede editar gastos aprobados',
+	'can_edit_executed_payments description' => 'Si esta opción está habilitada el usuario podrá modificar gastos que hayan sido aprobados.',
 
 	'payments report' => 'Reporte de gastos',
 	'payments report description' => 'Lista los gastos agrupados por clientes y proyectos desplegando el detalle de los gastos.',

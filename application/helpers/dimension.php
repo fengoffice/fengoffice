@@ -466,7 +466,8 @@ function render_associated_dimensions_selectors($params) {
 					'hidden_field_name' => $hf_name,
 					'select_function' => $select_fn, 
 					'listeners' => array('on_remove_relation' => "$remove_fn('$comp_genid', ".$dimension->getId().", '$hf_name');"),
-					'default_selection_checkboxes' => $dim_association->getAllowsDefaultSelection(),
+					// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
+					'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
 					'width' => 400,
 					'related_member_id' => $member->getId()
 				), false);

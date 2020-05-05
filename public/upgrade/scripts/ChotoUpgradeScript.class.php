@@ -28,7 +28,7 @@ class ChotoUpgradeScript extends ScriptUpgraderScript {
 	 * @var array
 	 */
 	private $check_extensions = array(
-		'mysql', 'gd', 'simplexml'
+		'mysqli', 'gd', 'simplexml'
 	); // array
 
 	 /**
@@ -238,7 +238,7 @@ class ChotoUpgradeScript extends ScriptUpgraderScript {
 						  `created_by_id` INTEGER UNSIGNED NOT NULL,
 						  PRIMARY KEY (`id`)
 						)
-						ENGINE = InnoDB;
+						ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 					";
 				}
 				

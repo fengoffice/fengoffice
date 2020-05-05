@@ -28,7 +28,7 @@ return array(
 	"og/Ext.ux.layout.MultiAccordion.js",
 	"og/Ext.ux.layout.Horizontal.js",
 	"og/ExtendedDialog.js",
-	"og/Sound.js",
+	//"og/Sound.js",
 	"og/LoginDialog.js",
 	"og/HtmlPanel.js",
 	"og/MemberTree.js",

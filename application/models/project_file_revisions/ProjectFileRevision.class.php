@@ -422,6 +422,8 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 		}
 		try {
 			FileRepository::deleteFile($this->getRepositoryId());
+		} catch (FileNotInRepositoryError $ex) {
+			Logger::log($ex->getMessage());
 		} catch (Exception $ex) {
 			Logger::log($ex->getMessage());
 		}

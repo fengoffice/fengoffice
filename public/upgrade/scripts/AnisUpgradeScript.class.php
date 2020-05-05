@@ -27,7 +27,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 	 * @var array
 	 */
 	private $check_extensions = array(
-		'mysql', 'gd', 'simplexml'
+		'mysqli', 'gd', 'simplexml'
 	); // array
 
 	 /**
@@ -116,7 +116,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 				  `name` VARCHAR(100) NOT NULL,
 				  `value` TEXT NOT NULL,
 				  PRIMARY KEY (`dimension_id`, `name`)
-				) ENGINE=InnoDB;
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
 			
 			$upgrade_script .= "
@@ -126,7 +126,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 				  `name` VARCHAR(100) NOT NULL,
 				  `value` TEXT NOT NULL,
 				  PRIMARY KEY (`dimension_id`, object_type_id, `name`)
-				) ENGINE=InnoDB;
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
 			
 			

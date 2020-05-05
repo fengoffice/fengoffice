@@ -87,7 +87,7 @@ CREATE TABLE `<?php echo $table_prefix ?>sharing_table_flags` (
   `created_by_id` INTEGER UNSIGNED NOT NULL,
   PRIMARY KEY (`id`)
 )
-ENGINE = <?php echo $engine ?>;
+ENGINE = <?php echo $engine ?> <?php echo $default_charset ?>;
 
 INSERT INTO `<?php echo $table_prefix ?>cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES
 	('check_sharing_table_flags', '1', '10', '1', '1', '0000-00-00 00:00:00')

@@ -351,6 +351,8 @@ og.preferences = {
 	'enableArchiveConfirmation': <?php echo user_config_option('enable_archive_confirmation') ? '1' : '0' ?>,
 	'enableTrashConfirmation': <?php echo user_config_option('enable_trash_confirmation') ? '1' : '0' ?>,
 	'trash_objects_in_member_after_delete': <?php echo user_config_option('trash_objects_in_member_after_delete') ? '1' : '0' ?>,
+	'decimals_separator': '<?php echo user_config_option('decimals_separator') ?>',
+	'thousand_separator': '<?php echo user_config_option('thousand_separator') ?>',
 };
 
 og.userRoles = {};
@@ -449,8 +451,8 @@ og.objectTypes =  <?php echo clean(str_replace('"',"'", escape_character(json_en
 og.breadcrumbs_skipped_dimensions = [];
 
 Ext.Ajax.timeout = <?php echo get_max_execution_time()*1100 // give a 10% margin to PHP's timeout ?>;
-og.musicSound = new Sound();
-og.systemSound = new Sound();
+//og.musicSound = new Sound();
+//og.systemSound = new Sound();
 
 <?php 
 	$all_dimension_associations = DimensionMemberAssociations::instance()->getAllAssociationsInfo();

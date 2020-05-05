@@ -1584,6 +1584,10 @@ class MemberController extends ApplicationController {
 					";
 					$object_ids_to_keep = array_flat(DB::executeAll($object_ids_to_keep_sql));
 					
+					// ensure that no user is going to be trashed
+					$user_ids = array_flat(DB::executeAll("SELECT object_id FROM ".TABLE_PREFIX."contacts WHERE user_type > 0"));
+					$object_ids_to_keep = array_merge($object_ids_to_keep, $user_ids);
+					
 					// calculate the object ids that can be trashed
 					$object_ids_to_trash = array_diff($all_affeceted_object_ids, $object_ids_to_keep);
 					

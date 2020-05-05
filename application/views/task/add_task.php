@@ -240,7 +240,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			<div class="clear"></div>
 		</div>
 		<?php if(config_option('use_task_percent_completed')){ ?>
-			<?php if(array_var($task_data, 'time_estimate') == 0){?>
+			<?php 
+			$time_estimate = array_var($task_data, 'time_estimate');
+			$count_timeslots = array_var($task_data, 'count_timeslots');
+			if(($time_estimate == 0 && $count_timeslots > 0) || $count_timeslots == 0){ ?>
 				<div class="dataBlock">
 				<?php echo label_tag(lang('percent completed')) ?>
 				<?php echo input_field('task[percent_completed]', array_var($task_data, 'percent_completed', 0), array('class' => 'short')) ?>

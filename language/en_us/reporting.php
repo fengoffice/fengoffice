@@ -49,6 +49,7 @@
 	'field Objects contact_id' => 'Person',
 	'field Objects description' => 'Description',
 	'field Objects move_direction_non_working_days' => 'Move direction if non working day',
+	'field Objects subscribers_list' => 'Subscribers',
 	'field Objects paused_on' => 'Paused on',
 	'field Objects subtract' => 'Paused time',
 	'field Objects fixed_billing' => 'Total billable',

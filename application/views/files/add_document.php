@@ -89,7 +89,7 @@ var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor', {
 				'NumberedList','BulletedList','-','Outdent','Indent','Blockquote','-',
 				'JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-',
 				'Link','Unlink', 'Anchor', '-','Maximize','-',
-				'Image','Table','HorizontalRule','Smiley','SpecialChar','PageBreak','-', 
+				'Image','Youtube','Table','HorizontalRule','Smiley','SpecialChar','PageBreak','-', 
 				'TextColor','BGColor','RemoveFormat']
 			],
 	
@@ -125,6 +125,9 @@ var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor', {
 		}
 	},
 	fillEmptyBlocks: false,
+
+	extraPlugins: 'youtube',
+	
 	removePlugins: 'scayt,liststyle,magicline',
 	entities_additional : '#336,#337,#368,#369'
 });

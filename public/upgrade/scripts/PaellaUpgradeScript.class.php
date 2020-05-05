@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.1.24');
+		$this->setVersionTo('3.8.1.32');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -95,7 +95,14 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		$total_queries = 0;
 		$executed_queries = 0;
 
-		$upgrade_script = "";
+		$upgrade_script = "
+				SET @old_sql_mode := @@sql_mode ;
+				-- derive a new value by removing NO_ZERO_DATE and NO_ZERO_IN_DATE
+				SET @new_sql_mode := @old_sql_mode ;
+				SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_DATE,'  ,','));
+				SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_IN_DATE,',','));
+				SET @@sql_mode := @new_sql_mode ;
+		";
 		
 		$v_from = array_var($_POST, 'form_data');
 		$original_version_from = array_var($v_from, 'upgrade_from', $installed_version);
@@ -135,7 +142,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		if (version_compare($installed_version, '3.5-beta2') < 0) {
 			if (!$this->checkColumnExists($t_prefix."timeslots", "worked_time", $this->database_connection)) {
 				$upgrade_script .= "
-					ALTER TABLE `".$t_prefix."timeslots` ADD COLUMN `worked_time` int(10) unsigned NOT NULL DEFAULT 0;
+					ALTER TABLE `".$t_prefix."timeslots` ADD COLUMN `worked_time` int(10)  NOT NULL DEFAULT 0;
 				";
 			}
 			
@@ -254,14 +261,14 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
                 CREATE TABLE IF NOT EXISTS `".$t_prefix."contact_external_tokens` (
                 `id` int(10) unsigned NOT NULL auto_increment,
                 `contact_id` int(10) unsigned NOT NULL,
-                `token` text COLLATE utf8_unicode_ci default '',
+                `token` text COLLATE utf8_unicode_ci,
                 `type` varchar(50) COLLATE utf8_unicode_ci NOT NULL default '',
                 `external_key` varchar(255) COLLATE utf8_unicode_ci default '',
                 `external_name` varchar(255) COLLATE utf8_unicode_ci default '',
                 `created_date` datetime default '0000-00-00 00:00:00',
                 `expired_date` datetime default '0000-00-00 00:00:00',
                   PRIMARY KEY  (`id`)
-                ) ENGINE=InnoDB;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             ";
         }
         
@@ -441,8 +448,8 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         if (version_compare($installed_version, '3.6.2-beta6') < 0) {
             if (!$this->checkValueExists($t_prefix."custom_properties","code","prefix_code", $this->database_connection)){
                 $upgrade_script .= "
-				INSERT INTO ".$t_prefix."custom_properties (object_type_id, name, code, `type`,`is_special`,`description`) VALUES
-                    ((SELECT id FROM ".$t_prefix."object_types WHERE name='contact'), 'Prefix', 'prefix_code', 'text', 1, '');
+				INSERT INTO ".$t_prefix."custom_properties (object_type_id, name, code, `type`,`is_special`,`description`,`values`,`default_value`,`is_required`,`is_multiple_values`,`property_order`,`visible_by_default`) VALUES
+                    ((SELECT id FROM ".$t_prefix."object_types WHERE name='contact'), 'Prefix', 'prefix_code', 'text', 1, '', '', '', 0, 0, 0, 0);
 			";
             }
 
@@ -691,9 +698,9 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			
 			$upgrade_script .= "
 				UPDATE `".$t_prefix."objects` SET `trashed_on`=0 WHERE `trashed_on` IS NULL;
-			";
-			$upgrade_script .= "
 				UPDATE `".$t_prefix."objects` SET `archived_on`=0 WHERE `archived_on` IS NULL;
+				UPDATE `".$t_prefix."objects` SET `trashed_by_id`=0 WHERE `trashed_by_id` IS NULL;
+				UPDATE `".$t_prefix."objects` SET `archived_by_id`=0 WHERE `archived_by_id` IS NULL;
 			";
 		}
 		
@@ -706,6 +713,12 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				ALTER TABLE `".$t_prefix."config_options` CHANGE `options` `options` varchar(511) COLLATE 'utf8_unicode_ci' DEFAULT '';
 			";
 		}
+		
+		$upgrade_script .= "
+				-- when we are done with required operations, we can revert back
+				-- to the original sql_mode setting, from the value we saved
+				SET @@sql_mode := @old_sql_mode ;
+		";
         
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {

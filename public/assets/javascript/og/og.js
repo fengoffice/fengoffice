@@ -5103,6 +5103,41 @@ og.updatePictureFile = function (url) {
 }
 
 
+
+og.format_money_amount = function(amount, decimals) {
+	
+	amount = og.clean_thousand_separator(amount);
+	
+	amount = parseFloat(amount);
+	
+	if (!decimals) decimals = 2;
+	
+	return amount.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+
+og.clean_thousand_separator = function(amount) {
+	if (!isNaN(amount)) return amount;
+	
+	var th_sep = og.get_locale_thousand_separator();
+	if (th_sep == ',') {
+		amount = amount.replace(/\,/, '');
+	} else {
+		var re = '/' + th_sep + '/';
+		amount = amount.replace(re, '');
+	}
+	return amount;
+}
+
+og.get_locale_thousand_separator = function() {
+	var num = 1000;
+    var numStr = num.toLocaleString();
+    if (numStr.length == 5) {
+        return numStr.substr(1, 1);
+    }
+    return og.preferences.thousand_separator;
+}
+
+
 /**
  * Return array [year,month,day,hour,minute] 
  * @param {string} date

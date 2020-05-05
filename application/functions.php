@@ -2598,7 +2598,7 @@ function copy_additional_object_data($object, &$copy, $options=array()) {
 		foreach ($object->getSubscriberIds() as $user_id) {
 			$subscribers_array["user_" . $user_id] = "1";
 		}
-		$controller->add_subscribers($copy, $subscribers_array);
+		$controller->add_subscribers($copy, $subscribers_array, true, false);
 	}
 
 	// copy reminders

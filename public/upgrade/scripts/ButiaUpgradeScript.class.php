@@ -27,7 +27,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 	 * @var array
 	 */
 	private $check_extensions = array(
-		'mysql', 'gd', 'simplexml'
+		'mysqli', 'gd', 'simplexml'
 	); // array
 
 	 /**
@@ -151,7 +151,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 				  `parameter_name` VARCHAR(255) NOT NULL DEFAULT '',
 				  `value` TEXT NOT NULL,
 				  PRIMARY KEY (`template_id`, `instantiation_id`, `parameter_name`)
-				) ENGINE = InnoDB;
+				) ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
 			
 			if (!$this->checkColumnExists($t_prefix."project_tasks", "instantiation_id", $this->database_connection)) {
@@ -184,7 +184,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 					  `can_delete` BOOLEAN NOT NULL,
 					  `can_write` BOOLEAN NOT NULL,
 					  PRIMARY KEY (`role_id`, `object_type_id`)
-					) ENGINE = InnoDB;
+					) ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 				";
 				$upgrade_script .= "
 					INSERT INTO `".$t_prefix."max_role_object_type_permissions` SELECT * FROM `".$t_prefix."role_object_type_permissions`;

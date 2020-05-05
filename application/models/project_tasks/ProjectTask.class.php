@@ -556,7 +556,8 @@ class ProjectTask extends BaseProjectTask {
 				$this->setRepeatM(0);
 				$this->setRepeatY(0);
 				$this->setRepeatBy("");
-				// ajx_current('reload');
+		
+				ajx_current('reload');
 			}
 		}
 		

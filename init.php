@@ -66,7 +66,7 @@ if(!is_bool($config_is_set) || !$config_is_set) {
 
 if (!defined('FILES_DIR')) define('FILES_DIR', ROOT . '/upload'); // place where we will upload project files
 define('PRODUCT_NAME', 'Feng Office');
-define('PRODUCT_URL', 'http://www.fengoffice.com');
+define('PRODUCT_URL', 'https://www.fengoffice.com');
 define('PRODUCT_LOGO_FILENAME', 'feng_logo.png');
 define('DEFAULT_HELP_LINK', 'http://fengoffice.com/web/wiki');
 
@@ -81,6 +81,8 @@ define('DEFAULT_THEME', 'default');
 
 define('SLIMEY_PATH', ROOT_URL . '/public/assets/javascript/slimey/');
 define('PLUGINS_URL', ROOT_URL . '/plugins' ) ;
+
+if (!defined('SANDBOX_URL')) define('SANDBOX_URL', ROOT_URL);
 
 if (!defined('PHP_PATH')) {
 	define('PHP_PATH', 'php');

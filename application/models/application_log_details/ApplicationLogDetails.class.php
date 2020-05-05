@@ -326,6 +326,8 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 							if ($old_value == $new_value) break;
 						}
 						
+						$field_name = $cp->getName();
+
 						if ($detail->getOldValue() != '') { 
 							$log_text .= $field_name . ': <span class="log-detail--old-value">' . $old_value . '</span> ' . '<span class="log-detail--new-value">' . $new_value . '</span>';
 						} else {

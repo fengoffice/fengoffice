@@ -27,7 +27,7 @@ class BauruUpgradeScript extends ScriptUpgraderScript {
 	 * @var array
 	 */
 	private $check_extensions = array(
-		'mysql', 'gd', 'simplexml'
+		'mysqli', 'gd', 'simplexml'
 	); // array
 
 	 /**
@@ -96,6 +96,15 @@ class BauruUpgradeScript extends ScriptUpgraderScript {
 		$executed_queries = 0;
 
 		$upgrade_script = "";
+		$upgrade_script .= "
+				SET @old_sql_mode := @@sql_mode ;
+				
+				-- derive a new value by removing NO_ZERO_DATE and NO_ZERO_IN_DATE
+				SET @new_sql_mode := @old_sql_mode ;
+				SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_DATE,'  ,','));
+				SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_IN_DATE,',','));
+				SET @@sql_mode := @new_sql_mode ;
+		";
 		
 		$v_from = array_var($_POST, 'form_data');
 		$original_version_from = array_var($v_from, 'upgrade_from', $installed_version);
@@ -316,7 +325,7 @@ class BauruUpgradeScript extends ScriptUpgraderScript {
 					`member_id` INTEGER UNSIGNED NOT NULL,
 					`selected_member_id` INTEGER UNSIGNED NOT NULL,
 					PRIMARY KEY (`association_id`, `member_id`, `selected_member_id`)
-				) ENGINE = InnoDB;
+				) ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
 			
 			if (!$this->checkColumnExists("".$t_prefix."dimension_member_associations", "allows_default_selection", $this->database_connection)) {
@@ -431,6 +440,15 @@ class BauruUpgradeScript extends ScriptUpgraderScript {
 			
 			if (!$this->checkColumnExists($t_prefix."sent_notifications", "object_id", $this->database_connection)) {
 				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."sent_notifications`
+					CHANGE `sent_date` `sent_date` datetime,
+					CHANGE `timestamp` `timestamp` datetime;
+				";
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."queued_emails`
+					CHANGE `timestamp` `timestamp` datetime;
+				";
+				$upgrade_script .= "
 					ALTER TABLE `".$t_prefix."sent_notifications` ADD `object_id` int(10) NOT NULL DEFAULT '0';
 				";
 				$upgrade_script .= "
@@ -441,6 +459,12 @@ class BauruUpgradeScript extends ScriptUpgraderScript {
 		
 
 		if (version_compare($installed_version, '3.4.4.8') < 0) {
+			$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."timeslots`
+					CHANGE `start_time` `start_time` datetime,
+					CHANGE `end_time` `end_time` datetime,
+					CHANGE `paused_on` `paused_on` datetime;
+				";
 			if (!$this->checkColumnExists($t_prefix."timeslots", 'rate_currency_id', $this->database_connection)) {
 				$upgrade_script .= "
 					ALTER TABLE `".$t_prefix."timeslots` ADD COLUMN `rate_currency_id` INTEGER UNSIGNED NOT NULL DEFAULT 0;
@@ -1214,6 +1238,11 @@ class BauruUpgradeScript extends ScriptUpgraderScript {
 			}
 		}
 		
+		$upgrade_script .= "
+				-- when we are done with required operations, we can revert back
+				-- to the original sql_mode setting, from the value we saved
+				SET @@sql_mode := @old_sql_mode ;
+		";
 		
 
 		// Execute all queries

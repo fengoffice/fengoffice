@@ -1790,7 +1790,7 @@ class MailController extends ApplicationController {
 	/**
 	 * @param $email MailContent to classify
 	 * @param $members array of member ids in which the $email will be classified
-	 * @param $classification_data additional data needed for classification
+	 * @param $classification_data array additional data needed for classification
 	 * @param $process_conversation boolean, if true all the conversation will be classified
 	 * @param $after_receiving boolean, indicates wheather the function was called after receiving the email or if only the user is classiffying the email
 	 */

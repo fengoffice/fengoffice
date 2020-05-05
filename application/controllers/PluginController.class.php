@@ -71,6 +71,7 @@ class PluginController extends ApplicationController {
 			foreach ($plugins as $plg) {
 				$plg->update();
 			}
+			DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
 		} catch (Exception $e) {
 			$name = $plg instanceof Plugin ? $plg->getName() : 'n/a';
 			throw new Error("Error updating plugin '$name': " . $e->getMessage());

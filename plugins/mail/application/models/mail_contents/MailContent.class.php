@@ -186,6 +186,8 @@ class MailContent extends BaseMailContent {
 		if ($this->getContentFileId() != '') {
 			try {
 				FileRepository::deleteFile($this->getContentFileId());
+			} catch (FileNotInRepositoryError $e) {
+				
 			} catch (Exception $e) {
 				//Logger::log($e->getMessage());
 			}
@@ -744,7 +746,7 @@ class MailContent extends BaseMailContent {
 			}
 			if (is_array($mail_objects)){
 				foreach ($mail_objects as $mo){
-					$objects[] = $mo;
+					$objects[$mo->getId()] = $mo;
 				}
 			}
 		}

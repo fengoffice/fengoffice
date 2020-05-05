@@ -49,7 +49,10 @@ class ApiController extends ApplicationController {
             	
             	if ($object instanceof ProjectTask) {
             		$object_data = $object->getArrayInfo(true, true);
-            	} else {
+                } elseif($object instanceof PaymentReceipt){
+                    $object_data = $object->getArrayInfo(false, true);
+                    $object_data['members_data'] = build_api_members_data($object);
+                } else {
             		if ($object instanceof Timeslot) {
             			$object_data = $object->getArrayInfo(false, true);
             		} else {
@@ -256,6 +259,24 @@ class ApiController extends ApplicationController {
         return $this->response('json', $contacts);
     }
 
+    private function list_budgeted_expenses($request) {
+        $members = !empty($request['args']['members']) ? $request['args']['members'] : null;
+        $query_options = array(
+            'member_ids' => $members,
+        );
+        $exp = Expenses::instance();
+        $expenses = $exp->listing($query_options);
+        $tmp_objects = array();
+        foreach($expenses->objects as $object){
+            if($object instanceof Expense){
+                $expense_data = $object->getArrayInfo();
+                array_push($tmp_objects, $expense_data);
+            }
+        }
+
+        return $this->response('json', $tmp_objects);
+    }
+
     /**
      * Retrive list of objects
      * @params mixed options
@@ -402,10 +423,38 @@ class ApiController extends ApplicationController {
             eval('$service_instance = '.$service.'::instance();');
             $result = $service_instance->listing($query_options);
             //$result = $service->instance()->listing($query_options);
+
             $temp_objects = array();
+            if($service == "Expenses"){
+                $temp_objects['budgeted_expenses'] = array();
+                $temp_objects['actual_expenses'] = array();
+            }
+
             foreach ($result->objects as $object) {
                 if ($service == "ProjectTasks") {
                     array_push($temp_objects, $object->getArrayInfo(1,true));
+                } elseif($service == "Expenses") {
+                    $object_data = $object->getArrayInfo();
+                    $extra_conditions = " AND `expense_id` = ".$object->getObjectId();
+                    // Get all the actual expenses that are linked to this expense
+                    $result = PaymentReceipts::instance()->listing(array(
+                        "order" => 'date',
+                        "order_dir" => 'ASC',
+                        "start" => 0,
+                        "limit" => 0,
+                        "ignore_context" => true,
+                        "extra_conditions" => $extra_conditions,
+                        "count_results" => false,
+                        "only_count_results" => false,
+                        "member_ids" => $members,
+                    ));
+                    $payments = array();
+                    foreach($result->objects as $payment){
+                        $payments[] = $payment->getArrayInfo();
+                    }
+                    $object_data['payments'] = $payments;
+                    $object_data['members_data'] = build_api_members_data($object);
+                    array_push($temp_objects['budgeted_expenses'], $object_data);
                 } else {
                 	if ($object instanceof Timeslot) {
                 		$object_data = $object->getArrayInfo(false, true);
@@ -417,6 +466,34 @@ class ApiController extends ApplicationController {
                 }
             }
 
+            // Get all the actual expenses(AKA payment_receipts) that are not linked to the 
+            // budgeted expenses
+            if($service == "Expenses") {
+                $object_data = array(
+                    "object_id" => 0,
+                    "name" => "Not budgeted expenses",
+                );
+                $extra_conditions = " AND `expense_id` = 0";
+                $result = PaymentReceipts::instance()->listing(array(
+                    "order" => 'date',
+                    "order_dir" => 'ASC',
+                    "start" => 0,
+                    "limit" => 0,
+                    "ignore_context" => true,
+                    "extra_conditions" => $extra_conditions,
+                    "count_results" => false,
+                    "only_count_results" => false,
+                    "member_ids" => $members,
+                ));
+                $payments = array();
+                foreach($result->objects as $payment){
+                    $payments[] = $payment->getArrayInfo();
+                }
+                $object_data['payments'] = $payments;
+                array_push($temp_objects['actual_expenses'], $object_data);
+            }
+
+             // Logger::log_r($temp_objects);
             return $this->response('json', $temp_objects);
         } catch (Exception $exception) {
             throw $exception;
@@ -518,6 +595,83 @@ class ApiController extends ApplicationController {
                     	$end_time = new DateTimeValue($object->getStartTime()->getTimestamp());
                     	$end_time->add('m', $worked_minutes);
                     	$object->setEndTime($end_time);
+                    }
+                    break;
+
+                case 'expense':
+                    if ($request ['args'] ['id']) {
+                        $object = PaymentReceipts::instance()->findByid($request ['args'] ['id']);
+                    } else {
+                        $object = new PaymentReceipt ();
+                    }
+                    if ($object instanceof PaymentReceipt) {
+                        Logger::log_r($request ['args']);
+                        if (!empty($request ['args'] ['name'])) {
+                            $object->setObjectName($request ['args'] ['name']);
+                        }
+                        if (!empty($request ['args'] ['description'])) {
+                            $object->setDescription($request ['args'] ['description']);
+                        }
+                        if (!empty($request ['args'] ['date'])) {
+                        	$date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['date']);
+                        	$date->add('s', -1*logged_user()->getUserTimezoneValue());
+                       		$object->setDate($date);
+                        }
+                        if (!empty($request ['args'] ['amount'])) {
+                            $object->setAmount($request ['args'] ['amount']);
+                        }
+                        if (!empty($request ['args'] ['paid_by_id']) || $request ['args'] ['paid_by_id'] == 0) {
+                            $object->setPaidById($request ['args'] ['paid_by_id']);
+                        }
+                        if (!empty($request ['args'] ['expense_id']) || $request ['args'] ['expense_id'] == 0) {
+                            $object->setExpenseId($request ['args'] ['expense_id']);
+                            $expense_category_dimension = Dimensions::findByCode('expense_categories')->getId();
+                            // Remove expense category member from object
+                            $object_members = $object->getMembers();
+                            foreach ($object_members as $member){
+                                if($member->getDimensionId() == $expense_category_dimension){
+                                    ObjectMembers::removeObjectFromMembers( $object, logged_user(), array($member), array($member->getId()));
+                                }
+                            }
+                            // Assign new expense category to the object
+                            if($request ['args'] ['expense_id'] > 0){
+                                $expense = Expenses::findById($request ['args'] ['expense_id']);
+                                $expense_members = $expense->getMembers();
+                                foreach ($expense_members as $member){
+                                    if($member->getDimensionId() == $expense_category_dimension){
+                                        $object->addToMembers(array($member));
+                                    }
+                                }
+                            }
+                        }
+                        if (!empty($request ['args'] ['billable'])) {
+                            $object->setIsBillable(1);
+                        } else {
+                            $object->setIsBillable(0);
+                        }
+                        if($request ['args'] ['old_document_id'] != $object->getDocumentId()){
+                            FileRepository::deleteFile($object->getDocumentId());
+                            $object->setDocumentId($request ['args'] ['old_document_id']);
+                        }
+                        if (!empty($_POST['file_content_encoded'])) {
+                        	// decode and save the file contents
+                        	$tmp_path = ROOT."/tmp/".gen_id();
+                        	file_put_contents($tmp_path, base64_decode($_POST['file_content_encoded']));
+                        	$file_type = $_POST['file_type'];
+                        	
+                        	// save file in repository
+                        	$document_id = FileRepository::addFile($tmp_path, array('type' => $file_type, 'public' => true));
+                        	
+                        	if ($document_id) {
+                        		// delete previous file
+	                        	if ($object->getDocumentId() != '') {
+	                        		FileRepository::deleteFile($object->getDocumentId());
+	                        	}
+	                        	
+	                        	// set the new file id
+                        		$object->setDocumentId($document_id);
+                        	}
+                        }
                     }
                     break;
 

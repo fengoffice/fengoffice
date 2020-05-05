@@ -1038,8 +1038,8 @@ class TaskController extends ApplicationController {
         $join_params['on_extra'] = $join_on_extra;
 
         $total_estimated = "SUM(time_estimate) AS group_time_estimate ";
-        $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM fo_timeslots tt 
-			INNER JOIN fo_objects oo ON oo.id=tt.object_id
+        $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM ".TABLE_PREFIX."timeslots tt 
+			INNER JOIN ".TABLE_PREFIX."objects oo ON oo.id=tt.object_id
 			WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0) ";
         $total_worked = $total_worked_subquery . "AS group_time_worked ";
         //" total_worked_time AS group_time_worked"
@@ -3357,6 +3357,9 @@ class TaskController extends ApplicationController {
             } else {
                 $text_post = array_var($_POST, 'text', $task->getText());
             }
+
+            $count_timeslots = count(Timeslots::getTimeslotsByObject($task));
+
             $task_data = array(
                 'name' => array_var($_POST, 'name', $task->getObjectName()),
                 'text' => $text_post,
@@ -3369,6 +3372,7 @@ class TaskController extends ApplicationController {
                 'priority' => array_var($_POST, 'priority', $task->getPriority()),
                 'time_estimate' => $estimatedTime,
                 'percent_completed' => $task->getPercentCompleted(),
+                'count_timeslots' => $count_timeslots,
                 'forever' => $task->getRepeatForever(),
                 'rend' => $rend,
                 'rnum' => $rnum,
@@ -4220,7 +4224,6 @@ class TaskController extends ApplicationController {
         try {
         	// to use when saving the application log
         	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-        	$task->old_content_object = $old_content_object;
         	// --
         	
             $reload_view = false;
@@ -4231,6 +4234,10 @@ class TaskController extends ApplicationController {
             $new_task = $result['new_task'];
 
             DB::commit();
+            // reload task's object new values
+            $task = ProjectTasks::findById($task->getId(), true);
+            $task->old_content_object = $old_content_object;
+            
             ApplicationLogs::createLog($task, ApplicationLogs::ACTION_CLOSE, false, false, true, substr($log_info, 0, -1));
             flash_success(lang('success complete task'));
 
@@ -4859,20 +4866,22 @@ class TaskController extends ApplicationController {
                     }   
                     
                     // generate completed task
-                    $last_task = $task->cloneTask($new_st_date,$new_due_date,true, true, 0, $generated_count);
-                    // set next values for repetetive task
-                    if ($task->getStartDate() instanceof DateTimeValue ) $task->setStartDate($new_st_date);
-                    if ($task->getDueDate() instanceof DateTimeValue ) $task->setDueDate($new_due_date);
-                    foreach ($task->getAllSubTasks() as $subt) {
-                    	$subt->setCompletedById(0);
-                    	$subt->setCompletedOn(EMPTY_DATETIME);
-                    	$subt->save();
+                    if ($task->getRepeatBy() == 'start_date' && ($new_st_date == "" || $new_st_date->getTimestamp() <= $task_end->getTimestamp()) ||
+                    $task->getRepeatBy() == 'due_date' && ($new_due_date == "" || $new_due_date->getTimestamp() <= $task_end->getTimestamp())){
+                        $last_task = $task->cloneTask($new_st_date,$new_due_date,true, false, 0, $generated_count);
+                        // set next values for repetetive task
+                        if ($task->getStartDate() instanceof DateTimeValue ) $task->setStartDate($new_st_date);
+                        if ($task->getDueDate() instanceof DateTimeValue ) $task->setDueDate($new_due_date);
+                        foreach ($task->getAllSubTasks() as $subt) {
+                            $subt->setCompletedById(0);
+                            $subt->setCompletedOn(EMPTY_DATETIME);
+                            $subt->save();
+                        }
+                        
+                        $generated_count++;
                     }
-                    
-                    $generated_count++;
                 }
             }
-
             // if there are more repetitions to generate then copy repetition settings to the last task
             if ($last_task instanceof ProjectTask && $task->getRepeatForever() && $forced_repeat_end instanceof DateTimeValue) {
                 $last_task->setRepeatForever($task->getRepeatForever());
@@ -4884,15 +4893,16 @@ class TaskController extends ApplicationController {
                 $last_task->setRepeatBy($task->getRepeatBy());
                 $last_task->save();
             }
-
-            $task->setRepeatForever(0);
-            $task->setRepeatEnd(EMPTY_DATETIME);
-            $task->setRepeatNum(0);
-            $task->setRepeatD(0);
-            $task->setRepeatM(0);
-            $task->setRepeatY(0);
-            $task->setRepeatBy("");
-            $task->save();
+            if ($last_task instanceof ProjectTask){
+                $task->setRepeatForever(0);
+                $task->setRepeatEnd(EMPTY_DATETIME);
+                $task->setRepeatNum(0);
+                $task->setRepeatD(0);
+                $task->setRepeatM(0);
+                $task->setRepeatY(0);
+                $task->setRepeatBy("");
+                $task->save();
+            }
         }
         return $generated_count;
     }

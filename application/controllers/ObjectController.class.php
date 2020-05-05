@@ -92,7 +92,7 @@ class ObjectController extends ApplicationController {
         ajx_extra_data(array('html' => $html,'selector'=>$selector));
     }
 
-	function add_subscribers(ContentDataObject $object, $subscribers = null, $check_permissions = true) {
+	function add_subscribers(ContentDataObject $object, $subscribers = null, $check_permissions = true, $send_notification = true) {
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
@@ -138,10 +138,10 @@ class ObjectController extends ApplicationController {
 			Hook::fire ('after_add_subscribers', array('object' => $object, 'user_ids' => $user_ids), $null);
 
 			if ($log_info != "") {
-				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_SUBSCRIBE, false, false, true, $log_info);
+				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_SUBSCRIBE, false, !$send_notification, true, $log_info);
 			}
 			if ($log_info_unsubscribe != "") {
-				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, false, true, $log_info_unsubscribe);
+				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, !$send_notification, true, $log_info_unsubscribe);
 			}
 		}else{
 			$subscribers_to_remove = $object->getSubscriberIds();
@@ -507,13 +507,36 @@ class ObjectController extends ApplicationController {
 		foreach ($required_custom_props as $req_cp) {/* @var $req_cp CustomProperty */
 			$not_set = false;
 			if ($req_cp->getIsMultipleValues()) {
-				if ($req_cp->getType() == 'user' && $obj_custom_properties[$req_cp->getId()] == 'Select user') {
-					$obj_custom_properties[$req_cp->getId()] = null;
+				
+				if (($req_cp->getType() == 'user' || $req_cp->getType() == 'contact')) {
+					// remove anything besides numbers, we are looking for contact ids
+					$obj_custom_properties[$req_cp->getId()] = array_filter(array_var($obj_custom_properties, $req_cp->getId(), array()), "is_numeric");
 				}
-				$empty_array = count($obj_custom_properties[$req_cp->getId()]) == 0;
-				$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || $empty_array;
+				
+				$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count(array_filter($obj_custom_properties[$req_cp->getId()])) == 0;
+				
 			} else {
-				$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "";
+				if ($req_cp->getType() == 'address') {
+					
+					$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count($obj_custom_properties[$req_cp->getId()]) == 0;
+				
+				} else {
+					if ($req_cp->getType() == 'date') {
+						
+						if (array_var($obj_custom_properties, $req_cp->getId()) == $date_format_tip) {
+							$obj_custom_properties[$req_cp->getId()] = "";
+						}
+						
+					} else if ($req_cp->getType() == 'user' || $req_cp->getType() == 'contact') {
+						
+						$cp_val_contact_id = array_var($obj_custom_properties, $req_cp->getId());
+						if (!is_numeric($cp_val_contact_id) || $cp_val_contact_id == 0) {
+							$obj_custom_properties[$req_cp->getId()] = "";
+						}
+					}
+					
+					$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "";
+				}
 			}
 			if ($not_set) {
 				throw new Exception(lang('custom property value required', $req_cp->getName()));
@@ -2458,7 +2481,9 @@ class ObjectController extends ApplicationController {
 		if (logged_user()->isAdministrator() && Plugins::instance()->isActivePlugin('mail')) {
 			$joins[] = "LEFT JOIN ".TABLE_PREFIX."project_files pf on pf.object_id=o.id";
 			$extra_conditions[] = "IF(pf.mail_id IS NULL OR pf.mail_id = 0, true,
-				pf.mail_id IN (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE pf.mail_id = sh.object_id AND sh.group_id  IN ($logged_user_pg_ids)))";
+				pf.mail_id IN (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE pf.mail_id = sh.object_id AND sh.group_id  IN ($logged_user_pg_ids))
+				OR o.id IN (SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh WHERE o.id= sh.object_id AND sh.group_id  IN ($logged_user_pg_ids))
+			)";
 		}
 
 		

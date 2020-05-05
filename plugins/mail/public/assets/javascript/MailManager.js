@@ -442,7 +442,7 @@ og.MailManager = function() {
 			id: 'actions',
 			header: lang("actions"),
 			width: 60,
-			fixed: true,
+			//fixed: true,
 			renderer: renderActions,
 			sortable: false
 		}];

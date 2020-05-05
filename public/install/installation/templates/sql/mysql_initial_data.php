@@ -696,7 +696,6 @@ INSERT INTO <?php echo $table_prefix ?>dimension_associations_config (associatio
 ON DUPLICATE KEY UPDATE value=value;
 
 
-
 INSERT INTO `<?php echo $table_prefix ?>countries` (`code`, `name`) VALUES
 ('AF',	'Afghanistan'),
 ('AX',	'Aland Islands'),

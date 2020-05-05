@@ -1255,13 +1255,13 @@ class MailUtilities {
 					if ($account->getMarkReadOnServer() > 0 ? $imap->selectMailbox(utf8_decode($box->getFolderName())) : $imap->examineMailbox(utf8_decode($box->getFolderName()))) {
 						$oldUids = $account->getUids($box->getFolderName(), 1);
 						$numMessages = $imap->getNumberOfMessages(utf8_decode($box->getFolderName()));
-						if ($numMessages == 0) continue;
 						if (!is_array($oldUids) || count($oldUids) == 0 || PEAR::isError($numMessages) || $numMessages == 0) {
 							if (PEAR::isError($numMessages)) {
 								debug_log("    PEAR ERROR numMessages has error: ".$numMessages->getMessage(), "checkmail_log.php");
 								continue;
 							}
 						}
+						if ($numMessages == 0) continue;
 						debug_log("    numMessages=$numMessages", "checkmail_log.php");
 
 						// determine the starting uid and number of message
@@ -1840,7 +1840,7 @@ class MailUtilities {
 	/**
 	 * Validates the correctness of the email addresses in a string
 	 * @param $addr_str String containing email addresses
-	 * @return Returns an array containing the invalid email addresses or NULL if every address in the string is valid
+	 * @return array containing the invalid email addresses or NULL if every address in the string is valid
 	 */
 	static function validate_email_addresses($addr_str) {
 		$invalid_addresses = null;

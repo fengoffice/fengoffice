@@ -51,6 +51,7 @@ div.selected-members.with-checkbox .completePath {
 }
 div.selected-members.with-checkbox div.selected-member-div div.selected-member-actions {
 	width: 38px;
+	text-align: right;
 }
 	
 .single_current_selected{

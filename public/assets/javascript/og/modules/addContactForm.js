@@ -230,13 +230,14 @@ og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignor
 	var tcount = og.addressCount[container_id];
 	
 	// remove special characters from id
+	var pre_name = pre_id;
 	pre_id = pre_id.replace("[","_").replace("]","_");
 	
 	var id = pre_id + 'Address_' + tcount;
 	if (!ignore_pre_id) {
-		var name = pre_id + '[address][' + tcount + ']';
+		var name = pre_name + '[address][' + tcount + ']';
 	} else {
-		var name = pre_id;
+		var name = pre_name;
 	}
 
 	$('#'+container_id).append('<div id="'+ container_id + tcount +'" class="address-input-container"></div>');

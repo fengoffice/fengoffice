@@ -1598,6 +1598,19 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 						if ($cp_val) {
 							$prop_values_array[] = $cp_val;
 						}
+						
+					} else if (str_starts_with($col, "assoc_")) { // use associated dimension members
+						
+						$association_id = str_replace("assoc_", "", $col);
+						$assoc_member_csv = MemberPropertyMembers::getAllPropertyMemberIds($association_id, $member_id);
+						$assoc_member_ids = array_filter(explode(',', $assoc_member_csv));
+						
+						foreach ($assoc_member_ids as $mid) {
+							$assoc_member = Members::getMemberById($mid);
+							if ($assoc_member instanceof Member) {
+								$prop_values_array[] = $assoc_member->getName();
+							}
+						}
 					}
 				}
 				$prop_values_array = array_filter($prop_values_array);

@@ -466,7 +466,7 @@ class Contact extends BaseContact {
 	 */
 	 function getEmailAddress($type=null) {
 	 	$contact_id = $this->getId();
-	 	$type_condition =  ($type) ? "AND name = '$type'" : "";
+	 	$type_condition =  ($type) ? "AND t.name = '$type'" : "";
 	 	
 	 	$sql = "SELECT * FROM ".TABLE_PREFIX."contact_emails ce
 				LEFT JOIN ".TABLE_PREFIX."email_types t
@@ -749,11 +749,11 @@ class Contact extends BaseContact {
     *@param api hash code
     @return boolean have access to api.
     */
-    private function  getApiAccess()
+    /*private function  getApiAccess()
     {
         return $this->getToken() == $api_token;
     }
-	
+	*/
 
 	/**
 	 * Check if $twisted_token is valid for this user account
@@ -1128,7 +1128,7 @@ class Contact extends BaseContact {
 	 *
 	 * @access public
 	 * @param Contact $user
-	 * @return booelean
+	 * @return boolean
 	 */
 	function canAddUser(Contact $user) {
 		return can_manage_security($user);
@@ -1977,7 +1977,7 @@ class Contact extends BaseContact {
 	 * be part of the company and have is_admin stamp set to true
 	 *
 	 * @access public
-	 * @param Company $company
+	 * @param Contact $company
 	 * @return boolean
 	 */
 	function isCompanyAdmin(Contact $company) {

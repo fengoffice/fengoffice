@@ -335,7 +335,7 @@ return array(
         'field Objects type_content' => 'Type content',
         'option repetitive task completed' => 'This task is already completed. To modify repetition data, please edit a pending task from this series.',
 
-        'subscribers' => 'Involved people',
+        'subscribers' => 'Subscribers',
         'and' => ' and ',
         'apply everywhere' => 'Apply everywhere',
         'apply for this' => 'Apply for this {0}',
