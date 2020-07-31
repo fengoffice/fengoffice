@@ -105,7 +105,7 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 			// Simple search for .txt and .html documents
 			if ($file_type->getIsSearchable()){
 				try {
-					$content = strip_tags($this->getFileContent()); // Remove unnecesary html tags
+					$content = $this->getFileContent();
 					if(strlen($content) > MAX_SEARCHABLE_FILE_SIZE) {
 						$content = substr($content, 0, MAX_SEARCHABLE_FILE_SIZE);
 					}

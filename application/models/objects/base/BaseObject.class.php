@@ -269,6 +269,28 @@
     function setTimezoneValue($value) {
     	return $this->setColumnValue('timezone_value', $value);
     }
+
+    /**
+    * Return value of 'object_subtype_id' field
+    *
+    * @access public
+    * @param void
+    * @return string 
+    */
+    function getObjectSubtypeId() {
+      return $this->getColumnValue('object_subtype_id');
+    } // getObjectSubtypeId()
+    
+    /**
+    * Set value of 'object_subtype_id' field
+    *
+    * @access public   
+    * @param string $value
+    * @return boolean
+    */
+    function setObjectSubtypeId($value) {
+      return $this->setColumnValue('object_subtype_id', $value);
+    } // setObjectSubtypeId()
     
     /**
     * Return manager instance

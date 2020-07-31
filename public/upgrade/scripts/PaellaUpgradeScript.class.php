@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.1.32');
+		$this->setVersionTo('3.8.3.3');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -713,6 +713,56 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				ALTER TABLE `".$t_prefix."config_options` CHANGE `options` `options` varchar(511) COLLATE 'utf8_unicode_ci' DEFAULT '';
 			";
 		}
+
+		if (version_compare($installed_version, '3.8.2-beta') < 0) {
+        	$upgrade_script .= "
+        		UPDATE ".$t_prefix."contact_config_options SET `default_value`='1' WHERE `name`='automatic_calculation_time';
+			";
+			$upgrade_script .= "
+        		UPDATE ".$t_prefix."contact_config_options SET `default_value`='1' WHERE `name`='automatic_calculation_start_time';
+        	";
+      
+     		$upgrade_script .= "			
+				UPDATE ".$t_prefix."system_permissions SET can_see_assigned_to_other_tasks=0
+				WHERE permission_group_id IN (SELECT id FROM ".$t_prefix."permission_groups WHERE name IN ('Executive','Collaborator Customer', 'Internal Collaborator', 'External Collaborator', 'Guest Customer', 'Guest'));
+				UPDATE ".$t_prefix."max_system_permissions SET can_see_assigned_to_other_tasks=0
+				WHERE permission_group_id IN (SELECT id FROM ".$t_prefix."permission_groups WHERE name IN ('Internal Collaborator', 'External Collaborator'));
+				UPDATE ".$t_prefix."system_permissions SET can_see_assigned_to_other_tasks=0
+				WHERE permission_group_id IN (SELECT permission_group_id FROM ".$t_prefix."contacts WHERE user_type IN (SELECT id FROM ".$t_prefix."permission_groups WHERE name IN ('Executive','Collaborator Customer', 'Internal Collaborator', 'External Collaborator', 'Guest Customer', 'Guest')));
+			";
+
+     		if (!$this->checkColumnExists($t_prefix."system_permissions", "can_see_others_timeslots", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."system_permissions` ADD COLUMN `can_see_others_timeslots` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1;
+					ALTER TABLE `".$t_prefix."max_system_permissions` ADD COLUMN `can_see_others_timeslots` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1;
+				";
+     		}
+     		
+			$upgrade_script .= "
+				UPDATE ".$t_prefix."system_permissions SET can_see_others_timeslots=can_see_assigned_to_other_tasks;
+				
+				UPDATE ".$t_prefix."max_system_permissions SET can_see_others_timeslots=can_see_assigned_to_other_tasks;
+			";
+
+        }
+        
+        if (version_compare($installed_version, '3.8.3.1-beta') < 0) {
+        	if (!$this->checkValueExists($t_prefix."config_options", "name", "reclassify_time_when_linking_task", $this->database_connection)) {
+        		$upgrade_script .= "
+	                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, '')
+	                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+	            ";
+        	}
+        }
+        
+        
+        
+        if (!$this->checkColumnExists("".$t_prefix."dimension_member_associations", "allows_default_selection", $this->database_connection)) {
+        	$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."dimension_member_associations` ADD `allows_default_selection` tinyint(1) unsigned NOT NULL;
+			";
+        }
 		
 		$upgrade_script .= "
 				-- when we are done with required operations, we can revert back

@@ -1,6 +1,8 @@
 <?php
 
-	$show_billing = can_manage_billing(logged_user());
+	$can_see_billing_info = true;
+	Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+	$show_billing = can_manage_billing(logged_user()) && $can_see_billing_info;
 	
 	if (!isset($genid)) $genid = gen_id();
 	/* @var $__timeslots_object ProjectTask */
@@ -199,7 +201,7 @@
 			$("#<?php echo $genid?>_print_link")[0].click();
 		}
 	});
-	timeslots_tbar_items.push(ts_print_btn);
+	//timeslots_tbar_items.push(ts_print_btn);
 <?php 
 if (can_delete(logged_user(), $__timeslots_object->getMembers(), Timeslots::instance()->getObjectTypeId())){
 ?>

@@ -536,7 +536,7 @@ class ProjectTask extends BaseProjectTask {
 				$new_due = array_var($new_dates, 'due');
 				
 				$daystoadd = 0;
-				$move_direction = $task->getMoveDirectionNonWorkingDays() ? $task->getMoveDirectionNonWorkingDays() : 'advance';
+				$move_direction = $this->getMoveDirectionNonWorkingDays() ? $this->getMoveDirectionNonWorkingDays() : 'advance';
 				$params = array('task' => $this, 'new_st_date' => $new_st, 'new_due_date' => $new_due, 'move_direction' => $move_direction);
 				Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
 				

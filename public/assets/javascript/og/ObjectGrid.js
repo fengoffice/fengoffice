@@ -451,6 +451,12 @@ og.ObjectGrid = function(config, ignore_context) {
     	}
     }
     
+
+	
+	if (config.allow_drag_drop) {
+		config.enableDrag = true;
+		config.ddGroup = 'MemberDD';
+	}
     
 
     og.ObjectGrid.superclass.constructor.call(this, Ext.apply(config, {

@@ -457,6 +457,8 @@ return array(
   'new timeslot' => 'New timeslot',
   'edit timeslot' => 'Edit timeslot',
   'start date' => 'Start date',
+  'start' => 'Start',
+  'end' => 'End',
   'start time' => 'Start time',
   'end date' => 'End date',
   'end time' => 'End time',
@@ -590,7 +592,7 @@ return array(
   'total pause time' => 'Total pause time',
   'pause time cannot be negative' => 'Pause time cannot be negative',
   'pause time cannot exceed timeslot time' => 'Pause time cannot exceed timeslot time',
-  'timeslots' => 'Timeslots',
+  'timeslots' => 'Time',
 
   'task timeslots' => 'Task timeslots',
   'time timeslots' => 'General timeslots',

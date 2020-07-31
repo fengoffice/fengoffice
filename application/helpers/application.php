@@ -1822,6 +1822,8 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 			memberChooserPanel.initialized = true;
 			memberChooserPanel.doLayout();
 			<?php endif; ?>
+
+			$("#<?php echo $component_id ?>-tree-textfilter").attr('autocomplete', 'no');
 		</script>
 	
 <?php 
@@ -2223,8 +2225,11 @@ function get_timeslots_from_grid_parameters() {
 				}
 			}
 		}
+		
+		// We must process the timesltos if client or project is selected or if list is being filtered by an user
+		$show_error_message = count($client_or_project_ids) == 0 && !array_var($_REQUEST, 'user_filter');
 
-		if (count($client_or_project_ids) == 0) {
+		if ($show_error_message) {
 
 			flash_error(lang('you need to be in a client or a project in order to perform this action'));
 			ajx_current("empty");

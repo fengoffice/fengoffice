@@ -8,7 +8,7 @@ var { ResponsiveContainer,
       CartesianGrid,
       Tooltip,
       Legend } = require('recharts');
-var { NumberFormatter } = require('./helpers/widgetChartHelpers');
+var { AxisNumberFormatter, FormatNumber } = require('./helpers/widgetChartHelpers');
 
 class WorkedHoursWidget extends React.Component {
     constructor(props) {
@@ -17,14 +17,20 @@ class WorkedHoursWidget extends React.Component {
                      estimated: props.data.estimated ? props.data.estimated : 0,
                      workedTitle: props.data.workedTitle ? props.data.workedTitle : 'Total worked hours',
                      estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total estimated hours',
-                     chartData: props.data.chartData ? props.data.chartData : ''
+                     chartData: props.data.chartData ? props.data.chartData : '',
+                     decimals: props.data.decimals ? props.data.decimals : 0,
+                     decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
+                     thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ',',
                     };
     }
 
       render() {
          // Define variables that will be used in the returned component
-         const worked = this.state.worked;
-         const estimated = this.state.estimated;
+         const decimals = this.state.decimals;
+         const decimalsSeparator = this.state.decimalsSeparator;
+         const thousandSeparator = this.state.thousandSeparator;
+         const worked = FormatNumber(this.state.worked, decimals, decimalsSeparator, thousandSeparator);
+         const estimated = FormatNumber(this.state.estimated, decimals, decimalsSeparator, thousandSeparator);
          const workedtitle = this.state.workedTitle;
          const estimatedTitle = this.state.estimatedTitle;
          const chartData = this.state.chartData;
@@ -98,8 +104,8 @@ class WorkedHoursWidget extends React.Component {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                         <XAxis dy={15} axisLine={false} tickSize={0} stroke="#888888" dataKey="date" interval="preserveStartEnd" minTickGap={70} height={40}/>
-                        <YAxis dx={10} tickFormatter={NumberFormatter} axisLine={false} tickSize={0} stroke="#888888" orientation="right" width={50} />
-                        <Tooltip />
+                        <YAxis dx={10} tickFormatter={AxisNumberFormatter} axisLine={false} tickSize={0} stroke="#888888" orientation="right" width={50} />
+                        <Tooltip formatter={(value) => FormatNumber(value, decimals, decimalsSeparator,thousandSeparator)}/>
                         <Area type="monotone" dataKey="estimated" stroke="#888888" fill="url(#colorEstimated)" isAnimationActive={false}/>
                         <Area type="monotone" dataKey="worked" stroke="#20a1f8" fill="url(#colorWorkedHours)" isAnimationActive={false}/>
                         </AreaChart>

@@ -95,6 +95,11 @@
 			
 			<?php if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0 && $can_change_permissions) { ?>
 			<li><a id="<?php echo $genid?>permissions_tab" href="#<?php echo $genid?>permissions"><?php echo lang('permissions') ?></a></li>
+			<?php
+				$hook_params = array('genid' => $genid, 'user_type' => $user_type, 'contact' => $contact);
+				$ignored = null;
+				Hook::fire('edit_contact_after_permissions_tab_title', $hook_params, $ignored); 
+			?>
 				<?php if (count($all_user_groups) > 0) {?>
 			<li><a id="<?php echo $genid?>groups_tab" href="#<?php echo $genid?>groups"><?php echo lang('groups') ?></a></li>
 				<?php } ?>
@@ -234,6 +239,12 @@
 		$this->includeTemplate(get_template_path('system_permissions', 'account'));
 	?>
 	</div>
+	
+	<?php
+		$hook_params = array('genid' => $genid, 'user_type' => $user_type, 'contact' => $contact);
+		$ignored = null;
+		Hook::fire('edit_contact_after_permissions_tab_content', $hook_params, $ignored); 
+	?>
 	
 	<?php if (count($all_user_groups) > 0) { ?>
 	<div class="user-groups-container form-tab" id="<?php echo $genid?>groups" style="display:none;">

@@ -822,7 +822,8 @@ return array(
     'can add mail accounts' => 'Can add mail accounts',
     'can_manage_dimensions'=>'Can manage dimensions',
     'can_manage_dimension_members'=>'Can manage dimension members',
-	'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
+  'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
+  'can_see_others_timeslots'=>'Can see other user\'s timeslots',
   	'can_update_other_users_invitations' => 'Can update other user\'s event invitations',
   	'can_link_objects' => 'Can link objects',
 
@@ -835,7 +836,8 @@ return array(
     'can_manage_dimensions description'=>'If this permission is checked the user will have full permissions over dimensions. He will be able to create new dimensions and change their configuration. This is an advanced administrative feature.',
     'can_manage_dimension_members description' => 'If this permission is checked the user will have full permissions over dimension members. He will be able to create, edit and delete new members. In practice, a member could be a workspace, project, client, etc.',
     'can_manage_tasks description' => 'If this permission is checked the user will have full permissions over tasks. He will be able to assign tasks to other users and complete them.',
-	'can_see_assigned_to_other_tasks description'=>'If enabled then the user will be able to see tasks that are not assigned to him/her.',
+  'can_see_assigned_to_other_tasks description'=>'If enabled then the user will be able to see tasks that are not assigned to him/her.',
+  'can_see_others_timeslots description'=>'If enabled then the user will be able to see timeslots that are not entered by him/her.',
   	'can_update_other_users_invitations description' => 'If enabled then the user will be able to change the status of other users event invitations.',
   	'can_link_objects description' => 'If this permission is checked the user will be able to link and unlink objects',
   		

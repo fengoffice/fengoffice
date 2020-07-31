@@ -242,6 +242,12 @@
 	background-size: 15px 15px !important;
 	background-position: 3px 5px!important;
 }
+.ico-remove {
+	background: url(../../images/icons-feng-3/16x16/del.png) no-repeat !important;
+	background-size: 15px 15px !important;
+	background-position: 0 3px!important;
+	padding-right: 15px;
+}
 .ico-doc {
 	/*background-image: url(../../images/16x16/doc.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/doc.png) !important;

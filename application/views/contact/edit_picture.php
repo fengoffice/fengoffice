@@ -30,7 +30,7 @@
 	<div style="padding:10px;">
 <?php if($contact->hasPicture()) { ?>
     <img src="<?php echo $contact->getPictureUrl('medium') ?>" alt="<?php echo clean($contact->getObjectName()) ?> picture" style="max-width:500px; max-height:500px;"/>
-    <p><a class="internalLink link-ico ico-delete" href="<?php echo $contact->getDeletePictureUrl() ?>" onclick="return confirm('<?php echo escape_single_quotes(lang('confirm delete current picture')) ?>')"><?php echo lang('delete current picture') ?></a></p>
+    <p><a class="internalLink link-ico ico-delete" href="#" onclick="og.delete_contact_picture('<?php echo $genid?>','<?php echo $contact->getDeletePictureUrl() ?>','<?php echo escape_single_quotes(lang('confirm delete current picture')) ?>','<?php echo $reload_picture?>');"><?php echo lang('delete current picture') ?></a></p>
 <?php } else { ?>
     <?php echo lang('no current picture') ?>
 <?php } // if ?>

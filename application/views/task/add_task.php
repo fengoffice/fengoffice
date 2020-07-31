@@ -224,7 +224,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<?php
 					$minutes = ($totalTime % 60);
 					$minuteOptions = array(0,5,10,15,20,25,30,35,40,45,50,55);
-					for($i = 0; $i < 12; $i++) {
+					Hook::fire('override_minute_options', array('name' => 'minuteOptions'), $minuteOptions);
+					$options_count = count($minuteOptions);
+					for($i = 0; $i < $options_count; $i++) {
 						echo "<option value=\"" . $minuteOptions[$i] . "\"";
 						if($minutes == $minuteOptions[$i]) echo ' selected="selected"';
 						echo ">" . $minuteOptions[$i] . "</option>\n";

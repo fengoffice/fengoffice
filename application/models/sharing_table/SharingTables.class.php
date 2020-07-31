@@ -8,6 +8,7 @@ class SharingTables extends BaseSharingTables {
      * @param integer   $object_id  Object id
      */
     public function fill_sharing_table_by_object ($object_id) {
+    	Env::useHelper('permissions');
         $object = Objects::findObject($object_id);
         if ($object instanceof ContentDataObject) {
             $this->delete_object_from_sharing_table($object_id);
@@ -40,6 +41,7 @@ class SharingTables extends BaseSharingTables {
             );
      */
     public function fill_sharing_table_by_permission_group($pg_id, $modified_members, $root_perm_info = null) {
+    	Env::useHelper('permissions');
         try{
             //##START Classified objects logic
             $this->fill_sharing_table_by_permission_group_for_specific_members($pg_id, $modified_members);

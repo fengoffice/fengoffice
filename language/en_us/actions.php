@@ -251,6 +251,8 @@
       'add new external token' => 'Add new token',
       'edit external tokens' => 'Manage external tokens',
       'token edit' => 'Save',
+  		
+  	'type to select' => 'Type to select a {0}',
       
   ); // array
 

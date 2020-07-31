@@ -54,10 +54,20 @@
 		$autocomplete_options = array();
 
 		$expgenid = gen_id();
+		
+		$member_type_names = array();
+		$member_type_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dimension_id);
+		foreach ($member_type_ids as $member_type_id) {
+			$mem_type = ObjectTypes::findById($member_type_id);
+			if (in_array($mem_type->getName(), array('folder','project_folder','customer_folder'))) continue;
+			$member_type_names[] = $mem_type->getObjectTypeName();
+		}
+		$dimension_member_type_names = implode(' '.lang('or').' ', $member_type_names);
 
 		// Render view by obj type
 		$container_id = $genid."member-seleector-dim".$dimension_id;
-		$search_placeholder = escape_character(lang('add new relation ' . $dimension['dimension_code']));
+		//$search_placeholder = escape_character(lang('add new relation ' . $dimension['dimension_code']));
+		$search_placeholder = escape_character(lang('type to select', $dimension_member_type_names));
 		$search_function = "ogSearchSelector.searchMember";
 		$result_limit = "5";
 		$select_function = array_var($options, 'select_function', "");

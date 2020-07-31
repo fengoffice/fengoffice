@@ -1106,7 +1106,7 @@ class Contact extends BaseContact {
 		if ($return_false) return false;
 		
 		if ( $this->isOwnerCompany()) return true;
-		if ( $this->getId() == logged_user()->getId() ) return true ;
+		if (logged_user() instanceof Contact && $this->getId() == logged_user()->getId() ) return true ;
 		if ($this->isUser()) {
 			// a contact that has a user assigned to it can be modified by anybody that can manage security (this is: users and permissions) or the user himself.
 			if($this->getCompanyId() ==  $user->getCompanyId()){

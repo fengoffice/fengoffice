@@ -94,6 +94,13 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 		var member = {};
 		member.id= member_id;
 	}
+	
+	if (!member_selector[genid].properties[dimension_id]) {
+		member_selector[genid].properties[dimension_id] = {
+				listeners: {},
+				isMultiple: false
+		};
+	}
 		
 	if (typeof show_actions == "undefined") {
 		var show_actions = member_selector[genid].properties[dimension_id].isMultiple;
@@ -142,18 +149,22 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 		if (member_selector[genid].defaultSelectionCheckboxes) {
 			html += '<input type="checkbox" class="checkbox" name="member[default_selection]['+member_id+']" title="'+lang('select by default')+'"/>&nbsp;';
 		}
-		html += '<a class="coViewAction ico-delete" onclick="member_selector.remove_relation('+dimension_id+',\''+genid+'\', '+member.id+')" href="#"></a>';
+		if (member_selector[genid].properties[dimension_id].isMultiple) {
+			html += '<a class="coViewAction ico-delete" onclick="member_selector.remove_relation('+dimension_id+',\''+genid+'\', '+member.id+')" href="#"></a>';
+		}
 		html += '</div>';
 	}
 	
 	html += '</div><div class="separator"></div>';
 
-	var sep = sel_members_div.select('div.separator').elements;
-	for (x in sep) Ext.fly(sep[x]).remove();
-	if (member_selector[genid].properties[dimension_id].isMultiple) {
-		sel_members_div.insertHtml('beforeEnd', html);
-	} else {
-		$("#"+sel_members_div.id).html(html);
+	if (sel_members_div) {
+		var sep = sel_members_div.select('div.separator').elements;
+		for (x in sep) Ext.fly(sep[x]).remove();
+		if (member_selector[genid].properties[dimension_id].isMultiple) {
+			sel_members_div.insertHtml('beforeEnd', html);
+		} else {
+			$("#"+sel_members_div.id).html(html);
+		}
 	}
 	
 	//add mem_path after insert completePath div to calculate the correct width
@@ -231,12 +242,14 @@ member_selector.remove_relation = function(dimension_id, genid, member_id, dont_
 	}
 
 	var sel_members_div = Ext.get(genid + 'selected-members-dim' + dimension_id);
-	var already_selected = sel_members_div.select('div.selected-member-div').elements;
-	if (already_selected.length == 0) {
-		var sep = sel_members_div.select('div.separator').elements;
-		for (x in sep) Ext.fly(sep[x]).remove();
+	if (sel_members_div) {
+		var already_selected = sel_members_div.select('div.selected-member-div').elements;
+		if (already_selected.length == 0) {
+			var sep = sel_members_div.select('div.separator').elements;
+			for (x in sep) Ext.fly(sep[x]).remove();
+		}
 	}
-
+	
 	// refresh member_ids input
 	var member_ids_input = Ext.fly(Ext.get(genid + member_selector[genid].hiddenFieldName));
 	var member_ids_input_val = member_ids_input.getValue();
@@ -304,7 +317,8 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 	var selected_members = eval(member_ids_input.getValue());
 
 	var main_tree = Ext.getCmp(genid + '-member-chooser-panel-' + dimension_id + '-tree');
-	if (main_tree.filterOnChange) {
+
+	if (main_tree && main_tree.filterOnChange) {
 	  for (i=0; i<dimensions_to_reload.length; i++) {
 		var dim_id = dimensions_to_reload[i];
 

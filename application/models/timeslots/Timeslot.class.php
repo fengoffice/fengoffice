@@ -268,11 +268,12 @@ class Timeslot extends BaseTimeslot {
 	 * @return boolean
 	 */
 	function canView(Contact $user) {
-		if ($this->getRelObject() instanceof ContentDataObject) {
+		return can_read($user, $this->getMembers(), $this->getObjectTypeId());
+		/*if ($this->getRelObject() instanceof ContentDataObject) {
 			return can_read($user, $this->getRelObject()->getMembers(), $this->getRelObject()->getObjectTypeId());
 		} else {
 			return can_read($user, $this->getMembers(), $this->getObjectTypeId());
-		}
+		}*/
 	}
 
 	/**

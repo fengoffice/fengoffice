@@ -189,7 +189,8 @@ class TimeslotController extends ApplicationController {
 		$timeslot_data = array_var($_POST, 'timeslot');
 		$timeslot->close();
 		$timeslot->setFromAttributes($timeslot_data);
-		
+
+		Hook::fire('round_minutes_to_fifteen', array('timeslot' => $timeslot), $ret);
 		//Billing
 		if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
 			$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
@@ -241,8 +242,9 @@ class TimeslotController extends ApplicationController {
 	    $config = user_config_option('stop_running_timeslots');
 	    if ($config){
             $date = format_date(null,DATE_MYSQL);
-            $time->getEndTime($date);
-            $time->close();
+			$time->getEndTime($date);
+			$time->close();
+			Hook::fire('round_minutes_to_fifteen', array('timeslot' => $time), $ret);
         
             //Billing
             if (!Plugins::instance()->isActivePlugin('advanced_billing')) {

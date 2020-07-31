@@ -795,7 +795,7 @@ class FilesController extends ApplicationController {
 					evt_add("reload current panel");
 				}
 	
-			} catch(Exception $e) {				
+			} catch(Error $e) {
 				flash_error($e->getMessage());
 				
 				if ($e instanceof InvalidUploadError) {
@@ -805,7 +805,17 @@ class FilesController extends ApplicationController {
 					Logger::log("Error when uploading file: ".$e->getMessage()."\n".$e->getTraceAsString());
 				}
 				ajx_current("empty");
-			} // try
+			} catch(Exception $e) {
+				flash_error($e->getMessage());
+				
+				if ($e instanceof InvalidUploadError) {
+					Logger::log("InvalidUploadError\n".$e->getTraceAsString());
+					Logger::log(print_r($e->getAdditionalParams(), 1));
+				} else {
+					Logger::log("Error when uploading file: ".$e->getMessage()."\n".$e->getTraceAsString());
+				}
+				ajx_current("empty");
+			}// try
 		} else {
 			if (array_var($_REQUEST, 'modal')) {
 				ajx_current("empty");

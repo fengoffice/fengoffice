@@ -11,13 +11,18 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		count_results : 0,
 		extra_list_params: extra_list_param
 	};
+
+	var url_controller = 'object';
+	var url_action = 'list_objects';
+	if (config.url_controller) url_controller = config.url_controller;
+	if (config.url_action) url_action = config.url_action;
 	
 	var Grid = function(config) {
 		if (!config) config = {};
 		this.store = new Ext.data.Store({
         	proxy: new Ext.data.HttpProxy(new Ext.data.Connection({
 				method: 'GET',
-            	url: og.getUrl('object', 'list_objects', url_params)
+            	url: og.getUrl(url_controller, url_action, url_params)
         	})),
         	reader: new Ext.data.JsonReader({
             	root: 'objects',

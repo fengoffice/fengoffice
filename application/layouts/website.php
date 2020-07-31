@@ -103,6 +103,11 @@
 			echo "\n";
 		}
 	}
+
+	$can_see_billing_info = true;
+	Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+	$can_see_cost_info = true;
+	Hook::fire('get_can_see_cost_information', array('user'=>logged_user()), $can_see_cost_info);
 	
 	?>
 	<style>
@@ -282,6 +287,8 @@ og.loggedUser = {
 	localization: '<?php echo logged_user()->getLocale() ?>',
 	can_instantiate_templates: <?php echo can_instantiate_templates(logged_user()) ? 'true' : 'false'?>,
 	can_manage_tasks: <?php echo can_manage_tasks(logged_user()) ? 'true' : 'false' ?>,
+	can_see_billing_info: <?php echo $can_see_billing_info ? 'true' : 'false' ?>,
+	can_see_cost_info: <?php echo $can_see_cost_info ? 'true' : 'false' ?>,
 	tz: {
 		id: '<?php echo logged_user()->getUserTimezoneId() ?>',
 		name: '<?php echo Timezones::getTimezoneName(logged_user()->getUserTimezoneId()) ?>',
@@ -416,7 +423,7 @@ $object_types = ObjectTypes::getAllObjectTypes();
 
 foreach ($object_types as $ot) {
     
-	$c_name = $ot->getPluralObjectTypeName();
+	$c_name = $ot->getObjectTypeName();
     $c_name_plural = $ot->getPluralObjectTypeName();
 	
 	$types[$ot->getId()] = array(

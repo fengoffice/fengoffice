@@ -2214,6 +2214,7 @@ class MemberController extends ApplicationController {
 	function add_objects_to_member() {
 		$ids = json_decode(array_var($_POST, 'objects'));
 		$mem_id = array_var($_POST, 'member');
+		$reclassify_in_associations = array_var($_POST, 'reclassify_in_associations');
 		
 		if (!is_array($ids) || count($ids) == 0) {
 			ajx_current("empty");
@@ -2259,7 +2260,8 @@ class MemberController extends ApplicationController {
 					}
 					
 					$obj->addToMembers(array($member),null,$is_multiple);
-					$obj->addToRelatedMembers(array($member));
+					$obj->addToRelatedMembers(array($member), false, $reclassify_in_associations);
+					$obj->save();
 					
 					$obj->addToSharingTable();
 					$objects[] = $obj;					

@@ -1056,7 +1056,7 @@ class ContactController extends ApplicationController {
 			}
 			
 			// escape all parameters
-			$contact_data = escape_parameters_array($contact_data);
+			//$contact_data = escape_parameters_array($contact_data);
 			
 			ajx_current("empty");
 			try {
@@ -1416,7 +1416,7 @@ class ContactController extends ApplicationController {
 			}
 			
 			// escape all parameters
-			$contact_data = escape_parameters_array($contact_data);
+			//$contact_data = escape_parameters_array($contact_data);
 			
 			try {
 				DB::beginWork();
@@ -1939,7 +1939,11 @@ class ContactController extends ApplicationController {
 				}
 				flash_success(lang('success edit picture'));
 			}
-			ajx_current("back");
+			if (array_var($_REQUEST, 'reload_picture')) {
+				ajx_current("empty");
+			} else {
+				ajx_current("back");
+			}
 		}
 	}
 	
@@ -1991,7 +1995,8 @@ class ContactController extends ApplicationController {
 			ApplicationLogs::createLog($contact, ApplicationLogs::ACTION_EDIT);
 
 			flash_success(lang('success delete picture'));
-			ajx_current("back");
+			ajx_extra_data(array('default_image_url' => $contact->getPictureUrl(), 'reload_picture' => array_var($_GET, 'reload_picture')));
+			ajx_current("empty");
 		} catch(Exception $e) {
 			DB::rollback();
 			flash_error(lang('error delete picture'));

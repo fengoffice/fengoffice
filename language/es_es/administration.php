@@ -742,4 +742,7 @@
 		'user config option desc thousand_separator' => 'Símbolo que separa los miles en los montos',
 		'user config option name decimal_digits' => 'Dígitos decimales',
 		'user config option desc thousand_separator' => 'Cantidad de dígitos decimales a mostrar',
+		
+		'config option name reclassify_time_when_linking_task' => 'Reclasificar tiempos de trabajo al asociar con una tarea',
+		'config option desc reclassify_time_when_linking_task' => 'Al editar un tiempo de trabajo y asiociarlo a una tarea, la clasificación del mismo será reemplazada por la clasificación de la tarea',
 );

@@ -61,25 +61,29 @@ class ConfigController extends ApplicationController {
 		$submited_values = array_var($_POST, 'options');
 		if(is_array($submited_values)) {
 			foreach($options as $option) {
-                                //update global cache if available
-                                if (GlobalCache::isAvailable() && GlobalCache::key_exists('config_option_'.$option->getName())) {					
-                                        GlobalCache::delete('config_option_'.$option->getName());					
-                                }
-                                if (!$option instanceof ConfigOption) continue;
-                                if($option->getName() == "working_days"){
-                                    $new_value = "";
-                                    foreach (array_var($submited_values, $option->getName()) as $value){
-                                        $new_value .= $value.",";
-                                    }
-                                    $new_value = substr ($new_value, 0, -1);                                    
-                                }else{             
-                                    $new_value = array_var($submited_values, $option->getName());
-                                    if(is_null($new_value) || ($new_value == $option->getValue())) continue;
-                                }
-                                
-                                $option->setValue($new_value);
-                                $option->save();
-                                evt_add("config option changed", array('name' => $option->getName(), 'value' => $new_value));
+				//update global cache if available
+				if (GlobalCache::isAvailable() && GlobalCache::key_exists('config_option_'.$option->getName())) {					
+					GlobalCache::delete('config_option_'.$option->getName());					
+				}
+				if (!$option instanceof ConfigOption) continue;
+				if($option->getName() == "working_days"){
+					$new_value = "";
+					foreach (array_var($submited_values, $option->getName()) as $value){
+						$new_value .= $value.",";
+					}
+					$new_value = substr ($new_value, 0, -1);                                    
+				}else{             
+					$new_value = array_var($submited_values, $option->getName());
+					if(is_null($new_value) || ($new_value == $option->getValue())) continue;
+				}
+				$old_value = $option->getValue();
+				
+				$option->setValue($new_value);
+				$option->save();
+				evt_add("config option changed", array('name' => $option->getName(), 'value' => $new_value, 'old_value' => $old_value));
+				
+				$ignored = null;
+				Hook::fire("config_option_changed", array('option' => $option, 'new_value' => $new_value, 'old_value' => $old_value), $ignored);
 				
 			} // foreach
 			

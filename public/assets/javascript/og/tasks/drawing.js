@@ -466,7 +466,7 @@ ogTasks.drawGroupNextTask = function (group, drawOptions, displayCriteria) {
 				ogTasks.isLoadingGroups = false;
 				// if there is no scrollbar and there are more task groups to load -> load them
 				var task_content_div = $("#tasksPanelContent").get(0);
-				if (!ogTasks.allGroupsLoaded && task_content_div && task_content_div.scrollHeight == task_content_div.clientHeight) {
+				if (!ogTasks.allGroupsLoaded && task_content_div && task_content_div.scrollHeight <= task_content_div.clientHeight) {
 					ogTasks.loadMoreGroups();
 				}
             }
@@ -684,7 +684,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
 
     //Member Path
     mem_path = "";
-    var mpath = Ext.util.JSON.decode(task.memPath);
+    var mpath = typeof(task.memPath)=='string' ? Ext.util.JSON.decode(task.memPath) : {};
 
     if (mpath) mem_path = og.getEmptyCrumbHtml(mpath, ".task-breadcrumb-container", og.breadcrumbs_skipped_dimensions);
 

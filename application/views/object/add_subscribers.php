@@ -75,7 +75,7 @@ require_javascript('og/modules/addMessageForm.js');
 					<div class="contact-picture-container" style="float:left;padding-top:3px;">
 						<img class="commentUserAvatar" src="<?php echo ($user instanceof Contact ? $user->getPictureUrl() : get_image_url('default-avatar.png')) ?>" alt="<?php echo clean($user instanceof Contact ? $user->getObjectName() : '') ?>" />
 					</div>
-					<label for="<?php echo $genid ?>notifyUser<?php echo $user->getId() ?>" style="float:left; width: 125px; min-width:0px; overflow:hidden; padding-left: 5px;>
+					<label for="<?php echo $genid ?>notifyUser<?php echo $user->getId() ?>" style="float:left; width: 130px; min-width:0px; overflow:hidden; padding-left: 5px;padding-right: 5px;">
 						<span class="ico-user link-ico"><?php echo clean($user->getObjectName()) ?></span>
 						<br>
 						<span style="color:#888888;font-size:90%;font-weight:normal;"> <?php echo $user->getEmailAddress()  ?> </span>

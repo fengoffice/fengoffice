@@ -1257,6 +1257,13 @@ class MailUtilities {
 						$numMessages = $imap->getNumberOfMessages(utf8_decode($box->getFolderName()));
 						if (!is_array($oldUids) || count($oldUids) == 0 || PEAR::isError($numMessages) || $numMessages == 0) {
 							if (PEAR::isError($numMessages)) {
+								
+								// if server error response tells that the folder doesn't exist then remove it from synchronization
+								if (str_ends_with($numMessages->getMessage(), '"'.$box->getFolderName().'" doesn\'t exist.')) {
+									$box->setCheckFolder(false);
+									$box->save();
+								}
+								
 								debug_log("    PEAR ERROR numMessages has error: ".$numMessages->getMessage(), "checkmail_log.php");
 								continue;
 							}

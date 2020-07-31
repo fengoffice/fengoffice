@@ -1,5 +1,5 @@
 
-	About Feng Office 3.8.1.32
+	About Feng Office 3.8.3.2
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,145 @@
 	
 	Changelog
 	=========
+
+	Since 3.8.3.2
+	-----------------
+	bugfix: when exporting timesheets report to csv it was not filling the worked time column
+	
+	Since 3.8.3.1
+	-----------------
+	feature: Generate 'Invoicing history' report for whole system
+	feature: Add the hierarchy path to members in the custom report group name
+	bugfix: when imap server responds that mailbox doesn't exist then remove it from synchronization
+	bugfix: fix actual expenses add/edit, it was not saving date correctly
+	bugfix: fix custom report conditions for dates and <= operator
+	bugfix: Fix the bug in the SQL query that caused inconsistent result in the custom reports for timesheets
+	bugfix: use only timeslot's members to calculate its permissions, don't use the related task's members
+
+	Since 3.8.3.1-beta
+	-----------------
+	feature: new plugin for sharepoint integration, includes a php sdk to interact wiht Sharepoint
+	feature: modifications to gesl_remote_actions plugin to generate the project folders structure in a Sharepoint site
+	bugfix: added missing spanish langs to expenses2 plugin
+	bugfix: fix drag and drop popup when using the check all checkbox in time list
+	bugfix: fix report conditions for datetime columns and timezon issues
+	bugfix: fix custom report grouping when grouping by folders
+	bugfix: fix timezone issue when adding timeslot from quick add
+	
+	Since 3.8.3.1-alpha2
+	-----------------
+	feature: add button to recalculate billing in timeslots list
+	feature: config option to reclassify a timeslot or not when linking it to a task
+	bugfix: fix error when saving timeslot and approval plugin is installed but workflow permissions is not
+	bugfix: fix js errors when linking a task to a timeslot and reclssifying timeslot
+
+	Since 3.8.3.1-alpha
+	-----------------
+	feature: new report for project billing
+	feature: add date range to pm report
+	
+	Since 3.8.3.0
+	-----------------
+	feature: Improvements in invoice history report
+	
+	Since 3.8.3-rc2
+	-----------------
+	bugfix: fix untrash function call in object controller
+	
+	Since 3.8.3-rc
+	-----------------
+	bugfix: fix user filter in timeslot form when user does not belong to owner company
+	bugfix: fix custom report excel export when last group is shown as columns, each group details for group columns were not included in the result
+	bugfix: fix currencies controller plugin name, that was causing an error when including helpers
+	bugfix: remove get/set functions from report category model for non exisiting columns
+	bugfix: fix performance issue when using advanced dimension intersection reports
+	bugfix: fix error when deleting client picture
+	bugfix: dont put the remove relation link when the relation is not multiple
+	bugfix: add default workflow permissions to admins and managers in time approval plugin
+	
+	Since 3.8.3-beta2
+	-----------------
+	bugfix: Fix bug: don't lose price and cost values when editing expense items
+	bugfix: round up time to 15 minutes when adding time from the tasks list
+	bugfix: fix the error generated when completing a repetitive task and selecting the option to complete the subtasks too
+	bugfix: temporarilly hide the print button from the task view's timeslots list
+	bugfix: fix client image input, the save button wasn't shown after selecting the picture
+	bugfix: fix error when trying to view a budgeted expense
+	bugfix: fix placeholder text in member selectors, allow usage of custom member type names
+	
+	Since 3.8.3-beta
+	-----------------
+	feature: Billing and cost permissions
+	bugfix: prevent browser autocomplete in member selectors
+	bugfix: when generating repetitions the first task is duplicated
+	bugfix: when generating repetitions the last task is unclassified
+	bugfix: when checking days to repeat a task timezone must be used
+	bugfix: Always round up time when using chronometer to 15 minutes even if it is a few seconds (less than one minute)
+	bugfix: fix js bug when rendering task breadcrumbs in the list
+	bugfix: remove company restriction from users filter in time module
+	
+	Since 3.8.3-alpha
+	-----------------
+	feature: feature: approval workflow permissions plugin for timeslots
+	bugfix: fix upgrade script to check if column exists before adding it
+	bugfix: fix js error when product type name has '
+	
+	Since 3.8.2.x
+	-----------------
+	bugfix: time_intervals plugin: roundup chronometer, proper estimated minutes options in the task
+	bugfix: ensure that permissions are saved before member templates plugin automatically instantiates task templates
+	bugfix: separate aoac features from evx_plugin, make a new plugin for aoac features
+	bugfix: fix lang for expenses options in settings
+	bugfix: dont check plugin permissions in core
+	bugfix: allow time approval workflow to do bulk actions when filtering by user
+	bugfix: fix border misalignment in the 'Invoicing history' report
+	
+	Since 3.8.2.0
+	-----------------
+	bugfix: fix repetitive tasks generation when specifying end date for repetitions, the first one was not being generated
+	
+	Since 3.8.2-beta
+	-----------------
+	bugfix: Remove minus from the negative numbers in 'Invoicing history' report
+	bugfix: Fix decimals in widgets
+	bugfix: add new column to contable report
+	bugfix: fix excel export for some custom reports
+	bugfix: remove unsupported characters from excel export sheet titles
+	bugfix: fix js money formatting to use config options for separators and ensure the sanity of the amount strings before saving them
+	
+	Since 3.8.2-alpha
+	-----------------
+	feature: Develop invoicing history report
+	feature: Develop timeslot specific system permissions
+	feature: allow contable report to filter active/inactive users, and modify column order
+	bugfix: Set 'suppliers' dimensions to 'mandatory'
+	bugfix: fix file upload error when saving searchable objects table for non txt file
+	bugfix: remove some warnings from log
+	bugfix: fix title property when exporting to excel
+	bugfix: fix pm report intermediate subtotals for estimated and pending time
+	bugfix: pm report: include the same summaries in excel as in html
+	bugfix: fix drag and drop to labor categories issue introduced after last feature of d&d
+	bugfix: prevent error when editing a payment receipt that has a document but it is not in the repo
+	bugfix: fix error in custom report conditions sql building function
+	
+	Since 3.8.1.33
+	-----------------
+	feature: ask user to reclassify in associated dimensions when reclassifying using drag and drop
+	feature: change project management report time and expenses tables order
+	bugfix: Fix bug that sent email subject that user is assigned to the new task, when user was only subscribed
+	bugfix: Fix add time feature
+	bugfix: fix company logo url in notifications manager, it wasn't absolute
+	bugfix: fix permissions errors when adding/editing/deleting actual expenses
+	bugfix: fix error 500 in custom report conditions when condition is 'is user = false'
+	
+	Since 3.8.1.32
+	-----------------
+	feature: allow drag and drop in time and expenses modules
+	feature: allow to modify grouped reports group order
+	bugfix: modify contable report order to use padron cp
+	bugfix: fix date formatting for task dates in timeslots reports
+	bugfix: fix custom reports when grouping by date
+	bugfix: fix fidelis report start and end time timezone
 	
 	Since 3.8.1.31
 	-----------------

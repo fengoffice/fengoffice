@@ -231,6 +231,7 @@ class Reports extends BaseReports {
 
             $report_columns = ReportColumns::getAllReportColumns($id);
 
+            Hook::fire('remove_billing_columns_from_view', array('object_type' => $ot),$report_columns);
             $contact_extra_columns = self::get_extra_contact_columns();
 
 
@@ -362,6 +363,9 @@ class Reports extends BaseReports {
 
             if ($ot->getName() == 'timeslot') {
                 $allConditions .= " AND   (e.rel_object_id=0 OR (SELECT aux.trashed_by_id FROM " . TABLE_PREFIX . "objects aux WHERE aux.id=e.rel_object_id)=0) ";
+                if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+                    $allConditions .= " AND contact_id = " . logged_user()->getId();
+                }
             }
 
             Hook::fire('custom_report_extra_conditions', array('report' => $report), $allConditions);
@@ -563,7 +567,7 @@ class Reports extends BaseReports {
                                             } else {
                                                 // if is a date then use format
                                                 if (ProjectTasks::instance()->getColumnType($field) == DATA_TYPE_DATETIME && $value instanceof DateTimeValue) {
-                                                    $value = format_value_to_print($field, $value->toMySQL(), DATA_TYPE_DATETIME, $report->getReportObjectTypeId());
+                                                	$value = format_value_to_print($field, $value->toMySQL(), DATA_TYPE_DATETIME, ProjectTasks::instance()->getObjectTypeId());
                                                 } else {
                                                     $value = format_value_to_print($field, $value, ProjectTasks::instance()->getColumnType($field), ProjectTasks::instance()->getObjectTypeId());
                                                 }

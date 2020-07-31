@@ -638,7 +638,7 @@ og.drawInnerHtml = function(companies) {
 				htmlStr += '<div class="contact-picture-container" style="float:left;padding-top:3px;">' +
 					'<img class="commentUserAvatar" src="'+ og.allUsers[usr.id].img_url +'" alt="'+og.clean(usr.name)+'" /></div>';
 				
-				htmlStr += '<label for="' + genid + 'notifyUser' + usr.id + '" style="float:left; width: 125px; min-width:0px; overflow:hidden; padding-left: 5px;>' +
+				htmlStr += '<label for="' + genid + 'notifyUser' + usr.id + '" style="float:left; width: 125px; min-width:0px; overflow:hidden; padding-left: 5px; padding-right: 5px;">' +
 					'<span class="ico-user link-ico">'+og.clean(usr.name)+'</span><br>' +
 					'<span style="color:#888888;font-size:90%;font-weight:normal;">'+ usr.mail+ '</span></label>';
 				

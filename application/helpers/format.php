@@ -775,6 +775,20 @@ function get_format_value_to_header($col, $obj_type_id)
 	}
 	
 	
+	function clean_formatted_money_amount_for_sql($amount) {
+		
+		$decimals_separator = user_config_option('decimals_separator');
+		$thousand_separator = user_config_option('thousand_separator');
+		
+		$amount = str_replace($thousand_separator, '', $amount);
+		if ($decimals_separator != '.') {
+			$amount = str_replace($decimals_separator, '.', $amount);
+		}
+		
+		return $amount;
+	}
+	
+	
 	function format_money_amount($number, $symbol = '$', $decimals = null) {
 		
 		if (is_null($decimals)) {
@@ -789,7 +803,7 @@ function get_format_value_to_header($col, $obj_type_id)
 		}
 		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
 		
-		return $formatted;
+		return trim($formatted);
 	}
 	
 	function format_boolean_to_string($value){

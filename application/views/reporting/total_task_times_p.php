@@ -9,6 +9,8 @@
 		$report_data['date_type'] = 4;
 	}
 	if (!isset($conditions)) $conditions = array();
+	$can_see_billing_info = true;
+	Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
 ?>
 <form style='height:100%;background-color:white' class="internalForm" action="<?php echo get_url('reporting', 'total_task_times') ?>" method="post" enctype="multipart/form-data">
 
@@ -155,7 +157,7 @@
 		</tr>
 		<?php } ?>
 		
-		<?php if ($has_billing && can_manage_billing(logged_user())) {?>
+		<?php if ($has_billing && can_manage_billing(logged_user()) && $can_see_billing_info) {?>
 		<tr style='height:30px;'>
 			<td><span class="bold"><?php echo lang('show billing information') ?></span></td>
 			<td align='left' style="padding-left:10px;">

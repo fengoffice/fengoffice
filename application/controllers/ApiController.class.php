@@ -348,6 +348,9 @@ class ApiController extends ApplicationController {
                     if (!empty($request['args']['assigned_to']) && is_numeric($request['args']['assigned_to'])) {
                         $query_options['extra_conditions'] = " AND contact_id = " . $request['args']['assigned_to'] . " ";
                     }
+                    if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+                        $query_options['extra_conditions'] = " AND contact_id = " . logged_user()->getId() . " ";
+                    }
 
                 	break;
                 	

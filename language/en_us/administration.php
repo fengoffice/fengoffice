@@ -836,7 +836,8 @@
     'can add mail accounts' => 'Can add mail accounts',
     'can_manage_dimensions'=>'Can manage dimensions',
     'can_manage_dimension_members'=>'Can manage dimension members',
-	'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
+    'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
+    'can_see_others_timeslots'=>'Can see other user\'s timeslots',
   	'can_update_other_users_invitations' => 'Can update other user\'s event invitations',
   	'can_link_objects' => 'Can link objects',
     'can_manage_repetitive_properties_of_tasks' => 'Can manage repetitive properties of tasks',
@@ -850,7 +851,8 @@
     'can_manage_dimensions description'=>'If this permission is checked the user will have full permissions over dimensions. He will be able to create new dimensions and change their configuration. This is an advanced administrative feature.',
     'can_manage_dimension_members description' => 'If this permission is checked the user will have full permissions over dimension members. He will be able to create, edit and delete new members. In practice, a member could be a workspace, project, client, etc. If user does not manage security configuration then when creating a client/project/workspace it will be mandatory to select where is located, so the permissions can be inherited.',
     'can_manage_tasks description' => 'If this permission is checked the user will have full permissions over tasks. He will be able to assign tasks to other users and complete them.',
-	'can_see_assigned_to_other_tasks description'=>'If enabled then the user will be able to see tasks that are not assigned to him/her.',
+  'can_see_assigned_to_other_tasks description'=>'If enabled then the user will be able to see tasks that are not assigned to him/her.',
+  'can_see_others_timeslots description'=>'If enabled then the user will be able to see timeslots that are not entered by him/her.',
   	'can_update_other_users_invitations description' => 'If enabled then the user will be able to change the status of other users event invitations.',
   	'can_link_objects description' => 'If this permission is checked the user will be able to link and unlink objects',
     'can_manage_repetitive_properties_of_tasks description' => 'If this permission is checked the user will be able to modify repetitive properties of repetitive tasks',
@@ -1027,6 +1029,9 @@
   		'user config option desc thousand_separator' => 'Symbol that seaparates the thousand digits in money amounts',
   		'user config option name decimal_digits' => 'Decimal digits',
   		'user config option desc thousand_separator' => 'Amount of decimal digits to show',
+  		
+  		'config option name reclassify_time_when_linking_task' => 'Reclassify time when linking to a task',
+  		'config option desc reclassify_time_when_linking_task' => 'When editing a time entry and linking it to a task then its classfication will be overriden by the task classification',
   ); // array
 
 

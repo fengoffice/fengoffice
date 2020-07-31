@@ -22,6 +22,10 @@ class Timeslots extends BaseTimeslots {
 		$userCondition = '';
 		if ($user)
 			$userCondition = ' AND `contact_id` = '. $user->getId();
+			
+		if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+			$userCondition = " AND contact_id = " . logged_user()->getId();
+		}
 
 		return self::findAll(array(
           'conditions' => array('`rel_object_id` = ? AND o.trashed_by_id=0' . $userCondition, $object->getObjectId()),
@@ -140,8 +144,7 @@ class Timeslots extends BaseTimeslots {
 			default:
 				throw new Error("Timeslot type not recognised: " . $timeslot_type);
 		}
-		
-		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+		if ((!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) || (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots'))) {
 			$conditions .= " AND `e`.`contact_id` = " . logged_user()->getId();
 		}
 		
@@ -220,6 +223,10 @@ class Timeslots extends BaseTimeslots {
 		$userCondition = '';
 		if ($user)
 			$userCondition = ' AND `contact_id` = '. $user->getId();
+
+		if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+			$userCondition = " AND contact_id = " . logged_user()->getId();
+		}
 		
 		$projectCondition = '';
 		if ($workspacesCSV && $object_manager == 'ProjectTasks')
@@ -250,6 +257,9 @@ class Timeslots extends BaseTimeslots {
 		if ($user instanceof Contact) {
 			$user_sql = " AND contact_id = " . $user->getId();
 		}
+		if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+			$user_sql = " AND contact_id = " . logged_user()->getId();
+		}
 		
 		$result = Timeslots::instance()->listing(array(
 			"order" => array('start_time', 'updated_on'),
@@ -268,7 +278,12 @@ class Timeslots extends BaseTimeslots {
 				INNER JOIN `".TABLE_PREFIX."objects` o ON o.id=ts.object_id
 				WHERE `rel_object_id` =  ". $object_id ." 
 				AND `end_time` > ".DB::escape(EMPTY_DATETIME)."
-				AND o.trashed_by_id=0;";
+				AND o.trashed_by_id=0";
+
+		if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+			$sql .= " AND contact_id = " . logged_user()->getId(); 
+		}
+		$sql .= ";";
 		
 		$result = DB::executeOne($sql);
 		$name = "total";

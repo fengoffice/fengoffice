@@ -1542,6 +1542,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		foreach($timeslots as $timeslot){
 			$timeslot->close($description);
+			Hook::fire('round_minutes_to_fifteen', array('timeslot' => $timeslot), $ret);
 			$timeslot->save();
 		}
                 
@@ -2002,7 +2003,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 	
 
-	function addToRelatedMembers($members, $from_form = false){
+	function addToRelatedMembers($members, $from_form = false, $remove_previous_associated_members = false){
 		$related_member_ids = array();
 		
 		foreach ($members as $member) {
@@ -2046,7 +2047,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					$object_members = $this->getMembers();
 					foreach ($object_members as $m) {
 						if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
-							$is_already_classified_in_assoc_dim = true;
+							if ($remove_previous_associated_members) {
+								ObjectMembers::removeObjectFromMembers($this, logged_user(), null, array($m->getId()));
+							} else {
+								$is_already_classified_in_assoc_dim = true;
+							}
 							break;
 						}
 					}

@@ -189,5 +189,6 @@
     
     'edit external tokens' => 'Administrar accesos externos',
         'add new external token' => 'Agregar nuevo token',
-        'token edit' => 'Guardar',
+		'token edit' => 'Guardar',
+	'type to select' => 'Escriba aquí para asignar {0}',
 ); ?>

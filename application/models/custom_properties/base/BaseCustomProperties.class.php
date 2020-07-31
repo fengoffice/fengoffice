@@ -138,6 +138,7 @@
     * @throws DBQueryError
     */
     function find($arguments = null) {
+      Hook::fire('add_custom_property_arguments', array('user'=>logged_user()), $arguments);
       if(isset($this) && instance_of($this, 'CustomProperties')) {
         return parent::find($arguments);
       } else {
@@ -153,6 +154,7 @@
     * @return one or  CustomProperties objects
     */
     function findAll($arguments = null) {
+      Hook::fire('add_custom_property_arguments', array('user'=>logged_user()), $arguments);
       if(isset($this) && instance_of($this, 'CustomProperties')) {
         return parent::findAll($arguments);
       } else {
@@ -168,6 +170,7 @@
     * @return  CustomProperties 
     */
     function findOne($arguments = null) {
+      Hook::fire('add_custom_property_arguments', array('user'=>logged_user()), $arguments);
       if(isset($this) && instance_of($this, 'CustomProperties')) {
         return parent::findOne($arguments);
       } else {
@@ -199,6 +202,7 @@
     * @return integer
     */
     function count($condition = null) {
+      Hook::fire('add_custom_property_arguments', array('user'=>logged_user()), $condition);
       if(isset($this) && instance_of($this, 'CustomProperties')) {
         return parent::count($condition);
       } else {

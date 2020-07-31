@@ -134,8 +134,11 @@
 			</select><span><?php echo lang('seconds') ?></span></td>
 		</tr>
 	</table>
-	
-	<?php if ($show_billing && !Plugins::instance()->isActivePlugin('advanced_billing')) { ?>
+
+	<?php 
+	$can_see_billing_info = true;
+	Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+	if ($show_billing && !Plugins::instance()->isActivePlugin('advanced_billing') && $can_see_billing_info) { ?>
 		<br/>
 		<?php echo radio_field('timeslot[is_fixed_billing]',!$timeslot_data['is_fixed_billing'],array('onchange' => 'og.showAndHide("' . $genid. 'hbilling",["' . $genid. 'fbilling"])', 
 			'value' => '0', 'style' => 'width:16px')); echo '<span class="bold">' . lang('hourly billing') . '</span>'; ?>

@@ -190,5 +190,6 @@
     'select all' => 'Seleccionar todos',
   	'dont filter' => 'No filtrar',
     
-    'add new external token' => 'Add new token',
+    'add new external token' => 'Agregar nuevo token',
+	'type to select' => 'Escriba aquí para asignar {0}',
 ); ?>

@@ -65,4 +65,7 @@
 	'trash objects in member desc' => 'If you choose \'yes\' then all objects that are classified here will be deleted (moved to the trash can).',
 
 	'add or condition' => 'Add \'OR\' condition',
+	
+	'classification in associated members' => 'Classification in associated entities',
+	'do you want to reclassify in memtype associated dimensions' => 'Do you want to reclassify this {0} to the new {1} associated {2}?',
 );

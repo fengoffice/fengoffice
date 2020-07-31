@@ -288,7 +288,9 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 				if ($mem instanceof Member) {
 					$mems = array($mem);
 					build_member_list_text_to_show_in_trees($mems);
-					$gd_name = $mems[0]->getName();
+					$mem_path = $mem->getPath(' - ');
+					$gd_name = $mem_path != '' ? $mem_path . ' - ' . $mems[0]->getName() : $mems[0]->getName();		
+					//$gd_name = $mems[0]->getName();
 				}
 			}
 			
@@ -358,6 +360,8 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 									if (count($mem_ids) == 1 && $mem_ids[0] == 0 && !isset($columns_set[$col])) {
 										$value = array_var($row, $col);
 										$columns_set[$col] = true;
+									} else {
+										$value = '';
 									}
 								}
 							}
@@ -488,10 +492,14 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 			foreach ($columns as $c) {
 				
 				$gd_name = $gd['name'];
-				$original_gkey = end(explode(',', $gd['original_gkey']));
+				$gd_original_gkey = $gd['original_gkey'];
+				$exploded = explode(',', $gd_original_gkey);
+				$original_gkey = end($exploded);
 					
 				if (str_starts_with($original_gkey, "_group_id_dim_")) {
-					$gd_id = end(explode('_', $gd['id']));
+					$tmp_gd_id = $gd['id'];
+					$exploded = explode('_', $tmp_gd_id);
+					$gd_id = end($exploded);
 					$mem = Members::findById($gd_id);
 					if ($mem instanceof Member) {
 						$mems = array($mem);
@@ -525,13 +533,41 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 				foreach($gd['items'] as $item_data) {
 					$row = array_var($rows, $item_data['mid']);
 					$i = 0;
-
 					$item_values = array();
 
 					foreach ($columns['order'] as $col) {
 						if ($col == 'object_type_id' || $col == 'link') continue;
+						
+						if (strrpos($col, '|') !== false) {
+							$exploded = explode('|', $col);
+							$mem_ids = array();
+							foreach ($exploded as $k=>$exp) {
+								if ($k == count($exploded)-1) $value = $exp;
+								else $mem_ids[] = $exp;
+							}
+							$col = substr_utf($col, strrpos($col, '|')+1);
+							
+							$o = Objects::findObject($item_data['mid']);
+							if ($o instanceof ContentDataObject) {
+								$obj_mem_ids = $o->getMemberIds();
+								$intersect = array_intersect($mem_ids, $obj_mem_ids);
+								if (count($intersect) == count($mem_ids)) {
+									$value = array_var($row, $col);
+									$columns_set[$col] = true;
+								} else {
+									// the unclassified column (when showing last group as columns)
+									if (count($mem_ids) == 1 && $mem_ids[0] == 0 && !isset($columns_set[$col])) {
+										$value = array_var($row, $col);
+										$columns_set[$col] = true;
+									}
+								}
+							}
+							if (str_starts_with($value, "cp_")) $value = '';
+							
+						} else {
+							$value = array_var($row, $col);
+						}
 
-						$value = array_var($row, $col);
 						$val_type = array_var($columns['types'], $col);
 						$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
 						$date_custom = $report->getColumnValue('date_format');
@@ -623,7 +659,7 @@ function get_cp_contact_name($gb_keys, $index, $row, &$cp_contact_cache) {
 function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate = true) {
 	
 	$gb_keys = array();
-
+	// Logger::log_r($group_by_criterias);
 	foreach ($group_by_criterias as $gb) {
 		switch ($gb['type']) {
 			case 'association': $gkey = '_group_id_a_'.$gb['id']; break;
@@ -649,6 +685,15 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					if (in_array($managerInstance->getColumnType($col), array(DATA_TYPE_DATETIME, DATA_TYPE_DATE))) {
 						$gbk['is_date'] = true;
 					}
+					
+					// if order column is different than the name column then use it with key . _toorder
+					$custom_order_col = str_replace('_group_id_fp_', '_group_order_col_fp_', $gbk['k']);
+					if (count($rows) > 0 && isset($rows[0][$custom_order_col])) {
+						foreach ($rows as &$r) {
+							$r[$gbk['k']."_toorder"] = $r[$custom_order_col];
+						}
+					}
+					
 				} else if (str_starts_with($gbk['k'], '_group_id_cp_')) {
 					$cp_id = str_replace('_group_id_cp_', '', $gbk['k']);
 					$cp = CustomProperties::findById($cp_id);
@@ -710,9 +755,24 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                         );
                         $k0 = $date;
                     }else{
+						if ($row[$gb_keys[0]['n']]){
+							$member_k0 = null;
+							if (str_starts_with($gb_keys[0]['k'], '_group_id_dim_')) {
+								$member_k0 = Members::getMemberById($k0);
+							}
+							if($member_k0 instanceof Member){
+								$path_k0 = $member_k0->getPath(' - ');
+								$name_k0 = $path_k0 != '' ? $path_k0 . ' - ' . $row[$gb_keys[0]['n']] : $row[$gb_keys[0]['n']];
+								$n0 = $name_k0.'_'.$row[$gb_keys[0]['k']];
+							} else {
+								$name_k0 = $row[$gb_keys[0]['n']];
+							}
+						} else {
+							$name_k0 = lang('unclassified');
+						}
                         $grouped_temp[$n0] = array(
                             'id' =>  $k0,
-                            'name' => $row[$gb_keys[0]['n']] ? $row[$gb_keys[0]['n']] : lang('unclassified'),
+                            'name' => $name_k0, //$row[$gb_keys[0]['n']] ? $row[$gb_keys[0]['n']] : lang('unclassified'),
                             'original_gkey' => $gb_keys[0]['k'],
                         );
                     }
@@ -758,9 +818,24 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                             );
                             $k1 = $date;
                         }else{
+							if ($row[$gb_keys[1]['n']]){
+								$member_k1 = null;
+								if (str_starts_with($gb_keys[1]['k'], '_group_id_dim_')) {
+									$member_k1 = Members::getMemberById($k1);
+								}
+								if($member_k1 instanceof Member){
+									$path_k1 = $member_k1->getPath(' - ');
+									$name_k1 = $path_k1 != '' ? $path_k1 . ' - ' . $row[$gb_keys[1]['n']] : $row[$gb_keys[1]['n']];
+									$n1 = $name_k1.'_'.$row[$gb_keys[1]['k']];
+								} else {
+									$name_k1 = $row[$gb_keys[1]['n']];
+								}
+							} else {
+								$name_k1 = lang('unclassified');
+							}
                             $grouped_temp[$n0]['groups'][$n1] = array(
                                 'id' => $k0."_".$k1,
-                                'name' => $row[$gb_keys[1]['n']] ? $row[$gb_keys[1]['n']] : lang('unclassified'),
+                                'name' => $name_k1, //$row[$gb_keys[1]['n']] ? $row[$gb_keys[1]['n']] : lang('unclassified'),
                                 'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'],
                             );
                         }
@@ -807,9 +882,24 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                                 );
                                 $k2 = $date;
                             }else{
+								if ($row[$gb_keys[2]['n']]){
+									$member_k2 = null;
+									if (str_starts_with($gb_keys[2]['k'], '_group_id_dim_')) {
+										$member_k2 = Members::getMemberById($k2);
+									}
+									if($member_k2 instanceof Member){
+										$path_k2 = $member_k2->getPath(' - ');
+										$name_k2 = $path_k2 != '' ? $path_k2 . ' - ' . $row[$gb_keys[2]['n']] : $row[$gb_keys[2]['n']];
+										$n2 = $name_k2.'_'.$row[$gb_keys[2]['k']];
+									} else {
+										$name_k2 = $row[$gb_keys[2]['n']];
+									}
+								} else {
+									$name_k2 = lang('unclassified');
+								}
                                 $grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
                                     'id' => $k0."_".$k1."_".$k2,
-                                    'name' => $row[$gb_keys[2]['n']] ? $row[$gb_keys[2]['n']] : lang('unclassified'),
+                                    'name' => $name_k2, //$row[$gb_keys[2]['n']] ? $row[$gb_keys[2]['n']] : lang('unclassified'),
                                     'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'].",".$gb_keys[2]['k'],
                                 );
                             }
@@ -868,7 +958,11 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 			if (preg_match($mysql_date_format_re, $v2['name'])) {
 				$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
 			} else {
-				$v0['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v0['name']), null, 0);
+				try {
+					$v0['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v0['name']), null, 0);
+				} catch (Exception $e) {
+					$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
+				}
 			}
 		}
 	}
@@ -1231,7 +1325,15 @@ function build_report_conditions_sql($parameters) {
 								$value = EMPTY_DATE;
 							} else {
 								$dtValue = DateTimeValueLib::dateFromFormatAndString($dateFormat, $value);
-								$value = $dtValue->format('Y-m-d');
+								if($condField->getCondition() == '<='){
+									$dtValue->endOfDay();
+								}
+								if ($col_type == DATA_TYPE_DATE) {
+									$value = $dtValue->format('Y-m-d');
+								} else {
+									$user_tz_offset = logged_user()->getUserTimezoneHoursOffset();
+									$value = format_date($dtValue, DATE_MYSQL, -1 * $user_tz_offset);
+								}
 							}
 						}
 						if($condField->getCondition() != '%'){
@@ -1250,7 +1352,7 @@ function build_report_conditions_sql($parameters) {
 											break;
 										case '<=':
 										case '>=':
-											$current_condition .= '(`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value).' OR '.$equal.') ';
+											$current_condition .= '(`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value).') '; //' OR '.$equal.') '; // The last part caused inconsistency in the query results, commented out for now
 											break;
 									}
 								} else {
@@ -1387,6 +1489,9 @@ function build_report_conditions_sql($parameters) {
 			}
 			
 			if ($current_condition != '') {
+				if (str_starts_with($current_condition, " AND")) {
+					$current_condition = substr($current_condition, 4);
+				}
 				$group_conditions_sql[] = $current_condition;
 			}
 		}
@@ -1399,6 +1504,7 @@ function build_report_conditions_sql($parameters) {
 	$allConditions = "";
 	
 	foreach ($all_group_conditions_sql as $group_conditions_sql) {
+		$group_conditions_sql = array_filter($group_conditions_sql);
 		if (count($group_conditions_sql) > 0) {
 			
 			$allConditions .= " AND (" . implode(' OR ', $group_conditions_sql) . ")";

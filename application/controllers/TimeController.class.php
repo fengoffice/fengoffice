@@ -30,11 +30,11 @@ class TimeController extends ApplicationController {
         if (!can_manage_time(logged_user())) {
         	$users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
         } else {
-            if (logged_user()->isMemberOfOwnerCompany()) {
+            //if (logged_user()->isMemberOfOwnerCompany()) {
                 $users = Contacts::getAllUsers();
-            } else {
+            /*} else {
                 $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-            }
+            }*/
         }
 		
 		// filter users by permissions only if any member is selected.
@@ -100,11 +100,12 @@ class TimeController extends ApplicationController {
             $users = array();
             if (can_manage_time(logged_user())) {
 
-                if (logged_user()->isMemberOfOwnerCompany()) {
+                /*if (logged_user()->isMemberOfOwnerCompany()) {
                     $users = Contacts::getAllUsers();
                 } else {
                     $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-                }
+                }*/
+                $users = Contacts::getAllUsers();
                 // filter users by permissions only if any member is selected.
                 $members = $timeslot->getMembers();
                 if (count($members) > 0) {
@@ -282,8 +283,8 @@ class TimeController extends ApplicationController {
                     $minutes = $minutes - 60;
                     $hoursToAdd += 1;
                 }
-                $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
             }
+            $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
 
             if (strpos($hoursToAdd, ',') && !strpos($hoursToAdd, '.'))
                 $hoursToAdd = str_replace(',', '.', $hoursToAdd);
@@ -347,7 +348,6 @@ class TimeController extends ApplicationController {
                         $starthoursandminutes->add('h', -$hoursToAdd);
                         $startTime->setHour($starthoursandminutes->getHour());
                         $startTime->setMinute($starthoursandminutes->getMinute());
-                        $startTime->add('h', -$logged_user_tz_hours_offset);
                         
                     } else {
                         //Case 4. If the date the user selected is not today, there might be a conflict
@@ -483,7 +483,8 @@ class TimeController extends ApplicationController {
         }
         $preferences = array(
           'show_paused_time'=> $show_paused_time,
-          'automatic_calculation_time'=> user_config_option('automatic_calculation_time')
+          'automatic_calculation_time'=> user_config_option('automatic_calculation_time'),
+          'automatic_calculation_start_time'=> user_config_option('automatic_calculation_start_time')
         );
         // load preferences
         tpl_assign('time_preferences',$preferences);
@@ -495,11 +496,12 @@ class TimeController extends ApplicationController {
             $users = array();
             if (can_manage_time(logged_user())) {
 
-                if (logged_user()->isMemberOfOwnerCompany()) {
+                /*if (logged_user()->isMemberOfOwnerCompany()) {
                     $users = Contacts::getAllUsers();
                 } else {
                     $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-                }
+                }*/
+                $users = Contacts::getAllUsers();
                 // filter users by permissions only if any member is selected.
                 $members = $timeslot->getMembers();
                 if (count($members) > 0) {
@@ -571,8 +573,8 @@ class TimeController extends ApplicationController {
                         $minutes = $minutes - 60;
                         $hoursToAdd += 1;
                     }
-                    $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
                 }
+                $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
 
                 if (strpos($hoursToAdd, ',') && !strpos($hoursToAdd, '.')) {
                     $hoursToAdd = str_replace(',', '.', $hoursToAdd);
@@ -773,7 +775,9 @@ class TimeController extends ApplicationController {
             default: break;
         }
 
-        if ($user_filter) {
+        if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+			$extra_conditions .= " AND contact_id = " . logged_user()->getId();
+		} elseif($user_filter) {
             $extra_conditions .= " AND contact_id='$user_filter' ";
         }
         

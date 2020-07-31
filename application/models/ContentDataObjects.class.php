@@ -1295,8 +1295,12 @@ abstract class ContentDataObjects extends DataManager {
 				$objects_list[$i]->timeslots_count = 0;
 			}
 			if (count($ids > 0)){
+				$user_condition = "";
+				if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+					$user_condition = " AND contact_id = " . logged_user()->getId();
+				}
 				$result = Timeslots::instance()->listing(array(
-					"extra_conditions" => ' AND `e`.`object_id` in (' . implode(',', $ids) . ')'
+					"extra_conditions" => ' AND `e`.`object_id` in (' . implode(',', $ids) . ')'.$user_condition
 				));
 				$timeslots = $result->objects;
 				for ($i = 0; $i < count($timeslots); $i++){

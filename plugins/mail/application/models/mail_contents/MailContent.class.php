@@ -412,9 +412,9 @@ class MailContent extends BaseMailContent {
 	function canView(Contact $user) {
 		$account = $this->getAccount();
 		if ($account instanceof MailAccount) {
-			$mac = MailAccountContacts::instance()->findOne(array('conditions' => 'account_id='.$account->getId()." AND contact_id=".logged_user()->getId()));
+			$mac = MailAccountContacts::instance()->findOne(array('conditions' => 'account_id='.$account->getId()." AND contact_id=".$user->getId()));
 			return $mac instanceof MailAccountContact || 
-				$account->getContactId() == logged_user()->getId() || 
+				$account->getContactId() == $user->getId() || 
 				can_read($user, $this->getMembers(), $this->getObjectTypeId());
 		}else{
 			return can_read($user, $this->getMembers(), $this->getObjectTypeId());
@@ -478,7 +478,7 @@ class MailContent extends BaseMailContent {
 	 * @access public
 	 * @param Contact $user
 	 * @param Project $project
-	 * @return booelean
+	 * @return boolean
 	 */
 	function canAdd(Contact $user, $context, &$notAllowedMember = '') {
 		return can_add($user, $context, $this->getObjectTypeId(), $notAllowedMember);
@@ -573,7 +573,7 @@ class MailContent extends BaseMailContent {
     		} // foreach
     	} // if
 
-    	$rows = DB::executeAll("select column_name from ".TABLE_PREFIX."searchable_objects where rel_object_id=".$this->getObjectId());
+    	//$rows = DB::executeAll("select column_name from ".TABLE_PREFIX."searchable_objects where rel_object_id=".$this->getObjectId());
     	
     	if ($wasNew){
     		SearchableObjects::dropContentByObjectColumn($this, 'uid');
@@ -586,7 +586,7 @@ class MailContent extends BaseMailContent {
 
     		$searchable_object->save();
     	}
-    	$rows = DB::executeAll("select column_name from ".TABLE_PREFIX."searchable_objects where rel_object_id=".$this->getObjectId());
+    	//$rows = DB::executeAll("select column_name from ".TABLE_PREFIX."searchable_objects where rel_object_id=".$this->getObjectId());
     	
     }
 	
@@ -637,8 +637,8 @@ class MailContent extends BaseMailContent {
 
 
   function getDashboardObject(){
-    	$projectId = "0";
-    	$project = "";
+    	//$projectId = "0";
+    	//$project = "";
     	if (count($this->getWorkspaces()) > 0) {
     		$type = "email";
     	} else {
@@ -841,7 +841,7 @@ class MailContent extends BaseMailContent {
 		$id = $this->getId();
 		$convId = $this->getConversationId();
 		$accountId = $this->getAccountId();
-		$folderName = $this->getImapFolderName();
+		//$folderName = $this->getImapFolderName();
 		$state = $this->getState();
 		
 		if ($state == 2) {

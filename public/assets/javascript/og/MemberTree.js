@@ -168,12 +168,22 @@ og.MemberTree = function(config) {
 
 				}
 				this.selectionHasAttachments = selectionHasAttachments;
+				
+				var first_selected_row = null;
+				for (var j=0; j<e.data.selections.length; j++) {
+					var sel_row = e.data.selections[j];
+					if (!sel_row) continue;
+					if (sel_row.id != 'quick_add_row' && sel_row.id != '#__total_row__' && sel_row.data.ot_id) {
+						first_selected_row = sel_row;
+						break;
+					}
+				}
 
-				if (e.data.selections[0] && e.data.selections[0].data && e.target && 
+				if (first_selected_row && first_selected_row.data && e.target && 
 						og.dimension_object_type_contents[config.dimensionId] &&
 						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id] &&
-						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][e.data.selections[0].data.ot_id] &&
-						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][e.data.selections[0].data.ot_id].multiple) {
+						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][first_selected_row.data.ot_id] &&
+						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][first_selected_row.data.ot_id].multiple) {
 					
 					if (og.preferences['drag_drop_prompt'] == 'prompt') {
 						var rm_prev = has_relations ? (confirm(lang('do you want to mantain the current associations of this obj with members of', config.title)) ? "0" : "1") : "1";
@@ -199,8 +209,10 @@ og.MemberTree = function(config) {
 						callback: function(){
 							e.data.grid.load();
 						}
-					});                                        
+					});
+					
 				} else {
+					
 					if (this.selectionHasAttachments() && e.target.id) {
 						if (og.preferences['mail_drag_drop_prompt'] == 'prompt') {
 							var attachment = confirm(lang('do you want to classify the unclassified emails attachments', config.title)) ? "1" : "0";
@@ -210,14 +222,62 @@ og.MemberTree = function(config) {
 							var attachment = 0;
 						}
 					}
+					
+					var dim_id = e.target.attributes.dimension_id;
+					
+					// Ask if user also wants to reclassify the object in the associated dimension members
+					if (og.dimension_member_associations[dim_id] && og.dimension_member_associations[dim_id][e.target.object_type_id] && og.dimension_member_associations[dim_id][e.target.object_type_id].length > 0) {
 
-					og.openLink(og.getUrl('member', 'add_objects_to_member'),{
-						method: 'POST',
-						post: {objects: Ext.util.JSON.encode(ids), member: e.target.id, attachment:attachment},
-						callback: function(){
-							e.data.grid.load();
+						var obj_type_name = 'object';
+						if (e.data && e.data.grid && e.data.grid.type_name) {
+							obj_type_name = lang(e.data.grid.type_name);
 						}
-					});
+						var mem_type_name = og.objectTypes[e.target.object_type_id].c_name;
+						var assoc_dim_names = '';
+						for (var i=0; i<og.dimension_member_associations[dim_id][e.target.object_type_id].length; i++) {
+							var assoc = og.dimension_member_associations[dim_id][e.target.object_type_id][i];
+							assoc_dim_names += (assoc_dim_names == '' ? '' : ', ') + assoc.name;
+						}
+						
+						var div = document.createElement('div');
+						var question = lang('do you want to reclassify in memtype associated dimensions', obj_type_name, mem_type_name, assoc_dim_names);
+						div.style = "border-radius: 5px; background-color: #fff; padding: 10px; width: 400px;";
+						var genid = Ext.id();
+						div.innerHTML = '<div><label class="coInputTitle">'+lang('classification in associated members')+'</label></div>'+
+							'<div id="'+genid+'_question">'+ question+'</div>'+
+							'<div id="'+genid+'_buttons">'+
+							'<button class="yes submit blue">'+lang('yes')+'</button><button class="no submit blue">'+lang('no')+'</button>'+
+							'</div><div class="clear"></div>';
+
+						var modal_params = {
+							'escClose': false,
+							'overlayClose': false,
+							'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+							'onShow': function (dialog) {
+								$("#"+genid+"_close_link").addClass("modal-close-img");
+								$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
+								$("#"+genid+"_question").css('margin', '10px 0');
+								$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+
+									og.call_add_objects_to_member(e, ids, e.target.id, attachment, true);
+									$('.modal-close').click();
+								});
+								$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+									
+									og.call_add_objects_to_member(e, ids, e.target.id, attachment);
+									$('.modal-close').click();
+								});
+						    }
+						};
+						setTimeout(function() {
+							$.modal(div, modal_params);
+						}, 100);
+						
+					} else {
+						// if member has no associations then directly call to the reclassify function
+						og.call_add_objects_to_member(e, ids, e.target.id, attachment);
+					}
+					
 				}
 			} else {
 				// if is root node => unclassify
@@ -231,6 +291,7 @@ og.MemberTree = function(config) {
 							if (mpath && mpath[config.dimensionId]) has_relations = true;
 						}
 					}
+
 					og.openLink(og.getUrl('member', 'add_objects_to_member'),{
 						method: 'POST',
 						post: {objects: Ext.util.JSON.encode(ids), dimension: e.target.getOwnerTree().dimensionId},

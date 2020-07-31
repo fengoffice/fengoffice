@@ -15,7 +15,15 @@ class BillingController extends ApplicationController {
 	}
 	
 	function index() {
-		
+		$can_see_billing_info = true;
+		Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+		$can_see_cost_info = true;
+    	Hook::fire('get_can_see_cost_information', array('user'=>logged_user()), $can_see_cost_info);
+		if (!$can_see_billing_info || !$can_see_cost_info) {
+			flash_error(lang('no access permissions'));
+			ajx_current('empty');			
+			return;
+		}
 	}
 	
 	function list_all() {

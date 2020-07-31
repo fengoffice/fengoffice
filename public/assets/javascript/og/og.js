@@ -5065,6 +5065,8 @@ og.updatePictureFile = function (url) {
 				p.fadeOut();
 
 				$("#"+genid+"current_picture").hide();
+				
+				$("#"+genid+"submit_btn").show(); // allow save after image is loaded
 
 				// For browsers with HTML5 compatibility
 				if (window.FileReader) {
@@ -5102,38 +5104,88 @@ og.updatePictureFile = function (url) {
 	});
 }
 
+og.delete_contact_picture = function(genid, delete_picture_url, confirm_message, reload_picture) {
+	if (confirm(confirm_message)) {
+		og.openLink(delete_picture_url, {
+			preventPanelLoad: true,
+			callback: function(success, data) {
+				$("#"+genid+"current_picture").fadeOut();
+				og.ExtModal.hide();
+				$("#"+reload_picture).attr('src', data.default_image_url);
+			}
+		});
+	}
+};
+
+// drag & drop classification call
+
+og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations) {
+	
+	if (og.still_adding_objects_to_member) return;
+	og.still_adding_objects_to_member = true;
+	setTimeout(function(){ og.still_adding_objects_to_member = false; }, 1000);
+	
+	var params = {};
+	params.objects = Ext.util.JSON.encode(ids);
+	params.member = member_id;
+	if (attachment) params.attachment = attachment;
+	if (reclassify_in_associations) params.reclassify_in_associations = reclassify_in_associations;
+	
+	og.openLink(og.getUrl('member', 'add_objects_to_member'),{
+		method: 'POST',
+		post: params,
+		//post: {objects: Ext.util.JSON.encode(ids), member: e.target.id, attachment:attachment, reclassify_in_associations: true},
+		callback: function(){
+			if (e && e.data && e.data.grid) e.data.grid.load();
+		}
+	});
+}
+
+// --
 
 
 og.format_money_amount = function(amount, decimals) {
-	
+	if (amount=='') amount = '0';
 	amount = og.clean_thousand_separator(amount);
-	
+
+	// if decimal separator is , then replace it by .
+	if (amount.toString().indexOf(',') > 0) {
+		amount = amount.toString().replace(',','.');
+	}
+
+	// get the number
 	amount = parseFloat(amount);
 	
 	if (!decimals) decimals = 2;
 	
-	return amount.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+	var locale = og.preferences.thousand_separator == ',' ? 'en' : 'it';
+	
+	return amount.toLocaleString(locale, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
 }
 
 og.clean_thousand_separator = function(amount) {
 	if (!isNaN(amount)) return amount;
 	
 	var th_sep = og.get_locale_thousand_separator();
-	if (th_sep == ',') {
-		amount = amount.replace(/\,/, '');
-	} else {
-		var re = '/' + th_sep + '/';
-		amount = amount.replace(re, '');
+	// remove thousand separator
+	while (amount.toString().indexOf(th_sep) > 0) {
+		amount = amount.toString().replace(th_sep, '');
+	}
+	
+	if (th_sep == '.') {
+		// set decimal separator to .
+		amount = amount.toString().replace(',','.');
 	}
 	return amount;
 }
 
 og.get_locale_thousand_separator = function() {
-	var num = 1000;
-    var numStr = num.toLocaleString();
+	/*var num = 1000;
+    var locale = og.preferences.thousand_separator == ',' ? 'en' : 'it';
+	var numStr = num.toLocaleString(locale);
     if (numStr.length == 5) {
         return numStr.substr(1, 1);
-    }
+    }*/
     return og.preferences.thousand_separator;
 }
 

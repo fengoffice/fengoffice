@@ -6,7 +6,9 @@ $additional_actions_params = array('panel_id' => $grid_id);
 $additional_actions = array();
 Hook::fire('timeslot_list_additional_actions', $additional_actions_params, $additional_actions);
 
-$show_billing = can_manage_billing(logged_user());
+$can_see_billing_info = true;
+Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+$show_billing = can_manage_billing(logged_user()) && $can_see_billing_info;
 
 $current_filters_json = user_config_option('current_time_module_filters');
 $current_filters = $current_filters_json == "" ? array() : json_decode($current_filters_json, true);
@@ -18,9 +20,8 @@ foreach (active_context() as $selection) {
 }
 $can_add_timeslots = can_add_timeslots(logged_user(), $active_members);
 
-if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_add_timeslots_in_time_tab')) {
-	$can_add_timeslots = false;
-}
+Hook::fire('time_tab_override_can_add_timeslots_permission', array('user'=>logged_user()), $can_add_timeslots);
+
 
 $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row');
 
@@ -407,9 +408,11 @@ if (is_array($add_columns)) {
     var period_options = [[0, lang('no filter')],[1, lang('today')],[2, lang('this week')],[3, lang('last week+')],[4, lang('this month')],[5, lang('last month+')],[6, lang('select dates...')]];
     var period_ini_val = '<?php echo array_var($current_filters, 'period_filter') ?>';
     
-<?php foreach ($users as $user) { ?>
-        user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user->getObjectName())) ?>']);
-        add_row_user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user->getObjectName())) ?>']);
+<?php foreach ($users as $user) {
+	$user_display_name = str_replace("\\'", "'", $user->getObjectName());
+?>
+        user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
+        add_row_user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
 <?php } ?>
 
     var type_ini_val = '<?php echo array_var($current_filters, 'type_filter', '0') ?>';
@@ -494,6 +497,7 @@ if (is_array($add_columns)) {
         name_fixed: true,
         name_width: 200,
         stateId: 'timeslots-module',
+        allow_drag_drop: true,
         sm: sm
     });
 

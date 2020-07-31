@@ -7,7 +7,7 @@ var { ResponsiveContainer,
       YAxis,
       CartesianGrid,
       Tooltip } = require('recharts');
-var { NumberFormatter } = require('./helpers/widgetChartHelpers');
+var { AxisNumberFormatter, FormatNumber } = require('./helpers/widgetChartHelpers');
 
 
 class FinancialsWidget extends React.Component {
@@ -18,16 +18,21 @@ class FinancialsWidget extends React.Component {
                      estimated: props.data.estimated ? props.data.estimated : 0,
                      earnedTitle: props.data.earnedTitle ? props.data.earnedTitle : 'Total earned value',
                      estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total budgeted',
-                     chartData: props.data.chartData ? props.data.chartData : ''
+                     chartData: props.data.chartData ? props.data.chartData : '',
+                     decimals: props.data.decimals ? props.data.decimals : 0,
+                     decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
+                     thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ','
                     };
     }
 
     render() {
         // Define variables that will be used in the returned component
         const currencySymbol = String(this.state.currencySymbol);
+        const decimals = this.state.decimals;
+        const decimalsSeparator = this.state.decimalsSeparator;
+        const thousandSeparator = this.state.thousandSeparator;
         const formatToMoney = (value) => {
-            return currencySymbol + ' ' + Number(value).toLocaleString();
-            //return currencySymbol + ' ' + Number(value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+            return currencySymbol + ' ' + FormatNumber(value, decimals, decimalsSeparator, thousandSeparator);
         }
         const earned = formatToMoney(this.state.earned);
         const estimated = formatToMoney(this.state.estimated);
@@ -80,7 +85,7 @@ class FinancialsWidget extends React.Component {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                         <XAxis dy={15} axisLine={false} tickSize={0} stroke="#888888" dataKey="date" interval="preserveStartEnd" minTickGap={70} height={40}/>
-                        <YAxis dx={10}  tickFormatter={NumberFormatter} axisLine={false} tickSize={0} stroke="#888888" orientation="right" width={50} />
+                        <YAxis dx={10}  tickFormatter={AxisNumberFormatter} axisLine={false} tickSize={0} stroke="#888888" orientation="right" width={50} />
                         <Tooltip formatter={(value) => formatToMoney(value)}/>
                         <Area type="monotone" dataKey="total_budget" stroke="#888888" fill="url(#colorEstimated)" isAnimationActive={false}/>
                         <Area type="monotone" dataKey="total_earned" stroke="#0cbe9b" fill="url(#colorEarned)" isAnimationActive={false}/>

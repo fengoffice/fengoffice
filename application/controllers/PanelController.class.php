@@ -26,7 +26,12 @@ class PanelController extends ApplicationController {
 				ORDER BY ordering ASC ";
 			
 			$res = DB::execute ( $sql );
+			$can_see_billing_info = true;
+			Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
 			while ( $row = $res->fetchRow () ) {
+				if(!$can_see_billing_info && $row['id'] == 'income-panel'){
+					continue;
+				}
 				 $url_params = trim($row['url_params']) == '' ? array() : json_decode($row['url_params'], true);
 				 
 				 if ( $row['default_controller'] == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {				     

@@ -78,7 +78,22 @@ echo select_box('objectTypeSel', $options, array('id' => 'objectTypeSel' ,'oncha
             echo $categoryHtml;
         ?>
 	<div class="clear"></div>
-	
+
+	<?php
+	/*
+	* Commented out to use later
+	if(Plugins::instance()->isActivePlugin('billing_and_cost_permissions')){ ?>
+		<div class="dataBlock">
+			<?php
+			$has_billing_info = array_var($report_data, 'has_billing_info',false);
+			echo label_tag(lang('has billing information'), $genid . 'reportFormHasBillingInfo', false);
+			echo checkbox_field("report[has_billing_info]", $has_billing_info);
+			?>
+		</div>
+	<?php } 
+	*/
+	?>
+
 	<div class="dataBlock">
 	  <span style="margin-left:30px;">
 		<?php echo checkbox_field("report[ignore_context]", $ignore_context, array('id' => $genid.'ignore_context',

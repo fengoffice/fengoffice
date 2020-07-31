@@ -1040,8 +1040,12 @@ class TaskController extends ApplicationController {
         $total_estimated = "SUM(time_estimate) AS group_time_estimate ";
         $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM ".TABLE_PREFIX."timeslots tt 
 			INNER JOIN ".TABLE_PREFIX."objects oo ON oo.id=tt.object_id
-			WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0) ";
-        $total_worked = $total_worked_subquery . "AS group_time_worked ";
+            WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0";
+        if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+            $total_worked_subquery .= " AND contact_id = " . logged_user()->getId();
+        }
+
+        $total_worked = $total_worked_subquery . ") AS group_time_worked ";
         //" total_worked_time AS group_time_worked"
 
         //querys returning total worked time, total estimated time and total pending time
@@ -4823,6 +4827,7 @@ class TaskController extends ApplicationController {
                 } else {
                     $task_end = $task->getRepeatEnd();
                 }
+                
                 $new_st_date = "";
                 $new_due_date = "";
 
@@ -4846,40 +4851,76 @@ class TaskController extends ApplicationController {
                     'original_st_date' => $original_st_date,
                     'original_due_date' => $original_due_date
                 );
+                
+                $first_iteration = true;
                 while ($task->getRepeatBy() == 'start_date' && ($new_st_date == "" || $new_st_date->getTimestamp() <= $task_end->getTimestamp()) ||
-                $task->getRepeatBy() == 'due_date' && ($new_due_date == "" || $new_due_date->getTimestamp() <= $task_end->getTimestamp())) {
+                		$task->getRepeatBy() == 'due_date' && ($new_due_date == "" || $new_due_date->getTimestamp() <= $task_end->getTimestamp())) {
                     $repetition_params['count'] = $generated_count;
-                    // @TODO change getNextRepetiotionDates to return new dates in an array
-                    // $new_dates = $this -> getNextRepetitionDates()
-                    $this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date, $repetition_params);
-
-                    if($working_days_only == 1) {
-                        $daystoadd = 0;
-                        $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date, 'move_direction' => $move_direction);
-                        Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
-                        if ($daystoadd != 0) {
-                            if ($new_st_date)
-                                $new_st_date->add('d', $daystoadd);
-                            if ($new_due_date)
-                                $new_due_date->add('d', $daystoadd);
-                        }
-                    }   
                     
-                    // generate completed task
-                    if ($task->getRepeatBy() == 'start_date' && ($new_st_date == "" || $new_st_date->getTimestamp() <= $task_end->getTimestamp()) ||
-                    $task->getRepeatBy() == 'due_date' && ($new_due_date == "" || $new_due_date->getTimestamp() <= $task_end->getTimestamp())){
-                        $last_task = $task->cloneTask($new_st_date,$new_due_date,true, false, 0, $generated_count);
-                        // set next values for repetetive task
-                        if ($task->getStartDate() instanceof DateTimeValue ) $task->setStartDate($new_st_date);
-                        if ($task->getDueDate() instanceof DateTimeValue ) $task->setDueDate($new_due_date);
-                        foreach ($task->getAllSubTasks() as $subt) {
-                            $subt->setCompletedById(0);
-                            $subt->setCompletedOn(EMPTY_DATETIME);
-                            $subt->save();
-                        }
-                        
-                        $generated_count++;
+                    if ($first_iteration) {
+                    	// Generate the first task of the repetition with the original start and due date, no need to calculate repetition dates for the first task
+                    	// this is only needed when generating instances for a repetition with fixed end date
+                    	if ($task->getRepeatEnd() instanceof DateTimeValue) {
+                    		$last_task = $task->cloneTask($task->getStartDate(), $task->getDueDate(), true, false, 0, $generated_count);
+	                    	$generated_count++;
+                    	}
+                    	
+                    } else {
+                    	// @TODO change getNextRepetiotionDates to return new dates in an array
+                    	// $new_dates = $this -> getNextRepetitionDates()
+                    	$this->getNextRepetitionDates($task, $opt_rep_day, $new_st_date, $new_due_date, $repetition_params);
+                    	
+                    	if($working_days_only == 1) {
+                    		$daystoadd = 0;
+                    		$params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date, 'move_direction' => $move_direction);
+                    		Hook::fire('check_valid_repetition_date_days_add', $params, $daystoadd);
+                    		if ($daystoadd != 0) {
+                    			if ($new_st_date)
+                    				$new_st_date->add('d', $daystoadd);
+                    			if ($new_due_date)
+                    				$new_due_date->add('d', $daystoadd);
+                    		}
+                    	}
+                    	
+                    	// generate completed task
+                    	if ($task->getRepeatBy() == 'start_date' && ($new_st_date == "" || $new_st_date->getTimestamp() <= $task_end->getTimestamp()) ||
+                    		$task->getRepeatBy() == 'due_date' && ($new_due_date == "" || $new_due_date->getTimestamp() <= $task_end->getTimestamp())){
+                    				
+                    		$last_task = $task->cloneTask($new_st_date,$new_due_date,true, false, 0, $generated_count);
+                    		// set next values for repetetive task
+                    		if ($task->getStartDate() instanceof DateTimeValue ) $task->setStartDate($new_st_date);
+                    		if ($task->getDueDate() instanceof DateTimeValue ) $task->setDueDate($new_due_date);
+                    		foreach ($task->getAllSubTasks() as $subt) {
+                    			$subt->setCompletedById(0);
+                  				$subt->setCompletedOn(EMPTY_DATETIME);
+                    			$subt->save();
+                    		}
+                    				
+                    		$generated_count++;
+                    		
+                    	} else {
+                    		// check if $task is inside the time period, using the end of day of $task_end
+                    		$task_end->endOfDay();
+                    		if ($task->getRepeatBy() == 'start_date' && $new_st_date->getTimestamp() <= $task_end->getTimestamp()
+                    			|| $task->getRepeatBy() == 'due_date' && $new_due_date->getTimestamp() <= $task_end->getTimestamp()) {
+                    			
+	                    		// this is the last task, so set their dates to the last caculated dates
+	                    		if ($task->getStartDate() instanceof DateTimeValue ) $task->setStartDate($new_st_date);
+	                    		if ($task->getDueDate() instanceof DateTimeValue ) $task->setDueDate($new_due_date);
+	                    		$task->save();
+	                    		
+                    		} else {
+                    			// delete $last_task, if it is repeated with the last $task instance
+                    			if ($last_task instanceof ProjectTask && 
+                    				($task->getRepeatBy() == 'due_date' && $task->getDueDate()->getTimestamp() == $last_task->getDueDate()->getTimestamp() ||
+                    				$task->getRepeatBy() == 'start_date' && $task->getStartDate()->getTimestamp() == $last_task->getStartDate()->getTimestamp())) {
+                    					$last_task->delete(); 
+                    			}
+                    		}
+                    	}
                     }
+                    $first_iteration = false;
+                    
                 }
             }
             // if there are more repetitions to generate then copy repetition settings to the last task
@@ -4892,6 +4933,13 @@ class TaskController extends ApplicationController {
                 $last_task->setRepeatY($task->getRepeatY());
                 $last_task->setRepeatBy($task->getRepeatBy());
                 $last_task->save();
+                
+                // ensure that this task is classified
+                $task_object_members = $task->getMembers();
+                $last_task->addToMembers($task_object_members);
+                Hook::fire ('after_add_to_members', $last_task, $task_object_members);
+                $last_task->addToSharingTable();
+                
             }
             if ($last_task instanceof ProjectTask){
                 $task->setRepeatForever(0);

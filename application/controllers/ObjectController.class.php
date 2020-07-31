@@ -360,6 +360,11 @@ class ObjectController extends ApplicationController {
 				throw new Exception(lang('must choose at least one member of',$rdim->getName()));
 			}
 		}
+		
+		// hook to add more validations before classifying an object
+		$continue = true;
+		Hook::fire('before_add_to_members', array('object' => $object, 'members' => $validMembers), $continue);
+		if (!$continue) return;
 
 		// add object to members selected in form
 		$object->addToMembers($validMembers, true, $is_multiple_classification);
@@ -1555,7 +1560,7 @@ class ObjectController extends ApplicationController {
 			try {
 				$errorMessage = null;
 				DB::beginWork();
-				$object->untrash($errorMessage);
+				$object->untrash();
 				DB::commit();
 				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNTRASH);
 				flash_success(lang("success untrash object"));
@@ -1945,9 +1950,11 @@ class ObjectController extends ApplicationController {
 
 	function get_cusotm_property_columns() {
 		$grouped = array();
+		$extra_conditions = '';
+		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
 		$cp_rows = DB::executeAll("SELECT cp.id, cp.name as cp_name, cp.code as cp_code, ot.name as obj_type, cp.visible_by_default as visible_def, cp.type as cp_type, cp.values as cp_values, cp.default_value as cp_default_value, cp.is_special as cp_special, cp.show_in_lists
 				FROM ".TABLE_PREFIX."custom_properties cp INNER JOIN ".TABLE_PREFIX."object_types ot on ot.id=cp.object_type_id 
-				WHERE cp.is_disabled=0
+				WHERE cp.is_disabled=0 ".$extra_conditions."
 				ORDER BY ot.name");
 
 		if (is_array($cp_rows)) {

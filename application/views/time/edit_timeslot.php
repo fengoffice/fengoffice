@@ -85,7 +85,7 @@
                                     "placeholder" => "Min")) ?>
                         
                         </div>
-                        <a class="specify-link pull-left" style="line-height: 25px;<?php echo $time_preferences['show_paused_time'] ? '':'display:none;' ?>" onclick="og.toggle_specify_paused_time(this, '<?php echo $genid ?>')" href="#"><?php echo lang('specify paused time') ?></a>
+                        <a class="specify-link pull-left" style="line-height: 25px;<?php echo $time_preferences['show_paused_time'] && ($timeslot->getSubtract() == 0) ? '':'display:none;' ?>" onclick="og.toggle_specify_paused_time(this, '<?php echo $genid ?>')" href="#"><?php echo lang('specify paused time') ?></a>
                         <div class="dataBlock dataBlockRight" 
                              style="<?php if ($timeslot->getSubtract() == 0) echo 'display:none;' ?>"
                              id="<?php echo $genid?>paused_time_container">
@@ -111,11 +111,11 @@
                     <div class="dataBlock">
                         <div class="pull-left">
                             <?php 
-                                echo label_tag(lang('start date'));
+                                echo label_tag(lang('start'));
                                 $tz_offset = Timezones::getTimezoneOffsetToApply($timeslot);
                                 if ($timeslot->isNew()) {
                                 	$date = DateTimeValueLib::now();
-                                	$date->add('s', $tz_offset);
+                                    $date->add('s', $tz_offset);
                                 } else {
 	                                $date = new DateTimeValue($timeslot->getStartTime()->getTimestamp() + $tz_offset);
                                 }
@@ -145,7 +145,7 @@
                         
                     <div class="dataBlock dataBlockRight" style="display:none;" id="<?php echo $genid?>end_date_container">
                         <?php 
-                            echo label_tag(lang('end date'));
+                            echo label_tag(lang('end'));
                             $tz_offset = Timezones::getTimezoneOffsetToApply($timeslot);
                             $end_date = $timeslot->isNew() || !$timeslot->getEndTime() instanceof DateTimeValue ? null : 
                                     new DateTimeValue($timeslot->getEndTime()->getTimestamp() + $tz_offset);
@@ -234,7 +234,10 @@
                     <div class="clear"></div>
                 </div>
 
-                <?php if (can_manage_billing(logged_user()) && !Plugins::instance()->isActivePlugin('advanced_billing')) { ?>
+                <?php 
+                $can_see_billing_info = true;
+                Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+                if (can_manage_billing(logged_user()) && !Plugins::instance()->isActivePlugin('advanced_billing') && $can_see_billing_info) { ?>
                     <div id="<?php echo $genid ?>add_timeslot_billing" class="editor-container form-tab">	
                         <div class="dataBlock">
                             <?php echo label_tag(lang('type')) ?>
@@ -363,6 +366,8 @@
     var gen_id = "<?php echo $genid; ?>";
     var time_preferences =JSON.parse('<?php echo json_encode($time_preferences); ?>');
     var div;
+
+    og.reclassify_time_when_linking_task = <?php echo (config_option('reclassify_time_when_linking_task') ? '1' : '0') ?>;
     
     og.toggle_specify_end_time = function(input, genid) {
         $(input).hide();
@@ -445,6 +450,15 @@
         //If the settings are for the system to edit the end time, and the end time wasn't edited after editing the start time
 		if (time_preferences.automatic_calculation_time == 2 && og._end_time_edited_in_session <= og._start_time_edited_in_session) {
 			og.changeEndDate();
+		} else if(time_preferences.automatic_calculation_time == 1) {
+            og.changeStartDate();
+        } else if(time_preferences.automatic_calculation_time == 3){
+            $modal = og.ExtModal.show({
+                title:'<?php echo lang("You changed the length of your time record"); ?>',
+                basecls: 'user-config-timeslots',
+                html: '<div id="user-config" class="user-config-timeslots-container">'+div+'</div>'
+                });
+            $modal.on('close', og.rollbackInputs);		
 		} else {
 	        //In every other case, edit the start-time
 			og.changeStartDate();			
@@ -788,6 +802,8 @@
     };
 
     og.onchangeStartDate = function () {
+        // console.log(time_preferences.automatic_calculation_start_time);
+        div = $('#modal-config-hours').html().replace(/\{genid\}/ig, Ext.id());
 		switch (time_preferences.automatic_calculation_start_time) {
 		case '1': //Change the opposite date
             og.changeEndDate();
@@ -812,7 +828,8 @@
     }
 
     og.onchangeEndDate = function () {
-		var option = time_preferences.automatic_calculation_start_time;
+        var option = time_preferences.automatic_calculation_start_time;
+        div = $('#modal-config-hours').html().replace(/\{genid\}/ig, Ext.id());
 		//console.log('option: '+option);
 		switch (option) {
     		case '1': //Change the opposite date
@@ -968,7 +985,9 @@
         Object.find('#object_id').val(object_id);
         Object.find('.name').text(object_name);
 
-        og.set_timeslot_members_by_task(object_id);
+        if (og.reclassify_time_when_linking_task) {
+        	og.set_timeslot_members_by_task(object_id);
+        }
 
         Link.hide()
         Object.show();

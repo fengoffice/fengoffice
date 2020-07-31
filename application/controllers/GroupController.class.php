@@ -285,6 +285,41 @@ class GroupController extends ApplicationController {
 	} // delete_group
 
 	
+	function list_all_permission_groups() {
+		
+		$more_conditions = "";
+		$id_no_select = array_var($_REQUEST, 'id_no_select');
+		if (is_numeric($id_no_select)) {
+			$more_conditions .= " AND id != $id_no_select";
+		}
+		
+		$groups = PermissionGroups::findAll(array("conditions" => "`type` IN ('user_groups','permission_groups') $more_conditions"));;
+		
+		$groups_data = array();
+		foreach ($groups as $group) {
+			
+			if ($group->getType() == 'user_groups') {
+				$group_name = escape_character($group->getName());
+				$group_type = 'group';
+			} else if ($group->getType() == 'permission_groups') {
+				$contact = Contacts::findById($group->getContactId());
+				if (!$contact instanceof Contact) continue;
+				$group_name = escape_character($contact->getName());
+				$group_type = 'contact';
+			}
+			
+			$groups_data[$group_name . "-" . $group->getId()] = array(
+					'id' => $group->getId(),
+					'name' => $group_name,
+					'type' => $group_type,
+			);
+		}
+		ksort($groups_data);
+		$groups_data = array_values($groups_data);
+		
+		ajx_extra_data(array('objects' => $groups_data, "totalCount" => count($groups_data), 'start' => 0));
+		ajx_current("empty");
+	}
 	
 	
 	function search_permission_group() {

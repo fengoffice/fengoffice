@@ -588,6 +588,12 @@ class ReportingController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
+		$new_report = new Report();
+		if(!$new_report->canEdit(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
+		} // if
 		tpl_assign('url', get_url('reporting', 'add_custom_report'));
 		$report_data = array_var($_POST, 'report');
 		if(is_array($report_data)){
@@ -730,9 +736,7 @@ class ReportingController extends ApplicationController {
 		
 		tpl_assign('object_types', $types);
 		tpl_assign('selected_type', $selected_type);
-                
-                
-		$new_report = new Report();
+
 		tpl_assign('object', $new_report);
 	}
 
@@ -768,6 +772,9 @@ class ReportingController extends ApplicationController {
 				$report->setOrderBy($report_data['order_by']);
 				$report->setIsOrderByAsc($report_data['order_by_asc'] == 'asc');
 				$report->setIgnoreContext(array_var($report_data, 'ignore_context') == 'checked');
+				/* Commented out to use later
+				Hook::fire('set_additional_report_values', array('report_data'=>$report_data), $report);
+				*/
 				$report->save();				
 					
 				$conditions = array_var($_POST, 'conditions');
@@ -871,6 +878,9 @@ class ReportingController extends ApplicationController {
 					'order_by_asc' => $report->getIsOrderByAsc(),
 					'ignore_context' => $report->getIgnoreContext(),
 				);
+				/* Commented out to use later
+				Hook::fire('additional_report_data_for_view', array('report'=>$report), $report_data);
+				*/
 				tpl_assign('report_data', $report_data);
 				$conditions = ReportConditions::getAllReportConditions($report_id);
 				tpl_assign('conditions', $conditions);
@@ -979,6 +989,15 @@ class ReportingController extends ApplicationController {
 		$report = Reports::getReport($report_id);
 		if (!$report instanceof Report) {
 			flash_error("report dnx");
+			ajx_current("empty");
+			return;
+		}
+		$show_report = true;
+		/* Commented out to use later
+		Hook::fire('has_permissions_to_see_report', array('report'=>$report), $show_report);
+		*/
+		if(!$show_report){
+			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			return;
 		}
@@ -1678,9 +1697,10 @@ class ReportingController extends ApplicationController {
 	
 	function get_object_column_list(){
 		$option_groups = null;
-		$allowed_columns = $this->get_allowed_columns(array_var($_GET, 'object_type'));
+		$object_type = array_var($_GET, 'object_type');
+		$allowed_columns = $this->get_allowed_columns($object_type);
 		$columns = array_var($_GET, 'columns', array());
-		if (array_var($_GET, 'object_type') == Timeslots::instance()->getObjectTypeId()) {
+		if ($object_type == Timeslots::instance()->getObjectTypeId()) {
 			$task_ot = ObjectTypes::findByName('task');
 			$task_columns = $this->get_allowed_columns($task_ot->getId());
 			
@@ -1715,23 +1735,20 @@ class ReportingController extends ApplicationController {
 				array('count' => $contact_columns_count, 'name' => lang('contact').' '.lang('columns')),
 			);
 		}
+		
+		$ret = array($allowed_columns,$option_groups);
+		Hook::fire('get_allow_columns_for_reports', array('object_type' => $object_type, 'columns' => $columns),$ret);
+		$allowed_columns = $ret[0];
+		$option_groups = $ret[1];
 
 
-
-
-                $ret = array($allowed_columns,$option_groups);
-                Hook::fire('get_allow_columns_for_reports', array('object_type' => array_var($_GET, 'object_type'), 'columns' => $columns),$ret);
-                $allowed_columns = $ret[0];
-                $option_groups = $ret[1];
-
-
-                $ret = array($allowed_columns,$option_groups);
-                Hook::fire('get_allow_taxes_row_for_reports', array('object_type' => array_var($_GET, 'object_type'), 'columns' => $columns),$ret);
-                $allowed_columns = $ret[0];
-                $option_groups = $ret[1];
-
-
-                tpl_assign('option_groups', $option_groups);
+		$ret = array($allowed_columns,$option_groups);
+		Hook::fire('get_allow_taxes_row_for_reports', array('object_type' => $object_type, 'columns' => $columns),$ret);
+		$allowed_columns = $ret[0];
+		$option_groups = $ret[1];
+		Hook::fire('remove_billing_and_cost_columns_from_list', array('object_type' => $object_type),$allowed_columns);
+		
+		tpl_assign('option_groups', $option_groups);
 		tpl_assign('allowed_columns', $allowed_columns);
 		tpl_assign('columns', explode(',', $columns));
 		tpl_assign('order_by', array_var($_GET, 'orderby'));
@@ -1745,7 +1762,6 @@ class ReportingController extends ApplicationController {
 	function get_object_column_list_task(){
 		$allowed_columns = $this->get_allowed_columns_custom_properties(array_var($_GET, 'object_type'));
 		$for_task = true;
-		
 		tpl_assign('allowed_columns', $allowed_columns);
 		tpl_assign('columns', explode(',', array_var($_GET, 'columns', array())));	
 		tpl_assign('genid', array_var($_GET, 'genid'));
@@ -1914,6 +1930,9 @@ class ReportingController extends ApplicationController {
 			Hook::fire('custom_reports_fixed_additional_columns', array('object_type' => $ot), $fields);
 		}
 		usort($fields, array(&$this, 'compare_FieldName'));
+		if($ot instanceof ObjectType){
+			Hook::fire('remove_billing_and_cost_columns_from_list', array('object_type' => $ot->getId()),$fields);
+		}
 		return $fields;
 	}
 
@@ -1995,7 +2014,7 @@ class ReportingController extends ApplicationController {
 	
 		$total += $group_total;
 	
-		$text .= "$group_name;;;".lang('subtotal'). ': '.";" . $group_total.";\n\n";
+		$text .= "$group_name;;;".lang('subtotal'). ': '.";" . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_total * 60), "hm", 60).";\n\n";
 	
 		return $text;
 	}
@@ -2033,11 +2052,11 @@ class ReportingController extends ApplicationController {
 				
 			$text .= ($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') .';';
 			$lastStop = $ts->getEndTime() != null ? $ts->getEndTime() : ($ts->isPaused() ? $ts->getPausedOn() : DateTimeValueLib::now());
-			$mystring = DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "m", 60, $ts->getSubtract());
+			$mystring = DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "hm", 60, $ts->getSubtract());
 			$resultado = preg_replace("[^0-9]", "", $mystring);
-			$resultado = is_numeric($resultado) ? round(($resultado/60),5) : 0;
+			//$resultado = is_numeric($resultado) ? round(($resultado/60),5) : 0;
 			$text .= $resultado;
-			$sub_total += $resultado;
+			$sub_total += $ts->getMinutes(); //$resultado;
 				
 			$new_values = null;
 			Hook::fire('total_tasks_times_csv_column_values', $ts, $new_values);
@@ -2072,8 +2091,7 @@ class ReportingController extends ApplicationController {
 			$text .= $this->cvs_total_task_times_group($group_obj, $grouped_timeslots['grouped_objects'], array_var($_SESSION, 'total_task_times_parameters'), $skip_groups, 0, "", $total);
 		}
 	
-		$text .= ";;;".lang('total'). ': '.";" .$total.";\n";
-	
+		$text .= ";;;".lang('total'). ': '.";" .DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total * 60), "hm", 60).";\n";
 	
 		$filename = lang('task time report');
 		file_put_contents(ROOT."/tmp/$filename.csv", $text);

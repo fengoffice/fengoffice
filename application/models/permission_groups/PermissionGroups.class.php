@@ -146,27 +146,64 @@
         foreach ($mdim_conds as $mdim_cond) {
             $mandatory_dims_sql .= $mdim_cond;
         }
-
+        
         //Exclude non manageable dimensions and archived members
+        $base_sql = "
+			SELECT DISTINCT(mp.permission_group_id)
+			FROM ".TABLE_PREFIX."object_members om
+			INNER JOIN ".TABLE_PREFIX."objects o ON o.id = om.object_id AND o.id = $object_id
+			INNER JOIN ".TABLE_PREFIX."contact_member_permissions mp ON mp.member_id = om.member_id AND mp.object_type_id = o.object_type_id
+			INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id
+			INNER JOIN ".TABLE_PREFIX."dimensions d ON d.id=m.dimension_id
+			WHERE d.is_manageable = 1
+			AND d.defines_permissions = 1
+			AND m.archived_on = 0
+			AND mp.member_id != 0
+			AND om.is_optimization = 0
+		";
+
+        
         $main_select_sql = "
-		SELECT DISTINCT(mp.permission_group_id)
-		FROM ".TABLE_PREFIX."object_members om
-		INNER JOIN ".TABLE_PREFIX."objects o ON o.id = om.object_id AND o.id = $object_id
-		INNER JOIN ".TABLE_PREFIX."contact_member_permissions mp ON mp.member_id = om.member_id AND mp.object_type_id = o.object_type_id
-		INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id
-		INNER JOIN ".TABLE_PREFIX."dimensions d ON d.id=m.dimension_id
-		WHERE d.is_manageable = 1
-		AND d.defines_permissions = 1
-		AND m.archived_on = 0
-		AND mp.member_id != 0
-		AND om.is_optimization = 0
+		$base_sql
 		$mandatory_dims_sql
 	    ";
 
         $rows = DB::executeAll($main_select_sql);
+        
+        $pgs_with_permissions_everywhere = array_unique(array_filter(array_flat($rows)));
 
-        return array_unique(array_filter(array_flat($rows)));
+        //return $pgs_with_permissions_everywhere;
+        
+        // get the user permission groups that have permissions in part of the classification
+        $sql_for_excluded_users = "
+			$base_sql
+			AND (SELECT pg.`type` FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.id=mp.permission_group_id) = 'permission_groups'
+		";
+		$excluded_users_rows = DB::executeAll($sql_for_excluded_users);
+		$excluded_user_pgs = array_unique(array_filter(array_flat($excluded_users_rows)));
+		
+		$excluded_user_pgs = array_diff($excluded_user_pgs, $pgs_with_permissions_everywhere);
+        
+		// foreach user permission group that has permissions in only a part of the classification
+		// use the canView function to check if user has permissions in the other parts of the classification using user groups
+		$pgs_with_permission_in_intersection = array();
+		if (count($excluded_user_pgs) > 0) {
+			$object = Objects::findObject($object_id);
+			if ($object instanceof ContentDataObject) {
+				$users = Contacts::findAll(array("conditions" => "user_type>0 AND permission_group_id IN (".implode(',',$excluded_user_pgs).")"));
+				foreach ($users as $user) {
+					if ($object->canView($user)) $pgs_with_permission_in_intersection[] = $user->getPermissionGroupId();
+				}
+			}
+		}
+		
+		
+		$all_pg_ids = array_merge($pgs_with_permissions_everywhere, $pgs_with_permission_in_intersection);
+		
+		return $all_pg_ids;
     }
+
+
     /**
      * Get all object ids by permissions group (only classified objects)
      *
@@ -229,27 +266,55 @@
         }
 
         //Exclude non manageable dimensions and archived members
+        $base_sql = "
+			SELECT o.id
+			FROM ".TABLE_PREFIX."object_members om
+			INNER JOIN ".TABLE_PREFIX."objects o ON o.id = om.object_id
+			INNER JOIN ".TABLE_PREFIX."contact_member_permissions mp ON mp.member_id = om.member_id AND mp.object_type_id = o.object_type_id
+			INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id
+			INNER JOIN ".TABLE_PREFIX."dimensions d ON d.id=m.dimension_id
+			WHERE d.is_manageable = 1
+			AND mp.permission_group_id = $permission_group_id
+			AND d.defines_permissions = 1
+			AND m.archived_on = 0
+			AND mp.member_id != 0
+			AND om.is_optimization = 0
+			$object_type_sql
+			$members_ids_sql
+		";
+        
         $main_select_sql = "
-		SELECT o.id
-		FROM ".TABLE_PREFIX."object_members om
-		INNER JOIN ".TABLE_PREFIX."objects o ON o.id = om.object_id
-		INNER JOIN ".TABLE_PREFIX."contact_member_permissions mp ON mp.member_id = om.member_id AND mp.object_type_id = o.object_type_id
-		INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id
-		INNER JOIN ".TABLE_PREFIX."dimensions d ON d.id=m.dimension_id
-		WHERE d.is_manageable = 1
-		AND mp.permission_group_id = $permission_group_id
-		AND d.defines_permissions = 1
-		AND m.archived_on = 0
-		AND mp.member_id != 0
-		AND om.is_optimization = 0
-		$object_type_sql
-		$members_ids_sql
-		$mandatory_dims_sql
+			$base_sql
+			$mandatory_dims_sql
 	    ";
 
         $rows = DB::executeAll($main_select_sql);
 
+        // these pgs are the ones that have permissions in all members of mandatory dimensions of the object's classification
         $return_array = array_filter(array_flat($rows));
+        
+        
+        $pg = PermissionGroups::instance()->findById($permission_group_id);
+        // only run this code for user permission groups
+        if ($pg->getType() == 'permission_groups') {
+	        // get the objects where the current permission group has partially permissions
+	        // and check if the user has the rest of the permissions through other user groups
+        	$all_oid_rows = DB::executeAll($base_sql);
+        	$oids_with_part_permissions = array_filter(array_flat($all_oid_rows));
+        	$oids_with_part_permissions = array_diff($oids_with_part_permissions, $return_array);
+        	
+        	$oids_with_full_permissions_through_intersection = array();
+        	foreach ($oids_with_part_permissions as $object_id) {
+        		$object = Objects::findObject($object_id);
+        		if ($object instanceof ContentDataObject) {
+        			$user = Contacts::findOne(array("conditions" => "user_type>0 AND permission_group_id = $permission_group_id"));
+        			if ($object->canView($user)) $oids_with_full_permissions_through_intersection[] = $object_id;
+        		}
+        	}
+        	
+        	$return_array = array_merge($return_array, $oids_with_full_permissions_through_intersection);
+        }
+        
 
         Hook::fire("get_classified_objects_ids_by_permission_group_modify_object_ids", array("permission_group_id" => $permission_group_id, "object_type_ids" => $object_type_ids, "members_ids" => $members_ids), $return_array);
 

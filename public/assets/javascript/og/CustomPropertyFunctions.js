@@ -126,6 +126,9 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 		if (property.show_in_lists) {
 			$(pre_id + " #show_in_lists").attr('checked', 'checked');
 		}
+		if (property.information_type) {
+			$(pre_id + " #information_type").val(property.information_type);
+		}
 
 		$(pre_id + ' #type option[value="' + property.type + '"]').prop('selected', true);
 		

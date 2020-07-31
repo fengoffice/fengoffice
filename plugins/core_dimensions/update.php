@@ -294,3 +294,13 @@ function core_dimensions_update_14_15() {
 	}
 }
 
+
+
+function core_dimensions_update_15_16() {
+	// rebuild sharing table for timesltos, as its permissions algorithm has changed (don't check in the task members for permissions, only in timelot's members)
+	$timeslots = Timeslots::findAll(array('id' => 'true'));
+	foreach ($timeslots as $t_id) {
+		ContentDataObjects::addObjToSharingTable($t_id);
+	}
+}
+

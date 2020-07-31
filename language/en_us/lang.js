@@ -485,6 +485,8 @@ addLangs({
     'order by': 'Order by',
     'workspace': 'Workspace',
     'start date': 'Start date',
+    'start': 'Start',
+    'end': 'End',
     'progress': 'Progress',
     'task name': 'Task name',
     'show': 'Show',
