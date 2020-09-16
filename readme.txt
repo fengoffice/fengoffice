@@ -4252,7 +4252,7 @@
 	Since 2.6-beta
 	----------------
 	
-	bugfix: after contact csv inport, msg says "Company NULL" if contact has no comapany
+	bugfix: after contact csv inport, msg says "Company NULL" if contact has no company
 	bugfix: templates import tasks, milestones (and several templates bugs)
 	bugfix: activity widget fixed
 	bugfix: email plugin upgrade script fixed
