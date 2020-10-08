@@ -302,7 +302,7 @@ function date_format_tip($format) {
 			}
 		}
 		if (!$is_time_column) {
-
+		  $type = strtoupper($type);
 		  switch ($type) {
 			case DATA_TYPE_STRING: 
 				if(preg_match(EMAIL_FORMAT, strip_tags($value))){
@@ -362,7 +362,7 @@ function date_format_tip($format) {
 						$formatted = $value;						
 					}
 					if (!isset($formatted)) {
-						$formatted = format_date($dtVal, $dateformat,0);
+						if ($dtVal->getTimestamp() > 0) $formatted = format_date($dtVal, $dateformat,0);
 					}
 				} else $formatted = '';
 				break;
@@ -376,7 +376,7 @@ function date_format_tip($format) {
 					} catch (Exception $e) {
 						$formatted = $value;
 					}
-					if ($dtVal instanceof DateTimeValue) {
+					if ($dtVal instanceof DateTimeValue && $dtVal->getTimestamp() > 0) {
 						if ($obj_type_id == ProjectEvents::instance()->getObjectTypeId() || $obj_type_id == ProjectTasks::instance()->getObjectTypeId()) {
 							if (is_null($tz_offset) && logged_user() instanceof Contact) {
 								$tz_offset = logged_user()->getUserTimezoneValue();

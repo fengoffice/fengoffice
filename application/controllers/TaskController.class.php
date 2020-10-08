@@ -4756,6 +4756,14 @@ class TaskController extends ApplicationController {
             if (array_var($original_dates, 'original_st_date') instanceof DateTimeValue) {
             	$original_st_date = array_var($original_dates, 'original_st_date');
             }
+            if($task->getRepeatM() && $task->getOriginalTaskId() > 0){
+                $row = DB::executeOne("
+                    SELECT count(distinct(".$task->getRepeatBy().")) as 'count'
+                    FROM ".TABLE_PREFIX."project_tasks 
+                    WHERE original_task_id=".$task->getOriginalTaskId().";
+                ");
+                $generated_count = $row['count'];
+            }
             
         }
         if ($task->isRepetitive() && (!$task->getRepeatForever() || $forced_repeat_end instanceof DateTimeValue )) {

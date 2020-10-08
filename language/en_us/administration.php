@@ -986,7 +986,10 @@
 	'config option desc reports_inherit_company_phones' => 'When enabled if the contact has no phone, the report will show the phone of the associated company.',
 	
 	'config option name use_time_quick_add_row' => 'Enable quick add row in time module',
-	
+  	
+  	'config option name show_company_info_report_print' => 'Show company data when printing reports',
+  	'config option desc show_company_info_report_print' => 'If enabled then the company logo, address, website and email will be added at the top right corner of the page when printing a report.',
+  		
 	'timezones' => 'Time zones',
 	'timezones admin desc' => 'In this section you can define which time zones use daylight saving time.',
 	'timezone' => 'Time zone',

@@ -206,6 +206,8 @@
 		
 		$enabled_dimensions = config_option('enabled_dimensions');
 		
+		Hook::fire('can_add_modify_context_array', array(), $context);
+		
 		$contact_pg_ids = ContactPermissionGroups::getPermissionGroupIdsByContactCSV($user->getId(),false);
 		if (is_array($context)) {
 			foreach($context as $selection){
@@ -348,7 +350,7 @@
 		$delete = $access_level == ACCESS_LEVEL_DELETE;
 		
 		if (($user->isGuest() && $access_level!= ACCESS_LEVEL_READ)) return false;
-		
+		Hook::fire('can_access_modify_members_array', array('user'=>$user, 'object_type_id'=>$object_type_id, 'access_level' => $access_level), $members);
 		try {
 			$contact_pg_ids = ContactPermissionGroups::getPermissionGroupIdsByContactCSV($user->getId(),false);
 			$allow_all_cache = array();

@@ -358,13 +358,13 @@ class Reports extends BaseReports {
                 $order_by_asc = $report->getIsOrderByAsc();
 
             if ($ot->getName() == 'task' && !SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
-                $allConditions .= " AND  assigned_to_contact_id = " . logged_user()->getId();
+                $allConditions .= " AND  e.assigned_to_contact_id = " . logged_user()->getId();
             }
 
             if ($ot->getName() == 'timeslot') {
                 $allConditions .= " AND   (e.rel_object_id=0 OR (SELECT aux.trashed_by_id FROM " . TABLE_PREFIX . "objects aux WHERE aux.id=e.rel_object_id)=0) ";
                 if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
-                    $allConditions .= " AND contact_id = " . logged_user()->getId();
+                    $allConditions .= " AND e.contact_id = " . logged_user()->getId();
                 }
             }
 

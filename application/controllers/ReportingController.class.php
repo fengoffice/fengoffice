@@ -236,6 +236,7 @@ class ReportingController extends ApplicationController {
 	}
 	
 	function total_task_times($report_data = null, $task = null, $csv = null){
+		//
 		if (!$report_data) {
 			$report_data = array_var($_POST, 'report');
 			set_user_config_option('timeReportDate', $report_data['date_type'] , logged_user()->getId());
@@ -1123,7 +1124,8 @@ class ReportingController extends ApplicationController {
 		
 		$params = array();
 		$params_str = array_var($_REQUEST, 'params');
-		if ($params_str) $params = json_decode(str_replace("'", '"',$params_str), true);
+		if (is_array($params_str)) $params = $params_str;
+		else if ($params_str != '') $params = json_decode(str_replace("'", '"',$params_str), true);
 		
 		$disabled_params = array_var($_REQUEST, 'disabled_params');
 		
@@ -2014,7 +2016,7 @@ class ReportingController extends ApplicationController {
 	
 		$total += $group_total;
 	
-		$text .= "$group_name;;;".lang('subtotal'). ': '.";" . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_total * 60), "hm", 60).";\n\n";
+		$text .= "$group_name;;;".lang('subtotal'). ': '.";" . preg_replace("[^0-9]", "", format_time_column_value($group_total)).";\n\n";
 	
 		return $text;
 	}
@@ -2031,9 +2033,7 @@ class ReportingController extends ApplicationController {
 		);
 		Hook::fire('total_tasks_times_csv_columns', $column_titles, $column_titles);
 		
-		foreach ($column_titles as $ct) {
-			$text .= $ct . ';';
-		}
+		$text .= implode(";", $column_titles);
 		$text .= "\n";
 	
 		$sub_total = 0;
@@ -2051,10 +2051,9 @@ class ReportingController extends ApplicationController {
 			$text .= $desc .';';
 				
 			$text .= ($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') .';';
-			$lastStop = $ts->getEndTime() != null ? $ts->getEndTime() : ($ts->isPaused() ? $ts->getPausedOn() : DateTimeValueLib::now());
-			$mystring = DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "hm", 60, $ts->getSubtract());
-			$resultado = preg_replace("[^0-9]", "", $mystring);
-			//$resultado = is_numeric($resultado) ? round(($resultado/60),5) : 0;
+
+			$resultado = preg_replace("[^0-9]", "", format_time_column_value($ts->getMinutes()));
+
 			$text .= $resultado;
 			$sub_total += $ts->getMinutes(); //$resultado;
 				
@@ -2091,7 +2090,7 @@ class ReportingController extends ApplicationController {
 			$text .= $this->cvs_total_task_times_group($group_obj, $grouped_timeslots['grouped_objects'], array_var($_SESSION, 'total_task_times_parameters'), $skip_groups, 0, "", $total);
 		}
 	
-		$text .= ";;;".lang('total'). ': '.";" .DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total * 60), "hm", 60).";\n";
+		$text .= ";;;".lang('total'). ': '.";" . preg_replace("[^0-9]", "", format_time_column_value($total)).";\n";
 	
 		$filename = lang('task time report');
 		file_put_contents(ROOT."/tmp/$filename.csv", $text);

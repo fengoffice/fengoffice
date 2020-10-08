@@ -79,10 +79,10 @@
 			echo '<td class="bold right">' . $def_c_symbol . " " . number_format($cost_total, 2) . '</td>';
 		}
 		
-		echo '<td class="bold right">' . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_total * 60), "hm", 60) . '</td>';
+		echo '<td class="bold right">' . format_time_column_value($group_total) . '</td>';
 		
 		if ((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && array_var($options, 'show_estimated_time')) {
-			echo '<td class="bold right">' . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($estimated_total * 60), "hm", 60) . '</td>';
+			echo '<td class="bold right">' . format_time_column_value($estimated_total) . '</td>';
 		}
 		
 		echo '</tr></tbody>';
@@ -166,10 +166,9 @@
 				}
 			}
 			
-			$lastStop = $ts->getEndTime() != null ? $ts->getEndTime() : ($ts->isPaused() ? $ts->getPausedOn() : DateTimeValueLib::now());
-			echo "<td class='time nobr right'>" . DateTimeValue::FormatTimeDiff($ts->getStartTime(), $lastStop, "hm", 60, $ts->getSubtract()) ."</td>";
+			echo "<td class='time nobr right'>" . format_time_column_value($ts->getMinutes()) ."</td>";
 			if((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && $ts->getRelObject() instanceof ProjectTask && array_var($options, 'show_estimated_time')) {
-				echo "<td class='time nobr right'>" . DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($ts->getRelObject()->getTimeEstimate() * 60), 'hm', 60) ."</td>";
+				echo "<td class='time nobr right'>" . format_time_column_value($ts->getRelObject()->getTimeEstimate()) ."</td>";
 				$task = $ts->getRelObject();
 				
 				//check if I have the estimated time of this task
@@ -323,10 +322,14 @@
             	<td class="right"><?php echo $def_c_symbol . " " . number_format($cost_total, 2) ?></td>
             	<?php }?>
             	
-            	<td class="right"><?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total * 60), "hm", 60) ?></td>
+				<td class="right"><?php 
+					echo format_time_column_value($total); 
+				?></td>
             	
             	<?php if ((array_var(array_var($_SESSION, 'total_task_times_report_data'), 'timeslot_type') == 0 || array_var(array_var($_SESSION, 'total_task_times_report_data'), 'timeslot_type') == 2 ) && array_var(array_var($_SESSION, 'total_task_times_report_data'), 'show_estimated_time')) { ?>
-            	<td class="right"><?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($estimated_total * 60), "hm", 60) ?></td>
+				<td class="right"><?php 
+					echo format_time_column_value($estimated_total);
+				?></td>
             	<?php } ?>
             	
             </tr>
@@ -346,7 +349,7 @@
 		for ($i = $sectionDepth - 1; $i >= 0; $i--){?>
 <tr style="padding-top:2px;text-align:right;font-weight:bold;">
 	<td style="padding:4px;border-top:2px solid #888;font-size:90%;color:#AAA;text-align:left;font-weight:normal"><?php echo truncate(clean(getGroupTitle($group_by[$i], $previousTSRow)),40,'&hellip;') ?></td>
-	<td colspan=<?php echo ($showBillingCol)? $totCols -2 : $totCols -1 ?> style="padding:4px;border-top:2px solid #888;text-align:right;"><?php echo lang('total') ?>:&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($sumTimes[$i] * 60), "hm", 60) ?></td>
+	<td colspan=<?php echo ($showBillingCol)? $totCols -2 : $totCols -1 ?> style="padding:4px;border-top:2px solid #888;text-align:right;"><?php echo lang('total') ?>:&nbsp;<?php echo format_time_column_value($sumTimes[$i]); ?></td>
 	
 	<?php if ($showBillingCol) { ?>
 	<td style="width:30px;padding:4px;border-top:2px solid #888;text-align:right;">

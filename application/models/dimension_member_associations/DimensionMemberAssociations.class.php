@@ -61,7 +61,23 @@
 				$result[$row['ot_id']][] = $row['dim_id'];
 			}
 		}
+
+		Hook::fire('add_dimensions_to_reload_by_object_type', array('dimension_id' => $dimension_id), $result);
 		
+		/*
+		$sql = "SELECT `associated_dimension_id` as dim_id, `object_type_id` as ot_id
+				FROM `".TABLE_PREFIX."dimension_member_associations`
+				WHERE `dimension_id` = $dimension_id";
+		
+		$rows = DB::executeAll($sql);
+		
+		if (is_array($rows)) {
+			foreach ($rows as $row) {
+				if (!isset($result[$row['ot_id']])) $result[$row['ot_id']] = array();
+				$result[$row['ot_id']][] = $row['dim_id'];
+			}
+		}
+		*/
 		return $result;
 	}
   	

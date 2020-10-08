@@ -92,7 +92,8 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_datas` (
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 INSERT INTO `<?php echo $table_prefix ?>mail_datas` (`id`, `to`, `cc`, `bcc`, `subject`, `content`, `body_plain`, `body_html`)
-  SELECT `id`, `to`, `cc`, `bcc`, `subject`, `content`, `body_plain`, `body_html` FROM `<?php echo $table_prefix ?>mail_contents`;
+  SELECT `id`, `to`, `cc`, `bcc`, `subject`, `content`, `body_plain`, `body_html` FROM `<?php echo $table_prefix ?>mail_contents`
+ON DUPLICATE KEY UPDATE <?php echo $table_prefix ?>mail_datas.id=<?php echo $table_prefix ?>mail_datas.id;
 
 ALTER TABLE `<?php echo $table_prefix ?>mail_contents`
   DROP COLUMN `to`,

@@ -593,6 +593,8 @@ tr.list-totals-row td.x-grid3-col.x-grid3-cell.x-grid3-td-name, tr.list-totals-r
 	margin-bottom: 4px;
 	padding-right: 20px;
 	border-right: 1px dotted #aaa;
+	overflow-y: scroll;
+    max-height: 150px;
 }
 .custom-report-info-block.no-border {
 	border: 0px none;
@@ -640,7 +642,7 @@ tbody.report-data td {
 }
 .custom-report thead tr th {
 	height: 30px;
-	line-height: 30px;
+	line-height: 22px;
 	word-break: break-word; /* for different browsers support */
 	word-break: keep-all; /* for different browsers support */
 }

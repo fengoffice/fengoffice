@@ -4,6 +4,18 @@ $member_id = 0;
 if($current_member instanceof Member){
    $member_id = $current_member->getId();
 }
+$project_dim_id = Dimensions::findByCode('customer_project')->getId();
+$active_members = active_context();
+$active_project = false;
+foreach($active_members as $mem){
+	if($mem instanceof Member){
+		$ot_conditions = " AND object_type_id = ".$mem->getObjectTypeId();
+		$subprojects = Members::getSubmembers($mem, false, $ot_conditions);
+		if ($mem->getDimensionId() == $project_dim_id && !(is_array($subprojects) && count($subprojects) > 0)){
+			$active_project = true;
+		}
+	}
+}
 ?>
 <div class="widget-activity widget dashTableActivity">
 
@@ -56,6 +68,27 @@ if($current_member instanceof Member){
 								<!-- Comment out BREADCRUMB
 									<div class="activity-breadcrumb-container" style="margin-top:4px;"><span class="breadcrumb"></span></div>-->
 							</div>
+							<?php if(!$active_project){ ?>
+								<p class='activity-widget-project-info'>
+									<?php
+										$object = $acts['data'][$k];
+										if($object instanceof ContentDataObject){
+											$members = $object->getMembers(); 
+											foreach($members as $member){
+												if($member->getDimensionId() == $project_dim_id){ ?>
+													<span style='font-weight: bold;'> <?php echo lang('project').': '; ?> </span>
+													<a class="internalLink" href="#" onclick="og.projects.onProjectClick('<?php echo $member->getId() ?>');">
+													<?php echo clean($member->getName()); ?>
+													</a>
+												<?php
+												}
+											}
+
+										}
+									
+									?>
+								</p>
+							<? } ?>
 							<!-- Comment out JS for BREADCRUMB
 								<script>
 								var crumbHtml  =  <?php echo $crumbJs?>;

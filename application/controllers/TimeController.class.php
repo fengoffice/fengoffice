@@ -76,6 +76,32 @@ class TimeController extends ApplicationController {
 
     function add() {
 
+        if (logged_user()->isGuest()) {
+            flash_error(lang('no access permissions'));
+            ajx_current("empty");
+            return;
+        }
+
+        $context = active_context();
+        $context_member_count = 0;
+        foreach ($context as $c) {
+            if ($c instanceof Member)
+                $context_member_count++;
+        }
+
+
+        $notAllowedMember = '';
+        if ($context_member_count > 0 && !Timeslot::canAdd(logged_user(), $context, $notAllowedMember)) {
+            if (str_starts_with($notAllowedMember, '-- req dim --'))
+                $msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
+            else
+                trim($notAllowedMember) == "" ? $msg = lang('you must select where to keep', lang('the task')) : $msg = lang('no context permissions to add', lang("time"), $notAllowedMember);
+
+            flash_error($msg);
+            ajx_current("empty");
+            return;
+        }
+
         $timeslot_data = array_var($_POST, 'timeslot');
         if (!is_array($timeslot_data)) {
             $timeslot = new Timeslot();
@@ -471,7 +497,7 @@ class TimeController extends ApplicationController {
             return;
         }
         
-        if (!can_add(logged_user(), $timeslot->getMembers(), Timeslots::instance()->getObjectTypeId())) {
+        if (!can_write(logged_user(), $timeslot->getMembers(), Timeslots::instance()->getObjectTypeId())) {
         	flash_error(lang('no access permissions'));
         	ajx_current("empty");
         	return;

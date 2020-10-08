@@ -56,6 +56,17 @@
 	}
 	
 	
+	function getValues() {
+		$list_values_str = parent::getValues();
+		
+		if ($this->getType() == 'list') {
+			Hook::fire('override_list_custom_property_values', array('cp' => $this), $list_values_str);
+		}
+		
+		return $list_values_str;
+	}
+	
+	
 	function getArrayInfo() {
 		$columns = $this->getColumns();
 		$info = array();

@@ -1740,11 +1740,14 @@ class ProjectTask extends BaseProjectTask {
 
 
 	function calculatePercentComplete() {
-		if (!$this->isCompleted() && $this->getTimeEstimate() > 0){
-			$total_time = 0;			
-			$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+		if (!$this->isCompleted()){
 			
-			$total_percentComplete = round(($totalSeconds * 100) / ($this->getTimeEstimate() * 60));
+			if ($this->getTimeEstimate() > 0) {
+				$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+				$total_percentComplete = round(($totalSeconds * 100) / ($this->getTimeEstimate() * 60));
+			} else {
+				$total_percentComplete = 0;
+			}
 			if ($total_percentComplete < 0) $total_percentComplete = 0;
 			
 			$this->setPercentCompleted($total_percentComplete);

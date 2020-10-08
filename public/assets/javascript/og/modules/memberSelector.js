@@ -226,6 +226,11 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	if (!dont_select_assoc_members) {
 		og.selectDefaultAssociatedMembers(genid, dimension_id, member.id, true);
 	}
+	
+
+	if (!member_selector[genid].properties[dimension_id].isMultiple) {
+		$("#"+genid+"-member-chooser-panel-"+dimension_id+"-tree-current-selected .empty-text").hide();
+	}
 }
 
 member_selector.remove_relation = function(dimension_id, genid, member_id, dont_reload) {
@@ -270,7 +275,8 @@ member_selector.remove_relation = function(dimension_id, genid, member_id, dont_
 		}
 	}
 
-	if (member_selector[genid].properties[dimension_id].isMultiple || !member_selector[genid].sel_context[dimension_id] || member_selector[genid].sel_context[dimension_id].length == 0) {
+	if (member_selector[genid].properties[dimension_id] && member_selector[genid].properties[dimension_id].isMultiple 
+			|| !member_selector[genid].sel_context[dimension_id] || member_selector[genid].sel_context[dimension_id].length == 0) {
 		var form = Ext.get(genid + 'add-member-form-dim' + dimension_id);
 		if (form) {
 			f = Ext.fly(form);
@@ -284,12 +290,12 @@ member_selector.remove_relation = function(dimension_id, genid, member_id, dont_
 		member_selector.reload_dependant_selectors(dimension_id, genid);
 	
 		// on selection change listener
-		if (member_selector[genid].properties[dimension_id].listeners.on_selection_change) {
+		if (member_selector[genid].properties[dimension_id] && member_selector[genid].properties[dimension_id].listeners.on_selection_change) {
 			eval(member_selector[genid].properties[dimension_id].listeners.on_selection_change);
 		}
 	}
 	
-	if (member_selector[genid].properties[dimension_id].listeners.on_remove_relation) {
+	if (member_selector[genid].properties[dimension_id] && member_selector[genid].properties[dimension_id].listeners.on_remove_relation) {
 		eval(member_selector[genid].properties[dimension_id].listeners.on_remove_relation);
 	}
 }
@@ -393,6 +399,34 @@ member_selector.remove_all_dimension_selections = function(genid, dim_id) {
 member_selector.remove_all_selections = function(genid) {
 	for (dim_id in member_selector[genid].properties) {
 		member_selector.remove_all_dimension_selections(genid, dim_id);
+		
+		if (!member_selector[genid].properties[dim_id].isMultiple) {
+			$("#"+genid+"-member-chooser-panel-"+dim_id+"-tree-current-selected .empty-text").show();
+		}
+	}
+}
+
+member_selector.reset_all_selections = function(genid) {
+
+	member_selector.remove_all_selections(genid);
+	
+	var added_dim_ids = [];
+	var dimensionMembers = og.contextManager.dimensionMembers;
+	for(dim_id in dimensionMembers){
+		var mids = dimensionMembers[dim_id];
+		for (i=0; i<mids.length; i++) {
+			if (mids[i] > 0) {
+				member_selector.add_relation(dim_id, genid, mids[i], true, true, false);
+				added_dim_ids.push(dim_id);
+			}
+		}
+	}
+	
+	for (dim_id in og.dimensions_info) {
+		var dim_info = og.dimensions_info[dim_id];
+		if (added_dim_ids.indexOf(dim_id) == -1 && dim_info.default_member) {
+			member_selector.add_relation(dim_id, genid, dim_info.default_member, true, true, false);
+		}
 	}
 }
 

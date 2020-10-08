@@ -51,6 +51,10 @@ class ApiController extends ApplicationController {
             		$object_data = $object->getArrayInfo(true, true);
                 } elseif($object instanceof PaymentReceipt){
                     $object_data = $object->getArrayInfo(false, true);
+                    $product_type = ProductTypes::findById($object->getProductTypeId());
+                    if($product_type instanceof ProductType){
+                        $object_data['product_type'] = $product_type->getName();
+                    }
                     $object_data['members_data'] = build_api_members_data($object);
                 } else {
             		if ($object instanceof Timeslot) {
@@ -133,6 +137,7 @@ class ApiController extends ApplicationController {
         $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
         $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
         $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
+        $show_subprojects = array_var($request['args'], 'subprojects') == "show";
 
         //Escape name - replace special character ' with \' 
         $name = escape_character($name);
@@ -182,9 +187,12 @@ class ApiController extends ApplicationController {
 //         		'limit' => $limit,
 //         );
         
-        $extra_conditions = null;
+        $extra_conditions = '';
         if ($name!=""){
-        	$extra_conditions = "AND mem.name LIKE '%".$name."%'";
+        	$extra_conditions .= " AND mem.name LIKE '%".$name."%'";
+        }
+        if($dimension_id == Dimensions::findByCode('customer_project')->getId() && !$show_subprojects){
+            $extra_conditions .= " AND mem.parent_member_id=0";
         }
         $params = array(
         		'dim_id' => $dimension_id, 
@@ -276,6 +284,62 @@ class ApiController extends ApplicationController {
 
         return $this->response('json', $tmp_objects);
     }
+
+    private function get_is_billable_by_budget_expense_id($request) {
+        $bud_expense_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
+        $expense = Expenses::findById($bud_expense_id);
+        $is_billable = 0;
+        if($expense instanceof Expense){
+            $is_billable = $expense->getIsBillable();
+        }
+        $result = array('is_billable' => $is_billable);
+
+        return $this->response('json', $result);
+    }
+
+    private function list_product_types($request) {
+        $member_ids = !empty($request['args']['members']) ? $request['args']['members'] : null;
+        $members = array();
+        foreach($member_ids as $m_id){
+            $mem = Members::findById($m_id);
+            if($mem instanceof Member){
+                $members[] = $mem;
+            }
+        }
+        $prod_typ_data = ProductTypes::getFilteredProductTypesData($members);
+
+        return $this->response('json', $prod_typ_data);
+    }
+
+    private function get_product_type_by_id($request) {
+        $prod_type_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
+        $prod_type= ProductTypes::findById($prod_type_id);
+        $prod_type_data = array();
+        if($prod_type instanceof ProductType){
+            $prod_type_data = $prod_type->getArrayInfo();
+        }
+
+        return $this->response('json', $prod_type_data);
+    }
+
+    private function product_types_by_budgeted_expense($request) {
+        $bud_expense_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
+        $filtered_product_types = array();
+        if($bud_expense_id > 0){
+            $expense_items = ExpenseItems::findAll(array('conditions' => 'expense_id ='.$bud_expense_id));
+            foreach($expense_items as $item){
+                if($item->getProductTypeId() > 0){
+                    $pt = ProductTypes::findById($item->getProductTypeId());
+                    if ($pt instanceof ProductType) {
+                        $filtered_product_types[] = $pt->getArrayInfo();
+                    }
+                }
+            }
+        }
+
+        return $this->response('json', $filtered_product_types);
+    }
+
 
     /**
      * Retrive list of objects
@@ -490,7 +554,9 @@ class ApiController extends ApplicationController {
                 ));
                 $payments = array();
                 foreach($result->objects as $payment){
-                    $payments[] = $payment->getArrayInfo();
+                    $payment_info = $payment->getArrayInfo();
+                    $payment_info['members_data'] = build_api_members_data($object);
+                    $payments[] = $payment_info;
                 }
                 $object_data['payments'] = $payments;
                 array_push($temp_objects['actual_expenses'], $object_data);
@@ -550,6 +616,7 @@ class ApiController extends ApplicationController {
 
     private function save_object($request) {
         $response = false;
+        // Logger::log_r($request ['args']);
         if (!empty($request ['args'])) {
             $service = $request ['srv'];
             switch ($service) {
@@ -608,7 +675,6 @@ class ApiController extends ApplicationController {
                         $object = new PaymentReceipt ();
                     }
                     if ($object instanceof PaymentReceipt) {
-                        Logger::log_r($request ['args']);
                         if (!empty($request ['args'] ['name'])) {
                             $object->setObjectName($request ['args'] ['name']);
                         }
@@ -620,15 +686,41 @@ class ApiController extends ApplicationController {
                         	$date->add('s', -1*logged_user()->getUserTimezoneValue());
                        		$object->setDate($date);
                         }
+                        if (!empty($request ['args'] ['quantity'])) {
+                            $object->setQuantity($request ['args'] ['quantity']);
+                        } else {
+                            $object->setQuantity(0);
+                        }
+                        if (!empty($request ['args'] ['unit_cost'])) {
+                            $object->setUnitCost($request ['args'] ['unit_cost']);
+                        } else {
+                            $object->setUnitCost(0);
+                        }
                         if (!empty($request ['args'] ['amount'])) {
                             $object->setAmount($request ['args'] ['amount']);
+                        } else {
+                            $object->setAmount(0);
+                        }
+                        if (!empty($request ['args'] ['unit_price'])) {
+                            $object->setUnitPrice($request ['args'] ['unit_price']);
+                        } else {
+                            $object->setUnitPrice(0);
+                        }
+                        if (!empty($request ['args'] ['total_price'])) {
+                            $object->setTotalPrice($request ['args'] ['total_price']);
+                        } else {
+                            $object->setTotalPrice(0);
                         }
                         if (!empty($request ['args'] ['paid_by_id']) || $request ['args'] ['paid_by_id'] == 0) {
                             $object->setPaidById($request ['args'] ['paid_by_id']);
                         }
+                        if (!empty($request ['args'] ['product_type_id']) || $request ['args'] ['product_type_id'] == 0) {
+                            $object->setProductTypeId($request ['args'] ['product_type_id']);
+                        }
                         if (!empty($request ['args'] ['expense_id']) || $request ['args'] ['expense_id'] == 0) {
                             $object->setExpenseId($request ['args'] ['expense_id']);
                             $expense_category_dimension = Dimensions::findByCode('expense_categories')->getId();
+                            /*
                             // Remove expense category member from object
                             $object_members = $object->getMembers();
                             foreach ($object_members as $member){
@@ -646,6 +738,7 @@ class ApiController extends ApplicationController {
                                     }
                                 }
                             }
+                            */
                         }
                         if (!empty($request ['args'] ['billable'])) {
                             $object->setIsBillable(1);

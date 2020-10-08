@@ -166,8 +166,8 @@ class PluginController extends ApplicationController {
 		
 		$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
 		if (!Plugins::instance()->isActivePlugin($plugin_name)) {
-			
-			if (!$plugin instanceof Plugin || !$plugin->isInstalled()) {
+			if (!$plugin instanceof Plugin) return;
+			if (!$plugin->isInstalled()) {
 				
 				$this->executeInstaller($plugin_name);
 		
@@ -181,6 +181,8 @@ class PluginController extends ApplicationController {
 		if ($plugin instanceof Plugin) {
 			$plugin->update();
 		}
+		
+		return true;
 	} 
 	
 /**

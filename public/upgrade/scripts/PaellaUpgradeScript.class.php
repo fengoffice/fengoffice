@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.3.3');
+		$this->setVersionTo('3.8.4.4');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -751,6 +751,16 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         		$upgrade_script .= "
 	                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
 					VALUES ('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, '')
+	                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+	            ";
+        	}
+        }
+        
+        if (version_compare($installed_version, '3.8.4.0') < 0) {
+        	if (!$this->checkValueExists($t_prefix."config_options", "name", "show_company_info_report_print", $this->database_connection)) {
+        		$upgrade_script .= "
+	                INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('reports', 'show_company_info_report_print', '1', 'BoolConfigHandler', 0, 0, '')
 	                ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
 	            ";
         	}

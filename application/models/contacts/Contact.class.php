@@ -48,7 +48,12 @@ class Contact extends BaseContact {
 	
 	
 	function getObjectName() {
-		$name = parent::getObjectName();
+		//$name = parent::getObjectName();
+        if(user_config_option("listingContactsBy")){
+            $name = $this->getDisplayName();
+        } else {
+            $name = $this->getReverseDisplayName();
+        }
 		
 		Hook::fire('override_contact_name', array('contact' => $this), $name);
 		
@@ -365,7 +370,7 @@ class Contact extends BaseContact {
 	 */
 	function getReverseDisplayName() {
 		if (parent::getSurname() != "")
-			$display = parent::getSurname() . " " . parent::getFirstName();
+			$display = parent::getSurname() . ", " . parent::getFirstName();
 		else
 			$display = parent::getFirstName();
 		return trim ($display);

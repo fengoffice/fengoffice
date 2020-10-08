@@ -592,7 +592,7 @@ return array(
   'total pause time' => 'Total pause time',
   'pause time cannot be negative' => 'Pause time cannot be negative',
   'pause time cannot exceed timeslot time' => 'Pause time cannot exceed timeslot time',
-  'timeslots' => 'Time',
+  'timeslots' => 'Timeslots',
 
   'task timeslots' => 'Task timeslots',
   'time timeslots' => 'General timeslots',

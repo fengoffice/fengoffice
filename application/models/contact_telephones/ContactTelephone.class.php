@@ -34,8 +34,9 @@
       if (is_null($this->getTelephoneType())){
           return array();
       }else{
+      	  $tt = $this->getTelephoneType();
           return array(
-              'type'=>$this->getTelephoneType()->getName(),
+              'type'=> $tt ? $tt->getName() : '',
               'number'=>$this->getNumber()
           );
       }

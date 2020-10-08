@@ -75,6 +75,7 @@
 		$search_delay = 500;
 		$horizontal = array_var($options, 'horizontal', false);
 		$extra_param = "$dimension_id";
+		
 		/*if(!$default_view && file_exists(get_template_path("components/small_view", "dimension"))){
 			include get_template_path("components/small_view", "dimension");
 		}else{*/

@@ -86,7 +86,7 @@ function report_values_to_arrays_plain($results, $report, $with_header = true) {
 			$date_custom = $report->getColumnValue('date_format');
 			$date_format = $date_custom != '' ? $date_custom : $date_format;
 			
-			if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+			if($val_type == DATA_TYPE_DATETIME && !($value instanceof DateTimeValue)){
 				if($value == ''){
 					$formatted_val = ' ';
 				} else {
@@ -155,7 +155,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 	$external_columns = $report->getReportExternalColumns();
 	
 	?>
-    <table class="report <?php echo $to_print ? '':'custom-report scroll' ?>">
+    <table class="report custom-report<?php echo $to_print ? '':' scroll' ?>">
         <thead>
 		<tr class="header-custom-report custom-report-table-heading">
 	<?php
@@ -211,7 +211,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 	<tr class="report-row-tbody report-data <?php echo ($isAlt ? 'alt' : '')?>">
 
 		<?php
-                        $types = array_var($columns,'types');
+			$types = array_var($columns,'types');
 			foreach ($columns['order'] as $col) {
 				if ($col == 'object_type_id') continue;
 
@@ -229,7 +229,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				$date_custom = $report->getColumnValue('date_format');
                 $date_format = $date_custom != '' ? $date_custom : $date_format;
 				
-				if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+                if($val_type == DATA_TYPE_DATETIME && !($value instanceof DateTimeValue)){
 					if($value == ''){
 						echo $value;
 						continue;
@@ -381,7 +381,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 						$date_custom = $report->getColumnValue('date_format');
 						$date_format = $date_custom != '' ? $date_custom : $date_format;
 
-						if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+						if($val_type == DATA_TYPE_DATETIME && !($value instanceof DateTimeValue)){
 							if($value == ''){
 								echo $value;
 								continue;
@@ -573,7 +573,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 						$date_custom = $report->getColumnValue('date_format');
 						$date_format = $date_custom != '' ? $date_custom : $date_format;
 						
-						if($val_type == 'DATETIME' && !($value instanceof DateTimeValue)){
+						if($val_type == DATA_TYPE_DATETIME && !($value instanceof DateTimeValue)){
 							if($value == ''){
 								$formatted_val = ' ';
 							} else {
@@ -757,7 +757,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                     }else{
 						if ($row[$gb_keys[0]['n']]){
 							$member_k0 = null;
-							if (str_starts_with($gb_keys[0]['k'], '_group_id_dim_')) {
+							if (strpos($gb_keys[0]['k'], '_group_id_dim_')) {
 								$member_k0 = Members::getMemberById($k0);
 							}
 							if($member_k0 instanceof Member){
@@ -820,7 +820,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                         }else{
 							if ($row[$gb_keys[1]['n']]){
 								$member_k1 = null;
-								if (str_starts_with($gb_keys[1]['k'], '_group_id_dim_')) {
+								if (strpos($gb_keys[1]['k'], '_group_id_dim_')) {
 									$member_k1 = Members::getMemberById($k1);
 								}
 								if($member_k1 instanceof Member){
@@ -884,7 +884,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
                             }else{
 								if ($row[$gb_keys[2]['n']]){
 									$member_k2 = null;
-									if (str_starts_with($gb_keys[2]['k'], '_group_id_dim_')) {
+									if (strpos($gb_keys[2]['k'], '_group_id_dim_')) {
 										$member_k2 = Members::getMemberById($k2);
 									}
 									if($member_k2 instanceof Member){
@@ -932,10 +932,11 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					
 					if (isset($gb_keys[2]['is_date']) && $gb_keys[2]['is_date'] && $formatDate) {
 						foreach ($v1['groups'] as $k2 => &$v2) {
+							Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[2]), $v2);
 						    // This is where formatting is applied (in this case, to the date values).
                             // We need to remove this from here and move to the view/rendering class.
 							if (preg_match($mysql_date_format_re, $v2['name'])) {
-								$v1['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v2['name']),null,0);
+								$v2['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v2['name']),null,0);
 							} else {
 								$v2['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v2['name']), null, 0);
 							}
@@ -943,6 +944,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					}
 				}
 				
+				Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[1]), $v1);
 				if (isset($gb_keys[1]['is_date']) && $gb_keys[1]['is_date'] && $formatDate) {
 					if (preg_match($mysql_date_format_re, $v1['name'])) {
 						$v1['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v1['name']),null,0);
@@ -954,6 +956,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 			ksort($v0['groups']);
 		}
 		
+		Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[0]), $v0);
 		if (isset($gb_keys[0]['is_date']) && $gb_keys[0]['is_date'] && $formatDate) {
 			if (preg_match($mysql_date_format_re, $v2['name'])) {
 				$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
@@ -1529,15 +1532,15 @@ function build_report_conditions_sql($parameters) {
 function pickDateOrDatetimeValueType($row, $report){
 	if($row['object_type_id'] == ObjectTypes::findByName('task')->getId()){
 		if(array_var($row, 'start_date') && !ProjectTasks::findById($row['id'])->getUseStartTime()){
-			return 'DATE';
+			return DATA_TYPE_DATE;
 		}
 		if(array_var($row, 'due_date') && !ProjectTasks::findById($row['id'])->getUseDueTime()){
-			return 'DATE';
+			return DATA_TYPE_DATE;
 		}
 	}
 	if ($report->getColumnValue('dont_show_time')){
-		return 'DATE';
+		return DATA_TYPE_DATE;
 	}
-	return 'DATETIME';
+	return DATA_TYPE_DATETIME;
 }
 

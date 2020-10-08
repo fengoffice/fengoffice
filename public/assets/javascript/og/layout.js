@@ -13,7 +13,7 @@ Ext.onReady(function(){
 			text.item(0).dom.select();
 	});
 
-	if (og.preferences['rememberGUIState']) {
+	if (og.preferences && og.preferences['rememberGUIState']) {
 		Ext.state.Manager.setProvider(new og.HttpProvider({
 			saveUrl: og.getUrl('gui', 'save_state'),
 			readUrl: og.getUrl('gui', 'read_state'),

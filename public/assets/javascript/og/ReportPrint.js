@@ -80,14 +80,22 @@ og.reports.printReport = function(genid, title, report_id) {
 	
 	og.openLink(og.getUrl('reporting', 'print_custom_report', params), {
 		callback: function(success, data) {
-			var printWindow = og.reports.createPrintWindow(title);
-			printWindow.document.write(data.html);
+			var printWindow = og.reports.createPrintWindow(title, !og.config.show_company_info_report_print);
+			var html = '';
+			if (!og.config.show_company_info_report_print) {
+				html = '<div class="report-print-header"><div class="title-container"><h1>' + title + '</h1></div></div><div class="clear"></div>';
+			}
+			html += data.html;
+			printWindow.document.write(html);
 			og.reports.closePrintWindow(printWindow);
 		}
 	});
 }
 
 og.reports.printNoPaginatedReport = function(genid, title, hide_report_header) {
+	if (typeof(hide_report_header) == 'undefined') {
+		hide_report_header = !og.config.show_company_info_report_print;
+	}
 	var printWindow = og.reports.createPrintWindow(title, hide_report_header);
 
 	var has_scroll = $('#' + genid + 'report_container .report.custom-report').hasClass('scroll');

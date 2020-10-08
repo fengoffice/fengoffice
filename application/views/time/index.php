@@ -498,6 +498,7 @@ if (is_array($add_columns)) {
         name_width: 200,
         stateId: 'timeslots-module',
         allow_drag_drop: true,
+        forceFit: false,
         sm: sm
     });
 

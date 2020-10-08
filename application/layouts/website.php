@@ -332,6 +332,7 @@ og.config = {
 	},
 	'with_perm_user_types': Ext.util.JSON.decode('<?php echo json_encode(config_option('give_member_permissions_to_new_users'))?>'),
 	'member_selector_page_size': 100,
+	'show_company_info_report_print': <?php echo config_option('show_company_info_report_print') ? '1' : '0' ?>,
 	'currency_code': '<?php config_option('currency_code', '$') ?>'
 };
 og.preferences = {

@@ -720,6 +720,16 @@ class TemplateController extends ApplicationController {
 		
 		Hook::fire("verify_objects_before_template_instantiation", $template, $objects);
 		
+		// sort tasks by depth, so first level task are instantiated first, and subtasks can find their parent
+		$tmp_sorted_objects = array();
+		foreach ($objects as $o) {
+			$d = $o instanceof TemplateTask ? $o->getDepth() : "0";
+			$tmp_sorted_objects[$d."-".$o->getId()] = $o;
+		}
+		ksort($tmp_sorted_objects);
+		$objects = $tmp_sorted_objects;
+		// --
+		
 		foreach ($objects as $object) {
 			if (!$object instanceof ContentDataObject) continue;
 			// copy object

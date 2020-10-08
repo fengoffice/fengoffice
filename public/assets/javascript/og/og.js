@@ -3875,6 +3875,8 @@ og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 		hideLoading:true,
 		hideErrors:true,
 		callback: function(success, data){
+			
+			if (!data) return;
 
 			var dimension_tree = Ext.getCmp(tree_id);
 

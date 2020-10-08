@@ -745,4 +745,8 @@
 		
 		'config option name reclassify_time_when_linking_task' => 'Reclasificar tiempos de trabajo al asociar con una tarea',
 		'config option desc reclassify_time_when_linking_task' => 'Al editar un tiempo de trabajo y asiociarlo a una tarea, la clasificación del mismo será reemplazada por la clasificación de la tarea',
+		
+		'config option name show_company_info_report_print' => 'Mostrar datos de empresa al imprimimr reporte',
+		'config option desc show_company_info_report_print' => 'Se muestra la dirección, correo, sitio web de la empresa en la esquina superior derecha de la página al imprimir un reporte',
+		
 );

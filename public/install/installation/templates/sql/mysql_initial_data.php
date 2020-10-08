@@ -27,7 +27,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('general', 'file_storage_adapter', 'fs', 'FileStorageConfigHandler', 0, 0, 'What storage adapter should be used? fs or mysql'),
 	('general', 'theme', 'default', 'ThemeConfigHandler', 0, 0, NULL),
 	('general', 'days_on_trash', '30', 'IntegerConfigHandler', 0, 0, 'Days before a file is deleted from trash. 0 = Not deleted'),
-        ('general', 'show_pause_time_action', '1', 'BoolConfigHandler', '0', '0', NULL),
+    ('general', 'show_pause_time_action', '1', 'BoolConfigHandler', '0', '0', NULL),
 	('mailing', 'exchange_compatible', '0', 'BoolConfigHandler', 1, 0, NULL),
 	('mailing', 'mail_transport', 'mail()', 'MailTransportConfigHandler', 0, 0, 'Values: ''mail()'' - try to emulate mail() function, ''smtp'' - use SMTP connection'),
 	('mailing', 'smtp_server', '', 'StringConfigHandler', 0, 0, ''),
@@ -94,6 +94,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('brand_colors', 'brand_colors_tabs_font', '333333', 'ColorPickerConfigHandler', '1', '0', NULL),
 	('reports', 'reports_inherit_company_address', '', 'BoolConfigHandler', '0', '0', NULL),
 	('reports', 'reports_inherit_company_phones', '', 'BoolConfigHandler', '0', '0', NULL),
+	('reports', 'show_company_info_report_print', '1', 'BoolConfigHandler', '0', '0', NULL),
 	('general', 'use_time_quick_add_row', '1', 'BoolConfigHandler', 0, 0, NULL),
 	('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, ''),
 	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, '');

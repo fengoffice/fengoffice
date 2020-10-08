@@ -9,6 +9,7 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 	
 	private static $readable_members = array();
 	private static $writable_members = array();
+	private static $deletable_members = array();
 	
 	/**
 	 * 
@@ -60,6 +61,34 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 				}
 			}
 			return in_array($member_id, array_var(self::$readable_members, "$permission_group_ids", array()));
+		} elseif($access_level == ACCESS_LEVEL_WRITE) {
+			
+			if (!isset(self::$writable_members["$permission_group_ids"])) {
+				$res = DB::execute("SELECT DISTINCT member_id FROM ".TABLE_PREFIX."contact_member_permissions WHERE can_write=1 AND permission_group_id IN (" . $permission_group_ids . ") $object_type_type_sql" );
+				$rows = $res->fetchAll();
+				if (is_array($rows)) {
+					self::$writable_members["$permission_group_ids"] = array();
+					foreach ($rows as $row) {
+						self::$writable_members["$permission_group_ids"][] = $row['member_id'];
+					}
+				}
+			}
+			return in_array($member_id, array_var(self::$writable_members, "$permission_group_ids", array()));
+			
+		} elseif($access_level == ACCESS_LEVEL_DELETE) {
+			
+			if (!isset(self::$deletable_members["$permission_group_ids"])) {
+				$res = DB::execute("SELECT DISTINCT member_id FROM ".TABLE_PREFIX."contact_member_permissions WHERE can_delete=1 AND permission_group_id IN (" . $permission_group_ids . ") $object_type_type_sql" );
+				$rows = $res->fetchAll();
+				if (is_array($rows)) {
+					self::$deletable_members["$permission_group_ids"] = array();
+					foreach ($rows as $row) {
+						self::$deletable_members["$permission_group_ids"][] = $row['member_id'];
+					}
+				}
+			}
+			return in_array($member_id, array_var(self::$deletable_members, "$permission_group_ids", array()));
+			
 		} else {
 			
 			if (!isset(self::$writable_members["$permission_group_ids"])) {

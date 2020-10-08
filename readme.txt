@@ -1,5 +1,5 @@
 
-	About Feng Office 3.8.3.2
+	About Feng Office 3.8.4.4
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,120 @@
 	
 	Changelog
 	=========
+	
+	Since 3.8.4.3
+	-----------------
+	feature: New bulk action: Mark as -> Mark as void
+	feature: use horizontal scroll in invoice list, batch invoicing list and time tab
+	bugfix: Don't generate invoice if there is no billed worked time or actual expenses in the project
+	bugfix: Budgeted expenses don't need invoicing status
+	bugfix: Show the name of every generated invoice in the success message after generation
+	bugfix: Show parent hierarchy in labor category select option in forms (#584)
+	
+	Since 3.8.4.2
+	-----------------
+	feature: Batch invoicing
+	feature: Show labor categeries associated with rate schedules in the forms
+	feature: Add project info to 'Activity' and 'Late and upcoming tasks' widgets
+	feature: Rename 'project phase' to 'contract phase' in en_us translations
+	feature: Add a new dimension 'Job phases'
+	feature: Use 'Job phase' instead of 'Project phase' in 'Budget' and 'Invoicing history' reports
+	bugfix: fix completed filter when showing tasks in calendar, completed tasks were not showing when no filter was applied
+	
+	Since 3.8.4.1
+	-----------------
+	bugfix: fix typo in function member_selector.remove_all_selections
+	bugfix: Fix custom report issue with totals when exporting to excel
+	bugfix: contact custom reports were not using the config option for the order of name and surname
+	bugfix: fix extra hour calculations in advanced services plugin, the day separator interval was not used with correct timezone
+	bugfix: fix expenses report group by status
+	bugfix: fix infobar hooks http query when trial is new
+	bugfix: cp date columns were not applying specific date format defined in reports
+	bugfix: fix paemfe plugin function to get receipt images
+	bugfix: fix js error that happens sometimes when logging in and leaves blank screen
+	bugfix: several obile improvements
+	bugfix: fix report header max-height
+	bugfix: modify text search inside modules min character restriction to 2 chars
+	bugfix: modify text search when using 'like' to use %query%
+	bugfix: fix template tasks instantiation order, so subtasks can always find their parent
+	
+	Since 3.8.4.0
+	-----------------
+	feature: actual expense form improvements
+	feature: invoice template changes to support lump sum
+	feature: use invoice templates from tasks and time list when no bulk actions are present
+	bugfix: fix bug that recreated the repetitive task with the same dates using template
+	bugfix: fix percent complete calculation when reopening a task
+	bugfix: fix adv services break hours calculation and fidelis contble report
+	bugfix: minor feng1 - feng3 migration fixes
+	bugfix: installer fixes
+	
+	Since 3.8.4-rc3
+	-----------------
+	bugfix: fix custom reports execution when user does not have the permission to see other user's timeslots
+	bugfix: remove bug that prevented saving actual expense with assigned budgeted expense
+	
+	Since 3.8.4-rc2
+	-----------------
+	bugfix: fix contact email and phone getArrayInfo function to not assume that the type exists
+	bugfix: fix timeslot billing recalculation when voiding an invoice
+	bugfix: fix timeslots approval status after voiding an invoice
+	bugfix: fix product type filtering query
+	bugfix: Remove high risk javascript vulnerability
+	bugfix: dont show deprecated status selector in budgeted expenses form
+	bugfix: fix unchecked workflow permissions for expenses and invoice generation when no product type is present
+	bugfix: fix errors in income and expenses update scripts
+
+	Since 3.8.4-rc
+	-----------------
+	feature: workflow permissions and bulk actions for actual expenses, analog to timesheet approval workflow
+	feature: make invoice bulk action work with invoice templates in expenses and time modules
+	feature: Project management reports improvements
+	bugfix: fix error when editing actual expense
+	bugfix: dont try to update a plugin if not present in db
+	
+	
+	Since 3.8.4-beta2
+	-----------------
+	feature: new config option to show or not company info when printing report
+	feature: Show pending billable info for expenses in the PM report
+	feature: Add 'Estimated billable' column to expenses summary in the PM report
+	feature: Reorder and rename columns in the PM reports
+	bugfix: fix documents filter by only current level and crpm installer/updater to ensure that the config option is present
+	bugfix: Fix javascript vulnerabilities; update some js modules
+	bugfix: Replace spaceship operator for php5 compatibility
+	bugfix: fix report container classes when printing report, so the same css as html report are applied
+	bugfix: fix actual expenses list and reports when date is not set
+	bugfix: add report conditions and applied filters to the report print header
+	bugfix: Use 'report_time_colums_display' config when exporting CSV for Timesheet report
+	bugfix: Use 'report_time_colums_display' config option to format time in the Timesheet report
+	bugfix: Remove bug that cause errors in the grouped custom reports
+	bugfix: Don't calculate estimated and pending when without labor category
+
+	
+	Since 3.8.4-beta
+	-----------------
+	bugfix: dont reload product type data in actual expenses if it didn't change after selecting a budgeted expense
+	bugfix: fix budgeted expense selector filters in actual expense form
+	bugfix: fix invoice template custom property selector when name has a ','
+    bugfix: commit css rules for invoicing status config options section
+	
+	Since 3.8.4-alpha
+	-----------------
+	feature: include actual expenses in automatic invoice generation for a project
+	feature: Redesign Add/Edit view for actual expenses
+	feature: Enforce project phase permissions
+	feature: modify actual expenses model and form to support cost and price and auto calculation based in product types
+	feature: add the new fields to actual expenses view (new cost and price fields)
+	feature: add invoicing status to actual expenses and budgeted expenses
+	feature: link actual expenses to invoicing status dimension
+	feature: modify config section names and format for timesheet customizations
+	bugfix: fix actual expenses listing totals row, format all amount columns with currency
+	bugfix: fix mail tracking feature to include the alt attr in the img tag so prevent spam negative score
+
+	Since 3.8.3.x
+	-----------------
+	feature: invoice templates feature
 
 	Since 3.8.3.2
 	-----------------
@@ -4252,7 +4366,7 @@
 	Since 2.6-beta
 	----------------
 	
-	bugfix: after contact csv inport, msg says "Company NULL" if contact has no company
+	bugfix: after contact csv inport, msg says "Company NULL" if contact has no comapany
 	bugfix: templates import tasks, milestones (and several templates bugs)
 	bugfix: activity widget fixed
 	bugfix: email plugin upgrade script fixed

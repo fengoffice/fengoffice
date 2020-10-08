@@ -46,8 +46,9 @@
     } // editEmailAddress
 
       function getArrayInfo(){
+      	$et = $this->getEmailType();
         return array(
-            'type'=>$this->getEmailType()->getName(),
+            'type'=> $et ? $et->getName() : '',
             'email'=>$this->getEmailAddress()
         );
       }

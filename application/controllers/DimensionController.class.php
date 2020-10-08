@@ -224,6 +224,12 @@ class DimensionController extends ApplicationController {
 			}
 			$filter_by_members = $tmp_array;
 			
+			Hook::fire('modify_initial_list_dimension_members', 
+					    array('dimension' => $dimension, 
+							 'dimension_id' => $dimension_id,
+							 'filtered_by_members' => $filter_by_members),
+					    $all_members);
+
 			if ($return_member_objects) {
 				$result = array('members' => $all_members, 'list_was_filtered_by' => $list_was_filtered_by);
 			} else {
@@ -640,7 +646,14 @@ class DimensionController extends ApplicationController {
 			if (!in_array($dim->getId(), $enabled_dimension_ids)) continue;
 			$dim_name = clean($dim->getName());
 			
-			$dim_names[$dim->getId()] = array("name" => $dim_name);
+			$info = array("name" => $dim_name);
+			
+			$default_value = DimensionOptions::instance()->getOptionValue($dim->getId(), 'default_value');
+			if ($default_value) {
+				$info["default_member"] = $default_value;
+			}
+			
+			$dim_names[$dim->getId()] = $info;
 		}
 		ajx_extra_data(array("dim_names" => $dim_names));
 	}
@@ -1279,6 +1292,7 @@ class DimensionController extends ApplicationController {
 		
 		foreach ($_REQUEST as $k => $v) {
 			tpl_assign($k, $v);
+			if ($k != 'current') ajx_extra_data(array($k=>$v));
 		}
 		
 		if (is_numeric($dim_id)) {

@@ -454,7 +454,7 @@ abstract class ContentDataObjects extends DataManager {
 		    	if (is_numeric($text_filter)) {
 		    		$text_filter_str = "$text_filter";
 		    	} else {
-		    		$text_filter_str = "$text_filter%";
+		    		$text_filter_str = "%$text_filter%";
 		    	}
 		    	$text_filter_extra_conditions .= "
 					AND so.content like '$text_filter_str'
@@ -588,10 +588,7 @@ abstract class ContentDataObjects extends DataManager {
 		$SQL_CONTEXT_CONDITION = " true ";
 		//show only objects that are on this members by classification not by hierarchy
 		$show_only_member_objects = array_var($args,'show_only_member_objects',false);
-		$exclusive_in_member = '';
-		if($show_only_member_objects){
-			$exclusive_in_member = " AND om.`is_optimization` = 0";
-		}
+		
 		if (!empty($members) && count($members)) {
 			
 			//$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=o.id ";
@@ -603,8 +600,13 @@ abstract class ContentDataObjects extends DataManager {
 					LEFT JOIN ".TABLE_PREFIX."object_members $t_alias ON ${t_alias}.object_id=o.id AND ${t_alias}.member_id=$mem_id ";
 				$i++;
 				
+				$exclusive_in_member = '';
+				if($show_only_member_objects){
+					$exclusive_in_member = " AND ${t_alias}.`is_optimization` < 1";
+				}
+				
 				$SQL_CONTEXT_CONDITION .= ($SQL_CONTEXT_CONDITION == '' ? '' : " AND ");
-				$SQL_CONTEXT_CONDITION .= "${t_alias}.member_id = $mem_id";
+				$SQL_CONTEXT_CONDITION .= "${t_alias}.member_id = $mem_id $exclusive_in_member";
 			}
 			//$SQL_CONTEXT_CONDITION = "om.member_id IN (" . implode ( ',', $members ) . ") $exclusive_in_member";
 			

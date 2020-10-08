@@ -155,6 +155,8 @@ og.renderContactSelector = function(config) {
 		is_bootstrap:config.is_bootstrap
 	});
 	contactsCombo.doQuery('', true);
+	
+	contactsCombo.config_parameters = config;
 
 	contactsCombo.on('focus', function(combo) {
             og.ContactCombo.addQuickContactButton(this);
@@ -318,8 +320,10 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 
 	// draw contact div and hide combo
 	if (!is_multiple) combo.hide();
-	var style = "min-width:300px; width:300px;";
+	var style = "";// "min-width:300px; width:300px;";
 	var remove_text = lang('remove');
+	//console.log(combo.config_parameters);
+	if (combo.config_parameters.remove_text) remove_text = combo.config_parameters.remove_text;
 	var rem_float_dir = 'right';
 
 	if (combo.initialConfig.inline_selector) {

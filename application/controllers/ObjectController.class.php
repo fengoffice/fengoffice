@@ -561,10 +561,6 @@ class ObjectController extends ApplicationController {
 						break;
 					}
 				}
-				if ($id == 49) {
-					Logger::log_r("CP VALUE");
-					Logger::log_r($value);
-				}
 
 				$object = $object_original;
 				// if custom property does not belong to the object, look for an associated object for current cp

@@ -134,13 +134,20 @@ class ProjectTasks extends BaseProjectTasks {
 		
 		$archived_cond = " AND `archived_on` ".($archived ? '<>' : '=')." 0";
 		
-		$conditions = DB::prepareString(' AND `is_template` = false AND `completed_on` '. ($task_filter == 'complete' ? '<>' : '=') .' ? AND 
+		$completed_cond = "";
+		if ($task_filter == 'complete') {
+			$completed_cond = "AND `completed_on` <> '".EMPTY_DATETIME."'";
+		} else if ($task_filter == 'pending') {
+			$completed_cond = "AND `completed_on` = '".EMPTY_DATETIME."'";
+		}
+		
+		$conditions = DB::prepareString(' AND `is_template` = false '.$completed_cond.' AND 
 			(IF (due_date>0, 
 				IF (use_due_time, (`due_date` >= ? AND `due_date` < ?), (`due_date` >= \''.$orig_from_date_sql.'\' AND `due_date` < \''.$orig_to_date_sql.'\')), false) 
 			OR IF (start_date>0, 
 				IF (use_start_time, (`start_date` >= ? AND `start_date` < ?), (`start_date` >= \''.$orig_from_date_sql.'\' AND `start_date` < \''.$orig_to_date_sql.'\')), false)
 			OR ' . $rep_condition . ') ' . $archived_cond . $assignedFilter, 
-			array(EMPTY_DATETIME,$from_date, $to_date, $from_date, $to_date)
+			array($from_date, $to_date, $from_date, $to_date)
 		);
 		
 		$other_perm_conditions = SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks');

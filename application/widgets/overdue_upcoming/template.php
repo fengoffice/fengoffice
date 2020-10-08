@@ -1,5 +1,18 @@
 <?php /* @var Project $project */
 	$genid = gen_id();
+	$project_dim_id = Dimensions::findByCode('customer_project')->getId();
+	$active_members = active_context();
+	$active_project = false;
+	foreach($active_members as $mem){
+		if($mem instanceof Member){
+			$ot_conditions = " AND object_type_id = ".$mem->getObjectTypeId();
+			$subprojects = Members::getSubmembers($mem, false, $ot_conditions);
+			if ($mem->getDimensionId() == $project_dim_id && !(is_array($subprojects) && count($subprojects) > 0)){
+				$active_project = true;
+			}
+		}
+	}
+	
 ?>
 
 
@@ -71,6 +84,23 @@
 							<?php /* if ($object instanceof ProjectTask && $object->getAssignedToContactId() > 0) echo "<span class='bold'>". clean($object->getAssignedToName()).": </span>"; */?>
 							<?php echo clean($object->getObjectName()) ?>
 						</a>
+						<?php if(!$active_project){ ?>
+							<p class='late-task-project-name'>
+								<?php
+									$members = $object->getMembers(); 
+									foreach($members as $member){
+										if($member->getDimensionId() == $project_dim_id){ ?>
+											<span style='font-weight: bold;'> <?php echo lang('project').': '; ?> </span>
+											<a class="internalLink" href="#" onclick="og.projects.onProjectClick('<?php echo $member->getId() ?>');">
+											<?php echo clean($member->getName()); ?>
+											</a>
+										<?php
+										}
+									}
+								
+								?>
+							</p>
+						<? } ?>
 			    		<!--<span id="object_crumb_<?php echo $object->getId()?>"></span>
 			    		<script>
 							var crumbHtml = <?php echo $crumbJs?>;

@@ -58,7 +58,9 @@ function text_field($name, $value = null, $attributes = null) {
     // If we don't have type attribute set it
     if (array_var($attributes, 'type', false) === false) {
         if (is_array($attributes)) {
-            $attributes['type'] = 'text';
+            if($attributes['type'] != 'hidden'){
+                $attributes['type'] = 'text';
+            }
         } else {
             $attributes = array('type' => 'text');
         } // if

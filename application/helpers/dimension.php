@@ -141,6 +141,24 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 			if (is_array($additional_filters) && count($additional_filters) > 0) {
 				$options['filter_by_ids'] = $additional_filters;
 			}
+
+			
+			$selected_members = count($selected_member_ids) > 0 ? Members::findAll(array('conditions' => 'id IN ('.implode(',', $selected_member_ids).') '.$manageable_conds)) : array();
+			foreach($dimensions as $dimension){
+				$dimension_id = $dimension['dimension_id'];
+				$dim_sel_mems = array();
+				foreach ($selected_members as $selected_member) {
+					if ($selected_member->getDimensionId() == $dimension_id) $dim_sel_mems[] = $selected_member;
+				}
+				if (count($dim_sel_mems) == 0 && array_var($options, 'select_current_context')) {
+					$default_value = DimensionOptions::instance()->getOptionValue($dimension_id, 'default_value');
+					if ($default_value) {
+						$default_member = Members::getMemberById($default_value);
+						if ($default_member instanceof Member) $selected_member_ids[] = $default_member->getId();
+					}
+				}
+			}
+			
 			
 			
 			$skipped_dimensions_cond = "";
