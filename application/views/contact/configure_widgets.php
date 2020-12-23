@@ -22,6 +22,21 @@ $title = $default_configuration ? lang('default dashboard options') : lang('dash
 
 <div class="page widget-manager adminMainBlock">
 	<div>
+		<?php
+		$dimensions_config_option = ContactConfigOptions::getByName('widget_dimensions');
+		if($dimensions_config_option instanceof ContactConfigOption){
+			echo '<div class="coInputMainBlock">';
+			echo '<div class="configCategory">
+					<h2>'. lang("dimensions that can be applied to widgets") .'</h2>';
+		
+			// render checked dimensions
+			echo $dimensions_config_option->getConfigHandler()->do_render('widget_dimensions', array('onchange_fn' => 'og.onWidgetDimensionChanged', 'is_default' => $default_configuration));
+			
+			echo '<div class="clear"></div></div></div>';
+		}
+		?>
+
+
 		<table style="border: 1px solid #D7E5F5;" id="<?php echo $genid?>top-widget-table">
 			<tr><th colspan="3" style="text-align:center;border-bottom:1px solid #ADCCF0;"><?php echo lang('top')?></th></tr>
 			<tr>

@@ -1,5 +1,7 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
+var moment = require('moment');
+
 var { ResponsiveContainer,
       AreaChart,
       Area,
@@ -15,6 +17,7 @@ class FinancialsWidget extends React.Component {
       super(props);
       this.state = { currencySymbol: props.data.currencySymbol ? props.data.currencySymbol : '$',
                      earned: props.data.earned ? props.data.earned : 0,
+                     dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
                      estimated: props.data.estimated ? props.data.estimated : 0,
                      earnedTitle: props.data.earnedTitle ? props.data.earnedTitle : 'Total earned value',
                      estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total budgeted',
@@ -37,8 +40,12 @@ class FinancialsWidget extends React.Component {
         const earned = formatToMoney(this.state.earned);
         const estimated = formatToMoney(this.state.estimated);
         const earnedTitle = this.state.earnedTitle;
+        const dateFormat = this.state.dateFormat;
         const estimatedTitle = this.state.estimatedTitle;
-        const chartData = this.state.chartData;
+        var chartData = this.state.chartData;
+        chartData.forEach(d => {
+            d.date = moment(d.date).valueOf();
+        });
         //const tooltipSeparator = ': ' + currencySymbol;
         return (
             <div className="progress-widget-container">
@@ -84,9 +91,33 @@ class FinancialsWidget extends React.Component {
                             </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                        <XAxis dy={15} axisLine={false} tickSize={0} stroke="#888888" dataKey="date" interval="preserveStartEnd" minTickGap={70} height={40}/>
-                        <YAxis dx={10}  tickFormatter={AxisNumberFormatter} axisLine={false} tickSize={0} stroke="#888888" orientation="right" width={50} />
-                        <Tooltip formatter={(value) => formatToMoney(value)}/>
+                        <XAxis 
+                            dy={15} 
+                            axisLine={false}
+                            tickSize={0}
+                            stroke="#888888"
+                            dataKey="date"
+                            type="number"
+                            scale="time"
+                            interval="preserveStartEnd"
+                            domain={['auto', 'auto']}
+                            tickFormatter={(unixTime) => moment(unixTime).format(dateFormat)}
+                            minTickGap={70}
+                            height={40}
+                        />
+                        <YAxis 
+                            dx={10}
+                            tickFormatter={AxisNumberFormatter}
+                            axisLine={false}
+                            tickSize={0}
+                            stroke="#888888"
+                            orientation="right"
+                            width={50}
+                        />
+                        <Tooltip 
+                            labelFormatter={(unixTime) => moment(unixTime).format(dateFormat)}
+                            formatter={(value) => formatToMoney(value)}
+                        />
                         <Area type="monotone" dataKey="total_budget" stroke="#888888" fill="url(#colorEstimated)" isAnimationActive={false}/>
                         <Area type="monotone" dataKey="total_earned" stroke="#0cbe9b" fill="url(#colorEarned)" isAnimationActive={false}/>
                         </AreaChart>

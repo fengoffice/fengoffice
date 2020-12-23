@@ -368,6 +368,10 @@ class Reports extends BaseReports {
                 }
             }
 
+            if ($ot->getName() == 'payment_receipt' && !SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_expenses_of_others')) {
+                $allConditions .= " AND e.paid_by_id = " . logged_user()->getId();
+            }
+
             Hook::fire('custom_report_extra_conditions', array('report' => $report), $allConditions);
             
             $report_options = array(

@@ -1579,7 +1579,7 @@ class ContactController extends ApplicationController {
 							DB::execute("INSERT INTO ".TABLE_PREFIX."contact_permission_groups VALUES $insert_values ON DUPLICATE KEY UPDATE contact_id=contact_id;");
 						}
 						
-						ContactMemberCaches::updateContactMemberCacheAllMembers($contact);
+						recalculate_contact_member_cache_for_user($contact, logged_user());
 					}
 					
 				}

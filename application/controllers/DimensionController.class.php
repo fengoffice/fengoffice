@@ -451,6 +451,7 @@ class DimensionController extends ApplicationController {
 		$dimension_id = array_var($_REQUEST, 'dimension_id');
 		$dimension = Dimensions::getDimensionById($dimension_id);
 		$name = trim(array_var($_REQUEST, 'query', ''));
+		$tree_id = trim(array_var($_REQUEST, 'tree_id', ''));
 		$random = trim(array_var($_REQUEST, 'random', 0));
 		$start = array_var($_REQUEST, 'start' , 0);
 		$limit = array_var($_REQUEST, 'limit');
@@ -592,7 +593,7 @@ class DimensionController extends ApplicationController {
 			}
 		}
 		ajx_extra_data(array('query' => $name));
-		ajx_extra_data(array('dimension_id' => $dimension_id));
+		ajx_extra_data(array('dimension_id' => $dimension_id, 'tree_id' => $tree_id));
 		ajx_extra_data(array('time' => array_var($_REQUEST, 'time')));
 		ajx_current("empty");			
 	}
@@ -661,6 +662,7 @@ class DimensionController extends ApplicationController {
 	//return all childs of a member
 	function get_member_childs() {
 		$mem_id = array_var($_GET, 'member');
+		$tree_id = array_var($_REQUEST, 'tree_id');
 		$offset = array_var($_REQUEST, 'offset', 0);
 		$limit = array_var($_REQUEST, 'limit', 100);
 		$ignore_context_filters = array_var($_REQUEST, 'ignore_context_filters');
@@ -731,12 +733,12 @@ class DimensionController extends ApplicationController {
 				// updates the name of the members using the configuration if exists.
 				build_member_list_text_to_show_in_trees($members);
 				
-				ajx_extra_data(array("members" => $members, "dimension" => $mem->getDimensionId(), "member_id" => $mem->getId(), "more_nodes_left" => $more_nodes_left));			
+				ajx_extra_data(array("members" => $members, "dimension" => $mem->getDimensionId(), "member_id" => $mem->getId(), "more_nodes_left" => $more_nodes_left, 'tree_id' => $tree_id));			
 			}
 		} else {
 			$mem = Members::getMemberById($mem_id);
 			$dim_id = $mem instanceof Member ? $mem->getDimensionId() : 0;
-			ajx_extra_data(array("members" => array(), "dimension" => $dim_id, "member_id" => $mem_id, "more_nodes_left" => false));
+			ajx_extra_data(array("members" => array(), "dimension" => $dim_id, "member_id" => $mem_id, "more_nodes_left" => false, 'tree_id' => $tree_id));
 		}
 		ajx_current("empty");
 	}
@@ -1089,6 +1091,8 @@ class DimensionController extends ApplicationController {
 		$dimension_id = array_var($_REQUEST, 'dimension_id');
 		$checkedField = (array_var($_REQUEST, 'checkboxes'))?"checked":"_checked";
 		$objectTypeId = array_var($_REQUEST, 'object_type_id', null );
+		$offset = array_var($_REQUEST, 'offset', 0);
+		$limit = array_var($_REQUEST, 'limit', 100 );
 		
 		$allowedMemberTypes = json_decode(array_var($_REQUEST, 'allowedMemberTypes', null ));
 		if (!is_array($allowedMemberTypes)) {
@@ -1146,9 +1150,21 @@ class DimensionController extends ApplicationController {
 	
 		$selected_member_ids = json_decode(array_var($_REQUEST, 'selected_ids', "[0]"));
 		$selected_members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
+		
+		$limit_obj = array(
+				'offset' => $offset,
+				'limit' => $limit + 1,
+		);
 	
-		$list_dim_members = $this->initial_list_dimension_members($dimension_id, $objectTypeId, $allowedMemberTypes, $return_all_members, $extra_cond, null, false, null, $only_names, $selected_members);
+		$list_dim_members = $this->initial_list_dimension_members($dimension_id, $objectTypeId, $allowedMemberTypes, $return_all_members, $extra_cond, $limit_obj, false, null, $only_names, $selected_members);
 		$memberList = $list_dim_members['members'];
+		
+		// add view more and remove last element
+		$more_nodes_left = false;
+		if (count($memberList) > $limit) {
+			$more_nodes_left = true;
+			array_pop($memberList);
+		}
 		
 		// add missing parents
 		$missing_parent_ids = array();
@@ -1166,6 +1182,19 @@ class DimensionController extends ApplicationController {
 			$new_missing = array();
 
 			foreach ($missing_members as $mem) {
+				
+				// use sort by name or by member type and name
+				$use_member_type_order = user_config_option('sort_member_trees_by_member_type');
+				$sort_key = strtolower(htmlentities($mem['name']));
+				if ($use_member_type_order) {
+					//Old version used the ObjectTypeId to sort:
+					//$sort_key = $m->getObjectTypeId() . $sort_key;
+					$option_name = 'order_in_dimension';
+					$object_type_order = trim(DimensionObjectTypeOptions::getOptionValue($dimension_id, $mem['object_type_id'], $option_name));
+					$sort_key = $object_type_order . $sort_key;
+				}
+				$sort_key = str_pad($mem['depth'], 20, "0", STR_PAD_LEFT) . $sort_key . $mem['id'];
+				
 				$m = array(
 					"id" => $mem['id'],
 					"name" => clean($mem['name']),
@@ -1176,6 +1205,7 @@ class DimensionController extends ApplicationController {
 					"iconCls" => 'ico-' . $mem['icon'],
 					"dimension_id" => $mem['dimension_id'],
 					"object_type_id" => $mem['object_type_id'],
+					"sort_key" => $sort_key,
 					"expandable" => true,
 				);
 				$memberList[str_pad(array_var($m, 'parent'), 20, "0", STR_PAD_LEFT) . strtolower(array_var($m, 'name')) . array_var($m, 'id')] = $m;
@@ -1191,7 +1221,7 @@ class DimensionController extends ApplicationController {
 		$tree = buildTree($memberList, "parent", "children", "id", "name", $checkedField);
 	
 		ajx_current("empty");
-		ajx_extra_data(array('dimension_members' => $tree, 'dimension_id' => $dimension_id));
+		ajx_extra_data(array('dimension_members' => $tree, 'dimension_id' => $dimension_id, 'more_nodes_left' => $more_nodes_left));
 	}
 
 

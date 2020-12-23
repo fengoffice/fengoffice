@@ -295,7 +295,7 @@ og.ogPermApplyToSubmembers = function(genid, dim_id, from_root_node){
 				og.markMemberPermissionModified(genid, dim_id, node.submember_ids[i]);
 			}
 			
-			og.eventManager.fireEvent('after apply permissions to submembers', {node:node, dim_id: dim_id, subids:node.submember_ids, member_id:member_id, genid:genid});
+			og.eventManager.fireEvent('after apply permissions to submembers', {node:node, dim_id: dim_id, subids:node.submember_ids, member_id:member_id, genid:genid, mark_modified:true});
 		});
 	}
 }
@@ -315,6 +315,11 @@ og.eventManager.addListener('after apply permissions to submembers',
 				node.ownerTree.getId() == genid + '_without_permissions_' + dim_id + '-tree' && og.hasAnyPermissions(genid, member_id)) {
 				
 				node.remove();
+			}
+		}
+		if (data.mark_modified) {
+			for (var i=0; i<ids.length; i++) {
+				og.markMemberPermissionModified(genid, dim_id, ids[i]);
 			}
 		}
  	}
@@ -423,6 +428,10 @@ og.ogPermInsertNodeHierarchy = function(node, tree_to) {
 	for (var i=0; i < empty_nodes.length; i++) {
 		empty_nodes[i].remove();
 	}
+	
+	var new_node = new Ext.tree.TreeNode(node.attributes);
+	new_node.object_type_id = node.object_type_id;
+	new_node.dimension_id = node.dimension_id;
 
 	var node_id = node.id;
 	if (!isNaN(node.parentNode.id) && node.parentNode.id > 0) {
@@ -431,7 +440,6 @@ og.ogPermInsertNodeHierarchy = function(node, tree_to) {
 		if (to_parent) {
 		
 			to_parent.expand();
-			var new_node = new Ext.tree.TreeNode({ 'id': parseInt(node.id), 'text': node.text, 'iconCls': node.getUI().getIconEl().className });
 			var ok = to_parent.appendChild(new_node);
 			
 		} else {
@@ -439,11 +447,9 @@ og.ogPermInsertNodeHierarchy = function(node, tree_to) {
 			
 			to_parent = tree_to.getNodeById(node.parentNode.id);
 			to_parent.expand();
-			var new_node = new Ext.tree.TreeNode({ 'id': parseInt(node.id), 'text': node.text, 'iconCls': node.getUI().getIconEl().className });
 			var ok = to_parent.appendChild(new_node);
 		}
 	} else {
-		var new_node = new Ext.tree.TreeNode({ 'id': parseInt(node.id), 'text': node.text, 'iconCls': node.getUI().getIconEl().className });
 		var ok = tree_to.getRootNode().appendChild(new_node);
 	}
 
@@ -451,12 +457,12 @@ og.ogPermInsertNodeHierarchy = function(node, tree_to) {
 	if (inserted) inserted.ensureVisible();
 
 	// add emtpy nodes, to fill container area (to allow d&d)
-	setTimeout(function() {
+	/*setTimeout(function() {
 		while (tree_to.getRootNode().childNodes.length < 9) {
 			var empty_node = new Ext.tree.TreeNode({ 'id': 'temp-'+Ext.id(), 'text': '', 'iconCls': '' });
 			tree_to.getRootNode().appendChild(empty_node);
 		}
-	}, 500);
+	}, 500);*/
 }
 
 
@@ -610,10 +616,17 @@ og.showPermissionsPopup = function(genid, dim_id, mem_id, name, set_default_perm
 	$('#'+ genid + '_' + dim_id + 'member_name').html(name);
 
 	var tree = Ext.getCmp(genid + '_with_permissions_' + dim_id + '-tree');
+	
+	var member_type = 'member';
+	var member_node = tree.getNodeById(mem_id);
+	if (member_node) {
+		member_type = og.objectTypes[member_node.object_type_id].c_name;
+	}
 
 	var tree_title = tree.title.toLowerCase().replace("&", "and");
-	$("#"+genid+ "_"+dim_id+ "_apply_to_submembers").html(lang('apply to all submembers', tree_title, name));
-	$("#"+genid+ "_"+dim_id+ "_apply_to_all_members").html(lang('apply to all members', tree_title));
+	$("#"+genid+ "_"+dim_id+ "_apply_to_submembers_label").html(lang('apply to all submembers', tree_title, name));
+	$("#"+genid+ "_"+dim_id+ "_apply_to_all_members_label").html(lang('apply to all members', tree_title));
+	$("#"+genid+ "_"+dim_id+ "_apply_to_only_current_label").html(lang('apply to only current', member_type));
 	
 	$('#'+ genid +'member_permissions' + dim_id).modal({
 		'escClose': true,
@@ -666,7 +679,49 @@ og.showHidePermissionsRadioButtonsByRole = function(genid, dim_id, role_id) {
 	}
 }
 
-og.afterChangingPermissions = function(genid) {
+
+og.onApplyToRadioChange = function(radio, genid, dimension_id) {
+	$("#"+genid+"_"+dimension_id+"_apply_to").val(radio.value);
+}
+
+og.afterChangingPermissions = function(genid, dimension_id) {
+	
+	var member_id = og.permissionInfo[genid].selectedMember;
+	
+	var permissions = og.getPermissionsForMember(genid, member_id);
+	var apply_to = $("#"+genid+"_"+dimension_id+"_apply_to").val();
+
+	// save the apply to all members configuration
+	if (apply_to == 'apply_to_all') {
+		var hf = document.getElementById(genid + 'hfPermsApplyToAll');
+		if (hf) {
+			// apply changes in configuration inputs
+			var all_member_permissions = hf.value == '' ? {} : Ext.util.JSON.decode(hf.value);
+			all_member_permissions[dimension_id] = permissions;
+			hf.value = Ext.util.JSON.encode(all_member_permissions);
+
+			// reflect changes in UI
+			og.ogPermApplyToAllMembers(genid, dimension_id);
+
+			// reset current apply to submembers configuration
+			var hf_sub = document.getElementById(genid + 'hfPermsApplyToSubmembers');
+			if (hf_sub) hf_sub.value = '';
+		}
+	}
+
+	// save the apply to submembers configuration
+	if (apply_to == 'apply_to_submembers') {
+		var hf = document.getElementById(genid + 'hfPermsApplyToSubmembers');
+		if (hf) {
+			// apply changes in configuration inputs
+			var sub_member_permissions = hf.value == '' ? {} : Ext.util.JSON.decode(hf.value);
+			sub_member_permissions[member_id] = permissions;
+			hf.value = Ext.util.JSON.encode(sub_member_permissions);
+
+			// reflect changes in UI
+			og.ogPermApplyToSubmembers(genid, dimension_id);
+		}
+	}
 }
 
 

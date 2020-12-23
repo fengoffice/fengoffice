@@ -19,6 +19,7 @@
 	$file_input_id = $genid.'cp'.$cp->getId();
 	$hf_input_id = $genid.'hf'.$cp->getId();
 	$file_input_name = "file_input_" . $cp->getId();
+	
 ?>
 
 <div id="<?php echo $genid ?>cp-image-selector-container" class="cp-image-selector-container">
@@ -28,14 +29,17 @@
 		
 		<img id="<?php echo $genid?>cp-preview-<?php echo $cp->getId()?>" alt="" src="<?php echo $preview_url?>"/>
 		
+		<?php if (!$disabled) { ?>
 		<div class="remove-link">
 			<a href="#" onclick="og.remove_image_custom_property('<?php echo $genid?>','<?php echo $cp->getId() ?>','<?php echo $hf_input_id ?>')" 
 				class="remove link-ico ico-delete"><?php echo lang('remove')?></a>
 		</div>
+		<?php } ?>
 	</div>
 <?php
-	
+if (!$disabled) {
 	echo file_field($file_input_name, null, array('id' => $file_input_id));
+}
 ?>
 	<input type="hidden" name="<?php echo $input_name ?>" 
 		id="<?php echo $hf_input_id?>" value="<?php echo $hf_value ?>" />

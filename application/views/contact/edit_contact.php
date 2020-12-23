@@ -83,7 +83,7 @@
 	<input id="<?php echo $genid?>merge-changes-hidden" type="hidden" name="merge-changes" value="" >
 	<input id="<?php echo $genid?>genid" type="hidden" name="genid" value="<?php echo $genid ?>" >
 	
-  <div id="<?php echo $genid?>tabs" class="edit-form-tabs">
+  <div id="<?php echo $genid?>tabs" class="edit-form-tabs" style="display:none;">
 	
 	<ul id="<?php echo $genid?>tab_titles">
 	
@@ -414,7 +414,7 @@
 
 		$(document).ready(function() {
 					
-			
+			$("#<?php echo $genid?>tabs").show();
 			
 			<?php if(isset ($_POST['widget_is_user'])){ ?>
 				$('input[name*="contact[user][create-user]"]').prop("checked",true);

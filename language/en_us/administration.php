@@ -784,8 +784,9 @@
     'user config option name classify_mail_with_conversation' => 'Classify mails with its conversation',
     'user config option desc classify_mail_with_conversation' => 'If enabled received mails are classified into the conversation workspaces (if email belongs to a conversation).',	
   	'user config option name listingContactsBy' => 'List contacts by name',
-  	'user config option desc listingContactsBy' => 'If enabled contacts will be listed as "name surname" instead of "surname name".',
-
+    'user config option desc listingContactsBy' => 'If enabled contacts will be listed as "name surname" instead of "surname name".',
+    
+    'dimensions that can be applied to widgets' => 'Dimensions that can be applied to widgets',
     
     'user config option name task_display_limit' => 'Maximum number of tasks to display',
     'user config option desc task_display_limit' => 'For performance reasons, this number should not be too big. Use 0 for no limit.',
@@ -838,6 +839,7 @@
     'can_manage_dimension_members'=>'Can manage dimension members',
     'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
     'can_see_others_timeslots'=>'Can see other user\'s timeslots',
+    'can_see_expenses_of_others'=>'Can see other user\'s actual expenses',
   	'can_update_other_users_invitations' => 'Can update other user\'s event invitations',
   	'can_link_objects' => 'Can link objects',
     'can_manage_repetitive_properties_of_tasks' => 'Can manage repetitive properties of tasks',
@@ -852,6 +854,7 @@
     'can_manage_dimension_members description' => 'If this permission is checked the user will have full permissions over dimension members. He will be able to create, edit and delete new members. In practice, a member could be a workspace, project, client, etc. If user does not manage security configuration then when creating a client/project/workspace it will be mandatory to select where is located, so the permissions can be inherited.',
     'can_manage_tasks description' => 'If this permission is checked the user will have full permissions over tasks. He will be able to assign tasks to other users and complete them.',
   'can_see_assigned_to_other_tasks description'=>'If enabled then the user will be able to see tasks that are not assigned to him/her.',
+  'can_see_expenses_of_others description'=>'If enabled then the user will be able to see actual expenses that are not paid by him/her.',
   'can_see_others_timeslots description'=>'If enabled then the user will be able to see timeslots that are not entered by him/her.',
   	'can_update_other_users_invitations description' => 'If enabled then the user will be able to change the status of other users event invitations.',
   	'can_link_objects description' => 'If this permission is checked the user will be able to link and unlink objects',

@@ -1451,7 +1451,16 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	
 	function removeFromMembers(Contact $user, $members_array){
-		return ObjectMembers::removeObjectFromMembers($this,$user, $members_array);
+		$member_ids_to_remove = null;
+		if (is_array($members_array) && count($members_array) > 0) {
+			$member_ids_to_remove = array();
+			foreach ($members_array as $m) $member_ids_to_remove[] = $m->getId();
+		}
+		return ObjectMembers::removeObjectFromMembers($this, $user, $members_array, $member_ids_to_remove);
+	}
+	
+	function removeFromAllMembers(Contact $user, $members_array){
+		return ObjectMembers::removeObjectFromMembers($this, $user, $members_array);
 	}
 	
 	
@@ -1853,16 +1862,20 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $members_info;
 	}
 	
-	function getMembersIdsToDisplayPath($show_hidden_breadcrumbs = false) {
+	function getMembersIdsToDisplayPath($show_hidden_breadcrumbs = false, $params = array()) {
 		$member_ids = array();
 		$dimensions_ids = array();
 		$selected_members_ids = $this->getMemberIds();
+		$use_restrictions = array_var($params, 'use_restrictions', false);
+		$allowed_dimension_ids = array_var($params, 'allowed_dimensions', array());
+		$exclude_member_ids = array_var($params, 'exclude_member_ids', array());
 		if(count($selected_members_ids) > 0){
 			$selected_members_cond = ' AND id IN ('.implode(',',$selected_members_ids).')';
 			
 			//get all dimensions ids to showInPaths
 			$dimensions = Dimensions::getAllowedDimensions($this->getObjectTypeId());
 			foreach ($dimensions as $dimension) {
+				if($use_restrictions && !in_array($dimension['dimension_id'], $allowed_dimension_ids)) continue;
 				$dim = Dimensions::getDimensionById($dimension['dimension_id']);
 				if (intval($dim->getOptionValue('showInPaths')) && $dim->getIsManageable()) {
 					
@@ -1886,6 +1899,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					$dim_members = ObjectMembers::getMembersIdsByObjectAndExtraCond($this->getId(), $extra_cond, $to_display, false);
 					if (is_array($dim_members)) {
 						foreach ($dim_members as $mem) {
+							if($use_restrictions && in_array($mem['member_id'], $exclude_member_ids)) continue;
 							$ot_id = $mem['object_type_id'];
 							if ($mem['is_optimization'] == '1') {
 								

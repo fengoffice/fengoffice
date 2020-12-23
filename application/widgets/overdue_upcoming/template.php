@@ -1,17 +1,9 @@
 <?php /* @var Project $project */
 	$genid = gen_id();
-	$project_dim_id = Dimensions::findByCode('customer_project')->getId();
+	$projects_dim = Dimensions::findByCode('customer_project');
+	$project_dim_id = $projects_dim ? $projects_dim->getId() : 0;
 	$active_members = active_context();
-	$active_project = false;
-	foreach($active_members as $mem){
-		if($mem instanceof Member){
-			$ot_conditions = " AND object_type_id = ".$mem->getObjectTypeId();
-			$subprojects = Members::getSubmembers($mem, false, $ot_conditions);
-			if ($mem->getDimensionId() == $project_dim_id && !(is_array($subprojects) && count($subprojects) > 0)){
-				$active_project = true;
-			}
-		}
-	}
+	$co_widget_dimensions = ContactConfigOptions::getByName('widget_dimensions');
 	
 ?>
 
@@ -72,47 +64,32 @@
 			    </td>
 			    
 			    <td style="padding-left:5px;padding-bottom:2px;overflow:hidden;text-overflow:ellipsis;max-width:10px;vertical-align: middle;">
-			    	<div class="nobr">
+			    	<div class="nobr" style="margin-bottom: 12px;">
 			    		<?php
-			    			$crumbOptions = json_encode($object->getMembersIdsToDisplayPath());
-			    			if($crumbOptions == ""){
-			    				$crumbOptions = "{}";
-			    			}
-							$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.nobr' ) "; 
+							if ($co_widget_dimensions instanceof ContactConfigOption){
+								$widget_dimensions = array_filter(explode(',', user_config_option('widget_dimensions')));
+								$active_member_ids = active_context_members(false);
+								$member_ids_params = array('exclude_member_ids' => $active_member_ids, 'allowed_dimensions' => $widget_dimensions, 'use_restrictions' => true);
+								$crumbOptions = json_encode($object->getMembersIdsToDisplayPath(false,$member_ids_params));
+								if($crumbOptions == ""){
+									$crumbOptions = "{}";
+								}
+								$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.nobr' ) ";
+							} 
 			    		?>
 			    		<a class="internalLink" href="#" onclick="og.openLink('<?php echo $object->getViewUrl() ?>');" title="<?php echo clean($object->getObjectName()) ?>">
-							<?php /* if ($object instanceof ProjectTask && $object->getAssignedToContactId() > 0) echo "<span class='bold'>". clean($object->getAssignedToName()).": </span>"; */?>
 							<?php echo clean($object->getObjectName()) ?>
 						</a>
-						<?php if(!$active_project){ ?>
-							<p class='late-task-project-name'>
-								<?php
-									$members = $object->getMembers(); 
-									foreach($members as $member){
-										if($member->getDimensionId() == $project_dim_id){ ?>
-											<span style='font-weight: bold;'> <?php echo lang('project').': '; ?> </span>
-											<a class="internalLink" href="#" onclick="og.projects.onProjectClick('<?php echo $member->getId() ?>');">
-											<?php echo clean($member->getName()); ?>
-											</a>
-										<?php
-										}
-									}
-								
-								?>
-							</p>
-						<? } ?>
-			    		<!--<span id="object_crumb_<?php echo $object->getId()?>"></span>
-			    		<script>
-							var crumbHtml = <?php echo $crumbJs?>;
-							$("#object_crumb_<?php echo $object->getId()?>").html(crumbHtml);
-						</script>-->
-						<?php if ($object instanceof ProjectTask) :
-								$text = strlen_utf($object->getText()) > 100 ? substr_utf(html_to_text($object->getText()), 0, 100) . "..." : strip_tags($object->getText());
-								$text = remove_scripts($text);
-								if (strlen_utf($text) > 0) : 
-								?>&nbsp;-&nbsp;<span class="desc nobr"><?php echo $text ?></span>
-							<?php endif;?>
-						<?php endif;?>
+						
+						<?php if ($co_widget_dimensions instanceof ContactConfigOption){ ?>
+							<div class="clear"></div>
+							<span id="object_crumb_<?php echo $object->getId()?>"></span>
+							<script>
+								var crumbHtml = <?php echo $crumbJs?>;
+								$("#object_crumb_<?php echo $object->getId()?>").html(crumbHtml);
+							</script>
+						<?php } ?>
+						
 					</div>
 				</td>
 				

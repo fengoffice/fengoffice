@@ -367,6 +367,7 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('general', 'enable_trash_confirmation', '1', 'BoolConfigHandler', 0, 0, ''),
  ('general', 'enable_archive_confirmation', '1', 'BoolConfigHandler', 0, 0, ''),
  ('general', 'trash_objects_in_member_after_delete', '0', 'BoolConfigHandler', 1, 0, ''),
+ ('system', 'widget_dimensions', '', 'AllDimensionsConfigHandler', 1, 0, ''),
  ('reporting', 'report_time_colums_display', 'friendly', 'TimeFormatConfigHandler', 0, 1, '');
 
  INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)

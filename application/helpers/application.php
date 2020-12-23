@@ -464,7 +464,6 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 		}
 		
 		echo '<div class="custom-properties">';
-		
 		foreach ($properties as $main_property){
 			echo $main_property['html'];
 		}
@@ -473,6 +472,33 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 	}
 	
 } // render_object_custom_properties
+
+
+/**
+ * Get object custom properties aligned by group property
+ *
+ * @param ContentDataObject $object Get custom properties of this object
+ * @return null
+ */
+function get_aligned_object_custom_properties($object, $visibility='all') {
+
+	$genid = gen_id();
+	
+	if ($object instanceof ContentDataObject) {
+		
+		$properties = array();
+		/*$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
+		Hook::fire('override_render_properties', $params, $properties);*/
+		$ot = ObjectTypes::findById($object->getObjectTypeId());
+		if ($ot->getName() == 'invoice') {
+			$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other', 'align_group_properties' => true);
+			Hook::fire('override_render_properties', $params, $properties);
+		}
+
+		return $properties;
+	}
+	
+} // get_aligned_object_custom_properties
 
 
 /**
@@ -504,7 +530,7 @@ function render_object_custom_properties_bootstrap($object, $required, $co_type=
             $cps = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility, $extra_conditions);
 
             foreach($cps as $customProp){
-                $html = get_custom_property_input_html($customProp, $object, $genid,$prefix,$member_parent,true);
+                $html = get_custom_property_input_html($customProp, $object, $genid,$prefix,$member_parent,null,true);
                 $properties[] = array('id' => '', 'html' => $html);
             }
         }
@@ -1790,6 +1816,10 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				config.loadUrl = '<?php echo $options['loadUrl'] ?>';
 			<?php endif; ?>
 
+			<?php if( isset ($options['root_node_text']) ) : ?>
+				config.root_node_text = '<?php echo $options['root_node_text'] ?>';
+			<?php endif; ?>
+
 			<?php if( isset ($options['filter_by_ids'])) : ?>
 				config.filter_by_ids = '<?php implode(',', $options['filter_by_ids']) ?>' ;
 			<?php endif; ?>
@@ -1802,7 +1832,8 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				<?php } ?>
 				var tree = new og.MemberTreeAjax ( config );
 			<?php }else{ ?>
-				var tree = new og.MemberChooserTree ( config );
+				//var tree = new og.MemberChooserTree ( config );
+				var tree = new og.MemberTree ( config );
 			<?php } ?>
 			
 			<?php if(array_var($options, 'enableDD') && array_var($options, 'enddrag_function')) : ?>

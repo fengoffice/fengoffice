@@ -106,14 +106,14 @@ class MoreController extends ApplicationController {
 			";
 			$rows = DB::executeAll($sql);
 			foreach ($rows as $r) {
-				$dtval = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $r['last_activity']);
+				$dtval = $r['last_activity'] != '0000-00-00 00:00:00' ? format_datetime(DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $r['last_activity'])) : lang('no activity yet');
 				$picture_url = trim($r['picture_file_small'])!='' ? get_url('files', 'get_public_file', array('id' => $r['picture_file_small'])) : get_image_url('default-avatar.png');
 				$users_data[] = array(
 						'object_id' => $r['object_id'],
 						'name' => trim($r['first_name'].' '.$r['surname']),
 						'email' => $r['email_address'],
 						'role' => $r['role'],
-						'last_activity' => format_datetime($dtval),
+						'last_activity' => $dtval,
 						'company' => trim($r['comp_fname'].' '.$r['comp_surname']),
 						'status' => $r['disabled'] ? lang('inactive') : lang('active'),
 						'disabled' => $r['disabled'] ? '1' : '',

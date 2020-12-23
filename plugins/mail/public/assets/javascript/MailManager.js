@@ -1368,8 +1368,15 @@ og.MailManager = function() {
 	// auto refresh emails
 	var me = this;
 	this.emailRefreshInterval = setInterval(function() {
-		me.needRefresh = false;
-		me.checkIfNewMails();
+		var is_online = true;
+		// check if internet connection is online if possible
+		if (window && window.navigator) {
+			is_online = window.navigator.onLine;
+		}
+		if (is_online) {
+			me.needRefresh = false;
+			me.checkIfNewMails();
+		}
 	}, 60000);
 	/*poll to see if an error has happened while checking mail*/
 	if (og.preferences.email_check_acc_errors > 0) {

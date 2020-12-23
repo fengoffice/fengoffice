@@ -248,7 +248,7 @@ class Net_Socket extends PEAR {
         }
 
         $this->fp = $fp;
-        $this->setTimeout();
+        $this->setTimeout(20,1000);
 
         return $this->setBlocking($this->blocking);
     }

@@ -934,7 +934,7 @@ class TaskController extends ApplicationController {
                 break;
             case 'subscribed_to':
                 if ($filter_value > 0) {
-                    $res20 = DB::execute("SELECT object_id FROM " . TABLE_PREFIX . "object_subscriptions WHERE `contact_id` = " . $filter_value);
+                    /*$res20 = DB::execute("SELECT object_id FROM " . TABLE_PREFIX . "object_subscriptions WHERE `contact_id` = " . $filter_value);
                     $subs_rows = $res20->fetchAll($res20);
                     $subs = array();
                     if (count($subs_rows) > 0) {
@@ -947,6 +947,9 @@ class TaskController extends ApplicationController {
                     } else {
                         $task_filter_condition = ($status==1 ? "" : " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME)) . " AND `o`.`id` = -1";
                     }
+                    */
+                    $subscribed_to_subquery = "SELECT object_id FROM " . TABLE_PREFIX . "object_subscriptions WHERE `contact_id` = " . $filter_value;
+                    $task_filter_condition = ($status==1 ? "" : " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME)) . " AND `o`.`id` IN(" . $subscribed_to_subquery . ")";
                 }
                 break;
             case 'no_filter':
@@ -1955,7 +1958,8 @@ class TaskController extends ApplicationController {
                 $order = "c.name";
             }
         }
-
+Logger::log_r($conditions);
+Logger::log_r(date('h:i:s'));
         $tasks_listing = ProjectTasks::instance()->listing(array(
             "select_columns" => array("e.*", "o.*"),
             "extra_conditions" => $conditions,
@@ -1969,7 +1973,7 @@ class TaskController extends ApplicationController {
 			"fire_additional_data_hook" => false,
             "raw_data" => true,
         ));
-
+Logger::log_r(date('h:i:s'));
         $tasks = $tasks_listing->objects;
         $total_see_roots_tasks = $tasks_listing->total;
 
@@ -2813,6 +2817,12 @@ class TaskController extends ApplicationController {
                     ajx_current("empty");
                     return;
                 }
+                // check if user can assing task to other users
+                if ($task->getAssignedToContactId() != logged_user()->getId() && !SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+                	//throw new Exception(lang('no access permissions'));
+                	$task->setAssignedToContactId(logged_user()->getId());
+                }
+                
                 $totalMinutes = (array_var($task_data, 'time_estimate_hours', 0) * 60) + (array_var($task_data, 'time_estimate_minutes', 0));
                 $task->setTimeEstimate($totalMinutes);
 

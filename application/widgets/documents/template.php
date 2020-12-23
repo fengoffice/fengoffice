@@ -37,7 +37,9 @@
 					
 					<?php /*if ($document->getUpdatedBy() instanceof Contact) { */?>
 					<!--<div class="desc date-container"><?php 
+					if ($document->getUpdatedBy()) {
 						echo lang('last updated by').' '.lang('user date', $document->getUpdatedBy()->getCardUserUrl(), clean($document->getUpdatedByDisplayName()), lcfirst(friendly_date($document->getUpdatedOn())), clean($document->getUpdatedByDisplayName()));
+					}
 					?></div>-->
 					<?php /* } */?>
 				</li>

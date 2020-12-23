@@ -306,16 +306,6 @@ class ProjectTasks extends BaseProjectTasks {
 	/**
 	 * 
 	 * @deprecated by listing
-	 * @param unknown_type $context
-	 * @param unknown_type $object_type
-	 * @param unknown_type $order
-	 * @param unknown_type $order_dir
-	 * @param unknown_type $extra_conditions
-	 * @param unknown_type $join_params
-	 * @param unknown_type $trashed
-	 * @param unknown_type $archived
-	 * @param unknown_type $start
-	 * @param unknown_type $limit
 	 */
 	static function getContentObjects($context, $object_type, $order=null, $order_dir=null, $extra_conditions=null, $join_params=null, $trashed=false, $archived=false, $start = 0 , $limit=null){
 		
@@ -435,7 +425,7 @@ class ProjectTasks extends BaseProjectTasks {
 	}
 	
 	
-	static function getArrayInfo($raw_data, $full = false, $include_members_data = false, $include_mem_path = true){
+	static function getArrayInfo($raw_data, $full = false, $include_members_data = false, $include_mem_path = true, $include_open_timeslots = true, $include_subtasks_ids = true){
 		$desc = "";
 		if ($full) {
 			if(config_option("wysiwyg_tasks")){
@@ -475,8 +465,9 @@ class ProjectTasks extends BaseProjectTasks {
 			$result['memPath'] = str_replace('"',"'", escape_character(json_encode($tmp_task->getMembersIdsToDisplayPath())));
 		}
 		if ($include_members_data && count($member_ids) > 0) {
-			
-			$task_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
+			$task_members = array();
+			foreach ($member_ids as $member_id) $task_members[] = Members::getMemberById($member_id); // uses cache
+			//$task_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
 			$members_data = array();
 			foreach ($task_members as $m) {
 				/* @var $m Member */
@@ -512,7 +503,9 @@ class ProjectTasks extends BaseProjectTasks {
 			$result['parentId'] = (int)$raw_data['parent_id'];
 		}
 		
-		$result['subtasksIds'] = $tmp_task->getSubTasksIds();
+		if ($include_subtasks_ids) {
+			$result['subtasksIds'] = $tmp_task->getSubTasksIds();
+		}
 				
 		//if ($this->getPriority() != 200)
 		$result['priority'] = (int)$raw_data['priority'];
@@ -559,27 +552,30 @@ class ProjectTasks extends BaseProjectTasks {
 
 		$result['timeZone'] = Timezones::getTimezoneOffsetToApplyFromArray($raw_data);
 
-		$ot = $tmp_task->getOpenTimeslots();
-
-		if ($ot){
-			$users = array();
-			$time = array();
-			$paused = array();
-			foreach ($ot as $t){
-				if (!$t instanceof Timeslot) continue;
-				$time[] = $t->getSeconds();
-				$users[] = $t->getContactId();
-				$paused[] = $t->isPaused()?1:0;
-				if ($t->isPaused() && $t->getContactId() == logged_user()->getId()) {
-					$result['pauseTime'] = $t->getPausedOn()->getTimestamp();
+		if ($include_open_timeslots) {
+			$ot = $tmp_task->getOpenTimeslots();
+	
+			if ($ot){
+				$users = array();
+				$time = array();
+				$paused = array();
+				foreach ($ot as $t){
+					if (!$t instanceof Timeslot) continue;
+					$time[] = $t->getSeconds();
+					$users[] = $t->getContactId();
+					$paused[] = $t->isPaused()?1:0;
+					if ($t->isPaused() && $t->getContactId() == logged_user()->getId()) {
+						$result['pauseTime'] = $t->getPausedOn()->getTimestamp();
+					}
 				}
+				$result['workingOnTimes'] = $time;
+				$result['workingOnIds'] = $users;
+				$result['workingOnPauses'] = $paused;
 			}
-			$result['workingOnTimes'] = $time;
-			$result['workingOnIds'] = $users;
-			$result['workingOnPauses'] = $paused;
 		}
 				
-		$total_minutes = $tmp_task->getTotalMinutes();
+		//$total_minutes = $tmp_task->getTotalMinutes();
+		$total_minutes = $raw_data['total_worked_time'];
 		
 		if ($total_minutes > 0){
 			$result['worked_time'] = $total_minutes;
@@ -602,7 +598,8 @@ class ProjectTasks extends BaseProjectTasks {
 		
 		$tmp_members = array();
 		if (count($member_ids) > 0) {
-			$tmp_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
+			//$tmp_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
+			foreach ($member_ids as $member_id) $tmp_members[] = Members::getMemberById($member_id); // uses cache
 		}
 		$result['can_add_timeslots'] = can_add_timeslots(logged_user(), $tmp_members);
 		

@@ -244,9 +244,17 @@ class TimeController extends ApplicationController {
         } else {
             $object_id = array_var($parameters, "object_id", false);
         }
-        
+
         ajx_current("empty");
         $timeslot_data = array_var($parameters, 'timeslot');
+        $sd = getDateValue(array_var($timeslot_data, 'date'));
+
+        // The MySQL supported range is '1000-01-01' to '9999-12-31'
+        if(!$sd instanceof DateTimeValue || $sd->getYear() > 9999 || $sd->getYear() < 1000){
+            flash_error(lang('incorrect date'));
+            ajx_current("empty");
+            return;
+        }
        
         if ($object_id) {
             $object = Objects::findObject($object_id);
@@ -550,6 +558,15 @@ class TimeController extends ApplicationController {
             tpl_assign('timeslot', $timeslot);
             tpl_assign('edit_mode',1);
         } else {
+            $sd = getDateValue(array_var($timeslot_data, 'date'));
+
+            // The MySQL supported range is '1000-01-01' to '9999-12-31'
+            if(!$sd instanceof DateTimeValue || $sd->getYear() > 9999 || $sd->getYear() < 1000){
+                flash_error(lang('incorrect date'));
+                ajx_current("empty");
+                return;
+            }
+
             $timeslot->setRelObjectId(array_var($_REQUEST, "object_id"));
             
             // FORM SENT...
@@ -746,7 +763,7 @@ class TimeController extends ApplicationController {
 
     function list_all($only_return_objects = false) {
         ajx_current("empty");
-
+        ini_set('memory_limit', '1G');
         // Get all variables from request
         $start = array_var($_REQUEST, 'start', 0);
         $limit = array_var($_REQUEST, 'limit', config_option('files_per_page'));

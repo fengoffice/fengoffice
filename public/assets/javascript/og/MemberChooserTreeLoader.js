@@ -111,6 +111,9 @@ Ext.extend(og.MemberChooserTreeLoader , Ext.tree.TreeLoader, {
 				//t.getRootNode().expand(true);
 				//t.getRootNode().collapse(true);
 				//t.getRootNode().expand(false);
+				
+				og.eventManager.fireEvent('after add nodes to tree panel', t);
+				
 			}, 1000 * count);
 			
 			node.endUpdate();

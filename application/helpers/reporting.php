@@ -251,7 +251,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 
 		<?php
 			$null = null;
-			Hook::fire('after_report_table_html_row', array('row' => $row, 'report' => $report, 'results' => $results), $null);
+			Hook::fire('after_report_table_html_row', array('row' => $row, 'report' => $report, 'results' => $results, 'is_alt'=>$isAlt), $null);
 		?>
 	</tr>
 	<?php 
@@ -400,7 +400,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 						$i++;
 					}
 					$null = null;
-					Hook::fire('after_report_table_html_row', array('row' => $row, 'report' => $report, 'results' => $results), $null);
+					Hook::fire('after_report_table_html_row', array('row' => $row, 'report' => $report, 'results' => $results, 'is_alt'=>$isAlt), $null);
 				?>
 				</tr>
 			<?php 
@@ -593,6 +593,8 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 					}
 
 					$all_rows[] = $item_values;
+					
+					Hook::fire('after_report_table_plain_row', array('row' => $row, 'report' => $report, 'results' => $results), $all_rows);
 				}
 			}
 

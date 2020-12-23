@@ -3,11 +3,57 @@
 	<input id='<?php echo $genid . $hidden_field_name ?>' name='<?php echo $hidden_field_name ?>' type='hidden' value="<?php echo str_replace('"', "'", $selected_members_json); ?>"></input>
 
 <?php
+$dim_count = 0;
 
+if (array_var($options, 'readonly')) {
+	$dim_mem_path = array();
+	foreach ($selected_members as $sm) {
+		if (!isset($dim_mem_path[$sm->getDimensionId()])) $dim_mem_path[$sm->getDimensionId()] = array();
+		if (!isset($dim_mem_path[$sm->getDimensionId()][$sm->getObjectTypeId()])) $dim_mem_path[$sm->getDimensionId()][$sm->getObjectTypeId()] = array();
+		
+		$dim_mem_path[$sm->getDimensionId()][$sm->getObjectTypeId()][] = $sm->getId();
+	}
+	foreach ($dim_mem_path as $dim_mem_path_dim_id => $dim_mem_path_ot_array) {
+		$dmp = array($dim_mem_path_dim_id => $dim_mem_path_ot_array);
+		
+		if (!isset($hide_label) || !$hide_label) {
+			$horizontal = array_var($options, 'horizontal', false);
+			$dim_mem_path_dim_obj = Dimensions::getDimensionById($dim_mem_path_dim_id);
+			$dimension_name = $dim_mem_path_dim_obj->getName();
+			$custom_name = DimensionOptions::getOptionValue($dim_mem_path_dim_id, 'custom_dimension_name');
+			$dimension_name = $custom_name && trim($custom_name) != "" ? $custom_name : $dimension_name;
+	?>
+		<label style="font-size: 100%; <?php  if (!$horizontal) echo "float:left;";?>"><?php echo (isset($label) && $label != '' ? $label : $dimension_name) ?>:</label>
+	<?php 
+		}
+	?>
+	<div class='breadcrumb-container' style='display:contents;max-width:800px; width:100%;' id="<?php echo $genid?>-breadcrumb-container-<?php echo $dim_mem_path_dim_id?>">
+	<script>
+    	var dim_mem_path = '<?php echo json_encode($dmp)?>';
+		var mpath = null;
+		if (dim_mem_path){
+			mpath = Ext.util.JSON.decode(dim_mem_path);
+		}
+		var mem_path = "";			
+		if (mpath){
+			mem_path = og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', null, false, null, true);
+		}
+		$("#<?php echo $genid?>-breadcrumb-container-<?php echo $dim_mem_path_dim_id?>").html(mem_path);
+
+		$(function() {
+			og.eventManager.fireEvent('replace all empty breadcrumb', null);
+		});
+		</script>
+	</div>
+	<?php
+	}
+	
+} else {
+	
 	$is_ie = isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false);
 
 	$enabled_dimensions = config_option("enabled_dimensions");
-	$dim_count = 0;
+	
 	$members_dimension = array();
 	$sel_mem_ids = array();
 	
@@ -135,6 +181,7 @@
 		$dim_count++; 
 	endforeach;
 
+}
 	foreach ($listeners as $event => $function) {
 		if ($event == 'after_render_all') {
 			echo '<script>'.escape_single_quotes($function).';</script>';

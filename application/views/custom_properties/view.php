@@ -45,7 +45,7 @@
 	                
 	                if ($cp_html_vals != "") {
 	                    $cp_html .= $cp_html_cp;
-	                    $tr_cls = $tr_cls == "" ? altRow : "";
+	                    $tr_cls = $tr_cls == "" ? "altRow" : "";
 	                }
 	            }
 			}

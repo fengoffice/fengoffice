@@ -529,14 +529,12 @@
 		foreach($dims as $dim) {
 			if ($dim->getDefinesPermissions() && in_array($dim->getId(), $enabled_dimensions)) {
 				$dimensions[] = $dim;
-				$root_members = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."members WHERE dimension_id=".$dim->getId()." AND parent_member_id=0 ORDER BY name ASC");
-				$tmp_mem_ids = array();
+				$root_members = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."members WHERE dimension_id=".$dim->getId()." ORDER BY parent_member_id, name ASC");
 				if (is_array($root_members)) {
-				  foreach ($root_members as $mem) {
-					if (!isset($members[$dim->getId()])) $members[$dim->getId()] = array();
-					$members[$dim->getId()][] = $mem;
-					$members[$dim->getId()] = array_merge($members[$dim->getId()], get_all_children_sorted(array($mem['id'])));
-				  }
+					$members[$dim->getId()] = array();
+					foreach ($root_members as $mem) {
+						$members[$dim->getId()][] = $mem;
+					}
 				}
 				
 				$allowed_object_types[$dim->getId()] = array();
@@ -1209,6 +1207,35 @@
 		$contactMemberCacheController = new ContactMemberCacheController();
 		$changed_pgs = array();
 		
+		// if the user does not have privileges to set the permissions
+		// then build the default permissions based on the config options and the parent
+		if (!$permissions) {
+			$add_log = ApplicationLogs::findOne(array("order"=>"id DESC", "conditions"=>array("member_id=?", $member->getId())));
+			$is_new_member = !($add_log instanceof ApplicationLog) || $add_log->getAction()=='add';
+			
+			if ($is_new_member) {
+				$permission_parameters = permission_member_form_parameters($member);
+				$permission_parameters = get_default_member_permission($member->getParentMemberId(), $permission_parameters);
+				
+				if (count($permission_parameters['member_permissions']) > 0) {
+					$permissions = array();
+					foreach ($permission_parameters['member_permissions'] as $pg_id => $perms_data) {
+						foreach ($perms_data as $perm_data) {
+							$perm = new stdClass();
+							$perm->pg = $pg_id;
+							$perm->r = $perm_data['r'];
+							$perm->w = $perm_data['w'];
+							$perm->d = $perm_data['d'];
+							$perm->o = $perm_data['o'];
+							
+							$permissions[] = $perm;
+						}
+					}
+				}
+			}
+		}
+		// -- end default permissions creation
+		
 		$sql_insert_values = "";
 		if (isset($permissions) && is_array($permissions)) {
 			
@@ -1469,6 +1496,67 @@
 	}
 	
 	
+	function generate_perm_objects_from_apply_to_permissions($perms, $dim_member_ids) {
+		
+		$tmp_permissions = json_decode(array_var($_POST, 'permissions'));
+		
+		$tmp_permissions_with_keys = array();
+		foreach ($tmp_permissions as $tmp_perm) {
+			if (!isset($tmp_permissions_with_keys[$tmp_perm->m])) $tmp_permissions_with_keys[$tmp_perm->m] = array();
+			$tmp_permissions_with_keys[$tmp_perm->m][$tmp_perm->o] = $tmp_perm;
+		}
+		
+		foreach ($dim_member_ids as $dim_member_id) {
+			foreach ($perms as $perm) {
+				if (!isset($tmp_permissions_with_keys[$dim_member_id])) $tmp_permissions_with_keys[$dim_member_id] = array();
+				if (!isset($tmp_permissions_with_keys[$dim_member_id][$perm->o])) {
+					$new_perm = new stdClass();
+					$new_perm->m = $dim_member_id;
+					$new_perm->o = $perm->o;
+					$new_perm->d = $perm->d;
+					$new_perm->w = $perm->w;
+					$new_perm->r = $perm->r;
+					$tmp_permissions_with_keys[$dim_member_id][$perm->o] = $new_perm;
+				}
+			}
+		}
+		
+		return json_encode(array_filter(array_flat($tmp_permissions_with_keys)));
+	}
+	
+	/**
+	 * Generates the permissions for each member when user checks in apply to all members or apply to all submembers
+	 */
+	function generate_perm_objects_from_apply_to_settings() {
+		
+		if ($apply_to_sub_json = array_var($_POST, 'apply_to_submembers_permissions')) {
+			$apply_to_sub = json_decode($apply_to_sub_json);
+			
+			foreach ($apply_to_sub as $dim_id => $dim_perms) {
+				foreach ($dim_perms as $parent_id => $perms) {
+					//$dim_member_ids = Members::findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
+					$parent_member = Members::getMemberById($parent_id);
+					if ($parent_member instanceof Member) {
+						$dim_member_ids = $parent_member->getAllChildrenIds(true);
+						if (count($dim_member_ids) > 0) {
+							$_POST['permissions'] = generate_perm_objects_from_apply_to_permissions($perms, $dim_member_ids);
+						}
+					}
+				}
+			}
+		}
+		
+		if ($apply_to_all_json = array_var($_POST, 'apply_to_all_permissions')) {
+			$apply_to_all = json_decode($apply_to_all_json);
+			
+			foreach ($apply_to_all as $dim_id => $perms) {
+				$dim_member_ids = Members::findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
+				if (count($dim_member_ids) > 0) {
+					$_POST['permissions'] = generate_perm_objects_from_apply_to_permissions($perms, $dim_member_ids);
+				}
+			}
+		}
+	}
 	
 	
 	function save_user_permissions_background($user, $pg_id, $is_guest=false, $users_ids_to_check = array(), $only_member_permissions=false, $is_new_user=false) {
@@ -1494,14 +1582,18 @@
 				}
 			}
 		}
+		
+		// gets the apply_to_all and apply_to_submembers settings to generate the resulting permission objects for each member
+		generate_perm_objects_from_apply_to_settings();
+		
 		// member permissions
 		$permissionsString = array_var($_POST, 'permissions');
-		
 		
 		
 		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background()){
 			//pclose(popen("start /B ". $command, "r"));
 			save_permissions($pg_id, $is_guest, null, true, true, true, true, $users_ids_to_check, $only_member_permissions, $is_new_user);
+			
 		} else {
 
 			// save permissions in background
@@ -1526,17 +1618,10 @@
 			$only_mem_perm_str = $only_member_permissions ? "1" : "0";
 			$is_guest_str = $is_guest ? "1" : "0";
 			$new_user_str = $is_new_user ? "1" : "0";
+			
 			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/save_user_permissions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." $pg_id $is_guest_str $perm_filename $sys_filename $mod_filename $rp_filename $usrcheck_filename $rp_genid $only_mem_perm_str $new_user_str";
 			exec("$command > /dev/null &");
 			
-			//Test php command
-			exec(PHP_PATH." -r 'echo function_exists(\"foo\") ? \"yes\" : \"no\";' 2>&1", $output, $return_var);
-			if($return_var != 0){
-				Logger::log(print_r("Error executing php command",true));
-				Logger::log(print_r($output,true));
-				Logger::log(print_r("Error code: ".$return_var,true));
-			}
-			//END Test php command
 		}
 	}
 	
@@ -1550,15 +1635,6 @@
 		} else {
 			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/add_object_to_sharing_table.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$object->getId();
 			exec("$command > /dev/null &");
-			
-			//Test php command
-			exec(PHP_PATH." -r 'echo function_exists(\"foo\") ? \"yes\" : \"no\";' 2>&1", $output, $return_var);
-			if($return_var != 0){
-				Logger::log(print_r("Error executing php command",true));
-				Logger::log(print_r($output,true));
-				Logger::log(print_r("Error code: ".$return_var,true));
-			}
-			//END Test php command
 		}
 	}
 	
@@ -1575,15 +1651,18 @@
 		} else {
 			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/add_object_to_sharing_table.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$ids_str;
 			exec("$command > /dev/null &");
-			
-			//Test php command
-			exec(PHP_PATH." -r 'echo function_exists(\"foo\") ? \"yes\" : \"no\";' 2>&1", $output, $return_var);
-			if($return_var != 0){
-				Logger::log(print_r("Error executing php command",true));
-				Logger::log(print_r($output,true));
-				Logger::log(print_r("Error code: ".$return_var,true));
-			}
-			//END Test php command
+		}
+	}
+	
+	
+	function recalculate_contact_member_cache_for_user($user, $logged_user) {
+		if (!$logged_user instanceof Contact) return;
+		
+		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background()){
+			ContactMemberCaches::updateContactMemberCacheAllMembers($user);
+		} else {
+			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/recalculate_contact_member_cache_for_user.php ".ROOT." ".$logged_user->getId()." ".$logged_user->getTwistedToken()." ".$user->getId();
+			exec("$command > /dev/null &");
 		}
 	}
 	

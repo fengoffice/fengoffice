@@ -1564,6 +1564,8 @@ class MemberController extends ApplicationController {
 				$trash_objects_in_member = array_var($_REQUEST, 'trash_objects_in_member');
 				set_user_config_option('trash_objects_in_member_after_delete', $trash_objects_in_member);
 				
+				$user_ids = array_flat(DB::executeAll("SELECT object_id FROM ".TABLE_PREFIX."contacts WHERE user_type > 0"));
+				
 				if ($trash_objects_in_member) {
 					/** 
 					 * Calculate which objects cannot be trashed
@@ -1585,7 +1587,6 @@ class MemberController extends ApplicationController {
 					$object_ids_to_keep = array_flat(DB::executeAll($object_ids_to_keep_sql));
 					
 					// ensure that no user is going to be trashed
-					$user_ids = array_flat(DB::executeAll("SELECT object_id FROM ".TABLE_PREFIX."contacts WHERE user_type > 0"));
 					$object_ids_to_keep = array_merge($object_ids_to_keep, $user_ids);
 					
 					// calculate the object ids that can be trashed
@@ -1609,8 +1610,9 @@ class MemberController extends ApplicationController {
 					}
 				}
 				
-				// recalculate sharing table for all the affected objects
-				$ids_str = implode(',', $all_affeceted_object_ids);
+				// recalculate sharing table for all the affected objects, exclude users
+				$ids_to_recalculate_cache = array_diff($all_affeceted_object_ids, $user_ids);
+				$ids_str = implode(',', $ids_to_recalculate_cache);
 				add_multilple_objects_to_sharing_table($ids_str, logged_user());
 			}
 			
@@ -2512,7 +2514,7 @@ class MemberController extends ApplicationController {
 			$pg_ids_str = implode(',', logged_user()->getPermissionGroupIds());
 			
 			$extra_conditions = "";
-			if (!$dimension->hasAllowAllForContact($pg_ids_str)) {
+			if (!logged_user()->isAdministrator() && !$dimension->hasAllowAllForContact($pg_ids_str)) {
 				$extra_conditions = " AND EXISTS (SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
 					WHERE cmp.member_id=".TABLE_PREFIX."members.id AND cmp.permission_group_id IN (". $pg_ids_str ."))";
 			}

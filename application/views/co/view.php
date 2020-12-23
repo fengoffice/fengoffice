@@ -85,7 +85,7 @@
 				}
 				else if (isset($content)) echo $content;
 				
-				if (!isset($is_user) && user_config_option("show_object_direct_url") ) { ?>
+				if (false && !isset($is_user) && user_config_option("show_object_direct_url") ) { ?>
 					<div id="<?php echo $genid?>direct_url" class="direct-url">
 						<b><?php echo lang('direct url') ?>:</b>
 						<a id="<?php echo $genid ?>task_url" href="<?php echo($object->getViewUrl()) ?>" target="_blank"><?php echo($object->getViewUrl()) ?></a>

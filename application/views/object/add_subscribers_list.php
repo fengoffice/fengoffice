@@ -30,6 +30,15 @@ require_javascript('og/modules/addMessageForm.js');
 	
 	$allowed_users = allowed_users_in_context($objectTypeId, $context, ACCESS_LEVEL_READ);
 	
+	// for tasks we must also check the system permission to see if each user can see tasks assinged to other
+	if ($object instanceof ProjectTask) {
+		$allowed_users_task = array();
+		foreach ($allowed_users as $allowed_user) {
+			if ($object->canView($allowed_user)) $allowed_users_task[] = $allowed_user;
+		}
+		$allowed_users = $allowed_users_task;
+	}
+	
 	Hook::fire('allowed_subscribers', $object, $allowed_users);
 	
 	$users = array();

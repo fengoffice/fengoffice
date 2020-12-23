@@ -263,7 +263,7 @@ form.edit-member .dimension-memberfields div.type-boolean input{
 }
 
 form.edit-member .dimension-selector-container {
-	min-width: 600px;
+	min-width: 570px;
 }
 
 
@@ -416,6 +416,10 @@ div.checkbox-config-option {
 
 .listing-admin .adminMainBlock .alt {
 	background-color: #efefef;
+}
+
+.configOptionControl input[type="text"] {
+	width: 400px;
 }
 
 .configOptionControl .dimension {

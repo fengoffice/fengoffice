@@ -35,6 +35,20 @@ table {
 border-bottom:1px solid black;
 }
 
+table.print-task-timeslots {
+	width: 100%;
+	border: 1px solid #333;
+	border-bottom: 2px solid #333;
+}
+table.print-task-timeslots td {
+	min-width: 100px;
+	padding: 4px 8px;
+	border-bottom: 1px solid #ccc;
+}
+table.print-task-timeslots th {
+	padding: 10px 8px;
+}
+
 </style>
 
 <div class="print" style="padding:7px;width:100%;max-width:1000px">
@@ -85,6 +99,19 @@ border-bottom:1px solid black;
 <p><b><?php echo lang('assigned to') ?>:</b>&nbsp;<?php echo clean($task->getAssignedToName()) ?></p>
 <?php } // if ?>
 
+<?php 
+$priority = '';
+if ($task->getPriority() >= ProjectTasks::PRIORITY_URGENT) {
+	$priority = '<div class="og-task-priority-high"><span style="font-weight:bold">'.lang('task priority').": </span>".lang('urgent priority').'</div>';
+} else if ($task->getPriority() >= ProjectTasks::PRIORITY_HIGH) {
+	$priority = '<div class="og-task-priority-high"><span style="font-weight:bold">'.lang('task priority').": </span>".lang('high priority').'</div>';
+} else if ($task->getPriority() == ProjectTasks::PRIORITY_NORMAL) {
+	$priority = '<div class="og-task-priority-normal"><span style="font-weight:bold">'.lang('task priority').": </span>".lang('normal priority').'</div>';
+} else if ($task->getPriority() <= ProjectTasks::PRIORITY_LOW) {
+	$priority = '<div class="og-task-priority-low"><span style="font-weight:bold">'.lang('task priority').": </span>".lang('low priority').'</div>';
+}
+echo $priority;
+?>
 
 <?php if ($task->getMilestone() instanceof ProjectMilestone) { ?>
 <p><b><?php echo lang('milestone') ?>:</b>&nbsp;<?php echo clean($task->getMilestone()->getObjectName()) ?></p>
@@ -125,10 +152,54 @@ if ($hasIncompleteSubtasks || $hasCompletedSubtasks) { ?>
 </ul>
 <?php } // if ?>
 
+<?php 
+// estimated time
+// worked time
+// percent complete
 
-<?php if ($task->hasComments() != '') { ?>
-<br/>
-<?php echo render_object_comments_for_print($task, $task->getViewUrl()); ?>
+$percent_completed = $task->getPercentCompleted();
+if ($percent_completed > 100) $percent_completed = 100;
+else if ($percent_completed < 0) $percent_completed = 0;
+
+
+$time_estimate = $task->getTimeEstimate();
+$total_minutes = $task->getTotalMinutes();
+$pending_time = $time_estimate - $total_minutes;
+?>
+
+<p><b><?php echo lang('percent completed') ?>:</b>&nbsp;<?php echo $percent_completed .'%' ?></p>
+
+<?php 
+if ($time_estimate > 0) {
+	?><p><b><?php echo lang('estimated time') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($time_estimate * 60), 'hm', 60) ?></p><?php
+}
+if ($total_minutes > 0) {
+	?><p><b><?php echo lang('total time worked') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total_minutes * 60), 'hm', 60) ?></p><?php
+}
+if ($pending_time > 0) {
+	?><p><b><?php echo lang('pending time') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($pending_time * 60), 'hm', 60) ?></p><?php
+}
+?>
+
+<?php $timeslots = $task->getTimeslots();
+	  if (count($timeslots) > 0) { ?>
+
+<table class="print-task-timeslots">
+	<tr><th><?php echo lang('name')?></th><th><?php echo lang('worked time')?></th><th><?php echo lang('start time')?></th><th><?php echo lang('description')?></th></tr>
+<?php foreach ($timeslots as $timeslot) { /* @var $timeslot Timeslot */
+	$contact = Contacts::findById($timeslot->getContactId());
+	$contact_name = $contact ? $contact->getName() : '';
+	format_time_column_value($value)
+	?>
+	<tr>
+		<td><?php echo $contact_name?></td>
+		<td style="text-align:center;"><?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($timeslot->getColumnValue('worked_time') * 60), 'hm', 60)?></td>
+		<td><?php echo format_datetime($timeslot->getStartTime())?></td>
+		<td><?php echo clean($timeslot->getDescription())?></td>
+	</tr>
+<?php } ?>
+</table>
+
 <?php } // if ?>
 
 <br/>
@@ -141,6 +212,12 @@ if ($hasIncompleteSubtasks || $hasCompletedSubtasks) { ?>
 </div>
 <?php } ?>
 
+
+
+<?php if ($task->hasComments() != '') { ?>
+<br/>
+<?php echo render_object_comments_for_print($task, $task->getViewUrl()); ?>
+<?php } // if ?>
 
 </div>
 

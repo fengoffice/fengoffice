@@ -413,7 +413,7 @@ class ReportingController extends ApplicationController {
 			$task_status = null;
 		}
 
-
+		Hook::fire("more_total_task_times_extra_conditions", $report_data, $extra_conditions);
 		
 		$timeslots = Timeslots::getTaskTimeslots($context, null, $user, $st, $et, array_var($report_data, 'task_id', 0), $group_by, null, null, null, $timeslotType, $extra_conditions);
 		

@@ -23,7 +23,9 @@
 			?>
 				<li id="<?php echo "comment-".$comment->getId()?>" class="comment-row <?php echo $row_cls ?>" style="<?php echo $style;?>">
 					<div class="contact-picture-container medium-size">
+					<?php if ($comment->getCreatedBy() instanceof Contact) { ?>
 						<img class="commentUserAvatar" src="<?php echo $comment->getCreatedBy()->getPictureUrl() ?>" alt="<?php echo clean($comment->getCreatedBy()->getObjectName()) ?>" />
+					<?php } ?>
 					</div>
 					<div class="comment-info-container">
 						<div class="comment-text-container">

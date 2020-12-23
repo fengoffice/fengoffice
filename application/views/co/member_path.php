@@ -19,10 +19,19 @@
 		}
 	}
 	
+	$breadcrumb_member_count = user_config_option('breadcrumb_member_count');
+	if (!$breadcrumb_member_count) $breadcrumb_member_count = 5;
+	
 	$members = $object->getMembers();
 	foreach ($members as $member) {
 		/* @var $member Member */
 		$dimension = $member->getDimension();
+		
+		// don't process more members than the amount rendered in breadcrumbs
+		if (isset($dimensions_info[$dimension->getName()]['members']) && count($dimensions_info[$dimension->getName()]['members']) >= $breadcrumb_member_count) {
+			continue;
+		}
+		
 		if (in_array($dimension->getCode(), array('feng_users', 'feng_persons')) || !in_array($dimension->getId(), $enabled_dimensions) 
 				|| !$dimension->getIsManageable() || in_array($dimension->getId(), $hidden_dim_ids)) {
 			continue;
@@ -55,9 +64,6 @@
 		}
 	}
 	
-	$breadcrumb_member_count = user_config_option('breadcrumb_member_count');
-	if (!$breadcrumb_member_count) $breadcrumb_member_count = 5;
-	
 	$width_style = ($object instanceof ProjectTask || $object instanceof TemplateTask) ? "width:50%;" : "width:100%;";
 	
 	if (count($dimensions_info) > 0) {
@@ -65,6 +71,7 @@
 ?>
 
 <?php if (isset($has_member_related)){ ?>
+<div class="clear"></div>
 <div class="commentsTitle"><?php echo lang('related to')?></div>
 <?php } ?>
 	<div style="padding-bottom: 10px;">

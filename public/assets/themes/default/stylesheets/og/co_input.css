@@ -92,7 +92,7 @@
 
 .coInputMainBlock label {
 	float: left;
-	min-width: 210px;
+	min-width: 150px;
 	padding-right: 20px;
 }
 
@@ -265,3 +265,19 @@ table.color-selector td .color-selector-sample {
 	opacity: 0.75;
 }
 /******** End Dropdown links list (with popover) css ********/
+
+
+.configCategory .dimension {
+    float: left;
+}
+
+.configCategory .dimension label {
+    margin: 0 5px;
+    display: inline;
+    vertical-align: super;
+}
+
+.configCategory .dimension input[type="checkbox"] {
+    float: left;
+    margin-top: 2px;
+}

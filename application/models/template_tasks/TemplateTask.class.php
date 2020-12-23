@@ -1570,7 +1570,7 @@ class TemplateTask extends BaseTemplateTask {
 			$updated_on = $this->getObjectUpdateTime() instanceof DateTimeValue ? ($this->getObjectUpdateTime()->isToday() ? format_time($this->getObjectUpdateTime()) : format_datetime($this->getObjectUpdateTime())) : lang('n/a');	
     	}else {
     		if($this->getCreatedBy())
-    			$updated_by_id = $this->getCreatedBy()->getId();
+    			$updated_by_id = $this->getCreatedById();
     		else
     			$updated_by_id = lang('n/a');
     		$updated_by_name = $this->getCreatedByDisplayName();

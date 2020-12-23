@@ -16,6 +16,8 @@
 	
 	<div class="adminMainBlock">
 	
+	<?php Hook::fire('config_category_before_options', array('category' => $category), $category); ?>
+	
 	<?php if(isset($options) && is_array($options) && count($options)) { ?>
 			<div id="configCategoryOptions">
 				<?php $counter = 0; ?>
@@ -61,7 +63,7 @@
 		<p><?php echo lang('config category is empty') ?></p>
 	<?php } // if ?>
 	
-	<?php $ret = null; Hook::fire('more_config_category_sections', array('category' => $category), $ret); ?>
+	<?php $counter++; Hook::fire('more_config_category_sections', array('category' => $category), $counter); ?>
 	
 	<?php if (is_array($options) && count($options)) { ?>
 	<?php 	echo submit_button(lang('save')) ?>&nbsp;<button class="submit" type="reset"><?php echo lang('reset') ?></button>

@@ -1,5 +1,7 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
+var moment = require('moment');
+
 var { ResponsiveContainer,
       AreaChart,
       Area,
@@ -15,6 +17,7 @@ class WorkedHoursWidget extends React.Component {
       super(props);
       this.state = { worked: props.data.worked ? props.data.worked : 0,
                      estimated: props.data.estimated ? props.data.estimated : 0,
+                     dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
                      workedTitle: props.data.workedTitle ? props.data.workedTitle : 'Total worked hours',
                      estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total estimated hours',
                      chartData: props.data.chartData ? props.data.chartData : '',
@@ -33,7 +36,7 @@ class WorkedHoursWidget extends React.Component {
          const estimated = FormatNumber(this.state.estimated, decimals, decimalsSeparator, thousandSeparator);
          const workedtitle = this.state.workedTitle;
          const estimatedTitle = this.state.estimatedTitle;
-         const chartData = this.state.chartData;
+         const dateFormat = this.state.dateFormat;
          const percentage = Math.round((worked / estimated) * 100);
          const percentStyle = {
              width: percentage+'%'
@@ -42,6 +45,12 @@ class WorkedHoursWidget extends React.Component {
          const remaining_percent = 100 - percentage;
          const budgeted = Math.round(estimated * 0.96);
          const variance = estimated - budgeted;
+         var chartData = this.state.chartData;
+         if(chartData){
+            chartData.forEach(d => {
+                d.date = moment(d.date).valueOf();
+            });
+         }
         return (
           <div className="progress-widget-container">
             <p style={percentStyle} data-value={percentage}></p>
@@ -103,9 +112,33 @@ class WorkedHoursWidget extends React.Component {
                             </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                        <XAxis dy={15} axisLine={false} tickSize={0} stroke="#888888" dataKey="date" interval="preserveStartEnd" minTickGap={70} height={40}/>
-                        <YAxis dx={10} tickFormatter={AxisNumberFormatter} axisLine={false} tickSize={0} stroke="#888888" orientation="right" width={50} />
-                        <Tooltip formatter={(value) => FormatNumber(value, decimals, decimalsSeparator,thousandSeparator)}/>
+                        <XAxis
+                            dy={15}
+                            axisLine={false}
+                            tickSize={0}
+                            stroke="#888888"
+                            dataKey="date"
+                            type="number"
+                            scale="time"
+                            interval="preserveStartEnd"
+                            domain={['auto', 'auto']}
+                            tickFormatter={(unixTime) => moment(unixTime).format(dateFormat)}
+                            minTickGap={70}
+                            height={40}
+                        />
+                        <YAxis
+                            dx={10}
+                            tickFormatter={AxisNumberFormatter}
+                            axisLine={false}
+                            tickSize={0}
+                            stroke="#888888"
+                            orientation="right"
+                            width={50}
+                        />
+                        <Tooltip
+                            labelFormatter={(unixTime) => moment(unixTime).format(dateFormat)}
+                            formatter={(value) => FormatNumber(value, decimals, decimalsSeparator,thousandSeparator)}
+                        />
                         <Area type="monotone" dataKey="estimated" stroke="#888888" fill="url(#colorEstimated)" isAnimationActive={false}/>
                         <Area type="monotone" dataKey="worked" stroke="#20a1f8" fill="url(#colorWorkedHours)" isAnimationActive={false}/>
                         </AreaChart>

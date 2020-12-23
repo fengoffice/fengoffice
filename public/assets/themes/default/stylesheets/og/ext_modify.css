@@ -345,7 +345,8 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
     border-color: transparent;  
 }
 
-
+.with-permissions-tree .x-tree-node-icon.root,
+.without-permissions-tree .x-tree-node-icon.root,
 #menu-panel .x-tree-node-icon.root {
     /*background-image: url(../../extjs/images/default/tree/folder-open.gif );*/
     background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important;

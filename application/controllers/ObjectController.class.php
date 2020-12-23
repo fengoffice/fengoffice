@@ -254,6 +254,7 @@ class ObjectController extends ApplicationController {
 		$uids = array_var($_GET, 'users', '');
 		$genid = array_var($_GET, 'genid', '');
 		$otype = array_var($_GET, 'otype', '');
+		$assigned_to = array_var($_GET, 'assigned_to', '');
 		$subscriberIds = explode(",", $uids);
 
 		// dont allow non numeric parameters for otype and subscriber ids
@@ -261,6 +262,7 @@ class ObjectController extends ApplicationController {
 		if (!is_numeric($otype)) $otype = 0;
 
 		tpl_assign('object_type_id', $otype);
+		tpl_assign('assigned_to', $assigned_to);
 		tpl_assign('context', $context);
 		tpl_assign('subscriberIds', $subscriberIds);
 		tpl_assign('genid', $genid);
@@ -341,7 +343,7 @@ class ObjectController extends ApplicationController {
 		  }
 		}
 
-		$removedMemebersIds = $object->removeFromMembers($user, $enteredMembers);
+		$removedMemebersIds = $object->removeFromAllMembers($user, $enteredMembers);
 
 		$not_valid_members = array();
 		/* @var $object ContentDataObject */
@@ -376,8 +378,20 @@ class ObjectController extends ApplicationController {
 
 		Hook::fire ('after_remove_members_from_object', $object, $removedMemebersIds);
 
-		$object->addToSharingTable();
-
+		$save_sharing_table = true;
+		// performance issue hack -----------------
+		// don't add to sharing table if object is an user and is classified in more than 1000 members
+		if ($object instanceof Contact && $object->getUserType() > 0) {
+			$object_members_count = ObjectMembers::instance()->count("is_optimization=0 AND object_id=".$object->getId());
+			$save_sharing_table = $object_members_count < 1000;
+		}
+		// end performance issue hack -------------
+		
+		if ($save_sharing_table) {
+			//add_object_to_sharing_table($object, logged_user()); // do it in background
+			$object->addToSharingTable();
+		}
+		
 		//add to the object instance the members only if members value of the object is not null
 		//because in that case when we ask for the members of the object we load them from db
 		if ( !is_null($object->members) ) {
@@ -509,42 +523,45 @@ class ObjectController extends ApplicationController {
 			}
 		}
 
-		foreach ($required_custom_props as $req_cp) {/* @var $req_cp CustomProperty */
-			$not_set = false;
-			if ($req_cp->getIsMultipleValues()) {
-				
-				if (($req_cp->getType() == 'user' || $req_cp->getType() == 'contact')) {
-					// remove anything besides numbers, we are looking for contact ids
-					$obj_custom_properties[$req_cp->getId()] = array_filter(array_var($obj_custom_properties, $req_cp->getId(), array()), "is_numeric");
-				}
-				
-				$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count(array_filter($obj_custom_properties[$req_cp->getId()])) == 0;
-				
-			} else {
-				if ($req_cp->getType() == 'address') {
+		$check_required_cps_disabled = array_var($_SESSION, 'dont_check_required_cps');
+		if (!$check_required_cps_disabled) {
+			foreach ($required_custom_props as $req_cp) {/* @var $req_cp CustomProperty */
+				$not_set = false;
+				if ($req_cp->getIsMultipleValues()) {
 					
-					$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count($obj_custom_properties[$req_cp->getId()]) == 0;
-				
-				} else {
-					if ($req_cp->getType() == 'date') {
-						
-						if (array_var($obj_custom_properties, $req_cp->getId()) == $date_format_tip) {
-							$obj_custom_properties[$req_cp->getId()] = "";
-						}
-						
-					} else if ($req_cp->getType() == 'user' || $req_cp->getType() == 'contact') {
-						
-						$cp_val_contact_id = array_var($obj_custom_properties, $req_cp->getId());
-						if (!is_numeric($cp_val_contact_id) || $cp_val_contact_id == 0) {
-							$obj_custom_properties[$req_cp->getId()] = "";
-						}
+					if (($req_cp->getType() == 'user' || $req_cp->getType() == 'contact')) {
+						// remove anything besides numbers, we are looking for contact ids
+						$obj_custom_properties[$req_cp->getId()] = array_filter(array_var($obj_custom_properties, $req_cp->getId(), array()), "is_numeric");
 					}
 					
-					$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "";
+					$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count(array_filter($obj_custom_properties[$req_cp->getId()])) == 0;
+					
+				} else {
+					if ($req_cp->getType() == 'address') {
+						
+						$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count($obj_custom_properties[$req_cp->getId()]) == 0;
+					
+					} else {
+						if ($req_cp->getType() == 'date') {
+							
+							if (array_var($obj_custom_properties, $req_cp->getId()) == $date_format_tip) {
+								$obj_custom_properties[$req_cp->getId()] = "";
+							}
+							
+						} else if ($req_cp->getType() == 'user' || $req_cp->getType() == 'contact') {
+							
+							$cp_val_contact_id = array_var($obj_custom_properties, $req_cp->getId());
+							if (!is_numeric($cp_val_contact_id) || $cp_val_contact_id == 0) {
+								$obj_custom_properties[$req_cp->getId()] = "";
+							}
+						}
+						
+						$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "";
+					}
 				}
-			}
-			if ($not_set) {
-				throw new Exception(lang('custom property value required', $req_cp->getName()));
+				if ($not_set) {
+					throw new Exception(lang('custom property value required', $req_cp->getName()));
+				}
 			}
 		}
 

@@ -41,3 +41,9 @@ foreach($fieldValues as $value){
 	</div>
 </div>
 
+<script>
+<?php if (array_var($configs,'disabled')) { ?>
+	$("#<?php echo $genid ?>listValues<?php echo $cp->getId()?> textarea").attr("disabled", "disabled");
+	$("#<?php echo $genid ?>listValues<?php echo $cp->getId()?> a").remove();
+<?php } ?>
+</script>

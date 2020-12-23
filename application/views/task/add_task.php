@@ -770,6 +770,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 
 		ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid?>');
 
+		var dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
+		og.render_tasks_form_subscribers(dimension_members_json);
+
 		// more processing...
 		if (og.after_assigned_to_change_fn) {
 			for (var x=0; x<og.after_assigned_to_change_fn.length; x++) {
@@ -914,21 +917,30 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			});
 		}
 	
-		var uids = App.modules.addMessageForm.getCheckedUsers('<?php echo $genid ?>');
-
 		if(render_add_subscribers){
-			Ext.get('<?php echo $genid ?>add_subscribers_content').load({
-				url: og.getUrl('object', 'render_add_subscribers', {
-					context: dimension_members_json,
-					users: uids,
-					genid: '<?php echo $genid ?>',
-					otype: '<?php echo $task->manager()->getObjectTypeId()?>'
-				}),
-				scripts: true
-			});
+			og.render_tasks_form_subscribers(dimension_members_json);
 		}
 		
 		og.redrawUserLists(dimension_members_json);
+	}
+
+	og.render_tasks_form_subscribers = function(dimension_members_json) {
+		var combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
+		if (combo) assigned_to = combo.getValue();
+		else assigned_to = 0;
+
+		var uids = App.modules.addMessageForm.getCheckedUsers('<?php echo $genid ?>');
+		
+		Ext.get('<?php echo $genid ?>add_subscribers_content').load({
+			url: og.getUrl('object', 'render_add_subscribers', {
+				context: dimension_members_json,
+				users: uids,
+				genid: '<?php echo $genid ?>',
+				assigned_to: assigned_to,
+				otype: '<?php echo $task->manager()->getObjectTypeId()?>'
+			}),
+			scripts: true
+		});
 	}
 	
 	

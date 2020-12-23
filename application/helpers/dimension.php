@@ -487,7 +487,8 @@ function render_associated_dimensions_selectors($params) {
 					// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
 					'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
 					'width' => 400,
-					'related_member_id' => $member->getId()
+					'related_member_id' => $member->getId(),
+					'readonly' => array_var($params, 'readonly'),
 				), false);
 			
 			echo '</div><div class="clear"></div>';

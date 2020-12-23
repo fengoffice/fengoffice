@@ -1567,7 +1567,7 @@ class ProjectTask extends BaseProjectTask {
 			$updated_on = $this->getObjectUpdateTime() instanceof DateTimeValue ? ($this->getObjectUpdateTime()->isToday() ? format_time($this->getObjectUpdateTime()) : format_datetime($this->getObjectUpdateTime())) : lang('n/a');	
     	}else {
     		if($this->getCreatedBy())
-    			$updated_by_id = $this->getCreatedBy()->getId();
+    			$updated_by_id = $this->getCreatedById();
     		else
     			$updated_by_id = lang('n/a');
     		$updated_by_name = $this->getCreatedByDisplayName();
@@ -1649,7 +1649,7 @@ class ProjectTask extends BaseProjectTask {
 	 * End task templates
 	 */
 
-	function getArrayInfo($full = false, $include_members_data = false, $include_mem_path = true){
+	function getArrayInfo($full = false, $include_members_data = false, $include_mem_path = true, $include_open_timeslots = true, $include_subtasks_ids = true){
 		$task = $this;
 		$col_names = $task->getColumns();
 		$ob_col_names = $task->getObject()->getColumns();
@@ -1671,7 +1671,7 @@ class ProjectTask extends BaseProjectTask {
 		//is read
 		$raw_data['isread'] = $task->getIsRead(logged_user()->getId());
 		$raw_data['mark_as_started'] = $task->getMarkAsStarted();
-		return ProjectTasks::getArrayInfo($raw_data, $full, $include_members_data, $include_mem_path);
+		return ProjectTasks::getArrayInfo($raw_data, $full, $include_members_data, $include_mem_path, $include_open_timeslots, $include_subtasks_ids);
 	}
 	
 	function isRepetitive() {

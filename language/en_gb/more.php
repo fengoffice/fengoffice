@@ -24,6 +24,7 @@ return array(
 		'edit dimensions description' => 'Here you can define how you organize your team\'s information. Check on the categories (dimensions) that you want to use. Change their order by dragging the icons in the order you prefer.',
 		'gantt chart' => 'Gantt chart',
 		'expenses' => 'Expenses',
+		'no activity yet' => 'No activity yet',
 		'edit your profile' => 'Edit your profile',
 		'about users, groups and permissions' => 'About users, groups and permissions',
 		'about process templates' => 'About process templates',

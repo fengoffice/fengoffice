@@ -260,6 +260,9 @@ og.eventManager.addListener('after member save',
 og.eventManager.addListener('try to select member',
 	function (member) {
 		if (og.resettingAllTrees) return;
+
+		var milis = 1000;
+		if (member.timeout_milis) milis = member.timeout_milis;
 		
 		var interval = setInterval(function(){
 			var tree = Ext.getCmp("dimension-panel-" + member.dimension_id);
@@ -269,7 +272,7 @@ og.eventManager.addListener('try to select member',
 				og.Breadcrumbs.refresh(treenode);
 				clearInterval(interval);
 			}
-		}, 1000);
+		}, milis);
 	}
 );
 
@@ -668,11 +671,12 @@ og.eventManager.addListener('member parent changed',
 			
 			// ensure that the old parent doesn't have any more childs before removing the expand tool.
 			if (old_parent && old_parent.getDepth() > 0) {
-				og.openLink(og.getUrl('dimension', 'get_member_childs', { member: data.op, limit: 1, offset: 0 }), {
+				og.openLink(og.getUrl('dimension', 'get_member_childs', { member: data.op, limit: 1, offset: 0, tree_id:tree.id }), {
 					hideLoading:true, 
 					hideErrors:true,
 	    			callback: function(success, data){
-	    				var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
+	    				//var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
+	    				var dimension_tree = Ext.getCmp(data.tree_id);
 	    				if (dimension_tree && data.members.length == 0) {
 							var p_node = dimension_tree.getNodeById(data.member_id);
 							if (p_node) {

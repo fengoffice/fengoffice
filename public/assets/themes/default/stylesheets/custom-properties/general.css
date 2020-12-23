@@ -4,8 +4,8 @@
 .cp-multiple {
     margin-left: 200px;
 }
-.coInputMainBlock .input-container  label {
-    width: 200px;
+.coInputMainBlock .input-container label {
+    width: 150px;
 }
 
 .address-input-container .address_street_input {
@@ -24,4 +24,17 @@
 .address-input-container select.country-selector {
     width: 203px;
     height: 24px;
+}
+
+.custom-properties .input-container input[type="text"]:not(.x-form-text),
+.custom-properties .input-container textarea {
+	display:block;
+	width: 400px;
+	padding: 5px;
+}
+
+.custom-properties .input-container select:not(.address_type_input .address_country_input) {
+	display:block;
+	width: 408px;
+	height: 26px;
 }

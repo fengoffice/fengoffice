@@ -224,6 +224,54 @@ class ConfigController extends ApplicationController {
 			DB::rollback();
 		}
 	}
+
+	function enable_disable_widget_dimension() {
+		ajx_current("empty");
+		
+		$dimension = Dimensions::getDimensionById(array_var($_GET, 'dim_id'));
+		if (!$dimension instanceof Dimension) {
+			flash_error(lang('dimension dnx'));
+			ajx_current('empty');
+			return;
+		}
+		$enable = array_var($_GET, 'enable');
+		$default = array_var($_GET, 'is_default');
+		
+		if($default){
+			$co_widget_dimensions = ContactConfigOptions::getByName('widget_dimensions');
+			$allowed_dimensions = array_filter(explode(',', $co_widget_dimensions->getDefaultValue()));
+		} else {
+			$allowed_dimensions = array_filter(explode(',', user_config_option('widget_dimensions')));
+		}
+
+		if ($enable) {
+			if (!in_array($dimension->getId(), $allowed_dimensions)) {
+				$allowed_dimensions[] = $dimension->getId();
+				if($default){
+					$co_widget_dimensions = ContactConfigOptions::getByName('widget_dimensions');
+					$co_widget_dimensions->setDefaultValue(implode(',', $allowed_dimensions));
+					$co_widget_dimensions->save();
+				} else {
+					set_user_config_option('widget_dimensions', $allowed_dimensions);
+				}
+			}
+		} else {
+			if (in_array($dimension->getId(), $allowed_dimensions)) {
+				foreach ($allowed_dimensions as $k => &$d) {
+					if ($d == $dimension->getId()) unset($allowed_dimensions[$k]);
+				}
+				if($default){
+					$co_widget_dimensions = ContactConfigOptions::getByName('widget_dimensions');
+					$co_widget_dimensions->setValue(implode(',', $allowed_dimensions));
+					$co_widget_dimensions->save();
+				} else {
+
+					set_user_config_option('widget_dimensions', $allowed_dimensions);
+				}
+			}
+		}
+		
+	}
 } // ConfigController
 
 ?>

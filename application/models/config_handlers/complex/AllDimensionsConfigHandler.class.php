@@ -18,7 +18,17 @@
   	}
   	
     function do_render($control_name, $additional_params=array()) {
+       $is_default = array_var($additional_params, 'is_default');
        $value =  $this->getValue();
+    
+       if(!is_null($is_default) && $control_name == 'widget_dimensions'){
+         if($is_default){
+           $co_widget_dimensions = ContactConfigOptions::getByName('widget_dimensions');
+          $value = array_filter(explode(',', $co_widget_dimensions->getDefaultValue()));
+         } else {
+          $value = array_filter(explode(',', user_config_option('widget_dimensions')));
+         }
+       }
        $dimensions  = Dimensions::instance()->findAll(array('conditions' => "`code` != 'feng_persons'"));
        $enabled_dimension_ids = config_option('enabled_dimensions');
        
@@ -32,7 +42,12 @@
 			$attr = array('id' => $this->getConfigOption()->getName().'_all_dim_'.$dim->getId());
 			
 			if ($onchange_fn != "") {
-				$attr['onchange'] = "$onchange_fn(this, ".$dim->getId().");";
+        if(is_null($is_default)){
+          $attr['onchange'] = "$onchange_fn(this, ".$dim->getId().");";
+        } else {
+          $is_default = $is_default == 1 ? 1 : 0;
+          $attr['onchange'] = "$onchange_fn(this, ".$dim->getId().", ".$is_default.");";
+        }
 			}
 			
 	       	$out .= '<div class="dimension" >';

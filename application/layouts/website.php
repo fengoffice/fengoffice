@@ -120,6 +120,7 @@
     		line-height: 150%;
 		}
 	</style>
+	<?php echo add_javascript_to_page("react_production/vendors~showEarnedValueWidget~showExpensesProgressWidget~showFinancialsWidget~showWorkedHoursWidget.js")?>
 	<?php echo add_javascript_to_page("react_production/vendors~showEarnedValueWidget~showExpensesProgressWidget~showFinancialsWidget~showProjectStatisticsW~f4ed70e4.js")?>
 	<?php echo add_javascript_to_page("react_production/showFinancialsWidget.js")?>
 	<?php echo add_javascript_to_page("react_production/showEarnedValueWidget.js")?>
@@ -770,6 +771,8 @@ if (is_array($default_currency) && count($default_currency) > 0) {
 	?>og.default_currency = Ext.util.JSON.decode('<?php echo json_encode($default_currency)?>');<?php
 } 
 ?>
+
+og.all_currencies = Ext.util.JSON.decode('<?php echo json_encode(Currencies::getCurrenciesInfo()) ?>');
 
 
 og.loadedScripts = [];

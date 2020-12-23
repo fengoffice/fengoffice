@@ -68,9 +68,11 @@ if ($ot instanceof ObjectType && $ot->getType() == 'dimension_group') {
 	$is_member_cp = '1';
 }
 
+$container_id = $genid . "_container_cp_" . $custom_property->getId();
+
 $cell_width = (600 / count($columnNames)) . "px";
 ?>
-<div class="og-add-custom-properties">
+<div class="og-add-custom-properties" id="<?php echo $container_id ?>">
 	<table>
 		<thead>
 			<tr>
@@ -100,4 +102,9 @@ echo $html;
 <script>
 if (!og.table_cps_last_row_id) og.table_cps_last_row_id = {};
 og.table_cps_last_row_id[<?php echo $custom_property->getId()?>] = <?php echo $row_count ?>;
+
+<?php if (array_var($configs,'disabled')) { ?>
+	$("#<?php echo $container_id ?> input").attr("disabled", "disabled");
+	$("#<?php echo $container_id ?> a.ico-delete").remove();
+<?php } ?>
 </script>

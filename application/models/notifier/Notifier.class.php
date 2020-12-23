@@ -27,14 +27,15 @@ class Notifier {
 	
 	function notifyAction($object, $action, $log_data, $exclude_contacts_ids = null, $log_object = null) {
 
+		if (!$object instanceof ContentDataObject) {
+			return;
+		}
+		
 		//Check disabled object types notificactions.
 		if(in_array($object->getObjectTypeId(),config_option("disable_notifications_for_object_type"))){
 			return;
 		}
 
-		if (!$object instanceof ContentDataObject) {
-			return;
-		}
 		if ($object instanceof Comment) {
 			$subscribers = $object->getRelObject()->getSubscribers();
 		} else {
@@ -106,7 +107,7 @@ class Notifier {
 	}
 	
 	/**
-	 * @return For each localization and timezone will return an array of user groups, with a maximum of 20 users per group.
+	 * @return array For each localization and timezone will return an array of user groups, with a maximum of 20 users per group.
 	 * @param $people array of users to separate in groups
 	 */
 	static function buildPeopleGroups($people, $object, $ignore_lang_and_timezone=false) {
@@ -1716,7 +1717,7 @@ class Notifier {
 						'smtp_password' => $mu->ENCRYPT_DECRYPT($ma->smtpPassword()),
 				));
 			} else {
-				$mailer = $default_mailer;
+				//$mailer = $default_mailer;
 			}
 		}
 
@@ -2133,7 +2134,7 @@ class Notifier {
 	/**
 	 * When a task is completed, sends a notification to the assigned users of all the 
 	 * dependant tasks of the completed task to inform that the previous task has been completed.
-	 * @param $object The task that has been completed
+	 * @param $object ProjectTask The task that has been completed
 	 */
 	static function notifyDependantTaskAssignedUsersOfTaskCompletion($object) { /* @var $object ProjectTask */
 		

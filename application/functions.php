@@ -1988,10 +1988,10 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page
 			if (!defined('WKHTMLTOPDF_PATH')) define('WKHTMLTOPDF_PATH', "C:\\Program Files\\wkhtmltopdf\\bin\\");
 			$command_location = with_slash(WKHTMLTOPDF_PATH) . "wkhtmltopdf";
 			
-			$command = "\"$command_location\" -s $page_size --encoding utf8 -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+			$command = "\"$command_location\" -s $page_size --encoding utf8 --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		} else {
 		    $command_location = (defined('WKHTMLTOPDF_PATH') ? with_slash(WKHTMLTOPDF_PATH) : "");
-		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		}
 		exec($command, $result, $return_var);
 		

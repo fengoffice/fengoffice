@@ -83,7 +83,7 @@ class DashboardController extends ApplicationController {
 			if( method_exists($instance, "getText")) {
 				$info_elem['content'] = $instance->getText();
 			}
-			$info_elem['picture'] = $instance->getCreatedBy()->getPictureUrl();
+			$info_elem['picture'] = $instance->getCreatedBy() ? $instance->getCreatedBy()->getPictureUrl() : '';
 			$info_elem['friendly_date'] = friendly_date($instance->getCreatedOn());
 			$info_elem['comment'] = $instance->getComments();		
 			

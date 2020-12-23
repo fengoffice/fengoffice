@@ -13,6 +13,7 @@
 	'apply to all members' => 'Aplicar los permisos seleccionados en todos los {0}',
 	'apply to all submembers desc' => '',
 	'apply to all members desc' => '',
+	'apply to only current' => 'Aplicar los permisos seleccionados solo en este {0}',
 	
 	'and' => 'y',
 	'Any' => 'Cualquiera',
@@ -65,6 +66,7 @@
 	'trash objects in member' => 'Eliminar objetos clasificados en este {0}',
 	'trash objects in member desc' => 'Si utiliza esta opción los objetos que están clasificados solamente en este {0} serán enviados a la papelera.',
 	'add or condition' => 'Agregar condición \'O\'',
+	'classification' => 'Clasificación',
 	'classification in associated members' => 'Clasificación en entidades asociadas',
 	'do you want to reclassify in memtype associated dimensions' => '¿Desea reclasificar este {0} en los {2} asociados a este {1}?',
 );

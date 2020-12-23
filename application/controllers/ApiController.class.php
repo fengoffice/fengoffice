@@ -503,6 +503,11 @@ class ApiController extends ApplicationController {
                 } elseif($service == "Expenses") {
                     $object_data = $object->getArrayInfo();
                     $extra_conditions = " AND `expense_id` = ".$object->getObjectId();
+
+                    if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_expenses_of_others')){
+                        $extra_conditions .= " AND paid_by_id = " . logged_user()->getId();
+                    }
+
                     // Get all the actual expenses that are linked to this expense
                     $result = PaymentReceipts::instance()->listing(array(
                         "order" => 'date',
@@ -541,6 +546,9 @@ class ApiController extends ApplicationController {
                     "name" => "Not budgeted expenses",
                 );
                 $extra_conditions = " AND `expense_id` = 0";
+                if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_expenses_of_others')){
+                    $extra_conditions .= " AND paid_by_id = " . logged_user()->getId();
+                }
                 $result = PaymentReceipts::instance()->listing(array(
                     "order" => 'date',
                     "order_dir" => 'ASC',

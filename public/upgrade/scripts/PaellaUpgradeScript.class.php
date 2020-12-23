@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.4.4');
+		$this->setVersionTo('3.8.5.8');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -766,7 +766,26 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         	}
         }
         
-        
+        if (version_compare($installed_version, '3.8.5.0') < 0) {
+        	$upgrade_script .= "
+				UPDATE `".$t_prefix."config_options` set `value`='default' where `name`='theme';
+			";
+		}
+		
+		if (version_compare($installed_version, '3.8.5.2') < 0) {
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."contact_config_options` set `default_value`='1' where `name`='listingContactsBy';
+			";
+        }
+		
+		if (version_compare($installed_version, '3.8.5.3') < 0) {
+        	if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "widget_dimensions", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('system', 'widget_dimensions', '', 'AllDimensionsConfigHandler', '1', '0', NULL, NULL);
+				";
+			}
+        }
         
         if (!$this->checkColumnExists("".$t_prefix."dimension_member_associations", "allows_default_selection", $this->database_connection)) {
         	$upgrade_script .= "

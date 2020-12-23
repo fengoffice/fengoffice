@@ -1499,7 +1499,7 @@ span.member-path span a:hover {
 
 .address-input-container {
 	margin-bottom: 2px;
-	min-width: 500px;
+	min-width: 400px;
 }
 .address-input-container.custom-property {
 	margin-left: 200px;
@@ -1541,7 +1541,7 @@ span.member-path span a:hover {
 }
 .address-input-container .undo-delete, .address-input-container .delete-link {
 	float: left;
-	margin-left: 325px;
+	margin-left: 275px;
 }
 
 .task .address-input-container .address_street_input {

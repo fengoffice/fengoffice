@@ -919,8 +919,10 @@ addLangs({
     'add first task': 'Add the first task',
     'edit variables': 'Edit variables',
     'new_task_template': 'New task',
-    'do you want to mantain the current associations of this obj with members of': 'Do you want to mantain the current associations of this object with {0}?',
-
+    'do you want to mantain the current associations of this obj with members of': 'Do you want to replace the current classification in {0}, or keep both?',
+    'replace with the new one': 'Replace with the new one',
+    'keep both current and new': 'Keep both - current and new',
+    
     'company not found': 'Company not found (id: {0})',
     'sync': 'Sync',
     'delete calendar': 'Delete calendar?',

@@ -17,6 +17,7 @@ return array(
 		'more settings' => 'More settings',
 		'settings' => 'Settings',
 		'modules' => 'Modules',
+		'no activity yet' => 'No activity yet',
 		'modules and dimensions' => 'System modules and dimensions',
 		'other modules' => 'Other modules',
 		'not installed modules' => 'Not installed modules',

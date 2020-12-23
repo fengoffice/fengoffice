@@ -276,6 +276,8 @@ if (isset($email)){
 					
 					$html_content = str_replace_first("/* Font Definitions */","<style>",$html_content);
 				}
+				// prevent javascript execution
+				$html_content = preg_replace('~<\s*\bscript\b[^>]*>(.*?)<\s*\/\s*script\s*>~is', '', $html_content);
 			} else {
 				$html_content = purify_html($html_content);
 			}

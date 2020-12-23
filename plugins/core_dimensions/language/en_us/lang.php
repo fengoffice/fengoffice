@@ -14,6 +14,7 @@
 	'apply to all members' => 'Apply the permissions above to all {0}',
 	'apply to all submembers desc' => '',
 	'apply to all members desc' => '',
+	'apply to only current' => 'Apply the permissions above only in current {0}',
 	'do you want to add default permissions in member for users' => 'Do you want to add default permissions to \'{1}\' in \'{0}\'?',
 	
 	'and' => 'and',
@@ -65,7 +66,8 @@
 	'trash objects in member desc' => 'If you choose \'yes\' then all objects that are classified here will be deleted (moved to the trash can).',
 
 	'add or condition' => 'Add \'OR\' condition',
-	
+		
+	'classification' => 'Classification',
 	'classification in associated members' => 'Classification in associated entities',
 	'do you want to reclassify in memtype associated dimensions' => 'Do you want to reclassify this {0} to the new {1} associated {2}?',
 );

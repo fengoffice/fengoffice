@@ -57,8 +57,8 @@ og.msg =  function(title, text, timeout, classname, sound) {
 		m.slideIn('t');
 	}
 	if (sound) {
-		og.systemSound.loadSound('public/assets/sounds/' + sound + '.mp3', true);
-		og.systemSound.start(0);
+		//og.systemSound.loadSound('public/assets/sounds/' + sound + '.mp3', true);
+		//og.systemSound.start(0);
 	}
 };
 
@@ -2557,6 +2557,13 @@ og.reload_subscribers = function(genid, object_type_id, user_ids) {
 	} else {
 		var uids = user_ids;
 	}
+	
+	var assigned_to = 0;
+	var ot = og.objectTypes[object_type_id];
+	if (ot && ot.name == 'task') {
+		var combo = Ext.getCmp(genid + 'taskFormAssignedToCombo');
+		if (combo) assigned_to = combo.getValue();
+	}
 
 	var subs = Ext.get(genid + 'add_subscribers_content');
 	if (subs) subs.mask();
@@ -2565,6 +2572,7 @@ og.reload_subscribers = function(genid, object_type_id, user_ids) {
 		context: Ext.util.JSON.encode(member_selector[genid].sel_context),
 		users: uids,
 		genid: genid,
+		assigned_to: assigned_to,
 		otype: object_type_id
 	}), {
 		preventPanelLoad: true,
@@ -2777,7 +2785,7 @@ og.showHideWidgetMoreLink = function(cls, linkid, show) {
 	else $(cls).hide("slow");
 }
 
-og.getColorInputHtml = function(genid, field_name, value, col, label) {
+og.getColorInputHtml = function(genid, field_name, value, col, label, disabled) {
 	if (!col) col = 'color';
 	if (!field_name) field_name = 'member';
 	if (!value) value = 0;
@@ -2787,16 +2795,20 @@ og.getColorInputHtml = function(genid, field_name, value, col, label) {
 		html += '<label for="'+ genid + field_name +'_' + col +'">' + label + ':</label>';
 	}
 	html += '<input name="'+field_name+'[' + col + ']" id="'+ genid + field_name +'_' + col +'" class="color-code" type="hidden" value="'+value+'" />';
-	html += "<div class='ws-color-chooser'>";
-	for (var i=0; i<=24; i++) {
-		var cls = (value == i)?'selected':'';
-		html += "<div  class='ico-color"+i+ " "+ cls + " color-cell'  onClick='$(\"input.color-code\").val(\""+i+"\");$(\".color-cell\").removeClass(\"selected\");$(this).addClass(\"selected\");'></div>";
-		if (i==12) {
-			html +=	'<div class="x-clear"></div><div style="width:20px;float:left;height:10px;"></div>';
+	if (!disabled) {
+		html += "<div class='ws-color-chooser'>";
+		for (var i=0; i<=24; i++) {
+			var cls = (value == i)?'selected':'';
+			html += "<div  class='ico-color"+i+ " "+ cls + " color-cell'  onClick='$(\"input.color-code\").val(\""+i+"\");$(\".color-cell\").removeClass(\"selected\");$(this).addClass(\"selected\");'></div>";
+			if (i==12) {
+				html +=	'<div class="x-clear"></div><div style="width:20px;float:left;height:10px;"></div>';
+			}
 		}
+		html += '<div class="x-clear"></div>';
+		html += '</div>';
+	} else {
+		html += "<div class='ico-color"+value+"' style='float:left;width:16px;'>&nbsp;</div>";
 	}
-	html+=	'<div class="x-clear"></div>';
-	html+=	'</div>';
 
 	return html;
 }
@@ -3171,6 +3183,16 @@ og.submit_modal_form = function(form_id, callback_fn, options) {
     }, 5000);
 }
 
+og.onWidgetDimensionChanged = function(checkbox, dim_id, is_default) {
+	var enable = $(checkbox).attr('checked') == 'checked' ? '1' : '0';
+	og.openLink(og.getUrl('config', 'enable_disable_widget_dimension', {dim_id:dim_id, enable:enable, is_default:is_default}), {
+		silent:true,
+		callback: function(success, data) {
+			//og.advanced_billing.reload_allowed_dimensions(parseInt(dim_id));	
+		}
+	});
+	
+}
 
 
 og.reload_active_tab = function() {
@@ -3924,7 +3946,8 @@ og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 	var parameters = {
 		dimension_id: tree.dimensionId,
 		ignore_context_filters: true,
-		member: pnode.id
+		member: pnode.id,
+		tree_id: tree_id
 	};
 
 	if (limit && !isNaN(limit)) {
@@ -3947,7 +3970,7 @@ og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 		hideErrors:true,
 		callback: function(success, data){
 
-			var dimension_tree = Ext.getCmp(tree_id);
+			var dimension_tree = Ext.getCmp(data.tree_id);
 
 			//add nodes to tree
 			dimension_tree.addMembersToTree(data.members,data.dimension_id);
@@ -5121,7 +5144,7 @@ og.delete_contact_picture = function(genid, delete_picture_url, confirm_message,
 
 // drag & drop classification call
 
-og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations) {
+og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations, remove_prev) {
 	
 	if (og.still_adding_objects_to_member) return;
 	og.still_adding_objects_to_member = true;
@@ -5132,6 +5155,7 @@ og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassi
 	params.member = member_id;
 	if (attachment) params.attachment = attachment;
 	if (reclassify_in_associations) params.reclassify_in_associations = reclassify_in_associations;
+	if (remove_prev) params.remove_prev = remove_prev;
 	
 	og.openLink(og.getUrl('member', 'add_objects_to_member'),{
 		method: 'POST',
@@ -5144,6 +5168,13 @@ og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassi
 }
 
 // --
+
+
+og.get_currency_by_id = function(id) {
+	for (var i=0; i<og.all_currencies.length; i++) {
+		if (og.all_currencies[i].id == id) return og.all_currencies[i];
+	}
+}
 
 
 og.format_money_amount = function(amount, decimals) {

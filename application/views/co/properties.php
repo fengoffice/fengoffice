@@ -19,6 +19,12 @@
 				<span style="color:#333333;font-weight:bolder;"><?php echo lang('unique id') ?>:&nbsp;</span><?php echo $object->getUniqueObjectId() ?>
 			</div>
 			
+			<?php if (!isset($is_user) && user_config_option("show_object_direct_url") ) { ?>
+			<div class="prop-col-div" style="width:200;">
+				<a id="<?php echo $genid ?>task_url" href="<?php echo($object->getViewUrl()) ?>" target="_blank"><?php echo lang('direct url') ?></a>
+			</div>
+			<?php } ?>
+			
 	<?php if(false && $object->isLinkableObject() && !$object->isTrashed()) {?>
 		<div id="linked_objects_in_prop_panel" class="prop-col-div" style="width:200;"><?php echo render_object_links($object, $object->canEdit(logged_user()))?></div>
 	<?php } ?>
@@ -228,7 +234,7 @@
     	
     	
     	
-    	<?php if($object->getObjectUpdateTime() && $object->getUpdatedBy() instanceof Contact && $object->getCreatedBy()->isUser() && $object->getCreatedOn() != $object->getUpdatedOn()) { ?>
+    	<?php if($object->getObjectUpdateTime() && $object->getUpdatedBy() instanceof Contact && $object->getCreatedBy() && $object->getCreatedBy()->isUser() && $object->getCreatedOn() != $object->getUpdatedOn()) { ?>
     		<div>
     		<span style="color:#333333;font-weight:bolder;">
     			<?php echo lang('modified by') ?>:

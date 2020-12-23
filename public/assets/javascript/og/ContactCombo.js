@@ -151,6 +151,8 @@ og.renderContactSelector = function(config) {
         emptyText: config.empty_text ? config.empty_text : (lang('select contact') + '...'),
         valueNotFoundText: '',
         inline_selector: config.inline_selector,
+        disabled:config.disabled,
+        hidden:config.disabled || config.hidden,
         cp_type:config.cp_type,
 		is_bootstrap:config.is_bootstrap
 	});
@@ -271,6 +273,10 @@ og.renderContactSelector = function(config) {
 			}
 		}
 
+	}
+	
+	if (config.disabled) {
+		$("#"+genid + render_to+" a.link-ico.ico-delete").remove();
 	}
 }
 

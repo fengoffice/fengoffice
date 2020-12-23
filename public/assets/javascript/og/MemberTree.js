@@ -70,6 +70,11 @@ og.MemberTree = function(config) {
 	name_to_over = name_to_over.slice(0, -2);
 	var show_over_button = name_to_over != '' ? lang('add a new custom member in', name_to_over) : '';
 	
+	var load_url = 'index.php?c=dimension&a=initial_list_dimension_members_tree_root&ajax=true&dimension_id='+config.dimensionId+'&avoid_session=1';
+	if (config.loadUrl) {
+		load_url = config.loadUrl;
+	}
+	load_url += (og.config.member_selector_page_size ? '&limit='+og.config.member_selector_page_size : '');
 
 	var expandM = 'root';
 	if(config.hidden) expandM = 'none';
@@ -77,13 +82,13 @@ og.MemberTree = function(config) {
 		region: 'center',
 		id: config.id,
 		loader: new og.MemberChooserTreeLoader({
-    		dataUrl: 'index.php?c=dimension&a=initial_list_dimension_members_tree_root&ajax=true&dimension_id='+config.dimensionId+'&avoid_session=1'+(og.config.member_selector_page_size ? '&limit='+og.config.member_selector_page_size : ''),
+    		dataUrl: load_url,
     		ownerTree: this  
     	}),
 		autoScroll: true,
 		//rootVisible: false,
 		root: {
-        	text: lang('view all'),
+        	text: config.root_node_text ? config.root_node_text : lang('view all'),
         	id:0,
         	href: "#",
         	iconCls : 'root',
@@ -134,6 +139,8 @@ og.MemberTree = function(config) {
 	if (!config.listeners) config.listeners = {};
 	Ext.apply(config.listeners, {
 		beforenodedrop: function(e) {
+			if (this.disable_default_events) return;
+			
 			if (!isNaN(e.target.id) && e.data.grid) {
 				
 				var has_relations = false;
@@ -184,14 +191,7 @@ og.MemberTree = function(config) {
 						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id] &&
 						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][first_selected_row.data.ot_id] &&
 						og.dimension_object_type_contents[config.dimensionId][e.target.object_type_id][first_selected_row.data.ot_id].multiple) {
-					
-					if (og.preferences['drag_drop_prompt'] == 'prompt') {
-						var rm_prev = has_relations ? (confirm(lang('do you want to mantain the current associations of this obj with members of', config.title)) ? "0" : "1") : "1";
-					}else if (og.preferences['drag_drop_prompt'] == 'move') {
-						var rm_prev = 1 ;
-					}else if (og.preferences['drag_drop_prompt'] == 'keep') {
-						var rm_prev = 0 ;
-					}
+
 
 					if (this.selectionHasAttachments() && e.target.id) {
 						if (og.preferences['mail_drag_drop_prompt'] == 'prompt') {
@@ -203,13 +203,56 @@ og.MemberTree = function(config) {
 						}
 					}
 
-					og.openLink(og.getUrl('member', 'add_objects_to_member'),{
-						method: 'POST',
-						post: {objects: Ext.util.JSON.encode(ids), member: e.target.id, remove_prev:rm_prev, attachment:attachment},
-						callback: function(){
-							e.data.grid.load();
+					
+					// Show modal form if preferences is prompt
+					if (og.preferences['drag_drop_prompt'] == 'prompt') {
+						
+						var div = document.createElement('div');
+						var question = lang('do you want to mantain the current associations of this obj with members of', config.title);
+						div.style = "border-radius: 5px; background-color: #fff; padding: 10px; width: 500px;";
+						var genid = Ext.id();
+						div.innerHTML = '<div><label class="coInputTitle">'+lang('classification')+'</label></div>'+
+							'<div id="'+genid+'_question">'+ question+'</div>'+
+							'<div id="'+genid+'_buttons">'+
+							'<button class="replace submit blue">'+lang('replace with the new one')+'</button><button class="keep submit blue">'+lang('keep both current and new')+'</button>'+
+							'</div><div class="clear"></div>';
+
+						var modal_params = {
+							'escClose': false,
+							'overlayClose': false,
+							'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+							'onShow': function (dialog) {
+								$("#"+genid+"_close_link").addClass("modal-close-img");
+								$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
+								$("#"+genid+"_question").css('margin', '10px 0');
+								$("#"+genid+"_buttons button.replace").css('margin-right', '10px').click(function(){
+
+									og.call_add_objects_to_member(e, ids, e.target.id, attachment, true, true);
+									$('.modal-close').click();
+								});
+								$("#"+genid+"_buttons button.keep").css('margin-right', '10px').click(function(){
+									
+									og.call_add_objects_to_member(e, ids, e.target.id, attachment, true, false);
+									$('.modal-close').click();
+								});
+						    }
+						};
+						setTimeout(function() {
+							$.modal(div, modal_params);
+						}, 100);
+						
+					} else {
+						// Here don't show any modal form, just call the reclassify function
+						
+						if (og.preferences['drag_drop_prompt'] == 'move') {
+							var rm_prev = 1 ;
+						} else if (og.preferences['drag_drop_prompt'] == 'keep') {
+							var rm_prev = 0 ;
 						}
-					});
+						og.call_add_objects_to_member(e, ids, e.target.id, attachment, true, rm_prev);
+					}
+					// -------------
+					
 					
 				} else {
 					
@@ -330,6 +373,7 @@ og.MemberTree = function(config) {
 				var parameters = {
 					member: node.id,
 					limit: limit,
+					tree_id: this.id,
 					offset: node.last_childs_offset,
 					ignore_context_filters: !this.filterOnChange,
 					context: og.contextManager.plainContext()
@@ -339,7 +383,8 @@ og.MemberTree = function(config) {
 	    			hideLoading:true, 
 	    			hideErrors:true,
 	    			callback: function(success, data){
-	    				var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
+	    				//var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
+	    				var dimension_tree = Ext.getCmp(data.tree_id);
 	    				if (dimension_tree) {
 		    				dimension_tree.addMembersToTree(data.members, data.dimension);
 		    				
@@ -367,6 +412,8 @@ og.MemberTree = function(config) {
 			
 		},
 		click: function(node, e){
+			if (this.disable_default_events) return;
+			
 			if (node && isNaN(node.id) && node.id.indexOf('view_more_') >= 0) {
 				return;
 			}
@@ -439,12 +486,13 @@ og.MemberTree = function(config) {
 		        if(node.childNodes.length < node.attributes.realTotalChilds && node.attributes.expandable && !node.attributes.gettingChildsFromServer){
 		        	node.ownerTree.innerCt.mask();
 		        	node.attributes.gettingChildsFromServer = true;
-		        	og.openLink(og.getUrl('dimension', 'get_member_childs', {member:node.id, ignore_context_filters: !this.filterOnChange}), {
+		        	og.openLink(og.getUrl('dimension', 'get_member_childs', {member:node.id, ignore_context_filters: !this.filterOnChange, tree_id:this.id}), {
 		    			hideLoading:true, 
 		    			hideErrors:true,
 		    			callback: function(success, data){
 		    				
-		    				var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
+		    				//var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension);
+		    				var dimension_tree = Ext.getCmp(data.tree_id);
 		    				
 		    				dimension_tree.addMembersToTree(data.members, data.dimension);
 		    				 
@@ -464,6 +512,8 @@ og.MemberTree = function(config) {
 			}
 		},
 		dblclick: function(node, e){
+			if (this.disable_default_events) return;
+			
 			og.contextManager.currentDimension = self.dimensionId;
 			og.eventManager.fireEvent("member tree node dblclick", node);
 			var treeConf = node.attributes.loader.ownerTree.initialConfig;
@@ -484,6 +534,8 @@ og.MemberTree = function(config) {
 	this.getSelectionModel().on({
 		
 		selectionchange : function(sm, selection) {
+			if (this.disable_default_events) return;
+			
 			if (selection && isNaN(selection.id) && selection.id.indexOf('view_more_') >= 0) {
 				return;
 			}
@@ -637,8 +689,11 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 				var d = new Date();
 				this.tbar.last_search_time = d.getTime();
 				
+				var dimension_id = this.dimensionId ? this.dimensionId : this.id.replace("dimension-panel-", "");
+				
 				og.last_search_request_id = og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {
-					dimension_id: this.id.replace("dimension-panel-", ""),
+					dimension_id: dimension_id,
+					tree_id: this.id,
 					query: Ext.escapeRe(text.toLowerCase()),
 					time: d.getTime()
 				}), {
@@ -646,7 +701,8 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 	    			hideErrors:true,
 	    			callback: function(success, data){
 	    				if(success){
-		    				var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension_id);
+		    				//var dimension_tree = Ext.getCmp('dimension-panel-'+data.dimension_id);
+	    					var dimension_tree = Ext.getCmp(data.tree_id);
 		    				// don't process response if it isn't the last one
 		    				if (dimension_tree.tbar.last_search_time != data.time) {
 		    					dimension_tree.innerCt.unmask();

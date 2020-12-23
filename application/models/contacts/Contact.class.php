@@ -1000,8 +1000,9 @@ class Contact extends BaseContact {
 	
 			if (!in_array('email', $this->skip_validations)) {
 				//if email address is entered, it must be unique
-				$user = array_var(array_var($_POST, 'contact'),'user');
-				$main_email = trim(array_var(array_var($_POST, 'contact'),'email'));
+				$contact_data = array_var($_POST, 'contact');
+				$user = array_var($contact_data,'user');
+				$main_email = trim(array_var($contact_data,'email'));
 				if($main_email || array_var($user, 'create-user')) {
 					if(!preg_match(EMAIL_FORMAT, $main_email)) {
 						$errors[] = lang('invalid email address');

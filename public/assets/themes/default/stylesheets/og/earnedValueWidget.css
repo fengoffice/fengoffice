@@ -1,22 +1,8 @@
+/* Style warnings */
 .widget-earned-value__warnings-container{
-    font-size: 13px;
-    line-height: 1.6;
-}
+    text-align: left;
+    font-size: 12px;
+    color: #888888;
+    margin: 0;
 
-.widget-earned-value__warning {
-   margin-bottom: 25px;
-}
-
-.widget-earned-value__warning-message {
-    color: #E81202;
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.widget-earned-value__warning-task {
-}
-
-
-.widget-earned-value__warning-list{
-    list-style-type: disc;
 }

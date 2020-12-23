@@ -53,3 +53,9 @@ $count = 0;
 
 </div>
 </div>
+
+<script>
+<?php if (array_var($configs,'disabled')) { ?>
+	$("#<?php echo $genid ?>listValues<?php echo $cp->getId()?> input").attr("disabled", "disabled");
+<?php } ?>
+</script>

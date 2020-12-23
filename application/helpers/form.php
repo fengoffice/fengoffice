@@ -58,7 +58,7 @@ function text_field($name, $value = null, $attributes = null) {
     // If we don't have type attribute set it
     if (array_var($attributes, 'type', false) === false) {
         if (is_array($attributes)) {
-            if($attributes['type'] != 'hidden'){
+            if(array_var($attributes, 'type') != 'hidden'){
                 $attributes['type'] = 'text';
             }
         } else {
@@ -517,7 +517,7 @@ function pick_date_widget($name, $value = null, $year_from = null, $year_to = nu
 
 // pick_date_widget
 
-function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null, $display_date_info = true, $id = null, $listeners = array()) {
+function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null, $display_date_info = true, $id = null, $listeners = array(), $disabled = false) {
     require_javascript('og/DateField.js');
 
     $date_format = user_config_option('date_format');
@@ -546,6 +546,8 @@ function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null
     		},
     		";
     }
+    $disabled_str = '';
+    if ($disabled) $disabled_str = 'disabled: true,';
     
     // 	if ($display_date_info)
     // 		$daterow = "<td style='padding-top:4px;font-size:80%'><span class='desc'>&nbsp;(" . date_format_tip($date_format) . ")</span></td>";
@@ -558,6 +560,7 @@ function pick_date_widget2($name, $value = null, $genid = null, $tabindex = null
 			id: '" . $id . "'," .
             (isset($tabindex) && !is_null($tabindex) ? "tabIndex: '$tabindex'," : "") .
             $listeners_str .
+            $disabled_str .
             "value: '" . $dateValue . "'
 		});
 	</script>
@@ -582,7 +585,7 @@ function pick_time_widget($name, $value = null) {
 
 // pick_time_widget
 
-function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null, $format = null, $id = null, $listeners = null) {
+function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null, $format = null, $id = null, $listeners = null, $disabled = false) {
     if ($format == null)
         $format = (user_config_option('time_format_use_24') ? 'G:i' : 'g:i A');
     if ($value instanceof DateTimeValue) {
@@ -607,6 +610,9 @@ function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null
 			";
 	}
 	
+	$disabled_str = '';
+	if ($disabled) $disabled_str = 'disabled: true,';
+	
     $html = "<table class='time-picker'><tr><td><div id='" . $genid . $name . "'></div></td></tr></table>
 	<script>
 		var tp" . gen_id() . " = new Ext.form.TimeField({
@@ -617,6 +623,7 @@ function pick_time_widget2($name, $value = null, $genid = null, $tabindex = null
 			id: '" . $id . "',
 			width: 80," .
 			$listeners_str .
+			$disabled_str .
             (isset($tabindex) ? "tabIndex: '$tabindex'," : "") .
             "value: '" . $value . "'
 		});
@@ -1086,6 +1093,7 @@ function render_image_custom_property_field($cp, $config) {
     tpl_assign('cp_value', $config['default_value']);
     tpl_assign('label', $config['label']);
     tpl_assign('input_name', $config['name']);
+    tpl_assign('disabled', array_var($config, 'property_perm') == 'view');
 
     return tpl_fetch(get_template_path('image_cp_selector', 'custom_properties'));
 }
@@ -1133,6 +1141,16 @@ function webpage_field($name, $values_array = null, $genid, $attributes = null) 
         }
     } else {
         $html .= "og.addNewWebpageInput('" . $container_id . "', '" . $input_base_id . "', 2);";
+    }
+    
+    if (array_var($attributes, 'disabled')) {
+    	$html .= '
+			$("#'.$container_id.' input").attr("disabled","disabled");
+			$("#'.$container_id.' textarea").attr("disabled","disabled");
+			$("#'.$container_id.' select").attr("disabled","disabled");
+			$("#'.$container_id.'").parent().children("a").remove();
+			$("#'.$container_id.' .delete-link").remove();
+		';
     }
 
     $html .= '});</script>';
@@ -1185,6 +1203,16 @@ function email_field($name, $values_array = null, $genid, $attributes = null) {
     } else {
         $html .= "og.addNewEmailInput('" . $container_id . "', '" . $input_base_id . "', 3);";
     }
+    
+    if (array_var($attributes, 'disabled')) {
+    	$html .= '
+			$("#'.$container_id.' input").attr("disabled","disabled");
+			$("#'.$container_id.' textarea").attr("disabled","disabled");
+			$("#'.$container_id.' select").attr("disabled","disabled");
+			$("#'.$container_id.'").parent().children("a").remove();
+			$("#'.$container_id.' .delete-link").remove();
+		';
+    }
 
     $html .= '});</script>';
 
@@ -1235,6 +1263,17 @@ function phone_field($name, $values_array = null, $genid, $attributes = null) {
         }
     } else {
         $html .= "og.addNewTelephoneInput('" . $container_id . "', '$input_base_id');";
+    }
+    
+    
+    if (array_var($attributes, 'disabled')) {
+    	$html .= '
+			$("#'.$container_id.' input").attr("disabled","disabled");
+			$("#'.$container_id.' textarea").attr("disabled","disabled");
+			$("#'.$container_id.' select").attr("disabled","disabled");
+			$("#'.$container_id.'").parent().children("a").remove();
+			$("#'.$container_id.' .delete-link").remove();
+		';
     }
 
     $html .= '});</script>';
@@ -1296,6 +1335,16 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
         }
     } else {
         $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '', {}, $ignore_pre_id);";
+    }
+    
+    if (array_var($attributes, 'disabled')) {
+    	$html .= '
+			$("#'.$container_id.' input").attr("disabled","disabled");
+			$("#'.$container_id.' textarea").attr("disabled","disabled");
+			$("#'.$container_id.' select").attr("disabled","disabled");
+			$("#'.$container_id.'").parent().children("a").remove();
+			$("#'.$container_id.' .delete-link").remove();
+		';
     }
 
     $html .= '});</script>';

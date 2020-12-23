@@ -1,5 +1,5 @@
 
-	About Feng Office 3.8.4.4
+	About Feng Office 3.8.5.7
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,138 @@
 	
 	Changelog
 	=========
+	
+	Since 3.8.5.7
+	-----------------
+	bugfix: Fixes to 'Project billing' and 'Project Budget Status' reports
+	bugfix: Fix quickbooks plugin update script
+	 
+	
+	Since 3.8.5.6
+	-----------------
+	feature: Several improvements to 'Project billing' and 'Project Budget Status' reports
+	feature: new plugin for Expense rate schedules dimension
+	feature: Two way synchronization with Quickbooks for invoices and payments
+	feature: Add 'is reimbursable' to product types
+	feature: Improve invoices form, allow property groups to be arranged and improve billing info tab
+
+	
+	Since 3.8.5.5
+	-----------------
+	feature: allow payment receipts to have greater amount than due amount
+	feature: include balance in payment receipt view and form
+	feature: add 'Add payment' feature to invoices and remove mark as paid feature if payment receipts is installed
+	feature: move direct url to the properties box in objects view
+	bugfix: adjust invoice payments table margin
+	bugfix: fix dimension options for payment receitps
+	bugfix: dont recalculate invoices with 0 amount when entering to the edition form of a payment
+	bugfix: apply correct format fot money amounts inside payments form
+	bugfix: performance improvements to tasks getArrayInfo() and more parameters to skip some information
+	bugfix: Don't allow user to create unassinged tasks if user can't see other users tasks
+
+	
+	Since 3.8.5.4
+	-----------------
+	feature: new plugin for invoice payment receipts
+	feature: several modifications to paemfe plugin reports
+	feature: replace old js default prompt with a modal form when reclassifying objects using drag & drop
+	feature: Add a config option to specify the invoice footer text when printing
+	feature: increase config options text inputs width
+	feature: quickbooks integration: add shipping info and match qbo classes with feng dimensions
+	feature: new invoice cp for po number autofilled with project po number, modify lump sum generation to include involved task names
+	bugfix: Don't show date in last activity column if user never used system
+	bugfix: fix notes field misalignment in clients form
+	bugfix: fix add_to_members function when removing members of an object
+	bugfix: fix some comments and ensure that object is correctly built
+	bugfix: fix tasks form subscribers component to use the new permission that checks if user can see other user's tasks
+	bugfix: prevent user sharing table recalculation when deleting member
+	
+	
+	Since 3.8.5.3
+	-----------------
+	bugfix: fix format date function for reports to prevent errors with emtpy or '--' strings
+	bugfix: performance improvements in user edition at permissions section
+	feature: Add permission "Can see other user's expenses"
+	
+	
+	Since 3.8.5.2
+	-----------------
+	feature: new plugin to define permissions to property groups in forms and overview
+	feature: when user can see only one client or project then select it automatically and hide dimensions panel
+	feature: when member selector property is readonly in form, disable breadcrumb clicks
+	bugfix: prevent error 500 when preview file is not in upload directory
+	bugfix: permissions for invoice actions were not verified correctly when collab customer views an invoice
+	bugfix: fix permissions for managed events dimension, they don't have to be mandatory like workspaces
+	bugfix: prevent error when labor cat dim is not installed and trying to render the selector at invoice line form
+	
+	
+	Since 3.8.5.1
+	-----------------
+	feature: Show YTD info in widgets for the whole system
+	feature: Add contact config option 'widget_dimensions'
+	feature: Increase memory in widgets
+	feature: Update css for dimension configs
+	bugfix: Don't save timeslot when incorrect year entered
+	bugfix: Increase memory limit when listing the timeslots
+	bugfix: fix custom reports dimension conditions for contact reports
+	bugfix: fix quota available amount verification when adding/editing payment
+	bugfix: fix quota selector in advanced expenses plugin, for quota name display
+	bugfix: check if member templates plugin is installed in evx widgets before using its classes
+	bugfix: remove references to og.systemSound in og.js
+	bugfix: fix quickbooks plugin installer
+	bugfix: Set contact config option listingContactsBy to 1 via script update
+	bugfix: Improve tasks list query when filtering by subscribers
+	bugfix: fix read permissions when showing linked objects in comments
+	bugfix: prevent not found errors in console with mail polling requests and mail_tr
+	bugfix: several fixes to paemfe plugin
+	bugfix: don't assume that crpm plugin is always installed to get the projects dimension id
+	bugfix: prevent errors when advanced core and status timesheet plugins are not installed
+	bugfix: fix overdue_and_upcoming widget syntax error with php tag
+	bugfix: Remove description of the task in 'Late and Upcoming tasks' widget
+	
+	Since 3.8.5.0
+	-----------------
+	feature: quickbooks integration improvements: match service items with feng users
+	feature: use Quickbooks default Terms when saving the invoice
+	feature: match Quickbooks custom fields with invoice/project custom properties
+	feature: create a Job entity under the client to represent the invoice project when saving the invoice
+	feature: modify show comments feature in reports to show them in separate lines below the objects
+	bugfix: ensure that superadmins always have workflow permissions
+	bugfix: when saving invoice use payment terms cp default value if it is defined
+	bugfix: fix invoice print links
+	bugfix: when user cant edit permissions the default permissions must be applied
+	bugfix: Quickbooks integration - fix invoice number, due date and address
+	bugfix: prevent javascript execution when viewing an email
+	bugfix: ensure that all calls to getCreatedBy() returns an object before asking for its properties
+	
+	Since 3.8.5-rc
+	-----------------
+	feature: Quickbooks Online integration improvements
+	feature: only show last year's information in evx widgets when not filtering by anything
+	bugfix: add missing parameters to setTimeout function in PEAR/Socket class
+	bugfix: fix crpm_types update script that adds the acronym custom property for pms
+	
+	Since 3.8.5-beta
+	-----------------
+	feature: add acronym custom property to project managers
+	feature: allow invoice to get the client legal name
+	feature: filter timesheets report by invoicing status
+	feature: improvements to send object mail for api
+	feature: allow to change invoice number
+	bugfix: add patch to estimated and worked time widget to use only current year's tasks
+	bugfix: fix widgets php syntax error when php short tags are not enabled
+	bugfix: when adding an user add default workflow permissions over this user to every administrator
+	bugfix: Fix 'Folders' widget: Allow to use custom object type names
+	
+	Since 3.8.4.x
+	-----------------
+	feature: remove aoac theme from core public folder
+	feature: Make widgets work for the whole system
+	feature: add missing information to individual task print view
+	feature: modifications to evx_edition and demo plugins
+	bugfix: fix issue when adding permissions to a member and applying to submembers when the logged user is a superadmin
+	bugfix: fix issue with double hour type in time module quick add feature
+	bugfix: fix error in notifier when object is null
 	
 	Since 3.8.4.3
 	-----------------

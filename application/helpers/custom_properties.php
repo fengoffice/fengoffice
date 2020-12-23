@@ -5,10 +5,14 @@ function cp_info_sort_by_order($a, $b) {
 }
 
 
-function render_object_fixed_property_input($genid, $input_name, $col_info, $value, $object=null) {
+function render_object_fixed_property_input($genid, $input_name, $col_info, $value, $object=null, $property_perm=null) {
 	$html = '<div class="input-container" style="margin-bottom: 1rem;" id="input-'.array_var($col_info, 'col').'">';
 
 	$html .= "<label>".array_var($col_info, 'label')."</label>";
+	
+	$disabled = $property_perm == 'view';
+	$attr = array();
+	if ($disabled) $attr['disabled']='disabled';
 
 	switch ($col_info['type']) {
 		case DATA_TYPE_TIMEZONE:
@@ -21,26 +25,27 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 				if ($object->getTypeId() == 2) $time_value = "";
 			}
 			$html .= '<div class="field"><table><tr><td>';
-			$html .= pick_date_widget2(str_replace($col_id, $col_id."_date", $input_name), $value, $genid);
+			$html .= pick_date_widget2(str_replace($col_id, $col_id."_date", $input_name), $value, $genid, null, null, null, null, $disabled);
 			$html .= '</td><td>';
-			$html .= pick_time_widget2(str_replace($col_id, $col_id."_time", $input_name), $time_value, $genid);
+			$html .= pick_time_widget2(str_replace($col_id, $col_id."_time", $input_name), $time_value, $genid, null, null, null, null, $disabled);
 			$html .= '</td></tr></table></div>';
 			break;
 		case DATA_TYPE_DATE:
-			$html .= pick_date_widget2($input_name, $value, $genid);
+			$html .= pick_date_widget2($input_name, $value, $genid, null, null, null, null, $disabled);
 			break;
 		case DATA_TYPE_INTEGER:
 		case DATA_TYPE_FLOAT:
-			$html .= number_field($input_name, $value);
+			$html .= number_field($input_name, $value, $attr);
 			break;
 		case DATA_TYPE_BOOLEAN:
-			$html .= yes_no_widget($input_name, $input_name, $value, lang('yes'), lang('no'));
+			$html .= yes_no_widget($input_name, $input_name, $value, lang('yes'), lang('no'), null, $attr);
 			break;
 		case DATA_TYPE_STRING:
 			if (array_var($col_info, 'large')) {
-				$html .= textarea_field($input_name, $value, array('style' => 'height: 75px; width:70%;'));
+				$attr['style'] = 'height: 75px; width:60%;';
+				$html .= textarea_field($input_name, $value, $attr);
 			} else {
-				$html .= text_field($input_name, $value);
+				$html .= text_field($input_name, $value, $attr);
 			}
 			break;
 		case 'email':
@@ -50,6 +55,7 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 				'container_id' => $genid.'_email_'.$col_info['col'],
 				'input_base_id' => str_replace(array("[","]"), array("-",""), str_replace('[email]', '', $input_name)),
 				'multiple' => true,
+				'disabled' => $disabled,
 			));
 			$html .= '</div>';
 			break;
@@ -60,6 +66,7 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 				'container_id' => $genid.'_address_'.$col_info['col'],
 				'input_base_id' => str_replace(array("[","]"), array("-",""), str_replace('[address]', '', $input_name)),
 				'multiple' => true,
+				'disabled' => $disabled,
 			));
 			$html .= '</div>';
 			break;
@@ -70,6 +77,7 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 				'container_id' => $genid.'_phone_'.$col_info['col'],
 				'input_base_id' => str_replace(array("[","]"), array("-",""), str_replace('[phone]', '', $input_name)),
 				'multiple' => true,
+				'disabled' => $disabled,
 			));
 			$html .= '</div>';
 			break;
@@ -80,6 +88,7 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 				'container_id' => $genid.'_webpage_'.$col_info['col'],
 				'input_base_id' => str_replace(array("[","]"), array("-",""), str_replace('[webpage]', '', $input_name)),
 				'multiple' => true,
+				'disabled' => $disabled,
 			));
 			$html .= '</div>';
 			break;
@@ -97,8 +106,10 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 		
 			$html .= '<div style="text-decoration:underline; display:inline-block;">';
 			$html .= '<div class="cardIcon" style="display: inline-block;"><img id="'.$genid.'_logo_img" src="'.$purl.'"/></div>';
-			$html .= '<a href="#" onclick="og.updatePictureFile(\''.$update_purl.'&reload_picture='.$genid.'_logo_img'.($is_new ? '&new_contact='.$genid.'_logo_file' : ''). '\');"';
-			$html .= 'class="coViewAction ico-picture">'. lang('update logo') .'</a>';
+			if (!$disabled) {
+				$html .= '<a href="#" onclick="og.updatePictureFile(\''.$update_purl.'&reload_picture='.$genid.'_logo_img'.($is_new ? '&new_contact='.$genid.'_logo_file' : ''). '\');"';
+				$html .= 'class="coViewAction ico-picture">'. lang('update logo') .'</a>';
+			}
 			$html .= '<input type="hidden" id="'. $genid .'_logo_file" name="'.$input_name.'" value=""/></div>';
 			break;
 		default:
@@ -180,7 +191,7 @@ function render_object_fixed_property_for_view($col_info, $value, ContentDataObj
 
 
 
-function get_custom_property_input_html($customProp, $object, $genid, $input_base_name = 'object_custom_properties',$member_parent,$is_bootstrap = false) {
+function get_custom_property_input_html($customProp, $object, $genid, $input_base_name = 'object_custom_properties',$member_parent, $property_perm = null, $is_bootstrap = false) {
 
 	$label = clean($customProp->getName());
 	if ($customProp->getIsSpecial()) {
@@ -212,21 +223,16 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 		}
 	}
 
-	if ($is_bootstrap){
-	    $name = $input_base_name . '[' . $customProp->getId() . ']';
-    }else{
-	    $name = $input_base_name . '[' . $customProp->getId() . ']';
-    }
-
-
+	$name = $input_base_name . '[' . $customProp->getId() . ']';
+    
 	$config = array();
 	$config['name'] = $name;
 	$config['default_value'] = $default_value;
 	$config['genid'] = $genid;
 	$config['label'] = $label;
 	$config['parent_member_id'] = array_var($_REQUEST, 'parent');
-    $config['is_bootstrap'] = $is_bootstrap;
-        $config['member_parent'] = $member_parent;
+	$config['is_bootstrap'] = $is_bootstrap;
+	$config['member_parent'] = $member_parent;
 	if ($object instanceof Member) {
 		$config['member_id'] = $object->getId();
 		$config['member_is_new'] = $object->isNew();
@@ -238,6 +244,8 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 		$config['object'] = $object;
 	}
 	
+	if ($property_perm) $config['property_perm'] = $property_perm;
+	
 	$html = render_custom_property_by_type($customProp,$config);
 
 	return $html;
@@ -247,7 +255,7 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 
 function render_custom_property_by_type($custom_property, $configs) {
     $style = "margin-bottom: 1rem;";
-    if ($configs['is_bootstrap']){
+    if (array_var($configs,'is_bootstrap')){
         $style = "margin-bottom: 1rem;width:100%";
     }
 	$html = '<div class="input-container" style="'.$style.'">';
@@ -320,15 +328,18 @@ function render_text_custom_property_field($custom_property, $configs) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 
-	    $style = 'display:block; width: 400px; padding: 5px;';
 	    $class = '';
 	    $placeholder = '';
-	    if ($configs['is_bootstrap']){
+	    if (array_var($configs,'is_bootstrap')){
             $style = '';
             $class = 'form-control';
             $placeholder = $configs['label'];
         }
-		$html = text_field($configs['name'], $configs['default_value'], array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'style' => $style,'class'=>$class,'placeholder'=>$placeholder));
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'class'=>$class,'placeholder'=>$placeholder);
+        
+        if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+        
+		$html = text_field($configs['name'], $configs['default_value'], $attributes);
 	}
 	return $html;
 }
@@ -337,13 +348,16 @@ function render_large_text_custom_property_field($custom_property, $configs) {
 	if ($custom_property->getIsMultipleValues()) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
-        $style = 'display:block; width: 400px; padding: 5px;';
         $class = '';
-        if ($configs['is_bootstrap']){
+        if (array_var($configs,'is_bootstrap')){
             $style = '';
             $class = 'form-control';
         }
-		$html = textarea_field($configs['name'], $configs['default_value'], array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'style' => $style,'class'=>$class, 'rows' => 5));
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'class'=>$class, 'rows' => 5);
+        
+        if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+        
+        $html = textarea_field($configs['name'], $configs['default_value'], $attributes);
 	}
 	return $html;
 }
@@ -358,8 +372,10 @@ function render_date_custom_property_field($custom_property, $configs) {
 		if (trim($configs['default_value']) != '' && trim($configs['default_value']) != EMPTY_DATETIME) {
 			$cp_date_value = DateTimeValueLib::makeFromString($configs['default_value']);
 		}
+		
+		$disabled = (array_var($configs, 'property_perm') == 'view');
 
-		$html = pick_date_widget2($configs['name'], $cp_date_value, $configs['genid'], null, null, $configs['genid'] . 'cp' . $custom_property->getId() );
+		$html = pick_date_widget2($configs['name'], $cp_date_value, $configs['genid'], null, null, $configs['genid'] . 'cp' . $custom_property->getId(), null, $disabled);
 	}
 
 	return $html;
@@ -375,11 +391,13 @@ function render_datetime_custom_property_field($custom_property, $configs) {
 		if (trim($configs['default_value']) != '' && trim($configs['default_value']) != EMPTY_DATETIME) {
 			$cp_date_value = DateTimeValueLib::makeFromString($configs['default_value']);
 		}
+		
+		$disabled = (array_var($configs, 'property_perm') == 'view');
 
-		$html = pick_date_widget2($configs['name'], $cp_date_value, $configs['genid'], null, null, $configs['genid'] . 'cp' . $custom_property->getId() );
+		$html = pick_date_widget2($configs['name'], $cp_date_value, $configs['genid'], null, null, $configs['genid'] . 'cp' . $custom_property->getId(), null, $disabled);
 		
 		$i_name = str_replace('['.$custom_property->getId().']', '[time]['.$custom_property->getId().']', $configs['name']);
-		$html .= '<div style="float:left;">'. pick_time_widget2($i_name, $cp_date_value, $configs['genid'], null, null, $configs['genid'] . 'cp' . $custom_property->getId().'_time' ) . '</div><div class="clear"></div>';
+		$html .= '<div style="float:left;">'. pick_time_widget2($i_name, $cp_date_value, $configs['genid'], null, null, $configs['genid'] . 'cp' . $custom_property->getId().'_time', null, $disabled) . '</div><div class="clear"></div>';
 		
 	}
 
@@ -391,18 +409,20 @@ function render_numeric_custom_property_field($custom_property, $configs) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 
-        $style = 'display:block; width: 400px; padding: 5px;';
         $class = '';
         $placeholder = '';
         $type ='';
-        if ($configs['is_bootstrap']){
+        if (array_var($configs,'is_bootstrap')){
             $type = 'number';
             $style = '';
             $class = 'form-control';
             $placeholder = $configs['label'];
         }
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'class'=>$class,'placeholder'=>$placeholder);
+        
+        if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
 
-		$html = text_field($configs['name'], $configs['default_value'], array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'style' => $style,'class'=>$class,'placeholder'=>$placeholder));
+		$html = text_field($configs['name'], $configs['default_value'], $attributes);
 	}
 	return $html;
 }
@@ -416,7 +436,12 @@ function render_boolean_custom_property_field($custom_property, $configs) {
 		$option_attributes = $configs['default_value'] == $value ? array('selected' => 'selected') : null;
 		$options[] = option_tag($opt_label, $value, $option_attributes);
 	}
-	$html = select_box($configs['name'], $options, $configs['default_value'], array('id' => $configs['genid'] . 'cp' . $custom_property->getId()));
+	
+	$attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId());
+	
+	if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+	
+	$html = select_box($configs['name'], $options, $attributes);
 
 	return $html;
 }
@@ -426,13 +451,17 @@ function render_list_custom_property_field($custom_property, $configs) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 		$options_html = render_list_options_custom_property_field(explode(',', $custom_property->getValues()), $custom_property, $configs);
-        $style = 'display:block; width: 408px; height: 26px;';
         $class = '';
-        if ($configs['is_bootstrap']){
+        if (array_var($configs,'is_bootstrap')){
             $style = '';
             $class = 'form-control';
         }
-		$html = select_box($configs['name'], $options_html, array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'style' => $style,'class'=>$class));
+        
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'class'=>$class);
+        
+        if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+        
+		$html = select_box($configs['name'], $options_html, $attributes);
 	}
 	return $html;
 }
@@ -448,12 +477,13 @@ function render_color_custom_property_field($custom_property, $configs) {
 			$default_value = $pmem->getColor();
 		}
 	}
+	$disabled = array_var($configs, 'property_perm') == 'view' ? '1' : '0';
 
 	$html = '<div class="cp-color-chooser"><div id="'.$genid.'colorcontainer-cp'.$custom_property->getId().'"></div><div class="x-clear"></div></div>';
 	
 	$html .= "<script>$(function(){";
 	$html .= "var cont = document.getElementById('".$genid."colorcontainer-cp".$custom_property->getId()."');";
-	$html .= "if (cont) cont.innerHTML = og.getColorInputHtml('$genid', '$name', '$default_value', '', '');";
+	$html .= "if (cont) cont.innerHTML = og.getColorInputHtml('$genid', '$name', '$default_value', '', '', $disabled);";
 	$html .= '});</script>';
 	return $html;
 }
@@ -474,10 +504,13 @@ function render_address_custom_property_field($custom_property, $configs) {
 		foreach ($values as $v) $address_values[] = $v->getValue();
 	}
 	
+	$disabled = array_var($configs, 'property_perm') == 'view';
+	
 	$html = '<div class="field" style="float:left;">';
 	
 	$html .= address_field($name, $address_values, $genid, array(
 			'container_id' => $genid.'addresscontainer-cp'.$custom_property->getId(),
+			'disabled' => $disabled,
 			'input_base_id' => $name//"cp".$custom_property->getId(),
 	), true);
 	$html .= '</div>';
@@ -628,6 +661,8 @@ function render_contact_custom_property_field($custom_property, $configs) {
         }
         
         
+    $disabled = array_var($configs, 'property_perm') == 'view';
+    $disabled_str = $disabled ? 'disabled: true,' : '';
     
 	$html .= '<script>
 			$(function(){
@@ -641,9 +676,10 @@ function render_contact_custom_property_field($custom_property, $configs) {
                 is_multiple: '.$is_multiple .',
 				empty_text: "'. $emtpy_text .'",
 				listClass: "custom-prop",
-				filters: '.$filters_str.',
-                                memberId:'.$configs["member_parent"].',
-                                cp_type: "'.$custom_property->getType().'"
+				filters: '.$filters_str.','.
+				$disabled_str.'
+				memberId:'.$configs["member_parent"].',
+				cp_type: "'.$custom_property->getType().'"
 			  });
 			});
 			</script>';

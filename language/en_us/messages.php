@@ -329,6 +329,7 @@
 
   	
     // Access or data errors
+    'incorrect date' => 'Incorrect date',
     'no access permissions' => 'You don\'t have permissions to access requested page',
     'invalid request' => 'Invalid request!',
     

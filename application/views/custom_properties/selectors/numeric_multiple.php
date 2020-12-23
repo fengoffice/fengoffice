@@ -41,3 +41,10 @@ foreach($fieldValues as $value){
 	?><a href="#" class="link-ico ico-add" onclick="og.addCPNumericValue(<?php echo $cp->getId()?>, '<?php echo $genid?>', <?php echo ($is_mem_cp ? "1" : "0")?>)"><?php echo lang('add value')?></a>
 	</div>
 </div>
+
+<script>
+<?php if (array_var($configs,'disabled')) { ?>
+	$("#<?php echo $genid ?>listValues<?php echo $cp->getId()?> input").attr("disabled", "disabled");
+	$("#<?php echo $genid ?>listValues<?php echo $cp->getId()?> a").remove();
+<?php } ?>
+</script>
