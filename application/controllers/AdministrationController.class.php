@@ -297,6 +297,7 @@ class AdministrationController extends ApplicationController {
 			
 			foreach ($custom_properties as $order => $data) {
 				$new_cp = null;
+				$data = (array) $data; //needs to be array, apparently
 				if($data['id'] != '') {
 					if (is_numeric($data['id'])) {
 						$new_cp = CustomProperties::getCustomProperty($data['id']);
