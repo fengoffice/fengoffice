@@ -339,7 +339,7 @@ function core_dimensions_after_add_subscribers($params, &$ignored) {
 function core_dimensions_after_insert($object, &$ignored) {
 	// add member in persons dimension for new contact
 	if ($object instanceof Contact && !isset($_POST['user'])) {
-		//core_dim_add_new_contact_to_person_dimension($object);
+		core_dim_add_new_contact_to_person_dimension($object); // commenting this out seemed to break support for Persons dimension for newly added Contacts
 	}
 }
 
