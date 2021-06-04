@@ -15,8 +15,17 @@
     } else {
 	
 	    if ($object instanceof ContentDataObject) {
+			
 	        $ot = ObjectTypes::findById($object->getObjectTypeId());
-	        $custom_properties = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility);
+			$extra_conditions = "";
+			if ($ot->getName() == 'contact'){
+				if($object->isUser()){
+					$extra_conditions .= " AND (contact_type LIKE 'user' OR contact_type LIKE 'all') ";
+				} else {
+					$extra_conditions .= " AND (contact_type LIKE 'contact' OR contact_type LIKE 'all') ";
+				}
+			}
+	        $custom_properties = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility, $extra_conditions);
 	        
 	        if (is_array($custom_properties) && count($custom_properties) > 0) {
 		        if (!($visibility == 'all' || $visibility == 'visible_by_default')) {

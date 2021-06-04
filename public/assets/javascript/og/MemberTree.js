@@ -205,7 +205,7 @@ og.MemberTree = function(config) {
 
 					
 					// Show modal form if preferences is prompt
-					if (og.preferences['drag_drop_prompt'] == 'prompt') {
+					if (has_relations && og.preferences['drag_drop_prompt'] == 'prompt') {
 						
 						var div = document.createElement('div');
 						var question = lang('do you want to mantain the current associations of this obj with members of', config.title);
@@ -247,6 +247,8 @@ og.MemberTree = function(config) {
 						if (og.preferences['drag_drop_prompt'] == 'move') {
 							var rm_prev = 1 ;
 						} else if (og.preferences['drag_drop_prompt'] == 'keep') {
+							var rm_prev = 0 ;
+						} else {
 							var rm_prev = 0 ;
 						}
 						og.call_add_objects_to_member(e, ids, e.target.id, attachment, true, rm_prev);
@@ -379,6 +381,13 @@ og.MemberTree = function(config) {
 					context: og.contextManager.plainContext()
 				};
 				
+				if (node.ownerTree.initialConfig.get_childs_params) {
+					for (p_name in node.ownerTree.initialConfig.get_childs_params) {
+						if (typeof(node.ownerTree.initialConfig.get_childs_params[p_name]) == 'function') continue;
+						parameters[p_name] = node.ownerTree.initialConfig.get_childs_params[p_name];
+					}
+				}
+				
 	        	og.openLink(og.getUrl('dimension', 'get_member_childs', parameters), {
 	    			hideLoading:true, 
 	    			hideErrors:true,
@@ -389,7 +398,7 @@ og.MemberTree = function(config) {
 		    				dimension_tree.addMembersToTree(data.members, data.dimension);
 		    				
 		    				if (data.more_nodes_left) {
-		    					og.addViewMoreNode(node, node.ownerTree.id, og.ajaxMemberTreeViewMoreCallback);
+		    					og.addViewMoreNode(node, data.tree_id, og.ajaxMemberTreeViewMoreCallback);
 		    				} else {
 		    					var old_view_more_node = dimension_tree.getNodeById('view_more_' + node.id);
 		    					if (old_view_more_node) old_view_more_node.remove();

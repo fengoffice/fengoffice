@@ -1061,7 +1061,7 @@ function get_custom_property_type_selector_html($attributes) {
     if (!isset($attributes['onchange']))
         $attributes['onchange'] = "og.customPropTypeChanged(this);";
 
-    $cp_types = array('text', 'numeric', 'boolean', 'contact', 'user', 'date', 'datetime', 'list', 'memo', 'address', 'table', 'image', 'color');
+    $cp_types = array('text', 'numeric', 'amount', 'boolean', 'contact', 'user', 'date', 'datetime', 'list', 'memo', 'address', 'table', 'image', 'color');
 
     $options = array();
     foreach ($cp_types as $t) {

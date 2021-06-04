@@ -205,3 +205,8 @@
 	white-space: pre-wrap;
 	line-height: 16px;
 }
+
+/* this is to fix the task timeslots grid to allow right buttons */
+.object-view-grid-container .object-grid .x-panel-tbar .x-toolbar.x-small-editor table {
+	width: 100%;
+}

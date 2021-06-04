@@ -847,6 +847,7 @@
 					$mail_ot = ObjectTypes::findByName('mail');
 					
 					$sql_insert_values = "";
+					$sql_insert_values_array = array();
 					$member_object_types_to_delete = array();
 					$allowed_members_ids= array();
 					foreach ($permissions as &$perm) {
@@ -901,7 +902,8 @@
 										$perm->w = 0;
 									}
 								}
-								$sql_insert_values .= ($sql_insert_values == "" ? "" : ",") . "('".$pg_id."','".$perm->m."','".$perm->o."','".$perm->d."','".$perm->w."')";
+								//$sql_insert_values .= ($sql_insert_values == "" ? "" : ",") . "('".$pg_id."','".$perm->m."','".$perm->o."','".$perm->d."','".$perm->w."')";
+								$sql_insert_values_array[] = "('".$pg_id."','".$perm->m."','".$perm->o."','".$perm->d."','".$perm->w."')";
 								
 								if (!isset($member_object_types_to_delete[$perm->m])) $member_object_types_to_delete[$perm->m] = array();
 								$member_object_types_to_delete[$perm->m][] = $perm->o;
@@ -922,24 +924,41 @@
 						if (isset($all_perm_deleted) && count($all_perm_deleted) > 0) {
 							$member_ids_to_delete = array();
 							foreach ($all_perm_deleted as $mid => $del) {
-								// also check in contact_member_permissions
-								$cmps = ContactMemberPermissions::findAll(array('conditions' => 'permission_group_id='.$pg_id." AND member_id=$mid"));
-								if ($del && (!is_array($cmps) || count($cmps) == 0)) {
-									$member_ids_to_delete[] = $mid;
+								if ($del) {
+									// also check in contact_member_permissions
+									$cmps = ContactMemberPermissions::findAll(array('conditions' => 'permission_group_id='.$pg_id." AND member_id=$mid"));
+									if (!is_array($cmps) || count($cmps) == 0) {
+										$member_ids_to_delete[] = $mid;
+									}
 								}
 							}
 							if (count($member_ids_to_delete) > 0) {
 								DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE member_id IN (".implode(',',$member_ids_to_delete).") AND permission_group_id=$pg_id");
 							}
 						}
+						$sql_delete_values_array = array();
 						foreach ($member_object_types_to_delete as $mid => $obj_type_ids) {
 							if (count($obj_type_ids) > 0) {
-								DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE member_id=$mid AND object_type_id IN (".implode(',',$obj_type_ids).") AND permission_group_id=$pg_id");
+								$sql_delete_values_array[] = "(member_id='$mid' AND object_type_id IN (".implode(',',$obj_type_ids)."))";
+								//DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE member_id=$mid AND object_type_id IN (".implode(',',$obj_type_ids).") AND permission_group_id=$pg_id");
 							}
 						}
-						if ($sql_insert_values != "") {
-							DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id, member_id, object_type_id, can_delete, can_write) VALUES $sql_insert_values ON DUPLICATE KEY UPDATE member_id=member_id");
+						$splitted_delete_values = array_chunk($sql_delete_values_array, 100);
+						foreach ($splitted_delete_values as $values_to_delete) {
+							$sql_delete_values = implode(' OR ', $values_to_delete);
+							DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE ($sql_delete_values) AND permission_group_id=$pg_id");
 						}
+						
+						if (count($sql_insert_values_array) > 0) {
+							$splitted_insert_values = array_chunk($sql_insert_values_array, 1000);
+							foreach ($splitted_insert_values as $values_to_insert) {
+								$sql_insert_values = implode(',', $values_to_insert);
+								if ($sql_insert_values != "") {
+									DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id, member_id, object_type_id, can_delete, can_write) VALUES $sql_insert_values ON DUPLICATE KEY UPDATE member_id=member_id");
+								}
+							}
+						}
+						
 					}
 					
 				} catch (Exception $e) {
@@ -1532,8 +1551,9 @@
 		if ($apply_to_sub_json = array_var($_POST, 'apply_to_submembers_permissions')) {
 			$apply_to_sub = json_decode($apply_to_sub_json);
 			
-			foreach ($apply_to_sub as $dim_id => $dim_perms) {
-				foreach ($dim_perms as $parent_id => $perms) {
+			//foreach ($apply_to_sub as $dim_id => $dim_perms) {
+				//foreach ($dim_perms as $parent_id => $perms) {
+				foreach ($apply_to_sub as $parent_id => $perms) {
 					//$dim_member_ids = Members::findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
 					$parent_member = Members::getMemberById($parent_id);
 					if ($parent_member instanceof Member) {
@@ -1543,7 +1563,7 @@
 						}
 					}
 				}
-			}
+			//}
 		}
 		
 		if ($apply_to_all_json = array_var($_POST, 'apply_to_all_permissions')) {

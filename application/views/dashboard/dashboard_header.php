@@ -101,7 +101,7 @@
     -->
     <div class="dashboard-header-filters">
         <div class="dashboard-header-filters--content">
-            <p>Viewing information with the following filters: </p>
+            <p><?php echo lang('viewing information with the following filters')?>: </p>
             <table class="dashboard-header-table">
                 <?php echo $members_table ?>
             </table>

@@ -483,6 +483,12 @@ og.checkAttach = function() {
 	var config = <?php echo user_config_option("check_attach_word") ? '1' : '0';?>;
 	text = editor.getData();
 	var originalMail = text.indexOf("original_mail");
+	
+	var p = og.getParentContentPanel(Ext.get(genid + 'ckeditor'));
+	if (p) {
+		var cmp = Ext.getCmp(p.id);
+		if (cmp) cmp.setPreventClose(false);
+	}
 
 	if(config && !attach && ((text.indexOf(lang('attach')) !== -1 && (text.indexOf(lang('attach')) < originalMail || originalMail == -1)) || (text.indexOf(lang('attach')) !== -1 && (text.indexOf(lang('attach')) < originalMail || originalMail == -1)))){
 		var conf = confirm(lang("confirm_mail_without_attach"));

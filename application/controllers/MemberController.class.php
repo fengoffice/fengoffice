@@ -217,7 +217,7 @@ class MemberController extends ApplicationController {
 		if (!$dimension instanceof Dimension) return array();
 		
 		$persons_dim = Dimensions::findByCode('feng_persons');
-		if (!$persons_dim instanceof Dimension) $persons_dim_id = $persons_dim->getId();
+		if ($persons_dim instanceof Dimension) $persons_dim_id = $persons_dim->getId();
 		else $persons_dim_id = 0;
 		
 		// get associations (exclude persons dimension)
@@ -229,10 +229,14 @@ class MemberController extends ApplicationController {
 		));
 		
 		// dimension ids
+		$enabled_dimensions = config_option("enabled_dimensions");
 		foreach ($dimension_associations as $da) {
 			/* @var $da DimensionMemberAssociation */
-			if ($da->getDimensionId() == $dimension->getId()) $associated_dimension_ids[] = $da->getAssociatedDimensionMemberAssociationId();
-			else $associated_dimension_ids[] = $da->getDimensionId();
+			if ($da->getDimensionId() == $dimension->getId() && in_array($da->getAssociatedDimensionMemberAssociationId(), $enabled_dimensions)) {
+				$associated_dimension_ids[] = $da->getAssociatedDimensionMemberAssociationId();
+			} else if (in_array($da->getDimensionId(), $enabled_dimensions)) {
+				$associated_dimension_ids[] = $da->getDimensionId();
+			}
 		}
 		
 		// get current selected members that area associated to this dimension

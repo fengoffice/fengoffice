@@ -589,7 +589,7 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .task-list-row-template .task-name{
-    line-height: 30px;
+    line-height: 35px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

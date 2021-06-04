@@ -6,9 +6,10 @@
 
 
 .tasks-widget-customized-legend{
-    font-size: 14px;
+    font-size: 12px;
     line-height: 2;
     color: #333;
+    max-width: 215px;
 }
 
 .tasks-widget-legend-row {

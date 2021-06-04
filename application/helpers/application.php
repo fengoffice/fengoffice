@@ -454,7 +454,13 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 			
 			$extra_conditions = "";
 			Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions, true);
-			
+			if ($ot->getName() == 'contact'){
+				if($object->isUser()){
+					$extra_conditions .= " AND (contact_type LIKE 'user' OR contact_type LIKE 'all') ";
+				} else {
+					$extra_conditions .= " AND (contact_type LIKE 'contact' OR contact_type LIKE 'all') ";
+				}
+			}
 			$cps = CustomProperties::getAllCustomPropertiesByObjectType($ot->getId(), $visibility, $extra_conditions);
 			
 			foreach($cps as $customProp){
@@ -1780,6 +1786,10 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 				width: <?php echo array_var($options, 'width', '385') ?>,
 				listeners: {'tree rendered': function (t) {if (select_root) t.root.select();}}
 			};
+			
+			<?php if( isset ($options['get_childs_params'])) : ?>
+				config.get_childs_params = <?php echo json_encode($options['get_childs_params']) ?>;
+			<?php endif; ?>
 		
 			<?php if( isset ($options['root_lang'])) : ?>
 				config.root_lang = <?php echo json_encode($options['root_lang']) ?>;

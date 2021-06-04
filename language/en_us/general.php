@@ -484,4 +484,6 @@ return array(
 	'pick a color' => 'Pick a color',
 	'you need to be in a client or a project in order to perform this action' => 'You need to be in a client or a project in order to perform this action',
 	'remove filters' => 'Remove filters',
+	'finish sign up' => 'Finish sign up',
+	'viewing information with the following filters' => 'Viewing information with the following filters',
 );

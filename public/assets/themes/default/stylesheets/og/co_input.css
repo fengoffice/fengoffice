@@ -116,17 +116,23 @@
 	float: none;
 }
 
+form.add-task {
+	width: 1250px;
+}
 .task-data .left-section, .task-data .right-section {
 	float: left;
+}
+.task-data td.left-section-td {
+	border-right:1px solid #ccc;
 }
 .task-data .left-section {
 	min-width: 465px;
 	max-width: 620px;
-	border-right:1px solid #ccc;	
+	width: 580px;
 }
 .task-data .right-section {
 	min-width: 465px;
-	padding-left: 10px;	
+	padding-left: 20px;	
 }
 .task-data {
 	min-width: 950px;

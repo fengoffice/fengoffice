@@ -314,7 +314,7 @@ class ObjectController extends ApplicationController {
 		} else {
 			$enteredMembers = array();
 		}
-
+		
 		$manageable_members = array();
 		foreach ($enteredMembers as $ent_mem) {
 			if ($ent_mem->getDimension()->getIsManageable() && $ent_mem->getDimension()->getDefinesPermissions()) $manageable_members[] = $ent_mem;
@@ -344,7 +344,7 @@ class ObjectController extends ApplicationController {
 		}
 
 		$removedMemebersIds = $object->removeFromAllMembers($user, $enteredMembers);
-
+		
 		$not_valid_members = array();
 		/* @var $object ContentDataObject */
 		$validMembers = $check_allowed_members ? $object->getAllowedMembersToAdd($user, $enteredMembers, $not_valid_members) : $enteredMembers;
@@ -367,17 +367,17 @@ class ObjectController extends ApplicationController {
 		$continue = true;
 		Hook::fire('before_add_to_members', array('object' => $object, 'members' => $validMembers), $continue);
 		if (!$continue) return;
-
+		
 		// add object to members selected in form
 		$object->addToMembers($validMembers, true, $is_multiple_classification);
-
+		
 		// add object to related members
 		$object->addToRelatedMembers($validMembers, true);
-
+		
 		Hook::fire ('after_add_to_members', $object, $validMembers);
-
+		
 		Hook::fire ('after_remove_members_from_object', $object, $removedMemebersIds);
-
+		
 		$save_sharing_table = true;
 		// performance issue hack -----------------
 		// don't add to sharing table if object is an user and is classified in more than 1000 members
@@ -661,6 +661,17 @@ class ObjectController extends ApplicationController {
 							$custom_property_value->setValue($address_val);
 							$custom_property_value->save();
 
+						} else if ($custom_property->getType() == 'amount') {
+
+							CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
+				
+							$custom_property_value = new CustomPropertyValue();
+							$custom_property_value->setObjectId($object->getId());
+							$custom_property_value->setCustomPropertyId($id);
+							$custom_property_value->setValue(clean_formatted_money_amount_for_sql($value['amount']));
+							$custom_property_value->setCurrencyId($value['currency_id']);
+							$custom_property_value->save();
+							
 						} else if ($custom_property->getType() == 'list') {
 							CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
 							foreach($value as $list_key => $list_val){
@@ -1001,7 +1012,7 @@ class ObjectController extends ApplicationController {
 	 * @param void
 	 * @return null
 	 */
-	function link_to_new_object($the_object){
+	function link_to_new_object($the_object, $check_permissions=true){
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
@@ -1009,8 +1020,10 @@ class ObjectController extends ApplicationController {
 		}
 
 		$objects = array_var($_POST, 'linked_objects');
+		
+		$can_link_object = !$check_permissions || $the_object->canLinkObject(logged_user());
 
-		if (is_array($objects) && count($objects) > 0 && !$the_object->isNew() && !$the_object->canLinkObject(logged_user())) {
+		if (is_array($objects) && count($objects) > 0 && !$the_object->isNew() && !$can_link_object) {
 			flash_error(lang("user cannot link objects"));
 			return;
 		}
@@ -1027,7 +1040,7 @@ class ObjectController extends ApplicationController {
 					$object = ProjectFiles::getByFilename($split[1]);
 				} else continue;
 
-				if ($object->canLinkObject(logged_user())) {
+				if (!$check_permissions || $object->canLinkObject(logged_user())) {
 					$the_object->linkObject($object);
 					if ($the_object instanceof ContentDataObject)
 						ApplicationLogs::createLog($the_object, ApplicationLogs::ACTION_LINK,false,null,true, $object->getId());

@@ -240,7 +240,7 @@ class AdministrationController extends ApplicationController {
 		
 	} // custom_properties
 	
-	function list_custom_properties_for_type() {
+	function list_custom_properties_for_type() { 
 		if(!can_manage_configuration(logged_user())) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
@@ -296,6 +296,7 @@ class AdministrationController extends ApplicationController {
 			DB::beginWork();
 			
 			foreach ($custom_properties as $order => $data) {
+				
 				$new_cp = null;
 				if($data['id'] != '') {
 					if (is_numeric($data['id'])) {

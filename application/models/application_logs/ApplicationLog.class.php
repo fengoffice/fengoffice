@@ -242,6 +242,48 @@ class ApplicationLog extends BaseApplicationLog {
 				if ($object) {
 					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);
 				}
+				
+			case ApplicationLogs::ACTION_MOVE :
+			case ApplicationLogs::ACTION_COPY :
+				$exploded = explode(";", $this->getLogData());
+				foreach ($exploded as $str) {
+					if (str_starts_with($str, "from:")) {
+						$from_ids_csv = str_replace("from:", "", $str);
+						if ($from_ids_csv != '') {
+							$from_rows = DB::executeAll("SELECT name FROM fo_members WHERE id IN ($from_ids_csv)");
+							$from_names = array();
+							foreach ($from_rows as $r) {
+								$from_names[] = $r['name'];
+							}
+						}
+					} else if (str_starts_with($str, "to:")) {
+						$to_ids_csv = str_replace("to:", "", $str);
+						if ($to_ids_csv != '') {
+							$to_rows = DB::executeAll("SELECT name FROM fo_members WHERE id IN ($to_ids_csv)");
+							$to_names = array();
+							foreach ($to_rows as $r) {
+								$to_names[] = $r['name'];
+							}
+						}
+					}
+				}
+				if($object){
+					if ($object instanceof Timeslot) {
+						$object_link = '';
+					}
+					$from_str = '<span class="bold">'.implode(', ', $from_names).'</span>';
+					$to_str = '<span class="bold">'.implode(', ', $to_names).'</span>';
+					if (count($from_names) > 0 && count($to_names) > 0) {
+						return lang('activity ' . $this->getAction() . ' from to', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $from_str, $to_str);
+					} else if (count($from_names) > 0) {
+						return lang('activity ' . $this->getAction() . ' from', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $from_str);
+					} else if (count($to_names) > 0) {
+						return lang('activity ' . $this->getAction() . ' to', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $to_str);
+					} else {
+						return lang('activity ' . $this->getAction() . ' no ws', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link);
+					}
+				}
+				
 			case ApplicationLogs::ACTION_LOGIN :
 			case ApplicationLogs::ACTION_LOGOUT :
 				return lang('activity ' . $this->getAction(), $user->getDisplayName());					

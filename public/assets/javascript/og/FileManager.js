@@ -70,9 +70,13 @@ og.FileManager = function() {
 						sm.clearSelections();
 						
 						og.eventManager.fireEvent('after grid panel load', {man:cmp, data:d});
+						if (d && d.totals) {
+							cmp.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+						} else {
+							cmp.reloadGridPagingToolbar('files','list_files','file-manager');
+						}
 					}
 					
-					Ext.getCmp('file-manager').reloadGridPagingToolbar('files','list_files','file-manager');
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 				}

@@ -96,7 +96,8 @@ class Timezones {
 		}
 
 		if ($object_arr['timezone_id'] == $user->getUserTimezoneId()) {
-			$tz_value = $object_arr['timezone_value'];
+			//$tz_value = $object_arr['timezone_value'];
+			$tz_value = $user->getUserTimezoneValue();
 		} else {
 			$tz_value = self::getTimezoneOffset($user->getUserTimezoneId());
 

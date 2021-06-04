@@ -129,6 +129,12 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 		if (property.information_type) {
 			$(pre_id + " #information_type").val(property.information_type);
 		}
+		if (property.is_import_id) {
+			$(pre_id + " #is_import_id").attr('checked', 'checked');
+		}
+		if (property.contact_type) {
+			$(pre_id + " #contact_type").val(property.contact_type);
+		}
 
 		$(pre_id + ' #type option[value="' + property.type + '"]').prop('selected', true);
 		
@@ -232,7 +238,8 @@ og.saveObjectTypeCustomProperties = function(genid, save_url) {
 				is_required: $(pre_id + " #is_required").attr('checked') == 'checked',
 				is_multiple_values: $(pre_id + " #is_multiple_values").attr('checked') == 'checked',
 				visible_by_default: $(pre_id + " #visible_by_default").attr('checked') == 'checked',
-				show_in_lists: $(pre_id + " #show_in_lists").attr('checked') == 'checked'
+				show_in_lists: $(pre_id + " #show_in_lists").attr('checked') == 'checked',
+				contact_type:  $(pre_id + " #contact_type").attr('value')
 		}
 
 		// set additional parameters foreach cp

@@ -58,8 +58,13 @@ og.MessageManager = function () {
                         sm.clearSelections();
 
                         og.eventManager.fireEvent('after grid panel load', {man: cmp, data: d});
+                        
+                        if (d && d.totals) {
+							cmp.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+						} else {
+		                    cmp.reloadGridPagingToolbar('message', 'list_all', 'message-manager');
+						}
                     }
-                    Ext.getCmp('message-manager').reloadGridPagingToolbar('message', 'list_all', 'message-manager');
 
                     og.eventManager.fireEvent('replace all empty breadcrumb', null);
                 }

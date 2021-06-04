@@ -434,6 +434,7 @@ abstract class ContentDataObjects extends DataManager {
 		$use_like_in_searchable_objects = array_var($args, 'use_like_in_searchable_objects');
 		$select_columns = array_var($args, 'select_columns');
 		$fire_additional_data_hook = array_var($args, 'fire_additional_data_hook', true);
+		$only_query_totals_row = array_var($args, 'only_query_totals_row');
 		
 		//text filter param
 		$text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
@@ -443,8 +444,11 @@ abstract class ContentDataObjects extends DataManager {
 		
 		if (trim($text_filter) != '') {
 		    
-		    $join_with_searchable_objects = true;
+		    //$join_with_searchable_objects = true;
 		    
+			$use_like_in_searchable_objects = true;
+			$select_columns = array('o.*,e.*');
+			
 		    $text_filter = str_replace("'", "\'", trim($text_filter));
 		    
 		    //if text_filter starts or ends with special characters, remove it for do the query.
@@ -456,11 +460,16 @@ abstract class ContentDataObjects extends DataManager {
 		    	} else {
 		    		$text_filter_str = "%$text_filter%";
 		    	}
-		    	$text_filter_extra_conditions .= "
+		    	/*$text_filter_extra_conditions .= "
 					AND so.content like '$text_filter_str'
+				";*/
+		    	$text_filter_extra_conditions .= "
+					AND EXISTS (SELECT * FROM ".TABLE_PREFIX."searchable_objects so WHERE so.rel_object_id=o.id AND so.content like '$text_filter_str')
 				";
 		    	
 		    } else {
+		    	$join_with_searchable_objects = true;
+		    	
 			    if(str_word_count($text_filter, 0) > 1){
 			        $text_filter_extra_conditions .= "
 									AND MATCH (so.content) AGAINST ('\"$text_filter\"' IN BOOLEAN MODE)
@@ -475,13 +484,15 @@ abstract class ContentDataObjects extends DataManager {
 		
 		if (empty($select_columns)) {
 		    if ($join_with_searchable_objects) {
-		        $select_columns = array('DISTINCT(o.id),o.*,e.*');
+		        //$select_columns = array('DISTINCT(o.id),o.*,e.*');
+		        $select_columns = array('o.*,e.*');
 		    } else {
 		        $select_columns = array('*');
 		    }
 		}else{
-		    if ($join_with_searchable_objects) {
-		        $select_columns = array('DISTINCT(o.id),o.*,e.*');		        		        
+			if ($join_with_searchable_objects) {
+		        //$select_columns = array('DISTINCT(o.id),o.*,e.*');	
+		        $select_columns = array('o.*,e.*');
 		    }
 		}
 		
@@ -509,7 +520,7 @@ abstract class ContentDataObjects extends DataManager {
 	    		$SQL_TYPE_CONDITION = "o.object_type_id = IF(e.rel_object_id > 0, (SELECT z.object_type_id FROM ".TABLE_PREFIX."objects z WHERE z.id = e.rel_object_id), $type_id)";
 	    	} else {
 	    		$SQL_BASE_JOIN = " INNER JOIN  $table_name e ON e.object_id = o.id ";
-	    		$SQL_TYPE_CONDITION = "o.object_type_id = $type_id";
+	    		$SQL_TYPE_CONDITION = "true";// "o.object_type_id = $type_id"; // no need to add this clause, inner join is filtering
 	    	}
 			$SQL_EXTRA_JOINS = self::prepareJoinConditions(array_var($args,'join_params'));
 			
@@ -517,6 +528,7 @@ abstract class ContentDataObjects extends DataManager {
 		
 		if ($join_with_searchable_objects) {
 			$SQL_SEARCHABLE_OBJ_JOIN = " INNER JOIN ".TABLE_PREFIX."searchable_objects so ON so.rel_object_id=o.id ";
+			$args['group_by'] = "o.id";
 		}
 		
 		if (!$ignore_context && !$member_ids) {
@@ -797,7 +809,7 @@ abstract class ContentDataObjects extends DataManager {
 			}
 			
 			$sql_total = "
-				SELECT count(DISTINCT(o.id)) as total FROM ".TABLE_PREFIX."objects o
+				SELECT count(o.id) as total FROM ".TABLE_PREFIX."objects o
 				$SQL_BASE_JOIN
 				$SQL_SEARCHABLE_OBJ_JOIN
 				$SQL_EXTRA_JOINS
@@ -827,35 +839,39 @@ abstract class ContentDataObjects extends DataManager {
 			
 		    if(!$only_count_results){
 				// Execute query and build the resultset
-				
-		    	$rows = DB::executeAll($sql);
-		    	
-		    	if ($return_raw_data) {
-		    		$result->objects = $rows;
-		    	} else {
-		    		if($rows && is_array($rows)) {
-		    			foreach ($rows as $row) {
-		    				if ($handler_class) {
-		    					$phpCode = '$co = '.$handler_class.'::instance()->loadFromRow($row);';
-		    					eval($phpCode);
-		    				}
-		    				if ( $co ) {
-		    					$result->objects[] = $co;
-		    				}
-		    			}
-		    		}
-		    	}
-				if ($count_results) {
-					$total = DB::executeOne($sql_total);
-					$result->total = $total['total'];	
-				}else{
-					if ( is_array($result->objects) && count($result->objects) >= $limit ) {
-						$result->total = 10000000;
+		    	if (!$only_query_totals_row) {
+			    	$rows = DB::executeAll($sql);
+			    	
+			    	if ($return_raw_data) {
+			    		$result->objects = $rows;
+			    	} else {
+			    		if($rows && is_array($rows)) {
+			    			
+			    			$phpCode = '$manager = '.$handler_class.'::instance();';
+			    			eval($phpCode);
+			    			
+			    			foreach ($rows as $row) {
+			    				if ($manager instanceof DataManager) {
+			    					$co = $manager->loadFromRow($row);
+			    				}
+			    				if ( $co ) {
+			    					$result->objects[] = $co;
+			    				}
+			    			}
+			    		}
+			    	}
+					if ($count_results) {
+						$total = DB::executeOne($sql_total);
+						$result->total = $total['total'];	
 					}else{
-						$result->total = $start + (is_array($result->objects) ? count($result->objects) : 0);
+						if ( is_array($result->objects) && count($result->objects) >= $limit ) {
+							$result->total = 10000000;
+						}else{
+							$result->total = $start + (is_array($result->objects) ? count($result->objects) : 0);
+						}
 					}
-				}
-				
+		    	}
+		    	
 				// additional data over result
 				$from_sql = "FROM ".TABLE_PREFIX."objects o";
 				$joins_sql = "$SQL_BASE_JOIN $SQL_SEARCHABLE_OBJ_JOIN $SQL_EXTRA_JOINS";
@@ -1010,7 +1026,7 @@ abstract class ContentDataObjects extends DataManager {
     
     
     static function prepareTrashAndArchivedConditions($trashed, $archived){
-        $trashed_cond = "`o`.`trashed_by_id` " .($trashed ? ">" : "="). " 0";
+        $trashed_cond = "`o`.`trashed_on` " .($trashed ? ">" : "="). " 0";
     	if ($trashed) {
     		$archived_cond = "";
     	} else {
@@ -1018,9 +1034,9 @@ abstract class ContentDataObjects extends DataManager {
     			$archived_cond = "";
     		} else {
     			if (!$archived || $archived == 'unarchived') {
-    				$archived_cond = "AND `o`.`archived_by_id` = 0";
+    				$archived_cond = "AND `o`.`archived_on` = 0";
     			} else {
-    				$archived_cond = "AND `o`.`archived_by_id` > 0";
+    				$archived_cond = "AND `o`.`archived_on` > 0";
     			}
     		}
     	}
@@ -1047,7 +1063,6 @@ abstract class ContentDataObjects extends DataManager {
     	if ($order && $order_dir){
     		if (!is_array($order)){
                 $order_conditions = "ORDER BY $order $order_dir";
-                $order_conditions .= ", o.name $order_dir";
             } else {
     			$i = 0;
     			foreach($order as $o){
@@ -1058,12 +1073,14 @@ abstract class ContentDataObjects extends DataManager {
     					case 'dateArchived': $o = 'archived_on'; break;
     					default: break;
     				}
-    				if ($i==0)$order_conditions.= "ORDER BY $o $order_dir";
-    				else $order_conditions.= ", $o $order_dir";
-
-    				if($i == count($order)){
-                        $order_conditions .= ", o.name ".$order_dir;
-                    }
+    				$dir = $order_dir;
+    				if (is_array($o)) {
+    					$dir = $o['dir'];
+    					$o = $o['col'];
+    				}
+    				
+    				if ($i==0)$order_conditions.= "ORDER BY $o $dir";
+    				else $order_conditions.= ", $o $dir";
 
                     $i++;
     			}

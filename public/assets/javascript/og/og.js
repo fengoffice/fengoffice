@@ -3964,6 +3964,14 @@ og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 			parameters[key] = add_params[key];
 		}
 	}
+	
+	
+	if (pnode.ownerTree.initialConfig.get_childs_params) {
+		for (p_name in pnode.ownerTree.initialConfig.get_childs_params) {
+			if (typeof(pnode.ownerTree.initialConfig.get_childs_params[p_name]) == 'function') continue;
+			parameters[p_name] = pnode.ownerTree.initialConfig.get_childs_params[p_name];
+		}
+	}
 
 	og.openLink(og.getUrl('dimension', 'get_member_childs', parameters), {
 		hideLoading:true,
@@ -4250,10 +4258,12 @@ og.getListToolbarFilterComponent = function(config) {
         width: config.width ? config.width : 160,
         valueField: 'value',
         valueNotFoundText: '',
+        grid_id: config.grid_id,
         listeners: {
         	'select' : function(combo, record) {
-                    var man = Ext.getCmp(config.grid_id);
+                    var man = Ext.getCmp(combo.grid_id);
                     man.filters[config.name].value = combo.getValue();
+                    if (man.store_params) man.store_params[config.name] = combo.getValue();
                     man.load();
         	},
         }
@@ -4600,7 +4610,7 @@ og.add_object_grid_quick_add_row = function(grid, config) {
 	}
 }
 
-og.on_quick_add_row_input_click = function(input) {
+og.on_quick_add_row_input_click = function(input, event) {
 	$(input).focus();
 }
 
@@ -4737,7 +4747,8 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 	$(add_row).find('input, select').each(function() {
 		if ($(this).attr('name').indexOf('members_input_') == 0) {
 			var mem_ids = Ext.util.JSON.decode($(this).val());
-			member_ids = member_ids.concat(mem_ids);
+			//member_ids = member_ids.concat(mem_ids);
+			member_ids = mem_ids; // keep only the last one, it is the only that is updated with all member ids
 		} else {
 			params[$(this).attr('name')] = $(this).val();
 		}
@@ -4816,7 +4827,7 @@ og.add_timeslot_module_quick_add_enter = function(event, genid) {
 
 og.add_timeslot_module_quick_add_row = function(grid, config) {
 
-	var onclick = 'og.on_quick_add_row_input_click(this);';
+	var onclick = 'og.on_quick_add_row_input_click(this, event);';
 
 	var first_input_column = null;
 	for (var i=0; i<grid.colModel.config.length; i++) {
@@ -4829,7 +4840,7 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 
 	var record_config = {};
 	record_config.type = 'add';
-	record_config.description = '<input type="text" id="'+config.genid+'add_ts_description" name="timeslot[description]" value="" style="width:95%;"';
+	record_config.description = '<input type="text" id="'+config.genid+'add_ts_description" name="timeslot[description]" value="" style="width:95%;" onmousedown="event.stopPropagation();"';
 	record_config.description += 'onclick="'+onclick+'" tabindex="'+og.quick_add_row_column_tabindex(grid, 'description')+'" onkeydown="og.add_timeslot_module_quick_add_enter(event, \''+config.genid+'\')"/>';
 	record_config.name = '<span id="'+config.genid+'usercombo">';
 	record_config.start_time = '<table><tr><td><span id="'+config.genid+'start_date"></td><td><span id="'+config.genid+'start_time"></td></tr></table>';
@@ -5058,6 +5069,11 @@ og.set_image_area_selection = function(genid, is_company) {
 	}, 500);
 }
 
+
+og.formatAmount = function(id) {
+	amount = $("#"+id).val();
+	$("#"+id).val(og.format_money_amount(amount));
+}
 
 og.updatePictureFile = function (url) {
 	og.openLink(url, {
@@ -5310,4 +5326,22 @@ og.getDateArray = function (date, time) {
     }
     result.push(times[1]);
     return result;
+}
+
+
+og.reload_tasks_list_with_status = function(status_id) {
+
+	var url = og.getUrl('task', 'set_task_list_filters_to_reload', {status_id: status_id});
+	og.openLink(url, {
+		hideLoading:true,
+		callback: function(success, data) {
+			var t = Ext.getCmp("tasks-panel");
+	        if (t) {
+	        	var tp = Ext.getCmp('tabs-panel');
+	        	tp.setActiveTab(t);
+	        	t.reset();
+	        }
+		}
+	});
+
 }

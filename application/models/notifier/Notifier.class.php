@@ -671,7 +671,7 @@ class Notifier {
 		//PHP7 fix:
 		//Previously: if (!$toemail) continue;
 		if (!$toemail) return;
-		
+		/*
 		self::queueEmail(
 			null,
 			array(self::prepareEmailAddress($toemail, $user->getObjectName())),
@@ -681,6 +681,28 @@ class Notifier {
 			lang('reset password'),
 			tpl_fetch(get_template_path('forgot_password', 'notifier'))
 		); // send
+		*/
+		
+		try {
+			$sent_ok = self::sendEmail(
+					array(self::prepareEmailAddress($toemail, $user->getObjectName())), 
+					self::prepareEmailAddress($from_email, $from_name), 
+					lang('reset password'), 
+					tpl_fetch(get_template_path('forgot_password', 'notifier')), 
+					'text/html'
+			);
+			if (!$sent_ok) {
+				logger::log_r("Error sending forgot password Notification");
+			}
+		} catch (Exception $e) {
+			logger::log_r("Error Sending Notification: " . $e->getMessage());
+			logger::log_r($e->getTraceAsString());
+			// save log in server
+			if (defined('EMAIL_ERRORS_LOGDIR') && file_exists(EMAIL_ERRORS_LOGDIR) && is_dir(EMAIL_ERRORS_LOGDIR)) {
+				$err_msg = ROOT_URL."\nError sending notification (subject=$subject) using account $from\n\nError detail:\n".$e->getMessage()."\n".$e->getTraceAsString();
+				file_put_contents(EMAIL_ERRORS_LOGDIR . basename(ROOT), $err_msg, FILE_APPEND);
+			}
+		}
 		
 		$locale = logged_user() instanceof Contact ? logged_user()->getLocale() : DEFAULT_LOCALIZATION;
 		Localization::instance()->loadSettings($locale, ROOT . '/language');

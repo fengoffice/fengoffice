@@ -215,7 +215,7 @@
 .ico-refresh, .op-ico-refresh, .x-toolbar .x-tbar-loading {
 	/*background-image: url(../../images/16x16/reopen.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/refresh.png) !important;
-	background-size: 18px 18px!important;	
+	background-size: 16px 14px!important;	
 }
 
 .ico-contact {
@@ -1252,7 +1252,16 @@ select.select_milestone, select.select_task_list, select.select_message {
 
 .quick-add-row .single-tree .collapsible-body {
 	overflow: auto !important;
+	position: relative;
+	top: 0px !important;
 }
+.quick-add-row .x-grid3-col.x-grid3-cell {
+	vertical-align: top;
+	padding-top: 4px;
+}
+.quick-add-row .x-grid3-col.x-grid3-cell .dimension-selector-container {
+	margin: 0;
+} 
 
 .single-tree .member-chooser {
 	width: 230px;

@@ -47,39 +47,56 @@
   				$member_ids = $members_to_remove;
   			}
   			
-  			$memebers_deleted_ids = array();
-  			foreach($member_ids as $id){
-				
-				$member = Members::findById($id);
-				if (!$member instanceof Member) continue;
-				
-				if($check_permissions){
-					//can write this object type in the member
-					$can_write = $object->canAddToMember($contact, $member, $context_members);
-				}else{
-					$can_write = true;
-				}
-				
-				if ($can_write){
-					$om = self::findById(array('object_id' => $object->getId(), 'member_id' => $id));
-					if ($om instanceof ObjectMember) {
-						$om->delete();
-						$memebers_deleted_ids[] = $id;
+  			if (!$check_permissions || $contact->isAdministrator()) {
+  				$member_ids = array_filter($member_ids);
+  				if (count($member_ids) > 0) {
+  					DB::execute("DELETE FROM fo_object_members WHERE member_id IN (".implode(',', $member_ids).") AND object_id=".$object->getId());
+  				
+  					$all_parent_member_ids = Members::getAllParentsInHierarchy($member_ids, true);
+	  				
+	  				if (count($all_parent_member_ids) > 0) {
+	  					DB::execute("DELETE FROM fo_object_members WHERE is_optimization=1 AND member_id IN (".implode(',', $all_parent_member_ids).") AND object_id=".$object->getId());
+	  				}
+  				}
+  				$memebers_deleted_ids = $member_ids;
+  				
+  			} else {
+  				
+	  			
+	  			$memebers_deleted_ids = array();
+	  			foreach($member_ids as $id){
+					
+					$member = Members::getMemberById($id);
+					if (!$member instanceof Member) continue;
+					
+					if($check_permissions){
+						//can write this object type in the member
+						$can_write = $object->canAddToMember($contact, $member, $context_members);
+					}else{
+						$can_write = true;
 					}
 					
-					$stop = false;
-					while ($member->getParentMember() != null && !$stop){
-						$member = $member->getParentMember();
-						$obj_member = ObjectMembers::findOne(array("conditions" => array("`object_id` = ? AND `member_id` = ? AND 
-									`is_optimization` = 1", $object->getId(),$member->getId())));
-						if (!is_null($obj_member)) {
-							$obj_member->delete();
+					if ($can_write){
+						$om = self::findById(array('object_id' => $object->getId(), 'member_id' => $id));
+						if ($om instanceof ObjectMember) {
+							$om->delete();
+							$memebers_deleted_ids[] = $id;
 						}
-						else $stop = true;
+						
+						$stop = false;
+						while ($member->getParentMember() != null && !$stop){
+							$member = $member->getParentMember();
+							$obj_member = ObjectMembers::findOne(array("conditions" => array("`object_id` = ? AND `member_id` = ? AND 
+										`is_optimization` = 1", $object->getId(),$member->getId())));
+							if (!is_null($obj_member)) {
+								$obj_member->delete();
+							}
+							else $stop = true;
+						}
 					}
 				}
-			}
-			
+  			}
+  			
 			return $memebers_deleted_ids;
   		}
   		

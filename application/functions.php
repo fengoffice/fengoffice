@@ -946,7 +946,7 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 		}	
 		$contact->setUsername(array_var($user_data, 'username'));
 		$contact->setTimezone(array_var($user_data, 'timezone'));
-		$user_from_contact = true;
+		$user_from_contact = false;
 	}
 	$contact->save();
 	if (is_valid_email(array_var($user_data, 'email'))) {
@@ -989,7 +989,9 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 			$rol_permissions=SystemPermissions::getRolePermissions(array_var($user_data, 'type'));
 			if (is_array($rol_permissions)) {
 				foreach($rol_permissions as $pr){
-					$sp->setPermission($pr);
+					if ($pr != 'permission_group_id'){
+						$sp->setPermission($pr);
+					}
 				}
 			}
 		}
@@ -1190,7 +1192,7 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 }
 
 // Warning don't use this function inside a mysql transaction, use it after comit.
-function send_notification($user_data, $contact_id){
+function send_notification($user_data, $contact_id, $token_valid_period=null){
 	$contact = Contacts::findById($contact_id);//$contact->getId()
 	$password = '';
 	// Send notification
@@ -1200,7 +1202,8 @@ function send_notification($user_data, $contact_id){
 				// Generate link password
 				$user = Contacts::getByEmail(array_var($user_data, 'email'), null, true);
 				$token = sha1(gen_id() . (defined('SEED') ? SEED : ''));
-				$timestamp = time() + 60*60*24;
+				if (!$token_valid_period) $token_valid_period = 60*60*24; // 1 day
+				$timestamp = time() + $token_valid_period;
 				set_user_config_option('reset_password', $token . ";" . $timestamp, $user->getId());
 				Notifier::newUserAccountLinkPassword($contact, $password, $token);
 			} else {
@@ -2390,8 +2393,7 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 	$objProp = TemplateObjectProperties::getPropertiesByTemplateObject($object->getTemplateId(), $object->getId());
 	$manager = $copy->manager();
 	
-	foreach($objProp as $property) { 
-	
+	foreach($objProp as $property) {
 		$propName = $property->getProperty();
 		$value = $property->getValue();
 	
@@ -2423,6 +2425,7 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 			if ($opPos !== false) {
 				// Is parametric
 				$dateParam = substr($value, 1, strpos($value, '}') - 1);
+				$dateParam = str_replace("'", "", $dateParam);
 				$hour_min = null;
 
                 $tz_offset = Timezones::getTimezoneOffsetToApply($copy);

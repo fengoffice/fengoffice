@@ -468,6 +468,7 @@ class ProjectTasks extends BaseProjectTasks {
 			$task_members = array();
 			foreach ($member_ids as $member_id) $task_members[] = Members::getMemberById($member_id); // uses cache
 			//$task_members = Members::findAll(array("conditions" => "id IN (".implode(',', $member_ids).")"));
+			$task_members = array_filter($task_members);
 			$members_data = array();
 			foreach ($task_members as $m) {
 				/* @var $m Member */

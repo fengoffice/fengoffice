@@ -117,6 +117,10 @@ $(function() {
 				'is_required' => array_var($cp, 'is_required') ? '1' : '',
 				'is_multiple_values' => array_var($cp, 'is_multiple_values') ? '1' : '',
 			);
+		    if ($object_type->getName() == 'contact') {
+				$prop['contact_type'] = $cp['contact_type'];
+			}
+			
 			Hook::fire('additional_custom_property_fields', array('cp' => $cp, 'ot' => $object_type), $prop);
 ?>
 		var prop = Ext.util.JSON.decode('<?php echo (defined('JSON_HEX_APOS') ? json_encode($prop, JSON_HEX_APOS) : json_encode($prop)) ?>');

@@ -30,7 +30,8 @@ member_selector.init = function(genid) {
 	// fill store with preloaded members
 	member_selector.preload_members(genid);
 	
-	og.openLink(og.getUrl('member', 'get_dimension_id', {member_id: Ext.util.JSON.encode(dimension_to_get)}), {callback: function(success, data){
+	if (dimension_to_get.length > 0) {
+	  og.openLink(og.getUrl('member', 'get_dimension_id', {member_id: Ext.util.JSON.encode(dimension_to_get)}), {callback: function(success, data){
 		
 		if (!data.dim_ids) {
 			og.eventManager.fireEvent('after member_selector init', null);
@@ -66,7 +67,8 @@ member_selector.init = function(genid) {
 		
 		og.eventManager.fireEvent('after member_selector init', null);	
 		og.eventManager.fireEvent('replace all empty breadcrumb', null);
-	}});
+	  }});	
+	}
 	
 	if (!selected_member_ids || selected_member_ids.length == 0) {
 		var idshf = document.getElementById(genid+'subscribers_ids_hidden');

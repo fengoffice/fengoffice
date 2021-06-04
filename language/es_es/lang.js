@@ -906,5 +906,6 @@ addLangs({
     'unclassified message':'Está a punto de agregar un contacto no clasificado. Tenga en cuenta que al guardar este formulario, el contacto se clasificará automáticamente en este miembro.',
     'add unclassified contact':'Añadir contacto no clasificado',
 	'template name required': 'El nombre de la plantilla es requerido',
-    'template': 'Plantilla'
+    'template': 'Plantilla',
+    'upcoming tasks w': 'Próximas'
 });

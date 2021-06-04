@@ -128,7 +128,7 @@ class TemplateController extends ApplicationController {
 							if (is_array($add_attr_milestones)) $additional_attributes['milestone'] = array_var($add_attr_milestones, $objid);
 						}
 						$oid = $cotemplate->addObject($object, $additional_attributes);
-						$object_ids[$objid] = $oid;
+						if ($oid) $object_ids[$objid] = $oid;
 	// 					COTemplates::validateObjectContext($object, $member_ids);
 					}
 				}
@@ -405,7 +405,7 @@ class TemplateController extends ApplicationController {
 						if (is_array($add_attr_milestones)) $additional_attributes['milestone'] = array_var($add_attr_milestones, $objid);
 					}
 					$oid = $cotemplate->addObject($object, $additional_attributes);
-					$object_ids[$objid] = $oid;
+					if ($oid) $object_ids[$objid] = $oid;
 				}
 
 				TemplateObjectProperties::deletePropertiesByTemplate(get_id());
@@ -941,7 +941,7 @@ class TemplateController extends ApplicationController {
 			Hook::fire('before_instantiate_paramters', array('id' => $template_id, 'params' => array_var($_POST, 'parameterValues')), $error);
 
 			foreach ($params as $param_name => $val) {
-				$tp = TemplateParameters::findOne(array('conditions' => array("template_id=? AND name=?", $template_id, $param_name)));
+				$tp = TemplateParameters::findOne(array('conditions' => array("template_id=? AND REPLACE(`name`,\"'\",'')=?", $template_id, $param_name)));
 				if ($tp instanceof TemplateParameter && $tp->getColumnValue('is_required') && !$val) {
 					$error = lang('custom property value required', $param_name);
 				} else if ($tp instanceof TemplateParameter && $tp->getColumnValue('type') == 'date' && !isDate($val)) {

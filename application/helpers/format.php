@@ -603,9 +603,26 @@ function get_format_value_to_header($col, $obj_type_id)
 						$cp_val->setValue($formatted);
 					}
 				}
+
+				if ($cp->getType() == 'amount' && $cp_val instanceof CustomPropertyValue) {
+					// if raw_data=true then return the json value as it is in the db, else render the feng component
+					if (!$raw_data) {
+						$currency_id = $cp_val->getCurrencyId();
+						$currency = Currencies::findById($currency_id);
+                        if ($currency instanceof Currency) {
+							$currency_symbol = $currency->getSymbol();
+						} else {
+							$currency_symbol = config_option('currency_code');
+						}
+						
+						$formatted = format_money_amount($cp_val->getValue(), $currency_symbol);
+					}
+				}
 				
 				if ($raw_data && $cp->getType() == 'address') {
 					$val_to_show[] = $formatted;
+				} else if ($cp->getType() == 'amount'){
+					$val_to_show = $formatted;
 				} else {
 					$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof CustomPropertyValue ? $cp_val->getValue() : "");
 				}
@@ -805,6 +822,23 @@ function get_format_value_to_header($col, $obj_type_id)
 			$sign = "- ";
 		}
 		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
+		
+		return trim($formatted);
+	}
+
+	function format_amount($number, $decimals = null) {
+		
+		if (is_null($decimals)) {
+			$decimals = user_config_option('decimal_digits');
+		}
+		$decimals_separator = user_config_option('decimals_separator');
+		$thousand_separator = user_config_option('thousand_separator');
+		
+		$sign = "";
+		if ($number < 0) {
+			$sign = "- ";
+		}
+		$formatted = $sign . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
 		
 		return trim($formatted);
 	}

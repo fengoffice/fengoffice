@@ -39,15 +39,18 @@ if (array_var($_REQUEST, 'modal')) {
 					$parameter_name = $parameter['name'];
 					Hook::fire('template_param_instantiation_name', array('param' => $parameter, 'template' => $template), $parameter_name);
 					echo $parameter_name;
+					
+					$parameter_js_key = str_replace("'", "", $parameter['name']);
+					
 				?></span></td>
 				<td align="left">
 					<?php if($parameter['type'] == 'string'){ ?>
-						<input id="parameterValues[<?php echo $parameter['name'] ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>"/>
+						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>"/>
 					<?php } else if ($parameter['type'] == 'date'){
-								echo pick_date_widget2('parameterValues['.$parameter['name'].']');
+							echo pick_date_widget2('parameterValues['.$parameter_js_key.']');
 							
 						  } else if($parameter['type'] == 'user') { ?>
-						<select name="<?php echo 'parameterValues['.$parameter['name'].']'; ?>">
+						<select name="<?php echo 'parameterValues['.$parameter_js_key.']'; ?>">
 						<?php
 							$context = active_context();
 							if (isset($member_id) && $member_id > 0) {
@@ -60,7 +63,7 @@ if (array_var($_REQUEST, 'modal')) {
 
 							$companies  = allowed_users_to_assign($context);
 							?>
-							<option value="<?php echo $usr['id'] ?>"><?php echo lang('none') ?></option>
+							<option value="0"><?php echo lang('none') ?></option>
 							<?php
 							foreach ($companies as $c) {
 								if (config_option('can_assign_tasks_to_companies')) { ?>

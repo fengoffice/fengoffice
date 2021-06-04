@@ -137,7 +137,7 @@ class ApiController extends ApplicationController {
         $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
         $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
         $name = (!empty($request['args']['name'])) ? $request['args']['name'] : "";
-        $show_subprojects = array_var($request['args'], 'subprojects') == "show";
+        $show_subprojects = array_var($request['args'], 'subprojects', 'show') == "show";
 
         //Escape name - replace special character ' with \' 
         $name = escape_character($name);

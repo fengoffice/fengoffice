@@ -194,7 +194,7 @@ class Net_Socket extends PEAR {
         if ($options && function_exists('stream_context_create')) {
         	
         	// hack to prevent ssl/tls connection errors when using php >= 5.6
-        	$disable_verify_peer_settings = false;
+        /*	$disable_verify_peer_settings = false;
 			if (str_starts_with($this->addr, "ssl:") || str_starts_with($this->addr, "tls:")) {
 				$disable_verify_peer_settings = true;
 			}
@@ -203,6 +203,7 @@ class Net_Socket extends PEAR {
 				$options['ssl']['verify_peer_name'] = FALSE;
 				$options['ssl']['ciphers'] = 'RSA:!COMPLEMENTOFALL';
 			}
+		*/
         	// -------------
         	
             $context = stream_context_create($options);

@@ -18,6 +18,8 @@ if ($dim instanceof Dimension) {
 	$selector_params = array('is_multiple' => $is_multiple, 'label' => $label, 'hide_label' => $hide_label, 'root_lang' => lang('none'), 
 		'hidden_field_name' => $hf_name, 'allowedMemberTypes' => $member_type_id, 'dont_filter_this_selector' => true);
 	
+	if (isset($width)) $selector_params['width'] = $width;
+	
 	if ($select_current_context) {
 		foreach (active_context() as $selection) {
 			if ($selection instanceof Member) {

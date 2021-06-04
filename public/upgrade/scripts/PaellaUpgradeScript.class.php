@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.5.8');
+		$this->setVersionTo('3.8.5.35');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -785,7 +785,85 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 					VALUES ('system', 'widget_dimensions', '', 'AllDimensionsConfigHandler', '1', '0', NULL, NULL);
 				";
 			}
-        }
+		}
+		
+		if (version_compare($installed_version, '3.8.5.12') < 0) {
+        	if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowWorkPerformedDeleteAllButton", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('task panel', 'tasksShowWorkPerformedDeleteAllButton', '1', 'BoolConfigHandler', '0', '0', NULL, NULL);
+				";
+			}
+		}
+		
+		if (version_compare($installed_version, '3.8.5.17') < 0) {
+        	if (!$this->checkColumnExists($t_prefix."im_types", "disabled", $this->database_connection)) {
+                $upgrade_script .= "
+					ALTER TABLE `".$t_prefix."im_types` ADD `disabled` TINYINT(1) NOT NULL default '0';
+				";
+			}
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."im_types` set `disabled`='1' where `name` IN ('ICQ', 'AIM', 'MSN', 'Yahoo!', 'Skype', 'Jabber');
+			";
+			if (!$this->checkValueExists($t_prefix."im_types", "name", "Twitter", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."im_types` (`name`, `icon`)
+					VALUES ('Twitter', 'twitter.svg');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix."im_types", "name", "Facebook", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."im_types` (`name`, `icon`)
+					VALUES ('Facebook', 'facebook.svg');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix."im_types", "name", "LinkedIn", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."im_types` (`name`, `icon`)
+					VALUES ('LinkedIn', 'linkedin.svg');
+				";
+			}
+			
+			
+		}
+		
+
+
+		if (version_compare($installed_version, '3.8.5.19') < 0) {
+        	if (!$this->checkColumnExists($t_prefix."custom_properties", "default_currency_id", $this->database_connection)) {
+                $upgrade_script .= "
+					ALTER TABLE `".$t_prefix."custom_properties` ADD `default_currency_id` INT(2) NOT NULL default '1';
+				";
+			}
+			
+			if (!$this->checkColumnExists($t_prefix."custom_property_values", "currency_id", $this->database_connection)) {
+                $upgrade_script .= "
+					ALTER TABLE `".$t_prefix."custom_property_values` ADD `currency_id` INT(2) NOT NULL default '0';
+				";
+			}
+			
+    }
+    
+
+    	if (version_compare($installed_version, '3.8.5.20') < 0) {
+        	if (!$this->checkColumnExists($t_prefix."custom_properties", "contact_type", $this->database_connection)) {
+                $upgrade_script .= "
+					ALTER TABLE `".$t_prefix."custom_properties` ADD `contact_type` VARCHAR(255) NOT NULL default 'all';
+				";
+			}
+		}
+		
+		if (version_compare($installed_version, '3.8.5.24') < 0) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."member_property_members`
+					ADD INDEX (`association_id`, `member_id`, `property_member_id`);
+				";
+		}
+    
+		$upgrade_script .= "
+			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
+			UPDATE `".$t_prefix."objects` SET `archived_on` = '0000-00-00 00:00:00' WHERE `archived_on` IS NULL;
+		";
         
         if (!$this->checkColumnExists("".$t_prefix."dimension_member_associations", "allows_default_selection", $this->database_connection)) {
         	$upgrade_script .= "

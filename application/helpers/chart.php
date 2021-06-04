@@ -171,7 +171,7 @@ function create_chart_data_object($type, $y_values_array) {
 			}			
 			
 			break;
-		default: continue;
+		default: break;
 	}
 	
 	if (isset($values_data)) $data_object->set_values($values_data);

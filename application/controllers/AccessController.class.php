@@ -339,7 +339,7 @@ class AccessController extends ApplicationController {
 			$new_password = array_var($changePassword_data, 'newPassword');
 			$repeat_password = array_var($changePassword_data, 'repeatPassword');
 			
-			if (trim($username) != $user->getUsername()) {
+			if (trim($username) != $user->getUsername() && trim($username) != $user->getEmailAddress()) {
 				tpl_assign('error', new Error(lang('invalid login data')));
 				$this->render();
 			}
@@ -409,7 +409,7 @@ class AccessController extends ApplicationController {
 			$user->save();
 			
 			try {
-				CompanyWebsite::instance()->logUserIn($user, $remember);
+				CompanyWebsite::instance()->logUserIn($user);
 			} catch(Exception $e) {
 				tpl_assign('error', new Error(lang('invalid login data')));
 				$this->render();
@@ -732,7 +732,7 @@ class AccessController extends ApplicationController {
 		$filenames = get_files($fileDir, "js");
 		sort($filenames);
 		foreach ($filenames as $f) {
-			$content .= "\n/* $f */\n";
+			//$content .= "\n/* $f */\n";
 			$content .= "try {";				
 			$content .= file_get_contents($f);
 			$content .= "} catch (e) {}";
@@ -774,6 +774,13 @@ class AccessController extends ApplicationController {
 	
 	function get_javascript_translation_default() {
 		$defaultLang = "en_us";
+		
+		if (Localization::instance()->getLocale() == $defaultLang) {
+			$this->setLayout("json");
+			$this->renderText("", true);
+			return;
+		}
+		
 		$content = "/* start */\n";		
 		$fileDir = ROOT . "/language/".$defaultLang;
 	
@@ -782,7 +789,7 @@ class AccessController extends ApplicationController {
 			
 		sort($filenames);
 		foreach ($filenames as $f) {
-			$content .= "\n/* $f */\n";
+			//$content .= "\n/* $f */\n";
 			$content .= "try {";
 			$content .= file_get_contents($f);
 			$content .= "} catch (e) {}";

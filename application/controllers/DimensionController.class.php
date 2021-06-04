@@ -702,6 +702,18 @@ class DimensionController extends ApplicationController {
 					}
 				}
 				
+				$extra_conditions = "";
+				// extra conditions for permission components
+				if (array_var($_REQUEST, 'with_permissions')) {
+					$pg_id = array_var($_REQUEST, 'pg_id', '-1');
+					$perm_cond = "EXISTS (SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp WHERE cmp.member_id=".TABLE_PREFIX."members.id AND cmp.permission_group_id=$pg_id)";
+					if (array_var($_REQUEST, 'with_permissions') == '1') {
+						$extra_conditions .= " AND $perm_cond";
+					} else {
+						$extra_conditions .= " AND NOT $perm_cond";
+					}
+				}
+				
 				//Do not use contact member cache for superadmins
 				if(!logged_user()->isAdministrator() && $mem->getDimension()->getDefinesPermissions()){
 					//use the contact member cache
@@ -710,7 +722,7 @@ class DimensionController extends ApplicationController {
 							"dimension" => $dimension,
 							"contact_id" => logged_user()->getId(),
 							"parent_member_id" => $mem->getId(),
-							"extra_condition" => " $dim_filter_conds AND m.archived_by_id=0 ",
+							"extra_condition" => " $dim_filter_conds $extra_conditions AND m.archived_by_id=0 ",
 							"start" => $offset,
 							"limit" => $new_limit,
 							"order" => '`name`',
@@ -718,7 +730,7 @@ class DimensionController extends ApplicationController {
 					);
 					$childs = $member_cache_list = ContactMemberCaches::getAllMembersWithCachedParentId($params);
 				}else{
-					$childs = Members::getSubmembers($mem, false, " $dim_filter_conds AND archived_by_id=0 ", null, null, $offset, $new_limit);
+					$childs = Members::getSubmembers($mem, false, " $dim_filter_conds $extra_conditions AND archived_by_id=0 ", null, null, $offset, $new_limit);
 				}
 				
 				$more_nodes_left = false;
@@ -981,6 +993,7 @@ class DimensionController extends ApplicationController {
 		
 		if (array_var($_REQUEST, 'show_associated_dimension_filters')) {
 			$options['allow_non_manageable'] = true;
+			$options['dont_exclude_hidden_selectors'] = true;
 		}
 		$options['dont_select_associated_members'] = true;
 		

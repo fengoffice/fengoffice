@@ -54,6 +54,7 @@ function core_dimensions_after_contact_quick_add(Contact $contact, &$null) {
 
 
 function core_dimensions_after_add_to_members($object, &$added_members) {
+	return;// we are not using this feature
 	
 	// Add to persons and users dimensions
 	$user_ids = array();

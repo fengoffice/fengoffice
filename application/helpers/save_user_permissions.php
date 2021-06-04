@@ -88,9 +88,14 @@
 			}
 		}
 		if (count($to_insert) > 0) {
-			$values = implode(',', $to_insert);
-			DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id,member_id,object_type_id,can_delete,can_write)
-			VALUES $values ON DUPLICATE KEY UPDATE member_id=member_id");
+			$to_insert_parts = array_chunk($to_insert, 100);
+			foreach ($to_insert_parts as $to_insert_part) {
+				$values = implode(',', $to_insert_part);
+				DB::execute("
+					INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id,member_id,object_type_id,can_delete,can_write)
+					VALUES $values ON DUPLICATE KEY UPDATE member_id=member_id
+				");
+			}
 		}
 		if (count($to_delete) > 0) {
 			$where = implode(' OR ', $to_delete);
@@ -144,6 +149,7 @@
 			$users_ids_checked[] = $us->getId();
 			$contactMemberCacheController->afterUserPermissionChanged($us, json_decode($permissions), $real_group);
 		}
+		debug_log("Member cache update part 2", "permissions_debug.log");
 		
 		//check all users in users_ids_to_check (we do this because a user can be removed from a group)
 		foreach ($users_ids_to_check as $us_id) {
@@ -189,3 +195,5 @@
 	@unlink($sys_permissions_filename);
 	@unlink($mod_permissions_filename);
 	@unlink($root_permissions_filename);
+	
+	debug_log("End saving permissions", "permissions_debug.log");

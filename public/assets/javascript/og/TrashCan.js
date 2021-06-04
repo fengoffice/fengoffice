@@ -62,7 +62,11 @@ og.TrashCan = function() {
 					og.TrashCan.store.lastOptions.params.trashed = true;
 					og.TrashCan.store.lastOptions.params.count_results = 1;
 					if (cmp) {
-						cmp.reloadGridPagingToolbar('object','list_objects','trash-can');
+						if (d && d.totals) {
+							cmp.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+						} else {
+							cmp.reloadGridPagingToolbar('object','list_objects','trash-can');
+						}
 					}
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);

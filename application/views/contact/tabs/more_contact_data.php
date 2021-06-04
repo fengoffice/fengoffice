@@ -8,7 +8,7 @@
 	// email types
 	$all_email_types = EmailTypes::getAllEmailTypesInfo();
 	// instant messenger types
-	$im_types = ImTypes::findAll(array('order' => '`id`'));
+	$im_types = ImTypes::findAll(array('conditions' => array('`disabled`=0'),'order' => '`id`'));
 	
 	if (!isset($id_prefix)) {
 		$id_prefix = '';

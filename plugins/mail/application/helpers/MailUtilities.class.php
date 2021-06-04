@@ -483,7 +483,7 @@ class MailUtilities {
 				if (array_var($attachment, 'FileDisposition') == 'attachment') {
 					$has_attachments = true;
 				} else {
-					$ext = get_file_extension(array_var($attach, 'FileName'));
+					$ext = get_file_extension(array_var($attachment, 'FileName'));
 					$fileType = FileTypes::getByExtension($ext);
 					if (!$fileType instanceof FileType || !$fileType->getIsImage()) {
 						$has_attachments = true;

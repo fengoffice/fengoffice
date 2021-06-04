@@ -68,9 +68,13 @@ og.ContactManager = function() {
 						sm.clearSelections();
 						
 						og.eventManager.fireEvent('after grid panel load', {man:cmp, data:d});
+						
+						if (d && d.totals) {
+							cmp.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+						} else {
+							cmp.reloadGridPagingToolbar('contact','list_all','contact-manager');
+						}
 					}
-					
-					Ext.getCmp('contact-manager').reloadGridPagingToolbar('contact','list_all','contact-manager');
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 				}

@@ -248,8 +248,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 			$upgrade_script .= "
 				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
 					('general', 'listingContactsBy', '0', 'BoolConfigHandler', '0', '0', NULL),
-					('task panel', 'pushUseWorkingDays', '1', 'BoolConfigHandler', '1', '0', NULL),
-					('task panel', 'zoom in gantt', '3', 'IntegerConfigHandler', 1, 0, NULL)
+					('task panel', 'pushUseWorkingDays', '1', 'BoolConfigHandler', '1', '0', NULL)
 				ON DUPLICATE KEY UPDATE name=name;
 			";
 

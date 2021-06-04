@@ -3,6 +3,11 @@
 	if (!isset($id_suffix)) $id_suffix = "";
 	
 	Hook::fire('custom_properties_form_modify_headers', array('ot' => $object_type), $headers);
+	if ($object_type->getName() == 'contact'){
+		$last_column = array_pop($headers);
+		$headers[] = "contact_type";
+		$headers[] = $last_column;
+	}
 ?>
 <table class="custom-property-list" id="<?php echo $genid?>custom-properties-table">
 	
@@ -66,9 +71,19 @@
 				$additional_columns = array();
 				Hook::fire('custom_properties_form_additional_columns', array('ot' => $object_type), $additional_columns);
 				foreach ($additional_columns as $column_data) {
-					?><td><?php echo $column_data['html']; ?></td><?php
+					?><td class="center"><?php echo $column_data['html']; ?></td><?php
 				}
 			?>
+
+			<?php if ($object_type->getName() == 'contact'){
+				$options = array('all', 'contact', 'user');
+				$options_html = array();
+				foreach($options as $opt){
+					$options_html[] = option_tag(ucwords(lang($opt)), $opt, $attr);
+				}
+				?>
+			<td class="center" style="max-width:80px;"><?php echo select_box("custom_properties[{number}][contact_type]", $options_html, array("id" => "contact_type"));?></td>
+			<?php } ?>
 			
 			<td class="actions">
 				<a class="link-ico ico-delete" id="delete_action" href="#" onclick="og.deleteCustomProperty(this)" title="<?php echo lang('delete')?>"></a>
@@ -87,7 +102,8 @@
 					echo $num_opt_html;
 				?></div>
 			</td>
-			<td colspan="<?php echo (5 + count($additional_columns)) ?>">
+			<?php $columns_count = $object_type->getName() == 'contact' ? 6 : 5; ?>
+			<td colspan="<?php echo ($columns_count + count($additional_columns)) ?>">
 				<span class="desc" id="disabled_message" style="display:none;"><?php echo lang('custom property is disabled')?></span>
 				<span class="desc" id="deleted_message" style="display:none;"><?php echo lang('custom property deleted')?></span>
 			</td>

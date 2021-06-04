@@ -153,6 +153,7 @@
 	'show by priority' => 'Mostrar por prioridade',
 	'task report' => 'Relatório de tarefas',
 	'priority' => 'Prioridade',
+	'number' => 'Número',
 	'anybody' => 'Todos',
 	'read and write' => 'Escrita e Leitura',
 	'read only' => 'Somente leitura',
@@ -363,6 +364,7 @@
 	'event details' => 'Detalhes do evento',
 	'person data' => 'Dados básicos',
 	'company data' => 'Dados da empresa',
-	'menu home' => 'Casa',
+	'menu home' => 'Home', 
 	'select group to add user' => 'Selecione um grupo na lista abaixo para adicionar o usuário ao grupo',
+	'viewing information with the following filters' => 'Visualizando informações com os seguintes filtros',
 ); ?>

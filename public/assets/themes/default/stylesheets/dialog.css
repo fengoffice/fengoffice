@@ -25,7 +25,7 @@ h1 {
   padding: 0 0 5px 0;
   color: #263356;
   font-size: 20px;
-  border-bottom: 3px double #ccc;
+  line-height: 24px;
 }
 
 h2 {
@@ -68,6 +68,7 @@ label {
   font-weight: bolder;
   display: block;
   white-space: nowrap;
+  color: #333;
 }
 
 label.checkbox {
@@ -262,7 +263,7 @@ span.required {
 	margin-right: 10px;
 }
 
-#reset_password_new {
+#reset_password_new, #reset_password_desc, #reset_password_repeat {
 	margin-top: 20px;
 }
 #reset_password_repeat {

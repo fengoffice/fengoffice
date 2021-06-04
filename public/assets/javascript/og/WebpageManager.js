@@ -57,8 +57,13 @@ og.WebpageManager = function() {
 						sm.clearSelections();
 						
 						og.eventManager.fireEvent('after grid panel load', {man:cmp, data:d});
+						
+						if (d && d.totals) {
+							cmp.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+						} else {
+							cmp.reloadGridPagingToolbar('webpage','list_all','webpage-manager');
+						}
 					}
-					Ext.getCmp('webpage-manager').reloadGridPagingToolbar('webpage','list_all','webpage-manager');
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 				}

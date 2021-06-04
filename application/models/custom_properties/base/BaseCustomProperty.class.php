@@ -186,6 +186,28 @@
     function setDefaultValue($value) {
       return $this->setColumnValue('default_value', $value);
     } // setDefaultValue() 
+
+     /**
+    * Return value of 'default_currency_id' field
+    *
+    * @access public
+    * @param void
+    * @return string 
+    */
+    function getDefaultCurrencyId() {
+      return $this->getColumnValue('default_currency_id');
+    } // getDefaultValue()
+    
+    /**
+    * Set value of 'default_currency_id' field
+    *
+    * @access public   
+    * @param string $value
+    * @return boolean
+    */
+    function setDefaultCurrencyId($value) {
+      return $this->setColumnValue('default_currency_id', $value);
+    } // setDefaultValue() 
     
     /**
     * Return value of 'required' field
@@ -300,6 +322,22 @@
     
     function setShowInLists($value) {
     	return $this->setColumnValue('show_in_lists', $value);
+    }
+
+    function getContactType() {
+    	return $this->getColumnValue('contact_type');
+    }
+    
+    function setContactType($value) {
+    	return $this->setColumnValue('contact_type', $value);
+    }
+
+    function getIsImportId() {
+    	return $this->getColumnValue('is_import_id');
+    }
+    
+    function setIsImportId($value) {
+    	return $this->setColumnValue('is_import_id', $value);
     }
     
     

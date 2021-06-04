@@ -515,11 +515,12 @@ og.TasksTopToolbar = function(config) {
 		for (var i=0; i<ogTasks.additional_task_list_columns.length; i++) {
 			var col = ogTasks.additional_task_list_columns[i];
 			menu_items.push({
+				configId: col.id,
 		        text: col.name,
 				checked: (ogTasks.userPreferences[col.id] == 1),
 				hideOnClick: false,
 				checkHandler: function() {
-					var url = og.getUrl('account', 'update_user_preference', {name: col.id, value:(this.checked?1:0)});
+					var url = og.getUrl('account', 'update_user_preference', {name: this.configId, value:(this.checked?1:0)});
 					ogTasksMakeRequestAndReloadWithTimeout(url);
 				}
 			});

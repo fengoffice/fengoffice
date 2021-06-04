@@ -16,7 +16,8 @@
     	'id' => DATA_TYPE_INTEGER,
     	'object_id' => DATA_TYPE_INTEGER,
     	'custom_property_id' => DATA_TYPE_INTEGER,
-    	'value' => DATA_TYPE_STRING
+      'value' => DATA_TYPE_STRING,
+      'currency_id' => DATA_TYPE_INTEGER
     );
   
     /**

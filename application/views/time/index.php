@@ -94,6 +94,12 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
                             actionStyle + '>&nbsp;</a>', lang('delete')
                             );
                 }
+                if (r.data.can_view_history) {
+                	actions += String.format(
+                            '<a class="list-action ico-properties" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}" ' +
+                            actionStyle + '>&nbsp;</a>', lang('view history')
+                            );
+                }
 
             } else {
 
@@ -226,7 +232,7 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
 <?php } ?>
 
     // system columns
-    var system_columns = ['uid', 'uname', 'can_edit', 'can_delete', 'add_cls', 'start_time_ts', 'paused_on_ts', 'paused_time_sec', 'rel_object_id'];
+    var system_columns = ['uid', 'uname', 'can_edit', 'can_delete', 'can_view_history', 'add_cls', 'start_time_ts', 'paused_on_ts', 'paused_time_sec', 'rel_object_id'];
     for (var j = 0; j < system_columns.length; j++) {
         timeslots_columns.push({
             name: system_columns[j],
@@ -303,6 +309,17 @@ if (is_array($add_columns)) {
             scope: this
         }),
 
+        edit: new Ext.Action({
+            text: lang('edit'),
+            tooltip: lang('edit selected object'),
+            iconCls: 'ico-edit',
+            disabled: true,
+            handler: function () {
+                    og.render_modal_form('', {c:'time', a:'edit_timeslot', params: {id: getSelectedIds()}});
+            },
+            scope: this
+        }),
+
         trash: new Ext.Action({
             text: lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
@@ -343,6 +360,7 @@ if (is_array($add_columns)) {
             timeslots_tbar_items.push(botonera.start);
         <?php } ?>
 <?php } ?>
+    timeslots_tbar_items.push(botonera.edit);
     timeslots_tbar_items.push(botonera.archive);
     timeslots_tbar_items.push(botonera.trash);
     timeslots_tbar_items.push(botonera.print);
@@ -451,7 +469,7 @@ if (is_array($add_columns)) {
 	        var f = og.additional_timeslots_tab_filters[filter_code];
 	        if (!f || typeof(f) == 'function') continue;
 
-	        if (all_current_filters[filter_code]) {
+	        if (typeof(all_current_filters[filter_code]) != "undefined") {
 				f.value = all_current_filters[filter_code];
 				f.initial_val = all_current_filters[filter_code];
 	        }
@@ -471,12 +489,19 @@ if (is_array($add_columns)) {
                     botonera.trash.setDisabled(false);
                     botonera.archive.setDisabled(false);
                 }
+
+                if (sm.getCount() == 1) {
+                    botonera.edit.setDisabled(false);
+                }  else {
+                    botonera.edit.setDisabled(true);
+                }
             }
         }
     });
 
     var timeslots_module_grid = new og.ObjectGrid({
         genid: '<?php echo $genid ?>',
+        separate_totals_request: true,
         renderTo: grid_id + '_container',
         url: og.getUrl('time', 'list_all'),
         type_name: 'timeslot',

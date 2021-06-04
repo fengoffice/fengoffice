@@ -41,6 +41,7 @@ class COTemplate extends BaseCOTemplate {
 	 */
 	function addObject($object, $additional_attributes = array(), $go_deep = true) {
 		//if ($this->hasObject($object)) return;
+		if (!$object instanceof ContentDataObject) return 0;
 		
 		//if object is a ProjectTask
 		if ($object instanceof ProjectTask) {
@@ -70,7 +71,6 @@ class COTemplate extends BaseCOTemplate {
 				
 			$object->save();
 		}
-		
 			
 		// the object is already a template or can't be one, use it as it is
 		$template = $object;

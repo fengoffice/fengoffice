@@ -955,7 +955,10 @@ class ContactController extends ApplicationController {
             }
         }
 
-		$contact = new Contact();		
+		$contact = new Contact();
+		if (array_var($_GET, 'is_user')) {
+			$contact->setUserType(array_var($_GET, 'type', 4));
+		}
 		$im_types = ImTypes::findAll(array('order' => '`id`'));
 
 		if (!$is_api){
@@ -1573,13 +1576,24 @@ class ContactController extends ApplicationController {
 							if (trim($gid) == "" || !is_numeric($gid)) continue;
 							$insert_values .= ($insert_values == "" ? "" : ",") . "(".$contact->getId().", $gid)";
 						}
-
-						ContactPermissionGroups::instance()->delete("contact_id=".$contact->getId()." AND permission_group_id <> ".$contact->getPermissionGroupId());
-						if ($insert_values != "") {
-							DB::execute("INSERT INTO ".TABLE_PREFIX."contact_permission_groups VALUES $insert_values ON DUPLICATE KEY UPDATE contact_id=contact_id;");
-						}
 						
-						recalculate_contact_member_cache_for_user($contact, logged_user());
+						$groups_have_changed = true;
+						$current_group_ids = explode(',', ContactPermissionGroups::getPermissionGroupIdsByContactCSV($contact->getId()));
+						$group_ids[] = $contact->getPermissionGroupId();
+						$group_ids = array_filter($group_ids);
+						$group_intersection = array_intersect($current_group_ids, $group_ids);
+						if (count($group_intersection) == count($current_group_ids) && count($group_intersection) == count($group_ids)) {
+							$groups_have_changed = false;
+						}
+
+						if ($groups_have_changed) {
+							ContactPermissionGroups::instance()->delete("contact_id=".$contact->getId()." AND permission_group_id <> ".$contact->getPermissionGroupId());
+							if ($insert_values != "") {
+								DB::execute("INSERT INTO ".TABLE_PREFIX."contact_permission_groups VALUES $insert_values ON DUPLICATE KEY UPDATE contact_id=contact_id;");
+							}
+							
+							recalculate_contact_member_cache_for_user($contact, logged_user());
+						}
 					}
 					
 				}
@@ -2157,6 +2171,9 @@ class ContactController extends ApplicationController {
 										$contact_data['company_id'] = $company->getId();
 									} 
 									$contact_data['import_status'] .= " " . lang("company") . " $comp_name";
+									// Find client member
+									$client_ot_id = ObjectTypes::findOne(array('conditions' => '`name`="customer"'))->getId();
+									$client_member = Members::findOne(array('conditions' => '`object_type_id`='.$client_ot_id.' AND `name`='.$comp_name));
 								} else {
 									$contact_data['company_id'] = 0;
 								}
@@ -2164,6 +2181,11 @@ class ContactController extends ApplicationController {
 								$contact_data['name'] = $contact_data['first_name']." ".$contact_data['surname'];
 								$contact->setFromAttributes($contact_data);
 								$contact->save();
+
+								if($client_member instanceof Member){
+									$client_member_id = array($client_member->getId());
+									$object_controller->add_to_members($contact,$client_member_id);
+								}
 
 								//Home form
 								if($contact_data['h_address'] != "" || $contact_data['h_city'] != "" || $contact_data['h_state'] != "" || $contact_data['h_country'] != "" || $contact_data['h_zipcode'] != ""){
@@ -4299,13 +4321,14 @@ class ContactController extends ApplicationController {
 		$can_manage_contacts = can_manage_contacts(logged_user());
 	
 		$conditions = "";
-		if (!$can_manage_contacts) {
+		// Comment out, because autofill excludes some emails.
+		/*if (!$can_manage_contacts) {
 			$conditions .= " AND c.object_id IN (
 				SELECT st.object_id FROM ".TABLE_PREFIX."sharing_table st WHERE st.group_id IN (
 					SELECT pg.permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups pg WHERE pg.contact_id = ".logged_user()->getId()."
 				)
 			)";
-		}
+		}*/
 	
 		$contacts_addresses = DB::executeAll("
 			SELECT c.object_id, c.first_name , c.surname , ce.email_address

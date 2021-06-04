@@ -445,6 +445,7 @@ CREATE TABLE `<?php echo $table_prefix ?>im_types` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `name` varchar(30) <?php echo $default_collation ?> NOT NULL default '',
   `icon` varchar(30) <?php echo $default_collation ?> NOT NULL default '',
+  `disabled` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -915,6 +916,7 @@ CREATE TABLE `<?php echo $table_prefix ?>custom_properties` (
   `description` text <?php echo $default_collation ?> NOT NULL,
   `values` text <?php echo $default_collation ?> NOT NULL,
   `default_value` varchar(255) <?php echo $default_collation ?> NOT NULL,
+  `default_currency_id` int(2) NOT NULL DEFAULT 1,
   `is_required` tinyint(1) NOT NULL DEFAULT 0,
   `is_multiple_values` tinyint(1) NOT NULL DEFAULT 0,
   `property_order` int(10) NOT NULL DEFAULT 0,
@@ -922,6 +924,7 @@ CREATE TABLE `<?php echo $table_prefix ?>custom_properties` (
   `is_special` tinyint(1) NOT NULL DEFAULT 0,
   `is_disabled` tinyint(1) NOT NULL DEFAULT 0,
   `show_in_lists` tinyint(1) NOT NULL DEFAULT 0,
+  `contact_type` varchar(255) NOT NULL DEFAULT 'all',
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -930,6 +933,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>custom_property_values` (
   `object_id` int(10) NOT NULL,
   `custom_property_id` int(10) NOT NULL,
   `value` text <?php echo $default_collation ?>,
+  `currency_id` int(2) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `object_id` (`object_id`),
   KEY `custom_property_id` (`custom_property_id`),

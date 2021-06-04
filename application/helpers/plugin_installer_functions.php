@@ -31,3 +31,11 @@ function check_is_active_plugin($db_connection, $table_prefix, $plugin_name) {
 	}
 	return $is_active;
 }
+
+function chcek_if_column_exists($db_connection, $table_name, $column) {
+	$res = mysqli_query($db_connection, "DESCRIBE `$table_name`");
+	while($row = mysqli_fetch_array($res)) {
+		if ($row['Field'] == $column) return true;
+	}
+	return false;
+}

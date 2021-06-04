@@ -20,14 +20,16 @@
     	'type' => DATA_TYPE_STRING, 
     	'description' => DATA_TYPE_STRING,
     	'values' => DATA_TYPE_STRING,
-    	'default_value' => DATA_TYPE_STRING,
+      'default_value' => DATA_TYPE_STRING,
+      'default_currency_id' => DATA_TYPE_INTEGER,
     	'is_required' => DATA_TYPE_BOOLEAN,
     	'is_multiple_values' => DATA_TYPE_BOOLEAN,
     	'property_order' => DATA_TYPE_INTEGER,
     	'visible_by_default' => DATA_TYPE_BOOLEAN,
     	'is_special' => DATA_TYPE_BOOLEAN,
     	'is_disabled' => DATA_TYPE_BOOLEAN,
-    	'show_in_lists' => DATA_TYPE_BOOLEAN,
+      'show_in_lists' => DATA_TYPE_BOOLEAN,
+      'contact_type' => DATA_TYPE_STRING,
     );
     
     static private $non_orderable_column_types = array('image','table');

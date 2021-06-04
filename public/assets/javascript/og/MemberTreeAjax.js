@@ -110,7 +110,7 @@ og.MemberTreeAjax = function(config) {
 			//get childs from server
 	        if(node.childNodes.length < node.attributes.realTotalChilds && node.attributes.expandable){
 	        	node.ownerTree.innerCt.mask();
-	        	var tree_id = node.ownerTree.id;
+	        	//var tree_id = node.ownerTree.id;
 	        	node.attributes.gettingChildsFromServer = true;
 	        	
 	        	if (!node.last_childs_offset) {
@@ -124,7 +124,8 @@ og.MemberTreeAjax = function(config) {
 					member: node.id,
 					limit: limit,
 					ignore_context_filters: true,
-					offset: node.last_childs_offset
+					offset: node.last_childs_offset,
+					tree_id: node.ownerTree.id
 				};
 				
 				if (member_selector[this.genid] && member_selector[this.genid].sel_context) {
@@ -137,12 +138,19 @@ og.MemberTreeAjax = function(config) {
 					}
 				}
 				
+				if (node.ownerTree.initialConfig.get_childs_params) {
+					for (p_name in node.ownerTree.initialConfig.get_childs_params) {
+						if (typeof(node.ownerTree.initialConfig.get_childs_params[p_name]) == 'function') continue;
+						parameters[p_name] = node.ownerTree.initialConfig.get_childs_params[p_name];
+					}
+				}
+				
 	        	og.openLink(og.getUrl('dimension', 'get_member_childs', parameters), {
 	    			hideLoading:true, 
 	    			hideErrors:true,
 	    			callback: function(success, data){
-	    				
-	    				var dimension_tree = Ext.getCmp(tree_id);
+	    				//console.log(data);
+	    				var dimension_tree = Ext.getCmp(data.tree_id);
 	    					    		
 	    				dimension_tree.suspendEvents();			
 	    				dimension_tree.addMembersToTree(data.members,data.dimension_id);  
@@ -153,7 +161,7 @@ og.MemberTreeAjax = function(config) {
 	    				}
 	    				
 	    				if (data.more_nodes_left) {
-	    					og.addViewMoreNode(node, tree_id, og.ajaxMemberTreeViewMoreCallback);
+	    					og.addViewMoreNode(node, data.tree_id, og.ajaxMemberTreeViewMoreCallback);
 	    				} else {
 	    					var old_view_more_node = dimension_tree.getNodeById('view_more_' + node.id);
 	    					if (old_view_more_node) old_view_more_node.remove();

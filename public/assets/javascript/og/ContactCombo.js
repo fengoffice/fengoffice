@@ -428,7 +428,27 @@ og.renderModalQuickContact = function (member,combo_id,render,gen,multiple){
     og.ExtModal.show({
         title:lang('new contact'),
         html:og.contentModalQuickContact(member,combo_id,render,gen,multiple)
-    })
+    });
+    
+    setTimeout(function() {
+    	// focus on the fist input
+    	$("#"+gen+"profileFormFirstName").focus();
+    	
+    	// prevent focus to get out of this modal
+    	$("#"+gen+"profileFormFirstName").focusout(function() {
+    		$("#"+gen+"profileFormSurname").focus();
+    	});
+    	$("#"+gen+"profileFormSurname").focusout(function() {
+    		$("#"+gen+"profileFormEmail").focus();
+    	});
+    	$("#"+gen+"profileFormEmail").focusout(function() {
+    		$("#"+gen+"submit").focus();
+    	});
+    	$("#"+gen+"submit").focusout(function() {
+    		$("#"+gen+"profileFormFirstName").focus();
+    	});
+    	// --
+    }, 100);
 }
 
 og.contentModalQuickContact = function (member,combo_id,render,gen,multiple){
@@ -439,12 +459,12 @@ og.contentModalQuickContact = function (member,combo_id,render,gen,multiple){
     var placeholder_l_name = lang("last name");
     var placeholder_e_mail = lang("email address");
     return '<div id="modalQuickContact" class="coInputHeader">'
-	+'<div class="coInputName">'
-	+'<input id="profileFormFirstName" tabindex="2001" maxlength="50" placeholder="'+placeholder_f_name+' *" class="title short" type="text" name="contact[first_name]" value="">'
-        +'<input id="profileFormSurname" tabindex="2002" maxlength="50" placeholder="'+placeholder_l_name+' *" class="title short" type="text" name="contact[surname]" value="">'
-        +'<input id="profileFormEmail" tabindex="2003" maxlength="90" placeholder="'+placeholder_e_mail+'" class="title short" type="text" name="contact[email]" value=""></div>'
+	+'<div class="coInputName"><form>'
+		+'<input id="'+gen+'profileFormFirstName" tabindex="0" maxlength="50" placeholder="'+placeholder_f_name+' *" class="title short" type="text" name="contact[first_name]" value="">'
+        +'<input id="'+gen+'profileFormSurname" tabindex="0" maxlength="50" placeholder="'+placeholder_l_name+' *" class="title short" type="text" name="contact[surname]" value="">'
+        +'<input id="'+gen+'profileFormEmail" tabindex="0" maxlength="90" placeholder="'+placeholder_e_mail+'" class="title short" type="text" name="contact[email]" value=""></form></div>'
 	+'<div class="coInputButtons" style="float:  none;width: 100%;">'
-	+'<button style="margin-top:0px;margin-left:10px;float: right;" id="submit" class="submit " type="submit" accesskey="s" onclick="'+method+'">'+button_content+'</button></div>'
+	+'<button style="margin-top:0px;margin-left:10px;float: right;" id="'+gen+'submit" class="submit " type="submit" accesskey="s" onclick="'+method+'">'+button_content+'</button></div>'
         +'<input type="hidden" name="contact[new_contact_from_mail_div_id]" value="">'
         +'<input type="hidden" name="contact[hf_contacts]" value="">'
         +'<div class="clear"></div>'
@@ -454,9 +474,9 @@ og.contentModalQuickContact = function (member,combo_id,render,gen,multiple){
 
 og.addQuickContactFromModal = function (member,combo_id,render,gen,multiple){
     var modalQuickContact = $('#modalQuickContact');
-    var name = modalQuickContact.find('#profileFormFirstName').val();
-    var surname = modalQuickContact.find('#profileFormSurname').val();
-    var email = modalQuickContact.find('#profileFormEmail').val();
+    var name = modalQuickContact.find('#'+gen+'profileFormFirstName').val();
+    var surname = modalQuickContact.find('#'+gen+'profileFormSurname').val();
+    var email = modalQuickContact.find('#'+gen+'profileFormEmail').val();
 
     og.openLink(og.getUrl('contact','add',{}),{
        hideLoading: true,

@@ -79,12 +79,12 @@ table.print-task-timeslots th {
 							if ($dim->getCode() == "customer_project" || $dim->getCode() == "customers"){
 								$obj_type = ObjectTypes::findById($member->getObjectTypeId());
 								if ($obj_type instanceof ObjectType) {
-									echo lang($dim->getCode()). ": ";
+									echo $dim->getName(). ": ";
 									echo $contexts[$dim->getCode()][$obj_type->getName()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
 									echo '<br />';
 								}
 							}else{
-								echo lang($dim->getCode()). ": ";
+								echo $dim->getName(). ": ";
 								echo $contexts[$dim->getCode()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
 								echo '<br />';
 							}
@@ -206,11 +206,8 @@ if ($pending_time > 0) {
 
 <?php $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($task->getObjectTypeId()) > 0;
 	  if ($has_custom_properties) { ?>
-<p><b><?php echo lang('custom properties') ?>:</b></p>
-<div style="margin-left:14px;padding:6px;border:1px solid #AAA">
-<?php echo str_replace(lang('custom properties'), "", render_custom_properties($task));?>
-</div>
-<?php } ?>
+		<?php echo str_replace(lang('custom properties'), "", render_custom_properties($task));?>
+	<?php } ?>
 
 
 

@@ -24,13 +24,15 @@ class ProjectStatisticsWidget extends React.Component {
             <tbody>
             {
               payload.map((entry) => {
-                const { name, value, color } = entry
+                const { name, value, color, list_url } = entry
                 if (value > 0) {
                     return (
                         <tr key={`${name}-legend`} className="tasks-widget-legend-row">
                             <td className="tasks-widget-legend-name"><svg className="tasks-widget-legend-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill={color} viewBox="0 0 24 24">
                             <path d="M3.984 12q0-3.281 2.367-5.648t5.648-2.367 5.648 2.367 2.367 5.648-2.367 5.648-5.648 2.367-5.648-2.367-2.367-5.648z"></path>
-                            </svg>{name}</td>
+                            </svg>
+                            <a class="internalLink" href={list_url}>{name}</a>
+							</td>
                             <td className="tasks-widget-legend-value">{value}</td>
                         </tr>
                     )

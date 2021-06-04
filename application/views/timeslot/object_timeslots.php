@@ -165,6 +165,7 @@
 
     // buttons
     var timeslots_tbar_items = [];
+	var timeslots_tbar_right_items = [];
 
 <?php if ($__timeslots_object->canAddTimeslot(logged_user())) { ?>
     var new_btn = new Ext.Button({
@@ -203,7 +204,9 @@
 	});
 	//timeslots_tbar_items.push(ts_print_btn);
 <?php 
-if (can_delete(logged_user(), $__timeslots_object->getMembers(), Timeslots::instance()->getObjectTypeId())){
+$can_delete_timeslots = can_delete(logged_user(), $__timeslots_object->getMembers(), Timeslots::instance()->getObjectTypeId());
+$show_delete_all_button = user_config_option('tasksShowWorkPerformedDeleteAllButton');
+if ($can_delete_timeslots && $show_delete_all_button){
 ?>
 	var ts_delete_all_btn = new Ext.Button({
 		iconCls: 'ico-delete-btn add-first-btn',
@@ -216,7 +219,7 @@ if (can_delete(logged_user(), $__timeslots_object->getMembers(), Timeslots::inst
     				
 		}
 	});
-	timeslots_tbar_items.push(ts_delete_all_btn);
+	timeslots_tbar_right_items.push(ts_delete_all_btn);
 	
 <?php } ?>
 
@@ -242,6 +245,7 @@ if (can_delete(logged_user(), $__timeslots_object->getMembers(), Timeslots::inst
     	//checkbox_sel_model: true,
     	columns: timeslots_columns,
     	tbar_items: timeslots_tbar_items,
+		tbar_right_items: timeslots_tbar_right_items,
     	no_totals_row: true,
     	add_default_actions_column: false,
     	stateId: 'task-timeslots-list', // to remember the gui state independent of the panel

@@ -89,7 +89,7 @@ class TimeController extends ApplicationController {
                 $context_member_count++;
         }
 
-
+/*
         $notAllowedMember = '';
         if ($context_member_count > 0 && !Timeslot::canAdd(logged_user(), $context, $notAllowedMember)) {
             if (str_starts_with($notAllowedMember, '-- req dim --'))
@@ -101,6 +101,7 @@ class TimeController extends ApplicationController {
             ajx_current("empty");
             return;
         }
+        */
 
         $timeslot_data = array_var($_POST, 'timeslot');
         if (!is_array($timeslot_data)) {
@@ -709,15 +710,23 @@ class TimeController extends ApplicationController {
                 
                 DB::beginWork();
                 $transacion_started = true;
-    
-                $old_object_id = array_var($_REQUEST, "old_object_id");
-                $timeslot->save($old_object_id);
+                
+                $timeslot->save();
 
                 $member_ids = json_decode(array_var($_POST, 'members', ''));
                 $object_controller = new ObjectController();
                 $object_controller->add_custom_properties($timeslot);
                 $object_controller->add_to_members($timeslot, $member_ids);
-
+                
+                // update old related object calculated worked time columns
+                $old_object_id = array_var($_REQUEST, "old_object_id");
+                if ($old_object_id > 0 && $old_object_id != $timeslot->getRelObjectId()) {
+	                $old_related_object = Objects::findObject($old_object_id);
+	                if ($old_related_object instanceof ContentDataObject) {
+	                	$old_related_object->onDeleteTimeslot($timeslot);
+	                }
+                }
+                
                 DB::commit();
                 ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT);
                 ajx_current("reload");
@@ -780,6 +789,8 @@ class TimeController extends ApplicationController {
         $period_filter = array_var($_REQUEST, 'period_filter');
         $from_filter = array_var($_REQUEST, 'from_filter');
         $to_filter = array_var($_REQUEST, 'to_filter');
+        
+        $load_totals_row = array_var($_REQUEST, 'load_totals_row');
 
         $dim_order = null;
         $cp_order = null;
@@ -808,7 +819,7 @@ class TimeController extends ApplicationController {
         if ($rel_object_id)
             $extra_conditions .= " AND rel_object_id='$rel_object_id' ";
 
-        $extra_conditions .= " AND end_time<>'" . EMPTY_DATETIME . "' ";
+        $extra_conditions .= " AND end_time > 0 ";
 
         switch ($type_filter) {
             case 1: $extra_conditions .= " AND rel_object_id>0 ";
@@ -910,9 +921,11 @@ class TimeController extends ApplicationController {
         $current_time_module_filters['from_filter'] = $from_filter;
         $current_time_module_filters['to_filter'] = $to_filter;
         
-        Hook::fire('additional_timeslots_tab_filters_config', $_REQUEST, $current_time_module_filters);
+        if (!$load_totals_row) {
+        	Hook::fire('additional_timeslots_tab_filters_config', $_REQUEST, $current_time_module_filters);
+        }
         
-        if (array_var($_REQUEST, 'current') == 'time-panel') {
+        if (!$load_totals_row && array_var($_REQUEST, 'current') == 'time-panel') {
         	set_user_config_option('current_time_module_filters', json_encode($current_time_module_filters), logged_user()->getId());
         }
         
@@ -961,6 +974,8 @@ class TimeController extends ApplicationController {
 
         Hook::fire("listing_extra_conditions", null, $extra_conditions);
 
+        $only_query_totals_row = isset($load_totals_row) && $load_totals_row;
+
         $res = Timeslots::instance()->listing(array(
             "join_ts_with_task" => false,
             "order" => $order,
@@ -974,7 +989,9 @@ class TimeController extends ApplicationController {
             "count_results" => false,
             "only_count_results" => $only_count_result,
             "join_params" => $join_params,
-            "select_columns" => $select_columns
+        	"select_columns" => $select_columns,
+        	"fire_additional_data_hook" => $only_query_totals_row,
+        	"only_query_totals_row" => $only_query_totals_row,
         ));
         $result_timeslots = $res->objects;
         
@@ -1043,6 +1060,8 @@ class TimeController extends ApplicationController {
                         if (!isset($info[$col_id]))
                             $info[$col_id] = $val;
                     }
+                    
+                    $info['can_view_history'] = logged_user()->isAdminGroup();
 
                     $object["timeslots"][$i] = $info;
                     $ids[] = $msg->getId();

@@ -97,6 +97,29 @@
     function setValue($value) {
       return $this->setColumnValue('value', $value);
     } // setValue()
+
+     /**
+    * Return value of 'currency_id' field
+    *
+    * @access public
+    * @param void
+    * @return string 
+    */
+    function getCurrencyId() {
+      return $this->getColumnValue('currency_id');
+    } // getDefaultValue()
+    
+    /**
+    * Set value of 'currency_id' field
+    *
+    * @access public   
+    * @param string $value
+    * @return boolean
+    */
+    function setCurrencyId($value) {
+      return $this->setColumnValue('currency_id', $value);
+    } // setDefaultValue() 
+    
       
     /**
     * Return manager instance

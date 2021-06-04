@@ -271,7 +271,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		$excluded_object_type_ids = array($temp_task_ot->getId());
 		
-		$extra_conditions = "AND action NOT IN ('login','logout','subscribe') AND created_by_id > '0'";
+		$extra_conditions = "AND action NOT IN ('login','logout','subscribe') AND al.created_by_id > '0'";
 		if($options[1] == 0){//do not show timeslots
 			$excluded_object_type_ids[] = $timeslot_ot->getId();
 		}
@@ -285,21 +285,23 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		// exclude template tasks logs and timeslot logs if widget is configured to do so.
 		if (count($excluded_object_type_ids) > 0) {
-			$extra_conditions .= " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=rel_object_id) NOT IN (".implode(',', $excluded_object_type_ids).") ";
+			//$extra_conditions .= " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=rel_object_id) NOT IN (".implode(',', $excluded_object_type_ids).") ";
+			//$extra_conditions .= " AND o.object_type_id NOT IN (".implode(',', $excluded_object_type_ids).") ";
 		}
 		
 		// if logged user is guest dont show other users logs
 		if (logged_user()->isGuest()) {
-			$extra_conditions .= " AND `created_by_id`=".logged_user()->getId()." ";
+			$extra_conditions .= " AND al.`created_by_id`=".logged_user()->getId()." ";
 		}
 		
-		$joins_sql = "";
+		$joins_sql = "INNER JOIN ".TABLE_PREFIX."objects o ON o.id=al.rel_object_id";
 		$group_by_sql = "";
 		$is_member_child = "";
 		
 		if(count($members) > 0){
 			
-			$joins_sql = "LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=al.rel_object_id";
+			$joins_sql .= "
+				LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=al.rel_object_id";
 			
 			$extra_conditions .= "AND om.member_id IN (" . implode ( ',', $members ) . ")";
 			
@@ -325,16 +327,20 @@ class ApplicationLogs extends BaseApplicationLogs {
 		)";
 
 		
-		$sql = "SELECT al.id FROM ".TABLE_PREFIX."application_logs al 
+		$sql = "SELECT al.id, o.object_type_id
+				FROM ".TABLE_PREFIX."application_logs al 
 				$joins_sql
 				WHERE 
 					$permissions_condition 
 					$extra_conditions
 					$group_by_sql
-				ORDER BY created_on DESC LIMIT 100
+				ORDER BY al.id DESC LIMIT 100
 		";
-		
-		$id_rows = array_flat(DB::executeAll($sql));
+		$rows = DB::executeAll($sql);
+		$id_rows = array();
+		foreach ($rows as $r) {
+			if (!in_array($r['object_type_id'], $excluded_object_type_ids)) $id_rows[] = $r['id'];
+		}
 		
 		// if logged user is guest dont show other users logs
 		$user_condition = "";
@@ -343,12 +349,12 @@ class ApplicationLogs extends BaseApplicationLogs {
 		}
 		
 		$member_logs_sql = "SELECT al.id FROM ".TABLE_PREFIX."application_logs al
-									INNER JOIN ".TABLE_PREFIX."members mem ON mem.id=al.member_id 
-										INNER JOIN ".TABLE_PREFIX."contact_member_cache cmcache ON cmcache.member_id=mem.id AND cmcache.contact_id = ".logged_user()->getId()."
-											WHERE al.member_id>0 and al.is_silent=0
-											$user_condition
-											$is_member_child
-							ORDER BY created_on DESC LIMIT 100";
+							INNER JOIN ".TABLE_PREFIX."members mem ON mem.id=al.member_id 
+							INNER JOIN ".TABLE_PREFIX."contact_member_cache cmcache ON cmcache.member_id=mem.id AND cmcache.contact_id = ".logged_user()->getId()."
+							WHERE al.member_id>0 and al.is_silent=0
+							$user_condition
+							$is_member_child
+							ORDER BY al.id DESC LIMIT 100";
 		
 		$m_id_rows = array_flat(DB::executeAll($member_logs_sql));
 		

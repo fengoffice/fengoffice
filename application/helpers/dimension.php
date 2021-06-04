@@ -58,7 +58,7 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 		
 		// Diemsions for this content type
 		if ( $all_dimensions = Dimensions::getAllowedDimensions($content_object_type_id) ) {
-			Hook::fire("allowed_dimensions_in_member_selector", array('ot' => $content_object_type_id), $all_dimensions);
+			Hook::fire("allowed_dimensions_in_member_selector", array('ot' => $content_object_type_id, 'options' => $options), $all_dimensions);
 			
 			foreach ($all_dimensions as $dimension){
 				if ( isset($user_dimensions[$dimension['dimension_id']] ) ){

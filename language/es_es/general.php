@@ -453,4 +453,6 @@
     'link task'=>'Vincular tarea',
 	'repeat by date warning' => 'Es necesario especificar la fecha de inicio o fecha límite para poder configurar esta tarea como repetitiva',
 	'pick a color' => 'Seleccione un color',
+	'finish sign up' => 'Finalizar registro',
+	'viewing information with the following filters' => 'Mostrando información para los siguientes filtros',
 );

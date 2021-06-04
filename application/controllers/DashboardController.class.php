@@ -288,9 +288,9 @@ class DashboardTools {
 		
 		usort($widgetsToRender, "widget_sort") ;
 		foreach ($widgetsToRender as $k => $w) {
-			debug_log(date("H:i:s")." - Starting widget ".$w->getName(), 'dashboard.log');
+			//$start = microtime(true);
 			$w->execute();
-			debug_log(date("H:i:s")." - End widget ".$w->getName(), 'dashboard.log');
+			//if ((microtime(true)-$start)>1) Logger::log_r($w->getName()." rendered in: ".(microtime(true)-$start));
 		}
 		
 	}

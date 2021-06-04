@@ -56,9 +56,6 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	margin-right: 10px;
 	min-width: 0px;
 }
-.task .left-section {
-	max-width:465px;
-}
 .task .custom-properties label {
 	max-width: 190px;
 	min-width: 190px;
@@ -141,7 +138,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		
 	
 	<div id="<?php echo $genid ?>add_task_basic_div" class="task-data form-tab">
-	<table><tr><td>
+	<table><tr><td class="left-section-td">
 	<div class="left-section">
 	
 		<div class="dataBlock">
@@ -258,7 +255,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 
 		
   	</div>
-  	</td><td>
+  	</td><td class="right-section-td">
   	<div class="right-section">
   		<div id="<?php echo $genid ?>add_task_select_context_div" class="context-selector-container">
 		<?php

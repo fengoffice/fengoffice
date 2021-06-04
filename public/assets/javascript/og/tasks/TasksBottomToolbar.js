@@ -501,14 +501,14 @@ setTimeout(function() {
     	id: 'ogTasksStatusCombo',
         store: new Ext.data.SimpleStore({
 	        fields: ['value', 'text'],
-	        data : [[2, '--' + lang('no filter') + '--'],[0, lang('pending')],[1, lang('complete')], [10, lang('active')], [11, lang('overdue')], [12, lang('today')], [13, lang('overdue')+"+"+lang('today')]]
+	        data : [[2, '--' + lang('no filter') + '--'],[0, lang('pending')],[1, lang('complete')], [10, lang('active')], [11, lang('overdue')], [12, lang('today')], [13, lang('overdue')+"+"+lang('today')], [14, lang('no due date')], [15, lang('upcoming tasks w')]]
 	    }),
         displayField:'text',
         //typeAhead: true,
         mode: 'local',
         triggerAction: 'all',
         selectOnFocus:true,
-        width:120,
+        width:130,
         valueField: 'value',
         listeners: {
         	'select' : function(combo, record) {

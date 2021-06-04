@@ -5,9 +5,11 @@
 ?>
 <div class="history" style="height:100%;background-color:white">
 <div class="coInputHeader">
+<?php if (!array_var($_REQUEST, 'modal')) { ?>
 	<div class="coInputHeaderUpperRow">
 	<div class="coInputTitle"><?php echo lang('view history for') . ' ' . clean($object->getObjectName()); ?></div>
 	</div>
+<?php } ?>
 </div>
 
 <div class="coInputMainBlock adminMainBlock">
@@ -17,7 +19,9 @@
 	
 	<ul id="<?php echo $genid?>tab_titles">
 		<li><a id="<?php echo $genid?>mods-tab" href="#<?php echo $genid?>modifications"><?php echo lang('modifications tab') ?></a></li>
+	<?php if (!$object instanceof Timeslot) { ?>
 		<li><a id="<?php echo $genid?>views-tab" href="#<?php echo $genid?>views"><?php echo lang('views tab') ?></a></li>
+	<?php } ?>
 	</ul>
 
 	<div id="<?php echo $genid?>modifications" class="form-tab">
@@ -66,6 +70,7 @@
 		
 	</div>
 	
+	<?php if (!$object instanceof Timeslot) { ?>
 	<div id="<?php echo $genid?>views" class="form-tab">
 		<table style="min-width:400px; width:100%;">
 			<tr>
@@ -100,6 +105,7 @@
 		</div>
 		
 	</div>
+	<?php } ?>
 </div>
 
 </div>

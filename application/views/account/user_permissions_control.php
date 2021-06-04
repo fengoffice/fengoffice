@@ -75,6 +75,7 @@ foreach ( $dimensions as $dimension ) {
 		'width' => '300',
 		'all_members' => false,
 		'root_node_text' => $dimension->getName(),//lang('All'),
+		'get_childs_params' => array('pg_id' => $pg_id, 'with_permissions' => '1'),
 		//'use_ajax_member_tree' => true,
 	));
 ?>
@@ -104,6 +105,7 @@ foreach ( $dimensions as $dimension ) {
 		'width' => '300',
 		'all_members' => false,
 		'root_node_text' => $dimension->getName(),//lang('All'),
+		'get_childs_params' => array('pg_id' => $pg_id, 'with_permissions' => '-1'),
 		//'use_ajax_member_tree' => true,
 	));
 ?>

@@ -29,7 +29,7 @@ foreach ($css as $c) {
 
 <form action="<?php echo get_url('access', 'change_password', array('id' => $user_id)) ?>" method="post">
 
-<div class="form-container">
+<div class="form-container" style="width: 700px;">
 <h2><?php echo lang('change password') ?></h2>
 
 <div style="color:red;">
@@ -39,7 +39,7 @@ foreach ($css as $c) {
 <?php tpl_display(get_template_path('form_errors')) ?>
 
   <div id="changePasswordDiv">
-    <label for="username"><?php echo lang('username') ?>:</label>
+    <label for="username"><?php echo lang('email or username') ?>:</label>
     <?php echo text_field('changePassword[username]', null, array('id' => 'username', 'class' => 'medium')) ?>
   </div>
   <div id="repeatPasswordDiv">

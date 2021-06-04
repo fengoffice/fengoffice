@@ -62,7 +62,12 @@ og.OverviewManager = function() {
 					}
 					
 					Ext.getCmp('overview-manager').store.lastOptions.params.count_results = 1;
-					Ext.getCmp('overview-manager').reloadGridPagingToolbar('object','list_objects','overview-manager');
+					
+					if (d && d.totals) {
+						cmp.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+					} else {
+						cmp.reloadGridPagingToolbar('object','list_objects','overview-manager');
+					}
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 					

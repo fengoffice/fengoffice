@@ -275,21 +275,21 @@ class Reports extends BaseReports {
 
             if (in_array($order_by_col, self::$external_columns)) {
                 $order_by_col = 'name_order';
-                $original_order_by_col = "e.$original_order_by_col";
+                //$original_order_by_col = "e.$original_order_by_col";
                 
                 $select_columns = array();
                 if (is_null($join_params)) {
 	                $join_params = array(
 	                    'table' => Objects::instance()->getTableName(),
 	                    'jt_field' => 'id',
-	                    'e_field' => $original_order_by_col,
+	                	'e_field' => $original_order_by_col,
 	                    'join_type' => 'left'
 	                );
 	                $select_columns[] = 'jt.name as name_order';
                 } else {
                 	if (!isset($join_params['on_extra'])) $join_params['on_extra'] = '';
                 	$join_params['on_extra'] .= "
-                		INNER JOIN ".TABLE_PREFIX."objects order_table ON order_table.id = $original_order_by_col
+                		INNER JOIN ".TABLE_PREFIX."objects order_table ON order_table.id = e.$original_order_by_col
                 	";
                 	$select_columns[] = 'order_table.name as name_order';
                 }
@@ -492,8 +492,8 @@ class Reports extends BaseReports {
                         Hook::fire('custom_reports_fixed_additional_columns_def', array('object_type' => $ot, 'field' => $field), $results);
                     }
 
-                    Hook::fire('get_columns_to_header_report', array('field' => $field),$results);
-                    Hook::fire('get_taxes_columns_to_header_report', array('field' => $field),$results);
+                    Hook::fire('get_columns_to_header_report', array('field' => $field, 'object_type' => $ot),$results);
+                    Hook::fire('get_taxes_columns_to_header_report', array('field' => $field, 'object_type' => $ot),$results);
 
                 } else {
 

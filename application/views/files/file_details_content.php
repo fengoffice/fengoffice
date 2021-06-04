@@ -7,7 +7,8 @@
 
 <?php if ($file->getType() == ProjectFiles::TYPE_WEBLINK) { ?>
 	<b><?php 
-	if (strpos($file->getUrl(), 'docs.google.com/') != false){
+	// always load the file contents
+	if (true || strpos($file->getUrl(), 'docs.google.com/') != false){
 		$content = '<div style="position: relative; left:0; top: 0; width: 100%; height: 600px; background-color: white">';
 		$content .= '<iframe id="'.$genid.'ifr" name="'.$genid.'ifr" style="width:100%;height:100%" frameborder="0" src="'.$file->getUrl().'" 
 								onload="javascipt:iframe=document.getElementById(\''.$genid.'ifr\'); iframe.parentNode.style.height = Math.min(600, iframe.contentWindow.document.body.scrollHeight + 30) + \'px\' ;">
@@ -105,17 +106,8 @@ $modtime = $modtime . "-" . date('YmdH') . "-" . $last_rev_id; // don't cache mo
       echo "<iframe src=".$urlpdf." width='100%' height='900px' frameborder=0 align='center'></iframe>";
       echo '</div>';
    }else if (substr($file->getFilename(), -3) == '.mm') {
-	require_javascript('flashobject.js');
-	$flashurl = get_flash_url('visorFreemind.swf') ?>
+?>
 	<div id="<?php echo $genid ?>mm">
-	<script>
-		var fo = new FlashObject("<?php echo $flashurl ?>", "visorFreeMind", "100%", "350px", 6, "#9999ff");
-		fo.addParam("quality", "high");
-		fo.addParam("bgcolor", "#ffffff");
-		fo.addVariable("initLoadFile", "<?php echo $file->getDownloadUrl() ?>");
-		fo.addVariable("openUrl", "_blank");
-		fo.write("<?php echo $genid ?>mm");
-	</script>
 <?php } ?>
 
 

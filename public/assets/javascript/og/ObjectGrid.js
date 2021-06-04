@@ -150,9 +150,16 @@ og.ObjectGrid = function(config, ignore_context) {
 					
 					og.eventManager.fireEvent('after grid panel load', {man:grid, data:d});
 					
-					if (this.baseParams.url_controller && this.baseParams.url_action) {
-						grid.reloadGridPagingToolbar(this.baseParams.url_controller, this.baseParams.url_action, grid_id);
+					if (config.separate_totals_request) {
+						grid.reloadTotalsRow({scroll_to_top: true});
+					} else {
+						if (d && d.totals) {
+							grid.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+						} else if (this.baseParams.url_controller && this.baseParams.url_action) {
+							grid.reloadGridPagingToolbar(this.baseParams.url_controller, this.baseParams.url_action, grid_id);
+						}
 					}
+						
 				}
 				
 				og.eventManager.fireEvent('replace all empty breadcrumb', null);
@@ -580,11 +587,19 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 		// use current filters and other parameters
 		Ext.apply(params, this.store_params);
 		
+		params.load_totals_row = 1;
+		
 		var objects_grid_id = this.id;
 		// call the controller to retrieve the totals
 		og.openLink(og.getUrl(this.store_params.url_controller, this.store_params.url_action, params), {
+			hideLoading: true,
 			callback: function(success, data) {
 				var g = Ext.getCmp(objects_grid_id);
+				
+				if (g && data && data.totals) {
+					g.updateGridPagingToolbar({totalCount: data.totals.total_rows});
+				}
+				
 				if (g && typeof(g.addTotalsRow) == 'function' && data && data.totals) {
 					
 					var totals_row_record = g.store.getById("#__total_row__");
@@ -593,7 +608,7 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 						g.store.remove(totals_row_record);
 					}
 					// add the totals row
-					g.addTotalsRow(data, true);
+					g.addTotalsRow(data, !params.scroll_to_top);
 				}
 			}
 		})

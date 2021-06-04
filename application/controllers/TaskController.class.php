@@ -988,8 +988,14 @@ class TaskController extends ApplicationController {
                 $task_status_condition .= " AND (((`e`.`start_date` BETWEEN '" . $now . "' AND '" . $now_end . "') AND `e`.`start_date` != " . DB::escape(EMPTY_DATETIME) . ") OR ((`e`.`due_date` BETWEEN '" . $now . "' AND '" . $now_end . "') AND `e`.`due_date` != " . DB::escape(EMPTY_DATETIME) . "))";
                 break;
             case 13: // Today + Overdue tasks
-                $task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `e`.`due_date` <= '$now_end'";
-                break;
+            	$task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `e`.`due_date` <= '$now_end'";
+            	break;
+            case 14: // Without due date
+            	$task_status_condition = " AND `e`.`due_date` = " . DB::escape(EMPTY_DATETIME);
+            	break;
+            case 15: // Upcoming tasks
+            	$task_status_condition = " AND `e`.`due_date` >= " . DB::escape($now) . " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME);
+            	break;
             case 20: // Actives task by current user
                 $task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `e`.`start_date` <= '$now' AND `e`.`assigned_to_contact_id` = " . logged_user()->getId();
                 break;
@@ -1937,6 +1943,8 @@ class TaskController extends ApplicationController {
             $conditions = $conditions . " AND NOT EXISTS($sub_listing_sql)";
         }
         //END tasks tree
+        
+        $original_order = $order;
         // when order is by assigned user => join with objects table and order by name
         if ($order == 'assigned_to_contact_id') {
             if (is_null($join_params) || empty($join_params)) {
@@ -1958,8 +1966,12 @@ class TaskController extends ApplicationController {
                 $order = "c.name";
             }
         }
-Logger::log_r($conditions);
-Logger::log_r(date('h:i:s'));
+        
+        // when ordering by priority, ensure that they are ordered by name too
+        if (in_array($original_order, array('priority', 'assigned_to_contact_id'))) {
+        	$order = array($order, array('col' => 'o.name', 'dir' => 'ASC'));
+        }
+
         $tasks_listing = ProjectTasks::instance()->listing(array(
             "select_columns" => array("e.*", "o.*"),
             "extra_conditions" => $conditions,
@@ -1973,14 +1985,20 @@ Logger::log_r(date('h:i:s'));
 			"fire_additional_data_hook" => false,
             "raw_data" => true,
         ));
-Logger::log_r(date('h:i:s'));
+
         $tasks = $tasks_listing->objects;
         $total_see_roots_tasks = $tasks_listing->total;
 
         $task_ids = array();
         $tasks_array = array();
         foreach ($tasks as $task) {
-            $tasks_array[] = ProjectTasks::getArrayInfo($task);
+            if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+				$full = true;
+				$include_members_data = true;
+				$tasks_array[] = ProjectTasks::getArrayInfo($task, $full, $include_members_data);
+			} else {
+				$tasks_array[] = ProjectTasks::getArrayInfo($task);
+			}
             $task_ids[] = $task['object_id'];
         }
 
@@ -5364,6 +5382,22 @@ Logger::log_r(date('h:i:s'));
     	ajx_extra_data(array('html' => $html));
     }
 
+    
+    
+    /**
+     * Resets the tasks list filters so it can be reloaded from outside (e.g.: a widget)
+     */
+    function set_task_list_filters_to_reload() {
+    	
+    	ajx_current("empty");
+    	
+    	$status_id = array_var($_REQUEST, 'status_id', '0');
+    	
+    	set_user_config_option('task panel filter', 'no_filter', logged_user()->getId());
+    	set_user_config_option('task panel status', $status_id, logged_user()->getId());
+    	
+    }
+    
 }
 
 // TaskController

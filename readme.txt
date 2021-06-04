@@ -1,5 +1,5 @@
 
-	About Feng Office 3.8.5.7
+	About Feng Office 3.8.5.34
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,277 @@
 	
 	Changelog
 	=========
+	
+	Since 3.8.5.34
+	-----------------
+	feature: add confirmation question before applying a bulk action for time module approval status change
+	feature: add action in time list to see the each timeslot's modifications history
+	bugfix: fix time module quick add row dim-member selectors, it was not removing previous member after changing if it was selected by default
+	bugfix: create log for each timeslot involved in any bulk action of time approval feature, store previous status and current status
+	
+	Since 3.8.5.33
+	-----------------
+	feature: Hide contact custom properties in suppliers
+	feature: Add expenses to batch import tool
+	feature: allow users to add and link actual expenses to a budgeted expense that they can't write
+	bugfix: in time module quick add row you can't select some text from the description with the mouse
+	bugfix: remove special char ':' from customer/project name before sync
+	bugfix: add 'if exists' to payment receipts plugin installer queries to prevent errors
+	
+	Since 3.8.5.32
+	-----------------
+	bugfix: Stop preselecting product type in actual expense
+	bugfix: improve performance of some classification and permissions functions
+	bugfix: don't recalculate contact member cache for user groups if groups didn't change
+	bugfix: fix alignment of workflow permissions in users form
+	bugfix: minor changes to timeslots hooks to try to improve performance when saving
+	bugfix: fix call to renderContactSelector, prevent js error when memberId is empty
+	
+	Since 3.8.5.31
+	-----------------
+	feature: user filter for actual expenses module
+	feature: Allow to assign client to the imported contact
+	bugfix: Stop preselecting product type in actual expense if no budgeted expense is selected
+	bugfix: fix expenses updater to allow classification in approval status dim
+	bugfix: time module quick add row dimension selectors dont't show the member list when clicked
+	bugfix: Fix bug that broke widgets when different date format was selected
+	bugfix: remove permissions check before adding a time entry, it was working bad
+	bugfix: fix 'NaN' js error in expenses cost/price calculation
+	
+	Since 3.8.5.30
+	-----------------
+	bugfix: always show associated dimensions in newsletter's contact selector
+	bugfix: fix error in tasks list
+	bugfix: fix budget status report billing category column
+	bugfix: member selector performance - don't request get_dimension_id if there are no members
+	bugfix: fix product type combo initialization in actual expenses
+	bugfix: actual expenses status filter was being initialized with time list equal filter
+	bugfix: time list invoicing status filter was being reseted after any action
+	bugfix: Fix bugs that prevented saving address and contact when importing
+	feature: allow plugin web to decide if sends mail from @feng or @evx depending on the edition
+	
+	Since 3.8.5.29
+	-----------------
+	feature: Add dimension members batch import
+	feature: redistribute project budget status report column colspans to make more room for the expenses name
+	bugfix: Fix actual expense assign product type from budgeted expense
+	bugfix: Fix bug in budget report labor calculations
+	bugfix: change date langs in budgeted expenses form
+	bugfix: show file name when adding document to an actual expense
+	bugfix: fix missing lang in billing rates
+	bugfix: when adding contact from inside project form, the contact is classified in random member if it is removed from selection
+	bugfix: fix workflow permissions component, ensure that the amount of inputs doesn't grow exponentially
+	
+	Since 3.8.5.28
+	-----------------
+	feature: Update react widgets' javascript packages
+	feature: allow to select invoice template when generating project invoice
+	bugfix: fix subtask's billing calculation when creating subtasks in tasks add/edit form
+	bugfix: fix contact selector quick-add, it was saving an empty contact
+	bugfix: change lang in expenses section of invoice print
+	bugfix: fix product type filtering in actual and budgeted expenses form
+	
+	Since 3.8.5.27
+	-----------------
+	feature: allow to put headers for labor/expense details
+	feature: make tasks view more wide
+	bugfix: fix invoice template html generation when printing invoice detail headers
+	bugfix: subtasks estimated time selector is not using the time interval plugin to override the available minutes
+	bugfix: validate additional subtask form's selectors before calling their functions
+	bugfix: fix input navigation with tab in contact combo modal form to add a new contact
+	
+	Since 3.8.5.26
+	-----------------
+	feature: allow to specify description and labor cat in subtasks of task form
+	feature: Add suppliers batch import
+	feature: allow to use taxes inside invoice lines
+	bugfix: Skip asking budgeted expense when adding actual expense from budgeted expense
+	bugfix: Fix css bug in the actual expense
+	bugfix: fix price multiplier usage, when changing unit cost the unit and total price were not calculated
+	bugfix: fix product type filtering, when dimension is defined as 'filter up' then the child members were not included to filter
+	bugfix: set default value of billable prop to true when creating a new actual expense
+	
+	Since 3.8.5.25
+	-----------------
+	feature: Import plugin - Support importing boolean custom properties via batch import
+	feature: Assign country based on country name or country code in batch importing
+	feature: Allow to import amounts and numbers via batch import
+	feature: Allow to save addresses as custom property when batch importing
+	feature: Add more options to dates format when batch importing
+	bugfix: Update vulnerable javascript packages
+	bugfix: fix invoice lines lost data (prod type,cat,unit_cost,price_mult,etc) after changing invoice template
+	
+	Since 3.8.5.24
+	-----------------
+	bugfix: Fix bug that when rendering amount custom property
+	bugfix: Show only contact custom properties in the client form
+	bugfix: Add missing empty contact type
+	bugfix: Save client's address, phone, email and url when batch importing
+	bugfix: ensure that trashed_on and archived_on columns are not null
+	
+	Since 3.8.5.23
+	-----------------
+	bugfix: fix project invoice generation, it was not taking in account the last day's timelots
+	bugfix: performance - dont request for listing totals if already have the number
+	bugfix: fix performance issue with member listings
+	
+	Since 3.8.5.22
+	-----------------
+	feature: add client batch import to objects_import plugin
+	bugfix: fix member reports when showing associated dimension column and has more than one associated member
+	bugfix: fix expense items currency selector, it was not enabled when 2 or more currency present
+	bugfix: improve time module performance
+	bugfix: improve performance in financial widgets
+	bugfix: improve performance in widgets activity, financials, earned_vs_labor, estimated_vs_worked
+	
+	Since 3.8.5.21
+	-----------------
+	feature: Improve objects import plugin, extend it for members
+	feature: allow member reports to have conditions by 'located under'
+	bugfix: improve breadcrbums rendering performance
+	bugfix: ensure that forgot password email is sent instantly
+	bugfix: fix var typo in mail utilities file
+	bugfix: improve page-break in project reports for project blocks
+	
+	Since 3.8.5.20
+	-----------------
+	bugfix: project budget report - fix alignment of first th
+	bugfix: project budget report - allow to decide if a page-break is inserted after each subproject
+	bugfix: project budget report - fix description cell width
+	bugfix: project budget report - fix all tables width and cells allignment
+	bugfix: fix error in confidential users functions when no logged user
+	bugfix: fix error when saving template that caused data loss
+	bugfix: fix product/service integration when invoice line has user and labor category
+	bugfix: don't assume the existance of invoice subtypes when making verifications
+	
+	Since 3.8.5.19
+	-----------------
+	feature: custom properties only for users
+	feature: create qbo items for labor categories and products when creating invoice in qbo, config option to sync only first level classes
+	bugfix: set mails panel 'preventClose' to false when sending an email to prevent the 'unsaved data popup' to appear
+	bugfix: fix product type selectos error when any product has a dobule quot in the name
+	
+	Since 3.8.5.18
+	-----------------
+	feature: Add 'amount' custom property type
+	feature: allow to include line description when grouping by labor cat
+	feature: Use expenses' price in 'Expenses' and 'Financials' widgets
+	bugfix: fix page breaks and repeat table headers in every page when exporting project budget report to pdf
+	bugfix: fix workflow permissions installer to add expenses workflow permissions if expenses plugin is installed
+	bugfix: fix expenses2 installer and updater to allow approval dimension to be applied in actual expenses
+	bugfix: fix function that gets the client of a project when it is a subproject
+	bugfix: fix error when generating invoice grouped by actual expenses and exp cagtegories dim is not present
+	
+	Since 3.8.5.17
+	-----------------
+	bugfix: fix error when instantiating tempaltes that have ' in some parameter name
+	bugfix: fix user creation when type is superadmin
+	
+	Since 3.8.5.16
+	-----------------
+	language: Add missing portuguese translations
+	feature: Hide old instant messengers, add twitter, facebook, linkedin
+	bugfix: when clients are separated from projects, the projects dimension didn't change its name
+	bugfix: fix client and status widgets to support long texts, and add some pt_br missing langs
+	
+	Since 3.8.5.15
+	-----------------
+	language: Add portuguese translations
+	bugfix: fix error in join clause when ordering contact reports by company id
+	
+	Since 3.8.5.14
+	-----------------
+	bugfix: Allow to autofill with emails of contacts that user cannot manage
+	bugfix: Change 'Home' translation in portugese
+	bugfix: Show dimension names in the print task view
+	bugfix: Fix bugs that prevented change the password
+	bugfix: Show more product types in an actual expense form, fix decimals in actula expenses form
+	bugfix: spelling error that stopped showing gantt chart (#623)
+	bugFix: project budget status didn't include projects (#622)
+	bugfix: fix permissions save functions when applying to submembers
+	bugfix: fix error message lang in invoices module
+	bugfix: when changing a timeslot's task, the old task's worked time was not being recalculated
+	bugfix: invoice lang change, use quantity instead of amount in lines
+	bugfix: fixes to permissions component
+	bugfix: exclude disabled users from user cp selectors
+	bugfix: fix hour_types plugin installer
+	bugfix: remove restriction in webfile view that was only loading contents for urls like 'docs.google.com'
+	bugfix: change non-working days skip algorithm to check if it is a non working day in every day of the interval for template tasks that advance some days
+	
+	Since 3.8.5.13
+	-----------------
+	feature: new plugin for additional timeslot permission (lock, unlock time in time status dim)
+	feature: make filter-selected class bold like in mails module
+	feature: listing search input, highlight keywords after search, and show clear button only if there is something to clear
+	feature: in actual expenses form, separate description field to a new row and enlarge it
+	performance: don't download the default language pack if it is the same as the user language
+	bugfix: add config option to enable/disable the feature to hide the left panel when only a client/project is there
+	bugfix: fix member color component when cp values and color column are not consistent
+	bugfix: task was not shown in statistics widget when due date is today
+	bugfix: fix gantt js error when calling tasks list from widget
+	bugfix: fix timesheet status dimension plugin installer, error if income plugin is not installed
+	
+	Since 3.8.5.12
+	-----------------
+	feature: Allow to filter tasks list by 'upcoming' and 'without due date' 
+	feature: click in tasks status widget goes to filtered task list
+	feature: Allow tasks to use status timesheet dimension
+	feature: improve listing function performance, affects dashboard, listings and reports
+	feature: add delete button to text filter input in lists
+	bugfix: Decrease the size of the load image for buttons
+	bugfix: remove feature that shows only first level projects, it has issues when they are grouped in folders
+	bugfix: fix mail rules when applying the trash rule, it was not saving the trashed_by_id when executed by cron
+	
+	
+	Since 3.8.5.11
+	-----------------
+	feature: Improve query when collecting timeslots for project billing report
+	feature: Save gantt config options and use them when rendering gantt
+	feature: Show message 'None selected' when no date is selected in Project Billing report
+	feature: Add user config option that allows to hide the "Delete All" button in tasks
+	bugfix: Apply timezone when searching and formatting dates in project billing report
+	bugfix: Increase the max width of the category column in project billing report
+	bugfix: Move 'Delete All' button to the right in the task view
+	bugfix: fix task timeslots grid to allow right buttons definition in the toolbar
+	bugfix: quickbooks integration - cut custom fields if the length is greater than 30 chars
+	bugfix: remove hack in pear lib to disable verify_peer options when connecting using ssl/tls
+	
+	
+	Since 3.8.5.10
+	-----------------
+	feature: Add payment button to invoice view when an external payment link is available for the account
+	feature: Add price and cost columns to the tasks list
+	feature: modifications to new user account creation to allow the finish sign up step
+	feature: Add the invoicing status filter to the actual expenses list
+	feature: Add edit button to the time list toolbar
+	bugfix: dont show add/edit buttons for users that don't have permissions in invoicing module
+	bugfix: Remove flash references
+	bugfix: fix expenses widget amounts sum for budgeted expenses
+	bugfix: fix time approval installer queruies to avoid errors with duplicated keys
+	bugfix: fix timezone usage when dst changes
+	
+	
+	Since 3.8.5.9
+	-----------------
+	feature: add taxes to actual expenses, and show them in listing and reports
+	feature: Modify income module name when it has more subtabs
+	feature: Add config options to expenses and income plugins to show/hide the subtabs for each module
+	feature: hide budgeted expense data in actual expense form when budgeted expense tab is not enabled, and the same behaviour with invoices and payment receipts
+	bugfix: fix invoice payment receitps installer
+	
+	
+	Since 3.8.5.8
+	-----------------
+	feature: quickbooks integration - if invoice line has user and not matched with any service try to use generic service item 'Hours'
+	feature: quickbooks integration - improve inv payment period sync
+	bugfix: quickbooks integration - improve version management when synchronizing objects with quickbooks
+	bugfix: quickbooks integration - prevent name override
+	bugfix: quickbooks integration - fix payments and invoices sync, part 2: invoice number unicity, payments account, void and reopen
+	bugfix: when classifying by drag and drop, don't ask to to remove previous or not if the object was not classified
+	bugfix: when generating invoice from project or batch invoicing, only use approved timeslots
+	bugfix: fix invoice form max width
+	bugfix: fix error with workflow permissions when adding actual expense and no status dim is installed
+	
 	
 	Since 3.8.5.7
 	-----------------

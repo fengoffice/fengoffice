@@ -92,7 +92,11 @@ og.MailManager = function() {
 					//reload columns for this folder
 					showFolderColumns();
 
-					manager.reloadGridPagingToolbar('mail','list_all','mails-manager');
+					if (d && d.totals) {
+						manager.updateGridPagingToolbar({totalCount: d.totals.total_rows});
+					} else {
+						manager.reloadGridPagingToolbar('mail','list_all','mails-manager');
+					}
 					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 					

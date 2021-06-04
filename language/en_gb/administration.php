@@ -304,6 +304,9 @@ return array(
   
   	'user config option name reminders_tasks' =>'Task Reminders',
     'user config option desc reminders_tasks' =>'Default value for task reminders',  
+
+    'user config option name tasksShowWorkPerformedDeleteAllButton' =>'Display the "Delete All" button',
+    'user config option desc tasksShowWorkPerformedDeleteAllButton' =>'Displays the "Delete All" button in the overview of the task in the "Work Performed" section',
   
   	'user config option name add_task_default_reminder' => 'Add a reminder by default when creating a task',
   	'user config option desc add_task_default_reminder' => 'Create reminders by default when you create tasks',

@@ -138,13 +138,16 @@ INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_se
     ('fodt', 'doc.png', '0', '0'),
     ('ics', 'ics.png', '0', '0');
 
-INSERT INTO `<?php echo $table_prefix ?>im_types` (`name`, `icon`) VALUES
-	('ICQ', 'icq.gif'),
-	('AIM', 'aim.gif'),
-	('MSN', 'msn.gif'),
-	('Yahoo!', 'yahoo.gif'),
-	('Skype', 'skype.gif'),
-	('Jabber', 'jabber.gif');
+INSERT INTO `<?php echo $table_prefix ?>im_types` (`name`, `icon`, `disabled`) VALUES
+	('ICQ', 'icq.gif', '1'),
+	('AIM', 'aim.gif', '1'),
+	('MSN', 'msn.gif', '1'),
+	('Yahoo!', 'yahoo.gif', '1'),
+	('Skype', 'skype.gif', '1'),
+	('Jabber', 'jabber.gif', '1'),
+	('Twitter', 'twitter.svg', '0'),
+	('Facebook', 'facebook.svg', '0'),
+	('LinkedIn', 'linkedin.svg', '0');
 
 
 INSERT INTO `<?php echo $table_prefix ?>cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES
@@ -213,7 +216,6 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('task panel', 'noOfTasks', '15', 'IntegerConfigHandler', '0', '100', NULL),
  ('task panel', 'task_display_limit', '500', 'IntegerConfigHandler', '0', '200', NULL),
  ('task panel', 'pushUseWorkingDays', '1', 'BoolConfigHandler', '1', '0', NULL),
- ('task panel', 'zoom in gantt', '3', 'IntegerConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowDimensionCols', '', 'StringConfigHandler', 1, 0, ''),
  ('task panel', 'tasksUseDateFilters', '1', 'BoolConfigHandler', 0, 0, ''),
  ('task panel', 'tasksShowAssignedToName', '0', 'BoolConfigHandler', 0, 0, ''),

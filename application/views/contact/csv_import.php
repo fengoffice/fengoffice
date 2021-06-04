@@ -97,7 +97,7 @@ og.submitCsv = function(genid) {
 			$i++;
 	?>	
 				<tr<?php echo ($isAlt ? ' class="altRow"': '') ?>>
-				<td><?php echo checkbox_field('check_'.$c_field, true,array( 'tabindex' => 50+$i)) ?></td><td><?php echo $c_label ?></td><td><?php echo select_box('select_'.$c_field, $options); ?></td></tr>	
+				<td><?php echo checkbox_field('check_'.$c_field, false,array( 'tabindex' => 50+$i)) ?></td><td><?php echo $c_label ?></td><td><?php echo select_box('select_'.$c_field, $options); ?></td></tr>	
 	<?php	
 		} //foreach	?>
 		
@@ -112,7 +112,7 @@ og.submitCsv = function(genid) {
 				$i++;
 				
 				?><tr<?php echo ($isAlt ? ' class="altRow"': '') ?>>
-					<td><?php echo checkbox_field('check_custom_properties['.$cp->getId().']', true,array( 'tabindex' => 50+$i)) ?></td><td><?php echo $cp->getName() ?></td>
+					<td><?php echo checkbox_field('check_custom_properties['.$cp->getId().']', false,array( 'tabindex' => 50+$i)) ?></td><td><?php echo $cp->getName() ?></td>
 					<td><?php echo select_box('select_custom_properties['.$cp->getId().']', $options); ?></td>
 				</tr>
 	<?php

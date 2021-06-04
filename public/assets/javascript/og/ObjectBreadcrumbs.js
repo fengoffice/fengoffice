@@ -40,7 +40,7 @@ og.replaceAllEmptyBreadcrumbForThisMemberInterval = function(emptyBreadcrumbs){
 		
 	}
 
-	var intervalID = setInterval(advanceNewsItem, 100);	
+	var intervalID = setInterval(advanceNewsItem, 20);	
 }
 
 
@@ -382,18 +382,42 @@ og.replaceAllEmptyBreadcrumbForThisMember = function(dimension_id ,member, extra
 	var targets = ".empty-bread-crumb.bread-crumb-"+member.id;
 	var all_targets = $(targets);
 	
-	for (var j = 0; j < all_targets.length; j++) {
-		var new_target_id = 'bread-crumb-'+ Ext.id() + member.id;
+	// generate breadcrumb html for the first one
+	var j= 0;
+	
+	var new_target_id = 'bread-crumb-'+ Ext.id() + member.id;
+	var container_to_fill = $(all_targets[j]).data("container-to-fill");
+	var show_link = $(all_targets[j]).data("show-link");
+	var exclude_parents_path = $(all_targets[j]).data("exclude-parents-path");
+	var epp = exclude_parents_path ? '1' : '0';
+	
+	$(all_targets[j]).parent().html('<span id="'+new_target_id+'" class="bread-crumb-'+ member.id +' member-path real-breadcrumb og-wsname-color-'+ member.color +
+			'" data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'" data-exclude-parents-path="'+epp+'"></span>');
+	
+	// this function creates the html and fills the container with it
+	og.insertBreadcrumb(member.id,new_target_id,false,null,exclude_parents_path);
+	
+	// get the generated html
+	var target_0_html = $("#"+new_target_id).html();
+	
+	// for each target copy the already generated html
+	for (var j = 1; j < all_targets.length; j++) {
+		var copy_target_id = 'bread-crumb-'+ Ext.id() + member.id;
 		var container_to_fill = $(all_targets[j]).data("container-to-fill");
 		var show_link = $(all_targets[j]).data("show-link");
 		var exclude_parents_path = $(all_targets[j]).data("exclude-parents-path");
 		var epp = exclude_parents_path ? '1' : '0';
 		
-		$(all_targets[j]).parent().html('<span id="'+new_target_id+'" class="bread-crumb-'+ member.id +' member-path real-breadcrumb og-wsname-color-'+ member.color +
+		$(all_targets[j]).parent().html('<span id="'+copy_target_id+'" class="bread-crumb-'+ member.id +' member-path real-breadcrumb og-wsname-color-'+ member.color +
 				'" data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'" data-exclude-parents-path="'+epp+'"></span>');
 		
-		og.insertBreadcrumb(member.id,new_target_id,false,null,exclude_parents_path);
-	}	
+		$('#'+copy_target_id).append(target_0_html);
+		
+		// make breadcrumbs groups when container is shorter than brs length
+		var container_width = $(all_targets[j]).closest(container_to_fill).width();
+		og.checkMultiMemberBreadcrumb($(all_targets[j]), container_width); 
+	}
+	
 }
 
 /* @container_to_fill is the class or the id of the container  example .container or #container
@@ -578,12 +602,14 @@ og.insertBreadcrumb = function(member_id,target,from_callback) {
 	}
 		
 	//Multiple Breadcrumb	
-	og.checkMultiMemberBreadcrumb(target,real_container_width);
+	og.checkMultiMemberBreadcrumb(target,real_container_width); // performance killer
+	// @TODO: THIS HAS TO BE DONE AFTER RENDERING ALL BREADCRUMBS
 	
 	//remove the clone
-	var final_container = clone.clone(true);
+	/*var final_container = clone.clone(true);
 	original_container.replaceWith(final_container);
-	clone.remove();
+	clone.remove();*/
+	original_container.replaceWith(clone);
 }
 
 //check if there are more member paths in the same breadcrumb container and if is necesary colapse them to objet types totals

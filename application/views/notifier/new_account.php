@@ -23,11 +23,11 @@
 
 	<?php echo lang('hi john doe', $new_account->getObjectName()) ?>,<br><br>
 	
-	<?php echo lang('user created your account', $new_account->getCreatedByDisplayName()) ?>.<br><br>
+	<?php echo lang('user created your account', $new_account->getUpdatedByDisplayName()) ?>.<br><br>
 	
 	<?php echo lang('need to set up your new password') ?><br><br>
 	
-	<?php echo '<a href="'.get_url('access','reset_password', array('t' => $token, 'uid' => $new_account->getId(), 'type_notifier' => $type_notifier)).'" target="_blank">'.get_url('access','reset_password', array('t' => $token, 'uid' => $new_account->getId(), 'type_notifier' => $type_notifier)).'</a>'?><br><br>
+	<?php echo '<a href="'.get_url('access','reset_password', array('t' => $token, 'uid' => $new_account->getId(), 'type_notifier' => $type_notifier)).'" target="_blank">'.lang('finish sign up').'</a>'?><br><br>
 	
 	<?php echo lang('visit feel free to log in', '<a href="'.ROOT_URL.'" target="_blank">'.ROOT_URL.'</a>',$new_account->getUsername(),$new_account->getEmailAddress()) ?><br><br>
 	

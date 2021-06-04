@@ -222,6 +222,11 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 			}
 		}
 	}
+	
+	// hard patch to correct the color cp values (when editing member) if they are not consistent with the color attribute of the member
+	if ($customProp->getIsSpecial() && $customProp->getType() == 'color' && $object instanceof Member) {
+		if($object->getColor() > 0) $default_value = $object->getColor();
+	}
 
 	$name = $input_base_name . '[' . $customProp->getId() . ']';
     
@@ -266,6 +271,9 @@ function render_custom_property_by_type($custom_property, $configs) {
 		case 'text':
 			$html .= render_text_custom_property_field($custom_property, $configs);
 			break;
+		case 'amount':
+			$html .= render_money_amount_custom_property_field($custom_property, $configs);
+			break;	
 		case 'numeric':
 			$html .= render_numeric_custom_property_field($custom_property, $configs);
 			break;
@@ -341,6 +349,35 @@ function render_text_custom_property_field($custom_property, $configs) {
         
 		$html = text_field($configs['name'], $configs['default_value'], $attributes);
 	}
+	return $html;
+}
+
+function render_money_amount_custom_property_field($custom_property, $configs) {
+
+    $html = '';
+	// Currency selector
+	$cp_value = CustomPropertyValues::findOne(array('conditions' => '`custom_property_id`='.$custom_property->getId().' AND `object_id`='.array_var($configs, 'object_id', 0)));
+	$selected_currency = $cp_value instanceof CustomPropertyValue ? $cp_value->getCurrencyId() : 1;
+	$currencies = Currencies::findAll();
+	$options = '';
+	foreach($currencies as $c){
+		$selected = $selected_currency == $c->getId() ? 'selected="selected"' : '';
+		$options .= '<option '.$selected.' value='.$c->getId().'>'.$c->getSymbol().'</option>';
+	}
+	$disabled = count($currencies) == 1 || array_var($configs, 'property_perm') == 'view' ? ' disabled="disabled" ' : '';
+	$html .= '<select name="object_custom_properties['.$custom_property->getId().'][currency_id]" style="min-width: 40px;" '.$disabled.'>'.$options.'</select>';
+
+	// Amount input
+	$id = $configs['genid'] . 'cp' . $custom_property->getId();
+	$class = '';
+	$placeholder = '';
+	$onChange = 'og.formatAmount(\''.$id.'\')';
+	$name = 'object_custom_properties['.$custom_property->getId().'][amount]';
+	$attributes = array('id' => $id,'class'=>$class,'placeholder'=>$placeholder, 'onChange' => $onChange, 'name' => $name);
+	if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+	$value = format_amount($configs['default_value']);
+	$html .= text_field($name, $value, $attributes);
+
 	return $html;
 }
 
@@ -580,6 +617,7 @@ function render_contact_custom_property_field($custom_property, $configs) {
 	$filters = array();
 	if ($custom_property->getType() == 'user') {
 		$filters['is_user'] = 1;
+		$filters['disabled'] = '0';
 		$emtpy_text = lang('select user');
 	}
 
@@ -678,7 +716,7 @@ function render_contact_custom_property_field($custom_property, $configs) {
 				listClass: "custom-prop",
 				filters: '.$filters_str.','.
 				$disabled_str.'
-				memberId:'.$configs["member_parent"].',
+				memberId:"'.$configs["member_parent"].'",
 				cp_type: "'.$custom_property->getType().'"
 			  });
 			});
