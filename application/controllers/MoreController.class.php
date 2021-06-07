@@ -280,7 +280,7 @@ class MoreController extends ApplicationController {
 		$active_dimensions_tmp = Dimensions::findAll(array('order' => 'default_order'));
 		$active_dimensions = array();
 		foreach ($active_dimensions_tmp as $dim) {
-			if ($dim->getCode() == 'feng_persons') continue;
+			// if ($dim->getCode() == 'feng_persons') continue; // this seems to break support for Persons dimension
 			
 			// if the plugin that owns the dimension is disabled then no ots are enabled for this dimension and it should be excluded
 			$dot_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dim->getId());
