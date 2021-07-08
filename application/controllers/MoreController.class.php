@@ -180,7 +180,7 @@ class MoreController extends ApplicationController {
 		        $enabled = $enabled && $plugin instanceof Plugin && $plugin->isActive();
 		    }
 		    
-		    $url_params = json_decode($panel->getUrlParams(), true);
+		    $url_params = (array) json_decode($panel->getUrlParams(), true);
 		    
 		    if ( $panel->getDefaultController() == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {
 		        $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id']);
