@@ -50,12 +50,12 @@
   			if (!$check_permissions || $contact->isAdministrator()) {
   				$member_ids = array_filter($member_ids);
   				if (count($member_ids) > 0) {
-  					DB::execute("DELETE FROM fo_object_members WHERE member_id IN (".implode(',', $member_ids).") AND object_id=".$object->getId());
+  					DB::execute("DELETE FROM ".TABLE_PREFIX."object_members WHERE member_id IN (".implode(',', $member_ids).") AND object_id=".$object->getId());
   				
   					$all_parent_member_ids = Members::getAllParentsInHierarchy($member_ids, true);
 	  				
 	  				if (count($all_parent_member_ids) > 0) {
-	  					DB::execute("DELETE FROM fo_object_members WHERE is_optimization=1 AND member_id IN (".implode(',', $all_parent_member_ids).") AND object_id=".$object->getId());
+	  					DB::execute("DELETE FROM ".TABLE_PREFIX."object_members WHERE is_optimization=1 AND member_id IN (".implode(',', $all_parent_member_ids).") AND object_id=".$object->getId());
 	  				}
   				}
   				$memebers_deleted_ids = $member_ids;
