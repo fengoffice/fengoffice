@@ -103,7 +103,7 @@
      *
      * @access public
      * @param void
-     * @return string
+     * @return array
      */
     function getNonOrderableColumnTypes() {
         return self::$non_orderable_column_types;
@@ -114,7 +114,7 @@
      *
      * @access public
      * @param void
-     * @return string
+     * @return array
      */
     function getNonSearchableColumnTypes() {
         return self::$non_searchable_column_types;

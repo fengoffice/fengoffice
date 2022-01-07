@@ -52,7 +52,7 @@
                     <?php foreach ($categories as $category) {
                         if (array_var($category, 'hidden')) continue;
                     ?>
-                    <li><a href="#<?php echo $genid . array_var($category, 'id', $category['name']) ?>"><?php echo $category['name'] ?></a></li>
+                    <li><a href="#<?php echo $genid . array_var($category, 'id', $category['name']) ?>" id="<?php echo array_var($category, 'id', $category['name'])."_li"?>"><?php echo $category['name'] ?></a></li>
                     <?php } ?>
                 </ul>
 
@@ -217,7 +217,12 @@
 
                     </div>
 
-
+					<?php 
+					$main_tab_more_html = "";
+					Hook::fire('timeslot_main_tab_additional_fields', $timeslot, $main_tab_more_html);
+					echo $main_tab_more_html;
+					?>
+                    
 
 
                 </div>
@@ -413,6 +418,16 @@
     og._lastMinutesInputValue = 0;
     og._lastPausedHoursInputValue = 0;
     og._lastPausedMinutesInputValue = 0;
+
+	og._dims_to_keep_when_relinkng_task = [];
+	<?php
+	$status_dim = Dimensions::findByCode('status_timesheet');
+	if ($status_dim instanceof Dimension) {
+	?>
+		og._dims_to_keep_when_relinkng_task.push(<?php echo $status_dim->getId() ?>);
+	<?php
+	}
+	?>
     
     /**
      * Process triggered when the user changes the value in the (worked) time input
@@ -986,7 +1001,7 @@
         Object.find('.name').text(object_name);
 
         if (og.reclassify_time_when_linking_task) {
-        	og.set_timeslot_members_by_task(object_id);
+        	og.set_timeslot_members_by_task(object_id, og._dims_to_keep_when_relinkng_task);
         }
 
         Link.hide()
@@ -1007,14 +1022,14 @@
         
     }
 
-    og.set_timeslot_members_by_task =  function(task_id) {
+    og.set_timeslot_members_by_task =  function(task_id, excluded_dim_ids) {
 		if (task_id) {
 			og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
 				hideLoading: true,
 				callback: function(success, data) {
 					if (data.task) {
                         // remove all members from timeslot
-                        member_selector.remove_all_selections(gen_id);
+                        member_selector.remove_all_selections(gen_id, excluded_dim_ids);
                         // parse the mem path string
                         var mempath = Ext.util.JSON.decode(data.task.memPath);
                         var task_members_json = {};

@@ -981,6 +981,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
             });
         }
     }
+
     //instantiate the template
     var html = ogTasks.task_list_row_template(data);
 
@@ -1532,7 +1533,7 @@ ogTasks.initTasksList = function () {
             {
                 id: 'task_pending',
                 title: lang('pending'),
-                group_total_field: 'pending_time_string',
+                group_total_field: 'pending_time_string', 
                 row_field: 'pending_time_string',
                 col_width: '100px'
             }
@@ -1557,13 +1558,15 @@ ogTasks.initTasksList = function () {
         for (var i = 0; i < ogTasks.additional_task_list_columns.length; i++) {
             var col = ogTasks.additional_task_list_columns[i];
             var field = col.row_field ? col.row_field : col.id;
+            var total_field = col.group_total_field ? col.group_total_field : '';
             var width = col.width ? col.width : '100px';
 
             if (drawOptions[col.id]) {
                 tasks_list_cols.push({
                     id: col.id,
                     title: col.name,
-                    group_total_field: '',
+                    data: col.data ?  col.data : '',
+                    group_total_field: total_field,
                     row_field: field,
                     col_width: width
                 });

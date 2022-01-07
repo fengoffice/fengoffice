@@ -95,6 +95,7 @@ ogTasksTask.prototype.flatten = function(){
 }
 
 ogTasksTask.prototype.setFromTdata = function(tdata){
+	
 	this.id = tdata.id;
 	this.title = tdata.name;
 	this.description = tdata.description;
@@ -146,6 +147,10 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.additional_data) this.additional_data = tdata.additional_data;
 	
 	if (tdata.custom_properties) this.custom_properties = tdata.custom_properties;
+
+	if (tdata.prevent_add_time_to_parent_task) this.prevent_add_time_to_parent_task = tdata.prevent_add_time_to_parent_task;
+
+	if (tdata.is_parent) this.is_parent = tdata.is_parent;
 }
 
 ogTasksMilestone = function(id, title, dueDate, totalTasks, completedTasks, isInternal, isUrgent){

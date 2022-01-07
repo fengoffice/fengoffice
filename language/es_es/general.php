@@ -455,4 +455,5 @@
 	'pick a color' => 'Seleccione un color',
 	'finish sign up' => 'Finalizar registro',
 	'viewing information with the following filters' => 'Mostrando información para los siguientes filtros',
+	'no filter' => 'Sin filtro',
 );

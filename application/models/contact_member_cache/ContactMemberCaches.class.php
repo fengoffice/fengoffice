@@ -319,9 +319,11 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 	static function getAllChildrenIdsFromCache($contact_id, $parent_id) {
 		// Prepare SQL
 		$sql = "SELECT cmc.member_id FROM ".TABLE_PREFIX."contact_member_cache cmc
+				INNER JOIN ".TABLE_PREFIX."members m ON m.id=cmc.member_id
 					WHERE cmc.contact_id = ".$contact_id."
-							AND cmc.parent_member_id = ".$parent_id."		
-					ORDER BY member_id DESC					
+						AND cmc.parent_member_id = ".$parent_id."
+						AND m.archived_on = 0
+					ORDER BY cmc.member_id DESC					
 				";
 		
 		// Run!

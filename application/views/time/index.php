@@ -423,7 +423,20 @@ if (is_array($add_columns)) {
     var add_row_user_options = [];
     var user_options = [[0, lang('everyone')]];
     
-    var period_options = [[0, lang('no filter')],[1, lang('today')],[2, lang('this week')],[3, lang('last week+')],[4, lang('this month')],[5, lang('last month+')],[6, lang('select dates...')]];
+    var period_options = [
+        [0, lang('no filter')],
+        [1, lang('today')],
+        [11, lang('yesterday+')],
+        [2, lang('this week')],
+        [3, lang('last week+')],
+        [7, lang('First half month+')],
+        [8, lang('Second half month+')],
+        [9, lang('First half of last month+')],
+        [10, lang('Second half of last month+')],
+        [4, lang('this month')],
+        [5, lang('last month+')],
+        [6, lang('select dates...')]
+    ];
     var period_ini_val = '<?php echo array_var($current_filters, 'period_filter') ?>';
     
 <?php foreach ($users as $user) {

@@ -404,7 +404,10 @@ class Timeslot extends BaseTimeslot {
 		parent::trash($trashDate, $fire_hook);
 
 		$object = $this->getRelObject();
-		if ($object instanceof ProjectTask) $object->calculatePercentComplete();
+		if ($object instanceof ProjectTask){
+			$object->calculatePercentComplete();
+			Hook::fire('calculate_executed_cost_and_price', array(), $object);
+		}
 	}
 
 	// ---------------------------------------------------

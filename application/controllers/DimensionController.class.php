@@ -486,7 +486,7 @@ class DimensionController extends ApplicationController {
 				
 				$search_name_cond = "";
 				if(!$random){
-				    $name = mysqli_real_escape_string(DB::connection()->getLink(), $name);
+					$name = mysqli_real_escape_string(DB::connection()->getLink(), $name);
 					$search_name_cond = " AND name LIKE '%".$name."%'";
 				}
 				
@@ -497,7 +497,7 @@ class DimensionController extends ApplicationController {
 				if (count($allowed_member_types) > 0) {
 					$member_type_cond = " AND object_type_id IN (".implode(',', $allowed_member_types).")";
 				}
-				
+
 				$more_conds = "";
 				if (!$ignore_context_filters) {
 					$filter_by_members = array();
@@ -510,9 +510,9 @@ class DimensionController extends ApplicationController {
 					$filter_by_members_sql = $this->get_association_filter_conditions($dimension, $filter_by_members, $real_applied_filters);
 					$more_conds .= $filter_by_members_sql;
 				}
-				
+
 				$memberList = Members::findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
-				
+
 				//include all parents
 				//Check hierarchy
 				if($parents){
@@ -706,7 +706,7 @@ class DimensionController extends ApplicationController {
 				// extra conditions for permission components
 				if (array_var($_REQUEST, 'with_permissions')) {
 					$pg_id = array_var($_REQUEST, 'pg_id', '-1');
-					$perm_cond = "EXISTS (SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp WHERE cmp.member_id=".TABLE_PREFIX."members.id AND cmp.permission_group_id=$pg_id)";
+					$perm_cond = "EXISTS (SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp WHERE cmp.member_id=`id` AND cmp.permission_group_id=$pg_id)";
 					if (array_var($_REQUEST, 'with_permissions') == '1') {
 						$extra_conditions .= " AND $perm_cond";
 					} else {
@@ -901,7 +901,7 @@ class DimensionController extends ApplicationController {
 					//check childs from contact member cache
 					$childsIds = ContactMemberCaches::getAllChildrenIdsFromCache(logged_user()->getId(), $m->getId());
 				}else{
-					$childsIds = $m->getAllChildrenIds(false,null,"");
+					$childsIds = $m->getAllChildrenIds(false,null," AND archived_ON=0");
 				}				
 				$totalChilds = count($childsIds);
 				$haveChilds = ($totalChilds > 0)? true : false; 

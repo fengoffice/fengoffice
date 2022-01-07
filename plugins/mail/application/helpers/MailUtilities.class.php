@@ -55,8 +55,21 @@ class MailUtilities {
 			}
 
 			debug_log("Start checking ".count($accounts)." accounts", "checkmail_log.php");
+			
+			$disabled_user_emails = array();
+			$disabled_users = Contacts::instance()->getAllUsers("AND `disabled` > 0", true);
+			foreach ($disabled_users as $disabled_user) {/* @var $disabled_user Contact */
+				$disabled_user_emails[] = $disabled_user->getEmailAddress();
+			}
 
-			foreach($accounts as $account) {
+			foreach($accounts as $account) {/* @var $account MailAccount */
+				
+				// don't check the accounts of disabled users
+				if (in_array($account->getEmailAddress(), $disabled_user_emails)) {
+					debug_log("SKIPPING Account (".$account->getEmailAddress().") ".$account->getId(), "checkmail_log.php");
+					Logger::log_r("CHECKMAIL: Skipping disabled user account: ".$account->getEmailAddress());
+					continue;
+				}
 
 				debug_log("Start checking account ".$account->getId(), "checkmail_log.php");
 
@@ -1990,7 +2003,7 @@ class MailUtilities {
 			$ret = $imap->login($account->getEmail(), MailUtilities::ENCRYPT_DECRYPT($account->getPassword()),null,false);
 			if (PEAR::isError($ret)) {
 				Logger::log_r("get_imap_account_mailboxes - LOGIN ERROR\n".print_r($ret,1));
-				return;
+				throw new Exception(lang('failed to authenticate email account desc', $account->getEmailAddress()));
 			}
 		}
 		// init capabilities

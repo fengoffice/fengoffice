@@ -275,7 +275,6 @@ class Reports extends BaseReports {
 
             if (in_array($order_by_col, self::$external_columns)) {
                 $order_by_col = 'name_order';
-                //$original_order_by_col = "e.$original_order_by_col";
                 
                 $select_columns = array();
                 if (is_null($join_params)) {
@@ -300,6 +299,13 @@ class Reports extends BaseReports {
                 foreach ($tmp_cols as $col)
                     $select_columns[] = "o.$col";
                 
+				// ensure that original order by column has the right table alias
+				if (in_array($original_order_by_col, $managerInstance->getColumns())) {
+					$original_order_by_col = "e.$original_order_by_col";
+				} else if (in_array($original_order_by_col, Objects::instance()->getColumns())) {
+					$original_order_by_col = "o.$original_order_by_col";
+				} 
+
             } else {
                 if (in_array($order_by_col, $managerInstance->getColumns())) {
                     $original_order_by_col = "e.$order_by_col";
@@ -362,7 +368,6 @@ class Reports extends BaseReports {
             }
 
             if ($ot->getName() == 'timeslot') {
-                $allConditions .= " AND   (e.rel_object_id=0 OR (SELECT aux.trashed_by_id FROM " . TABLE_PREFIX . "objects aux WHERE aux.id=e.rel_object_id)=0) ";
                 if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
                     $allConditions .= " AND e.contact_id = " . logged_user()->getId();
                 }
@@ -586,7 +591,15 @@ class Reports extends BaseReports {
                                     }
                                 }
                             } else {
-                                $value = $object->getColumnValue($field);
+
+                                $column_value = $object->getColumnValue($field);
+
+                                if ($field == 'currency_id' && $currency = Currencies::getCurrency($column_value)) {
+                                    $value = $currency->getShortName();
+                                } else {
+                                    $value = $column_value;
+                                }                                
+                                
                             }
 
                             if ($value instanceof DateTimeValue) {
@@ -609,8 +622,8 @@ class Reports extends BaseReports {
                                         }
                                     }
 
-                                    if ($object instanceof IncomeInvoice) {
-                                        if ($field == 'expiration_date') {
+                                    if (Plugins::instance()->isActivePlugin('income') && $object instanceof IncomeInvoice) {
+                                        if (in_array($field, array('date', 'expiration_date'))) {
                                             $add_timezone_offset = false;
                                         }
                                     }

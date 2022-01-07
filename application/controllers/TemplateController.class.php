@@ -138,6 +138,7 @@ class TemplateController extends ApplicationController {
 				$propValueOperation = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueOperation');
 				$propValueAmount = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueAmount');
 				$propValueUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueUnit');
+				$propValueVarUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueVarUnit');
 				$propValueTime = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueTime');
 				
 				if (is_array($objectPropertyValues)) {
@@ -155,18 +156,27 @@ class TemplateController extends ApplicationController {
 							$templateObjPropValue->setProperty($property);
 							$propValue = '';
 							if(isset($propValueParams[$objInfo][$property])){
-								$param = trim($propValueParams[$objInfo][$property]);
-								$operation = trim($propValueOperation[$objInfo][$property]);
-								$amount = trim($propValueAmount[$objInfo][$property]);
-								$unit = trim($propValueUnit[$objInfo][$property]);
-								$propValue = '{'.$param.'}'.$operation.$amount.$unit;
+
+								$propValue = null;
+								Hook::fire('override_template_param_definition', array('controller'=>$this, 'obj_id'=>$objInfo, 'property'=>$property, 'decoded_prop_inputs'=>$decoded_prop_inputs), $propValue);
 								
-								if (isset($propValueTime[$objInfo])) {
-									$time = array_var($propValueTime[$objInfo], $property);
-									if ($param == 'task_creation' && config_option('use_time_in_task_dates')) {
-										$tval = getTimeValue($time);
-										if (is_array($tval)) {
-											$propValue .= "|".str_pad($tval['hours'], 2, '0', STR_PAD_LEFT).":".str_pad($tval['mins'], 2, '0', STR_PAD_LEFT);
+								if (is_null($propValue)) {
+									// if the hook didn't override the definition of the parameter then continue with the usual procedure
+
+									$param = trim($propValueParams[$objInfo][$property]);
+									$operation = trim($propValueOperation[$objInfo][$property]);
+									$amount = trim($propValueAmount[$objInfo][$property]);
+									$unit = trim($propValueUnit[$objInfo][$property]);
+									$var_unit = trim(array_var($propValueVarUnit[$objInfo], $property));
+									$propValue = '{'.$param.'}'.$var_unit.$operation.$amount.$unit;
+									
+									if (isset($propValueTime[$objInfo])) {
+										$time = array_var($propValueTime[$objInfo], $property);
+										if ($param == 'task_creation' && config_option('use_time_in_task_dates')) {
+											$tval = getTimeValue($time);
+											if (is_array($tval)) {
+												$propValue .= "|".str_pad($tval['hours'], 2, '0', STR_PAD_LEFT).":".str_pad($tval['mins'], 2, '0', STR_PAD_LEFT);
+											}
 										}
 									}
 								}
@@ -323,7 +333,7 @@ class TemplateController extends ApplicationController {
 	}
 	
 	
-	private function get_prop_input_decoded($decoded_prop_inputs, $prefix) {
+	function get_prop_input_decoded($decoded_prop_inputs, $prefix) {
 		$decoded_var = array();
 		
 		foreach ($decoded_prop_inputs as $key => $value) {
@@ -334,7 +344,15 @@ class TemplateController extends ApplicationController {
 					$decoded_var[$subkeys[0]] = array();
 				}
 				if (isset($subkeys[1])) {
-					$decoded_var[$subkeys[0]][$subkeys[1]] = $value;
+					if (isset($subkeys[2])) {
+						if (isset($subkeys[3])) {
+							$decoded_var[$subkeys[0]][$subkeys[1]][$subkeys[2]][$subkeys[3]] = $value;
+						} else {
+							$decoded_var[$subkeys[0]][$subkeys[1]][$subkeys[2]] = $value;
+						}
+					} else {
+						$decoded_var[$subkeys[0]][$subkeys[1]] = $value;
+					}
 				} else {
 					$decoded_var[$subkeys[0]] = $value;
 				}
@@ -415,6 +433,7 @@ class TemplateController extends ApplicationController {
 				$propValueOperation = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueOperation');
 				$propValueAmount = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueAmount');
 				$propValueUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueUnit');
+				$propValueVarUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueVarUnit');
 				$propValueTime = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueTime');
 				
 				if (is_array($objectPropertyValues)) {
@@ -430,18 +449,27 @@ class TemplateController extends ApplicationController {
 							$templateObjPropValue->setProperty($property);
 							$propValue = '';
 							if(isset($propValueParams[$objInfo][$property])){
-								$param = trim($propValueParams[$objInfo][$property]);
-								$operation = trim(array_var($propValueOperation[$objInfo], $property));
-								$amount = trim(array_var($propValueAmount[$objInfo], $property));
-								$unit = trim(array_var($propValueUnit[$objInfo], $property));
-								$propValue = '{'.$param.'}'.$operation.$amount.$unit;
+
+								$propValue = null;
+								Hook::fire('override_template_param_definition', array('controller'=>$this, 'obj_id'=>$objInfo, 'property'=>$property, 'decoded_prop_inputs'=>$decoded_prop_inputs), $propValue);
 								
-								if (isset($propValueTime[$objInfo])) {
-									$time = array_var($propValueTime[$objInfo], $property);
-									if ($param == 'task_creation' && config_option('use_time_in_task_dates')) {
-										$tval = getTimeValue($time);
-										if (is_array($tval)) {
-											$propValue .= "|".str_pad($tval['hours'], 2, '0', STR_PAD_LEFT).":".str_pad($tval['mins'], 2, '0', STR_PAD_LEFT);
+								if (is_null($propValue)) {
+									// if the hook didn't override the definition of the parameter then continue with the usual procedure
+									
+									$param = trim($propValueParams[$objInfo][$property]);
+									$operation = trim(array_var($propValueOperation[$objInfo], $property));
+									$amount = trim(array_var($propValueAmount[$objInfo], $property));
+									$unit = trim(array_var($propValueUnit[$objInfo], $property));
+									$var_unit = trim(array_var($propValueVarUnit[$objInfo], $property));
+									$propValue = '{'.$param.'}'.$var_unit.$operation.$amount.$unit;
+									
+									if (isset($propValueTime[$objInfo])) {
+										$time = array_var($propValueTime[$objInfo], $property);
+										if ($param == 'task_creation' && config_option('use_time_in_task_dates')) {
+											$tval = getTimeValue($time);
+											if (is_array($tval)) {
+												$propValue .= "|".str_pad($tval['hours'], 2, '0', STR_PAD_LEFT).":".str_pad($tval['mins'], 2, '0', STR_PAD_LEFT);
+											}
 										}
 									}
 								}

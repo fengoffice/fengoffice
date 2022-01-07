@@ -83,20 +83,33 @@ og.TasksBottomToolbar = function(config) {
         }
     });
     this.groupcombo.setValue(ogTasks.userPreferences.groupBy);
-	
-    this.ordercombo = new Ext.form.ComboBox({
-    	id: 'ogTasksOrderByCombo',
-        store: new Ext.data.SimpleStore({
-	        fields: ['value', 'text'],
-	        data : [['priority',lang('priority')]
+    
+    var ordercombo_data = [
+    			['priority',lang('priority')]
 	        	,['name', lang('task name')]
 	        	,['due_date', lang('due date')]
 	        	,['created_on', lang('created on')]
 	        	,['completed_on', lang('completed on')]
 	        	,['assigned_to', lang('assigned to')]
 	        	,['start_date', lang('start date')]
-	        	,['percent_completed', lang('progress')]]
-	    	}),
+	        	,['percent_completed', lang('progress')]
+	];
+	
+	if (og.additional_tasks_list_order_by_fn) {
+		for (var i=0; i<og.additional_tasks_list_order_by_fn.length; i++) {
+			var add_fn = og.additional_tasks_list_order_by_fn[i];
+			if (typeof(add_fn) == 'function') {
+				ordercombo_data = add_fn.call(null, ordercombo_data);
+			}
+		}
+	}
+	
+    this.ordercombo = new Ext.form.ComboBox({
+    	id: 'ogTasksOrderByCombo',
+        store: new Ext.data.SimpleStore({
+	        fields: ['value', 'text'],
+	        data : ordercombo_data
+	    }),
         displayField:'text',
         //typeAhead: true,
         mode: 'local',

@@ -1670,20 +1670,22 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 	
 	
 	function append_other_properties_search_conditions(Dimension $dimension, $query_string, &$search_name_cond) {
-		
+
 		$option_values = DimensionObjectTypeOptions::getOptionValuesForAllObjectTypes($dimension->getId(), 'text_to_show_in_trees');
-		
+	
 		if (is_array($option_values) && count($option_values) > 0) {
+
 			$conditions = array();
 			
 			foreach ($option_values as $option_value) {
 				/* @var $option_value DimensionObjectTypeOption */
 				$raw_val = $option_value->getValue();
-				
+
 				if (trim($raw_val) != "") {
 					$option_decoded = json_decode($raw_val, true);
-					
+
 					if (isset($option_decoded['properties']) && count($option_decoded['properties']) > 0) { 
+
 						foreach ($option_decoded['properties'] as $col) {
 							if (Members::instance()->columnExists($col)) {
 								$conditions[] = "$col LIKE '%".$query_string."%'";
@@ -1709,6 +1711,18 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 										";
 									}
 								}
+							}
+							else if (str_starts_with($col, "assoc_")) {
+
+								$assoc_id = str_replace("assoc_", "", $col);
+								
+								$conditions[] = " EXISTS (
+									SELECT fm.name, fmpm.property_member_id 
+									FROM fo_members fm 
+									INNER JOIN fo_member_property_members fmpm ON fmpm.association_id = '$assoc_id'
+									INNER JOIN fo_members fm2 ON fm2.id = fmpm.property_member_id 
+									WHERE fm.name LIKE '%".$query_string."%'
+								) ";
 							}
 						}
 						

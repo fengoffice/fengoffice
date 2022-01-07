@@ -170,15 +170,16 @@ INSERT INTO `<?php echo $table_prefix ?>object_reminder_types` (`name`) VALUES
   ('reminder_email'),
   ('reminder_popup');
   
-INSERT INTO `<?php echo $table_prefix ?>contact_config_categories` (`name`, `is_system`, `type`, `category_order`) VALUES 
-	('general', 0, 0, 0),
-	('task panel', 0, 0, 2),
-	('calendar panel', 0, 0, 4),
-	('context help', 1, 0, 5),
-	('time panel', 0, 0, 3),
-	('contact panel', 0, 0, 8),
-	('listing preferences', 0, 0, 10),
-	('reporting', 0, 0, 15);
+INSERT INTO `<?php echo $table_prefix ?>contact_config_categories` (`name`, `is_system`, `type`, `category_order`, `located_under`) VALUES 
+	('general', 0, 0, 0, 0),
+	('task panel', 0, 0, 2, 0),
+	('calendar panel', 0, 0, 4, 0),
+	('context help', 1, 0, 5, 0),
+	('time panel', 0, 0, 3, 0),
+	('contact panel', 0, 0, 8, 0),
+	('listing preferences', 0, 0, 10, 0),
+	('reporting', 0, 0, 15, 0),
+	('connected systems', 0, 0, 9, 0);
 	
 INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES 
  ('task panel','tasksDateStart','','DateTimeConfigHandler',1,0,'date from to filter out task list'),

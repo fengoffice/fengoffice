@@ -201,7 +201,7 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 	}
 
     $default_value = null;
-	Hook::fire("custom_property_input_default_value", array('customProp' => $customProp, 'object' => $object), $default_value);
+	Hook::fire("custom_property_input_default_value", array('customProp' => $customProp, 'object' => $object, 'member_parent_id' => array_var($_REQUEST, 'parent')), $default_value);
 	
 	if (is_null($default_value)) {
 		if ($customProp->getIsMultipleValues() || $customProp->getType() == 'table'){
@@ -318,6 +318,9 @@ function render_custom_property_by_type($custom_property, $configs) {
     }
 
 	$html .= '</div>';
+	
+	Hook::fire("after_render_custom_property_input", array('cp'=>$custom_property, 'config'=>$configs), $html);
+	
 	return $html;
 } // render_custom_property_by_type
 
@@ -448,14 +451,16 @@ function render_numeric_custom_property_field($custom_property, $configs) {
 
         $class = '';
         $placeholder = '';
-        $type ='';
+        $type = '';
+        $onchange = "og.check_if_valid_cp_num(this);";
         if (array_var($configs,'is_bootstrap')){
-            $type = 'number';
+	        $type = 'number';
+	        $onchange = '';
             $style = '';
             $class = 'form-control';
             $placeholder = $configs['label'];
         }
-        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'class'=>$class,'placeholder'=>$placeholder);
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'onchange'=>$onchange,'class'=>$class,'placeholder'=>$placeholder);
         
         if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
 
@@ -536,8 +541,10 @@ function render_address_custom_property_field($custom_property, $configs) {
 	if (is_null($values)) {
 		$values = CustomPropertyValues::getCustomPropertyValues($configs['object_id'], $custom_property->getId());
 	}
-	$address_values = array();
-	if (is_array($values)) {
+
+	if($default_value != ''){
+		$address_values[] = $default_value;
+	} else if (is_array($values)) {
 		foreach ($values as $v) $address_values[] = $v->getValue();
 	}
 	
@@ -593,9 +600,11 @@ function render_contact_custom_property_field($custom_property, $configs) {
 	       $cp_value = CustomPropertyValues::getCustomPropertyValue($configs['object_id'], $custom_property->getId());
 	    }
 	}
-	
-	
-	if (!$is_multiple && $cp_value) {
+
+	if($default_value > 0){
+		$value = $default_value;
+		$contact = Contacts::findById($value);
+	} else if (!$is_multiple && $cp_value) {
 		$value = $cp_value->getValue();
 		$contact = Contacts::findById($value);
 	}else{
@@ -667,6 +676,8 @@ function render_contact_custom_property_field($custom_property, $configs) {
 		
 	}
 	
+	Hook::fire('override_contact_cp_filters', array("cp"=>$custom_property), $filters);
+	
 	if (is_array($filters) && count($filters) > 0) {
 		$filters_str = '{';
 		foreach ($filters as $k => $v) {
@@ -702,6 +713,9 @@ function render_contact_custom_property_field($custom_property, $configs) {
     $disabled = array_var($configs, 'property_perm') == 'view';
     $disabled_str = $disabled ? 'disabled: true,' : '';
     
+    $onchange_fn = "null";
+    Hook::fire('contact_cp_selector_onchange', array("cp"=>$custom_property), $onchange_fn);
+    
 	$html .= '<script>
 			$(function(){
 			  og.renderContactSelector({
@@ -717,7 +731,8 @@ function render_contact_custom_property_field($custom_property, $configs) {
 				filters: '.$filters_str.','.
 				$disabled_str.'
 				memberId:"'.$configs["member_parent"].'",
-				cp_type: "'.$custom_property->getType().'"
+				cp_type: "'.$custom_property->getType().'",
+				onchange_fn: '.$onchange_fn.'
 			  });
 			});
 			</script>';

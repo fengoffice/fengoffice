@@ -57,6 +57,13 @@
             						}
             					}
     						});
+							og.openLink(og.getUrl('task','render_task_financials_summary', {id:g.store.baseParams.rel_object_id}), {
+        						callback: function(success,data){
+            						if (data && data.html) {
+            							$("#<?php echo $genid ?>_task_financials_summary").html(data.html);
+            						}
+            					}
+    						});
     					}
         				if (g) g.reset();
     				}
@@ -167,8 +174,15 @@
     var timeslots_tbar_items = [];
 	var timeslots_tbar_right_items = [];
 
-<?php if ($__timeslots_object->canAddTimeslot(logged_user())) { ?>
-    var new_btn = new Ext.Button({
+<?php 
+	
+	$prevent_adding_worked_time_to_parent = false;	
+	
+	Hook::fire('get_prevent_adding_time_to_parent', array('time_type' => 'worked', 'is_parent' => $__timeslots_object->isParent()), $prevent_adding_worked_time_to_parent);
+	
+	if ($__timeslots_object->canAddTimeslot(logged_user()) && !$prevent_adding_worked_time_to_parent) { ?>
+    
+	var new_btn = new Ext.Button({
     	iconCls: 'ico-new add-first-btn blue',
     	text: '<?php echo lang('add work')?>',
     	id: 'new_user_btn',

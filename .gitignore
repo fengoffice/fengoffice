@@ -25,3 +25,4 @@ dummy.php
 dummy.txt
 .buildpath
 .settings/org.eclipse.core.runtime.prefs
+node_modules

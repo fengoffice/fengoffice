@@ -175,16 +175,22 @@ abstract class BaseProjectTasks extends ContentDataObjects {
     *
     * @access public
     * @param void
-    * @return string
+    * @return array
     */
     function getTemplateObjectProperties() {
-    	return array(
+    	$templateObjectProperties = array(
     		array('id' => 'name', 'type' => self::getColumnType('name')),
     		array('id' => 'text', 'type' => self::getColumnType('text')),
     		array('id' => 'start_date', 'type' => self::getColumnType('start_date')),
     		array('id' => 'due_date', 'type' => self::getColumnType('due_date')),
-    		array('id' => 'assigned_to_contact_id', 'type' => 'USER')
+            array('id' => 'assigned_to_contact_id', 'type' => 'USER')
     	);
+
+		//Add more possible Object Properties
+        Hook::fire('add_custom_properties_as_template_properties', null, $templateObjectProperties);
+
+		return $templateObjectProperties;
+
     } // getTemplateObjectProperties
 
 	// -------------------------------------------------------

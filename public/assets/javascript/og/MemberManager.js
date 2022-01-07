@@ -24,6 +24,13 @@ og.MemberManager = function(config) {
 	  		}
 	  	}
   	}
+	// add the customer's related contact custom properties to the grid fields
+	if (this.object_type_name == 'customer') {
+		var contact_cps = og.custom_properties_by_type['contact'];
+		for (i=0; i<contact_cps.length; i++) {
+			cp_names.push('cp_' + contact_cps[i].id);
+		}
+	}
   	this.fields = this.fields.concat(cp_names);
 	
   	// add associated dimensions fields 
@@ -462,6 +469,24 @@ og.MemberManager = function(config) {
 				sortable: true,
 				//renderer: og.clean
 			});
+		}
+	}
+	// add the customer's related contact custom properties to the grid column model
+	if (this.object_type_name == 'customer') {
+		// client contact custom property columns
+		var cps = og.custom_properties_by_type['contact'] ? og.custom_properties_by_type['contact'] : [];
+		for (i=0; i<cps.length; i++) {
+			if (!parseInt(cps[i].disabled)) {
+				cm_info.push({
+					id: 'cp_' + cps[i].id,
+					hidden: parseInt(cps[i].show_in_lists) == 0,
+					header: cps[i].name,
+					dataIndex: 'cp_' + cps[i].id,
+					align: cps[i].cp_type=='numeric' ? 'right' : 'left',
+					sortable: false,
+					//renderer: og.clean
+				});
+			}
 		}
 	}
 	

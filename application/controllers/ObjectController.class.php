@@ -298,17 +298,6 @@ class ObjectController extends ApplicationController {
 		}		
 		$required_dimensions = Dimensions::findAll(array("conditions" => "id IN (".implode(",",$required_dimension_ids).") OR is_required=1"));
 
-		// If not entered members
-		/*if (count($member_ids) <= 0){
-			$throw_error = true;
-			if (Plugins::instance()->isActivePlugin('core_dimensions')) {
-				$personal_member = Members::findById($user->getPersonalMemberId());
-				if ($personal_member instanceof Member) {
-					$member_ids[] = $user->getPersonalMemberId();
-				}
-			}
-		}*/
-
 		if (count($member_ids) > 0) {
 			$enteredMembers = Members::findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
 		} else {
@@ -328,16 +317,7 @@ class ObjectController extends ApplicationController {
 				$ot_name = $object->getObjectTypeNameLang();
 				foreach ($manageable_members as $man_mem) $mem_names[] = $man_mem->getName();
 				throw new Exception(lang('you dont have permissions to add this object in members', $ot_name, implode(', ',$mem_names)));
-			/*
-			$dinfos = DB::executeAll("SELECT id, name, code, options FROM ".TABLE_PREFIX."dimensions WHERE is_manageable = 1");
-			$dimension_names = array();
-			foreach ($dinfos as $dinfo) {
-				if (in_array($dinfo['id'], config_option('enabled_dimensions'))) {
-					$dimension_names[] = json_decode($dinfo['options'])->useLangs ? lang($dinfo['code']) : $dinfo['name'];
-				}
-			}			
-			throw new Exception(lang('must choose at least one member of', implode(', ', $dimension_names)));
-			*/
+			
 			ajx_current("empty");
 			return;
 		  }
@@ -541,6 +521,11 @@ class ObjectController extends ApplicationController {
 						
 						$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count($obj_custom_properties[$req_cp->getId()]) == 0;
 					
+					} else if ($req_cp->getType() == 'amount') {
+
+						$amount = clean_formatted_money_amount_for_sql($obj_custom_properties[$req_cp->getId()]['amount']);
+						$not_set = $amount == 0;
+
 					} else {
 						if ($req_cp->getType() == 'date') {
 							
@@ -1787,23 +1772,7 @@ class ObjectController extends ApplicationController {
 		$reminders = ObjectReminders::getDueReminders("reminder_popup");
 		$popups = array();
 		foreach ($reminders as $reminder) {
-			$context = $reminder->getContext();
-
-			if(str_starts_with($context, "mails_in_outbox")){
-				if ($reminder->getUserId() > 0 && $reminder->getUserId() != logged_user()->getId()) {
-					continue;
-				}
-
-				preg_match('!\d+!', $context, $matches);
-				evt_add("popup", array(
-					'title' => lang("mails_in_outbox reminder"),
-					'message' => lang("mails_in_outbox reminder desc", $matches[0]),
-					'type' => 'reminder',
-					'sound' => 'info'
-				));
-				$reminder->delete();
-				continue;
-			}
+			$context = $reminder->getContext(); 
 
 			if(str_starts_with($context, "eauthfail")){
 				if ($reminder->getUserId() == logged_user()->getId()) {
@@ -2651,6 +2620,8 @@ class ObjectController extends ApplicationController {
 						} else if ($instance instanceof ProjectFile) {
 							$info_elem['mimeType'] = $instance->getTypeString();
 						} else if ($instance instanceof ProjectTask) {
+							$info_elem['startDate'] = format_datetime($instance->getStartDate(), null, logged_user()->getUserTimezoneHoursOffset());
+							$info_elem['dueDate'] = format_datetime($instance->getDueDate(), null, logged_user()->getUserTimezoneHoursOffset());
 							$info_elem['completedBy'] = $instance->getCompletedById();
 							$info_elem['dateCompleted'] = $instance->getCompletedOn() instanceof DateTimeValue ? format_datetime($instance->getCompletedOn()) : '';
 						}

@@ -294,7 +294,8 @@ class MailContents extends BaseMailContents {
 			Hook::fire('mail_list_dim_ids_excluded_from_classified_filder', array('classif_filter'=>$classif_filter), $extra_ignore_classif_cond);
 			
 			$classified = "AND " . ($classif_filter == 'unclassified' ? "NOT " : "");
-			$classified .= "o.id IN (SELECT om.object_id FROM ".TABLE_PREFIX."object_members om INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id WHERE m.dimension_id<>$persons_dim_id $extra_ignore_classif_cond)";
+			$classified .= "o.id IN (SELECT om.object_id FROM ".TABLE_PREFIX."object_members om where $persons_dim_id<>(select m.dimension_id from ".TABLE_PREFIX."members m where m.id=om.member_id) $extra_ignore_classif_cond)";
+
 		}
 		
 		// if not filtering by account or classification then check that emails are classified or from one of my accounts
@@ -304,10 +305,10 @@ class MailContents extends BaseMailContents {
 			foreach ($macs as $mac) $acc_ids[] = $mac->getAccountId();
 			
 			$accountConditions = " AND ($mailTablePrefix.account_id IN (".implode(',', $acc_ids).") OR EXISTS (
-					SELECT om1.object_id FROM ".TABLE_PREFIX."object_members om1 
-						INNER JOIN ".TABLE_PREFIX."members m1 ON m1.id=om1.member_id 
-						INNER JOIN ".TABLE_PREFIX."dimensions d1 ON d1.id=m1.dimension_id 
-					WHERE om1.object_id=$mailTablePrefix.object_id AND d1.is_manageable=1) ) ";
+				SELECT om1.object_id FROM ".TABLE_PREFIX."object_members om1
+				WHERE om1.object_id=$mailTablePrefix.object_id 
+				AND 1=(select d1.is_manageable from ".TABLE_PREFIX."dimensions d1 where d1.id=(select m1.dimension_id from ".TABLE_PREFIX."members m1 where m1.id=om1.member_id))
+			) ) ";
 		}
 
 		// Check for draft, junk, etc. emails
@@ -395,7 +396,7 @@ class MailContents extends BaseMailContents {
 	function getByMessageId($message_id) {
 		return self::findOne(array('conditions' => array('`message_id` = ?', $message_id)));
 	}
-	
+
 	function countUserInboxUnreadEmails() {
 		$tp = TABLE_PREFIX;
 		$uid = logged_user()->getId();
@@ -407,6 +408,36 @@ class MailContents extends BaseMailContents {
 		$all = $rows[0]['c'];
 		return $all - $read;
 	}
+
+	function countOutboxEmails($account_ids, $state) {
+
+		if(!$account_ids) return 0;
+
+		$tp = TABLE_PREFIX;
+		
+		// Check for draft, junk, etc. emails
+		if ($state == "draft") {
+			$stateConditions = " = '2'";
+		} else if ($state == "sent") {
+			$stateConditions = " IN ('1','3','5')";
+		} else if ($state == "received") {
+			$stateConditions = " IN ('0','5')";
+		} else if ($state == "junk") {
+			$stateConditions = " = '4'";
+		} else if ($state == "outbox") {
+			$stateConditions = " >= 200";
+		} else {
+			$stateConditions = "";
+		}
+		
+		$sql = "SELECT COUNT(*) AS outbox_total FROM ${tp}mail_contents mc INNER JOIN ${tp}objects o ON o.id = mc.object_id
+ 			WHERE mc.account_id IN (${account_ids}) AND mc.state ${stateConditions} AND o.trashed_on = '0000-00-00 00:00:00'";
+		
+		$total = DB::executeOne($sql);
+
+		return $total; 
+	
+ 	}
 	
 	
 	/*

@@ -291,6 +291,8 @@ addLangs({
     'send outbox': 'Send outbox',
     'send outbox title': 'Send mails in outbox folder',
     'sending outbox mails': 'Sending mails from outbox folder...',
+    'error sending outbox': 'Email could not be sent. Please try again',
+    'no mails to send': 'There are no emails to be sent',
 
     'filter workspaces': 'Filter workspaces...',
     'filter tags': 'Filter tags...',

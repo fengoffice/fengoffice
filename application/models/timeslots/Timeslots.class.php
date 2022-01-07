@@ -139,7 +139,7 @@ class Timeslots extends BaseTimeslots {
 				$conditions = " AND `e`.`rel_object_id` = 0";
 				break;
 			case 2: //All timeslots
-				$conditions = " AND (`e`.`rel_object_id` = 0 OR `e`.`rel_object_id` IN (SELECT `obj`.`id` FROM `" . TABLE_PREFIX . "objects` `obj` WHERE `obj`.`trashed_on` = 0 AND `obj`.`archived_on` = 0))";
+				$conditions = "";// " AND (`e`.`rel_object_id` = 0 OR `e`.`rel_object_id` IN (SELECT `obj`.`id` FROM `" . TABLE_PREFIX . "objects` `obj` WHERE `obj`.`trashed_on` = 0 AND `obj`.`archived_on` = 0))";
 				break;
 			default:
 				throw new Error("Timeslot type not recognised: " . $timeslot_type);

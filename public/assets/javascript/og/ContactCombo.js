@@ -340,12 +340,18 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 	if(no_style_in_selected==true){
         style="";
     }
+    
+    var onchange_fn_str = '';
+	if (typeof(onchange_fn) == 'function') {
+		onchange_fn(contact_id);
+		onchange_fn_str = onchange_fn.name + "("+contact_id+");";
+	}
 
     if (combo.initialConfig.is_bootstrap) {
         var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="font-size: 1rem;white-space: nowrap;'+style+'">' +
 			'<label>'+ contact_name + '</label>' +
             '<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');' +
-			'og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" ' +
+			'og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" ' +
 			'class="link-ico ico-delete multiple-cp-contact-a-remove" ' +
 			'style="padding-left:18px;font-size: 0.75rem;padding-top: 1px;padding-bottom: 19px;">'+remove_text+'</a>' +
 			'</div>';
@@ -353,21 +359,16 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 
 		if (!is_multiple){
 			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="'+style+'"><div style="float:left;margin-right:5px;">'+ contact_name + '</div>' +
-			'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" style="padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
+			'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" style="padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
 		}else{
 
 			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="white-space: nowrap;'+style+'"><div class="multiple-cp-contact-div-name">'+ contact_name + '</div>' +
-			'<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();" class="link-ico ico-delete multiple-cp-contact-a-remove">'+remove_text+'</a></div>';
+			'<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" class="link-ico ico-delete multiple-cp-contact-a-remove">'+remove_text+'</a></div>';
 		}
 	}
 
 	//fill div with names contact selected and option to remove it.
 	var div_id = hf_id+'_labels';
-
-
-	if (typeof(onchange_fn) == 'function') {
-		onchange_fn(contact_id);
-	}
 
 	if(unclassified){
         og.elementToAddUnclassified = html;

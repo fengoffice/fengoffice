@@ -827,7 +827,7 @@ return array(
     'can_manage_dimension_members'=>'Can manage dimension members',
   'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
   'can_see_others_timeslots'=>'Can see other user\'s timeslots',
-  'can_see_expenses_of_others'=>'Can see other user\'s actual expenses',
+  'can_see_expenses_of_others'=>'Can see actual expenses paid by other users',
   	'can_update_other_users_invitations' => 'Can update other user\'s event invitations',
   	'can_link_objects' => 'Can link objects',
 

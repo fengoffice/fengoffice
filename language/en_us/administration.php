@@ -154,6 +154,7 @@
     'config option desc notification_recipients_field' => 'Select if the recipients for each notifications will be put in the "To" field, in "CC" field or in "BCC" field (by using this last one the recipients will not see each other in the mail header).',
   	'config option name check_unique_mail_contact_comp' => 'Check email unicity between contacts and companies',
   	'config option desc check_unique_mail_contact_comp' => 'If this option is enabled you will not be able to add a company if its email is already used by a contact.',
+    'this email already exists for another user. please use a different email.' => 'This email already exists for another user. Please use a different email.',
 
     'config option name infinite_paging' => 'Paging',
     'config option desc infinite_paging' => 'Enables or disables the paging. When enabled, a little performance can be noticed when loading lists.',
@@ -444,7 +445,6 @@
   	'select one' => 'Select one',
   	'email type' => 'Email',
   	'custom properties updated' => 'Custom properties updated',
-  	'user config option name noOfTasks' => 'Set number of tasks shown as default',
   
   	'user config option name amount_objects_to_show' => 'Number of Linked Objects to show',
   	'user config option desc amount_objects_to_show' => 'Sets the number of Linked Objects to be displayed on object\'s views',
@@ -552,7 +552,8 @@
   	'user config option name can notify subscribers' => 'Notify subscribers',
   	'user config option desc can notify subscribers' => 'This option enables notifying subscribed users, after a task has been added or updated',
     'user config option name close timeslot open' => 'Close the timeslots that are still running when completing a task',  
-  	'user config option name noOfTasks' => 'Number Of Tasks',
+  	'user config option name noOfTasks' => 'Number of tasks displayed by group',
+  	'user config option desc noOfTasks' => 'The amount of tasks shown for each group of tasks in tasks module, you can always load more tasks if the group has more.',
   	'user config option name task_display_limit' => 'Maximum number of tasks to display',
   	'user config option desc task_display_limit' => 'For performance reasons, this number should not be too big. Use 0 for no limit',
   	'user config option name quick_add_task_view_dimensions_combos' => 'Tasks quick add/edit classification',
@@ -648,7 +649,6 @@
     'select one' => 'Select one',
     'email type' => 'Email',
     'custom properties updated' => 'Custom properties updated',
-    'user config option name noOfTasks' => 'Set number of tasks shown as default',
 
     'user config option name amount_objects_to_show' => 'Number of Linked Objects to show',
     'user config option desc amount_objects_to_show' => 'Sets the number of Linked Objects to be displayed on object\'s views',
@@ -750,8 +750,6 @@
 
     //task options
 
-      
-    'user config option name noOfTasks' => 'Number Of Tasks',
     'user config option name task_display_limit' => 'Maximum number of tasks to display',
     'user config option desc task_display_limit' => 'For performance reasons, this number should not be too big. Use 0 for no limit',
     'config option name use tasks dependencies' => 'Use tasks dependencies',
@@ -842,7 +840,7 @@
     'can_manage_dimension_members'=>'Can manage dimension members',
     'can_see_assigned_to_other_tasks'=>'Can see other user\'s tasks',
     'can_see_others_timeslots'=>'Can see other user\'s timeslots',
-    'can_see_expenses_of_others'=>'Can see other user\'s actual expenses',
+    'can_see_expenses_of_others'=>'Can see actual expenses paid by other users',
   	'can_update_other_users_invitations' => 'Can update other user\'s event invitations',
   	'can_link_objects' => 'Can link objects',
     'can_manage_repetitive_properties_of_tasks' => 'Can manage repetitive properties of tasks',

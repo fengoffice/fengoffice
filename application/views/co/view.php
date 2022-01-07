@@ -150,7 +150,16 @@
 				?><div id="<?php echo $genid ?>_work_performed_summary"><?php 
 				$this->includeTemplate(get_template_path('work_performed', 'task'));
 				?></div><?php
+
+				$estimated_executed_info = '';
+				Hook::fire("add_estimated_executed_info_to_view", $object, $estimated_executed_info); ?>
+				<div id="<?php echo $genid ?>_task_financials_summary">
+					<?php echo $estimated_executed_info; ?>
+				</div>
+				<?php
 			}
+
+			
 			
 			
 			$isUser = ( $object instanceof Contact && $object->isUser() );

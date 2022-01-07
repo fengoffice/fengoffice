@@ -306,24 +306,29 @@ class ReportingController extends ApplicationController {
 		switch (array_var($report_data, 'date_type')){
 			case 1: //Today
 				$st = DateTimeValueLib::make(0,0,0,$now->getMonth(),$now->getDay(),$now->getYear());
-				$et = DateTimeValueLib::make(23,59,59,$now->getMonth(),$now->getDay(),$now->getYear());break;
+				$et = DateTimeValueLib::make(23,59,59,$now->getMonth(),$now->getDay(),$now->getYear());
+				break;
 			case 2: //This week
-				$monday = $now->getMondayOfWeek();
-				$nextMonday = $now->getMondayOfWeek()->add('w',1)->add('d',-1);
-				$st = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
-				$et = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());break;
+				$sunday = $now->getMondayOfWeek()->add('d',-1);
+				$nextSunday = $now->getMondayOfWeek()->add('w',1)->add('d',-2);
+				$st = DateTimeValueLib::make(0,0,0,$sunday->getMonth(),$sunday->getDay(),$sunday->getYear());
+				$et = DateTimeValueLib::make(23,59,59,$nextSunday->getMonth(),$nextSunday->getDay(),$nextSunday->getYear());
+				break;
 			case 3: //Last week
-				$monday = $now->getMondayOfWeek()->add('w',-1);
-				$nextMonday = $now->getMondayOfWeek()->add('d',-1);
-				$st = DateTimeValueLib::make(0,0,0,$monday->getMonth(),$monday->getDay(),$monday->getYear());
-				$et = DateTimeValueLib::make(23,59,59,$nextMonday->getMonth(),$nextMonday->getDay(),$nextMonday->getYear());break;
+				$sunday = $now->getMondayOfWeek()->add('w',-1)->add('d',-1);
+				$nextSunday = $now->getMondayOfWeek()->add('d',-2);
+				$st = DateTimeValueLib::make(0,0,0,$sunday->getMonth(),$sunday->getDay(),$sunday->getYear());
+				$et = DateTimeValueLib::make(23,59,59,$nextSunday->getMonth(),$nextSunday->getDay(),$nextSunday->getYear());
+				break;
 			case 4: //This month
 				$st = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
-				$et = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);break;
+				$et = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);
+				break;
 			case 5: //Last month
 				$now->add('M',-1);
 				$st = DateTimeValueLib::make(0,0,0,$now->getMonth(),1,$now->getYear());
-				$et = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);break;
+				$et = DateTimeValueLib::make(23,59,59,$now->getMonth(),1,$now->getYear())->add('M',1)->add('d',-1);
+				break;
 			case 6: //Date interval
 				$st = getDateValue(array_var($report_data, 'start_value'));
 				$st = $st->beginningOfDay();
@@ -334,10 +339,14 @@ class ReportingController extends ApplicationController {
 		}
 		
 		if ($st instanceof DateTimeValue) {
-			$st->add('s',-logged_user()->getUserTimezoneValue());
+			$st->beginningOfDay();
+			$st->advance(-1 * logged_user()->getUserTimezoneValue(), true);
+			//$st->add('s',-logged_user()->getUserTimezoneValue());
 		}
 		if ($et instanceof DateTimeValue) {
-			$et->add('s',-logged_user()->getUserTimezoneValue());
+			$et->endOfDay();
+			$et->advance(-1 * logged_user()->getUserTimezoneValue(), true);
+			//$et->add('s',-logged_user()->getUserTimezoneValue());
 		}
 				
 		$timeslotType = array_var($report_data, 'timeslot_type', 0);
@@ -1989,9 +1998,9 @@ class ReportingController extends ApplicationController {
 		$cls_suffix = $level > 2 ? "all" : $level;
 		$next_level = $level + 1;
 			
-		$group_name = $group_obj['group']['name'];
+		$group_name = str_replace(',','', $group_obj['group']['name']);
 	
-		$text .= '"'. $pad_str . $group_name . '"'. "\n";
+		$text .= '"'. str_replace(',','', $pad_str) . $group_name . '"'. "\n";
 	
 		$mem_index = $prev . $group_obj['group']['id'];
 	
@@ -2016,7 +2025,7 @@ class ReportingController extends ApplicationController {
 	
 		$total += $group_total;
 	
-		$text .= "$group_name;;;".lang('subtotal'). ': '.";" . preg_replace("[^0-9]", "", format_time_column_value($group_total)).";\n\n";
+		$text .= "$group_name,,,".lang('subtotal'). ': '."," . preg_replace("[^0-9]", "", str_replace(',','', format_time_column_value($group_total))).",\n\n";
 	
 		return $text;
 	}
@@ -2032,37 +2041,42 @@ class ReportingController extends ApplicationController {
 				lang('time') .' ('.lang('hours').')'
 		);
 		Hook::fire('total_tasks_times_csv_columns', $column_titles, $column_titles);
+
+		$fixed_column_titles = array();
+		foreach($column_titles as $title){
+			$fixed_column_titles[] = str_replace(',','', $title);
+		}
 		
-		$text .= implode(";", $column_titles);
+		$text .= implode(",", $column_titles);
 		$text .= "\n";
 	
 		$sub_total = 0;
 	
 		foreach ($objects as $ts) {
-			$text .= $pad_str . format_date($ts->getStartTime()) . ';';
+			$text .= $pad_str . format_date($ts->getStartTime()) . ',';
 				
 			$name = ($ts->getRelObjectId() == 0 ? $ts->getObjectName() : $ts->getRelObject()->getObjectName());
-			$name = str_replace("\r", " ", str_replace("\n", " ", str_replace("\r\n", " ", $name)));
-			$text .= $name . ';';
+			$name = str_replace(',','', str_replace("\r", " ", str_replace("\n", " ", str_replace("\r\n", " ", $name))));
+			$text .= $name . ',';
 				
 			$desc = $ts->getDescription();
 			$desc = str_replace("\r", " ", str_replace("\n", " ", str_replace("\r\n", " ", $desc)));
-			$desc = '"'.$desc.'"';
-			$text .= $desc .';';
+			$desc = '"'.str_replace(',','', $desc).'"';
+			$text .= $desc .',';
 				
-			$text .= ($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') .';';
+			$text .= ($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') .',';
 
 			$resultado = preg_replace("[^0-9]", "", format_time_column_value($ts->getMinutes()));
 
-			$text .= $resultado;
+			$text .= str_replace(',','', $resultado);
 			$sub_total += $ts->getMinutes(); //$resultado;
 				
 			$new_values = null;
 			Hook::fire('total_tasks_times_csv_column_values', $ts, $new_values);
 			if (is_array($new_values) && count($new_values) > 0) {
 				foreach ($new_values as $nv) {
-					$nv = str_replace("\r", " ", str_replace("\n", " ", str_replace("\r\n", " ", $nv)));
-					$text .= ';' . $nv;
+					$nv = str_replace("\r", " ", str_replace("\n", " ", str_replace("\r\n", " ", str_replace(',','', $nv))));
+					$text .= ',' . $nv;
 				}
 			}
 				
@@ -2090,7 +2104,7 @@ class ReportingController extends ApplicationController {
 			$text .= $this->cvs_total_task_times_group($group_obj, $grouped_timeslots['grouped_objects'], array_var($_SESSION, 'total_task_times_parameters'), $skip_groups, 0, "", $total);
 		}
 	
-		$text .= ";;;".lang('total'). ': '.";" . preg_replace("[^0-9]", "", format_time_column_value($total)).";\n";
+		$text .= ",,,".lang('total'). ': '."," . preg_replace("[^0-9]", "", str_replace(',','', format_time_column_value($total))).",\n";
 	
 		$filename = lang('task time report');
 		file_put_contents(ROOT."/tmp/$filename.csv", $text);

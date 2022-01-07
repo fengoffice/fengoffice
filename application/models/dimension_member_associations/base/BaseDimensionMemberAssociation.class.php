@@ -197,6 +197,14 @@
     	return $this->setColumnValue('allows_default_selection', $value);
     }
     
+    function getCode() {
+    	return $this->getColumnValue('code');
+    }
+    
+    function setCode($value) {
+    	return $this->setColumnValue('code', $value);
+    }
+    
       
     /**
     * Return manager instance

@@ -124,7 +124,7 @@ class  CustomProperties extends  BaseCustomProperties {
      *
      * @param $object_type
      * @param $custom_property_code
-     * @return CustomProperties
+     * @return CustomProperty
      */
 	static function getCustomPropertyByCode($object_type, $custom_property_code) {
 		$key = $object_type."-".$custom_property_code;

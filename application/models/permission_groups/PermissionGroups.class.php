@@ -280,7 +280,7 @@
 			AND m.archived_on = 0
 			AND mp.member_id != 0
 			AND om.is_optimization = 0
-			AND IF (o.object_type_id=".Contacts::instance()->getObjectTypeId().", 0=(select c.user_type from fo_contacts c where c.object_id=o.id),true)
+			AND IF (o.object_type_id=".Contacts::instance()->getObjectTypeId().", 0=(select c.user_type from ".TABLE_PREFIX."contacts c where c.object_id=o.id),true)
 			$object_type_sql
 			$members_ids_sql
 		";

@@ -1962,7 +1962,7 @@ function pdf_convert_and_download($html_filename, $download_filename=null, $orie
 	}
 }
 
-function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page_size="A4") {
+function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page_size="A4", $zoom='') {
 	$pdf_filename = null;
 	
 	if(is_exec_available()){
@@ -1991,10 +1991,10 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page
 			if (!defined('WKHTMLTOPDF_PATH')) define('WKHTMLTOPDF_PATH', "C:\\Program Files\\wkhtmltopdf\\bin\\");
 			$command_location = with_slash(WKHTMLTOPDF_PATH) . "wkhtmltopdf";
 			
-			$command = "\"$command_location\" -s $page_size --encoding utf8 --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+			$command = "\"$command_location\" -s $page_size --encoding utf8 $zoom --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		} else {
 		    $command_location = (defined('WKHTMLTOPDF_PATH') ? with_slash(WKHTMLTOPDF_PATH) : "");
-		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 $zoom --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		}
 		exec($command, $result, $return_var);
 		
@@ -2119,7 +2119,7 @@ function print_modal_json_response($data, $dont_process_response = true, $use_aj
 
 
 
-function associate_member_to_status_member($project_member, $old_project_status, $status_member_id, $status_dimension, $status_ot=null, $remove_prev_associations=true) {
+function associate_member_to_status_member($project_member, $old_project_status, $status_member_id, $status_dimension, $status_ot=null, $remove_prev_associations=true, $assoc_code=null) {
 
 	if ($status_dimension instanceof Dimension && in_array($status_dimension->getId(), config_option('enabled_dimensions'))) {
 		
@@ -2132,7 +2132,7 @@ function associate_member_to_status_member($project_member, $old_project_status,
 			$object_members = ObjectMembers::instance()->findAll(array('conditions' => "member_id = ".$project_member->getId()." AND is_optimization=0 $object_type_cond"));
 
 			// if has old status or status removed => remove objects from old project_type member
-			if ($old_project_status > 0 || $status_member_id == 0) {
+			if ($old_project_status > 0 || $status_member_id == 0 || $remove_prev_associations) {
 				foreach ($object_members as $om) {
 					$obj = Objects::findObject($om->getObjectId());
 					if ($obj instanceof ContentDataObject) {
@@ -2142,7 +2142,7 @@ function associate_member_to_status_member($project_member, $old_project_status,
 							$mems_to_remove = array($old_project_status);
 						}
 						
-						if (!is_numeric($status_member_id) || $status_member_id == 0) {
+						if (!is_numeric($status_member_id) || $status_member_id == 0 || $remove_prev_associations) {
 							// remove from all
 							$mems_to_remove = array_flat(DB::executeAll("
 								SELECT om.member_id FROM ".TABLE_PREFIX."object_members om
@@ -2177,11 +2177,12 @@ function associate_member_to_status_member($project_member, $old_project_status,
 			
 		}
 
+		$assoc_code_cond = $assoc_code ? " AND code='$assoc_code'" : '';
 
 		$member_dimension = $project_member->getDimension();
 
 		$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND associated_dimension_id=?'.
-				($status_ot instanceof ObjectType ? ' AND associated_object_type_id='.$status_ot->getId() : ''),
+				($status_ot instanceof ObjectType ? ' AND associated_object_type_id='.$status_ot->getId() : '') . $assoc_code_cond,
 				$member_dimension->getId(), $project_member->getObjectTypeId(), $status_dimension->getId())));
 
 		// create relation between members and remove old relations
@@ -2204,7 +2205,7 @@ function associate_member_to_status_member($project_member, $old_project_status,
 		
 		
 		$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('associated_dimension_id=? AND associated_object_type_id=? AND dimension_id=?'.
-				($status_ot instanceof ObjectType ? ' AND object_type_id='.$status_ot->getId() : ''),
+				($status_ot instanceof ObjectType ? ' AND object_type_id='.$status_ot->getId() : '') . $assoc_code_cond,
 				$member_dimension->getId(), $project_member->getObjectTypeId(), $status_dimension->getId())));
 		
 		// create relation between members and remove old relations
@@ -2227,19 +2228,21 @@ function associate_member_to_status_member($project_member, $old_project_status,
 	}
 }
 
-function get_all_associated_status_member_ids($member, $dimension, $ot=null, $reverse=false) {
+function get_all_associated_status_member_ids($member, $dimension, $ot=null, $reverse=false, $assoc_code=null) {
 	$ids = array();
 	if ($member instanceof Member && $dimension instanceof Dimension) {
 		$member_dimension = $member->getDimension();
 		if (!$member_dimension instanceof Dimension) return 0;
+		
+		$assoc_code_cond = $assoc_code ? " AND code='$assoc_code'" : '';
 
 		if ($reverse) {
 			$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('associated_dimension_id=? AND associated_object_type_id=? AND dimension_id=?'.
-				($ot instanceof ObjectType ? ' AND object_type_id='.$ot->getId() : ''),
+				($ot instanceof ObjectType ? ' AND object_type_id='.$ot->getId() : '') . $assoc_code_cond,
 				$member_dimension->getId(), $member->getObjectTypeId(), $dimension->getId())));
 		} else {
 			$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND associated_dimension_id=?'.
-				($ot instanceof ObjectType ? ' AND associated_object_type_id='.$ot->getId() : ''),
+				($ot instanceof ObjectType ? ' AND associated_object_type_id='.$ot->getId() : '') . $assoc_code_cond,
 				$member_dimension->getId(), $member->getObjectTypeId(), $dimension->getId())));
 		}
 		
@@ -2257,19 +2260,21 @@ function get_all_associated_status_member_ids($member, $dimension, $ot=null, $re
 }
 
 
-function get_associated_status_member_id($member, $dimension, $ot=null, $reverse=false) {
+function get_associated_status_member_id($member, $dimension, $ot=null, $reverse=false, $assoc_code=null) {
 	if ($member instanceof Member && $dimension instanceof Dimension) {
 		$member_dimension = $member->getDimension();
 		if (!$member_dimension instanceof Dimension) return 0;
+		
+		$assoc_code_cond = $assoc_code ? " AND code='$assoc_code'" : '';
 
 		if (!$reverse) {
 			$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND associated_dimension_id=?'.
-				($ot instanceof ObjectType ? ' AND associated_object_type_id='.$ot->getId() : ''),
+				($ot instanceof ObjectType ? ' AND associated_object_type_id='.$ot->getId() : '') . $assoc_code_cond,
 				$member_dimension->getId(), $member->getObjectTypeId(), $dimension->getId())));
 		} else {
 			$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('associated_dimension_id=? AND associated_object_type_id=? AND dimension_id=?'.
-					($ot instanceof ObjectType ? ' AND object_type_id='.$ot->getId() : ''),
-					$member_dimension->getId(), $member->getObjectTypeId(), $dimension->getId())));
+				($ot instanceof ObjectType ? ' AND object_type_id='.$ot->getId() : '') . $assoc_code_cond,
+				$member_dimension->getId(), $member->getObjectTypeId(), $dimension->getId())));
 		}
 		
 		if ($a instanceof DimensionMemberAssociation) {
@@ -2388,125 +2393,286 @@ function get_instantiated_date_template_parameter($first_task, $parameter_value)
 }
 
 
+function calculate_template_task_parameter_string($parameterValues, $value) {
+
+	if (is_array($parameterValues)){
+		$is_present = false;
+		foreach($parameterValues as $param => $val){
+			if (stripos($value, '{'.$param.'}') !== FALSE) {
+				$value = str_replace('{'.$param.'}', $val, $value);
+				$is_present = true;
+			}
+		}
+		// if parameter not present replace the parameter code with empty string
+		if (!$is_present) {
+			$value = preg_replace('/[{].*[}]/U', '', $value);
+		}
+	}
+	
+	return $value;
+}
+
+function calculate_template_task_parameter_date($parameterValues, $value, $propName, $object, $copy) {
+
+	$exp_value = explode("|", $value);
+	$value = $exp_value[0];
+	$time_value = null;
+	if (isset($exp_value[1])) $time_value = $exp_value[1];
+	
+	$operator = '+';
+	if (strpos($value, '+') === false) {
+		$operator = '-';
+	}
+	$opPos = strpos($value, $operator);
+	if ($opPos !== false) {
+		// Is parametric
+		$dateParam = substr($value, 1, strpos($value, '}') - 1);
+		$dateParam = str_replace("'", "", $dateParam);
+		$hour_min = null;
+
+		$tz_offset = Timezones::getTimezoneOffsetToApply($copy);
+		
+		// get date from parameter, if parameter is defined by user => use that value, if it is the date of task creation => use DateTimeValueLib::now();
+		if ($dateParam == 'task_creation') {
+			$date = DateTimeValueLib::now();
+			$date->advance($tz_offset);
+
+			if ($time_value) {
+				$time_value_exp = explode(':', $time_value);
+				$hour_min['hours'] = $time_value_exp[0];
+				$hour_min['mins'] = $time_value_exp[1];
+
+			}else{
+				$hour_min['hours'] = $date->getHour();
+				$hour_min['mins'] = $date->getMinute();
+			}
+		} else {
+			$date_str = $parameterValues[$dateParam];
+			$result = null;
+			Hook::fire('before_instantiate_template_date_param', array('object' => $object, 'copy' => $copy, 'date_str' => $date_str), $result);
+			if (is_array($result)) {
+				if (isset($result['date'])) $date_str = $result['date'];
+				if (isset($result['time'])) $hour_min = $result['time'];
+			}
+			
+			$date = getDateValue($date_str);
+			if (!$date instanceof DateTimeValue) {
+				// dont set any date if user didn't specify one in the parameters
+				return;
+			}
+		}
+		
+		// set due time of resulting date as end of the day
+		if ($copy instanceof ProjectTask && config_option('use_time_in_task_dates') && $propName == "due_date"){
+			$copy->setUseDueTime(1);
+			
+			if ($hour_min == null) {
+				$hour_min = getTimeValue(user_config_option('work_day_end_time'));
+			}
+
+			$date->setHour($hour_min['hours']);
+			$date->setMinute($hour_min['mins']);
+			
+			$date = $date->add('s', -1*$tz_offset);
+		}
+		
+		// set start time of resulting date as beggining of the day
+		if ($copy instanceof ProjectTask && config_option('use_time_in_task_dates') && $propName == "start_date"){
+			$copy->setUseStartTime(1);
+			
+			if ($hour_min == null) {
+				$hour_min = getTimeValue(user_config_option('work_day_start_time'));
+			}
+
+			$date->setHour($hour_min['hours']);
+			$date->setMinute($hour_min['mins']);
+			
+			$date = $date->add('s', -1*$tz_offset);						
+		}
+		
+		
+		$dateUnit = substr($value, strlen($value) - 1); // i, d, w or m (for days, weeks or months, i for minutes)
+		if($dateUnit == 'm') {
+			$dateUnit = 'M'; // make month unit uppercase to call DateTimeValue::add with correct parameter
+		}
+		if($dateUnit == 'i') {
+			$dateUnit = 'm'; // DateTimeValue::add function needs minute option as 'm'
+		}
+		$dateNum = (int) substr($value, strpos($value,$operator), strlen($value) - 2);
+		
+		Hook::fire('template_param_date_calculation', array('op' => $operator, 'date' => $date, 'unit' => $dateUnit, 'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
+		
+		$value = $date->add($dateUnit, $dateNum);
+		
+	}else{
+		$value = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $value);
+	}
+
+	return array('value' => $value, 'dateUnit' => $dateUnit);
+}
+
+function calculate_template_task_parameter_numeric($parameterValues, $value, $propName) {
+
+	$hook_return_value = null;
+	Hook::fire('override_template_task_numeric_param_calculation', array('parameterValues' => $parameterValues, 'value' => $value, 'propName' => $propName), $hook_return_value);
+	if (is_array($hook_return_value) && $hook_return_value['value_generated']) {
+		return $hook_return_value['value'];
+	}
+	
+	if (is_array($parameterValues)) {
+				
+		$operator = '+';
+		if (strpos($value, '+') === false) {
+			$operator = '-';
+		}
+
+		$opPos = strpos($value, $operator);
+
+		if ($opPos !== false) {
+
+			// get the variable key
+			$numParam = substr($value, 1, strpos($value, '}') - 1);
+			$numParam = str_replace("'", "", $numParam);
+
+			// calculate the amount to add using the formula defined in the template
+			$amount_to_add = substr($value, $opPos + 1);
+			if (!is_numeric($amount_to_add)) $amount_to_add = 0;
+			if ($operator == '-') {
+				$amount_to_add = -1 * $amount_to_add;
+			}
+
+			// get the number entered by the user
+			$number = (int) $parameterValues[$numParam];
+			if (is_numeric($number) && is_numeric($amount_to_add)) {
+				// add the calculated amount
+				$value = $number + $amount_to_add;
+			} else {
+				$value = '';
+			}
+			
+		} else {
+			$value = '';
+		}
+	}
+
+	return $value;
+}
+
+function calculate_template_task_parameter_time($parameterValues, $value) {
+	
+	if (is_array($parameterValues)) {
+				
+		$operator = '+';
+		if (strpos($value, '+') === false) {
+			$operator = '-';
+		}
+
+		$opPos = strpos($value, $operator);
+
+		if ($opPos !== false) {
+
+			// get the variable key
+			$numParam = substr($value, 1, strpos($value, '}') - 1);
+			$numUnit = substr($value, strpos($value, '}')+1, 1);
+			$numParam = str_replace("'", "", $numParam);
+
+			// calculate the amount to add using the formula defined in the template
+			$amount_and_unit_to_add = substr($value, $opPos + 1);
+			$amount_to_add = substr($amount_and_unit_to_add, 0, strlen($amount_and_unit_to_add) - 1);
+			$amount_unit = substr($amount_and_unit_to_add, strlen($amount_and_unit_to_add) - 1);
+
+			if (!is_numeric($amount_to_add)) $amount_to_add = 0;
+			if ($operator == '-') {
+				$amount_to_add = -1 * $amount_to_add;
+			}
+
+			// get the number entered by the user
+			$number = (int) $parameterValues[$numParam];
+
+			// calculate the value
+			if (is_numeric($number) && is_numeric($amount_to_add)) {
+
+				$number_minutes = convert_time_amount_to_minutes($numUnit, $number);
+				$amount_to_add_minutes = convert_time_amount_to_minutes($amount_unit, $amount_to_add);
+				
+				$value = $number_minutes + $amount_to_add_minutes;
+
+			} else {
+				$value = '';
+			}
+			
+		} else {
+			$value = '';
+		}
+	}
+
+	return $value;
+}
+
+function convert_time_amount_to_minutes($unit, $number) {
+
+	if ($unit == 'i') {// minutes
+		$number_minutes = $number;
+	} else if ($unit == 'h') {// hours
+		$number_minutes = $number * 60;
+	} else if ($unit == 'd') {// days
+		$number_minutes = $number * 60 * 24;
+	} else if ($unit == 'w') {// weeks
+		$number_minutes = $number * 60 * 24 * 7;
+	}
+
+	return $number_minutes;
+}
+
+
 function instantiate_template_task_parameters(TemplateTask $object, ProjectTask $copy, $parameterValues = array()) {  
 	
 	$objProp = TemplateObjectProperties::getPropertiesByTemplateObject($object->getTemplateId(), $object->getId());
 	$manager = $copy->manager();
+
+	$template_object_properties = $manager->getTemplateObjectProperties();
 	
 	foreach($objProp as $property) {
 		$propName = $property->getProperty();
 		$value = $property->getValue();
-	
-		if ($manager->getColumnType($propName) == DATA_TYPE_STRING || $manager->getColumnType($propName) == DATA_TYPE_INTEGER) {
-			if (is_array($parameterValues)){
-				$is_present = false;
-				foreach($parameterValues as $param => $val){
-					if (stripos($value, '{'.$param.'}') !== FALSE) {
-						$value = str_replace('{'.$param.'}', $val, $value);
-						$is_present = true;
-					}
-				}
-				// if parameter not present replace the parameter code with empty string
-				if (!$is_present) {
-					$value = preg_replace('/[{].*[}]/U', '', $value);
-				}
-			}
-		} else if($manager->getColumnType($propName) == DATA_TYPE_DATE || $manager->getColumnType($propName) == DATA_TYPE_DATETIME) {
-			$exp_value = explode("|", $value);
-			$value = $exp_value[0];
-			$time_value = null;
-			if (isset($exp_value[1])) $time_value = $exp_value[1];
-			
-			$operator = '+';
-			if (strpos($value, '+') === false) {
-				$operator = '-';
-			}
-			$opPos = strpos($value, $operator);
-			if ($opPos !== false) {
-				// Is parametric
-				$dateParam = substr($value, 1, strpos($value, '}') - 1);
-				$dateParam = str_replace("'", "", $dateParam);
-				$hour_min = null;
 
-                $tz_offset = Timezones::getTimezoneOffsetToApply($copy);
-				
-				// get date from parameter, if parameter is defined by user => use that value, if it is the date of task creation => use DateTimeValueLib::now();
-				if ($dateParam == 'task_creation') {
-					$date = DateTimeValueLib::now();
-                    $date->advance($tz_offset);
-
-					if ($time_value) {
-						$time_value_exp = explode(':', $time_value);
-						$hour_min['hours'] = $time_value_exp[0];
-						$hour_min['mins'] = $time_value_exp[1];
-
-					}else{
-                        $hour_min['hours'] = $date->getHour();
-                        $hour_min['mins'] = $date->getMinute();
-                    }
-				} else {
-					$date_str = $parameterValues[$dateParam];
-					$result = null;
-					Hook::fire('before_instantiate_template_date_param', array('object' => $object, 'copy' => $copy, 'date_str' => $date_str), $result);
-					if (is_array($result)) {
-						if (isset($result['date'])) $date_str = $result['date'];
-						if (isset($result['time'])) $hour_min = $result['time'];
-					}
-					
-					$date = getDateValue($date_str);
-					if (!$date instanceof DateTimeValue) {
-						// dont set any date if user didn't specify one in the parameters
-						continue;
-					}
-				}
-                
-				// set due time of resulting date as end of the day
-				if ($copy instanceof ProjectTask && config_option('use_time_in_task_dates') && $propName == "due_date"){
-					$copy->setUseDueTime(1);
-					
-					if ($hour_min == null) {
-						$hour_min = getTimeValue(user_config_option('work_day_end_time'));
-					}
-
-					$date->setHour($hour_min['hours']);
-					$date->setMinute($hour_min['mins']);
-					
-					$date = $date->add('s', -1*$tz_offset);
-				}
-				
-				// set start time of resulting date as beggining of the day
-				if ($copy instanceof ProjectTask && config_option('use_time_in_task_dates') && $propName == "start_date"){
-					$copy->setUseStartTime(1);
-					
-					if ($hour_min == null) {
-						$hour_min = getTimeValue(user_config_option('work_day_start_time'));
-					}
-
-					$date->setHour($hour_min['hours']);
-					$date->setMinute($hour_min['mins']);
-					
-					$date = $date->add('s', -1*$tz_offset);						
-				}
-				
-				
-				$dateUnit = substr($value, strlen($value) - 1); // i, d, w or m (for days, weeks or months, i for minutes)
-				if($dateUnit == 'm') {
-					$dateUnit = 'M'; // make month unit uppercase to call DateTimeValue::add with correct parameter
-				}
-				if($dateUnit == 'i') {
-					$dateUnit = 'm'; // DateTimeValue::add function needs minute option as 'm'
-				}
-				$dateNum = (int) substr($value, strpos($value,$operator), strlen($value) - 2);
-				
-				Hook::fire('template_param_date_calculation', array('op' => $operator, 'date' => $date, 'unit' => $dateUnit, 'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
-				
-				$value = $date->add($dateUnit, $dateNum);
-				
-			}else{
-				$value = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $value);
+		$is_user_id = false;
+		foreach ($template_object_properties as $top) {
+			if ($top['id'] == $propName) {
+				$is_user_id = $top['type'] == 'USER';
+				$is_time_prop = $top['type'] == DATA_TYPE_TIME;
 			}
 		}
-		if($value != '') {
+	
+		if ($manager->getColumnType($propName) == DATA_TYPE_STRING || ($manager->getColumnType($propName) == DATA_TYPE_INTEGER && $is_user_id) ) {
+			// is a string column or an user id column
+
+			$value = calculate_template_task_parameter_string($parameterValues, $value);
+
+		} else if ($manager->getColumnType($propName) == DATA_TYPE_INTEGER || $manager->getColumnType($propName) == DATA_TYPE_FLOAT) {
+			// is a numeric column
+			
+			if ($is_time_prop) {
+				// this numeric property represents a time amount in minutes
+				$value = calculate_template_task_parameter_time($parameterValues, $value);
+
+			} else {
+				// it is a normal numeric property
+				$value = calculate_template_task_parameter_numeric($parameterValues, $value, $propName);
+			}
+
+		} else if($manager->getColumnType($propName) == DATA_TYPE_DATE || $manager->getColumnType($propName) == DATA_TYPE_DATETIME) {
+			// is a date column
+
+			$result = calculate_template_task_parameter_date($parameterValues, $value, $propName, $object, $copy);
+
+			$value = array_var($result, 'value');
+			$dateUnit = array_var($result, 'dateUnit');
+			
+		}
+
+		if($value != '' && $manager->columnExists($propName)) {
+
 			if (!$copy->setColumnValue($propName, $value)){
 				$copy->object->setColumnValue($propName, $value);
 			}
@@ -2520,6 +2686,7 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 				$copy->setText(html_to_text($copy->getText()));
 			}
 			$copy->save();
+
 		}
 		
 	}
@@ -2735,6 +2902,21 @@ function check_member_custom_prop_exists($table_prefix, $cp_code, $ot_name) {
 
 	$ot_subquery = "SELECT id FROM ".$table_prefix."object_types WHERE name='$ot_name'";
 	$sql = "SELECT count(id) as total FROM ".$table_prefix."member_custom_properties WHERE code='$cp_code' AND object_type_id = ($ot_subquery)";
+	$mysql_res = mysqli_query(DB::connection()->getLink(), $sql);
+	if ($mysql_res) {
+		$rows = mysqli_fetch_assoc($mysql_res);
+		if (is_array($rows) && count($rows) > 0) {
+			$exists_cp = $rows['total'] > 0;
+		}
+	}
+	return $exists_cp;
+}
+
+function check_custom_prop_exists($table_prefix, $cp_code, $ot_name) {
+	$exists_cp = false;
+
+	$ot_subquery = "SELECT id FROM ".$table_prefix."object_types WHERE name='$ot_name'";
+	$sql = "SELECT count(id) as total FROM ".$table_prefix."custom_properties WHERE code='$cp_code' AND object_type_id = ($ot_subquery)";
 	$mysql_res = mysqli_query(DB::connection()->getLink(), $sql);
 	if ($mysql_res) {
 		$rows = mysqli_fetch_assoc($mysql_res);

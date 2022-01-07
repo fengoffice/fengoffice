@@ -294,12 +294,15 @@ class ApplicationLogs extends BaseApplicationLogs {
 			$extra_conditions .= " AND al.`created_by_id`=".logged_user()->getId()." ";
 		}
 		
-		$joins_sql = "INNER JOIN ".TABLE_PREFIX."objects o ON o.id=al.rel_object_id";
+		Hook::fire("last_activities_list_extra_conditions", array(), $extra_conditions);
+		
+		//$joins_sql = "INNER JOIN ".TABLE_PREFIX."objects o ON o.id=al.rel_object_id";
+		$joins_sql = "";
 		$group_by_sql = "";
 		$is_member_child = "";
 		
 		if(count($members) > 0){
-			
+			/*
 			$joins_sql .= "
 				LEFT JOIN ".TABLE_PREFIX."object_members om ON om.object_id=al.rel_object_id";
 			
@@ -309,6 +312,16 @@ class ApplicationLogs extends BaseApplicationLogs {
 				GROUP BY al.id
 				HAVING count(om.member_id) = ".count($members)."
 			";
+			*/
+			foreach ($members as $mid) {
+				
+				$extra_conditions .= "
+					and exists (
+						select om.object_id from ".TABLE_PREFIX."object_members om force index (primary) 
+						where om.object_id=al.rel_object_id and om.member_id=$mid
+					)
+				";
+			}
 			
 			//do not display users logs
 			$extra_conditions .= " AND NOT EXISTS(SELECT con.object_id FROM ".TABLE_PREFIX."contacts con WHERE con.object_id=rel_object_id AND user_type > 0)";
@@ -322,12 +335,13 @@ class ApplicationLogs extends BaseApplicationLogs {
 			
 		$permissions_condition = "EXISTS (
 			SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+			force index (object_id)
 			WHERE al.rel_object_id = sh.object_id AND sh.object_id > 0
-			AND sh.group_id  IN ($logged_user_pgs) AND sh.object_id=al.rel_object_id
+			AND sh.group_id  IN ($logged_user_pgs)
 		)";
 
 		
-		$sql = "SELECT al.id, o.object_type_id
+		$sql = "SELECT al.id, (select o.object_type_id from ".TABLE_PREFIX."objects o where o.id=al.rel_object_id) as object_type_id
 				FROM ".TABLE_PREFIX."application_logs al 
 				$joins_sql
 				WHERE 

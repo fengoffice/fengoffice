@@ -58,7 +58,7 @@
 <?php 	if (is_array($all_modules_info) && count($all_modules_info) > 0) {?>
 </td><td style="padding-left:10px;width:50%;">
 <fieldset class=""><legend class="toggle_expanded" onclick="og.toggle('<?php echo $genid ?>userModulePermissions',this)"><?php echo lang("module permissions") ?></legend>
-	<div id="<?php echo $genid ?>userModulePermissions" style="display:block" class="user-module-permissions">	
+	<div id="<?php echo $genid ?>userModulePermissions" style="display:block" class="user-module-permissions"> 
 	<?php foreach ($all_modules_info as $mod_info) { ?>
 	
 		<div id="<?php echo $genid . array_var($mod_info, 'id')?>">

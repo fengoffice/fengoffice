@@ -34,7 +34,7 @@ member_selector.init = function(genid) {
 	  og.openLink(og.getUrl('member', 'get_dimension_id', {member_id: Ext.util.JSON.encode(dimension_to_get)}), {callback: function(success, data){
 		
 		if (!data.dim_ids) {
-			og.eventManager.fireEvent('after member_selector init', null);
+			og.eventManager.fireEvent('after member_selector init', {genid:genid});
 			return;
 		}
 		
@@ -65,7 +65,7 @@ member_selector.init = function(genid) {
 			}
 		}
 		
-		og.eventManager.fireEvent('after member_selector init', null);	
+		og.eventManager.fireEvent('after member_selector init', {genid:genid});	
 		og.eventManager.fireEvent('replace all empty breadcrumb', null);
 	  }});	
 	}
@@ -169,6 +169,13 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 		}
 	}
 	
+	if (og.fn_sel_member_additional_html && og.fn_sel_member_additional_html.length > 0) {
+		for (var x=0; x<og.fn_sel_member_additional_html.length; x++) {
+			var fn = og.fn_sel_member_additional_html[x];
+			if (typeof(fn) == 'function') fn.call(null, genid, member);
+		}
+	}
+	
 	//add mem_path after insert completePath div to calculate the correct width
 	
 	var minfo = null;
@@ -225,7 +232,7 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	}
 	
 	// automatic selection of associated members of related dimensions
-	if (!dont_select_assoc_members) {
+	if (!dont_select_assoc_members && !member_selector[genid].properties[dimension_id].dontSelectAssociatedMembers) {
 		og.selectDefaultAssociatedMembers(genid, dimension_id, member.id, true);
 	}
 	
@@ -386,7 +393,7 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 
 member_selector.remove_all_dimension_selections = function(genid, dim_id) {
 	
-	member_selector[genid].properties[dim_id];
+	if (!member_selector[genid]) return;
 		
 	if (member_selector[genid].sel_context[dim_id]) {
 		var length = member_selector[genid].sel_context[dim_id].length;
@@ -398,12 +405,17 @@ member_selector.remove_all_dimension_selections = function(genid, dim_id) {
 	}	
 }
 
-member_selector.remove_all_selections = function(genid) {
+member_selector.remove_all_selections = function(genid, excluded_dim_ids) {
+	if (typeof(excluded_dim_ids) == 'undefined') excluded_dim_ids = [];
+
 	for (dim_id in member_selector[genid].properties) {
-		member_selector.remove_all_dimension_selections(genid, dim_id);
-		
-		if (!member_selector[genid].properties[dim_id].isMultiple) {
-			$("#"+genid+"-member-chooser-panel-"+dim_id+"-tree-current-selected .empty-text").show();
+
+		if (excluded_dim_ids.indexOf(parseInt(dim_id)) == -1) {
+			member_selector.remove_all_dimension_selections(genid, dim_id);
+			
+			if (!member_selector[genid].properties[dim_id].isMultiple) {
+				$("#"+genid+"-member-chooser-panel-"+dim_id+"-tree-current-selected .empty-text").show();
+			}
 		}
 	}
 }

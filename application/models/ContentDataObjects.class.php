@@ -533,7 +533,7 @@ abstract class ContentDataObjects extends DataManager {
 		
 		if (!$ignore_context && !$member_ids) {
 			$members = active_context_members(false); // Context Members Ids
-		} elseif ( count($member_ids) ) {
+		} elseif ( is_array($member_ids) && count($member_ids) ) {
 			$members = $member_ids;
 		}
 		
@@ -609,7 +609,7 @@ abstract class ContentDataObjects extends DataManager {
 				$t_alias = 'om';
 				if ($i > 0) $t_alias .= $i;
 				$SQL_BASE_JOIN .= "
-					LEFT JOIN ".TABLE_PREFIX."object_members $t_alias ON ${t_alias}.object_id=o.id AND ${t_alias}.member_id=$mem_id ";
+					LEFT JOIN ".TABLE_PREFIX."object_members $t_alias USE INDEX (PRIMARY) ON ${t_alias}.object_id=o.id AND ${t_alias}.member_id=$mem_id ";
 				$i++;
 				
 				$exclusive_in_member = '';

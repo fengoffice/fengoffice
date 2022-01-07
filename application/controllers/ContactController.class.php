@@ -259,6 +259,16 @@ class ContactController extends ApplicationController {
 		tpl_assign('config_categories', ContactConfigCategories::getAll());	
 	} //list_preferences
 	
+
+	/**
+	 * List user sub categories 
+	 *
+	 */
+	function list_user_sub_categories(){	
+		tpl_assign('config_categories', ContactConfigCategories::findAll(array('conditions' => "located_under=" . get_id())));
+		tpl_assign('main_category', ContactConfigCategories::findById(get_id()));
+		tpl_assign('title', ContactConfigCategories::findById(get_id())->getName());
+	} //list_preferences
 		
 	/**
 	 * List user preferences
@@ -1093,6 +1103,15 @@ class ContactController extends ApplicationController {
 				$contact_data['birthday'] = getDateValue(array_var($contact_data,"birthday"));
 				$contact_data['name'] = $contact_data['first_name']." ".$contact_data['surname'];
 				
+				// Check if the email is unique when the contact is user
+				if(is_array(array_var($contact_data, 'user')) && $contact_data['email'] != ''){
+					$is_email_valid = Contacts::validateUniqueEmail($contact_data['email'], $contact->getObjectId());
+					if(!$is_email_valid){
+						flash_error(lang('this email already exists for another user. please use a different email.'));
+						ajx_current("empty");
+						return;
+					}
+				}
 				$contact->setFromAttributes($contact_data);
 
 				if($newCompany) {
@@ -1425,6 +1444,15 @@ class ContactController extends ApplicationController {
 				DB::beginWork();
 				$contact_data['email']= trim ($contact_data['email']);
 				$contact_data['contact_type'] = 'contact';
+				// Check if the email is unique when the contact is user
+				if(is_array(array_var($contact_data, 'user')) && $contact_data['email'] != ''){
+					$is_email_valid = Contacts::validateUniqueEmail($contact_data['email'], get_id());
+					if(!$is_email_valid){
+						flash_error(lang('this email already exists for another user. please use a different email.'));
+						ajx_current("empty");
+						return;
+					}
+				}
 				Contacts::validate($contact_data, get_id());
 				$newCompany = false;
 				if (array_var($contact_data, 'isNewCompany') == 'true' && is_array(array_var($_POST, 'company'))){

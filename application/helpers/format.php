@@ -308,12 +308,15 @@ function date_format_tip($format) {
 			case DATA_TYPE_STRING: 
 				if(preg_match(EMAIL_FORMAT, strip_tags($value))){
 					$formatted = strip_tags($value);
-				}else{
+				}else{					
 					if ($col == 'is_user') {
 						$formatted = ($value == 1 ? lang('yes') : lang('no'));
 					} else if ($ot instanceof ObjectType && $ot->getName() == 'invoice' && $col == 'status') {
 						$formatted = lang($value);
-					} else {
+					} else if ($col == 'customer_rut') {
+						$formatted = strval($value);
+					}
+					else {
 						$value = trim($value);
 						if (strpos($value, "\xA0") !== false) $value = str_replace('\xA0', ' ', $value);
 						$value = utf8_safe($value);
@@ -344,11 +347,13 @@ function date_format_tip($format) {
 				}
 				break;
 			case DATA_TYPE_BOOLEAN:
-			    
-			    if ($value == 1){
-			        $formatted = lang('yes');
+				
+				if(is_string($value)) {
+					$formatted = $value;
+				}else if ($value == 1){
+					$formatted = lang('yes');
 			    }else if($value == -1){
-			        $formatted = lang('no');
+					$formatted = lang('no');
 			    }else{
 			        $formatted = "";
 			    }			    
@@ -586,12 +591,12 @@ function get_format_value_to_header($col, $obj_type_id)
 						} else {
 							
 							$tmp = array();
-							if ($street != '') $tmp[] = $street;
+							//if ($street != '') $tmp[] = nl2br($street);
 							if ($city != '') $tmp[] = $city;
 							if ($state != '') $tmp[] = $state;
 							if ($zip_code != '') $tmp[] = $zip_code;
 							if ($country_name != '') $tmp[] = $country_name;
-							$cp_val->setValue(implode(' - ', $tmp));
+							$cp_val->setValue(($street==''?'':nl2br($street."\n")) . implode(' - ', $tmp));
 						}
 					}
 				}
@@ -809,13 +814,17 @@ function get_format_value_to_header($col, $obj_type_id)
 	}
 	
 	
-	function format_money_amount($number, $symbol = '$', $decimals = null) {
+	function format_money_amount($number, $symbol = '$', $decimals = null, $decimals_separator = null, $thousand_separator = null) {
 		
 		if (is_null($decimals)) {
 			$decimals = user_config_option('decimal_digits');
 		}
-		$decimals_separator = user_config_option('decimals_separator');
-		$thousand_separator = user_config_option('thousand_separator');
+		if (is_null($decimals_separator)) {
+			$decimals_separator = user_config_option('decimals_separator');
+		}
+		if (is_null($thousand_separator)) {
+			$thousand_separator = user_config_option('thousand_separator');
+		}
 		
 		$sign = "";
 		if ($number < 0) {

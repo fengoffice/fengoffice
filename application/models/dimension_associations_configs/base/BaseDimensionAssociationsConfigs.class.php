@@ -13,8 +13,9 @@
     * @static
     */
     static private $columns = array(
-    	'association_id' => DATA_TYPE_INTEGER, 
-    	'config_name' => DATA_TYPE_STRING, 
+    	'association_id' => DATA_TYPE_INTEGER,
+    	'config_name' => DATA_TYPE_STRING,
+    	'type' => DATA_TYPE_STRING, 
     	'value' => DATA_TYPE_STRING,
     );
   
@@ -95,7 +96,7 @@
     *  - offset - limit offset, valid only if limit is present
     *  - limit
     * 
-    * @return one or DimensionAssociationsConfigs objects
+    * @return array of DimensionAssociationsConfigs objects
     * @throws DBQueryError
     */
     function find($arguments = null) {
@@ -111,7 +112,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or DimensionAssociationsConfigs objects
+    * @return array of DimensionAssociationsConfigs objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'DimensionAssociationsConfigs')) {

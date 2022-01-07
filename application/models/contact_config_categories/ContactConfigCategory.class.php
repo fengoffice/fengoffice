@@ -99,6 +99,16 @@ class ContactConfigCategory extends BaseContactConfigCategory {
 		return get_url('config', 'update_default_user_preferences', $this->getId());
 	}
 
+	/**
+    * View list of sub categories
+    *
+    * @param void
+    * @return null
+    */
+    function getSubCategories() {
+		return get_url('contact', 'list_user_sub_categories', $this->getId());
+	  } // getUpdateUrl
+
 } // ConfigCategory
 
 ?>

@@ -113,7 +113,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or  CustomPropertyValues objects
+    * @return array of CustomPropertyValues objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'CustomPropertyValues')) {

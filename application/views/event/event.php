@@ -344,6 +344,13 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 		
 		  <div class="reminders-div sub-section-div" style="border-top:0px none;">
 			<h2><?php echo lang('object reminders')?></h2>
+			
+			<?php 
+				$note = '';
+				Hook::fire('show_reminder_note', null, $note);
+				echo $note;
+			?>
+
 			<div id="<?php echo $genid ?>add_reminders_content">
 				<div id="<?php echo $genid ?>add_reminders_warning" class="desc" style="display:none;">
 					<?php echo lang('reminders will not apply to repeating events') ?>

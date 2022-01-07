@@ -67,8 +67,9 @@
 	    return array(
 	        'street'=>$this->getStreet(),
             'city'=>$this->getCity(),
-            'state'=>$this->getState(),
-            'country'=>$this->getCountry(),
+    		'state'=>$this->getState(),
+    		'country'=>$this->getCountry(),
+    		'country_name'=>$this->getCountryName(),
             'zipcode'=>$this->getZipCode(),
 			'parsed'=> $this->toString()
         );

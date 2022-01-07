@@ -347,7 +347,7 @@ return array(
 	'users in' => 'Users in {0}',
 
         'field Objects type_content' => 'Type content',
-        'option repetitive task completed' => 'This task is already completed. To modify repetition data, please edit a pending task from this series.',
+        'option repetitive task completed' => 'You can\'t edit the repetition on a completed task. Please edit one of the pending tasks.',
 
         'subscribers' => 'Subscribers',
         'and' => ' and ',
@@ -486,4 +486,5 @@ return array(
 	'remove filters' => 'Remove filters',
 	'finish sign up' => 'Finish sign up',
 	'viewing information with the following filters' => 'Viewing information with the following filters',
+	'no filter' => 'No filter',
 );

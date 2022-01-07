@@ -352,7 +352,12 @@
 			foreach ($mail_accounts as $account) {/* @var $account MailAccount */
 				if ($account->getIsImap()) {
 					$can_detect_special_folders = false;
-					$folders_data = $mu->get_imap_account_mailboxes($account, $can_detect_special_folders);
+					try {
+						$folders_data = $mu->get_imap_account_mailboxes($account, $can_detect_special_folders);
+					} catch (Exception $e) {
+						Logger::log_r("ERROR AT ".__FUNCTION__.": when getting imap account mailboxes. ".$e->getMessage());
+						continue;
+					}
 					if ($can_detect_special_folders) {
 						foreach ($folders_data as $fdata) {
 							if ($fdata['special_use']) {

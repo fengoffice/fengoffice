@@ -31,27 +31,49 @@
     function setAssociationId($value) {
       return $this->setColumnValue('association_id', $value);
     }
-  	
+    
     /**
-    * Return value of 'config_name' field
-    *
-    * @access public
-    * @param void
-    * @return string
-    */
+     * Return value of 'config_name' field
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
     function getConfigName() {
-      return $this->getColumnValue('config_name');
+    	return $this->getColumnValue('config_name');
     }
     
     /**
-    * Set value of 'config_name' field
-    *
-    * @access public   
-    * @param string $value
-    * @return boolean
-    */
+     * Set value of 'config_name' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
     function setConfigName($value) {
-      return $this->setColumnValue('config_name', $value);
+    	return $this->setColumnValue('config_name', $value);
+    }
+    
+    /**
+     * Return value of 'type' field
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getType() {
+    	return $this->getColumnValue('type');
+    }
+    
+    /**
+     * Set value of 'type' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setType($value) {
+    	return $this->setColumnValue('type', $value);
     }
   	
     /**

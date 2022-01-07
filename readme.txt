@@ -1,5 +1,5 @@
 
-	About Feng Office 3.8.5.34
+	About Feng Office 3.8.6.12
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,552 @@
 	
 	Changelog
 	=========
+
+  Since 3.8.6.11
+  -----------------
+
+  bugfix: Set subtask's financials to the calculated as default (#839)
+
+  Since 3.8.6.10
+  -----------------
+
+  enhancement: Improve template task variables formulas (#836)
+    * In task templates modify estimated time varible assignation selectors to specify time units for the variable and for the additional amount
+    * MVP for task templates numeric properties assignation with formulas involving the numeric variables defined in the template
+  bugfix: ensure that the group by column passed to the advanced reports hook has the right table alias to avoid sql conflicts (#837)
+
+  Since 3.8.6.9
+  -----------------
+
+  bugfix: fix don't show warning when deleting draft email from secondary account (#832)
+  bugfix: show or hide add worked time option depending on if task is parent and config settings (#831)  
+  bugfix: if there is an error validating the access token, catch the exception and return that it is invalid, so the user can login again to qbo (#835)  
+  bugfix: Set to 'calculated' all the values in the template task's financials tab (#834)
+
+  Since 3.8.6.8
+  -----------------
+
+  bugfix: fix billing report showing gliched date data (#827)
+  feature: Task templates new variable type numeric (#830)
+    * allow to add 'numeric' variables when configuring a task template
+    * add 'Estimated time' to the elegible properties of a task to be assigned with the value of a template variable when configuring a task template
+    * in tasks form, if a task estimated time has an amount of minutes that is not present in the selector options, then add it to the selector, to prevent losing the value after saving the form
+    * use getColumnType function for the template variable type
+    * refactor code for template variables instantiation
+    * allow text, numeric, date and user custom properties to be used in template tasks and re-use the same functions that fixed task properties use for calculations
+  bugfix: only recalculate due date (using selected payment terms) in the controller if it's not sent by the interface (#825)  
+  bugfix: Fix columns layout in the expenses list for the expense items rows (#826)
+    * Add column 'is_billable' to the expense items row in the expenses list
+    * Remove log message
+  bugfix: Inherit task's financials info when it gets cloned (#828)
+
+  Since 3.8.6.7
+  -----------------
+
+  feature: Feature improved outbox email user feedback (#822)
+    * add methods for counting total emails in outbox and showing popup to user
+    * show number of emails in outbox folder and give feedback when trying to send emails in outbox
+    * remove legacy method that showed outbox emails count fron cron
+    * new messages for outbox emails feedback
+  bugfix: fix typo on email notification messages (#801)
+  bugfix: errors reported on fresh enterprise edition installation (#766)
+    * add typecast to avoid warning: 'count(): Parameter must be an array or an object that implements Countable'
+    * call ->database_connection instead of DB, as DB class is not available from this dir
+    * add date field to insert query for fo_cron_events table to avoid error when installing crpm plugin  
+  feature: when creating a project from evx to quickbooks, set the option BillWithParent (#821)
+    * when creating a project from evx to quickbooks, set the option BillWithParent to true
+    * put some comments at project creation in qbo
+
+  Since 3.8.6.6
+  -----------------
+
+  feature: Add new config option in the project billing report (#818)
+    * Add option to exclude subprojects info in the Project Billing report and in the Project Budget Status report
+    * Bugfix: Check if dates are DateTimeValue
+  bugfix: When syncronizing an invoice if a line has a date then include it in the SalesItemDetail data of the qbo line (#820)  
+  qbo-sync: when importing invoices prevent the case where there are in (#815)
+    * qbo-sync: when importing invoices prevent the case where there are invoice lines with quantity=0, and take into consideration that LinkedTxn sometimes is an array and sometimes is an object
+    * bugfix: before checking project number uniqueness, check if it's not empty
+    * fix qbo sync to prevent differences at subtotal/total calculation when numbers come from qbo rounded up
+  enhancement: Improve performance of 'Generate project invoice' function (#817)
+    * Update invoice status of time entry via SQL query
+    * Added a comment
+
+  Since 3.8.6.5
+  -----------------
+
+  bugfix: fix time by name report doesn't allow to select all invoice option all (#812)  
+  bugfix: Remove condition that excludes timeslots assigned to the trashed task (#816)
+  performance: use the 'use index' directive when joining with object_members to avoid mysql to use index_merge and filesort for mail list when filtering by any dimension member (#814)
+  bugfix: Fix bugs that didn't add timeslot via api (#813)
+    - Add the date to the time entry
+    - Add client member associated to the project member  
+  bugfix: Bugfix repetition lost after non admin edits last task (#811)
+    * When an user that doesn't have the permission to edit repetition options edits the last task of a repetition then the repetition options are lost and the task's thread is cutted
+    * improve code comment
+
+  Since 3.8.6.4
+  -----------------
+
+  improvement: Improve project billing report performance (#791)
+    * Check if asocciated members are selected when running Project budget status
+    * Get projects that have time and expenses in given date range in Project Billing
+    * Get project members using SQL query instead of Member controller
+    Improves performance a lot
+    * Fix bug that effected dates filter in many reports  
+  feature: Microsoft Integrations - Support Multiple Clients (#796)
+    * Microsoft Integrations - Support Multiple Clients
+    * Used config options for ms integration configuration
+  bugfix: Add missing langs (#804)
+  bugfix: Check if dates are selected when batch invoicing, notify the user if not (#805)
+  bugfix: when trying to sync account mailboxes, if imap connection fails, don't retry for each mailbox (#807)
+  bugfix: Invoice template: don't allow to add description if grouped by labor categories (#808)
+    * Don't allow to add description if grouped by labor categories
+    * Don't allow to add description if grouped by tasks
+  bugfix: Remove unwanted characters from client and projects when trying to create them in Quickbooks (#809)
+  bugfix: Exclude non billables from the project billing report (#810)
+
+  Since 3.8.6.3
+  -----------------
+
+  feature: add config option to prevent users from adding time to parent tasks (#798)
+    * add config option to prevent users from adding time to parent tasks
+    * update plugin version info
+  feature: Create invoice memo cp for project (#774)
+    * Add 'invoice memo' custom property to the project
+    This custom property is used to autopopulate the additional info of the invoice
+    * Add cp in installer
+    * Remove logger message
+  bugfix: format_date function last argument (timezone) had zero instead of null as default value, and that caused that the date on the exported report didn't apply user timezone (#806)  
+  bugfix: add document type for invoices with facturalista (#802)
+    * fix income plugin updater at version 32 to 33
+    * add document type selector to invoices in facturalista plugin, to specify the client doc type (ci,rut,passport,dni)
+    * bugfix: at inovoice form: replace country text input with a country selector to ensure that we use country code instead of plain text
+    * remove duplicated queries in income/update.php and use raw sql instead of DataObject to prevent errors if some columns are not present
+  feature: improve error message when batch invoicing can't be executed (#800)
+    * improve error message when batch invoicing can't be executed
+    * replace double quotes by single quotes in lang.php to avoid js errors  
+  bugfix: Fix the excel export bug in the "Worked time by person" report (#794)
+  bugfix: after making inv number alphanumeric, the autonumeration process returns always number 1000 after reaching num 999 (#803)
+
+  Since 3.8.6.2
+  -----------------
+  bugfix: utilization report bugs (#787)
+    * fix subtitle of report end date was one day behind selected end day
+    * fix when selecting this month filter showing until last day of month instead of until current day
+    * add variation column to utilization report
+  feature: make quickbooks column of invoices sortable (#789)
+    * make quickbooks column of invoices sortable
+    * update controllers to allow sorting by quickbooks synch state
+  feature: Don't allow deleting synchronized invoices and payments receipts when QB is not connected (#793)
+    * Flash an error if user tries to delete synchronized invoice
+    When the system is not connected to the Quickbooks.
+    Raise an error when the user tries to delete it from the:
+      - Invoice list
+      - Invoice view
+    * Don't allow to delete payment receipt from list if synchronized
+    * Don't allow to delete payment receipt from the view if synchronized  
+  feature: in customer listing add the client's related contact custom properties as columns (#795)  
+  bugfix: Check if user has permissions to generate invoice (#797)
+    From:
+    - Tasks list
+    - Task view
+    - Timeslots list  
+  bugfix: fix crpm plugin installer
+
+  Since 3.8.6.1
+  -----------------
+  bugfix: Qbo sync issue with required props when creating member and sync invoice (#788)
+    * qbo invoice import: one transaction per invoice and verify again that the invoice has not been imported in the same iteration
+    * qbo invoice import: prevent duplicated payments when invoice includes payment and payment includes more invoices
+  feature: show start and due date in tasks module (#765)
+    * Client RN show start and due date in tasks module
+    * changes in the form that seach task tring in filters object
+    * don't use harcoded index when getting columns to show/hide at the ObjectPicker.js
+  bugfix: Check if suppliers and income plugins are activated (#776)
+  bugfix: Check if email is already assigned to another user (#783)
+    * When creating or editing a user
+  bugfix: fix excel and csv export not showing totals for users (#784)
+    * fix excel and csv export not showing totals for users
+    * add condition to check if total_keys is null before setting default value
+  bugfix: Qbo sync issue with required props when creating member and sync invoice (#785)
+    * ignore required member associations when creating projects from quickbooks job
+    * don't allow to save invoice with more than 21 chars (qbo restriction)
+    * allow to select which invoices can be imported from the list preview
+    * fix error importing invoice when client is marked as 'deleted' in quickbooks
+    * remove unused and commented code
+  bugfix: Prevent creating duplicated project number entries (#786)
+    * Flash an error message when the user tries to create a project with a project number that belongs to another project
+  bugfix: errors in qbo plugin js and hooks when invoice payment receipts plugin is not installed
+
+  Since 3.8.6.0
+  -----------------
+  bugfix: at project billing report when use non-standard dimensions, we need to check if they exist before using them
+  bugfix: Allow invoicing only approved time and expenses via bulk actions
+    * Don't allow invoice  unsubmitted time and expenses via bulk actions
+    * Check if time or entry is approved, when invoicing via bulk actions
+    * Update approval status of time entries when invoice is trashed/untrashed
+  bugfix report showing id instead of value and excel export formatting
+    * fix: show currency name instead of currency id
+    * fix spanish translation of currency name and type of payment
+    * fix customer_rut shown with scientific notation format on excel exports
+    * fix translation net d - due on receipt
+    * remove lang, check currency is not null,  show short name
+    * remove currencies tranlation
+    * use strval to cast to string  
+  bugfix: set value to empty string instead of null when clicking "remove filter" button on date-picker
+  feature: Qbo sync import tool for invoices and payments and column to show if invoice/payment is synchronized (#782)
+    * feature: batch import of QBO invoices into the invoicing module
+    * add action to sync invoices and payments that are not synchronized and new column at invoices and payments lists to show if they are synchronized or not
+
+  Since 3.8.5.69
+  -----------------
+  bugfix: Unable to enter time for a project that has both main and billing client
+  bugfix: Bug with the Grouped Timeslots Report columns
+  bugfix: Time entries reseting status when being edited and task is changed
+
+  Since 3.8.5.68
+  -----------------
+  feature: Add subtotal column in batch invoicing
+  bugfix: Invoice print minor adjustments
+    * fix error that prevented to print invoice when using multiple client allocation
+    * show discount amounts between brackets instead of using the '-' sign
+    * change 'Actual expense' for 'Expense' in invoice print and align header to the left
+    * at print invoice, expenses subtable, always use 'Expense' as header for the description for any combination of description, product type, exp cat, etc.
+
+  Since 3.8.5.67
+  -----------------
+  feature: to resolve a problem in search by project
+  bugfix: Fix invoices trash error msg and reopen status
+    * bugfix: don't set invoicing status to printed when reopening an invoice
+    * bugfix: when trying to delete an invoice, the system always assumes that the invoice is paid when showing the error message
+  bugfix: when generating an invoice from a template, don't assume that the client's associated contact always exists
+  bugfix: batch invoicing fails if one of the limit dates is not specified, we must set default values for these cases  
+  feature: Set by defaul Actual Expenses tab in Expenses Module
+  bugfix: Fix bug: increase the update version of the script. Because the version of the script is too low, the system will not run the script.
+  bugfix: Don't assign incorrect 'approval status' member to the new actual expense
+    * Don't assign 'approval status' member to the new actual expense
+      The system automatically assigned the approval status member to the actual expense whenever 'invoicing_status' was assigned to the actual
+      expense. I added a new condition to check if the actual expense didn't have  the  'invoicing_status' set to prevent setting approval status.
+    * Remove commented code
+  bugfix: Add 'invoicing_status' columns to the 'expenses' and 'payment_receipts' tables
+    Add this column when 'income' plugin is activated and the user tries to install and activate 'expenses2' plugin
+  feature: Add a new column 'Project number' to the time module list
+    * Add new column 'Project number' to the time module list
+    * Update the custom property 'project_id' Make it special and set type to 'text'
+  bugfix: ms calendar sync feng duplicates events after sync
+    * prevent errors when using a bad token in ms integrations preferneces section
+    * bugfix: prevent duplicated events creation when synchronizing events with ms calendar
+    * add more verifications before importing an event from ms to prevent duplicates, also fix the issue that was not assigning the created_by_id property of the event
+    * comment some parts of code
+
+  Since 3.8.5.66
+  -----------------
+  bugfix: New variable in languages files to payment receipt description
+  bugfix: Project billing report: bug fixes and improvements
+  feature: adjusting the width of the task financial columns
+  bugfix: Bugfix qbo sync duplicate item name error
+
+  Since 3.8.5.65
+  -----------------
+  bugfix: Fix number formatting in the actual expenses footer
+  bugfix: Fix the bug in the batch invoicing when generating the invoices list
+  bugfix: Fix time module footer counter:
+    - Show correct info when filter values are changed
+    - Decrease second value by 1 in the "Displaying objects" info
+  bugfix: Check if client and project are associated with each other (if combination project/client is valid):
+    - Check it when adding or editing the time entry
+  bugfix: Bugfix/gsel changes in langs files in ms calendar
+  bugfix: new changes in ms integratiosn langs files
+  bugfix: Changes in langs files in ms calendar
+
+	Since 3.8.5.64
+	-----------------
+	bugfix: add class to totals tbody when printing invoice and generating inner details html with template
+	bugfix: modify invoice template html generation for printing to render time and expenses lines in separate tables
+
+
+	Since 3.8.5.63
+	-----------------
+	feature: qbo-sync - prevent that category-item mapping is wiped out when qb item ids are changed in qb, if that happens then try to map using item name
+	feature: Allow invoice templates to group expenses by description, also when grouping expenses don't put in the same group expenses with different cost/price rate
+	feature: Add columns to project billing report and consider active context members at "Project billing" and "Project budget status" reports
+	feature: QBO Viewer, for debugging and testing purposes, makes queries to QBO and shows data
+	bugfix: fix error when trying to edit actual expense and image does not exists
+	bugfix: don't allow to change invoice template if invoice is not new
+	bugfix: fix invoice template html generation at expenses, use unit price in unit cost column if the mupliplier is not used
+	bugfix: improve performance of the invoice list reloading after generating invoice and sending it to qbo, make sync run in background
+	bugfix: editing invoice line description not reflected in invoice print
+	bugfix: qbo sync - after saving invoice user has to wait until qb saves it to continue working, the sync must be done in background
+	bugfix: qbo sync - if company not found by CompanyName try using DisplayName, when quering a project by project number don't check if it is a job or not
+	bugfix: when saving inv template the include exp description is not saved, also we need to force it checked if grouping by description
+	bugfix: when printing invoice using template sort the invoice lines by the first column to print
+	bugfix: Lump sum - Calculate previous task financials when timeentry assigned to a new task
+	bugfix: Lump sum - Calculate tasks when a subtask get assigned to another task
+	bugfix: Remove hardcoded 'fo_' prefix in the MemberController query
+	bugfix: Fix calculation bug in the "Project budget status"
+	bugfix: Fix bug in the report title in "Projec budget status" report
+	bugfix: Fix bug in the query that caused fatal error when grouped by dimension
+	
+	Since 3.8.5.62
+	-----------------
+	feature: Add ability to set a lump sum in the task financials
+	feature: Subproject inherits project fields
+	feature: when changing payment terms recalculate the invoice's due date if term is Net 30 or Net 60
+	bugfix: qbo_sync fix duplicate name error when getting/creating client
+	bugfix: when generating invoice don't duplucate description if grouping expenses by category
+	bugfix: at item-category mapping, add the account number to the item's account name after selecting an item and showing its account
+	bugfix: fix qbo api queries result size, the amount of items and accounts by default was too small
+	bugfix: Changes to set correctly decimal digits in expenses module
+
+	Since 3.8.5.61
+	-----------------
+	feature: allow to show expense name for invoice expense lines in invoice templates
+	feature: set position sticky to tasks list headers so they are visible when scrolling
+	feature: invoice view - hide ordered by if it is equal to bill to field
+	feature: qbo sync - map labor/expense categories with qbo items
+	feature: add 'hide billing tab in the timeslot' option
+	bugfix: Improvements to the time imports
+		- Increase memory size
+		- Add members to timeslots only once
+		- Save timeslot only once
+		- Remove error messages when importing
+	bugfix: fix multiplier column calculation at invoice template html generation when it is 0
+	bugfix: error when filtering labor categories member selector using rate schedule selected member, the query was not being hierarchical
+	bugfix: when deleting submember and not deleting its objects the is_optimization field for the parent membe classification was not recalculated
+
+	Since 3.8.5.60
+	-----------------
+	feature: Add improvements invoicing history report
+	feature: Batch invoicing syncronize to qbo in background
+	feature: Improvements to the estimated and executed price and cost task columns
+	feature: qbo-sync: in account-category matching if a category doesn't have an account assigned then use the closest in hierarchy
+	bugfix: fix upgrade script queries that gave errors in new mysql version
+	bugfix: Project earnings report needs 2 more columns
+	bugfix: Project earnings report pdf export cuts the report
+	bugfix: Set correct paid amount and due date based on status of the invoice when importing
+	bugfix: Time-Module Resolved issue in period first half of the month
+	bugfix: Resolved columns issues in non billable reports
+	bugfix: fix actual expenses invoicing status filter
+	bugfix: when member has archived submembers the arrow to expand submembers is shown in the dimension tree
+	bugfix: actual expenses filter by invoicing status is including non billable entries when filtering by 'unbilled'
+
+	Since 3.8.5.59
+	-----------------
+	feature: allow QBO sync to match labor categories with quickbooks account, and when generating invoices send the account that matches each line's labor category
+	feature: Persist estimated cost and executed cost task values
+	feature: Project billing report: Include the quick date options in the "Project billing" report
+	feature: Project billing report: Add "invoicing_status" condition to the time and expense search
+	feature: Project billing report: Include only "approved" time and expenses when getting unbilled ones
+	feature: Microsoft Calendar Integration for MVP
+	feature: in payment receipts change billable checkbox for a radio button yes/no
+	feature: re-enable the 'bill to' info override with all the billing clients when invoice has more than one bc
+	bugfix: Invoice import tool: Consider thousand separator option when importing invoices
+	bugfix: Invoice import tool: Set paid_amount and due_amount when importing invoices
+	bugfix: Invoice import tool: Include "due date" in the invoice form in the import tool
+	bugfix: fix batch invoicing to prevent that expenses out of date range be included in invoice
+	bugfix: add custom macrofcultad custom translations to the macro_facultad plugin
+	bugfix: when an actual expense is not billable then the invoicing status should show 'non billable' text like in timeslots list
+
+	Since 3.8.5.58
+	-----------------
+	feature: Revamp automatic split invoice generation and allow to show the same invoice totals and number for the same project invoices
+	codefix: consolidate repeated code in common functions for project reports plugin helper functions and js functions
+	codefix: remove harcoded 'fo_' prefix in some queries
+
+	Since 3.8.5.57
+	-----------------
+	feature: Project earnings report 
+	feature: Import tool: Add capability to import payment receipts
+	bugfix: Fix estimated cost and estimated price column for subtasks
+
+	Since 3.8.5.56
+	-----------------
+	feature: Project jdt report
+	feature: Import tool: add invoice imports
+
+	Since 3.8.5.55
+	-----------------
+	bugfix: qbo sync, fix customer generation when name has multiple spaces between words
+	bugfix: fix invoice status calculation when payment is greater than invoice total
+	bugfix: qbo cron event to process pending entities is giving error because cron functions file was not included
+
+	Since 3.8.5.54
+	-----------------
+	feature: allow to have alphanumeric invoice numbers and allow to disable 'Serie' field
+	bugfix: quickbooks sync: don't send dummy TaxCodeRef property if we don't have a value for a tax
+	bugfix: client's contact was not always classified in client's associated dimension members
+	bugfix: fix deprecated usage of { and } to access array position
+	bugfix: when uploading file if selected file exists and then you change the file or the name it still will be uploaded as a new revision of the first one that has the duplicated name
+
+	Since 3.8.5.53
+	-----------------
+	feature: AR Ledger report
+	bugfix: Fix bug in the permissions tab during drag and drop
+	bugfix: repetitive task is not generating the subtasks in the next repetitions
+	bugfix: fix subtasks section in tasks form that added 1 hour to current estimated time when its minutes were greater or equal than 30
+	bugfix: fix project reports install and update to avoid null values in objects table for the new report
+
+	Since 3.8.5.52
+	-----------------
+	feature: Utilization report
+	bugfix: Refactor and improve performance in the Import Tool
+	bugfix: when creating item in qb if default income account at qb preferences is not set then try with 'Sales' income account
+
+	Since 3.8.5.51
+	-----------------
+	feature: add invoice template option to show date in expenses
+	feature: include project contract amount custom property when generating invoice summary to print
+	bugfix: fix bill to column length
+	bugfix: fix bug in invoice template when printing expense employee
+	bugfix: allow to order the batch invoicing list by clicking in the column headers
+	bugfix: don't filter expenses widget by last year if there are very few expenses
+
+	Since 3.8.5.50
+	-----------------
+	feature: Add new filters to Time Module for half month periods
+	feature: Updates to Aged AR report for PMs, show client name and increase date size
+	feature: change 'invoice split' feature to be more informative and not split an invoice into several clients
+	bugfix: fix invoice template error when grouping by tasks and task does not exists
+	bugfix: fix billing address feature that caused the error in permissions tab
+	bugfix: install.php file was in wrong directory at quickbooks plugin
+	bugfix: fix batch invoicing pagination toolbar info
+	bugfix: fix batch invoicing request to prevent 'max url length reached' error
+	bugfix: fix quickbooks integration account usage when creating invoice item
+
+	Since 3.8.5.49
+	-----------------
+	bugfix: fix quickbooks sync project and client matching, store the qb object id in members table and try to match using it, if not available then use project id cp or project/client name
+	bugfix: fix po number assignation when generating the invoice
+	bugfix: fix batch invoicing time limits for actual expenses
+	bugfix: Added a new installation print message with the faulty query when installation fails
+
+	Since 3.8.5.48
+	-----------------
+	feature: improve management of invoice allocation percentage, store the applied value in the invoice
+	
+	Since 3.8.5.47
+	-----------------
+	feature: allow invoice template lines table render function to receive parameters with the labels to use in the invoice
+	feature: add functions at invoice class to get a summary of the invoice's project or client (used for invoice footers)
+	
+	Since 3.8.5.46
+	-----------------
+	feature: improve invoice templates to allow grouping by project and project-laborcategory, so user can create a 'joint invoice template' for grouping lines by subproject/laborcat
+	bugfix: fix payment receipt form error when invoice name has any special char
+	bugfix: fix error when entering to quickbooks integration config section and access/refresh token is invalid
+	bugfix: fix required custom properties control for amount cps
+	bugfix: fix error when non-superadmin edits permissions and expands workspaces tree
+	
+	Since 3.8.5.45
+	-----------------
+	feature: allow to split automatic invoices into several clients depending on the invoice allocation attribute on the relation project-client
+	bugfix: fix expenses2 plugin update script
+	bugfix: ix payment receipts form's invoice list and client selector when selecting project with multiple clients
+	
+	Since 3.8.5.44
+	-----------------
+	feature: allow billing contact cp to have companies
+	feature: show billing address in project form, depending on the selected billing contact, billing client and client
+	feature: Use billing contact cp for invoice billing info if that cp is present in invoice's project or client
+	bugfix: fix checkmail function to skip accounts of disabled users
+	bugfix: fix hardcoded id and prefixes in objects import get task function query 
+	bugfix: fix user preference for notifying subscribers, if disabled it was notifying anyways
+	bugfix: fix noOfTasks user preference lang and description
+	bugfix: fix error in mail controller when hook not receiving 2nd param
+	bugfix: fix some issues at invoice's billing information tab
+	
+	
+	Since 3.8.5.43
+	-----------------
+	feature: improve performance in activity widget 
+	feature: remove an index that causes performance issues
+	feature: improve performance in mail list queries
+	feature: Improve timeslots import perfromance
+	feature: Support task assignment to the timeslot when batch importing 
+	bugfix: Add cp code 'project_manager' for custom property "Project manager" in Project
+	bugfix: Show currency selector when adding or editing the invoice
+	bugfix: When editing or adding an invoice, show Series and Invoice number
+	bugfix: fix update script, don't create billing client config option if clients dim is the same as projects dim
+	bugfix: When importing timeslots set start time to 08:00 AM
+	bugfix: fix payment classification in axes and objectives when changing quota
+	bugfix: fix member selectors default associated member selection when there are more than one association between the same member types
+	
+	Since 3.8.5.42
+	-----------------
+	feature: generate automatic invoices using the billing client instead of default client if it is configured
+	feature: new type of config option to select dimension associations
+	feature: ensure that all dim-member associations have their config options before editing dimension options
+	feature: Develop timeslots batch import
+	bugfix: fix issue missing subtasks tags when saving task
+	bugfix: if client address is not of type work the automatic invoice didn't use it
+	bugfix: align numeric dim-association attributes to the right
+	bugfix: fix invoice date in custom reports, it was adding timezone
+	bugfix: fix js error when adding projects
+	bugfix: fix invoice templates when grouping at timeslot level the user was not saved in the invoice lines
+	
+	Since 3.8.5.41
+	-----------------
+	feature: New plugin to have attributes in dimension member associations
+	feature: Build aged invoices report
+	feature: modify dimension associations structure and logic to allow having multiple associations between the same member types
+	feature: add new dimension association config option to set a custom name for each association
+	feature: modify member report group by selector to use dimension associations custom name if defined
+	feature: modify advanced reports to use the custom dimension association names in report columns and conditions
+	bugfix: modify income tab name
+	bugfix: prevent warnings triggered in some parts of the code 
+	
+	Since 3.8.5.40
+	-----------------
+	feature: change invoicing status combo for a radio button indicating if it is billable or not
+	feature: move billing yes/no widget to main tab in timeslots add/edit form
+	feature: Add config option 'disable_billing_tab_in_timeslot' in advanced_billing plugin
+	bugfix: fix dimension component renderers to allow non manageable dimensions to be shown when necessary
+	bugfix: set all non-billable timeslot's billing to 0 in upgrade script
+	bugfix: set timeslot billing to 0 if marked as non-billable
+	bugfix: fix address field display, it was not applying line breaks
+	bugfix: fix billing category edition, when removing all members the save function did not remove them
+	bugfix: improve billing category form langs for billing rate field
+	bugfix: fix income plugin update script when getting objects and some columns are not still in db
+	
+	Since 3.8.5.39
+	-----------------
+	bugfix: Fix timesheet report bug that caused misalignment
+	bugfix: Start using commas instead of semicolon in timesheet csv export
+	bugfix: don't allow user to create unassigned actual expenses if doesn't have the permission to see other user's expenses
+	bugfix: don't show financials and expense progress widgets if user cannot see other user's expenses
+	bugfix: fix activity widget to consider the can see other user's expenses permission to show the objects
+	bugfix: modify can see other user's expenses lang
+	bugfix: change message when not letting the user update the repetition settings of a completed task.
+	bugfix: when editing a completed task of a repetition, the rest of the tasks should not be affected, and the repetition settings must not be lost
+	
+	Since 3.8.5.38
+	-----------------
+	bugfix: Don't show task template form after batch importing project templates
+	bugfix: Fix missing comma in en-us lang
+	
+	Since 3.8.5.37
+	-----------------
+	feature: Add project template support batch import
+	feature: Add mobile and fax number to the client and supplier batch import form
+	
+	Since 3.8.5.36
+	-----------------
+	bugfix: Add field to expense import, add lang to expenses plugin
+	bugfix: fix missing langs for all 'unsubscribed' notifications
+	bugfix: fix error when expanding subtasks introduced in last version
+	bugfix: fix member deletion queries
+	bugfix: only numbers must be allowed in numeric custom property inputs
+	
+	Since 3.8.5.35
+	-----------------
+	feature: allow tasks list to be ordered by custom properties
+	feature: Batch import improvements
+	bugfix: fix actual expenses default date, it was not using user's timezone
+	bugfix: fix member delete function queries to prevent execution break due to memory limit reached
+	bugfix: timesheet report 'last week' and 'this week' was filtering from monday to sunday instead of sunday to saturday
+	bugfix: in timesheet report the timeslots associated to trashed tasks were excluded
+	bugfix: fix time quick add row member selectors
 	
 	Since 3.8.5.34
 	-----------------
