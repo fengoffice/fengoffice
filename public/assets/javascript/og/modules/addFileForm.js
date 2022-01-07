@@ -161,27 +161,39 @@ og.checkFileNameCallback = function(success, data, genid){
   		og.fileValidateAttempt = false;
 		if (data.files && isNew){
 			og.checkFileNameResult = 1;
-			og.showFileExists(genid, data);
 		} else {
 			og.checkFileNameResult = 2;
 		}
+		og.showFileExists(genid, data);
   	} else {
   		og.fileValidateAttempt = false;
   		og.checkFileNameResult = 1;
   	}
 }
   
-og.showFileExists = function(genid, fileInfo){
- 	Ext.get(genid + "addFileFilenameExists").setDisplayed(true);
- 	var table = document.getElementById(genid + 'upload-table');
- 	while(table.rows.length>0) 
-    	table.deleteRow(table.rows.length-1);
- 	
- 	checked = true;
- 	for (var i = 0; i < fileInfo.files.length; i++) {
- 		og.addFileOption(table, fileInfo.files[i], genid, checked);
- 		checked = false;
- 	}
+og.showFileExists = function(genid, fileInfo) {
+	var table = document.getElementById(genid + 'upload-table');
+	// delete the radio buttons of previous call
+	if (table) {
+		while (table.rows.length > 0) {
+			table.deleteRow(table.rows.length-1);
+		}
+	}
+	
+	var file_exists_container = Ext.get(genid + "addFileFilenameExists");
+	if (fileInfo && fileInfo.files && fileInfo.files.length > 0) {
+		// show duplicate filename selector
+		file_exists_container.setDisplayed(true);
+		// add the radio buttons for the files that have same name
+		checked = true;
+		for (var i = 0; i < fileInfo.files.length; i++) {
+			og.addFileOption(table, fileInfo.files[i], genid, checked);
+			checked = false;
+		}
+	} else {
+		// hide duplicate filename selector
+		file_exists_container.setDisplayed(false);
+	}
 }
 
 og.addFileOption = function(table, file, genid, checked){

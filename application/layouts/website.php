@@ -641,7 +641,7 @@ og.objPickerTypeFilters = [];
 		$linkable = $type->getIsLinkableObjectType();
 		if ($linkable) {
 			$tab_ids = DB::executeAll("SELECT id FROM ".TABLE_PREFIX."tab_panels WHERE object_type_id = ".$type->getId());
-			if (count($tab_ids) > 0) {
+			if (is_array($tab_ids) && count($tab_ids) > 0) {
 				$tab_id = $tab_ids[0]['id'];
 				if (!TabPanelPermissions::isModuleEnabled($tab_id, implode(',', $pg_ids))) {
 					continue;

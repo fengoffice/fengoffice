@@ -1555,9 +1555,11 @@ class MemberController extends ApplicationController {
 										ON        om.object_id = sh.object_id
 										WHERE     om.member_id = ".$member->getId()." AND om.is_optimization = 0;";
 			
-			DB::execute($sqlDeleteSharingTable);
+			// commented bacause triggers a lock wait timeout in large databases
+			//DB::execute($sqlDeleteSharingTable);
 			
 			$affectedObjectsRows = DB::executeAll("SELECT distinct(object_id) AS object_id FROM ".TABLE_PREFIX."object_members where member_id = ".$member->getId()." AND is_optimization = 0") ;
+			
 			if (is_array($affectedObjectsRows) && count($affectedObjectsRows) > 0) {
 				// build an array with all the affected object ids
 				$all_affeceted_object_ids = array();
@@ -1576,19 +1578,39 @@ class MemberController extends ApplicationController {
 					 * 1) users
 					 * 2) objects classified in other members of dimensions that defines permissions
 					 */
-					$object_ids_to_keep_sql = "
-						SELECT om.object_id 
-						FROM ".TABLE_PREFIX."object_members om 
-						INNER JOIN ".TABLE_PREFIX."members m on m.id=om.member_id
-						INNER JOIN ".TABLE_PREFIX."dimensions d on d.id=m.dimension_id
-						INNER JOIN ".TABLE_PREFIX."objects o on o.id=om.object_id
-						LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id
-						WHERE 
-							om.member_id<>".$member->getId()." AND om.is_optimization=0
-							AND d.defines_permissions=1 AND d.code<>'feng_persons'
-							AND (c.user_type IS NULL OR c.user_type>0)
-					";
-					$object_ids_to_keep = array_flat(DB::executeAll($object_ids_to_keep_sql));
+					$object_ids_to_keep = array();
+					$sql_start = 0;
+					$sql_limit = 100000;
+					$continue_query = true;
+					
+					$affected_ids_sql = "";
+					if (count($all_affeceted_object_ids) > 0) {
+						$affected_ids_sql = "AND om.object_id IN (".implode(',',$all_affeceted_object_ids).")";
+					}
+					
+					// collect the results in batches to prevent high memory usage
+					while ($continue_query) {
+						$object_ids_to_keep_sql = "
+							SELECT distinct(om.object_id) 
+							FROM ".TABLE_PREFIX."object_members om 
+							INNER JOIN ".TABLE_PREFIX."members m on m.id=om.member_id
+							INNER JOIN ".TABLE_PREFIX."dimensions d on d.id=m.dimension_id
+							INNER JOIN ".TABLE_PREFIX."objects o on o.id=om.object_id
+							LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id
+							WHERE 
+								om.member_id<>".$member->getId()." AND om.is_optimization=0
+								AND d.defines_permissions=1 AND d.code<>'feng_persons'
+								AND (c.user_type IS NULL OR c.user_type>0)
+								$affected_ids_sql
+							LIMIT $sql_start, $sql_limit
+						";
+						
+						$more_ids = array_flat(DB::executeAll($object_ids_to_keep_sql));
+						$object_ids_to_keep = array_merge($object_ids_to_keep, $more_ids);
+						
+						$sql_start += $sql_limit;
+						$continue_query = count($more_ids) == $sql_limit;
+					}
 					
 					// ensure that no user is going to be trashed
 					$object_ids_to_keep = array_merge($object_ids_to_keep, $user_ids);
@@ -1610,13 +1632,28 @@ class MemberController extends ApplicationController {
 						foreach ($object_ids_to_trash as $oid) {
 							$app_logs_rows[] = array(logged_user()->getId(), $oid, '', $now_str, logged_user()->getId(), 'trash', 'trashed when deleting member '.$member->getId());
 						}
+						
 						massiveInsert(TABLE_PREFIX."application_logs", $app_logs_columns, $app_logs_rows, 500);
 					}
+				} else {
+
+					// set parent member's is_optimization column to 0 for all objects that are classified in this member
+					$parent_id = $member->getParentMemberId();
+					if ($parent_id > 0 && count($all_affeceted_object_ids) > 0) {
+						DB::execute("
+							UPDATE ".TABLE_PREFIX."object_members
+							SET is_optimization = 0
+							WHERE member_id='$parent_id' AND is_optimization=1
+							AND object_id IN (".implode(',',$all_affeceted_object_ids).")
+						");
+					}
+
 				}
 				
 				// recalculate sharing table for all the affected objects, exclude users
 				$ids_to_recalculate_cache = array_diff($all_affeceted_object_ids, $user_ids);
 				$ids_str = implode(',', $ids_to_recalculate_cache);
+				
 				add_multilple_objects_to_sharing_table($ids_str, logged_user());
 			}
 			
@@ -2573,6 +2610,9 @@ class MemberController extends ApplicationController {
 	        } else {
 	        	if (isset($member_data['contacts']['Company']) && count($member_data['contacts']['Company']) > 0) {
 	        		$response['contacts']['Company'][] = $member_data['contacts']['Company'][0];
+	        	} else if (count($member_data['contacts']) > 0) {
+	        		$response['custom_properties'] = array_merge($response['custom_properties'], $member_data['custom_properties']);
+	        		$response['contacts'] = array_merge($response['contacts'], $member_data['contacts']);
 	        	}
 	        }
         }
@@ -2586,8 +2626,11 @@ class MemberController extends ApplicationController {
     	}
         $cp_contacts = self::getCPContactsOfMember($member);
         ksort($cp_contacts['contacts']);
-        if($need_company_data){
-            $cp_contacts['contacts']['Company'][]=array_merge(['name'=>$member->getName()],InvoiceController::customerDataLogic($member->getId(),$invoice_id));
+        if($need_company_data && Plugins::instance()->isActivePlugin('income')){
+        	$customer_data = InvoiceController::customerDataLogic($member->getId(),$invoice_id);
+        	if ($customer_data) {
+            	$cp_contacts['contacts']['Company'][]=array_merge(['name'=>$member->getName()], $customer_data);
+        	}
         }
         return $cp_contacts;
     }
@@ -2596,20 +2639,26 @@ class MemberController extends ApplicationController {
         
         $return =['custom_properties'=>[],'contacts'=>[]];
         if(!is_null($member)){
+        	
+        	$mem_ot_name = '';
+        	$ot = ObjectTypes::findById($member->getObjectTypeId());
+        	if ($ot) $mem_ot_name = $ot->getObjectTypeName();
+        	
             /** @var CustomProperty $cp */
             //ask if we have billing contact property
-            $cps = array_filter(CustomProperties::getAllCustomPropertiesByObjectType(Customers::instance()->getObjectTypeId()),function($cp){
+        	$cps = array_filter(CustomProperties::getAllCustomPropertiesByObjectType($member->getObjectTypeId()),function($cp){
                 return $cp->getType()=='contact';
             });
             foreach($cps as $cp){
                 /** @var CustomProperty $cp */
-                $cp_value = CustomPropertyValues::getCustomPropertyValue($member->getObjectId(), $cp->getId());
-                if ($cp_value instanceof CustomPropertyValue) {
+            	$cp_values = CustomPropertyValues::getCustomPropertyValues($member->getObjectId(), $cp->getId());
+            	if (!$cp_values) continue;
+            	foreach ($cp_values as $cp_value) {
                     $contact = Contacts::findById($cp_value->getValue());
                     if ($contact instanceof Contact) {
-                         $contact_info = $contact->getArrayInfo();
-                         $contact_info['code'] = $cp->getCode();
-                         $return['contacts'][$cp->getName()][] = $contact_info;
+                    	$contact_info = $contact->getArrayInfo();
+                    	$contact_info['code'] = $cp->getCode();
+                    	$return['contacts'][trim($mem_ot_name." ".$cp->getName())][] = $contact_info;
                     }
                 }
                 $return['custom_properties'][] = $cp->getArrayInfo();

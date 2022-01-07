@@ -27,6 +27,14 @@ if ($dim instanceof Dimension) {
 				if ($select_context_associated_members) {
 					$assoc_mem_ids = MemberPropertyMembers::getAllAssociatedMemberIds($selection->getId(),true);
 					foreach ($assoc_mem_ids as $aid => $amids) {
+						$a = DimensionMemberAssociations::findById($aid);
+						// use only default associations
+						$tmp_ot = ObjectTypes::instance()->findById($a->getObjectTypeId());
+						$tmp_assoc_ot = ObjectTypes::instance()->findById($a->getAssociatedObjectType());
+						if (!$tmp_ot || !$tmp_assoc_ot) continue;
+						if ($a->getCode() != $tmp_ot->getName()."_".$tmp_assoc_ot->getName()) {
+							continue;
+						}
 						foreach ($amids as $amid) $selected_member_ids[] = $amid;
 					}
 				}

@@ -98,7 +98,7 @@
     *  - offset - limit offset, valid only if limit is present
     *  - limit
     * 
-    * @return one or  CustomPropertyValues objects
+    * @return array of Report objects
     * @throws DBQueryError
     */
     function find($arguments = null) {
@@ -114,7 +114,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or  Reports objects
+    * @return array of Report objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'Reports')) {
@@ -129,7 +129,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return  Reports 
+    * @return  Report
     */
     function findOne($arguments = null) {
       if(isset($this) && instance_of($this, 'Reports')) {
@@ -145,7 +145,7 @@
     * @access public
     * @param mixed $id
     * @param boolean $force_reload If true cache will be skipped and data will be loaded from database
-    * @return  Reports 
+    * @return  Report
     */
     function findById($id, $force_reload = false) {
       if(isset($this) && instance_of($this, 'Reports')) {

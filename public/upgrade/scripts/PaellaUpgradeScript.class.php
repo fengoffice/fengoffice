@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.5.35');
+		$this->setVersionTo('3.8.6.12');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -147,7 +147,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			}
 			
 			$upgrade_script .= "
-				update ".$t_prefix."timeslots set worked_time=GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60);
+				update ".$t_prefix."timeslots set worked_time=IF(end_time>0,GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60),0);
 			";
 		}
 		
@@ -859,11 +859,60 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 					ADD INDEX (`association_id`, `member_id`, `property_member_id`);
 				";
 		}
+		
+		if (version_compare($installed_version, '3.8.5.42') < 0) {
+			if (!$this->checkColumnExists($t_prefix."dimension_associations_config", "type", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."dimension_associations_config`
+					ADD `type` varchar(255) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT 'boolean' AFTER `config_name`;
+				";
+			}
+			if (!$this->checkColumnExists($t_prefix."dimension_member_associations", "code", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."dimension_member_associations`
+					ADD `code` varchar(255) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
+				";
+			}
+			$upgrade_script .= "
+				update ".$t_prefix."dimension_member_associations dma
+				set dma.code = coalesce(concat((select name from ".$t_prefix."object_types where id=dma.object_type_id),'_',(select name from ".$t_prefix."object_types where id=dma.associated_object_type_id)),'')
+				where dma.code='';
+			";
+		}
+		
+		if (version_compare($installed_version, '3.8.5.44') < 0) {
+			if ($this->checkKeyExists($t_prefix."objects", "archived_on", $this->database_connection)) {
+				// archived_on index is causing performance issues in queries
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."objects`
+					ADD INDEX `archived_by_id` (`archived_by_id`),
+					DROP INDEX `archived_on`;
+				";
+			}
+		}
+			
+		if (version_compare($installed_version, '3.8.5.67') < 0) {
+			
+			if (!$this->checkColumnExists($t_prefix."contact_config_categories", "located_under", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."contact_config_categories` ADD COLUMN `located_under` TINYINT(3) UNSIGNED NOT NULL DEFAULT 0;
+				";
+			}
+			
+			if (!$this->checkValueExists($t_prefix."contact_config_categories", "name", "connected systems", $this->database_connection)) {
+				// Add 'Connect systems' contact config category
+				$upgrade_script .= "
+	        		INSERT INTO `".$t_prefix."contact_config_categories` (`name`, `is_system`, `type`, `category_order`, `located_under`) VALUES
+					('connected systems', 0, 0, 9, 0);
+				";
+			}
+		}
     
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
 			UPDATE `".$t_prefix."objects` SET `archived_on` = '0000-00-00 00:00:00' WHERE `archived_on` IS NULL;
 		";
+
         
         if (!$this->checkColumnExists("".$t_prefix."dimension_member_associations", "allows_default_selection", $this->database_connection)) {
         	$upgrade_script .= "

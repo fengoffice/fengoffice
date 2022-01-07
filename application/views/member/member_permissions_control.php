@@ -72,7 +72,7 @@
 					<input id="<?php echo $genid ?>_user_id_<?php echo $user->getPermissionGroupId()?>" name="user_id" type="hidden" value="<?php echo $user->getId()?>"/>
 					<input id="<?php echo $genid ?>_user_type_<?php echo $user->getPermissionGroupId()?>" name="user_type" type="hidden" value="<?php echo $user->getUserType()?>"/>
 					
-					<?php if ($user->getCompanyId() > 0) { ?>
+					<?php if ($user->getCompanyId() > 0 && $user->getCompany()) { ?>
 					<div class="desc"><?php echo $user->getCompany()->getObjectName(); ?></div>
 					<?php } ?>
 					

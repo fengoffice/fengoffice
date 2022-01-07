@@ -275,3 +275,9 @@ og.cp_list_selected = function(combo, genid, name, cp_id, is_multiple) {
 	}]);
 
 }
+
+og.check_if_valid_cp_num = function(inp) {
+	if (isNaN(inp.value)) {
+		inp.value='';
+	}
+}

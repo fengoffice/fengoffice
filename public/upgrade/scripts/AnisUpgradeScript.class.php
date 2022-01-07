@@ -163,7 +163,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 					
 					insert into ".$t_prefix."member_custom_property_values (`member_id`, `custom_property_id`, `value`)
 					  select m.id, (select id from ".$t_prefix."member_custom_properties where code='color_special' and is_special=1 and object_type_id=m.object_type_id), m.color
-					  from ".$t_prefix."members m where m.color != ''
+					  from ".$t_prefix."members m where m.color > 0
 					on duplicate key update `value`=color;
 				";
 			}

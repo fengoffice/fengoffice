@@ -844,13 +844,31 @@ class ApiController extends ApplicationController {
 			$controller = new TimeslotController();
 			$controller->add_timespan();
 		} else {
-			
-			$parameters = array();
-			$parameters['members'] = json_encode(array_var($request['args'], 'members', array()));
+			$members = array_var($request['args'], 'members', array());
+            // Get project member
+            $project_member = null;
+            $project_ot_id = ObjectTypes::findByName('project')->getId();
+            foreach($members as $m){
+                $member = Members::findById($m);
+                if($member instanceof Member){
+                    if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
+                }
+            }
+            // Get client member associated to the project
+            if($project_member instanceof Member){
+                Env::useHelper('functions', 'crpm');
+                $client_member = get_client_member_of_project($project_member);
+                if($client_member instanceof Member){
+                    $members[] = $client_member->getId();
+                }
+            }
+
+            $parameters = array();
+			$parameters['members'] = json_encode($members);
 			$parameters['timeslot'] = array(
 				'hours' => $request ['args'] ['hours'],
 				'minutes' => $request ['args'] ['minutes'],
-//				'date' => DateTimeValueLib::now(),
+				'date' => DateTimeValueLib::now(),
 //				'start_time' => $start_time,
 				'description' => $request ['args'] ['description'],
 				'contact_id' => $request ['args'] ['contact_id'],

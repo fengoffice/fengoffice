@@ -507,6 +507,9 @@ og.checkAttach = function() {
 
 og.checkFrom = function() {
 	var config = <?php echo user_config_option("check_is_defult_account") ? '1' : '0';?>;
+
+	const draft_edit =  <?php echo array_var($mail_data, 'draft_edit', false);?>;	
+
 	if (!config){
 		return true;
 	}
@@ -515,7 +518,7 @@ og.checkFrom = function() {
 	var is_autosaving = $('#' + genid + 'autosave').val();
 	if (is_autosaving == "true" || def_acc == 0) return true;
 
-	if (sel_acc != def_acc) {
+	if (sel_acc != def_acc && !draft_edit) {
 		var acc_combo = document.getElementById(genid + 'mailAccount');
 		var acc_name = acc_combo.options[acc_combo.selectedIndex].text;
 		if (! confirm(lang("are you sure you want to send the email using account x", acc_name)) ) {

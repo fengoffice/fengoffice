@@ -20583,7 +20583,7 @@ Ext.PagingToolbar = Ext.extend(Ext.Toolbar, {
                 this.emptyMsg :
                 String.format(
                     this.displayMsg,
-                    this.cursor+1, this.cursor+count, this.store.getTotalCount()
+                    this.cursor+1, this.cursor+count-1, this.store.getTotalCount()
                 );
             this.displayEl.update(msg);
         }

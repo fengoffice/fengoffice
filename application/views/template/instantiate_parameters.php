@@ -46,6 +46,11 @@ if (array_var($_REQUEST, 'modal')) {
 				<td align="left">
 					<?php if($parameter['type'] == 'string'){ ?>
 						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>"/>
+					
+					<?php } else if ($parameter['type'] == 'numeric') { ?>
+
+						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>" type="number" />
+					
 					<?php } else if ($parameter['type'] == 'date'){
 							echo pick_date_widget2('parameterValues['.$parameter_js_key.']');
 							

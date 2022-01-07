@@ -27,7 +27,7 @@ class TimeslotController extends ApplicationController {
 	 * @return null
 	 */
 	function open() {
-		
+
 		$this->setTemplate('add_timeslot');
 
 		$object_id = get_id('object_id');

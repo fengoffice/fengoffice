@@ -117,7 +117,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or MemberPropertyMembers objects
+    * @return array MemberPropertyMembers objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'MemberPropertyMembers')) {

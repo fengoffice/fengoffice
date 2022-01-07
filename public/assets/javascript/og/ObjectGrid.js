@@ -585,9 +585,14 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 		if (!params) params = {};
 		
 		// use current filters and other parameters
-		Ext.apply(params, this.store_params);
-		
-		params.load_totals_row = 1;
+		var filters_object = this.filters;
+		var filters = {};
+		Object.keys(filters_object).forEach(function (key) {
+			var val = filters_object[key]['value'];
+			filters[key] = val;
+		});
+		Ext.apply(params, filters);
+		params.load_totals_row = 1; 
 		
 		var objects_grid_id = this.id;
 		// call the controller to retrieve the totals

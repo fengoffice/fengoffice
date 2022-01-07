@@ -85,8 +85,15 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 						if (!array_var($options, 'dont_select_associated_members')) {
 							// get the related members that are defined to autoclassify in its association config
 							$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($selection->getDimensionId(), $selection->getObjectTypeId());
-							foreach ($associations as $a) {
+							foreach ($associations as $a) {/* @var $a DimensionMemberAssociation */
 								$autoclassify_in_related = (bool)DimensionAssociationsConfigs::getConfigValue($a->getId(), 'autoclassify_in_property_member');
+								// use only default associations
+								$tmp_ot = ObjectTypes::instance()->findById($a->getObjectTypeId());
+								$tmp_assoc_ot = ObjectTypes::instance()->findById($a->getAssociatedObjectType());
+								if (!$tmp_ot || !$tmp_assoc_ot) continue;
+								if ($a->getCode() != $tmp_ot->getName()."_".$tmp_assoc_ot->getName()) {
+									continue;
+								}
 								if ($autoclassify_in_related) {
 									$tmp = MemberPropertyMembers::getAllPropertyMemberIds($a->getId(), $selection->getId());
 									$tmp = array_filter(explode(',', $tmp));
@@ -110,6 +117,13 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 							$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($assoc_member->getDimensionId(), $assoc_member->getObjectTypeId());
 							foreach ($associations as $a) {
 								$autoclassify_in_related = (bool)DimensionAssociationsConfigs::getConfigValue($a->getId(), 'autoclassify_in_property_member');
+								// use only default associations
+								$tmp_ot = ObjectTypes::instance()->findById($a->getObjectTypeId());
+								$tmp_assoc_ot = ObjectTypes::instance()->findById($a->getAssociatedObjectType());
+								if (!$tmp_ot || !$tmp_assoc_ot) continue;
+								if ($a->getCode() != $tmp_ot->getName()."_".$tmp_assoc_ot->getName()) {
+									continue;
+								}
 								if ($autoclassify_in_related) {
 									$tmp = MemberPropertyMembers::getAllPropertyMemberIds($a->getId(), $assoc_member->getId());
 									$tmp = array_filter(explode(',', $tmp));
@@ -143,7 +157,7 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 			}
 
 			
-			$selected_members = count($selected_member_ids) > 0 ? Members::findAll(array('conditions' => 'id IN ('.implode(',', $selected_member_ids).') '.$manageable_conds)) : array();
+			$selected_members = count($selected_member_ids) > 0 ? Members::findAll(array('conditions' => 'id IN ('.implode(',', $selected_member_ids).') ')) : array();
 			foreach($dimensions as $dimension){
 				$dimension_id = $dimension['dimension_id'];
 				$dim_sel_mems = array();
@@ -249,6 +263,10 @@ function render_single_member_selector(Dimension $dimension, $genid = null, $sel
 	// option to show default selection checkboxes
 	$default_selection_checkboxes = array_var($options, 'default_selection_checkboxes', false);
 	$related_member_id = array_var($options, 'related_member_id', 0);
+	$member_association_id = array_var($options, 'member_association_id', 0);
+	
+	// for single member selectors, don't restrict by is_manageable
+	$options['allow_non_manageable'] = true;
 	
 	// Render view
 
@@ -341,13 +359,13 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 			MemberPropertyMembers::instance()->delete('association_id = '.$assoc_id.' AND '.$memcol.' = '.$member->getId());
 			
 			foreach ($assoc_mem_ids as $rel_mem_id) {
-				associate_member_to_status_member($member, 0, $rel_mem_id, $rel_dimension, $rel_ot, false);
+				associate_member_to_status_member($member, 0, $rel_mem_id, $rel_dimension, $rel_ot, false, $a->getCode());
 			}
 		} else {
 			// asociate objects to the new related member, remove from the old one
-			$old_related_mem_id = get_associated_status_member_id($member, $rel_dimension, $rel_ot, $reverse_relation);
+			$old_related_mem_id = get_associated_status_member_id($member, $rel_dimension, $rel_ot, $reverse_relation, $a->getCode());
 			
-			associate_member_to_status_member($member, $old_related_mem_id, array_var($assoc_mem_ids, 0), $rel_dimension, $rel_ot);
+			associate_member_to_status_member($member, $old_related_mem_id, array_var($assoc_mem_ids, 0), $rel_dimension, $rel_ot, true, $a->getCode());
 		}
 		
 		if ($a->getAllowsDefaultSelection()) {
@@ -367,21 +385,24 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 		
 	}
 	
-	// check if all required associated dimensions have a value
-	foreach ($required_associations_present as $aid => $present) {
-		if (!$present) {
-			$assoc = $required_associations_object[$aid];
-			if ($assoc->getIsMultiple()) {
-				$assoc_dim = Dimensions::findById($assoc->getColumnValue('associated_dimension_id'));
-				$property_name = $assoc_dim instanceof Dimension ? $assoc_dim->getName() : 'dimension';
-			} else {
-				$assoc_ot = ObjectTypes::findById($assoc->getColumnValue('associated_object_type_id'));
-				$property_name = $assoc_ot instanceof ObjectType ? $assoc_ot->getObjectTypeName() : 'property';
+	$check_required_associations_disabled = array_var($_SESSION, 'dont_check_required_associations');
+	if (!$check_required_associations_disabled) {
+		// check if all required associated dimensions have a value
+		foreach ($required_associations_present as $aid => $present) {
+			if (!$present) {
+				$assoc = $required_associations_object[$aid];
+				if ($assoc->getIsMultiple()) {
+					$assoc_dim = Dimensions::findById($assoc->getColumnValue('associated_dimension_id'));
+					$property_name = $assoc_dim instanceof Dimension ? $assoc_dim->getName() : 'dimension';
+				} else {
+					$assoc_ot = ObjectTypes::findById($assoc->getColumnValue('associated_object_type_id'));
+					$property_name = $assoc_ot instanceof ObjectType ? $assoc_ot->getObjectTypeName() : 'property';
+				}
+				throw new Exception(lang('custom property value required', $property_name));
 			}
-			throw new Exception(lang('custom property value required', $property_name));
 		}
 	}
-	
+
 	$null = null;
 	Hook::fire('after_member_association_changed', array('member' => $member, 'request' => $request, 'is_new' => $is_new), $null);
 }
@@ -447,10 +468,25 @@ function render_associated_dimensions_selectors($params) {
 		if (in_array($dimension->getId(), $enabled_dimensions)) {
 			echo '<div class="field '.$ot->getName().'">';
 			
-			if ($is_new) {
-				$selected_ids = array(array_var($initial_values, $dimension->getId()));
-			} else {
-				$selected_ids = get_all_associated_status_member_ids($member, $dimension, $ot, $reverse_relation);
+			$selected_ids = array();
+
+			$params = array(
+				'member' => $member,
+				'dimension' => $dimension,
+				'ot' => $ot,
+				'reverse_relation' => $reverse_relation,
+				'dim_association_code' => $dim_association->getCode(),
+				'parent_member_id' => array_var($_REQUEST, 'parent')
+			);
+
+			Hook::fire('get_parent_associated_member_ids', $params, $selected_ids);
+
+			if (empty($selected_ids)){
+				if ($is_new) {
+					$selected_ids = array(array_var($initial_values, $dimension->getId()));
+				} else {
+					$selected_ids = get_all_associated_status_member_ids($member, $dimension, $ot, $reverse_relation, $dim_association->getCode());
+				}
 			}
 			
 			// use multiple selectors if the association is multiple or if editing the associated member (e.g.: proj. status)
@@ -459,19 +495,28 @@ function render_associated_dimensions_selectors($params) {
 			$select_fn = $is_multiple ? "og.onAssociatedMemberTypeSelectMultiple" : "og.onAssociatedMemberTypeSelect";
 			$remove_fn = $is_multiple ? "og.onAssociatedMemberTypeRemoveMultiple" : "og.onAssociatedMemberTypeRemove";
 			
-			$custom_name = $dimension->getOptionValue('custom_dimension_name');
-			if ($custom_name && trim($custom_name) != "") {
-				$label = $custom_name;
+			$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_name');
+			if ($custom_assoc_name) {
+				$label = $custom_assoc_name;
 			} else {
-				$label = Localization::instance()->lang(str_replace('_',' ', $ot->getName()) . ($is_multiple ? 's' : ''));
-				if (is_null($label)) {
-					$label = $dimension->getName();
+				$custom_name = $dimension->getOptionValue('custom_dimension_name');
+				if ($custom_name && trim($custom_name) != "") {
+					$label = $custom_name;
+				} else {
+					$label = Localization::instance()->lang(str_replace('_',' ', $ot->getName()) . ($is_multiple ? 's' : ''));
+					if (is_null($label)) {
+						$label = $dimension->getName();
+					}
 				}
 			}
 			
 			if ($dim_association->getIsRequired()) {
 				$label .= " *";
 			}
+			
+			$listeners = array('on_remove_relation' => "$remove_fn('$comp_genid', ".$dimension->getId().", '$hf_name');");
+			
+			Hook::fire("before_render_associated_dimension_selector", array('genid'=>$comp_genid, 'member'=>$member, 'selected_ids'=>$selected_ids, 'dim_association'=>$dim_association), $listeners);
 			
 			$hf_name = 'associated_members['.$dim_association->getId().']';
 			
@@ -483,11 +528,12 @@ function render_associated_dimensions_selectors($params) {
 					'allow_non_manageable' => true, 
 					'hidden_field_name' => $hf_name,
 					'select_function' => $select_fn, 
-					'listeners' => array('on_remove_relation' => "$remove_fn('$comp_genid', ".$dimension->getId().", '$hf_name');"),
+					'listeners' => $listeners,
 					// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
 					'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
 					'width' => 400,
 					'related_member_id' => $member->getId(),
+					'member_association_id' => $dim_association->getId(),
 					'readonly' => array_var($params, 'readonly'),
 				), false);
 			
@@ -713,3 +759,71 @@ function get_object_members_by_type($object, $object_type_id) {
 	return $result;
 }
 
+function check_project_client_compatibility($member_ids) {
+	$result = array('result' => true, 'error_message' => '');
+
+	Env::useHelper('functions', 'crpm');
+	$clients_dim = get_customers_dimension();
+	$project_dim = Dimensions::findByCode('customer_project');
+	if (!$clients_dim || !$project_dim || $clients_dim->getId() == $project_dim->getId()) {
+		return $result;
+	}
+
+	// Check if both client and project dimensions are enabled
+	$client_dim_id = $clients_dim->getId();
+	$project_dim_id = $project_dim->getId();
+	$enabled_dimensions = config_option('enabled_dimensions');
+	if(!in_array($client_dim_id, $enabled_dimensions) || !in_array($project_dim_id, $enabled_dimensions)) return $result;
+
+	
+	// Get client and project member
+	$client_ot_id = ObjectTypes::findByName('customer')->getId();
+	$project_ot_id = ObjectTypes::findByName('project')->getId();
+	$project_member = null;
+	$client_member = null;
+	foreach($member_ids as $m_id){
+		$member = Members::findById($m_id);
+		if($member->getObjectTypeId() == $client_ot_id) $client_member = $member;
+		if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
+	}
+
+	// Return if project is not assigned
+	if(!$project_member instanceof Member) return $result;
+
+	// Get project to client associations ids to make the query
+	$project_client_associations = DimensionMemberAssociations::instance()->getAllAssociations($project_dim_id, $client_dim_id);
+	$project_client_association_ids = array();
+	foreach ($project_client_associations as $project_client_assoc) {
+		$project_client_association_ids[] = $project_client_assoc->getId();
+	}
+	// if there are no associations then return true
+	if (count($project_client_association_ids) == 0) return $result;
+
+	// find all clients related to the project with any dimension association
+	$mpms = MemberPropertyMembers::findAll(array('conditions' => '`association_id` IN (' . implode(',',$project_client_association_ids). ') AND `member_id` = ' . $project_member->getId().' AND `is_active` = 1'));
+
+    // Return true if project doesn't have any client associations
+	if(count($mpms) == 0) return $result;
+
+	// Return false if no client is associated, but project has client associations
+	if(!$client_member instanceof Member){
+		$result['result'] = false;
+		$result['error_message'] = lang('client is not assigned');
+		return $result;
+	}
+
+	// build an array with all the associated client member ids
+	$eligible_client_member_ids = array();
+	foreach($mpms as $mpm){
+		$eligible_client_member_ids[] = $mpm->getPropertyMemberId();
+	}
+
+	// Check if client member is in the list of eligible client members
+	if(in_array($client_member->getId(), $eligible_client_member_ids)){
+		return $result;
+	} else {
+		$result['result'] = false;
+		$result['error_message'] = lang('project and client are not associated with each other');
+		return $result;
+	}
+}

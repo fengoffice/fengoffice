@@ -511,7 +511,7 @@ class Contact extends BaseContact {
 	 * @access public
 	 * @param $typeId
 	 * @param $main
-	 * @return ContactTelephone
+	 * @return ContactAddress
      * @author Seba
 	 */
 	function getAddress($type) {

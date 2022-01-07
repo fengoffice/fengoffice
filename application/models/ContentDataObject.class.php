@@ -1877,7 +1877,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			foreach ($dimensions as $dimension) {
 				if($use_restrictions && !in_array($dimension['dimension_id'], $allowed_dimension_ids)) continue;
 				$dim = Dimensions::getDimensionById($dimension['dimension_id']);
-				if (intval($dim->getOptionValue('showInPaths')) && $dim->getIsManageable()) {
+				if (intval($dim->getOptionValue('showInPaths')) ) {
 					
 					if (!$show_hidden_breadcrumbs) {
 						$hook_return = null;

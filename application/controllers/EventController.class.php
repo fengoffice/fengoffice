@@ -155,9 +155,11 @@ class EventController extends ApplicationController {
 	
 	
 	function getData($event_data, $timezone_offset=null){
+
 		if (is_null($timezone_offset)) {
 			$timezone_offset = logged_user()->getUserTimezoneValue();
 		}
+		
 		// get the day
 			if (array_var($event_data, 'start_value') != '') {
 				$date_from_widget = array_var($event_data, 'start_value');
@@ -171,7 +173,7 @@ class EventController extends ApplicationController {
 				$day = isset($event_data['day'])?$event_data['day']:date('j', DateTimeValueLib::now()->getTimestamp());
 				$year = isset($event_data['year'])?$event_data['year']:date('Y', DateTimeValueLib::now()->getTimestamp());
 			}
-       		
+
 			if (array_var($event_data, 'start_time') != '') {
 				$this->parseTime(array_var($event_data, 'start_time'), $hour, $minute);
 			} else {
@@ -191,7 +193,7 @@ class EventController extends ApplicationController {
 			// get the options
 			$forever = 0;
 			$jump = array_var($event_data,'occurance_jump');
-			
+		
 			if(array_var($event_data,'repeat_option') == 1) $forever = 1;
 			elseif(array_var($event_data,'repeat_option') == 2) $rnum = array_var($event_data,'repeat_num');
 			elseif(array_var($event_data,'repeat_option') == 3) $rend = getDateValue(array_var($event_data,'repeat_end'));
@@ -264,6 +266,7 @@ class EventController extends ApplicationController {
 				
 			// calculate timestamp and durationstamp
 			$dt_start = new DateTimeValue(mktime($hour, $minute, 0, $month, $day, $year) - $timezone_offset);
+
 			$timestamp = $dt_start->format('Y-m-d H:i:s');
 			$dt_duration = DateTimeValueLib::make($dt_start->getHour() + $durationhour, $dt_start->getMinute() + $durationmin, 0, $dt_start->getMonth(), $dt_start->getDay(), $dt_start->getYear());
 			$durationstamp = $dt_duration->format('Y-m-d H:i:s');
@@ -342,6 +345,7 @@ class EventController extends ApplicationController {
 	}
 	
 	function add() {
+
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
@@ -400,11 +404,11 @@ class EventController extends ApplicationController {
 				'durationmin' => isset($_GET['durationmin']) ? $_GET['durationmin'] : 0,
 			); // array
 		} // if
-		
+			
 		tpl_assign('event', $event);
 		tpl_assign('event_data', $event_data);
 		tpl_assign('event_related', false);
-		
+	
 		if (is_array(array_var($_POST, 'event'))) {
 			try {
 				$data = $this->getData($event_data);
@@ -413,7 +417,7 @@ class EventController extends ApplicationController {
 
 				DB::beginWork();
 				$event->save();
-
+	
 				$this->registerInvitations($data, $event);
 
 				if (isset($data['confirmAttendance'])) {
@@ -429,14 +433,14 @@ class EventController extends ApplicationController {
 						if ($selection instanceof Member) $member_ids[] = $selection->getId();
 					}
 				}
-				
+
 				
 				$object_controller = new ObjectController();
+				$object_controller->add_reminders($event);
 				$object_controller->add_to_members($event, $member_ids);
 				$object_controller->add_subscribers($event);
 				$object_controller->link_to_new_object($event);
 				$object_controller->add_custom_properties($event);
-				$object_controller->add_reminders($event);
 
 				if (array_var($_POST, 'popup', false)) {
 					// create default reminder
@@ -986,11 +990,6 @@ class EventController extends ApplicationController {
 				$member_ids = json_decode ( array_var ( $_POST, 'members' ) );
 				
 				$object_controller = new ObjectController ();
-				$object_controller->add_to_members ( $event, $member_ids );
-				$object_controller->add_subscribers ( $event );
-				
-				$object_controller->link_to_new_object ( $event );
-				$object_controller->add_custom_properties ( $event );
 				
 				$old_reminders = ObjectReminders::getByObject ( $event );
 				if ($old_reminders != null) {
@@ -1013,6 +1012,11 @@ class EventController extends ApplicationController {
 					$reminder->save ();
 				}
 				
+				$object_controller->add_to_members ( $event, $member_ids );
+				$object_controller->add_subscribers ( $event );
+				$object_controller->link_to_new_object ( $event );
+				$object_controller->add_custom_properties ( $event );
+
 				$event->resetIsRead ();
 				DB::commit ();
 				
@@ -1327,6 +1331,8 @@ class EventController extends ApplicationController {
 	    	$externalCalendarController->sync_event_on_extern_calendar($event );
 	    }
 	    
+	    Hook::fire("after_event_change_duration", array('event' => $event), $event);
+	    
 	    ajx_extra_data($this->get_updated_event_data($event));
 	    if ($event->isRepetitive()) ajx_current("reload");
 	    else ajx_current("empty");
@@ -1428,6 +1434,8 @@ class EventController extends ApplicationController {
 	    	$externalCalendarController = new ExternalCalendarController();
 	    	$externalCalendarController->sync_event_on_extern_calendar($event );
 	    }
+	    
+	    Hook::fire("after_event_move", array('event' => $event), $event);
     
 	    ajx_extra_data($this->get_updated_event_data($event));
 	    if ($different_days || $event->isRepetitive()) ajx_current("reload");

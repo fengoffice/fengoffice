@@ -1313,7 +1313,9 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
             }
 
             $values = str_replace("\|", "%%_PIPE_%%", $value);
-            $values = str_replace(array("\r", "\n"), " ", $values);
+            //$values = str_replace(array("\r", "\n"), " ", $values);
+            $values = str_replace("\n", "\\n", $values);
+            $values = str_replace("\r", "\\r", $values);
             $exploded = explode("|", $values);
             foreach ($exploded as &$v) {
                 $v = str_replace("%%_PIPE_%%", "|", $v);

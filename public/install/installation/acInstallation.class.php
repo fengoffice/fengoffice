@@ -247,7 +247,7 @@ final class acInstallation {
 	 * @return boolean
 	 */
 	function breakExecution($error_message) {
-		$this->printMessage($error_message, true);
+		$this->printMessage(preg_replace('/\s+/', ' ', trim($error_message)), true);
 		if(is_resource($this->database_connection)) {
 		    @mysqli_query($this->database_connection, 'ROLLBACK');
 		} // if
@@ -348,6 +348,7 @@ final class acInstallation {
         if(@mysqli_query($this->database_connection, trim($query))) {
 					$executed_queries++;
 				} else {
+					$this->printMessage("Found faulty query: " . preg_replace('/\s+/', ' ', trim($query)), true);
 					return false;
 				} // if
 			} // if
@@ -592,7 +593,7 @@ final class acInstallation {
 	 */
 	function installPlugins($pluginNames) {
 
-		if (count($pluginNames)) {
+		if (count(array($pluginNames))) {
 			foreach  ($pluginNames as $name ) {
 			    
 				$path  = INSTALLATION_PATH."/plugins/$name/info.php";
@@ -712,7 +713,7 @@ final class acInstallation {
 						if($this->executeMultipleQueries(tpl_fetch($schema_query), $total_queries, $executed_queries)) {
 							$this->printMessage("Initial data loaded for plugin  '$name'.".mysqli_error($this->database_connection));	
 						}else{
-							$this->breakExecution("Error while loading inital data for plugin '$name'.".mysqli_error($this->database_connection));
+							$this->breakExecution("Error while loading inital data for plugin '$name'. ".mysqli_error($this->database_connection));
 						}	
 					}
 						
@@ -733,7 +734,7 @@ final class acInstallation {
 						}else{
 							echo mysqli_error($this->database_connection);
 							$this->breakExecution("Error while executing install.php for plugin '$name'.".mysqli_error($this->database_connection));
-							DB::rollback();
+							$this->database_connection->rollback();
 							return false;
 						}
 					}

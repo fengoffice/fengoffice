@@ -446,7 +446,7 @@ class DateTimeValue {
 		return $this;
 	}
 	
-	static function FormatTimeDiff(DateTimeValue $dt1, DateTimeValue $dt2=null, $format='yfwdhms', $modulus = 1, $subtract = 0){
+	static function FormatTimeDiff(DateTimeValue $dt1, DateTimeValue $dt2=null, $format='yfwdhms', $modulus = 1, $subtract = 0, $return_raw_data = false){
 		$t1 = $dt1->getTimestamp();
 		if ($dt2)
 			$t2 = $dt2->getTimestamp();
@@ -474,6 +474,9 @@ class DateTimeValue {
 			}else{
 				$out[$k] = 0;
 			}
+		}
+		if ($return_raw_data) {
+			return $out;
 		}
 		$result = '';
 		if ($out['y'] > 0)

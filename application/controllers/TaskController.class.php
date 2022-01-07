@@ -1057,20 +1057,41 @@ class TaskController extends ApplicationController {
         $total_worked = $total_worked_subquery . ") AS group_time_worked ";
         //" total_worked_time AS group_time_worked"
 
-        //querys returning total worked time, total estimated time and total pending time
-        //time worked is the addition of all timeslots minus the addition of all pauses
-        //time estimated is the addition of the substractions of estimated and worked, grouping by task to substract
-        $group_totals = ProjectTasks::instance()->listing(array(
-        		"select_columns" => array("time_estimate", $total_worked, "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
+        $group_totals_financials = array();
+        if (Plugins::instance()->isActivePlugin('advanced_billing')){
+            $total_estimated_cost = "SUM(estimated_cost) AS group_estimated_cost ";
+            $total_estimated_price = "SUM(estimated_price) as group_estimated_price ";
+            $total_executed_cost = "SUM(executed_cost) AS group_executed_cost ";
+            $total_earned_value = "SUM(earned_value) as group_earned_value ";
+
+            $group_totals_financials = ProjectTasks::instance()->listing(array(
+        		"select_columns" => array("executed_cost", "earned_value", "estimated_cost", "estimated_price"),
                     "join_params" => $join_params,
-                    "extra_conditions" => $conditions,
+                    "extra_conditions" => $conditions . ' AND e.parent_id=0 ',
                     "group_by" => "e.`object_id`",
-                    "query_wraper_start" => "SELECT $total_estimated,  SUM(group_time_worked) AS group_time_worked ,COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
+                    "query_wraper_start" => "SELECT $total_estimated_cost, $total_estimated_price, $total_executed_cost, $total_earned_value FROM (",
                     "query_wraper_end" => ") AS pending_calc",
                     "count_results" => false,
 					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
+        } 
+
+        //querys returning total worked time, total estimated time and total pending time
+        //time worked is the addition of all timeslots minus the addition of all pauses
+        //time estimated is the addition of the substractions of estimated and worked, grouping by task to substract
+        $group_totals = ProjectTasks::instance()->listing(array(
+            "select_columns" => array("time_estimate", $total_worked, "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
+                "join_params" => $join_params,
+                "extra_conditions" => $conditions,
+                "group_by" => "e.`object_id`",
+                "query_wraper_start" => "SELECT $total_estimated,  SUM(group_time_worked) AS group_time_worked ,COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
+                "query_wraper_end" => ") AS pending_calc",
+                "count_results" => false,
+                "fire_additional_data_hook" => false,
+                "raw_data" => true,
+            ))->objects;
+        
 
         $group_time_estimate = $group_totals[0]['group_time_estimate'];
         //$group_time_pending = $group_totals[0]['group_time_pending'];
@@ -1084,6 +1105,8 @@ class TaskController extends ApplicationController {
         $totals['worked_time_string'] = ($group_time_worked <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_worked * 60), 'hm', 60));
         $totals['pending_time'] = $group_time_pending;
         $totals['pending_time_string'] = ($group_time_pending <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_pending * 60), 'hm', 60));
+
+        Hook::fire('add_task_group_totals', array('group_totals' => $group_totals, 'group_totals_financials' => $group_totals_financials), $totals);
 
         return $totals;
     }
@@ -1967,6 +1990,18 @@ class TaskController extends ApplicationController {
             }
         }
         
+        $hook_order_result = null;
+        Hook::fire("override_tasks_list_order_by", array('order' => $order, 'join_params' => $join_params), $hook_order_result);
+        if (is_array($hook_order_result)) {
+        	if ($hook_order_result['order']) {
+        		$order = $hook_order_result['order'];
+        		if ($hook_order_result['order_dir']) $order_dir = $hook_order_result['order_dir'];
+        	}
+        	if ($hook_order_result['join_params']) {
+        		$join_params = $hook_order_result['join_params'];
+        	}
+        }
+        
         // when ordering by priority, ensure that they are ordered by name too
         if (in_array($original_order, array('priority', 'assigned_to_contact_id'))) {
         	$order = array($order, array('col' => 'o.name', 'dir' => 'ASC'));
@@ -2202,19 +2237,34 @@ class TaskController extends ApplicationController {
             $order_by = 'name';
             $order_dir = 'ASC';
             $this->getListingOrderBy($order_by, $order_dir);
+            
+            $join_params = null;
+            $hook_order_result = null;
+            Hook::fire("override_tasks_list_order_by", array('order' => $order_by, 'join_params' => $join_params), $hook_order_result);
+            if (is_array($hook_order_result)) {
+            	if ($hook_order_result['order']) {
+            		$order_by = $hook_order_result['order'];
+            		if ($hook_order_result['order_dir']) $order_dir = $hook_order_result['order_dir'];
+            	}
+            	if ($hook_order_result['join_params']) {
+            		$join_params = $hook_order_result['join_params'];
+            	}
+            }
 
             $tasks = ProjectTasks::instance()->listing(array(
+            			"select_columns" => array("e.*", "o.*"),
                         "extra_conditions" => $conditions,
                         "count_results" => false,
 						"fire_additional_data_hook" => false,
                         "order" => $order_by,
                         "order_dir" => $order_dir,
+            			"join_params" => $join_params,
                         "raw_data" => true,
                     ))->objects;
 
             $tasks_array = array();
             foreach ($tasks as $task) {
-                $tasks_array[] = ProjectTasks::getArrayInfo($task);
+            	$tasks_array[] = ProjectTasks::getArrayInfo($task);
             }
         }
 
@@ -2875,6 +2925,8 @@ class TaskController extends ApplicationController {
                     $task->setSessionId(logged_user()->getId());
                 }
 
+                Hook::fire('update_calculated_and_manual_data', $task_data, $task);
+
                 DB::beginWork();
                 $task->save();
 
@@ -2931,12 +2983,19 @@ class TaskController extends ApplicationController {
                         $object_controller->add_to_members($task, $member_ids);
                     }
                 }
+                $notify_subscribers = user_config_option("can notify subscribers");
                 $is_template = $task instanceof TemplateTask;
-                $object_controller->add_subscribers($task, null, !$is_template);
+                $object_controller->add_subscribers($task, null, !$is_template, $notify_subscribers);
                 $object_controller->link_to_new_object($task);
                 $object_controller->add_custom_properties($task);
 
                 $object_controller->add_reminders($task);
+
+
+                if (config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) {
+                    $subtasks = array_var($_POST, 'multi_assignment');
+                    Hook::fire('save_subtasks', array('task' => $task, 'is_new' => true), $subtasks);
+                }
 
                 if ($task instanceof ProjectTask) {
                     $generated_count = $this->repetitive_task($task, array());
@@ -2946,12 +3005,6 @@ class TaskController extends ApplicationController {
                     	$_REQUEST['reload'] = true;
                     }
                 }
-
-                if (config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) {
-                    $subtasks = array_var($_POST, 'multi_assignment');
-                    Hook::fire('save_subtasks', array('task' => $task, 'is_new' => true), $subtasks);
-                }
-
 
                 //for calculate member status we save de task again after the object have the members
                 $task->save();
@@ -3176,7 +3229,8 @@ class TaskController extends ApplicationController {
                     if ($stdata['assigned_to'] > 0 && !in_array($stdata['assigned_to'], $subs)) {
                         $st_subs_array['user_' . $stdata['assigned_to']] = 1;
                     }
-                    $object_controller->add_subscribers($st, $st_subs_array);
+                    $notify_subscribers = user_config_option("can notify subscribers");
+                    $object_controller->add_subscribers($st, $st_subs_array, true, $notify_subscribers);
 
                     if ($new_subtask)
                         $to_log['add'][] = $st;
@@ -3348,7 +3402,6 @@ class TaskController extends ApplicationController {
             } else {
                 $this->getRepeatOptions($task, $occ, $rsel1, $rsel2, $rsel3, $rnum, $rend, $rjump);
             }
-
 
             $dd = $task->getDueDate() instanceof DateTimeValue ? $task->getDueDate() : null;
             if ($dd instanceof DateTimeValue && $task->getUseDueTime()) {
@@ -3589,13 +3642,14 @@ class TaskController extends ApplicationController {
                 if (isset($task_data['percent_completed']) && $task_data['percent_completed'] >= 0 && $task_data['percent_completed'] <= 100) {
                     $task->setPercentCompleted($task_data['percent_completed']);
                 }
+                Hook::fire('update_calculated_and_manual_data', $task_data, $task);
 
                 DB::beginWork();
                 
-                if ($can_manage_repetitive_properties_of_tasks) {
+                if (!$task->isCompleted() && $can_manage_repetitive_properties_of_tasks) {
                 	if (isset($last_repetitive_task) && $last_repetitive_task instanceof ProjectTask) {
                 		// current task is not the last of the repetition
-	                    $this->updateLastTaskRepetitive($last_repetitive_task, $task);
+                		$this->updateLastTaskRepetitive($last_repetitive_task, $task);
 	                    $this->resetRepeatProperties($task);
                 	} else if ($last_related_task_id > 0 && !$last_repetitive_task instanceof ProjectTask) {
                 		// current task is the last of the repetition
@@ -3660,7 +3714,9 @@ class TaskController extends ApplicationController {
                     }
                 }
                 $is_template = $task instanceof TemplateTask;
-                $object_controller->add_subscribers($task, null, !$is_template);
+                $notify_subscribers = user_config_option("can notify subscribers");
+                
+                $object_controller->add_subscribers($task, null, !$is_template, $notify_subscribers);
                 $object_controller->link_to_new_object($task);
                 $object_controller->add_custom_properties($task);
 
@@ -3881,7 +3937,8 @@ class TaskController extends ApplicationController {
                     $isSilent = false;
                 }
                 $task->old_content_object = $old_content_object;
-                ApplicationLogs::createLog($task, ApplicationLogs::ACTION_EDIT, false, false, true, $log_info, $exclude_from_notification);
+                $notify_subscribers = user_config_option("can notify subscribers");
+                ApplicationLogs::createLog($task, ApplicationLogs::ACTION_EDIT, false, !$notify_subscribers, true, $log_info, $exclude_from_notification);
 
                 //flash_success(lang('success edit task list', $task->getObjectName()));
                 if (array_var($_REQUEST, 'modal')) {
@@ -3934,6 +3991,14 @@ class TaskController extends ApplicationController {
                     if ($dd_advance_info != null || $sd_advance_info != null) {
                         evt_add('ask to change subtasks dates', array('dd_diff' => $dd_advance_info, 'sd_diff' => $sd_advance_info, 'task_id' => $task->getId()));
                     }
+                }
+
+                // Calculate task financials for previous parent id
+                $old_parent_id = $old_content_object->getParentId();
+                $task_parent_id = $task->getParentId();
+                if($old_parent_id != $task_parent_id){
+                    $old_parent_task = ProjectTasks::findById($old_parent_id);
+                    Hook::fire('calculate_estimated_and_executed_financials', $params, $old_parent_task);
                 }
             } catch (Exception $e) {
                 DB::rollback();
@@ -4654,6 +4719,13 @@ class TaskController extends ApplicationController {
     }
 
     private function setRepeatOptions(&$task_data) {
+
+		// don't process repetitive options it they are not present in the task's data
+		// to avoid overriding the repetition options defined in the original task if the user doesn't have permissions to edit rep. options.
+		if (!isset($task_data['repeat_option'])) {
+			return;
+		}
+
         // repeat options
         $repeat_d = 0;
         $repeat_m = 0;
@@ -5081,6 +5153,10 @@ class TaskController extends ApplicationController {
     }
 
     function repetitive_tasks_related($task, $action, $type_related = "", $task_data = array()) {
+    	
+    	// if task is completed, only modify the current task, don't affect the rest of the sequence
+    	if ($task->isCompleted()) return array();
+    	
         //I find all those related to the task to find out if the original        
         $task_related = ProjectTasks::findByRelated($task->getObjectId());
         if (!$task_related) {
@@ -5240,10 +5316,11 @@ class TaskController extends ApplicationController {
                 $_POST['subscribers'] = array();
             $_POST['subscribers']['user_' . $task->getAssignedToContactId()] = '1';
         }
+        $notify_subscribers = user_config_option("can notify subscribers");
 
         $object_controller = new ObjectController();
         $object_controller->add_to_members($task, array_var($task_data, 'members'));
-        $object_controller->add_subscribers($task);
+        $object_controller->add_subscribers($task, null, true, $notify_subscribers);
         $object_controller->link_to_new_object($task);
         $object_controller->add_custom_properties($task);
         $object_controller->add_reminders($task);
@@ -5369,7 +5446,7 @@ class TaskController extends ApplicationController {
     
     
     
-    function render_task_work_performed_summary() {
+    function render_task_work_performed_summary() { 
     	ajx_current("empty");
     	$html = '';
     	
@@ -5382,6 +5459,18 @@ class TaskController extends ApplicationController {
     	ajx_extra_data(array('html' => $html));
     }
 
+
+    function render_task_financials_summary() { 
+    	ajx_current("empty");
+    	$html = '';
+    	
+    	$object = ProjectTasks::findById(get_id());
+    	if ($object instanceof ProjectTask && Plugins::instance()->isActivePlugin('advanced_billing')) {
+    		Env::useHelper('functions', 'advanced_billing');
+            $html = get_task_estimated_executed_view_info($object);
+    	}
+    	ajx_extra_data(array('html' => $html));
+    }
     
     
     /**

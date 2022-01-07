@@ -1353,7 +1353,7 @@ function build_report_conditions_sql($parameters) {
 									}
 									switch($condField->getCondition()){
 										case '=':
-											$current_condition .= $equal;
+											$current_condition .= $value != '' ? $equal : '';																					
 											break;
 										case '<=':
 										case '>=':

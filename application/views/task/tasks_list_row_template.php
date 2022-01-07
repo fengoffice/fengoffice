@@ -251,50 +251,54 @@
     {{/if}}
 
     {{#if draw_options.show_time_quick}}
-    <div class="task-single-div">
-      <a class="internalLink task-single-div big-ico" href="#" onclick="ogTasks.AddWorkTime([{{task.id}}])">
-        <div title="{{lang 'add work'}}" class="ogTasksTimeClock ico-time-quick task-action-icon"></div>
-      </a>
+      {{#unless_or task.is_parent task.prevent_add_time_to_parent_task}}
+        <div class="task-single-div">
+          <a class="internalLink task-single-div big-ico" href="#" onclick="ogTasks.AddWorkTime([{{task.id}}])">
+            <div title="{{lang 'add work'}}" class="ogTasksTimeClock ico-time-quick task-action-icon"></div>
+          </a>
+        </div>
+      {{/unless_or}}
     {{/if}}
 
 
 
     {{#if draw_options.show_time}}
-    <div class="task-single-div big-ico">
-    {{#if user_is_working}}
-      <div class="og-timeslot-work-{{user_state}} task-single-div">
-        <input type="hidden" value="{{user_start_time}}" id="{{genid}}{{tgId}}user_start_time" name="user_start_time">
-        <span id="{{genid}}{{tgId}}timespan{{user_paused_time}}">{{user_paused_time}}</span>
-      </div>
+      {{#unless_or task.is_parent task.prevent_add_time_to_parent_task}}
+      <div class="task-single-div big-ico">
+      {{#if user_is_working}}
+        <div class="og-timeslot-work-{{user_state}} task-single-div">
+          <input type="hidden" value="{{user_start_time}}" id="{{genid}}{{tgId}}user_start_time" name="user_start_time">
+          <span id="{{genid}}{{tgId}}timespan{{user_paused_time}}">{{user_paused_time}}</span>
+        </div>
 
-      <a href='#' class="task-single-div" onclick='ogTasks.closeTimeslot([{{task.id}}])' data-id="{{task.id}}">
-        <div class='ogTasksTimeClock ico-time-stop task-action-icon' title='{{lang 'close_work'}}'></div>
-      </a>
+        <a href='#' class="task-single-div" onclick='ogTasks.closeTimeslot([{{task.id}}])' data-id="{{task.id}}">
+          <div class='ogTasksTimeClock ico-time-stop task-action-icon' title='{{lang 'close_work'}}'></div>
+        </a>
 
-      {{#if user_paused}}
-      <a href='#' class="task-single-div" onclick='ogTasks.executeAction("resume_work",[{{task.id}}])'>
-        <div class='ogTasksTimeClock ico-time-play task-action-icon' title='{{lang 'pause_work'}}'></div>
-      </a>
+        {{#if user_paused}}
+        <a href='#' class="task-single-div" onclick='ogTasks.executeAction("resume_work",[{{task.id}}])'>
+          <div class='ogTasksTimeClock ico-time-play task-action-icon' title='{{lang 'pause_work'}}'></div>
+        </a>
+        {{else}}
+        <a href='#' class="task-single-div" onclick='ogTasks.executeAction("pause_work",[{{task.id}}])'>
+          <div class='ogTasksTimeClock ico-time-pause task-action-icon' title='{{lang 'pause_work'}}'></div>
+        </a>
+        {{/if}}
       {{else}}
-      <a href='#' class="task-single-div" onclick='ogTasks.executeAction("pause_work",[{{task.id}}])'>
-        <div class='ogTasksTimeClock ico-time-pause task-action-icon' title='{{lang 'pause_work'}}'></div>
+        {{#if can_add_timeslots}}
+        <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}],'','#tasksPanelContainer')">
+          <div title="{{lang 'start_work'}}" class="ogTasksTimeClock ico-time task-action-icon"></div>
+        </a>
+        {{/if}}
+      {{/if}}
+
+      {{#if show_working_on_users}}
+      <a class="internalLink tasksActionsBtn task-single-action" href="#" id="workingOnUsersbtn{{tgId}}" data-templateid="workingOnUsers{{tgId}}" data-container="body" data-toggle="popover" data-placement="left" data-trigger="hover" >
+        <div class="ogTasksTimeClock ico-b-users task-action-icon"></div>
       </a>
       {{/if}}
-    {{else}}
-      {{#if can_add_timeslots}}
-      <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}],'','#tasksPanelContainer')">
-        <div title="{{lang 'start_work'}}" class="ogTasksTimeClock ico-time task-action-icon"></div>
-      </a>
-      {{/if}}
-    {{/if}}
-
-    {{#if show_working_on_users}}
-    <a class="internalLink tasksActionsBtn task-single-action" href="#" id="workingOnUsersbtn{{tgId}}" data-templateid="workingOnUsers{{tgId}}" data-container="body" data-toggle="popover" data-placement="left" data-trigger="hover" >
-      <div class="ogTasksTimeClock ico-b-users task-action-icon"></div>
-    </a>
-    {{/if}}
-
-    </div>
+      </div>
+      {{/unless_or}}
     {{/if}}
   </td>
 

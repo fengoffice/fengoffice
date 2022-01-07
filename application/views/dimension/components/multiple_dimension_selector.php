@@ -169,12 +169,17 @@ if (array_var($options, 'readonly')) {
 		reloadDimensions: <?php echo $reloadDimensions ?>,
 		isMultiple: <?php echo $dimension['is_multiple'] ? '1' : '0'?>,
 		allowedMemberTypes: <?php echo json_encode($allowed_member_type_ids)?>,
+		dontSelectAssociatedMembers: <?php echo array_var($options,'dont_select_associated_members') ? '1' : '0'?>,
 		listeners: <?php echo $listeners_str ?>
 	};
 
 	if (member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'].listeners.after_render) {
 		eval(member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'].listeners.after_render);
 	}
+	
+	<?php if (array_var($options, 'member_association_id')) { ?>
+	member_selector['<?php echo $genid; ?>'].member_association_id = <?php echo array_var($options, 'member_association_id') ?>;
+	<?php } ?>
 
 	</script>
 <?php

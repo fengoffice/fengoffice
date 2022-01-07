@@ -811,6 +811,8 @@
 
   	'x members deleted' => '{1} {0} deleted succesfully.',
   	'x members deleted y members not deleted' => '{1} {0} deleted succesfully, {2} {0} not deleted.',
+    'project and client are not associated with each other' => 'Project and client are not associated with each other',
+    'client is not assigned' => 'Client is not assigned'
   ); // array
 
 ?>

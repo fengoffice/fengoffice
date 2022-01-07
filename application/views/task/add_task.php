@@ -155,10 +155,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php 
 			$can_notify_assigned = user_config_option('can notify from quick add');
 			$is_assigned = array_var($task_data, 'assigned_to_contact_id') != 0;
-			$assigned_to_me = array_var($task_data, 'assigned_to_contact_id') == logged_user()->getId(); 
-			
+			$assigned_to_me = array_var($task_data, 'assigned_to_contact_id') == logged_user()->getId(); 			
 			$show_notif_checkbox_div = $can_notify_assigned && $task->isNew() && $is_assigned && !$assigned_to_me;
 			$check_notif_checkbox = $show_notif_checkbox_div;
+			
 		?>
 		
 		<div id="<?php echo $genid ?>taskFormSendNotificationDiv" style="display:<?php echo ($show_notif_checkbox_div ? 'block' : 'none') ?>" class="dataBlock">
@@ -206,7 +206,12 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			}
 		?>
     	<div class="clear"></div>
-		<?php if(config_option('use_task_estimated_time')){?>
+		<?php 
+		
+			$prevent_adding_estimated_time_to_parent = false;					
+			Hook::fire('get_prevent_adding_time_to_parent', array('time_type' => 'estimated', 'is_parent' => $task->isParent()), $prevent_adding_estimated_time_to_parent);						
+			
+			if(config_option('use_task_estimated_time') && !$prevent_adding_estimated_time_to_parent){?>
 			<div class="dataBlock" id='<?php echo $genid ?>add_task_time_div'>
 			<?php
 				echo label_tag(lang('estimated time'));
@@ -222,6 +227,14 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					$minutes = ($totalTime % 60);
 					$minuteOptions = array(0,5,10,15,20,25,30,35,40,45,50,55);
 					Hook::fire('override_minute_options', array('name' => 'minuteOptions'), $minuteOptions);
+					
+					// if the task has an amount of minutes that is not present in the minuteOptions then add it
+					// this can happen when estimated time is calculated using some formula in a template
+					if (!in_array($minutes, $minuteOptions)) {
+						$minuteOptions[] = $minutes;
+						sort($minuteOptions, SORT_NUMERIC);
+					}
+
 					$options_count = count($minuteOptions);
 					for($i = 0; $i < $options_count; $i++) {
 						echo "<option value=\"" . $minuteOptions[$i] . "\"";

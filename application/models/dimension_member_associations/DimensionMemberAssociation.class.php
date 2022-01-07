@@ -19,6 +19,17 @@ class DimensionMemberAssociation extends BaseDimensionMemberAssociation {
 		return $config;
 	}
 	
+	function getConfigTypes() {
+		$config = array();
+		
+		$config_objects = DimensionAssociationsConfigs::findAll(array('conditions' => "association_id=".$this->getId()));
+		foreach ($config_objects as $c) {
+			$config[$c->getConfigName()] = $c->getType();
+		}
+		
+		return $config;
+	}
+	
 	
 	function getArrayInfo(Dimension $dim_reference) {
 		$assoc = $this;
@@ -42,6 +53,11 @@ class DimensionMemberAssociation extends BaseDimensionMemberAssociation {
 			$assoc_dimension_name = $assoc_dim->getName();
 			$assoc_dimension_code = $assoc_dim->getCode();
 			$assoc_object_type_id = $assoc->getObjectTypeId();
+		}
+		
+		$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($assoc->getId(), 'custom_association_name');
+		if ($custom_assoc_name) {
+			$assoc_dimension_name = $custom_assoc_name;
 		}
 			
 		$info = array(

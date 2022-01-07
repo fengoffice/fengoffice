@@ -4214,7 +4214,7 @@ og.getDateToolbarFilterComponent = function (config) {
                     handler: function () {
                         var man = Ext.getCmp(config.grid_id);
                         if (man.filters[config.name])
-                            man.filters[config.name].value = null;
+                            man.filters[config.name].value = '';
                         man.load();
                         this.hide();
                         Ext.getCmp(config.name).setText(lang('select a date'));
@@ -4725,8 +4725,9 @@ og.quick_add_row_member_selector = function(dim_id, genid, hf_name, sel_mem_ids,
 			hideLoading: true,
 			callback: function(success, data) {
 				if (success) {
-					var container_id = genid + 'members_' + dim_id;
+					var container_id = data.genid + 'members_' + data.dim_id;
 					$("#" + container_id).html(data.current.data);
+					
 				}
 			}
 		});
@@ -4746,13 +4747,19 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 
 	$(add_row).find('input, select').each(function() {
 		if ($(this).attr('name').indexOf('members_input_') == 0) {
-			var mem_ids = Ext.util.JSON.decode($(this).val());
+			//var mem_ids = Ext.util.JSON.decode($(this).val());
 			//member_ids = member_ids.concat(mem_ids);
-			member_ids = mem_ids; // keep only the last one, it is the only that is updated with all member ids
 		} else {
 			params[$(this).attr('name')] = $(this).val();
 		}
 	});
+	
+	if (member_selector[grid.genid] && member_selector[grid.genid].sel_context) {
+		for (did in member_selector[grid.genid].sel_context) {
+			var mem_ids = member_selector[grid.genid].sel_context[did];
+			member_ids = member_ids.concat(mem_ids);
+		}
+	}
 
 	if (member_ids.length > 0) {
 		params['members'] = Ext.util.JSON.encode(member_ids);
@@ -5210,6 +5217,11 @@ og.format_money_amount = function(amount, decimals) {
 	var locale = og.preferences.thousand_separator == ',' ? 'en' : 'it';
 	
 	return amount.toLocaleString(locale, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+
+og.updateElementMoneyAmount = function(id, value){
+	var formatted_value = og.format_money_amount(value);
+	$('#'+id).val(formatted_value);
 }
 
 og.clean_thousand_separator = function(amount) {

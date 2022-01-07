@@ -10,17 +10,30 @@
   	 */
   	static function ensureAllAssociationsHaveConfigOptions() {
   		DB::execute("
-  			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value)
-				SELECT id, 'autoclassify_in_property_member', '1'
+  			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value, type)
+				SELECT id, 'autoclassify_in_property_member', '1', 'boolean'
 				FROM ".TABLE_PREFIX."dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM ".TABLE_PREFIX."dimensions WHERE code='feng_persons')
 			ON DUPLICATE KEY UPDATE value=value;
   		");
-		DB::execute("
-			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value)
-				SELECT id, 'allow_remove_from_property_member', '1'
+  		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value, type)
+				SELECT id, 'allow_remove_from_property_member', '1', 'boolean'
 				FROM ".TABLE_PREFIX."dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM ".TABLE_PREFIX."dimensions WHERE code='feng_persons')
 			ON DUPLICATE KEY UPDATE value=value;
   		");
+  		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."dimension_associations_config (association_id, config_name, value, type)
+				SELECT id, 'custom_association_name', '', 'text'
+				FROM ".TABLE_PREFIX."dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM ".TABLE_PREFIX."dimensions WHERE code='feng_persons')
+			ON DUPLICATE KEY UPDATE value=value;
+  		");
+  		
+  		// ensure that all associations have their code
+  		DB::execute("
+			update ".TABLE_PREFIX."dimension_member_associations dma
+			set dma.code = coalesce(concat((select name from ".TABLE_PREFIX."object_types where id=dma.object_type_id),'_',(select name from ".TABLE_PREFIX."object_types where id=dma.associated_object_type_id)),'')
+			where dma.code='';
+		");
   	}
   	
   	static function getConfigValue($association_id, $config_name) {

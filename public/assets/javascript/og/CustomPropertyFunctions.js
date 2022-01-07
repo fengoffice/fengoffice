@@ -132,6 +132,9 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 		if (property.is_import_id) {
 			$(pre_id + " #is_import_id").attr('checked', 'checked');
 		}
+		if (property.is_inheritable) {
+			$(pre_id + " #is_inheritable").attr('checked', 'checked');
+		}
 		if (property.contact_type) {
 			$(pre_id + " #contact_type").val(property.contact_type);
 		}

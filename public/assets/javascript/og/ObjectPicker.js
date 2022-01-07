@@ -31,7 +31,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
             	fields: [
 	                'name', 'object_id', 'type', 'ot_id', 'icon', 'object_id', 'mimeType',
 	                'createdBy', 'createdById', 'dateCreated',
-					'updatedBy', 'updatedById', 'dateUpdated'
+					'updatedBy', 'updatedById', 'dateUpdated', 'startDate', 'dueDate'
             	]
         	}),
         	remoteSort: true,
@@ -80,45 +80,46 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		}
 
 		var sm = new Ext.grid.RowSelectionModel();
-		var cm = new Ext.grid.ColumnModel([{
-	        	id: 'icon',
-	        	header: '&nbsp;',
-	        	dataIndex: 'icon',
-	        	width: 28,
-	        	renderer: renderIcon,
-	        	sortable: false,
-	        	fixed:true,
-	        	resizable: false,
-	        	hideable:false,
-	        	menuDisabled: true
-	        },{
+
+		var arrayColumns = [{
+				id: 'icon',
+				header: '&nbsp;',
+				dataIndex: 'icon',
+				width: 28,
+				renderer: renderIcon,
+				sortable: false,
+				fixed:true,
+				resizable: false,
+				hideable:false,
+				menuDisabled: true
+			},{
 				id: 'name',
 				header: lang("name"),
 				dataIndex: 'name',
 				renderer: og.clean
 				//,width: 120
-	        },{
+			},{
 				id: 'type',
 				header: lang('type'),
 				dataIndex: 'type',
 				width: 60,
 				hidden: true,
 				sortable: false
-	        },{
+			},{
 				id: 'last',
 				header: lang("last update"),
 				dataIndex: 'dateUpdated',
 				width: 60,
 				renderer: renderDate
-	        },{
-	        	id: 'user',
-	        	header: lang('user'),
-	        	dataIndex: 'updatedBy',
-	        	width: 60,
-	        	renderer: og.clean,
-	        	sortable: false,
+			},{
+				id: 'user',
+				header: lang('user'),
+				dataIndex: 'updatedBy',
+				width: 60,
+				renderer: og.clean,
+				sortable: false,
 				hidden: true
-	        },{
+			},{
 				id: 'created',
 				header: lang("created on"),
 				dataIndex: 'dateCreated',
@@ -132,9 +133,28 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				width: 60,
 				renderer: og.clean,
 				hidden: true
-			}]);
+			},{
+				id: 'start',
+				header: lang("start date"),
+				dataIndex: 'startDate',
+				width: 60,
+				renderer: renderDate,
+				sortable: false,
+				hidden: false
+			},{
+				id: 'due',
+				header: lang("due date"),
+				dataIndex: 'dueDate',
+				width: 60,
+				renderer: renderDate,
+				sortable: false,
+				hidden: false
+			}
+		];
+
+		var cm = new Ext.grid.ColumnModel(arrayColumns);
 	    cm.defaultSortable = true;
-    
+
 		Grid.superclass.constructor.call(this, Ext.apply(config, {
 	        store: this.store,
 			layout: 'fit',
@@ -163,6 +183,33 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		},
 		
 		filterSelect: function(filter) {
+
+			// get column index for the columns we are going to modify
+			var dueDateIndex = this.getColumnModel().findColumnIndex('dueDate');
+			var startDateIndex = this.getColumnModel().findColumnIndex('startDate');
+			var nameIndex = this.getColumnModel().findColumnIndex('name');
+			var lastUpdateIndex = this.getColumnModel().findColumnIndex('dateUpdated');
+
+			/**
+			 * If the User clicks on Task dimension (in Link Objects modal), the startDate and dueDate
+			 * columns will be visible.
+			 * Sets width of columns to see better.
+			 */
+			let filtersMenu = filter.type.split(',');
+			if(filtersMenu.indexOf("task") > -1) {
+ 				this.getColumnModel().setHidden(startDateIndex, false);
+				this.getColumnModel().setHidden(dueDateIndex, false);
+			}
+			else {
+				this.getColumnModel().setHidden(startDateIndex, true);
+				this.getColumnModel().setHidden(dueDateIndex, true);
+			}
+			this.getColumnModel().setColumnWidth(nameIndex, 400);//name
+			this.getColumnModel().setColumnWidth(lastUpdateIndex, 130);//last update
+			this.getColumnModel().setColumnWidth(startDateIndex, 130);//start date
+			this.getColumnModel().setColumnWidth(dueDateIndex, 130);//due date
+			//console.log(filter.type);
+
 			if (filter && filter.filter == 'type') {
 				this.type = filter.type;
 				this.store.baseParams.type = this.type;

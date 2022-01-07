@@ -3,7 +3,7 @@
 	$hidden_dim_ids = array();
 	
 	$enabled_dimensions = config_option('enabled_dimensions');
-	$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',',$enabled_dimensions).') AND is_manageable=1'));
+	$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',',$enabled_dimensions).') '));
 	foreach ($dimensions as $dimension) {
 		if (in_array($dimension->getCode(), array('feng_users', 'feng_persons'))) continue;
 		
@@ -33,7 +33,7 @@
 		}
 		
 		if (in_array($dimension->getCode(), array('feng_users', 'feng_persons')) || !in_array($dimension->getId(), $enabled_dimensions) 
-				|| !$dimension->getIsManageable() || in_array($dimension->getId(), $hidden_dim_ids)) {
+				 || in_array($dimension->getId(), $hidden_dim_ids)) {
 			continue;
 		}
 		

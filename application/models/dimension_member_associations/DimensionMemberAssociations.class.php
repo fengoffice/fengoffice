@@ -6,6 +6,12 @@
   * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
   */
   class DimensionMemberAssociations extends BaseDimensionMemberAssociations {
+  	
+  	
+  	static function getAssociationByCode($code) {
+  		return self::findOne(array("conditions" => array("`code`=?", $code)));
+  	}
+  	
     
     function getAssociatedDimensions($associated_dimension_id) {
 

@@ -11,7 +11,7 @@ class CustomPropertyValues extends BaseCustomPropertyValues {
 	 *
 	 * @param $object_id
 	 * @param $custom_property_id
-	 * @return array
+	 * @return CustomPropertyValue
 	 */
 	static function getCustomPropertyValue($object_id, $custom_property_id) {
 		return self::findOne(array(

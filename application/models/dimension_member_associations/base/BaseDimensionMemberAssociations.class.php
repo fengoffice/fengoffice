@@ -24,6 +24,7 @@
     	'is_multiple' => DATA_TYPE_BOOLEAN, 
     	'keeps_record' => DATA_TYPE_BOOLEAN,
     	'allows_default_selection' => DATA_TYPE_BOOLEAN,
+    	'code' => DATA_TYPE_STRING,
     );
   
     /**

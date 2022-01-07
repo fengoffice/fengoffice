@@ -119,7 +119,7 @@
 				    		renderTo:'<?php echo $genid.$condition->getId(); ?>external_field_combo_container',
 				    		name: "params[<?php echo $condition->getId(); ?>]",
 				    		id: '<?php echo $genid.$condition->getId(); ?>external_field_combo',
-				    		value: '0',
+				    		value: '',
 				    		store: external_fields_store,
 				    		mode: 'local',
 				            cls: 'assigned-to-combo',
@@ -128,11 +128,12 @@
 				            width: 244,
 				            listWidth: 244,
 				            listClass: 'assigned-to-combo-list',
-				            displayField    : 'name',
-				            valueField        : 'id',
+				            displayField: 'name',
+				            valueField: 'id',
+							forceSelection: true,
 				            hiddenName : "params[<?php echo $condition->getId(); ?>]",
 				            emptyText: '',
-				            valueNotFoundText: ''
+				            valueNotFoundText: ''							
 				    	});
 				</script>
 
@@ -208,6 +209,12 @@ og.on_custom_report_param_disable = function(checkbox) {
 var firstCond = Ext.getDom('<?php echo $firstId ?>');
 if (firstCond)
 	firstCond.focus();
+
+tsContactCombo.on("select", function(){
+	if(this.value == 'all') {
+		document.getElementById(this.hiddenName).value = ''		
+	}
+})
 </script>
 
 </form>

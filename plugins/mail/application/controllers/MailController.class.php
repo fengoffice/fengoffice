@@ -749,7 +749,8 @@ class MailController extends ApplicationController {
 						//send mail
                         try {
 
-                        	Hook::fire("after_add_mail_content", array("mail" => $mail, "mail_data" => $mail_data));
+                        	$null = null;
+                        	Hook::fire("after_add_mail_content", array("mail" => $mail, "mail_data" => $mail_data), $null);
                         	
                         	if (config_option('send_outbox_emails_in_background')) {
                         		// call a background process to send the email
@@ -757,6 +758,8 @@ class MailController extends ApplicationController {
                         		send_outbox_emails_in_background($account);
                         		
                         		flash_success(lang('success mail enqueued'));
+
+								MailController::outbox_popup();
                         	
                         	} else {
                         		// send the email inmediatelly
@@ -764,6 +767,8 @@ class MailController extends ApplicationController {
 	                                $from_time = DateTimeValueLib::now();
 	                                $from_time = $from_time->add('h', -24);
 	                                $this->send_outbox_mails(null,$account,$from_time);
+
+									MailController::outbox_popup();
 	                            }
                         	}
                         	
@@ -771,6 +776,8 @@ class MailController extends ApplicationController {
                             Logger::log("Fail to send the mail the first time object id: ".$mail->getObjectId());
                             Logger::log($e->getMessage());
                             evt_add("must send mails", array("account" => $mail->getAccountId()));
+
+							MailController::outbox_popup();
                         }
 						//flash_success(lang('mail is being sent'));
 						ajx_current("back");
@@ -1022,6 +1029,8 @@ class MailController extends ApplicationController {
 							DB::commit();
 						} else {
 							Logger::log("Swift returned sentOK = false after sending email\nmail_id=".$mail->getId());
+							evt_add("error sending mail");							
+							
 							// set status to a higher and pair value, to retry later.
 							if (!$mail->addToStatus(1)) Logger::log("Swift could not send the email and the state could not be set to retry later.\nmail_id=".$mail->getId());
 						}
@@ -1095,7 +1104,7 @@ class MailController extends ApplicationController {
 								}
 							}
 
-							$properties = array("id" => $mail->getId());
+							$properties = array("id" => $mail->getId());							
 							evt_add("mail sent", $properties);
 							$count++;
 						}
@@ -1104,7 +1113,7 @@ class MailController extends ApplicationController {
 						DB::rollback();
 						Logger::log("Exception deleting tmp repository files (attachment list): ".$e->getMessage()."\nmail_id=".$mail->getId());
 					}
-				}
+				}				
 				if ($count > 0) {
 					evt_add("mails sent", $count);
 				}
@@ -2154,6 +2163,21 @@ class MailController extends ApplicationController {
 	}
 
 
+	function outbox_popup() {
+		
+		$outbox_total = MailContents::countOutboxEmails($this->get_account_ids(), 'outbox')['outbox_total'];
+		
+		$outbox_not_empty = $outbox_total > 0;
+		if($outbox_not_empty) {
+			evt_add("popup", array(
+				'title' => lang("mails_in_outbox reminder"),
+				'message' => lang("mails_in_outbox reminder desc", $outbox_total),
+				'type' => 'reminder',
+				'sound' => 'info'
+			));
+		}
+	}
+	
 	function checkmail() {
 		@set_time_limit(0);
 
@@ -2195,6 +2219,8 @@ class MailController extends ApplicationController {
 
 		ajx_add("overview-panel", "reload");
 
+		$this->outbox_popup();
+		
 		return array($err, $errMessage);
 	}
 
@@ -2324,7 +2350,12 @@ class MailController extends ApplicationController {
 					} else {
 						$mu = new MailUtilities();
 						$can_detect_special_folders = false;
-						$real_folders = $mu->get_imap_account_mailboxes($mailAccount, $can_detect_special_folders);
+						try {
+							$real_folders = $mu->get_imap_account_mailboxes($mailAccount, $can_detect_special_folders);
+						} catch (Exception $e) {
+							Logger::log_r("ERROR AT ".__FUNCTION__.": when getting imap account mailboxes. ".$e->getMessage());
+							$real_folders = array();
+						}
 						foreach ($real_folders as $folder_data) {
 							$folder_name = array_var($folder_data['name']);
 							if (!MailAccountImapFolders::findById(array('account_id' => $mailAccount->getId(), 'folder_name' => $folder_name))) {
@@ -2863,6 +2894,42 @@ class MailController extends ApplicationController {
 	}//edit_mail
 
 
+	function get_account_ids($user = null){
+		
+		if(!$user) $user = logged_user();
+
+		$accounts = MailAccounts::getMailAccountsByUser($user);
+		if(sizeof($accounts) > 0) {
+			$account_ids = array();
+
+			foreach ($accounts as $acc) {
+				$account_ids[] = $acc->getId();
+			}
+
+			return implode(",",$account_ids);
+		}				
+
+		return;
+
+	}
+
+	function get_count(){	
+		
+		ajx_current("empty");
+		
+		$state = array_var($_GET, 'state');
+		$acc_ids = $this->get_account_ids();
+		
+		if($acc_ids) {
+			$res = MailContents::countOutboxEmails($acc_ids, $state);
+		} else {
+			$res = 0;
+		}
+			
+		ajx_extra_data($res);	
+
+	}
+	
 	/**
 	 * Lists emails.
 	 *

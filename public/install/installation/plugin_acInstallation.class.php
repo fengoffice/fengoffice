@@ -706,7 +706,7 @@ final class acInstallation {
 						    $this->printMessage("Initial data loaded for plugin  '$name'.".mysqli_error($this->database_connection));	
 						}else{
 						    echo mysqli_error($this->database_connection);
-							$this->breakExecution("Error while loading inital data for plugin '$name'.".mysqli_error($this->database_connection));
+							$this->breakExecution("Error while loading inital data for plugin '$name'. ".mysqli_error($this->database_connection));
 							DB::rollback();
 							return false;
 						}	

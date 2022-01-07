@@ -501,9 +501,12 @@ og.objectPropertyChanged = function(obj_id, count, value){
 		var prop = propertySel[selectedPropIndex];
 		var propValueTD = document.getElementById('propSel[' + obj_id + '][' + count + ']');
 		var datePropTD = document.getElementById('datePropTD[' + obj_id + '][' + count + ']');
-		if(datePropTD != null){
-			datePropTD.innerHTML = '';
-		}
+		if (datePropTD != null) datePropTD.innerHTML = '';
+		var numericPropTD = document.getElementById('numericPropTD[' + obj_id + '][' + count + ']');
+		if (numericPropTD != null) numericPropTD.innerHTML = '';
+		var timePropTD = document.getElementById('timePropTD[' + obj_id + '][' + count + ']');
+		if (timePropTD != null) timePropTD.innerHTML = '';
+		
 		var id = 0;
 		var propSel = document.getElementById('objectProperties[' + obj_id + '][' + id + ']');
 		while(propSel != null){
@@ -615,6 +618,24 @@ og.objectPropertyChanged = function(obj_id, count, value){
 					});
 				}
 			}
+		} else if (prop.className == 'INTEGER' || prop.className == 'FLOAT') {
+			
+			var newTD = document.createElement('td');
+			newTD.id = 'numericPropTD[' + obj_id + '][' + count + ']';
+			
+			propValueTD.parentNode.appendChild(newTD);
+
+			og.numericPropertyTypeSel(count, obj_id, value);
+
+		} else if (prop.className == 'TIME') {
+			
+			var newTD = document.createElement('td');
+			newTD.id = 'timePropTD[' + obj_id + '][' + count + ']';
+			
+			propValueTD.parentNode.appendChild(newTD);
+
+			og.timePropertyTypeSel(count, obj_id, value);
+
 		}else{
 			propValueTD.innerHTML = '';
 		}
@@ -657,7 +678,7 @@ og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
 			var html = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + 
 				selectParam + '&nbsp;<select name="propValueOperation[' + obj_id + '][' + prop + ']" id="propValueOperation[' + obj_id + '][' + prop + ']">' +
 				'<option>+</option><option>-</option></select>&nbsp;' + 
-				'<input name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:30px;" />' +
+				'<input name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:50px;" type="number" step="any" />' +
 				'&nbsp;<select name="propValueUnit[' + obj_id + '][' + prop + ']" id="propValueUnit[' + obj_id + '][' + prop + ']">' + 
 				'<option value="i">'+ lang('minutes') + '</option><option value="d" selected="selected">'+ lang('days') + '</option>' +
 				'<option value="w">'+ lang('weeks') + '</option><option value="m">'+ lang('months') + '</option></select>';
@@ -689,6 +710,139 @@ og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
 	}
 };
 
+
+
+og.numericPropertyTypeSel = function(count, obj_id, value) {
+
+	if (og.override_template_numeric_property_selector && typeof(og.override_template_numeric_property_selector) == 'function') {
+		og.override_template_numeric_property_selector.call(null, count, obj_id, value);
+		return;
+	}
+	
+	var numericPropTD = document.getElementById('numericPropTD[' + obj_id + '][' + count + ']');
+	
+	numericPropTD.innerHTML = '';
+	
+	var propertySel = document.getElementById('objectProperties[' + obj_id + '][' + count + ']');
+	var prop = propertySel[propertySel.selectedIndex].value;
+	
+	var amount = '';
+	var param = "";
+	var operator = "+";
+	// parse the already defined value if exists
+	if(value.indexOf("+") != -1 || value.indexOf("-") != -1){
+		var posOp = 0;
+		if(value.indexOf("+") != -1){
+			posOp = value.indexOf("+");
+		}
+		if (value.indexOf("-") != -1){
+			posOp = value.indexOf("-");
+			operator = "-";
+		}
+		param = value.substring(0, posOp);
+		amount = value.substring(posOp + 1);
+	}
+	
+	// selectbox with numeric variables
+	selectParam = '<select name="propValueParam[' + obj_id + '][' + prop + ']" id="propValueParam[' + obj_id + '][' + prop + ']" >';
+	for (var j=0; j < og.templateParameters.length; j++) {
+		var item = og.templateParameters[j];
+		if (item.type.toUpperCase() == "NUMERIC") {
+			var param_selected = param == '{'+item['name']+'}' ? 'selected="selected"' : '';
+			selectParam += '<option value="'+ item['name'] +'" '+ param_selected +'>' + item['name'] + '</option>';
+		}
+	}
+	selectParam += '</select>';
+
+	var html = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + selectParam + '&nbsp;';
+
+	// operator selctor
+	html += '<select name="propValueOperation[' + obj_id + '][' + prop + ']" id="propValueOperation[' + obj_id + '][' + prop + ']">' +
+		'<option '+ (operator == "+" ? 'selected="selected"' : '') +'>+</option>' +
+		'<option '+ (operator == "-" ? 'selected="selected"' : '') +'>-</option>' +
+		'</select>&nbsp;';
+
+	// amount input
+	html += '<input type="number" step="any" name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:50px;" value="'+amount+'"/>';
+		
+	numericPropTD.innerHTML = html;
+	
+};
+
+
+og.timePropertyTypeSel = function(count, obj_id, value) {
+
+	var timePropTD = document.getElementById('timePropTD[' + obj_id + '][' + count + ']');
+	
+	timePropTD.innerHTML = '';
+	
+	var propertySel = document.getElementById('objectProperties[' + obj_id + '][' + count + ']');
+	var prop = propertySel[propertySel.selectedIndex].value;
+	
+	var param = "";
+	var var_unit = "h";
+	var operator = "+";
+	var amount = "";
+	var unit = "h";
+	// parse the already defined value if exists
+	if(value.indexOf("+") != -1 || value.indexOf("-") != -1){
+		var posOp = 0;
+		if(value.indexOf("+") != -1){
+			posOp = value.indexOf("+");
+		}
+		if (value.indexOf("-") != -1){
+			posOp = value.indexOf("-");
+			operator = "-";
+		}
+		param = value.substring(0, posOp - 1);
+		var_unit = value.substring(posOp - 1, posOp);
+		amount = value.substring(posOp + 1, value.length - 1);
+		unit = value.substring(value.length - 1);
+	}
+
+	// value = "[var][unit][operator][amount][amount_unit]"
+	// example: "{var1}d+60i" => var1 days + 60 minutes
+	
+	// selectbox with numeric variables
+	selectParam = '<select name="propValueParam[' + obj_id + '][' + prop + ']" id="propValueParam[' + obj_id + '][' + prop + ']" >';
+	for (var j=0; j < og.templateParameters.length; j++) {
+		var item = og.templateParameters[j];
+		if (item.type.toUpperCase() == "NUMERIC") {
+			var param_selected = param == '{'+item['name']+'}' ? 'selected="selected"' : '';
+			selectParam += '<option value="'+ item['name'] +'" '+ param_selected +'>' + item['name'] + '</option>';
+		}
+	}
+	selectParam += '</select>';
+
+	var html = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + selectParam + '&nbsp;';
+
+	// variable unit selector
+	html += og.buildTimeUnitSelectorHtml(obj_id, prop, var_unit, 'propValueVarUnit');
+
+	// operator selctor
+	html += '<select name="propValueOperation[' + obj_id + '][' + prop + ']" id="propValueOperation[' + obj_id + '][' + prop + ']">' +
+		'<option '+ (operator == "+" ? 'selected="selected"' : '') +'>+</option>' +
+		'<option '+ (operator == "-" ? 'selected="selected"' : '') +'>-</option>' +
+		'</select>&nbsp;';
+
+	// amount input
+	html += '<input type="number" step="any" name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:50px;" value="'+amount+'"/>&nbsp;';
+
+	// amount unit selector
+	html += og.buildTimeUnitSelectorHtml(obj_id, prop, unit, 'propValueUnit');
+		
+	timePropTD.innerHTML = html;
+}
+
+og.buildTimeUnitSelectorHtml = function(obj_id, prop, unit, field_name) {
+
+	return '<select name="'+ field_name +'[' + obj_id + '][' + prop + ']" id="'+ field_name +'[' + obj_id + '][' + prop + ']">' +
+		'<option value="i" '+ (unit == "i" ? 'selected="selected"' : '') +'>'+ lang('minutes') + '</option>' +
+		'<option value="h" '+ (unit == "h" ? 'selected="selected"' : '') +'>'+ lang('hours') + '</option>' +
+		'<option value="d" '+ (unit == "d" ? 'selected="selected"' : '') +'>'+ lang('days') + '</option>' +
+		'<option value="w" '+ (unit == "w" ? 'selected="selected"' : '') +'>'+ lang('weeks') + '</option>' +
+	'</select>&nbsp;';
+}
 
 
 og.renderAssignedToTemplatePropertySelector = function(companies, obj_id, count, prop, callback) {
@@ -852,7 +1006,7 @@ og.promptAddParameter = function(before, edit, pos) {
 		loadType = paramType.value;
 	}
 	
-	var variable_types = [['string', lang('text')],['user', lang('user')],['date', lang('date')]];
+	var variable_types = [['string', lang('text')],['numeric', lang('numeric')],['user', lang('user')],['date', lang('date')]];
 	if (og.templates.more_var_types) {
 		for (var i=0; i<og.templates.more_var_types.length; i++) {
 			var t = og.templates.more_var_types[i];

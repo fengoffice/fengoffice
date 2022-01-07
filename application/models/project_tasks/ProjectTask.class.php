@@ -1638,6 +1638,21 @@ class ProjectTask extends BaseProjectTask {
 		return false;
 	}
 	
+	/**
+	 * Returns true if the task has one or more subtasks .
+	 * 
+	 * @return boolean
+	 */
+	function isParent($task_id = null) {
+		
+		if($task_id) {
+			$task = ProjectTasks::findById($task_id);
+		} else {
+			$task = $this;
+		}
+		
+		return count($task->getSubTasks()) > 0 ;
+	}
 	
 	/**
 	 * Begin task templates

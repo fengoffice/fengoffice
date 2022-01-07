@@ -1,5 +1,5 @@
 {
-  "name": "fo-internal",
+  "name": "FO_Internal",
   "version": "1.0.0",
   "description": "About Feng Office 3.8.0.9\r \t================================",
   "main": "index.js",
@@ -35,6 +35,6 @@
     "kind-of": "^6.0.3",
     "minimist": "^1.2.5",
     "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.9"
+    "webpack-cli": "^3.3.12"
   }
 }
