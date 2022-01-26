@@ -762,6 +762,9 @@ function get_object_members_by_type($object, $object_type_id) {
 function check_project_client_compatibility($member_ids) {
 	$result = array('result' => true, 'error_message' => '');
 
+	// Check if the CRPM plugin is active
+	if (!Plugins::instance()->isActivePlugin('crpm')) return $result;
+
 	Env::useHelper('functions', 'crpm');
 	$clients_dim = get_customers_dimension();
 	$project_dim = Dimensions::findByCode('customer_project');
