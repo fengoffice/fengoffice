@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/fengoffice/FO_Internal#readme",
   "dependencies": {
-    "moment": "^2.29.0",
+    "moment": "^2.29.2",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "recharts": "^1.8.5"
