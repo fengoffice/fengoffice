@@ -809,6 +809,9 @@ class TaskController extends ApplicationController {
 
         $previous_filter = user_config_option('task panel filter', 'no_filter');
 
+        //type of date
+        $filter_type_date=array_var($_REQUEST, 'type_date')==""?"start_date":array_var($_REQUEST, 'type_date');
+
         $filter_from_date = getDateValue(array_var($_REQUEST, 'from_date'));
         if ($filter_from_date instanceof DateTimeValue) {
             $copFromDate = $filter_from_date;
@@ -858,13 +861,13 @@ class TaskController extends ApplicationController {
                 $dateTo = $dateTo->toMySQL();
             }
             if ((($filter_from_date != '0000-00-00 00:00:00')) && (($filter_to_date != '0000-00-00 00:00:00'))) {
+               $tasks_from_date = " AND (`e`.`".$filter_type_date."` BETWEEN '" . $dateFrom . "' AND '" . $dateTo . "')";
 
-                $tasks_from_date = " AND (((`e`.`start_date` BETWEEN '" . $dateFrom . "' AND '" . $dateTo . "') AND `e`.`start_date` != " . DB::escape(EMPTY_DATETIME) . ") OR ((`e`.`due_date` BETWEEN '" . $dateFrom . "' AND '" . $dateTo . "') AND `e`.`due_date` != " . DB::escape(EMPTY_DATETIME) . "))";
             } elseif (($filter_from_date != '0000-00-00 00:00:00')) {
-                $tasks_from_date = " AND (`e`.`start_date` > '" . $dateFrom . "' OR `e`.`due_date` > '" . $dateFrom . "') ";
-            } else {
+                $tasks_from_date = " AND (`e`.`".$filter_type_date."` > '" . $dateFrom . "' ) ";
 
-                $tasks_from_date = "AND ((`e`.`start_date` < '" . $dateTo . "' AND `e`.`start_date` != " . DB::escape(EMPTY_DATETIME) . ") OR (`e`.`due_date` < '" . $dateTo . "' AND `e`.`due_date` != " . DB::escape(EMPTY_DATETIME) . "))";
+            } else {
+                $tasks_from_date = "AND (`e`.`".$filter_type_date."` < '" . $dateTo;
             }
         } else {
             $tasks_from_date = "";
@@ -1019,14 +1022,16 @@ class TaskController extends ApplicationController {
         }
 
         $conditions = "AND $template_condition $task_filter_condition $task_status_condition $task_assignment_conditions $tasks_from_date";
-
+       // die($conditions);
         $data = array();
         $data['conditions'] = $conditions;
         $data['filterValue'] = isset($filter_value) ? $filter_value : '';
         $data['filter'] = $filter;
         $data['status'] = $status;
         $data['limit'] = array_var($_REQUEST, 'limit', user_config_option('task_display_limit', 999));
+
         return $data;
+
     }
 
     //TASK GROUP HELPER START
