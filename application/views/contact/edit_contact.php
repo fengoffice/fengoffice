@@ -406,8 +406,9 @@
 	
   </div>
   
-  	<?php if (!array_var($_REQUEST, 'modal')) {
-		echo submit_button($contact->isNew() ? $add_contact_lang : lang('save changes'),'s', array('id' => $genid . 'submit2'));
+  	<?php if (true) {
+		echo submit_button($contact->isNew() ? $add_contact_lang : lang('save changes'),'s', array('id' => $genid . 'submit2', 
+													  'style' => array_var($_REQUEST, 'modal') ? 'display: none;' : ''));
   	} ?>
 
 	<script>
