@@ -10,7 +10,11 @@ og.MemberTree = function(config) {
 		listeners:{
 			render: {
 				fn: function(f){
-					f.el.on('keyup', function(e) {
+					f.el.on('keyup', function(e) {					
+						if(e.target.value.length != 0 && e.target.value.length < og.config.minimum_characters_dimension_search){
+							return false;
+						}
+
 						var from_server = true;
 						
 						//check history date
@@ -50,7 +54,7 @@ og.MemberTree = function(config) {
 
 						this.filterTree(e.target.value, from_server);
 					},
-					this, {buffer: 350});
+					this, {buffer: 700});
 				},
 				scope: this
 			}
@@ -206,41 +210,9 @@ og.MemberTree = function(config) {
 					
 					// Show modal form if preferences is prompt
 					if (has_relations && og.preferences['drag_drop_prompt'] == 'prompt') {
-						
-						var div = document.createElement('div');
-						var question = lang('do you want to mantain the current associations of this obj with members of', config.title);
-						div.style = "border-radius: 5px; background-color: #fff; padding: 10px; width: 500px;";
-						var genid = Ext.id();
-						div.innerHTML = '<div><label class="coInputTitle">'+lang('classification')+'</label></div>'+
-							'<div id="'+genid+'_question">'+ question+'</div>'+
-							'<div id="'+genid+'_buttons">'+
-							'<button class="replace submit blue">'+lang('replace with the new one')+'</button><button class="keep submit blue">'+lang('keep both current and new')+'</button>'+
-							'</div><div class="clear"></div>';
 
-						var modal_params = {
-							'escClose': false,
-							'overlayClose': false,
-							'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
-							'onShow': function (dialog) {
-								$("#"+genid+"_close_link").addClass("modal-close-img");
-								$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
-								$("#"+genid+"_question").css('margin', '10px 0');
-								$("#"+genid+"_buttons button.replace").css('margin-right', '10px').click(function(){
+						og.drag_drop_classification_keep_or_move_prompt(genid, e, ids, e.target.id, attachment, true);
 
-									og.call_add_objects_to_member(e, ids, e.target.id, attachment, true, true);
-									$('.modal-close').click();
-								});
-								$("#"+genid+"_buttons button.keep").css('margin-right', '10px').click(function(){
-									
-									og.call_add_objects_to_member(e, ids, e.target.id, attachment, true, false);
-									$('.modal-close').click();
-								});
-						    }
-						};
-						setTimeout(function() {
-							$.modal(div, modal_params);
-						}, 100);
-						
 					} else {
 						// Here don't show any modal form, just call the reclassify function
 						

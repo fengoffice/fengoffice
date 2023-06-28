@@ -267,7 +267,7 @@ class MailContents extends BaseMailContents {
 	 * @param Project $project
 	 * @return array
 	 */
-	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = 'unarchived', $conversation_list = null, $only_count_result = false, $extra_cond="") {
+	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = 'unarchived', $conversation_list = null, $only_count_result = false, $extra_cond="", $is_email_widget = false) { 
 		$mailTablePrefix = "e";
 		if (!$limit) $limit = user_config_option('mails_per_page') ? user_config_option('mails_per_page') : config_option('files_per_page');
 		$accountConditions = "";
@@ -387,6 +387,7 @@ class MailContents extends BaseMailContents {
 			'only_count_results' => $only_count_result,
 			'join_params' => $join_params,
 			'archived' => $archived,
+			'is_email_widget' => $is_email_widget
 		));
 		
 		
@@ -396,7 +397,7 @@ class MailContents extends BaseMailContents {
 	function getByMessageId($message_id) {
 		return self::findOne(array('conditions' => array('`message_id` = ?', $message_id)));
 	}
-
+	
 	function countUserInboxUnreadEmails() {
 		$tp = TABLE_PREFIX;
 		$uid = logged_user()->getId();
@@ -408,36 +409,6 @@ class MailContents extends BaseMailContents {
 		$all = $rows[0]['c'];
 		return $all - $read;
 	}
-
-	function countOutboxEmails($account_ids, $state) {
-
-		if(!$account_ids) return 0;
-
-		$tp = TABLE_PREFIX;
-		
-		// Check for draft, junk, etc. emails
-		if ($state == "draft") {
-			$stateConditions = " = '2'";
-		} else if ($state == "sent") {
-			$stateConditions = " IN ('1','3','5')";
-		} else if ($state == "received") {
-			$stateConditions = " IN ('0','5')";
-		} else if ($state == "junk") {
-			$stateConditions = " = '4'";
-		} else if ($state == "outbox") {
-			$stateConditions = " >= 200";
-		} else {
-			$stateConditions = "";
-		}
-		
-		$sql = "SELECT COUNT(*) AS outbox_total FROM ${tp}mail_contents mc INNER JOIN ${tp}objects o ON o.id = mc.object_id
- 			WHERE mc.account_id IN (${account_ids}) AND mc.state ${stateConditions} AND o.trashed_on = '0000-00-00 00:00:00'";
-		
-		$total = DB::executeOne($sql);
-
-		return $total; 
-	
- 	}
 	
 	
 	/*

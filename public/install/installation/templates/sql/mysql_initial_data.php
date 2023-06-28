@@ -97,46 +97,49 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('reports', 'show_company_info_report_print', '1', 'BoolConfigHandler', '0', '0', NULL),
 	('general', 'use_time_quick_add_row', '1', 'BoolConfigHandler', 0, 0, NULL),
 	('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, ''),
-	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, '');
+	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, ''),
+	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
+	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, '');
 
 		
-INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`) VALUES
-	('zip', 'archive.png', 0, 0),
-	('rar', 'archive.png', 0, 0),
-	('bz', 'archive.png', 0, 0),
-	('bz2', 'archive.png', 0, 0),
-	('gz', 'archive.png', 0, 0),
-	('ace', 'archive.png', 0, 0),
-	('mp3', 'audio.png', 0, 0),
-	('wma', 'audio.png', 0, 0),
-	('ogg', 'audio.png', 0, 0),
-	('doc', 'doc.png', 0, 0),
-	('xls', 'xls.png', 0, 0),
-	('docx', 'doc.png', 1, 0),
-	('xlsx', 'xls.png', 0, 0),
-	('gif', 'image.png', 0, 1),
-	('jpg', 'image.png', 0, 1),
-	('jpeg', 'image.png', 0, 1),
-	('png', 'image.png', 0, 1),
-	('mov', 'mov.png', 0, 0),
-	('pdf', 'pdf.png', 1, 0),
-	('psd', 'psd.png', 0, 0),
-	('rm', 'rm.png', 0, 0),
-	('svg', 'svg.png', 0, 0),
-	('swf', 'swf.png', 0, 0),
-	('avi', 'video.png', 0, 0),
-	('mpeg', 'video.png', 0, 0),
-	('mpg', 'video.png', 0, 0),
-	('qt', 'mov.png', 0, 0),
-	('vob', 'video.png', 0, 0),
-	('txt', 'text.png', 1, 0),
-	('html', 'html.png', 1, 0),
-	('slim', 'ppt.png', 1, 0),
-	('ppt', 'ppt.png', 0, 0),
-	('webfile', 'webfile.png', 0, 0),
-    ('odt', 'doc.png', '0', '0'),
-    ('fodt', 'doc.png', '0', '0'),
-    ('ics', 'ics.png', '0', '0');
+INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
+	('zip', 'archive.png', 0, 0, 'compressed archive file zip'),
+	('rar', 'archive.png', 0, 0, 'compressed archive file rar'),
+	('bz', 'archive.png', 0, 0, 'compressed archive file bz'),
+	('bz2', 'archive.png', 0, 0, 'compressed archive file bz'),
+	('gz', 'archive.png', 0, 0, 'compressed archive file gz'),
+	('ace', 'archive.png', 0, 0, 'compressed archive file ace'),
+	('mp3', 'audio.png', 0, 0, 'audio mp3'),
+	('wma', 'audio.png', 0, 0, 'Windows Media audio'),
+	('ogg', 'audio.png', 0, 0, 'vorbis audio file'),
+	('doc', 'doc.png', 0, 0, 'microsoft word file'),
+	('xls', 'xls.png', 0, 0, 'microsoft excel spreadsheet'),
+	('docx', 'doc.png', 1, 0, 'microsoft word xml document'),
+	('xlsx', 'xls.png', 0, 0, 'microsoft excel xml spreadsheet'),
+	('gif', 'image.png', 0, 1, 'gif image'),
+	('jpg', 'image.png', 0, 1, 'jpg image'),
+	('jpeg', 'image.png', 0, 1, 'jpeg image'),
+	('png', 'image.png', 0, 1, 'png image'),
+	('mov', 'mov.png', 0, 0, 'quicktime movie file'),
+	('pdf', 'pdf.png', 1, 0, 'pdf file'),
+	('psd', 'psd.png', 0, 0, 'adobe photoshop document'),
+	('rm', 'rm.png', 0, 0, 'real media file'),
+	('svg', 'svg.png', 0, 0, 'vector graphics file'),
+	('swf', 'swf.png', 0, 0, 'shockwave flash movie'),
+	('avi', 'video.png', 0, 0, 'microsoft audio/visual interleaved'),
+	('mpeg', 'video.png', 0, 0, 'motion picture experts group file'),
+	('mpg', 'video.png', 0, 0, 'video stream'),
+	('qt', 'mov.png', 0, 0, 'apple quicktime movie'),
+	('vob', 'video.png', 0, 0, 'dvd video object file'),
+	('txt', 'text.png', 1, 0, 'raw text file'),
+	('html', 'html.png', 1, 0, 'hypertext markup language file'),
+	('slim', 'ppt.png', 1, 0, 'slim presentation file'),	
+	('ppt', 'ppt.png', 0, 0, 'powerpoint presentation file'),	
+	('webfile', 'webfile.png', 0, 0, 'web file'),    
+	('odt', 'doc.png', '0', '0', 'opendocument text document'),    
+	('fodt', 'doc.png', '0', '0', 'fodt'),    
+	('ics', 'ics.png', '0', '0', 'icalendar file');
+
 
 INSERT INTO `<?php echo $table_prefix ?>im_types` (`name`, `icon`, `disabled`) VALUES
 	('ICQ', 'icq.gif', '1'),
@@ -193,8 +196,10 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('task panel', 'tasksShowDates', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowPercentCompletedBar', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowTimeEstimates', '1', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksShowTotalTimeEstimates', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowTimePending', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowTimeWorked', '0', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksShowTotalTimeWorked', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickEdit', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickComplete', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickComment', '0', 'BoolConfigHandler', 1, 0, ''),
@@ -323,7 +328,7 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('time panel', 'show_start_time_action', '1', 'BoolConfigHandler', 0, 0, ''),
  ('time panel', 'add_timeslot_view_dimensions_combos', '', 'ManageableDimensionsConfigHandler', '0', '0', 'dimensions ids for skip'),
  ('time panel', 'show_pause_time_action', '1', 'BoolConfigHandler', '0', '0', ''),
- ('time panel', 'stop_running_timeslots', '0', 'BoolConfigHandler', '0', '0', ''),
+ ('time panel', 'stop_running_timeslots', '3', 'ListConfigHandler', '0', '0', ''), 
  ('general', 'show_context_help', 'until_close', 'ShowContextHelpConfigHandler', '0', '0', NULL),
  ('dashboard', 'show charts widget', '1', 'BoolConfigHandler', 0, 600, ''),
  ('dashboard', 'show dashboard info widget', '1', 'BoolConfigHandler', 0, 900, ''),
@@ -410,6 +415,10 @@ INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`t
  ('template_task', 'TemplateTasks', 'template_tasks', 'content_object', 'task', 0),
  ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0),
  ('report_category', 'ReportCategories', 'report_category', 'located', 'reporting', 0);
+
+UPDATE `<?php echo $table_prefix ?>contact_config_options` 
+SET `options`='{"no_empty_value":1, "option": [{"value": "1","text": "config_allow_stop_timer"},{"value": "2","text": "config_allow_pause_timer"},{"value": "3","text": "config_let_timer_continue"}]}'
+WHERE `name`='stop_running_timeslots';
 
 INSERT INTO `<?php echo $table_prefix ?>address_types` (`name`,`is_system`) VALUES
  ('home', 1),
@@ -1379,3 +1388,7 @@ INSERT INTO `<?php echo $table_prefix ?>timezones` (`id`, `country_code`, `name`
 (419,	'ZA',	'Africa/Johannesburg',	0,	7200,	10800,	0),
 (420,	'ZM',	'Africa/Lusaka',	0,	7200,	7200,	0),
 (421,	'ZW',	'Africa/Harare',	0,	7200,	7200,	0);
+
+-- option Minimum number of characters for dimension search
+INSERT INTO `fo_config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+VALUES ('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '');

@@ -74,6 +74,7 @@ Ext.onReady(function(){
 			var center_panel = new Ext.Panel({
 				layout: 'border', 
 				id: 'center-panel',
+				minWidth: 800,
 				region:'center',
 				items: [
 				   /*	new Ext.Panel({
@@ -123,6 +124,7 @@ Ext.onReady(function(){
 				        	split: true,
 				        	width: 250,
 				        	minWidth: 200,
+				        	//maxWidth: 350,
 				        	//bodyBorder: false,
 				        	hideCollapseTool:true,
 				        	collapseMode:'mini',

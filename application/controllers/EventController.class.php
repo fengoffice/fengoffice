@@ -983,6 +983,13 @@ class EventController extends ApplicationController {
 				if (isset ( $data ['confirmAttendance'] )) {
 					$this->change_invitation_state ( $data ['confirmAttendance'], $event->getId (), $user_filter );
 				}
+
+				// subscribe or not the invited users
+				if (array_var($data, 'subscribe_invited')){
+					foreach ( $data ['users_to_invite'] as $us => $v ) {
+						$_POST['subscribers']['user_' + $us] = '1';
+					}
+				}
 				
 				DB::beginWork ();
 				$event->save ();				

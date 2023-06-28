@@ -832,6 +832,29 @@ abstract class BaseTemplateTask extends ContentDataObject {
         return false;
     } // getMarkAsStarted()
 
+
+	/**
+	 * Return value of 'is_manual_percent_completed' field
+	 * 
+	 * @access public
+	 * @param void
+	 * @return boolean
+	 */
+	function getIsManualPercentCompleted() {
+	    return $this->getColumnValue('is_manual_percent_completed');
+	}
+
+	/**
+	 * Set value of 'is_manual_percent_completed' field
+	 * 
+	 * @access public
+	 * @param boolean $value
+	 * @return boolean
+	 */
+	function setIsManualPercentCompleted($value) {
+	    return $this->setColumnValue('is_manual_percent_completed', $value);
+	}
+
         /**
 	 * Return manager instance
 	 *

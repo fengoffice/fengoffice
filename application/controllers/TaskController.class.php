@@ -601,9 +601,7 @@ class TaskController extends ApplicationController {
                 $all_tasks[] = $task;
                 
                 // to use when saving the application log
-                $old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-            	$task->old_content_object = $old_content_object;
-            	// --
+                $old_content_object = $task->generateOldContentObjectData();
             	
                 switch ($action) {
                     case 'complete':
@@ -666,6 +664,16 @@ class TaskController extends ApplicationController {
                             $showSuccessMessage = false;
                             $task->calculatePercentComplete();
                             $tasksToReturn[] = $task->getArrayInfo();
+                            Hook::fire('after_timer_closed', $timeslot, $ret);
+			            	Hook::fire('calculate_estimated_and_executed_financials', array(), $task);
+                        }
+                        break;
+
+                    case 'cancel_work':
+                        if ($task->canAddTimeslot(logged_user())) {
+                            $task->deleteTimeslots(logged_user());
+                            $tasksToReturn[] = $task->getArrayInfo();
+                            $showSuccessMessage = false;
                         }
                         break;
                     case 'pause_work':
@@ -693,6 +701,7 @@ class TaskController extends ApplicationController {
                                     $additional_error_message_info .= "\n - " . lang('task x cant be assigned to user y', $task->getName(), $user->getName());
                                 } else {
                                     $task->setAssignedToContactId($user->getId());
+                                    Hook::fire('calculate_estimated_and_executed_financials', array(), $task);
                                     $task->save();
                                     $tasksToReturn[] = $task->getArrayInfo();
                                     $application_logs[] = array($task, ApplicationLogs::ACTION_EDIT, false, array_var($_POST, 'send_subs_notifications'));
@@ -703,6 +712,7 @@ class TaskController extends ApplicationController {
                                 }
                             } else {
                                 $task->setAssignedToContactId(0);
+                                Hook::fire('calculate_estimated_and_executed_financials', array(), $task);
                                 $task->save();
                                 $tasksToReturn[] = $task->getArrayInfo();
                                 $application_logs[] = array($task, ApplicationLogs::ACTION_EDIT, false, array_var($_POST, 'send_subs_notifications'));
@@ -758,13 +768,25 @@ class TaskController extends ApplicationController {
                         $tasksToReturn[] = $task->getArrayInfo();
                         $showSuccessMessage = false;
                         break;
+                    case 'markasbillable':
+                        $task->setColumnValue('is_billable', 1);
+                        $task->save();
+                        $tasksToReturn[] = $task->getArrayInfo();
+                        $showSuccessMessage = false;
+                        break;
+                    case 'markasnonbillable':
+                        $task->setColumnValue('is_billable', 0);
+                        $task->save();
+                        $tasksToReturn[] = $task->getArrayInfo();
+                        $showSuccessMessage = false;
+                        break;
                     default:
                         //DB::rollback();
                         flash_error(lang('invalid action'));
                         return;
                 } // end switch
             } // end foreach
-
+ 
             $ignored = null;
             Hook::fire('after_multi_object_action', array('objects' => $all_tasks, 'action' => $action, 'options' => $options), $ignored);
 
@@ -981,7 +1003,8 @@ class TaskController extends ApplicationController {
                 $task_status_condition = " AND (SELECT COUNT(ts.object_id) FROM " . TABLE_PREFIX . "timeslots ts WHERE ts.rel_object_id=o.id AND ts.end_time = '" . EMPTY_DATETIME . "') > 0";
                 break;
             case 11: // Overdue tasks
-                $task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `e`.`due_date` < '$now'";
+                //$task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `e`.`due_date` < '$now'";
+                $task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME) . " AND `e`.`due_date` < '$now' AND `e`.`due_date` != " .DB::escape(EMPTY_DATETIME);
                 break;
             case 12: // Today tasks
                 $task_status_condition = " AND `e`.`completed_on` = " . DB::escape(EMPTY_DATETIME);
@@ -1047,15 +1070,15 @@ class TaskController extends ApplicationController {
         $join_params['on_extra'] = $join_on_extra;
 
         $total_estimated = "SUM(time_estimate) AS group_time_estimate ";
+
+        // Worked time
         $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM ".TABLE_PREFIX."timeslots tt 
 			INNER JOIN ".TABLE_PREFIX."objects oo ON oo.id=tt.object_id
             WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0";
         if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
             $total_worked_subquery .= " AND contact_id = " . logged_user()->getId();
         }
-
         $total_worked = $total_worked_subquery . ") AS group_time_worked ";
-        //" total_worked_time AS group_time_worked"
 
         $group_totals_financials = array();
         if (Plugins::instance()->isActivePlugin('advanced_billing')){
@@ -1085,7 +1108,7 @@ class TaskController extends ApplicationController {
                 "join_params" => $join_params,
                 "extra_conditions" => $conditions,
                 "group_by" => "e.`object_id`",
-                "query_wraper_start" => "SELECT $total_estimated,  SUM(group_time_worked) AS group_time_worked ,COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
+                "query_wraper_start" => "SELECT $total_estimated,  SUM(group_time_worked) AS group_time_worked, COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
                 "query_wraper_end" => ") AS pending_calc",
                 "count_results" => false,
                 "fire_additional_data_hook" => false,
@@ -1100,11 +1123,21 @@ class TaskController extends ApplicationController {
         $group_time_pending = $group_time_estimate - $group_time_worked;
         if ($group_time_pending < 0) $group_time_pending = 0;
 
+        // Overall group worked time includes subtasks time
+        $group_overall_time_worked = $group_totals[0]['group_time_worked'];
+        $group_overall_time_worked = is_null($group_overall_time_worked) ? 0 : $group_overall_time_worked;
+
         $totals['estimatedTime'] = str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_estimate * 60), 'hm', 60));
+        $totals['totalEstimatedTime'] = str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_estimate * 60), 'hm', 60));
+
         $totals['worked_time'] = $group_time_worked;
         $totals['worked_time_string'] = ($group_time_worked <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_worked * 60), 'hm', 60));
         $totals['pending_time'] = $group_time_pending;
         $totals['pending_time_string'] = ($group_time_pending <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_pending * 60), 'hm', 60));
+
+        // Overall worked time includes subtasks time
+        $totals['overall_worked_time'] = $group_overall_time_worked;
+        $totals['overall_worked_time_string'] = ($group_overall_time_worked <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_overall_time_worked * 60), 'hm', 60));
 
         Hook::fire('add_task_group_totals', array('group_totals' => $group_totals, 'group_totals_financials' => $group_totals_financials), $totals);
 
@@ -2460,8 +2493,10 @@ class TaskController extends ApplicationController {
                 'showTags' => user_config_option('tasksShowTags', 0),
                 'showEmptyMilestones' => user_config_option('tasksShowEmptyMilestones', 1),
                 'showTimeEstimates' => user_config_option('tasksShowTimeEstimates', 1),
+                'showTotalTimeEstimates' => user_config_option('tasksShowTotalTimeEstimates', 1),
                 'showTimePending' => user_config_option('tasksShowTimePending', 1),
                 'showTimeWorked' => user_config_option('tasksShowTimeWorked', 1),
+                'showTotalTimeWorked' => user_config_option('tasksShowTotalTimeWorked', 1),
                 'showPercentCompletedBar' => user_config_option('tasksShowPercentCompletedBar', 1),
                 'showQuickEdit' => user_config_option('tasksShowQuickEdit', 1),
                 'showQuickComplete' => user_config_option('tasksShowQuickComplete', 1),
@@ -2688,14 +2723,12 @@ class TaskController extends ApplicationController {
 
         $notAllowedMember = '';
         if ($context_member_count > 0 && !ProjectTask::canAdd(logged_user(), $context, $notAllowedMember) && !$isTemplateTask) {
-            if (str_starts_with($notAllowedMember, '-- req dim --'))
-                $msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
-            else
+            if (!str_starts_with($notAllowedMember, '-- req dim --')) {
                 trim($notAllowedMember) == "" ? $msg = lang('you must select where to keep', lang('the task')) : $msg = lang('no context permissions to add', lang("tasks"), $notAllowedMember);
-
-            flash_error($msg);
-            ajx_current("empty");
-            return;
+                flash_error($msg);
+                ajx_current("empty");
+                return;
+            }
         }
 
         //is template task?
@@ -2708,6 +2741,12 @@ class TaskController extends ApplicationController {
 
         $task_data = array_var($_POST, 'task');
         if (is_array($task_data)) {
+            if (str_starts_with($notAllowedMember, '-- req dim --')) {
+                $msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
+                flash_error($msg);
+                ajx_current("empty");
+                return;
+            }
             foreach ($task_data as $k => &$v) {
                 $v = remove_scripts($v);
             }
@@ -2762,6 +2801,7 @@ class TaskController extends ApplicationController {
                 'percent_completed' => array_var($_POST, "percent_completed", ''),
                 'object_subtype' => array_var($_POST, "object_subtype", config_option('default task co type')),
                 'send_notification_subscribers' => user_config_option("can notify subscribers"),
+                'is_manual_percent_completed' => $task->getIsManualPercentCompleted(),
             ); // array
             //if is subtask copy parent dates and assigned
             if (array_var($_REQUEST, 'parent_id', 0)) {
@@ -3086,7 +3126,7 @@ class TaskController extends ApplicationController {
                 if ((array_var($task_data, 'send_notification_subscribers'))) {
                     $isSilent = false;
                 }
-                //$task->old_content_object = new ProjectTask();
+                
                 ApplicationLogs::createLog($task, ApplicationLogs::ACTION_ADD, null, $isSilent, true, null, $exclude_from_notification);
 
                 if (array_var($_REQUEST, 'modal')) {
@@ -3294,6 +3334,7 @@ class TaskController extends ApplicationController {
             'text' => $task->getText(),
             'copyId' => $task->getId(),
             'percent_completed' => $task->getPercentCompleted(),
+            'is_manual_percent_completed' => $task->getIsManualPercentCompleted(),
         	'selected_members_ids' => $task->getMemberIds(),
         	//'subtasks' => $subtasks,
         ); // array
@@ -3304,6 +3345,7 @@ class TaskController extends ApplicationController {
         if ($task->getUseDueTime()) {
             $newtask->setUseDueTime($task->getUseDueTime());
         }
+        Hook::fire('task_clone_more_attributes', array('original' => $task, 'copy' => $newtask), $null);
         tpl_assign('task_data', $task_data);
         tpl_assign('task', $newtask);
         tpl_assign('base_task', $task);
@@ -3472,6 +3514,7 @@ class TaskController extends ApplicationController {
                 'multi_assignment' => $task->getColumnValue('multi_assignment', 0),
                 'send_notification_subscribers' => user_config_option("can notify subscribers"),
                 'apply_milestone_subtasks' => config_option('apply_milestone_subtasks'),
+                'is_manual_percent_completed' => $task->getIsManualPercentCompleted(),
             ); // array
             //control dates of parent and subtasks
             $task_data ['type_control'] = "";
@@ -3526,6 +3569,8 @@ class TaskController extends ApplicationController {
             if ($task->getAssignedToContactId() == array_var($task_data, 'assigned_to_contact_id')) {
                 $send_edit = true;
             }
+            $contact_ot_id = ObjectTypes::findByName('person')->getId();
+            $previous_member_ids = $task->getMemberIds(array($contact_ot_id));
 
             $old_owner = $task->getAssignedTo();
             if (array_var($task_data, 'parent_id') == $task->getId()) {
@@ -3544,8 +3589,7 @@ class TaskController extends ApplicationController {
             }
 
             try {
-            	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-            	//$task->old_content_object = $old_content_object;
+				$old_content_object = $task->generateOldContentObjectData();
             	
                 try {
                     $task_data['due_date'] = getDateValue(array_var($_POST, 'task_due_date'));
@@ -3758,8 +3802,11 @@ class TaskController extends ApplicationController {
                     
                     Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => $parent), $member_ids);
                     $members = Members::findAll(array('conditions' => "id IN (" . implode(',', $member_ids) . ")"));
-                    $task->apply_members_to_subtasks($members, true);
-                }
+                    
+                    if($previous_member_ids != $member_ids){ 
+                        $task->apply_members_to_subtasks($members, true);
+                    }
+                } 
 
                 // apply values to subtasks
                 $assigned_to = $task->getAssignedToContactId();
@@ -4320,8 +4367,7 @@ class TaskController extends ApplicationController {
 
         try {
         	// to use when saving the application log
-        	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-        	// --
+        	$old_content_object = $task->generateOldContentObjectData();
         	
             $reload_view = false;
             DB::beginWork();
@@ -4455,9 +4501,7 @@ class TaskController extends ApplicationController {
 
         try {
         	// to use when saving the application log
-        	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-        	$task->old_content_object = $old_content_object;
-        	// --
+        	$old_content_object = $task->generateOldContentObjectData();
         	
             DB::beginWork();
             $log_info = $task->openTask();
@@ -4602,9 +4646,7 @@ class TaskController extends ApplicationController {
         }
 
         // to use when saving the application log
-        $old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-        $task->old_content_object = $old_content_object;
-        // --
+        $old_content_object = $task->generateOldContentObjectData();
         
         $tochange = array_var($_GET, 'tochange', '');
 
@@ -4735,19 +4777,20 @@ class TaskController extends ApplicationController {
         $forever = 0;
         $jump = array_var($task_data, 'occurance_jump');
 
-        if (array_var($task_data, 'repeat_option') == 1)
-            $forever = 1;
-        elseif (array_var($task_data, 'repeat_option') == 2)
+        if (array_var($task_data, 'repeat_option') == 1) {
+            $forever = 1; 
+        } elseif (array_var($task_data, 'repeat_option') == 2) {
             $rnum = array_var($task_data, 'repeat_num');
-        elseif (array_var($task_data, 'repeat_option') == 3)
+            if($rnum == '') return lang('please provide input for repeat times');
+            if (isset($rnum) && $rnum) {
+                if (!is_numeric($rnum) || $rnum < 1 || $rnum > 1000)
+                    throw new Exception(lang('repeat x times must be a valid number between 1 and 1000'));
+            }
+        } elseif (array_var($task_data, 'repeat_option') == 3) {
             $rend = getDateValue(array_var($task_data, 'repeat_end'));
-        // verify the options above are valid
-        if (isset($rnum) && $rnum) {
-            if (!is_numeric($rnum) || $rnum < 1 || $rnum > 1000)
-                throw new Exception(lang('repeat x times must be a valid number between 1 and 1000'));
-        } else
-            $rnum = 0;
-
+            if(!$rend instanceof DateTimeValue) return lang('please provide date for repeat until');
+        }
+       
         if (isset($jump) && $jump) {
             if (!is_numeric($jump) || $jump < 1 || $jump > 1000)
                 throw new Exception(lang('repeat period must be a valid number between 1 and 1000'));
@@ -4908,7 +4951,7 @@ class TaskController extends ApplicationController {
                     $task->setRepeatNum($task->getRepeatNum() - 1);
 
                     // generate completed task
-                    $last_task = $task->cloneTask($new_st_date, $new_due_date, true, true, 0, $generated_count);
+                    $last_task = $task->cloneTask($new_st_date, $new_due_date, true, false, 0, $generated_count);
                     // set next values for repetetive task
                     if ($task->getStartDate() instanceof DateTimeValue)
                         $task->setStartDate($new_st_date);
@@ -5085,9 +5128,7 @@ class TaskController extends ApplicationController {
                     if ($task->canEdit(logged_user())) {
                     	
                     	// to use when saving the application log
-                    	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-                    	$task->old_content_object = $old_content_object;
-                    	// --
+                    	$old_content_object = $task->generateOldContentObjectData();
                     	
                         switch ($attribute) {
                             case 'assigned_to':
@@ -5415,9 +5456,7 @@ class TaskController extends ApplicationController {
 
         try {
         	// to use when saving the application log
-        	$old_content_object = ContentDataObjects::generateOldContentObjectData($task);
-        	$task->old_content_object = $old_content_object;
-        	// --
+        	$old_content_object = $task->generateOldContentObjectData();
         	
             DB::beginWork();
 

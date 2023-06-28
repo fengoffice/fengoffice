@@ -8,7 +8,8 @@
   class MemberPropertyMembers extends BaseMemberPropertyMembers {
     
     static function getAssociatedMembers($association_id, $member_ids_csv, $property_member_ids_csv, $is_active = true){
-    	
+    	if (!$member_ids_csv) return '';
+
     	$sql = "SELECT DISTINCT (`member_id`) FROM `".TABLE_PREFIX."member_property_members` WHERE 
     		`association_id` = $association_id AND `member_id` IN ($member_ids_csv) AND `property_member_id` IN ($property_member_ids_csv)
     		AND `is_active` = $is_active";
@@ -27,6 +28,8 @@
     
     
     static function getAllPropertyMemberIds($association_id, $member_id, $is_active = true){
+		if (!$member_id) return '';
+		
     	$sql = "SELECT DISTINCT (`property_member_id`) FROM `".TABLE_PREFIX."member_property_members` WHERE 
     		`association_id` = $association_id AND `member_id` IN ($member_id) AND `is_active` = $is_active";
     	

@@ -288,11 +288,13 @@ return array(
 	'field Objects text' => 'Description',
     'field Objects mark_as_started' => 'Marked as started',
     
-    'field ProjectTasks total_worked_time' => 'Total worked time', 
+    'field ProjectTasks total_worked_time' => 'Worked time',
+	'field ProjectTasks overall_worked_time_plus_subtasks' => 'Total worked time',  
+	'field ProjectTasks total_time_estimate' => 'Total estimated time',  
     'field ProjectTasks status' => 'Status',
 
     // Time fields 
-    'field Objects total_worked_time' => 'Total worked time', 
+    'field Objects total_worked_time' => 'Worked time', 
     'field Objects status' => 'Status',
     
     

@@ -27,6 +27,9 @@
 				break;
 			case 'boolean': $type = DATA_TYPE_BOOLEAN;
 				break;
+			case 'user': 
+			case 'contact': $type = DATA_TYPE_OBJECT;
+				break;
 			default: $type = DATA_TYPE_STRING;
 				break;
 		}

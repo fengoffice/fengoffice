@@ -195,6 +195,11 @@
 .ico-text-xml {
 	background-image: url(../../images/16x16/types/text-xml.png) !important;
 }
+/* HOTFIX --> Documents Missing Icons (START) */
+.ico-text-csv { background-image: url(../../images/16x16/types/text-csv.png) !important; }
+.ico-application-vnd_openxmlformats-officedocument_presentationml_presentation { background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.presentationml.presentation.png) !important; }
+.ico-application-vnd_ms-excel_sheet_binary_macroenabled_12 { background-image: url(../../images/16x16/types/application-vnd.ms-excel.sheet.binary.macroenabled.12.png) !important; }
+/* HOTFIX --> Documents Missing Icons (END) */
 .ico-video {
 	background-image: url(../../images/16x16/types/video.png) !important;
 }

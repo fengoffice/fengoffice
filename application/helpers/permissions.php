@@ -169,7 +169,8 @@
 			//check for context permissions that allow user to add in this member
 			if ($context_members){
 				$member_ids = array();
-				foreach ($context_members as $member_obj) $member_ids[] = $member_obj->getId();
+				foreach ($context_members as $member_obj) $member_ids[] = $member_obj instanceof Member ? $member_obj->getId() : $member_obj;
+				$member_ids = array_filter($member_ids, 'is_numeric');
 				$allowed_members = ContactMemberPermissions::getActiveContextPermissions($user,$object_type_id, $context_members, $member_ids, true);
 				if (in_array($member, $allowed_members)) return true;
 			}	
@@ -217,7 +218,8 @@
 				if ($selection instanceof Member){
 					
 					$dimension = $selection->getDimension();
-					if(!$dimension->getDefinesPermissions() || !in_array($dimension->getId(), $enabled_dimensions)){
+
+					if((!$dimension->getDefinesPermissions() || !in_array($dimension->getId(), $enabled_dimensions)) && !in_array($dimension->getId(), $required_dimensions_ids)){
 						continue;
 					}
 					
@@ -232,7 +234,6 @@
 						return false;
 					}
 				}
-	
 				// Revoke explicty permission
 				if ($can_add && !$no_required_dimensions){
 					foreach ($dimensions_in_context as $key=>$value){

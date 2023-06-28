@@ -2,6 +2,15 @@
 
 class ApplicationLogDetails extends BaseApplicationLogDetails {
 
+
+	static function countLogDetails($application_log_id) {
+		return self::count("application_log_id = ".DB::escape($application_log_id));
+	}
+
+	static function getLogDetails($application_log_id) {
+		return self::findAll(array("conditions" => array("application_log_id = ?", $application_log_id)));
+	}
+
 	
 	static function calculateSavedObjectDifferences($object, $old_object) {
 		
@@ -11,6 +20,9 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		if (!$object instanceof ContentDataObject) {
 			return;
 		}
+
+		// ensure that we have the latest version of the object
+		$object = Objects::findObject($object->getId(), true);
 		
 		$manager = $object->manager();
 		$object_columns = array_merge(array('name'), $manager->getColumns());
@@ -113,6 +125,11 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 			);
 		}
 		
+		// check if any relation with other content object has changed (like changing the task of a timeslot)
+		$changed_relations = $object->getChangedRelations($old_object);
+		if (!empty($changed_relations)) {
+			$differences['changed_relations'] = $changed_relations;
+		}
 		
 		return $differences;
 	}
@@ -131,7 +148,9 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		
 		$application_log_id = $log->getId();
 
-		foreach ($differences_to_save as $object_difference) {
+		foreach ($differences_to_save as $key => $object_difference) {
+			if ($key == 'changed_relations') continue;
+
 			$object_difference['application_log_id'] = $application_log_id;
 
 			if ($object_difference['old_value'] instanceof DateTimeValue) {
@@ -151,6 +170,24 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 			$detail->save();
 		}
 		
+		$changed_relations = array_var($differences_to_save, 'changed_relations');
+		if (!empty($changed_relations)) {
+
+			// log_action can be relation_added, relation_edited, relation_removed
+			foreach ($changed_relations as $log_action => $related_object_ids) {
+
+				// for each related object we must create a new log entry saying that the relation changed
+				foreach ($related_object_ids as $obj_id) {
+					// find the related object
+					$related_object = Objects::findObject($obj_id);
+
+					if ($related_object instanceof ContentDataObject) {
+						// create the log and set the associated log entry in the log_data value, so we can track which object triggered this log
+						ApplicationLogs::createLog($related_object, $log_action, false, true, true, $application_log_id);
+					}
+				}
+			}
+		}
 		
 	}
 	
@@ -317,22 +354,25 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 						$cp_id = str_replace("cp_", "", $detail->getProperty());
 						$cp = CustomProperties::findById($cp_id);
 						
-						$old_value = $detail->getOldValue();
-						$new_value = $detail->getNewValue();
-						
-						if (in_array($cp->getType(), array('contact','user','numeric'))) {
-							if (!is_numeric($old_value)) $old_value = '';
-							if (!is_numeric($new_value)) $new_value = '';
-							if ($old_value == $new_value) break;
+						if($cp instanceof CustomProperty) {
+							$old_value = $detail->getOldValue();
+							$new_value = $detail->getNewValue();
+							
+							if (in_array($cp->getType(), array('contact','user','numeric'))) {
+								if (!is_numeric($old_value)) $old_value = '';
+								if (!is_numeric($new_value)) $new_value = '';
+								if ($old_value == $new_value) break;
+							}
+							
+							$field_name = $cp->getName();
+	
+							if ($detail->getOldValue() != '') { 
+								$log_text .= $field_name . ': <span class="log-detail--old-value">' . $old_value . '</span> ' . '<span class="log-detail--new-value">' . $new_value . '</span>';
+							} else {
+								$log_text .= $field_name . ': <span class="log-detail--new-value">' . $new_value . '</span>';
+							}
 						}
-						
-						$field_name = $cp->getName();
 
-						if ($detail->getOldValue() != '') { 
-							$log_text .= $field_name . ': <span class="log-detail--old-value">' . $old_value . '</span> ' . '<span class="log-detail--new-value">' . $new_value . '</span>';
-						} else {
-							$log_text .= $field_name . ': <span class="log-detail--new-value">' . $new_value . '</span>';
-						}
 					} else if (in_array($detail->getProperty(), $co_columns) && !in_array($detail->getProperty(), $system_columns)) {
 						$log_text .= self::buildDetailHtml($detail, $object, $manager, $object_type);
 					}

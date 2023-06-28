@@ -400,5 +400,36 @@
 		");
 	}
 	
+	function mail_update_27_28(){
+		DB::execute("
+			update ".TABLE_PREFIX."mail_contents 
+			join ".TABLE_PREFIX."objects fo on(object_id=fo.id)
+			set ".TABLE_PREFIX."mail_contents.state=999
+			where state>=200 and state<210
+			and fo.created_on < NOW() - interval 1 day;
+		");
+	}
+
 	
 	
+	function mail_update_28_29(){
+		DB::execute("
+			ALTER TABLE `".TABLE_PREFIX."mail_account_imap_folder`
+			CHANGE `folder_name` `folder_name` varchar(500) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
+		");
+		DB::execute("
+			ALTER TABLE `".TABLE_PREFIX."mail_content_imap_folders`
+			CHANGE `folder` `folder` varchar(500) COLLATE 'utf8_unicode_ci' NOT NULL AFTER `message_id`;
+		");
+		
+	}
+
+	function mail_update_29_30(){
+		// disable this feature by default
+		DB::execute("
+			UPDATE `".TABLE_PREFIX."contact_config_options` 
+			SET `default_value` = '0'
+			WHERE `name` = 'hide_quoted_text_in_emails';
+		");
+		
+	}

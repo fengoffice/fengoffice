@@ -584,6 +584,10 @@ div.add-person-form div.field label.checkbox {
 
 .edit-form-tabs .ui-tabs-panel.ui-widget-content a {
 	color: #003562;
+	height: 14px;
+}
+.removeUndo > a{
+	height: 21px !important;
 }
 
 .edit-form-tabs .ui-tabs-panel.ui-widget-content .breadcrumb-container a {
@@ -729,4 +733,8 @@ a.wiki-link {
     width: 400px;
     padding: 5px;
     margin: 10px 0px;
+}
+
+a.cke_combo_button, a.cke_button {
+	height: auto !important;
 }

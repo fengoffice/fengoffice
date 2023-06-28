@@ -84,4 +84,6 @@ return array(
     
     
         'custom system member module hint' => 'View the {0} list in a separate tab.',
+
+		'all_expenses' => 'Expenses'
 );

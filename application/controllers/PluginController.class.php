@@ -67,7 +67,7 @@ class PluginController extends ApplicationController {
 	
 	function updateAll() {
 		try {
-			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1'));
+			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1 AND is_activated=1'));
 			foreach ($plugins as $plg) {
 				$plg->update();
 			}

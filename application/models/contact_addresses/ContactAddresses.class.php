@@ -15,7 +15,7 @@
     */
     function getContactMainAddressType(Contact $contact) {
       
-      $contact_address_values_table = ContactAddresss::instance()->getTableName(true);
+      $contact_address_values_table = ContactAddresses::instance()->getTableName(true);
       $address_types_table = AddressTypes::instance()->getTableName(true);
       
       $sql = "SELECT $address_types_table.* FROM $address_types_table, $contact_address_values_table WHERE $address_types_table.`id` = $contact_address_values_table.`address_type_id` AND $contact_address_values_table.`is_main` = '1' AND $contact_address_values_table.`contact_id` = ?";

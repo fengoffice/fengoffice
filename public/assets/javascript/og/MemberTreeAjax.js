@@ -247,6 +247,10 @@ og.MemberTreeAjax = function(config) {
 						tree.body.show();
 						var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
 						$("#"+tree.body.id).css({top: top+'px'});
+						
+						// if we are in a modal form then ensure the whole dropdown list is visible
+						tree.adjustDropDownListHeight();
+
 						if(!tree.initialized){
                             tree.initialized = true;
 							tree.init();
@@ -285,6 +289,10 @@ og.MemberTreeAjax = function(config) {
 							tree.body.show();
 							var top = $("#"+tree.tbar.id).offset().top + $("#"+tree.tbar.id).height();
 							$("#"+tree.body.id).css({top: top+'px'});
+							
+							// if we are in a modal form then ensure the whole dropdown list is visible
+							tree.adjustDropDownListHeight();
+
 							if(!tree.initialized){
                                 tree.initialized = true;
 								tree.init();
@@ -394,12 +402,12 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 	    			hideLoading:true, 
 	    			hideErrors:true,
 	    			callback: function(success, data){
-	    				
+
 	    				var dimension_tree = Ext.getCmp(tree_id);
 	    					
 	    				//add nodes to tree
 	    				dimension_tree.addMembersToTree(data.members,data.dimension_id);    				
-	    			   				
+						
 	    				dimension_tree.innerCt.unmask();
 	    				
 	    				//get the text from the filter
@@ -558,7 +566,7 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 			}
 			
 			this.initialized = true;
-			
+			og.eventManager.fireEvent('end_callback member_tree loaded', {});
 		}else{
 			
 			var options = {};
@@ -648,7 +656,8 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 		var dimension_tree = this;
 		for (var prop in members) {  
 			var mem = members[prop];
-			
+			if (typeof mem == 'function') continue;
+
 			if(typeof dimension_tree.allowedMemberTypes != "undefined"){
 				if(dimension_tree.allowedMemberTypes.indexOf(mem.object_type_id) == -1){
 					continue;
@@ -656,27 +665,27 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 			}
 			
 		    var new_node = dimension_tree.loader.createNode(mem);
-		   
+			
 		    var node_parent = dimension_tree.getNodeById(mem.parent);
 		    if(mem.parent == 0){
 		    	node_parent = dimension_tree.getRootNode();
 		    }
 		    var node_exist = dimension_tree.getNodeById(mem.id);
-			if(!node_exist){
+
+			if (node_parent) {
 				dimension_tree.suspendEvents();
-				if (node_parent) node_parent.appendChild(new_node);
+				if (node_exist) {
+					// remove old node if already there
+					node_parent.removeChild(node_exist);
+				}
+				// add the new node
+				node_parent.appendChild(new_node);
 				dimension_tree.resumeEvents();
-			}else{
-				if (node_parent){
-					// dont remove old and insert the new, only update the name and the attributes.
-					node_exist.attributes = mem;
-					node_exist.setText(mem.text);
-				}							
+
+				// add the parent to the array of parents to sort
+				all_parent_nodes_involved[node_parent.id] = node_parent;
 			}
-            if (node_parent) {
-            	all_parent_nodes_involved[node_parent.id] = node_parent;
-            }
-			
+
 			//add member to og.dimensions
 			og.addMemberToOgDimensions(dimension_id,mem);						
 		}
@@ -716,6 +725,38 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
         
         return node ;            
         
+	},
+
+
+	// if we are in a modal form then ensure the whole dropdown list is visible
+	adjustDropDownListHeight: function() {
+		
+		if ($(".simplemodal-overlay").length > 0) {
+			let winh = $(".simplemodal-overlay").height();
+			let list = this.body;
+			
+			// if a part of the list is below the end of the screen then change the height and the top if necessary
+			if (list.getTop() + list.getHeight() > winh) {
+
+				let max_height = winh - list.getTop() - 5;
+				let minimum_heigth = 80;
+				let new_top = 0;
+
+				// set a min height so the list remains usable, if still hidden then move the list up
+				if (max_height < minimum_heigth) {
+					new_top = list.getTop() + max_height - minimum_heigth
+					max_height = minimum_heigth;
+				}
+
+				// make the list smaller
+				$("#"+list.id).css({'max-height': max_height+'px'});
+
+				// if the list is still hidden then move it up
+				if (new_top) {
+					$("#"+list.id).css({'top': new_top+'px', 'border-top': '1px solid #cccccc'});
+				}
+			}
+		}
 	}
 	
 	

@@ -194,7 +194,7 @@
     'no mailAccount error' => 'Action unavailable. You do not have an email account added.',
 	'content too long not loaded' => 'Previous email content is too long and was not loaded, but will be sent with this email.',
   	'member name already exists in dimension' => 'Member \'{0}\' already exists in selected dimension.',  
-	'must choose at least one member of' => 'You must choose at least one member of {0}.',
+	'must choose at least one member of' => 'Please select a member of {0}.',
 	'timeslot dnx' => 'Timeslot does not exist',
 	'you dont have permissions to classify object in member' => 'You don\'t have permissions to classify \'{0}\' in \'{1}\'',
   
@@ -208,6 +208,13 @@
   	'upload error msg UPLOAD_ERR_NO_TMP_DIR' => 'No file could be uploaded, missing temporary folder.',
   	'upload error msg UPLOAD_ERR_CANT_WRITE' => 'Could not write file to disk.',
   	'upload error msg UPLOAD_ERR_EXTENSION' => 'A PHP extension stopped the file upload.',
+
+    'you cannot edit invoiced time entry' => 'You cannot edit an invoiced time entry',
+    'you cannot delete invoiced time entry' => 'You cannot delete an invoiced time entry',
+    'you cannot edit invoiced actual expense' => 'You cannot edit an invoiced actual expense',
+    'you cannot delete invoiced actual expense' => 'You cannot delete an invoiced actual expense',
+    'you cannot untrash invoice' => 'You cannot untrash an invoice',
+
   	
   	'failed to authenticate email account' => 'Failed to authenticate email account',
   	'failed to authenticate email account desc' => 'Could not authenticate account "{0}" to send notifications, please make sure that the account\'s username and password are correct.',
@@ -218,6 +225,8 @@
     'token external name value required' => 'Name is required',
     'token external type value required' => 'Type is required',
   	'you dont have permissions to add this object in members' => 'You don\'t have permissions to add this {0} in {1}',
+    'please provide input for repeat times' => 'Please provide a number for Repeat Times input',
+    'please provide date for repeat until' => 'Please provide a date for Repeat Until input'
   ); // array
 
 ?>

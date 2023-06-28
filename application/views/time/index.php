@@ -1,4 +1,5 @@
 <?php
+require_javascript("og/ReportingFunctions.js");
 $genid = gen_id();
 $grid_id = array_var($_REQUEST, 'current') . "_timeslots_module_grid";
 
@@ -7,7 +8,7 @@ $additional_actions = array();
 Hook::fire('timeslot_list_additional_actions', $additional_actions_params, $additional_actions);
 
 $can_see_billing_info = true;
-Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+Hook::fire('get_can_see_billing_information', array('user' => logged_user()), $can_see_billing_info);
 $show_billing = can_manage_billing(logged_user()) && $can_see_billing_info;
 
 $current_filters_json = user_config_option('current_time_module_filters');
@@ -20,22 +21,43 @@ foreach (active_context() as $selection) {
 }
 $can_add_timeslots = can_add_timeslots(logged_user(), $active_members);
 
-Hook::fire('time_tab_override_can_add_timeslots_permission', array('user'=>logged_user()), $can_add_timeslots);
+Hook::fire('time_tab_override_can_add_timeslots_permission', array('user' => logged_user()), $can_add_timeslots);
 
 
 $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row');
 
+// adds new layouts to the time panel
+$panel_view_hook_output = null;
+$hook_params = array(
+    'genid' => $genid,
+    'panel_id' => $grid_id,
+    'current_filters' => $current_filters
+);
+Hook::fire('additional_time_panel_view', $hook_params, $panel_view_hook_output);
+
+// check if we have to hide the list
+$list_view_display = '';
+if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view']) {
+	$list_view_display = 'display:none;';
+}
+
 ?>
 
-<div id="timePanel" class="ogContentPanel" style="height:100%;">
+<div id="timePanel" class="ogContentPanel" style="height:100%; overflow-x: scroll;">
 
-    <div id="<?php echo $grid_id ?>_container" style="height:100%;"></div>
+    <div id="<?php echo $grid_id ?>_container" style="height:100%;<?php echo $list_view_display ?>"></div>
+
+	<?php
+		// html for the additional layouts
+		if (is_array($panel_view_hook_output) && $panel_view_hook_output['html']) {
+			echo $panel_view_hook_output['html'];
+		}
+	?>
 
 </div>
 
 
 <script>
-
     var grid_id = '<?php echo $grid_id ?>';
 
     og.module_timeslots_grid = {
@@ -44,7 +66,7 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
 
         clocks_to_start: [],
 
-        name_renderer: function (value, p, r) {
+        name_renderer: function(value, p, r) {
             if (r.id == 'quick_add_row')
                 return value;
             if (r.data.id == '__total_row__' || r.data.object_id <= 0)
@@ -53,7 +75,7 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
             return String.format('<a href="#" onclick="{1}" title="{2}" style="font-size:120%;"><span class="bold">{0}</span></a>', og.clean(r.data.uname), onclick, og.clean(r.data.uname));
         },
 
-        task_name_renderer: function (value, p, r) {
+        task_name_renderer: function(value, p, r) {
             if (r.id == 'quick_add_row')
                 return value;
             if (r.data.id == '__total_row__' || r.data.object_id <= 0)
@@ -63,18 +85,25 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
         },
 
         delete_timeslot: function (tid) {
-            if (confirm('<?php echo escape_single_quotes(lang('confirm delete timeslot')) ?>')) {
-                og.openLink(og.getUrl('time', 'delete_timeslot', {id: tid}), {
-                    callback: function (success, data) {
-                        var g = Ext.getCmp(og.module_timeslots_grid.grid_id);
-                        if (g)
-                            g.reset();
+            og.openLink(og.getUrl('time', 'check_time_invoicing_status', {id: tid}), {
+                callback: function (success, data) {
+                    if(data.timeslotId > 0){
+                        if (confirm('<?php echo escape_single_quotes(lang('confirm delete timeslot')) ?>')) {
+                            og.openLink(og.getUrl('time', 'delete_timeslot', {id: tid}), {
+                                callback: function (success, data) {
+                                    console.log(data);
+                                    var g = Ext.getCmp(og.module_timeslots_grid.grid_id);
+                                    if (g)
+                                        g.reset();
+                                }
+                            });
+                        }
                     }
-                });
-            }
+                }
+            });
         },
 
-        render_grid_actions: function (value, p, r) {
+        render_grid_actions: function(value, p, r) {
             var actions = '';
             if (r.id == 'quick_add_row' || r.data.id == '__total_row__' || r.data.id <= 0)
                 return value;
@@ -84,21 +113,21 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
             if (r.data.end_time) {
                 if (r.data.can_edit) {
                     actions += String.format(
-                            '<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:' + r.data.id + '}});" title="{0}" ' +
-                            actionStyle + '>&nbsp;</a>', lang('edit')
-                            );
+                        '<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:' + r.data.id + '}});" title="{0}" ' +
+                        actionStyle + '>&nbsp;</a>', lang('edit')
+                    );
                 }
                 if (r.data.can_delete) {
                     actions += String.format(
-                            '<a class="list-action ico-delete" href="#" onclick="og.module_timeslots_grid.delete_timeslot(' + r.data.id + ');" title="{0}" ' +
-                            actionStyle + '>&nbsp;</a>', lang('delete')
-                            );
+                        '<a class="list-action ico-delete" href="#" onclick="og.module_timeslots_grid.delete_timeslot(' + r.data.id + ');" title="{0}" ' +
+                        actionStyle + '>&nbsp;</a>', lang('delete')
+                    );
                 }
                 if (r.data.can_view_history) {
-                	actions += String.format(
-                            '<a class="list-action ico-properties" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}" ' +
-                            actionStyle + '>&nbsp;</a>', lang('view history')
-                            );
+                    actions += String.format(
+                        '<a class="list-action ico-properties" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}" ' +
+                        actionStyle + '>&nbsp;</a>', lang('view history')
+                    );
                 }
 
             } else {
@@ -109,7 +138,8 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
 
                 actions += '<div class="open-ts-clock"><span id="' + html_id + 'timespan">';
                 if (r.data.paused_on_ts > 0) {
-                    var diff_m = 0, diff_h = 0;
+                    var diff_m = 0,
+                        diff_h = 0;
                     var diff_s = r.data.paused_on_ts - r.data.start_time_ts - r.data.paused_time_sec;
                     while (diff_s >= 60) {
                         diff_s -= 60;
@@ -135,41 +165,64 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
                     og.module_timeslots_grid.clocks_to_start.push(html_id);
                 }
                 actions += '</div>';
-
+ 
+                
                 actions += '<div class="task-single-div">';
+                // Stop timer
                 actions += '<a href="#" class="task-single-div" onclick="og.module_timeslots_grid.close_work(' + r.data.id + ');">';
                 actions += '<div class="ogTasksTimeClock ico-time-stop task-action-icon" title="' + lang('close_work') + '"></div></a>';
 
                 if (r.data.paused_on_ts) {
+                    // Resume timer
                     actions += '<a href="#" class="task-single-div" onclick="og.module_timeslots_grid.resume_work(' + r.data.id + ');">';
                     actions += '<div class="ogTasksTimeClock ico-time-play task-action-icon" title="' + lang('resume_work') + '"></div></a>'
                 } else {
+                    // Pause timer
                     actions += '<a href="#" class="task-single-div" onclick="og.module_timeslots_grid.pause_work(' + r.data.id + ');">';
                     actions += '<div class="ogTasksTimeClock ico-time-pause task-action-icon" title="' + lang('pause_work') + '"></div></a>';
                 }
+
+                // Cancel timer
+                actions += '<a href="#" class="task-single-div" onclick="og.module_timeslots_grid.cancel_work(' + r.data.id + ');">';
+                actions += '<div class="ogTasksTimeClock ico-delete task-action-icon" title="' + lang('discard_work') + '"></div></a>';
+                    
                 actions += '</div>';
             }
 
             return '<div>' + actions + '</div>';
         },
 
-        close_work: function (tid) {
-            this.execute_action("close", tid);
+        close_work: function(tid) {
+            og.render_modal_form('', {
+                c: 'timeslot',
+                a: 'close_timer',
+                params: {
+                    id: tid                }
+            });
         },
 
-        resume_work: function (tid) {
+        cancel_work: function(tid) {
+            if (confirm(lang('confirm discard work timeslot'))){
+                this.execute_action("close", tid, true);
+            }
+        },
+
+        resume_work: function(tid) {
             this.execute_action("resume", tid);
         },
 
-        pause_work: function (tid) {
+        pause_work: function(tid) {
             this.execute_action("pause", tid);
         },
 
-        execute_action: function (action, id) {
-            og.openLink(og.getUrl('timeslot', action, {id: id}));
+        execute_action: function(action, id, cancel = false) {
+            og.openLink(og.getUrl('timeslot', action, {
+                id: id,
+                cancel: cancel
+            }));
         },
 
-        start_clocks: function () {
+        start_clocks: function() {
             for (var i = 0; i < og.module_timeslots_grid.clocks_to_start.length; i++) {
                 var pre_id = og.module_timeslots_grid.clocks_to_start[i];
                 og.startClock(pre_id, parseInt($("#" + pre_id + 'user_start_time').val()));
@@ -187,6 +240,13 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
         header: lang('description'),
         sortable: true
     });
+
+    timeslots_columns.push({
+        name: 'qbo_sync_status',
+        header: lang('quickbooks'),
+        sortable: true
+    });
+    
     timeslots_columns.push({
         name: 'start_time',
         header: '<?php echo lang('start time') ?>',
@@ -221,7 +281,7 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
         renderer: og.module_timeslots_grid.task_name_renderer,
         sortable: true
     });
-<?php if ($show_billing) { ?>
+    <?php if ($show_billing) { ?>
         timeslots_columns.push({
             name: 'fixed_billing',
             header: '<?php echo lang('billing') ?>',
@@ -229,7 +289,7 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
             align: 'right',
             sortable: true
         });
-<?php } ?>
+    <?php } ?>
 
     // system columns
     var system_columns = ['uid', 'uname', 'can_edit', 'can_delete', 'can_view_history', 'add_cls', 'start_time_ts', 'paused_on_ts', 'paused_time_sec', 'rel_object_id'];
@@ -244,19 +304,19 @@ $add_quick_add_row = $can_add_timeslots && config_option('use_time_quick_add_row
     timeslots_columns.push({
         name: 'actions',
         is_right_column: true,
-        fixed: true,
-        width: 100,
+        //fixed: true,
+        width: 150,
         renderer: og.module_timeslots_grid.render_grid_actions
     });
 
-<?php
-$add_columns = "";
-$dummy_ts = new Timeslot();
-Hook::fire("view_timeslot_render_more_columns", $dummy_ts, $add_columns);
-if (is_array($add_columns)) {
-    foreach ($add_columns as $col_id => $val) {
-        $align = in_array($dummy_ts->getColumnType($col_id), array(DATA_TYPE_FLOAT, DATA_TYPE_INTEGER)) ? 'right' : 'left';
-        ?>
+    <?php
+    $add_columns = array();
+    $dummy_ts = new Timeslot();
+    Hook::fire("view_timeslot_render_more_columns", $dummy_ts, $add_columns);
+    if (is_array($add_columns)) {
+        foreach ($add_columns as $col_id => $val) {
+            $align = in_array($dummy_ts->getColumnType($col_id), array(DATA_TYPE_FLOAT, DATA_TYPE_INTEGER)) ? 'right' : 'left';
+    ?>
             timeslots_columns.push({
                 name: '<?php echo $col_id ?>',
                 header: '<?php echo lang($col_id) ?>',
@@ -265,10 +325,10 @@ if (is_array($add_columns)) {
                 renderer: 'string',
                 sortable: true
             });
-        <?php
+    <?php
+        }
     }
-}
-?>
+    ?>
 
     // buttons
     var botonera = {
@@ -276,8 +336,14 @@ if (is_array($add_columns)) {
             iconCls: 'ico-new add-first-btn blue',
             text: '<?php echo lang('add work') ?>',
             id: 'new_ts_btn',
-            handler: function () {
-                og.render_modal_form('', {c: 'time', a: 'add', params: {contact_id:<?php echo logged_user()->getId() ?>}});
+            handler: function() {
+                og.render_modal_form('', {
+                    c: 'time',
+                    a: 'add',
+                    params: {
+                        contact_id: <?php echo logged_user()->getId() ?>
+                    }
+                });
             }
         }),
 
@@ -285,7 +351,7 @@ if (is_array($add_columns)) {
             iconCls: 'ico-time add-first-btn',
             text: '<?php echo lang('start work') ?>',
             id: 'start_work_btn',
-            handler: function () {
+            handler: function() {
                 og.openLink(og.getUrl('timeslot', 'open'));
             }
         }),
@@ -295,18 +361,20 @@ if (is_array($add_columns)) {
             tooltip: lang('archive selected object'),
             iconCls: 'ico-archive-obj',
             disabled: true,
-            handler: function () {
+			selection_dependant: true,
+			is_multiple: true,
+			grid_id: grid_id,
+            handler: function() {
                 if (confirm(lang('confirm archive selected objects'))) {
-                    var cmp = Ext.getCmp(grid_id);
+                    var cmp = Ext.getCmp(this.grid_id);
                     cmp.store.load({
                         params: Ext.apply({}, {
                             action: 'archive',
-                            ids: getSelectedIds()
+                            ids: cmp.getSelectedIds()
                         })
                     });
                 }
-            },
-            scope: this
+            }
         }),
 
         edit: new Ext.Action({
@@ -314,37 +382,48 @@ if (is_array($add_columns)) {
             tooltip: lang('edit selected object'),
             iconCls: 'ico-edit',
             disabled: true,
-            handler: function () {
-                    og.render_modal_form('', {c:'time', a:'edit_timeslot', params: {id: getSelectedIds()}});
-            },
-            scope: this
+			selection_dependant: true,
+			is_multiple: false,
+			grid_id: grid_id,
+            handler: function() {
+				var cmp = Ext.getCmp(this.grid_id);
+                og.render_modal_form('', {
+                    c: 'time',
+                    a: 'edit_timeslot',
+                    params: {
+                        id: cmp.getFirstSelectedId()
+                    }
+                });
+            }
         }),
-
+        
         trash: new Ext.Action({
             text: lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
             iconCls: 'ico-trash',
             disabled: true,
-            handler: function () {
+			selection_dependant: true,
+			is_multiple: true,
+			grid_id: grid_id,
+            handler: function() {
                 if (confirm(lang('confirm move to trash'))) {
                     var cmp = Ext.getCmp(grid_id);
                     cmp.store.load({
                         params: Ext.apply({}, {
                             action: 'trash',
-                            ids: getSelectedIds()
+                            ids: cmp.getSelectedIds()
                         })
                     });
                 }
-            },
-            scope: this
+            }
         }),
         print: new Ext.Button({
             iconCls: 'ico-print',
             text: '<?php echo lang('generate report') ?>',
             id: 'ts_print_btn',
-            handler: function () {
-            	var tab = Ext.getCmp('reporting-panel');
-				if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);
+            handler: function() {
+                var tab = Ext.getCmp('reporting-panel');
+                if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);
                 og.openLink(og.getUrl('reporting', 'total_task_times_p'), {
                     caller: 'reporting-panel'
                 });
@@ -354,57 +433,57 @@ if (is_array($add_columns)) {
 
     var timeslots_tbar_items = [];
 
-<?php if ($can_add_timeslots) { ?>
+    <?php if ($can_add_timeslots) { ?>
         timeslots_tbar_items.push(botonera.newtimeslot);
         <?php if (user_config_option('show_start_time_action')) { ?>
             timeslots_tbar_items.push(botonera.start);
         <?php } ?>
-<?php } ?>
+    <?php } ?>
     timeslots_tbar_items.push(botonera.edit);
     timeslots_tbar_items.push(botonera.archive);
     timeslots_tbar_items.push(botonera.trash);
     timeslots_tbar_items.push(botonera.print);
 
 
-<?php foreach ($additional_actions as $add_action) { 
-		if (array_var($add_action, 'type') == 'menu') {
-?>
-			var menu_items = [];
-<?php foreach ($add_action['items'] as $item) { ?>
-			menu_items.push(new Ext.Action({
-				iconCls: '<?php echo array_var($item, 'cls') ?>',
-				text: '<?php echo array_var($item, 'text') ?>',
-				handler: function() {
-				<?php if (isset($item['onclick'])) { ?>
-					eval("<?php echo $item['onclick'] ?>");
-				<?php } else if (isset($item['url'])) { ?>
-					og.openLink("<?php echo $item['url'] ?>");
-				<?php } ?>
-				}
-			}));
-<?php } ?>
-			var menu_action = new Ext.Action({
-				text: '<?php echo array_var($add_action, 'text') ?>',
-				menu: menu_items
-			});
-			timeslots_tbar_items.push(menu_action);
-<?php
-		} else {
-?>
-        timeslots_tbar_items.push(new Ext.Button({
-            iconCls: '<?php echo array_var($add_action, 'cls') ?>',
-            text: '<?php echo array_var($add_action, 'text') ?>',
-            handler: function () {
-    <?php if (isset($add_action['onclick'])) { ?>
-                    eval("<?php echo $add_action['onclick'] ?>");
-    <?php } else if (isset($add_action['url'])) { ?>
-                    og.openLink("<?php echo $add_action['url'] ?>");
-    <?php } ?>
-            }
-        }));
-        
-<?php 	}
-	  } ?>
+    <?php foreach ($additional_actions as $add_action) {
+        if (array_var($add_action, 'type') == 'menu') {
+    ?>
+            var menu_items = [];
+            <?php foreach ($add_action['items'] as $item) { ?>
+                menu_items.push(new Ext.Action({
+                    iconCls: '<?php echo array_var($item, 'cls') ?>',
+                    text: '<?php echo array_var($item, 'text') ?>',
+                    handler: function() {
+                        <?php if (isset($item['onclick'])) { ?>
+                            eval("<?php echo $item['onclick'] ?>");
+                        <?php } else if (isset($item['url'])) { ?>
+                            og.openLink("<?php echo $item['url'] ?>");
+                        <?php } ?>
+                    }
+                }));
+            <?php } ?>
+            var menu_action = new Ext.Action({
+                text: '<?php echo array_var($add_action, 'text') ?>',
+                menu: menu_items
+            });
+            timeslots_tbar_items.push(menu_action);
+        <?php
+        } else {
+        ?>
+            timeslots_tbar_items.push(new Ext.Button({
+                iconCls: '<?php echo array_var($add_action, 'cls') ?>',
+                text: '<?php echo array_var($add_action, 'text') ?>',
+                handler: function() {
+                    <?php if (isset($add_action['onclick'])) { ?>
+                        eval("<?php echo $add_action['onclick'] ?>");
+                    <?php } else if (isset($add_action['url'])) { ?>
+                        og.openLink("<?php echo $add_action['url'] ?>");
+                    <?php } ?>
+                }
+            }));
+
+    <?php     }
+    } ?>
 
 
     // toolbar buttons to the right
@@ -412,7 +491,9 @@ if (is_array($add_columns)) {
 
     // filters
     var type_options = [
-        [0, '<?php echo lang('all timeslots') ?>'], [1, '<?php echo escape_character(lang('task timeslots')) ?>'], [2, '<?php echo escape_character(lang('time timeslots')) ?>']
+        [0, '<?php echo lang('all timeslots') ?>'],
+        [1, '<?php echo escape_character(lang('task timeslots')) ?>'],
+        [2, '<?php echo escape_character(lang('time timeslots')) ?>']
     ];
     if (og.additional_timeslot_type_filter_values) {
         for (var j = 0; j < og.additional_timeslot_type_filter_values.length; j++) {
@@ -421,8 +502,10 @@ if (is_array($add_columns)) {
     }
 
     var add_row_user_options = [];
-    var user_options = [[0, lang('everyone')]];
-    
+    var user_options = [
+        [0, lang('everyone')]
+    ];
+
     var period_options = [
         [0, lang('no filter')],
         [1, lang('today')],
@@ -435,36 +518,80 @@ if (is_array($add_columns)) {
         [10, lang('Second half of last month+')],
         [4, lang('this month')],
         [5, lang('last month+')],
+        [12, lang('year to date')],
         [6, lang('select dates...')]
     ];
     var period_ini_val = '<?php echo array_var($current_filters, 'period_filter') ?>';
-    
-<?php foreach ($users as $user) {
-	$user_display_name = str_replace("\\'", "'", $user->getObjectName());
-?>
+
+    <?php foreach ($users as $user) {
+        $user_display_name = str_replace("\\'", "'", $user->getObjectName());
+    ?>
         user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
         add_row_user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
-<?php } ?>
+    <?php } ?>
 
     var type_ini_val = '<?php echo array_var($current_filters, 'type_filter', '0') ?>';
     var user_ini_val = '<?php echo array_var($current_filters, 'user_filter', '0') ?>';
 
-    if(period_ini_val == 6){
+    if (period_ini_val == 6) {
         var hidden_from = false;
         var hidden_to = false;
-    }else{
+    } else {
         var hidden_from = true;
         var hidden_to = true;
     }
 
     var filters = {
-        type_filter: {type: 'list', label: '&nbsp;' + lang('type') + ': ', options: type_options, width: 200, value: type_ini_val, initial_val: type_ini_val, secondToolbar:true},
-        user_filter: {type: 'list', label: '&nbsp;' + lang('person') + ': ', options: user_options, width: 150, value: user_ini_val, initial_val: user_ini_val, secondToolbar:true},
-        period_filter: {type: 'period', label: '&nbsp;' + lang('Time period') + ': ', options: period_options, value: period_ini_val, initial_val: period_ini_val, secondToolbar:true},
-        from_filter: {type: 'date', label:{id:'label_from_filter',hidden:hidden_from,text: '&nbsp;' + lang('from date') + ': '}, value: '<?php echo array_var($current_filters, 'from_filter') ?>',hidden:hidden_from, secondToolbar:true},
-        to_filter: {type: 'date', label: {id:'label_to_filter',hidden:hidden_to,text:'&nbsp;' + lang('to date') + ': '}, value: '<?php echo array_var($current_filters, 'to_filter') ?>',hidden:hidden_to, secondToolbar:true}
+        type_filter: {
+            type: 'list',
+            label: '&nbsp;' + lang('type') + ': ',
+            options: type_options,
+            width: 200,
+            value: type_ini_val,
+            initial_val: type_ini_val,
+            secondToolbar: true
+        },
+        user_filter: {
+            type: 'list',
+            label: '&nbsp;' + lang('person') + ': ',
+            options: user_options,
+            width: 150,
+            value: user_ini_val,
+            initial_val: user_ini_val,
+            secondToolbar: true
+        },
+        period_filter: {
+            type: 'period',
+            label: '&nbsp;' + lang('Time period') + ': ',
+            options: period_options,
+            value: period_ini_val,
+            initial_val: period_ini_val,
+            secondToolbar: true
+        },
+        from_filter: {
+            type: 'date',
+            label: {
+                id: 'label_from_filter',
+                hidden: hidden_from,
+                text: '&nbsp;' + lang('from date') + ': '
+            },
+            value: '<?php echo array_var($current_filters, 'from_filter') ?>',
+            hidden: hidden_from,
+            secondToolbar: true
+        },
+        to_filter: {
+            type: 'date',
+            label: {
+                id: 'label_to_filter',
+                hidden: hidden_to,
+                text: '&nbsp;' + lang('to date') + ': '
+            },
+            value: '<?php echo array_var($current_filters, 'to_filter') ?>',
+            hidden: hidden_to,
+            secondToolbar: true
+        }
     };
-    
+
     var store_parameters = {
         url_controller: 'time',
         url_action: 'list_all'
@@ -479,40 +606,19 @@ if (is_array($add_columns)) {
     // filters added by plugin
     if (og.additional_timeslots_tab_filters) {
         for (filter_code in og.additional_timeslots_tab_filters) {
-	        var f = og.additional_timeslots_tab_filters[filter_code];
-	        if (!f || typeof(f) == 'function') continue;
+            var f = og.additional_timeslots_tab_filters[filter_code];
+            if (!f || typeof(f) == 'function') continue;
 
-	        if (typeof(all_current_filters[filter_code]) != "undefined") {
-				f.value = all_current_filters[filter_code];
-				f.initial_val = all_current_filters[filter_code];
-	        }
-	        filters[filter_code] = f;
-	    	store_parameters[filter_code] = f.initial_val;
+            if (typeof(all_current_filters[filter_code]) != "undefined") {
+                f.value = all_current_filters[filter_code];
+                f.initial_val = all_current_filters[filter_code];
+            }
+            filters[filter_code] = f;
+            store_parameters[filter_code] = f.initial_val;
         }
     }
 
-
-    var sm = new Ext.grid.CheckboxSelectionModel({
-        listeners: {
-            selectionchange: function () {
-                if (sm.getCount() <= 0) {
-                    botonera.trash.setDisabled(true);
-                    botonera.archive.setDisabled(true);
-                } else {
-                    botonera.trash.setDisabled(false);
-                    botonera.archive.setDisabled(false);
-                }
-
-                if (sm.getCount() == 1) {
-                    botonera.edit.setDisabled(false);
-                }  else {
-                    botonera.edit.setDisabled(true);
-                }
-            }
-        }
-    });
-
-    var timeslots_module_grid = new og.ObjectGrid({
+    var timeslots_module_grid = new og.ObjectGrid({ 
         genid: '<?php echo $genid ?>',
         separate_totals_request: true,
         renderTo: grid_id + '_container',
@@ -536,19 +642,18 @@ if (is_array($add_columns)) {
         name_width: 200,
         stateId: 'timeslots-module',
         allow_drag_drop: true,
-        forceFit: false,
-        sm: sm
+        forceFit: false
     });
 
 
     var active_tab = Ext.getCmp('tabs-panel').activeTab;
     if (active_tab.events.resize.listeners.length < 2) {
-        active_tab.on('resize', function () {
+        active_tab.on('resize', function() {
             og.resize_all_grids(this);
         });
     }
 
-    og.resize_all_grids = function (active_tab) {
+    og.resize_all_grids = function(active_tab) {
         var grids = $("#" + active_tab.id + " .x-grid-panel");
         for (var i = 0; i < grids.length; i++) {
             var g = Ext.getCmp($(grids[i]).attr('id'));
@@ -558,7 +663,7 @@ if (is_array($add_columns)) {
     }
 
     timeslots_module_grid.getView().override({
-        getRowClass: function (record, index, rowParams, store) {
+        getRowClass: function(record, index, rowParams, store) {
             return record.data.add_cls ? record.data.add_cls : "";
         }
     });

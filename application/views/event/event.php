@@ -527,6 +527,7 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 				$subscriber_ids[] = logged_user()->getId();
 			}
 		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
+		<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
 		<div id="<?php echo $genid ?>add_subscribers_content"><?php
 				foreach ($subscriber_ids as $subid) {
 					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
@@ -539,8 +540,8 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 	
 		<div class="dataBlock">
 			<p><?php echo lang('event invitations desc') ?></p>
-			<p><?php $event_send_invitations = (user_config_option("event_send_invitations") && $event->isNew()) ? true : false;
-					 $event_subscribe_invited = (user_config_option("event_subscribe_invited") && $event->isNew()) ? true : false;
+			<p><?php $event_send_invitations = (user_config_option("event_send_invitations") ) ? true : false;
+					 $event_subscribe_invited = (user_config_option("event_subscribe_invited") ) ? true : false;
 					 echo checkbox_field('event[send_notification]', array_var($event_data, 'send_notification', $event_send_invitations), array('id' => $genid . 'eventFormSendNotification')) ?>
 			<label for="<?php echo $genid ?>eventFormSendNotification" class="checkbox"><?php echo lang('send new event notification') ?></label></p>
 			

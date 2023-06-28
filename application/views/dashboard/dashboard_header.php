@@ -14,11 +14,11 @@
             // Populate $member, $member_type, $member_name
             $member = $active_members[0];
             $member_type = $member->getTypeNameToShow();
-            $member_name = clean($member->getName());
+            $member_name = clean($member->getDisplayName());
     } else if (count($active_members) > 1) {
         // Populate $members array
         foreach($active_members as $act_member){
-            $members[] = array($act_member->getTypeNameToShow(), clean($act_member->getName()));
+            $members[] = array($act_member->getTypeNameToShow(), clean($act_member->getDisplayName()));
         }
     }
 

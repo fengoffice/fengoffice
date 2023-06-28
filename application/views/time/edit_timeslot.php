@@ -219,8 +219,8 @@
 
 					<?php 
 					$main_tab_more_html = "";
-					Hook::fire('timeslot_main_tab_additional_fields', $timeslot, $main_tab_more_html);
-					echo $main_tab_more_html;
+					Hook::fire('timeslot_main_tab_additional_fields', array('timeslot' => $timeslot, 'task_id' => $object_id, 'selected_member_ids' => $pre_selected_member_ids, 'genid' => $genid), $main_tab_more_html);
+					echo $main_tab_more_html; 
 					?>
                     
 
@@ -229,7 +229,7 @@
 
                 <div id="<?php echo $genid ?>add_timeslot_related_to" class="editor-container form-tab">
                     <?php 
-                        $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
+                        $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.set_time_is_billable_using_labor("'.$genid.'");');
                         if ($timeslot->isNew()) {
                             render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $pre_selected_member_ids, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
                         } else {
@@ -364,9 +364,6 @@
 <script>   
     var edit_mode = "<?php echo $edit_mode;  //this variable is undefined ?>";
 
-    // Note: IDE does not reflect it, but the following line is fully commented out 
-    // var edit_mode = "<?php echo $timeslot->isNew(); ?>";
-
     var edit_hours_mode = "<?php echo 0; ?>";
     var gen_id = "<?php echo $genid; ?>";
     var time_preferences =JSON.parse('<?php echo json_encode($time_preferences); ?>');
@@ -383,7 +380,10 @@
         $(input).hide();
         $('#' + genid + "paused_time_container").slideToggle(100);
     }
-
+    // Save current selected member ids
+    var json_sel_ids = document.getElementById(gen_id + member_selector[gen_id].hiddenFieldName).value; 
+    var current_selected_member_ids = json_sel_ids == "" ? [] : Ext.util.JSON.decode(json_sel_ids);
+    
 	//[Conrado 8/2019] Would this work?
 	//The idea here is to know the initial values, to see if/how we need to edit them 
     og._original_worked_time = $('#worked_time').val();
@@ -610,61 +610,6 @@
         start_date.val(startDate.dateFormat(og.preferences.date_format));
         start_time.val(timeslots.format_hours_and_minutes(startDate));
           
-        
-        /*
-        
-        PREVIOUS VERSION - DELETE
-		var start_date_aux = og.getDateArray(start_date.val(), start_time.val());
-
-		//If the end_date is empty, it should be set as "now" by default.
-        if(end_date.val() == og.preferences.date_format_tip || end_time.val() =="hh:mm"){
-            //This is wrong.
-            var now = new Date(start_date_aux[0],start_date_aux[1],start_date_aux[2],start_date_aux[3],start_date_aux[4]);
-        }else{
-            var end_date_aux = og.getDateArray(end_date.val(),end_time.val());
-            var now = new Date(start_date_aux[0],start_date_aux[1],start_date_aux[2],end_date_aux[3],end_date_aux[4]);
-        }
-        
-        hours = now.getHours();
-        minutes = now.getMinutes(); 
-
-        //This is wrong - right?
-        //Conrado 8/2019 - commented out
-        //og._newTimeValue = og._lastTimeValue;
-
-        var h = $('#worked_time').val();
-        var m = $('#worked_minutes').val();
-        if (isNaN(h)) h = 0;
-        if (isNaN(m)) m = 0;
-        var worked_milis = (h * 60 + m) * 60 * 1000;
-        
-        //var d = new Date(now.getTime()-(og._newTimeValue));
-        var d = new Date(now.getTime() - worked_milis);
-        
-        var final_minutes = d.getMinutes();
-        var final_end_minutes = now.getMinutes();
-        if(d.getMinutes() < 10){
-            final_minutes = '0'+final_minutes
-        }
-        if(now.getMinutes() < 10){
-            final_end_minutes = '0'+final_end_minutes
-        }
-        if(og.preferences.time_format_use_24 == "0"){
-            start_time.val(d.getHours()+':'+final_minutes+' AM');
-            end_time.val(now.getHours()+':'+final_end_minutes+' AM');
-            if(d.getHours() > 12){
-                start_time.val((d.getHours()-12)+':'+final_minutes+' PM');
-            }
-            if(now.getHours() > 12){
-                end_time.val((now.getHours()-12)+':'+final_end_minutes+' PM');
-            }
-        }else{
-            start_time.val(d.getHours()+':'+final_minutes);
-            end_time.val(now.getHours()+':'+final_end_minutes);
-        }
-        start_date.val(d.dateFormat(og.preferences.date_format));
-        end_date.val(now.dateFormat(og.preferences.date_format));
-        */
     };
 
     /**
@@ -714,53 +659,6 @@
             end_date.val(endDate.dateFormat(og.preferences.date_format));
             end_time.val(timeslots.format_hours_and_minutes(endDate));
         } 
-        
-        /* Old version
-        var now;
-        if(end_date.val() == og.preferences.date_format_tip || end_time.val() =="hh:mm"){
-            now = new Date();
-        }else{
-            var start_date_aux = og.getDateArray(start_date.val(),start_time.val());
-            now = new Date(start_date_aux[0],start_date_aux[1],start_date_aux[2],start_date_aux[3],start_date_aux[4]);
-        }
-        hours = now.getHours();
-        minutes = now.getMinutes(); 
-
-        var h = $('#worked_time').val();
-        var m = $('#worked_minutes').val();
-        if (isNaN(h)) h = 0;
-        if (isNaN(m)) m = 0;
-        var worked_milis = (h * 60 + m) * 60 * 1000;
-        
-        og._newTimeValue = og._lastTimeValue;
-        
-        var d = new Date(now.getTime() + worked_milis);
-        
-        var final_minutes = d.getMinutes();
-        var final_end_minutes = now.getMinutes();
-        if(d.getMinutes() < 10){
-            final_minutes = '0'+final_minutes
-        }
-        if(now.getMinutes() < 10){
-            final_end_minutes = '0'+final_end_minutes
-        }
-        if(og.preferences.time_format_use_24 == "0"){
-            end_time.val(d.getHours()+':'+final_minutes+' AM');
-            start_time.val(now.getHours()+':'+final_end_minutes+' AM');
-            if(d.getHours() > 12){
-                end_time.val((d.getHours()-12)+':'+final_minutes+' PM');
-            }
-            if(now.getHours() > 12){
-                start_time.val((now.getHours()-12)+':'+final_end_minutes+' PM');
-            }
-        }else{
-            end_time.val(d.getHours()+':'+final_minutes);
-            start_time.val(now.getHours()+':'+final_end_minutes);
-        }
-        end_date.val(d.dateFormat(og.preferences.date_format));
-        start_date.val(now.dateFormat(og.preferences.date_format));
-
-        */
 
     };
 
@@ -976,7 +874,7 @@
     }
 
     
-    og.openObjectTaskPicker = function () {
+    og.openObjectTaskPicker = function () { 
         og.ObjectPicker.show(function (objs) {
             if (objs && objs.length > 0) {
                 var obj = objs[0].data;
@@ -1001,13 +899,88 @@
         Object.find('.name').text(object_name);
 
         if (og.reclassify_time_when_linking_task) {
-        	og.set_timeslot_members_by_task(object_id, og._dims_to_keep_when_relinkng_task);
+            og.set_timeslot_members_by_task(object_id, og._dims_to_keep_when_relinkng_task);
+        } else {
+            og.setTimeslotIsBillableUsingTask(object_id);
         }
-
+		
         Link.hide()
         Object.show();
         
     };
+
+    og.setTimeslotIsBillableUsingTask = function(task_id){
+        // Change billable if hour_types, advanced_billing and income plugins are activated
+		var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
+		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
+        var income_active = <?php echo Plugins::instance()->isActivePlugin('income') ? '1' : '0'; ?>;
+        var genid = gen_id;
+        var use_task_billable = og.config['use_is_billable_value_in_tasks']; 
+		if(use_task_billable && hour_type_active && advanced_billing_active && income_active){
+            var is_invoiced = $('#'+genid+'invoicing_status').val() == 'invoiced';
+            if(!is_invoiced){
+                var current_billable = $('#'+genid+'is_billableYes').attr('checked') == 'checked' ? 1 : 0;
+                var params = {task_id: task_id, current_billable: current_billable};
+                og.openLink(og.getUrl('billing_definition','get_task_billable_for_time_form', params), {
+                    hideLoading: true,
+                    callback: function(success, data) {
+                        if(data.has_value){
+                            if(data.is_billable){
+                                $('#'+genid+'is_billableNo').removeAttr('checked');
+                                $('#'+genid+'is_billableYes').attr('checked','checked');
+                                $('#'+genid+'invoicing_status').val('pending');
+                            } else {
+                                $('#'+genid+'is_billableYes').removeAttr('checked');
+                                $('#'+genid+'is_billableNo').attr('checked','checked');
+                                $('#'+genid+'invoicing_status').val('non_billable');
+                            }
+                        }
+                    }
+                });
+            }
+        }	
+	};
+
+    og.set_time_is_billable_using_labor = function (genid) {
+        // Change billable if hour_types, advanced_billing and income plugins are activated
+		var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
+		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
+        var income_active = <?php echo Plugins::instance()->isActivePlugin('income') ? '1' : '0'; ?>;
+        var json_sel_ids = document.getElementById(genid + member_selector[genid].hiddenFieldName).value; 
+        var selected_member_ids = json_sel_ids == "" ? [] : Ext.util.JSON.decode(json_sel_ids);
+        if(hour_type_active && advanced_billing_active && income_active){
+            var is_invoiced = $('#'+genid+'invoicing_status').val() == 'invoiced';
+            if(!is_invoiced){
+                var current_billable = $('#'+genid+'is_billableYes').attr('checked') == 'checked' ? 1 : 0;
+                var params = {member_ids: selected_member_ids, current_member_ids: current_selected_member_ids, current_billable: current_billable};
+                og.openLink(og.getUrl('billing_definition','get_labor_cat_billable_for_time_form', params), {
+                    hideLoading: true,
+                    callback: function(success, data) {
+                        if(data.has_value){
+                            if(data.is_billable){
+                                if(current_billable != data.is_billable){
+                                    if(confirm(lang('You are changing from a non-billable labor category to a billable one. This will set the \'Billable\' property for this task to \'Yes\''))){
+                                        $('#'+genid+'is_billableNo').removeAttr('checked');
+                                        $('#'+genid+'is_billableYes').attr('checked','checked');
+                                        $('#'+genid+'invoicing_status').val('pending');
+                                    }
+                                }
+                            } else {
+                                if(current_billable != data.is_billable){
+							        if(confirm(lang('You are changing from a billable labor category to a non-billable one. This will set the \'Billable\' property for this task to \'No\''))){
+                                        $('#'+genid+'is_billableYes').removeAttr('checked');
+                                        $('#'+genid+'is_billableNo').attr('checked','checked');
+                                        $('#'+genid+'invoicing_status').val('non_billable');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        current_selected_member_ids = selected_member_ids;
+    }
 
     og.removeObjectTask = function (element) {
 
@@ -1029,7 +1002,7 @@
 				callback: function(success, data) {
 					if (data.task) {
                         // remove all members from timeslot
-                        member_selector.remove_all_selections(gen_id, excluded_dim_ids);
+                        member_selector.remove_all_selections(gen_id, excluded_dim_ids, true);
                         // parse the mem path string
                         var mempath = Ext.util.JSON.decode(data.task.memPath);
                         var task_members_json = {};
@@ -1058,11 +1031,28 @@
                             for (var i=0; i<member_ids.length; i++) {
                                 if(typeof member_ids[i] != 'function'){
                                     var mem_id = member_ids[i];
-                                    member_selector.add_relation(dim_id, gen_id, mem_id);
+                                    member_selector.add_relation(dim_id, gen_id, mem_id, false, true);
                                 }
                             }     
                         }
-                        	
+
+                        if(og.enabled_dimensions_by_code['hour_types']) {
+                            var hour_type_dim_id = og.enabled_dimensions_by_code['hour_types'];
+                            var contact_id = document.getElementById(gen_id+'timeslot_contact_id').value;
+                            if(member_selector[gen_id].sel_context[hour_type_dim_id].length == 0){
+                                og.openLink(og.getUrl('hour_type', 'get_user_default_hour_type', {user_id: contact_id}), {
+                                    hideLoading: true,
+                                    callback: function(success, data) {
+                                        if (data.member_id) {
+                                            member_selector.add_relation(hour_type_dim_id, gen_id, data.member_id);
+                                        }
+                                    }
+                                });
+                            }
+
+                        }
+                        
+                        og.setTimeslotIsBillableUsingTask(task_id);
 					}
 				}
 			});
@@ -1108,9 +1098,10 @@
                         if (og.on_ts_contact_combo_select && og.on_ts_contact_combo_select.length > 0) {
                             var params = {genid: '<?php echo $genid?>', selected_user_id: combo.getValue(), combo: combo, task_id:'<?php echo $timeslot->getRelObjectId()?>'};
                             for (x in og.on_ts_contact_combo_select) {
+                                if(x == 'remove') continue;
                                 var fn = og.on_ts_contact_combo_select[x];
                             	if (typeof(fn) == 'function') {
-		                        	fn.call(null, params)
+                                    fn.call(null, params);
 		                        }
                             }
                         }

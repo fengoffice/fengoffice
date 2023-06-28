@@ -308,9 +308,9 @@ class MailUtilities {
 
 			if (defined('EMAIL_MESSAGEID_CONTROL') && EMAIL_MESSAGEID_CONTROL) {
 				if (trim($message_id) != "") {
-					$id_condition = " AND `message_id`='".trim($message_id)."' AND `from`='$from'";
+					$id_condition = " AND `message_id`='".trim($message_id)."' AND `from`=".DB::escape($from);
 				} else {
-					$id_condition = " AND `name`= ". DB::escape(trim(array_var($parsedMail, 'Subject'))) ." AND `from`='$from'";
+					$id_condition = " AND `name`= ". DB::escape(trim(array_var($parsedMail, 'Subject'))) ." AND `from`=".DB::escape($from);
 
 					if (array_var($parsedMail, 'Date')) {
 						$sent_date_dt = new DateTimeValue(strtotime(array_var($parsedMail, 'Date')));

@@ -391,7 +391,7 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 	}
 }
 
-member_selector.remove_all_dimension_selections = function(genid, dim_id) {
+member_selector.remove_all_dimension_selections = function(genid, dim_id, dont_relaod_dependant_selectors) {
 	
 	if (!member_selector[genid]) return;
 		
@@ -401,17 +401,19 @@ member_selector.remove_all_dimension_selections = function(genid, dim_id) {
 			var member_id = member_selector[genid].sel_context[dim_id][0];
 			member_selector.remove_relation(dim_id, genid, member_id, true);
 		}
-		member_selector.reload_dependant_selectors(dim_id, genid);
+		if (!dont_relaod_dependant_selectors) {
+			member_selector.reload_dependant_selectors(dim_id, genid);
+		}
 	}	
 }
 
-member_selector.remove_all_selections = function(genid, excluded_dim_ids) {
+member_selector.remove_all_selections = function(genid, excluded_dim_ids, dont_relaod_dependant_selectors) {
 	if (typeof(excluded_dim_ids) == 'undefined') excluded_dim_ids = [];
 
 	for (dim_id in member_selector[genid].properties) {
 
 		if (excluded_dim_ids.indexOf(parseInt(dim_id)) == -1) {
-			member_selector.remove_all_dimension_selections(genid, dim_id);
+			member_selector.remove_all_dimension_selections(genid, dim_id, dont_relaod_dependant_selectors);
 			
 			if (!member_selector[genid].properties[dim_id].isMultiple) {
 				$("#"+genid+"-member-chooser-panel-"+dim_id+"-tree-current-selected .empty-text").show();
@@ -420,9 +422,9 @@ member_selector.remove_all_selections = function(genid, excluded_dim_ids) {
 	}
 }
 
-member_selector.reset_all_selections = function(genid) {
+member_selector.reset_all_selections = function(genid, dont_relaod_dependant_selectors) {
 
-	member_selector.remove_all_selections(genid);
+	member_selector.remove_all_selections(genid, [], dont_relaod_dependant_selectors);
 	
 	var added_dim_ids = [];
 	var dimensionMembers = og.contextManager.dimensionMembers;

@@ -18,7 +18,7 @@
     	'contact_id' => DATA_TYPE_INTEGER, 
     	'email_type_id' => DATA_TYPE_INTEGER, 
     	'email_address' => DATA_TYPE_STRING, 
-    	'is_main' => DATA_TYPE_BOOLEAN
+    	'is_main' => DATA_TYPE_BOOLEAN,
     );
   
     /**
@@ -27,7 +27,7 @@
     * @return BaseContactEmails 
     */
     function __construct() {
-      //Hook::fire('object_definition', 'ContactEmail', self::$columns);
+      Hook::fire('object_definition', 'ContactEmail', self::$columns);
       parent::__construct('ContactEmail', 'contact_emails', true);
     } // __construct
     

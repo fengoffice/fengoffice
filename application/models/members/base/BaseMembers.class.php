@@ -19,6 +19,7 @@
     	'parent_member_id' => DATA_TYPE_INTEGER, 
     	'depth' => DATA_TYPE_INTEGER, 
     	'name' => DATA_TYPE_STRING,  
+      'display_name' => DATA_TYPE_STRING,
     	'description' => DATA_TYPE_STRING,
     	'object_id' => DATA_TYPE_INTEGER,
     	'archived_on' => DATA_TYPE_DATETIME,
@@ -125,7 +126,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or Members objects
+    * @return array or Members objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'Members')) {

@@ -248,9 +248,10 @@ class Contacts extends BaseContacts {
 		return $this->getAllowedContacts($condition);
 	}
 
-	static function getContactFieldNames() {
+	static function getContactFieldNames() { 
 		return array('contact[first_name]' => lang('first name'),
 			'contact[surname]' => lang('surname'), 
+			'contact[display_name]' => lang('full name'),
 			'contact[email]' => lang('email address'),
 			'contact[company_id]' => lang('company'),
 
@@ -371,7 +372,7 @@ class Contacts extends BaseContacts {
 	 * @param unknown_type $email
 	 * @param unknown_type $id
 	 */
-	static function validateUniqueEmail ($email, $id = null, $contact_type = "") {
+	static function validateUniqueEmail ($email, $id = null, $contact_type = "", $is_user = false) {
 		
 		$do_validate_unique_mail = true;
 		Hook::fire('validate_contact_unique_mail', null, $do_validate_unique_mail);
@@ -395,6 +396,11 @@ class Contacts extends BaseContacts {
 		} else if ($contact_type == 'company') {
 			$contact_type_cond = " AND c.is_company=1";
 		}
+
+		$user_type_cond = "";
+		if($is_user){
+			$user_type_cond = " AND c.user_type > 0";
+		}
 		
 		$sql = "
 			SELECT DISTINCT(contact_id) FROM ".TABLE_PREFIX."contact_emails ce 
@@ -406,6 +412,7 @@ class Contacts extends BaseContacts {
 				ce.email_address = '$email'
 				$id_cond
 				$contact_type_cond
+				$user_type_cond
 				LIMIT 1 ";
 		
 		$res  = DB::execute($sql);
@@ -483,7 +490,7 @@ class Contacts extends BaseContacts {
 	static function validateUser($attributes, $id = null) {
 		$errors = array() ;
 
-		if (trim($attributes['email']) && !self::validateUniqueEmail($attributes['email'], $id, 'contact')){
+		if (trim($attributes['email']) && !self::validateUniqueEmail($attributes['email'], $id, 'contact', true)){
 			$errors[] = lang("email address must be unique");
 		}
 		
@@ -525,6 +532,9 @@ class Contacts extends BaseContacts {
             'all_addresses|country',
             'all_webpages',
             'all_emails',
+			'first_name',
+			'display_name'
+
         );
     }
 
@@ -547,6 +557,7 @@ class Contacts extends BaseContacts {
             'all_addresses|country',
             'all_webpages',
             'all_emails',
+			'display_name'
         );
     }
 

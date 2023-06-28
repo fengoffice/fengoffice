@@ -436,16 +436,16 @@ return array(
   'start work' => 'Start clock',
   'end work' => 'Stop clock',
   'confirm delete timeslot' => 'Are you sure you want to permanently delete this timeslot?',
-  'success open timeslot' => 'Time slot opened successfully',
-  'success create timeslot' => 'Time slot created successfully',
-  'success cancel timeslot' => 'Time slot canceled successfully',
-  'success close timeslot' => 'Time slot closed successfully',
-  'success delete timeslot' => 'Time slot deleted successfully',
-  'success edit timeslot' => 'Time slot edited successfully',
+  'success open timeslot' => 'Time entry opened successfully',
+  'success create timeslot' => 'Time entry created successfully',
+  'success cancel timeslot' => 'Time entry canceled successfully',
+  'success close timeslot' => 'Time entry closed successfully',
+  'success delete timeslot' => 'Time entry deleted successfully',
+  'success edit timeslot' => 'Time entry edited successfully',
   'open timeslot message' => 'Total work time elapsed: ',
-  'success pause timeslot' => 'Time slot paused successfully',
-  'success resume timeslot' => 'Time slot resumed successfully',
-  'paused timeslot message' => 'Time slot paused, total time: {0}',
+  'success pause timeslot' => 'Time entry paused successfully',
+  'success resume timeslot' => 'Time entry resumed successfully',
+  'paused timeslot message' => 'Time entry paused, total time: {0}',
   'time since pause' => 'Time since pause',
   'pause work' => 'Pause clock',
   'resume work' => 'Resume clock',
@@ -488,10 +488,11 @@ return array(
   'seconds' => 'Seconds',
   'days' => 'Days',
   'estimated time' => 'Estimated time',
+  'total estimated time' => 'Total estimated time',
   'work in progress' => 'Work in progress',
   'total time' => 'Total time',
-  'total time worked' => 'Total time worked',
-    
+  'total time worked' => 'Worked time',
+  'overall worked time' => 'Total worked time',
 
   'upload anyway' => 'Upload anyway',
 
@@ -774,6 +775,7 @@ return array(
 	'template parameters description' => 'This form contains the parameters that are needed to fill the tasks to be generated.',
 	'template_task' => 'Template task',
 	'repeat options' => 'Repeat options',
+  'time will be rounded to 15 minutes' => 'Time will be rounded to 15 minutes'
 ); // array
 
 ?>

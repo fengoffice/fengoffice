@@ -161,8 +161,14 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 			$(pre_id + " #values").hide();
 			$(pre_id + " #values_hint").hide();
 			$(pre_id + " #default_value").hide();
-			$(pre_id + " #is_required").hide();
-			$(pre_id + " #is_multiple_values").hide();
+		
+			if(!property.override_is_required) {
+				$(pre_id + " #is_required").hide();	
+			}
+			
+			if(!property.override_is_multiple_values) {
+				$(pre_id + " #is_multiple_values").hide();
+			}
 			
 			$(pre_id + " #is_special_hint").show();
 
@@ -192,7 +198,7 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 		$(pre_id + " #visible_by_default").attr('checked', 'checked');
 		$(pre_id + " #show_in_lists").attr('checked', 'checked');
 	}
-	
+
 	og.admin_cp_count[genid] = cp_count + 1;
 }
 

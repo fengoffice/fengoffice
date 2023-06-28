@@ -121,6 +121,9 @@ $(function() {
 				$prop['contact_type'] = $cp['contact_type'];
 			}
 			
+
+			Hook::fire('overrides_special_cp',null, $prop);
+			
 			Hook::fire('additional_custom_property_fields', array('cp' => $cp, 'ot' => $object_type), $prop);
 ?>
 		var prop = Ext.util.JSON.decode('<?php echo (defined('JSON_HEX_APOS') ? json_encode($prop, JSON_HEX_APOS) : json_encode($prop)) ?>');

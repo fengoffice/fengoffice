@@ -1,7 +1,6 @@
 <?php $hidden_field_name = array_var($options, 'hidden_field_name', 'members');?>
-<div id='<?php echo $component_id ?>-container' style="float: left;">
+<div id='<?php echo $component_id ?>-container' class="feng-dimention-selector" data-generic-id="<?php echo $genid; ?>" style="float: left;">
 	<input id='<?php echo $genid . $hidden_field_name ?>' name='<?php echo $hidden_field_name ?>' type='hidden' value="<?php echo str_replace('"', "'", $selected_members_json); ?>"></input>
-
 <?php
 $dim_count = 0;
 
@@ -58,9 +57,8 @@ if (array_var($options, 'readonly')) {
 	$sel_mem_ids = array();
 	
 	$original_options = $options;
-	
+
 	foreach ($dimensions as $dimension) :
-	
 		$dimension_id = $dimension['dimension_id'];
 		if (isset($skipped_dimensions) && is_array($skipped_dimensions) && in_array($dimension_id, $skipped_dimensions) || !in_array($dimension_id, $enabled_dimensions)) continue;
 		
@@ -77,9 +75,10 @@ if (array_var($options, 'readonly')) {
 		
 		$is_required = array_var($dimension, 'is_required');
 		$dimension_name = array_var($dimension, 'dimension_name');
+
 		Hook::fire("edit_dimension_name", array('dimension' => $dimension_id), $dimension_name);
-		
 		$custom_name = DimensionOptions::getOptionValue($dimension_id, 'custom_dimension_name');
+
 		$dimension_name = $custom_name && trim($custom_name) != "" ? $custom_name : $dimension_name;
 		
 		if ($is_required) $dimension_name .= " *";

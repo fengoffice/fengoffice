@@ -115,7 +115,10 @@ og.setHfValue = function(genid, id, val) {
 
 og.setDiscard = function(genid, val){
 	var the_id = Ext.getDom(genid + 'id').value;
-	document.frmMail.action = og.getUrl('mail', 'discard', {id: the_id, ajax:'true'});
+	var form = document.getElementById(genid + 'form');
+	if (form) {
+		form.action = og.getUrl('mail', 'discard', {id: the_id, ajax:'true'});
+	}
 };
 
 og.addContactsToAdd = function(genid) {
@@ -342,22 +345,26 @@ og.autoSaveDraft = function(genid) {
 	
 	og.setHfValue(genid, 'autosave', true);
 
-	if (mb.oldMailBody == null) mb.oldMailBody = og.getMailBodyFromUI(genid);
+	if (mb.oldMailBody == null){
+		 mb.oldMailBody = og.getMailBodyFromUI(genid);
+	}
 	// if html -> always check for changes, if plain -> only check when key is pressed
 
 	var format_html = Ext.getDom(genid + 'format_html');
-	if (format_html && format_html.checked) og.checkMailBodyChanges(genid);
+	if (format_html && format_html.checked){
+		 og.checkMailBodyChanges(genid);
+	}
 		
 	if (mb.thisDraftHasChanges) {
 		mb.thisDraftHasChanges = false;
 		
-		var prev_action = document.frmMail.action;
-		document.frmMail.action = og.getUrl('mail', 'autosave_draft', {ajax:'true'});
-		
 		var form = document.getElementById(genid + 'form');
-		if (form) form.onsubmit();
 		
-		document.frmMail.action = prev_action;
+		var prev_action = form.action;
+		form.action = og.getUrl('mail', 'autosave_draft', {ajax:'true'});
+		
+		if (form) form.onsubmit();
+		form.action = prev_action;
 	}
 	og.setHfValue(genid, 'autosave', false);
 	og.stopAutosave(genid);

@@ -62,6 +62,10 @@ class LocalizationConfigHandler extends ConfigHandler {
 		return select_box($control_name, $options);
 	} // render
 
+	function getAvailableLocales(){
+		return $this->available_locales;
+	}
+
 } // LocalizationConfigHandler
 
 ?>

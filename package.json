@@ -20,21 +20,22 @@
   },
   "homepage": "https://github.com/fengoffice/FO_Internal#readme",
   "dependencies": {
-    "moment": "^2.29.0",
-    "react": "^16.11.0",
-    "react-dom": "^16.11.0",
-    "recharts": "^1.8.5"
+    "moment": "^2.29.1",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
+    "recharts": "^1.8.5",
+    "swagger-ui": "^4.18.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.16",
-    "@babel/core": "^7.6.4",
-    "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/preset-env": "^7.6.3",
-    "@babel/preset-react": "^7.6.3",
-    "babel-loader": "^8.0.6",
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.7",
+    "@babel/plugin-proposal-class-properties": "^7.16.7",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-react": "^7.16.7",
+    "babel-loader": "^8.2.3",
     "kind-of": "^6.0.3",
     "minimist": "^1.2.5",
-    "webpack": "^4.41.2",
+    "webpack": "^4.46.0",
     "webpack-cli": "^3.3.12"
   }
 }

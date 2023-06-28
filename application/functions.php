@@ -1962,7 +1962,7 @@ function pdf_convert_and_download($html_filename, $download_filename=null, $orie
 	}
 }
 
-function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page_size="A4", $zoom='') {
+function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page_size="A4", $zoom='', $html_header_footer = array()) {
 	$pdf_filename = null;
 	
 	if(is_exec_available()){
@@ -1976,7 +1976,23 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page
 		
 		$tmp_html_path = ROOT."/tmp/tmp_html_".$temp_genid.".html";
 		file_put_contents($tmp_html_path, $html_to_convert);
-		
+
+		if($html_header_footer['header']){
+			$tmp_html_header_path = ROOT."/tmp/tmp_html_header_".$temp_genid.".html";
+			file_put_contents($tmp_html_header_path, $html_header_footer['header']);
+			$flag_header = " --header-html  \"".$tmp_html_header_path."\" ";
+		}else{
+			$flag_header = "";
+		}
+
+		if($html_header_footer['footer']){
+			$tmp_html_footer_path = ROOT."/tmp/tmp_html_footer_".$temp_genid.".html";
+			file_put_contents($tmp_html_footer_path, $html_header_footer['footer']);
+			$flag_footer = " --footer-left [page]/[topage] --footer-html  \"".$tmp_html_footer_path."\" ";
+		}else{
+			$flag_footer = "--footer-right [page]/[topage]";
+		}
+
 		if (!in_array($orientation, array('Portrait', 'Landscape'))) $orientation = 'Portrait';
 		
 		$temp_pdf_name = ROOT."/tmp/".$temp_genid.".pdf";
@@ -1987,15 +2003,14 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page
 		
 		//convert to pdf in background
 		if (substr(php_uname(), 0, 7) == "Windows") {
-			
 			if (!defined('WKHTMLTOPDF_PATH')) define('WKHTMLTOPDF_PATH', "C:\\Program Files\\wkhtmltopdf\\bin\\");
 			$command_location = with_slash(WKHTMLTOPDF_PATH) . "wkhtmltopdf";
-			
-			$command = "\"$command_location\" -s $page_size --encoding utf8 $zoom --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+			$command = "\"$command_location\" -s $page_size --encoding utf8 $zoom -L 1 -R 1 ". $flag_header ." ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		} else {
 		    $command_location = (defined('WKHTMLTOPDF_PATH') ? with_slash(WKHTMLTOPDF_PATH) : "");
-		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 $zoom --footer-right [page]/[topage] -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 $zoom  -L 1 -R 1 ". $flag_header ."  ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		}
+
 		exec($command, $result, $return_var);
 		
 		if ($return_var > 0){
@@ -2007,6 +2022,12 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page
 		
 		//delete the png file
 		unlink($tmp_html_path);
+		if($html_header_footer['header']){
+			unlink($tmp_html_header_path);
+		}
+		if($html_header_footer['footer']){
+			unlink($tmp_html_footer_path);
+		}
 			
 		$file_path = ROOT."/tmp/".$pdf_filename;
 		
@@ -2419,12 +2440,12 @@ function calculate_template_task_parameter_date($parameterValues, $value, $propN
 	$time_value = null;
 	if (isset($exp_value[1])) $time_value = $exp_value[1];
 	
-	$operator = '+';
-	if (strpos($value, '+') === false) {
-		$operator = '-';
-	}
-	$opPos = strpos($value, $operator);
+	$opPos = strpos($value, '}') + 1;// the operator is placed after variable name
+
 	if ($opPos !== false) {
+		
+		$operator = substr($value, $opPos, 1);
+
 		// Is parametric
 		$dateParam = substr($value, 1, strpos($value, '}') - 1);
 		$dateParam = str_replace("'", "", $dateParam);
@@ -2498,10 +2519,11 @@ function calculate_template_task_parameter_date($parameterValues, $value, $propN
 		if($dateUnit == 'i') {
 			$dateUnit = 'm'; // DateTimeValue::add function needs minute option as 'm'
 		}
-		$dateNum = (int) substr($value, strpos($value,$operator), strlen($value) - 2);
+		$dateNum = substr($value, $opPos+1, strlen($value) - $opPos - 2);
+
+		Hook::fire('template_param_date_calculation', array('parameterValues' => $parameterValues, 'op' => $operator, 'date' => $date, 'unit' => $dateUnit, 'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
 		
-		Hook::fire('template_param_date_calculation', array('op' => $operator, 'date' => $date, 'unit' => $dateUnit, 'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
-		
+		$dateNum = (int)$dateNum;
 		$value = $date->add($dateUnit, $dateNum);
 		
 	}else{
@@ -2631,6 +2653,7 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 	$manager = $copy->manager();
 
 	$template_object_properties = $manager->getTemplateObjectProperties();
+	$save_copy = false;
 	
 	foreach($objProp as $property) {
 		$propName = $property->getProperty();
@@ -2646,33 +2669,26 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 	
 		if ($manager->getColumnType($propName) == DATA_TYPE_STRING || ($manager->getColumnType($propName) == DATA_TYPE_INTEGER && $is_user_id) ) {
 			// is a string column or an user id column
-
 			$value = calculate_template_task_parameter_string($parameterValues, $value);
-
 		} else if ($manager->getColumnType($propName) == DATA_TYPE_INTEGER || $manager->getColumnType($propName) == DATA_TYPE_FLOAT) {
 			// is a numeric column
-			
 			if ($is_time_prop) {
 				// this numeric property represents a time amount in minutes
 				$value = calculate_template_task_parameter_time($parameterValues, $value);
-
 			} else {
 				// it is a normal numeric property
 				$value = calculate_template_task_parameter_numeric($parameterValues, $value, $propName);
 			}
-
 		} else if($manager->getColumnType($propName) == DATA_TYPE_DATE || $manager->getColumnType($propName) == DATA_TYPE_DATETIME) {
 			// is a date column
-
 			$result = calculate_template_task_parameter_date($parameterValues, $value, $propName, $object, $copy);
-
 			$value = array_var($result, 'value');
 			$dateUnit = array_var($result, 'dateUnit');
-			
 		}
-
-		if($value != '' && $manager->columnExists($propName)) {
-
+		
+		// Use the paramater value and set it in the copy
+		$column_exist = $manager->columnExists($propName) || $propName == 'name';
+		if($value != '' && $column_exist) {
 			if (!$copy->setColumnValue($propName, $value)){
 				$copy->object->setColumnValue($propName, $value);
 			}
@@ -2685,10 +2701,15 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 			if ($propName == 'text' && $copy->getTypeContent() == 'text') {
 				$copy->setText(html_to_text($copy->getText()));
 			}
-			$copy->save();
 
-		}
-		
+			Hook::fire('after_task_template_param_assigned', array('template_task'=>$object, 'property'=>$propName, 'value'=>$value), $copy);
+			
+			$save_copy = true;
+		}	
+	}
+
+	if ($save_copy) {
+		$copy->save();
 	}
 	
 	// Ensure that assigned user is subscribed

@@ -30,7 +30,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
             	id: 'id',
             	fields: [
 	                'name', 'object_id', 'type', 'ot_id', 'icon', 'object_id', 'mimeType',
-	                'createdBy', 'createdById', 'dateCreated',
+	                'createdBy', 'createdById', 'dateCreated', 'assignedTo',
 					'updatedBy', 'updatedById', 'dateUpdated', 'startDate', 'dueDate'
             	]
         	}),
@@ -113,7 +113,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				renderer: renderDate
 			},{
 				id: 'user',
-				header: lang('user'),
+				header: lang('updated by'),
 				dataIndex: 'updatedBy',
 				width: 60,
 				renderer: og.clean,
@@ -127,8 +127,15 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				renderer: renderDate,
 				hidden: true
 			},{
+				id: 'assignedto',
+				header: lang('assigned to'),
+				dataIndex: 'assignedTo',
+				width: 60,
+				renderer: 'string',
+				hidden: true
+			},{
 				id: 'author',
-				header: lang("author"),
+				header: lang("created by"),
 				dataIndex: 'createdBy',
 				width: 60,
 				renderer: og.clean,
@@ -189,26 +196,31 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			var startDateIndex = this.getColumnModel().findColumnIndex('startDate');
 			var nameIndex = this.getColumnModel().findColumnIndex('name');
 			var lastUpdateIndex = this.getColumnModel().findColumnIndex('dateUpdated');
+			var assignedToIndex = this.getColumnModel().findColumnIndex('assignedTo');
 
 			/**
 			 * If the User clicks on Task dimension (in Link Objects modal), the startDate and dueDate
 			 * columns will be visible.
 			 * Sets width of columns to see better.
 			 */
-			let filtersMenu = filter.type.split(',');
-			if(filtersMenu.indexOf("task") > -1) {
- 				this.getColumnModel().setHidden(startDateIndex, false);
-				this.getColumnModel().setHidden(dueDateIndex, false);
+			if(filter && filter.type) {
+				let filtersMenu = filter.type.split(',');
+				if(filtersMenu.indexOf("task") > -1) {
+					 this.getColumnModel().setHidden(startDateIndex, false);
+					this.getColumnModel().setHidden(dueDateIndex, false);
+					this.getColumnModel().setHidden(assignedToIndex, false);
+				}
+				else {
+					this.getColumnModel().setHidden(startDateIndex, true);
+					this.getColumnModel().setHidden(dueDateIndex, true);
+					this.getColumnModel().setHidden(assignedToIndex, true);
+				}
+				this.getColumnModel().setColumnWidth(nameIndex, 400);//name
+				this.getColumnModel().setColumnWidth(lastUpdateIndex, 130);//last update
+				this.getColumnModel().setColumnWidth(startDateIndex, 130);//start date
+				this.getColumnModel().setColumnWidth(dueDateIndex, 130);//due date
+				this.getColumnModel().setColumnWidth(assignedToIndex, 130);//assignedTo date
 			}
-			else {
-				this.getColumnModel().setHidden(startDateIndex, true);
-				this.getColumnModel().setHidden(dueDateIndex, true);
-			}
-			this.getColumnModel().setColumnWidth(nameIndex, 400);//name
-			this.getColumnModel().setColumnWidth(lastUpdateIndex, 130);//last update
-			this.getColumnModel().setColumnWidth(startDateIndex, 130);//start date
-			this.getColumnModel().setColumnWidth(dueDateIndex, 130);//due date
-			//console.log(filter.type);
 
 			if (filter && filter.filter == 'type') {
 				this.type = filter.type;

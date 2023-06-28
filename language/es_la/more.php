@@ -80,5 +80,7 @@ return array(
 		'done apply changes' => 'Aplicar cambios',
 		'config category desc organization data' => 'Aquí puede administrar los datos de su organización.',
 
-    'custom system member module hint' => 'Ver lista de {0} en tab separado.',
+		'custom system member module hint' => 'Ver lista de {0} en tab separado.',
+
+		'all_expenses' => 'Gastos'
 );

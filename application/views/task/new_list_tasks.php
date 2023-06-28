@@ -130,7 +130,8 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 og.config.use_milestones = <?php echo config_option('use_milestones') ? 'true' : 'false' ?>;
 og.config.show_notify_checkbox_in_quick_add = <?php echo user_config_option('show_notify_checkbox_in_quick_add') ? 'true' : 'false' ?>;
 og.config.tasks_show_description_on_time_forms = <?php echo user_config_option('tasksShowDescriptionOnTimeForms') ? 'true' : 'false' ?>;
-og.config.stop_running_timeslots = <?php echo user_config_option('stop_running_timeslots') ? 'true' : 'false' ?>;
+
+og.config.stop_running_timeslots = <?php echo user_config_option('stop_running_timeslots'); ?>;
 og.config.tasks_use_date_filters = <?php echo user_config_option('tasksUseDateFilters') ? 'true' : 'false' ?>;
 og.config.tasks_show_assigned_to_name = <?php echo user_config_option('tasksShowAssignedToName') ? 'true' : 'false' ?>;
 og.config.quick_add_task_combos = <?php 

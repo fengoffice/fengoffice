@@ -291,6 +291,24 @@ Oggetto: {0}
 	'add a new milestone to this template' => 'Aggiungere un nuovo obiettivo per questo modello',
 	'linked weblink tab' => 'Weblink',
 	'attachment from email' => 'Attaccato alla posta elettronica "{0}"',
- ); ?>
-	
-); ?>
+
+	'completed subtasks' => 'Sotto-attività completate',
+	'open subtasks' => 'Sotto-attività aperte',
+	'assigned by' => 'Assegnato da',
+	'to start' => 'Inizio',
+	'work performed' => 'Lavoro eseguito',
+	'send task subscribers notification' => 'Invia notifica email agli iscritti',
+	'send email notification' => 'Invia notifica email',
+	'field workspace color' => 'Colore dello spazio di lavoro',
+	'bar sketch' => 'Barre a schizzo',
+	'bar 3d' => 'Barre 3D',
+	'bar glass' => 'Barre in vetro',
+	'variables' => 'Variabili',
+	'add a variable to this template' => 'Aggiungi una variabile a questo modello',
+	'add a new task to this template' => 'Aggiungi una nuova attività a questo modello',
+	'add a new milestone to this template' => 'Aggiungi una nuova pietra miliare a questo modello',
+	'linked weblink tab' => 'Collegamenti',
+	'linked objective tab' => 'Obiettivi',
+	'undo remove subtasks' => 'Ripristina le sottoattività rimosse',
+
+);

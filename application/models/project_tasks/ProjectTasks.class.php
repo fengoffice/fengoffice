@@ -549,7 +549,14 @@ class ProjectTasks extends BaseProjectTasks {
 		$time_estimate = $raw_data['time_estimate'];
 		$result['timeEstimate'] = $raw_data['time_estimate'];
 		if ($time_estimate > 0) $result['timeEstimateString'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($time_estimate * 60), 'hm', 60));
-		
+
+		$total_time_estimate = $raw_data['total_time_estimate'];
+		if($total_time_estimate > 0) {
+			$result['totalTimeEstimate'] = $total_time_estimate;
+			$result['totalTimeEstimateString'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total_time_estimate * 60), 'hm', 60));
+		} else {
+			$result['totalTimeEstimate'] = 0;
+		}
 
 		$result['timeZone'] = Timezones::getTimezoneOffsetToApplyFromArray($raw_data);
 
@@ -583,6 +590,17 @@ class ProjectTasks extends BaseProjectTasks {
 			$result['worked_time_string'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total_minutes * 60), 'hm', 60));
 		}else{
 			$result['worked_time'] = 0;
+		}
+
+		//Logger::log_r($raw_data);
+		$overall_worked_minutes = $raw_data['overall_worked_time_plus_subtasks'];
+		if($overall_worked_minutes > 0){
+			$result['overall_worked_time_plus_subtasks'] = $overall_worked_minutes;
+			$result['overall_worked_time'] = $overall_worked_minutes;
+			$result['overall_worked_time_string'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($overall_worked_minutes * 60), 'hm', 60));
+		}else{
+			$result['overall_worked_time_plus_subtasks'] = $overall_worked_minutes;
+			$result['overall_worked_time'] = 0;
 		}
 
 		$pending_time = $time_estimate - $total_minutes;		
@@ -653,11 +671,48 @@ class ProjectTasks extends BaseProjectTasks {
 	}
 
 	function getColumnsToAggregateInTotals() {
-		return array(
+		$parent_cols = parent::getColumnsToAggregateInTotals();
+		$cols = array(
 			'time_estimate' => array('operation' => 'sum', 'format' => 'time'),
 			'total_worked_time' => array('operation' => 'sum', 'format' => 'time'),
-			'percent_completed' => array('operation' => 'average'),
 		);
+
+		return array_merge($parent_cols, $cols);
+	}
+
+	function checkTaskInTemplate($task, $template)
+	{
+		if (Plugins::instance()->isActivePlugin('advanced_billing') && ($task instanceof ProjectTask || $task instanceof TemplateTask))
+		{
+		    $project_ot=ObjectTypes::findByName('project');
+
+		    $task_members = $task->getMembers();
+		    foreach($task_members as $task_member)
+		    {
+			    if($task_member->getObjectTypeId()==$project_ot->getId())
+			    {
+				    $project_member = $task_member;
+			    }
+		    }
+			
+    	    if ($project_member instanceof Member) {
+    		    $cp = CustomProperties::getCustomPropertyByCode($project_ot->getId(), 'invoice_template');
+    		    $cp_val = CustomPropertyValues::getCustomPropertyValue($project_member->getObjectId(), $cp->getId());
+    		    if ($cp_val)
+			    {
+			        $invoice_template = IncomeInvoiceTemplates::instance()->findById($cp_val->getValue());
+			    }
+		    }
+
+			if($invoice_template)
+			{
+			    if($invoice_template->getTemplateType()==$template)
+			    {
+				    return true;
+			    }
+			}
+		}
+		return false;
 	}
 	
 } // ProjectTasks

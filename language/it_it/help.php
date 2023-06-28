@@ -48,4 +48,22 @@
 	'success enable all context help' => 'Aiuto contestuale riaperto con successo.',
 	'success enable context help' => 'Aiuto contestuale abilitato con successo.',
 	'success disable context help' => 'Aiuto contestuale disabilitato con successo.',
+
+	'how to purchase' => 'Come acquistare',
+	'how to purchase desc' => 'Informazioni sui nostri piani e vantaggi',
+	'add ticket' => 'Aggiungi un nuovo ticket di supporto',
+	'add ticket desc' => 'Per ottenere assistenza personalizzata su Feng Office',
+	'Super Administrator user role description' => 'Può vedere e fare assolutamente tutto. Ruolo ideale per il proprietario dell\'azienda del sistema Feng Office.',
+	'Administrator user role description' => 'Può fare tutto, tranne gestire le autorizzazioni per altri amministratori e super amministratori.',
+	'Manager user role description' => 'Può fare tutto su Clienti, Progetti e Spazi di lavoro a cui gli amministratori hanno concesso l\'accesso.',
+	'Executive user role description' => 'Può lavorare su tutto ciò a cui è autorizzato, ma non può impostare le autorizzazioni. Questo ruolo è utilizzato per le persone che lavorano sui compiti, nonché per le risorse di terze parti che lavorano fianco a fianco in un progetto. Non può definire le impostazioni di fatturazione.',
+	'Collaborator Customer user role description' => 'È un cliente che si coinvolge abbastanza nella collaborazione in un progetto: può essere assegnato a compiti, completare i propri compiti, modificare e caricare documenti e leggere e commentare qualsiasi altra cosa a cui concediamo loro autorizzazioni. Di default non possono vedere i compiti di altri utenti né quelli non assegnati, né le informazioni di fatturazione.',
+	'Internal Collaborator user role description' => 'È un nostro collega che non richiede tante autorizzazioni come l\'utente Executive. Questo tipo di utente può: completare, registrare il tempo e commentare sui propri compiti, modificare e caricare documenti e leggere e commentare qualsiasi altra cosa a cui concediamo loro autorizzazioni. Di default possono vedere i compiti di altri utenti e quelli non assegnati. Di default non vedono le informazioni di fatturazione.',
+
+	'External Collaborator user role description' => 'Si tratta di un utente esterno all\'organizzazione che non richiede tante autorizzazioni quanto l\'utente Executive. Questo tipo di utente può: completare, registrare il tempo e commentare le proprie attività, modificare e caricare documenti, e leggere e commentare tutto ciò a cui abbiamo concesso loro le autorizzazioni. Di default non possono vedere le attività di altri utenti né quelle non assegnate. Di default non vedono le informazioni di fatturazione.',
+	'Guest Customer user role description' => 'Si tratta di un cliente con un accesso limitato alle informazioni (solo lettura), ma che non può modificare, creare o caricare dati. Tuttavia, può commentare tutti i dati a cui ha accesso. Di default non possono vedere le attività di altri utenti né quelle non assegnate, né le informazioni di fatturazione.',
+	'Guest user role description' => 'Si tratta di qualcuno con cui condividiamo informazioni, ma che non può modificare, creare o caricare dati. Non può fare commenti. Non possono vedere le attività di altri utenti né quelle non assegnate, né le informazioni di fatturazione.',
+	'Non-Exec Director user role description' => 'Ha accesso a tutti i dati, ma non può modificarli, quindi le cose non possono essere danneggiate :) Di default possono vedere tutte le attività, i registri di tempo e le informazioni di fatturazione.',
+	'more information about user roles' => 'Maggiori informazioni sui ruoli utente',
+
 ); ?>

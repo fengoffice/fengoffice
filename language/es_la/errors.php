@@ -82,8 +82,7 @@
 	'task child of child error' => 'Una tarea (no) puede ser hija de una de sus herederas',
 	'chart title required' => 'Se requiere el título del gráfico.',
 	'chart title unique' => 'El título del gráfico debe ser único.',	
-	//'must choose at least one member of' => 'Debe seleccionar al menos un miembro de las dimensiones requeridas.',
-	'must choose at least one member of' => 'Debe seleccionar al menos un miembro de {0}.',
+	'must choose at least one member of' => 'Por favor seleccione un miembro de {0}.',
 	'must choose at least one member' => 'Debe seleccionar al menos un miembro donde guardar el objeto.',
 	'no context permissions to add' => 'No puede agregar {0} en {1}' ,
 	'you must select where to keep' => 'Debe seleccionar donde guardar {0}.',
@@ -156,5 +155,5 @@
         'token external key value required' => 'Key es requerido',
         'token external name value required' => 'Name es requerido',
 		'token external type value required' => 'Type es requerido',
-		'you dont have permissions to add this object in members' => 'Usted no tiene permisos para agregar este {0} en {1}',
+		'you dont have permissions to add this object in members' => 'Usted no tiene permisos para agregar este {0} en {1}'
 ); ?>

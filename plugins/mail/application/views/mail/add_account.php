@@ -780,7 +780,10 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		}, 200);
 		
 		<?php
-		if (!$mailAccount->isNew()) { ?>
+		$accountUser = MailAccountContacts::getByAccountAndContact($this, logged_user());
+		$can_edit_account = $accountUser instanceof MailAccountContact && $accountUser->getCanEdit();
+
+		if (!$mailAccount->isNew() && $can_edit_account) { ?>
 			og.checkMailAccountConnection('<?php echo $genid?>', true);
 
 			$('#<?php echo $genid?>password').change(function() {

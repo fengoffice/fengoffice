@@ -150,7 +150,7 @@ $(function() {
 		<?php foreach($conditions as $condition){ 
 			$gid = Plugins::instance()->isActivePlugin('advanced_core') ? $condition->getColumnValue('group_id') : "undefined";
 		?>
-		    og.addCondition('<?php echo $genid?>',<?php echo $condition->getId() ?>, <?php echo $condition->getCustomPropertyId() ?> , '<?php echo $condition->getFieldName() ?>', '<?php echo $condition->getCondition() ?>', '<?php echo $condition->getValue() ?>', '<?php echo $condition->getIsParametrizable() ?>', null,null,null, <?php echo $gid ?>);		
+		    og.addCondition('<?php echo $genid?>',<?php echo $condition->getId() ?>, <?php echo $condition->getCustomPropertyId() ?> , '<?php echo $condition->getFieldName() ?>', '<?php echo $condition->getCondition() ?>', '<?php echo ($condition->getValue()=="''") ? '' : $condition->getValue() ?>', '<?php echo $condition->getIsParametrizable() ?>', null,null,null, <?php echo $gid ?>);		
 		<?php 
 		}//foreach ?>
 	<?php }//if ?>

@@ -651,6 +651,17 @@
     function getDefaultBillingId() {
       return $this->getColumnValue('default_billing_id');
     } // getDefaultBillingId()
+
+  /**
+   * Return value of 'default_billing_email' field
+   *
+   * @access public
+   * @param void
+   * @return boolean 
+   */
+    function getDefaultBillingEmail() {
+      return $this->getColumnValue('default_billing_email');
+    } // getDefaultBillingId()
     
     
     /**

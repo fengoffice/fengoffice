@@ -258,6 +258,22 @@ og.contextManager  = new function() {
     	else return null ;
     }
     
+    
+    /**
+     * Returns an array of member ids for certain diemension that are in the context 
+     */
+    this.getSelectedMembers = function () {
+		var mem_ids = [];
+		for (var dimension in this.dimensionMembers) {
+			if (this.dimensionMembers[dimension]) {
+				mem_ids = mem_ids.concat(this.dimensionMembers[dimension]);
+			}
+		}
+		return mem_ids.filter(function(mid){
+			return mid > 0;
+		});
+    }
+    
     this.plainActiveMembers = function () {
     	return "["+this.activeMembers.join(",")+"]";
     }

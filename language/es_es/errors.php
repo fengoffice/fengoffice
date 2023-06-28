@@ -122,7 +122,7 @@
 	'timeslot dnx' => 'No existe el tiempo de trabajo',
 	'you dont have permissions to classify object in member' => 'No tiene permisos para clasificar \'{0}\' en \'{1}\'',
 	'invalid email' => 'La dirección de correo es incorrecta',
-	'must choose at least one member of' => 'Debe seleccionar al menos un miembro de {0}.',
+	'must choose at least one member of' => 'Por favor seleccione un miembro de {0}.',
 	'must choose at least one member' => 'Debe seleccionar al menos un miembro donde guardar el objeto.',
 	'no context permissions to add' => 'No puede agregar {0} en {1}',
 	'you must select where to keep' => 'Debe seleccionar donde guardar {0}.',
@@ -155,5 +155,5 @@
     'token external key value required' => 'Key es requerido',
     'token external name value required' => 'Name es requerido',
 	'token external type value required' => 'Type es requerido',
-	'you dont have permissions to add this object in members' => 'Usted no tiene permisos para agregar este {0} en {1}',
+	'you dont have permissions to add this object in members' => 'Usted no tiene permisos para agregar este {0} en {1}'
 );

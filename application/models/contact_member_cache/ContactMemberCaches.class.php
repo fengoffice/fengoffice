@@ -49,16 +49,16 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		// Prepare Condition SQL
 		$SQL_CONDITION = "";
 		if (!is_null($contact_id)) {
-			$SQL_CONDITION .= " AND cmc.contact_id = ".$contact_id;
+			$SQL_CONDITION .= " AND cmc.contact_id = $contact_id ";
 		}
 		
 		if (!is_null($parent_member_id)) {
-			$SQL_CONDITION .= " AND cmc.parent_member_id = ".$parent_member_id;
+			$SQL_CONDITION .= " AND cmc.parent_member_id = $parent_member_id ";
 		}
 		
 		if (!is_null($member_name)) {
 			$member_name = mysqli_real_escape_string(DB::connection()->getLink(), $member_name);
-			$SQL_CONDITION .= " AND m.name LIKE '%".$member_name."%'";
+			$SQL_CONDITION .= " AND m.name LIKE '%".$member_name."%' ";
 		}
 		
 		if (!is_null($extra_condition)) {

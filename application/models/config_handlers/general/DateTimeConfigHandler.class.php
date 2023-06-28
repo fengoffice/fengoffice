@@ -25,7 +25,10 @@
     * @return null
     */
     protected function phpToRaw($value) {
-      return $value instanceof DateTimeValue ? $value->toMySQL() : EMPTY_DATETIME;
+		if (gettype($value) == 'string') {
+			$value = DateTimeValueLib::makeFromString($value);
+		}
+    	return $value instanceof DateTimeValue ? $value->toMySQL() : EMPTY_DATETIME;
     } // phpToRaw
     
     /**
@@ -36,7 +39,7 @@
     */
     protected function rawToPhp($value) {
       $from_value = trim($value) ? $value : EMPTY_DATETIME;
-      return DateTimeValueLib::makeFromString($from_value);
+	  return DateTimeValueLib::makeFromString($from_value);
     } // rawToPhp
     
   } // DateTimeConfigHandler

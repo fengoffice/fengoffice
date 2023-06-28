@@ -141,7 +141,9 @@ return array(
     'config option desc notification_recipients_field' => 'Select if the recipients for each notifications will be put in the "To" field, in "CC" field or in "BCC" field (by using this last one the recipients will not see each other in the mail header).',
   	'config option name check_unique_mail_contact_comp' => 'Check email unicity between contacts and companies',
   	'config option desc check_unique_mail_contact_comp' => 'If this option is enabled you will not be able to add a company if its email is already used by a contact.',
-
+    'config option name use_mail_accounts_to_send_nots' => 'Use mail accounts to send notes',
+    'config option name track_send_mails' => 'Track send mails',
+    'config option name send_outbox_emails_in_background' => 'Send outbox emails in background',
     'config option name infinite_paging' => 'Paging',
     'config option desc infinite_paging' => 'Enables or disables the paging. When enabled, a little performance can be noticed when loading lists.',
   	'owned by' => 'Owned by',
@@ -883,7 +885,10 @@ return array(
     'user config option desc automatic_calculation_start_time'=>'When you change the start or end date of a time tracking record, what would you prefer the system do?',
     'user config option name show_pause_time_action' => 'Allow paused time',
     'config option name show_pause_time_action' => 'Allow paused time',
-    'user config option name stop_running_timeslots' => 'Allow stop timeslots recording when you started a new one',
+    'user config option name stop_running_timeslots' => 'When a new timer is started', 
+    'config_allow_stop_timer' => 'Stop current running timer (if any)',
+    'config_allow_pause_timer' => 'Pause all running timers (if any)',
+    'config_let_timer_continue' => 'Let all started timers to continue running',
 
     'user config option name properties_for_contact_component' => 'Contact properties to display on contact selectors',
     'user config option desc properties_for_contact_component' => 'Here you can choose additional properties to be displayed when selecting a contact on any contact selector.',

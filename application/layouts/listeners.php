@@ -785,4 +785,22 @@ og.eventManager.addListener('update tasks in list', function(data) {
 	}
 });
 
+
+// after loading the first tab, preload the members of small dimensions
+og.eventManager.addListener('tab loaded', 
+	function (tab_id) {
+		if (!og.simple_member_selectors || !og.simple_member_selectors.store_cache) {
+			og.preload_small_dimension_members();
+		}
+ 	}
+);
+
+og.eventManager.addListener('show error message', function(data) {
+	if (data && data.message) {
+		og.err(data.message);
+	}
+});
+
+
+
 </script>

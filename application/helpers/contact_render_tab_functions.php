@@ -38,6 +38,8 @@ function render_contact_data_tab($genid, $contact, $renderContext, $contact_data
 		$contact_data['all_webpages'] = $all_webpages;
 		$all_emails = $contact->getNonMainEmails();
 		$contact_data['all_emails'] = $all_emails;
+		$contact_data['default_billing_email'] = $contact->getBillingEmail();
+
 	}
 	
 	tpl_assign('main_cp_count', $main_cp_count);
@@ -94,6 +96,12 @@ function render_company_data_tab($genid, $company, $renderContext, $company_data
 		$company_data['all_webpages'] = $all_webpages;
 		$all_emails = $company->getNonMainEmails();
 		$company_data['all_emails'] = $all_emails;
+
+		$mainEmailData = $company->getMainEmails();
+		if($mainEmailData)
+		{
+			$company_data['default_billing_email'] = $mainEmailData[0]->getDefaultEmail();
+		}
 	}
 	
 	// telephone types

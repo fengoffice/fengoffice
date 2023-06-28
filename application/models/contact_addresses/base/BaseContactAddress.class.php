@@ -208,7 +208,28 @@
     function setIsMain($value) {
       return $this->setColumnValue('is_main', $value);
     } // setIsMain() 
-    
+
+  // /**
+  //  * Set value of 'default_address' field
+  //  *
+  //  * @access public   
+  //  * @param boolean $value
+  //  * @return boolean
+  //  */
+    function setDefaultAddress($value) {
+      return $this->setColumnValue('default_billing_address', $value);
+    } // seDefaultAddress() }
+
+  // /**
+  //  * Return value of 'default_address' field
+  //  *
+  //  * @access public
+  //  * @param void
+  //  * @return boolean 
+  //  */
+    function getDefaultAddress() {
+      return $this->getColumnValue('default_billing_address');
+    } // getDefaultAddress()
     
     /**
     * Return manager instance

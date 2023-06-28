@@ -35,14 +35,14 @@
      'picture_file_medium' => DATA_TYPE_STRING,
      'avatar_file' => DATA_TYPE_STRING,	 	
      'comments' => DATA_TYPE_STRING,
-	 'last_login' => DATA_TYPE_DATETIME,
-	 'last_activity' => DATA_TYPE_DATETIME,
-     'last_visit' => DATA_TYPE_DATETIME,
-	 'personal_member_id' => DATA_TYPE_INTEGER,
-     'disabled' => DATA_TYPE_BOOLEAN,
-     'token_disabled' => DATA_TYPE_STRING,
-     'default_billing_id' => DATA_TYPE_INTEGER,
-     'user_timezone_id' => DATA_TYPE_INTEGER,
+      'last_login' => DATA_TYPE_DATETIME,
+      'last_activity' => DATA_TYPE_DATETIME,
+      'last_visit' => DATA_TYPE_DATETIME,
+      'personal_member_id' => DATA_TYPE_INTEGER,
+      'disabled' => DATA_TYPE_BOOLEAN,
+      'token_disabled' => DATA_TYPE_STRING,
+      'default_billing_id' => DATA_TYPE_INTEGER,
+      'user_timezone_id' => DATA_TYPE_INTEGER,
     );
   
     /**
@@ -188,7 +188,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or Contacts objects
+    * @return array or Contacts objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'Contacts')) {

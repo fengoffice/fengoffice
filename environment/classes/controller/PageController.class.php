@@ -314,6 +314,7 @@ abstract class PageController extends Controller {
 		} // if
 
 		// Template dnx?
+		//$path="C:/xampp/htdocs/FO_Internal/plugins/income/invoice_print_templates/bca/invoice_print_custom_template.php";
 		if(!is_file($path)) throw new FileDnxError($path);
 
 		// Return path

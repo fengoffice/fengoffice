@@ -304,3 +304,45 @@ function core_dimensions_update_15_16() {
 	}
 }
 
+function core_dimensions_update_17_18() {
+	// Add display name column to member table
+	if (!check_column_exists(TABLE_PREFIX."members", "display_name")) {
+		DB::execute("
+			ALTER TABLE `".TABLE_PREFIX."members` ADD `display_name` varchar(511) COLLATE 'utf8_unicode_ci' NOT NULL default '';"                        
+		);
+	}
+
+	$members = Members::instance()->findAll();
+	foreach ($members as $member) {
+		if($member instanceof Member){
+			$display_name = build_member_display_name($member);
+			$member->setDisplayName($display_name);
+			$member->save();
+		}
+	}
+}	
+
+
+function core_dimensions_update_18_19() {
+	// Recalculate percent completed for each task
+	@set_time_limit(0);
+	ini_set("memory_limit", "2G");
+	$max_depth_sql = "SELECT MAX(depth) as max_depth  FROM " . TABLE_PREFIX . "project_tasks;";
+	$max_depth_row = DB::executeAll($max_depth_sql);
+	$max_depth = $max_depth_row[0]['max_depth'] ? $max_depth_row[0]['max_depth'] : 0;
+
+	while($max_depth >= 0){
+		$tasks_query = "SELECT `object_id` FROM " . TABLE_PREFIX . "project_tasks WHERE `depth`='".$max_depth."';";
+		$rows = DB::executeAll($tasks_query);
+		$prevent_parent_update = true;
+		foreach ($rows as $row) {
+			$task_id = $row['object_id'];
+			$project_task = ProjectTasks::findOne(array('conditions' => "object_id = $task_id"));
+			if($project_task instanceof ProjectTask){
+				$project_task->calculatePercentComplete($prevent_parent_update);
+			}
+		}
+		$max_depth--;
+	}
+}
+

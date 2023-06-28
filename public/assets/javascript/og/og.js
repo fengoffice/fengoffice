@@ -625,8 +625,7 @@ og.openLink = function(url, options) {
 					if (!dont_process_response) {
 						og.processResponse(data, options);
 					}
-				} catch (e) {
-					//console.log(e);
+				} catch (e) {					
 					og.err(e.message);
 				}
 				var ok = typeof data == 'object' && data.errorCode == 0;
@@ -901,8 +900,7 @@ og.eventManager = {
 
 								}
 							}
-						} catch (e) {
-							//console.log(e);
+						} catch (e) {							
 							if (!Ext.isIE) og.err(e.message);
 						}
 					}
@@ -925,8 +923,7 @@ og.eventManager = {
 				if (list[i] && list[i].callback && typeof(list[i].callback) == 'function') {
 					ret = list[i].callback.call(list[i].scope, arguments, list[i].id);
 				}
-			} catch (e) {
-				//console.log(e);
+			} catch (e) {			
 				og.err(e.message);
 			}
 			if (list[i] && list[i].options.single || ret == 'remove') {
@@ -957,8 +954,6 @@ og.extractScripts = function(html) {
 							window.eval(match[2]);
 						}
 					} catch (e) {
-						//console.log(match[2]);
-						//console.log(e);
 						og.err(e.message);
 					}
 				}
@@ -1370,8 +1365,6 @@ og.loadScripts = function(urls, config) {
 					success[urls[i]] = true;
 					count++;
 				} catch (e) {
-					//console.log(scripts[i]);
-					//console.log(e);
 					og.err(e.message);
 				}
 			}
@@ -2386,12 +2379,16 @@ og.checkEmailAddress = function(element, id_contact, contact_type) {
 				$(field).addClass("field-error");
 				$(field).after("<div class='field-error-msg'>"+lang("email already taken by",contact.name)+" </div>");
 				$(field).focus();
+				$('.submit').attr('disabled', true);
+				$('.submit').addClass('disabled');
 			}else{
 				$(field).removeClass("field-error");
 				if(contact.id){
 					og.openLink(og.getUrl('contact', 'edit',{id:contact.id,isEdit:1}));
 					$("#quick-form").hide();
 				}
+				$('.submit').attr('disabled', false);
+				$('.submit').removeClass('disabled');
 			}
 			og.hideLoading();
 		});
@@ -2552,6 +2549,24 @@ og.openTab = function (id) {
 }
 
 og.reload_subscribers = function(genid, object_type_id, user_ids) {
+	// wait a bit to see if there are more changes to effectively reload the subscribers, 
+	// to avoid sending 3 parallel requests that will override one to another, only send the last one.
+	if (og.reload_subscribers_timeout) {
+		clearTimeout(og.reload_subscribers_timeout);
+	}
+
+	og.reload_subscribers_params = {
+		genid: genid,
+		object_type_id: object_type_id,
+		user_uds: user_ids
+	};
+
+	og.reload_subscribers_timeout = setTimeout(function() {
+		og.do_reload_subscribers(og.reload_subscribers_params.genid, og.reload_subscribers_params.object_type_id, og.reload_subscribers_params.user_ids);
+	}, 500);
+}
+
+og.do_reload_subscribers = function(genid, object_type_id, user_ids) {
 	if (!user_ids) {
 		var uids = App.modules.addMessageForm.getCheckedUsers(genid);
 	} else {
@@ -2783,6 +2798,12 @@ og.showHideWidgetMoreLink = function(cls, linkid, show) {
 
 	if (show) $(cls).show("slow");
 	else $(cls).hide("slow");
+}
+
+og.showHideAppLogDetails = function(id) {
+	og.showHide('hidelink' + id);
+	og.showHide('showlink' + id);
+	og.showHide('logdetails' + id);
 }
 
 og.getColorInputHtml = function(genid, field_name, value, col, label, disabled) {
@@ -3083,6 +3104,18 @@ og.resize_modal_form = function() {
 	}, 500);
 }
 
+
+og.center_modal_form = function() {
+	var modalh = $(".simplemodal-data").height();
+	var winh = $(".simplemodal-overlay").height();
+
+	var otop = (winh - modalh) / 2;
+	if (otop < 0) otop = 0;
+	$(".simplemodal-container").css({
+		top: (otop)+'px'
+	});
+}
+
 og.update_modal_main_input_width = function() {
 	var title_w = $(".simplemodal-data .coInputHeader .coInputHeaderUpperRow .coInputTitle").width();
 	var buttons_w = $(".simplemodal-data .coInputHeader .coInputButtons").width();
@@ -3147,12 +3180,16 @@ og.submit_modal_form = function(form_id, callback_fn, options) {
 	for (var i=0; i<all_textareas.length; i++) {
 		params[all_textareas[i].name] = all_textareas[i].value;
 	}
+	// Disable submit button when clicked
+	$('#'+form_id+' .submit').prop('disabled', true);
 	og.openLink(form.action, {
 		post: params,
 		preventPanelLoad: true,
 		hideLoading: options.hideLoading || false,
 		hideErrors: options.hideErrors || false,
 		callback: function(success, data) {
+			// Enable submit button once the callback is received
+			$('#'+form_id+' .submit').prop('disabled', false);
 			if (typeof(data) == "string") {
 				try {
 					data = eval(data);
@@ -3596,6 +3633,7 @@ og.renderAddressTypeSelector = function(id, name, container_id, selected_value) 
 		select.append(option);
 	}
 	$('#'+container_id).empty().append(select);
+	
 }
 
 
@@ -3606,18 +3644,15 @@ og.renderAddressInput = function(id, name, container_id, sel_type, sel_data) {
 	if (!sel_data.city) sel_data.city = '';
 	if (!sel_data.state) sel_data.state = '';
 	if (!sel_data.zip_code) sel_data.zip_code = '';
-	if (!sel_data.country) sel_data.country = '';
-
+	if (!sel_data.country) sel_data.country = og.config['default_country_address'] ? og.config['default_country_address'] : '';
+	
 	$('#'+container_id).append('<input type="hidden" name="'+name+'[id]" id="'+id+'_id" value="'+sel_data.id+'" />');
 	$('#'+container_id).append('<input type="hidden" name="'+name+'[deleted]" id="'+id+'_deleted" value="0" />');
 
 	$('#'+container_id).append('<span id="'+id+'_type" style="vertical-align:top;"></span>');
 	og.renderAddressTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
 
-	var delete_link = $('<a href="#" onclick="og.markAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-delete delete-link" title="'+lang('delete')+'">'+lang('delete')+'</a>');
-	$('#'+container_id).append(delete_link);
-	var undo_delete_link = $('<a href="#" onclick="og.undoMarkAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="'+lang('undo')+'">'+lang('undo')+'</a>');
-	$('#'+container_id).append(undo_delete_link);
+	var address_placeholder_str = navigator.appVersion.indexOf("MSIE") != -1 ? '' : ('placeholder="' + lang('street address') + '"');
 
 	var address_placeholder_str = navigator.appVersion.indexOf("MSIE") != -1 ? '' : ('placeholder="'+lang('street address')+'"');
 	var address_input = $('<textarea name="'+name+'[street]" id="'+id+'_street" class="address_street_input" '+address_placeholder_str+'>'+ sel_data.street +'</textarea>');
@@ -3635,18 +3670,27 @@ og.renderAddressInput = function(id, name, container_id, sel_type, sel_data) {
 	var select_country = $('<select name="'+name+'[country]" id="'+id+'_country" class="address_country_input country-selector"></select>');
 	$('#'+container_id).append(select_country);
 	$('#template_select_country option').clone().appendTo('#'+id+'_country');
-	if (sel_data.country != '') {
+	if (sel_data.country != '') { 
 		var selc = document.getElementById(id+'_country');
 		for (var i=0; i<selc.options.length; i++) {
-			if (selc.options[i].value == sel_data.country) selc.options[i].setAttribute('selected','selected');
+			if (selc.options[i].value == sel_data.country) {
+				selc.options[i].setAttribute('selected','selected');
+			}
 		}
 	}
+
+	var delete_or_undo = $(`<div class="removeUndo addressRemoveUndo">
+		<a href="#" onclick="og.markAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-delete delete-link" title="${lang('delete')}"></a>
+		<a href="#" onclick="og.undoMarkAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="${lang('undo')}"></a>
+	</div>`);
+	$('#' + container_id).append(delete_or_undo);
 
 	if (og.loggedUser.localization) {
 		$('#'+container_id).addClass(og.loggedUser.localization);
 	}
 
 	$('#'+container_id).append('<div class="clear"></div>');
+
 }
 /* end address input */
 
@@ -3937,6 +3981,7 @@ og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 					}
 				}
 			}
+			og.eventManager.fireEvent('end_callback member_tree loaded', {});
 		}
 	});
 }
@@ -4047,54 +4092,65 @@ og.addTableCustomPropertyRow = function(parent, focus, values, col_count, ti, cp
 		input.focus();
 }
 
-
 og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, current_associated_members) {
-	var d_associations = [];
-  	for (var ot in og.dimension_member_associations[dimension_id]) {
-	  	for (var j=0; j<og.dimension_member_associations[dimension_id][ot].length; j++) {
-  			d_associations.push(og.dimension_member_associations[dimension_id][ot][j]);
-	  	}
-  	}
 
-  	for (var i=0; i<d_associations.length; i++) {
-	  	var assoc = d_associations[i];
 
-  		if (assoc && assoc.allows_default_selection) {
-  			
-  			var action_name = 'get_default_associated_members';
-  			if (current_associated_members) {
-  				action_name = 'get_associated_members';
-  			}
+	var action_name = 'get_all_default_associated_members';
+	if (current_associated_members) {
+		action_name = 'get_all_associated_members';
+	}
 
-	  		og.openLink(og.getUrl('dimension', action_name, {member_id: member_id, assoc_id:assoc.id, dim_id:assoc.assoc_dimension_id, genid:genid}), {
-		  		hideLoading: true,
-		  		callback: function(success, data) {
-			  		var hf = Ext.get(data.genid + member_selector[data.genid].hiddenFieldName);
-			  		
-			  		if (!hf.dom.form) {
-			  			var dep_genid = data.genid;
-			  		} else {
-			  			
-			  			var form_id = hf.dom.form.id;
-			  			
-			  			var dep_genid = "";
-			  			var selector_inputs = $("#" + form_id + ' .dimension-panel-textfilter');
-			  			for (var x=0; x<selector_inputs.length; x++) {
-			  				var sel_id = selector_inputs[x].id;
-			  				var key = "-member-chooser-panel-"+ data.dimension_id +"-tree-textfilter";
-			  				if (sel_id.indexOf(key) >= 0) {
-			  					dep_genid = selector_inputs[x].id.substring(0, selector_inputs[x].id.indexOf("-"));
-			  					break;
-			  				}
-			  			}
-			  			if (dep_genid == '') dep_genid = data.genid;
-			  		}
+	og.openLink(og.getUrl('dimension', action_name, {member_id: member_id, dimension_id: dimension_id, genid: genid}), {
+		hideLoading: true,
+		callback: function(success, response_data) {
+			if (!response_data) return;
 
-					if (member_selector[dep_genid] /*&& (!member_selector[dep_genid].sel_context[data.dimension_id] || member_selector[dep_genid].sel_context[data.dimension_id].length == 0)*/ 
-							&& member_selector[dep_genid].properties[data.dimension_id]) {
+			var d_associations = [];
+			for (var ot in og.dimension_member_associations[response_data.dimension_id]) {
+				for (var j=0; j<og.dimension_member_associations[response_data.dimension_id][ot].length; j++) {
+					d_associations.push(og.dimension_member_associations[response_data.dimension_id][ot][j]);
+				}
+			}
+
+			let processed_dimension_ids = [];
+
+			for (var i=0; i<d_associations.length; i++) {
+				var assoc = d_associations[i];
+	  
+				if (assoc && assoc.allows_default_selection) {
+
+					// don't override the same dimension with anohter association (e.g: don't override client with billing client)
+					if (processed_dimension_ids.indexOf(assoc.assoc_dimension_id) >= 0) continue;
+					processed_dimension_ids.push(assoc.assoc_dimension_id);
+					
+					var data = response_data.associations_data[assoc.id];
+					if (!data) continue;
+
+					var hf = Ext.get(data.genid + member_selector[data.genid].hiddenFieldName);
+			
+					if (!hf.dom.form) {
+						var dep_genid = data.genid;
+					} else {
+						
+						var form_id = hf.dom.form.id;
+						
+						var dep_genid = "";
+						var selector_inputs = $("#" + form_id + ' .dimension-panel-textfilter');
+						for (var x=0; x<selector_inputs.length; x++) {
+							var sel_id = selector_inputs[x].id;
+							var key = "-member-chooser-panel-"+ data.dimension_id +"-tree-textfilter";
+							if (sel_id.indexOf(key) >= 0) {
+								dep_genid = selector_inputs[x].id.substring(0, selector_inputs[x].id.indexOf("-"));
+								break;
+							}
+						}
+						if (dep_genid == '') dep_genid = data.genid;
+					}
+		
+					if (member_selector[dep_genid] && member_selector[dep_genid].properties[data.dimension_id]) {
 						// add the relations
 						for (var z=0; z<data.member_ids.length; z++) {
-							
+
 							// if already selected then do nothing
 							var hf_input = document.getElementById(dep_genid + member_selector[dep_genid].hiddenFieldName);
 							var json_sel_ids = Ext.util.JSON.decode(hf_input.value);
@@ -4120,12 +4176,12 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 								$("#"+dep_genid+"-member-chooser-panel-"+data.dimension_id+"-tree-current-selected .empty-text").hide();
 							}
 						}
-						
+
 					}
-		  		}
-		  	});
-  		}
-  	}
+				}
+			}
+		}
+	});
 }
 
 og.member_selector_add_relation = function(ignored1, ignored2, data) {
@@ -4168,12 +4224,16 @@ og.is_associated_dimension = function(dimension_id) {
 }
 
 og.gridBooleanColumnRenderer = function(value, p, r) {
+	if (r.data.id == 'quick_add_row') return value;
 	if (r.data.id == '__total_row__' || r.data.object_id <= 0) return '';
 
 	return value ? lang('yes') : lang('no');
 }
 
 og.gridObjectNameRenderer = function(value, p, r) {
+	if (r.data.id == 'quick_add_row') {
+		return value;
+	}
 	if (r.data.id == '__total_row__' || r.data.object_id <= 0) return '<span id="__total_row__">'+value+'</span>';
 
 	var controller = r.data.type_controller ? r.data.type_controller : r.store.baseParams.url_controller;
@@ -4194,11 +4254,12 @@ og.gridPictureRenderer = function(value, p, r) {
 }
 
 og.getDateToolbarFilterComponent = function (config) {
-    var uid = Ext.id();
+    
+	var genid = config.genid ? config.genid : '';
 
     var action_btn = new Ext.Action({
         //id: uid +config.name,
-        id: config.name,
+        id: genid + config.name,
         hidden:config.hidden,
         text: config.value ? config.value : lang('select a date'),
         value: config.value ? config.value : '',
@@ -4207,28 +4268,38 @@ og.getDateToolbarFilterComponent = function (config) {
             id: config.name,
             items: [new Ext.menu.Item({
                     //id: uid + config.name + '_remove',
-            		id: config.name + '_remove',
+            		id: genid + config.name + '_remove',
                     text: lang('remove filter'),
                     iconCls: 'ico-delete',
                     hidden: true,
                     handler: function () {
                         var man = Ext.getCmp(config.grid_id);
-                        if (man.filters[config.name])
-                            man.filters[config.name].value = '';
+						if(man.filters) {							
+							man.filters[config.name].value = '';							                           
+						} 
+						
+						man[config.name] = ''
+						                       
                         man.load();
                         this.hide();
-                        Ext.getCmp(config.name).setText(lang('select a date'));
+                        Ext.getCmp(genid + config.name).setText(lang('select a date'));
                         //Ext.getCmp(uid + config.name).setText(lang('select a date'));
                     }
                 })],
             listeners: {
-                'select': function (dp, date) {
+                'select': function (dp, date) {					
                     var man = Ext.getCmp(config.grid_id);
                     //Ext.getCmp(uid + config.name).setText(date.format(og.preferences['date_format']));
-                    Ext.getCmp(config.name).setText(date.format(og.preferences['date_format']));
-                    man.filters[dp.id].value = date.format(og.preferences['date_format']);
+                    Ext.getCmp(genid + config.name).setText(date.format(og.preferences['date_format']));      										
+					
+					if(man.filters){
+						man.filters[dp.id].value = date.format(og.preferences['date_format']);
+					}
+											
+					man[dp.id] = date.format(og.preferences['date_format']);
+															
                     man.load();
-                    Ext.getCmp(config.name + '_remove').show();
+                    Ext.getCmp(genid + config.name + '_remove').show();
                     //Ext.getCmp(uid + config.name + '_remove').show();
                 }
             }
@@ -4243,10 +4314,11 @@ og.getDateToolbarFilterComponent = function (config) {
 }
 
 og.getListToolbarFilterComponent = function(config) {
-	var uid = Ext.id();
+	
+	var genid = config.genid ? config.genid : '';
 
 	var combo = new Ext.form.ComboBox({
-    	id: config.name,
+    	id: genid + config.name,
     	store: new Ext.data.SimpleStore({
 	        fields: ['value', 'text'],
 	        data : config.options
@@ -4276,10 +4348,11 @@ og.getListToolbarFilterComponent = function(config) {
 	return combo;
 }
 og.getListToolbarFilterComponentWithEvents = function(config) {
-	var uid = Ext.id();
+
+	var genid = config.genid ? config.genid : '';
 
 	var combo = new Ext.form.ComboBox({
-            id: config.name,
+            id: genid + config.name,
             store: new Ext.data.SimpleStore({
                     fields: ['value', 'text'],
                     data : config.options
@@ -4292,21 +4365,41 @@ og.getListToolbarFilterComponentWithEvents = function(config) {
             width: config.width ? config.width : 160,
             valueField: 'value',
             valueNotFoundText: '',
-            listeners: {
+            listeners: {			
                 'select': function (combo, record) {
-                    var man = Ext.getCmp(config.grid_id);
-                    man.filters[config.name].value = combo.getValue();
-                    if (combo.id == 'period_filter') {
-                        if (record.data.value == 6) {
-                            Ext.getCmp('label_from_filter').show();
-                            Ext.getCmp('from_filter').show();
-                            Ext.getCmp('label_to_filter').show();
-                            Ext.getCmp('to_filter').show();
+                    var man = Ext.getCmp(config.grid_id);                    
+					
+					if(man.filters) {
+						man.filters[config.name].value = combo.getValue();
+					}
+											
+					man[config.name] = combo.getValue();
+					
+                    if (combo.id == genid + 'period_filter') {
+                        if (record.data.value == 6) {							
+                            Ext.getCmp(genid + 'label_from_filter').show();
+                            Ext.getCmp(genid + 'from_filter').show();
+                            Ext.getCmp(genid + 'label_to_filter').show();
+                            Ext.getCmp(genid + 'to_filter').show();
+
+							man.from_filter = Ext.getCmp(genid + 'from_filter').text;
+							man.to_filter = Ext.getCmp(genid + 'to_filter').text;							
+							
+							if(Ext.getCmp(genid + 'label_period_filter')) {
+								Ext.getCmp(genid + 'label_period_filter').hide();
+							}							
                         } else {
-                            Ext.getCmp('label_from_filter').hide();
-                            Ext.getCmp('from_filter').hide();
-                            Ext.getCmp('label_to_filter').hide();
-                            Ext.getCmp('to_filter').hide();
+                            Ext.getCmp(genid + 'label_from_filter').hide();
+                            Ext.getCmp(genid + 'from_filter').hide();
+                            Ext.getCmp(genid + 'label_to_filter').hide();
+                            Ext.getCmp(genid + 'to_filter').hide();
+
+							man.from_filter = '';
+							man.to_filter = '';
+
+							if(Ext.getCmp(genid + 'label_period_filter')) {
+								Ext.getCmp(genid + 'label_period_filter').show();
+							}			
                         }
                     }
                     man.load();
@@ -4329,14 +4422,14 @@ og.getListToolbarFilterComponentWithEvents = function(config) {
 }
 
 
-og.buildToolbarFilterAction = function(filter_name, filter_data, grid_id) {
+og.buildToolbarFilterAction = function(filter_name, filter_data, grid_id) {	
 	var items = [];
 	if (filter_name == 'text_filter') {
 		items.push(filter_data);
 
 	} else if (filter_data.type == 'date') {
 		var btn_config = {name: filter_name, grid_id:grid_id};
-		btn_config = Ext.apply(btn_config, filter_data);
+		btn_config = Ext.apply(btn_config, filter_data);						
 		var btn = og.getDateToolbarFilterComponent(btn_config);
 		if (btn) {
 			if (filter_data.label) items.push(filter_data.label);
@@ -4355,7 +4448,7 @@ og.buildToolbarFilterAction = function(filter_name, filter_data, grid_id) {
 		var combo_config = {name: filter_name, grid_id:grid_id};
 		combo_config = Ext.apply(combo_config, filter_data);
 		var combo = og.getListToolbarFilterComponentWithEvents(combo_config);
-		if (combo) {
+		if (combo) {			
 			if (filter_data.label) items.push(filter_data.label);
 			items.push(combo);
 		}
@@ -4615,52 +4708,68 @@ og.on_quick_add_row_input_click = function(input, event) {
 }
 
 og.quick_add_row_combo_input = function(config) {
-	var uid = Ext.id();
-	var combo_config = {
-		renderTo: config.renderTo,
-    	id: config.id,
-    	genid: config.genid,
-    	name: config.name,
-    	store: new Ext.data.SimpleStore({
-	        fields: ['value', 'text'],
-	        data : config.options
-	    }),
-	    displayField: 'text',
-        mode: 'local',
-        triggerAction: 'all',
-        selectOnFocus: true,
-        width: config.width ? config.width : 160,
-        valueField: 'value',
-        valueNotFoundText: '',
-        tabIndex: config.tabIndex
-	};
-	if (config.listeners) {
-		combo_config.listeners = config.listeners;
-	}
-	var combo = new Ext.form.ComboBox(combo_config);
+	try {
 
-	if (typeof(config.initial_val) != 'undefined') {
-		combo.setValue(config.initial_val);
-	}
+		var uid = Ext.id();
+		var combo_config = {
+			renderTo: config.renderTo,
+			id: config.id,
+			genid: config.genid,
+			name: config.name,
+			store: new Ext.data.SimpleStore({
+				fields: ['value', 'text'],
+				data : config.options
+			}),
+			displayField: 'text',
+			mode: 'local',
+			triggerAction: 'all',
+			selectOnFocus: true,
+			width: config.width ? config.width : 160,
+			valueField: 'value',
+			valueNotFoundText: '',
+			tabIndex: config.tabIndex
+		};
+		if (config.listeners) {
+			combo_config.listeners = config.listeners;
+		}
+		var combo = new Ext.form.ComboBox(combo_config);
+	
+		if (typeof(config.initial_val) != 'undefined') {
+			combo.setValue(config.initial_val);
+		}
+	
+		return combo;
 
-	return combo;
+	} catch (e) {
+		console.log(e);
+	}
 }
 
 og.quick_add_row_date_input = function(config) {
-	var picker = new og.DateField(Ext.apply(config, {
-		width: 100,
-		emptyText: og.preferences.date_format_tip
-	}));
-	return picker;
+	try {
+		var picker = new og.DateField(Ext.apply(config, {
+			width: 100,
+			emptyText: og.preferences.date_format_tip
+		}));
+		return picker;
+		
+	} catch (e) {
+		console.log(e);
+	}
 }
 
 og.quick_add_row_time_input = function(config) {
-	var picker = new Ext.form.TimeField(Ext.apply(config, {
-		width: 80,
-		format: og.config.time_format_use_24 ? 'G:i' : 'g:i A',
-		emptyText: 'hh:mm'
-	}));
-	return picker;
+	try {
+		var picker = new Ext.form.TimeField(Ext.apply(config, {
+			width: 80,
+			format: og.config.time_format_use_24 ? 'G:i' : 'g:i A',
+			emptyText: 'hh:mm'
+		}));
+		return picker;
+		
+	} catch (e) {
+		console.log(e);
+	}
 }
 
 og.quick_add_row_worked_time_input = function(config) {
@@ -4728,10 +4837,23 @@ og.quick_add_row_member_selector = function(dim_id, genid, hf_name, sel_mem_ids,
 					var container_id = data.genid + 'members_' + data.dim_id;
 					$("#" + container_id).html(data.current.data);
 					
+					// correct member list position that breaks if the gird was scrolled
+					$("#" + data.genid+"-member-chooser-panel-"+data.dim_id+"-tree").click(function() {
+						og.fix_quick_add_row_member_selector_list_position(data);
+					});
+					
 				}
 			}
 		});
 	}
+}
+
+og.fix_quick_add_row_member_selector_list_position = function(data) {
+
+	var tree_el = Ext.get(data.genid+"-member-chooser-panel-"+data.dim_id+"-tree");
+	var left = ($("#menu-panel-xsplit").position().left - Ext.get("menu-panel-xsplit").getOffsetsTo(tree_el)[0]);
+
+	$("#"+data.genid+"-member-chooser-panel-"+data.dim_id+" .x-panel-body.collapsible-body").css('left', left + 'px');
 }
 
 /****************************************************/
@@ -4754,13 +4876,15 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 		}
 	});
 	
-	if (member_selector[grid.genid] && member_selector[grid.genid].sel_context) {
-		for (did in member_selector[grid.genid].sel_context) {
-			var mem_ids = member_selector[grid.genid].sel_context[did];
-			member_ids = member_ids.concat(mem_ids);
+	for (did in og.simple_member_selectors[grid.genid]) {
+		var mem_selector = og.simple_member_selectors[grid.genid][did];
+		if (mem_selector) {
+			var mem_id = mem_selector.getValue();
+			if (mem_id > 0) {
+				member_ids.push(mem_id);
+			}
 		}
 	}
-
 	if (member_ids.length > 0) {
 		params['members'] = Ext.util.JSON.encode(member_ids);
 	}
@@ -4803,6 +4927,22 @@ og.add_timeslot_module_quick_add_submit = function(grid_id, first_input_column) 
 		callback: function(success, data) {
 			if (success && data.timeslot) {
 				data.timeslot.type = 'timeslot';
+				if (data.timeslot.invoicing_status) {
+					// set the is billable property to show
+					data.timeslot.is_billable = data.timeslot.invoicing_status == 'pending' ? lang('yes') : lang('no');
+
+					// add the status html to show
+					if (!data.timeslot.invoicing_status_html) {
+						let status_text = lang('invoicing_status ' + data.timeslot.invoicing_status);
+						let status_class = 'invoicing-status-' + data.timeslot.invoicing_status;
+						data.timeslot.invoicing_status_html = '<span class="additional-list-col"><span class="' + status_class + '">' + status_text + '</span></span>';
+					}
+				}
+
+				// set the object id so the generic grid can use it in the toolbar actions
+				data.timeslot.object_id = data.timeslot.id;
+
+				// create the grid record to add to the grid's store
 				var record = new Ext.data.Record(data.timeslot, data.timeslot.id);
                                 
 				og.clean_timeslot_module_quick_add_params(grid);
@@ -4835,12 +4975,22 @@ og.add_timeslot_module_quick_add_enter = function(event, genid) {
 og.add_timeslot_module_quick_add_row = function(grid, config) {
 
 	var onclick = 'og.on_quick_add_row_input_click(this, event);';
-
+	
+	let labor_cat_dim_id = 0;
+	for (did in og.dimensions_info) {
+		if (!isNaN(did) && og.dimensions_info[did].code == "hour_types") {
+			labor_cat_dim_id = did;
+		}
+	}
 	var first_input_column = null;
 	for (var i=0; i<grid.colModel.config.length; i++) {
 		var col_conf = grid.colModel.config[i];
-		if (col_conf.id == 'description' || col_conf.id == 'start_time' || col_conf.id == 'worked_time') {
-			first_input_column = col_conf.id;
+		if (col_conf.id == 'name' || col_conf.id == 'description' || col_conf.id == 'start_time' || col_conf.id == 'worked_time') {
+			if (col_conf.id == 'name') {
+				first_input_column = 'contact_id';
+			} else {
+				first_input_column = col_conf.id;
+			}
 			break;
 		}
 	}
@@ -4849,7 +4999,7 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 	record_config.type = 'add';
 	record_config.description = '<input type="text" id="'+config.genid+'add_ts_description" name="timeslot[description]" value="" style="width:95%;" onmousedown="event.stopPropagation();"';
 	record_config.description += 'onclick="'+onclick+'" tabindex="'+og.quick_add_row_column_tabindex(grid, 'description')+'" onkeydown="og.add_timeslot_module_quick_add_enter(event, \''+config.genid+'\')"/>';
-	record_config.name = '<span id="'+config.genid+'usercombo">';
+	record_config.name = '<span id="'+config.genid+'usercombo"></span>';
 	record_config.start_time = '<table><tr><td><span id="'+config.genid+'start_date"></td><td><span id="'+config.genid+'start_time"></td></tr></table>';
 
 	record_config.worked_time = og.quick_add_row_worked_time_input({
@@ -4857,6 +5007,11 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		tabindex: og.quick_add_row_column_tabindex(grid, 'worked_time'),
 		onkeydown: 'og.add_timeslot_module_quick_add_enter(event, \''+config.genid+'\')'
 	});
+
+	if (og.income && og.advanced_billing) {
+		record_config.is_billable = '<span id="'+config.genid+'is_billable"></span>';
+		record_config.is_billable += '<input type="hidden" id="'+ config.genid + 'add_ts_invoicing_status" name="timeslot[invoicing_status]" />';
+	}
 
 	// submit button
 	var quick_add_submit_fn = 'og.add_timeslot_module_quick_add_submit(\''+grid.id+'\', \''+first_input_column+'\'); return false;';
@@ -4888,7 +5043,22 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		var col_conf = grid.colModel.config[i];
 		if (col_conf.id.indexOf('dim_') == 0) {
 			var dim_id = col_conf.id.substring(4);
-			og.quick_add_row_member_selector(dim_id, config.genid);
+
+			// after changing exepnse category selector we must filter the product types selector
+			var onselect = null;
+			if (og.hour_types && dim_id == labor_cat_dim_id) {
+				onselect = og.hour_types.after_quick_add_labor_cat_select;
+			}
+		
+			dim_sel = new og.SimpleMemberSelector({
+				dimensionId: dim_id,
+				genid: config.genid,
+				renderTo: config.genid + 'members_' + dim_id,
+				width: grid.colModel.getColumnWidth(i) - 14,
+				select_current_context: true,
+				tabIndex: og.quick_add_row_column_tabindex(grid, col_conf.id),
+				onselect_fn: onselect
+			});
 		}
 	}
 
@@ -4938,6 +5108,24 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		tabIndex: start_time_tindex + 1
  	});
 
+	if (og.income && og.advanced_billing) {
+		let billable_combo_listeners = {
+			'select': og.quick_add_row_time_on_is_billable_select
+		}
+		// is billable selector
+		var billable_combo = og.quick_add_row_combo_input({
+			id: config.genid + 'add_ts_is_billable',
+			genid: config.genid,
+			name: "timeslot[is_billable]",
+			options: [['yes', lang('yes')], ['no', lang('no')]],
+			initial_val: 'pending',
+			renderTo: config.genid + "is_billable",
+			width: 60,
+			tabIndex: og.quick_add_row_column_tabindex(grid, 'is_billable'),
+			listeners: billable_combo_listeners
+		});
+	}
+
 	$("#"+ config.genid +"add_ts_start_time_min").keydown(function(event){
 		var gid = $(this).attr('id').replace("add_ts_start_time_min", "");
 		og.add_timeslot_module_quick_add_enter(event, gid);
@@ -4952,18 +5140,69 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 	});
 
 	// focus in the first input
-	if (first_input_column) {
+	if (first_input_column && !config.dont_focus_in_first_input) {
 		setTimeout(function() {
 			$("#"+config.genid+"add_ts_" + first_input_column).focus();
 		}, 200);
 	}
+
+	// when using tab if focus goes to a td then change it to the input inside it
+	$("#" + grid.id + " .quick-add-row td").focus(function(){
+		//$(this).find('input, textarea, select').first().focus();
+	});
+
 }
+
+og.quick_add_row_time_on_is_billable_select = function(combo, record, index) {
+	let inv_status = combo.getValue() == 'yes' ? 'pending' : 'non_billable';
+	$("#" + combo.genid + 'add_ts_invoicing_status').val(inv_status);
+}
+
+// listen to the scroll event of the grid contents, so we can fix the position 
+// of the expanded member selectors lists
+og.quick_add_row_event_to_fix_mem_selector_position = function(grid) {
+	if (!grid.scroll_event_added) {
+
+		grid.last_horizontal_scroll = $("#"+grid.id+" .x-grid3-scroller").scrollLeft();
+		grid.scroll_event_added = true;
+
+		$("#"+grid.id+" .x-grid3-scroller").scroll(function() {
+	
+			// use a timeout to try to execute this function after scroll ends, and not at every pixel move
+			if (grid.fix_member_selector_position_timeout) {
+				clearTimeout(grid.fix_member_selector_position_timeout);
+			}
+			grid.fix_member_selector_position_timeout = setTimeout(function() {
+				var left_scroll_pos = $("#"+grid.id+" .x-grid3-scroller").scrollLeft();
+				
+				// if scroll is horizontal then fix the position of the expanded member selectors
+				if (left_scroll_pos != grid.last_horizontal_scroll) {
+					grid.last_horizontal_scroll = left_scroll_pos;
+		
+					$("#"+grid.id+" .x-panel-body.collapsible-body:visible").each(function(){
+		
+						var container_id = $(this).closest(".member-chooser-container").attr('id');
+						var arr = container_id.split('-');
+						var dim = arr[arr.length - 2];
+		
+						og.fix_quick_add_row_member_selector_list_position({genid: grid.genid, dim_id: dim});
+					});
+		
+				} else {
+					// if scroll is vertical then collapse the expanded member selectors
+					$("#"+grid.id+" .dimension-panel-textfilter").blur();
+				}
+			}, 5);
+		});
+	}
+}
+
 /****************************************************/
 
 
-og.prompt_delete_object = function(id) {
+og.prompt_delete_object = function(id, reload) {
 	if (confirm(lang('confirm delete object'))) {
-		og.openLink(og.getUrl('object', 'trash', {object_id:id}));
+		og.openLink(og.getUrl('object', 'trash', {object_id:id, reload:reload}));
 	}
 }
 
@@ -4985,7 +5224,7 @@ og.render_default_grid_actions = function(value, p, r) {
 		);
 
 		actions += String.format(
-			'<a class="list-action ico-delete" href="#" onclick="og.prompt_delete_object('+obj_id+');" title="{0}" '+
+			'<a class="list-action ico-delete" href="#" onclick="og.prompt_delete_object('+obj_id+', 1);" title="{0}" '+
 			actionStyle + '>&nbsp;</a>', lang('delete')
 		);
 	}
@@ -5165,17 +5404,67 @@ og.delete_contact_picture = function(genid, delete_picture_url, confirm_message,
 	}
 };
 
+
+// used to upload the file contents of a file input into a tmp folder in the server
+og.upload_tmp_file_content = function(genid, file_input_id, file_input_name, hf_id, callback) {
+	var fileInput = document.getElementById(file_input_id);
+
+	var fileParent = fileInput.parentNode;
+	fileParent.removeChild(fileInput);
+	
+	var form = document.createElement('form');
+	form.method = 'post';
+	form.enctype = 'multipart/form-data';
+	form.encoding = 'multipart/form-data';
+	form.action = og.getUrl('object', 'tmp_file_upload', {'id': hf_id, 'input_name': file_input_name});
+	form.style.display = 'none';
+	form.appendChild(fileInput);
+	document.body.appendChild(form);
+	
+	og.submit(form, {
+		callback: function(d) {
+			$("button.submit").removeAttr("disabled").removeClass("disabled");
+			
+			form.removeChild(fileInput);
+			fileParent.appendChild(fileInput);
+			document.body.removeChild(form);
+			
+			// set the hidden input
+			if (d && d.id) {
+				$("#"+hf_id).val(d.id);
+			} else {
+				// if no file selected remove the previous value
+				$("#"+hf_id).val("");
+			}
+
+			// allow to execute another function after uploading the file
+			if (typeof callback == 'function') {
+				callback(genid, file_input_id, hf_id);
+			}
+		}
+	});
+}
+
 // drag & drop classification call
 
-og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations, remove_prev) {
+og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations, remove_prev, callback, dimension_id) {
 	
 	if (og.still_adding_objects_to_member) return;
 	og.still_adding_objects_to_member = true;
 	setTimeout(function(){ og.still_adding_objects_to_member = false; }, 1000);
 	
 	var params = {};
+	// the ids of the objects to classify
 	params.objects = Ext.util.JSON.encode(ids);
-	params.member = member_id;
+
+	if (isNaN(member_id) || member_id == null) {
+		// when unclassifying we must specify in which dimension
+		params.dimension = dimension_id;
+	} else {
+		// classify in this member
+		params.member = member_id;
+	}
+
 	if (attachment) params.attachment = attachment;
 	if (reclassify_in_associations) params.reclassify_in_associations = reclassify_in_associations;
 	if (remove_prev) params.remove_prev = remove_prev;
@@ -5186,8 +5475,48 @@ og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassi
 		//post: {objects: Ext.util.JSON.encode(ids), member: e.target.id, attachment:attachment, reclassify_in_associations: true},
 		callback: function(){
 			if (e && e.data && e.data.grid) e.data.grid.load();
+			if (typeof(callback) == 'function') {
+				callback.call(null, ids, member_id);
+			}
 		}
 	});
+}
+
+og.drag_drop_classification_keep_or_move_prompt = function (genid, e, ids, member_id, attachment, reclassify_in_associations, callback) {
+
+	var div = document.createElement('div');
+	var question = lang('do you want to mantain the current associations of this obj with members of', config.title);
+	div.style = "border-radius: 5px; background-color: #fff; padding: 10px; width: 500px;";
+	var genid = Ext.id();
+	div.innerHTML = '<div><label class="coInputTitle">'+lang('classification')+'</label></div>'+
+		'<div id="'+genid+'_question">'+ question+'</div>'+
+		'<div id="'+genid+'_buttons">'+
+		'<button class="replace submit blue">'+lang('replace with the new one')+'</button><button class="keep submit blue">'+lang('keep both current and new')+'</button>'+
+		'</div><div class="clear"></div>';
+
+	var modal_params = {
+		'escClose': false,
+		'overlayClose': false,
+		'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+		'onShow': function (dialog) {
+			$("#"+genid+"_close_link").addClass("modal-close-img");
+			$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
+			$("#"+genid+"_question").css('margin', '10px 0');
+			$("#"+genid+"_buttons button.replace").css('margin-right', '10px').click(function(){
+
+				og.call_add_objects_to_member(e, ids, member_id, attachment, reclassify_in_associations, true, callback);
+				$('.modal-close').click();
+			});
+			$("#"+genid+"_buttons button.keep").css('margin-right', '10px').click(function(){
+				
+				og.call_add_objects_to_member(e, ids, member_id, attachment, reclassify_in_associations, false, callback);
+				$('.modal-close').click();
+			});
+		}
+	};
+	setTimeout(function() {
+		$.modal(div, modal_params);
+	}, 100);
 }
 
 // --
@@ -5201,7 +5530,7 @@ og.get_currency_by_id = function(id) {
 
 
 og.format_money_amount = function(amount, decimals) {
-	if (amount=='') amount = '0';
+	if (amount=='' || typeof amount == 'undefined') amount = '0';
 	amount = og.clean_thousand_separator(amount);
 
 	// if decimal separator is , then replace it by .
@@ -5213,6 +5542,11 @@ og.format_money_amount = function(amount, decimals) {
 	amount = parseFloat(amount);
 	
 	if (!decimals) decimals = 2;
+
+	// if not using any thousand separator then only put the correct decimals separator in the string
+	if (og.preferences.thousand_separator == '') {
+		return amount.toFixed(decimals).toString().replace('.', og.preferences.decimals_separator);
+	}
 	
 	var locale = og.preferences.thousand_separator == ',' ? 'en' : 'it';
 	
@@ -5226,8 +5560,14 @@ og.updateElementMoneyAmount = function(id, value){
 
 og.clean_thousand_separator = function(amount) {
 	if (!isNaN(amount)) return amount;
+	if (typeof amount == 'undefined') return 0;
 	
 	var th_sep = og.get_locale_thousand_separator();
+	if (th_sep == '') {
+		// if not using any thousand separator then guess it using the decimal separator
+		// so if the user inputs some thousands separator we can manage it
+		th_sep = og.preferences.decimals_separator == ',' ? '.' : ',';
+	}
 	// remove thousand separator
 	while (amount.toString().indexOf(th_sep) > 0) {
 		amount = amount.toString().replace(th_sep, '');
@@ -5357,3 +5697,164 @@ og.reload_tasks_list_with_status = function(status_id) {
 	});
 
 }
+
+og.get_object_type_by_name = function(ot_name) {
+	for (x in og.objectTypes) {
+		if (!isNaN(x)) {
+			var ot = og.objectTypes[x];
+			if (ot && ot.name == ot_name) {
+				return ot;
+			}
+		}
+	}
+}
+
+// render a member selector using standard html select box
+// if og.dimensions does not have the data then queries the server for the data before trying to render the component
+// also makes a queue of other components for the same dimension so we don't make the same request every time
+og.render_plain_member_selector = function(config) {
+
+	var dim_id = config.dim_id;
+
+	if (!og.render_plain_member_selector_waiting_response) og.render_plain_member_selector_waiting_response = {};
+
+	// if we are already waiting for server response to load the dimension members, then queue this selector to be rendered when data is loaded
+	if (og.render_plain_member_selector_waiting_response[dim_id]) {
+		og.render_plain_member_selector_waiting_response[dim_id].push(config);
+		return;
+	}
+
+	// if we don't have the members data in og.dimensions variable -> query the server for the data and render the component after
+	if (typeof og.dimensions[dim_id] == 'undefined') {
+
+		// queue this selector config to be rendered after the server response is loaded
+		og.render_plain_member_selector_waiting_response[dim_id] = [];
+		og.render_plain_member_selector_waiting_response[dim_id].push(config);
+
+		// query the server for members data
+		og.openLink(og.getUrl('dimension', 'reload_dimensions_js', {dim_ids: [dim_id], vars: Ext.util.JSON.encode(config)}), {
+			callback: function(success, data) {
+				
+				for (dim_id in data.dims) {
+
+					// store the members data in og.dimensions variable
+					let dim_members = data.dims[dim_id];
+					if (dim_members.length > 0) {
+						if (!og.dimensions) {
+							og.dimensions = {};
+						}
+						if (!og.dimensions[dim_id]) {
+							og.dimensions[dim_id] = {};
+						}
+						for (var i=0; i < dim_members.length; i++) {
+							let member = dim_members[i];
+							og.dimensions[dim_id][member.id] = member;
+						}
+					}
+
+					// render all the queued components for this dimension
+					for (var i=0; i < og.render_plain_member_selector_waiting_response[dim_id].length; i++) {
+						// get the config of the component
+						let conf = og.render_plain_member_selector_waiting_response[dim_id][i];
+
+						// call the render function
+						og.do_render_plain_member_selector(conf);
+					}
+
+					// reset the waiting for server variable
+					delete og.render_plain_member_selector_waiting_response[dim_id];
+				}
+				
+			}
+		});
+
+	} else {
+		// dimension already in cache -> render component
+		og.do_render_plain_member_selector(config);
+	}
+
+}
+
+// function that renders the dimension selector component, og.dimensions must have the members data for the required dimension
+og.do_render_plain_member_selector = function(config) {
+
+	var dim_id = config.dim_id;
+	var hf_name = config.hf_name;
+	var container = config.container;
+	var genid = config.genid;
+	var sel_id = config.sel_id ? config.sel_id : 0;
+	var class_add = config.class_add ? config.class_add : '';
+
+	var selector_id = genid + 'member_selector_' + dim_id;
+
+	// get the members
+	var members = [];
+	for (mem_id in og.dimensions[dim_id]) {
+		members.push(og.dimensions[dim_id][mem_id]);
+	}
+
+	// sort the members
+	members.sort(function (a, b){
+		return ((a.sort_key < b.sort_key) ? -1 : ((a.sort_key > b.sort_key) ? 1 : 0));
+	});
+
+	// create the selector inside the container
+	var sel = $('<select id="'+selector_id+'" name="'+ hf_name +'" class="'+class_add+'">');
+	sel.append($('<option value="0">'));
+	$("#" + container).html(sel);
+
+	// add the members to the selector
+	for (var j=0; j<members.length; j++) {
+		var member = members[j];
+
+		// indent the name depending on the depth
+		var mem_name = "";
+		for (var i=1; i<member.depth; i++) mem_name += '&nbsp;&nbsp;';
+		mem_name += og.clean(member.name);
+
+		// create the option element
+		var option_id = "mem_" + member.id;
+		var pid = member.parent == 0 ? member.id : member.parent;
+		var sel_attr = sel_id == member.id ? 'selected="selected"' : "";
+		var option_html = '<option id="'+option_id+'" class="parent_'+pid+'" value="'+member.id+'" '+sel_attr+'>'+mem_name+'</option>';
+
+		if (member.parent == 0) {
+			// append a root element
+			sel.append(option_html);
+
+		} else {
+			// append an element below its parent
+			parent_option_id = "mem_" + member.parent;
+			$("#" + selector_id + " .parent_" + member.parent + ":last").after(option_html);
+
+		}
+
+	}
+
+}
+
+
+og.preload_small_dimension_members = function() {
+	
+	if (!og.simple_member_selectors) og.simple_member_selectors = {store_cache: {}};
+	og.openLink(og.getUrl('dimension', 'preload_small_dimension_members'), {
+		silent: true,
+		callback: function(success, data) {
+			if (data && data.dimension_members) {
+				
+				for (dim_id in data.dimension_members) {
+					// format the store
+					let store_data = [[0, lang('none')]];
+					og.buildPlainStoreFromTree(data.dimension_members[dim_id], store_data);
+	
+					// store cache data for some time to avoid making so much queries to the server when redrawing quick add row
+					og.simple_member_selectors.store_cache[dim_id] = {
+						store: store_data,
+						date: new Date(),
+					}
+				}
+			}
+		}
+	});
+}
+

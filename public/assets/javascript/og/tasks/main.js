@@ -132,6 +132,9 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.pending_time_string) this.pending_time_string = tdata.pending_time_string; else this.pending_time_string = '';
 	if (tdata.worked_time) this.worked_time = tdata.worked_time; else this.worked_time = 0;
 	if (tdata.worked_time_string) this.worked_time_string = tdata.worked_time_string; else this.worked_time_string = '';
+	if (tdata.overall_worked_time_string) this.overall_worked_time_string = tdata.overall_worked_time_string; else this.overall_worked_time_string = '';
+	if(tdata.totalTimeEstimate) this.totalTimeEstimate = tdata.totalTimeEstimate; else this.totalTimeEstimate = 0;
+	if (tdata.totalTimeEstimateString) this.totalTimeEstimateString = tdata.totalTimeEstimateString; else this.totalTimeEstimateString = '';
 	
 	if (tdata.timeEstimate) this.TimeEstimate = tdata.timeEstimate; else this.TimeEstimate = 0;
 	if (tdata.depCount) this.depCount = tdata.depCount; else this.depCount = null;
@@ -231,11 +234,17 @@ ogTasks.loadData = function(data){
 	if (drawOptions.show_time_estimates) {
 		this.TotalCols.estimatedTime = {title: 'estimated', group_total_field: 'TimeEstimate', row_field: 'estimatedTime'};
 	}
+	if (drawOptions.show_total_time_estimates) {
+		this.TotalCols.totalEstimatedTime = {title: 'total estimated', group_total_field: 'TotalTimeEstimate', row_field: 'totalTimeEstimateString'};
+	}
 	if (drawOptions.show_time_pending) {
 		this.TotalCols.pendingTime = {title: 'pending', group_total_field: 'pending_time', row_field: 'pending_time_string'};	
 	}
 	if (drawOptions.show_time_worked) {
 		this.TotalCols.workedTime = {title: 'worked', group_total_field: 'worked_time', row_field: 'worked_time_string'};	
+	}
+	if (drawOptions.show_total_time_worked) {
+		this.TotalCols.totalWorkedTime = {title: 'total worked', group_total_field: 'overall_worked_time', row_field: 'overall_worked_time_string'};	
 	}
 	
 	this.AllUsers = [];
@@ -372,7 +381,7 @@ ogTasks.executeAction = function(actionName, ids, options,partent){
     if (actionName == 'start_work'){
         if(partent != undefined){
             var listOfRunningTime = $(partent).find('.og-timeslot-work-started, .og-timeslot-work-paused')
-            if (listOfRunningTime.length > 0 && og.config.stop_running_timeslots){
+            if (listOfRunningTime.length > 0 && og.config.stop_running_timeslots == 1){
                 listOfRunningTime.each(function (index) {
                     var data_id = $(this).parent().find('a:first').attr('data-id');
 
@@ -381,7 +390,7 @@ ogTasks.executeAction = function(actionName, ids, options,partent){
                             ogTasks.executeActionFinal(actionName,ids,options,function () {
                             });
                         }
-                    })
+                    });
                 })
             }else{
                 ogTasks.executeActionFinal(actionName,ids,options,function () {
@@ -391,7 +400,13 @@ ogTasks.executeAction = function(actionName, ids, options,partent){
             ogTasks.executeActionFinal(actionName,ids,options,function () {
             })
         }
-    }else{
+    } else if(actionName == 'cancel_work') {
+		if (confirm(lang('confirm discard work timeslot'))){
+			ogTasks.executeActionFinal(actionName,ids,options,function () {
+			});
+		}
+		
+	} else {
         ogTasks.executeActionFinal(actionName,ids,options,function () {
         })
     }
@@ -425,9 +440,11 @@ ogTasks.executeActionFinal = function(actionName, ids, options,callback){
                         //remove task from cache
                         ogTasksCache.removeTask(task);
                         ogTasks.removeTaskFromView(task);
-                    }else{
-                        ogTasks.UpdateTask(task.id,false);
-                    }
+                    }else if (actionName == 'close_work'){
+                        ogTasks.UpdateTask(task.id, true);
+                    } else {
+						ogTasks.UpdateTask(task.id, false);
+					}
                 }
                 if (actionName == 'delete' || actionName == 'archive'){
                     var task = data.tasks[data.tasks.length-1];

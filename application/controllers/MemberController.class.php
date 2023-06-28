@@ -24,11 +24,18 @@ class MemberController extends ApplicationController {
 		
 		$ot = ObjectTypes::findById(array_var($_REQUEST, 'type_id'));
 		$dim = Dimensions::findById(array_var($_REQUEST, 'dim_id'));
-		
+		$group_by_value = 'mem_path';
+		if($ot instanceof ObjectType && $dim instanceof Dimension) {
+			$ot_id = $ot->getId();
+			$dim_id = $dim->getId();
+			$config_option_name = 'member_list_group_by_' . $dim_id . '_' . $ot_id;
+			$group_by_value = user_config_option($config_option_name, 'mem_path');
+		}
 		$config = array(
 			'object_type_id' => array_var($_REQUEST, 'type_id'),
 			'object_subtype_id' => array_var($_REQUEST, 'subtype_id'),
 			'dimension_id' => array_var($_REQUEST, 'dim_id'),
+			'last_group_field' => $group_by_value,
 			'dimension_code' => $dim instanceof Dimension ? $dim->getCode() : '',
 			'object_type_name' => $ot instanceof ObjectType ? $ot->getName() : '',
 		);
@@ -60,6 +67,8 @@ class MemberController extends ApplicationController {
 	
 	function build_listing_order_parameters($order, $order_dir, $member_type) {
 		$order_join_sql = "";
+		$financial_columns = array();
+		Hook::fire('get_all_member_totals_columns', null, $financial_columns);
 		
 		switch ($order){
 			/*case 'task_completion_p':
@@ -84,10 +93,15 @@ class MemberController extends ApplicationController {
 			case 'description':
 				$order = "mem.".$order;
 				break;
-		
+			case 'days_since_created':
+				$order = "o.created_on";
+				break;
 			case 'mem_path':
 				$order_join_sql = "LEFT JOIN ".TABLE_PREFIX."members mem_parent ON mem.parent_member_id = mem_parent.id";
 				$order = "mem_parent.`name`";
+				break;
+			case 'created_on':
+				$order = "o.created_on";
 				break;
 			default:
 				// check if order column is a custom property
@@ -115,17 +129,23 @@ class MemberController extends ApplicationController {
 					} else if ($member_type->getType() == 'dimension_object') {
 						$cp = CustomProperties::findById($cp_id);
 						if ($cp instanceof CustomProperty) {
-							$order_join_sql = "LEFT JOIN ".TABLE_PREFIX."custom_property_values cpv ON cpv.object_id=mem.object_id AND cpv.custom_property_id=$cp_id";
-							if ($cp->getType() == 'contact' || $cp->getType() == 'user') {
-								$order_join_sql .= " LEFT JOIN ".TABLE_PREFIX."objects ocpv ON ocpv.id=cpv.`value`";
-								$order = "ocpv.`name`";
+							if ($cp->getObjectTypeId() == $member_type->getId()) {
+								$order_join_sql = "LEFT JOIN ".TABLE_PREFIX."custom_property_values cpv ON cpv.object_id=mem.object_id AND cpv.custom_property_id=$cp_id";
+								if ($cp->getType() == 'contact' || $cp->getType() == 'user') {
+									$order_join_sql .= " LEFT JOIN ".TABLE_PREFIX."objects ocpv ON ocpv.id=cpv.`value`";
+									$order = "ocpv.`name`";
+								} else {
+									if($cp->getType() == 'numeric'){
+										$order = "CAST(cpv.value AS DECIMAL(10,4))";
+									}else{
+										$order = "cpv.`value`";
+									}
+								}
 							} else {
-                                if($cp->getType() == 'numeric'){
-                                    $order = "CAST(cpv.value AS DECIMAL(10,4))";
-                                }else{
-                                    $order = "cpv.`value`";
-                                }
+								$order_join_sql .= "";
+								$order = "cpval_".$cp_id.".`value`";
 							}
+
 						} else {
 							$order = 'mem.`name`';
 						}
@@ -153,6 +173,11 @@ class MemberController extends ApplicationController {
 						$order = 'mem.`name`';
 					}
 					
+				} else if (count($financial_columns) > 0 && in_array($order, $financial_columns)){ 
+					$order_join_sql = "
+						LEFT JOIN ".TABLE_PREFIX."member_totals memtotals ON memtotals.member_id = mem.id
+					";
+					$order = "memtotals.".$order;
 				} else {
 					// check if order column is specific from associated member type table
 					
@@ -360,7 +385,7 @@ class MemberController extends ApplicationController {
 	    }
 	}
 	
-	function listing($parameters = null) {
+	function listing($parameters = null) { 
 		$return_the_list = true;
 		// if parameters not specified => use the request
 		if (is_null($parameters)) {
@@ -551,7 +576,7 @@ class MemberController extends ApplicationController {
 				ORDER BY $order $order_dir
 				LIMIT $start, $limit
 		";
-		
+
 		// execute query
 		$rows = DB::executeAll($data_sql);
 		if (!is_array($rows)) $rows = array();
@@ -1206,7 +1231,13 @@ class MemberController extends ApplicationController {
 			
 			// save associated members
 			save_associated_dimension_members(array('member' => $member, 'request' => $_REQUEST, 'is_new' => $is_new));
-			
+
+
+			// build name to display, based on properties and relations, we do it here after saving everything needed
+			$display_name = build_member_display_name($member);
+			$member->setDisplayName($display_name);
+			$member->save();
+
 			// Other dimensions member restrictions
 			$restricted_members = array_var($_POST, 'restricted_members');
 			if (is_array($restricted_members)) {
@@ -1669,6 +1700,12 @@ class MemberController extends ApplicationController {
 			if ($member->getObjectId() > 0) {
 				$mobj = Objects::findObject($member->getObjectId());
 				if ($mobj instanceof ContentDataObject) $mobj->delete();
+			}
+
+			// delete object custom property values
+			if ($member->getObjectId() > 0) {
+				$m_object_id = $member->getObjectId();
+				CustomPropertyValues::delete('object_id = '.$m_object_id);
 			}
 			
 			// delete from object_members
@@ -2283,9 +2320,7 @@ class MemberController extends ApplicationController {
 				$obj = Objects::findObject($oid);
 				if ($obj instanceof ContentDataObject && $obj->canAddToMember(logged_user(), $member, active_context())) {
 					// to use when saving the application log
-					$old_content_object = ContentDataObjects::generateOldContentObjectData($obj);
-					$obj->old_content_object = $old_content_object;
-					// --
+					$old_content_object = $obj->generateOldContentObjectData();
 					
 					$prev_classification[$obj->getId()] = $obj->getMemberIds();
 					
@@ -2304,6 +2339,7 @@ class MemberController extends ApplicationController {
 					
 					$obj->addToMembers(array($member),null,$is_multiple);
 					$obj->addToRelatedMembers(array($member), false, $reclassify_in_associations);
+					$obj->override_workflow_permissions = true; // they are already verified before classification
 					$obj->save();
 					
 					$obj->addToSharingTable();
@@ -2320,6 +2356,32 @@ class MemberController extends ApplicationController {
 								}
 								MailController::classifyFile($classification_data, $conv_email, $parsedEmail, array($member), array_var($_POST, 'remove_prev'), false);
 							}
+						}
+					}
+
+					// if object is a task, then apply classification to subtasks
+					if ($obj instanceof ProjectTask) {
+						// get the classification configuration to see if this dimension allows classification in multiple members for tasks
+						$dotc = DimensionObjectTypeContents::instance()->findOne(array(
+							"conditions" => array("dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?", $member->getDimensionId(), $member->getObjectTypeId(), $obj->getObjectTypeId())
+						));
+
+						$obj_controller = new ObjectController();
+						$subtasks = array_reverse($obj->getAllSubTasks(false));
+						// reclassify each subtask in the same member as the parent task
+						foreach ($subtasks as $st) {
+							$st_members = $st->getMembers();
+							$st_mem_ids = array();
+							foreach ($st_members as $st_mem) {
+								// keep other dimension members, also keep prev classification if dim allows multiple classification
+								if ($dotc->getIsMultiple() || $st_mem->getDimensionId() != $member->getDimensionId()) {
+									$st_mem_ids[] = $st_mem->getId();
+								}
+							}
+							// add new member to members array
+							$st_mem_ids[] = $member->getId();
+							// classify
+							$obj_controller->add_to_members($st, $st_mem_ids);
 						}
 					}
 					
@@ -2361,9 +2423,7 @@ class MemberController extends ApplicationController {
 					$obj = Objects::findObject($oid);
 					if ($obj instanceof ContentDataObject) {
 						// to use when saving the application log
-						$old_content_object = ContentDataObjects::generateOldContentObjectData($obj);
-						$obj->old_content_object = $old_content_object;
-						// --
+						$old_content_object = $obj->generateOldContentObjectData();
 						
 						$db_res = DB::execute("SELECT group_concat(om.member_id) as old_members FROM ".TABLE_PREFIX."object_members om INNER JOIN ".TABLE_PREFIX."members m ON om.member_id=m.id WHERE m.dimension_id=".$dim_id." AND om.object_id=".$obj->getId());
 						$row = $db_res->fetchRow();
@@ -2609,13 +2669,29 @@ class MemberController extends ApplicationController {
 	        	$response = $member_data;
 	        } else {
 	        	if (isset($member_data['contacts']['Company']) && count($member_data['contacts']['Company']) > 0) {
-	        		$response['contacts']['Company'][] = $member_data['contacts']['Company'][0];
-	        	} else if (count($member_data['contacts']) > 0) {
+	        		
+					$response['contacts']['Company'] = array_merge($response['contacts']['Company'], $member_data['contacts']['Company']);
+					$client_billing_address=$response['contacts']['Company'][0]['billing_address'];
+	        	}
+	        	if (isset($member_data['contacts']['Billing Company']) && count($member_data['contacts']['Billing Company']) > 0) {
+	        		$response['contacts']['Billing Company'] = array_merge($response['contacts']['Billing Company'], $member_data['contacts']['Billing Company']);
+	        	}
+				if (count($member_data['contacts']) > 0) {
 	        		$response['custom_properties'] = array_merge($response['custom_properties'], $member_data['custom_properties']);
 	        		$response['contacts'] = array_merge($response['contacts'], $member_data['contacts']);
 	        	}
 	        }
         }
+        
+		//best solution will be get all address
+		//$response['contacts']['Company'][0]['client billing address']=$client_billing_address;
+
+		//fix patch if billing address is null (not have billing in project), override with CLIENT billing address
+		if($response['contacts']['Company'][0]['billing_address'][0]['parsed']=='')
+		{
+			$response['contacts']['Company'][0]['billing_address']=$client_billing_address;
+		}
+		
         ajx_extra_data(array('response' => $response));
     }
     
@@ -2629,7 +2705,8 @@ class MemberController extends ApplicationController {
         if($need_company_data && Plugins::instance()->isActivePlugin('income')){
         	$customer_data = InvoiceController::customerDataLogic($member->getId(),$invoice_id);
         	if ($customer_data) {
-            	$cp_contacts['contacts']['Company'][]=array_merge(['name'=>$member->getName()], $customer_data);
+				$client_key = $customer_data['is_billing_client'] ? "Billing Company" : "Company";
+            	$cp_contacts['contacts'][$client_key][] = array_merge(['name'=>$member->getName()], $customer_data);
         	}
         }
         return $cp_contacts;

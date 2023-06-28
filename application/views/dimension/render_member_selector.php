@@ -1,4 +1,7 @@
 <?php
+
+// The following section renders a selector of one or multiple members for a dimension filter
+
 if ($dim instanceof Dimension) {
 	
 	if (!isset($selector_genid)) {
@@ -12,14 +15,25 @@ if ($dim instanceof Dimension) {
 	if (!isset($select_current_context)) $select_current_context = true;
 	if (!isset($select_context_associated_members)) $select_context_associated_members = true;
 	if (!isset($label)) $label = null;
+	if (!isset($root_lang)) $root_lang = lang('none');
+	if (!isset($listeners)) {
+		$listeners = array();
+	} else {
+		$listeners = (array) json_decode($listeners);
+	}
 	
 	if (!is_array($selected_member_ids)) $selected_member_ids = explode(',', $selected_member_ids);
 	
-	$selector_params = array('is_multiple' => $is_multiple, 'label' => $label, 'hide_label' => $hide_label, 'root_lang' => lang('none'), 
-		'hidden_field_name' => $hf_name, 'allowedMemberTypes' => $member_type_id, 'dont_filter_this_selector' => true);
+	$selector_params = array('is_multiple' => $is_multiple, 
+							 'label' => $label, 
+							 'hide_label' => $hide_label, 
+							 'root_lang' => $root_lang, 
+							 'listeners' => $listeners,
+							 'hidden_field_name' => $hf_name, 
+							 'allowedMemberTypes' => $member_type_id, 
+							 'dont_filter_this_selector' => true);
 	
 	if (isset($width)) $selector_params['width'] = $width;
-	
 	if ($select_current_context) {
 		foreach (active_context() as $selection) {
 			if ($selection instanceof Member) {
@@ -42,7 +56,6 @@ if ($dim instanceof Dimension) {
 		}
 	}
 	$selected_member_ids = array_filter($selected_member_ids);
-	
 	render_single_member_selector($dim, $selector_genid, $selected_member_ids, $selector_params, false);
 
 ?>

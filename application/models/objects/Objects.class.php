@@ -12,14 +12,14 @@
   	 * @return ContentDataObject
   	 * @param $object_id id of the content object to get
   	 */
-    static function findObject($object_id){
+    static function findObject($object_id, $force_reload=false){
     	
-    	$object = self::findById($object_id);
+    	$object = self::findById($object_id, $force_reload);
     	if (is_null($object)) return null;
     	$object_type = $object->getType();
     	if (!$object_type instanceof ObjectType) return null;
     	$handler_class = $object_type->getHandlerClass();
-    	$concrete_object = $handler_class::findById($object_id);
+    	$concrete_object = $handler_class::findById($object_id, $force_reload);
     	//eval('$concrete_object = '.$handler_class.'::findById('.$object_id.');');
     	
     	$object_type = null;

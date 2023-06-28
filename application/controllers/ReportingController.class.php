@@ -268,8 +268,6 @@ class ReportingController extends ApplicationController {
 			$_SESSION['total_task_times_report_data'] = $report_data;
 		}
 		
-		//Logger::log_r($report_data);
-		
 		if (array_var($_GET, 'export') == 'csv' || (isset($csv) && $csv == true)){
 			$context = build_context_array(array_var($_REQUEST, 'context'));
 			CompanyWebsite::instance()->setContext($context);
@@ -592,7 +590,11 @@ class ReportingController extends ApplicationController {
 	//  Custom Reports
 	// ---------------------------------------------------
 
-	function add_custom_report(){
+	/**
+	 * This is the function that renders the form to add custom report
+	 * After the form is submitted, this function is called again with the report properties to save a new Report object.
+	 */
+	function add_custom_report(){ 
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
@@ -628,7 +630,7 @@ class ReportingController extends ApplicationController {
 					if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
 					else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the report'))) : flash_error(lang('no context permissions to add', lang("report"), $notAllowedMember ));
 					ajx_current("empty");
-					return;
+					return; 
 				}
 				
 				$newReport->setObjectName($report_data['name']);
@@ -750,6 +752,10 @@ class ReportingController extends ApplicationController {
 		tpl_assign('object', $new_report);
 	}
 
+	/**
+	 * This is the function that renders the form to edit a custom report
+	 * After the form is submitted, this function is called again with the report properties to save the edited Report object.
+	 */
 	function edit_custom_report(){
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
@@ -928,6 +934,8 @@ class ReportingController extends ApplicationController {
 			tpl_assign('object', $report);
 			
 			tpl_assign('allowed_columns', $this->get_allowed_columns($selected_type), true);
+
+			evt_add("edit report loaded", array());
 		}
 	}
 
@@ -988,7 +996,6 @@ class ReportingController extends ApplicationController {
 	}
 
 	function view_custom_report($report_id = null, $view_attributes = null, $params = null,$to_print = false) {
-		
 		if (!$report_id) {
 			$report_id = array_var($_REQUEST, 'id');
 		}
@@ -1079,7 +1086,6 @@ class ReportingController extends ApplicationController {
 			$order_by_asc = array_var($_REQUEST, 'order_by_asc', false);
 			
 			$results = Reports::executeReport($report_id, $params, $order_by, $order_by_asc, $offset, $limit);
-			
 			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
 
 			tpl_assign('results', $results);
@@ -1226,25 +1232,41 @@ class ReportingController extends ApplicationController {
 		$html .= stylesheet_tag('og/pdf_export.css');
 		
 		// title html
-		$html .= '<div class="report-print-header"><div class="title-container"><h1>'.clean($report->getName()).'</h1></div></div><div class="clear"></div>';
+		// $html .= '<div class="report-print-header"><div class="title-container"><h1>'.clean($report->getName()).'</h1></div></div><div class="clear"></div>';
 		
 		ob_start();
-		custom_report_info_blocks(array('id' => $report_id, 'results' => $results, 'parameters' => $params, 'disabled_params' => $disabled_params));
+		// custom_report_info_blocks(array('id' => $report_id, 'results' => $results, 'parameters' => $params, 'disabled_params' => $disabled_params));
+
+		custom_report_info_blocks_pdf(array('name_report'=>clean($report->getName()),'id' => $report_id, 'results' => $results, 'parameters' => $params, 'disabled_params' => $disabled_params));
+
 		$html .= ob_get_clean();
 		
 		// build html
 		$html .= report_table_html($results, $report, '', true);
+
+		// add more content to the resulting html (example: signature, etc)
+		Hook::fire("export_report_pdf_more_content", array('report' => $report, 'results' => $results), $html);
+
+		$html = '<div id="print-pdf">'. $html .'</div>';
 		file_put_contents($html_filepath, $html);
-		
+
+		$html_header_footer = array();
+		// build header
+		$html_header_footer['header'] = '<div style="height: 35px; color: white;">.</div>';
+		// build footer
+		$company_mini_logo = get_image_url("small_logo_feng.png");
+		$html_header_footer['footer'] = '<div style="text-align: right; font-size: 15px; height: 20px; font-family: "Open Sans",Arial,sans-serif;"> 
+		<div style="padding-top: 2px; display: inline-block; padding-left: 10px; padding-right: 3px;"> Powered by </div> 
+			<div style="background: url(\''.$company_mini_logo.'\'); background-size: 70px 20px; width: 70px; height: 20px; display: inline-block; color: white;">.</div> 
+		</div>';
 		// convert html to pdf
 		$orientation = array_var($_REQUEST, 'pdfPageLayout') == 'L' ? 'Landscape' : 'Portrait';
 		$page_size = array_var($_REQUEST, 'pdfPageSize');
 		
-		$pdf_data = convert_to_pdf($html, $orientation, str_replace(" ", "_", $report->getObjectName()), $page_size);
+		$pdf_data = convert_to_pdf($html, $orientation, str_replace(" ", "_", $report->getObjectName()), $page_size, '', $html_header_footer);
 		$real_pdf_filename = $pdf_data['name'];
 		
 		ajx_extra_data(array("filename" => $real_pdf_filename, 'size' => $pdf_data['size']));
-		
 	}
 	
 	
@@ -1706,7 +1728,7 @@ class ReportingController extends ApplicationController {
 		return $fields;
 	}
 	
-	function get_object_column_list(){
+	function get_object_column_list(){ 
 		$option_groups = null;
 		$object_type = array_var($_GET, 'object_type');
 		$allowed_columns = $this->get_allowed_columns($object_type);
@@ -1720,7 +1742,7 @@ class ReportingController extends ApplicationController {
 
 			foreach ($task_columns as $t) {
 				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
-						|| in_array($t['id'], array('id','name'))) continue;
+						|| in_array($t['id'], array('id','name', 'project_number'))) continue;
 						$allowed_columns[] = $t;
 						$task_columns_count++;
 			}
@@ -1731,7 +1753,7 @@ class ReportingController extends ApplicationController {
 			$contact_columns_count = 0;
 			foreach ($contact_columns as $t) {
 				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
-						|| in_array($t['id'], array('id','name'))) continue;
+						|| in_array($t['id'], array('id','name', 'project_number'))) continue;
 				
 				// only custom properties for now
 				if (is_numeric($t['id'])) { 
@@ -1758,16 +1780,37 @@ class ReportingController extends ApplicationController {
 		$allowed_columns = $ret[0];
 		$option_groups = $ret[1];
 		Hook::fire('remove_billing_and_cost_columns_from_list', array('object_type' => $object_type),$allowed_columns);
-		
+
+		$this->sort_custom_report_columns_using_option_groups($allowed_columns, $option_groups);
 		tpl_assign('option_groups', $option_groups);
 		tpl_assign('allowed_columns', $allowed_columns);
 		tpl_assign('columns', explode(',', $columns));
 		tpl_assign('order_by', array_var($_GET, 'orderby'));
 		tpl_assign('order_by_asc', array_var($_GET, 'orderbyasc'));
 		tpl_assign('genid', array_var($_GET, 'genid'));
+
+		evt_add("end colum list", array());
 		
 		$this->setLayout("html");
 		$this->setTemplate("column_list");
+	}
+
+	function sort_custom_report_columns_using_option_groups(&$allowed_columns, $option_groups) {
+		if(count($option_groups) == 0) {
+			usort($allowed_columns, array(&$this, 'compare_FieldName'));
+			return;
+		}
+		$sorted_allowed_columns = array();
+		$array_start = 0;
+		foreach($option_groups as $group) {
+			$array_end = $array_start + $group['count'];
+			$group_columns = array_slice($allowed_columns, $array_start, $group['count']);
+			usort($group_columns, array(&$this, 'compare_FieldName'));
+			$sorted_allowed_columns = array_merge($sorted_allowed_columns, $group_columns);
+			$array_start = $array_end;
+		}
+
+		$allowed_columns = $sorted_allowed_columns;
 	}
 
 	function get_object_column_list_task(){
@@ -1801,7 +1844,7 @@ class ReportingController extends ApplicationController {
 				if ($cp->getType() == 'user') $user_cp = true;
 			}
 		}
-		if($user_cp || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'completed_by_id'
+		if($user_cp || $field == 'contact_id' || $field == 'created_by_id' || $field== 'paid_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'completed_by_id'
 			|| $field == 'approved_by_id'){
 			$users = Contacts::getAllUsers();
 			Hook::fire('filter_report_external_user_col_values', array('field' => $field, 'ot_id' => $ot_id), $users);
@@ -1935,6 +1978,7 @@ class ReportingController extends ApplicationController {
 				$fields[] = array('id' => 'other_address', 'name' => lang('other_address'), 'type' => 'text');
 				$fields[] = array('id' => 'postal_address', 'name' => lang('postal_address'), 'type' => 'text');
 			}
+
 			if (!array_var($_REQUEST, 'noaddcol')) {
 				Hook::fire('custom_reports_additional_columns', array('object_type' => $ot), $fields);
 			}
@@ -1943,6 +1987,7 @@ class ReportingController extends ApplicationController {
 		usort($fields, array(&$this, 'compare_FieldName'));
 		if($ot instanceof ObjectType){
 			Hook::fire('remove_billing_and_cost_columns_from_list', array('object_type' => $ot->getId()),$fields);
+			Hook::fire('remove_custom_report_columns_from_list',  array('object_type' => $ot->getId()),$fields);
 		}
 		return $fields;
 	}

@@ -129,7 +129,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or Objects objects
+    * @return array or Objects objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'Objects')) {

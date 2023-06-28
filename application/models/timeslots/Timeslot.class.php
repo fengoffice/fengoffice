@@ -129,6 +129,15 @@ class Timeslot extends BaseTimeslot {
     	$timeToSubtract = $dt->getTimestamp() - $this->getPausedOn()->getTimestamp();
 		$this->setPausedOn(null);
 		$this->setSubtract($this->getSubtract() + $timeToSubtract);
+
+		$allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
+		// Handle open timeslots
+		$t_controller = new TimeslotController();
+		foreach ($allOpenTimeslot as $time){
+			if($time->getId() != $this->getId()){
+				$t_controller->handle_open_timeslot($time);
+			}
+		 }
     }
     
     function close($description = null){
@@ -378,7 +387,7 @@ class Timeslot extends BaseTimeslot {
 	        }
 	    }
 	    DB::execute("UPDATE ".TABLE_PREFIX."timeslots
-				SET worked_time=GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - (subtract/60)
+				SET worked_time=(GREATEST(TIMESTAMPDIFF(SECOND,start_time,end_time),0) - subtract)/60
 				WHERE object_id=".$this->getId());
 	    return $saved;
 	}
@@ -494,8 +503,10 @@ class Timeslot extends BaseTimeslot {
 			$result['can_delete'] = $this->canDelete(logged_user());
 		}
 		if ($return_billing) {
+			$result['is_fixed_billing'] = $this->getColumnValue('is_fixed_billing');
 			$result['hourlybilling'] = $this->getHourlyBilling();
 			$result['totalbilling'] = $this->getFixedBilling();
+			$result['uses_modified_keys'] = true;
 			$result['fixed_billing'] = "";
 			if ($this->getFixedBilling() > 0) {
 				$c = Currencies::getCurrency($this->getRateCurrencyId());
@@ -516,6 +527,32 @@ class Timeslot extends BaseTimeslot {
 		
 		return $result;
 	}
+
+
+	function getChangedRelations($old_content_object) {
+		$changed_relations = array();
+
+		// task
+		if ($this->getRelObjectId() != $old_content_object->getRelObjectId()) {
+
+			// log the relation added with the new task
+			if ($this->getRelObjectId() > 0) {
+				$changed_relations['relation_added'][] = $this->getRelObjectId();
+			}
+			// log the removed relation with the old task
+			if ($old_content_object->getRelObjectId() > 0) {
+				$changed_relations['relation_removed'][] = $old_content_object->getRelObjectId();
+			}
+
+		} else if ($this->getRelObjectId() > 0) {
+			// only log that the related object to the task has been edited
+			$changed_relations['relation_edited'][] = $this->getRelObjectId();
+		}
+
+		return $changed_relations;
+	}
+
+
 
 	
 } // Timeslot

@@ -72,6 +72,24 @@ class ApplicationLog extends BaseApplicationLog {
 		$now->getYear() == $day_after->getYear();
 	} // isYesterday
 
+
+	/**
+	 * @return true if there are details associated to this log, saved in application_log_details table
+	 */
+	function hasDetails() {
+		if (in_array($this->getAction(), array(ApplicationLogs::ACTION_LINK, ApplicationLogs::ACTION_UNLINK))) {
+			return false;
+		}
+		return ApplicationLogDetails::countLogDetails($this->getId()) > 0;
+	}
+
+	/**
+	 * @return array the details associated to this log
+	 */
+	function getDetails() {
+		return ApplicationLogDetails::getLogDetails($this->getId());
+	}
+
 	
 	/**
 	 * Return text message for this entry. If is lang formed as 'log' + action + manager name
@@ -242,6 +260,31 @@ class ApplicationLog extends BaseApplicationLog {
 				if ($object) {
 					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);
 				}
+				break;
+
+			case ApplicationLogs::ACTION_RELATION_ADDED :
+			case ApplicationLogs::ACTION_RELATION_EDITED :
+			case ApplicationLogs::ACTION_RELATION_REMOVED :
+
+				$related_log = ApplicationLogs::findById($this->getLogData());
+				if ($related_log instanceof ApplicationLog) {
+
+					$related_object = $related_log->getObject();					
+					if ($related_object instanceof ContentDataObject) {
+	
+						$related_object_url = $related_object->getObjectUrl();
+						if ($related_object instanceof Timeslot) {
+							// as we don't have a view for timeslots then put the link to the history log of it
+							$related_object_url = "javascript:og.render_modal_form('', {c:'object', a:'view_history', params:{id:".$related_object->getId()."}});";
+						}
+						
+						$related_object_link = '<a href="' . $related_object_url . '">&nbsp;<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-'. $related_object->getObjectTypeName() .'"/>'. clean($related_object->getObjectName()) .'</a>';
+	
+						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()) . $object_link, $user->getDisplayName(), lang('the '.$related_object->getObjectTypeName()) . $related_object_link);
+					}
+				}
+
+				break;
 				
 			case ApplicationLogs::ACTION_MOVE :
 			case ApplicationLogs::ACTION_COPY :
@@ -478,6 +521,26 @@ class ApplicationLog extends BaseApplicationLog {
 				if ($object instanceof ContentDataObject) {
 					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()," "), $userName, $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);
 				}
+				break;
+
+			case ApplicationLogs::ACTION_RELATION_ADDED :
+			case ApplicationLogs::ACTION_RELATION_EDITED :
+			case ApplicationLogs::ACTION_RELATION_REMOVED :
+
+				$related_log = ApplicationLogs::findById($this->getLogData());
+				if ($related_log instanceof ApplicationLog) {
+
+					$related_object = $related_log->getObject();					
+					if ($related_object instanceof ContentDataObject) {
+	
+						$related_object_link = '<a href="' . $related_object->getObjectUrl() . '">&nbsp;<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-'. $related_object->getObjectTypeName() .'"/>'. clean($related_object->getObjectName()) .'</a>';
+	
+						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()) . $object_link, $user->getDisplayName(), lang('the '.$related_object->getObjectTypeName()) . $related_object_link);
+					}
+				}
+
+				break;
+
 			case ApplicationLogs::ACTION_LOGIN :
 			case ApplicationLogs::ACTION_LOGOUT :
 				return lang('activity ' . $this->getAction(), $userName);

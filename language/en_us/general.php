@@ -307,6 +307,7 @@ return array(
 	'no data to show' => 'No data to show', 
 	'activity feeds' => 'Activity Feeds',
   	'estimated' => 'Estimated',
+	'total estimated' => 'Total estimated',
   	'percent completed' => 'Percent completed',
     'percent completed detail' => 'Note: If the task has an estimated time, the percentage is calculated based on the number of hours worked over the amount of estimated hours. If the task does not have an estimated time, you may set up the percentage manually by editing the task.',
   	'task percent completed must be greater than 0' => 'Percent completed must be greater than 0.',
@@ -392,7 +393,7 @@ return array(
 	'completed tasks list' => 'Completed tasks',
 	'crpm_people' => 'People',
 	'estimated_worked_time' => 'Estimated and worked time',
-	'pending time' => 'Pending time',
+	'pending time' => 'Remaining budgeted time',
 	'worked time' => 'Worked time',
 	'overdue and upcoming' => 'Late and upcoming tasks',
 	'projects widget title' => 'Projects',
@@ -447,7 +448,7 @@ return array(
 	
 	'menu home' => 'Home',
 	'select group to add user' => 'Select a group from the dropdown list below to add the user to the group',
-	'click to select country' => 'Click to select country',
+	'click to select country' => 'Select country',
 	'there are no custom properties defined message' => 'There are no custom properties defined for {0}.',
 	'there are no custom properties defined link' => 'Please refer to <a href="http://wiki.fengoffice.com/doku.php/custom_properties" target="_blank" class="wiki-link">this article</a> to learn how to add custom properties.',
 	
@@ -487,4 +488,9 @@ return array(
 	'finish sign up' => 'Finish sign up',
 	'viewing information with the following filters' => 'Viewing information with the following filters',
 	'no filter' => 'No filter',
+	'old value' => 'Old value',
+	'new value' => 'New value',
+	'hide details' => 'Hide details',
+	'added' => 'Added',
+	'removed' => 'Removed',
 );

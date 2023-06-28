@@ -13,6 +13,17 @@ class Member extends BaseMember {
 	private $skip_validations = array();
 	
 	private $icon_class = null;
+
+	/**
+	 * Save the member
+	 *
+	 * @param void
+	 * @return boolean
+	 */
+	function save() {
+		$saved = parent::save();
+		return $saved;
+	}
 	
 	function getAllChildrenObjectTypeIds(){
 		return DimensionObjectTypeHierarchies::getAllChildrenObjectTypeIds($this->getDimensionId(), $this->getObjectTypeId());
@@ -682,6 +693,29 @@ class Member extends BaseMember {
 		return $cant > 0;
 	}
 	
+
+	function getCustomPropertyValueByCode($cp_code) {
+		$value = '';
+
+		$object_type = ObjectTypes::instance()->findById($this->getObjectTypeId());
+
+		if ($object_type->getType() == 'dimension_group') {
+			if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+				$cp = MemberCustomProperties::getCustomPropertyByCode($object_type->getId(), $cp_code);
+				if ($cp) {
+					$cp_val = MemberCustomPropertyValues::getMemberCustomPropertyValue($this->getId(), $cp->getId());
+					if ($cp_val) $value = $cp_val->getValue();
+				}
+			}
+		} else {
+			$cp = CustomProperties::getCustomPropertyByCode($object_type->getId(), $cp_code);
+			if ($cp) {
+				$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getObjectId(), $cp->getId());
+				if ($cp_val) $value = $cp_val->getValue();
+			}
+		}
+		return $value;
+	}
 	
 	
 	function getDataForHistory() {

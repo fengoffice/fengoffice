@@ -107,10 +107,10 @@
     'config option desc use_task_work_performed' => 'Allow users to create timeslots inside tasks.',
     'config option name use_task_estimated_time' => 'Use estimated time in tasks',
     'config option desc use_task_estimated_time' => 'Allow users to add Estimated Time to the task',
-    'config option name use_task_pending_time' => 'Use pending time in tasks',
-    'config option desc use_task_pending_time' => 'If Estimated Time is used, allow users to see Pending Time',
-    'config option name use_task_percent_completed' => 'Use percent completed in tasks',
-    'config option desc use_task_percent_completed' => 'Allow users to enter what percentage of the work is done',
+    'config option name use_task_pending_time' => 'Use remaining budgeted time in tasks',
+    'config option desc use_task_pending_time' => 'If Estimated Time is used, allow users to see Remaining budgeted time',
+    'config option name use_task_percent_completed' => 'Allow users to manually set the percentage complete of a given task',
+    'config option desc use_task_percent_completed' => 'If set to \'No\', then the percentage complete will be calculated as Total worked time / Estimated time',
     'config option name untitled_notes' => 'Untitled notes',
     'config option desc untitled_notes' => 'Allows creating notes without a title required',
     'config option name repeating_task' => 'Repeating task',
@@ -125,7 +125,7 @@
     'config option desc wysiwyg_projects' => 'Enable this option so that you can write your Projects description using rich text format.',
 
   	'config option name let_users_create_objects_in_root' => 'Let users create objects without classifying them',
-
+    'config option name minimum_characters_dimension_search' => 'Minimum number of characters for dimension search',
     // Mailing
     'config option name exchange_compatible' => 'Microsoft Exchange compatibility mode',
     'config option desc exchange_compatible' => 'If you are using Microsoft Exchange Server set this option to yes to avoid some known mailing problems.',
@@ -155,7 +155,10 @@
   	'config option name check_unique_mail_contact_comp' => 'Check email unicity between contacts and companies',
   	'config option desc check_unique_mail_contact_comp' => 'If this option is enabled you will not be able to add a company if its email is already used by a contact.',
     'this email already exists for another user. please use a different email.' => 'This email already exists for another user. Please use a different email.',
-
+    'this email already exists for another contact. please use a different email.' => 'This email already exists for another contact. Please use a different email.',
+    'config option name use_mail_accounts_to_send_nots' => 'Use mail accounts to send notes',
+    'config option name track_send_mails' => 'Track send mails',
+    'config option name send_outbox_emails_in_background' => 'Send outbox emails in background',
     'config option name infinite_paging' => 'Paging',
     'config option desc infinite_paging' => 'Enables or disables the paging. When enabled, a little performance can be noticed when loading lists.',
   	'owned by' => 'Owned by',
@@ -1022,7 +1025,10 @@
     'user config option desc automatic_calculation_start_time'=>'When you change the start or end date of a time tracking record, what do you prefer the system do?',
     'user config option name show_pause_time_action' => 'Allow paused time',
     'config option name show_pause_time_action' => 'Allow paused time',
-    'user config option name stop_running_timeslots' => 'Allow stop timeslots recording when you started a new one',
+    'user config option name stop_running_timeslots' => 'When a new timer is started',
+    'config_allow_stop_timer' => 'Stop current running timer (if any)',
+    'config_allow_pause_timer' => 'Pause all running timers (if any)',
+    'config_let_timer_continue' => 'Let all started timers to continue running',
 
     'user config option name properties_for_contact_component' => 'Contact properties to display on contact selectors',
     'user config option desc properties_for_contact_component' => 'Here you can choose additional properties to be displayed when selecting a contact on any contact selector.',
@@ -1042,7 +1048,14 @@
     'contact_type' => 'Contact type',  
     'all' => 'All',
     'contact' => 'Contact',
-    'user' => 'User'
+    'user' => 'User',
+
+    
+    'config option name default_type_address' => 'Default Type Address',
+	  'config option desc default_type_address' => 'Select the default option within the address type',
+
+    'config option name default_country_address' => 'Default country in address',  
+    'config option desc default_country_address' => 'Select the default option within the countries',
   ); // array
 
 

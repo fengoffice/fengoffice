@@ -440,7 +440,7 @@
 	'billing category' => 'Catégorie de facturation',
 	'select billing category' => '-- Sélectionner une catégorie de facturation --',
 	'billing amount' => 'Montant',
-	'hourly billing' => 'Facturation à l\'heure',
+	'hourly billing' => 'Facturation à l`heure',
 	'fixed billing' => 'Facturation fixe',
 	'show billing information' => 'Montrer les informations de facturation',
 	'no billing categories' => 'Il n\'y a pas de catégories de facturation à afficher.',

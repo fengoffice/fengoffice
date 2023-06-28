@@ -332,6 +332,7 @@ return array(
     // Confirmation
     'confirm delete billing category' => "Are you sure you want to delete the selected billing category?",
     'confirm cancel work timeslot' => "Are you sure you want to cancel the current timeslot?",
+    'confirm discard work timeslot' => 'Are you sure you want to discard the current timeslot?',
     'confirm delete mail account' => 'Warning: All emails belonging to this account will be deleted as well, are you sure that you want to delete this mail account?',
     'confirm delete message' => 'Are you sure that you want to delete this note?',
     'confirm delete milestone' => 'Are you sure that you want to delete this milestone?',

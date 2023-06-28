@@ -41,6 +41,7 @@
 @import "bootstrap/bootstrap.min.css";
 @import "bootstrap/bootstrap-grid.min.css";
 @import "bootstrap/bootstrap-reboot.min.css";
+@import "bootstrap/bootstrap-timepicker.min.css";
 @import 'og/workedHoursWidget.css';
 @import 'og/tasksStatusWidget.css';
 @import 'og/informationWidget.css';

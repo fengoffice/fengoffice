@@ -45,13 +45,25 @@
     	}
     } // editEmailAddress
 
-      function getArrayInfo(){
-      	$et = $this->getEmailType();
-        return array(
-            'type'=> $et ? $et->getName() : '',
-            'email'=>$this->getEmailAddress()
-        );
-      }
+    /**
+    * Set Billing Email to Main Email
+    *
+    * @access public
+    * @param  void
+    * @return void
+    */
+    function setBillingMainEmail($switch) {
+      $this->setDefaultEmail($switch);
+      $this->save();
+    } // setBillingMainEmail
+
+    function getArrayInfo(){
+      $et = $this->getEmailType();
+      return array(
+          'type'=> $et ? $et->getName() : '',
+          'email'=>$this->getEmailAddress()
+      );
+    }
 
 
     /**

@@ -143,7 +143,34 @@
     function setName($value) {
       return $this->setColumnValue('name', $value);
     } // setName() 
-    
+
+    /**
+     * Return value of 'display_name' field
+     * 
+     * @access public
+     * @param void
+     * @return string 
+     */
+    function getDisplayName() {
+
+      $display_name = $this->getColumnValue('display_name');
+    	if ($display_name == '') {
+    		$display_name = $this->getName();
+    	}
+    	return $display_name;
+    } // getDisplayName()      
+      
+    /**
+     * Set value of 'display_name' field
+     *
+     * @access public   
+     * @param string $value
+     * @return boolean
+     */
+    function setDisplayName($value) {
+      return $this->setColumnValue('display_name', $value);
+    } // setDisplayName()
+      
     /**
      * Return value of 'description' field
      *

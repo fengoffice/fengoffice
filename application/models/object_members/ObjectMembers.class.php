@@ -101,9 +101,16 @@
   		}
   		
   		
-  		static function getMemberIdsByObject($object_id){
+  		static function getMemberIdsByObject($object_id, $exclude_ot_ids = array()){
   			if ($object_id) {
-	  			$db_res = DB::execute("SELECT member_id FROM ".TABLE_PREFIX."object_members WHERE object_id = $object_id AND is_optimization = 0");
+				
+				$ot_cond = "";
+				$member_join = "";
+				if (count($exclude_ot_ids) > 0) {	
+					$member_join = "INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id";
+					$ot_cond = "AND m.object_type_id NOT IN (".implode(",", $exclude_ot_ids).")";
+				}
+	  			$db_res = DB::execute("SELECT member_id FROM ".TABLE_PREFIX."object_members om $member_join WHERE om.object_id = $object_id AND is_optimization = 0 $ot_cond");
 	  			$rows = $db_res->fetchAll();
   			} else {
   				return array();

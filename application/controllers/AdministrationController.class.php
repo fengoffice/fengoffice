@@ -257,7 +257,7 @@ class AdministrationController extends ApplicationController {
 		
 		$extra_params = array('extra_conditions' => '', 'form_title' => '', 'add_link_text' => '');
 		Hook::fire('list_custom_properties_for_type_extra_parameters', array('request' => $_REQUEST, 'object_type' => $object_type), $extra_params);
-		
+	
 		$extra_conditions = array_var($extra_params, 'extra_conditions');
 		
 		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType($object_type->getId(), 'all', $extra_conditions, true, true);
@@ -283,7 +283,7 @@ class AdministrationController extends ApplicationController {
 			flash_error(lang('object dnx'));
 			return;
 		}
-		
+			
 		$custom_properties_parameter = array_var($_POST, 'custom_properties');
 		if (is_string($custom_properties_parameter)) {
 			$custom_properties = json_decode($custom_properties_parameter, true);
@@ -298,9 +298,24 @@ class AdministrationController extends ApplicationController {
 			foreach ($custom_properties as $order => $data) {
 				
 				$new_cp = null;
+				
+				$is_assoc_substr = 'assoc_';
+
 				if($data['id'] != '') {
 					if (is_numeric($data['id'])) {
 						$new_cp = CustomProperties::getCustomProperty($data['id']);
+					} else if (str_starts_with($data['id'], $is_assoc_substr)){	
+											
+						$dimension_id = substr($data['id'],6);
+						$dim_association = DimensionMemberAssociations::findById($dimension_id, false);
+						
+						$dim_association->setIsRequired($data['is_required']);
+						$dim_association->setIsMultiple($data['is_multiple_values']);						
+									
+						$dim_association->save();
+
+						continue;
+
 					} else {
 						continue;
 					}

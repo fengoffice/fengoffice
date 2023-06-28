@@ -214,7 +214,8 @@ class MailController extends ApplicationController {
 		}
 
 		$cache_fname = "";
-		if (strlen($re_body) > 200 * 1024) {
+		// when body size is greater than 20 MB -> hide content in the mail body editor (it will be sent anyways)
+		if (strlen($re_body) > 20000 * 1024) {
 			$cache_fname = gen_id();
 			file_put_contents(ROOT . "/tmp/$cache_fname", $re_body);
 			$re_body = lang("content too long not loaded");
@@ -625,7 +626,7 @@ class MailController extends ApplicationController {
 				$mail->setHasAttachments((is_array($attachments) && count($attachments) > 0) ? 1 : 0);
 				$mail->setAccountEmail($account->getEmailAddress());
 
- 				$mail->setSentDate(DateTimeValueLib::now());
+ 				//$mail->setSentDate(DateTimeValueLib::now());
  				$mail->setReceivedDate(DateTimeValueLib::now());
 
 				DB::beginWork();
@@ -758,8 +759,6 @@ class MailController extends ApplicationController {
                         		send_outbox_emails_in_background($account);
                         		
                         		flash_success(lang('success mail enqueued'));
-
-								MailController::outbox_popup();
                         	
                         	} else {
                         		// send the email inmediatelly
@@ -767,8 +766,6 @@ class MailController extends ApplicationController {
 	                                $from_time = DateTimeValueLib::now();
 	                                $from_time = $from_time->add('h', -24);
 	                                $this->send_outbox_mails(null,$account,$from_time);
-
-									MailController::outbox_popup();
 	                            }
                         	}
                         	
@@ -776,8 +773,6 @@ class MailController extends ApplicationController {
                             Logger::log("Fail to send the mail the first time object id: ".$mail->getObjectId());
                             Logger::log($e->getMessage());
                             evt_add("must send mails", array("account" => $mail->getAccountId()));
-
-							MailController::outbox_popup();
                         }
 						//flash_success(lang('mail is being sent'));
 						ajx_current("back");
@@ -860,7 +855,7 @@ class MailController extends ApplicationController {
 
 		$from_time_cond = "";
 		if(!is_null($from_time) && $from_time instanceof DateTimeValue){
-			$from_time_cond = " AND `created_on` > '".$from_time->toMySQL()."'";
+			$from_time_cond = " AND (`created_on` > '".$from_time->toMySQL()."' OR `state` <= 210)";
 		}
 
 		session_commit();
@@ -899,6 +894,7 @@ class MailController extends ApplicationController {
 				if (defined("MAILS_MAX_OUTBOX_STATE") && is_numeric(MAILS_MAX_OUTBOX_STATE)) {
 					$extra_state_cond = " AND `state` < " . MAILS_MAX_OUTBOX_STATE;
 				}
+
 				$mails = MailContents::findAll(array(
 					"conditions" => array("`is_deleted`=0 AND `state` >= 200 $extra_state_cond AND `account_id` = ? AND `created_by_id` = ? $from_time_cond", $account->getId(), $accountUser->getContactId()),
 					"order" => "`state` ASC"
@@ -997,7 +993,7 @@ class MailController extends ApplicationController {
 							}
 						}
 
-						$mail->setSentDate(DateTimeValueLib::now());
+						
 						$mail->setReceivedDate(DateTimeValueLib::now());
 
 						if (defined('DEBUG') && DEBUG) file_put_contents(ROOT."/cache/log_mails.txt", gmdate("d-m-Y H:i:s") . " antes de enviar: ".$mail->getId() . "\n", FILE_APPEND);
@@ -1024,13 +1020,12 @@ class MailController extends ApplicationController {
 					try {
 						if ($sentOK) {
 							DB::beginWork();
+							$mail->setSentDate(DateTimeValueLib::now());
 							$mail->setState(3);
 							$mail->save();
 							DB::commit();
 						} else {
 							Logger::log("Swift returned sentOK = false after sending email\nmail_id=".$mail->getId());
-							evt_add("error sending mail");							
-							
 							// set status to a higher and pair value, to retry later.
 							if (!$mail->addToStatus(1)) Logger::log("Swift could not send the email and the state could not be set to retry later.\nmail_id=".$mail->getId());
 						}
@@ -1104,7 +1099,7 @@ class MailController extends ApplicationController {
 								}
 							}
 
-							$properties = array("id" => $mail->getId());							
+							$properties = array("id" => $mail->getId());
 							evt_add("mail sent", $properties);
 							$count++;
 						}
@@ -1113,7 +1108,7 @@ class MailController extends ApplicationController {
 						DB::rollback();
 						Logger::log("Exception deleting tmp repository files (attachment list): ".$e->getMessage()."\nmail_id=".$mail->getId());
 					}
-				}				
+				}
 				if ($count > 0) {
 					evt_add("mails sent", $count);
 				}
@@ -1390,7 +1385,7 @@ class MailController extends ApplicationController {
 				}
 
 				if (!array_var($attach, 'FileName')) {
-					$attach['FileName'] = 'ForwardedMessage.eml';
+					$attach = $this->fill_attachment_name_from_content($attach, $email);
 				}
 
 			 	$attach['size'] = format_filesize(strlen($attach["Data"]));
@@ -1420,6 +1415,36 @@ class MailController extends ApplicationController {
 		}
 		ApplicationReadLogs::createLog($email, null , ApplicationReadLogs::ACTION_READ);
 	}
+
+
+	private function fill_attachment_name_from_content(&$attach, $email) {
+		
+		$file_name = null;
+		// set a default name = email subject
+		$base_file_name = clean($email->getSubject());
+
+		// save attachment in filesystem so we can analyze it
+		$tmp_attach_path = ROOT . '/tmp/att';
+		file_put_contents($tmp_attach_path, $attach['Data']);
+
+		// get the mime type from the file content
+		$mime_type = mime_content_type($tmp_attach_path);
+		if ($mime_type) {
+			// get the extension using the mime type and build a default file name
+			$extension = Mime_Types::instance()->get_extension($mime_type);
+			$file_name = $base_file_name . "." . $extension;
+		}
+
+		// if we couldn't find the type and name of the file, then assign "UnknownFile.txt" as the name
+		if (!$file_name) {
+			$file_name = 'UnknownFile.txt';
+		}
+
+		$attach['FileName'] = $file_name;
+		
+		return $attach;
+	}
+
 
 	/**
 	 * Images that are attachments are saved to the filesystem and the links to them are rebuilt
@@ -1599,7 +1624,7 @@ class MailController extends ApplicationController {
 
 			// add default name to email attachment if it doesn't have name
 			if (!array_var($attachment, 'FileName')) {
-				$attachment['FileName'] = 'ForwardedMessage.eml';
+				$attachment = $this->fill_attachment_name_from_content($attachment, $email);
 			}
 		}
 
@@ -2163,21 +2188,6 @@ class MailController extends ApplicationController {
 	}
 
 
-	function outbox_popup() {
-		
-		$outbox_total = MailContents::countOutboxEmails($this->get_account_ids(), 'outbox')['outbox_total'];
-		
-		$outbox_not_empty = $outbox_total > 0;
-		if($outbox_not_empty) {
-			evt_add("popup", array(
-				'title' => lang("mails_in_outbox reminder"),
-				'message' => lang("mails_in_outbox reminder desc", $outbox_total),
-				'type' => 'reminder',
-				'sound' => 'info'
-			));
-		}
-	}
-	
 	function checkmail() {
 		@set_time_limit(0);
 
@@ -2219,8 +2229,6 @@ class MailController extends ApplicationController {
 
 		ajx_add("overview-panel", "reload");
 
-		$this->outbox_popup();
-		
 		return array($err, $errMessage);
 	}
 
@@ -2357,8 +2365,8 @@ class MailController extends ApplicationController {
 							$real_folders = array();
 						}
 						foreach ($real_folders as $folder_data) {
-							$folder_name = array_var($folder_data['name']);
-							if (!MailAccountImapFolders::findById(array('account_id' => $mailAccount->getId(), 'folder_name' => $folder_name))) {
+							$folder_name = array_var($folder_data, 'name');
+							if ($folder_name && !MailAccountImapFolders::findById(array('account_id' => $mailAccount->getId(), 'folder_name' => $folder_name))) {
 								$acc_folder = new MailAccountImapFolder();
 								$acc_folder->setAccountId($mailAccount->getId());
 								$acc_folder->setFolderName($folder_name);
@@ -2894,42 +2902,6 @@ class MailController extends ApplicationController {
 	}//edit_mail
 
 
-	function get_account_ids($user = null){
-		
-		if(!$user) $user = logged_user();
-
-		$accounts = MailAccounts::getMailAccountsByUser($user);
-		if(sizeof($accounts) > 0) {
-			$account_ids = array();
-
-			foreach ($accounts as $acc) {
-				$account_ids[] = $acc->getId();
-			}
-
-			return implode(",",$account_ids);
-		}				
-
-		return;
-
-	}
-
-	function get_count(){	
-		
-		ajx_current("empty");
-		
-		$state = array_var($_GET, 'state');
-		$acc_ids = $this->get_account_ids();
-		
-		if($acc_ids) {
-			$res = MailContents::countOutboxEmails($acc_ids, $state);
-		} else {
-			$res = 0;
-		}
-			
-		ajx_extra_data($res);	
-
-	}
-	
 	/**
 	 * Lists emails.
 	 *
@@ -3147,7 +3119,7 @@ class MailController extends ApplicationController {
 				}
 			}
 		}*/
-/* @var $msg MailContent */
+      /* @var $msg MailContent */
 
 		$persons_dim = Dimensions::findByCode('feng_persons');
 		$persons_dim_id = $persons_dim instanceof Dimension ? $persons_dim->getId() : "0";

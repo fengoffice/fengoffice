@@ -123,7 +123,7 @@ class Timeslots extends BaseTimeslots {
 			$commonConditions .= DB::prepareString(' AND `e`.`start_time` >= ? ', array($start_date));
 		}
 		if ($end_date) {
-			$commonConditions .= DB::prepareString(' AND (`e`.`paused_on` <> 0 AND `e`.`paused_on` <= ? OR `e`.`end_time` <> 0 AND `e`.`end_time` <= ?) ', array($end_date, $end_date));
+			$commonConditions .= DB::prepareString(' AND (`e`.`paused_on` <> 0 AND `e`.`paused_on` <= ? OR `e`.`end_time` <> 0 AND `e`.`start_time` <= ?) ', array($end_date, $end_date));
 		}
 		//User condition
 		$commonConditions .= $user ? ' AND `e`.`contact_id` = '. $user->getId() : '';

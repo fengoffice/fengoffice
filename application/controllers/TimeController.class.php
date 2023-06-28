@@ -94,19 +94,19 @@ class TimeController extends ApplicationController
 
         }
 
-/*
-$notAllowedMember = '';
-if ($context_member_count > 0 && !Timeslot::canAdd(logged_user(), $context, $notAllowedMember)) {
-if (str_starts_with($notAllowedMember, '-- req dim --'))
-$msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
-else
-trim($notAllowedMember) == "" ? $msg = lang('you must select where to keep', lang('the task')) : $msg = lang('no context permissions to add', lang("time"), $notAllowedMember);
+        /*
+        $notAllowedMember = '';
+        if ($context_member_count > 0 && !Timeslot::canAdd(logged_user(), $context, $notAllowedMember)) {
+        if (str_starts_with($notAllowedMember, '-- req dim --'))
+        $msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
+        else
+        trim($notAllowedMember) == "" ? $msg = lang('you must select where to keep', lang('the task')) : $msg = lang('no context permissions to add', lang("time"), $notAllowedMember);
 
-flash_error($msg);
-ajx_current("empty");
-return;
-}
- */
+        flash_error($msg);
+        ajx_current("empty");
+        return;
+        }
+        */
 
         $timeslot_data = array_var($_POST, 'timeslot');
         if (!is_array($timeslot_data)) {
@@ -161,7 +161,15 @@ return;
             $pre_selected_member_ids = null;
             $rel_obj = $timeslot->getRelObject();
             if ($rel_obj instanceof ContentDataObject) {
-                $pre_selected_member_ids = $rel_obj->getMemberIds();
+				$pre_selected_member_ids = array();
+                $task_members = $rel_obj->getMembers();
+				// only preload the task's members that we can in the time form, this will prevent wrong members in dimension selectors filtering when initializing
+				foreach ($task_members as $task_member) {
+					$hidden_dim = DimensionContentObjectOptions::getOptionValue($task_member->getDimensionId(), Timeslots::instance()->getObjectTypeId(), 'hide_member_selector_in_forms');
+					if (!$hidden_dim) {
+						$pre_selected_member_ids[] = $task_member->getId();
+					}
+				}
             } else {
                 $pre_selected_member_ids = active_context_members(false);
                 $all_assoc_member_ids = array();
@@ -181,6 +189,7 @@ return;
             tpl_assign('timeslot', $timeslot);
             $this->setTemplate('edit_timeslot');
         } else {
+
             $ok = $this->add_timeslot(array(
                 'timeslot' => $timeslot_data,
                 'object_id' => array_var($_REQUEST, "object_id"),
@@ -191,10 +200,11 @@ return;
             if ($ok) {
                 $dont_reload = array_var($_REQUEST, "dont_reload");
                 if ($dont_reload) {
-                    $t = ProjectTasks::findById(array_var($_REQUEST, "object_id"));
-                    if ($t instanceof ProjectTask) {
-                        $tdata = $t->getArrayInfo();
-                        evt_add('update tasks in list', array('tasks' => array($tdata)));
+                    $task = ProjectTasks::findById(array_var($_REQUEST, "object_id"), true);
+
+                    if ($task instanceof ProjectTask) {
+                        $task_data = $task->getArrayInfo();
+                        evt_add('update tasks in list', array('tasks' => array($task_data)));
                     }
                 } else {
                     evt_add("reload current panel");
@@ -261,6 +271,11 @@ return;
         $timeslot_data = array_var($parameters, 'timeslot');
         $sd = getDateValue(array_var($timeslot_data, 'date'));
 
+        if($timeslot_data['billable'] == 0){
+            $timeslot_data['hourly_billing'] = 0;
+            $timeslot_data['fixed_billing'] = 0; 
+        }
+
         // The MySQL supported range is '1000-01-01' to '9999-12-31'
         if (!$sd instanceof DateTimeValue || $sd->getYear() > 9999 || $sd->getYear() < 1000) {
             Logger::log_r("Error adding timeslot: incorrect date");
@@ -304,9 +319,16 @@ return;
             $member_ids = $tmp_mids;
 
             if (empty($member_ids)) {
-                if (!can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId())) {
-                    Logger::log_r("Error adding timeslot: no access permissions (b)");
-                    flash_error(lang('no access permissions'));
+				$notAllowedMember = null;
+                if (!can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId(), $notAllowedMember)) {
+					if (str_starts_with($notAllowedMember, '-- req dim --')) {
+						$dim_names = str_replace_first('-- req dim --', '', $notAllowedMember);
+						$err_msg = lang('must choose at least one member of', $dim_names);
+					} else {
+						$err_msg = lang('no access permissions');
+					}
+                    Logger::log_r("Error adding timeslot: no access permissions (b)\n$err_msg\n$notAllowedMember");
+                    flash_error($err_msg);
                     ajx_current("empty");
                     return;
                 }
@@ -481,6 +503,18 @@ return;
             if ($use_transaction) {
                 DB::beginWork();
             }
+
+            //check task mandatory config option
+            $result_task_mandatory=true;
+            $param_object_id['object_id']=$object_id;
+            Hook::fire('check_task_timeslot_config_option',$param_object_id, $result_task_mandatory);
+            if(!$result_task_mandatory)
+            {
+                flash_error(lang('select a task for this time entry'));
+                    ajx_current("empty");
+                    return;
+            }
+
             $timeslot->save();
 
             $task = ProjectTasks::findById($object_id);
@@ -548,6 +582,12 @@ return;
             ajx_current("empty");
             return;
         }
+        
+        if(Plugins::instance()->isActivePlugin('income') && $timeslot->getColumnValue('invoicing_status') == 'invoiced'){
+            flash_error(lang('you cannot edit invoiced time entry'));
+            ajx_current("empty");
+            return;
+        }
 
         $show_paused_time = user_config_option('show_pause_time_action');
         if (!config_option('show_pause_time_action')) {
@@ -600,6 +640,10 @@ return;
             tpl_assign('timeslot', $timeslot);
             tpl_assign('edit_mode', 1);
         } else {
+
+			// to use when saving the application log
+			$old_content_object = $timeslot->generateOldContentObjectData();
+
             $sd = getDateValue(array_var($timeslot_data, 'date'));
 
             // The MySQL supported range is '1000-01-01' to '9999-12-31'
@@ -651,6 +695,18 @@ return;
             }
 
             try {
+
+                //check task mandatory config option
+                $result_task_mandatory=true;
+                $param_object_id['object_id']=array_var($_REQUEST, "object_id");
+                Hook::fire('check_task_timeslot_config_option',$param_object_id, $result_task_mandatory);
+                if(!$result_task_mandatory)
+                {
+                    flash_error(lang('select a task for this time entry'));
+                        ajx_current("empty");
+                        return;
+                }
+                
                 $transacion_started = false;
                 $hhmm = $this->parse_hours_and_minutes_to_save($timeslot_data);
 
@@ -762,6 +818,8 @@ return;
                             $timeslot->setIsFixedBilling(false);
                         }
                     }
+                } else {
+                    $timeslot->setForceRecalculateBilling(true); 
                 }
 
                 DB::beginWork();
@@ -802,6 +860,29 @@ return;
 
     }
 
+    public function check_time_invoicing_status(){
+        ajx_current("empty");
+        $timeslot = Timeslots::findById(get_id());
+
+        if (!$timeslot instanceof Timeslot) {
+            flash_error(lang('timeslot dnx'));
+            return;
+        }
+
+        if (!$timeslot->canDelete(logged_user())) {
+            flash_error(lang('no access permissions'));
+            return;
+        }
+
+        if(Plugins::instance()->isActivePlugin('income') && $timeslot->getColumnValue('invoicing_status') == 'invoiced'){
+            flash_error(lang('you cannot delete invoiced time entry'));
+            ajx_current("empty");
+            return;
+        }
+
+        ajx_extra_data(array("timeslotId" => get_id()));
+    }
+
     public function delete_timeslot()
     {
         ajx_current("empty");
@@ -814,6 +895,12 @@ return;
 
         if (!$timeslot->canDelete(logged_user())) {
             flash_error(lang('no access permissions'));
+            return;
+        }
+
+        if(Plugins::instance()->isActivePlugin('income') && $timeslot->getColumnValue('invoicing_status') == 'invoiced'){
+            flash_error(lang('you cannot delete invoiced time entry'));
+            ajx_current("empty");
             return;
         }
 
@@ -902,7 +989,6 @@ return;
 
         $from_date = null;
         $to_date = null;
-
         switch ($period_filter) {
             case 0:
                 break;
@@ -927,17 +1013,22 @@ return;
                 $to_date = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), 1, $now->getYear())->add('M', 1)->add('d', -1);
                 break;
             case 5: // last month
+                $now->setDay(1);
                 $now->add('M', -1);
                 $from_date = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), 1, $now->getYear());
                 $to_date = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), 1, $now->getYear())->add('M', 1)->add('d', -1);
                 break;
             case 6: //Date interval
-                $from_date = getDateValue($from_filter);
+				try {
+					$from_date = getDateValue($from_filter);
+				} catch (Exception $e) {};
                 if ($from_date instanceof DateTimeValue) {
                     $from_date = $from_date->beginningOfDay();
                 }
 
-                $to_date = getDateValue($to_filter);
+				try {
+                	$to_date = getDateValue($to_filter);
+				} catch (Exception $e) {};
                 if ($to_date instanceof DateTimeValue) {
                     $to_date = $to_date->endOfDay();
                 }
@@ -961,6 +1052,10 @@ return;
             case 11: //Yesterday
                 $from_date = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), $now->getDay(), $now->getYear())->add('d', -1);
                 $to_date = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), $now->getDay(), $now->getYear())->add('d', -1);
+                break;
+            case 12: //Year
+                $from_date = DateTimeValueLib::make(0, 0, 0, 1, 1, $now->getYear());
+                $to_date = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), $now->getDay(), $now->getYear());
                 break;
             default:
                 break;
@@ -1005,52 +1100,80 @@ return;
             Hook::fire('additional_timeslots_tab_filters_config', $_REQUEST, $current_time_module_filters);
         }
 
-        if (!$load_totals_row && array_var($_REQUEST, 'current') == 'time-panel') {
+        if (!$load_totals_row && array_var($_REQUEST, 'current') == 'time-panel' && !$rel_object_id) {
             set_user_config_option('current_time_module_filters', json_encode($current_time_module_filters), logged_user()->getId());
         }
 
-        switch ($order) {
-            case 'updatedOn':
-                $order = '`updated_on`';
-                break;
-            case 'createdOn':
-                $order = '`created_on`';
-                break;
-            case 'name':
-                $order = 'contact_name';
-                $join_params = array(
-                    'table' => Objects::instance()->getTableName(),
-                    'jt_field' => 'id',
-                    'e_field' => 'contact_id',
-                );
-                $select_columns = array("e.*, o.*, jt.`name` as contact_name");
-                break;
-            case 'description':
-            case 'start_time':
-            case 'end_time':
-            case 'subtract':
-            case 'worked_time':
-            case 'fixed_billing':
-            case 'fixed_cost':
-            case 'invoicing_status':
-                break;
-            default:
-                //if order by custom prop
-                if (strpos($order, 'cp_') == 1) {
-                    $cp_order = substr($order, 3);
-                    $order = 'customProp';
-                } else if (str_starts_with($order, "dim_")) {
-                    $dim_order = substr($order, 4);
-                    $order = 'dimensionOrder';
-                } else {
-                    $order = '`start_time`';
-                }
-                break;
-        }
+		switch ($order) {
+			case 'updatedOn':
+				$order = '`updated_on`';
+				break;
+			case 'createdOn':
+				$order = '`created_on`';
+				break;
+			case 'name':
+				$order = 'contact_name';
+				$join_params = array(
+					'table' => Objects::instance()->getTableName(),
+					'jt_field' => 'id',
+					'e_field' => 'contact_id',
+				);
+				$select_columns = array("e.*, o.*, jt.`name` as contact_name");
+				break;
+			case 'hourly_billing':
+				$order ='hourly_billing';
+				break;
+			case 'invoicing_status_html':
+				$order = 'invoicing_status';
+				break;
+			case 'hourly_billing':
+				$order ='hourly_billing';
+				break;
+			case 'rel_object_name':
+				$order = 'task_name';
+				$join_params = array(
+					'table' => Objects::instance()->getTableName(),
+					'jt_field' => 'id',
+					'join_type' => 'LEFT',
+					'e_field' => 'rel_object_id',
+				);
+				$select_columns = array("e.*, o.*, jt.`name` as task_name");
+				break;
+			case 'description':
+			case 'start_time':
+			case 'end_time':
+			case 'subtract':
+			case 'worked_time':
+			case 'fixed_billing':
+			case 'fixed_cost':
+			case 'invoicing_status':
+				break;
+			default:
+				//if order by custom prop
+				if (strpos($order, 'cp_') == 1) {
+					$cp_order = substr($order, 3);
+					$order = 'customProp';
+				} else if (str_starts_with($order, "dim_")) {
+					$dim_order = substr($order, 4);
+					$order = null;
+					Hook::fire("get_listing_order_by_value", array('dim_order' => $dim_order), $order);
+					if(is_null($order)) $order = 'dimensionOrder';
+				} else {
+					$col_order_list = '';
+					Hook::fire("define_colum_order_list", array('order'=>$order), $col_order_list);
 
-        if (!$order_dir) {
-            $order_dir = 'ASC';
-        }
+					if($col_order_list){
+						$order = $col_order_list;
+					}else{
+						$order = '`start_time`';
+					}
+				}
+				break;
+		}
+
+		if (!$order_dir) {
+			$order_dir = 'ASC';
+		}
 
         Hook::fire("listing_extra_conditions", null, $extra_conditions);
 
@@ -1151,6 +1274,8 @@ return;
 
                     $info['can_view_history'] = logged_user()->isAdminGroup();
 
+                    Hook::fire('timeslots_list_additional_column_values', array('timelot' => $msg), $info);
+
                     $object["timeslots"][$i] = $info;
                     $ids[] = $msg->getId();
 
@@ -1194,6 +1319,21 @@ return;
             case "trash":
                 $succ = 0;
                 $err = 0;
+
+                if(Plugins::instance()->isActivePlugin('income')){
+					$timeslot_ids = array_filter($attributes["ids"], 'is_numeric');
+					if (count($timeslot_ids) > 0) {
+						$timeslot_ids_csv = '(' . implode(',', array_filter($attributes["ids"], 'is_numeric')) . ')';
+						$timeslots = Timeslots::instance()->findAll(array('conditions' => array('`object_id` IN ' . $timeslot_ids_csv . ' AND `invoicing_status`="invoiced"')));
+						if (count($timeslots)){	    
+							$resultCode = 2;
+							$resultMessage = lang("you cannot delete invoiced time entry");
+							return array("errorMessage" => $resultMessage, "errorCode" => $resultCode);
+						}	
+					}
+                } 
+				
+				$error_details = "";
                 for ($i = 0; $i < count($attributes["ids"]); $i++) {
                     $id = $attributes["ids"][$i];
                     if (!is_numeric($id)) {
@@ -1218,7 +1358,7 @@ return;
                             if ($do_rollback_if_error) {
                                 DB::rollback();
                             }
-
+							$error_details .= "\n" . $e->getMessage();
                             $err++;
                         }
                     } else {
@@ -1227,7 +1367,7 @@ return;
                 }; // for
                 if ($err > 0) {
                     $resultCode = 2;
-                    $resultMessage = lang("error delete objects", $err) . ($succ > 0 ? "\n" . lang("success delete objects", $succ) : "");
+                    $resultMessage = lang("error delete objects", $err) . $error_details . ($succ > 0 ? "\n" . lang("success delete objects", $succ) : "");
                 } else {
                     $resultMessage = lang("success delete objects", $succ);
                 }

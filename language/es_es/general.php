@@ -414,7 +414,7 @@
 	
 	'write the first letters of the name or surname of the person to select' => 'Escriba las primeras letras del nombre o apellido de la persona a seleccionar o ',
 	'click here to select one from a list' => 'Click aquí para seleccionar de una lista',
-	'click to select country' => 'Click aquí para selccionar país',
+	'click to select country' => 'Selccionar país',
 		
 	'completed by name on' => 'Completado por {0} el {1}',
     'settings' => 'Ajustes',
@@ -456,4 +456,9 @@
 	'finish sign up' => 'Finalizar registro',
 	'viewing information with the following filters' => 'Mostrando información para los siguientes filtros',
 	'no filter' => 'Sin filtro',
+	'old value' => 'Valor anterior',
+	'new value' => 'Nuevo valor',
+	'hide details' => 'Ocultar detalles',
+	'added' => 'Se agregó',
+	'removed' => 'Se quitó',
 );

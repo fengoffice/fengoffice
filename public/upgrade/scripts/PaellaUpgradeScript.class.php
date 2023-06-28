@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.8.6.12');
+		$this->setVersionTo('3.10.4.3');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -829,7 +829,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		
 
 
-		if (version_compare($installed_version, '3.8.5.19') < 0) {
+			if (version_compare($installed_version, '3.8.5.19') < 0) {
         	if (!$this->checkColumnExists($t_prefix."custom_properties", "default_currency_id", $this->database_connection)) {
                 $upgrade_script .= "
 					ALTER TABLE `".$t_prefix."custom_properties` ADD `default_currency_id` INT(2) NOT NULL default '1';
@@ -890,7 +890,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
 			}
 		}
-			
+
 		if (version_compare($installed_version, '3.8.5.67') < 0) {
 			
 			if (!$this->checkColumnExists($t_prefix."contact_config_categories", "located_under", $this->database_connection)) {
@@ -907,7 +907,148 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
 			}
 		}
-    
+
+		if (version_compare($installed_version, '3.8.6.22') < 0) {
+			// Delete custom property values that belong to the deleted objects
+			$upgrade_script .= "
+				DELETE FROM `".$t_prefix."custom_property_values`
+				WHERE object_id NOT IN (select id from `".$t_prefix."objects`);
+			";	
+		}
+
+		if (version_compare($installed_version, '3.8.6.27') < 0) {
+			// option Minimum number of characters for dimension search
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "minimum_characters_dimension_search", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '');
+				";
+			}
+		}	
+		
+		if (version_compare($installed_version, '3.8.7.0-beta2') < 0) {
+			// default type for address inputs
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "default_type_address", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', '0', '0', '');
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.8.8.0') < 0) {
+			$upgrade_script .= "
+            UPDATE `" . $t_prefix . "config_options` SET `name` = 'default_type_address' WHERE `category_name` = 'clients_and_contacts' AND `name` = 'defaultTypeAddress';
+			";
+		}
+
+		if (version_compare($installed_version, '3.9.0.0-beta9') < 0) {
+
+			if (!$this->checkColumnExists("" . $t_prefix . "file_types", "friendly_name", $this->database_connection)) {
+
+				$upgrade_script .= "
+                    ALTER TABLE `" . $t_prefix . "file_types` ADD `friendly_name` varchar(100) COLLATE 'utf8_unicode_ci' NOT NULL default '';
+                ";
+
+				$upgrade_script .= "
+                    INSERT INTO `" . $t_prefix . "file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
+                    ('pptx', 'ppt.png', 0, 0, 'powerpoint xml presentation'),
+                    ('xlsb', 'xls.png', 0, 0, 'excel binary spreadsheet'),
+                    ('csv', 'archive.png', 0, 0, 'comma separated values file');
+                ";
+			}
+		}
+
+		if (version_compare($installed_version, '3.9.3.0') < 0) {
+			$upgrade_options_data = '{"no_empty_value":1, "option": [{"value": "1","text": "config_allow_stop_timer"},{"value": "2","text": "config_allow_pause_timer"},{"value": "3","text": "config_let_timer_continue"}]}';
+
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."contact_config_options` 
+				SET `default_value`='3',
+				`config_handler_class`='ListConfigHandler',
+				`options`='".$upgrade_options_data."'
+				WHERE `name`='stop_running_timeslots';
+			";
+
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."contact_config_option_values` 
+				SET `value`='3' 
+				WHERE `option_id`=(SELECT id 
+				                   FROM `".$t_prefix."contact_config_options` 
+								   WHERE `name`='stop_running_timeslots');
+			";
+		}
+
+
+		if (version_compare($installed_version, '3.9.3.0-beta') < 0) {
+			// default type for address inputs
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "default_country_address", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', '0', '0', '');
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.10.4.0') < 0) {
+			// add more possible actions to application logs table
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."application_logs`
+				CHANGE `action` `action` enum('upload','open','close','delete','edit','add','trash','untrash','subscribe','unsubscribe','tag','comment','link','unlink','login','logout','untag','archive','unarchive','move','copy','read','download','checkin','checkout','relation_added','relation_edited','relation_removed');
+			";
+		}
+
+
+		if (version_compare($installed_version, '3.10.4.0-beta1') < 0) {
+			// Add 'overall_worked_time_plus_subtasks' column to project_tasks table
+        	if (!$this->checkColumnExists($t_prefix."project_tasks", "overall_worked_time_plus_subtasks", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."project_tasks` ADD `overall_worked_time_plus_subtasks` int(10) unsigned NOT NULL DEFAULT '0';
+				";
+        	}
+			// Add 'total_time_estimate' column to project_tasks table
+			if (!$this->checkColumnExists($t_prefix."project_tasks", "total_time_estimate", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."project_tasks` ADD `total_time_estimate` int(10) unsigned NOT NULL DEFAULT '0';
+				";
+        	}
+
+			// Add 'tasksShowTotalTimeWorked' contact config option
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowTotalTimeWorked", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES ('task panel', 'tasksShowTotalTimeWorked', '0', 'BoolConfigHandler', 1, 0, '')
+					ON DUPLICATE KEY UPDATE name=name;
+				";
+			}
+
+			// Add 'tasksShowTotalTimeEstimates' contact config option
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowTotalTimeEstimates", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES ('task panel', 'tasksShowTotalTimeEstimates', '0', 'BoolConfigHandler', 1, 0, '')
+					ON DUPLICATE KEY UPDATE name=name;
+				";
+			}
+
+		}
+
+		if (version_compare($installed_version, '3.10.4.0-beta6') < 0) {
+			// Add 'total_time_estimate' column to project_tasks table
+			if (!$this->checkColumnExists($t_prefix."project_tasks", "is_manual_percent_completed", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."project_tasks` ADD `is_manual_percent_completed` BOOLEAN NOT NULL default '0';
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.10.4.0-rc1') < 0) {
+			// Add 'total_time_estimate' column to template_tasks table
+			if (!$this->checkColumnExists($t_prefix."template_tasks", "is_manual_percent_completed", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."template_tasks` ADD `is_manual_percent_completed` BOOLEAN NOT NULL default '0';
+				";
+			}
+		}
+
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
 			UPDATE `".$t_prefix."objects` SET `archived_on` = '0000-00-00 00:00:00' WHERE `archived_on` IS NULL;
@@ -931,6 +1072,66 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
 			return false;
 		}
+
+		// Calculate after new columns added
+		if (version_compare($installed_version, '3.10.4.0-beta1') < 0) {
+			@set_time_limit(0);
+			ini_set("memory_limit", "2G");
+			// Calculate 'overall_worked_time_plus_subtasks' and 'total_time_estimate' for all tasks
+			$max_depth_sql = "SELECT MAX(depth) as max_depth  FROM " .$t_prefix. "project_tasks;";
+			$max_depth_row_res = mysqli_query($this->database_connection, $max_depth_sql);
+			$max_depth_row = $max_depth_row_res ? mysqli_fetch_array($max_depth_row_res) : 0;
+			$max_depth = $max_depth_row['max_depth'] ? $max_depth_row['max_depth'] : 0;
+
+			while($max_depth >= 0){
+				$tasks_query = "SELECT `object_id` FROM " .$t_prefix. "project_tasks WHERE `depth`='".$max_depth."';";
+				$rows = mysqli_query($this->database_connection, $tasks_query);
+				//echo implode($rows);
+				if ($rows) {
+					while ($row = mysqli_fetch_array($rows)) {
+						$task_id = $row['object_id'];
+						// 1. Calculate overall worked time plus subtasks
+						// 1.a. Get worked time for task
+						$worked_time_sql = "SELECT total_worked_time FROM ".$t_prefix."project_tasks WHERE object_id=".$task_id.";";
+						$worked_time_row_res = mysqli_query($this->database_connection, $worked_time_sql);
+						$worked_time_row = $worked_time_row_res ? mysqli_fetch_array($worked_time_row_res) : array();
+						$overall_total_minutes = array_var($worked_time_row, 'total_worked_time', 0);
+						// 1.b. Get worked time for subtasks
+						$subtask_worked_sql = "SELECT SUM(overall_worked_time_plus_subtasks) as subtasks_worked_time 
+						FROM ".$t_prefix."project_tasks pt 
+						INNER JOIN ".$t_prefix."objects o ON o.id=pt.object_id 
+						WHERE pt.parent_id=".$task_id." AND o.trashed_by_id=0 AND o.archived_by_id=0";
+						$subtask_worked_time_row_res = mysqli_query($this->database_connection, $subtask_worked_sql);
+						$subtask_worked_time_row = $subtask_worked_time_row_res ? mysqli_fetch_array($subtask_worked_time_row_res) : array();
+						$subtasks_total_worked_minutes = array_var($subtask_worked_time_row, 'subtasks_worked_time', 0);
+						$overall_total_minutes += $subtasks_total_worked_minutes;
+
+						// 2. Calculate total time estimate
+						// 2.a. Get time estimate for task
+						$task_estimate_sql = "SELECT time_estimate FROM ".$t_prefix."project_tasks WHERE object_id=".$task_id.";";
+						$task_estimate_row_res = mysqli_query($this->database_connection, $task_estimate_sql);
+						$task_estimate_row = $task_estimate_row_res ? mysqli_fetch_array($task_estimate_row_res) : array();
+						$total_task_estimate = array_var($task_estimate_row, 'time_estimate', 0);
+						// 2.b. Get time estimate for subtasks
+						$subtask_estimate_sql = "SELECT SUM(total_time_estimate) as subtasks_estimate
+						FROM ".$t_prefix."project_tasks pt
+						INNER JOIN ".$t_prefix."objects o ON o.id=pt.object_id
+						WHERE pt.parent_id=".$task_id." AND o.trashed_by_id=0 AND o.archived_by_id=0";
+						$subtask_estimate_row_res = mysqli_query($this->database_connection, $subtask_estimate_sql);
+						$subtask_estimate_row = $subtask_estimate_row_res ? mysqli_fetch_array($subtask_estimate_row_res) : array();
+						$subtasks_total_estimate = array_var($subtask_estimate_row, 'subtasks_estimate', 0);
+						$total_task_estimate += $subtasks_total_estimate;
+
+						// 3. Update task
+						$update_task_sql = "UPDATE ".TABLE_PREFIX."project_tasks SET overall_worked_time_plus_subtasks=".$overall_total_minutes.", total_time_estimate=".$total_task_estimate." WHERE object_id=".$task_id.";\n";
+
+						mysqli_query($this->database_connection, $update_task_sql);
+					}
+				}
+				$max_depth--;
+			}
+        }
+
 		$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 		
 		$this->printMessage('Feng Office has been upgraded. You are now running Feng Office '.$this->getVersionTo().' Enjoy!');

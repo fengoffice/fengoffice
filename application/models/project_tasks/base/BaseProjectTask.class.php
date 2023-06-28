@@ -344,6 +344,28 @@ abstract class BaseProjectTask extends ContentDataObject {
 	function setTimeEstimate($value) {
 		return $this->setColumnValue('time_estimate', $value);
 	} // setTimeEstimate()
+
+	/**
+	 * Return value of 'total_time_estimate' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getTotalTimeEstimate() {
+		return $this->getColumnValue('total_time_estimate');
+	} // getTotalTimeEstimate()
+
+	/**
+	 * Set value of 'total_time_estimate' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setTotalTimeEstimate($value) {
+		return $this->setColumnValue('total_time_estimate', $value);
+	} // setTotalTimeEstimate()
 	
 	/**
 	 * Return value of 'priority' field
@@ -810,6 +832,28 @@ abstract class BaseProjectTask extends ContentDataObject {
 	function setTotalWorkedTime($value) {
 		return $this->setColumnValue('total_worked_time', $value);
 	}
+
+	/**
+	 * Return value of 'overall_worked_time_plus_subtasks' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getOverallWorkedTime() {
+		return $this->getColumnValue('overall_worked_time_plus_subtasks');
+	}
+	
+	/**
+	 * Set value of 'total_worked_time' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setOverallWorkedTime($value) {
+		return $this->setColumnValue('overall_worked_time_plus_subtasks', $value);
+	}
 	
 	/**
 	 * Set value of 'mark_as_started' field
@@ -845,6 +889,28 @@ abstract class BaseProjectTask extends ContentDataObject {
 	}
 	
 	/**
+	 * Set value of 'invoicing_status field
+	 *
+	 * @access public
+	 * @param string $value
+	 * @return boolean
+	 */
+	function setInvoicingStatus($value) {
+	    return $this->setColumnValue('invoicing_status', $value);
+	}
+
+	/**
+	 * Return value of 'invoicing_status' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return string
+	 */
+	function getInvoicingStatus() {
+	    return $this->getColumnValue('invoicing_status');
+	}
+	
+	/**
 	 * Set value of 'move_direction_non_working_days field
 	 *
 	 * @access public
@@ -853,6 +919,28 @@ abstract class BaseProjectTask extends ContentDataObject {
 	 */
 	function setMoveDirectionNonWorkingDays($value) {
 	    return $this->setColumnValue('move_direction_non_working_days', $value);
+	}
+
+	/**
+	 * Return value of 'is_manual_percent_completed' field
+	 * 
+	 * @access public
+	 * @param void
+	 * @return boolean
+	 */
+	function getIsManualPercentCompleted() {
+	    return $this->getColumnValue('is_manual_percent_completed');
+	}
+
+	/**
+	 * Set value of 'is_manual_percent_completed' field
+	 * 
+	 * @access public
+	 * @param boolean $value
+	 * @return boolean
+	 */
+	function setIsManualPercentCompleted($value) {
+	    return $this->setColumnValue('is_manual_percent_completed', $value);
 	}
 	
     /**

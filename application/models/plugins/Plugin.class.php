@@ -24,6 +24,9 @@ class Plugin extends BasePlugin {
 	}
 	
 	function deactivate() {
+		$null = null;
+		Hook::fire('on_plugin_deactivate', array('plugin' => $this->getSystemName()), $null);
+
 		$this->setIsActivated ( 0 );
 		$this->save ();
 	}

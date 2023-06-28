@@ -435,9 +435,11 @@ abstract class ContentDataObjects extends DataManager {
 		$select_columns = array_var($args, 'select_columns');
 		$fire_additional_data_hook = array_var($args, 'fire_additional_data_hook', true);
 		$only_query_totals_row = array_var($args, 'only_query_totals_row');
+		$is_email_widget = array_var($args, 'is_email_widget');
 		
 		//text filter param
-		$text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
+		// ORG $text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
+		$text_filter = array_var($_GET, 'text_filter');
 		
 		$controller = array_var($_GET, 'c');
 		$text_filter_extra_conditions = ''; 
@@ -445,18 +447,17 @@ abstract class ContentDataObjects extends DataManager {
 		if (trim($text_filter) != '') {
 		    
 		    //$join_with_searchable_objects = true;
-		    
 			$use_like_in_searchable_objects = true;
 			$select_columns = array('o.*,e.*');
-			
 		    $text_filter = str_replace("'", "\'", trim($text_filter));
-		    
-		    //if text_filter starts or ends with special characters, remove it for do the query.
-		    $text_filter = str_replace( array( '-', '+', '~' , '(', ')','<','>','*','"' ), ' ', $text_filter);
 		    
 		    if ($use_like_in_searchable_objects || is_numeric($text_filter)) {
 		    	if (is_numeric($text_filter)) {
-		    		$text_filter_str = "$text_filter";
+
+					//Clean text filter param
+					$text_filter = DB::cleanStringToFullSearch($text_filter);
+
+					$text_filter_str = "%$text_filter%";
 		    	} else {
 		    		$text_filter_str = "%$text_filter%";
 		    	}
@@ -468,6 +469,10 @@ abstract class ContentDataObjects extends DataManager {
 				";
 		    	
 		    } else {
+
+				//Clean text filter param
+				$text_filter = DB::cleanStringToFullSearch($text_filter);
+
 		    	$join_with_searchable_objects = true;
 		    	
 			    if(str_word_count($text_filter, 0) > 1){
@@ -544,21 +549,18 @@ abstract class ContentDataObjects extends DataManager {
 				$members = $extra_member_ids;
 			}
 		}
-		
+
 		// Specific order statements for dimension orders
-		if (is_numeric(array_var($args,'dim_order')) && array_var($args,'dim_order') > 0) {
-			
+		if (is_numeric(array_var($args, 'dim_order')) && array_var($args, 'dim_order') > 0) {
 			$SQL_BASE_JOIN .= "
-					LEFT JOIN ".TABLE_PREFIX."object_members obj_mems ON obj_mems.object_id=o.id AND obj_mems.is_optimization=0
+				LEFT JOIN " . TABLE_PREFIX . "object_members obj_mems ON obj_mems.object_id=o.id AND obj_mems.is_optimization=0
 			";
 			$SQL_BASE_JOIN .= "
-					LEFT JOIN ".TABLE_PREFIX."members memb ON obj_mems.member_id=memb.id AND memb.dimension_id=".array_var($args,'dim_order')."
+				LEFT JOIN " . TABLE_PREFIX . "members memb ON obj_mems.member_id=memb.id AND memb.dimension_id=" . array_var($args, 'dim_order') . "
 			";
-			
-			$select_columns = array("DISTINCT o.*", "e.*, GROUP_CONCAT(memb.name) as memb_name");
-			
-			$args['order'] = 'memb_name';
+			$select_columns = array("DISTINCT o.*", "e.*, GROUP_CONCAT(memb.display_name) as memb_name");
 			$args['group_by'] = "o.id";
+			$args['order'] = 'memb_name';
 			
 		} else if (is_numeric(array_var($args,'cp_order')) && array_var($args,'cp_order') > 0) {
 			// Specific order statements for custom property orders
@@ -578,7 +580,7 @@ abstract class ContentDataObjects extends DataManager {
 			} else {
 				
 			    if ($cp instanceof CustomProperty && $cp->getType() == 'numeric'){			        
-			        $cp_concat_string = "CONVERT(cpropval.value,SIGNED INTEGER)";
+			        $cp_concat_string = "CONVERT(cpropval.value, DOUBLE)";
 			    }else{
 			        $cp_concat_string = "cpropval.value";
 			    }
@@ -609,7 +611,7 @@ abstract class ContentDataObjects extends DataManager {
 				$t_alias = 'om';
 				if ($i > 0) $t_alias .= $i;
 				$SQL_BASE_JOIN .= "
-					LEFT JOIN ".TABLE_PREFIX."object_members $t_alias USE INDEX (PRIMARY) ON ${t_alias}.object_id=o.id AND ${t_alias}.member_id=$mem_id ";
+					LEFT JOIN ".TABLE_PREFIX."object_members $t_alias USE INDEX (member_id) ON ${t_alias}.object_id=o.id AND ${t_alias}.member_id=$mem_id ";
 				$i++;
 				
 				$exclusive_in_member = '';
@@ -700,18 +702,27 @@ abstract class ContentDataObjects extends DataManager {
 			$permissions_condition = " true ";
 			if (!logged_user()->isAdministrator() || self::getObjectTypeId() == $mail_ot_id) {
 				if (self::getObjectTypeId() == $mail_ot_id) {
-					$permissions_condition = "(
-						$check_permissions_col IN (
-							SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-							WHERE ".$check_permissions_col." = sh.object_id
-								AND sh.group_id  IN ($logged_user_pgs)
+					if($is_email_widget){
+						$permissions_condition = "
+							e.account_id IN (
+								SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
+								WHERE macc.contact_id=$uid
 							)
-						OR
-						e.account_id IN (
-							SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
-							WHERE macc.contact_id=$uid
-						)
-					) ";
+						";
+					} else {
+						$permissions_condition = "(
+							$check_permissions_col IN (
+								SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+								WHERE ".$check_permissions_col." = sh.object_id
+									AND sh.group_id  IN ($logged_user_pgs)
+								)
+							OR
+							e.account_id IN (
+								SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
+								WHERE macc.contact_id=$uid
+							)
+						) ";
+					}
 				} else if (self::getObjectTypeId() == $report_ot_id) {
 					$permissions_condition = "(e.ignore_context=1 OR ".$check_permissions_col." IN (
 						SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
@@ -801,7 +812,7 @@ abstract class ContentDataObjects extends DataManager {
 				$SQL_GROUP_BY
 				$SQL_ORDER
 				$SQL_LIMIT";
-			
+						
 			if (isset($args['query_wraper_start'])){
 				$query_wraper_start = $args['query_wraper_start'];
 				$query_wraper_end = $args['query_wraper_end'];
@@ -841,8 +852,8 @@ abstract class ContentDataObjects extends DataManager {
 				// Execute query and build the resultset
 		    	if (!$only_query_totals_row) {
 			    	$rows = DB::executeAll($sql);
-			    	
-			    	if ($return_raw_data) {
+
+					if ($return_raw_data) {
 			    		$result->objects = $rows;
 			    	} else {
 			    		if($rows && is_array($rows)) {
@@ -1459,6 +1470,10 @@ abstract class ContentDataObjects extends DataManager {
 	static function generateOldContentObjectData(ContentDataObject $object) {
 
 		$old_content_object = $object->manager()->findById($object->getId(), true);
+		if (!$old_content_object instanceof ContentDataObject) {
+			$object_class = $object->manager()->getItemClass();
+			$old_content_object = new $object_class;
+		}
 		$old_content_object->member_ids = $object->getMemberIds();
 		$old_content_object->linked_object_ids = $object->getAllLinkedObjectIds();
 		$old_content_object->subscriber_ids = $object->getSubscriberIds();
@@ -1471,6 +1486,8 @@ abstract class ContentDataObjects extends DataManager {
 			$cp_values[$cp->getId()] = $cpval instanceof CustomPropertyValue ? $cpval->getValue() : '';
 		}
 		$old_content_object->custom_properties = $cp_values;
+
+		Hook::fire('generate_old_content_object_more_data', array('object' => $object), $old_content_object);
 		
 		return $old_content_object;
 	}

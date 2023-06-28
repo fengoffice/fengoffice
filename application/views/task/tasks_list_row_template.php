@@ -284,6 +284,10 @@
           <div class='ogTasksTimeClock ico-time-pause task-action-icon' title='{{lang 'pause_work'}}'></div>
         </a>
         {{/if}}
+
+        <a href='#' class="task-single-div" onclick='ogTasks.executeAction("cancel_work",[{{task.id}}])'>
+          <div class='ogTasksTimeClock ico-delete task-action-icon' title='{{lang 'discard_work'}}'></div>
+        </a>
       {{else}}
         {{#if can_add_timeslots}}
         <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}],'','#tasksPanelContainer')">

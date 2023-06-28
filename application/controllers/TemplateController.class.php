@@ -141,6 +141,10 @@ class TemplateController extends ApplicationController {
 				$propValueVarUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueVarUnit');
 				$propValueTime = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueTime');
 				
+				$propValueNumType = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumType');
+				$propValueNumOp = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumOp');
+				$propValueNumConst = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumConst');
+				
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
 						foreach($propertyValues as $property => $value){
@@ -168,6 +172,15 @@ class TemplateController extends ApplicationController {
 									$amount = trim($propValueAmount[$objInfo][$property]);
 									$unit = trim($propValueUnit[$objInfo][$property]);
 									$var_unit = trim(array_var($propValueVarUnit[$objInfo], $property));
+
+									$amount_type = trim(array_var($propValueNumType[$objInfo], $property));
+									if ($amount_type != '' && $amount_type != 'fixed') {
+										$amount_op = trim(array_var($propValueNumOp[$objInfo], $property));
+										$amount_const = trim(array_var($propValueNumConst[$objInfo], $property));
+
+										$amount = '{'.$amount_type.'}'.$amount_op.$amount_const;
+									}
+
 									$propValue = '{'.$param.'}'.$var_unit.$operation.$amount.$unit;
 									
 									if (isset($propValueTime[$objInfo])) {
@@ -436,6 +449,10 @@ class TemplateController extends ApplicationController {
 				$propValueVarUnit = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueVarUnit');
 				$propValueTime = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueTime');
 				
+				$propValueNumType = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumType');
+				$propValueNumOp = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumOp');
+				$propValueNumConst = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumConst');
+				
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
 						foreach($propertyValues as $property => $value){
@@ -461,6 +478,15 @@ class TemplateController extends ApplicationController {
 									$amount = trim(array_var($propValueAmount[$objInfo], $property));
 									$unit = trim(array_var($propValueUnit[$objInfo], $property));
 									$var_unit = trim(array_var($propValueVarUnit[$objInfo], $property));
+
+									$amount_type = trim(array_var($propValueNumType[$objInfo], $property));
+									if ($amount_type != '' && $amount_type != 'fixed') {
+										$amount_op = trim(array_var($propValueNumOp[$objInfo], $property));
+										$amount_const = trim(array_var($propValueNumConst[$objInfo], $property));
+
+										$amount = '{'.$amount_type.'}'.$amount_op.$amount_const;
+									}
+
 									$propValue = '{'.$param.'}'.$var_unit.$operation.$amount.$unit;
 									
 									if (isset($propValueTime[$objInfo])) {
@@ -733,12 +759,12 @@ class TemplateController extends ApplicationController {
 		
 		$objects = $template->getObjects() ;
 		$controller  = new ObjectController();
-		if (count($selected_members) > 0) {
+/*		if (count($selected_members) > 0) {
 			$selected_members_instances = Members::findAll(array('conditions' => 'id IN ('.implode($selected_members).')'));
 		} else {
 			$selected_members_instances = array();
 		}
-		
+*/		
 		DB::beginWork();
 		
 		$active_context = active_context();
@@ -826,11 +852,17 @@ class TemplateController extends ApplicationController {
 			Env::useHelper('dimension');
 			append_related_members_to_autoclassify($object_members);
 			
+			// set flag to skip calculations in this step, they will be done later
+			$copy->dont_calculate_financials = true;
+			// classify the task
 			$controller->add_to_members($copy, $object_members, null, false);
 			
 			// set property values as defined in template
-			instantiate_template_task_parameters($object, $copy, $parameterValues);
-						
+			if($object instanceof TemplateTask && $copy instanceof ProjectTask)
+			{
+			    instantiate_template_task_parameters($object, $copy, $parameterValues);
+			}
+
 			// subscribe assigned to
 			if ($copy instanceof ProjectTask) {
 				foreach($copy->getOpenSubTasks(false) as $m_task){
@@ -940,6 +972,9 @@ class TemplateController extends ApplicationController {
                     }
                 }
 			}
+
+			// allow calculations from this point
+			$c->dont_calculate_financials = false;
 			
 			$ret = null;
 			Hook::fire('after_template_object_instantiation_and_commit', array('template' => $template, 'object' => $c), $ret);

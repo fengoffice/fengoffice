@@ -32,13 +32,15 @@ if (!isset($allow_export)) $allow_export = true;
                 
                 if (is_numeric($id) && $id > 0) { // is a custom report ?>
                 
-                    <?php if (!isset($disable_print) || !$disable_print) {
+                    <?php 
+						
+						// if (!isset($disable_print) || !$disable_print) {
 
-                            render_report_header_button_small(array(
-                                'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printReport('$genid','".escape_character($title)."', '$id');return false;", 'iconcls' => "ico-print"
-                            ));
+                        //     render_report_header_button_small(array(
+                        //         'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printReport('$genid','".escape_character($title)."', '$id');return false;", 'iconcls' => "ico-print"
+                        //     ));
 
-                        }
+                        // }
 
                         if ($allow_export) {
 
@@ -52,7 +54,11 @@ if (!isset($allow_export)) $allow_export = true;
 
                             $null=null; Hook::fire('additional_custom_report_export_actions', array('genid' => $genid, 'report_id' => $id), $null);
 
-                        }
+                        }else{
+							render_report_header_button_small(array(
+								'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printReport('$genid','" . escape_character($title) . "', '$id');return false;", 'iconcls' => "ico-print"
+							));
+						}
 
                       } else { // predefined report
 

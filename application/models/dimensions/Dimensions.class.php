@@ -53,7 +53,7 @@
   	}
   	
 
-
+	static private $allowed_dimensions_by_type_cache = array();
 	/**
 	 * 
 	 * Returns list of Dimensions where objects with $content_object_type_id can be located
@@ -61,6 +61,15 @@
 	 * @author Pepe
 	 */
 	static function getAllowedDimensions($content_object_type_id) {
+
+		// try to get the data from cache
+		$dims = array_var(self::$allowed_dimensions_by_type_cache, $content_object_type_id);
+		if ($dims) {
+			return $dims;
+		}
+
+		// if not in cache then get it from db and store in cache var
+
 		$enabled_dimensions_sql = "AND false";
 		$enabled_dimensions_ids = implode(',', config_option('enabled_dimensions'));
 		if ($enabled_dimensions_ids != "") {
@@ -99,7 +108,12 @@
 		";
 		$dimensions = array();
 		$res= DB::execute($sql);
-		return $res->fetchAll();
+		$dims = $res->fetchAll();
+
+		// store in cache var
+		self::$allowed_dimensions_by_type_cache[$content_object_type_id] = $dims;
+
+		return $dims;
 	}
 	
 	/**
@@ -114,4 +128,25 @@
 	}
 
     
+
+	static function getSmallDimensions($max_size = 500) {
+
+		$dimension_ids = array();
+		$enabled_dimension_ids = config_option('enabled_dimensions');
+
+		$rows = DB::executeAll("
+			select dimension_id, count(id) as size
+			from ".TABLE_PREFIX."members 
+			group by dimension_id
+		");
+
+		foreach ($rows as $row) {
+			if (in_array($row['dimension_id'], $enabled_dimension_ids) && $row['size'] < 500) {
+				$dimension_ids[] = $row['dimension_id'];
+			}
+		}
+
+		return $dimension_ids;
+	}
+
   } // Dimensions 

@@ -124,9 +124,7 @@ class ObjectController extends ApplicationController {
 				}
 			}
 
-			//remove subscribers
-			//$subscribers_to_remove = array_diff($object->getSubscriberIds(), $subscribers_ids);
-
+			
 			foreach ($subscribers_to_remove as $subs_remove) {
 				$user = Contacts::findById($subs_remove);
 				if ($user instanceof Contact) {
@@ -144,6 +142,7 @@ class ObjectController extends ApplicationController {
 				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, !$send_notification, true, $log_info_unsubscribe);
 			}
 		}else{
+			logger::log(' aver por aca!');
 			$subscribers_to_remove = $object->getSubscriberIds();
 			foreach ($subscribers_to_remove as $user_id_remove) {
 				$log_info_unsubscribe.= ($log_info_unsubscribe == "" ? "" : ",") . $user_id_remove;
@@ -271,7 +270,7 @@ class ObjectController extends ApplicationController {
 	}
 
 
-	function add_to_members($object, $member_ids, $user = null, $check_allowed_members = true, $is_multiple_classification = false) {
+	function add_to_members($object, $member_ids, $user = null, $check_allowed_members = true, $is_multiple_classification = false, $add_related_mem = true) {
 		if (!$user instanceof Contact) $user = logged_user();
 
 		// clean member_ids
@@ -303,20 +302,30 @@ class ObjectController extends ApplicationController {
 		} else {
 			$enteredMembers = array();
 		}
-		
+
+		$object_type_id = $object->getObjectTypeId();
+		$required_dimensions_ids = DimensionObjectTypeContents::getRequiredDimensions($object_type_id);
 		$manageable_members = array();
 		foreach ($enteredMembers as $ent_mem) {
-			if ($ent_mem->getDimension()->getIsManageable() && $ent_mem->getDimension()->getDefinesPermissions()) $manageable_members[] = $ent_mem;
+			if ($ent_mem->getDimension()->getIsManageable() && ($ent_mem->getDimension()->getDefinesPermissions() || in_array($ent_mem->getDimension()->getId(), $required_dimensions_ids))){
+				$manageable_members[] = $ent_mem;
+			}
 		}
 
+		$notAllowedMember = '';
 		if ($check_allowed_members) {
-		  if ((!can_add($user, $check_allowed_members ? $object->getAllowedMembersToAdd($user, $manageable_members):$manageable_members, $object->getObjectTypeId()))
+		  if ((!can_add($user, $check_allowed_members ? $object->getAllowedMembersToAdd($user, $manageable_members):$manageable_members, $object->getObjectTypeId(), $notAllowedMember))
 			&& !($object instanceof TemplateTask || $object instanceof TemplateMilestone || ($object instanceof Contact && $object->isUser()))) {
 
-				$mem_names = array();
-				$ot_name = $object->getObjectTypeNameLang();
-				foreach ($manageable_members as $man_mem) $mem_names[] = $man_mem->getName();
-				throw new Exception(lang('you dont have permissions to add this object in members', $ot_name, implode(', ',$mem_names)));
+				if (str_starts_with($notAllowedMember, '-- req dim --')){
+					$msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
+					throw new Exception($msg);
+				} else {
+					$mem_names = array();
+					$ot_name = $object->getObjectTypeNameLang();
+					foreach ($manageable_members as $man_mem) $mem_names[] = $man_mem->getName();
+					throw new Exception(lang('you dont have permissions to add this object in members', $ot_name, implode(', ',$mem_names)));
+				}
 			
 			ajx_current("empty");
 			return;
@@ -344,15 +353,19 @@ class ObjectController extends ApplicationController {
 		}
 		
 		// hook to add more validations before classifying an object
+		
 		$continue = true;
 		Hook::fire('before_add_to_members', array('object' => $object, 'members' => $validMembers), $continue);
+		
 		if (!$continue) return;
 		
 		// add object to members selected in form
 		$object->addToMembers($validMembers, true, $is_multiple_classification);
 		
 		// add object to related members
-		$object->addToRelatedMembers($validMembers, true);
+		if($add_related_mem){
+			$object->addToRelatedMembers($validMembers, true);
+		}
 		
 		Hook::fire ('after_add_to_members', $object, $validMembers);
 		
@@ -397,6 +410,7 @@ class ObjectController extends ApplicationController {
 				));
 			}
 		}
+		
 
 		return $validMembers;
 	}
@@ -458,9 +472,6 @@ class ObjectController extends ApplicationController {
 		}
 		$object = $object_original;
 
-		//Debug: 
-		//Logger::log_r("Object Id: ".$object->getId()."Object Name: ".$object->getName());
-		
 		if (!is_null($cp_data)) {
 			$obj_custom_properties = $cp_data;
 		} else {
@@ -719,12 +730,23 @@ class ObjectController extends ApplicationController {
                             $custom_property_value->setCustomPropertyId($id);
                             $custom_property_value->setValue($value);
                             $custom_property_value->save();
+
                             $contact = Contacts::findById($value);
                             $member = Members::findOneByObjectId($object->getObjectId());
-                            if($member instanceof Member && $contact instanceof Contact) {
-                                $object_controller = new ObjectController();
-                                $object_controller->add_to_members($contact, array($member->getId()),null,false);
-                            }
+							
+							if($member instanceof Member && $contact instanceof Contact && !$contact->isUser()) {
+                                
+								$object_controller = new ObjectController();																
+								$new_member_id = $member->getId();																
+								$mems_arr = array($new_member_id);								
+								$old_mems = $contact->getMembers();
+								
+								foreach($old_mems as $om) {
+									array_push($mems_arr, $om->getId());
+								}																
+
+                                $object_controller->add_to_members($contact, $mems_arr,null,false, false, false);
+                            }                            
                         }
                         
                     } else if($custom_property->getType() == 'image') {
@@ -786,11 +808,13 @@ class ObjectController extends ApplicationController {
 						if (is_array($value)) {
 							$value = implode(', ', $value);
 						}
-						$value = str_replace("'", "\'", $value);
+						
+						// this function escapes special characters and adds the string quotes for the query
+						$value = DB::escape($value);
 
 						$sql = "INSERT INTO ".TABLE_PREFIX."searchable_objects (rel_object_id, column_name, content)
-						VALUES ('".$object->getId()."', '".$name."', '".$value."')
-						ON DUPLICATE KEY UPDATE content='".$value."'";
+						VALUES ('".$object->getId()."', '".$name."', ".$value.")
+						ON DUPLICATE KEY UPDATE content=".$value."";
 
 						DB::execute($sql);
 					}
@@ -833,11 +857,13 @@ class ObjectController extends ApplicationController {
 		$durationsC = array_var($_POST, 'reminder_duration');
 		$duration_typesC = array_var($_POST, 'reminder_duration_type');
 		$subscribersC = array_var($_POST, 'reminder_subscribers');
+		$contextC = array_var($_POST, 'reminder_context'); 
 
 		foreach ($typesC as $context => $types) {
 			$durations = $durationsC[$context];
 			$duration_types = $duration_typesC[$context];
 			$subscribers = $subscribersC[$context];
+			$context_row = $contextC[$context]; 
 
 			for ($i=0; $i < count($types); $i++) {
 				$type = $types[$i];
@@ -850,7 +876,7 @@ class ObjectController extends ApplicationController {
 				$reminder = new ObjectReminder();
 				$reminder->setMinutesBefore($minutes);
 				$reminder->setType($type);
-				$reminder->setContext($context);
+				$reminder->setContext($context_row[$i]);
 				$reminder->setObject($object);
 				if (isset($subscribers[$i]) && $subscribers[$i]) {
 					$reminder->setUserId(0);
@@ -1635,15 +1661,22 @@ class ObjectController extends ApplicationController {
 		$csvids = array_var($_GET, 'ids');
 		if (!$csvids && array_var($_GET, 'object_id')) {
 			$csvids = array_var($_GET, 'object_id');
-			ajx_current("back");
+			
+			if (array_var($_REQUEST, 'reload')) {
+				ajx_current("reload");
+			} else {
+				ajx_current("back");
+			}
 		}
 		$ids = explode(",", $csvids);
 		$count_persons = 0;
 		$count = 0;
 		$err = 0;
 		$errorMessage = null;
+		$error_details = "";
 		foreach ($ids as $id) {
 			try {
+				DB::beginWork();
 				$object = Objects::findObject($id);
 				if ($object instanceof ContentDataObject && $object->canDelete(logged_user())) {
 					$object->trash(null, false);
@@ -1654,12 +1687,15 @@ class ObjectController extends ApplicationController {
 				} else {
 					$err++;
 				}
+				DB::commit();
 			} catch (Exception $e) {
+				DB::rollback();
 				$err++;
+				$error_details .= "\n" . $e->getMessage();
 			}
 		}
 		if ($err > 0) {
-			$errorString = is_null($errorMessage)? lang("error delete objects", $err) : $errorMessage;
+			$errorString = is_null($errorMessage)? lang("error delete objects", $err) . $error_details : $errorMessage;
 			flash_error($errorString);
 		} else {
 			flash_success(lang("success trash objects", $count));
@@ -1772,7 +1808,23 @@ class ObjectController extends ApplicationController {
 		$reminders = ObjectReminders::getDueReminders("reminder_popup");
 		$popups = array();
 		foreach ($reminders as $reminder) {
-			$context = $reminder->getContext(); 
+			$context = $reminder->getContext();
+
+			if(str_starts_with($context, "mails_in_outbox")){
+				if ($reminder->getUserId() > 0 && $reminder->getUserId() != logged_user()->getId()) {
+					continue;
+				}
+
+				preg_match('!\d+!', $context, $matches);
+				evt_add("popup", array(
+					'title' => lang("mails_in_outbox reminder"),
+					'message' => lang("mails_in_outbox reminder desc", $matches[0]),
+					'type' => 'reminder',
+					'sound' => 'info'
+				));
+				$reminder->delete();
+				continue;
+			}
 
 			if(str_starts_with($context, "eauthfail")){
 				if ($reminder->getUserId() == logged_user()->getId()) {
@@ -1790,7 +1842,11 @@ class ObjectController extends ApplicationController {
 
 			$object = $reminder->getObject();
 			$type = $object->getObjectTypeName();
-			$date = $object->getColumnValue($reminder->getContext());
+			if (in_array($context, $object->manager()->getColumns())) {
+				$date = $object->getColumnValue($reminder->getContext());
+			} else {
+				$date = $reminder->getDate();
+			}
 			if (!$date instanceof DateTimeValue) continue;
 			if ($object->isTrashed()) {
 				$reminder->delete();
@@ -2109,29 +2165,36 @@ class ObjectController extends ApplicationController {
 			$errorMessage = null;
 			$ids = explode(',', array_var($_GET, 'objects'));
 			$success = 0; $error = 0;
-			foreach ($ids as $id) {
-				$obj = Objects::findObject($id);
-				if (!$obj instanceof ContentDataObject) continue;
-				if (method_exists($obj, 'setDontMakeCalculations')) $obj->setDontMakeCalculations(true);
-				if ($obj->canDelete(logged_user())) {
-					try {
-						$obj->untrash();
+			$hook_result = array('allowed_to_restore' => true, 'error' => 0, 'errorMessage' => null);
+			Hook::fire('check_objects_to_get_restored', array('ids' => $ids), $hook_result);
+			if($hook_result['allowed_to_restore']){
+				foreach ($ids as $id) {
+					$obj = Objects::findObject($id);
+					if (!$obj instanceof ContentDataObject) continue;
+					if (method_exists($obj, 'setDontMakeCalculations')) $obj->setDontMakeCalculations(true);
+					if ($obj->canDelete(logged_user())) {
+						try {
+							$obj->untrash();
 
-						if($obj->getObjectTypeId() == 11){
-							$event = ProjectEvents::findById($obj->getId());
-							if($event->getExtCalId() != ""){
-								$this->created_event_google_calendar($obj,$event);
+							if($obj->getObjectTypeId() == 11){
+								$event = ProjectEvents::findById($obj->getId());
+								if($event->getExtCalId() != ""){
+									$this->created_event_google_calendar($obj,$event);
+								}
 							}
-						}
 
-						ApplicationLogs::createLog($obj, ApplicationLogs::ACTION_UNTRASH);
-						$success++;
-					} catch (Exception $e) {
+							ApplicationLogs::createLog($obj, ApplicationLogs::ACTION_UNTRASH);
+							$success++;
+						} catch (Exception $e) {
+							$error++;
+						}
+					} else {
 						$error++;
 					}
-				} else {
-					$error++;
 				}
+			} else {
+				$error = $hook_result['error'];
+				$errorMessage = $hook_result['errorMessage'];
 			}
 			if ($success > 0) {
 				flash_success(lang("success untrash objects", $success));
@@ -2151,9 +2214,7 @@ class ObjectController extends ApplicationController {
 
 
 	function list_objects() {
-
 		$params = $this->get_list_objects_params();
-
 		$listing = $this->get_objects_list($params);
 
 		ajx_extra_data($listing);
@@ -2285,11 +2346,14 @@ class ObjectController extends ApplicationController {
             $count_results = $params['count_results'];
         }
 
+
 		/* if there's an action to execute, do so */
 		if (!$show_all_linked_objects){
 			$this->processListActions();
 		}
 
+		
+		
 		$template_object_names = "";
 		$template_extra_condition = "true";
 
@@ -2396,8 +2460,11 @@ class ObjectController extends ApplicationController {
 
 
 		// Object type filter - exclude template types (if not template picker), filter by required type names (if specified) and match value with objects table
+		// ORG $extra_object_type_conditions = "
+		//AND ot.name <> 'file revision' $template_object_names $type_condition AND o.object_type_id = ot.id";
+
 		$extra_object_type_conditions = "
-		AND ot.name <> 'file revision' $template_object_names $type_condition AND o.object_type_id = ot.id";
+		AND ot.name <> 'file revision' $template_object_names $type_condition";
 
 		$extra_conditions[] = ObjectTypes::getListableObjectsSqlCondition($extra_object_type_conditions);
 		// --
@@ -2426,7 +2493,6 @@ class ObjectController extends ApplicationController {
 			$extra_conditions[] = "
 			o.id in ($object_ids_filter)";
 		}
-
 
 		$joins[] = "
 			LEFT JOIN ".TABLE_PREFIX."project_tasks pt on pt.object_id=o.id";
@@ -2488,8 +2554,6 @@ class ObjectController extends ApplicationController {
 			)";
 		}
 
-		
-
 		// Members filter
 		$sql_members = "";
 		if (!$ignore_context && !$member_ids) {
@@ -2520,7 +2584,6 @@ class ObjectController extends ApplicationController {
 			";
 		}
 		// --
-
 		// External extra conditions
 		Hook::fire("get_objects_list_extra_conditions", null, $extra_conditions);
 		// --
@@ -2536,7 +2599,6 @@ class ObjectController extends ApplicationController {
 		}
 
 		// Main select
-		
 		$sql_select = "SELECT ".$select_fields." FROM ".TABLE_PREFIX."objects o ";
 
 		// Joins
@@ -2562,6 +2624,7 @@ class ObjectController extends ApplicationController {
 
 		// Full SQL
 		$sql = "$sql_select $sql_joins $sql_where $sql_order $sql_limit";
+		
 		// Execute query
 		if (!$only_count_result) {
 			$rows = DB::executeAll($sql);
@@ -2624,6 +2687,7 @@ class ObjectController extends ApplicationController {
 							$info_elem['dueDate'] = format_datetime($instance->getDueDate(), null, logged_user()->getUserTimezoneHoursOffset());
 							$info_elem['completedBy'] = $instance->getCompletedById();
 							$info_elem['dateCompleted'] = $instance->getCompletedOn() instanceof DateTimeValue ? format_datetime($instance->getCompletedOn()) : '';
+							$info_elem['assignedTo'] = $instance->getAssignedToName();
 						}
 					}
 
@@ -2640,7 +2704,10 @@ class ObjectController extends ApplicationController {
 				"objects" => $info
 		);
 
-		$object_types = ObjectTypes::findAll(array('conditions' => "type IN ('content_object', 'dimension_object', 'dimension_group', 'located')"));
+		$object_types = ObjectTypes::findAll(array(
+			'conditions' => "type IN ('content_object') AND 
+							(plugin_id = 0 OR plugin_id IS NULL OR (SELECT is_activated FROM ".TABLE_PREFIX."plugins WHERE id=plugin_id) = 1)"
+		));
 		$object_types_info = array();
 		foreach ($object_types as $ot) {
 			if (in_array($ot->getName(), array('template_task','template_milestone','project_folder','customer_folder','file revision','company','person'))) {

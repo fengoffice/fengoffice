@@ -16,6 +16,25 @@
   	 */
   	static $listableObjectTypesIds = null ;
   	
+	/**
+	* Return all status available for the object type
+	* @var int
+	* @return array
+	*/
+	static function getObjectStatusTypes(int $object_type_id) {
+
+		$sql = "
+				SELECT *
+				FROM ".TABLE_PREFIX."object_status_types 
+				WHERE object_type_id = $object_type_id
+				";
+
+		$rows = DB::executeAll($sql);
+
+		return $rows;
+
+	}
+
   	static function getAllObjectTypes($external_conditions = "") {
   		$object_types = self::findAll(array(
   			"conditions" => "IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) $external_conditions"
@@ -129,9 +148,7 @@
 	
 	
 	static function getListableObjectsSqlCondition($extra_conditions = "") {
-		
 		$sql = "
-			EXISTS (
 				SELECT DISTINCT(id) as id  
 				FROM ".TABLE_PREFIX."object_types ot
 				WHERE ot.type IN ('content_object', 'dimension_object', 'comment', 'located') 
@@ -142,9 +159,13 @@
 				  )
 				)
 				$extra_conditions
-			)
 		";
-		
+		$rows = DB::executeAll($sql);
+		$ids = [];
+		foreach($rows as $k=>$v){
+			$ids[]=$rows[$k]['id'];
+		}
+		$sql = "o.object_type_id IN (".implode(",",$ids).")";
 		return $sql;
 	}
     

@@ -30,6 +30,9 @@ class ApplicationLogs extends BaseApplicationLogs {
 	const ACTION_DOWNLOAD    = 'download';
 	const ACTION_CHECKOUT    = 'checkout';
 	const ACTION_CHECKIN     = 'checkin';
+	const ACTION_RELATION_ADDED = 'relation_added';
+	const ACTION_RELATION_EDITED = 'relation_edited';
+	const ACTION_RELATION_REMOVED = 'relation_removed';
     const ACTION_MADE_SEVERAL_CHANGES     = 'made several changes';
 	
 	/**
@@ -155,7 +158,10 @@ class ApplicationLogs extends BaseApplicationLogs {
 			self::ACTION_READ,
 			self::ACTION_DOWNLOAD,
 			self::ACTION_CHECKOUT,
-			self::ACTION_CHECKIN
+			self::ACTION_CHECKIN,
+			self::ACTION_RELATION_ADDED,
+			self::ACTION_RELATION_EDITED,
+			self::ACTION_RELATION_REMOVED
 			); // array
 		} // if
 		
@@ -219,10 +225,14 @@ class ApplicationLogs extends BaseApplicationLogs {
 				'offset' => $offset,
 			)); // findAll				
 		} else {
+			$comment_ids = Comments::findAll(array('id'=>true, 'conditions'=>'rel_object_id = '.$object->getId()));
+			if (is_array($comment_ids) && count($comment_ids) > 0) {
+				$comments_conditions = "OR `rel_object_id` IN (".implode(',', $comment_ids).")";
+			}
 			$logs = self::findAll(array(
 				'conditions' => array('`is_private` <= ? AND `is_silent` <= ? AND 
-					(`rel_object_id` = (?) OR `rel_object_id` IN (SELECT com.object_id FROM '.TABLE_PREFIX.'comments com WHERE com.rel_object_id=? )) 
-					'.$extra_conditions, $private_filter, $silent_filter, $object->getId(), $object->getId()),
+					(`rel_object_id` = (?) '.$comments_conditions.') 
+					'.$extra_conditions, $private_filter, $silent_filter, $object->getId()),
 				'order' => '`created_on` DESC',
 				'limit' => $limit,
 				'offset' => $offset,
@@ -332,18 +342,17 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		//permissions
 		$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
-			
-		$permissions_condition = "EXISTS (
-			SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-			force index (object_id)
-			WHERE al.rel_object_id = sh.object_id AND sh.object_id > 0
-			AND sh.group_id  IN ($logged_user_pgs)
-		)";
+		$share_table_join = "";
+		$permissions_condition = 'true';
+		if(!logged_user()->isAdministrator()){
+			$share_table_join = " INNER JOIN ".TABLE_PREFIX."sharing_table sh ON al.rel_object_id = sh.object_id";
+			$permissions_condition = "sh.group_id  IN ($logged_user_pgs) ";
+		}
 
-		
 		$sql = "SELECT al.id, (select o.object_type_id from ".TABLE_PREFIX."objects o where o.id=al.rel_object_id) as object_type_id
 				FROM ".TABLE_PREFIX."application_logs al 
 				$joins_sql
+				$share_table_join
 				WHERE 
 					$permissions_condition 
 					$extra_conditions

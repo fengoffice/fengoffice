@@ -191,10 +191,23 @@ og.ObjectGrid = function(config, ignore_context) {
 		}
 		return value;
 	}
+
+	this.getValidSelections = function() {
+		var selections = this.getSelectionModel().getSelections();
+		var valid_selections = [];
+		for (var i=0; i<selections.length; i++) {
+			// don't count quick add row and totals row as a valid selection to enable/disable the toolbar buttons
+			if (selections[i] && selections[i].id != "#__total_row__" && selections[i].id != "quick_add_row") {
+				valid_selections.push(selections[i]);
+			}
+		}
+
+		return valid_selections;
+	}
 	
 	this.getSelectedIds = function() {
 		var ret = '';
-		var selections = this.getSelectionModel().getSelections();
+		var selections = this.getValidSelections();
 		for (var i=0; i < selections.length; i++) {
 			ret += (ret == "" ? "" : ",") + selections[i].data.object_id;
 		}
@@ -202,7 +215,7 @@ og.ObjectGrid = function(config, ignore_context) {
 	}
 	
 	this.getFirstSelectedId = function() {
-		var selections = sm.getSelections();
+		var selections = this.getValidSelections();
 		if (selections.length <= 0) {
 			return '';
 		} else {
@@ -212,35 +225,35 @@ og.ObjectGrid = function(config, ignore_context) {
 	}
 
 	if (config.checkbox_sel_model) {
-            if(config.sm){
-                var sm = config.sm;
-            }else{
-		var sm = new Ext.grid.CheckboxSelectionModel();
-		sm.on('selectionchange', function() {
-			var selections = sm.getSelections();
-			var sel_count = sm.getCount();
-			
-			for (x in this.grid.tbar_items) {
-				var action = this.grid.tbar_items[x];
-				if (typeof(action) == 'object') {
-					// for actions that requires selected rows set if they are enabled or disabled
-					if (action.initialConfig.selection_dependant) {
-						if (sel_count == 0) {
-							// disable if there are no selections
-							action.setDisabled(true);
-						} else if (sel_count == 1) {
-							// enable all if there is only one row selected
-							action.setDisabled(false);
-						} else {
-							// if there are more than one rows selected, enable only the ones defined as multiple
-							action.setDisabled(!action.initialConfig.is_multiple);
+		if(config.sm){
+			var sm = config.sm;
+		}else{
+			var sm = new Ext.grid.CheckboxSelectionModel();
+			sm.on('selectionchange', function() {
+				var selections = this.grid.getValidSelections();
+				var sel_count = selections.length;
+				
+				for (x in this.grid.tbar_items) {
+					var action = this.grid.tbar_items[x];
+					if (typeof(action) == 'object') {
+						// for actions that requires selected rows set if they are enabled or disabled
+						if (action.initialConfig.selection_dependant) {
+							if (sel_count == 0) {
+								// disable if there are no selections
+								action.setDisabled(true);
+							} else if (sel_count == 1) {
+								// enable all if there is only one row selected
+								action.setDisabled(false);
+							} else {
+								// if there are more than one rows selected, enable only the ones defined as multiple
+								action.setDisabled(!action.initialConfig.is_multiple);
+							}
 						}
 					}
 				}
-			}
-			
-		});
-            }
+				
+			});
+        }
 		
 		var cm_info = [sm];
 		
@@ -289,8 +302,9 @@ og.ObjectGrid = function(config, ignore_context) {
 	cm_info.push({
 		id: 'name',
 		//@ToDo The main ID column might not always be called "Name". This should be an attribute of the column.
-		header: lang("name"),
+		header: config.name_column_text ? config.name_column_text : lang("name"),
 		dataIndex: 'name',
+		hidden: config.hide_name_column,
 		fixed: config.name_fixed | false,
     	width: typeof(config.name_width) != "undefined" ? config.name_width : 200,
 		renderer: config.nameRenderer ? config.nameRenderer : og.default_grid_column_renderer
@@ -498,6 +512,12 @@ og.ObjectGrid = function(config, ignore_context) {
 					scroller.each(function() {
 						this.dom.appendChild(msg);
 					});
+
+					if (config.hide_name_column) {
+						var col_model = this.getColumnModel();
+						col_model.setHidden(col_model.getIndexById('name'), true);
+						//col_model.moveColumn(col_model.getIndexById('product_type_name'),1);
+					}
 					
 					// add the second toolbar
 					if (tbar2.length > 0) {
@@ -535,6 +555,16 @@ og.ObjectGrid = function(config, ignore_context) {
 			'columnmove': {
 				fn: function(old_index, new_index) {
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
+
+					// reset quick add row
+					if (config.quick_add_row) {
+						// remove previous quick add row
+						this.store.remove(this.store.getAt(0));
+						// don't focus in first input to prevent scrolling left and let user continue moving columns
+						this.initialConfig.dont_focus_in_first_input = true;
+						// add new quick add row
+						og.add_object_grid_quick_add_row(this, this.initialConfig);
+					}
 				},
 				scope: this
 			}
@@ -584,16 +614,18 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 	reloadTotalsRow: function(params) {
 		if (!params) params = {};
 		
-		// use current filters and other parameters
-		var filters_object = this.filters;
-		var filters = {};
-		Object.keys(filters_object).forEach(function (key) {
-			var val = filters_object[key]['value'];
-			filters[key] = val;
-		});
-		Ext.apply(params, filters);
 		params.load_totals_row = 1; 
 		
+		Ext.apply(params, this.store_params);
+
+		if (!this.filters) this.filters = {};
+
+		// add the last selected filter values to the totals request parameters
+		for (var filter_name in this.filters) {
+			if (typeof filter_name == 'function') continue;
+			params[filter_name] = this.filters[filter_name].value;
+		}
+
 		var objects_grid_id = this.id;
 		// call the controller to retrieve the totals
 		og.openLink(og.getUrl(this.store_params.url_controller, this.store_params.url_action, params), {

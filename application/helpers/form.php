@@ -899,7 +899,7 @@ function darkerHtmlColor($htmlColor, $percentage = 20) {
 	
 	// 1st box
 	$attributes['id'] = $id . "_box1";
-	$html = "<table><tr><td>" . select_box($name."_box1", $options1, $attributes) . "</td>";
+	$html = "<table class='cols_doble_contol'><tr><td>" . select_box($name."_box1", $options1, $attributes) . "</td>";
 	
 	// buttons
 	$btn_style = 'border:1px solid #bbb; width:35px; margin:2px;';
@@ -1061,7 +1061,7 @@ function get_custom_property_type_selector_html($attributes) {
     if (!isset($attributes['onchange']))
         $attributes['onchange'] = "og.customPropTypeChanged(this);";
 
-    $cp_types = array('text', 'numeric', 'amount', 'boolean', 'contact', 'user', 'date', 'datetime', 'list', 'memo', 'address', 'table', 'image', 'color');
+    $cp_types = array('text', 'numeric', 'amount', 'boolean', 'contact', 'user', 'date', 'datetime', 'list', 'memo', 'address', 'table', 'image', 'color', 'url');
 
     $options = array();
     foreach ($cp_types as $t) {
@@ -1108,7 +1108,9 @@ function webpage_field($name, $values_array = null, $genid, $attributes = null) 
     $container_id = array_var($attributes, 'container_id', $genid . 'webpagecontainer-' . $name);
     $input_base_id = array_var($attributes, 'input_base_id', "prop-" . $name);
 
-    $html = '<div id="' . $container_id . '" class="webpages-input-container"></div>';
+    $html = '<div class="tableDataContainer">
+        <div id="' . $container_id . '" class="webpages-input-container"></div>
+    </div>';
     if (array_var($attributes, 'multiple')) {
         $html .= '<a href="#" onclick="og.addNewWebpageInput(\'' . $container_id . '\', \'' . $input_base_id . '\', 2)" class="coViewAction ico-add">' . lang('add new webpage') . '</a>';
     }
@@ -1168,7 +1170,9 @@ function email_field($name, $values_array = null, $genid, $attributes = null) {
     $container_id = array_var($attributes, 'container_id', $genid . 'emailcontainer-' . $name);
     $input_base_id = array_var($attributes, 'input_base_id', "prop-" . $name);
 
-    $html = '<div id="' . $container_id . '" class="emails-input-container"></div>';
+    $html = '<div class="tableDataContainer clientForm">
+        <div id="' . $container_id . '" class="emails-input-container"></div>
+    </div>';
     if (array_var($attributes, 'multiple')) {
         $html .= '<a href="#" onclick="og.addNewEmailInput(\'' . $container_id . '\', \'' . $input_base_id . '\', 3)" class="coViewAction ico-add">' . lang('add new email address') . '</a>';
     }
@@ -1229,7 +1233,9 @@ function phone_field($name, $values_array = null, $genid, $attributes = null) {
     $container_id = array_var($attributes, 'container_id', $genid . 'phonecontainer-' . $name);
     $input_base_id = array_var($attributes, 'input_base_id', "prop-" . $name);
 
-    $html = '<div id="' . $container_id . '" class="phones-input-container"></div>';
+    $html = '<div class="tableDataContainer clientForm">
+        <div id="' . $container_id . '" class="phones-input-container"></div>
+    </div>';
     if (array_var($attributes, 'multiple')) {
         $html .= '<a href="#" onclick="og.addNewTelephoneInput(\'' . $container_id . '\', \'' . $input_base_id . '\')" class="coViewAction ico-add">' . lang('add new phone number') . '</a>';
     }
@@ -1282,6 +1288,9 @@ function phone_field($name, $values_array = null, $genid, $attributes = null) {
 }
 
 function address_field($name, $values_array = null, $genid, $attributes = null, $ignore_pre_id = false) {
+
+    $addressTypeActive = config_option('default_type_address');
+    
     if (is_null($values_array)) {
         $values_array = array();
     } else if (!is_array($values_array)) {
@@ -1291,7 +1300,7 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
     $container_id = array_var($attributes, 'container_id', $genid . 'addresscontainer-' . $name);
     $input_base_id = array_var($attributes, 'input_base_id', "prop-" . $name);
 
-    $html = '<div id="' . $container_id . '" class="address-input-container"></div>';
+    $html = '<div id="' . $container_id . '" class="address-input-container address-custom-properties-parent"></div>';
     if (array_var($attributes, 'multiple')) {
         $html .= '<a href="#" onclick="og.addNewAddressInput(\'' . $container_id . '\', \'' . $input_base_id . '\')" class="coViewAction ico-add">' . lang('add new address') . '</a>';
     }
@@ -1330,13 +1339,13 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
                 $zip_code = array_var($exploded, 5, '');
                 $id = array_var($exploded, 6, '');
                 $sel_data_str = "{street:'$street', city:'$city', state:'$state', zip_code:'$zip_code', country:'$country', id:'$id'}";
-                $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '$address_type', $sel_data_str, $ignore_pre_id);";
+                $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '$address_type', $sel_data_str, $ignore_pre_id, );";
             } else {
-                $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '', {}, $ignore_pre_id);";
+                $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '".$addressTypeActive."', {}, $ignore_pre_id);";
             }
         }
     } else {
-        $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '', {}, $ignore_pre_id);";
+        $html .= "og.addNewAddressInput('" . $container_id . "', '" . $input_base_id . "', '".$addressTypeActive."', {}, $ignore_pre_id);";
     }
     
     if (array_var($attributes, 'disabled')) {

@@ -6,7 +6,7 @@ function cp_info_sort_by_order($a, $b) {
 
 
 function render_object_fixed_property_input($genid, $input_name, $col_info, $value, $object=null, $property_perm=null) {
-	$html = '<div class="input-container" style="margin-bottom: 1rem;" id="input-'.array_var($col_info, 'col').'">';
+	$html = '<div class="input-container" id="'.$genid.'" style="margin-bottom: 1rem;" id="input-'.array_var($col_info, 'col').'">';
 
 	$html .= "<label>".array_var($col_info, 'label')."</label>";
 	
@@ -42,7 +42,8 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 			break;
 		case DATA_TYPE_STRING:
 			if (array_var($col_info, 'large')) {
-				$attr['style'] = 'height: 75px; width:60%;';
+				$attr['rows'] = '7';
+				$attr['cols'] = '60';
 				$html .= textarea_field($input_name, $value, $attr);
 			} else {
 				$html .= text_field($input_name, $value, $attr);
@@ -238,6 +239,7 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 	$config['parent_member_id'] = array_var($_REQUEST, 'parent');
 	$config['is_bootstrap'] = $is_bootstrap;
 	$config['member_parent'] = $member_parent;
+	$config['style'] = '';
 	if ($object instanceof Member) {
 		$config['member_id'] = $object->getId();
 		$config['member_is_new'] = $object->isNew();
@@ -248,6 +250,8 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 		$config['object_is_new'] = $object->isNew();
 		$config['object'] = $object;
 	}
+
+	Hook::fire('custom_property_additional_style', array('object' => $object, 'custom_property' => $customProp), $config);
 	
 	if ($property_perm) $config['property_perm'] = $property_perm;
 	
@@ -261,9 +265,12 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 function render_custom_property_by_type($custom_property, $configs) {
     $style = "margin-bottom: 1rem;";
     if (array_var($configs,'is_bootstrap')){
-        $style = "margin-bottom: 1rem;width:100%";
+        $style = "margin-bottom: 1rem; width:100%;";
     }
-	$html = '<div class="input-container" style="'.$style.'">';
+	$style .= $configs['style'];
+	$custom_property_id = $custom_property->getId();
+	$container_id = $configs['genid'] . '-container-cp' . $custom_property_id;
+	$html = '<div class="input-container" style="'.$style.'" id="'.$container_id.'">';
 	$html .= label_tag($configs['label'], $configs['genid'] . 'cp' . $custom_property->getId(), $custom_property->getIsRequired(), array('style' => 'display:inline-block;'), $custom_property->getType() == 'boolean'?'':':');
 	//if (isset($configs['member'])) $html .= '<br>';
 	
@@ -304,6 +311,9 @@ function render_custom_property_by_type($custom_property, $configs) {
 		case 'user':
 		case 'contact':
 			$html .= render_contact_custom_property_field($custom_property, $configs);
+			break;
+		case 'url':
+			$html .= render_url_custom_property_field($custom_property, $configs);
 			break;
 		case 'image':
 			$html .= render_image_custom_property_field($custom_property, $configs);
@@ -355,6 +365,7 @@ function render_text_custom_property_field($custom_property, $configs) {
 	return $html;
 }
 
+
 function render_money_amount_custom_property_field($custom_property, $configs) {
 
     $html = '';
@@ -393,7 +404,7 @@ function render_large_text_custom_property_field($custom_property, $configs) {
             $style = '';
             $class = 'form-control';
         }
-        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'class'=>$class, 'rows' => 5);
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(), 'class'=>$class, 'rows' => 7, 'cols' => '60');
         
         if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
         
@@ -455,6 +466,30 @@ function render_numeric_custom_property_field($custom_property, $configs) {
         $onchange = "og.check_if_valid_cp_num(this);";
         if (array_var($configs,'is_bootstrap')){
 	        $type = 'number';
+	        $onchange = '';
+            $style = '';
+            $class = 'form-control';
+            $placeholder = $configs['label'];
+        }
+        $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'onchange'=>$onchange,'class'=>$class,'placeholder'=>$placeholder);
+        
+        if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+
+		$html = text_field($configs['name'], $configs['default_value'], $attributes);
+	}
+	return $html;
+}
+
+function render_url_custom_property_field($custom_property, $configs) {
+	if ($custom_property->getIsMultipleValues()) {
+		$html = render_multiple_custom_property_field($custom_property, $configs);
+	} else {
+
+        $class = '';
+        $placeholder = '';
+        $type = 'url';
+        $onchange = "";
+        if (array_var($configs,'is_bootstrap')){
 	        $onchange = '';
             $style = '';
             $class = 'form-control';
@@ -601,7 +636,7 @@ function render_contact_custom_property_field($custom_property, $configs) {
 	    }
 	}
 
-	if($default_value > 0){
+	if(is_numeric($default_value) && $default_value > 0){
 		$value = $default_value;
 		$contact = Contacts::findById($value);
 	} else if (!$is_multiple && $cp_value) {

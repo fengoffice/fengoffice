@@ -15,17 +15,58 @@ var { AxisNumberFormatter, FormatNumber } = require('./helpers/widgetChartHelper
 class WorkedHoursWidget extends React.Component {
     constructor(props) {
       super(props);
-      this.state = { worked: props.data.worked ? props.data.worked : 0,
-                     estimated: props.data.estimated ? props.data.estimated : 0,
-                     dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
-                     workedTitle: props.data.workedTitle ? props.data.workedTitle : 'Total worked hours',
-                     estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total estimated hours',
-                     chartData: props.data.chartData ? props.data.chartData : '',
-                     decimals: props.data.decimals ? props.data.decimals : 0,
-                     decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
-                     thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ',',
-                    };
+      this.state = {
+        worked: 0,
+        estimated: 0,
+        dateFormat: 'MM/DD/YYYY',
+        workedTitle: 'Total worked hours',
+        estimatedTitle: 'Total estimated hours',
+        chartData: '',
+        decimals: 0,
+        decimalsSeparator: '.',
+        thousandSeparator: ',', 
+        DataisLoaded: false,
+        api_url: props.api_url,
+        no_obj_msg: props.no_obj_msg,
+        tasks_without_due_date: [],
+        tasks_without_due_date_msg: '',
+        completed_tasks_no_timeslots: [],
+        completed_tasks_no_timeslots_msg: '',
+        tasks_without_estimated_time: [],
+        tasks_without_estimated_time_msg: '',
+        list_tasks_with_missing_info: false
+      };
     }
+
+    // ComponentDidMount is used to execute the code 
+    componentDidMount() {
+        const api_url = this.state.api_url;
+        fetch(api_url)
+            .then((res) => res.json())
+            .then((json) => {
+              this.setState({
+                worked: json.worked ? json.worked : 0,
+                estimated: json.estimated ? json.estimated : 0,
+                dateFormat: json.dateFormat ? json.dateFormat : 'MM/DD/YYYY',
+                workedTitle: json.workedTitle ? json.workedTitle : 'Total worked hours',
+                estimatedTitle: json.estimatedTitle ? json.estimatedTitle : 'Total estimated hours',
+                chartData: json.chartData ? json.chartData : '',
+                decimals: json.decimals ? json.decimals : 0,
+                decimalsSeparator: json.decimalsSeparator ? json.decimalsSeparator : '.',
+                thousandSeparator: json.thousandSeparator ? json.thousandSeparator : ',',
+                DataisLoaded: true,
+                tasks_without_due_date: json.tasks_without_due_date ? json.tasks_without_due_date : [],
+                tasks_without_due_date_msg: json.tasks_without_due_date_msg ? json.tasks_without_due_date_msg : '',
+                completed_tasks_no_timeslots: json.completed_tasks_no_timeslots ? json.completed_tasks_no_timeslots : [],
+                completed_tasks_no_timeslots_msg: json.completed_tasks_no_timeslots_msg ? json.completed_tasks_no_timeslots_msg : '',
+                tasks_without_estimated_time: json. tasks_without_estimated_time ? json. tasks_without_estimated_time : [],
+                tasks_without_estimated_time_msg: json. tasks_without_estimated_time_msg ? json. tasks_without_estimated_time_msg : '',
+                list_tasks_with_missing_info: json.list_tasks_with_missing_info ? json.list_tasks_with_missing_info : false
+              });
+            });
+      }
+
+
 
       render() {
          // Define variables that will be used in the returned component
@@ -45,30 +86,32 @@ class WorkedHoursWidget extends React.Component {
          const remaining_percent = 100 - percentage;
          const budgeted = Math.round(estimated * 0.96);
          const variance = estimated - budgeted;
+         const tasks_without_due_date = this.state.tasks_without_due_date;
+         const tasks_without_due_date_msg = this.state.tasks_without_due_date_msg;
+         const completed_tasks_no_timeslots= this.state.completed_tasks_no_timeslots;
+         const completed_tasks_no_timeslots_msg = this.state.completed_tasks_no_timeslots_msg;
+         const tasks_without_estimated_time = this.state.tasks_without_estimated_time;
+         const tasks_without_estimated_time_msg = this.state.tasks_without_estimated_time_msg;
+         const list_tasks_with_missing_info = this.state.list_tasks_with_missing_info;
          var chartData = this.state.chartData;
          if(chartData){
             chartData.forEach(d => {
                 d.date = moment(d.date).valueOf();
             });
          }
+         var DataisLoaded = this.state.DataisLoaded;
+
+         if (!DataisLoaded) return <div className="statistics-widget__placeholder">
+            <div className="statistics-widget__placeholder-circle"></div>
+            <div>
+            <div className="statistics-widget__placeholder-line-1"></div>
+            <div className="statistics-widget__placeholder-line-2"></div>
+            </div>
+        </div> ;
+
         return (
           <div className="progress-widget-container">
             <p style={percentStyle} data-value={percentage}></p>
-
-            {/* For later use in "Project status" widget
-            <div className="progress-info-container">
-                <div className="progress-bar-container">
-                    {percentage <= 4 ? (
-                        <div className="progress-label-small-number" style={percentStyle} data-value={percentage}></div>
-                    ) : (
-                        <div className="progress-label" style={percentStyle} data-value={percentage}></div>
-                    )}
-                    <div className="progress-bar">
-                        <span className="progress-bar-fill" style={percentStyle}></span>
-                    </div>
-                </div>
-            </div>
-                    */}
 
             <div className="progress-info-container">
                 <div className="progress-total">
@@ -145,13 +188,46 @@ class WorkedHoursWidget extends React.Component {
                     </ResponsiveContainer>
                 </div>
             }
+
+            {tasks_without_due_date.length > 0 && 
+                <div className="worked-hours-widget-warning">
+                    <div>{tasks_without_due_date_msg}</div>
+                    <ul>
+                    {list_tasks_with_missing_info && tasks_without_due_date.map(task => (
+                        <li><a href={task['view_url']}>{task['name']}</a></li>
+                      ))}
+                    </ul>
+                </div>
+            }
+
+            {completed_tasks_no_timeslots.length > 0 && 
+                <div className="worked-hours-widget-warning">
+                    <div>{completed_tasks_no_timeslots_msg}</div>
+                    <ul>
+                    {list_tasks_with_missing_info && completed_tasks_no_timeslots.map(task => (
+                        <li><a href={task['view_url']}>{task['name']}</a></li>
+                      ))}
+                    </ul>
+                </div>
+            }
+
+            {tasks_without_estimated_time.length > 0 && 
+                <div className="worked-hours-widget-warning">
+                    <div>{tasks_without_estimated_time_msg}</div>
+                    <ul>
+                    {list_tasks_with_missing_info && tasks_without_estimated_time.map(task => (
+                        <li><a href={task['view_url']}>{task['name']}</a></li>
+                      ))}
+                    </ul>
+                </div>
+            }
           </div>
         );
       }
   };
   
-  function showWorkedHoursWidget(data, element){
-    ReactDOM.render(<WorkedHoursWidget data={data} />,
+  function showWorkedHoursWidget(api_url, no_obj_msg, element){
+    ReactDOM.render(<WorkedHoursWidget api_url={api_url} no_obj_msg={no_obj_msg}/>,
       element);
   };
   

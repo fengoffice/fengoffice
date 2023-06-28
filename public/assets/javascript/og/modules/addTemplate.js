@@ -194,7 +194,7 @@ og.addObjectToTemplate = function(target, obj, dont_draw_milestone_combo) {
 		'<a id="toggleTemplateProperties'+obj.object_id+'" href="#" onclick="og.toggleTemplateProperties('+obj.object_id+')" class="toggle_collapsed">'+ lang("edit variables") + '</a>'+
 		"<a href='#' class='internalLink coViewAction ico-edit' onclick='"+"og.editTempObj("+obj.object_id+", \""+obj.type+"\")"+"'>" + lang('edit') + '</a>';
 	if (obj.type == 'template_task') {
-		divhtml += '<a href="#" onclick="og.openLink(og.getUrl(\'task\', \'add_task\', {template_task:1, parent_id:'+ obj.object_id +', template_id:'+og.actual_template_id+'}), {caller:\'new_task_template\'})" class="internalLink ico-add coViewAction">'+lang("add sub task")+'</a>';
+		divhtml += '<a href="#" onclick="og.render_modal_form(\'\', {c:\'task\', a:\'add_task\', params:{template_task:1, parent_id:'+ obj.object_id +', template_id:'+og.actual_template_id+'}})" class="internalLink ico-add coViewAction">'+lang("add sub task")+'</a>';
 	} else if (obj.type == 'template_milestone') {
 		divhtml += '<a href="#" onclick="og.openLink(og.getUrl(\'task\', \'add_task\', {template_task:1, milestone_id:'+ obj.object_id +', template_id:'+og.actual_template_id+'}), {caller:\'new_task_template\'})" class="internalLink ico-add coViewAction">'+lang("add task")+'</a>';
 	}
@@ -539,15 +539,9 @@ og.objectPropertyChanged = function(obj_id, count, value){
 				var datePropTypeSel = document.getElementById('datePropType[' + obj_id + '][' + count + ']');
 				if(value.indexOf("+") != -1 || value.indexOf("-") != -1){
 					var param = "";
-					var operator = "+";
-					var posOp = 0;
-					if(value.indexOf("+") != -1){
-						posOp = value.indexOf("+");
-					}
-					if (value.indexOf("-") != -1){
-						posOp = value.indexOf("-");
-						operator = "-";
-					}
+					var posOp = value.indexOf("}") + 1;
+					var operator = value.substring(posOp, posOp + 1);
+					
 					param = value.substring(0, posOp);
 					amount = value.substring(posOp + 1, value.length - 1);
 					unit = value.substring(value.length - 1);
@@ -568,8 +562,16 @@ og.objectPropertyChanged = function(obj_id, count, value){
 							opSel.selectedIndex = i;
 						}
 					}
-					var amountInput = document.getElementById('propValueAmount[' + obj_id + '][' + prop.value + ']');
-					amountInput.value = amount;
+
+					if (og.override_template_date_amount_input_init && typeof(og.override_template_date_amount_input_init) == 'function') {
+
+						og.override_template_date_amount_input_init.call(null, obj_id, prop, amount);
+
+					} else {
+						var amountInput = document.getElementById('propValueAmount[' + obj_id + '][' + prop.value + ']');
+						amountInput.value = amount;
+					}
+
 					var unitSel = document.getElementById('propValueUnit[' + obj_id + '][' + prop.value + ']');
 					for(i=0; i < unitSel.length; i++){
 						var u = unitSel.options[i].value;
@@ -677,9 +679,17 @@ og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
 			selectParam += '</select>';
 			var html = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + 
 				selectParam + '&nbsp;<select name="propValueOperation[' + obj_id + '][' + prop + ']" id="propValueOperation[' + obj_id + '][' + prop + ']">' +
-				'<option>+</option><option>-</option></select>&nbsp;' + 
-				'<input name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:50px;" type="number" step="any" />' +
-				'&nbsp;<select name="propValueUnit[' + obj_id + '][' + prop + ']" id="propValueUnit[' + obj_id + '][' + prop + ']">' + 
+				'<option>+</option><option>-</option></select>&nbsp;';
+
+			var amount_html = '';
+			if (og.override_template_date_amount_input && typeof(og.override_template_date_amount_input) == 'function') {
+				amount_html = og.override_template_date_amount_input.call(null, obj_id, prop);
+			} else {
+				amount_html = '<input name="propValueAmount[' + obj_id + '][' + prop + ']" id="propValueAmount[' + obj_id + '][' + prop + ']" style="width:50px;" type="number" step="any" />';
+			}
+			html += amount_html;
+
+			html += '&nbsp;<select name="propValueUnit[' + obj_id + '][' + prop + ']" id="propValueUnit[' + obj_id + '][' + prop + ']">' + 
 				'<option value="i">'+ lang('minutes') + '</option><option value="d" selected="selected">'+ lang('days') + '</option>' +
 				'<option value="w">'+ lang('weeks') + '</option><option value="m">'+ lang('months') + '</option></select>';
 			
@@ -930,7 +940,7 @@ og.changeIntegerParam = function(select){
 	
 }
 
-og.editStringTemplateObjectProperty = function(obj_id, prop){
+og.editStringTemplateObjectProperty = function(obj_id, prop, value_field_id){
 	var params = [];
 	for(var j=0; j < og.templateParameters.length; j++){
 		var item = og.templateParameters[j];
@@ -938,7 +948,11 @@ og.editStringTemplateObjectProperty = function(obj_id, prop){
 			params.push([item['name']]);
 		}
 	}
-	var valueField = document.getElementById('propValues[' + obj_id + '][' + prop + ']');
+	if (typeof value_field_id == 'undefined') {
+		var valueField = document.getElementById('propValues[' + obj_id + '][' + prop + ']');
+	} else {
+		var valueField = document.getElementById(value_field_id);
+	}
 	var config = {
 			genid: Ext.id(),
 			title: lang('edit object property'),
@@ -996,7 +1010,15 @@ og.editStringTemplateObjectProperty = function(obj_id, prop){
 		og.ExtendedDialog.show(config);
 };
 
-og.promptAddParameter = function(before, edit, pos) {
+og.promptAddParameter = function(before, edit, pos, config) {
+	var for_task_templates = true;
+	if (config) {
+		var ok_function = config.ok_function;
+		var prev_name = config.prev_name;
+		var prev_type = config.prev_type;
+		for_task_templates = config.for_task_templates;
+	}
+
 	var paramName = document.getElementById('parameters[' + pos + '][name]');
 	var paramType = document.getElementById('parameters[' + pos + '][type]');
 	var loadName = '';
@@ -1004,6 +1026,9 @@ og.promptAddParameter = function(before, edit, pos) {
 	if(paramName != null){
 		loadName = paramName.value;
 		loadType = paramType.value;
+	} else {
+		if (prev_name) loadName = prev_name;
+		if (prev_type) loadType = prev_type;
 	}
 	
 	var variable_types = [['string', lang('text')],['numeric', lang('numeric')],['user', lang('user')],['date', lang('date')]];
@@ -1040,7 +1065,7 @@ og.promptAddParameter = function(before, edit, pos) {
 			})
 	    }
 	];
-	if (og.templates && og.templates.more_param_prompt_items) {
+	if (for_task_templates && og.templates && og.templates.more_param_prompt_items) {
 		for (var i=0; i<og.templates.more_param_prompt_items.length; i++) {
 			var item = og.templates.more_param_prompt_items[i];
 			if (edit) {
@@ -1062,6 +1087,17 @@ og.promptAddParameter = function(before, edit, pos) {
 		width: 350,
 		labelWidth: 50,
 		ok_fn: function() {
+			if (typeof ok_function == 'function') {
+				// used by c_obj_templates
+				var name = Ext.getCmp('paramName').getValue();
+				var type = Ext.getCmp('paramType').getValue();
+				/*var req_cmp = Ext.getCmp('paramIsRequired');
+				var required = req_cmp ? req_cmp.getValue() : false;*/
+				
+				ok_function.call(null, pos, name, type);
+				og.ExtendedDialog.hide();
+				return;
+			}
 			var name = Ext.getCmp('paramName').getValue();
 			if(name == ""){
 				alert(lang('parameter name empty'));

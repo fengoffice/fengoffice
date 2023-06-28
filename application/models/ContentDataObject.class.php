@@ -15,6 +15,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	var $memberIds = null;
 	
 	var $members = null;
+
+	// use these variables to force using the setted custom properties for this object
+	protected $use_cached_custom_properties = false;
+	protected $cached_custom_properties = null;
+	
+	// used to store previous state of this object, to calculate the differences after any modifications and save a detailed log
+	public $old_content_object = null;
 	
 	/**
 	 * 
@@ -206,7 +213,6 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	function getCreatedOn() {
 		return $this->object->getCreatedOn ();
 	} // getCreatedOn()
-	
 
 	/**
 	 * Set value of 'created_on' field
@@ -1378,14 +1384,21 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * Returns an array with the ids of the members that this object belongs to
 	 *
 	 */
-	function getMemberIds() {
+	function getMemberIds($exclude_ot_ids = array()) {
 		
 		if (is_null($this->memberIds)) {
-			 $this->memberIds = ObjectMembers::getMemberIdsByObject($this->getId());
+			 $this->memberIds = ObjectMembers::getMemberIdsByObject($this->getId(), $exclude_ot_ids);
 		}
 		return $this->memberIds ;
 		
 		//return ObjectMembers::getMemberIdsByObject($this->getId());
+	}
+
+	/**
+	 * Forces this object to see the given members
+	 */
+	function setMemberIds($member_ids) {
+		$this->memberIds = $member_ids;
 	}
 	
 	
@@ -1399,11 +1412,86 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		}
 		return $this->members ;
 	}
+
+	/**
+	 * Forces this object to see the given members
+	 */
+	function setMembers($members) {
+		$this->members = $members;
+	}
+
+	/**
+	 * Returns the member of type $member_type_id in which this object is classified
+	 * @param int $member_type_id The id of the member to get
+	 * @return Member
+	 */
+	function getMemberOfType($member_type_id) {
+		$member = null;
+		$members = $this->getMembers();
+		foreach ($members as $m) {
+			if ($m->getObjectTypeId() == $member_type_id) {
+				$member = $m;
+				break;
+			}
+		}
+
+		return $member;
+	}
+
+	/**
+	 * Returns all the members of type $member_type_id in which this object is classified
+	 * @param int $member_type_id The id of the member to get
+	 * @return array()
+	 */
+	function getMembersOfType($member_type_id) {
+		$members_to_return = array();
+		$members = $this->getMembers();
+		foreach ($members as $m) {
+			if ($m->getObjectTypeId() == $member_type_id) {
+				$members_to_return[] = $m;
+			}
+		}
+
+		return $members_to_return;
+	}
+
+	/**
+	 * returns true if the object has to use the cached cps
+	 */
+	function getUseCachedCustomProperties() {
+		return $this->use_cached_custom_properties;
+	}
+
+	/**
+	 * tell the object to use the cached cps
+	 */
+	function setUseCachedCustomProperties($value) {
+		$this->use_cached_custom_properties = $value;
+	}
+
+	/**
+	 * returns the custom properties to use if use_cached_custom_properties is true
+	 */
+	function getCachedCustomProperties() {
+		return $this->cached_custom_properties;
+	}
+
+	/**
+	 * Set the custom properties to use if use_cached_custom_properties is true
+	 */
+	function setCachedCustomProperties($properties) {
+		$this->cached_custom_properties = $properties;
+	}
+
+
 	
 	function resetCachedVars() {
 		$this->memberIds = null;
 		$this->members = null;
 		$this->subscribers = null;
+		
+		$this->use_cached_custom_properties = false;
+		$this->cached_custom_properties = null;
 	}
 	
 	function getDimensionObjectTypes(){
@@ -1502,12 +1590,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	
 	function addTimeslot(Contact $user){
-		if ($this->hasOpenTimeslots($user))
-			throw new Error("Cannot add timeslot: user already has an open timeslot");
-
-
-
-        if (user_config_option('stop_running_timeslots')) {
+        if (user_config_option('stop_running_timeslots') == 1) { 
             $allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
             if (!empty($allOpenTimeslot)) {
 				$time_c = new TimeslotController();
@@ -1519,6 +1602,18 @@ abstract class ContentDataObject extends ApplicationDataObject {
                 	}
                 }
             }
+        } else if (user_config_option('stop_running_timeslots') == 2) { 
+            $allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
+            if (!empty($allOpenTimeslot)) {
+				$time_c = new TimeslotController();
+                foreach ($allOpenTimeslot as $time) {
+                	try{
+                		$time_c->internal_pause($time);
+                	}catch(Exception $ex){
+                		Logger::log_r("Error pausing running timeslot: ".$ex->getMessage());
+                	}
+                }
+            }
         }
 
         $timeslot = new Timeslot();
@@ -1527,6 +1622,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
         $timeslot->setStartTime($dt);
         $timeslot->setContactId($user->getId());
         $timeslot->setRelObjectId($this->getObjectId());
+
+		if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+			$invoicing_status = 'pending';
+			Hook::fire('get_initial_invoicing_status_for_timeslot_using_members_and_task', array('task_id' => $this->getObjectId(), 'get_task_members' => true), $invoicing_status);
+			$timeslot->setColumnValue('invoicing_status', $invoicing_status);
+		}
+
 
 		$timeslot->save();
 		
@@ -1542,20 +1644,35 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$userCondition = ' AND `contact_id` = '. $user->getId();
 
 		return Timeslots::findOne(array(
-          'conditions' => array('`rel_object_id` = ? AND end_time = \'' . EMPTY_DATETIME . '\''  . $userCondition, $this->getObjectId()))
+          'conditions' => array('`rel_object_id` = ? AND o.trashed_by_id=0 AND end_time = \'' . EMPTY_DATETIME . '\''  . $userCondition, $this->getObjectId()))
 		) instanceof Timeslot;
 	}
 
 	function closeTimeslots(Contact $user, $description = ''){
-		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"'));
+		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"')); 
 
 		foreach($timeslots as $timeslot){
+			// to use when saving the application log
+			$old_content_object = $timeslot->generateOldContentObjectData();
+
 			$timeslot->close($description);
 			Hook::fire('round_minutes_to_fifteen', array('timeslot' => $timeslot), $ret);
 			$timeslot->save();
+
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true);
 		}
                 
-                return $timeslot;
+		return $timeslot;
+	}
+
+	function deleteTimeslots(Contact $user, $description = ''){
+		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"')); 
+
+		foreach($timeslots as $timeslot){
+			$timeslot->delete();
+			
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_DELETE, false, true);
+		}
 	}
 
 	function pauseTimeslots(Contact $user){
@@ -1563,8 +1680,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		if ($timeslots) {
 			foreach($timeslots as $timeslot){
+				// to use when saving the application log
+				$old_content_object = $timeslot->generateOldContentObjectData();
+
 				$timeslot->pause();
 				$timeslot->save();
+
+				ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true);
 			}
 		}
 	}
@@ -1574,8 +1696,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		if ($timeslots)
 		foreach($timeslots as $timeslot){
+			// to use when saving the application log
+			$old_content_object = $timeslot->generateOldContentObjectData();
+
 			$timeslot->resume();
 			$timeslot->save();
+
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_OPEN, false, true);
 		}
 	}
 	
@@ -1687,7 +1814,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$total_worked_time = $this->calculateTotalWorkedTime();
 			$twt_column = array_var($params, 'total_worked_time_column');
 			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
-			if ($this instanceof ProjectTask) $this->calculatePercentComplete();
+			if ($this instanceof ProjectTask) {
+				$this->calculatePercentComplete();
+				Hook::fire('calculate_executed_cost_and_price', array(), $this);
+			}
+
 		}
 		return true;
 	}
@@ -1703,7 +1834,10 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$total_worked_time = $this->calculateTotalWorkedTime();
 			$twt_column = array_var($params, 'total_worked_time_column');
 			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
-			if ($this instanceof ProjectTask) $this->calculatePercentComplete();
+			if ($this instanceof ProjectTask) {
+				$this->calculatePercentComplete();
+				Hook::fire('calculate_executed_cost_and_price', array(), $this);
+			}
 		}
 		return true;
 	}
@@ -1719,7 +1853,10 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$total_worked_time = $this->calculateTotalWorkedTime();
 			$twt_column = array_var($params, 'total_worked_time_column');
 			$this->saveTotalWorkedTime($total_worked_time, $twt_column);
-			if ($this instanceof ProjectTask) $this->calculatePercentComplete();
+			if ($this instanceof ProjectTask) {
+				$this->calculatePercentComplete();
+				Hook::fire('calculate_executed_cost_and_price', array(), $this);
+			}
 		}
 		return true;
 	}
@@ -1755,7 +1892,11 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		$total_worked_time_column = trim($total_worked_time_column);
 		if ($total_worked_time_column && $this->columnExists($total_worked_time_column)) {
 			$this->setColumnValue($total_worked_time_column, $total_worked_time);
+			if($this instanceof ProjectTask) {
+				$this->calculateAndSaveOverallTotalWorkedTime();
+			} else {
 			$this->save();
+			}
 		}
 	}
 
@@ -2214,6 +2355,23 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	function getFixedColumnValue($column_name, $raw_data=false) {
 		return $this->getColumnValue($column_name);
+	}
+	
+
+	function generateOldContentObjectData() {
+		// generate the old object
+		$old_content_object = $this->manager()->generateOldContentObjectData($this);
+
+		// store the old object
+		$this->old_content_object = $old_content_object;
+
+		// return the old object
+		return $old_content_object;
+	}
+
+
+	function getChangedRelations($old_content_object) {
+		return array();
 	}
 	
 }

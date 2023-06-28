@@ -198,6 +198,7 @@ class Reports extends BaseReports {
         }
         $results = array();
         $report = self::getReport($id);
+
         $show_archived = false;
         if ($report instanceof Report) {
             $ot = ObjectTypes::findById($report->getReportObjectTypeId());
@@ -219,8 +220,6 @@ class Reports extends BaseReports {
             if ($report_result) {
                 return $report_result;
             }
-
-
             eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
             eval('$item_class = ' . $ot->getHandlerClass() . '::instance()->getItemClass(); $object = new $item_class();');
 
@@ -233,8 +232,6 @@ class Reports extends BaseReports {
 
             Hook::fire('remove_billing_columns_from_view', array('object_type' => $ot),$report_columns);
             $contact_extra_columns = self::get_extra_contact_columns();
-
-
 
             $cond_sql_obj = build_report_conditions_sql(array('report' => $report, 'params' => $params));
             $allConditions = array_var($cond_sql_obj, 'all_conditions');
@@ -337,7 +334,7 @@ class Reports extends BaseReports {
                         	
                             //if is grouping by CP numeric, convert value to INTEGER to order correctly by numeric
                             if ($cp->getType() == 'numeric') {
-                                $cp_concat_string = "CONVERT(cpropval.value,SIGNED INTEGER)";
+                                $cp_concat_string = "CONVERT(cpropval.value, DOUBLE)";
                             } else {
                                 $cp_concat_string = "cpropval.value";
                             }
@@ -353,7 +350,9 @@ class Reports extends BaseReports {
                     if (!is_null($new_order_params)) {
                         $order_by_col = $new_order_params['order_by_col'];
                         $original_order_by_col = $new_order_params['order_by_col'];
-                        $join_params = $new_order_params['join_params'];
+                        if(array_var($new_order_params, 'join_params')) {
+                            $join_params = $new_order_params['join_params'];
+                        }
                     } else {
                         $order_by_col = "name";
                         $original_order_by_col = "o.name";
@@ -391,6 +390,7 @@ class Reports extends BaseReports {
                 'join_str' => $join_str,
                 'more_select_columns' => $more_select_columns
             );
+
             $results = null;
             Hook::fire('execute_object_custom_report', $report_options, $results);
 
@@ -445,7 +445,6 @@ class Reports extends BaseReports {
             }
 
             $dimensions_cache = array();
-
             $results['columns'] = array('names' => array(), 'order' => array(), 'types' => array());
             foreach ($report_columns as $column) {
                 if ($column->getCustomPropertyId() == 0) {
@@ -480,7 +479,10 @@ class Reports extends BaseReports {
                                 if (in_array($field, array('time', 'billing'))) {
                                     $results['columns']['names'][$field] = lang('field Objects ' . $field);
                                     $results['columns']['order'][] = $field;
-                                }
+                                } else if (in_array($field, ProjectTasks::instance()->getColumns())) {
+									$results['columns']['names'][$field] = lang('field ProjectTasks ' . $field);
+                                    $results['columns']['order'][] = $field;
+								}
                             } else if ($ot->getHandlerClass() == 'MailContents') {
                                 if (in_array($field, array('to', 'cc', 'bcc', 'body_plain', 'body_html'))) {
                                     $results['columns']['names'][$field] = lang('field Objects ' . $field);
@@ -512,7 +514,6 @@ class Reports extends BaseReports {
 
             }
             Hook::fire('get_more_columns_to_header_report', array('object_type' => $ot,'report'=>$report),$results);
-
             $report_rows = array();
             foreach ($objects as &$object) {/* @var $object Object */
                 $obj_name = $object->getObjectName();
@@ -590,6 +591,8 @@ class Reports extends BaseReports {
                                         }
                                     }
                                 }
+                            } else if ($object instanceof ProjectTask && $field == 'percent_completed') {
+                                $value = $object->getColumnValue($field) < 100 ? $object->getColumnValue($field) : 100;
                             } else {
 
                                 $column_value = $object->getColumnValue($field);
@@ -669,8 +672,6 @@ class Reports extends BaseReports {
                                     $value = '<a class="internalLink" target="_self" href="mailto:' . clean($value) . '">' . clean($value) . '</a></div>';
                                 }
                             }
-
-
 
                             Hook::fire('get_value_columns_to_body_report', array('field' => $field,'object'=>$object),$value);
                             Hook::fire('get_taxes_value_columns_to_body_report', array('field' => $field,'object'=>$object),$value);

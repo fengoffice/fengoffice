@@ -622,7 +622,7 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 .x-grid3-scroller {
 	overflow: auto;
 }
-.object-grid .x-grid3-header-inner {
+.x-grid3-header-inner {
 	float: none;
 }
 .x-tab-strip-inner .x-tab-strip-text{background-position: left center !important;}

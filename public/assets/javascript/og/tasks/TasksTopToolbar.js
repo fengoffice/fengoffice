@@ -160,7 +160,29 @@ og.TasksTopToolbar = function(config) {
 			scope: this
 		})
 	};
+
+	if(ogTasks.additional_mark_actions){
+		for(var i = 0; i < ogTasks.additional_mark_actions.length; i++){
+			var action = ogTasks.additional_mark_actions[i];
+			var action_name = action['action_name'];
+			markactions[action_name] = new Ext.Action({
+				text: action['text'],
+				tooltip: action['tooltip'],
+				iconCls: action['iconCls'],
+				handler: action['handler'],
+				scope: this	
+			});
+		}
+	}
+
 	this.markactions = markactions;
+
+	this.markactions_menuitems = [
+		markactions.markAsRead,
+		markactions.markAsUnread
+	];
+	if (markactions.markAsBillable) this.markactions_menuitems.push(markactions.markAsBillable);
+	if (markactions.markAsNonBillable) this.markactions_menuitems.push(markactions.markAsNonBillable);
 	
 	var actions = {
 		del: new Ext.Action({
@@ -224,10 +246,7 @@ og.TasksTopToolbar = function(config) {
 		markAs: new Ext.Action({
 			text: lang('mark as'),
 			tooltip: lang('mark as desc'),
-			menu: [
-				markactions.markAsRead,
-				markactions.markAsUnread
-			]
+			menu: this.markactions_menuitems
 		}),
 		archive: new Ext.Action({
 			text: lang('archive'),
@@ -295,7 +314,7 @@ og.TasksTopToolbar = function(config) {
 					ogTasksMakeRequestAndReloadWithTimeout(url);
 				}
 			},
-                        time_quick: {
+            time_quick: {
 				hidden: (typeof(ogTasks.userPreferences.showTimeQuick) == "undefined"),
                                 text: lang('quick time'),
 				checked: (ogTasks.userPreferences.showTimeQuick == 1),
@@ -334,7 +353,7 @@ og.TasksTopToolbar = function(config) {
 				},
 				hidden: (!og.config.use_milestones)
 			},
-                        time_estimates: {
+            time_estimates: {
 		        text: lang('estimated time'),
 				checked: (ogTasks.userPreferences.showTimeEstimates == 1),
 				hideOnClick: false,
@@ -346,6 +365,21 @@ og.TasksTopToolbar = function(config) {
 					}					
 					
 					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTimeEstimates', value:(this.checked?1:0)});
+					ogTasksMakeRequestAndReloadWithTimeout(url);
+				}
+			},
+			total_time_estimates: {
+		        text: lang('total estimated time'),
+				checked: (ogTasks.userPreferences.showTotalTimeEstimates == 1),
+				hideOnClick: false,
+				checkHandler: function() {
+					if(this.checked){
+						ogTasks.TotalCols.estimatedTime = {title: 'total estimated', group_total_field: 'TotalTimeEstimate', row_field: 'totalTimeEstimateString'};
+					}else{
+						delete ogTasks.TotalCols.estimatedTime;				
+					}					
+					
+					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTotalTimeEstimates', value:(this.checked?1:0)});
 					ogTasksMakeRequestAndReloadWithTimeout(url);
 				}
 			},
@@ -378,6 +412,22 @@ og.TasksTopToolbar = function(config) {
 					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTimeWorked', value:(this.checked?1:0)});
 					ogTasksMakeRequestAndReloadWithTimeout(url);
 				}
+			},
+			total_worked_time: {
+				text: lang('total worked time'),
+				checked: (ogTasks.userPreferences.showTotalTimeWorked == 1),
+				hideOnClick: false,	
+				checkHandler: function() {
+					if(this.checked){
+						ogTasks.TotalCols.totalWorkedTime = {title: 'total worked', group_total_field: 'overall_worked_time', row_field: 'overall_worked_time_string'};
+					}else{
+						delete ogTasks.TotalCols.totalWorkedTime;				
+					}
+					
+					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTotalTimeWorked', value:(this.checked?1:0)});
+					ogTasksMakeRequestAndReloadWithTimeout(url);
+				}
+											
 			},
 			percent_completed_bar: {
 		        text: lang('percent completed'),
@@ -471,8 +521,10 @@ og.TasksTopToolbar = function(config) {
 				this.displayOptions.dates_end,
 				this.displayOptions.empty_milestones,
                 this.displayOptions.time_estimates,
+				this.displayOptions.total_time_estimates,
                 this.displayOptions.time_pending,
                 this.displayOptions.time_worked,
+				this.displayOptions.total_worked_time,
                 this.displayOptions.percent_completed_bar,                
                 this.displayOptions.show_quick_edit,
                 this.displayOptions.show_quick_mark_as_started,
@@ -656,18 +708,20 @@ Ext.extend(og.TasksTopToolbar, Ext.Toolbar, {
 			show_start_dates : this.show_menu.items[0].menu.items.items[3].checked,
 			show_end_dates : this.show_menu.items[0].menu.items.items[4].checked,
 			show_ms : this.show_menu.items[0].menu.items.items[5].checked,
-                        show_time_estimates : this.show_menu.items[0].menu.items.items[6].checked,            
-                        show_time_pending : this.show_menu.items[0].menu.items.items[7].checked,
-                        show_time_worked : this.show_menu.items[0].menu.items.items[8].checked,            
-                        show_percent_completed_bar : this.show_menu.items[0].menu.items.items[9].checked,
-                        show_quick_edit : this.show_menu.items[0].menu.items.items[10].checked,
-                        show_quick_mark_as_started : this.show_menu.items[0].menu.items.items[11].checked,
-                        show_quick_complete : this.show_menu.items[0].menu.items.items[12].checked,
-                        show_quick_add_sub_tasks : this.show_menu.items[0].menu.items.items[13].checked,
-                        show_classification : this.show_menu.items[0].menu.items.items[14].checked,
-                        show_previous_pending_tasks : this.show_menu.items[0].menu.items.items[15].checked,
-                        show_subtasks_structure : this.show_menu.items[0].menu.items.items[16].checked,
-                        show_dimension_cols : ogTasks.userPreferences.showDimensionCols            
+			show_time_estimates : this.show_menu.items[0].menu.items.items[6].checked,  
+			show_total_time_estimates : this.show_menu.items[0].menu.items.items[7].checked,          
+			show_time_pending : this.show_menu.items[0].menu.items.items[8].checked,
+			show_time_worked : this.show_menu.items[0].menu.items.items[9].checked,
+			show_total_time_worked: this.show_menu.items[0].menu.items.items[10].checked,   
+			show_percent_completed_bar : this.show_menu.items[0].menu.items.items[11].checked,
+			show_quick_edit : this.show_menu.items[0].menu.items.items[12].checked,
+			show_quick_mark_as_started : this.show_menu.items[0].menu.items.items[13].checked,
+			show_quick_complete : this.show_menu.items[0].menu.items.items[14].checked,
+			show_quick_add_sub_tasks : this.show_menu.items[0].menu.items.items[15].checked,
+			show_classification : this.show_menu.items[0].menu.items.items[16].checked,
+			show_previous_pending_tasks : this.show_menu.items[0].menu.items.items[17].checked,
+			show_subtasks_structure : this.show_menu.items[0].menu.items.items[18].checked,
+			show_dimension_cols : ogTasks.userPreferences.showDimensionCols            
 		}
 		
 		var show_cp_config = {};

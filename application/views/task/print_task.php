@@ -163,7 +163,9 @@ else if ($percent_completed < 0) $percent_completed = 0;
 
 
 $time_estimate = $task->getTimeEstimate();
-$total_minutes = $task->getTotalMinutes();
+$total_time_estimate = $task->getTotalTimeEstimate(); // includes subtask's time estimate
+$worked_minutes = $task->getTotalMinutes();
+$overall_worked_time = $task->getOverallWorkedTime(); // includes subtask's worked time
 $pending_time = $time_estimate - $total_minutes;
 ?>
 
@@ -173,8 +175,14 @@ $pending_time = $time_estimate - $total_minutes;
 if ($time_estimate > 0) {
 	?><p><b><?php echo lang('estimated time') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($time_estimate * 60), 'hm', 60) ?></p><?php
 }
-if ($total_minutes > 0) {
-	?><p><b><?php echo lang('total time worked') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total_minutes * 60), 'hm', 60) ?></p><?php
+if ($total_time_estimate > 0) {
+	?><p><b><?php echo lang('total estimated time') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total_time_estimate * 60), 'hm', 60) ?></p><?php
+}
+if ($worked_minutes > 0) {
+	?><p><b><?php echo lang('total time worked') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($worked_minutes * 60), 'hm', 60) ?></p><?php
+}
+if ($overall_worked_time > 0) {
+	?><p><b><?php echo lang('overall worked time') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($overall_worked_time * 60), 'hm', 60) ?></p><?php
 }
 if ($pending_time > 0) {
 	?><p><b><?php echo lang('pending time') ?>:</b>&nbsp;<?php echo DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($pending_time * 60), 'hm', 60) ?></p><?php

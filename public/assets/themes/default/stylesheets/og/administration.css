@@ -297,6 +297,7 @@ div.checkbox-config-option {
 }
 .adminMainBlock table.bordered {
 	border: 1px solid #d7e5f5;
+	background: #fff;
 }
 .adminMainBlock table.bordered td {
 	padding: 3px 5px;
@@ -310,6 +311,28 @@ div.checkbox-config-option {
 	padding: 10px 0;
 }
 
+.app-log-details.adminMainBlock {
+	padding: 0;
+	margin: 5px 0;
+}
+.app-log-details.adminMainBlock table.bordered {
+	width: 100%;
+}
+.app-log-details.adminMainBlock table.bordered td {
+	vertical-align: text-top;
+}
+.app-log-details.adminMainBlock table.bordered td.prop {
+	width: 20%;
+}
+.app-log-details.adminMainBlock table.bordered td.val {
+	width: 40%;
+}
+.listing-admin .app-log-details ul li {
+    padding: 2px;
+}
+.listing-admin .app-log-details ul li a {
+	text-decoration: none;
+}
 
 
 

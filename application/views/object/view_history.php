@@ -25,7 +25,7 @@
 	</ul>
 
 	<div id="<?php echo $genid?>modifications" class="form-tab">
-		<table style="min-width:400px; width:100%;">
+		<table style="min-width:800px; width:100%;">
 			<tr>
 				<th><?php echo lang('date')?></th>
 				<th><?php echo lang('user')?></th>

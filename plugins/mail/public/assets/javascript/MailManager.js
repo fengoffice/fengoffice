@@ -57,19 +57,8 @@ og.MailManager = function() {
 			listeners: {
 				'load': function(store, rs) {
 					var d = this.reader.jsonData;
-					var manager = Ext.getCmp('mails-manager');					
+					var manager = Ext.getCmp('mails-manager');
 					
-					og.openLink(og.getUrl('mail', 'get_count', {state:'outbox'}), {						
-						callback: function(success, data){							
-							if(data.outbox_total && data.outbox_total > 0) {
-								let originalText = actions.out_email.getText();
-								let newText = originalText == 'Outbox' ? `${originalText} (${data.outbox_total})` : `Outbox (${data.outbox_total})` ;
-								actions.out_email.setText(newText.bold());
-							}							
-							
-						}
-					});					
-
 					// if response has check_id check if it is the last check_id sent, if not then ignore the response.
 					if (d.check_id && d.check_id != manager.last_check_id) {
 						return;
@@ -125,7 +114,7 @@ og.MailManager = function() {
 								func.call(null);
 							}
 						}
-					}					
+					}
 				}
 			}
 		});
@@ -828,36 +817,9 @@ og.MailManager = function() {
 			text: lang('send outbox'),
 			tooltip: lang('send outbox title'),
 			iconCls: 'ico-sent',
-			handler: function() {				
-				og.openLink(og.getUrl('mail', 'send_outbox_mails', {}), {				
-					callback: function(success, data){
-						
-						if(success){					
-							
-							const hasErrors = data.events.length > 0 && data.events.some(function(d){
-								return d.name === "error sending mail";
-							});
-							
-							if(!hasErrors){
-								
-								const hasEmails = data.events.length > 0 && data.events.some(function(d){
-									return d.name === "mails sent";
-								});
-			
-								if(data.events.length > 0 && hasEmails) {
-									og.msg(lang('success'), lang('sending outbox mails'));
-								} else {
-									og.msg(lang('information'), lang('no mails to send'));
-								}								
-							} else {
-								og.msg(lang('error'), lang('error sending outbox'));
-							}							
-						}else {
-							og.msg(lang('error'), lang('error sending outbox'));
-							console.log("there was an error")
-						}					
-					}
-				});
+			handler: function() {
+				og.msg(lang('success'), lang('sending outbox mails'));
+				og.openLink(og.getUrl('mail', 'send_outbox_mails', {}), {hideLoading:1});
 			},
 			id: 'send_outbox_btn',
 			hidden: true,
@@ -1012,7 +974,7 @@ og.MailManager = function() {
 	        handler: function(item, event) {
         		if(!item.pressed){
         			item.toggle(true,true);
-        		}				
+        		}
 			},
 			toggleHandler: function(item, pressed) {
 				if(pressed){

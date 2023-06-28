@@ -12,6 +12,7 @@ og.MemberManager = function(config) {
 	this.object_type_id = config.object_type_id;
 	this.object_subtype_id = config.object_subtype_id;
 	this.object_type_name = config.object_type_name;
+	this.lastGroupField = config.last_group_field;
 	this.groups_info = null;
 	
 	// prepare reader fields for any member type
@@ -61,13 +62,11 @@ og.MemberManager = function(config) {
   	
   	// data store and grid view configuration
   	if (og.member_list_grouping) {
-  		
-	  	this.lastGroupField = 'mem_path';
 	  	if (og.member_list_groups_info && og.member_list_groups_info[this.dimension_id+"-"+this.object_type_id]) {
 	  		this.lastGroupField = og.member_list_groups_info[this.dimension_id+"-"+this.object_type_id].last_group_by;
 	  	}
 	  	
-	  	var view_object = new Ext.grid.GroupingView({ forceFit: true, enableNoGroups: false, groupByText: lang('group by this field') });
+	  	var view_object = new Ext.grid.GroupingView({ forceFit: false, enableNoGroups: false, groupByText: lang('group by this field') });
   		var store_class = Ext.data.GroupingStore;
   		var controller = og.member_list_grouping.controller;
   		var action = og.member_list_grouping.action;
@@ -483,7 +482,7 @@ og.MemberManager = function(config) {
 					header: cps[i].name,
 					dataIndex: 'cp_' + cps[i].id,
 					align: cps[i].cp_type=='numeric' ? 'right' : 'left',
-					sortable: false,
+					sortable: true,
 					//renderer: og.clean
 				});
 			}
@@ -519,7 +518,9 @@ og.MemberManager = function(config) {
 	  				header: col.name,
 	  				dataIndex: col.id,
 	  				sortable: true,//col.sortable,
-	  				renderer: col.renderer
+	  				renderer: col.renderer,
+					align: col.align ? col.align : 'left',
+					hidden: col.hidden == true
 	  			});
 	  		}
   		}
@@ -668,9 +669,6 @@ og.MemberManager = function(config) {
 							var h = $("#"+v.grid.id).parent().height();
 							v.grid.setSize({height:h});
 							
-							// adjust totals row position
-							var trb = $("#"+v.grid.id+ " .x-panel-bbar").outerHeight() + $("#footer").outerHeight() + 1;
-							$("#"+v.grid.id+" .list-totals-row-container").css('position', 'fixed').css('bottom', trb+'px');
 						}, 200);
 					}
 					
@@ -733,6 +731,11 @@ Ext.extend(og.MemberManager, Ext.grid.GridPanel, {
 	
 	showMessage: function(text) {
 		this.innerMessage.innerHTML = text;
+		if (text == '') {
+			$(this.innerMessage).hide();
+		} else {
+			$(this.innerMessage).show();
+		}
 	},
 	
 	trashObjects: function() {

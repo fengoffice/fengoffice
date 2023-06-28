@@ -16,6 +16,7 @@ class ApiController extends ApplicationController {
         $this->setLayout('empty');
     }
 
+
     /**
      * Default action
      */
@@ -73,7 +74,7 @@ class ApiController extends ApplicationController {
             throw $exception;
         }
     }
-    
+
 	/*
      * Get an object's timeslots     
      */
@@ -306,6 +307,19 @@ class ApiController extends ApplicationController {
                 $members[] = $mem;
             }
         }
+        // Use associated members if only one member is selected and it is a project
+        $project_ot_id = ObjectTypes::instance()->findByName('project')->getId();
+        $use_associated_members = count($members) == 1 && $members[0]->getObjectTypeId() == $project_ot_id;
+        if($use_associated_members){
+            $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($members[0]->getId(), true);
+            foreach($project_members as $pm_id){
+                $property_member = Members::findById($pm_id);
+                if($property_member instanceof Member){
+                    $members[] = $property_member;
+                }
+            }
+        }
+
         $prod_typ_data = ProductTypes::getFilteredProductTypesData($members);
 
         return $this->response('json', $prod_typ_data);
@@ -563,14 +577,13 @@ class ApiController extends ApplicationController {
                 $payments = array();
                 foreach($result->objects as $payment){
                     $payment_info = $payment->getArrayInfo();
-                    $payment_info['members_data'] = build_api_members_data($object);
+                    $payment_info['members_data'] = build_api_members_data($payment);
                     $payments[] = $payment_info;
                 }
                 $object_data['payments'] = $payments;
                 array_push($temp_objects['actual_expenses'], $object_data);
             }
 
-             // Logger::log_r($temp_objects);
             return $this->response('json', $temp_objects);
         } catch (Exception $exception) {
             throw $exception;
@@ -624,7 +637,7 @@ class ApiController extends ApplicationController {
 
     private function save_object($request) {
         $response = false;
-        // Logger::log_r($request ['args']);
+        $additional_members = array();
         if (!empty($request ['args'])) {
             $service = $request ['srv'];
             switch ($service) {
@@ -669,6 +682,20 @@ class ApiController extends ApplicationController {
                             $object->setObjectName($request ['args'] ['description']);
                             $object->setDescription($request ['args'] ['description']);
                         }
+						if (isset($request['args']['date'])) {
+							// if user inputs a date, then update the start date before calculating end date
+							try {
+								$start_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['date']);
+								if ($start_date instanceof DateTimeValue) {
+									$start_date->setHour($object->getStartTime()->getHour());
+									$start_date->setMinute($object->getStartTime()->getMinute());
+									$start_date->setSecond($object->getStartTime()->getSecond());
+									$object->setStartTime($start_date);
+								}
+							} catch (Exception $e) {
+								Logger::log_r("ERROR - Timeslots API: Invalid date input: ".$request['args']['date']);
+							}
+						}
                     	$worked_minutes = $request['args']['hours']*60 + $request['args']['minutes'];
                     	$end_time = new DateTimeValue($object->getStartTime()->getTimestamp());
                     	$end_time->add('m', $worked_minutes);
@@ -723,7 +750,20 @@ class ApiController extends ApplicationController {
                             $object->setPaidById($request ['args'] ['paid_by_id']);
                         }
                         if (!empty($request ['args'] ['product_type_id']) || $request ['args'] ['product_type_id'] == 0) {
-                            $object->setProductTypeId($request ['args'] ['product_type_id']);
+                            $product_type_id = $request ['args'] ['product_type_id'];
+                            $object->setProductTypeId($product_type_id);
+
+                            // Get expense category member using product type
+                            $product_type = ProductTypes::getById($product_type_id);
+                            $dim_exp_category = Dimensions::findByCode('expense_categories');
+                            if($product_type instanceof ProductType && $dim_exp_category instanceof Dimension){
+                                $dim_id_exp_category = $dim_exp_category->getId();
+                                $expense_category_ptm = ProductTypeMembers::findOne(array('conditions' => 'product_type_id='.$product_type_id.' AND dimension_id='.$dim_id_exp_category)); 
+                                if($expense_category_ptm instanceof ProductTypeMember){
+                                    $additional_members[] = $expense_category_ptm->getMemberId();
+                                }
+                                
+                            }
                         }
                         if (!empty($request ['args'] ['expense_id']) || $request ['args'] ['expense_id'] == 0) {
                             $object->setExpenseId($request ['args'] ['expense_id']);
@@ -803,7 +843,22 @@ class ApiController extends ApplicationController {
                     if (!empty($request['args']['members'])) {
                         $members = $request['args']['members'];
                         $context = get_context_from_array($members);
+                        if(count($members) == 1) {
+                             // Use associated members if only one member is selected and it is a project
+                            $project_ot_id = ObjectTypes::instance()->findByName('project')->getId();
+                            $member = Members::findById($members[0]);
+                            if($member->getObjectTypeId() == $project_ot_id){
+                                $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($member->getId(), true);
+                                foreach($project_members as $pm_id){
+                                    $property_member = Members::findById($pm_id);
+                                    if($property_member instanceof Member){
+                                        $members[] = $property_member->getId();
+                                    }
+                                }
+                            }
+                        }
                     }
+                    $members = array_merge($members, $additional_members);
 
                     //Check permissions: 
                     if ($request['args']['id'] && $object->canEdit(logged_user()) ||
@@ -830,60 +885,61 @@ class ApiController extends ApplicationController {
 
 
 	private function add_timeslot($request) {
-		$_POST['object_id'] = $request ['args'] ['object_id'];
-		$_REQUEST['object_id'] = $_POST['object_id'];
-		
-		$_POST['timeslot'] = array(
-			'contact_id' => $request ['args'] ['contact_id'],
-			'hours' => $request ['args'] ['hours'],
-			'minutes' => $request ['args'] ['minutes'],
-			'description' => $request ['args'] ['description'],
-		);
-		
-		if ($_REQUEST['object_id']) {
-			$controller = new TimeslotController();
-			$controller->add_timespan();
-		} else {
-			$members = array_var($request['args'], 'members', array());
-            // Get project member
-            $project_member = null;
-            $project_ot_id = ObjectTypes::findByName('project')->getId();
-            foreach($members as $m){
-                $member = Members::findById($m);
-                if($member instanceof Member){
-                    if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
-                }
-            }
-            // Get client member associated to the project
-            if($project_member instanceof Member){
-                Env::useHelper('functions', 'crpm');
-                $client_member = get_client_member_of_project($project_member);
-                if($client_member instanceof Member){
-                    $members[] = $client_member->getId();
-                }
-            }
-
-            $parameters = array();
-			$parameters['members'] = json_encode($members);
-			$parameters['timeslot'] = array(
-				'hours' => $request ['args'] ['hours'],
-				'minutes' => $request ['args'] ['minutes'],
-				'date' => DateTimeValueLib::now(),
-//				'start_time' => $start_time,
-				'description' => $request ['args'] ['description'],
-				'contact_id' => $request ['args'] ['contact_id'],
-			);
-			$controller = new TimeController();
-			$timeslot = $controller->add_timeslot($parameters);
-			
-			$modified = false;
-			Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
-			
-			if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
-				Env::useHelper('functions', 'advanced_billing');
-				calculate_timeslot_rate_and_cost($timeslot);
+	
+		$members = array_var($request['args'], 'members', array());
+		// Get project member
+		$project_member = null;
+		$project_ot_id = ObjectTypes::findByName('project')->getId();
+		foreach($members as $m){
+			$member = Members::findById($m);
+			if($member instanceof Member){
+				if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
 			}
 		}
+		// Get client member associated to the project
+		if($project_member instanceof Member){
+			Env::useHelper('functions', 'crpm');
+			$client_member = get_client_member_of_project($project_member);
+			if($client_member instanceof Member){
+				$members[] = $client_member->getId();
+			}
+		}
+
+		$ts_date = DateTimeValueLib::now();
+		if (isset($request ['args'] ['date'])) {
+			try {
+				$ts_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request ['args'] ['date']);
+			} catch (Exception $e) {
+				Logger::log_r("ERROR - Timeslots API: Invalid date input: ".$request ['args'] ['date']);
+			}
+		}
+
+		$parameters = array();
+		$parameters['members'] = json_encode($members);
+		$parameters['timeslot'] = array(
+			'hours' => $request ['args'] ['hours'],
+			'minutes' => $request ['args'] ['minutes'],
+			'date' => $ts_date,
+			'description' => $request ['args'] ['description'],
+			'contact_id' => $request ['args'] ['contact_id'],
+		);
+
+		// set task id if present
+		if (isset($request ['args'] ['object_id'])) {
+			$parameters['object_id'] = $request ['args'] ['object_id'];
+		}
+
+		$controller = new TimeController();
+		$timeslot = $controller->add_timeslot($parameters);
+		
+		$modified = false;
+		Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
+		
+		if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
+			Env::useHelper('functions', 'advanced_billing');
+			calculate_timeslot_rate_and_cost($timeslot);
+		}
+
 		return $this->response('json', true);
     }
     
@@ -923,5 +979,255 @@ class ApiController extends ApplicationController {
                 throw new Exception('Response type must be defined');
         }
     }
+
+    /**
+     * API responds to get data for Project Statistics Widget
+     */
+    public function get_widget_project_statistics_info() {
+        // IMPORTANT save and close sessions to allow other processes to run in parallel
+        session_write_close();
+
+        $members = array_var($_REQUEST, 'members', array());
+        $res_data = array();
+        if (Plugins::instance()->isActivePlugin('crpm')) {
+            Env::useHelper('widget_functions', 'crpm');
+            ini_set('memory_limit', '1G');
+
+            $task_assignment_conditions = "";
+            if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+                $task_assignment_conditions = " AND assigned_to_contact_id = ".logged_user()->getId();
+            }
+
+            $tasks = get_tasks_for_statistics_widget($members);
+            $task_stats = array('upcoming' => 0, 'late' => 0, 'complete' => 0, 'today' => 0, 'no_due_date' => 0, 'total' => count($tasks));
+
+            $today = DateTimeValueLib::now();
+            $today->beginningOfDay();
+                
+            if (is_array($tasks) && count($tasks) > 0) {
+                foreach ($tasks as $obj) {
+                    if ($obj['completed_by_id'] > 0) {
+                        $task_stats['complete'] = $task_stats['complete'] + 1;
+                    } else {
+                        $due_date = DateTimeValueLib::makeFromString($obj['due_date']);
+                        if ($due_date instanceof DateTimeValue) $due_date->advance(logged_user()->getUserTimezoneValue(), true);
+                        if ($due_date->getTimestamp() < 1) {
+                            $task_stats['no_due_date'] += 1;
+                        } else if ($due_date instanceof DateTimeValue && $due_date->getTimestamp() < $today->getTimestamp()) {
+                            $task_stats['late'] = $task_stats['late'] + 1;
+                        } else {
+                            $task_stats['upcoming'] = $task_stats['upcoming'] + 1;
+                        }
+                    }
+                }
+            } 
+
+            $res_data = array(
+                array( 
+                'name' => "'".lang('upcoming')."'",
+                'value' => array_var($task_stats, 'upcoming'),
+                'list_url' => 'javascript:og.reload_tasks_list_with_status(15)',
+                'color' => '#fbc85a' // Yellow
+                ) , array( 
+                'name' => "'".lang('overdue')."'",
+                'value' => array_var($task_stats, 'late'),
+                'list_url' => 'javascript:og.reload_tasks_list_with_status(11)',
+                'color' => '#fd7066' // Red
+                ) , array( 
+                'name' => "'".lang('completed')."'",
+                'value' => array_var($task_stats, 'complete'),
+                'list_url' => 'javascript:og.reload_tasks_list_with_status(1)',
+                'color' => '#0cbe9b' // Green
+                ) , array( 
+                'name' => "'".lang('without due date')."'",
+                'value' => array_var($task_stats, 'no_due_date'),
+                'list_url' => 'javascript:og.reload_tasks_list_with_status(14)',
+                'color' => '#b4b3b3' // Grey
+                )  
+            );
+        }
+
+        ajx_current("empty");
+        $this->setLayout("json");
+		$this->renderText(json_encode($res_data), true);
+    }
+
+    /**
+     * API responds to get data for Project Statistics Widget
+     */
+    public function get_widget_work_progress_info() {
+        // IMPORTANT save and close sessions to allow other processes to run in parallel
+        session_write_close();
+
+        $members = array_var($_REQUEST, 'members', array());
+        $res_data = array();
+        if (Plugins::instance()->isActivePlugin('crpm')) {
+            Env::useHelper('widget_functions', 'crpm');
+            Env::useHelper('chart');
+            Env::useHelper("api", "crpm");
+            ini_set('memory_limit', '1G');
+
+            $tasks = get_tasks_for_work_progress_widget($members);
+            if (!$tasks) $tasks = array();
+            $task_ids = array(0);
+            foreach ($tasks as $task) {
+                $task_ids[] = $task['object_id'];
+            }
+
+            $extra_conditions = " AND e.rel_object_id IN (". implode(',', $task_ids) .")";
+            if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
+                $extra_conditions .= " AND e.contact_id = " . logged_user()->getId();
+            }
+
+            $timeslots_objects = get_timeslots_for_work_progress_widget($members, $extra_conditions);
+            $tasks_timeslots = array();
+            if (is_array($timeslots_objects)) {
+                foreach ($timeslots_objects as $ts_data) {
+                    if (!isset($tasks_timeslots[$ts_data['rel_object_id']])) $tasks_timeslots[$ts_data['rel_object_id']] = array();
+                    $tasks_timeslots[$ts_data['rel_object_id']][] = $ts_data;
+                }
+            }
+
+            $all_has_due_date = true;
+            $all_completed_has_work = true;
+            $all_has_estimated_time = true;
+            $tasks_without_due_date = array();
+            $completed_tasks_no_timeslots = array();
+            $tasks_without_estimated_time = array();
+            $task_warning_amount = 5;
+            $get_tasks_with_missing_info = count($members) > 0;
+
+            foreach ($tasks as $task) {
+                if ($task['due_date'] == EMPTY_DATETIME && $task['start_date'] == EMPTY_DATETIME) {
+                    $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
+                    $tasks_without_due_date[] = $task;
+                    $all_has_due_date = false;
+                }
+                
+                if ($task['completed_by_id'] > 0) {
+                    $task_ts = array_var($tasks_timeslots, $task['object_id'], array());
+                    if (count($task_ts) == 0){
+                        $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
+                        $completed_tasks_no_timeslots[] = $task;
+                        $all_completed_has_work = false;
+                    }
+                }
+                
+                if ($task['time_estimate'] == 0){
+                    $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
+                    $tasks_without_estimated_time[] = $task;
+                    $all_has_estimated_time = false;
+                }
+            }
+
+            if ($all_has_due_date) {
+                $hours = CrpmAPI::sumTasksHoursByExecutionTime($tasks, $tasks_timeslots);
+            } else {
+                $hours = CrpmAPI::sumTasksHoursByType($tasks, $tasks_timeslots);
+            }
+
+            $active_members = array();
+            $context = active_context();
+            foreach ($context as $selection) {
+                if ($selection instanceof Member) $active_members[] = $selection;
+            }
+
+            $mnames = array();
+            $allowed_contact_ids = array();
+            foreach ($active_members as $member) {
+                $allowed_contact_ids[] = $member->getAllowedContactIds();
+                $mnames[] = clean($member->getName());
+            }
+
+             // Define variables
+            $estimated = array();
+            $worked = array();
+            $chart_labels = array();
+            $estimated_accumulated = 0;
+            $worked_accumulated = 0;
+            $date_format = convertPHPToMomentFormat(user_config_option('date_format'));
+            $workedTitle = lang('total worked hours');
+            $estimatedTitle = lang('total estimated hours');
+            $decimals = user_config_option('decimal_digits');
+            $decimals_separator = user_config_option('decimals_separator');
+            $thousand_separator = user_config_option('thousand_separator');
+
+            //prepare messages and tasks with missing info
+            $count_tasks_without_dates = count($tasks_without_due_date);
+            $count_tasks_without_estimate = count($tasks_without_estimated_time);
+            $count_completed_tasks_no_timeslots = count($completed_tasks_no_timeslots);
+            $tasks_without_due_date = $count_tasks_without_dates > 5 ? array_slice($tasks_without_due_date, 0, 5) : $tasks_without_due_date;
+            $tasks_without_estimated_time = $count_tasks_without_estimate > 5 ? array_slice($tasks_without_estimated_time, 0, 5) : $tasks_without_estimated_time;
+            $completed_tasks_no_timeslots = $count_completed_tasks_no_timeslots > 5 ? array_slice($completed_tasks_no_timeslots, 0, 5) : $completed_tasks_no_timeslots;
+            $tasks_without_due_date_msg = lang('there are tasks without start date or due date', $count_tasks_without_dates);
+            $tasks_without_estimated_time_msg = lang('there are tasks with no estimated time', $count_tasks_without_estimate);
+            $completed_tasks_no_timeslots_msg = lang('there are completed tasks with no worked time registered', $count_completed_tasks_no_timeslots);
+
+            $res_data = array(
+                'dateFormat' => $date_format,
+                'estimatedTitle' => $estimatedTitle,
+                'workedTitle' => $workedTitle,
+                'decimals' => $decimals,
+                'decimalsSeparator' => $decimals_separator,
+                'thousandSeparator' => $thousand_separator, 
+                'tasks_without_due_date' => $tasks_without_due_date,
+                'tasks_without_due_date_msg' => $tasks_without_due_date_msg,
+                'completed_tasks_no_timeslots' => $completed_tasks_no_timeslots,
+                'completed_tasks_no_timeslots_msg' => $completed_tasks_no_timeslots_msg,
+                'tasks_without_estimated_time' => $tasks_without_estimated_time,
+                'tasks_without_estimated_time_msg' => $tasks_without_estimated_time_msg,
+                'list_tasks_with_missing_info' => $get_tasks_with_missing_info
+            );
+
+            if ($all_has_due_date) {
+                // if all tasks have due date, build showWorkedHoursWidget component with chart
+                foreach ($hours as $ts => $values) {
+                    $estimated_accumulated += ($values['estimated'] > 0 ? round($values['estimated'] / 60, 2) : 0);
+                    $estimated[] = $estimated_accumulated;
+                    
+                    $worked_accumulated += ($values['worked'] > 0 ? round($values['worked'] / 60, 2) : 0);
+                    $worked[] = $worked_accumulated;
+                    
+                    $d = new DateTimeValue($ts);
+                    $chart_labels[] = $d->format('m/d/Y');
+                }
+                
+                if (count($estimated) + count($worked) > 0) {
+                    $chart_data_array = array();
+                    $chart_length = count($estimated);
+
+                    // Populate $chart_data_array with arrays that has date, estimated and worked time info
+                    for($i = 0; $i<$chart_length; $i++){
+                        $data_info = array(
+                            "date" => $chart_labels[$i],
+                            "estimated" => $estimated[$i],
+                            "worked" => $worked[$i]
+                        );
+                        array_push($chart_data_array, $data_info);
+                    }
+                    $chartData = $chart_data_array;
+
+                    // Prepare data to pass to showWorkedHoursWidget()
+                    $res_data['estimated'] = $estimated_accumulated;
+                    $res_data['worked'] = $worked_accumulated;
+                    $res_data['chartData'] = $chartData;
+                }
+            } else {
+                // if some tasks don't have due date, build showWorkedHoursWidget component without chart
+                $estimated = array(round($hours['estimated'] / 60, 2));
+                $worked = array(round($hours['worked'] / 60, 2));
+                if (count($estimated) + count($worked) > 0) {
+                    $res_data['estimated'] = $estimated[0];
+                    $res_data['worked'] = $worked[0];
+                }
+            }
+        }
+
+        ajx_current("empty");
+        $this->setLayout("json");
+		$this->renderText(json_encode($res_data), true);
+
+    }
+
 
 }

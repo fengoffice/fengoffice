@@ -215,4 +215,10 @@
     return $new_date;
 }
 
+function moveElement(&$array, $a, $b) {
+    $p1 = array_splice($array, $a, 1);
+    $p2 = array_splice($array, 0, $b);
+    $array = array_merge($p2,$p1,$array);
+}
+
 ?>

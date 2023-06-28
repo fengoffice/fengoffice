@@ -305,6 +305,68 @@ function update_all_childs_depths($member, $old_parent_id) {
 	DB::execute($update_depth_sql);
 }
 
+function render_plain_member_selector($config) {
+
+    $dim_id = $config['dim_id'];
+    $cache_key = $dim_id . '_dimension_members_tree';
+	$expiration = 60; // cache data for 1 minute
+
+	// Check if the members data is already in the cache
+    if (!isset($_SESSION[$cache_key])) {
+       	$_REQUEST['dimension_id'] = $dim_id;
+		$_REQUEST['vars'] = $config;	
+		$_REQUEST['return_array'] = true;
+		$dim_controller = new DimensionController();
+		$data = $dim_controller->initial_list_dimension_members_tree();
+		if(!empty($data)) {
+			$_SESSION[$cache_key] = $data;
+			$_SESSION[$cache_key . '_expiration'] = time() + $expiration;
+		}
+    } 
+
+	$plain_selector = render_plain_member_selector_using_cache($config);
+
+	return $plain_selector;
+}
+
+function render_plain_member_selector_using_cache($config) {
+	$dim_id = array_var($config, 'dim_id');
+	$genid = array_var($config, 'genid');
+	$hf_name = array_var($config, 'hf_name');
+	$selector_id = array_var($config, 'selector_id');
+	$container = array_var($config, 'container');
+	$selected_id = array_var($config, 'selected_id');
+	$selector_class = array_var($config, 'selector_class', '');
+	$onchange = array_var($config, 'onchange', '');
+
+	$cache_key = $dim_id . '_dimension_members_tree';
+	$member_tree_data = $_SESSION[$cache_key];
+	$identation = 0;
+ 
+	// build HTML selector with members as options
+	$selector = '<select id=\'' . $selector_id . '\' onchange=\''.$onchange.'\' name=\'' . $hf_name . '\' class=\''.$selector_class.'\'>';
+	$selector .= '<option value=\'0\'>' . '' . '</option>';
+	$selector .= render_plain_member_selector_options($member_tree_data, $selected_id, $identation);
+	$selector .= '</select>';
+
+	return $selector;
+}
+
+function render_plain_member_selector_options($member_tree_data, $selected_id, $identation = 0) {
+	$options = '';
+	foreach ($member_tree_data as $member) {
+		$selected = $member['id'] == $selected_id ? 'selected=\'selected\'' : '';
+		$ident = '';
+		for ($i = 0; $i < $identation; $i++) {
+			$ident .= '&nbsp;&nbsp;&nbsp;&nbsp;';
+		}
+		$options .= '<option value=\'' . $member['id'] . '\' ' . $selected . '>' . $member['name'] . '</option>';
+		if (isset($member['children'])) {
+			$options .= render_plain_member_selector_options($member['children'], $selected_id, $identation + 1);
+		}
+	}
+	return $options;
+}
 
 
 
@@ -511,14 +573,15 @@ function render_associated_dimensions_selectors($params) {
 			}
 			
 			if ($dim_association->getIsRequired()) {
-				$label .= " *";
+				$label .= ' <span class="label_required">*</span>';
+				
 			}
+
+			$hf_name = 'associated_members['.$dim_association->getId().']';
 			
 			$listeners = array('on_remove_relation' => "$remove_fn('$comp_genid', ".$dimension->getId().", '$hf_name');");
 			
 			Hook::fire("before_render_associated_dimension_selector", array('genid'=>$comp_genid, 'member'=>$member, 'selected_ids'=>$selected_ids, 'dim_association'=>$dim_association), $listeners);
-			
-			$hf_name = 'associated_members['.$dim_association->getId().']';
 			
 			render_single_member_selector($dimension, $comp_genid, $selected_ids, array(
 					'is_multiple' => $is_multiple,

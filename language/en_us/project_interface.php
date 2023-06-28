@@ -250,6 +250,7 @@ return array(
 	'low priority' => 'Low',
 
 	'estimated time' => 'Estimated time',
+	'total estimated time' => 'Total estimated time',
 	'estimated time desc' => 'Estimated duration of the task in hours.',
 	'x hours' => '{0} hours.',
 	'pending' => 'Pending',

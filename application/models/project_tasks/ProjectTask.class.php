@@ -467,9 +467,14 @@ class ProjectTask extends BaseProjectTask {
 			$timeslots = Timeslots::instance()->getOpenTimeslotsByObject($this->getId());
 			if ($timeslots){
 				foreach ($timeslots as $timeslot){
+					// to use when saving the application log
+					$old_content_object = $timeslot->generateOldContentObjectData();
+
 					if ($timeslot->isOpen())
 					$timeslot->close();
 					$timeslot->save();
+
+					ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true);
 				}
 			}
 		}
@@ -560,8 +565,9 @@ class ProjectTask extends BaseProjectTask {
 				ajx_current('reload');
 			}
 		}
-		
+
 		$this->setPercentCompleted(100);
+		Hook::fire('calculate_executed_cost_and_price', array(), $this);
 		$this->update_parents_path = false;
 		$this->save();
 		
@@ -587,9 +593,19 @@ class ProjectTask extends BaseProjectTask {
 		$this->setCompletedOn(null);
 		$this->setCompletedById(0);
 		$this->update_parents_path = false;
-		$this->save();
 
 		$this->calculatePercentComplete();
+		Hook::fire('calculate_executed_cost_and_price', array(), $this);
+		$this->save();
+
+		if($this->parent_id > 0){
+			$parent_task = ProjectTasks::findById($this->parent_id);
+			if($parent_task instanceof ProjectTask){
+				$parent_task->calculatePercentComplete();
+				Hook::fire('calculate_executed_cost_and_price', array(), $parent_task);
+				$parent_task->save();
+			}
+		}
 
 		$log_info = "";
 		if (config_option('use tasks dependencies')) {
@@ -726,6 +742,8 @@ class ProjectTask extends BaseProjectTask {
 			}
 		}
                 
+		
+
 		Hook::fire('after_task_cloned', array('original' => $this, 'new_task' => $new_task), $new_task);
 		
 		return $new_task;
@@ -887,7 +905,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return array
 	 */
-	function getSubTasks($include_trashed = true, $include_archived = true) {
+	function getSubTasks($include_trashed = true, $include_archived = true, $dont_get_from_cache = false) {
 		$include = "";
 		if(!$include_trashed){
 			$include = "`trashed_by_id` = 0 AND ";
@@ -895,7 +913,7 @@ class ProjectTask extends BaseProjectTask {
 		if(!$include_archived){
 			$include .= "`archived_by_id` = 0 AND ";
 		}
-		if(is_null($this->all_tasks)) {
+		if(is_null($this->all_tasks) || $dont_get_from_cache) {
 			$this->all_tasks = ProjectTasks::findAll(array(
           'conditions' => $include.'`parent_id` = ' . DB::escape($this->getId()),
           'order' => '`order`, `created_on`'			
@@ -962,6 +980,24 @@ class ProjectTask extends BaseProjectTask {
 		
 		return $result;
 	} // getTasks
+
+	/**
+	 * Return all subtask ids for the task
+	 *
+	 * @access public
+	 * @param void
+	 * @return array
+	 */
+	function getAllSubTasksIds($include_trashed = true) {
+		$tasks = $this->getAllSubTasks($include_trashed);
+		$result = array();
+		for ($i = 0; $i < count($tasks); $i++){
+			if(!$include_trashed && $tasks[$i]->isTrashed()) continue;
+			$result[] = $tasks[$i]->getId();
+		}
+		return $result;
+	} // getAllSubTasksIds
+	
 	
 	
 	/**
@@ -1430,9 +1466,13 @@ class ProjectTask extends BaseProjectTask {
 		}else{
 			$this->updateDepthAndParentsPath($new_parent_id);
 		}
-		
+
 		parent::save();
 		
+		$this->calculateTotalTimeEstimate();
+
+		Hook::fire('save_additional_data_in_related_members', array('object' => $this), $this);
+
 		if ($due_date_changed) {
 			$id = $this->getId();
 			$sql = "UPDATE `".TABLE_PREFIX."object_reminders` SET
@@ -1488,6 +1528,31 @@ class ProjectTask extends BaseProjectTask {
 		}	
 	}
 
+	function calculateTotalTimeEstimate() {
+		$task_id = $this->getId();
+		$total_time_estimate = $this->getTimeEstimate();
+
+		// Get subtask's total time estimate
+		$sql = "SELECT SUM(total_time_estimate) as subtasks_total_time_estimate 
+				FROM ".TABLE_PREFIX."project_tasks pt 
+				INNER JOIN ".TABLE_PREFIX."objects o ON o.id=pt.object_id 
+				WHERE pt.parent_id=".$task_id." AND o.trashed_by_id=0 AND o.archived_by_id=0";
+		
+		$row = DB::executeOne($sql);
+		$subtasks_total_minutes = array_var($row, 'subtasks_total_time_estimate', 0);
+		$total_time_estimate += $subtasks_total_minutes;
+
+		// Set total time estimate
+		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` SET `total_time_estimate` = $total_time_estimate WHERE `object_id` = $task_id;";
+		DB::execute($sql);
+
+		// Recalculate total time estimate for parent task
+		$parent = $this->getParent();
+		if($parent instanceof ProjectTask) {
+			$parent->calculateTotalTimeEstimate();
+		}
+	}
+
 	function unarchive($unarchive_children = true){
 		$archiveTime = $this->getArchivedOn();
 		parent::unarchive();
@@ -1514,17 +1579,7 @@ class ProjectTask extends BaseProjectTask {
 				}
 			}
 		}
-/* FIXME
-		if ($this->hasOpenTimeslots()){
-			$openTimeslots = $this->getOpenTimeslots();
-			foreach ($openTimeslots as $timeslot){
-				if (!$timeslot->isPaused()){
-					$timeslot->setPausedOn($deleteTime);
-					$timeslot->resume();
-					$timeslot->save();
-				}
-			}
-		}*/
+
 	}
 
 	/**
@@ -1717,10 +1772,26 @@ class ProjectTask extends BaseProjectTask {
 	
 	function apply_members_to_subtasks($members, $recursive = false) {
 		if (!is_array($members) || count($members)==0) return;
+
+		$ignored_dimension_ids = config_option('ignored_dimensions_for_subtasks');
 		
 		foreach ($this->getSubTasks() as $subtask) {/* @var $subtask ProjectTask */
-			// dont apply members of dimensions with single selection and subtask has already one of them
+
+			// Check ignored dimensions to keep the ignored data when applying changes on subtask
+			$keep_members = array();
+			foreach($subtask->getMembers() as $st_member){
+				if (in_array($st_member->getDimensionId(), $ignored_dimension_ids)) {
+					$keep_members[] = $st_member;
+				}
+			}
+			
+			// Add ignored dimentions to initialization of subtask members
 			$members_to_apply = array();
+			foreach($keep_members as $km){
+				$members_to_apply[] = $km;
+			}
+
+			// dont apply members of dimensions with single selection and subtask has already one of them
 			foreach ($members as $m) {/* @var $m Member */
 				$dim = $m->getDimension();
 				$dotc = DimensionObjectTypeContents::findOne(array("conditions" => array(
@@ -1744,8 +1815,9 @@ class ProjectTask extends BaseProjectTask {
 					}
 				}
 			}
-			
-			$subtask->addToMembers($members_to_apply);
+
+			// classify subtask
+			$subtask->addToMembers($members_to_apply); 
 			Hook::fire ('after_add_to_members', $subtask, $members);
 			if ($recursive) {
 				$subtask->apply_members_to_subtasks($members, $recursive);
@@ -1754,19 +1826,138 @@ class ProjectTask extends BaseProjectTask {
 	}
 
 
-	function calculatePercentComplete() {
-		if (!$this->isCompleted()){
-			
-			if ($this->getTimeEstimate() > 0) {
-				$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
-				$total_percentComplete = round(($totalSeconds * 100) / ($this->getTimeEstimate() * 60));
-			} else {
-				$total_percentComplete = 0;
+	function calculatePercentComplete($prevent_parent_update = false) {
+		if (!$this->isCompleted() && !$this->getIsManualPercentCompleted()) {
+			$task_id = $this->getId();
+			$numerator = 0;
+			$denominator = 0;
+
+			$parent_time_estimate = $this->getTimeEstimate();
+			if ($parent_time_estimate > 0) {
+				$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($task_id);
+				$parent_percent_completed = round(($totalSeconds * 100) / ($parent_time_estimate * 60));
+				if($parent_percent_completed > 100) $parent_percent_completed = 100;
+				$numerator = $parent_percent_completed * $parent_time_estimate;
+				$denominator = $parent_time_estimate;
+			} 
+
+			$subtasks = $this->getSubTasks(false, false);
+			foreach($subtasks as $subtask){
+				$subtask_percent_completed_calculations = $subtask->calculateRecursiveSubtaskPercentCompleted();
+				$numerator += $subtask_percent_completed_calculations['numerator'];
+				$denominator += $subtask_percent_completed_calculations['denominator'];
 			}
-			if ($total_percentComplete < 0) $total_percentComplete = 0;
+
+			$total_percent_completed = 0;
+			if ($denominator > 0) {
+				$total_percent_completed = round($numerator / $denominator);
+			}
+
+			if ($total_percent_completed < 0) $total_percent_completed = 0;
 			
-			$this->setPercentCompleted($total_percentComplete);
+			$sql = "UPDATE `".TABLE_PREFIX."project_tasks` SET `percent_completed` = $total_percent_completed WHERE `object_id` = $task_id;";
+			if($this instanceof ProjectTask) $this->setPercentCompleted($total_percent_completed);
+			
+			DB::execute($sql);		
+		}
+		if (!$prevent_parent_update) {
+			$parent = $this->getParent();
+			if($parent instanceof ProjectTask) {
+				$parent->calculatePercentComplete();
+			}
+		}	
+	}
+
+	function calculateRecursiveSubtaskPercentCompleted() {
+		$numerator = 0;
+		$denominator = 0;
+
+		$subtasks = $this->getSubTasks(false, false);
+		if(count($subtasks) > 0) {
+			$parent_time_estimate = $this->isCompleted() ? $this->getTotalTimeEstimate() : $this->getTimeEstimate();
+			if ($parent_time_estimate > 0) {
+				if ($this->isCompleted()) {
+					$parent_percent_completed = 100;
+				} else {
+					$totalSeconds = Timeslots::getTotalSecondsWorkedOnObject($this->getId());
+					$parent_percent_completed = round(($totalSeconds * 100) / ($parent_time_estimate * 60));
+					if($parent_percent_completed > 100) $parent_percent_completed = 100;
+				}
+				$numerator = $parent_percent_completed * $parent_time_estimate;
+				$denominator = $parent_time_estimate;
+			} 
+
+			if(!$this->isCompleted()) {
+				$subtasks = $this->getSubTasks(false, false);
+				foreach($subtasks as $subtask){
+					$subtask_percent_completed_calculations = $subtask->calculateRecursiveSubtaskPercentCompleted();
+					$numerator += $subtask_percent_completed_calculations['numerator'];
+					$denominator += $subtask_percent_completed_calculations['denominator'];
+				}
+			}
+		} else {
+			$time_estimate = $this->getTimeEstimate();
+			$task_percent_completed = $this->isCompleted() ? 100 : $this->getPercentCompleted();
+			$percent_completed = $task_percent_completed > 100 ? 100 : $task_percent_completed;
+			$numerator = $percent_completed * $time_estimate;
+			$denominator = $time_estimate;
+		}
+
+		if ($denominator == 0) $numerator = 0;
+
+		return array('numerator' => $numerator, 'denominator' => $denominator);
+
+	}
+
+
+	function calculateAndSaveOverallTotalWorkedTime() {
+		$this->calculateAndSetOverallTotalWorkedTime();
+		$this->save();
+		
+		$parent = $this->getParent();
+		if($parent instanceof ProjectTask) {
+			$parent->calculateAndSaveOverallTotalWorkedTime();
+		}
+	}
+
+	function calculateAndSetOverallTotalWorkedTime() {
+		$sql = "SELECT (SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60)) as overall_total_minutes 
+				FROM ".TABLE_PREFIX."timeslots ts 
+				INNER JOIN ".TABLE_PREFIX."objects o ON o.id=ts.object_id 
+				WHERE ts.rel_object_id=".$this->getId()." AND o.trashed_by_id=0";
+		
+		$row = DB::executeOne($sql);
+		$overall_total_minutes = array_var($row, 'overall_total_minutes', 0);
+
+		$subtasks = $this->getSubTasks(false, false);
+		$subtask_total_minutes = 0;
+		foreach($subtasks as $subtask){
+			$subtask_total_minutes += $subtask->getOverallWorkedTime();
+		}
+		$overall_total_minutes += $subtask_total_minutes;
+
+		$this->setOverallWorkedTime($overall_total_minutes);
+		// For debugging purposes
+		// Logger::log_r('Task id: '.$this->getId().' overall_total_minutes: '.$overall_total_minutes);
+	}
+
+	function changeInvoicingStatus($status) {
+		if (ProjectTasks::instance()->columnExists('invoicing_status')) {
+			// to use when saving the application log
+			$old_content_object = $this->generateOldContentObjectData();
+
+			$old_status = $this->getColumnValue('invoicing_status');
+			
+			$this->setColumnValue('invoicing_status', $status);
+			if($status == 'pending') {
+				$this->setColumnValue('invoice_id', 0);
+			}
 			$this->save();
+			
+			$ret = null;
+			Hook::fire("after_change_object_inv_status", array('object' => $this, 'old_status' => $old_status), $ret);
+
+			ApplicationLogs::createLog($this, ApplicationLogs::ACTION_EDIT, false, true);
 		}
 	}
 	

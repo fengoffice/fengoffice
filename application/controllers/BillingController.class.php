@@ -4,6 +4,10 @@ class BillingController extends ApplicationController {
 
 	function __construct() {
 		parent::__construct();
+		if(Plugins::instance()->isActivePlugin("income")){
+			Env::useHelper('functions', 'income');
+		}
+		
 		prepare_company_website_controller($this, 'website');
 		//ajx_set_panel("administration");
 
@@ -19,6 +23,7 @@ class BillingController extends ApplicationController {
 		Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
 		$can_see_cost_info = true;
     	Hook::fire('get_can_see_cost_information', array('user'=>logged_user()), $can_see_cost_info);
+
 		if (!$can_see_billing_info || !$can_see_cost_info) {
 			flash_error(lang('no access permissions'));
 			ajx_current('empty');			

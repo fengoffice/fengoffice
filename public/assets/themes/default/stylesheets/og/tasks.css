@@ -427,8 +427,10 @@ button.add-first-btn.no-tasks-add-task-btn {
 .task-list-col-names-template .task_start_date,
 .task-list-col-names-template .task_due_date,
 .task-list-col-names-template .task_estimated,
+.task-list-col-names-template .task_total_estimated,
 .task-list-col-names-template .task_pending,
 .task-list-col-names-template .task_worked,
+.task-list-col-names-template .task_total_worked,
 .task-list-col-names-template .task_quick_actions{
     min-width: 70px;
     max-width: 70px;
@@ -454,8 +456,10 @@ button.add-first-btn.no-tasks-add-task-btn {
 
 .task-list-row-template .task-date-container,
 .task-list-group-totals-template .task_estimated,
+.task-list-group-totals-template .task_total_estimated,
 .task-list-group-totals-template .task_pending,
-.task-list-group-totals-template .task_worked{
+.task-list-group-totals-template .task_worked,
+.task-list-group-totals-template .task_total_worked{
     width: 70px;
     line-height: 12px;
     font-size: 9px;
@@ -919,4 +923,13 @@ button.add-first-btn.no-tasks-add-task-btn {
 .ogContentPanel #ogTasksPanelColNamesThead {
 	position: sticky;
 	top: -1px;
+}
+
+a.add-first-btn.btn-add-work {
+    background: 0 center no-repeat;
+    padding-left: 20px;
+    border: none;
+    box-shadow: none;
+    color: #003562;
+    height: 14px;
 }

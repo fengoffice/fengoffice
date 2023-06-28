@@ -70,4 +70,26 @@
 	'classification' => 'Classification',
 	'classification in associated members' => 'Classification in associated entities',
 	'do you want to reclassify in memtype associated dimensions' => 'Do you want to reclassify this {0} to the new {1} associated {2}?',
+
+
+	// TABLE HEADERS - BILLING ::
+	'type address' => 'Type',
+	'street address' => 'Street address',
+	'city address' => 'City',
+	'state address' => 'State',
+	'zipcode address' => 'ZipCode',
+	'country address' => 'Country',
+	'default address' => 'Default Billing Address',
+
+	'type email' => 'Type',
+	'email address' => 'Email address',
+	'default email' => 'Default Billing Email',
+
+	'type phone' => 'Type',
+	'phone number' => 'Phone',
+	'phone name' => 'Name',
+
+	'type webpage' => 'Type',
+	'link webpage' => 'Link',
+	
 );

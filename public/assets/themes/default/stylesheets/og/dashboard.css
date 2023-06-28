@@ -419,6 +419,12 @@
 	white-space: nowrap;
 }
 
+.widget-header .widget-subtitle {
+	color: #888;
+	font-size: 13px;
+	line-height: 2;
+}
+
 .widget-body {
 	background: #FFFFFF ;
 	padding: 0 30px 30px 30px;

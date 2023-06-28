@@ -445,6 +445,14 @@ class DateTimeValue {
 		}
 		return $this;
 	}
+
+	static function FormatTimeAmount($amount, $format='yfwdhms', $modulus = 1, $subtract = 0, $return_raw_data = false){
+
+		$dt = DateTimeValueLib::now();
+		$dt->advance(-1 * $amount);
+
+		return self::FormatTimeDiff($dt, null, $format, $modulus, $subtract, $return_raw_data);
+	}
 	
 	static function FormatTimeDiff(DateTimeValue $dt1, DateTimeValue $dt2=null, $format='yfwdhms', $modulus = 1, $subtract = 0, $return_raw_data = false){
 		$t1 = $dt1->getTimestamp();

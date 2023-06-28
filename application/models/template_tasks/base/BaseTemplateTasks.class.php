@@ -50,7 +50,8 @@ abstract class BaseTemplateTasks extends ContentDataObjects {
         'use_due_time' => DATA_TYPE_BOOLEAN,
         'use_start_time' => DATA_TYPE_BOOLEAN,
         'original_task_id' => DATA_TYPE_INTEGER,
-        'type_content' => DATA_TYPE_STRING
+        'type_content' => DATA_TYPE_STRING,
+		'is_manual_percent_completed' => DATA_TYPE_BOOLEAN,
 	);
 
 	/**

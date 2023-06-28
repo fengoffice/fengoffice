@@ -184,7 +184,7 @@ class DimensionController extends ApplicationController {
 			}
 			
 			$parent = 0;
-			if (is_null($order)) $order = "parent_member_id, name";
+			if (is_null($order)) $order = "parent_member_id, display_name";
 			if (!$dimension->getDefinesPermissions() || $dimension->hasAllowAllForContact($contact_pg_ids) || $return_all_members){
 				$all_members = $dimension->getAllMembers(false, $order, true, $extra_conditions, $limit);
 			}
@@ -198,7 +198,7 @@ class DimensionController extends ApplicationController {
 							"start" => $limit['offset'],
 							"limit" => $limit['limit'],
 							"extra_condition" => $extra_conditions,
-							"order" => '`name`',
+							"order" => '`display_name`',
 							"order_dir" => 'ASC',
 					);
 					$all_members = ContactMemberCaches::getAllMembersWithCachedParentId($params);
@@ -309,15 +309,39 @@ class DimensionController extends ApplicationController {
 	}
 	
 
+	function preload_small_dimension_members() {
+
+		$dimension_ids = Dimensions::getSmallDimensions();
+		$dimension_members = array();
+
+		$limit_obj = array(
+			'offset' => 0,
+			'limit' => 1000,
+		);
+
+		foreach ($dimension_ids as $dimension_id) {
+			$list_dim_members = $this->initial_list_dimension_members($dimension_id, null, null, false, '', $limit_obj);
+			$memberList = $list_dim_members['members'];
+			$tree = buildTree($memberList, "parent", "children", "id", "display_name");
+			
+			$dimension_members[$dimension_id] = $tree;
+		}
+
+		ajx_current("empty");
+		ajx_extra_data(array('dimension_members' => $dimension_members, 'genid' => array_var($_REQUEST, 'genid', ''),));
+
+	}
 	
 	
 	function initial_list_dimension_members_tree() {
 		$dimension_id = array_var($_REQUEST, 'dimension_id');
 		$checkedField = (array_var($_REQUEST, 'checkboxes'))?"checked":"_checked";
 		$objectTypeId = array_var($_REQUEST, 'object_type_id', null );
+		$return_array = array_var($_REQUEST, 'return_array', false);
+		$memberId = array_var($_REQUEST, 'id', null );
 		$offset = array_var($_REQUEST, 'offset', 0);
 		$limit = array_var($_REQUEST, 'limit', 100);
-		
+		//Logger::log_r($_REQUEST);
 		$allowedMemberTypes = json_decode(array_var($_REQUEST, 'allowedMemberTypes', null ));	
 		if (!is_array($allowedMemberTypes)) {
 			$allowedMemberTypes = null;
@@ -326,7 +350,10 @@ class DimensionController extends ApplicationController {
 		$only_names = array_var($_REQUEST, 'onlyname', false);
 		
 		$name = trim(array_var($_REQUEST, 'query', ''));
-		$extra_cond = $name == "" ? "" : " AND name LIKE '%".$name."%'";
+		$extra_cond = $name == "" ? "" : " AND display_name LIKE '%".$name."%'";
+		if ($memberId && is_numeric($memberId)) {
+			$extra_cond .= " AND id=$memberId";
+		}
 		
 		$return_all_members = false;
 		
@@ -349,12 +376,17 @@ class DimensionController extends ApplicationController {
 		}
 		
 		// updates the name of the members using the configuration if exists
-		build_member_list_text_to_show_in_trees($memberList);
+	//	build_member_list_text_to_show_in_trees($memberList);
 		
-		$tree = buildTree($memberList, "parent", "children", "id", "name", $checkedField);
+		$tree = buildTree($memberList, "parent", "children", "id", "display_name", $checkedField);
 		
 		ajx_current("empty");
-		ajx_extra_data(array('dimension_members' => $tree, 'dimension_id' => $dimension_id, 'more_nodes_left' => $more_nodes_left));
+
+		if($return_array) {
+			return $tree;
+		} 
+
+		ajx_extra_data(array('dimension_members' => $tree, 'dimension_id' => $dimension_id, 'more_nodes_left' => $more_nodes_left, 'genid' => array_var($_REQUEST, 'genid', ''),));
 	}
 	
 	//return only root members
@@ -442,6 +474,7 @@ class DimensionController extends ApplicationController {
 				'dimension_members' => $tree, 'dimension_id' => $dimension_id, 
 				'dimensions_root_members' => true, 'more_nodes_left' => $more_nodes_left,
 				'list_was_filtered_by' => $list_was_filtered_by,
+				'genid' => array_var($_REQUEST, 'genid', ''),
 		));
 		//}
 	}
@@ -511,7 +544,11 @@ class DimensionController extends ApplicationController {
 					$more_conds .= $filter_by_members_sql;
 				}
 
-				$memberList = Members::findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
+				// add condition to prevent returning malformed data that is in the database, example a client member without the customer object
+				$object_exist_cond = " AND ( object_id = 0 OR EXISTS ( SELECT id FROM ".TABLE_PREFIX."objects o WHERE o.id = object_id AND o.archived_on = '0000-00-00 00:00:00' AND o.trashed_on = '0000-00-00 00:00:00' ))";
+				
+
+				$memberList = Members::findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
 
 				//include all parents
 				//Check hierarchy
@@ -563,6 +600,20 @@ class DimensionController extends ApplicationController {
 					unset($params["member_name"]);
 					$params["extra_condition"] .= " $additional_query_string_conditions";
 				}
+
+				$more_conds = "";
+				if (!$ignore_context_filters) {
+					$filter_by_members = array();
+					$context = active_context();
+					foreach ($context as $selection) {
+						if ($selection instanceof Member) $filter_by_members[] = $selection;
+					}
+					
+					$real_applied_filters = null;
+					$filter_by_members_sql = $this->get_association_filter_conditions($dimension, $filter_by_members, $real_applied_filters);
+					$more_conds .= $filter_by_members_sql;
+					$params["extra_condition"] .= " $more_conds";
+				}
 				
 				$memberList = ContactMemberCaches::getAllMembersWithCachedParentId($params);
 			}
@@ -600,7 +651,31 @@ class DimensionController extends ApplicationController {
 	
 	function reload_dimensions_js () {
 		ajx_current("empty");
-		$dimensions = Dimensions::findAll();
+		
+		$dimension_codes = explode(',', array_var($_REQUEST, 'dim_codes', ""));
+		$dimension_ids = explode(',', array_var($_REQUEST, 'dim_ids', ""));
+		$check_permissions = array_var($_REQUEST, 'check_perm', true);
+		$vars = array_var($_REQUEST, 'vars');
+		$dimensions_cond = null;
+
+		$dimension_codes = array_filter($dimension_codes);
+		foreach ($dimension_codes as &$code) {
+			$code = DB::escape($code);
+		}
+		$dimension_ids = array_filter($dimension_ids, 'is_numeric');
+
+		if (count($dimension_codes) > 0) {
+			$dimensions_cond = "`code` IN (".implode(',', $dimension_codes).")";
+		} else if (count($dimension_ids) > 0) {
+			$dimensions_cond = "`id` IN (".implode(',', $dimension_ids).")";
+		}
+
+		if (is_null($dimensions_cond)) {
+			return;
+		}
+
+		$dimensions = Dimensions::findAll(array("conditions" => $dimensions_cond));
+
 		
 		$ot_extra_cond = "";
 		Hook::fire('available_object_types_extra_cond', null, $ot_extra_cond);
@@ -612,6 +687,8 @@ class DimensionController extends ApplicationController {
 			$dims_info[$dim->getId()] = array();
 			$perms_info[$dim->getId()] = array();
 			$members = $dim->getAllMembers();
+			$allMemebers = $this->buildMemberList($members, $dim, array(),array(), null, null);
+			/*
 			foreach ($members as $member) {
 				$mem_info = array();
 				$mem_info['id'] = $member->getId();
@@ -624,17 +701,20 @@ class DimensionController extends ApplicationController {
 				$mem_info['archived'] = $member->getArchivedById();
 								
 				$p_info = array();
-				if ($dim->getIsManageable()) {
-					foreach ($ots as $ot) {
-						$p_info[$ot->getId()] = $dim->getDefinesPermissions() ? can_read(logged_user(), array($member), $ot->getId()): true;
+				if ($check_permissions) {
+					if ($dim->getIsManageable()) {
+						foreach ($ots as $ot) {
+							$p_info[$ot->getId()] = $dim->getDefinesPermissions() ? can_read(logged_user(), array($member), $ot->getId()): true;
+						}
 					}
 				}
 				
 				$dims_info[$dim->getId()][$member->getId()] = $mem_info;
 				$perms_info[$dim->getId()][$member->getId()] = $p_info;
-			}
+			}*/
+			$dims_info[$dim->getId()] = $allMemebers;
 		}
-		ajx_extra_data(array("dims" => $dims_info, "perms" => $perms_info));
+		ajx_extra_data(array("dims" => $dims_info, "perms" => $perms_info, "vars" => $vars));
 	}
 	
 	function load_dimensions_info() {
@@ -646,8 +726,9 @@ class DimensionController extends ApplicationController {
 		foreach ($dimensions as $dim) {
 			if (!in_array($dim->getId(), $enabled_dimension_ids)) continue;
 			$dim_name = clean($dim->getName());
+			$dim_code = $dim->getCode();
 			
-			$info = array("name" => $dim_name);
+			$info = array("name" => $dim_name, "code" => $dim_code);
 			
 			$default_value = DimensionOptions::instance()->getOptionValue($dim->getId(), 'default_value');
 			if ($default_value) {
@@ -887,6 +968,7 @@ class DimensionController extends ApplicationController {
 				$member = array(
 					"id" => $m->getId(),
 					"name" => $m->getName(),
+					"display_name" => clean($m->getDisplayName()),
 					"path" => $path,
 					"depth" => $m->getDepth(),
 					"to_show" => $m->getName() . ($path != "" ? " ($path)" : ""),
@@ -912,7 +994,8 @@ class DimensionController extends ApplicationController {
 				$member = array(
 					"id" => $m->getId(),
 					"color" => $m->getMemberColor(),
-					"name" => clean($m->getName()),
+					"name" => $m->getName(),
+					"display_name" => clean($m->getDisplayName()),
 					"text" => clean($m->getName()),
 					"leaf" => true,
 					"parent" => $tempParent,
@@ -1325,6 +1408,114 @@ class DimensionController extends ApplicationController {
 		}
 		
 		ajx_extra_data(array('dimension_id' => $dimension_id, 'member_ids' => $sel_member_ids, 'genid' => $genid));
+	}
+	
+	function get_all_associated_members() {
+		ajx_current("empty");
+		$member_id = array_var($_REQUEST, 'member_id');
+		$dimension_id = array_var($_REQUEST, 'dimension_id');
+		$genid = array_var($_REQUEST, 'genid');
+
+		$member = Members::getMemberById($member_id);
+		if (!$member) return;
+
+		$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($member->getDimensionId(), $member->getObjectTypeId());
+	
+		$return_data = array();
+
+		foreach ($associations as $assoc) {
+
+			$assoc_id = $assoc->getId();
+			$assoc_dim_id = $assoc->getAssociatedDimensionMemberAssociationId();
+			$assoc_dim = Dimensions::getDimensionById($assoc_dim_id);
+			if (!$assoc_dim || $assoc_dim->getCode() == 'feng_persons') continue;
+
+			$assoc_member_ids = explode(',', MemberPropertyMembers::instance()->getAllPropertyMemberIds($assoc_id, $member_id));
+			$assoc_member_ids = array_filter($assoc_member_ids);
+
+			$assoc_data = array(
+				'member_ids' => $assoc_member_ids,
+				'dimension_id' => $assoc_dim_id,
+				'assoc_id' => $assoc_id,
+				'assoc_code' => $assoc->getCode(),
+				'genid' => $genid,
+			);
+
+			$return_data[$assoc_id] = $assoc_data;
+		}
+
+		$data_event = [];
+		Hook::fire("get_all_associated_members_finish", array('object'=>$member), $data_event);
+		evt_add('get_all_associated_members_finish', $data_event);
+
+		ajx_extra_data(array('associations_data' => $return_data, 'dimension_id' => $dimension_id, 'member_id' => $member_id, 'genid' => $genid, 'data_event'=>$data_event));
+	}
+
+	function get_all_associated_member_ids($member) {
+		if (!$member) return;
+		$member_id = $member->getId();
+
+		$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($member->getDimensionId(), $member->getObjectTypeId());
+	
+		$result = array();
+
+		foreach ($associations as $assoc) {
+
+			$assoc_id = $assoc->getId();
+			$assoc_dim_id = $assoc->getAssociatedDimensionMemberAssociationId();
+			$assoc_dim = Dimensions::getDimensionById($assoc_dim_id);
+			if (!$assoc_dim || $assoc_dim->getCode() == 'feng_persons') continue;
+
+			$assoc_member_ids = explode(',', MemberPropertyMembers::instance()->getAllPropertyMemberIds($assoc_id, $member_id));
+			$assoc_member_ids = array_filter($assoc_member_ids);
+
+			$result = array_merge($result, $assoc_member_ids);
+		}
+
+		return $result;
+	}
+	
+	function get_all_default_associated_members() {
+		ajx_current("empty");
+		$member_id = array_var($_REQUEST, 'member_id');
+		$dimension_id = array_var($_REQUEST, 'dimension_id');
+		$genid = array_var($_REQUEST, 'genid');
+
+		$member = Members::getMemberById($member_id);
+		if (!$member) return;
+
+		$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($member->getDimensionId(), $member->getObjectTypeId());
+	
+		$return_data = array();
+
+		foreach ($associations as $assoc) {
+
+			$assoc_id = $assoc->getId();
+			$assoc_dim_id = $assoc->getAssociatedDimensionMemberAssociationId();
+			$assoc_dim = Dimensions::getDimensionById($assoc_dim_id);
+			if (!$assoc_dim || $assoc_dim->getCode() == 'feng_persons') continue;
+
+			$rows = DB::executeAll("SELECT selected_member_id FROM ".TABLE_PREFIX."dimension_member_association_default_selections
+				WHERE association_id='$assoc_id' AND member_id='$member_id'");
+
+			$assoc_member_ids = array();
+			if (is_array($rows)) {
+				$assoc_member_ids = array_flat($rows);
+			}
+			$assoc_member_ids = array_filter($assoc_member_ids);
+
+			$assoc_data = array(
+				'member_ids' => $assoc_member_ids,
+				'dimension_id' => $assoc_dim_id,
+				'assoc_id' => $assoc_id,
+				'assoc_code' => $assoc->getCode(),
+				'genid' => $genid,
+			);
+
+			$return_data[$assoc_id] = $assoc_data;
+		}
+		
+		ajx_extra_data(array('associations_data' => $return_data, 'dimension_id' => $dimension_id, 'member_id' => $member_id, 'genid' => $genid));
 	}
 	
 	

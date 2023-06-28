@@ -233,6 +233,8 @@ sig.actualHtmlSignature = '';
 		name: '<?php echo $split[1] ?>',
 		icocls: '<?php echo $icon_class ?>'
 	});
+
+	$('#add_mail_attachments').show();
 	<?php
 			}
 		}
@@ -244,8 +246,11 @@ sig.actualHtmlSignature = '';
 				var obj = {object_id: <?php echo $att['object_id']?>, manager: '<?php echo $att['manager']?>',
 					name: '<?php echo $att['name']?>', icocls: '<?php echo $att['ico']?>', mimeType: '<?php echo $att['type']?>'};
 				og.addMailAttachment(container, obj);
+				//show attachment section
+				
 		<?php
 			}
+		?>$('#add_mail_attachments').show();<?php 
 		}
 	?>
  	</script>
@@ -467,13 +472,13 @@ Ext.onReady(function() {
 });
 
 og.saveDraftEmail = function(genid){
-	var prev_action = document.frmMail.action;
-	document.frmMail.action = og.getUrl('mail', 'save_draft', {ajax:'true'});
-
 	var form = document.getElementById(genid + 'form');
-	if (form) form.onsubmit();
-
-	document.frmMail.action = prev_action;
+	if (form) {
+		var prev_action = form.action;
+		form.action = og.getUrl('mail', 'save_draft', {ajax:'true'});
+		form.onsubmit();
+		form.action = prev_action;
+	}
 };
 
 
@@ -507,9 +512,6 @@ og.checkAttach = function() {
 
 og.checkFrom = function() {
 	var config = <?php echo user_config_option("check_is_defult_account") ? '1' : '0';?>;
-
-	const draft_edit =  <?php echo array_var($mail_data, 'draft_edit', false);?>;	
-
 	if (!config){
 		return true;
 	}
@@ -518,7 +520,7 @@ og.checkFrom = function() {
 	var is_autosaving = $('#' + genid + 'autosave').val();
 	if (is_autosaving == "true" || def_acc == 0) return true;
 
-	if (sel_acc != def_acc && !draft_edit) {
+	if (sel_acc != def_acc) {
 		var acc_combo = document.getElementById(genid + 'mailAccount');
 		var acc_name = acc_combo.options[acc_combo.selectedIndex].text;
 		if (! confirm(lang("are you sure you want to send the email using account x", acc_name)) ) {

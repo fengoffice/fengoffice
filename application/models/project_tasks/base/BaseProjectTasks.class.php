@@ -53,6 +53,11 @@ abstract class BaseProjectTasks extends ContentDataObjects {
         'total_worked_time' => DATA_TYPE_INTEGER,
 		'mark_as_started'=> DATA_TYPE_BOOLEAN,
 		'move_direction_non_working_days' => DATA_TYPE_STRING,
+		'overall_worked_time_plus_subtasks' => DATA_TYPE_INTEGER,
+		'total_time_estimate' => DATA_TYPE_INTEGER,
+		'is_manual_percent_completed' => DATA_TYPE_BOOLEAN,
+
+		
 	    
 	);
 
@@ -144,7 +149,7 @@ abstract class BaseProjectTasks extends ContentDataObjects {
      * Must be overriden by the specific object classes
      */
     function getTimeColumns() {
-    	return array('time_estimate', 'total_worked_time');
+    	return array('time_estimate', 'total_worked_time', 'overall_worked_time_plus_subtasks', 'total_time_estimate');
     }
 	
 	/**

@@ -1722,6 +1722,14 @@ class Notifier {
 			$sender_name = $from_name;
 		}
 
+		// check if from header needs to be overriden
+		if ($from_override = array_var($_SESSION, 'mailer_override_from')) {
+			$from_address = $from_override['address'];
+			if (trim($sender_name) == "") {
+				$sender_name = $from_override['name'];
+			}
+		}
+
 		$from = array($from_address => $sender_name);
 
 		if (Plugins::instance()->isActivePlugin('mail') && config_option('use_mail_accounts_to_send_nots')) {
@@ -1763,6 +1771,13 @@ class Notifier {
 		foreach ($to as $address) {
 			$message->addTo(array_var($address, 0), array_var($address, 1));
 		}
+		
+		// before using getUsername function ensure that transport object is a Swift_SmtpTransport, other transports classes may not have this function
+		if ($mailer->getTransport() instanceof Swift_SmtpTransport) {
+			// set email from equal to user account
+			$message->setFrom($mailer->getTransport()->getUsername());
+		}
+
 		$result = $mailer->send($message);
 
 		if ($swift_logger_level >= 2 || ($swift_logger_level > 0 && !$result)) {
@@ -1945,6 +1960,14 @@ class Notifier {
 					$sender_name = $from_name;
 				}
 
+				// check if from header needs to be overriden
+				if ($from_override = array_var($_SESSION, 'mailer_override_from')) {
+					$from_address = $from_override['address'];
+					if (trim($sender_name) == "") {
+						$sender_name = $from_override['name'];
+					}
+				}
+
 				$from = array($from_address => $sender_name);
 				
 				
@@ -2092,6 +2115,11 @@ class Notifier {
 			$smtp_secure_connection = array_var($parameters, 'smtp_secure_connection', self::SMTP_SECURE_CONNECTION_NO);
 			$smtp_username = array_var($parameters, 'smtp_username');
 			$smtp_password = array_var($parameters, 'smtp_password');
+
+			$from_override = array_var($parameters, 'from_override');
+			if ($from_override) {
+				$_SESSION['mailer_override_from'] = $from_override;
+			}
 		
 		} else {
 			$mail_transport_config = config_option('mail_transport', self::MAIL_TRANSPORT_MAIL);

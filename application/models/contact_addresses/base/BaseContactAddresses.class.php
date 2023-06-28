@@ -23,7 +23,7 @@
     	'state' => DATA_TYPE_STRING, 
     	'country' => DATA_TYPE_STRING,
     	'zip_code' => DATA_TYPE_STRING,
-    	'is_main' => DATA_TYPE_BOOLEAN
+    	'is_main' => DATA_TYPE_BOOLEAN,
     );
   
     /**
@@ -32,7 +32,7 @@
     * @return BaseContactAddresses 
     */
     function __construct() {
-      //Hook::fire('object_definition', 'ContactAddress', self::$columns);
+      Hook::fire('object_definition', 'ContactAddress', self::$columns);
       parent::__construct('ContactAddress', 'contact_addresses', true);
     } // __construct
     

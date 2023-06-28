@@ -200,10 +200,11 @@ og.renderTelephoneInput = function(id, name, container_id, sel_type, sel_number,
 	var name_input = $('<input name="'+name+'[name]" id="'+id+'_name" value="'+sel_name+'" placeholder="'+lang('name')+'"/>');
 	$('#'+container_id).append(name_input);
 
-	var delete_link = $('<a href="#" onclick="og.markAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-delete delete-link" title="'+lang('delete')+'">'+lang('delete')+'</a>');
-	$('#'+container_id).append(delete_link);
-	var undo_delete_link = $('<a href="#" onclick="og.undoMarkAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="'+lang('undo')+'">'+lang('undo')+'</a>');
-	$('#'+container_id).append(undo_delete_link);
+	var delete_or_undo = $(`<div class="removeUndo">
+		<a href="#" onclick="og.markAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-delete delete-link" title="${lang('delete')}"></a>
+		<a href="#" onclick="og.undoMarkAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="${lang('undo')}"></a>
+	</div>`);
+	$('#' + container_id).append(delete_or_undo);
 }
 
 og.addNewTelephoneInput = function(container_id, pre_id, sel_type, sel_number, sel_name, sel_id) {
@@ -244,6 +245,12 @@ og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignor
 	
 	og.renderAddressInput(id, name, container_id + tcount, sel_type, sel_data);
 
+	// DEFAULT BILLING ADDRESS VERIFICATION ::
+	let dataBillingAttr = $('#' + container_id).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
+	if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
+		og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'address', sel_data, false);
+	};
+
 	$(".address-input-container").css('max-width', ($('#'+container_id).width()-270)+'px');
 	
 	og.addressCount[container_id] = og.addressCount[container_id] + 1;
@@ -271,16 +278,18 @@ og.renderWebpageInput = function(id, name, container_id, sel_type, sel_url, sel_
 	$('#'+container_id).append('<input type="hidden" name="'+name+'[id]" id="'+id+'_id" value="'+sel_id+'" />');
 	$('#'+container_id).append('<input type="hidden" name="'+name+'[deleted]" id="'+id+'_deleted" value="0" />');
 	
-	$('#'+container_id).append('<span id="'+id+'_type"></span>');
+	$('#' + container_id).append('<td><span id="' + id +'_type"></span></td>');
 	og.renderWebpageTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
 
-	var webpage_input = $('<input name="'+name+'[url]" id="'+id+'_url" value="'+sel_url+'" placeholder="'+lang('webpage')+'"/>');
+	var webpage_input = $('<td><input name="'+name+'[url]" id="'+id+'_url" value="'+sel_url+'" placeholder="'+lang('webpage')+'"/></td>');
 	$('#'+container_id).append(webpage_input);
 
-	var delete_link = $('<a href="#" onclick="og.markAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-delete delete-link" title="'+lang('delete')+'">'+lang('delete')+'</a>');
-	$('#'+container_id).append(delete_link);
-	var undo_delete_link = $('<a href="#" onclick="og.undoMarkAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="'+lang('undo')+'">'+lang('undo')+'</a>');
-	$('#'+container_id).append(undo_delete_link);
+	var delete_or_undo = $(`<td class="removeUndo">
+		<a href="#" onclick="og.markAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-delete delete-link" title="${lang('delete')}"></a>
+		<a href="#" onclick="og.undoMarkAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="${lang('undo')}"></a>
+	</td>`);
+	$('#' + container_id).append(delete_or_undo);
+
 }
 
 og.addNewWebpageInput = function(container_id, pre_id, sel_type, sel_url, sel_id) {
@@ -315,26 +324,30 @@ og.renderEmailTypeSelector = function(id, name, container_id, selected_value) {
 	$('#'+container_id).empty().append(select);
 }
 
-og.renderEmailInput = function(id, name, container_id, sel_type, sel_address, sel_id) {
+og.renderEmailInput = function(id, name, container_id, sel_type, sel_address, sel_id, defaultEmail=0) {
+
 	if (!sel_address) sel_address = '';
 	if (!sel_id) sel_id = 0;
 
 	$('#'+container_id).append('<input type="hidden" name="'+name+'[id]" id="'+id+'_id" value="'+sel_id+'" />');
 	$('#'+container_id).append('<input type="hidden" name="'+name+'[deleted]" id="'+id+'_deleted" value="0" />');
 	
-	$('#'+container_id).append('<span id="'+id+'_type"></span>');
+	$('#' + container_id).append('<span id="' + id +'_type"></span>');
 	og.renderEmailTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
 
-	var email_input = $('<input name="'+name+'[email_address]" id="'+id+'_email_address" value="'+sel_address+'" placeholder="'+lang('email address')+'"/>');
+	var email_input = $('<input name="' + name + '[email_address]" id="' + id + '_email_address" value="' + sel_address + '" class="moreEmailInputs" placeholder="' + lang('email address') +'"/>');
 	$('#'+container_id).append(email_input);
+	
+	var undo_or_remove = $(`<div class="removeUndo">
+		<a href="#" onclick="og.markAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-delete delete-link" title="${lang('delete')}"></a>
+		<a href="#" onclick="og.undoMarkAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="${lang('undo')}"></a>
+	</div>`);
+	$('#' + container_id).append(undo_or_remove);
 
-	var delete_link = $('<a href="#" onclick="og.markAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-delete delete-link" title="'+lang('delete')+'">'+lang('delete')+'</a>');
-	$('#'+container_id).append(delete_link);
-	var undo_delete_link = $('<a href="#" onclick="og.undoMarkAsDeleted(this, \''+container_id+'\', \''+id+'\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="'+lang('undo')+'">'+lang('undo')+'</a>');
-	$('#'+container_id).append(undo_delete_link);
 }
 
-og.addNewEmailInput = function(container_id, pre_id, sel_type, sel_address, sel_id) {
+og.addNewEmailInput = function(container_id, pre_id, sel_type, sel_address, sel_id, default_email_value=0) {
+
 	if (!pre_id) pre_id = 'contact';
 	if (!og.emailCount) og.emailCount = {};
 	if (!og.emailCount[container_id]) og.emailCount[container_id] = 0;
@@ -345,7 +358,20 @@ og.addNewEmailInput = function(container_id, pre_id, sel_type, sel_address, sel_
 
 	$('#'+container_id).append('<div id="'+ container_id + tcount +'" class="email-input-container"></div>');
 	
-	og.renderEmailInput(id, name, container_id + tcount, sel_type, sel_address, sel_id);
+	og.renderEmailInput(id, name, container_id + tcount, sel_type, sel_address, sel_id, default_email_value);
+	
+	// DEFAULT BILLING EMAIL VERIFICATION ::
+	let dataBillingAttr = $('#' + container_id).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
+	if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
+		og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'email', default_email_value, false);
+	};
 
 	og.emailCount[container_id] = og.emailCount[container_id] + 1;
+
+	let othersEmail = document.querySelectorAll('.moreEmailInputs');
+	othersEmail.forEach((element) => {
+		og.checkEmailAddress('#' + element.getAttribute('id'), '', '', 'contact');
+	});
 }
+
+og

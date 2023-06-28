@@ -2031,7 +2031,7 @@ class FilesController extends ApplicationController {
 					"id" => $o->getId(),
 					"ix" => $index++,
 					"mimeType" => $o->getTypeString(),
-					"type" => $o->getTypeString(),
+					"type" => file_types_friendly_name($o->getFileTypeId()),
 					"icon" => $o->getTypeIconUrl(),
 					"size" => format_filesize($o->getFileSize()),
 					"manager" => get_class($o->manager()),
@@ -2116,8 +2116,7 @@ class FilesController extends ApplicationController {
 		} // if
 		
 		// to use when saving the application log
-		$old_content_object = ContentDataObjects::generateOldContentObjectData($file);
-		$file->old_content_object = $old_content_object;
+		$old_content_object = $file->generateOldContentObjectData();
 		
 		$file_data = array_var($_POST, 'file');
 		if(!is_array($file_data)) {

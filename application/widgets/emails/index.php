@@ -2,7 +2,7 @@
 if (logged_user()->hasMailAccounts()) { 
 
 	$limit = 10;
-	$result = MailContents::getEmails(null, 'received', "unread", null, null, 0, $limit, "received_date", "DESC");
+	$result = MailContents::getEmails(null, 'received', "unread", null, null, 0, $limit, "received_date", "DESC", null, 'unarchived', null, false, "", true);
 
 	$active_members = array();
 	$context = active_context();

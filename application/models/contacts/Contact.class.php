@@ -356,8 +356,7 @@ class Contact extends BaseContact {
 	 * @return string
 	 */
 	function getDisplayName() {
-		$display = parent::getDisplayName();
-		return trim($display) == '' ? "".$this->getFirstName()." ".$this->getSurname() : $display;
+		return $this->getFirstName()." ".$this->getSurname();
 	} // getDisplayName
 	
 
@@ -1321,13 +1320,15 @@ class Contact extends BaseContact {
      * @param boolean $isMain
      * @author pepe
      */
-    function addEmail($value, $email_type, $isMain = false) {
+    function addEmail($value, $email_type, $isMain = false, $isMainbilling = false) {
+
     	$value=trim($value);
     	$email = new ContactEmail() ;
     	$email->setEmailTypeId(EmailTypes::getEmailTypeId($email_type));
     	$email->setEmailAddress($value);
     	$email->setContactId($this->getId());
     	$email->setIsMain($isMain);
+		$email->setDefaultEmail($isMainbilling);
     	$email->save();
     }
     
@@ -1608,7 +1609,8 @@ class Contact extends BaseContact {
     
 	
     function getPictureUrl($size = 'small') {
-    	$default_img_file = $this->getIsCompany() ? 'default-company.png' : 'default-avatar.png';
+
+		$default_img_file = null; Hook::fire('default_image_file', $this, $default_img_file);
     	
     	$url = null; Hook::fire('override_contact_picture_url', $this, $url);
     	if ($url != null) return $url;
@@ -2224,5 +2226,12 @@ class Contact extends BaseContact {
 		}
 		return $value;
 	}
+
+	function getBillingEmail() {
+		$value = ContactEmails::instance()->findOne(array("conditions" => "contact_id = ".$this->getId()." AND is_main = 1"));
+		if(empty($value)) return false;
+		return ($value->getColumnValue('default_billing_email') != '') ? $value->getColumnValue('default_billing_email') : 0;
+	}
+
 	
 }

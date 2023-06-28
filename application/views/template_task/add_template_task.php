@@ -186,7 +186,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 			<div class="clear"></div>
 		</div>
 		
-		<?php if(array_var($task_data, 'time_estimate') == 0){?>
+		<?php if((array_var($task_data, 'time_estimate') == 0) || (ProjectTasks::checkTaskInTemplate($task, 'fixed fee tasks'))){?>
 		<div class="dataBlock">
 		<?php echo label_tag(lang('percent completed')) ?>
 		<?php echo input_field('task[percent_completed]', array_var($task_data, 'percent_completed', 0), array('class' => 'short')) ?>
@@ -208,7 +208,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php 
 			$null = null;
 			$object->setObjectTypeId($projectTask->getObjectTypeId());
-			Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);
+			Hook::fire('before_render_main_custom_properties', array('object' => $object, 'task_data' => $task_data, 'genid' => $genid), $null);
 		?>
 		
 		<div class="main-custom-properties-div"><?php
@@ -676,7 +676,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	var assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
 	var start = true;
 	
-	og.drawAssignedToSelectBox = function(companies, only_me, groups) {
+	og.drawAssignedToSelectBoxTempTask = function(companies, only_me, groups) {
 		ogTasks.usersStore['<?php echo $genid ?>'] = ogTasks.buildAssignedToComboStore(companies, only_me, groups, true);
 		var assignCombo = new Ext.form.ComboBox({
 			renderTo:'<?php echo $genid ?>assignto_container_div',
@@ -696,7 +696,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	        emptyText: (lang('select user or group') + '...'),
 	        valueNotFoundText: ''
 		});
-		assignCombo.on('select', og.onAssignToComboSelect);
+		assignCombo.on('select', og.onAssignToComboSelectTempTask);
 
 		assignedto = document.getElementById('<?php echo $genid ?>taskFormAssignedTo');
 		if (assignedto){
@@ -704,13 +704,12 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		}
 	}
 	
-	og.onAssignToComboSelect = function() {
-		combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
+	og.onAssignToComboSelectTempTask = function(combo, selected, idx) {
+		var plain_text = og.removeTags(selected.data.text);
+		$('#<?php echo $genid ?>taskFormAssignedToCombo').val(plain_text);
+
 		assignedto = document.getElementById('<?php echo $genid ?>taskFormAssignedTo');
 		if (assignedto) assignedto.value = combo.getValue();
-		assigned_user = combo.getValue();
-		
-		ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid?>');
 	}
 
  	og.redrawUserListsTempTask = function(context){
@@ -737,7 +736,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					combo.setValue(prev_value);
 					combo.enable();
 				} else {
-					og.drawAssignedToSelectBox(data.companies, only_me, data.groups);
+					og.drawAssignedToSelectBoxTempTask(data.companies, only_me, data.groups);
 				}
 				ogTasks.usersStore['<?php echo $genid?>'] = ogTasks.buildAssignedToComboStore(data.companies, only_me, data.groups);
 				// update subtasks assigned_to selector
@@ -754,6 +753,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					}
 				}
 				og.redrawingUserList = false;
+
+				// ensure that no html tags are inside the input
+				var plain_text = og.removeTags($('#<?php echo $genid ?>taskFormAssignedToCombo').val());
+				$('#<?php echo $genid ?>taskFormAssignedToCombo').val(plain_text);
 			}});
 			setTimeout(function() { 
 				og.redrawingUserList = false;
@@ -819,8 +822,31 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				scripts: true
 			});
 		}
-		
+		 
 		og.redrawUserListsTempTask(dimension_members_json);
+
+		// Change billable if hour_types and and advanced billing plugins are activated
+		var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
+		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
+		if(hour_type_active && advanced_billing_active){
+			og.setIsBillable(dimension_members_json);
+		}
+	}
+
+	og.setIsBillable = function(dimension_members_json){
+		var current_billable = $('#<?php echo $genid ?>is_billableYes').attr('checked') == 'checked' ? 1 : 0;
+		var member_params = {member_ids: dimension_members_json, current_billable: current_billable};
+		og.openLink(og.getUrl('billing_definition','get_labor_category_billable_for_task_form', member_params), {
+			callback: function(success, data) {
+				if(data.has_value){
+					if(data.is_billable){
+						$('#<?php echo $genid ?>is_billableYes').attr('checked','checked');
+					} else {
+						$('#<?php echo $genid ?>is_billableNo').attr('checked','checked');
+					}
+				}
+			}
+		});
 	}
 	
 	
@@ -914,19 +940,40 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		if (label) label.style.display = 'inline';
 		
 	};
+
+	//User combo
+	og.drawAssignedToSelectBoxTempTask([], false, []);
+	var task_members_json = {};
+	if(<?php echo $task->isNew() ? '0' : '1'?>){
+		// parse the mem path string
+		var mempath = Ext.util.JSON.decode('<?php echo json_encode($task->getMembersIdsToDisplayPath()) ?>');
+
+		var task_members_json = {};
+		// iterate the mempath object, key = dimension_id, value = member ids grouped by member type id
+		for (var dim_id in mempath) {
+			task_members_json[dim_id] = [];
+			// get the members grouped by type
+			ots_data = mempath[dim_id];
+			// foreach member type, proecess the members
+			for (var ot_id in ots_data) {
+				if (!isNaN(ot_id) && ots_data[ot_id] && ots_data[ot_id].length > 0) {
+					// process the members of the current member tpye
+					for (var x in ots_data[ot_id]) {
+						// get the member id
+						var m = ots_data[ot_id][x];
+						// add the member id to the result
+						task_members_json[dim_id].push(m);
+					}
+				}
+			}
+		}
+	}
+	task_members_json = Ext.util.JSON.encode(task_members_json);
+	og.redrawUserListsTempTask(task_members_json);
 	
 
 	$(document).ready(function() {
-		if($("#<?php echo $genid?>view_related").val()){
-			<?php if($task->isCompleted()){ ?>
-			this.dialog = new og.TaskPopUp('task_complete','');
-			<?php }else{?>
-			this.dialog = new og.TaskPopUp('','');
-			<?php }?>
-			this.dialog.setTitle(lang('tasks related'));
-			this.dialog.show();
-		}
-		
+				
 		<?php if(!$task->isCompleted()){ ?>
 			og.changeTaskRepeat();
 		<?php }?>
@@ -945,10 +992,6 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php
 			}
 		?>
-
-		$('#<?php echo $genid?>taskFormApplyAssignee').change(function(event){
-			ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid?>');
-		});
 
 		$("#<?php echo $genid?>tabs").tabs();
 

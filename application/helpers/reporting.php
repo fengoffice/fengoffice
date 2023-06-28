@@ -27,11 +27,11 @@ function report_values_to_arrays($results, $report) {
 	if (!isset($results['group_by_criterias']) || count($results['group_by_criterias']) == 0) {
 		return report_values_to_arrays_plain($results, $report);
 	}
-	
+
 	Hook::fire('modify_custom_report_results', array('report' => $report), $results);
 	
 	$groups = $results['grouped_rows'];
-	
+
 	$headers = array();
 	$columns = array_var($results, 'columns');
 	foreach ($columns['order'] as $col) {
@@ -171,8 +171,10 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				$sorted = true;
 				$asc = !$last_order_by_asc;
 			}
+			$type = array_var($columns['types'], $col);
+			$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
-			<th class="bold">
+			<th class="<?php echo $numeric_type ? 'bold right' : 'bold'?>">
 		<?php 
 			if ($to_print) {
 				
@@ -219,8 +221,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 
 				$value = array_var($row, $col);
 				$type = array_var($columns['types'], $col);
-
-                                $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
+                $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
 		<?php 
@@ -269,10 +270,13 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 
 
 
-function echo_report_group_html($group_data, $results, $report, $level=0) {
+function echo_report_group_html($group_data, $results, $report, $level=0, $to_print=false) {
 	
 	$columns = array_var($results, 'columns');
-	
+
+	$project_ot = ObjectTypes::findByName('project');
+	$project_ot_id = $project_ot ? $project_ot->getId() : '';
+
 	$i = 0;
 	foreach ($group_data as $gd) {
 		if (!$report->getColumnValue("hide_group_details")) {
@@ -284,13 +288,16 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 			if (str_starts_with($original_gkey, "_group_id_dim_")) {
 			    $exp_id = explode('_', $gd['id']);
 				$gd_id = end($exp_id);
-				$mem = Members::findById($gd_id);
+				$mem = Members::getMemberById($gd_id);
 				if ($mem instanceof Member) {
 					$mems = array($mem);
 					build_member_list_text_to_show_in_trees($mems);
-					$mem_path = $mem->getPath(' - ');
-					$gd_name = $mem_path != '' ? $mem_path . ' - ' . $mems[0]->getName() : $mems[0]->getName();		
-					//$gd_name = $mems[0]->getName();
+					if ($mem->getObjectTypeId() == $project_ot_id) {
+						$gd_name = $mem->getName();
+					} else {
+						$mem_path = $mem->getPath(' - ');
+						$gd_name = $mem_path != '' ? $mem_path . ' - ' . $mem->getName() : $mem->getName();		
+					}
 				}
 			}
 			
@@ -307,7 +314,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 		$i++;
 		
 		if (isset($gd['groups'])) {
-			echo_report_group_html($gd['groups'], $results, $report, $level+1);
+			echo_report_group_html($gd['groups'], $results, $report, $level+1, $to_print);
 			
 			if (!$report->getColumnValue("hide_group_details")) {
 				// when hiding details dont show the title and show the totals before the subgroups
@@ -374,28 +381,35 @@ function echo_report_group_html($group_data, $results, $report, $level=0) {
 						$type = array_var($columns['types'], $col);
 						$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
 				?>
-					<td style="<?php echo ($col == 'link' ? 'width:16px;border-right:0 none;' : '') ?>" <?php echo $numeric_type ? 'class="right"' : ''?>>
-				<?php 
-						$val_type = ($col == 'link' ? '' : array_var($columns['types'], $col));
-						$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
-						$date_custom = $report->getColumnValue('date_format');
-						$date_format = $date_custom != '' ? $date_custom : $date_format;
+					<?php
+					if($col == 'link' && $to_print){ ?>
+						<td style="min-width: 1px !important;width: 1px !important; max-width: 20px !important;"></td>
+					<?php }else{ ?>
+						<td 
+							style="<?php echo ($col == 'link' ? 'width:16px;border-right:0 none;' : '') ?>" 
+							class="<?= $numeric_type ? 'right' : ''?> <?= ($col == 'description' || $col == 'rel_object_id' || $col == 'bill_adv_billing_id') ? 'largeColumn forcetLeft' : '' ?>">
+							<?php 
+									$val_type = ($col == 'link' ? '' : array_var($columns['types'], $col));
+									$date_format = is_numeric($col) ? "Y-m-d" : user_config_option('date_format');
+									$date_custom = $report->getColumnValue('date_format');
+									$date_format = $date_custom != '' ? $date_custom : $date_format;
 
-						if($val_type == DATA_TYPE_DATETIME && !($value instanceof DateTimeValue)){
-							if($value == ''){
-								echo $value;
-								continue;
-							} else {
-								$value = formatToDateTimeValue($value);
-								$val_type = pickDateOrDatetimeValueType($row, $report);
-							}
-						}
-						
-						$tz_offset = array_var($row, 'tz_offset');
-						echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
-						
-				?>
-					</td>
+									if($val_type == DATA_TYPE_DATETIME && !($value instanceof DateTimeValue)){
+										if($value == ''){
+											echo $value;
+											continue;
+										} else {
+											// A.C This is comented because add 1 day before firstday and after end day
+											// $value = formatToDateTimeValue($value);
+											$val_type = pickDateOrDatetimeValueType($row, $report);
+										}
+									}
+									
+									$tz_offset = array_var($row, 'tz_offset');
+									echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+							?>
+						</td>
+					<?php } ?>
 				<?php
 						$i++;
 					}
@@ -441,16 +455,28 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
         <thead>
 		<tr class="custom-report-table-heading <?php echo $add_thead_cls ?>">
 		<?php if (!$report->getColumnValue("hide_group_details")) { ?>
-            <th>&nbsp;</th>
+            <th style="min-width: 1px !important;width: 1px !important;">&nbsp;</th>
         <?php } ?>
 		<?php
 		$columns = array_var($results, 'columns');
+		$verifyColumn = array('contact_id', 'rel_object_id', 'adv_billing_id', 'created_by_id');
+		$descClass = '';
 		foreach ($columns['order'] as $col) {
+
+			$descClass =($col =='description' || $col =='rel_object_id' || $col =='bill_adv_billing_id') ? 'largeColumn forcetLeft' : '';
 			if($col != 'link') {
-				echo "<th>";
+				if(in_array($col, $verifyColumn)) {
+					$th_class = 'left';
+				} else {
+					$type = array_var($columns['types'], $col);
+					$is_numeric_type = in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
+					$th_class =  $is_numeric_type ? "right" : "";
+				}
+				// $th_class = array_var($columns['types'], $col) == 'INTEGER' ? "right" : "";
+				echo "<th class='$descClass $th_class'>";
 			  	echo clean(array_var($columns['names'], $col));
-                echo ' '.get_format_value_to_header($col, $report->getReportObjectTypeId());
-				echo "</th>";
+				echo ' '.get_format_value_to_header($col, $report->getReportObjectTypeId());
+				echo "</th>"; 
 			}
 		}
 		?>
@@ -459,10 +485,11 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 	    <tbody style="<?php echo $to_print ? '':'' ?>">
         <?php
 	foreach($groups as $g) {
-	    echo_report_group_html($g, $results, $report, 0);
+	    echo_report_group_html($g, $results, $report, 0, $to_print);
     }
-
-	echo "<tr><td>&nbsp;</td></tr>";
+	
+	$style_min = ($to_print) ? "style='min-width: 1px !important;width: 1px !important;'" : '';
+	echo "<tr><td ". $style_min .">&nbsp;</td></tr>";
 	$null=null;
 	Hook::fire('render_additional_report_rows', array('results' => $results, 'report' => $report,'final_total' => true), $null);
 	
@@ -507,7 +534,12 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 						$gd_name = $mems[0]->getName();
 					}
 				}
-				
+				if (!$report->getColumnValue("hide_group_details")) {
+					if (!empty($row_vals)) :
+						$row_vals['type'] = 'group_header_' . $level;
+					endif;
+				}
+
 				$row_vals[] = $first ? $gd_name : "";
 				$first = false;
 			}
@@ -517,7 +549,6 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 		}
 
 		if (isset($gd['groups'])) {
-
 			$group_rows = get_report_grouped_values_as_array($gd['groups'], $results, $report, $level+1);
 			$all_rows = array_merge($all_rows, $group_rows);
 			Hook::fire('get_additional_report_group_rows_csv', array('results' => $results, 'report' => $report, 'group' => $gd, 'level' => $level), $all_rows);		
@@ -661,7 +692,6 @@ function get_cp_contact_name($gb_keys, $index, $row, &$cp_contact_cache) {
 function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate = true) {
 	
 	$gb_keys = array();
-	// Logger::log_r($group_by_criterias);
 	foreach ($group_by_criterias as $gb) {
 		switch ($gb['type']) {
 			case 'association': $gkey = '_group_id_a_'.$gb['id']; break;
@@ -716,6 +746,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 	$cp_contact_cache = array();
 	
 	$grouped_temp = array();
+	$project_ot = ObjectTypes::findByName('project');
+	$project_ot_id = $project_ot ? $project_ot->getId() : '';
 	
 	foreach ($rows as $row) {
 		if (!empty($row)) {
@@ -744,8 +776,17 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					$n0 = get_cp_contact_name($gb_keys, 0, $row, $cp_contact_cache);
 					$row[$gb_keys[0]['n']] = $n0;
 				}
+				else  if (str_starts_with($gb_keys[0]['k'], '_group_id_dim_') && str_ends_with($gb_keys[0]['k'], "_".$project_ot_id)) {
+					$tmp_mem_arr = array(Members::getMemberById($row[$gb_keys[0]['k']]));
+					if (count($tmp_mem_arr) > 0) {
+						build_member_list_text_to_show_in_trees($tmp_mem_arr);
+						$n0 = ($tmp_mem_arr[0] instanceof Member) ? $tmp_mem_arr[0]->getName() : '';
+						$row[$gb_keys[0]['n']] = $n0;
+					}
+				}
 				
 				if ($n0 == '') $n0 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+				$n0 = strtoupper($n0);
 				
 				if (!isset($grouped_temp[$n0])) {
 				    if ($gb_keys[0]['is_date'] && $formatDate){
@@ -771,6 +812,15 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 							}
 						} else {
 							$name_k0 = lang('unclassified');
+						}
+						if ($gb_keys[0]['k'] == "_group_id_fp_is_billable") {
+							if($k0 == 0) {
+								$name_k0 = lang('non-billable');
+							} else if($k1 == 1){
+								$name_k0 = lang('billable');
+							}
+						} else if ($gb_keys[0]['k'] == "_group_id_fp_invoicing_status") {
+							$name_k0 = lang("invoicing_status $k0");
 						}
                         $grouped_temp[$n0] = array(
                             'id' =>  $k0,
@@ -835,6 +885,15 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 							} else {
 								$name_k1 = lang('unclassified');
 							}
+							if ($gb_keys[1]['k'] == "_group_id_fp_is_billable") {
+								if($k1 == 0) {
+									$name_k1 = lang('non-billable');
+								} else if($k1 == 1){
+									$name_k1 = lang('billable');
+								}
+							} else if ($gb_keys[1]['k'] == "_group_id_fp_invoicing_status") {
+								$name_k1 = lang("invoicing_status $k1");
+							}
                             $grouped_temp[$n0]['groups'][$n1] = array(
                                 'id' => $k0."_".$k1,
                                 'name' => $name_k1, //$row[$gb_keys[1]['n']] ? $row[$gb_keys[1]['n']] : lang('unclassified'),
@@ -898,6 +957,15 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 									}
 								} else {
 									$name_k2 = lang('unclassified');
+								}
+								if ($gb_keys[2]['k'] == "_group_id_fp_is_billable") {
+									if($k2 == 0) {
+										$name_k2 = lang('non-billable');
+									} else if($k1 == 1){
+										$name_k2 = lang('billable');
+									}
+								} else if ($gb_keys[2]['k'] == "_group_id_fp_invoicing_status") {
+									$name_k2 = lang("invoicing_status $k2");
 								}
                                 $grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
                                     'id' => $k0."_".$k1."_".$k2,
@@ -1094,7 +1162,8 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 			}
 			
 			if (!$already_rendered && $value != '' && $value != $date_format_tip) {
-				$conditionHtml .= '<li>' . $name . ' ' . ($condition->getCondition() != '%' ? $condition->getCondition() : lang('ends with') ) . ' ' . format_value_to_print($condition->getFieldName(), $value, $coltype, '', '"', user_config_option('date_format')) . '</li>';
+				
+				$conditionHtml .= '<li>' . $name . ' ' . ($condition->getCondition() != '%' ? $condition->getCondition() : lang('ends with') ) . ' ' . format_value_to_print($condition->getFieldName(), $value, $coltype, '', '"', user_config_option('date_format'), null, false, true) . '</li>';
 				$conditions_count++;
 				if ($conditions_count % $conditions_per_block == 0) {
 					$conditionHtml .= '</ul><ul>';
@@ -1156,7 +1225,61 @@ function custom_report_info_blocks($params) {
 <?php 
 }
 
+function custom_report_info_blocks_pdf($params) {
+	$id = array_var($params, 'id');
+	$name_report = array_var($params, 'name_report');
+	$results = array_var($params, 'results');
+	$rep_params = array_var($params, 'parameters');
+	$disabled_params = array_var($params, 'disabled_params');
+	$conditionHtml = build_report_conditions_html($id, $rep_params, null, $disabled_params);
+	$company_name = owner_company()->getObjectName();
+	
+	$company_logo = null;
+	if (FileRepository::isInRepository(owner_company()->getPictureFile())) {
+		$company_logo = FileRepository::getBackend()->getFileContent(owner_company()->getPictureFile());
+	}
+	$company_logo = base64_encode($company_logo);
 
+	$name_project = "";
+	$now_pdf = format_date(date("m-d-Y"),null, logged_user()->getUserTimezoneHoursOffset());
+
+	$context = active_context();
+	foreach ($context as $selection) :
+		if ($selection instanceof Member) :
+			$name_project = $selection->getName();
+	endif;
+	endforeach;
+
+	$html = '
+		<div class="flex-cols">
+			<div class="fcol-1" style="position: relative;">
+				<img class="imageLogoReports" src="data:image/png;base64,'. $company_logo . '">
+			</div>
+			<div class="fcol-2">
+				'. $company_name .'
+			</div>
+			<div class="fcol-3">
+				<b>Executed on:</b><br>
+				'. $now_pdf .'
+			</div>
+		</div>
+		<div class="clear"></div>
+		<div class="flex-cols-3">
+			<div class="fcol-1">
+				<h1>'. $name_report .'</h1>
+				<b>'. $name_project .'</b>
+			</div>
+			<div class="fcol-3">
+				<b>Filters</b>
+				'. $conditionHtml .'
+			</div>
+		</div>
+		<div class="clear"></div>
+		<br>
+	';
+
+	echo $html;
+}
 
 function parse_custom_report_group_by($group_by, $group_by_options = array()) {
 	
@@ -1528,6 +1651,32 @@ function build_report_conditions_sql($parameters) {
 	return array(
 			'all_conditions' => $allConditions,
 	);
+}
+
+
+function build_sql_date_string_using_column_type($value = null, $object_type_id = null, $column = null) {
+	$ot = ObjectTypes::findById($object_type_id);
+	if (!$ot) return '';
+
+	$ot_class = $ot->getHandlerClass();
+	$obj = new $ot_class();
+	$column_type = $obj->getColumnType($column);
+
+	$timezone = 0;
+	if (function_exists('logged_user') && logged_user() instanceof Contact && $column_type == DATA_TYPE_DATETIME) {
+		$timezone = logged_user()->getUserTimezoneHoursOffset();
+	} // if
+
+	$datetime = $value instanceof DateTimeValue ? $value : new DateTimeValue($value);
+	if (!$datetime) return '';
+
+	// Create new datetimevalue to apply toMySQL()
+	$dt = new DateTimeValue($datetime->getTimestamp());
+
+	// Adjust date based on timezone - 3600 : 1 hour (to adjust timestamp on advance function)
+	$dt->advance($timezone * -1 * 3600, true); 
+
+	return $dt->toMySQL();
 }
 
 

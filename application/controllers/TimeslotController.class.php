@@ -47,13 +47,19 @@ class TimeslotController extends ApplicationController {
 			$timeslot->setRelObjectId($object_id);
 		}
         
-         $allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
+		if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+			$invoicing_status = 'pending';
+			Hook::fire('get_initial_invoicing_status_for_timeslot_using_members_and_task', array('task_id' => $object_id, 'get_task_members' => true), $invoicing_status);
+			$timeslot->setColumnValue('invoicing_status', $invoicing_status);
+		}
+
+        $allOpenTimeslot = Timeslots::getAllOpenTimeslotByObjectByUser(logged_user());
 		
 		try{
 			DB::beginWork();
             
             foreach ($allOpenTimeslot as $time){
-               $this->internal_close($time);
+			   $this->handle_open_timeslot($time);
             }
 			
 			$timeslot->save();
@@ -173,6 +179,7 @@ class TimeslotController extends ApplicationController {
 
 		$this->setTemplate('add_timeslot');
 
+		$cancel_timer = array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true';
 		$timeslot = Timeslots::findById(get_id());
 		if(!($timeslot instanceof Timeslot)) {
 			flash_error(lang('timeslot dnx'));
@@ -206,6 +213,9 @@ class TimeslotController extends ApplicationController {
 		}
 		
 		try{
+			// to use when saving the application log
+			$old_content_object = $timeslot->generateOldContentObjectData();
+			
 			DB::beginWork();
 			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true'){
 				$timeslot->delete();
@@ -216,19 +226,23 @@ class TimeslotController extends ApplicationController {
 			$object = $timeslot->getRelObject();
 			if($object instanceof ProjectTask) {
 				$object->calculatePercentComplete();
+				Hook::fire('calculate_estimated_and_executed_financials', array(), $object);
 			}
 			
 			DB::commit();
 			if($object instanceof ProjectTask) {
 				$this->notifier_work_estimate($object);
 			}
-			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_CLOSE);
-				
-			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true')
+			
+			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true') {
 				flash_success(lang('success cancel timeslot'));
-			else
-				flash_success(lang('success close timeslot'));
-				
+			} else { 
+				Hook::fire('after_timer_closed', $timeslot, $ret);
+				flash_success(lang('success close timeslot', ''));
+			}	
+			
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_CLOSE);
+
 			ajx_current("reload");
 		} catch (Exception $e) {
 			DB::rollback();
@@ -237,10 +251,43 @@ class TimeslotController extends ApplicationController {
 		}
 	}
 	
-	function internal_close($time){
-	    
-	    $config = user_config_option('stop_running_timeslots');
+	function close_timer() {
+		$this->setTemplate('close_timer');
+		$timeslot = Timeslots::findById(get_id());
+		if(!($timeslot instanceof Timeslot)) {
+			flash_error(lang('timeslot dnx'));
+			ajx_current("empty");
+			return;
+		}
+
+		$object = $timeslot->getRelObject();
+		if($object instanceof ContentDataObject && !($object->canAddTimeslot(logged_user()))) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+			return;
+		}
+
+		tpl_assign('timeslot', $timeslot);
+	}
+		
+		
+	
+
+	function handle_open_timeslot($time) {
+		$config = user_config_option('stop_running_timeslots');
+		if($config == 1) {
+			$this->internal_close($time);
+		} else if ($config == 2) {
+			$this->internal_pause($time);
+		}
+	}
+	
+	function internal_close($time){ 
+	    $config = user_config_option('stop_running_timeslots') == 1; 
 	    if ($config){
+			// to use when saving the application log
+			$old_content_object = $time->generateOldContentObjectData();
+
             $date = format_date(null,DATE_MYSQL);
 			$time->getEndTime($date);
 			$time->close();
@@ -266,8 +313,35 @@ class TimeslotController extends ApplicationController {
                 $object->calculatePercentComplete();
             }
             
+			ApplicationLogs::createLog($time, ApplicationLogs::ACTION_CLOSE, false, true);
         }
     }
+
+	function internal_pause($time) {
+		$config = user_config_option('stop_running_timeslots') == 2; 
+		$is_paused = $time->isPaused();
+	    if ($config && !$is_paused){
+			try{
+				// to use when saving the application log
+				$old_content_object = $time->generateOldContentObjectData();
+
+				DB::beginWork();
+				$time->pause();
+				$time->save();
+				DB::commit();
+				
+				ApplicationLogs::createLog($time, ApplicationLogs::ACTION_EDIT, false, true);
+
+			//	flash_success(lang('success pause timeslot'));
+				ajx_current("reload");
+			} catch (Exception $e) {
+				DB::rollback();
+				flash_error($e->getMessage());
+			}
+        
+            
+       }
+	}
 	
 	function pause() {
 
@@ -291,10 +365,15 @@ class TimeslotController extends ApplicationController {
 		}
 		
 		try{
+			// to use when saving the application log
+			$old_content_object = $timeslot->generateOldContentObjectData();
+
 			DB::beginWork();
 			$timeslot->pause();
 			$timeslot->save();
 			DB::commit();
+
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT);
 				
 			flash_success(lang('success pause timeslot'));
 			ajx_current("reload");
@@ -324,14 +403,21 @@ class TimeslotController extends ApplicationController {
 			flash_error(lang('no access permissions'));
 			return;
 		}
+
 		
 		try{
+			// to use when saving the application log
+			$old_content_object = $timeslot->generateOldContentObjectData();
+
 			DB::beginWork();
+			
 			$timeslot->resume();
 			$timeslot->save();
 			DB::commit();
-				
-			flash_success(lang('success pause timeslot'));
+			
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_OPEN);
+
+			flash_success(lang('success resume timeslot'));
 			ajx_current("reload");
 		} catch (Exception $e) {
 			DB::rollback();
@@ -396,6 +482,9 @@ class TimeslotController extends ApplicationController {
 		
 		if(is_array(array_var($_POST, 'timeslot'))) {
 			try {
+				// to use when saving the application log
+				$old_content_object = $timeslot->generateOldContentObjectData();
+
 				$old_user_id = $timeslot->getContactId();
 				
 				$timeslot->setFromAttributes($timeslot_data);
@@ -504,7 +593,7 @@ class TimeslotController extends ApplicationController {
 	 * @return null
 	 */
 	function delete() {
-
+		
 		$timeslot = Timeslots::findById(get_id());
 		if(!($timeslot instanceof Timeslot)) {
 			flash_error(lang('timeslot dnx'));
@@ -576,8 +665,16 @@ class TimeslotController extends ApplicationController {
                 }
                 
                 if($timeslot->canDelete(logged_user())) {
-                    
-                    $timeslot->delete();
+
+					if(Plugins::instance()->isActivePlugin('income') && $timeslot->getColumnValue('invoicing_status') == 'invoiced'){
+						flash_error(lang('you cannot delete invoiced time entry'));
+						ajx_current("empty");
+						return;
+					}
+
+					$timeslot->trash();
+
+                    // $timeslot->delete();
                     $object->onDeleteTimeslot($timeslot);
                     
                     if ($object instanceof ProjectTask) {
@@ -601,6 +698,18 @@ class TimeslotController extends ApplicationController {
             ajx_current("empty");
         }
 
+	}
+
+	function taskHasInvoicedTimeslots($task){
+		$result = false;
+		if(Plugins::instance()->isActivePlugin('income') && $task instanceof ProjectTask){
+			$task_id = $task->getObjectId();
+			$timeslots = Timeslots::instance()->findAll(array('conditions' => array('`rel_object_id` = ' . $task_id . ' AND `invoicing_status`="invoiced"')));
+			if (count($timeslots)){	    
+				$result = true;
+			}	
+		} 
+		return $result;
 	}
 
 	function notifier_work_estimate($task){

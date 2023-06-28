@@ -120,7 +120,28 @@
     function setIsMain($value) {
       return $this->setColumnValue('is_main', $value);
     } // setIsMain() 
-    
+
+    /**
+    * Set value of 'default_email' field
+    *
+    * @access public   
+    * @param boolean $value
+    * @return boolean
+    */
+    function setDefaultEmail($value) {
+      return $this->setColumnValue('default_billing_email', $value);
+    } // setDefaultEmail() 
+
+  /**
+   * Return value of 'default_email' field
+   *
+   * @access public
+   * @param void
+   * @return boolean 
+   */
+    function getDefaultEmail() {
+      return $this->getColumnValue('default_billing_email');
+    } // getDefaultEmail()
     
     /**
     * Return manager instance
