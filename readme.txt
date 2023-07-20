@@ -1,5 +1,5 @@
 
-	About Feng Office 3.10.4.3
+	About Feng Office 3.10.4.7
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,49 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.4.6
+	-----------------------------------
+	bugfix: if-no-contact-billing-address-let-use-blank-addres (#2035)
+	bugfix: Calculate estimated expenses financials when the task is changed (#2034)
+	bugfix: fix-po_number_and_labor_detail_on_inoive_generation (#2033)
+	bugfix: qbo sync must be triggered after drag and drop classification (#2032)
+	bugfix: add needed columns for tasks when updating advanced_billing (#2031)
+	bugfix: When showing error message in widgets, base it on 'total_time_estimate' (#2030)
+	bugfix: Remove conditions that prevented percent complete calculations (#2027)
+	bugfix: hotfix-save-detail-in-lump-sum-generation (#2025)
+	bugfix: template numeric variables don't allow to enter decimals (#2022)
+	bugfix: need to check if advanced_core plugin is installed before using its classes, add time from task didn't work (#2021)
+	bugfix: fix-invoice-generate-fixed-fee-tasks-name-duplicated (#2018)
+
+	Since 3.10.4.5
+	-----------------------------------
+	bugfix: configure ermi invoice layout (#2017)
+	bugfix: not all expense types are available in qbo sync (#2016)
+	bugfix: never allow expenses to be saved with currency_id=0 (#2015)
+	bugfix: fix-permission-can-manage-email-template (#2014)
+	bugfix: update default Feng Office logo and favicon (#2013)
+	bugfix: add margin to task list 'show all/more' actions to prevent overlap with scrollbar (#2012)
+
+	Since 3.10.4.4
+	-----------------------------------
+	bugfix: disable deprecated mandatory expense custom properties once used for qbo sync (#2009)
+	bugifx: fix permissions check in weekly view controller before making any change to times (#2005)
+	Bugfix: add total cost and price columns to budgeted exp reports (#1998)
+	bugfix: fix-notifications (#2003)
+	Bugfix: overtime make same calculations for billing as for cost (#2010)
+	bugfix: if task list date filter is empty then use empty datetime constant to prevent wrong filter initialization with now() (#2011)
+	bugfix: fix context manager function that gets member node, don't assume the tree is always present (#2004)
+	bugfix: add get/set for cost currency in timeslot model (#2008)
+	bugfix: fix-invoice-duplicate-taks-name-for-fixed-fee-tasks (#2007)
+
+	Since 3.10.4.3
+	-----------------------------------
+	fix-langs-invoices (#2002)
+	bugfix: rollback batch invoicing functions to previous code and check if project member exists before building lines data (#2001)
+	Bugfix: Check if 'income' plugin is installed (#2000)
+	fix-bill-to-invoice-order (#1996) 
+	Stop adding already existing column in the NM installer (#1988)
 
     Since 3.10.4.2
 	-----------------------------------

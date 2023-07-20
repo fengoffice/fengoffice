@@ -332,6 +332,13 @@
       return $this->setColumnValue('rate_currency_id', $value);
     }
     
+    function getCostCurrencyId() {
+		return $this->getColumnValue('cost_currency_id');
+    }
+
+    function setCostCurrencyId($value) {
+		return $this->setColumnValue('cost_currency_id', $value);
+    }
     
     /**
     * Return manager instance

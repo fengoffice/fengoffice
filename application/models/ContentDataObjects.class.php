@@ -1308,7 +1308,7 @@ abstract class ContentDataObjects extends DataManager {
     
     
     
-    function getExternalColumnValue($field, $id) {
+    function getExternalColumnValue($field, $id, $manager=null, $object=null) {
     	return "";
     }
     

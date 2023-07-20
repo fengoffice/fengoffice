@@ -380,9 +380,8 @@ class TaskController extends ApplicationController {
                 }
                 $task->save();
 
-                if (!isset($task_data['percent_completed'])) {
-                    $task->calculatePercentComplete();
-                }
+                $task->calculatePercentComplete();
+
                 // get member ids
                 $member_ids = array();
                 if (array_var($task_data, 'members')) {
@@ -849,7 +848,7 @@ class TaskController extends ApplicationController {
         // only apply saved task dates filters if dates filter inputs are enabled
         if (user_config_option('tasksUseDateFilters')) {
             if (user_config_option('tasksDateStart') != $filter_from_date) {
-                if ($filter_from_date != '0000-00-00 00:00:00' || array_var($_REQUEST, 'resetDateStart')) {
+                if ($filter_from_date != EMPTY_DATETIME || array_var($_REQUEST, 'resetDateStart')) {
                     set_user_config_option('tasksDateStart', $copFromDate, logged_user()->getId());
                 } else {
                     $filter_from_date = user_config_option('tasksDateStart');
@@ -857,7 +856,7 @@ class TaskController extends ApplicationController {
             }
 
             if (user_config_option('tasksDateEnd') != $filter_to_date) {
-                if ($filter_to_date != '0000-00-00 00:00:00' || array_var($_REQUEST, 'resetDateEnd')) {
+                if ($filter_to_date != EMPTY_DATETIME || array_var($_REQUEST, 'resetDateEnd')) {
                     set_user_config_option('tasksDateEnd', $copToDate, logged_user()->getId());
                 } else {
                     $filter_to_date = user_config_option('tasksDateEnd');
@@ -865,13 +864,22 @@ class TaskController extends ApplicationController {
             }
         }
 
-        if ((($filter_from_date != '0000-00-00 00:00:00')) || (($filter_to_date != '0000-00-00 00:00:00'))) {
-            if (($filter_from_date != '0000-00-00 00:00:00')) {
+		// if filter is empty then use empty datetime constant to prevent wrong filter initialization with now()
+		if ($filter_from_date == '') {
+			$filter_from_date = EMPTY_DATETIME;
+		}
+		if ($filter_to_date == '') {
+			$filter_to_date = EMPTY_DATETIME;
+		}
+		// ---
+
+        if ((($filter_from_date != EMPTY_DATETIME)) || (($filter_to_date != EMPTY_DATETIME))) {
+            if (($filter_from_date != EMPTY_DATETIME)) {
                 $dateFrom = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $filter_from_date);
                 $dateFrom->advance(logged_user()->getUserTimezoneValue() * -1);
                 $dateFrom = $dateFrom->toMySQL();
             }
-            if (($filter_to_date != '0000-00-00 00:00:00')) {
+            if (($filter_to_date != EMPTY_DATETIME)) {
                 $dateTo = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $filter_to_date);
                 $dateTo->setHour(23);
                 $dateTo->setMinute(59);
@@ -879,10 +887,10 @@ class TaskController extends ApplicationController {
                 $dateTo->advance(logged_user()->getUserTimezoneValue() * -1);
                 $dateTo = $dateTo->toMySQL();
             }
-            if ((($filter_from_date != '0000-00-00 00:00:00')) && (($filter_to_date != '0000-00-00 00:00:00'))) {
+            if ((($filter_from_date != EMPTY_DATETIME)) && (($filter_to_date != EMPTY_DATETIME))) {
 
                 $tasks_from_date = " AND (((`e`.`start_date` BETWEEN '" . $dateFrom . "' AND '" . $dateTo . "') AND `e`.`start_date` != " . DB::escape(EMPTY_DATETIME) . ") OR ((`e`.`due_date` BETWEEN '" . $dateFrom . "' AND '" . $dateTo . "') AND `e`.`due_date` != " . DB::escape(EMPTY_DATETIME) . "))";
-            } elseif (($filter_from_date != '0000-00-00 00:00:00')) {
+            } elseif (($filter_from_date != EMPTY_DATETIME)) {
                 $tasks_from_date = " AND (`e`.`start_date` > '" . $dateFrom . "' OR `e`.`due_date` > '" . $dateFrom . "') ";
             } else {
 
@@ -3712,9 +3720,7 @@ class TaskController extends ApplicationController {
 
                 $task->save();
 
-                if (!isset($task_data['percent_completed'])) {
-                    $task->calculatePercentComplete();
-                }
+                $task->calculatePercentComplete();
 
                 // dependencies
                 if (config_option('use tasks dependencies')) {

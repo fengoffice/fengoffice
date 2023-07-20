@@ -136,8 +136,6 @@ class PluginController extends ApplicationController {
 			$plg->deactivate();
 		}
 	}
-
-
 	
 	function __construct() {
 		if (!defined('PLUGIN_MANAGER') && !defined('PLUGIN_MANAGER_CONSOLE')) {
@@ -161,19 +159,15 @@ class PluginController extends ApplicationController {
 		return $plugins ;
 	}
 	
-	
 	function ensure_installed_and_activated($plugin_name) {
 		
 		$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
 		if (!Plugins::instance()->isActivePlugin($plugin_name)) {
 			if (!$plugin instanceof Plugin) return;
 			if (!$plugin->isInstalled()) {
-				
 				$this->executeInstaller($plugin_name);
-		
 				$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
 			}
-				
 			$plugin->activate();
 		}
 		
@@ -183,7 +177,15 @@ class PluginController extends ApplicationController {
 		}
 		
 		return true;
-	} 
+	}
+
+	/**
+	 * check that plugin is installed and activated
+	 */
+	function check_installed_and_activated($plugin_name) {
+		return Plugins::instance()->isActivePlugin($plugin_name);
+	}
+	
 	
 /**
  * @param array of string $pluginNames

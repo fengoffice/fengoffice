@@ -49,7 +49,7 @@ if (array_var($_REQUEST, 'modal')) {
 					
 					<?php } else if ($parameter['type'] == 'numeric') { ?>
 
-						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>" type="number" />
+						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>" type="number" step="0.01" />
 					
 					<?php } else if ($parameter['type'] == 'date'){
 							echo pick_date_widget2('parameterValues['.$parameter_js_key.']');

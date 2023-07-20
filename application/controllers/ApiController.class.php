@@ -1113,7 +1113,7 @@ class ApiController extends ApplicationController {
                     }
                 }
                 
-                if ($task['time_estimate'] == 0){
+                if ($task['total_time_estimate'] == 0){
                     $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
                     $tasks_without_estimated_time[] = $task;
                     $all_has_estimated_time = false;

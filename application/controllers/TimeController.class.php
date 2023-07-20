@@ -165,7 +165,10 @@ class TimeController extends ApplicationController
                 $task_members = $rel_obj->getMembers();
 				// only preload the task's members that we can in the time form, this will prevent wrong members in dimension selectors filtering when initializing
 				foreach ($task_members as $task_member) {
-					$hidden_dim = DimensionContentObjectOptions::getOptionValue($task_member->getDimensionId(), Timeslots::instance()->getObjectTypeId(), 'hide_member_selector_in_forms');
+					$hidden_dim = false;
+					if (Plugins::instance()->isActivePlugin('advanced_core')) {
+						$hidden_dim = DimensionContentObjectOptions::getOptionValue($task_member->getDimensionId(), Timeslots::instance()->getObjectTypeId(), 'hide_member_selector_in_forms');
+					}
 					if (!$hidden_dim) {
 						$pre_selected_member_ids[] = $task_member->getId();
 					}

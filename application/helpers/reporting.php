@@ -380,6 +380,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 						
 						$type = array_var($columns['types'], $col);
 						$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
+						Hook::fire('check_is_numeric_column_type', array('report' => $report, 'column' => $col), $numeric_type);
 				?>
 					<?php
 					if($col == 'link' && $to_print){ ?>

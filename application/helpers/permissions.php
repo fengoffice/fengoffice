@@ -89,7 +89,7 @@
   	
   	
   	function can_add_timeslots($user, $members) {
-  		return can_access($user, $members, Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+		return can_add($user, $members, Timeslots::instance()->getObjectTypeId());
   	}
   	
   	/**

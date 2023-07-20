@@ -652,7 +652,7 @@ class Reports extends BaseReports {
                                     $value = floor($value / 60); // format_value_to_print requires time in minutes
                                     $value = format_value_to_print('time', $value, DATA_TYPE_INTEGER, $report->getReportObjectTypeId());
                                 } else {
-                                    $value = self::instance()->getExternalColumnValue($field, $value, $managerInstance);
+                                    $value = self::instance()->getExternalColumnValue($field, $value, $managerInstance, $object);
                                 }
                             } else if (in_array($field, $managerInstance->getCalculatedColumns())) {
 
@@ -924,7 +924,7 @@ class Reports extends BaseReports {
             $obj = Objects::findObject($id);
             $value = $obj instanceof ContentDataObject ? $obj->getObjectName() : "";
         } else if ($manager instanceof ContentDataObjects) {
-            $value = $manager->getExternalColumnValue($field, $id);
+            $value = $manager->getExternalColumnValue($field, $id, $manager, $object);
         }
 
         Hook::fire('custom_reports_get_external_column_value', array('field' => $field, 'external_id' => $id, 'manager' => $manager, 'object' => $object), $value);
