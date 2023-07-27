@@ -1,5 +1,5 @@
 
-	About Feng Office 3.10.4.7
+	About Feng Office 3.10.4.10
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,18 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.4.9
+	-----------------------------------
+	bugfix: Fix installation with custom tables prefixes (#2037)
+
+	Since 3.10.4.8
+	-----------------------------------
+	bugfix: invoice-preview-get-main-project-name (#2006)
+
+	Since 3.10.4.7
+	-----------------------------------
+	bugfix: Fix invoice address config option (#2042)
 
 	Since 3.10.4.6
 	-----------------------------------
