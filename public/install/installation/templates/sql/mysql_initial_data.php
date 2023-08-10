@@ -1390,5 +1390,5 @@ INSERT INTO `<?php echo $table_prefix ?>timezones` (`id`, `country_code`, `name`
 (421,	'ZW',	'Africa/Harare',	0,	7200,	7200,	0);
 
 -- option Minimum number of characters for dimension search
-INSERT INTO `fo_config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
 VALUES ('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '');
