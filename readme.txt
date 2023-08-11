@@ -1,5 +1,5 @@
 
-	About Feng Office 3.10.4.13
+	About Feng Office 3.10.5.1
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -107,24 +107,71 @@
 	Changelog
 	=========
 
-	Since 3.10.4.12
+	Since 3.10.5.0
+	-----------------------------------
+	feature: new widget and listing for vendors (#2069)
+	feature: config option to set non billable time expenses for fixedfee tasks (#2065)
+	bugfix: can't define variable for expenses that have several lines with same prod type (#2068)
+	
+	Since 3.10.5.0-rc2
 	-----------------------------------
 	bugfix: Issue with total worked time calculation after performance fixes (#2073)
 	bugfix:Weekly view fix: Escape special charachtes in the task tooltip (#2071)
 	bugfix: include subtotals in the project billing report subtotals (#2070)
 
-    Since 3.10.4.11
+    Since 3.10.5.0-rc1
 	-----------------------------------
-	bugfix: can't download excel export for custom report if report name has "/
+	bugfix: Fix discount title on split invoice
+	bugfix: can't download excel export for custom report if report name has /
 
-    Since 3.10.4.10
-	-----------------------------------
-	bugfix: don't trigger task and project calculations after changing timeslot status, also improve performance at task calculations and save
+	Since 3.10.5.0-beta4
+    -----------------------------------
+	bugfix: fix-fixed-fee-tasks-split-trash-invoiced #2064
 
-	Since 3.10.4.9
+	Since 3.10.5.0-beta3
+    -----------------------------------
+	bugfix: Don't trigger task and project calculations after changing timeslot status, also improve performance at task calculations and save
+	Bugfix: Cant edit parent task when subtask has multiline desc (#2052)
+	Bugfix: Wrong members autoselected in forms and automatic invoice #2053
+	Bugfix: fix-site-address-in-invoice-project-table #2019
+	Bugfix: Develop fixed fee tasks for multi client invoices #2057
+	Bugfix: fix hook that adds financial tab to tasks #2055
+	Bugfix: Remove miscalculations by calculating project financials for estimated and executed values #2051
+	Bugfix: Fix the calculations of the estimated financials in the widgets #2056
+	Bugfix: unlink expenses and timeslots when trashing a task, ask confirmation to the user #2061
+	Bugfix: Fix totals calculation in the task module for financial values #2059
+	bugfix: Fix custom report calculation: 'profit margin' columns for the tasks #2063
+
+
+
+	Since 3.10.5.0-beta2
 	-----------------------------------
 	bugfix: Fix installation with custom tables prefixes (#2037)
+	bugfix: Check if config option for sync sent mails is present, if not the add (#2048)
+	bugfix: Fix calcultion fee column on invoice (#2044)
+	bugfix: Fix reasign button (#2049)
+	bugfix: Fix calculate overtime based on week days (#2046)
+	bugfix: In time module organize the columns by "Overtime"
 
+	Since 3.10.5.0-beta1
+	-----------------------------------
+	feature: revamp old feature that sends sent email to the "sent emails" folder of an email account in the mail server (#2043)
+	feature: new config option to define start date for overttime calculations (#2039)
+	bugfix: Fix display cost fee unitprice in invoice v2 (#2041)
+	bugfix: invoice generation not using overtime calcualted values for time lines (#2040)
+	bugfix: work progress widget not counting time entries without task (#2038)
+	bugfix: fix-install-prefix (#2037)
+
+	Since 3.10.4.x
+	-----------------------------------
+	feature: qbo sync cc expenses with qbo purchase (#2024)
+	feature: Improvement/save action channel in application logs (#2020)
+	bugfix: in-task-form-set-tab-order (#2036)
+	bugfix: fix-config-option-always-select-task-in-time-entries (#2029)
+	bugfix: in-expenses-do-not-inherit-cost-and-price-values (#2028)
+	bugfix: features-ermi-split (#2026)
+	bugfix: fix-display-cost-fee-unitprice-in-invoice (#2023)
+	
 	Since 3.10.4.8
 	-----------------------------------
 	bugfix: invoice-preview-get-main-project-name (#2006)

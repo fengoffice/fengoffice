@@ -423,7 +423,8 @@ ogTasks.executeActionFinal = function(actionName, ids, options,callback){
         post: {
             "ids": ids.join(','),
             "action" : actionName,
-            "options": options
+            "options": options,
+			"req_channel": 'task list - ' + actionName
         },
         callback: function(success, data) {
             if (success && ! data.errorCode) {
@@ -455,9 +456,13 @@ ogTasks.executeActionFinal = function(actionName, ids, options,callback){
                 topToolbar.updateCheckedStatus();
 
                 ogTasks.refreshGroupsTotals();
-                callback(success);
+				if (typeof callback == 'function') {
+					callback(success);
+				}
             } else {
-                callback(false);
+				if (typeof callback == 'function') {
+					callback(false);
+				}
             }
         },
         scope: this
@@ -468,6 +473,16 @@ ogTasks.setAllCheckedValue = function(checked){
 	for (var i = 0; i < this.Tasks.length; i++){
 		this.Tasks[i].isChecked = checked;
 	}
+}
+
+ogTasks.resetSelection = function() {
+	// reset selction of tasks in cache
+	for(var prop in ogTasksCache.Tasks) {
+		var task = ogTasksCache.Tasks[prop];
+		task.isChecked = false;
+	}
+	// reset selction of current tasks in list
+	ogTasks.setAllCheckedValue(false);
 }
 
 ogTasks.getSelectedIds = function(){

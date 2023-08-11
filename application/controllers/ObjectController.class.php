@@ -1658,9 +1658,9 @@ class ObjectController extends ApplicationController {
 			return;
 		}
 		ajx_current("empty");
-		$csvids = array_var($_GET, 'ids');
-		if (!$csvids && array_var($_GET, 'object_id')) {
-			$csvids = array_var($_GET, 'object_id');
+		$csvids = array_var($_REQUEST, 'ids');
+		if (!$csvids && array_var($_REQUEST, 'object_id')) {
+			$csvids = array_var($_REQUEST, 'object_id');
 			
 			if (array_var($_REQUEST, 'reload')) {
 				ajx_current("reload");
@@ -1669,6 +1669,22 @@ class ObjectController extends ApplicationController {
 			}
 		}
 		$ids = explode(",", $csvids);
+
+		$prompt_user_already_done = array_var($_REQUEST, 'prompt_confirmed');
+		if (!$prompt_user_already_done) {
+			$can_trash_result = $this->check_if_can_trash_directly($ids);
+			if (!$can_trash_result['can_trash']) {
+				evt_add('prompt user trash objects', array(
+					'message' => $can_trash_result['prompt_message'],
+					'ids' => $ids,
+					'from_view' => array_var($_REQUEST, 'object_id', 0) > 0,
+					'req_channel' => array_var($_REQUEST, 'req_channel', ''),
+				));
+				ajx_current("empty");
+				return;
+			}
+		}
+
 		$count_persons = 0;
 		$count = 0;
 		$err = 0;
@@ -1698,10 +1714,52 @@ class ObjectController extends ApplicationController {
 			$errorString = is_null($errorMessage)? lang("error delete objects", $err) . $error_details : $errorMessage;
 			flash_error($errorString);
 		} else {
+			if (array_var($_REQUEST, 'reload')) {
+				ajx_current("reload");
+			}
 			flash_success(lang("success trash objects", $count));
 			if ($count_persons > 0) self::reloadPersonsDimension();
-			Hook::fire('after_object_controller_trash', array_var($_GET, 'ids', array_var($_GET, 'object_id')), $ignored);
+			Hook::fire('after_object_controller_trash', array_var($_REQUEST, 'ids', array_var($_REQUEST, 'object_id')), $ignored);
 		}
+	}
+
+	/**
+	 * Call this function before trashing so we can check if the objects are associated to other objects
+	 * If so, we can prompt the user for confirmation and explain what will be done
+	 * Example: when trashing a task that has timeslots
+	 */
+	function check_if_can_trash_directly($ids) {
+		$result = array('can_trash' => true);
+		if (count($ids) == 0) {
+			return $result;
+		}
+
+		// get the tasks among the objects to be deleted
+		$task_ids = Objects::instance()->findAll(array(
+			"conditions" => array("id IN (?) AND object_type_id = ?", implode(',',$ids), ProjectTasks::instance()->getObjectTypeId()),
+			"id" => true
+		));
+		// check if the tasks found have any time or expense associated
+		if (count($task_ids) > 0) {
+			$times_count = Timeslots::count("rel_object_id IN (".implode(',',$task_ids).")");
+			$times_associated = $times_count > 0;
+			$expenses_associated = false;
+			if (PLugins::instance()->isActivePlugin('expenses2')) {
+				$b_expenses_count = Expenses::count("task_id IN (".implode(',',$task_ids).")");
+				$a_expenses_count = PaymentReceipts::count("task_id IN (".implode(',',$task_ids).")");
+				$expenses_associated = ($b_expenses_count + $a_expenses_count) > 0;
+			}
+
+			if ($times_associated || $expenses_associated) {
+				$result = array(
+					'can_trash' => false,
+					'prompt_message' => lang('task is linked to time expenses are you sure you want to delete'),
+				);
+			}
+		}
+
+
+		return $result;
 	}
 
 	/**
@@ -2057,6 +2115,11 @@ class ObjectController extends ApplicationController {
 				if (is_numeric($exp)) $ids[] = $exp;
 			}
 
+			// let ObjectController::trash() function handle the trash operations
+			$_REQUEST['ids'] = implode(',', $ids);
+			$this->trash();
+			return;
+/*
 			$result = ContentDataObjects::listing(array(
 					"extra_conditions" => " AND o.id IN (".implode(",",$ids).") ",
 					"include_deleted" => true
@@ -2075,7 +2138,7 @@ class ObjectController extends ApplicationController {
 			} else {
 				Hook::fire('after_object_delete_permanently', $real_deleted_ids, $ignored);
 				flash_success(lang('success delete objects', $succ));
-			}
+			}*/
 		} else if (array_var($_GET, 'action') == 'delete_permanently') {
 			$ids = array();
 			$exploded = explode(',', array_var($_GET, 'objects'));

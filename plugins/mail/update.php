@@ -433,3 +433,16 @@
 		");
 		
 	}
+
+
+	function mail_update_30_31() {
+		// check if config option for sync sent mails is present, if not then add it
+		$option = ConfigOptions::getByName('sent_mails_sync');
+		if (!$option instanceof ConfigOption) {
+			DB::execute("
+				INSERT INTO `".TABLE_PREFIX."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`) VALUES
+				('mail module', 'sent_mails_sync','0', 'BoolConfigHandler', 0, 0, '','')
+				ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+			");
+		}
+	}

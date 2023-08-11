@@ -229,6 +229,7 @@ return array(
     'field ProjectTasks object_subtype' => 'Object subtype',
 	'field ProjectTasks percent_completed' => 'Percent completed',
 	'field ProjectTasks original_task_id' => 'Original task id',
+	'field ProjectTasks parent_id' => 'Parent task',
 
 	// User fields
     'field Users username' => 'Username', 

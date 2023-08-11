@@ -96,12 +96,12 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		$task_name = array_var($task_data, 'name', $task->getName());
 		Hook::fire("render_object_name_prefix", array('object' => $task), $task_name);
 		
-		echo text_field('task[name]', $task_name, array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "size"=>"255", "maxlength"=>"255", 'placeholder' => lang('task')));
+		echo text_field('task[name]', $task_name, array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "tabindex"=>"1", "size"=>"255", "maxlength"=>"255", 'placeholder' => lang('task')));
 	?>
 	</div>
 		
 	<div class="coInputButtons">
-		<?php echo submit_button($task->isNew() ? (array_var($task_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		<?php echo submit_button($task->isNew() ? (array_var($task_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px', 'tabindex'=>'2')) ?>
 	</div>
 	<div class="clear"></div>
   </div>
@@ -117,13 +117,14 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	<input id="<?php echo $genid?>multi_assignment_aplly_change" type="hidden" name="task[multi_assignment_aplly_change]" value="" />
 	<input id="<?php echo $genid?>view_add" type="hidden" name="view_add" value="true" />
 	<input id="<?php echo $genid?>control_dates" type="hidden" name="control_dates" value="false" />
+	<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'modal form') ?>" />
 	
 	
 	<input id="<?php echo $genid?>task_id" type="hidden" name="task_id" value="<?php echo $task->isNew() ? '0': $task->getId() ?>" />
 	
-	<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
+	<div   id="<?php echo $genid?>tabs" class="edit-form-tabs">
 	
-		<ul id="<?php echo $genid?>tab_titles">
+		<ul   id="<?php echo $genid?>tab_titles">
 			
 			<li><a href="#<?php echo $genid?>add_task_basic_div"><?php echo lang('basic data') ?></a></li>
 			<li><a href="#<?php echo $genid?>add_task_desc_div"><?php echo lang('description') ?></a></li>
@@ -143,7 +144,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		</ul>
 		
 	
-	<div id="<?php echo $genid ?>add_task_basic_div" class="task-data form-tab">
+	<div id="<?php echo $genid ?>add_task_basic_div"  class="task-data form-tab">
 	<table>
 		<tr>
 			<td class="left-section-td">
@@ -228,13 +229,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 							$hours = ($totalTime - $minutes) / 60;
 						?>
 							<?php echo lang("hours") ?>:&nbsp;
-							<?php echo text_field("task[time_estimate_hours]", $hours, array('id' => 'ogTasksPanelATHours', 'style' => 'width:30px')) ?>
+							<?php echo text_field("task[time_estimate_hours]", $hours, array('id' => 'ogTasksPanelATHours', 'style' => 'width:30px', 'tabindex'=>'85')) ?>
 							<span style="margin-left:10px"><?php echo lang("minutes") ?>:&nbsp;</span>
-							<select name="task[time_estimate_minutes]" size="1" id="ogTasksPanelATMinutes">
+							<select name="task[time_estimate_minutes]" size="1" id="ogTasksPanelATMinutes" tabindex="90">
 							<?php
 								$minutes = ($totalTime % 60);
 								$minuteOptions = array(0,5,10,15,20,25,30,35,40,45,50,55);
-								Hook::fire('override_minute_options', array('name' => 'minuteOptions'), $minuteOptions);
+								Hook::fire('override_minute_options', array('name' => 'minuteOptions' ), $minuteOptions);
 								
 								// if the task has an amount of minutes that is not present in the minuteOptions then add it
 								// this can happen when estimated time is calculated using some formula in a template
@@ -256,13 +257,13 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					
 					<div class="dataBlock">
 					<?php echo label_tag(lang('task priority')) ?>
-					<?php echo select_task_priority('task[priority]', array_var($task_data, 'priority', ProjectTasks::PRIORITY_NORMAL)) ?>
+					<?php echo select_task_priority('task[priority]', array_var($task_data, 'priority', ProjectTasks::PRIORITY_NORMAL),  array('tabindex' => '95')) ?>
 						<div class="clear"></div>
 					</div>
 					<?php if(config_option('use_task_percent_completed')){ ?>
 						<div class="dataBlock">
 							<?php echo label_tag('Manual percent completed'); ?>
-							<?php echo checkbox_field('task[is_manual_percent_completed]', array_var($task_data, 'is_manual_percent_completed', false), array('id' => $genid . '_is_manual_percent_completed', 'onchange' => 'og.updateIsManualPercentCompleted();')); ?>
+							<?php echo checkbox_field('task[is_manual_percent_completed]', array_var($task_data, 'is_manual_percent_completed', false), array('id' => $genid . '_is_manual_percent_completed', 'onchange' => 'og.updateIsManualPercentCompleted();', 'tabindex' => '100')); ?>
 						</div>
 						<?php 
 							$show_percent_completed = array_var($task_data, 'is_manual_percent_completed', false) ? '' : 'display:none;';
@@ -334,17 +335,17 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					<?php if (isset($task_data['parent_id'])&& $task_data['parent_id'] == 0) {?>
 														
 						<span id="no-task-selected<?php echo $genid?>"><?php echo lang('none')?></span>
-						<a style="margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
+						<a style="margin-left: 10px" tabindex="999" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
 						
 					<?php }else{
 						$parentTask = ProjectTasks::findById(array_var($task_data, 'parent_id'));
 						if ($parentTask instanceof ProjectTask){?>
 						<span style="display: none;" id="no-task-selected<?php echo $genid?>"><?php echo lang('none')?></span>
-						<a style="display: none;margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a> 
+						<a  tabindex="999" style="display: none;margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a> 
 						<div class="og-add-template-object">
 							<input type="hidden" name="task[parent_id]" value="<?php echo $parentTask->getId() ?>" />
 							<div class="parent-task-name action-ico ico-task"> <?php echo $parentTask->getTitle() ?> </div>
-							<a style="float:left" href="#" onclick="og.removeParentTask(this.parentNode)" class="remove" style="display: block;"><?php echo lang('remove')?> </a> 
+							<a tabindex="999" style="float:left" href="#" onclick="og.removeParentTask(this.parentNode)" class="remove" style="display: block;"><?php echo lang('remove')?> </a> 
 						</div>
 					<?php }
 						}?>
@@ -378,7 +379,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 							<div class="og-add-template-object previous-task">
 								<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task_prev->getId()?>" />
 								<div class="previous-task-name action-ico ico-task"><?php echo clean($task_prev->getTitle()) ?></div>
-								<a href="#" onclick="og.removePreviousTask(this.parentNode, '<?php echo $genid?>', '<?php echo $k?>')" class="removeDiv link-ico ico-delete" style="display: block;"><?php echo lang('remove') ?></a>
+								<a href="#" tabindex="999" onclick="og.removePreviousTask(this.parentNode, '<?php echo $genid?>', '<?php echo $k?>')" class="removeDiv link-ico ico-delete" style="display: block;"><?php echo lang('remove') ?></a>
 							</div>
 							<script>
 								var obj={id:'<?php echo $task_dep->getPreviousTaskId() ?>'};
@@ -389,7 +390,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 							}
 						} ?>
 						</div>
-						<a class="coViewAction ico-add" id="<?php echo $genid?>previous_before" href="#"  
+						<a class="coViewAction ico-add" tabindex="999" id="<?php echo $genid?>previous_before" href="#"  
 							onclick="og.pickPreviousTask(this, '<?php echo $genid?>', '<?php echo $task->getId()?>')"><?php echo lang('add previous task') ?></a>
 						
 					</div>
@@ -678,8 +679,8 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		  		<div id="<?php echo $genid ?>subtasks" class="subtasks-container">
 		  		</div>
 		  		<div class="add-subtask-container">
-		  			<a href="#" class="link-ico ico-add" onclick="ogTasks.drawAddSubTaskInputs('<?php echo $genid?>')"><?php echo lang('add sub task')?></a>
-		  			<a href="#" class="link-ico ico-undo" onclick="ogTasks.undoRemoveSubtasks('<?php echo $genid?>')" style="display:none;margin-left:20px;" id="<?php echo $genid?>undo_remove"><?php echo lang('undo remove subtasks')?></a>
+		  			<a href="#" tabindex="990" class="link-ico ico-add" onclick="ogTasks.drawAddSubTaskInputs('<?php echo $genid?>')"><?php echo lang('add sub task')?></a>
+		  			<a href="#" tabindex="990" class="link-ico ico-undo" onclick="ogTasks.undoRemoveSubtasks('<?php echo $genid?>')" style="display:none;margin-left:20px;" id="<?php echo $genid?>undo_remove"><?php echo lang('undo remove subtasks')?></a>
 		  		</div>
 	  		
 	  		</div>
@@ -782,6 +783,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	        triggerAction: 'all',
 	        selectOnFocus:true,
 	        width: 244,
+			tabIndex: '20',
 	        listWidth: 244,
 	        listClass: 'assigned-to-combo-list',
 	        valueField: 'value',
@@ -1267,5 +1269,5 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		
 		$("#ogTasksPanelATTitle").focus();
 	});
-	
+	$("#ogTasksPanelATTitle").focus();
 </script>

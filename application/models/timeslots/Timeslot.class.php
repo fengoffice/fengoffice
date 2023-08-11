@@ -252,8 +252,8 @@ class Timeslot extends BaseTimeslot {
 	 * @param void
 	 * @return string
 	 */
-	function getEditUrl() {
-		return get_url('timeslot', 'edit', array('id' => $this->getId()));
+	function getEditUrl($req_channel = '') {
+		return get_url('time', 'edit_timeslot', array('id' => $this->getId(), 'req_channel' => $req_channel));
 	}
 
 	/**
@@ -262,8 +262,8 @@ class Timeslot extends BaseTimeslot {
 	 * @param void
 	 * @return string
 	 */
-	function getDeleteUrl() {
-		return get_url('timeslot', 'delete', array('id' => $this->getId()));
+	function getDeleteUrl($req_channel = '') {
+		return get_url('time', 'delete_timeslot', array('id' => $this->getId(), 'req_channel' => $req_channel));
 	}
 
 	// ---------------------------------------------------
@@ -549,13 +549,47 @@ class Timeslot extends BaseTimeslot {
 
 		} else if ($this->getRelObjectId() > 0) {
 			// only log that the related object to the task has been edited
-			$changed_relations['relation_edited'][] = $this->getRelObjectId();
+			$relation_key = 'relation_edited';
+
+			// if the object has been trashed or untrashed then the relation is added or removed
+			if ($this->isTrashed() && !$old_content_object->isTrashed()) { // sent to trash
+				$relation_key = 'relation_removed';
+			} else if (!$this->isTrashed() && $old_content_object->isTrashed()) { // restored from trash
+				$relation_key = 'relation_added';
+			}
+
+			$changed_relations[$relation_key][] = $this->getRelObjectId();
 		}
 
 		return $changed_relations;
 	}
 
 
+	function changeInvoicingStatus($status) {
+		// to use when saving the application log
+		$old_content_object = $this->generateOldContentObjectData();
+
+		$old_status = $this->getColumnValue('invoicing_status');
+		$invoice_id = $status == 'pending' ? 0 : $this->getId();
+		// update timeslot status
+		$this->setColumnValue('invoice_id', $invoice_id);
+		$this->setColumnValue('invoicing_status', $status);
+		$this->setForceRecalculateBilling(true);
+		
+		// don't check workflow permissions here, because this action is not a direct action executed by the user, 
+		// is triggered by other objects status change, like an invoice
+		$this->override_workflow_permissions = true;
+		
+		// don't trigger the recalculation of associated task worked time, etc
+		$this->recalculate_task_values = false;
+	
+		$this->save();
+		
+		$ret = null;
+		Hook::fire("after_change_object_inv_status", array('object' => $this, 'old_status' => $old_status), $ret);
+
+		ApplicationLogs::createLog($this, ApplicationLogs::ACTION_EDIT, false, true);
+	}
 
 	
 } // Timeslot

@@ -18,16 +18,6 @@ class DashboardController extends ApplicationController {
 		prepare_company_website_controller($this, 'website');
 		$this->addHelper('calendar');
 	} // __construct
-
-	function init_overview() {
-		if (user_config_option("overviewAsList")){
-			require_javascript("og/OverviewManager.js");
-			ajx_current("panel", "overview", null, null, true);
-			ajx_replace(true);
-		}else{
-			ajx_set_no_toolbar(true);
-		}
-	}
 	
 	/**
 	 * 

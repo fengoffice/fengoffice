@@ -264,15 +264,19 @@ og.eventManager.addListener('try to select member',
 		var milis = 1000;
 		if (member.timeout_milis) milis = member.timeout_milis;
 		
+		if (!og.try_to_select_member_intervals) og.try_to_select_member_intervals = {};
+		
 		var interval = setInterval(function(){
 			var tree = Ext.getCmp("dimension-panel-" + member.dimension_id);
 			var treenode = tree ? (member.id > 0 ? tree.getNodeById(member.id) : tree.getRootNode()) : null;
 			if (treenode) {
 				treenode.fireEvent('click', treenode);
 				og.Breadcrumbs.refresh(treenode);
+				let interval = og.try_to_select_member_intervals[treenode.id];
 				clearInterval(interval);
 			}
 		}, milis);
+		og.try_to_select_member_intervals[member.id] = interval;
 	}
 );
 
@@ -800,6 +804,64 @@ og.eventManager.addListener('show error message', function(data) {
 		og.err(data.message);
 	}
 });
+
+
+
+og.eventManager.addListener('prompt user trash objects',
+	function (data) {
+		
+		if (data && data.ids && data.ids.length) {
+			var question = data.message;
+			var div = document.createElement('div');
+			var genid = Ext.id();
+			div.innerHTML = '<div style="border-radius: 5px; background-color: #fff; padding: 10px; width: 400px;">'+ 
+				'<div><label class="coInputTitle">'+lang('confirm delete task')+'</label></div>'+
+				'<div id="'+genid+'_question">'+ question +'</div>'+
+				'<div id="'+genid+'_buttons">'+
+				'<button class="yes submit blue">'+lang('yes')+'</button><button class="no submit blue">'+lang('no')+'</button>'+
+				'</div><div class="clear"></div></div>';
+
+			var modal_params = {
+				'escClose': false,
+				'overlayClose': false,
+				'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+				'onShow': function (dialog) {
+					$("#"+genid+"_close_link").addClass("modal-close-img");
+					$("#"+genid+"_buttons").css('text-align', 'right').css('margin', '10px 0');
+					$("#"+genid+"_question").css('margin', '10px 0');
+					$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+
+						var params = {
+							prompt_confirmed: 1,
+							req_channel: data.req_channel
+						};
+						if (data.from_view) {
+							params.object_id = data.ids[0];
+						} else {
+							params.ids = data.ids;
+							params.reload = 1;
+						}
+
+						og.openLink(og.getUrl('object', 'trash', params), {
+							callback: function(success, cbdata) {
+								if (success) {
+								//	og.eventManager.fireEvent('reload current panel');
+								}
+							}
+						});
+						$('.modal-close').click();
+					});
+					$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+						$('.modal-close').click();
+					});
+			    }
+			};
+			setTimeout(function() {
+				$.modal(div, modal_params);
+			}, 100);
+		}
+	}
+);
 
 
 

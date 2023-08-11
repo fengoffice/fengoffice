@@ -1768,30 +1768,57 @@ class MailUtilities {
 	}
 
 
-	function appendMailThroughIMAP($account, $content) {
-		if ($account instanceof MailAccount && $account->getSyncFolder() && $content != "") {
+	function getSentImapFolderToSync($account) {
+		$sync_folder_obj = null;
 
-			try{
-				$imap = $account->imapConnect();
+		if ($account->getSyncFolder() != "") {
+			$sync_folder_obj = MailAccountImapFolders::getByFolderName($account->getId(), $account->getSyncFolder());
+		}
+		if (!$sync_folder_obj) {
+			$sync_folder_obj = MailAccountImapFolders::getSpecialUseFolder($account->getId(), "\\Sent");
+		}
+		if (!$sync_folder_obj) {
+			$sync_folder_obj = MailAccountImapFolders::getSpecialUseFolder($account->getId(), "Sent");
+		}
 
-				$login_ret = $imap->login($account->getEmail(), $this->ENCRYPT_DECRYPT($account->getPassword()),null,false);
-				if (PEAR::isError($login_ret)) {
-					debug_log("IMAP login error: ".$login_ret->getMessage(), "sent_emails_sync.log");
-					throw new Exception($login_ret->getMessage());
+		return $sync_folder_obj;
+	}
+
+	function appendMailThroughIMAP($account, $mail, $content, $imap = null) {
+		
+		if ($account instanceof MailAccount && $account->getIsImap() && $content != "") {
+			
+			$sync_folder_obj = $this->getSentImapFolderToSync($account);
+
+			if ($sync_folder_obj instanceof MailAccountImapFolder && $sync_folder_obj->getFolderName() != "") {
+				
+				try{
+					if (!$imap) {
+						$imap = $account->imapConnect();
+						
+						$login_ret = $imap->login($account->getEmail(), $this->ENCRYPT_DECRYPT($account->getPassword()),null,false);
+						if (PEAR::isError($login_ret)) {
+							debug_log("IMAP login error: ".$login_ret->getMessage(), "sent_emails_sync.log");
+							throw new Exception($login_ret->getMessage());
+						}
+					}
+	
+					$folder = utf8_decode($sync_folder_obj->getFolderName());
+	
+					$result = $imap->appendMessage($content, $folder);
+					if (PEAR::isError($result)) {
+						debug_log("IMAP append error: ".$result->getMessage(), "sent_emails_sync.log");
+						throw new Exception($result->getMessage());
+					}
+
+					DB::execute("UPDATE ".TABLE_PREFIX."mail_contents SET sync=1 WHERE object_id=".$mail->getId());
+					
+					return true;
+	
+				} catch(Exception $e) {
+					debug_log("appendMailThroughIMAP ERROR: ".$e->getMessage()."\n".$e->getTraceAsString(), "sent_emails_sync.log");
+					Logger::log_r($e->getMessage()."\n".$e->getTraceAsString());
 				}
-
-				$folder = utf8_decode($account->getSyncFolder());
-
-				$result = $imap->appendMessage($content, $folder);
-				if (PEAR::isError($result)) {
-					debug_log("IMAP append error: ".$result->getMessage(), "sent_emails_sync.log");
-					throw new Exception($result->getMessage());
-				}
-				return true;
-
-			} catch(Exception $e) {
-				debug_log("appendMailThroughIMAP ERROR: ".$e->getMessage()."\n".$e->getTraceAsString(), "sent_emails_sync.log");
-				Logger::log_r($e->getMessage()."\n".$e->getTraceAsString());
 			}
 		}
 	}

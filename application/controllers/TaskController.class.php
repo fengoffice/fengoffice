@@ -580,6 +580,13 @@ class TaskController extends ApplicationController {
             return;
         }
 
+		// let ObjectController handle the trash operations
+		if ($action == 'delete') {
+			$object_controller = new ObjectController();
+			$object_controller->trash();
+			return;
+		}
+
         $count_tasks = ProjectTasks::count('object_id in (' . implode(',', $ids) . ')');
         $tasksToReturn = array();
         $subt_info = array();
@@ -1089,23 +1096,53 @@ class TaskController extends ApplicationController {
         $total_worked = $total_worked_subquery . ") AS group_time_worked ";
 
         $group_totals_financials = array();
-        if (Plugins::instance()->isActivePlugin('advanced_billing')){
-            $total_estimated_cost = "SUM(estimated_cost) AS group_estimated_cost ";
-            $total_estimated_price = "SUM(estimated_price) as group_estimated_price ";
-            $total_executed_cost = "SUM(executed_cost) AS group_executed_cost ";
-            $total_earned_value = "SUM(earned_value) as group_earned_value ";
-
-            $group_totals_financials = ProjectTasks::instance()->listing(array(
-        		"select_columns" => array("executed_cost", "earned_value", "estimated_cost", "estimated_price"),
+        if (Plugins::instance()->isActivePlugin('advanced_billing')){ 
+           $tasks = ProjectTasks::instance()->listing(array(
                     "join_params" => $join_params,
-                    "extra_conditions" => $conditions . ' AND e.parent_id=0 ',
-                    "group_by" => "e.`object_id`",
-                    "query_wraper_start" => "SELECT $total_estimated_cost, $total_estimated_price, $total_executed_cost, $total_earned_value FROM (",
-                    "query_wraper_end" => ") AS pending_calc",
+                    "extra_conditions" => $conditions,
                     "count_results" => false,
 					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
+
+            // get unique tasks
+            $seen = [];
+            $uniqueTasks = array_filter($tasks, function ($task) use (&$seen) {
+                if (in_array($task['id'], $seen)) {
+                    return false; // Skip task if its id already seen
+                }
+            
+                $seen[] = $task['id'];
+                return true;
+            });
+
+            $tasks = $uniqueTasks;
+            $taskParent = [];
+            foreach ($tasks as $task) {
+                $taskParent[$task['id']] = $task['parent_id'];
+            }
+
+            $highestNodeTasks = array_filter($tasks, function ($task) use ($taskParent) {
+                // If a task's parent_id is 0, it's a root node.
+                // If a task's parent_id does not exist in task IDs, it's also a root node.
+                return $task['parent_id'] == 0 || !array_key_exists($task['parent_id'], $taskParent);
+            });
+            
+            $group_totals_financials[0] = array(
+                'group_estimated_cost' => 0,
+                'group_estimated_price' => 0,
+                'group_executed_cost' => 0,
+                'group_earned_value' => 0,
+            );
+
+            // calculate financials for each root node
+            foreach ($highestNodeTasks as $task) {
+                //Logger::log_r($task);
+                $group_totals_financials[0]['group_estimated_cost'] += $task['estimated_cost'];
+                $group_totals_financials[0]['group_estimated_price'] += $task['estimated_price'];
+                $group_totals_financials[0]['group_executed_cost'] += $task['executed_cost'];
+                $group_totals_financials[0]['group_earned_value'] += $task['earned_value'];
+            }
         } 
 
         //querys returning total worked time, total estimated time and total pending time
@@ -3359,6 +3396,7 @@ class TaskController extends ApplicationController {
         tpl_assign('base_task', $task);
         tpl_assign('pending_task_id', 0);
         tpl_assign('multi_assignment', array());
+        tpl_assign('req_channel', array_var($_REQUEST, 'req_channel'));
         $this->setTemplate("add_task");
     }
 

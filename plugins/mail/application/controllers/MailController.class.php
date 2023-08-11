@@ -1039,12 +1039,9 @@ class MailController extends ApplicationController {
 
 					try {
 
-						if ($sentOK && config_option("sent_mails_sync")) {
+						if ($sentOK && config_option("sent_mails_sync") && $account->getIsImap()) {
 							$mu = new MailUtilities();
-							$appended = $mu->appendMailThroughIMAP($account, $complete_mail);
-							if ($appended) {
-								DB::execute("UPDATE ".TABLE_PREFIX."mail_contents SET sync=1 WHERE object_id=".$mail->getId());
-							}
+							$appended = $mu->appendMailThroughIMAP($account, $mail, $complete_mail);
 							debug_log("mail_id=".$mail->getId()." - appended=$appended", "sent_emails_sync.log");
 						}
 
@@ -1085,8 +1082,6 @@ class MailController extends ApplicationController {
 
 							$mail->setContentFileId($repository_id);
 							$mail->setSize(strlen($content));
-							if (config_option("sent_mails_sync") && isset($check_sync_box) && $check_sync_box)
-								$mail->setSync(true);
 							$mail->save();
 
 							if (defined('DEBUG') && DEBUG) file_put_contents(ROOT."/cache/log_mails.txt", gmdate("d-m-Y H:i:s") . " email saved: ".$mail->getId() . "\n", FILE_APPEND);
@@ -1150,12 +1145,6 @@ class MailController extends ApplicationController {
 			return;
 		}
 
-		if (!function_exists('imap_open')) {
-			flash_error(lang('php-imap extension not installed'));
-			ajx_current("empty");
-			return;
-		}
-
 		$id = get_id();
 		$account = MailAccounts::findById($id);
 
@@ -1164,48 +1153,53 @@ class MailController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-
-		$pass = $account->getSyncPass();
-		$server = $account->getSyncServer();
-		$folder = $account->getSyncFolder();
-		$address = $account->getSyncAddr();
-		if($pass == null || $server == null || $folder == null || $address == null) {
+		if (!$account->getIsImap()) {
 			flash_error(lang('cant sync account'));
 			ajx_current("empty");
 			return;
 		}
+
+		// prevent connection close if there are too many emails to send to server
+		set_time_limit(0);
+		ini_set("memory_limit", "512M");
+
 		$conditions = array("conditions" => array("`sync`=0 AND `state` = 3 AND `account_id` =".$account->getId()));
-
-		$check_sync_box = MailUtilities::checkSyncMailbox($server, $account->getSyncSsl(), $account->getOutgoingTrasnportType(), $account->getSyncSslPort(), $folder, $address, $pass);
-
-		if ($check_sync_box){
-			$sent_mails = MailContents::findAll($conditions);
-			if (count($sent_mails)==0){
-				flash_success(lang('mails on imap acc already sync'));
-				ajx_current("empty");
-				return;
-			}
-			foreach ($sent_mails as $mail){
-				try{
-					DB::beginWork();
-					$content = $mail->getContent();
-					MailUtilities::sendToServerThroughIMAP($server, $account->getSyncSsl(), $account->getOutgoingTrasnportType(), $account->getSyncSslPort(), $folder, $address, $pass, $content);
-					$mail->setSync(true);
-					$mail->save();
-					DB::commit();
-				}
-				catch(Exception $e){
-					DB::rollback();
-				}
-			}
-			flash_success(lang('sync complete'));
-			ajx_current("empty");
-			return;
-		}else{
-			flash_error(lang('invalid sync settings'));
+		$sent_mails = MailContents::findAll($conditions);
+		
+		if (count($sent_mails)==0){
+			flash_success(lang('mails on imap acc already sync'));
 			ajx_current("empty");
 			return;
 		}
+
+		$mu = new MailUtilities();
+		// connect to server using imap
+		$imap = $account->imapConnect();				
+		$login_ret = $imap->login($account->getEmail(), $mu->ENCRYPT_DECRYPT($account->getPassword()),null,false);
+		if (PEAR::isError($login_ret)) {
+			debug_log("IMAP login error: ".$login_ret->getMessage(), "sent_emails_sync.log");
+			throw new Exception($login_ret->getMessage());
+		}
+
+		// send each mail to the sent folder of the mail account in the mail server
+		foreach ($sent_mails as $mail){
+			try{
+				DB::beginWork();
+				$content = $mail->getContent();
+				
+				$appended = $mu->appendMailThroughIMAP($account, $mail, $content, $imap);
+				debug_log("mail_id=".$mail->getId()." - appended=$appended", "sent_emails_sync.log");
+				
+				DB::commit();
+			}
+			catch(Exception $e){
+				DB::rollback();
+			}
+		}
+		flash_success(lang('sync complete'));
+		ajx_current("empty");
+		return;
+		
 	}
 
 	function mark_as_unread() {
@@ -2302,11 +2296,7 @@ class MailController extends ApplicationController {
 				$mailAccount->setServer(trim($mailAccount->getServer()));
 				$mailAccount->setPassword(MailUtilities::ENCRYPT_DECRYPT($mailAccount->getPassword()));
 				$mailAccount->setSmtpPassword(MailUtilities::ENCRYPT_DECRYPT($mailAccount->getSmtpPassword()));
-				$outbox_folder = array_var($_POST, 'outbox_select_box');
-				if (config_option("sent_mails_sync") && isset($outbox_folder)){
-					$mailAccount->setSyncPass(MailUtilities::ENCRYPT_DECRYPT($mailAccount_data['sync_pass']));
-					$mailAccount->setSyncFolder($outbox_folder);
-				}
+				
 
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				$member_ids_str = "";
@@ -2511,17 +2501,8 @@ class MailController extends ApplicationController {
 				  'get_read_state_from_server' => $mailAccount->getGetReadStateFromServer(),
 		          'outgoing_transport_type' => $mailAccount->getOutgoingTrasnportType(),
 			); // array
-			if(config_option('sent_mails_sync')){
-				$sync_details = array('sync_server' => $mailAccount->getSyncServer(),
-				  'sync_addr' => $mailAccount->getSyncAddr(),
-				  'sync_pass' => MailUtilities::ENCRYPT_DECRYPT($mailAccount->getSyncPass()),
-				  'sync_ssl' => $mailAccount->getSyncSsl(),
-				  'sync_sslport' => $mailAccount->getSyncSslPort());
-				$mailAccount_data = array_merge ($mailAccount_data, $sync_details);
-			}
+			
 		} else {
-			if (!isset($mailAccount_data['sync_ssl']))
-				$mailAccount_data['sync_ssl'] = false;
 			if (!isset($mailAccount_data['incoming_ssl']))
 				$mailAccount_data['incoming_ssl'] = false;
 			if (!isset($mailAccount_data['is_default']))
@@ -2561,11 +2542,7 @@ class MailController extends ApplicationController {
 					$mailAccount->setServer(trim($mailAccount->getServer()));
 					$mailAccount->setPassword(MailUtilities::ENCRYPT_DECRYPT($mailAccount->getPassword()));
 					$mailAccount->setSmtpPassword(MailUtilities::ENCRYPT_DECRYPT($mailAccount->getSmtpPassword()));
-					$outbox_folder = array_var($_POST, 'outbox_select_box');
-					if (config_option("sent_mails_sync") && isset($outbox_folder)){
-						$mailAccount->setSyncPass(MailUtilities::ENCRYPT_DECRYPT($mailAccount_data['sync_pass']));
-						$mailAccount->setSyncFolder($outbox_folder);
-					}
+					
 
 
 					//in case there is a new owner of the email account

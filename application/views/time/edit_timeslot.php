@@ -16,6 +16,12 @@
 	if (!isset($pre_selected_member_ids)) $pre_selected_member_ids = null;
 	
     $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
+
+	$disable_is_billable_if_fixedfee_task = false;
+	if (Plugins::instance()->isActivePlugin('income')) {
+		Env::useHelper('functions', 'income');
+		$disable_is_billable_if_fixedfee_task = income_config_option('set_objects_non_billable_if_price_is_manual');
+	}
 ?>
 
 <form onsubmit="<?php echo $on_submit?>" class="add-timeslot" id="<?php echo $genid ?>submit-edit-form" action="<?php echo $timeslot->isNew() ? get_url('time', 'add') : get_url('time', 'edit_timeslot', array('id' => $timeslot->getId())); ?>" method="post" enctype="multipart/form-data">
@@ -40,6 +46,7 @@
         <div class="coInputMainBlock">
             <input type="hidden" name="object_id" value="<?php echo $timeslot->getRelObjectId()?>" />
             <input type="hidden" name="dont_reload" value="<?php echo isset($dont_reload) ? $dont_reload : '0'?>" />
+			<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'modal form') ?>" />
 
             <div id="<?php echo $genid?>tabs" class="edit-form-tabs">
                 <ul id="<?php echo $genid?>tab_titles">
@@ -229,7 +236,7 @@
 
                 <div id="<?php echo $genid ?>add_timeslot_related_to" class="editor-container form-tab">
                     <?php 
-                        $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.set_time_is_billable_using_labor("'.$genid.'");');
+                        $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.set_time_is_billable_using_labor_wrapper("'.$genid.'");');
                         if ($timeslot->isNew()) {
                             render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $pre_selected_member_ids, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
                         } else {
@@ -370,6 +377,8 @@
     var div;
 
     og.reclassify_time_when_linking_task = <?php echo (config_option('reclassify_time_when_linking_task') ? '1' : '0') ?>;
+
+	og.disable_is_billable_if_fixedfee_task = <?php echo $disable_is_billable_if_fixedfee_task ? '1' : '0' ?>;
     
     og.toggle_specify_end_time = function(input, genid) {
         $(input).hide();
@@ -901,13 +910,87 @@
         if (og.reclassify_time_when_linking_task) {
             og.set_timeslot_members_by_task(object_id, og._dims_to_keep_when_relinkng_task);
         } else {
-            og.setTimeslotIsBillableUsingTask(object_id);
+            og.setTimeslotIsBillableUsingTaskWrapper(object_id);
         }
 		
         Link.hide()
         Object.show();
         
     };
+
+	og.disable_time_form_is_billable_input = function() {
+		$("#" + gen_id + "is_billableNo").click();
+		$("#" + gen_id + "is_billableNo").attr('disabled','disabled');
+		$("#" + gen_id + "is_billableYes").attr('disabled','disabled');
+	}
+	og.enable_time_form_is_billable_input = function() {
+		$("#" + gen_id + "is_billableNo").removeAttr('disabled');
+		$("#" + gen_id + "is_billableYes").removeAttr('disabled');
+	}
+
+	og.related_task_data = {};
+
+	og.enabled_disable_is_billable_from_fixed_fee_task = function(task) {
+		if (!task.is_calculated_estimated_price) {
+			
+			var question = lang("You are trying to link a billable time entry to a fixed price task. If you continue, this time entry will be set to non-billable. Continue?");
+			var html = '<div style="padding: 10px;">'+ 
+				'<div id="'+genid+'_question">'+ question +'</div>'+
+				'<div class="clear"></div></div>';
+	
+			og.ExtendedDialog.show({
+				YESNO: true,
+				html: html,
+				height: 200,
+				width: 400,
+				title: lang('confirm set non billable'),
+				okBtnCls: 'submit-btn-blue',
+				cancelBtnCls: 'cancel-btn-g',
+				iconCls: ' ',
+				cls: 'ext-modal-object-list no-border',
+				ok_fn: function() {
+					og.disable_time_form_is_billable_input();
+					og.ExtendedDialog.hide();
+				},
+				cancel_fn: function() {
+					og.removeObjectTask(null);
+					og.ExtendedDialog.hide();
+				},
+			});
+		} else {
+			og.enable_time_form_is_billable_input();
+		}
+	}
+
+	og.setTimeslotIsBillableUsingTaskWrapper = function(task_id) {
+
+		if (og.disable_is_billable_if_fixedfee_task) {
+			let task = og.related_task_data[task_id];
+			if (!task) {
+				og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
+					hideLoading: true,
+					callback: function(success, data) {
+						let task = data.task;
+						if (task) {
+							og.related_task_data[task.id] = task;
+							og.enabled_disable_is_billable_from_fixed_fee_task(task);
+							if (task.is_calculated_estimated_price) {
+								og.setTimeslotIsBillableUsingTask(task_id);
+							}
+						}
+					}
+				});
+			} else {
+				og.enabled_disable_is_billable_from_fixed_fee_task(task);
+				if (task.is_calculated_estimated_price) {
+					og.setTimeslotIsBillableUsingTask(task_id);
+				}
+			}
+
+		} else {
+			og.setTimeslotIsBillableUsingTask(task_id);
+		}
+	}
 
     og.setTimeslotIsBillableUsingTask = function(task_id){
         // Change billable if hour_types, advanced_billing and income plugins are activated
@@ -940,6 +1023,36 @@
             }
         }	
 	};
+
+	og.set_time_is_billable_using_labor_wrapper = function(genid) {
+		let task_id = $("#object_id").val();
+		if (og.disable_is_billable_if_fixedfee_task && task_id > 0) {
+			let task = og.related_task_data[task_id];
+			if (!task) {
+				og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
+					hideLoading: true,
+					callback: function(success, data) {
+						let task = data.task;
+						if (task) {
+							og.related_task_data[task.id] = task;
+							og.enabled_disable_is_billable_from_fixed_fee_task(task);
+							if (task.is_calculated_estimated_price) {
+								og.set_time_is_billable_using_labor(genid);
+							}
+						}
+					}
+				});
+			} else {
+				og.enabled_disable_is_billable_from_fixed_fee_task(task);
+				if (task.is_calculated_estimated_price) {
+					og.set_time_is_billable_using_labor(genid);
+				}
+			}
+
+		} else {
+			og.set_time_is_billable_using_labor(genid);
+		}
+	}
 
     og.set_time_is_billable_using_labor = function (genid) {
         // Change billable if hour_types, advanced_billing and income plugins are activated
@@ -993,6 +1106,7 @@
         Object.find('#object_id').val(0);
         Object.find('.name').text('');
         
+		og.enable_time_form_is_billable_input();
     }
 
     og.set_timeslot_members_by_task =  function(task_id, excluded_dim_ids) {
@@ -1001,6 +1115,7 @@
 				hideLoading: true,
 				callback: function(success, data) {
 					if (data.task) {
+						og.related_task_data[data.task.id] = data.task;
                         // remove all members from timeslot
                         member_selector.remove_all_selections(gen_id, excluded_dim_ids, true);
                         // parse the mem path string
@@ -1052,7 +1167,7 @@
 
                         }
                         
-                        og.setTimeslotIsBillableUsingTask(task_id);
+                        og.setTimeslotIsBillableUsingTaskWrapper(task_id);
 					}
 				}
 			});
@@ -1113,6 +1228,8 @@
         og.updateLastTimeValue();
     })
     
-    
+    <?php if ($disable_is_billable_if_fixedfee_task && $timeslot->getRelObject() instanceof ProjectTask && !$timeslot->getRelObject()->getColumnValue('is_calculated_estimated_price')) { ?>
+		og.disable_time_form_is_billable_input();
+	<?php } ?>
             
 </script>

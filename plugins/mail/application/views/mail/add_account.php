@@ -69,8 +69,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 				<span class="label_required">*</span> <span class="desc"><?php echo lang('mail address description') ?></span>
 			</label>
 			<?php if ($logged_user_can_edit) {
-				$sync = (config_option("sent_mails_sync")) ? '1' : '0';
-				echo text_field('mailAccount[email_addr]', array_var($mailAccount_data, 'email_addr'), array('id' => 'mailAccountFormEmail', 'class' => 'long', 'tabindex'=>'20','onchange'=> 'og.autofillmailaccountinfo(this.value,\''.$genid.'\','.$sync.')'));
+				echo text_field('mailAccount[email_addr]', array_var($mailAccount_data, 'email_addr'), array('id' => 'mailAccountFormEmail', 'class' => 'long', 'tabindex'=>'20','onchange'=> 'og.autofillmailaccountinfo(this.value,\''.$genid.'\',0)'));
 			} else {
 				echo text_field('', array_var($mailAccount_data, 'email_addr'), array('id' => 'mailAccountFormEmail', 'tabindex'=>'20', 'class' => 'long', 'disabled' => 'disabled'));
 			} ?>
@@ -103,9 +102,6 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		<?php if ($logged_user_can_edit) { ?>	
 			<li><a href="#<?php echo $genid?>account_permissions_div"><?php echo lang('mail account permissions') ?></a></li>
 			
-			<?php if (config_option("sent_mails_sync")) { ?>
-			<li><a href="#<?php echo $genid?>sent_mails_sync"><?php echo lang('sent mails sync') ?></a></li>
-			<?php } ?>
 		<?php } ?>
 		
 		<?php foreach ($categories as $category) {
@@ -360,65 +356,6 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		
 	</div>
 	
-	<?php		
-		if (config_option("sent_mails_sync")) { ?>
-			<div id="<?php echo $genid ?>sent_mails_sync" class="form-tab" style="display:none;">
-				
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid ?>sync_addr">
-									<?php echo lang('mail account id')?><span class="label_required">*</span>
-								</label>
-								<?php echo text_field('mailAccount[sync_addr]', array_var($mailAccount_data, 'sync_addr'), array('id' => $genid.'sync_addr', 'tabindex'=>'230')) ?>
-								<span class="desc"><?php echo lang('mail account id description') ?></span>
-							</div>
-					
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid?>sync_pass">
-									<?php echo lang('password')?><span class="label_required">*</span>
-								</label>
-								<?php echo password_field('mailAccount[sync_pass]', array_var($mailAccount_data, 'sync_pass'), array('id' => $genid.'sync_pass', 'tabindex'=>'240')) ?>
-								<span class="desc"><?php echo lang('mail account password description') ?></span>
-							</div>
-					
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid ?>sync_server">
-									<?php echo lang('server address')?><span class="label_required">*</span>
-								</label>
-								<?php echo text_field('mailAccount[sync_server]', array_var($mailAccount_data, 'sync_server'), array('id' => $genid.'sync_server', 'tabindex'=>'250')) ?>
-								<span class="desc"><?php echo lang('mail account server description') ?></span>
-							</div>
-					
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid ?>method"><?php echo lang('connnection security')?></label>
-								<input id="<?php echo $genid.'is_imap'?>sync_is_imap" type="hidden" name="sync_imap" value="1" ><?php 
-																
-									$onchange = "var div = document.getElementById('$genid' + 'sync_sslportdiv');if(this.checked) div.style.display='block';else div.style.display='none';";
-									echo checkbox_field('mailAccount[sync_ssl]', array_var($mailAccount_data, 'sync_ssl'), array('id' => $genid.'sync_ssl', 'tabindex'=>'270', 'onclick' => $onchange)) ?>											
-							
-								<label for="<?php echo $genid ?>sync_ssl" class="yes_no"><?php echo lang('incoming ssl') ?></label>
-							</div>
-					
-							<div class="mail-account-item dataBlock" id="<?php echo $genid ?>sync_sslportdiv" <?php if (!array_var($mailAccount_data, 'sync_ssl')) echo 'style="display:none"'; ?>>
-								<?php echo label_tag(lang('incoming ssl port'), 'mailAccountFormIncomingSslPort') ?>
-								<?php echo text_field('mailAccount[sync_ssl_port]', array_var($mailAccount_data, 'sync_ssl_port', 993), array('id' => $genid.'sync_sslport', 'tabindex'=>'320')) ?>
-							</div>
-					
-							<div class="mail-account-item dataBlock" id="<?php echo $genid ?>sync_folders" style="padding:5px;<?php  ?>">
-					
-								<div id="<?php echo $genid ?>imap_folders_sync"><?php
-									tpl_assign('imap_folders_sync', isset($imap_folders_sync) ? $imap_folders_sync : array());									
-									tpl_assign('genid', $genid);
-									tpl_assign('mail_acc_id',$mail_acc_id);
-									tpl_display(get_template_path("fetch_imap_folders_sync", "mail")) ?>
-								</div>
-							</div>
-												
-			
-			</div>
-			
-		<?php }
-
-	?>
 	
 	
 <?php } ?>
