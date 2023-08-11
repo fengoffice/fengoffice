@@ -1,5 +1,5 @@
 
-	About Feng Office 3.10.4.10
+	About Feng Office 3.10.4.13
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -106,6 +106,20 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.4.12
+	-----------------------------------
+	bugfix: Issue with total worked time calculation after performance fixes (#2073)
+	bugfix:Weekly view fix: Escape special charachtes in the task tooltip (#2071)
+	bugfix: include subtotals in the project billing report subtotals (#2070)
+
+    Since 3.10.4.11
+	-----------------------------------
+	bugfix: can't download excel export for custom report if report name has "/
+
+    Since 3.10.4.10
+	-----------------------------------
+	bugfix: don't trigger task and project calculations after changing timeslot status, also improve performance at task calculations and save
 
 	Since 3.10.4.9
 	-----------------------------------
