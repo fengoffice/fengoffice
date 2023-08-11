@@ -367,6 +367,9 @@ class Timeslot extends BaseTimeslot {
 	
 	*/
 	
+
+	public $recalculate_task_values = true;
+
 	/**
 	 * Save the timeslot
 	 *
@@ -376,7 +379,7 @@ class Timeslot extends BaseTimeslot {
 	    $is_new = $this->isNew();
 	    $saved = parent::save();
 	    
-	    if($saved) {	        
+	    if($saved && $this->recalculate_task_values) {	        
 	        $object = $this->getRelObject();
 	        if($object instanceof ContentDataObject) {
 	            if($is_new) {

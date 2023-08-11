@@ -916,7 +916,6 @@ class ProjectTask extends BaseProjectTask {
 		if(is_null($this->all_tasks) || $dont_get_from_cache) {
 			$this->all_tasks = ProjectTasks::findAll(array(
           'conditions' => $include.'`parent_id` = ' . DB::escape($this->getId()),
-          'order' => '`order`, `created_on`'			
           )); // findAll
           if (is_null($this->all_tasks)) $this->all_tasks = array();
 		} // if
