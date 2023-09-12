@@ -119,7 +119,7 @@
 
 
 			<div style="padding-top:12px;">
-				<button class="add-first-btn" type="" onclick="ogTasks.drawAddNewTaskFromData('new_task_<?php echo $genid?>')"><?php echo lang('add task')?></button>
+				<button class="add-first-btn" type="" onclick="ogTasks.drawAddNewTaskFromData('new_task_<?php echo $genid?>', 'overdue upcoming widget - add task')"><?php echo lang('add task')?></button>
 			</div>
 			<div class="x-clear"></div>
 			

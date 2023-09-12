@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.10.4.13');
+		$this->setVersionTo('3.10.6.0');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1045,6 +1045,17 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			if (!$this->checkColumnExists($t_prefix."template_tasks", "is_manual_percent_completed", $this->database_connection)) {
 				$upgrade_script .= "
 					ALTER TABLE `".$t_prefix."template_tasks` ADD `is_manual_percent_completed` BOOLEAN NOT NULL default '0';
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.10.5.0') < 0) {
+			// Add 'total_time_estimate' column to template_tasks table
+			if (!$this->checkColumnExists($t_prefix."application_logs", "full_request", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."application_logs`
+					ADD `full_request` text COLLATE 'utf8_unicode_ci' NULL,
+					ADD `request_channel` varchar(511) COLLATE 'utf8_unicode_ci' DEFAULT '';
 				";
 			}
 		}

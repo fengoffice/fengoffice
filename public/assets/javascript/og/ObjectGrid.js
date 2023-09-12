@@ -600,6 +600,10 @@ Ext.extend(og.ObjectGrid, Ext.grid.GridPanel, {
 			
 			this.updateColumnModelHiddenColumns();
 			
+			if (!params.req_channel && params.action) {
+				params.req_channel = this.store_params.url_controller + ' list - toolbar ' + params.action;
+			}
+			
 			this.store.removeAll();
 			this.store.load({
 				params: Ext.apply(params, {

@@ -910,6 +910,7 @@ addLangs({
 	'template name required': 'El nombre de la plantilla es requerido',
     'template': 'Plantilla',
     'upcoming tasks w': 'Próximas',
+	'confirm delete task': 'Confirma eliminar tarea',
     'time will be rounded to 15 minutes': 'El tiempo se redondeara a un multiplo de 15 minutos',
 	"the user assign to this task doesn't have permission over the selected project. The task is now unassigned": "El usuario asignado a esta tarea no tiene permisos sobre el proyecto seleccionado. La tarea ha sido desasignada.",
 });

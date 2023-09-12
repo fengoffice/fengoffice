@@ -391,7 +391,7 @@ ogTimeManager.executeAction = function(actionName, ids, options){
 			"options": options
 		},
 		callback: function(success, data) {
-			if (success && ! data.errorCode) {
+			if (success && ! data.errorCode && data.tasks) {
 				for (var i = 0; i < data.tasks.length; i++){
 					var tdata = data.tasks[i];
 					/*if (actionName == 'close_work')

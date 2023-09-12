@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Console\View\Components\Task;
+
 /**
  * Middle class to API - FengOffice integration
  */
@@ -162,11 +164,11 @@ class ApiController extends ApplicationController {
         $type = ObjectTypes::instance()->findByName($service);
         
         //Debugging. Delete:
-        //Logger::log_r("Service: ". $service);
         
         if (!is_null($type))
           $typeId = $type->getId();
         
+
         switch ($service){
             case "workspace":
                 $dimension_id = Dimensions::findByCode('workspaces')->getId();
@@ -190,8 +192,14 @@ class ApiController extends ApplicationController {
         
         $extra_conditions = '';
         if ($name!=""){
-        	$extra_conditions .= " AND mem.name LIKE '%".$name."%'";
+            if (check_column_exists( TABLE_PREFIX ."members", "display_name")) {//TABLE_PREFIX .
+        	    $extra_conditions .= " AND mem.display_name LIKE '%".$name."%'";
+            }else{
+                $extra_conditions .= " AND mem.name LIKE '%".$name."%'";
+            }
         }
+
+
         if($dimension_id == Dimensions::findByCode('customer_project')->getId() && !$show_subprojects){
             $extra_conditions .= " AND mem.parent_member_id=0";
         }
@@ -283,6 +291,27 @@ class ApiController extends ApplicationController {
             }
         }
 
+        return $this->response('json', $tmp_objects);
+    }
+
+    private function list_expense_types($request) {
+        $members = !empty($request['args']['members']) ? $request['args']['members'] : null;
+        $query_options = array(
+            'member_ids' => $members,
+        );
+
+        $actual_expense_types = config_option('set_actual_expense_type');
+        $filter_actual_expense_types = array_filter($actual_expense_types);
+        $tmp_objects = array();
+        $tmp_array=[];
+        $i=0;
+        foreach($actual_expense_types as $type)
+        {
+            $tmp_array[$i]['key']=$type;
+            $tmp_array[$i]['value']=lang($type);
+            $i++;
+        }
+        array_push($tmp_objects, $tmp_array);
         return $this->response('json', $tmp_objects);
     }
 
@@ -816,6 +845,9 @@ class ApiController extends ApplicationController {
                         		$object->setDocumentId($document_id);
                         	}
                         }
+                        if (!empty($request ['args'] ['payment_receipt']['expense_type'])) {
+                            $object->setExpenseType($request ['args'] ['payment_receipt']['expense_type']);
+                        }
                     }
                     break;
 
@@ -840,8 +872,38 @@ class ApiController extends ApplicationController {
                 try {
                     $context = array();
                     $members = array();
-                    if (!empty($request['args']['members'])) {
-                        $members = $request['args']['members'];
+
+
+                    if($request ['srv']=='expense')//if object is expense
+                    {
+                        //if it has budgeted expense, get all form bugeted
+                        if (!empty($request['args']['expense_id'])) {
+                            $expenseAux = Expenses::findById($request['args'] ['expense_id']);
+                            if($expenseAux instanceof Expense)
+                            {
+                                $members = $expenseAux->getMemberIds();
+                            }
+
+                        }else if(!empty($request['args']['members'])){
+                                $members = $request['args']['members'];
+                        }
+
+                        //if it has default aproval status add
+                        //get default approval status
+                        $approval_status_dimension_id = Dimensions::findByCode('status_timesheet')->getId();
+                        if($approval_status_dimension_id>0)
+                        {
+                            $default_value = DimensionOptions::instance()->getOptionValue($approval_status_dimension_id, 'default_value');
+                            if($default_value>0)
+                            {
+                                $members[]=$default_value;
+                            }
+                        }
+                    }
+
+                    //if members exists 
+                    if(count($members)>0)
+                    {
                         $context = get_context_from_array($members);
                         if(count($members) == 1) {
                              // Use associated members if only one member is selected and it is a project
@@ -886,7 +948,19 @@ class ApiController extends ApplicationController {
 
 	private function add_timeslot($request) {
 	
-		$members = array_var($request['args'], 'members', array());
+		//if member came by args 
+        $members = array_var($request['args'], 'members', array());
+        
+        //if not, get the task and then the members of the task!
+        if(!$members)
+        {
+            $taskAux = ProjectTasks::findById($request['args'] ['object_id']);
+            if($taskAux instanceof ProjectTask)
+            {
+                $members = $taskAux->getMemberIds();
+            }
+        }
+
 		// Get project member
 		$project_member = null;
 		$project_ot_id = ObjectTypes::findByName('project')->getId();
@@ -896,6 +970,7 @@ class ApiController extends ApplicationController {
 				if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
 			}
 		}
+
 		// Get client member associated to the project
 		if($project_member instanceof Member){
 			Env::useHelper('functions', 'crpm');

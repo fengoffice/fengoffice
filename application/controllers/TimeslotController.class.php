@@ -641,10 +641,10 @@ class TimeslotController extends ApplicationController {
 	
 	function delete_all_from_task() {
 	    $task_id = get_id('object_id');
-	    $timeslots = Timeslots::instance()->findAll(array('conditions' => array('`rel_object_id` = ?', $task_id)));
+	    $timeslots = Timeslots::instance()->findAll(array('conditions' => array('`rel_object_id` = ? AND trashed_by_id=0', $task_id)));
 	    
 	    if (!is_array($timeslots) || !count($timeslots)){	    
-	        flash_error(lang('timeslot dnx'));
+	        flash_error(lang('there are no timeslots to delete'));
 	        ajx_current("empty");
 	        return;
 	    }

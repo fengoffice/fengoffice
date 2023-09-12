@@ -73,9 +73,11 @@ class MailUtilities {
 
 				debug_log("Start checking account ".$account->getId(), "checkmail_log.php");
 
-				if (!$account->getServer()) continue;
+				if (!$account->getServer() &&  !$account->getUsesOauth2()) continue;
 				try {
 					$lastChecked = $account->getLastChecked();
+					// For debugging purposes set to false last checked to enable getting mails
+					// $lastChecked = false;
 					$minutes = 1;
 					if ($lastChecked instanceof DateTimeValue && $lastChecked->getTimestamp() + $minutes*60 >= DateTimeValueLib::now()->getTimestamp()) {
 						$succ++;
@@ -95,10 +97,16 @@ class MailUtilities {
 					}
 					$accId = $account->getId();
 					$emails = array();
-					if (!$account->getIsImap()) {
-						$mailsReceived += self::getNewPOP3Mails($account, $maxPerAccount);
-					} else {
+					if ($account->getUsesOauth2()) {
 						$mailsReceived += self::getNewImapMails($account, $maxPerAccount);
+					} else {
+						// When accounts authenticate using basic login
+						if (!$account->getIsImap()) {
+							$mailsReceived += self::getNewPOP3Mails($account, $maxPerAccount);
+						} else {
+							$mailsReceived += self::getNewImapMails($account, $maxPerAccount);
+						}
+
 					}
 
 					debug_log("End checking account ".$account->getId(), "checkmail_log.php");
@@ -1007,15 +1015,30 @@ class MailUtilities {
 		return prepare_email_addresses($addr_str);
 	}
 
-	function sendMail($smtp_server, $to, $from, $subject, $body, $cc, $bcc, $attachments=null, $smtp_port=25, $smtp_username = null, $smtp_password ='', $type='text/plain', $transport=0, $message_id=null, $in_reply_to=null, $inline_images = null, &$complete_mail, $att_version) {
+	function sendMail($smtp_server, $to, $from, $subject, $body, $cc, $bcc, $attachments=null, $smtp_port=25, $smtp_username = null, $smtp_password ='', $type='text/plain', $transport=0, $message_id=null, $in_reply_to=null, $inline_images = null, &$complete_mail, $att_version, $mail_account) {
 		//Load in the files we'll need
 		Env::useLibrary('swift');
 		try {
+/* 			Logger::log_r($smtp_server);
+			Logger::log_r($smtp_port);
+			Logger::log_r($transport); */
 			$mail_transport = Swift_SmtpTransport::newInstance($smtp_server, $smtp_port, $transport);
 			$smtp_authenticate = $smtp_username != null;
-			if($smtp_authenticate) {
-				$mail_transport->setUsername($smtp_username);
-				$mail_transport->setPassword(self::ENCRYPT_DECRYPT($smtp_password));
+			$account_uses_oauth = $mail_account->getColumnValue('uses_oauth2');
+			if($smtp_authenticate || $account_uses_oauth) {
+				if($account_uses_oauth) {
+					$mail_address = $mail_account->getEmailAddress();
+					$access_token = '';
+					Hook::fire('mail_account_get_oauth_access_token', array('mail_account' => $mail_account), $access_token);
+					/* Logger::log_r($mail_address);
+					Logger::log_r($access_token); */
+					$mail_transport->setAuthMode('XOAUTH2');
+					$mail_transport->setUsername($mail_address);
+					$mail_transport->setPassword($access_token);
+				} else {
+					$mail_transport->setUsername($smtp_username);
+					$mail_transport->setPassword(self::ENCRYPT_DECRYPT($smtp_password));
+				}
 			}
 
 			$local_domain = parse_url(ROOT_URL);
@@ -1109,13 +1132,11 @@ class MailUtilities {
 			//Send the message
 			$failed_recipients = array();
 			$result = $mailer->send($message, $failed_recipients);
-
 			if ($swift_logger_level >= 2 || ($swift_logger_level > 0 && !$result) || count($failed_recipients)>0) {
 				$fail_recipients_str = count($failed_recipients)>0 ? "FAILED RECIPIENTS: ".print_r($failed_recipients,1)."\n" : "";
 				file_put_contents(CACHE_DIR."/swift_log.txt", "\n".gmdate("Y-m-d H:i:s")." $fail_recipients_str DEBUG:\n" . $swift_logger->dump() . "----------------------------------------------------------------------------", FILE_APPEND);
 				$swift_logger->clear();
 			}
-
 			return $result;
 
 		} catch (Exception $e) {
@@ -1195,10 +1216,9 @@ class MailUtilities {
 	 */
 	static function setReadUnreadImapMails(MailAccount $account, $folder, $uid, $read = true) {
 
-		$imap = $account->imapConnect();
-
+		$imap = $account->imapConnect(); 
 		//login
-		$login_ret = $imap->login($account->getEmail(), self::ENCRYPT_DECRYPT($account->getPassword()),null,false);
+		$login_ret = $account->imapLogin($imap);
 		if (PEAR::isError($login_ret)) {
 			throw new Exception($login_ret->getMessage());
 		}
@@ -1250,7 +1270,8 @@ class MailUtilities {
 
 		$imap = $account->imapConnect();
 
-		$ret = $imap->login($account->getEmail(), self::ENCRYPT_DECRYPT($account->getPassword()),null,false);
+		// Imap login
+		$ret = $account->imapLogin($imap);
 		$mailboxes = MailAccountImapFolders::getMailAccountImapFolders($account->getId());
 		if (is_array($mailboxes)) {
 			foreach ($mailboxes as $box) {
@@ -1509,7 +1530,7 @@ class MailUtilities {
 
 		$imap = $account->imapConnect();
 
-		$ret = $imap->login($account->getEmail(), self::ENCRYPT_DECRYPT($account->getPassword()));
+		$ret = $account->imapLogin($imap);
 		if ($ret !== true || PEAR::isError($ret)) {
 			//Logger::log($ret->getMessage());
 			throw new Exception($ret->getMessage());
@@ -1585,7 +1606,7 @@ class MailUtilities {
 
 				$imap = $account->imapConnect();
 
-				$ret = $imap->login($account->getEmail(), self::ENCRYPT_DECRYPT($account->getPassword()));
+				$ret = $account->imapLogin($imap);
 
 				$result = array();
 				if ($ret === true) {
@@ -1768,30 +1789,63 @@ class MailUtilities {
 	}
 
 
-	function appendMailThroughIMAP($account, $content) {
-		if ($account instanceof MailAccount && $account->getSyncFolder() && $content != "") {
+	function getSentImapFolderToSync($account) {
+		$sync_folder_obj = null;
 
-			try{
-				$imap = $account->imapConnect();
+		if ($account->getSyncFolder() != "") {
+			$sync_folder_obj = MailAccountImapFolders::getByFolderName($account->getId(), $account->getSyncFolder());
+		}
+		if (!$sync_folder_obj) {
+			$sync_folder_obj = MailAccountImapFolders::getSpecialUseFolder($account->getId(), "\\Sent");
+		}
+		if (!$sync_folder_obj) {
+			$sync_folder_obj = MailAccountImapFolders::getSpecialUseFolder($account->getId(), "Sent");
+		}
 
-				$login_ret = $imap->login($account->getEmail(), $this->ENCRYPT_DECRYPT($account->getPassword()),null,false);
-				if (PEAR::isError($login_ret)) {
-					debug_log("IMAP login error: ".$login_ret->getMessage(), "sent_emails_sync.log");
-					throw new Exception($login_ret->getMessage());
+		$imap = $account->imapConnect();
+		$login_ret = $account->imapLogin($imap);
+		if (PEAR::isError($login_ret)) {
+			debug_log("IMAP login error: ".$login_ret->getMessage(), "sent_emails_sync.log");
+			throw new Exception($login_ret->getMessage());
+		}
+
+		return $sync_folder_obj;
+	}
+
+	function appendMailThroughIMAP($account, $mail, $content, $imap = null) {
+		
+		if ($account instanceof MailAccount && $account->getIsImap() && $content != "") {
+			
+			$sync_folder_obj = $this->getSentImapFolderToSync($account);
+
+			if ($sync_folder_obj instanceof MailAccountImapFolder && $sync_folder_obj->getFolderName() != "") {
+				
+				try{
+					if (!$imap) {
+						$imap = $account->imapConnect();
+						$login_ret = $account->imapLogin($imap);
+						if (PEAR::isError($login_ret)) {
+							debug_log("IMAP login error: ".$login_ret->getMessage(), "sent_emails_sync.log");
+							throw new Exception($login_ret->getMessage());
+						}
+					}
+	
+					$folder = utf8_decode($sync_folder_obj->getFolderName());
+	
+					$result = $imap->appendMessage($content, $folder);
+					if (PEAR::isError($result)) {
+						debug_log("IMAP append error: ".$result->getMessage(), "sent_emails_sync.log");
+						throw new Exception($result->getMessage());
+					}
+
+					DB::execute("UPDATE ".TABLE_PREFIX."mail_contents SET sync=1 WHERE object_id=".$mail->getId());
+					
+					return true;
+	
+				} catch(Exception $e) {
+					debug_log("appendMailThroughIMAP ERROR: ".$e->getMessage()."\n".$e->getTraceAsString(), "sent_emails_sync.log");
+					Logger::log_r($e->getMessage()."\n".$e->getTraceAsString());
 				}
-
-				$folder = utf8_decode($account->getSyncFolder());
-
-				$result = $imap->appendMessage($content, $folder);
-				if (PEAR::isError($result)) {
-					debug_log("IMAP append error: ".$result->getMessage(), "sent_emails_sync.log");
-					throw new Exception($result->getMessage());
-				}
-				return true;
-
-			} catch(Exception $e) {
-				debug_log("appendMailThroughIMAP ERROR: ".$e->getMessage()."\n".$e->getTraceAsString(), "sent_emails_sync.log");
-				Logger::log_r($e->getMessage()."\n".$e->getTraceAsString());
 			}
 		}
 	}
@@ -2000,7 +2054,7 @@ class MailUtilities {
 		if (is_null($imap)) {
 			$has_to_disconnect = true;
 			$imap = $account->imapConnect();
-			$ret = $imap->login($account->getEmail(), MailUtilities::ENCRYPT_DECRYPT($account->getPassword()),null,false);
+			$ret = $account->imapLogin($imap);
 			if (PEAR::isError($ret)) {
 				Logger::log_r("get_imap_account_mailboxes - LOGIN ERROR\n".print_r($ret,1));
 				throw new Exception(lang('failed to authenticate email account desc', $account->getEmailAddress()));

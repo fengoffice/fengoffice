@@ -55,7 +55,12 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 				$currency = Currencies::getCurrency($currency_id);
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code');
 				$formatted = format_money_amount($value, $c_symbol);
-			}else {
+			} else if ($ot->getName() == 'task' && $property == 'parent_id') {
+				$parent_task = ProjectTasks::findById($value);
+				if ($parent_task instanceof ProjectTask) {
+					$formatted = $parent_task->getName();
+				}
+			} else {
 				$formatted = format_value_to_print($property, $value, $object->getColumnType($property), $object->getObjectTypeId());
 			}
 

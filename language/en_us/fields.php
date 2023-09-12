@@ -229,6 +229,7 @@ return array(
     'field ProjectTasks object_subtype' => 'Object subtype',
 	'field ProjectTasks percent_completed' => 'Percent completed',
 	'field ProjectTasks original_task_id' => 'Original task id',
+	'field ProjectTasks parent_id' => 'Parent task',
 
 	// User fields
     'field Users username' => 'Username', 
@@ -248,6 +249,7 @@ return array(
     'field Users auto_assign' => 'Auto assign', 
     'field Users can_manage_contacts' => 'Can manage all people',
     'field Users can_manage_templates' => 'Can manage templates',
+	'field Users can_manage_mail_templates'=>'Can manage mail templates',
 	'field Users can_manage_reports'=> 'Can manage reports',
 	'field Users can_manage_time'=> 'Can manage time',
 	'field Users can_add_mail_accounts'=> 'Can add email accounts',

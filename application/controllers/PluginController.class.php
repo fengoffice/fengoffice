@@ -39,6 +39,27 @@ class PluginController extends ApplicationController {
 		}
 	} 
 	
+	function show_error_message($plugin, $error, $action) {
+
+		$name = $plugin instanceof Plugin ? $plugin->getName() : 'n/a';
+		$message = "Error executing $action for plugin '$name':\n\n" . $error->getMessage() . "\n\n" . $error->getTraceAsString();
+
+		if (defined('CONSOLE_MODE')) { // executing by command line
+			
+			fwrite(STDERR, $message . "\n");
+			throw $error; // for plugin-console.php to catch and exit with error
+
+		} else { // executing by interface
+			ajx_extra_data(array('errorMessage' => nl2br($message)));
+		}
+	}
+
+	function show_success_message($message) {
+		if (defined('CONSOLE_MODE')) { // executing by command line
+			echo $message . "\n";
+		}
+	}
+
 	function update($id = null) {
 		ajx_current("empty");
 		$from_post = false;
@@ -54,27 +75,31 @@ class PluginController extends ApplicationController {
 					$plg->update();
 					
 					DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
+
+					$this->show_success_message("Plugin $name updated successfully");
 				}
 			}
+		} catch (Error $e) {
+			$this->show_error_message($plg, $e, 'update');
 		} catch (Exception $e) {
-			if ($from_post) {
-				ajx_extra_data(array('errorMessage' => "Error updating plugin '$name': " . $e->getMessage()));
-			} else {
-				throw new Error("Error installing plugin '$name': " . $e->getMessage());
-			}
+			$this->show_error_message($plg, $e, 'update');
 		}
 	}
 	
 	function updateAll() {
 		try {
-			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1 AND is_activated=1'));
+			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1'));
 			foreach ($plugins as $plg) {
-				$plg->update();
+				if ($plg->updateAvailable()) {
+					$plg->update();
+					$this->show_success_message("Plugin ".$plg->getName()." updated successfully");
+				}
 			}
 			DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
+		} catch (Error $e) {
+			$this->show_error_message($plg, $e, 'update');
 		} catch (Exception $e) {
-			$name = $plg instanceof Plugin ? $plg->getName() : 'n/a';
-			throw new Error("Error updating plugin '$name': " . $e->getMessage());
+			$this->show_error_message($plg, $e, 'update');
 		}
 	}
 	
@@ -92,6 +117,7 @@ class PluginController extends ApplicationController {
 			if (file_exists($path)){
 				include_once $path;
 			}
+			$this->show_success_message("Plugin $name uninstalled successfully");
 		}
 	}
 	
@@ -110,14 +136,14 @@ class PluginController extends ApplicationController {
 				$plg->save();
 				
 				DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
-				
+
+				$this->show_success_message("Plugin ".$plg->getName()." installed successfully");
+
+			} catch (Error $e) {
+				$this->show_error_message($plg, $e, 'install');
 			} catch (Exception $e) {
-				if ($from_post) {
-					ajx_extra_data(array('errorMessage' => "Error installing plugin '$name': " . $e->getMessage()));
-				} else {
-					throw new Error("Error installing plugin '$name': " . $e->getMessage());
-				}
-			}	
+				$this->show_error_message($plg, $e, 'install');
+			}
 		}
 	}
 	
@@ -126,6 +152,7 @@ class PluginController extends ApplicationController {
 		$id=array_var($_POST,'id');
 		if ( $plg  = Plugins::instance()->findById($id)) {
 			$plg->activate();
+			$this->show_success_message("Plugin ".$plg->getName()." activated successfully");
 		}
 	}
 	
@@ -134,6 +161,7 @@ class PluginController extends ApplicationController {
 		$id=array_var($_POST,'id');
 		if ( $plg  = Plugins::instance()->findById($id)) {
 			$plg->deactivate();
+			$this->show_success_message("Plugin ".$plg->getName()." deactivated successfully");
 		}
 	}
 	
@@ -266,7 +294,7 @@ static function executeInstaller($name) {
 			}
 			
 			//2. IF Plugin defines tabs, INSERT INTO ITS TABLE
-			if (count ( array_var ( $pluginInfo, 'tabs' ) )) {
+			if (count ( array_var ( $pluginInfo, 'tabs', array() ) ) > 0) {
 				foreach ( $pluginInfo ['tabs'] as $k => $tab ) {
 					if (isset ( $tab ['title'] )) {
 						$type_id = array_var ( $type, "id" );

@@ -64,28 +64,22 @@ try {
 		switch($command) {
 			case 'update':
 				$ctrl->update($plg->getId());
-				$success_message = "Plugin ".$plg->getName()." successfully updated.";
 				break;
 			case 'install':
 				$ctrl->install($plg->getId());
-				$success_message = "Plugin ".$plg->getName()." successfully installed.";
 				break;
 			case 'activate':
 				$plg->activate();
-				$success_message = "Plugin ".$plg->getName()." successfully activated.";
 				break;
 			case 'install_activate':
 				$ctrl->install($plg->getId());
 				$plg->activate();
-				$success_message = "Plugin ".$plg->getName()." successfully installed and activated.";
 				break;
 			case 'deactivate':
 				$plg->deactivate();
-				$success_message = "Plugin ".$plg->getName()." successfully deactivated.";
 				break;
 			case 'uninstall':
 				$ctrl->uninstall($plg->getId());
-				$success_message = "Plugin ".$plg->getName()." successfully uninstalled.";
 				break;
 			default:
 				die("Invalid command \n$usage");
@@ -94,9 +88,8 @@ try {
 		
 	}
 
+} catch (Error $e) {
+	exit(1); // return error code
 } catch (Exception $e) {
-	echo $e->getMessage();
-	echo "\n".$e->getTraceAsString()."\n";
+	exit(1); // return error code
 }
-
-echo "$success_message\n";

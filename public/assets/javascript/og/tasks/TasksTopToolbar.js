@@ -24,10 +24,10 @@ og.TasksTopToolbar = function(config) {
 						callback: function(success, data) {
 							if (success) {
 								if(data.parameters.length == 0){
-									var url = og.getUrl('template', 'instantiate', {id: tid});
+									var url = og.getUrl('template', 'instantiate', {id: tid, req_channel: 'task list - toolbar instantiate template'});
 									og.openLink(url);
 								}else{
-									og.render_modal_form('', {c:'template', a:'instantiate_parameters', params: {id: tid}, 
+									og.render_modal_form('', {c:'template', a:'instantiate_parameters', params: {id: tid, req_channel: 'task list - toolbar instantiate template'}, 
 										overlayClose:false, escClose:false, hideCloseIcon:false
 									});
 								}
@@ -54,6 +54,8 @@ og.TasksTopToolbar = function(config) {
 					additionalParams.assigned_to_contact_id = value;
 				}
 			}
+
+			additionalParams.req_channel = 'task list - toolbar new task';
 			
 			og.render_modal_form('', {c:'task', a:'add_task', params: additionalParams});
 		}
@@ -88,10 +90,10 @@ og.TasksTopToolbar = function(config) {
 						callback: function(success, data) {
 							if (success) {
 								if (data.parameters.length == 0) {
-									var url = og.getUrl('template', 'instantiate', {id: tid});
+									var url = og.getUrl('template', 'instantiate', {id: tid, req_channel: 'task list - toolbar instantiate template'});
 									og.openLink(url);
 								} else {
-									og.openLink(og.getUrl('template', 'instantiate_parameters', {id: tid}));
+									og.openLink(og.getUrl('template', 'instantiate_parameters', {id: tid, req_channel: 'task list - toolbar instantiate template'}));
 								}
 							}
 						}
@@ -254,24 +256,24 @@ og.TasksTopToolbar = function(config) {
                         iconCls: 'ico-archive-obj',
 			disabled: true,
 			handler: function() {
-                                var ids = ogTasks.getSelectedIds()+'';
-                                var arr_ids = ids.split(',')
-                                for(var i = 0; i < arr_ids.length; i++){
-                                    var related = og.checkRelated("task",arr_ids[i]);
-                                    if(related){
-                                        break;    
-                                    }                                
-                                }
+				var ids = ogTasks.getSelectedIds() + '';
+				var arr_ids = ids.split(',')
+				for (var i = 0; i < arr_ids.length; i++) {
+					var related = og.checkRelated("task", arr_ids[i]);
+					if (related) {
+						break;
+					}
+				}
 
-                                if(related){
-                                    this.dialog = new og.TaskPopUp("archive",'');
-                                this.dialog.setTitle(lang('tasks related'));	                                
-                                this.dialog.show();
-                                }else{
-                                    if (confirm(lang('confirm archive selected objects'))) {
-					ogTasks.executeAction('archive');
-                                    }
-                                }
+				if (related) {
+					this.dialog = new og.TaskPopUp("archive", '');
+					this.dialog.setTitle(lang('tasks related'));
+					this.dialog.show();
+				} else {
+					if (confirm(lang('confirm archive selected objects'))) {
+						ogTasks.executeAction('archive');
+					}
+				}
 			},
 			scope: this
 		})

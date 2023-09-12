@@ -409,9 +409,8 @@
 			and fo.created_on < NOW() - interval 1 day;
 		");
 	}
+	
 
-	
-	
 	function mail_update_28_29(){
 		DB::execute("
 			ALTER TABLE `".TABLE_PREFIX."mail_account_imap_folder`
@@ -432,4 +431,33 @@
 			WHERE `name` = 'hide_quoted_text_in_emails';
 		");
 		
+	}
+	function mail_update_30_31() {
+		// check if config option for sync sent mails is present, if not then add it
+		$option = ConfigOptions::getByName('sent_mails_sync');
+		if (!$option instanceof ConfigOption) {
+			DB::execute("
+				INSERT INTO `".TABLE_PREFIX."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`) VALUES
+				('mail module', 'sent_mails_sync','0', 'BoolConfigHandler', 0, 0, '','')
+				ON DUPLICATE KEY UPDATE `category_name`=`category_name`;
+			");
+		}
+	}
+
+	function mail_update_31_32() {
+		if (!check_column_exists(TABLE_PREFIX."mail_accounts", "oauth2_access_token")) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts` ADD `oauth2_access_token` text COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
+			");
+		}
+		if (!check_column_exists(TABLE_PREFIX."mail_accounts", "oauth2_provider")) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts` ADD `oauth2_provider` varchar(255) COLLATE 'utf8_unicode_ci' NOT NULL DEFAULT '';
+			");
+		}
+		if (!check_column_exists(TABLE_PREFIX."mail_accounts", "uses_oauth2")) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts` ADD `uses_oauth2` tinyint(1) NOT NULL DEFAULT 0;
+			");
+		}
 	}

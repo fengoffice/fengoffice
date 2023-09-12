@@ -246,6 +246,7 @@
 	'field ProjectTasks repeat_y' => 'Año de repetición',
 	'field ProjectTasks percent_completed' => 'Porcentaje completado',
 	'field ProjectTasks total_worked_time' => 'Total de tiempo trabajado',
+	'field ProjectTasks parent_id' => 'Tarea padre',
     'field ProjectTasks status' => 'Estado',
 	'field Users created_by_id' => 'Creado por',
 	'field Users updated_by_id' => 'Actualizado por',
