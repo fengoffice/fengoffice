@@ -199,18 +199,23 @@ og.timeslotTypeSelectChange = function(select, genid) {
 	if (st_row) st_row.style.display = select.value == 1 ? 'none' : '';
 }
 
+og.switchDashboardView = function(view_as_list) {
+	og.openLink(og.getUrl('account', 'update_user_preference', {name:'overviewAsList', value: view_as_list}), {
+		hideLoading:true,
+		callback: function(success, data) {
+			var opanel = Ext.getCmp('overview-panel');
+			opanel.defaultContent = {type: 'url', data: og.getUrl('dashboard', 'main_dashboard')};
+			opanel.load(opanel.defaultContent);
+		}
+	});
+}
+
 og.switchToOverview = function(){
-	og.openLink(og.getUrl('account', 'update_user_preference', {name:'overviewAsList', value:1}), {hideLoading:true});
-	var opanel = Ext.getCmp('overview-panel');
-	opanel.defaultContent = {type: 'url', data: og.getUrl('dashboard', 'init_overview')};
-	opanel.load(opanel.defaultContent);
+	og.switchDashboardView(1);
 };
 
 og.switchToDashboard = function(){
-	og.openLink(og.getUrl('account', 'update_user_preference', {name:'overviewAsList', value:0}), {hideLoading:true});
-	var opanel = Ext.getCmp('overview-panel');
-	opanel.defaultContent = {type: "url", data: og.getUrl('dashboard','main_dashboard')};
-	opanel.load(opanel.defaultContent);
+	og.switchDashboardView(0);
 };
 
 og.customDashboard = function (controller,action,params, reload) {
@@ -231,7 +236,7 @@ og.customDashboard = function (controller,action,params, reload) {
 og.resetDashboard = function () {
 	var opanel = Ext.getCmp('overview-panel');
 	if (opanel && opanel.defaultContent.data != "overview"){
-		opanel.defaultContent = {type: "url", data: og.getUrl('dashboard','init_overview')};
+		opanel.defaultContent = {type: "url", data: og.getUrl('dashboard','main_dashboard')};
 		opanel.load(opanel.defaultContent);
 	}
 }
@@ -2367,6 +2372,10 @@ og.checkValidEmailAddress = function(email) {
 }
 
 og.checkEmailAddress = function(element, id_contact, contact_type) {
+	var elementCheck = document.querySelector(element);
+	elementCheck.addEventListener("keyup", (e) => {
+		e.target.value = e.target.value.replace(/\s/g, '')
+	})
 	$(element).blur(function(){
 		var field = $(this);
 		// Ajax to ?c=contact&a=check_existing_email&email=admin@admin.com&ajax=true
@@ -4892,6 +4901,8 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 	var user_id = Ext.getCmp(grid.genid + 'add_ts_contact_id').getValue();
 	params['timeslot[contact_id]'] = user_id;
 
+	params['req_channel'] = 'time list - quick add';
+
 	return params;
 }
 
@@ -5468,6 +5479,8 @@ og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassi
 	if (attachment) params.attachment = attachment;
 	if (reclassify_in_associations) params.reclassify_in_associations = reclassify_in_associations;
 	if (remove_prev) params.remove_prev = remove_prev;
+	
+	params.req_channel = 'drag and drop';
 	
 	og.openLink(og.getUrl('member', 'add_objects_to_member'),{
 		method: 'POST',

@@ -2,6 +2,19 @@
 og.Breadcrumbs = {
 		
 	resetSelection: function () {
+		// delete any pending request to select a node
+		if (og.try_to_select_member_intervals) {
+			for (x in og.try_to_select_member_intervals) {
+				clearInterval(og.try_to_select_member_intervals[x]);
+			}
+			og.try_to_select_member_intervals = {};
+		}
+
+		// remove everything from the context
+		for (dimId in og.contextManager.dimensionMembers) {
+			og.contextManager.cleanActiveMembers(dimId);
+		}
+
 		// click root node in first tree, then call the next
 		for (dimId in og.contextManager.dimensionMembers) {
 			og.clickRootNodeAndCallNext(dimId, 0);

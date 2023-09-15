@@ -1283,6 +1283,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if (!$this->getObject() instanceof FengObject) {
 			return false;
 		}
+		// to use when saving the application log
+		$old_content_object = $this->generateOldContentObjectData();
+
 		if(!$trashDate instanceof DateTimeValue) {
 			$trashDate = DateTimeValueLib::now();
 		}
@@ -1311,6 +1314,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	
 	function untrash($fire_hook = true) {
+		// to use when saving the application log
+		$old_content_object = $this->generateOldContentObjectData();
+		
 		if ($this->getObject()->columnExists('trashed_on')) {
 			$this->getObject()->setColumnValue('trashed_on', EMPTY_DATETIME);
 		}
@@ -2372,6 +2378,31 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 	function getChangedRelations($old_content_object) {
 		return array();
+	}
+
+
+
+	function getCustomPropertyValueByCode($cp_code) {
+		$value = '';
+
+		$cp = CustomProperties::instance()->getCustomPropertyByCode($this->getObjectTypeId(), $cp_code);
+		if ($cp instanceof CustomProperty) {
+			$value = $this->getCustomPropertyValue($cp->getId());
+		}
+
+		return $value;
+
+	}
+
+	function getCustomPropertyValue($cp_id) {
+		$value = '';
+		
+		$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getId(), $cp_id);
+		if ($cp_val instanceof CustomPropertyValue) {
+			$value = $cp_val->getValue();
+		}
+
+		return $value;
 	}
 	
 }

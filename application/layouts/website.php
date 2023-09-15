@@ -747,7 +747,7 @@ $(document).ready(function() {
 					og.enabled_dimensions_by_code[value.code] = key;
 				}
 			}
-
+			og.eventManager.fireEvent('after dimensions info loaded', null);
 		}
 	});
 

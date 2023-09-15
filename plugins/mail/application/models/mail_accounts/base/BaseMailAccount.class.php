@@ -723,6 +723,33 @@ abstract class BaseMailAccount extends DataObject {
 		return $this->setColumnValue("member_id", $memberId);
 	}
 	
+	
+	function getOauth2AccessToken() {
+		return $this->getColumnValue('oauth2_access_token');
+	}
+	
+	function setOauth2AccessToken($memberId) {
+		return $this->setColumnValue("oauth2_access_token", $memberId);
+	}
+	
+	
+	function getOauth2Provider() {
+		return $this->getColumnValue('oauth2_provider');
+	}
+	
+	function setOauth2Provider($memberId) {
+		return $this->setColumnValue("oauth2_provider", $memberId);
+	}
+	
+	
+	function getUsesOauth2() {
+		return $this->getColumnValue('uses_oauth2');
+	}
+	
+	function setUsesOauth2($memberId) {
+		return $this->setColumnValue("uses_oauth2", $memberId);
+	}
+	
 	/**
 	 * Return manager instance
 	 *

@@ -99,6 +99,10 @@
 	opacity: 0!important;
 }
 
+.ext-modal-object-list.no-border .x-panel-body-noheader{
+	border: none;
+}
+
 .ext-modal-object-list .x-panel-body-noheader{
 	border-top: none;
 }

@@ -55,6 +55,9 @@ if (array_var($options, 'readonly')) {
 	
 	$members_dimension = array();
 	$sel_mem_ids = array();
+
+	// ids of the dimensions that are read-only
+	$disabled_dimension_ids = array_var($options, 'disabled_dimension_ids', array());
 	
 	$original_options = $options;
 

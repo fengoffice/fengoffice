@@ -6,7 +6,7 @@
 -- blob/text cannot have default values
 -- sql queries must finish with ;\n (line break inmediately after ;)
 
-CREATE TABLE  `<?php echo $table_prefix ?>mail_contents` (
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_contents` (
   `object_id` int(10) unsigned NOT NULL,
   `account_id` int(10) unsigned NOT NULL default '0',
   `uid` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
@@ -37,7 +37,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_contents` (
   KEY `state` (`state`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
-CREATE TABLE  `<?php echo $table_prefix ?>mail_datas` (
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_datas` (
   `id` int(10) unsigned NOT NULL,
   `to` text <?php echo $default_collation ?> NOT NULL,
   `cc` text <?php echo $default_collation ?> NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_datas` (
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
-CREATE TABLE  `<?php echo $table_prefix ?>mail_accounts` (
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_accounts` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `contact_id` int(10) unsigned NOT NULL default '0',
   `name` varchar(40) <?php echo $default_collation ?> NOT NULL default '',
@@ -84,12 +84,14 @@ CREATE TABLE  `<?php echo $table_prefix ?>mail_accounts` (
   `sync_folder` varchar(100) <?php echo $default_collation ?> NOT NULL,
   `member_id` varchar(100) <?php echo $default_collation ?> NOT NULL,
   `can_detect_special_folders` tinyint(1) NOT NULL default '0',
-  
+  `oauth2_access_token` text <?php echo $default_collation ?> NOT NULL,
+  `oauth2_provider` varchar(255) <?php echo $default_collation ?> NOT NULL DEFAULT '',
+  `uses_oauth2` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`id`),
   INDEX `contact_id` (`contact_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
-CREATE TABLE  `<?php echo $table_prefix ?>mail_account_imap_folder` (
+CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_account_imap_folder` (
   `account_id` int(10) unsigned NOT NULL default '0',
   `folder_name` varchar(500) <?php echo $default_collation ?> NOT NULL default '',
   `check_folder` tinyint(1) NOT NULL default '0',

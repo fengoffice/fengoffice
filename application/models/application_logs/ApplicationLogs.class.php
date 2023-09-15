@@ -56,6 +56,16 @@ class ApplicationLogs extends BaseApplicationLogs {
 			}
 			$object_differences = ApplicationLogDetails::calculateSavedObjectDifferences($object, $object->old_content_object);
 		}
+
+		if (!empty($_REQUEST)) {
+			// get all the request parameters and store them
+			$full_request = var_export($_REQUEST, true);
+			$request_channel = array_var($_REQUEST, 'req_channel', '');
+		} else {
+			// we are inside a script execution like cron.php or any data import script => get the full trace of the execution
+			$full_request = get_back_trace();
+			$request_channel = 'script';
+		}
 		
 		$args = array (
 			'action' => &$action,
@@ -104,6 +114,9 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$log->setIsPrivate($is_private);
 		$log->setIsSilent($is_silent);
 		$log->setLogData($log_data);
+
+		$log->setFullRequest($full_request);
+		$log->setRequestChannel($request_channel);
 		
 		if($save) {
 			$log->save();
@@ -207,6 +220,10 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$private_filter = $include_private ? 1 : 0;
 		$silent_filter = $include_silent ? 1 : 0;		
 		
+		/* 
+			COMMENTED SO WE CAN ANALYZE WHAT WAS INTENDED TO DO AND HOW TO FIX IT, 
+			AND SHOW USER LOGS IN THE SAME WAY AS OTHER OBJECTS
+
 		// User History
 		if ($object instanceof Contact && $object->isUser()){		
 			$private_filter = $include_private ? 1 : 0;
@@ -225,6 +242,8 @@ class ApplicationLogs extends BaseApplicationLogs {
 				'offset' => $offset,
 			)); // findAll				
 		} else {
+			-------------------------------------------- */
+			
 			$comment_ids = Comments::findAll(array('id'=>true, 'conditions'=>'rel_object_id = '.$object->getId()));
 			if (is_array($comment_ids) && count($comment_ids) > 0) {
 				$comments_conditions = "OR `rel_object_id` IN (".implode(',', $comment_ids).")";
@@ -237,7 +256,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 				'limit' => $limit,
 				'offset' => $offset,
 			)); // findAll
-		}
+		//}
 		
 		$next_offset = $offset + $limit;
 		do {

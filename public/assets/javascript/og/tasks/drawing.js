@@ -11,6 +11,10 @@
 //************************************
 
 ogTasks.draw = function () {
+	
+	// reset list selections in cache and current tasks
+	ogTasks.resetSelection();
+
     //first load the groups from server
     if (!ogTasks.Groups.loaded) {
     	ogTasks.resetPaginationVariables();
@@ -323,7 +327,7 @@ ogTasks.drawGroupActions = function (group) {
         '<a id="ogTasksPanelGroupSoloOff' + group.group_id + '" style="display:' + (group.solo ? "inline" : "none") + ';margin-right:15px;" href="#" class="internalLink" onClick="ogTasks.hideShowGroups(\'' + group.group_id + '\')" title="' + lang('show all groups') + '">' + (lang('show all')) + '</a>' +
         '<a href="#" class="internalLink ogTasksGroupAction ico-print" style="margin-right:15px;" onClick="ogTasks.printGroup(\'' + group.group_id + '\')" title="' + lang('print this group') + '">' + (lang('print')) + '</a>';
     if (ogTasks.userPermissions.can_add) {
-        html += '<a href="#" class="internalLink ogTasksGroupAction ico-add" onClick="ogTasks.drawAddNewTaskForm(\'' + group.group_id + '\')" title="' + lang('add a new task to this group') + '">' + (lang('add task')) + '</a>';
+        html += '<a href="#" class="internalLink ogTasksGroupAction ico-add" onClick="ogTasks.drawAddNewTaskForm(\'' + group.group_id + '\', 0, 0, 0, 0, \'task list - add task to group\')" title="' + lang('add a new task to this group') + '">' + (lang('add task')) + '</a>';
     }
     return html;
 }
@@ -815,7 +819,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
     taskActions.push({
         act_collapsed: !drawOptions.show_quick_add_sub_tasks,
         act_onclick: "ogTasks.drawAddNewTaskForm",
-        act_onclick_param: [{param_val: "'" + group_id + "',"}, {param_val: task.id + ","}, {param_val: level}],
+        act_onclick_param: [{param_val: "'" + group_id + "',"}, {param_val: task.id + ","}, {param_val: level+ ","}, {param_val: "'',"}, {param_val: "0,"}, {param_val: "'task list - line add subtask'"}],
         act_text: lang('add subtask'),
         act_id: "ogTasksPanelExpander" + tgId,
         act_class: "add-subtask-link ico-add coViewAction"
@@ -1199,7 +1203,7 @@ ogTasks.ToggleCompleteStatus = function (task_id, status) {
 
 ogTasks.ToggleCompleteStatusOk = function (task_id, status, opt) {
     var action = (status == 0) ? 'complete_task' : 'open_task';
-    og.openLink(og.getUrl('task', action, {id: task_id, quick: true, options: opt}), {
+    og.openLink(og.getUrl('task', action, {id: task_id, quick: true, options: opt, req_channel: 'task list - line ' + action}), {
         callback: function (success, data) {
             if (success || !data.errorCode) {
                 if (data.task) {
@@ -1232,7 +1236,7 @@ ogTasks.ToggleCompleteStatusOk = function (task_id, status, opt) {
 
 ogTasks.ToggleChangeMarkAsStarted = function (task_id) {
 
-    og.openLink(og.getUrl('task', "change_mark_as_started", {id: task_id, quick: true}), {
+    og.openLink(og.getUrl('task', "change_mark_as_started", {id: task_id, quick: true, req_channel: 'task list - line mark as started'}), {
         callback: function (success, data) {
             if (!success || data.errorCode) {
 
@@ -1278,7 +1282,7 @@ ogTasks.AddWorkTime = function (task_id) {
     og.render_modal_form('', {
         c: 'time',
         a: 'add',
-        params: {object_id: task_id, contact_id: og.loggedUser.id, dont_reload: 1}
+        params: {object_id: task_id, contact_id: og.loggedUser.id, dont_reload: 1, req_channel: 'task list - add worked hours'}
     });
     return;
 }
@@ -1290,7 +1294,7 @@ ogTasks.readTask = function (task_id, isUnRead) {
         og.openLink(
             og.getUrl('task', 'multi_task_action'),
             {
-                method: 'POST', post: {ids: task_id, action: 'markasread'}, callback: function (success, data) {
+                method: 'POST', post: {ids: task_id, action: 'markasread', req_channel: 'task list - mark as read'}, callback: function (success, data) {
                     if (!success || data.errorCode) {
                     } else {
                         var td = document.getElementById('ogTasksPanelMarkasTd' + task_id);
@@ -1304,7 +1308,7 @@ ogTasks.readTask = function (task_id, isUnRead) {
         og.openLink(
             og.getUrl('task', 'multi_task_action'),
             {
-                method: 'POST', post: {ids: task_id, action: 'markasunread'}, callback: function (success, data) {
+                method: 'POST', post: {ids: task_id, action: 'markasunread', req_channel: 'task list - mark as unread'}, callback: function (success, data) {
                     if (!success || data.errorCode) {
                     } else {
                         var td = document.getElementById('ogTasksPanelMarkasTd' + task_id);
@@ -1893,7 +1897,8 @@ ogTasks.editTasksAttribute = function (task_ids, attribute, new_value, from_grou
     var params = {
         task_ids: Ext.util.JSON.encode(task_ids),
         attribute: attribute,
-        new_value: new_value
+        new_value: new_value,
+		req_channel: 'task list - edit attribute '+attribute
     };
     og.openLink(og.getUrl('task', 'edit_tasks_attribute'), {
         method: 'POST',

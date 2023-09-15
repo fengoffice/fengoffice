@@ -1021,6 +1021,7 @@ addLangs({
     'template name required': 'Template name is required',
     'template': 'Template',
     'upcoming tasks w': 'Upcoming',
+	'confirm delete task': 'Confirm delete task',
     'time will be rounded to 15 minutes': 'Time will be rounded to 15 minutes',
     "the user assign to this task doesn't have permission over the selected project. The task is now unassigned": "The user assign to this task doesn't have permission over the selected project. The task is now unassigned",
     "the user assign to this timeslot doesn't have permission over the selected project. The timeslot is now unassigned": "The user assign to this timeslot doesn't have permission over the selected project. The timeslot is now unassigned",

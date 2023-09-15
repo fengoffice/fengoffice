@@ -316,6 +316,7 @@ return array(
     'field Contacts other_address' => 'Otra dirección',
     'field Contacts postal_address' => 'Dirección postal',
     'field ProjectTasks original_task_id' => 'Id de tarea original',
+	'field ProjectTasks parent_id' => 'Tarea padre',
     'field ProjectTasks status' => 'Estado',
     'field Timeslots rel_object_id' => 'Tarea',
     // Time fields 

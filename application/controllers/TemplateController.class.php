@@ -699,6 +699,11 @@ class TemplateController extends ApplicationController {
 	
 	
 	function instantiate($arguments = null) {
+		// let the process finish if the connection is lost
+		set_time_limit(0);
+		ini_set("memory_limit", "512M");
+		// -------------
+
 		if (!can_instantiate_templates(logged_user())) {
 			flash_error(lang("no access permissions"));
 			ajx_current("empty");
@@ -811,6 +816,10 @@ class TemplateController extends ApplicationController {
 			if ($copy->columnExists('is_template')) {
 				$copy->setColumnValue('is_template', false);
 			}
+
+			// set flag to skip calculations in this step, they will be done later
+			$copy->dont_calculate_financials = true;
+			$copy->dont_calculate_project_financials = true;
 						
 			$copy->save();
 			$copies[] = $copy;
@@ -852,8 +861,6 @@ class TemplateController extends ApplicationController {
 			Env::useHelper('dimension');
 			append_related_members_to_autoclassify($object_members);
 			
-			// set flag to skip calculations in this step, they will be done later
-			$copy->dont_calculate_financials = true;
 			// classify the task
 			$controller->add_to_members($copy, $object_members, null, false);
 			
@@ -973,12 +980,19 @@ class TemplateController extends ApplicationController {
                 }
 			}
 
-			// allow calculations from this point
+			// allow calculations for this task from this point
 			$c->dont_calculate_financials = false;
+			
+			// avoid calling project financials recalculations repeatedly once per task, 
+			// do that in the general hook after all tasks are done
+			$c->dont_calculate_project_financials = true;
 			
 			$ret = null;
 			Hook::fire('after_template_object_instantiation_and_commit', array('template' => $template, 'object' => $c), $ret);
 		}
+
+		// This hook allows to execute additional general tasks after the template is completely instantiated (like recalculate project's financials)
+		Hook::fire('after_task_template_instantiation', array('template' => $template, 'objects' => $copies), $ret);
 		
 		if (is_array($parameters) && count($parameters) > 0){
 			ajx_current("back");
