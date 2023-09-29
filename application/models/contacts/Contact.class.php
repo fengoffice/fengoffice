@@ -2234,4 +2234,31 @@ class Contact extends BaseContact {
 	}
 
 	
+
+	function getAllPhonesString() {
+		$all_phones = $this->getAllPhones();
+		$phone_numbers = array();
+		foreach ($all_phones as $phone) {
+			$phone_numbers[] = $phone->getNumber();
+		}
+		return implode(" - ", $phone_numbers);
+	}
+
+	function getAllAddressesString() {
+		$addresses = array();
+		$all_addresses = $this->getAllAddresses();
+		foreach ($all_addresses as $address) {
+			$addresses[] = $address->toString();
+		}
+		return implode("\n", $addresses);
+	}
+
+	function getAllEmailsString() {
+		$emails = array();
+		$all_emails = $this->getAllEmails();
+		foreach ($all_emails as $email) {
+			$emails[] = $email->getEmailAddress();
+		}
+		return implode(" - ", $emails);
+	}
 }

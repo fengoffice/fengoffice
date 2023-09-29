@@ -358,7 +358,20 @@ class MailAccount extends BaseMailAccount {
 		require_once 'Net/IMAP.php';
 		
 		$ret = null;
-		if ($this->getIncomingSsl()) {
+
+		if($this->getUsesOauth2()){
+
+			$imap_configs = array(
+				'host' => $this->getServer(),
+				'port' => $this->getIncomingSslPort(),
+				'encryption' => 'ssl'
+			);
+			Hook::fire('get_imap_connect_config_using_mail_account', array('account' => $this), $imap_configs);
+			$server = $imap_configs['encryption'] . '://' . $imap_configs['host'];
+
+			$imap = new Net_IMAP($ret,  $server, $imap_configs['port'], null, null);
+			
+		} else if ($this->getIncomingSsl()) {
 			
 			if ($this->getIncomingSslVerifyPeer()) {
 				$options = null;
@@ -380,6 +393,26 @@ class MailAccount extends BaseMailAccount {
 		}
 		
 		return $imap;
+	}
+
+	function imapLogin($imap, $use_authenticate = null, $select_mail_box = false) {
+		$ret = true;
+
+		$imap_login_config = array(
+			'email' => $this->getEmail(),
+			'password' => MailUtilities::ENCRYPT_DECRYPT($this->getPassword()),
+			'use_authenticate' => $use_authenticate,
+			'select_mail_box' => $select_mail_box
+		);
+
+		Hook::fire('get_imap_login_config_using_mail_account', array('account' => $this), $imap_login_config);
+		// Logger::log_r($imap_login_config);
+		$ret = $imap->login($imap_login_config['email'], 
+		                    $imap_login_config['password'],
+							$imap_login_config['use_authenticate'],
+							$imap_login_config['select_mail_box']);
+		
+		return $ret;
 	}
 	
 }

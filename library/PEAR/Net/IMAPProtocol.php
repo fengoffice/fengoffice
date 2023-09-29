@@ -35,7 +35,7 @@ class Net_IMAPProtocol
      * The auth methods this class support
      * @var array
      */
-    var $supportedAuthMethods = array('DIGEST-MD5', 'CRAM-MD5', 'LOGIN');
+    var $supportedAuthMethods = array('DIGEST-MD5', 'CRAM-MD5', 'LOGIN', 'XOAUTH2');
 
 
     /**
@@ -518,6 +518,9 @@ class Net_IMAPProtocol
         case 'LOGIN':
             $result = $this->_authLOGIN($uid, $pwd, $cmdid);
             break;
+        case 'XOAUTH2':
+            $result = $this->_authXOAUTH2($uid, $pwd, $cmdid);
+            break;
         default:
             $result = new PEAR_Error($method 
                                      . ' is not a supported authentication'
@@ -526,6 +529,11 @@ class Net_IMAPProtocol
         }
 
         $args = $this->_getRawResponse($cmdid);
+
+        // for debugging
+        // Set var $_debug = true; on line 88 to write the IMAP dialog with the server
+        // Logger::log_r($this->dbgDialog); to see the dialog
+
         return $this->_genericImapResponseParser($args, $cmdid);
 
     }
@@ -669,6 +677,38 @@ class Net_IMAPProtocol
         }
     }
 
+    /**
+     * Authenticates the user using the XOAUTH2 method.
+     * 
+     * @param string $uid   The userid to authenticate as.
+     * @param string $pwd   The password to authenticate with.
+     * @param string $cmdid The cmdID.
+     * 
+     * @return array Returns an array containing the response
+     * @access private
+     */
+    function _authXOAUTH2($uid, $pwd, $cmdid) 
+    {
+        if (PEAR::isError($error = $this->_putCMD($cmdid,
+                                                    'AUTHENTICATE',
+                                                    'XOAUTH2'))) {  
+            return $error;
+        }
+        if (PEAR::isError($args = $this->_recvLn())) {
+            return $args;
+        }
+        $this->_getNextToken($args, $plus);
+        $this->_getNextToken($args, $space);
+        $this->_getNextToken($args, $challenge);
+
+        // XOAUTH2 authentication format
+        $auth_str = base64_encode("user=$uid\1auth=Bearer $pwd\1\1");
+
+        if (PEAR::isError($error = $this->_send($auth_str . "\r\n"))) {
+            return $error;
+        }
+    }
+    
 
 
     /**
@@ -700,7 +740,7 @@ class Net_IMAPProtocol
                 if (in_array($method, $this->_serverAuthMethods)) {
                     return $method;
                 }
-            }
+            } 
             $serverMethods = implode(',', $this->_serverAuthMethods);
             $myMethods     = implode(',', $this->supportedAuthMethods);
 
@@ -2027,7 +2067,8 @@ class Net_IMAPProtocol
             $this->cmdCapability();
         }
         if ($this->_serverSupportedCapabilities != null) {
-            if (in_array($capability, $this->_serverSupportedCapabilities)) {
+            if (in_array($capability, $this->_serverSupportedCapabilities)) {
+
                 return true;
             }
         }
@@ -2325,7 +2366,8 @@ class Net_IMAPProtocol
     }
 
 
-
+
+
     /**
      * Parses the ARRDLIST as defined in RFC
      *

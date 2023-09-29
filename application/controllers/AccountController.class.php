@@ -188,18 +188,18 @@ class AccountController extends ApplicationController {
 			try {
 				if(!logged_user()->isAdminGroup()) {
 					if(trim($old_password) == '') {
-						throw new Error(lang('old password required'));
+						throw new Exception(lang('old password required'));
 					} // if
 					if(!$user->isValidPassword($old_password)) {
-						throw new Error(lang('invalid old password'));
+						throw new Exception(lang('invalid old password'));
 					} // if
 				} // if
 
 				if(trim($new_password) == '') {
-					throw new Error(lang('password value required'));
+					throw new Exception(lang('password value required'));
 				} // if
 				if($new_password <> $new_password_again) {
-					throw new Error(lang('passwords dont match'));
+					throw new Exception(lang('passwords dont match'));
 				} // if
 				
 				$user_password = new ContactPassword();

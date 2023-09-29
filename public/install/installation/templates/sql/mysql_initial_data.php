@@ -413,8 +413,7 @@ INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`t
  ('file revision', 'ProjectFileRevisions', 'project_file_revisions', 'content_object', 'file', 0),
  ('timeslot', 'Timeslots', 'timeslots', 'located', 'time', 0),
  ('template_task', 'TemplateTasks', 'template_tasks', 'content_object', 'task', 0),
- ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0),
- ('report_category', 'ReportCategories', 'report_category', 'located', 'reporting', 0);
+ ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0);
 
 UPDATE `<?php echo $table_prefix ?>contact_config_options` 
 SET `options`='{"no_empty_value":1, "option": [{"value": "1","text": "config_allow_stop_timer"},{"value": "2","text": "config_allow_pause_timer"},{"value": "3","text": "config_let_timer_continue"}]}'

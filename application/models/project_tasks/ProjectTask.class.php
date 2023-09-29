@@ -24,6 +24,9 @@ class ProjectTask extends BaseProjectTask {
 	
 	public $timeslots = null ;
 
+	public $dont_calculate_financials = false;
+	public $dont_calculate_project_financials = false;
+
 	/**
 	 * Cached task array
 	 *
@@ -1214,8 +1217,8 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return string
 	 */
-	function getEditListUrl() {
-		return get_url('task', 'edit_task', array('id' => $this->getId()));
+	function getEditListUrl($req_channel = '') {
+		return get_url('task', 'edit_task', array('id' => $this->getId(), 'req_channel' => $req_channel));
 	} // getEditUrl
 
 	/**
@@ -1225,8 +1228,8 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return string
 	 */
-	function getDeleteUrl() {
-		return get_url('task', 'delete_task', array('id' => $this->getId()));
+	function getDeleteUrl($req_channel = '') {
+		return get_url('task', 'delete_task', array('id' => $this->getId(), 'req_channel' => $req_channel));
 	} // getDeleteUrl
 
 	/**
@@ -1247,7 +1250,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @param string $redirect_to Redirect to this URL (referer will be used if this URL is not provided)
 	 * @return string
 	 */
-	function getCompleteUrl($redirect_to = null) {
+	function getCompleteUrl($redirect_to = null, $req_channel = null) {
 		$params = array(
         'id' => $this->getId()
 		); // array
@@ -1255,11 +1258,14 @@ class ProjectTask extends BaseProjectTask {
 		if(trim($redirect_to)) {
 			$params['redirect_to'] = $redirect_to;
 		} // if
+		if(trim($req_channel)) {
+			$params['req_channel'] = $req_channel;
+		}
 
 		return get_url('task', 'complete_task', $params);
 	} // getCompleteUrl
 	
-	function getChangeMarkStartedUrl($redirect_to = null) {
+	function getChangeMarkStartedUrl($redirect_to = null, $req_channel = null) {
 	    $params = array(
 	        'id' => $this->getId()
 	    ); // array
@@ -1267,6 +1273,9 @@ class ProjectTask extends BaseProjectTask {
 	    if(trim($redirect_to)) {
 	        $params['redirect_to'] = $redirect_to;
 	    } // if
+		if(trim($req_channel)) {
+			$params['req_channel'] = $req_channel;
+		}
 	    
 	    return get_url('task', 'change_mark_as_started', $params);
 	} // getCompleteUrl
@@ -1278,7 +1287,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @param string $redirect_to Redirect to this URL (referer will be used if this URL is not provided)
 	 * @return string
 	 */
-	function getOpenUrl($redirect_to = null) {
+	function getOpenUrl($redirect_to = null, $req_channel = null) {
 		$params = array(
         'id' => $this->getId()
 		); // array
@@ -1286,6 +1295,9 @@ class ProjectTask extends BaseProjectTask {
 		if(trim($redirect_to)) {
 			$params['redirect_to'] = $redirect_to;
 		} // if
+		if(trim($req_channel)) {
+			$params['req_channel'] = $req_channel;
+		}
 
 		return get_url('task', 'open_task', $params);
 	} // getOpenUrl
@@ -1372,6 +1384,34 @@ class ProjectTask extends BaseProjectTask {
 		//if(!$this->validateMaxValueOf('percent_completed', 100)) $errors[] = lang('task percent completed must be lower than 100');
 	} // validate
 
+
+	/**
+	 * Unlinks all the timeslots and expenses related to this task
+	 */
+	function unlinkRelatedObjects() {
+
+		$timeslots = Timeslots::getTimeslotsByObject($this);
+		foreach ($timeslots as $ts) {
+			$old_content_object = $ts->generateOldContentObjectData();
+			$ts->override_workflow_permissions = true;
+			$ts->setRelObjectId(0);
+			$ts->save();
+			ApplicationLogs::createLog($ts, ApplicationLogs::ACTION_EDIT, false, true);
+		}
+
+		if (Plugins::instance()->isActivePlugin('expenses2')) {
+			$b_expenses = Expenses::getBudgetedExpensesByTask($this->getId());
+			$a_expenses = PaymentReceipts::getActualExpensesByTask($this->getId());
+			$all_expenses = array_filter(array_merge($b_expenses, $a_expenses));
+
+			foreach ($all_expenses as $exp) {
+				$old_content_object = $exp->generateOldContentObjectData();
+				$exp->setTaskId(0);
+				$exp->save();
+				ApplicationLogs::createLog($exp, ApplicationLogs::ACTION_EDIT, false, true);
+			}
+		}
+	}
 	 
 	/**
 	 * Delete this task lists
@@ -1405,6 +1445,7 @@ class ProjectTask extends BaseProjectTask {
 				$child->trash(true,$trashDate);
 			}
 		}
+		$this->unlinkRelatedObjects();
 		return parent::trash($trashDate);
 	} // delete
 	

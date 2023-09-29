@@ -580,6 +580,14 @@ class TaskController extends ApplicationController {
             return;
         }
 
+		// let ObjectController handle the trash operations
+		if ($action == 'delete') {
+			$object_controller = new ObjectController();
+			$object_controller->trash();
+			ajx_current("reload");
+			return;
+		}
+
         $count_tasks = ProjectTasks::count('object_id in (' . implode(',', $ids) . ')');
         $tasksToReturn = array();
         $subt_info = array();
@@ -1088,25 +1096,6 @@ class TaskController extends ApplicationController {
         }
         $total_worked = $total_worked_subquery . ") AS group_time_worked ";
 
-        $group_totals_financials = array();
-        if (Plugins::instance()->isActivePlugin('advanced_billing')){
-            $total_estimated_cost = "SUM(estimated_cost) AS group_estimated_cost ";
-            $total_estimated_price = "SUM(estimated_price) as group_estimated_price ";
-            $total_executed_cost = "SUM(executed_cost) AS group_executed_cost ";
-            $total_earned_value = "SUM(earned_value) as group_earned_value ";
-
-            $group_totals_financials = ProjectTasks::instance()->listing(array(
-        		"select_columns" => array("executed_cost", "earned_value", "estimated_cost", "estimated_price"),
-                    "join_params" => $join_params,
-                    "extra_conditions" => $conditions . ' AND e.parent_id=0 ',
-                    "group_by" => "e.`object_id`",
-                    "query_wraper_start" => "SELECT $total_estimated_cost, $total_estimated_price, $total_executed_cost, $total_earned_value FROM (",
-                    "query_wraper_end" => ") AS pending_calc",
-                    "count_results" => false,
-					"fire_additional_data_hook" => false,
-                    "raw_data" => true,
-                ))->objects;
-        } 
 
         //querys returning total worked time, total estimated time and total pending time
         //time worked is the addition of all timeslots minus the addition of all pauses
@@ -1147,7 +1136,12 @@ class TaskController extends ApplicationController {
         $totals['overall_worked_time'] = $group_overall_time_worked;
         $totals['overall_worked_time_string'] = ($group_overall_time_worked <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_overall_time_worked * 60), 'hm', 60));
 
-        Hook::fire('add_task_group_totals', array('group_totals' => $group_totals, 'group_totals_financials' => $group_totals_financials), $totals);
+		// add more totals to the group for columns that are added by plugins, like the financial info
+        Hook::fire('add_task_group_totals', array(
+			'group_totals' => $group_totals, 
+			'join_params' => $join_params,
+			'conditions' => $conditions,
+		), $totals);
 
         return $totals;
     }
@@ -3359,6 +3353,7 @@ class TaskController extends ApplicationController {
         tpl_assign('base_task', $task);
         tpl_assign('pending_task_id', 0);
         tpl_assign('multi_assignment', array());
+        tpl_assign('req_channel', array_var($_REQUEST, 'req_channel'));
         $this->setTemplate("add_task");
     }
 

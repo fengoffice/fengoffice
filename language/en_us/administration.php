@@ -836,6 +836,7 @@
     'can manage security' => 'Can manage security configuration (users, groups and permissions)',
     'can manage configuration' => 'Can manage configuration, owner company data, tabs, logos and colors',
     'can manage templates' => 'Can manage task templates',
+    'can_manage_mail_templates'=>'Can manage mail templates',
 	'can_instantiate_templates' => 'Can use task templates',
     'can manage time' => 'Can manage timeslots',
     'can add mail accounts' => 'Can add mail accounts',

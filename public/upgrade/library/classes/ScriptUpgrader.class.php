@@ -235,18 +235,61 @@ final class ScriptUpgrader {
 				} // if
 			} // foreach
 			
+			// update the plugins that have a pending update function to execute
+			$this->updatePlugins();
+			
 			// clean autoloader
 			file_put_contents(INSTALLATION_PATH . "/cache/autoloader.php", "");
 			@unlink(INSTALLATION_PATH . "/cache/autoloader.php");
 			
 			if (isset($last_correct_version)) {
+				@mysqli_query($dbc, "UPDATE `".TABLE_PREFIX."config_options` SET `value` = '$last_correct_version' WHERE `name` = 'installed_version'");
 			    @mysqli_query($dbc, "UPDATE `".TABLE_PREFIX."config_options` SET `value` = 0 WHERE `name` = 'upgrade_last_check_new_version'");
 				tpl_assign('version', $last_correct_version);
-				return file_put_contents(INSTALLATION_PATH . '/config/installed_version.php', tpl_fetch(get_template_path('installed_version')));
+				file_put_contents(INSTALLATION_PATH . '/config/installed_version.php', tpl_fetch(get_template_path('installed_version')));
 			}
 		} // if
 	} // upgrade
 
+
+	function updatePlugins() {
+		
+		$plugin_console_script = INSTALLATION_PATH . "/public/install/plugin-console.php";
+		$plugin_update_all_command = "php $plugin_console_script update_all";
+		
+		if (is_exec_available()) {
+			$exec_result = null;
+			$exec_return_var = null;
+
+			$command_suffix = $this->getOutput() instanceof Output_Console ? "" : " 2>&1";
+
+			exec($plugin_update_all_command . $command_suffix, $exec_result, $exec_return_var);
+
+			$is_error = $exec_return_var > 0;
+			if ($is_error) {
+				$this->printMessage("Error found when updating plugins", $is_error);
+			} else {
+				$this->printMessage("Updating plugins...");
+			}
+
+			foreach ($exec_result as $exec_result_line) {
+				$this->printMessage($exec_result_line, $is_error);
+			}
+
+			if ($is_error) {
+				$this->printMessage("Please contact your administrator to solve this issue.", true);
+			} else {
+				$this->printMessage("Finished plugins update.");
+			}
+
+		} else {
+
+			$this->printMessage("Couldn't execute update for plugins due to 'exec' function is not available. ", true);
+			$this->printMessage("To finish updating the plugins please execute the following command in your terminal:", true);
+			$this->printMessage($plugin_update_all_command, true);
+
+		}
+	}
 
 
 	// ---------------------------------------------------

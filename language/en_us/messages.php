@@ -813,7 +813,9 @@
   	'x members deleted' => '{1} {0} deleted succesfully.',
   	'x members deleted y members not deleted' => '{1} {0} deleted succesfully, {2} {0} not deleted.',
     'project and client are not associated with each other' => 'Project and client are not associated with each other',
-    'client is not assigned' => 'Client is not assigned'
+    'client is not assigned' => 'Client is not assigned',
+	'there are no timeslots to delete' => 'There are no time entries to delete',
+	'task is linked to time expenses are you sure you want to delete' => 'Any time entry and/or expense linked to this task won\'t be deleted but it will remain now unlinked. Do you want to proceed?',
   ); // array
 
 ?>

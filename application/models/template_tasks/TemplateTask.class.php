@@ -524,6 +524,9 @@ class TemplateTask extends BaseTemplateTask {
 		$copy_repeat_options = true;
 		
 		$new_task = new ProjectTask();
+
+		$new_task->dont_calculate_financials = true;
+		$new_task->dont_calculate_project_financials = true;
 		
 		/*if($parent_subtask != 0){
 			$new_task->setParentId($parent_subtask);

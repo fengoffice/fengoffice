@@ -8,6 +8,7 @@ if (array_var($_REQUEST, 'modal')) {
 }
 ?>
 <form onsubmit="<?php echo $on_submit?>" id="<?php echo $genid?>template_params" class="internalForm" action="<?php echo get_url('template', 'instantiate_parameters', array('id' => $id, 'back' => '1')) ?>" method="post">
+	<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'instantiate task template') ?>" />
 
 <div class="template">
 <div class="coInputHeader">

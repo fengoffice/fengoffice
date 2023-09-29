@@ -127,7 +127,7 @@ abstract class BaseProjectTasks extends ContentDataObjects {
 	 */
 	function getSystemColumns() {
 		return array_merge(parent::getSystemColumns(), array(
-      		'object_subtype', 'parent_id', 'parents_path',	'depth', 'assigned_to_contact_id', 'completed_by_id', 'milestone_id', 'state', 'started_by_id', 'started_on',
+      		'object_subtype', 'parents_path', 'depth', 'milestone_id', 'state', 'started_by_id', 'started_on',
                 'from_template_id', 'from_template_object_id', 'use_due_time', 'use_start_time', 'original_task_id', 'multi_assignment', 'instantiation_id')
 		);
 	} // getSystemColumns

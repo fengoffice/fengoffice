@@ -49,6 +49,9 @@
     'sync_folder' => DATA_TYPE_STRING,
     'member_id' => DATA_TYPE_STRING,
     'can_detect_special_folders' => DATA_TYPE_BOOLEAN,
+    'oauth2_access_token' => DATA_TYPE_STRING,
+    'oauth2_provider' => DATA_TYPE_STRING,
+    'uses_oauth2' => DATA_TYPE_BOOLEAN, 
 );
   
     /**

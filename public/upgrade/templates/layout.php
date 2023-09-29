@@ -78,7 +78,7 @@ if (count($scripts) > 0) {
 		unset($_SESSION['status_messages']);
 	} else {
 		if (!isset($status_messages)) $status_messages = array();
-		$status_messages[] = "<strong>Please check for plugin updates.</strong><br>Open a console and execute the script 'public/install/plugin-console.php'<br>with argument 'list' to view the plugins' status or argument 'update_all' to update them all.";
+		//$status_messages[] = "<strong>Please check for plugin updates.</strong><br>Open a console and execute the script 'public/install/plugin-console.php'<br>with argument 'list' to view the plugins' status or argument 'update_all' to update them all.";
 	}
 ?>
 <?php if(isset($status_messages) && count($status_messages)) { ?>

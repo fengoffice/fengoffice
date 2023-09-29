@@ -90,6 +90,28 @@ class ApplicationLog extends BaseApplicationLog {
 		return ApplicationLogDetails::getLogDetails($this->getId());
 	}
 
+	/**
+	 * @return string the formatted text of the request channel value
+	 */
+	function getRequestChannelText() {
+		$text = "";
+
+		if ($this->getRequestChannel() != '') {
+			if (Localization::instance()->lang_exists($this->getRequestChannel())) {
+				$text = lang($this->getRequestChannel());
+			} else {
+				$exploded = explode('-', $this->getRequestChannel());
+				$parts = array();
+				foreach ($exploded as $exp) {
+					$parts[] = ucfirst(trim($exp));
+				}
+				$text = implode(' - ', $parts);
+			}
+		}
+
+		return $text;
+	}
+
 	
 	/**
 	 * Return text message for this entry. If is lang formed as 'log' + action + manager name

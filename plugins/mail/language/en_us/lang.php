@@ -43,4 +43,10 @@
 	'success mail enqueued' => 'Email successfully enqueued for sending',
 	'config option name send_outbox_emails_in_background' => 'Send emails in background',
 	'config option desc send_outbox_emails_in_background' => 'If this option is enabled the emails will be sent in a separate process, allowing the user to work faster. Emails will be put in outbox and sent by a process triggered in background.',
+	'select a provider' => 'Select a provider',
+	'connect to' => 'Connect to',
+	'basic' => 'Basic',
+	'oauth2' => 'External provider',
+	'auth method' => 'Authentication method',
+	'use oauth2' => 'Use OAUTH2'
 );
