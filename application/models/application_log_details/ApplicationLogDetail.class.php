@@ -64,6 +64,9 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 				$formatted = format_value_to_print($property, $value, $object->getColumnType($property), $object->getObjectTypeId());
 			}
 
+			// some specific columns may need the owner plugin to format its value correctly (example: user's default labor category)
+			Hook::fire('app_log_detail_property_format', array('object' => $object, 'property' => $property, 'value' => $value), $formatted);
+
 		} else if (str_starts_with($property, 'cp_')) {
 
 			$cp_id = str_replace('cp_', '', $property);

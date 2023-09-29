@@ -1482,6 +1482,9 @@ class ContactController extends ApplicationController
 			// escape all parameters
 			//$contact_data = escape_parameters_array($contact_data);
 
+			// to use when saving the application log
+			$old_content_object = $contact->generateOldContentObjectData();
+
 			try {
 				DB::beginWork();
 				$contact_data['email'] = trim($contact_data['email']);

@@ -1461,6 +1461,15 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $members_to_return;
 	}
 
+
+	function getMemberIdsOfNonPermissionDimensions() {
+		$no_permission_condition = " AND m.dimension_id IN (SELECT d.id FROM ".TABLE_PREFIX."dimensions d WHERE d.defines_permissions=0) ";
+		$object_mem_rows = ObjectMembers::instance()->getMembersIdsByObjectAndExtraCond($this->getId(), $no_permission_condition, "", false);
+		$non_permission_member_ids = array_column($object_mem_rows, 'member_id');
+
+		return $non_permission_member_ids;
+	}
+
 	/**
 	 * returns true if the object has to use the cached cps
 	 */

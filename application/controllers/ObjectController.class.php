@@ -2432,7 +2432,6 @@ class ObjectController extends ApplicationController {
 		$template_extra_condition = "true";
 
 		$template_objects = false;
-
 		//if(in_array("template_task", array_var($filters, 'types', array())) || in_array("template_milestone", array_var($filters, 'types', array()))){
 		if (in_array("template_task", $filters['types']) || in_array("template_milestone", $filters['types'])){
 			$template_id = 0;
@@ -2762,6 +2761,56 @@ class ObjectController extends ApplicationController {
 							$info_elem['completedBy'] = $instance->getCompletedById();
 							$info_elem['dateCompleted'] = $instance->getCompletedOn() instanceof DateTimeValue ? format_datetime($instance->getCompletedOn()) : '';
 							$info_elem['assignedTo'] = $instance->getAssignedToName();
+							
+							//get members
+							$instance_members = $instance->getMembers();
+							
+							$project_ot = ObjectTypes::findByName('project');
+							$customer_ot = ObjectTypes::findByName('customer');
+							$job_phases_ot = ObjectTypes::findByName('job_phase');
+							$labor_category_ot = ObjectTypes::findByName('hour_type');
+							
+							$member_project_name='';
+							$member_client_name='';
+							$member_job_phases_name='';
+							$member_labor_category_name='';
+							foreach ($instance_members as $member) {
+								///get the project
+								if($project_ot instanceof ObjectType)
+								{
+									if ($member instanceof Member && $member->getObjectTypeId() == $project_ot->getId()) {
+										$member_project_name = $member->getDisplayName();
+									}
+								}
+								
+								//get the cliet
+								if($customer_ot instanceof ObjectType)
+								{
+									if ($member instanceof Member && $member->getObjectTypeId() == $customer_ot->getId()) {
+										$member_client_name = $member->getDisplayName();
+									}
+								}
+
+								//get the client
+								if($job_phases_ot instanceof ObjectType)
+								{
+									if ($member instanceof Member && $member->getObjectTypeId() == $job_phases_ot->getId()) {
+										$member_job_phases_name = $member->getDisplayName();
+									}
+								}
+
+								///get the labor category
+								if($labor_category_ot instanceof ObjectType)
+								{
+									if ($member instanceof Member && $member->getObjectTypeId() == $labor_category_ot->getId()) {
+										$member_labor_category_name = $member->getDisplayName();
+									}
+								}
+							}
+							$info_elem['project']=$member_project_name;
+							$info_elem['client']=$member_client_name;
+							$info_elem['labor_category']=$member_labor_category_name;
+							$info_elem['job_phase']=$member_job_phases_name;
 						}
 					}
 

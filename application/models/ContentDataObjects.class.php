@@ -1474,7 +1474,11 @@ abstract class ContentDataObjects extends DataManager {
 			$object_class = $object->manager()->getItemClass();
 			$old_content_object = new $object_class;
 		}
-		$old_content_object->member_ids = $object->getMemberIds();
+		if ($object instanceof Contact && $object->isUser()) {
+			$old_content_object->member_ids = $object->getMemberIdsOfNonPermissionDimensions();
+		} else {
+			$old_content_object->member_ids = $object->getMemberIds();
+		}
 		$old_content_object->linked_object_ids = $object->getAllLinkedObjectIds();
 		$old_content_object->subscriber_ids = $object->getSubscriberIds();
 		

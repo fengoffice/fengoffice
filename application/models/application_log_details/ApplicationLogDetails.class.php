@@ -34,7 +34,11 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		
 		// member ids
 		$old_member_ids = array_filter($old_object->member_ids);
-		$current_member_ids = array_filter($object->getMemberIds());
+		if ($object instanceof Contact && $object->isUser()) {
+			$current_member_ids = $object->getMemberIdsOfNonPermissionDimensions();
+		} else {
+			$current_member_ids = array_filter($object->getMemberIds());
+		}
 		
 		// remove member ids of persons dimension from both arrays
 		// get the person member ids

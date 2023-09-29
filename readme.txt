@@ -1,4 +1,4 @@
-	About Feng Office 3.10.6.3
+	About Feng Office 3.10.6.4
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,6 +105,12 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.6.3
+	-----------------------------------
+	feature: Add columns and filters to task picker (#2150) 
+	feature: add app log details to user edition (#2143) 
+	bugfix: fix plugin installer scripts (#2135)
 
 	Since 3.10.6.2
 	-----------------------------------
