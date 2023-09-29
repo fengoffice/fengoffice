@@ -153,7 +153,7 @@ abstract class BaseMailContents extends ContentDataObjects {
 	 *  - offset - limit offset, valid only if limit is present
 	 *  - limit
 	 *
-	 * @return one or MailContents objects
+	 * @return mixed
 	 * @throws DBQueryError
 	 */
 	function find($arguments = null) {
@@ -169,7 +169,7 @@ abstract class BaseMailContents extends ContentDataObjects {
 	 *
 	 * @access public
 	 * @param array $arguments
-	 * @return one or MailContents objects
+	 * @return mixed
 	 */
 	function findAll($arguments = null) {
 		if(isset($this) && instance_of($this, 'MailContents')) {

@@ -28,6 +28,9 @@ og.loadFiltersReport = function(report_id, skip_member = false){
 			}catch(e){}
 
 			if(j.custom == 'choosen'){
+				/**
+				 * COMMENTED BECAUSE IS CAUSING A BUG WHEN EDITING OBJECTS, REPLACING THE PROJECT OTHER MEMBERS IN OBJECT FORM
+				 * 
 				if(!skip_member){
 					var obejct = $('.feng-dimention-selector').eq(count_choosen);
 					$(obejct).find('input').focus();
@@ -37,6 +40,7 @@ og.loadFiltersReport = function(report_id, skip_member = false){
 					count_choosen++;
 					og.reportsFiltersData.count_choosen = count_choosen;
 				}
+				*/
 			}else if(j.custom == 'combo'){
 				if(comboBoxes != "undefined" && Object.keys(comboBoxes).length === 0) {
 					tsContactCombo.setValue(j.values);
@@ -94,6 +98,9 @@ og.setMemoryFilttersReport = function(object, report_id){
 		}
 	})
 
+	/**
+	 * COMMENTED BECAUSE IS CAUSING A BUG WHEN EDITING OBJECTS, REPLACING THE PROJECT OTHER MEMBERS IN OBJECT FORM
+	 * 
 	// Read choosen
 	$('.feng-dimention-selector').each(function(k,o){
 		var value = $(o).find('input:hidden:first').val();
@@ -101,6 +108,7 @@ og.setMemoryFilttersReport = function(object, report_id){
 
 		information.push({"name":"","custom":"choosen","values":value,"text":text});
 	})
+	*/
 
 	// Read standar controls
 	$(standar_controls).each(function(k,o){
@@ -117,6 +125,9 @@ og.setMemoryFilttersReport = function(object, report_id){
 	localStorage.setItem('preload_filters_'+report_id, JSON.stringify(information));
 }
 
+/**
+ * COMMENTED BECAUSE IS CAUSING A BUG WHEN EDITING OBJECTS, REPLACING THE PROJECT OTHER MEMBERS IN OBJECT FORM
+ * 
 // Set values for type choosen 
 og.eventManager.addListener('end_callback member_tree loaded', reportLoadFilttersValues);
 og.eventManager.addListener('cache member_tree loaded', reportLoadFilttersValues);
@@ -145,3 +156,4 @@ function reportLoadFilttersValues(params){
 
 	og.reportsFiltersData.listeners_called++;
 }
+*/

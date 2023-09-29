@@ -548,7 +548,7 @@ function render_color_custom_property_field($custom_property, $configs) {
 	$name = $configs['name'];
 	$default_value = $configs['default_value'];
 
-	if (isset($configs['parent_member_id']) && $configs['parent_member_id'] > 0) {
+	if (array_var($configs, 'member_is_new') && isset($configs['parent_member_id']) && $configs['parent_member_id'] > 0) {
 		$pmem = Members::findById($configs['parent_member_id']);
 		if ($pmem instanceof Member) {
 			$default_value = $pmem->getColor();

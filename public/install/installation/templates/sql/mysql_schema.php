@@ -463,6 +463,8 @@ CREATE TABLE `<?php echo $table_prefix ?>application_logs` (
   `is_silent` tinyint(1) unsigned NOT NULL default '0',
   `member_id` int(10) NOT NULL default '0',
   `log_data` text <?php echo $default_collation ?>,
+  `full_request` text <?php echo $default_collation ?> NULL,
+  `request_channel` varchar(511) <?php echo $default_collation ?> DEFAULT '',
   PRIMARY KEY  (`id`),
   KEY `created_on` USING BTREE (`created_on`,`is_silent`),
   KEY `object` (`rel_object_id`,`created_on`,`is_silent`),

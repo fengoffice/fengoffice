@@ -347,13 +347,24 @@ function core_dimensions_update_18_19() {
 }
 
 function core_dimensions_update_19_20() {
+	Env::useHelper('dimension');
 	// get timeslots affected by recalculation bug
 	$timeslots = Timeslots::instance()->findAll(array(
 		"conditions" => "updated_on > '2023-08-01' AND trashed_by_id=0"
 	));
+
+	$tasks_processed = array();
 	// call save function to recalculate the values correcctly
 	foreach ($timeslots as $timeslot) {
-		$timeslot->save();
+		$task = $timeslot->getRelObject();
+		// only recalculate tasks once and don't process timeslots without task
+		if ($task instanceof ProjectTask && !in_array($task->getId(), $tasks_processed)) {
+			$task->dont_calculate_project_financials = true; // don't calculate for projects, it will generate a loop
+
+			$timeslot->save(); // save to trigger the related task's calculations
+			
+			$tasks_processed[] = $task->getId();
+		}
 	}
 }
 

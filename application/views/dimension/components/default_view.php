@@ -11,6 +11,10 @@ if (array_var($options, 'width')) {
 ?>
 <div style="display: inline-block;float:right;width: <?php echo $container_width ?>px;">
 <?php
+
+// don't reneder the input to select the member if the dimension id is in the disabled dimension ids
+$selector_disabled = in_array($dimension_id, $disabled_dimension_ids);
+
 // tree with members where user has permissions
 $dim = Dimensions::getDimensionById($dimension_id);
 $opts = array('checkBoxes'=>false,'all_members' => false,'use_ajax_member_tree' => true, 'search_placeholder' => $search_placeholder, 'select_function' => $select_function);
@@ -79,8 +83,8 @@ if (isset($default_selection_checkboxes)) {
 								<input type="checkbox" class="checkbox" name="member[default_selection][<?php echo $selected_member->getId()?>]" <?php echo $checked_str ?> title="<?php echo lang('select by default')?>"/>
 								<?php } ?>
 								
-								<?php if ($can_remove_classification) { ?>
-								<a href="#" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
+								<?php if ($can_remove_classification && !$selector_disabled) { ?>
+								<a href="#" class="coViewAction ico-delete action-remove" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
 								<?php } ?>
 							</div>	
 							<div class="clear"></div>
@@ -96,7 +100,9 @@ if (isset($default_selection_checkboxes)) {
 	</div>	
 	
 	<?php 
-	echo render_single_dimension_tree ( $dim, $genid, null, $opts);
+	if (!$selector_disabled) {
+		echo render_single_dimension_tree ( $dim, $genid, null, $opts);
+	}
 	?>
 </div>
 </div>

@@ -4,7 +4,7 @@ if ($mysql_version && version_compare($mysql_version, '5.6', '>=')) {
 	
 	// create searchable_objects as InnoDB
 	$sql_string = "
-		CREATE TABLE `".$database_prefix."searchable_objects_new` (
+		CREATE TABLE IF NOT EXISTS `".$database_prefix."searchable_objects_new` (
 			`rel_object_id` int(10) unsigned NOT NULL default '0',
 			`column_name` varchar(50) collate utf8_unicode_ci NOT NULL default '',
 			`content` text collate utf8_unicode_ci NOT NULL,

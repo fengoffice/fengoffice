@@ -23,8 +23,11 @@ if ($mailAccount->getContactId() == logged_user()->getId() || logged_user()->isA
 	$logged_user_can_edit = true;
 }
 
+$uses_oauth2 = 0;
 if (!$mailAccount->isNew()){
-	$mail_acc_id = $mailAccount->getId();	
+	$mail_acc_id = $mailAccount->getId();
+	$uses_oauth2 = $mailAccount->getUsesOAuth2();	
+	$oauth2_provider = $mailAccount->getOAuth2Provider();
 }
 
 $categories = array();
@@ -32,6 +35,13 @@ Hook::fire('mail_account_edit_categories', $mailAccount, $categories);
 
 $loc = user_config_option('localization');
 if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
+
+
+$oauth2_providers = array();
+Hook::fire('oauth2_providers', $mailAccount, $oauth2_providers);
+
+$show_auth_method_selector = count($oauth2_providers) > 0;
+
 ?>
 
 <form onsubmit="return og.setDescription();" style="height: 100%; background-color: white" class="internalForm"
@@ -69,8 +79,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 				<span class="label_required">*</span> <span class="desc"><?php echo lang('mail address description') ?></span>
 			</label>
 			<?php if ($logged_user_can_edit) {
-				$sync = (config_option("sent_mails_sync")) ? '1' : '0';
-				echo text_field('mailAccount[email_addr]', array_var($mailAccount_data, 'email_addr'), array('id' => 'mailAccountFormEmail', 'class' => 'long', 'tabindex'=>'20','onchange'=> 'og.autofillmailaccountinfo(this.value,\''.$genid.'\','.$sync.')'));
+				echo text_field('mailAccount[email_addr]', array_var($mailAccount_data, 'email_addr'), array('id' => 'mailAccountFormEmail', 'class' => 'long', 'tabindex'=>'20','onchange'=> 'og.autofillmailaccountinfo(this.value,\''.$genid.'\',0)'));
 			} else {
 				echo text_field('', array_var($mailAccount_data, 'email_addr'), array('id' => 'mailAccountFormEmail', 'tabindex'=>'20', 'class' => 'long', 'disabled' => 'disabled'));
 			} ?>
@@ -103,9 +112,6 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		<?php if ($logged_user_can_edit) { ?>	
 			<li><a href="#<?php echo $genid?>account_permissions_div"><?php echo lang('mail account permissions') ?></a></li>
 			
-			<?php if (config_option("sent_mails_sync")) { ?>
-			<li><a href="#<?php echo $genid?>sent_mails_sync"><?php echo lang('sent mails sync') ?></a></li>
-			<?php } ?>
 		<?php } ?>
 		
 		<?php foreach ($categories as $category) {
@@ -121,7 +127,83 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 <?php if ($logged_user_can_edit) { ?>
 
 	<div id="<?php echo $genid ?>incoming_settings_div" class="form-tab">
-		
+		<!-- Show connected auth account if any -->
+		<?php 
+			if(!$mailAccount->isNew() && $uses_oauth2){
+				if($oauth2_provider == 'microsoft'){
+					$serialized_token = $mailAccount->getColumnValue('oauth2_access_token');
+					$accessToken = unserialize(base64_decode($serialized_token));
+					$account_id = $mailAccount->getId();
+					$is_mail = true;
+					if (isset($accessToken) && is_valid_microsoft_access_token($account_id, $accessToken, $is_mail)) {
+						$microsoft_logo = get_image_url('16x16/microsoft.png');
+						$image = '<img src="' . $microsoft_logo . '" style="margin-right: 5px;" alt="Microsoft" />';
+						echo '<div class="mail-account-item">';
+						echo '<label for="mailAccountFormEmail">'.'Account connected to:'.'</label>';
+						echo '<div><b>' . 'Microsoft' . '</b></div>';
+						echo '</div>';
+						echo '<div class="mail-account-item">';
+						echo '<div>'.'<a href="#" onclick="og.openLink(og.getUrl(\'microsoft\', \'disconnect_from_microsoft_mail_account\', {account_id: '.$mailAccount->getId().'})); return false;">'.$image.'Disconnect from Microsoft account'.'</a>'.'</div>';
+						echo '</div>';
+						$show_auth_method_selector = false;			
+					}
+				}
+			}
+		?>
+		<!-- <a href="<?php echo get_url('microsoft', 'connect_to_microsoft_mail_account', array('controller'=>'microsoft', 'action' => 'reload_current_panel', 'account_id'=>$mailAccount->getId(), 'id'=>'dummy')) ?>">Connect to Microsoft 365</a> 
+		<br />
+		<a href="<?php echo get_url('microsoft', 'get_microsoft_imap_emails', array('controller'=>'microsoft', 'action' => 'reload_current_panel', 'account_id'=>$mailAccount->getId(), 'id'=>'dummy')) ?>">Download emails</a>
+		<br /> -->
+		<!-- Authentication method -->
+		<div class="mail-account-item dataBlock" style="<?php echo $show_auth_method_selector ? '' : 'display:none;' ?>">
+			<label>
+				<?php echo lang('auth method')?>
+			</label>
+			<?php
+				$options = array(
+					option_tag(lang('basic'), 0, !$mailAccount->getUsesOauth2() ? array("selected"=>"selected") : null),
+					option_tag(lang('oauth2'), 1, $mailAccount->getUsesOauth2() ? array("selected"=>"selected") : null),
+				);
+				echo select_box('mailAccount[uses_oauth2]', $options, array('id' => $genid . 'uses_oauth2'));
+			?>
+		</div>
+		<!-- Select provider if using oauth2 -->
+		<div id="<?php echo $genid ?>oauth2_settings" style="<?php echo $mailAccount->getUsesOauth2() && $show_auth_method_selector ? '' : 'display:none;' ?>">
+			<label><?php echo lang('select a provider')?>:</label>
+
+			<?php 
+				$provider_options = array();
+				
+				foreach($oauth2_providers as $key => $provider) {
+					$selected = $key == 0 ? array("selected"=>"selected") : null;
+					$provider_options[] = option_tag($provider['name'], $provider['code'], $selected);
+				}
+
+				echo select_box('mailAccount[oauth2_provider]', $provider_options, array('id' => $genid . 'oauth2_provider'));
+			
+				foreach($oauth2_providers as $key => $provider) {
+					$display = $key == 0 ? '' : 'display:none;';
+					$display .= 'margin-top:10px; margin-bottom:10px;';
+					echo '<div id="' . $genid . 'oauth2_provider_' . $provider['code'] . '" style="' . $display . '">';
+					$image = '';
+					if(isset($provider['logo'])) {
+						$image = '<img src="' . $provider['logo'] . '" style="margin-right: 5px;" alt="' . $provider['name'] . '" />';
+					}
+					$call_to_connect = $image . lang('connect to') . ' ' . $provider['name'];
+					echo '<a href="' . $provider['connect_url'] . '">' .$call_to_connect . '</a>';
+					echo '</div>';
+				}
+			?>
+			
+			<!-- <a href="<?php echo get_url('microsoft', 'connect_to_microsoft_mail_account', array('controller'=>'microsoft', 'action' => 'reload_current_panel', 'account_id'=>$mailAccount->getId(), 'id'=>'dummy')) ?>">Connect to Microsoft 365</a> 
+			<br />
+			<a href="<?php echo get_url('microsoft', 'get_microsoft_imap_emails', array('controller'=>'microsoft', 'action' => 'reload_current_panel', 'account_id'=>$mailAccount->getId(), 'id'=>'dummy')) ?>">Download emails</a>
+			<br /> -->
+			
+		</div>
+
+		<div id="<?php echo $genid ?>basic_settings" style="<?php echo $mailAccount->getUsesOauth2() ? 'display:none;' : '' ?>">
+
 		<div class="mail-account-item dataBlock">
 			<label for="<?php echo $genid ?>email">
 				<?php echo lang('mail account id')?><span class="label_required">*</span>
@@ -206,6 +288,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 				tpl_assign('genid', $genid);
 				tpl_display(get_template_path("fetch_imap_folders", "mail")) ?>
 			</div>
+		</div>
+
 		</div>
 		
 		<div class="mail-account-item dataBlock">
@@ -303,7 +387,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 			$options = array(
 				option_tag(lang('no smtp auth'), 0, ($use_auth==0)?array('selected' => 'selected'):null),
 				option_tag(lang('same as incoming'), 1, ($use_auth==1)?array('selected' => 'selected'):null),
-				option_tag(lang('smtp specific'), 2, ($use_auth==2)?array('selected' => 'selected'):null)
+				option_tag(lang('smtp specific'), 2, ($use_auth==2)?array('selected' => 'selected'):null),
+				option_tag(lang('use oauth2'), 3, ($use_auth==3)?array('selected' => 'selected'):null),
 			);
 			echo select_box('mailAccount[smtp_use_auth]', $options, array(
 				'id' => 'mailSmtpUseAuth', 'tabindex'=>'170',
@@ -360,65 +445,6 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		
 	</div>
 	
-	<?php		
-		if (config_option("sent_mails_sync")) { ?>
-			<div id="<?php echo $genid ?>sent_mails_sync" class="form-tab" style="display:none;">
-				
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid ?>sync_addr">
-									<?php echo lang('mail account id')?><span class="label_required">*</span>
-								</label>
-								<?php echo text_field('mailAccount[sync_addr]', array_var($mailAccount_data, 'sync_addr'), array('id' => $genid.'sync_addr', 'tabindex'=>'230')) ?>
-								<span class="desc"><?php echo lang('mail account id description') ?></span>
-							</div>
-					
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid?>sync_pass">
-									<?php echo lang('password')?><span class="label_required">*</span>
-								</label>
-								<?php echo password_field('mailAccount[sync_pass]', array_var($mailAccount_data, 'sync_pass'), array('id' => $genid.'sync_pass', 'tabindex'=>'240')) ?>
-								<span class="desc"><?php echo lang('mail account password description') ?></span>
-							</div>
-					
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid ?>sync_server">
-									<?php echo lang('server address')?><span class="label_required">*</span>
-								</label>
-								<?php echo text_field('mailAccount[sync_server]', array_var($mailAccount_data, 'sync_server'), array('id' => $genid.'sync_server', 'tabindex'=>'250')) ?>
-								<span class="desc"><?php echo lang('mail account server description') ?></span>
-							</div>
-					
-							<div class="mail-account-item dataBlock">
-								<label for="<?php echo $genid ?>method"><?php echo lang('connnection security')?></label>
-								<input id="<?php echo $genid.'is_imap'?>sync_is_imap" type="hidden" name="sync_imap" value="1" ><?php 
-																
-									$onchange = "var div = document.getElementById('$genid' + 'sync_sslportdiv');if(this.checked) div.style.display='block';else div.style.display='none';";
-									echo checkbox_field('mailAccount[sync_ssl]', array_var($mailAccount_data, 'sync_ssl'), array('id' => $genid.'sync_ssl', 'tabindex'=>'270', 'onclick' => $onchange)) ?>											
-							
-								<label for="<?php echo $genid ?>sync_ssl" class="yes_no"><?php echo lang('incoming ssl') ?></label>
-							</div>
-					
-							<div class="mail-account-item dataBlock" id="<?php echo $genid ?>sync_sslportdiv" <?php if (!array_var($mailAccount_data, 'sync_ssl')) echo 'style="display:none"'; ?>>
-								<?php echo label_tag(lang('incoming ssl port'), 'mailAccountFormIncomingSslPort') ?>
-								<?php echo text_field('mailAccount[sync_ssl_port]', array_var($mailAccount_data, 'sync_ssl_port', 993), array('id' => $genid.'sync_sslport', 'tabindex'=>'320')) ?>
-							</div>
-					
-							<div class="mail-account-item dataBlock" id="<?php echo $genid ?>sync_folders" style="padding:5px;<?php  ?>">
-					
-								<div id="<?php echo $genid ?>imap_folders_sync"><?php
-									tpl_assign('imap_folders_sync', isset($imap_folders_sync) ? $imap_folders_sync : array());									
-									tpl_assign('genid', $genid);
-									tpl_assign('mail_acc_id',$mail_acc_id);
-									tpl_display(get_template_path("fetch_imap_folders_sync", "mail")) ?>
-								</div>
-							</div>
-												
-			
-			</div>
-			
-		<?php }
-
-	?>
 	
 	
 <?php } ?>
@@ -770,6 +796,43 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 			preventPanelLoad: true
 		});
 	};
+
+	og.setSmtpConfigurations = function(server) {
+		if(server == 'microsoft') {
+			$('#mailSmtpServer').val('smtp.office365.com');
+			$('#mailSmtpPort').val('587');
+			$('#mailOutgoingTransportType').val('tls');
+			$('#mailSmtpUseAuth').val('3');
+		} else {
+			$('#mailSmtpServer').val('');
+			$('#mailSmtpPort').val('');
+			$('#mailOutgoingTransportType').val('none');
+			$('#mailSmtpUseAuth').val('0');
+		}
+	};
+
+	<?php if($uses_oauth2 && $oauth2_provider == 'microsoft') { ?>
+		og.setSmtpConfigurations('microsoft');
+	<?php } ?>
+
+	$("#<?php echo $genid?>uses_oauth2").change(function(){
+		if ($(this).val() == 0) {
+			$("#<?php echo $genid?>oauth2_settings").hide();
+			og.setSmtpConfigurations('other');
+			$("#<?php echo $genid?>basic_settings").show();
+		} else {
+			$("#<?php echo $genid?>oauth2_settings").show();
+			$("#<?php echo $genid?>oauth2_provider").trigger('change');
+			$("#<?php echo $genid?>basic_settings").hide();
+		}
+	});
+
+	$("#<?php echo $genid?>oauth2_provider").change(function() {
+		if ($(this).val() == 'microsoft') {
+			$("#<?php echo $genid?>oauth2_provider_microsoft").show();
+			og.setSmtpConfigurations('microsoft');
+		}
+	});
 
 	$(function() {
 		$("#<?php echo $genid?>tabs").tabs();

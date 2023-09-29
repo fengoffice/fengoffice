@@ -49,7 +49,7 @@
                 callback: function (success, data) {
                     if(data.timeslotId > 0){
 						if (confirm('<?php echo escape_single_quotes(lang('confirm delete timeslot'))?>')) {
-							og.openLink(og.getUrl('time', 'delete_timeslot', {id:tid}), {
+							og.openLink(og.getUrl('time', 'delete_timeslot', {id:tid, req_channel:'task view - line delete'}), {
 								callback: function(success, data) {
 									var g = Ext.getCmp(og.task_timeslots_grid.grid_id);
 									if (g) {
@@ -85,7 +85,7 @@
 
     		if (r.data.can_edit) {
     			actions += String.format(
-    				'<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:'+r.data.id+'}});" title="{0}" '+
+    				'<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:'+r.data.id+', req_channel:\'task view - line edit\'}});" title="{0}" '+
     				actionStyle + '>&nbsp;</a>', lang('edit')
     			);
     		}
@@ -199,7 +199,15 @@
     	text: '<?php echo lang('add work')?>',
     	id: 'new_user_btn',
     	handler: function() {
-    		og.render_modal_form('', {c:'time', a:'add', params: {object_id:<?php echo $__timeslots_object->getId() ?>, contact_id:<?php echo logged_user()->getId() ?>}});
+    		og.render_modal_form('', {
+				c:'time', 
+				a:'add', 
+				params: {
+					object_id:<?php echo $__timeslots_object->getId() ?>, 
+					contact_id:<?php echo logged_user()->getId() ?>,
+					req_channel: 'task view - toolbar add button'
+				}
+			});
     	}
     });
     timeslots_tbar_items.push(new_btn);
@@ -212,7 +220,10 @@
                 text: '<?php echo lang('start work')?>',
                 id: 'start_work_btn',
                 handler: function() {
-                        og.openLink(og.getUrl('timeslot', 'open', {object_id:<?php echo $__timeslots_object->getId() ?>}));
+					og.openLink(og.getUrl('timeslot', 'open', {
+						object_id:<?php echo $__timeslots_object->getId() ?>,
+						req_channel: 'task view - toolbar start clock'
+					}));
                 }
             });
             timeslots_tbar_items.push(start_work_btn);
@@ -242,7 +253,7 @@ if ($can_delete_timeslots && $show_delete_all_button){
 		id: 'ts_delete_all_btn',
 		handler: function() {
 			if (confirm('<?php echo escape_single_quotes(lang('confirm delete all timeslots'))?>')) {
-				og.openLink(og.getUrl('timeslot', 'delete_all_from_task', {object_id:<?php echo $__timeslots_object->getId() ?>}));
+				og.openLink(og.getUrl('timeslot', 'delete_all_from_task', {object_id:<?php echo $__timeslots_object->getId() ?>, req_channel: 'task view - line delete all'}));
 			}
     				
 		}

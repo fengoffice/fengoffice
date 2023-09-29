@@ -253,6 +253,57 @@
     	return $this->setColumnValue('member_id', $value);
     } // setMemberId()
     
+
+
+    /**
+     * Return value of 'full_request' field
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getFullRequest() {
+    	return $this->getColumnValue('full_request');
+    } // getFullRequest()
+    
+    /**
+     * Set value of 'full_request' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setFullRequest($value) {
+    	return $this->setColumnValue('full_request', $value);
+    } // setFullRequest()
+
+	
+    
+    /**
+     * Return value of 'request_channel' field
+     *
+     * @access public
+     * @param void
+     * @return string
+     */
+    function getRequestChannel() {
+    	return $this->getColumnValue('request_channel');
+    } // getRequestChannel()
+    
+    /**
+     * Set value of 'request_channel' field
+     *
+     * @access public
+     * @param string $value
+     * @return boolean
+     */
+    function setRequestChannel($value) {
+    	return $this->setColumnValue('request_channel', $value);
+    } // setRequestChannel()
+
+
+
+    
     /**
     * Return manager instance
     *

@@ -437,6 +437,7 @@
 	'can manage security' => 'Puede modificar configuraciones de seguridad (usuarios, grupos y permisos)',
 	'can manage configuration' => 'Puede modificar las configuraciones, datos de la organización propietaria, pestañas, logos y colores',
 	'can manage templates' => 'Puede crear y editar plantillas de tareas',
+	'can_manage_mail_templates'=>'Puede crear y editar plantillas de emails',
 	'can manage time' => 'Puede administrar tiempos de trabajo',
 	'can add mail accounts' => 'Puede agregar cuentas de correo',
 	'can_manage_dimensions' => 'Puede administrar la configuración de dimensiones',

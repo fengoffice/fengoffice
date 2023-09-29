@@ -1513,7 +1513,7 @@ class ContactController extends ApplicationController
 					// save phones, addresses and webpages
 					$this->save_phones_addresses_webpages($company_data, $company);
 
-					if ($company_data['email'] != "") $company->addEmail($company_data['email'], 'work', true);
+					if ($company_data['email'] != "") $company->addEmail(trim($company_data['email']), 'work', true);
 
 					$newCompany = true;
 				}
@@ -1558,10 +1558,10 @@ class ContactController extends ApplicationController
 				}
 
 				if ($main_mail) {
-					$main_mail->editEmailAddress($contact_data['email']);
+					$main_mail->editEmailAddress(trim($contact_data['email']));
 					$main_mail->setBillingMainEmail(isset($contact_data['isMainBilling']));
 				} else {
-					if ($contact_data['email'] != "") $contact->addEmail($contact_data['email'], 'personal', true);
+					if ($contact_data['email'] != "") $contact->addEmail(trim($contact_data['email']), 'personal', true);
 				}
 				foreach ($more_main_emails as $mme) {
 					$mme->setIsMain(false);
@@ -1800,7 +1800,7 @@ class ContactController extends ApplicationController
 					$obj->setContactId($contact->getId());
 				}
 				$obj->setEmailTypeId($data['type']);
-				$obj->setEmailAddress($data['email_address']);
+				$obj->setEmailAddress(trim($data['email_address']));
 				if(Plugins::instance()->isActivePlugin('income')):
 					$obj->setIsMain((!is_null($data['is_main_email']) ? true : false));
 					$obj->setDefaultEmail((!is_null($data['default_billing_email']) ? true : false));
@@ -2718,9 +2718,8 @@ class ContactController extends ApplicationController
 		if ($text instanceof DateTimeValue) {
 			$text = $text->format("Y-m-d");
 		}
-		if (strpos($text, ",") !== FALSE) {
-			$str = '"' . str_replace('"', '""', $text) . '"';
-		} else $str = $text;
+		// always put the text between csv string delimiter (") and escape that char if it is present in the text
+		$str = '"' . str_replace('"', '""', $text) . '"';
 		if (!$last) {
 			$str .= $delimiter;
 		}
@@ -3456,13 +3455,20 @@ class ContactController extends ApplicationController
 		if (isset($checked['first_name']) && $checked['first_name'] == 'checked') $str .= self::build_csv_field($company->getObjectName(), $delimiter);
 
 		$address = $company->getAddress('work', true);
-		if ($address) {
-			if (isset($checked['address']) && $checked['address'] == 'checked') $str .= self::build_csv_field($address->getStreet(), $delimiter);
-			if (isset($checked['city']) && $checked['city'] == 'checked') $str .= self::build_csv_field($address->getCity(), $delimiter);
-			if (isset($checked['state']) && $checked['state'] == 'checked') $str .= self::build_csv_field($address->getState(), $delimiter);
-			if (isset($checked['zipcode']) && $checked['zipcode'] == 'checked') $str .= self::build_csv_field($address->getZipcode(), $delimiter);
-			if (isset($checked['country']) && $checked['country'] == 'checked') $str .= self::build_csv_field($address->getCountryName(), $delimiter);
-		}
+		
+		// if company doesn't have an address object then put an empty string, so the csv columns remains aligned
+		$street_string = $address instanceof ContactAddress ? $address->getStreet() : "";
+		$city_string = $address instanceof ContactAddress ? $address->getCity() : "";
+		$state_string = $address instanceof ContactAddress ? $address->getState() : "";
+		$zipcode_string = $address instanceof ContactAddress ? $address->getZipCode() : "";
+		$country_string = $address instanceof ContactAddress ? $address->getCountryName() : "";
+		
+		if (isset($checked['address']) && $checked['address'] == 'checked') $str .= self::build_csv_field($street_string, $delimiter);
+		if (isset($checked['city']) && $checked['city'] == 'checked') $str .= self::build_csv_field($city_string, $delimiter);
+		if (isset($checked['state']) && $checked['state'] == 'checked') $str .= self::build_csv_field($state_string, $delimiter);
+		if (isset($checked['zipcode']) && $checked['zipcode'] == 'checked') $str .= self::build_csv_field($zipcode_string, $delimiter);
+		if (isset($checked['country']) && $checked['country'] == 'checked') $str .= self::build_csv_field($country_string, $delimiter);
+		
 		if (isset($checked['phone_number']) && $checked['phone_number'] == 'checked') $str .= self::build_csv_field($company->getPhoneNumber('work', true), $delimiter);
 		if (isset($checked['fax_number']) && $checked['fax_number'] == 'checked') $str .= self::build_csv_field($company->getPhoneNumber('fax', true), $delimiter);
 		if (isset($checked['email']) && $checked['email'] == 'checked') $str .= self::build_csv_field($company->getEmailAddress(), $delimiter);
@@ -3592,10 +3598,10 @@ class ContactController extends ApplicationController
 				}
 
 				if ($main_mail) {
-					$main_mail->editEmailAddress($company_data['email']);
+					$main_mail->editEmailAddress(trim($company_data['email']));
 					$main_mail->setBillingMainEmail(isset($company_data['isMainBilling']));
 				} else {
-					if ($company_data['email'] != "") $company->addEmail($company_data['email'], 'work', true);
+					if ($company_data['email'] != "") $company->addEmail(trim($company_data['email']), 'work', true);
 				}
 				foreach ($more_main_emails as $mme) {
 					$mme->setIsMain(false);
