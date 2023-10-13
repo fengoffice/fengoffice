@@ -12,7 +12,7 @@
 ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload, req_channel){
 	var additionalParams = {};
 	var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-	if (toolbar.filterNamesCompaniesCombo.isVisible()){
+	if (toolbar && toolbar.filterNamesCompaniesCombo.isVisible()){
 		var value = toolbar.filterNamesCompaniesCombo.getValue();
 		if (value) {
 			additionalParams.assigned_to_contact_id = value;
@@ -72,7 +72,7 @@ ogTasks.drawAddNewTaskFromData = function(container_id, req_channel){
 	});
 
     var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-    if (toolbar.filterNamesCompaniesCombo.isVisible()){
+    if (toolbar && toolbar.filterNamesCompaniesCombo.isVisible()){
         var value = toolbar.filterNamesCompaniesCombo.getValue();
         if (value) {
             task['assigned_to_contact_id'] = value;

@@ -348,6 +348,14 @@ function core_dimensions_update_18_19() {
 
 function core_dimensions_update_19_20() {
 	Env::useHelper('dimension');
+
+	// ensure that expenses plugin is in the latest version before making calculations
+	// after saving a time some other calculations involving expenses can be triggered by advanced_billing plugin
+	if (Plugins::instance()->isActivePlugin('expenses2')) {
+		$expenses_plugin = Plugins::instance()->findOne(array("conditions" => "`name`='expenses2'"));
+		$expenses_plugin->update();
+	}
+
 	// get timeslots affected by recalculation bug
 	$timeslots = Timeslots::instance()->findAll(array(
 		"conditions" => "updated_on > '2023-08-01' AND trashed_by_id=0"

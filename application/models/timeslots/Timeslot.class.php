@@ -379,7 +379,12 @@ class Timeslot extends BaseTimeslot {
 	 * @return boolean
 	 */
 	function canEdit(Contact $user) {
-		return can_write($user, $this->getMembers(), $this->getObjectTypeId());
+		$can_edit = can_write($user, $this->getMembers(), $this->getObjectTypeId());
+
+		// additional validations that can be done by plugins to see if time can be edited
+		Hook::fire('timeslot_can_edit', array('user'=>$user, 'timeslot'=>$this), $can_edit);
+
+		return $can_edit;
 		//return ($user->getId() == $this->getContactId() || can_manage_time($user));
 	}
 
