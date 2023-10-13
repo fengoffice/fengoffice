@@ -501,6 +501,11 @@ class TimeController extends ApplicationController
                 }
             } else {
                 $timeslot->setForceRecalculateBilling(true);
+                // Skip force recalculation if needed
+                $skip_force_recalculation = array_var($timeslot_data, 'skip_force_recalculation', false);
+                if($skip_force_recalculation) {
+                    $timeslot->setForceRecalculateBilling(false);
+                }
             }
 
             if ($use_transaction) {
@@ -580,8 +585,8 @@ class TimeController extends ApplicationController
             return;
         }
 
-        if (!can_write(logged_user(), $timeslot->getMembers(), Timeslots::instance()->getObjectTypeId())) {
-            flash_error(lang('no access permissions'));
+        if (!$timeslot->canEdit(logged_user())) {
+            flash_error(array_var($_REQUEST, 'timeslot_cant_edit_message', lang('no access permissions')));
             ajx_current("empty");
             return;
         }

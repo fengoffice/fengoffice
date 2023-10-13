@@ -2318,7 +2318,7 @@ class MemberController extends ApplicationController {
 			foreach ($ids as $oid) {
 				/* @var $obj ContentDataObject */
 				$obj = Objects::findObject($oid);
-				if ($obj instanceof ContentDataObject && $obj->canAddToMember(logged_user(), $member, active_context())) {
+				if ($obj instanceof ContentDataObject && $obj->canEdit(logged_user()) && $obj->canAddToMember(logged_user(), $member, active_context())) {
 					// to use when saving the application log
 					$old_content_object = $obj->generateOldContentObjectData();
 					
@@ -2390,7 +2390,11 @@ class MemberController extends ApplicationController {
 						$user_ids[] = $obj->getId();
 					}
 				} else {
-					throw new Exception(lang('you dont have permissions to classify object in member', $obj->getName(), $member->getName()));
+					$err_message = lang('you dont have permissions to classify object in member', $obj->getName(), $member->getName());
+					if ($obj instanceof Timeslot) {
+						$err_message = array_var($_REQUEST, 'timeslot_cant_edit_message', $err_message);
+					}
+					throw new Exception($err_message);
 				}
 			}
 			

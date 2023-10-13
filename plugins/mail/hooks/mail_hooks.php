@@ -1,6 +1,17 @@
 <?php
 Hook::register('mail');
 
+// when deactivating mail plugin we also need to deactivate mail_rules to avoid issues
+function mail_on_plugin_deactivate($params, &$ignored) {
+
+	if (array_var($params, 'plugin') == 'mail') {
+
+		$mail_rules_plugin = Plugins::instance()->getByName("mail_rules");
+		if ($mail_rules_plugin instanceof Plugin) {
+			$mail_rules_plugin->deactivate();
+		}
+	}
+}
 
 function mail_additional_general_config_option($params, &$options) {
 	$cat = array_var($params, 'category');

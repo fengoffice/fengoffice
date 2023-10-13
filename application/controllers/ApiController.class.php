@@ -384,6 +384,71 @@ class ApiController extends ApplicationController {
         return $this->response('json', $result);
     }
 
+
+    /**
+     * Retrive list of members for a specific dimension
+     * @params mixed options
+     * receives $request['args']['params']['dimension_code']
+     * @return object list
+     */
+    private function list_dimension_members($request)
+    {
+        //get the dimension id from the dimension code
+        $dimension_dim = Dimensions::findByCode($request['args']['params']['dimension_code']);//hour_types
+
+        //set auxiliar variables
+        $tmp_array=[];
+        $tmp_objects=[];
+        $i=0;
+
+        //get the members from the dimension id if exists
+        if ($dimension_dim instanceof Dimension) {
+            $dimensions = Members::findAll(array(
+                "conditions" => "dimension_id = ".$dimension_dim->getId(),
+                "order" => " name",
+            ));
+        
+            foreach($dimensions as $dimension)
+            {
+                $tmp_array[$i]['key']=$dimension->getId();
+                $tmp_array[$i]['value']=$dimension->getName();
+                $i++;
+            }
+        }
+       
+        //push the array to the object
+        array_push($tmp_objects, $tmp_array);
+       
+        //return the object
+        return $this->response('json', $tmp_objects);
+    }
+
+    private function list_labor_categories($request) {
+
+        $labor_categories_dim = Dimensions::findByCode('hour_types');
+
+        if ($labor_categories_dim instanceof Dimension) {
+            $labor_categories = Members::findAll(array(
+                "conditions" => "dimension_id = ".$labor_categories_dim->getId(),
+                "order" => " name",
+            ));
+        }
+
+        $tmp_array=[];
+        $tmp_objects=[];
+        $i=0;
+        foreach($labor_categories as $labor_category)
+        {
+            $tmp_array[$i]['key']=$labor_category->getId();
+            $tmp_array[$i]['value']=$labor_category->getName();
+            $i++;
+        }
+        
+       array_push($tmp_objects, $tmp_array);
+       
+       return $this->response('json', $tmp_objects);
+    }
+
     private function list_product_types($request) {
         $member_ids = !empty($request['args']['members']) ? $request['args']['members'] : null;
         $members = array();
@@ -1063,16 +1128,20 @@ class ApiController extends ApplicationController {
 
 		$controller = new TimeController();
 		$timeslot = $controller->add_timeslot($parameters);
+        if($timeslot instanceof Timeslot){
 		
-		$modified = false;
-		Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
-		
-		if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
-			Env::useHelper('functions', 'advanced_billing');
-			calculate_timeslot_rate_and_cost($timeslot);
-		}
+            $modified = false;
+            Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
+            
+            if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
+                Env::useHelper('functions', 'advanced_billing');
+                calculate_timeslot_rate_and_cost($timeslot);
+            }
 
-		return $this->response('json', true);
+            return $this->response('json', true);
+        }else{
+            return $this->response('json', false);
+        }
     }
     
     private function add_comment($request) {

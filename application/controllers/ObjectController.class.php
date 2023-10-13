@@ -332,6 +332,10 @@ class ObjectController extends ApplicationController {
 		  }
 		}
 
+		$continue = true;
+		Hook::fire('before_changing_classification', array('object' => $object, 'members' => $enteredMembers), $continue);
+		if (!$continue) return;
+
 		$removedMemebersIds = $object->removeFromAllMembers($user, $enteredMembers);
 		
 		$not_valid_members = array();

@@ -1,4 +1,4 @@
-	About Feng Office 3.10.6.4
+	About Feng Office 3.10.6.7
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,6 +105,33 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.6.6
+	-----------------------------------
+	feature: Import tool: Ability to search tasks by name, project and job phase members (#2184)
+	feature: Import tool: Add functionality to connect actual expense to task (#2184)
+	feature: append member names to weekly view task selector (#2183) 
+	bugfix: when adding/editing email templates the subject and to fields were initialized always as if were an email tempate for invoicing, (#2185)
+	bugfix: in budget by tasks report excel export: include subtasks like in the print view (#2182)
+	bugfix: deactivate mail rules plugin when deactivating mail plugin (#2181)
+	bugfix: add default hardcoded mail template to use only when no email template is found for notifications (#2180)
+	Invoice Margins need adjustment (#2178)
+	bugfix: member selector based on extjs sometimes don't load the initial list (#2177)
+
+	Since 3.10.6.5
+	-----------------------------------
+	bugfix: in core dim plugin update: expenses plugin must be in latest version before saving timeslot and triggering project calculations (#2176)
+	bugfix: Project earnings report: Rename 'percent complete' to 'Revenue vs. Budget %' (#2173)
+	bugfix: Fix time entry imports, avoid force recalculations (#2172)
+	bugfix: prevent inconsistencies with tsheets time off sync (#2171) 
+	bugfix: project financial calculations invoiced, due, paid amounts (#2170) 
+	bugfix: remove the condition that the description is mandatory under time tab for mobile (#2166)
+
+	Since 3.10.6.4
+	-----------------------------------
+	bugfix: fix error when trying to add subtask if task in not opened in tasks tab (#2167)
+	bugfix: When generating invoice using tasks, remove 'is_billable' constraint (#2164)
+	bugfix: multi assignment subtasks are not inheriting is_billable property (#2163)
 
 	Since 3.10.6.3
 	-----------------------------------

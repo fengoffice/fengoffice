@@ -26,6 +26,16 @@
   		}
   		return $this->all ;
   	}
+
+	
+	/**
+	 * Returns the plugin object of a given name.
+	 * @param string $name the name of the plugin we search
+	 * @return Plugin the plugin object, or null if not exists
+	 */
+	function getByName($name) {
+		return $this->findOne(array("conditions" => array("name = ?", $name)));
+	}
   	
 	/**
 	 * 
