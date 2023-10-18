@@ -277,7 +277,13 @@ final class ScriptUpgrader {
 			}
 
 			if ($is_error) {
-				$this->printMessage("Please contact your administrator to solve this issue.", true);
+				if (!$exec_result) {
+					// if empty error message then tell the user to try updating plugins in terminal
+					$this->printMessage("To finish updating the plugins please try executing the following command in your terminal:", true);
+					$this->printMessage($plugin_update_all_command, true);
+				} else {
+					$this->printMessage("Please contact your administrator to solve this issue.", true);
+				}
 			} else {
 				$this->printMessage("Finished plugins update.");
 			}

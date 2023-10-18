@@ -349,6 +349,7 @@
 	'confirm delete template' => '¿Realmente desea eliminar esta plantilla?',
 	'success delete template' => 'Plantilla \'{0}\' ha sido borrada',
 	'success add template' => 'La plantilla ha sido agregada',
+	'success copy template' => 'Plantilla copiada exitosamente',
 	'log add companies' => '\'{0}\' agregada',
 	'log edit companies' => '\'{0}\' modificada',
 	'log delete companies' => '\'{0}\' eliminada',

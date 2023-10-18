@@ -602,6 +602,7 @@
   	'confirm delete template' => 'Are you sure that you want to delete this template?',
   	'success delete template' => 'Template \'{0}\' has been deleted',
   	'success add template' => 'Template has been added',
+	'success copy template' => 'Template copied successfully',
   
   	'log add companies' => '\'{0}\' added',
   	'log edit companies' => '\'{0}\' updated',

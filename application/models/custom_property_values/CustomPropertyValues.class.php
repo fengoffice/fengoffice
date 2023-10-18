@@ -33,6 +33,18 @@ class CustomPropertyValues extends BaseCustomPropertyValues {
 	} //  getCustomPropertyValue
 	
 	/**
+	 * Return all custom property values for the object
+	 *
+	 * @param $object_id
+	 * @return array
+	 */
+	static function getAllCustomPropertyValuesForObject($object_id) {
+		return self::instance()->findAll(array(
+			'conditions' => array("`object_id` = ?", $object_id)
+		)); // findAll
+	} //  getAllCustomPropertyValuesForObject
+	
+	/**
 	 * Delete custom property values for the object
 	 *
 	 * @param $object_id

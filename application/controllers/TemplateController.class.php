@@ -1163,6 +1163,170 @@ class TemplateController extends ApplicationController {
 		
 		ajx_extra_data(array('tasks' => $objects));
 	}
+
+
+	function copy_task_template($template_id = null) {
+
+		if (!can_manage_templates(logged_user())) {
+			flash_error(lang("no access permissions"));
+			ajx_current("empty");
+			return;
+		}
+
+		if (!$template_id) {
+			$template_id = array_var($_REQUEST, 'template_id');
+		}
+		$original_template = COTemplates::instance()->findById($template_id);
+
+		if ($original_template instanceof COTemplate) {
+
+			try {
+				DB::beginWork();
+
+				$template_columns = COTemplates::instance()->getColumns();
+				
+				// copy template columns
+				$new_template = new COTemplate();
+				foreach ($template_columns as $col) {
+					if ($col != 'object_id') {
+						$new_template->setColumnValue($col, $original_template->getColumnValue($col));
+					}
+				}
+				$new_template->setObjectName(lang('copy of', $original_template->getName()));
+				$new_template->save();
+	
+				// copy template parameters
+				$original_parameters = TemplateParameters::getParametersByTemplate($template_id);
+				$param_columns = TemplateParameters::instance()->getColumns();
+	
+				foreach ($original_parameters as $param) {
+					$new_param = new TemplateParameter();
+					foreach ($param_columns as $col) {
+						if ($col != 'id' && $col != 'template_id') {
+							$new_param->setColumnValue($col, $param->getColumnValue($col));
+						}
+					}
+					$new_param->setTemplateId($new_template->getId());
+					$new_param->save();
+				}
+	
+				// get all template objects and copy them
+				$original_template_objects = $original_template->getObjects();
+				$task_columns = TemplateTasks::instance()->getColumns();
+				$milestone_columns = TemplateMilestones::instance()->getColumns();
+	
+				$new_template_tasks = array(); // keep new tasks so we can iterate them and update parent and milestone with correct values
+				$template_objects_mapping = array(); // map correspondency between old objects and their new copies to use them when saving properties
+	
+				foreach ($original_template_objects as $template_obj) {
+	
+					// copy template tasks
+					if ($template_obj instanceof TemplateTask) {
+						$new_template_task = new TemplateTask();
+						foreach ($task_columns as $col) {
+							if ($col != 'id' && $col != 'object_id' && $col != 'template_id') {
+								$new_template_task->setColumnValue($col, $template_obj->getColumnValue($col));
+							}
+						}
+						$new_template_task->setTemplateId($new_template->getId());
+						$new_template_task->setObjectName($template_obj->getObjectName());
+						$new_template_task->save();
+
+						$new_object = $new_template_task;
+	
+						$new_template_tasks[] = $new_template_task;
+						$template_objects_mapping[$template_obj->getId()] = $new_template_task->getId();
+	
+					} else if ($template_obj instanceof TemplateMilestone) {
+						// copy template milestones
+						
+						$new_template_mile = new TemplateMilestone();
+						foreach ($milestone_columns as $col) {
+							if ($col != 'id' && $col != 'object_id' && $col != 'template_id') {
+								$new_template_mile->setColumnValue($col, $template_obj->getColumnValue($col));
+							}
+						}
+						$new_template_mile->setTemplateId($new_template->getId());
+						$new_template_mile->setObjectName($template_obj->getObjectName());
+						$new_template_mile->save();
+	
+						$new_object = $new_template_mile;
+	
+						$template_objects_mapping[$template_obj->getId()] = $new_template_mile->getId();
+					}
+
+					// create a TemplateObject
+					$to = new TemplateObject();
+					$to->setObject($new_object);
+					$to->setTemplate($new_template);
+					$to->save();
+
+					// copy classification
+					$members = $template_obj->getMembers();
+					ObjectMembers::addObjectToMembers($new_object->getId(), $members);
+
+					// copy custom property values
+					$cp_vals = CustomPropertyValues::getAllCustomPropertyValuesForObject($template_obj->getId());
+					foreach ($cp_vals as $cp_val) {
+						$new_cp_val = new CustomPropertyValue();
+						$new_cp_val->setObjectId($new_object->getId());
+						$new_cp_val->setCustomPropertyId($cp_val->getCustomPropertyId());
+						$new_cp_val->setValue($cp_val->getValue());
+						$new_cp_val->setCurrencyId($cp_val->getCurrencyId());
+						$new_cp_val->save();
+					}
+				}
+
+				// set correct parent ids and milestone ids to tasks
+				foreach ($new_template_tasks as $new_template_task) {
+					$need_save = false;
+					if ($new_template_task->getParentId() > 0) {
+						$new_parent_id = array_var($template_objects_mapping, $new_template_task->getParentId());
+						$new_template_task->setParentId($new_parent_id);
+						$need_save = true;
+					}
+					if ($new_template_task->getMilestoneId() > 0) {
+						$new_milestone_id = array_var($template_objects_mapping, $new_template_task->getMilestoneId());
+						$new_template_task->setMilestoneId($new_milestone_id);
+						$need_save = true;
+					}
+					if ($need_save) {
+						$new_template_task->save();
+					}
+				}
+	
+				// copy template object properties
+				foreach ($template_objects_mapping as $old_object_id => $new_object_id) {
+	
+					$template_obj_properties = TemplateObjectProperties::getPropertiesByTemplateObject($template_id, $old_object_id);
+					foreach ($template_obj_properties as $prop) {
+						$new_property = new TemplateObjectProperty();
+						$new_property->setTemplateId($new_template->getId());
+						$new_property->setObjectId($new_object_id);
+						$new_property->setProperty($prop->getProperty());
+						$new_property->setValue($prop->getValue());
+						$new_property->save();
+					}
+				}
+
+				DB::commit();
+
+				ApplicationLogs::createLog($new_template, ApplicationLogs::ACTION_ADD);
+				flash_success(lang("success copy template"));
+				ajx_current("reload");
+
+			} catch (Exception $e) {
+				flash_error($e->getMessage());
+				DB::rollback();
+				ajx_current("empty");
+			}
+
+
+		}
+
+	}
+
+
 }
 
 ?>

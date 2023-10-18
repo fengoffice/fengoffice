@@ -1,4 +1,4 @@
-	About Feng Office 3.10.6.7
+	About Feng Office 3.10.6.9
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,6 +105,17 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.6.8
+	-----------------------------------
+	bugfix: recalculate financials when the subtask is edited in the task form (#2195)
+	bugfix: suggest using command line to upgrade plugins when no error message is found
+
+	Since 3.10.6.7
+	-----------------------------------
+	feature: copy task templates (#2192)
+	bugfix: member custom report issues (#2190) 
+	bugfix: calculation for executed cost/price for tasks and project financials (#2191)
 
 	Since 3.10.6.6
 	-----------------------------------
