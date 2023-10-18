@@ -269,7 +269,7 @@ class MemberController extends ApplicationController {
 		$context = active_context();
 		if (is_array($context)) {
 			foreach ($context as $sel) {
-				if ($sel instanceof Member && in_array($sel->getDimensionId(), $associated_dimension_ids)) {
+				if ($sel instanceof Member && $dimension->getId() != $sel->getDimensionId() && in_array($sel->getDimensionId(), $associated_dimension_ids)) {
 					$associated_member_ids[] = $sel->getId();
 				}
 			}

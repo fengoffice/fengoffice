@@ -436,6 +436,7 @@ abstract class ContentDataObjects extends DataManager {
 		$fire_additional_data_hook = array_var($args, 'fire_additional_data_hook', true);
 		$only_query_totals_row = array_var($args, 'only_query_totals_row');
 		$is_email_widget = array_var($args, 'is_email_widget');
+		$check_sharing_table = array_var($args, 'check_sharing_table', true);
 		
 		//text filter param
 		// ORG $text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
@@ -700,7 +701,7 @@ abstract class ContentDataObjects extends DataManager {
 			$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
 			
 			$permissions_condition = " true ";
-			if (!logged_user()->isAdministrator() || self::getObjectTypeId() == $mail_ot_id) {
+			if ($check_sharing_table && (!logged_user()->isAdministrator() || self::getObjectTypeId() == $mail_ot_id)) {
 				if (self::getObjectTypeId() == $mail_ot_id) {
 					if($is_email_widget){
 						$permissions_condition = "
