@@ -15,7 +15,7 @@ class ReportConditions extends BaseReportConditions {
 	 * @return ReportCondition
 	 */
 	static function getCondition($id) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
 			'conditions' => array("`id` = ?", $id)
 		)); // findOne
 	} //  getCondition
@@ -27,7 +27,7 @@ class ReportConditions extends BaseReportConditions {
 	 * @return array
 	 */
 	static function getAllReportConditions($report_id) {
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ?", $report_id)
 		)); // findAll
 	} //  getAllReportConditions
@@ -39,7 +39,7 @@ class ReportConditions extends BaseReportConditions {
 	 * @return array
 	 */
 	static function getAllReportConditionsForFields($report_id) {
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ? AND field_name != '' AND custom_property_id = 0", $report_id)
 		)); // findAll
 	} //  getAllReportConditionsForFields
@@ -51,7 +51,7 @@ class ReportConditions extends BaseReportConditions {
 	 * @return array
 	 */
 	static function getAllReportConditionsForCustomProperties($report_id) {
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ? AND custom_property_id > 0", $report_id)
 		)); // findAll
 	} //  getAllReportConditionsForFields
@@ -64,7 +64,7 @@ class ReportConditions extends BaseReportConditions {
 	 * @return ReportCondition
 	 */
 	static function getReportConditionField($reportid,$field) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
 			'conditions' => array('field_name = \'' . $field.'\'' ,'report_id = \'' . $reportid . '\'')
 		)); // findOne
 	} //  getReportConditionField

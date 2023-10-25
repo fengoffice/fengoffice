@@ -27,7 +27,7 @@ class APCWrapper {
 	
 	static function update($key, $value, $ttl = null) {
 		if (self::isAvailable()) {
-			self::delete($key);
+			self::instance()->delete($key);
 			return self::add($key, $value, $ttl);
 		} else {
 			return false;

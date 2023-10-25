@@ -220,7 +220,7 @@ CHANGELOG
  * disabled _method request parameter support by default (call Request::enableHttpMethodParameterOverride() to
    enable it, and Request::getHttpMethodParameterOverride() to check if it is supported)
  * Request::splitHttpAcceptHeader() method is deprecated and will be removed in 2.3
- * Deprecated Flashbag::count() and \Countable interface, will be removed in 2.3
+ * Deprecated Flashbag::instance()->count() and \Countable interface, will be removed in 2.3
 
 2.1.0
 -----

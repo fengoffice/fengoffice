@@ -198,7 +198,7 @@ class BaseContactWidgets extends DataManager {
 	 *
 	 * @return ContactWidgets 
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if (! instance_of ( $instance, 'ContactWidgets' )) {
 			$instance = new ContactWidgets ();

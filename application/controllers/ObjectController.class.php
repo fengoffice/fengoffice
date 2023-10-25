@@ -37,7 +37,7 @@ class ObjectController extends ApplicationController {
 
 		// if object not found, use a new object with the same object type
 		if (!$object instanceof ContentDataObject) {
-			$object_type = ObjectTypes::findById(get_id('ot_id'));
+			$object_type = ObjectTypes::instance()->findById(get_id('ot_id'));
 			if ($object_type instanceof ObjectType && class_exists($object_type->getHandlerClass()) ) {
 				eval('$ot_manager = '.$object_type->getHandlerClass().'::instance();');
 				if ($ot_manager) {
@@ -67,7 +67,7 @@ class ObjectController extends ApplicationController {
 
         // if object not found, use a new object with the same object type
         if (!$object instanceof ContentDataObject) {
-            $object_type = ObjectTypes::findById(get_id('ot_id'));
+            $object_type = ObjectTypes::instance()->findById(get_id('ot_id'));
             if ($object_type instanceof ObjectType && class_exists($object_type->getHandlerClass()) ) {
                 eval('$ot_manager = '.$object_type->getHandlerClass().'::instance();');
                 if ($ot_manager) {
@@ -113,7 +113,7 @@ class ObjectController extends ApplicationController {
 				$user_id = substr($key, 5);
 				$subscribers_ids[] = $user_id;
 				if ($checked == "1" && !in_array($user_id, $object->getSubscriberIds())) {
-					$user = Contacts::findById($user_id);
+					$user = Contacts::instance()->findById($user_id);
 					if ($user instanceof Contact) {
 						$object->subscribeUser($user);
 						$log_info .= ($log_info == "" ? "" : ",") . $user->getId();
@@ -126,7 +126,7 @@ class ObjectController extends ApplicationController {
 
 			
 			foreach ($subscribers_to_remove as $subs_remove) {
-				$user = Contacts::findById($subs_remove);
+				$user = Contacts::instance()->findById($subs_remove);
 				if ($user instanceof Contact) {
 					$object->unsubscribeUser($user);
 					$log_info_unsubscribe .= ($log_info_unsubscribe == "" ? "" : ",") . $user->getId();
@@ -295,10 +295,10 @@ class ObjectController extends ApplicationController {
 				$required_dimension_ids[] = $dot->getDimensionId();
 			}
 		}		
-		$required_dimensions = Dimensions::findAll(array("conditions" => "id IN (".implode(",",$required_dimension_ids).") OR is_required=1"));
+		$required_dimensions = Dimensions::instance()->findAll(array("conditions" => "id IN (".implode(",",$required_dimension_ids).") OR is_required=1"));
 
 		if (count($member_ids) > 0) {
-			$enteredMembers = Members::findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
+			$enteredMembers = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
 		} else {
 			$enteredMembers = array();
 		}
@@ -405,7 +405,7 @@ class ObjectController extends ApplicationController {
 			if (count($not_valid_mem_names_array) > 0) {
 				$not_valid_mem_names = implode(', ', $not_valid_mem_names_array);
 
-				$ot = ObjectTypes::findById($object->getObjectTypeId());
+				$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 				$ot_name = $ot instanceof ObjectType ? $ot->getPluralObjectTypeName() : '';
 				
 				evt_add("popup", array(
@@ -582,7 +582,7 @@ class ObjectController extends ApplicationController {
 				$object = $object_original;
 				// if custom property does not belong to the object, look for an associated object for current cp
 				if (is_null($custom_property)) {
-					$custom_property = CustomProperties::findById($id);
+					$custom_property = CustomProperties::instance()->findById($id);
 					$object = $object_original->getAdditionalCustomPropertyAssociatedObject($custom_property);
 
 					if (!$custom_property instanceof CustomProperty || !$object instanceof ContentDataObject) {
@@ -694,7 +694,7 @@ class ObjectController extends ApplicationController {
                                     $custom_property_value->setCustomPropertyId($id);
                                     $custom_property_value->setValue($list_val);
                                     $custom_property_value->save();
-                                    $contact = Contacts::findById($list_val);
+                                    $contact = Contacts::instance()->findById($list_val);
                                     $member = Members::findOneByObjectId($object->getObjectId());
                                     if($member instanceof Member && $contact instanceof Contact) {
                                         $object_controller = new ObjectController();
@@ -735,7 +735,7 @@ class ObjectController extends ApplicationController {
                             $custom_property_value->setValue($value);
                             $custom_property_value->save();
 
-                            $contact = Contacts::findById($value);
+                            $contact = Contacts::instance()->findById($value);
                             $member = Members::findOneByObjectId($object->getObjectId());
 							
 							if($member instanceof Member && $contact instanceof Contact && !$contact->isUser()) {
@@ -1104,13 +1104,13 @@ class ObjectController extends ApplicationController {
 					return;
 				} // if
 
-				$linked_object = LinkedObjects::findById(array(
+				$linked_object = LinkedObjects::instance()->findById(array(
 					'rel_object_id' => $object_id,
 					'object_id' => $rel_object_id,
 				)); // findById
 				if(!($linked_object instanceof LinkedObject ))
 				{ //search for reverse link
-					$linked_object = LinkedObjects::findById(array(
+					$linked_object = LinkedObjects::instance()->findById(array(
 						'rel_object_id' => $rel_object_id,
 						'object_id' => $object_id,
 					)); // findById
@@ -1311,7 +1311,7 @@ class ObjectController extends ApplicationController {
 			return;
 		} // if
 
-		$object_type = ObjectTypes::findById($obj->getObjectTypeId());
+		$object_type = ObjectTypes::instance()->findById($obj->getObjectTypeId());
 		if($object_type->getType() == 'dimension_object'){
 			ajx_current("empty");
 		}elseif($object_type->getType() == 'dimension_group'){
@@ -1749,12 +1749,12 @@ class ObjectController extends ApplicationController {
 		));
 		// check if the tasks found have any time or expense associated
 		if (count($task_ids) > 0) {
-			$times_count = Timeslots::count("rel_object_id IN (".implode(',',$task_ids).")");
+			$times_count = Timeslots::instance()->count("rel_object_id IN (".implode(',',$task_ids).")");
 			$times_associated = $times_count > 0;
 			$expenses_associated = false;
 			if (PLugins::instance()->isActivePlugin('expenses2')) {
-				$b_expenses_count = Expenses::count("task_id IN (".implode(',',$task_ids).")");
-				$a_expenses_count = PaymentReceipts::count("task_id IN (".implode(',',$task_ids).")");
+				$b_expenses_count = Expenses::instance()->count("task_id IN (".implode(',',$task_ids).")");
+				$a_expenses_count = PaymentReceipts::instance()->count("task_id IN (".implode(',',$task_ids).")");
 				$expenses_associated = ($b_expenses_count + $a_expenses_count) > 0;
 			}
 
@@ -1971,7 +1971,7 @@ class ObjectController extends ApplicationController {
 
 		// popup reminders already checked for logged user
 		if (GlobalCache::isAvailable()) {
-			$today_next_reminders = ObjectReminders::findAll(array(
+			$today_next_reminders = ObjectReminders::instance()->findAll(array(
 				'conditions' => array("`date` > ? AND `date` < ?", DateTimeValueLib::now(), DateTimeValueLib::now()->endOfDay()),
 				'limit' => config_option('cron reminder limit', 100)
 			));
@@ -2017,7 +2017,7 @@ class ObjectController extends ApplicationController {
 	function get_co_types() {
 		$object_type = array_var($_GET, 'object_type', '');
 		if($object_type != ''){
-			$types = ProjectCoTypes::findAll(array("conditions" => "`object_manager` = ".DB::escape($object_type)));
+			$types = ProjectCoTypes::instance()->findAll(array("conditions" => "`object_manager` = ".DB::escape($object_type)));
 			$co_types = array();
 			foreach($types as $type){
 				$t = array();
@@ -2226,7 +2226,7 @@ class ObjectController extends ApplicationController {
 				$split = explode(":", $id);
 				$type = $split[0];
 				if (Plugins::instance()->isActivePlugin('mail') && $type == 'MailContents') {
-					$email = MailContents::findById($split[1]);
+					$email = MailContents::instance()->findById($split[1]);
 					if ($email instanceof MailContent && !$email->isDeleted() && $email->canEdit(logged_user())){
 						if (MailController::do_unclassify($email)) $succ++;
 						else $err++;
@@ -2255,7 +2255,7 @@ class ObjectController extends ApplicationController {
 							$obj->untrash();
 
 							if($obj->getObjectTypeId() == 11){
-								$event = ProjectEvents::findById($obj->getId());
+								$event = ProjectEvents::instance()->findById($obj->getId());
 								if($event->getExtCalId() != ""){
 									$this->created_event_google_calendar($obj,$event);
 								}
@@ -2437,7 +2437,7 @@ class ObjectController extends ApplicationController {
 
 		$template_objects = false;
 		//if(in_array("template_task", array_var($filters, 'types', array())) || in_array("template_milestone", array_var($filters, 'types', array()))){
-		if (in_array("template_task", $filters['types']) || in_array("template_milestone", $filters['types'])){
+		if ($filters['types'] && ( in_array("template_task", $filters['types']) || in_array("template_milestone", $filters['types']))){
 			$template_id = 0;
 			$template_objects = true;
 			if(isset($extra_list_params->template_id)){
@@ -2447,7 +2447,7 @@ class ObjectController extends ApplicationController {
 				$id_no_select = $extra_list_params->id_no_select;
 			}
 			
-			$tmpl_task = TemplateTasks::findById(intval($id_no_select));
+			$tmpl_task = TemplateTasks::instance()->findById(intval($id_no_select));
 			if($tmpl_task instanceof TemplateTask){
 				$template_extra_condition = "o.id IN (SELECT object_id from ".TABLE_PREFIX."template_tasks WHERE `template_id`=".$tmpl_task->getTemplateId()." OR `template_id`=0 AND `session_id`=".logged_user()->getId()." )";
 			}else{
@@ -2477,7 +2477,6 @@ class ObjectController extends ApplicationController {
 		}
 
 		$extra_conditions = array();
-
 		if (array_var($filters, 'contact_type_filter')) {
 			$joins[] = " LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id";
 
@@ -2506,7 +2505,7 @@ class ObjectController extends ApplicationController {
 
 		}
 		// user filter
-		if (in_array("contact", array_var($filters, 'types', array())) && isset($extra_list_params->is_user)) {
+		if ($filters['types'] && in_array("contact", $filters['types']) && isset($extra_list_params->is_user)) {
 			$joins[] = " LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id";
 			
 			$extra_conditions[] = "
@@ -2755,7 +2754,16 @@ class ObjectController extends ApplicationController {
 								$info_elem['icon'] = 'ico-company';
 								$info_elem['type'] = 'company';
 							}else{
-								$info_elem['memPath'] = json_encode($instance->getUserType()?"":$instance->getMembersIdsToDisplayPath());
+								// cut users and contacts amount of members to show in the object picker, they can lead to performance issues
+								if ($instance->isUser()) {
+									$max_members_to_show = 5; // to avoid performance issues when lisiting users 
+								} else {
+									$max_members_to_show = 20; // to avoid performance issues when lisiting contacts, some may be classified in many projects 
+								}
+								$members_path = $instance->getMembersIdsToDisplayPath(false, array(
+									"max_members_per_dimension" => $max_members_to_show, // to avoid performance issues when lisiting users 
+								));
+								$info_elem['memPath'] = json_encode($members_path);
 							}
 						} else if ($instance instanceof ProjectFile) {
 							$info_elem['mimeType'] = $instance->getTypeString();
@@ -2765,56 +2773,6 @@ class ObjectController extends ApplicationController {
 							$info_elem['completedBy'] = $instance->getCompletedById();
 							$info_elem['dateCompleted'] = $instance->getCompletedOn() instanceof DateTimeValue ? format_datetime($instance->getCompletedOn()) : '';
 							$info_elem['assignedTo'] = $instance->getAssignedToName();
-							
-							//get members
-							$instance_members = $instance->getMembers();
-							
-							$project_ot = ObjectTypes::findByName('project');
-							$customer_ot = ObjectTypes::findByName('customer');
-							$job_phases_ot = ObjectTypes::findByName('job_phase');
-							$labor_category_ot = ObjectTypes::findByName('hour_type');
-							
-							$member_project_name='';
-							$member_client_name='';
-							$member_job_phases_name='';
-							$member_labor_category_name='';
-							foreach ($instance_members as $member) {
-								///get the project
-								if($project_ot instanceof ObjectType)
-								{
-									if ($member instanceof Member && $member->getObjectTypeId() == $project_ot->getId()) {
-										$member_project_name = $member->getDisplayName();
-									}
-								}
-								
-								//get the cliet
-								if($customer_ot instanceof ObjectType)
-								{
-									if ($member instanceof Member && $member->getObjectTypeId() == $customer_ot->getId()) {
-										$member_client_name = $member->getDisplayName();
-									}
-								}
-
-								//get the client
-								if($job_phases_ot instanceof ObjectType)
-								{
-									if ($member instanceof Member && $member->getObjectTypeId() == $job_phases_ot->getId()) {
-										$member_job_phases_name = $member->getDisplayName();
-									}
-								}
-
-								///get the labor category
-								if($labor_category_ot instanceof ObjectType)
-								{
-									if ($member instanceof Member && $member->getObjectTypeId() == $labor_category_ot->getId()) {
-										$member_labor_category_name = $member->getDisplayName();
-									}
-								}
-							}
-							$info_elem['project']=$member_project_name;
-							$info_elem['client']=$member_client_name;
-							$info_elem['labor_category']=$member_labor_category_name;
-							$info_elem['job_phase']=$member_job_phases_name;
 						}
 					}
 
@@ -2831,7 +2789,7 @@ class ObjectController extends ApplicationController {
 				"objects" => $info
 		);
 
-		$object_types = ObjectTypes::findAll(array(
+		$object_types = ObjectTypes::instance()->findAll(array(
 			'conditions' => "type IN ('content_object') AND 
 							(plugin_id = 0 OR plugin_id IS NULL OR (SELECT is_activated FROM ".TABLE_PREFIX."plugins WHERE id=plugin_id) = 1)"
 		));
@@ -2904,7 +2862,6 @@ class ObjectController extends ApplicationController {
 		$this->addHelper('object_selector');
 
 		$params = $this->get_list_objects_params();
-
 		$listing = $this->get_objects_list($params);
 
 		$selected_ids = get_selected_objects_ids();

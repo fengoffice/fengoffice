@@ -226,7 +226,7 @@ abstract class BaseMailSpamFilters extends DataManager {
 	 *
 	 * @return MailSpamFilters
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'MailSpamFilters')) {
 			$instance = new MailSpamFilters();

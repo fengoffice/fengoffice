@@ -564,7 +564,7 @@ foreach ($actions as $action) {
 	og.emailFilters.classif = '<?php echo user_config_option('mails classification filter') ?>';
 	og.emailFilters.read = '<?php echo user_config_option('mails read filter') ?>';
 	<?php
-		$acc = MailAccounts::findById(user_config_option('mails account filter'));
+		$acc = MailAccounts::instance()->findById(user_config_option('mails account filter'));
 		if ($acc instanceof MailAccount) {
 			?>
 			og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
@@ -639,7 +639,7 @@ og.dimension_object_type_descendants = Ext.util.JSON.decode('<?php echo json_enc
 og.contextManager.construct();
 og.objPickerTypeFilters = [];
 <?php
-	$obj_picker_type_filters = ObjectTypes::findAll(array("conditions" => "`type` = 'content_object'
+	$obj_picker_type_filters = ObjectTypes::instance()->findAll(array("conditions" => "`type` = 'content_object'
 		AND (plugin_id IS NULL OR plugin_id = 0 OR plugin_id IN (SELECT distinct(id) FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1 AND is_activated = 1 ))
 		AND `name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `id` NOT IN (
 			SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0
@@ -678,7 +678,7 @@ og.objPickerTypeFilters = [];
 	og.additional_on_dimension_object_click = [];
 	og.dimension_object_types = [];
 <?php
-	$dimension_object_types = ObjectTypes::findAll(array('conditions' => "`type` IN ('dimension_object', 'dimension_group')"));
+	$dimension_object_types = ObjectTypes::instance()->findAll(array('conditions' => "`type` IN ('dimension_object', 'dimension_group')"));
 	foreach ($dimension_object_types as $dot) { ?>
 		og.dimension_object_types[<?php echo $dot->getId()?>] = '<?php echo $dot->getName()?>';
 <?php
@@ -691,7 +691,7 @@ og.objPickerTypeFilters = [];
 
 og.dimension_object_type_contents = {};
 <?php 
-	$dotcs = DimensionObjectTypeContents::findAll();
+	$dotcs = DimensionObjectTypeContents::instance()->findAll();
 	foreach ($dotcs as $dotc) { /* @var $dotc DimensionObjectTypeContent */?>
 		var dim = <?php echo $dotc->getDimensionId() ?>;
 		var dot = <?php echo $dotc->getDimensionObjectTypeId() ?>;

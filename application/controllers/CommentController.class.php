@@ -109,7 +109,7 @@ class CommentController extends ApplicationController {
 	function edit() {
 		$this->setTemplate('add_comment');
 
-		$comment = Comments::findById(get_id());
+		$comment = Comments::instance()->findById(get_id());
 		if(!($comment instanceof Comment)) {
 			flash_error(lang('comment dnx'));
 			ajx_current("empty");
@@ -177,7 +177,7 @@ class CommentController extends ApplicationController {
 	 * @return null
 	 */
 	function delete() {
-		$comment = Comments::findById(get_id());
+		$comment = Comments::instance()->findById(get_id());
 		if(!($comment instanceof Comment)) {
 			flash_error(lang('comment dnx'));
 			ajx_current("empty");
@@ -217,7 +217,7 @@ class CommentController extends ApplicationController {
 	
 	
 	function view() {
-		$comment = Comments::findById(get_id());
+		$comment = Comments::instance()->findById(get_id());
 		if(!($comment instanceof Comment)) {
 			flash_error(lang('comment dnx'));
 			ajx_current("empty");

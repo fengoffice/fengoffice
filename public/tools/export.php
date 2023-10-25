@@ -26,7 +26,7 @@ if (file_exists($dir)) {
 }
 
 if (FileRepository::getBackend() instanceof FileRepository_Backend_FileSystem) {
-	$files = ProjectFiles::findAll();
+	$files = ProjectFiles::instance()->findAll();
 	foreach ($files as $file) {
 		$filename = $file->getFilename();
 		$id = $file->getLastRevision()->getRepositoryId();
@@ -51,7 +51,7 @@ if (FileRepository::getBackend() instanceof FileRepository_Backend_FileSystem) {
 		echo "Exported $filename\n";
 	}
 } else {
-	$files = ProjectFiles::findAll();
+	$files = ProjectFiles::instance()->findAll();
 	foreach ($files as $file) {
 		$filename = $file->getFilename();
 		$newpath = "tmp/export/" . $filename;

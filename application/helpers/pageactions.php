@@ -304,7 +304,7 @@
     * @param void
     * @return PageActions
     */
-    function instance() {
+    static function instance() {
       static $instance;
       
       // Check instance

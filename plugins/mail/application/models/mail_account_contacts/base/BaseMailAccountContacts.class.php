@@ -230,7 +230,7 @@ abstract class BaseMailAccountContacts extends DataManager {
 	 *
 	 * @return MailAccountContacts
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'MailAccountContacts')) {
 			$instance = new MailAccountContacts();

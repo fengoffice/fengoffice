@@ -65,7 +65,7 @@ class Timeslot extends BaseTimeslot {
     */
     function getUser() {
       if(is_null($this->assigned_user)) {
-        $this->assigned_user = Contacts::findById($this->getContactId());
+        $this->assigned_user = Contacts::instance()->findById($this->getContactId());
       }
       return $this->assigned_user;
     }
@@ -150,9 +150,9 @@ class Timeslot extends BaseTimeslot {
     	}
         	
     	//Billing
-		$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
+		$user = Contacts::instance()->findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
 		$billing_category_id = $user->getDefaultBillingId();
-		$bc = BillingCategories::findById($billing_category_id);
+		$bc = BillingCategories::instance()->findById($billing_category_id);
 		if ($bc instanceof BillingCategory) {
 			$this->setBillingId($billing_category_id);
 			$hourly_billing = $bc->getDefaultValue();
@@ -367,7 +367,7 @@ class Timeslot extends BaseTimeslot {
 	 * @param array $context
 	 * @return boolean
 	 */
-	function canAdd(Contact $user, $context, &$notAllowedMember = '') {
+	static function canAdd(Contact $user, $context, &$notAllowedMember = '') {
 		return can_add($user, $context, Timeslots::instance()->getObjectTypeId(), $notAllowedMember );
 	}
 
@@ -550,7 +550,7 @@ class Timeslot extends BaseTimeslot {
 	function getArrayInfo($return_billing = false, $time_detail = false, $permissions_detail = false, $mem_path = true) {
 		$task_name = '';
 		
-		$user = Contacts::findById($this->getContactId());
+		$user = Contacts::instance()->findById($this->getContactId());
 		if ($user instanceof Contact) {
 			$displayname = $user->getObjectName();
 		} else {
@@ -611,7 +611,7 @@ class Timeslot extends BaseTimeslot {
 			$result['uses_modified_keys'] = true;
 			$result['fixed_billing'] = "";
 			if ($this->getFixedBilling() > 0) {
-				$c = Currencies::getCurrency($this->getRateCurrencyId());
+				$c = Currencies::instance()->getCurrency($this->getRateCurrencyId());
 				$c_symbol = $c instanceof Currency ? $c->getSymbol() : '';
 				$result['rate_currency_id'] = $this->getRateCurrencyId();
 				$result['rate_currency_sym'] = $c_symbol;

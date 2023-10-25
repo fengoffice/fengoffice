@@ -1,4 +1,4 @@
-	About Feng Office 3.10.6.9
+	About Feng Office 3.10.7.0-beta3
 	================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,6 +105,42 @@
 	
 	Changelog
 	=========
+
+	Since Since 3.10.7.0-beta2
+	-----------------------------------
+	feature: new split invoice mode, recalculate each line amounts using allocation percentage (#2203)
+	bugfix: duplicated subtotal line when printing invoice with taxes (#2214)
+	bugfix: subscribers are lost when editing invoice (#2213)
+	bugfix: when using qbo plugin and invoice split feature only the first invoice was being synchronized after creation (#2212)
+	bugfix: lump sum invoices duplicates the expense amount if the project has a subproject (#2211)
+	bugfix: ensure that we can use advanced billing functions before executing them in other plugins (#2208)
+	bugfix: fx function that makes dimension groups in tasks list (#2216)
+	bugfix: missing es_es and es_la translations (#2217) 
+
+	Since 3.10.7.0-beta1
+	-----------------------------------
+	feature: add generic dimension columns in object picker for every object type and use breadcrumbs (#2201)
+	feature: always ask if overwrite expense amount when product type change or budgeted expense change (#2199) 
+	feature: Invoice templates: Automatic generation of line items -> Expenses -> (#2187)
+	bugfix: improve how mandatory labor category field is handled in weekly view (#2194)
+	bugfix: Remove 'Calculated method' duplicate from the task view (#2198)
+	bugfix: plugin update fixes (#2210) 
+	bugfix: broken dashboard in latest beta (#2209) 
+	bugfix: fix some static/non-static function calls (#2207)
+	bugfix: Add the missing columns in the update script for advanced_billing plugin (#2206)
+	bugfix: non static getObjectTypeId() was called with self instead of $this in ContentDataObjects listing (#2204)
+	bugfix: ensure that we can use advanced billing functions before executing them in other plugins (#2208)
+	bugfix: footer sometimes is cut in half instead of rendering complete in next page (#2202)
+	bugfix: fix project name at invoice print (#2193)
+
+	Since 3.10.6.x
+	-----------------------------------
+	feature: invoice templates new option to group by labor category and task (#2175)
+	feature: Rename timeslots to time entries (#2091) 
+	feature: add 'billable' custom property to expense category (#2075) 
+	feature: task financial add tm fixed fee (#2130) 
+	feature: php8 compatibility changes (#2188)
+	bugfix: order project by displayname for mobile (#2186)
 
 	Since 3.10.6.8
 	-----------------------------------

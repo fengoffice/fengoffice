@@ -99,7 +99,7 @@ abstract class ContentDataObjects extends DataManager {
 	 * This method is required to be overriden by classes that manage 'dimension_objects'
 	 */
 	function newDimensionObject() {
-		$ot = ObjectTypes::findById($this->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($this->getObjectTypeId());
 		eval('$manager = '.$ot->getHandlerClass().'::instance();');
 		eval('$object = new '.$manager->getItemClass().'();');
 		if (isset($object) && $object) {
@@ -111,7 +111,7 @@ abstract class ContentDataObjects extends DataManager {
 	
 	function sqlFields($all = true) {
 		$common_fields = array() ;
-		foreach ( Objects::getColumns() as $col ) {
+		foreach ( Objects::instance()->getColumns() as $col ) {
 			$common_fields[] = "o.$col AS `$col`";
 		}
 		if (!$all) {
@@ -319,7 +319,7 @@ abstract class ContentDataObjects extends DataManager {
     * @return array
     */
     function loadRow($id) {
-        $ocols = Objects::getColumns();
+        $ocols = Objects::instance()->getColumns();
         $tcols = $this->getColumns();
     	$columns = array_map('db_escape_field', array_merge ($ocols, $tcols ) );
     	$table_prefix = defined('FORCED_TABLE_PREFIX') && FORCED_TABLE_PREFIX ? FORCED_TABLE_PREFIX : TABLE_PREFIX;
@@ -366,7 +366,7 @@ abstract class ContentDataObjects extends DataManager {
 	function findById($id, $force_reload = false) {
 		$co = parent::findById($id, $force_reload);
 		if (!is_null($co)) {
-			$co->setObject(Objects::findById($id, $force_reload));
+			$co->setObject(Objects::instance()->findById($id, $force_reload));
 		}
 		return $co;
 	}
@@ -395,7 +395,7 @@ abstract class ContentDataObjects extends DataManager {
 	    $result = new stdClass;
 		$result->objects = array();
 		$result->total = array();
-		$type_id = self::getObjectTypeId();
+		$type_id = $this->getObjectTypeId();
 		$members = array ();
 		$SQL_BASE_JOIN = '';
 		$SQL_SEARCHABLE_OBJ_JOIN = '';
@@ -512,7 +512,7 @@ abstract class ContentDataObjects extends DataManager {
 	
 		if ($type_id){
 			// If isset type, is a concrete instance linsting. Otherwise is a generic listing of objects
-			$type = ObjectTypes::findById($type_id); /* @var $object_type ObjectType */
+			$type = ObjectTypes::instance()->findById($type_id); /* @var $object_type ObjectType */
 			$handler_class = $type->getHandlerClass();
 			$table_name = self::getTableName();
 			
@@ -569,7 +569,7 @@ abstract class ContentDataObjects extends DataManager {
 			$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."custom_property_values cpropval ON cpropval.object_id=o.id 
 					AND (cpropval.custom_property_id=".array_var($args,'cp_order')." OR cpropval.custom_property_id IS NULL) ";
 			
-			$cp = CustomProperties::findById(array_var($args,'cp_order'));
+			$cp = CustomProperties::instance()->findById(array_var($args,'cp_order'));
 			if ($cp instanceof CustomProperty && ($cp->getType() == 'contact' || $cp->getType() == 'user')) {
 				
 				$SQL_BASE_JOIN .= " LEFT JOIN ".TABLE_PREFIX."objects cpobj ON cpobj.id=cpropval.value";
@@ -701,8 +701,8 @@ abstract class ContentDataObjects extends DataManager {
 			$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
 			
 			$permissions_condition = " true ";
-			if ($check_sharing_table && (!logged_user()->isAdministrator() || self::getObjectTypeId() == $mail_ot_id)) {
-				if (self::getObjectTypeId() == $mail_ot_id) {
+			if ($check_sharing_table && (!logged_user()->isAdministrator() || $type_id == $mail_ot_id)) {
+				if ($type_id == $mail_ot_id) {
 					if($is_email_widget){
 						$permissions_condition = "
 							e.account_id IN (
@@ -724,7 +724,7 @@ abstract class ContentDataObjects extends DataManager {
 							)
 						) ";
 					}
-				} else if (self::getObjectTypeId() == $report_ot_id) {
+				} else if ($type_id == $report_ot_id) {
 					$permissions_condition = "(e.ignore_context=1 OR ".$check_permissions_col." IN (
 						SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
 						WHERE ".$check_permissions_col." = sh.object_id
@@ -748,7 +748,7 @@ abstract class ContentDataObjects extends DataManager {
 			 * 		3 - Or user has permissions to read objects without classification 
 			 */
 		  if (!$type instanceof ObjectType || $type->getName() != 'mail') {
-			$without_perm_dim_ids = Dimensions::findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
+			$without_perm_dim_ids = Dimensions::instance()->findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
 			$no_perm_dims_cond = "";
 			$no_perm_reports_cond = "";
 			if ($type instanceof ObjectType && $type->getName() == 'report') {
@@ -780,8 +780,8 @@ abstract class ContentDataObjects extends DataManager {
 			/********************************************************************************************************/
 		  
 		    $contact_ot_id = ObjectTypes::findByName('contact')->getId();
-			if (self::getObjectTypeId() != $mail_ot_id && logged_user()->isAdministrator() || 
-					(self::getObjectTypeId() == $contact_ot_id && can_manage_contacts(logged_user()))) {
+			if ($type_id != $mail_ot_id && logged_user()->isAdministrator() || 
+					($type_id == $contact_ot_id && can_manage_contacts(logged_user()))) {
 				$permissions_condition = "true";
 			}
 			/*
@@ -996,7 +996,7 @@ abstract class ContentDataObjects extends DataManager {
 		    		if (str_ends_with($join_str, ",")) $join_str = substr($join_str, 0, strlen($join_str)-1);
 		    		$join_str .= ')';
 	    		}
-	    		$phpCode = '$objects = '.$handler_class.'::findAll(array("conditions" => "`e`.`object_id` IN ('.implode(',', $ids).')", "order" => "'.str_replace("ORDER BY ", "", $order_conditions).'"'.$join_str.'));';
+	    		$phpCode = '$objects = '.$handler_class.'::instance()->findAll(array("conditions" => "`e`.`object_id` IN ('.implode(',', $ids).')", "order" => "'.str_replace("ORDER BY ", "", $order_conditions).'"'.$join_str.'));';
 	    		eval($phpCode);
 	    	}
     	}
@@ -1186,7 +1186,7 @@ abstract class ContentDataObjects extends DataManager {
     		return self::prepareAssociationConditions($redefined_context, $context_dimensions, $properties, $object_type_id, $pg_ids, $selection_members);
 	    }
     	
-    	$dimensions = Dimensions::findAll();
+    	$dimensions = Dimensions::instance()->findAll();
     	foreach ($dimensions as $dimension){
     		if ($dimension->canContainObjects() && !in_array($dimension, $context) && !in_array($dimension, $selected_dimensions)){
     			$member_ids = array();
@@ -1290,7 +1290,7 @@ abstract class ContentDataObjects extends DataManager {
 	    		else $member_ids = $member_intersection;
 	    		$association_conditions.= self::prepareQuery($association_conditions, $dimension, $member_ids,$object_type_id, $pg_ids, 'AND', $selection_members);
     	}
-    	$dims = Dimensions::findAll();
+    	$dims = Dimensions::instance()->findAll();
     	foreach ($dims as $dim){
     		if (!in_array($dim->getId(), $redefined_context) && !isset($properties[$dim->getId()]) && $dim->canContainObjects()){
     			$member_ids = array();
@@ -1495,6 +1495,7 @@ abstract class ContentDataObjects extends DataManager {
 		Hook::fire('generate_old_content_object_more_data', array('object' => $object), $old_content_object);
 		
 		return $old_content_object;
+
 	}
 	
 }

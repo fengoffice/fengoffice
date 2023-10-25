@@ -95,7 +95,7 @@
     * @param void
     * @return Template
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Template')) $instance = new Template();
       return $instance;

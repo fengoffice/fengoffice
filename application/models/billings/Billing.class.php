@@ -11,7 +11,7 @@ class Billing extends BaseBilling {
 	
 	function getBillingCategory(){
 		if(is_null($this->billing_category)) {
-			$this->billing_category = BillingCategories::findById($this->getBillingId());
+			$this->billing_category = BillingCategories::instance()->findById($this->getBillingId());
 		} // if
 		return $this->billing_category;
 	}
@@ -19,7 +19,7 @@ class Billing extends BaseBilling {
 	function canView(Contact $user) {
 		return can_read($user, $this->getMembers(), $this->getObjectTypeId());
 	}
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return true;
 	}
 	function canEdit(Contact $user) {

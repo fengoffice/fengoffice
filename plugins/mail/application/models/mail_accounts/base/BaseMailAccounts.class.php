@@ -260,7 +260,7 @@
     *
     * @return MailAccounts 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'MailAccounts')) {
         $instance = new MailAccounts();

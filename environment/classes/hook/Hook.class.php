@@ -19,6 +19,7 @@ class Hook {
 	 */
 	static function fire($function, $argument, &$ret) {
 		foreach (self::$hooks as $hook) {
+			$retOld = $ret;
 			$callback = $hook."_".$function;
 			if (function_exists($callback)) {
 				$callback($argument, $ret);

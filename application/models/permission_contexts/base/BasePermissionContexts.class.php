@@ -211,7 +211,7 @@
     *
     * @return PermissionContexts 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'PermissionContexts')) {
         $instance = new PermissionContexts();

@@ -168,7 +168,7 @@
 	'view tag' => 'Ver etiqueta',
 	'view template' => 'Ver plantilla',
 	'view timeslot' => 'Ver tiempo de trabajo',
-	'view timeslots' => 'Ver tiempos de trabajo',
+	'view timeslots' => 'Ver entradas de tiempo',
 	'view user' => 'Ver usuario',
 	'closed notification task' => 'Tarea completada: {0}',
 	'closed notification task desc' => 'La siguiente tarea ha sido completada por {1}:',

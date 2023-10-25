@@ -2,6 +2,7 @@
 
 final class acInstallation {
 
+	public $plugins;
 	/**
 	 * Output object
 	 *

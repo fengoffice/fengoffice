@@ -29,7 +29,7 @@ if ($dim instanceof Dimension) {
 							 'hide_label' => $hide_label, 
 							 'root_lang' => $root_lang, 
 							 'listeners' => $listeners,
-							 'hidden_field_name' => $hf_name, 
+							 'hidden_field_name' => isset( $hf_name) ? $hf_name : "" , 
 							 'allowedMemberTypes' => $member_type_id, 
 							 'dont_filter_this_selector' => true);
 	
@@ -41,7 +41,7 @@ if ($dim instanceof Dimension) {
 				if ($select_context_associated_members) {
 					$assoc_mem_ids = MemberPropertyMembers::getAllAssociatedMemberIds($selection->getId(),true);
 					foreach ($assoc_mem_ids as $aid => $amids) {
-						$a = DimensionMemberAssociations::findById($aid);
+						$a = DimensionMemberAssociations::instance()->findById($aid);
 						// use only default associations
 						$tmp_ot = ObjectTypes::instance()->findById($a->getObjectTypeId());
 						$tmp_assoc_ot = ObjectTypes::instance()->findById($a->getAssociatedObjectType());

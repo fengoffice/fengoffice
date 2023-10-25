@@ -16,7 +16,7 @@ class TaskdependencyController extends ApplicationController {
 			$error = lang('no access permissions');
 		}
 		if (!$error) {
-			$prev_task = ProjectTasks::findById($pt);
+			$prev_task = ProjectTasks::instance()->findById($pt);
 			if (!$prev_task instanceof ProjectTask) {
 				$error = lang('task list dnx');
 			} else if (!$prev_task->canEdit(logged_user())) {
@@ -38,7 +38,7 @@ class TaskdependencyController extends ApplicationController {
 			return;
 		}
 		
-		$dep = ProjectTaskDependencies::findOne(array('conditions' => "`previous_task_id` = $pt AND `task_id` = $t"));
+		$dep = ProjectTaskDependencies::instance()->findOne(array('conditions' => "`previous_task_id` = $pt AND `task_id` = $t"));
 		if ($dep instanceof ProjectTaskDependency) {
 			$dep->delete();
 			flash_success(lang('success remove task dependency'));
@@ -70,7 +70,7 @@ class TaskdependencyController extends ApplicationController {
 			return;
 		}
 		
-		$dep = ProjectTaskDependencies::findOne(array('conditions' => "`previous_task_id` = $pt AND `task_id` = $t"));
+		$dep = ProjectTaskDependencies::instance()->findOne(array('conditions' => "`previous_task_id` = $pt AND `task_id` = $t"));
 		if (!$dep instanceof ProjectTaskDependency) {
 			try {
 				DB::beginWork();

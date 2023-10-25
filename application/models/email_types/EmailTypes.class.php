@@ -41,14 +41,14 @@
   	
   	
   	static function getTypeId($type){
-  		$email_type = EmailTypes::findOne(array('conditions' => array("`name` = ?",$type)));
+  		$email_type = EmailTypes::instance()->findOne(array('conditions' => array("`name` = ?",$type)));
   		if (!is_null($email_type)) return $email_type->getId();
   		else return null;
     }
   	
     
     static function getAllEmailTypesInfo($use_id_as_key = false) {
-    	$types = EmailTypes::findAll();
+    	$types = EmailTypes::instance()->findAll();
     	$result = array();
     	foreach ($types as $type) {
     	    if($use_id_as_key){

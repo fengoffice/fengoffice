@@ -214,7 +214,7 @@
     *
     * @return DimensionMemberRestrictionDefinitions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'DimensionMemberRestrictionDefinitions')) {
         $instance = new DimensionMemberRestrictionDefinitions();

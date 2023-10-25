@@ -27,9 +27,9 @@ class ProjectForm extends BaseProjectForm {
 	function getInObject() {
 		if(is_null($this->in_object)) {
 			if($this->getAction() == self::ADD_COMMENT_ACTION) {
-				$this->in_object = ProjectMessages::findById($this->getInObjectId());
+				$this->in_object = ProjectMessages::instance()->findById($this->getInObjectId());
 			} elseif($this->getAction() == self::ADD_TASK_ACTION) {
-				$this->in_object = Projects::findById($this->getInObjectId());
+				$this->in_object = Projects::instance()->findById($this->getInObjectId());
 			} // if
 		} // if
 		return $this->in_object;
@@ -123,7 +123,7 @@ class ProjectForm extends BaseProjectForm {
 	 * @param Project $project
 	 * @return booelean
 	 */
-	function canAdd(User $user, Project $project) {
+	static function canAdd(User $user, Project $project) {
 		if(!$user->isProjectUser($project)) return false; // user is on project
 		if($user->isAdministrator()) return true; // user is administrator or root
 		return false; // no no

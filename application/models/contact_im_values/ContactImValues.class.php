@@ -14,7 +14,7 @@
     * @param Contact $contact
     * @return ImType
     */
-    function getContactMainImType(Contact $contact) {
+    static function getContactMainImType(Contact $contact) {
       
       $contact_im_values_table = ContactImValues::instance()->getTableName(true);
       $im_types_table = ImTypes::instance()->getTableName(true);
@@ -36,8 +36,8 @@
     * @param Contact $contact
     * @return array
     */
-    function getByContact(Contact $contact) {
-      return self::findAll(array(
+    static function getByContact(Contact $contact) {
+      return self::instance()->findAll(array(
         'conditions' => '`contact_id` = ' . DB::escape($contact->getId())
       )); // findAll
     } // getByContact
@@ -49,7 +49,7 @@
     * @param Contact $contact
     * @return boolean
     */
-    function clearByContact(Contact $contact) {
+    static function clearByContact(Contact $contact) {
       return DB::execute('DELETE FROM ' . self::instance()->getTableName(true) . ' WHERE `contact_id` = ?', $contact->getId());
     } // clearByContact
     

@@ -12,7 +12,7 @@ class CronEvents extends BaseCronEvents {
 			@unlink(CACHE_DIR . "/autoloader.php");
 		}
 		if (!$date instanceof DateTimeValue) $date = DateTimeValueLib::now();
-		$events = self::findAll(array(
+		$events = self::instance()->findAll(array(
 			'conditions' => array(
 				'`date` <= ?',
 				$date
@@ -23,7 +23,7 @@ class CronEvents extends BaseCronEvents {
 	}
 	
 	function getUserEvents() {
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array(
 				'`is_system` = ?',
 				false
@@ -37,7 +37,7 @@ class CronEvents extends BaseCronEvents {
 	 * @return CronEvent
 	 */
 	function getByName($name) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
 			'conditions' => array(
 				'`name` = ?',
 				$name

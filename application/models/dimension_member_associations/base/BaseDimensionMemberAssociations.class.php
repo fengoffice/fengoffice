@@ -218,7 +218,7 @@
     *
     * @return DimensionMemberAssociations 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'DimensionMemberAssociations')) {
         $instance = new DimensionMemberAssociations();

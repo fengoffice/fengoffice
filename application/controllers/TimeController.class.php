@@ -203,7 +203,7 @@ class TimeController extends ApplicationController
             if ($ok) {
                 $dont_reload = array_var($_REQUEST, "dont_reload");
                 if ($dont_reload) {
-                    $task = ProjectTasks::findById(array_var($_REQUEST, "object_id"), true);
+                    $task = ProjectTasks::instance()->findById(array_var($_REQUEST, "object_id"), true);
 
                     if ($task instanceof ProjectTask) {
                         $task_data = $task->getArrayInfo();
@@ -274,7 +274,7 @@ class TimeController extends ApplicationController
         $timeslot_data = array_var($parameters, 'timeslot');
         $sd = getDateValue(array_var($timeslot_data, 'date'));
 
-        if($timeslot_data['billable'] == 0){
+        if( array_var( $timeslot_data, 'billable', 0) == 0){  // *** LC 2023-10-03
             $timeslot_data['hourly_billing'] = 0;
             $timeslot_data['fixed_billing'] = 0; 
         }
@@ -344,7 +344,7 @@ class TimeController extends ApplicationController
                     return;
                 }
                 if (count($member_ids) > 0) {
-                    $enteredMembers = Members::findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
+                    $enteredMembers = Members::instance()->findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
                 } else {
                     $enteredMembers = array();
                 }
@@ -376,7 +376,7 @@ class TimeController extends ApplicationController
                     $hoursToAdd += 1;
                 }
             }
-            $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
+            $timeslot_data['subtract'] = 60 * ((float)$sub_hours * 60 + (float)$sub_minutes);
 
             if (strpos($hoursToAdd, ',') && !strpos($hoursToAdd, '.')) {
                 $hoursToAdd = str_replace(',', '.', $hoursToAdd);
@@ -485,10 +485,10 @@ class TimeController extends ApplicationController
 
             // Billing
             if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
-                $user = Contacts::findById($timeslot_data['contact_id']);
+                $user = Contacts::instance()->findById($timeslot_data['contact_id']);
                 if ($user instanceof Contact && $user->isUser()) {
                     $billing_category_id = $user->getDefaultBillingId();
-                    $bc = BillingCategories::findById($billing_category_id);
+                    $bc = BillingCategories::instance()->findById($billing_category_id);
                     if ($bc instanceof BillingCategory) {
                         $timeslot->setBillingId($billing_category_id);
                         $hourly_billing = $bc->getDefaultValue();
@@ -525,7 +525,7 @@ class TimeController extends ApplicationController
 
             $timeslot->save();
 
-            $task = ProjectTasks::findById($object_id);
+            $task = ProjectTasks::instance()->findById($object_id);
             if ($task instanceof ProjectTask) {
                 $task->calculatePercentComplete();
             }
@@ -578,7 +578,7 @@ class TimeController extends ApplicationController
     public function edit_timeslot()
     {
 
-        $timeslot = Timeslots::findById(get_id());
+        $timeslot = Timeslots::instance()->findById(get_id());
         if (!$timeslot instanceof Timeslot) {
             flash_error(lang('timeslot dnx'));
             ajx_current("empty");
@@ -691,7 +691,7 @@ class TimeController extends ApplicationController
                     return;
                 }
                 if (count($member_ids) > 0) {
-                    $enteredMembers = Members::findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
+                    $enteredMembers = Members::instance()->findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
                 } else {
                     $enteredMembers = array();
                 }
@@ -814,10 +814,10 @@ class TimeController extends ApplicationController
                 }
 
                 if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
-                    $user = Contacts::findById($timeslot_data['contact_id']);
+                    $user = Contacts::instance()->findById($timeslot_data['contact_id']);
                     if ($user instanceof Contact && $user->isUser()) {
                         $billing_category_id = $user->getDefaultBillingId();
-                        $bc = BillingCategories::findById($billing_category_id);
+                        $bc = BillingCategories::instance()->findById($billing_category_id);
                         if ($bc instanceof BillingCategory) {
                             $timeslot->setBillingId($billing_category_id);
                             $hourly_billing = $bc->getDefaultValue();
@@ -870,7 +870,7 @@ class TimeController extends ApplicationController
 
     public function check_time_invoicing_status(){
         ajx_current("empty");
-        $timeslot = Timeslots::findById(get_id());
+        $timeslot = Timeslots::instance()->findById(get_id());
 
         if (!$timeslot instanceof Timeslot) {
             flash_error(lang('timeslot dnx'));
@@ -894,7 +894,7 @@ class TimeController extends ApplicationController
     public function delete_timeslot()
     {
         ajx_current("empty");
-        $timeslot = Timeslots::findById(get_id());
+        $timeslot = Timeslots::instance()->findById(get_id());
 
         if (!$timeslot instanceof Timeslot) {
             flash_error(lang('timeslot dnx'));
@@ -1348,7 +1348,7 @@ class TimeController extends ApplicationController
                         continue;
                     }
 
-                    $message = Timeslots::findById($id);
+                    $message = Timeslots::instance()->findById($id);
                     if (!$message instanceof Timeslot) {
                         continue;
                     }
@@ -1390,7 +1390,7 @@ class TimeController extends ApplicationController
                         continue;
                     }
 
-                    $message = Timeslots::findById($id);
+                    $message = Timeslots::instance()->findById($id);
                     if (!$message instanceof Timeslot) {
                         continue;
                     }
