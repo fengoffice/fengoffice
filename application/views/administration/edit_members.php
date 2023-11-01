@@ -32,7 +32,7 @@
 				foreach ($dim_members as $mem) {
 					$alt = !$alt;
 					$indent = 16 * $mem->getDepth();
-					$ot = ObjectTypes::findById($mem->getObjectTypeId());
+					$ot = ObjectTypes::instance()->findById($mem->getObjectTypeId());
 					$ot_name = $ot instanceof ObjectType ? lang($ot->getName()) : $mem->getName();
 ?>
 						<div style="margin-left:<?php echo $indent?>px;width:<?php echo 800 - $indent?>px;" id="abm-members-item-container-<?php echo $mem->getId() ?>"

@@ -6,15 +6,15 @@
     $acts = array();
     $acts['data'] = array();
     foreach($activities as $activity){
-    	$user = Contacts::findById($activity->getCreatedById());
+    	$user = Contacts::instance()->findById($activity->getCreatedById());
     	$member_deleted = false;
     	if($activity->getMemberId()){
-    		$object = Members::findById($activity->getMemberId());
+    		$object = Members::instance()->findById($activity->getMemberId());
     		$key = $activity->getRelObjectId(). "-" .$activity->getId() . "-" . $activity->getCreatedById();
     	}else{
     		$key = $activity->getRelObjectId(). "-" . $activity->getCreatedById();
 	    	if ($activity->getLogData() == 'member deleted') {
-	        	$object = Members::findById($activity->getRelObjectId());
+	        	$object = Members::instance()->findById($activity->getRelObjectId());
 	        	$member_deleted = true;
 	        } else {
 	        	$object = Objects::findObject($activity->getRelObjectId());

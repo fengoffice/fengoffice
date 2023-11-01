@@ -69,7 +69,7 @@ abstract class MultipleInstanceManager
      * @param  string|null  $name
      * @return mixed
      */
-    public function instance($name = null)
+    public static function instance($name = null)
     {
         $name = $name ?: $this->getDefaultInstance();
 

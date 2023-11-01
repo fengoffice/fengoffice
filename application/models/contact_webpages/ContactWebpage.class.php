@@ -15,7 +15,7 @@
     * @return WebpageType
     */
     function getWebpageType() {
-      return WebpageTypes::findById($this->getWebTypeId());
+      return WebpageTypes::instance()->findById($this->getWebTypeId());
     } // getWebpageType
     
     /**
@@ -26,7 +26,7 @@
     * @return Contact
     */
     function getContact() {
-      return Contacts::findById($this->getContactId());
+      return Contacts::instance()->findById($this->getContactId());
     } // getContact
     
     /**

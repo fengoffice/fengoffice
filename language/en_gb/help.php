@@ -13,7 +13,7 @@ return array(
  	'chelp messages widget' => 'This widget shows the latest notes',
  	
  	'chelp active tasks panel' => 'All your active tasks are displayed below, regardless of the current workspace. This panel also offers the possibility to pause the task, continue it and set it as complete when finished.',
-	'chelp general timeslots panel' => 'This panel displays timeslots directly assigned to a workspace. ',
+	'chelp general timeslots panel' => 'This panel displays time entries directly assigned to a workspace. ',
 
 	'chelp personal account' => 'This is your personal account.<br/>In this view you can update your profile and picture, change your password and edit your personal preferences.',
 	'chelp user account' => 'This is a user account.',

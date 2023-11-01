@@ -133,8 +133,8 @@ return array(
     'view project' => 'View workspace',
     'view tag' => 'View tag',
     'view template' => 'View template',
-    'view timeslot' => 'View timeslot',
-	'view timeslots' => 'View timeslots',
+    'view timeslot' => 'View time entry',
+	'view timeslots' => 'View time entries',
     'view user' => 'View user',	
 
 	'mails_in_outbox reminder' => 'Mails without sending',

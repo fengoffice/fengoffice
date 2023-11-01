@@ -27,8 +27,8 @@ use InvalidArgumentException;
  * @method static        resolveCarbon($date)
  * @method static        copy()
  * @method static        nowWithSameTz()
- * @method static static yesterday($timezone = null)
- * @method static static tomorrow($timezone = null)
+ * @method static yesterday($timezone = null)
+ * @method static tomorrow($timezone = null)
  */
 trait Comparison
 {

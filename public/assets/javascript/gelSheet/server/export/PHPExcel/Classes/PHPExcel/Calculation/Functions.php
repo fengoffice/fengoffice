@@ -502,7 +502,7 @@ class PHPExcel_Calculation_Functions {
 					$mArgs[] = $arg;
 				}
 			}
-			$count = self::COUNT($mArgs);
+			$count = self::instance()->count($mArgs);
 			$n = floor(--$n);
 			if (($n < 0) || ($n >= $count) || ($count == 0)) {
 				return self::$_errorCodes['num'];
@@ -604,7 +604,7 @@ class PHPExcel_Calculation_Functions {
 					$mArgs[] = $arg;
 				}
 			}
-			$count = self::COUNT($mArgs);
+			$count = self::instance()->count($mArgs);
 			$n = floor(--$n);
 			if (($n < 0) || ($n >= $count) || ($count == 0)) {
 				return self::$_errorCodes['num'];
@@ -644,7 +644,7 @@ class PHPExcel_Calculation_Functions {
 			$mValueCount = count($mArgs);
 			if ($mValueCount > 0) {
 				sort($mArgs);
-				$count = self::COUNT($mArgs);
+				$count = self::instance()->count($mArgs);
 				$index = $entry * ($count-1);
 				$iBase = floor($index);
 				if ($index == $iBase) {
@@ -1036,7 +1036,7 @@ class PHPExcel_Calculation_Functions {
 		$aMean = self::PRODUCT(func_get_args());
 		if (is_numeric($aMean) && ($aMean > 0)) {
 			$aArgs = self::flattenArray(func_get_args());
-			$aCount = self::COUNT($aArgs) ;
+			$aCount = self::instance()->count($aArgs) ;
 			if (self::MIN($aArgs) > 0) {
 				return pow($aMean, (1 / $aCount));
 			}
@@ -1114,7 +1114,7 @@ class PHPExcel_Calculation_Functions {
 					$mArgs[] = $arg;
 				}
 			}
-			$discard = floor(self::COUNT($mArgs) * $percent / 2);
+			$discard = floor(self::instance()->count($mArgs) * $percent / 2);
 			sort($mArgs);
 			for ($i=0; $i < $discard; ++$i) {
 				array_pop($mArgs);
@@ -1456,7 +1456,7 @@ class PHPExcel_Calculation_Functions {
 					return self::AVERAGE($aArgs);
 					break;
 				case 2	:
-					return self::COUNT($aArgs);
+					return self::instance()->count($aArgs);
 					break;
 				case 3	:
 					return self::COUNTA($aArgs);

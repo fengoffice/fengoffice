@@ -210,7 +210,7 @@
     *
     * @return DimensionOptions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'DimensionOptions')) {
         $instance = new DimensionOptions();

@@ -69,7 +69,7 @@ class TemplateMilestones extends BaseTemplateMilestones {
 		if ($archived) $archived_cond = "`archived_on` <> 0 AND ";
 		else $archived_cond = "`archived_on` = 0 AND ";
 		
-		return self::findAll(array(
+		return self::instance()->findAll(array(
         	'conditions' => array('`is_template` = false AND (`assigned_to_contact_id` = ? OR `assigned_to_contact_id` = ? ) AND ' . $archived_cond . ' AND `completed_on` = ?', $contact->getId(), $contact->getCompanyId(), EMPTY_DATETIME),
         	'order' => '`due_date`'
         )); // findAll

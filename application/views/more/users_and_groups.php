@@ -1,6 +1,6 @@
 <?php
 	$genid = gen_id();
-	$exe_user_type = PermissionGroups::findOne(array('conditions' => "type='roles' AND name='Executive'"))->getId();
+	$exe_user_type = PermissionGroups::instance()->findOne(array('conditions' => "type='roles' AND name='Executive'"))->getId();
 ?>
 
 <div class="user-groups-container" style="height:auto;">
@@ -26,7 +26,7 @@
 $groups = PermissionGroups::getNonRolePermissionGroups();
 $gr_lengths = array();
 foreach ($groups as $gr) {
-	$count = ContactPermissionGroups::count("`permission_group_id` = ".$gr->getId());
+	$count = ContactPermissionGroups::instance()->count("`permission_group_id` = ".$gr->getId());
 	$gr_lengths[$gr->getId()] = $count;
 }
 ?>

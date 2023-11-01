@@ -4,11 +4,11 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 
 
 	static function countLogDetails($application_log_id) {
-		return self::count("application_log_id = ".DB::escape($application_log_id));
+		return self::instance()->count("application_log_id = ".DB::escape($application_log_id));
 	}
 
 	static function getLogDetails($application_log_id) {
-		return self::findAll(array("conditions" => array("application_log_id = ?", $application_log_id)));
+		return self::instance()->findAll(array("conditions" => array("application_log_id = ?", $application_log_id)));
 	}
 
 	
@@ -199,10 +199,10 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 	static function buildLogDetailsHtml(ApplicationLog $log, $email_type) {
 		
 		$html = '';
-		$all_details = self::findAll(array('conditions' => 'application_log_id = '.$log->getId()));
+		$all_details = self::instance()->findAll(array('conditions' => 'application_log_id = '.$log->getId()));
 		$object = Objects::findObject($log->getRelObjectId());
 		$manager = $object->manager();
-		$object_type = ObjectTypes::findByID($object->getObjectTypeId());
+		$object_type = ObjectTypes::instance()->findById($object->getObjectTypeId());
 		$log_user_name = $log->getTakenByDisplayName();
 		
 		$logs_html = '';
@@ -224,8 +224,8 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 					if($email_type == '' || in_array($email_type, $config_options)){
 						$newId = $detail->getNewValue();
 						$oldId = $detail->getOldValue();
-						$newContactObj = Contacts::findOne(array('conditions' => array('object_id = ?', $newId)));
-						$oldContactObj = Contacts::findOne(array('conditions' => array('object_id = ?', $oldId)));
+						$newContactObj = Contacts::instance()->findOne(array('conditions' => array('object_id = ?', $newId)));
+						$oldContactObj = Contacts::instance()->findOne(array('conditions' => array('object_id = ?', $oldId)));
 						$newContact = $newContactObj instanceof Contact ? $newContactObj->getDisplayName() : '';
 						$oldContact = $oldContactObj instanceof Contact ? $oldContactObj->getDisplayName() : '';
 						if (isset($oldContact)){
@@ -276,7 +276,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 
 						if (count($added_ids) > 0) {
 							$member_names = '';
-							$members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$added_ids).')'));
+							$members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$added_ids).')'));
 							foreach ($members as $m) {
 								$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
 							}
@@ -284,7 +284,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 						}
 						if (count($removed_ids) > 0) {
 							$member_names = '';
-							$members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$removed_ids).')'));
+							$members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$removed_ids).')'));
 							foreach ($members as $m) {
 								$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
 							}
@@ -327,7 +327,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 
 					if (count($added_ids) > 0) {
 						$object_names = '';
-						$objects = Objects::findAll(array('conditions' => 'id IN ('.implode(',',$added_ids).')'));
+						$objects = Objects::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$added_ids).')'));
 						foreach ($objects as $o) {
 							$object_names .= ($object_names == '' ? '' : ', ') . $o->getName();
 						}
@@ -335,7 +335,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 					}
 					if (count($removed_ids) > 0) {
 						$object_names = '';
-						$objects = Objects::findAll(array('conditions' => 'id IN ('.implode(',',$removed_ids).')'));
+						$objects = Objects::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$removed_ids).')'));
 						foreach ($objects as $o) {
 							$object_names .= ($object_names == '' ? '' : ', ') . $o->getName();
 						}
@@ -356,7 +356,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 					
 					if (str_starts_with($detail->getProperty(), "cp_")) {
 						$cp_id = str_replace("cp_", "", $detail->getProperty());
-						$cp = CustomProperties::findById($cp_id);
+						$cp = CustomProperties::instance()->findById($cp_id);
 						
 						if($cp instanceof CustomProperty) {
 							$old_value = $detail->getOldValue();

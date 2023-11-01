@@ -32,7 +32,7 @@ class BillingController extends ApplicationController {
 	}
 	
 	function list_all() {
-		tpl_assign('billing_categories', BillingCategories::findAll());
+		tpl_assign('billing_categories', BillingCategories::instance()->findAll());
 	}
 
 	function add() {
@@ -82,7 +82,7 @@ class BillingController extends ApplicationController {
 	function edit() {
 		$this->setTemplate('add');
 		
-		$billingCategory = BillingCategories::findById(get_id());
+		$billingCategory = BillingCategories::instance()->findById(get_id());
 		if(!($billingCategory instanceof BillingCategory)) {
 			flash_error(lang('billing category dnx'));
 			ajx_current("empty");
@@ -133,7 +133,7 @@ class BillingController extends ApplicationController {
 	function delete() {
 		ajx_current("empty");
 		
-		$billingCategory = BillingCategories::findById(get_id());
+		$billingCategory = BillingCategories::instance()->findById(get_id());
 		if(!($billingCategory instanceof BillingCategory)) {
 			flash_error(lang('billing category dnx'));
 			return;
@@ -167,7 +167,7 @@ class BillingController extends ApplicationController {
 			try {
 				DB::beginWork();
 				foreach ($users_data as $user_id => $user_billing){
-					$user = Contacts::findById($user_id);
+					$user = Contacts::instance()->findById($user_id);
 					if ($user_billing != $user->getDefaultBillingId()){
 						$user->setDefaultBillingId($user_billing);
 						$user->save();
@@ -184,7 +184,7 @@ class BillingController extends ApplicationController {
 		}
 		
 		tpl_assign('users_by_company', Contacts::getGroupedByCompany(false));
-		tpl_assign('billing_categories', BillingCategories::findAll());
+		tpl_assign('billing_categories', BillingCategories::instance()->findAll());
 	}
 	
 	

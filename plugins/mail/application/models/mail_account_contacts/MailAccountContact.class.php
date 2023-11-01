@@ -8,11 +8,11 @@
 class MailAccountContact extends BaseMailAccountContact {
 
 	function getContact() {
-		return Contacts::findById($this->getContactId());
+		return Contacts::instance()->findById($this->getContactId());
 	}
 	
 	function getAccount() {
-		return MailAccounts::findById($this->getAccountId());
+		return MailAccounts::instance()->findById($this->getAccountId());
 	}
 
 }

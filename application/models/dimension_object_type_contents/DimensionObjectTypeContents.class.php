@@ -33,7 +33,7 @@
     
   	
   	static function getDimensionObjectTypesforObject($object_type_id){
-  		return self::findAll(array('conditions' => "`content_object_type_id` = '$object_type_id'"));
+  		return self::instance()->findAll(array('conditions' => "`content_object_type_id` = '$object_type_id'"));
   	}
   	
   	

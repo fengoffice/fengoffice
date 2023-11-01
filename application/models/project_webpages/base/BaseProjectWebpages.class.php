@@ -253,7 +253,7 @@ abstract class BaseProjectWebpages extends ContentDataObjects {
 	 *
 	 * @return ProjectWebpages
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ProjectWebpages')) {
 			$instance = new ProjectWebpages();

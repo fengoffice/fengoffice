@@ -89,7 +89,7 @@ class COTemplate extends BaseCOTemplate {
 	// ---------------------------------------------------
 
 	
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return 1 ;
 		//FIXME: return can_manage_templates($user) && can_add($user, $context, COTemplates::instance()->getObjectTypeId());
 	}

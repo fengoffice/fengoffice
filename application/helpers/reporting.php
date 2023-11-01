@@ -62,7 +62,7 @@ function report_values_to_arrays_plain($results, $report, $with_header = true) {
 	$rows = array_var($results, 'rows');
 	$pagination = array_var($results, 'pagination');
 	
-	$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+	$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	
 	$headers = array();
 	if ($with_header) {
@@ -151,7 +151,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 	$rows = array_var($results, 'rows');
 	$pagination = array_var($results, 'pagination');
 	
-	$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+	$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	$external_columns = $report->getReportExternalColumns();
 	
 	?>
@@ -171,7 +171,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				$sorted = true;
 				$asc = !$last_order_by_asc;
 			}
-			$type = array_var($columns['types'], $col);
+			$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;
 			$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
 			<th class="<?php echo $numeric_type ? 'bold right' : 'bold'?>">
@@ -217,10 +217,8 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 			foreach ($columns['order'] as $col) {
 				if ($col == 'object_type_id') continue;
 
-
-
 				$value = array_var($row, $col);
-				$type = array_var($columns['types'], $col);
+				$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;  // *** LC 2023-09-04 
                 $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
@@ -528,7 +526,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 					$tmp_gd_id = $gd['id'];
 					$exploded = explode('_', $tmp_gd_id);
 					$gd_id = end($exploded);
-					$mem = Members::findById($gd_id);
+					$mem = Members::instance()->findById($gd_id);
 					if ($mem instanceof Member) {
 						$mems = array($mem);
 						build_member_list_text_to_show_in_trees($mems);
@@ -558,7 +556,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 			$rows = array_var($results, 'rows');
 			$pagination = array_var($results, 'pagination');
 			$tz_offset = array_var($row, 'tz_offset');
-			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 
 			if (!$report->getColumnValue("hide_group_details")) {
 
@@ -680,7 +678,7 @@ function get_cp_contact_name($gb_keys, $index, $row, &$cp_contact_cache) {
 	if (!isset($cp_contact_cache[$cp_id])) $cp_contact_cache[$cp_id] = array();
 	
 	if (!isset($cp_contact_cache[$cp_id][$cp_contact_id])) {
-		$cp_contact = Contacts::findById($cp_contact_id);
+		$cp_contact = Contacts::instance()->findById($cp_contact_id);
 		if ($cp_contact instanceof Contact) {
 			$cp_contact_cache[$cp_id][$cp_contact_id] = $cp_contact->getObjectName();
 		}
@@ -729,7 +727,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					
 				} else if (str_starts_with($gbk['k'], '_group_id_cp_')) {
 					$cp_id = str_replace('_group_id_cp_', '', $gbk['k']);
-					$cp = CustomProperties::findById($cp_id);
+					$cp = CustomProperties::instance()->findById($cp_id);
 					if ($cp instanceof CustomProperty && ($cp->getType()=='contact' || $cp->getType()=='user')) {
 						$gbk['cp_contact'] = $cp_id;
 					}
@@ -1029,7 +1027,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 		
 		Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[0]), $v0);
 		if (isset($gb_keys[0]['is_date']) && $gb_keys[0]['is_date'] && $formatDate) {
-			if (preg_match($mysql_date_format_re, $v2['name'])) {
+			if ( isset($v2['name']) && preg_match($mysql_date_format_re, $v2['name'])) {
 				$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
 			} else {
 				try {
@@ -1053,7 +1051,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 
 
 function build_report_conditions_html($report_id, $parameters=array(), $conditions=null, $disabled_params=array()) {
-	$report = Reports::findById($report_id);
+	$report = Reports::instance()->findById($report_id);
 	if (!$report instanceof Report) return "";
 	
 	if (is_null($conditions)) {
@@ -1066,7 +1064,7 @@ function build_report_conditions_html($report_id, $parameters=array(), $conditio
 
 function build_report_conditions_html_main($report, $parameters=array(), $conditions=array(), $disabled_params=array()) {
 
-	$object_type = ObjectTypes::findById($report->getReportObjectTypeId());
+	$object_type = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	
 	$rc = new ReportingController();
 	$types = $rc->get_report_column_types($report->getId());
@@ -1078,8 +1076,8 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 		if ($conditions_per_block < 4) $conditions_per_block = 4;
 		$conditions_count = 0;
 		
-		$disabled_param_ids = isset($disabled_params) ? array_keys($disabled_params) : null;
-		if (!is_array($disabled_param_ids)) $disabled_param_ids = array();
+		$disabled_param_ids = isset($disabled_params) && is_array($disabled_params) ? array_keys($disabled_params) : null;
+		if (!is_array($disabled_param_ids) ) $disabled_param_ids = array();
 		
 	    $date_format_tip = date_format_tip(user_config_option('date_format'));
 	    $model = $object_type instanceof ObjectType ? $object_type->getHandlerClass() : "Objects";
@@ -1419,9 +1417,9 @@ function build_report_conditions_sql($parameters) {
 				
 				$possible_columns = $model_instance->getColumns();
 				if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
-					$possible_columns = array_merge($possible_columns, Members::getColumns());
+					$possible_columns = array_merge($possible_columns, Members::instance()->getColumns());
 				} else {
-					$possible_columns = array_merge($possible_columns, Objects::getColumns());
+					$possible_columns = array_merge($possible_columns, Objects::instance()->getColumns());
 				}
 				
 				if (in_array($condField->getFieldName(), $possible_columns)) {
@@ -1432,14 +1430,14 @@ function build_report_conditions_sql($parameters) {
 						$field_name = $condField->getFieldName();
 							
 						if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
-							if (in_array($condField->getFieldName(), Members::getColumns())) {
+							if (in_array($condField->getFieldName(), Members::instance()->getColumns())) {
 								$field_name = 'm`.`'.$condField->getFieldName();
 				
-							} else  if (in_array($condField->getFieldName(), Objects::getColumns())) {
+							} else  if (in_array($condField->getFieldName(), Objects::instance()->getColumns())) {
 								$field_name = 'o`.`'.$condField->getFieldName();
 							}
 						} else {
-							if (in_array($condField->getFieldName(), Objects::getColumns())) {
+							if (in_array($condField->getFieldName(), Objects::instance()->getColumns())) {
 								$field_name = 'o`.`'.$condField->getFieldName();
 							} else {
 								$field_name = 'e`.`'.$condField->getFieldName();
@@ -1656,7 +1654,7 @@ function build_report_conditions_sql($parameters) {
 
 
 function build_sql_date_string_using_column_type($value = null, $object_type_id = null, $column = null) {
-	$ot = ObjectTypes::findById($object_type_id);
+	$ot = ObjectTypes::instance()->findById($object_type_id);
 	if (!$ot) return '';
 
 	$ot_class = $ot->getHandlerClass();
@@ -1683,10 +1681,10 @@ function build_sql_date_string_using_column_type($value = null, $object_type_id 
 
 function pickDateOrDatetimeValueType($row, $report){
 	if($row['object_type_id'] == ObjectTypes::findByName('task')->getId()){
-		if(array_var($row, 'start_date') && !ProjectTasks::findById($row['id'])->getUseStartTime()){
+		if(array_var($row, 'start_date') && !ProjectTasks::instance()->findById($row['id'])->getUseStartTime()){
 			return DATA_TYPE_DATE;
 		}
-		if(array_var($row, 'due_date') && !ProjectTasks::findById($row['id'])->getUseDueTime()){
+		if(array_var($row, 'due_date') && !ProjectTasks::instance()->findById($row['id'])->getUseDueTime()){
 			return DATA_TYPE_DATE;
 		}
 	}

@@ -232,7 +232,7 @@
     *
     * @return BillingCategories 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'BillingCategories')) {
         $instance = new BillingCategories();

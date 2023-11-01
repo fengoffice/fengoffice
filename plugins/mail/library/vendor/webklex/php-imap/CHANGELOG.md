@@ -474,7 +474,7 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 - Missing variable check added to prevent exception while parsing a part content-type [webklex/laravel-imap #356](https://github.com/Webklex/laravel-imap/issues/356)
 - Mixed message header attribute `in_reply_to` "unified" to be always an array  #26
 - Potential message moving / copying problem fixed #29
-- Move messages by using `Protocol::moveMessage()` instead of `Protocol::copyMessage()` and `Message::delete()` #29
+- Move messages by using `Protocol::moveMessage()` instead of `Protocol::copyMessage()` and `Message::instance()->delete()` #29
 
 ### Added
 - `Protocol::moveMessage()` method added #29
@@ -549,7 +549,7 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [2.1.7] - 2020-10-03
 ### Fixed
-- Fixed `Query::paginate()` (#13 #14 by [@Max13](https://github.com/Max13))
+- Fixed `Query::instance()->paginate()` (#13 #14 by [@Max13](https://github.com/Max13))
 
 ### Affected Classes
 - [Query::class](src/Query/Query.php)
@@ -704,7 +704,7 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 - Message::getHTMLBody($callback) extended
 - Masks added (take look at the examples for more information on masks)
 - More examples added
-- Query::paginate() method added
+- Query::instance()->paginate() method added
 - Imap client timeout can be modified and read #186
 - Decoder config options added #175
 - Message search criteria "NOT" added #181

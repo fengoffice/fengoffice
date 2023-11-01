@@ -19,7 +19,7 @@ class Reports extends BaseReports {
      * @return Report
      */
     static function getReport($id) {
-        return self::findById($id);
+        return self::instance()->findById($id);
     }
     /**
      * Return all reports for an object type
@@ -28,7 +28,7 @@ class Reports extends BaseReports {
      * @return array
      */
     static function getAllReportsForObjectType($object_type) {
-        return self::findAll(array(
+        return self::instance()->findAll(array(
                     'conditions' => array("`object_type_id` = ?", $object_type)
         ));
     }
@@ -41,7 +41,7 @@ class Reports extends BaseReports {
      * @return array
      */
     static function getAllReports() {
-        return self::findAll();
+        return self::instance()->findAll();
     }
 
 //  getAllReports
@@ -52,7 +52,7 @@ class Reports extends BaseReports {
      * @return array
      */
     static function getAllReportsByObjectType() {
-        $ignore_context_reports = Reports::findAll(array("conditions" => "ignore_context = 1"));
+        $ignore_context_reports = Reports::instance()->findAll(array("conditions" => "ignore_context = 1"));
 
         $reports_result = Reports::instance()->listing();
         $reports = $reports_result->objects;
@@ -198,10 +198,9 @@ class Reports extends BaseReports {
         }
         $results = array();
         $report = self::getReport($id);
-
         $show_archived = false;
         if ($report instanceof Report) {
-            $ot = ObjectTypes::findById($report->getReportObjectTypeId());
+            $ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
             $table = $ot->getTableName();
 
             $contact_ot = ObjectTypes::findByName('contact');
@@ -388,7 +387,8 @@ class Reports extends BaseReports {
                 'select_columns' => $select_columns,
                 'join_params' => $join_params,
                 'join_str' => $join_str,
-                'more_select_columns' => $more_select_columns
+                'more_select_columns' => isset($more_select_columns) ? $more_select_columns : "",
+                // 'more_select_columns' => $more_select_columns
             );
 
             $results = null;
@@ -563,7 +563,7 @@ class Reports extends BaseReports {
                                     $value = $object->getColumnValue($field);
                                     // if it is a task column
                                     if ($field == 'name' || in_array($field, ProjectTasks::instance()->getColumns()) || in_array($field, ProjectTasks::instance()->getCalculatedColumns())) {
-                                        $task = ProjectTasks::findById($object->getRelObjectId());
+                                        $task = ProjectTasks::instance()->findById($object->getRelObjectId());
                                         // if task exists
                                         if ($task instanceof ProjectTask) {
                                             $value = $task->getColumnValue($field);
@@ -597,14 +597,12 @@ class Reports extends BaseReports {
 
                                 $column_value = $object->getColumnValue($field);
 
-                                if ($field == 'currency_id' && $currency = Currencies::getCurrency($column_value)) {
+                                if ($field == 'currency_id' && $currency = Currencies::instance()->getCurrency($column_value)) {
                                     $value = $currency->getShortName();
                                 } else {
                                     $value = $column_value;
                                 }                                
-                                
                             }
-
                             if ($value instanceof DateTimeValue) {
 
                                 // check if the value for this object in the same column has already been processed
@@ -646,6 +644,7 @@ class Reports extends BaseReports {
                             }
                             if (in_array($field, $managerInstance->getExternalColumns())) {
 
+                                $valueOld = $value;
                                 if ($object instanceof Timeslot && $field == 'time') {
 
                                     $value = $object->getEndTime()->getTimestamp() - $object->getStartTime()->getTimestamp() - $object->getSubtract();
@@ -675,13 +674,12 @@ class Reports extends BaseReports {
 
                             Hook::fire('get_value_columns_to_body_report', array('field' => $field,'object'=>$object),$value);
                             Hook::fire('get_taxes_value_columns_to_body_report', array('field' => $field,'object'=>$object),$value);
-
+ 
                             Hook::fire('custom_reports_override_column_format', array('field' => $field, 'manager' => $managerInstance, 'object' => $object,'report'=>$report), $value);
                             $row_values[$field] = $value;
-
                             if ($ot->getHandlerClass() == 'Contacts') {
                                 if ($managerInstance instanceof Contacts) {
-                                    $contact = Contacts::findOne(array("conditions" => "object_id = " . $object->getId()));
+                                    $contact = Contacts::instance()->findOne(array("conditions" => "object_id = " . $object->getId()));
                                     if ($field == "email_address") {
                                         $row_values[$field] = $contact->getEmailAddress();
                                     }
@@ -735,7 +733,7 @@ class Reports extends BaseReports {
                                 }
                             } else if ($ot->getHandlerClass() == 'MailContents') {
                                 if (in_array($field, array('to', 'cc', 'bcc', 'body_plain', 'body_html'))) {
-                                    $mail_data = MailDatas::findById($object->getId());
+                                    $mail_data = MailDatas::instance()->findById($object->getId());
                                     $row_values[$field] = $mail_data->getColumnValue($field);
                                     if ($field == "body_html") {
                                         if (class_exists("DOMDocument")) {
@@ -754,7 +752,6 @@ class Reports extends BaseReports {
                                     }
                                 }
                             }
-
                             if (!$to_print && $field == "name") {
                                 $row_values[$field] = '<a target="new-' . $object->getId() . '" href="' . $object->getViewUrl() . '">' . $value . '</a>';
                             }
@@ -769,11 +766,11 @@ class Reports extends BaseReports {
                         if ($cp instanceof CustomProperty) { /* @var $cp CustomProperty */
 
                         	if ($ot->getName() == 'timeslot' && $cp->getObjectTypeId() == $contact_ot->getId()) {
-                        		$object_contact = Contacts::findById($object->getContactId());
+                        		$object_contact = Contacts::instance()->findById($object->getContactId());
                         		$row_values[$cp->getId()] = get_custom_property_value_for_listing($cp, $object_contact);
                         		
                         	} else if ($ot->getName() == 'timeslot' && $cp->getObjectTypeId() != Timeslots::instance()->getObjectTypeId()) {
-                        		$cp_ot = ObjectTypes::findById($cp->getObjectTypeId());
+                        		$cp_ot = ObjectTypes::instance()->findById($cp->getObjectTypeId());
                         		if ($cp_ot instanceof ObjectType && $cp_ot->getType() == 'dimension_object') {
                         			$obj_members = $object->getMembers();
                         			$member = null;
@@ -826,7 +823,7 @@ class Reports extends BaseReports {
 
 //  executeReport
 
-    function isReportColumnEmail($col) {
+    static function isReportColumnEmail($col) {
         return preg_match(EMAIL_FORMAT, $col);
     }
 
@@ -909,15 +906,15 @@ class Reports extends BaseReports {
     function getExternalColumnValue($field, $id, $manager = null, $object = null) {
         $value = '';
         if ($field == 'user_id' || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'assigned_by_id' || $field == 'completed_by_id' || $field == 'approved_by_id') {
-            $contact = Contacts::findById($id);
+            $contact = Contacts::instance()->findById($id);
             if ($contact instanceof Contact)
                 $value = $contact->getObjectName();
         } else if ($field == 'milestone_id') {
-            $milestone = ProjectMilestones::findById($id);
+            $milestone = ProjectMilestones::instance()->findById($id);
             if ($milestone instanceof ProjectMilestone)
                 $value = $milestone->getObjectName();
         } else if ($field == 'company_id') {
-            $company = Contacts::findById($id);
+            $company = Contacts::instance()->findById($id);
             if ($company instanceof Contact && $company->getIsCompany())
                 $value = $company->getObjectName();
         } else if ($field == 'rel_object_id') {
@@ -926,9 +923,7 @@ class Reports extends BaseReports {
         } else if ($manager instanceof ContentDataObjects) {
             $value = $manager->getExternalColumnValue($field, $id, $manager, $object);
         }
-
         Hook::fire('custom_reports_get_external_column_value', array('field' => $field, 'external_id' => $id, 'manager' => $manager, 'object' => $object), $value);
-
         return $value;
     }
 

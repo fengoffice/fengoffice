@@ -206,7 +206,7 @@ abstract class BaseCOTemplates extends ContentDataObjects {
 	 *
 	 * @return COTemplates
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'COTemplates')) {
 			$instance = new COTemplates();

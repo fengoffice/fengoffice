@@ -233,7 +233,7 @@ abstract class BaseQueuedEmails extends DataManager {
 	 *
 	 * @return QueuedEmails
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'QueuedEmails')) {
 			$instance = new QueuedEmails();

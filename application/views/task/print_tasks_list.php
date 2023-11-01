@@ -42,7 +42,7 @@
 		    <div class='task-row-avatar'>
 		        <span><?php 
 		        if (array_var($task, 'assignedById')) {
-					$assignedBy = Contacts::findById(array_var($task, 'assignedById'));
+					$assignedBy = Contacts::instance()->findById(array_var($task, 'assignedById'));
 					if ($assignedBy instanceof Contact) {
 		        		echo $assignedBy->getObjectName();
 		        	}

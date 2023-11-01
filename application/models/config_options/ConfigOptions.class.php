@@ -11,7 +11,7 @@
   	protected $config_options = array();
   	
   	function loadConfigOptionsCache(){
-  		$options = self::findAll();
+  		$options = self::instance()->findAll();
   		foreach ($options as $option)
   			$this->config_options[$option->getName()] = $option; 
   	}
@@ -36,7 +36,7 @@
         array('`category_name` = ?', $category->getName()) : 
         array('`category_name` = ? AND `is_system` = ?', $category->getName(), false);
         
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => $conditions,
         'order' => '`option_order`'
       )); // findAll
@@ -54,7 +54,7 @@
         array('`category_name` = ?', $category->getName()) : 
         array('`category_name` = ? AND `is_system` = ?', $category->getName(), false);
         
-      return self::count($conditions);
+      return self::instance()->count($conditions);
     } // countOptionsByCategory
     
     /**
@@ -85,7 +85,7 @@
     * @return ConfigOption
     */
     static function getByName($name) {
-      return self::findOne(array(
+      return self::instance()->findOne(array(
         'conditions' => array('`name` = ?', $name)
       )); // if
     } // getByName

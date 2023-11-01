@@ -23,7 +23,7 @@ $alt = " odd";
 	<?php if(isset($config_categories) && is_array($config_categories) && count($config_categories)) { ?>
 		<?php foreach($config_categories as $config_category) { ?>
 				<?php 
-				$sub_config_categories = ContactConfigCategories::findAll(array('conditions' => "located_under=" . $config_category->getId()));
+				$sub_config_categories = ContactConfigCategories::instance()->findAll(array('conditions' => "located_under=" . $config_category->getId()));
 				if(!$config_category->isEmpty() || count($sub_config_categories) > 0){
 					$url = count($sub_config_categories) > 0 ? $config_category->getSubCategories() : $config_category->getUpdateUrl();
 					?>

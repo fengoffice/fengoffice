@@ -58,9 +58,9 @@ $cant = 0;
 $count = 0;
 $processed_objects = array();
 
-$user = Contacts::findOne(array("conditions"=>"user_type = (SELECT id FROM ".TABLE_PREFIX."permission_groups WHERE name='Super Administrator')"));
+$user = Contacts::instance()->findOne(array("conditions"=>"user_type = (SELECT id FROM ".TABLE_PREFIX."permission_groups WHERE name='Super Administrator')"));
 $object_controller = new ObjectController();
-$objects = Objects::findAll(array('id'=>true, "conditions" => "id NOT IN(SELECT object_id FROM ".TABLE_PREFIX."processed_objects)", "order" => "id DESC", "limit" => OBJECT_COUNT));
+$objects = Objects::instance()->findAll(array('id'=>true, "conditions" => "id NOT IN(SELECT object_id FROM ".TABLE_PREFIX."processed_objects)", "order" => "id DESC", "limit" => OBJECT_COUNT));
 
 foreach ($objects as $obj) {
 	$cobj = Objects::findObject($obj);
@@ -111,7 +111,7 @@ foreach ($objects as $obj) {
 			$processed_objects_ids = "(" . implode("),(", $processed_objects) . ")";
 			DB::execute("INSERT INTO ".TABLE_PREFIX."processed_objects (object_id) VALUES $processed_objects_ids ON DUPLICATE KEY UPDATE object_id=object_id");
 			
-			$rest = Objects::count("id NOT IN(SELECT object_id FROM ".TABLE_PREFIX."processed_objects)");
+			$rest = Objects::instance()->count("id NOT IN(SELECT object_id FROM ".TABLE_PREFIX."processed_objects)");
 			$row = DB::executeOne("SELECT COUNT(object_id) AS 'row_count' FROM ".TABLE_PREFIX."processed_objects");
 			$proc_count = $row['row_count'];
 			
@@ -143,7 +143,7 @@ if (count($processed_objects) > 0) {
 
 if (COMPLETE_MIGRATION_OUT != 'console') {
 	
-	$all = Objects::count();
+	$all = Objects::instance()->count();
 	$row = DB::executeOne("SELECT COUNT(object_id) AS 'row_count' FROM ".TABLE_PREFIX."processed_objects");
 	$proc_count = $row['row_count'];
 	

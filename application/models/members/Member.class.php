@@ -54,7 +54,7 @@ class Member extends BaseMember {
 		$child_members = array();
 		$find_options = array('conditions' => '`parent_member_id` = ' . $this->getId() .' '. $extra_conditions);
 		if ($order != null) $find_options['order'] = $order;
-		$members = Members::findAll($find_options);
+		$members = Members::instance()->findAll($find_options);
 		foreach ($members as $mem){
 			$child_members[] = $mem;
 			if ($recursive) {
@@ -174,7 +174,7 @@ class Member extends BaseMember {
 	
 	
 	function satisfiesRestriction($member_id){
-		$restriction_value = MemberRestrictions::findOne(array('conditions' => '`member_id` = ' . 
+		$restriction_value = MemberRestrictions::instance()->findOne(array('conditions' => '`member_id` = ' . 
 							 $member_id. ' AND `restricted_member_id` = '. $this->getId()));
 		if ($restriction_value != null) return true;
 		else return false;
@@ -198,15 +198,15 @@ class Member extends BaseMember {
 		}
 		
 		// delete member restrictions
-		MemberRestrictions::delete(array("`member_id` = ?", $this->getId()));
-		MemberRestrictions::delete(array("`restricted_member_id` = ?", $this->getId()));
+		MemberRestrictions::instance()->delete(array("`member_id` = ?", $this->getId()));
+		MemberRestrictions::instance()->delete(array("`restricted_member_id` = ?", $this->getId()));
 		
 		// delete member properties
-		MemberPropertyMembers::delete(array("`member_id` = ?", $this->getId()));
-		MemberPropertyMembers::delete(array("`property_member_id` = ?", $this->getId()));
+		MemberPropertyMembers::instance()->delete(array("`member_id` = ?", $this->getId()));
+		MemberPropertyMembers::instance()->delete(array("`property_member_id` = ?", $this->getId()));
 		
 		// delete permissions
-		ContactMemberPermissions::delete(array("member_id = ?", $this->getId()));
+		ContactMemberPermissions::instance()->delete(array("member_id = ?", $this->getId()));
 		
 		// delete member objects (if they don't belong to another member)
 		$sql = "SELECT `o`.`object_id` FROM `".ObjectMembers::instance()->getTableName()."` `o` WHERE `o`.`is_optimization`=0 AND `o`.`member_id`=".$this->getId()." AND NOT EXISTS (
@@ -215,13 +215,13 @@ class Member extends BaseMember {
     	$rows = $result->fetchAll();
     	if (!is_null($rows)) {
 	    	foreach ($rows as $row) {
-	    		$obj = Objects::findById(array_var($row, 'object_id'));
+	    		$obj = Objects::instance()->findById(array_var($row, 'object_id'));
 	    		if ($obj instanceof ContentDataObject) $obj->delete();
 	    	}
     	}
     	
     	// clean object_members
-    	ObjectMembers::delete("member_id = ".$this->getId());
+    	ObjectMembers::instance()->delete("member_id = ".$this->getId());
 		
 		// delete object if member is a dimension_object
 		if ($this->getObjectId()) {
@@ -258,7 +258,7 @@ class Member extends BaseMember {
 			foreach ($childs as $child) {
 				// check if child can be put in the parent (or root)
 				if ($this->getParentMemberId() == 0) {
-					$dim_ot = DimensionObjectTypes::findOne(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $this->getDimensionId(), $child->getObjectTypeId())));
+					$dim_ot = DimensionObjectTypes::instance()->findOne(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $this->getDimensionId(), $child->getObjectTypeId())));
 					if (!$dim_ot->getIsRoot()){
 						$error_message = lang("cannot delete member cannot be root");
 						return false;
@@ -365,7 +365,7 @@ class Member extends BaseMember {
 	
 	function getObjectHandlerClass() {
 		if ($otid = $this->getObjectTypeId()){
-			if ($ot = ObjectTypes::findById($otid)) {
+			if ($ot = ObjectTypes::instance()->findById($otid)) {
 				if ($handler = $ot->getHandlerClass() ){
 					return $handler;
 				}
@@ -457,7 +457,7 @@ class Member extends BaseMember {
 			WHERE cmp.permission_group_id IN (".implode(",",$logged_user_pgs).") AND cmp.member_id=".TABLE_PREFIX."members.id)";
 		}
 		
-		$member = Members::findOne(array("conditions" => "`parent_member_id` = ". $this->getId() .' '. $permission_conditions));
+		$member = Members::instance()->findOne(array("conditions" => "`parent_member_id` = ". $this->getId() .' '. $permission_conditions));
 		if($member instanceof Member){
 			return true;
 		}
@@ -765,7 +765,7 @@ class Member extends BaseMember {
 					}
 					$associated_members = array();
 					if (trim($tmp_ids_csv) != "") {
-						$associated_members = Members::findAll(array('conditions' => "id IN ($tmp_ids_csv)"));
+						$associated_members = Members::instance()->findAll(array('conditions' => "id IN ($tmp_ids_csv)"));
 					}
 					$associated_info = array();
 					foreach ($associated_members as $amem) {

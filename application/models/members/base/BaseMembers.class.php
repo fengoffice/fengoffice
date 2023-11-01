@@ -224,7 +224,7 @@
     *
     * @return Members 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Members')) {
         $instance = new Members();

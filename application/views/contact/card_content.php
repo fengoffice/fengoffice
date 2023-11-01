@@ -7,10 +7,10 @@
 	$main_email = $contact->getEmailAddress('personal');
 	$personal_emails = $contact->getContactEmails('personal');
 	
-	$all_phones = ContactTelephones::findAll(array('conditions' => 'contact_id = '.$contact->getId()));
-	$all_addresses = ContactAddresses::findAll(array('conditions' => 'contact_id = '.$contact->getId()));
-	$all_webpages = ContactWebpages::findAll(array('conditions' => 'contact_id = '.$contact->getId()));
-	$all_other_emails = ContactEmails::findAll(array('conditions' => 'is_main=0 AND contact_id = '.$contact->getId()));
+	$all_phones = ContactTelephones::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
+	$all_addresses = ContactAddresses::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
+	$all_webpages = ContactWebpages::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
+	$all_other_emails = ContactEmails::instance()->findAll(array('conditions' => 'is_main=0 AND contact_id = '.$contact->getId()));
 
 	$all_telephone_types = TelephoneTypes::getAllTelephoneTypesInfo();
 	$all_address_types = AddressTypes::getAllAddressTypesInfo();
@@ -69,7 +69,7 @@ $is_alt = true;
 $is_alt_box = true;
 
 if ($main_email) { ?>
-	<div class="info-type" ><?php echo (count($all_other_emails) > 0 ? lang('main email') : lang('email')) ?></div>
+	<div class="info-type" ><?php echo ( ($all_other_emails && count($all_other_emails)) > 0 ? lang('main email') : lang('email')) ?></div>
 	<div class="info-content"><?php 
 		$is_alt = !$is_alt;
 		echo render_mailto($main_email);
@@ -93,11 +93,13 @@ foreach ($all_type_codes as $type_code) {
 	
 	?>
 
+	<?php
+	if ($tel_type) {
+	?>
 	<div id="<?php echo $genid.'_title_'.$tel_type['code'] ?>" class="info-type" ><?php echo $tel_type['name'] ?></div>
-	<div id="<?php echo $genid.'_content_'.$tel_type['code'] ?>" class="info-content"><?php
+	<div id="<?php echo $genid.'_content_'.$tel_type['code'] ?>" class="info-content"><?php 
 	$any_obj = false;
 	
-	if ($tel_type) {
 		foreach ($all_phones as $phone) {
 			if ($phone->getTelephoneTypeId() != $tel_type['id']) continue; 
 			$any_obj = true;
@@ -156,7 +158,7 @@ foreach ($all_type_codes as $type_code) {
 	}
 	
 	
-	if (!$any_obj) { ?>
+	if (!$any_obj && $tel_type) { ?>
 	<script>
 		$('#<?php echo $genid.'_title_'.$tel_type['code'] ?>').remove();
 		$('#<?php echo $genid.'_content_'.$tel_type['code'] ?>').remove();

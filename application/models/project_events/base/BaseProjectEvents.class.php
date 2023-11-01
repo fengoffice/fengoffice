@@ -272,7 +272,7 @@ abstract class BaseProjectEvents extends ContentDataObjects {
 	 *
 	 * @return ProjectEvents
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ProjectEvents')) {
 			$instance = new ProjectEvents();

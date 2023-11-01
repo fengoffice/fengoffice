@@ -8,12 +8,12 @@
 class ContactPermissionGroup extends BaseContactPermissionGroup {
 
 	function getPermissionGroup() {
-		return PermissionGroups::findById($this->getPermissionGroupId());
+		return PermissionGroups::instance()->findById($this->getPermissionGroupId());
 	}
 	
 	
 	function getContactDimensionPermission($dimension_id) {
-		return ContactDimensionPermissions::findOne(array('conditions' => '`dimension_id` = ' . $dimension_id));
+		return ContactDimensionPermissions::instance()->findOne(array('conditions' => '`dimension_id` = ' . $dimension_id));
 	}
 	
 	function getPermissionTypeForDimension($dimension_id) {

@@ -230,7 +230,7 @@
     *
     * @return ObjectReminders 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ObjectReminders')) {
         $instance = new ObjectReminders();

@@ -214,7 +214,7 @@
     *
     * @return ConfigCategories 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactConfigCategories')) {
         $instance = new ContactConfigCategories();

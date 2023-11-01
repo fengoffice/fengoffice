@@ -15,7 +15,7 @@
     * @return array
     */
     static function getRelationsByObject(ApplicationDataObject $object) {
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => array('(`rel_object_id` = ?) or (`object_id` = ?)', 
         		$object->getObjectId(), $object->getObjectId()),
         'order' => '`created_on`'
@@ -68,7 +68,7 @@
     	if (is_array($linked_objs)) {
     	  foreach ($linked_objs as $lo) {
     		if ($lo->canEdit(logged_user())) {
-    			self::delete(array('(`object_id` = ? AND `rel_object_id` = ?) or (`rel_object_id` = ? AND `object_id` = ?)', $object->getId(), $lo->getId(), $object->getId(), $lo->getId()));
+    			self::instance()->delete(array('(`object_id` = ? AND `rel_object_id` = ?) or (`rel_object_id` = ? AND `object_id` = ?)', $object->getId(), $lo->getId(), $object->getId(), $lo->getId()));
     		}
     	  }
     	}
