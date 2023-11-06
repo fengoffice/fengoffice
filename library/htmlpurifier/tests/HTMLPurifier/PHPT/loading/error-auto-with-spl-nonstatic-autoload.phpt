@@ -22,7 +22,7 @@ $obj = new NotStatic();
 spl_autoload_register(array($obj, 'autoload'));
 
 try {
-    require '../library/HTMLPurifier.auto.php';
+    require_once '../library/HTMLPurifier.auto.php';
 } catch (Exception $e) {
     echo 'Caught error gracefully';
     assert('strpos($e->getMessage(), "44144") !== false');

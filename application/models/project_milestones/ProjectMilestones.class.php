@@ -58,7 +58,7 @@ class ProjectMilestones extends BaseProjectMilestones {
 		}
 		
 		$conditions = "trashed_by_id = 0 AND archived_by_id = 0 AND $permission_conditions $member_conditions";
-		$milestones = ProjectMilestones::findAll(array('conditions' => $conditions, 'order' => 'name'));
+		$milestones = ProjectMilestones::instance()->findAll(array('conditions' => $conditions, 'order' => 'name'));
 
 		return $milestones;
 	} // getActiveMilestonesByUser
@@ -74,7 +74,7 @@ class ProjectMilestones extends BaseProjectMilestones {
 		if ($archived) $archived_cond = "`archived_on` <> 0 AND ";
 		else $archived_cond = "`archived_on` = 0 AND ";
 		
-		return self::findAll(array(
+		return self::instance()->findAll(array(
         	'conditions' => array('`is_template` = false AND (`assigned_to_contact_id` = ? OR `assigned_to_contact_id` = ? ) AND ' . $archived_cond . ' AND `completed_on` = ?', $contact->getId(), $contact->getCompanyId(), EMPTY_DATETIME),
         	'order' => '`due_date`'
         )); // findAll
@@ -89,7 +89,7 @@ class ProjectMilestones extends BaseProjectMilestones {
 	 * @param ProjectMilestone $milestone
 	 * @return ProjectMilestone
 	 */
-	function createMilestoneCopy(ProjectMilestone $milestone) {
+	static function createMilestoneCopy(ProjectMilestone $milestone) {
 		$new = new ProjectMilestone();
 		$new->setObjectName($milestone->getObjectName());
 		$new->setDescription($milestone->getDescription());
@@ -104,7 +104,7 @@ class ProjectMilestones extends BaseProjectMilestones {
 	 * @param ProjectMilestone $milestoneFrom
 	 * @param ProjectMilestone $milestoneTo
 	 */
-	function copyTasks(ProjectMilestone $milestoneFrom, ProjectMilestone $milestoneTo, $as_template = false) {
+	static function copyTasks(ProjectMilestone $milestoneFrom, ProjectMilestone $milestoneTo, $as_template = false) {
 		//FIXME 
 		foreach ($milestoneFrom->getTasks($as_template) as $sub) {
 			if ($sub->getParentId() != 0) continue;
@@ -147,7 +147,7 @@ class ProjectMilestones extends BaseProjectMilestones {
 	 * @param DateTimeValue $date_start in user gmt
 	 * @param DateTimeValue $date_end	in user gmt	 * 
 	 */
-	function getRangeMilestones(DateTimeValue $date_start, DateTimeValue $date_end, $archived = false) {
+	static function getRangeMilestones(DateTimeValue $date_start, DateTimeValue $date_end, $archived = false) {
 		
 		$from_date = new DateTimeValue ( $date_start->getTimestamp () );
 		$from_date = $from_date->beginningOfDay ();

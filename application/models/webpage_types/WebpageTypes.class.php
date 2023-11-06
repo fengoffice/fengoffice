@@ -35,14 +35,14 @@
   	
   	
   	static function getTypeId($type){
-  		$webpage_type = WebpageTypes::findOne(array('conditions' => array("`name` = ?",$type)));
+  		$webpage_type = WebpageTypes::instance()->findOne(array('conditions' => array("`name` = ?",$type)));
   		if (!is_null($webpage_type)) return $webpage_type->getId();
   		else return null;
     }
 
 
     static function getAllWebpageTypesInfo($use_id_as_key = false) {
-      $types = WebpageTypes::findAll();
+      $types = WebpageTypes::instance()->findAll();
       $result = array();
       foreach ($types as $type) {
           if ($use_id_as_key){

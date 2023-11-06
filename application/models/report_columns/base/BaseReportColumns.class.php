@@ -211,7 +211,7 @@
     *
     * @return  ReportColumns 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ReportColumns')) {
         $instance = new ReportColumns();

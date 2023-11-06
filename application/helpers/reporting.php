@@ -62,7 +62,7 @@ function report_values_to_arrays_plain($results, $report, $with_header = true) {
 	$rows = array_var($results, 'rows');
 	$pagination = array_var($results, 'pagination');
 	
-	$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+	$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	
 	$headers = array();
 	if ($with_header) {
@@ -151,7 +151,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 	$rows = array_var($results, 'rows');
 	$pagination = array_var($results, 'pagination');
 	
-	$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+	$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	$external_columns = $report->getReportExternalColumns();
 	
 	?>
@@ -171,7 +171,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				$sorted = true;
 				$asc = !$last_order_by_asc;
 			}
-			$type = array_var($columns['types'], $col);
+			$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;
 			$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
 			<th class="<?php echo $numeric_type ? 'bold right' : 'bold'?>">
@@ -217,10 +217,8 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 			foreach ($columns['order'] as $col) {
 				if ($col == 'object_type_id') continue;
 
-
-
 				$value = array_var($row, $col);
-				$type = array_var($columns['types'], $col);
+				$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;  // *** LC 2023-09-04 
                 $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
@@ -528,7 +526,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 					$tmp_gd_id = $gd['id'];
 					$exploded = explode('_', $tmp_gd_id);
 					$gd_id = end($exploded);
-					$mem = Members::findById($gd_id);
+					$mem = Members::instance()->findById($gd_id);
 					if ($mem instanceof Member) {
 						$mems = array($mem);
 						build_member_list_text_to_show_in_trees($mems);
@@ -558,7 +556,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 			$rows = array_var($results, 'rows');
 			$pagination = array_var($results, 'pagination');
 			$tz_offset = array_var($row, 'tz_offset');
-			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 
 			if (!$report->getColumnValue("hide_group_details")) {
 
@@ -680,7 +678,7 @@ function get_cp_contact_name($gb_keys, $index, $row, &$cp_contact_cache) {
 	if (!isset($cp_contact_cache[$cp_id])) $cp_contact_cache[$cp_id] = array();
 	
 	if (!isset($cp_contact_cache[$cp_id][$cp_contact_id])) {
-		$cp_contact = Contacts::findById($cp_contact_id);
+		$cp_contact = Contacts::instance()->findById($cp_contact_id);
 		if ($cp_contact instanceof Contact) {
 			$cp_contact_cache[$cp_id][$cp_contact_id] = $cp_contact->getObjectName();
 		}
@@ -729,7 +727,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					
 				} else if (str_starts_with($gbk['k'], '_group_id_cp_')) {
 					$cp_id = str_replace('_group_id_cp_', '', $gbk['k']);
-					$cp = CustomProperties::findById($cp_id);
+					$cp = CustomProperties::instance()->findById($cp_id);
 					if ($cp instanceof CustomProperty && ($cp->getType()=='contact' || $cp->getType()=='user')) {
 						$gbk['cp_contact'] = $cp_id;
 					}
@@ -749,249 +747,252 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 	$grouped_temp = array();
 	$project_ot = ObjectTypes::findByName('project');
 	$project_ot_id = $project_ot ? $project_ot->getId() : '';
-	
-	foreach ($rows as $row) {
-		if (!empty($row)) {
-			
-			if (isset($gb_keys[0])) {
-				$k0 = $row[$gb_keys[0]['k']];
-				//$n0 = isset($row[$gb_keys[0]['k']."_toorder"]) ? $row[$gb_keys[0]['k']."_toorder"] : $row[$gb_keys[0]['n']].'_'.$row[$gb_keys[0]['k']];
-				if (isset($row[$gb_keys[0]['k']."_toorder"])){
-                    $n0 = $row[$gb_keys[0]['k']."_toorder"];
-                }else{
-                    $n0 = $row[$gb_keys[0]['n']].'_'.$row[$gb_keys[0]['k']];
-                    if ($row[$gb_keys[0]['n']] == ''){
-                        $n0 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
-                    }
-                }
-				if ($gb_keys[0]['is_date'] && $formatDate){
-					//$n0 = gmdate('Y-m-d', strtotime($k0));
-					if (preg_match($mysql_date_format_re, $k0)) {
-						$n0 =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k0),null,0);
+
+	if (isset($rows)) {
+		foreach ($rows as $row) {
+			if (!empty($row)) {
+
+				if (isset($gb_keys[0])) {
+					$k0 = $row[$gb_keys[0]['k']];
+					//$n0 = isset($row[$gb_keys[0]['k']."_toorder"]) ? $row[$gb_keys[0]['k']."_toorder"] : $row[$gb_keys[0]['n']].'_'.$row[$gb_keys[0]['k']];
+					if (isset($row[$gb_keys[0]['k'] . "_toorder"])) {
+						$n0 = $row[$gb_keys[0]['k'] . "_toorder"];
 					} else {
-						$n0 =  format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k0),null,0);
+						$n0 = $row[$gb_keys[0]['n']] . '_' . $row[$gb_keys[0]['k']];
+						if ($row[$gb_keys[0]['n']] == '') {
+							$n0 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+						}
 					}
-                	$row[$gb_keys[0]['n']] = $n0;
-				}
-				else if (array_var($gb_keys[0], 'cp_contact')) {
-					$n0 = get_cp_contact_name($gb_keys, 0, $row, $cp_contact_cache);
-					$row[$gb_keys[0]['n']] = $n0;
-				}
-				else  if (str_starts_with($gb_keys[0]['k'], '_group_id_dim_') && str_ends_with($gb_keys[0]['k'], "_".$project_ot_id)) {
-					$tmp_mem_arr = array(Members::getMemberById($row[$gb_keys[0]['k']]));
-					if (count($tmp_mem_arr) > 0) {
-						build_member_list_text_to_show_in_trees($tmp_mem_arr);
-						$n0 = ($tmp_mem_arr[0] instanceof Member) ? $tmp_mem_arr[0]->getName() : '';
+					if ($gb_keys[0]['is_date'] && $formatDate) {
+						//$n0 = gmdate('Y-m-d', strtotime($k0));
+						if (preg_match($mysql_date_format_re, $k0)) {
+							$n0 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k0), null, 0);
+						} else {
+							$n0 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k0), null, 0);
+						}
 						$row[$gb_keys[0]['n']] = $n0;
+					} else if (array_var($gb_keys[0], 'cp_contact')) {
+						$n0 = get_cp_contact_name($gb_keys, 0, $row, $cp_contact_cache);
+						$row[$gb_keys[0]['n']] = $n0;
+					} else if (str_starts_with($gb_keys[0]['k'], '_group_id_dim_') && str_ends_with($gb_keys[0]['k'], "_" . $project_ot_id)) {
+						$tmp_mem_arr = array(Members::getMemberById($row[$gb_keys[0]['k']]));
+						if (count($tmp_mem_arr) > 0) {
+							build_member_list_text_to_show_in_trees($tmp_mem_arr);
+							$n0 = ($tmp_mem_arr[0] instanceof Member) ? $tmp_mem_arr[0]->getName() : '';
+							$row[$gb_keys[0]['n']] = $n0;
+						}
 					}
-				}
-				
-				if ($n0 == '') $n0 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
-				$n0 = strtoupper($n0);
-				
-				if (!isset($grouped_temp[$n0])) {
-				    if ($gb_keys[0]['is_date'] && $formatDate){
-				    	$date = $n0;
-                        $grouped_temp[$n0] = array(
-                            'id' =>  $date,
-                            'name' => $k0 ? $k0 : lang('unclassified'),
-                            'original_gkey' => $gb_keys[0]['k'],
-                        );
-                        $k0 = $date;
-                    }else{
-						if ($row[$gb_keys[0]['n']]){
-							$member_k0 = null;
-							if (strpos($gb_keys[0]['k'], '_group_id_dim_')) {
-								$member_k0 = Members::getMemberById($k0);
-							}
-							if($member_k0 instanceof Member){
-								$path_k0 = $member_k0->getPath(' - ');
-								$name_k0 = $path_k0 != '' ? $path_k0 . ' - ' . $row[$gb_keys[0]['n']] : $row[$gb_keys[0]['n']];
-								$n0 = $name_k0.'_'.$row[$gb_keys[0]['k']];
-							} else {
-								$name_k0 = $row[$gb_keys[0]['n']];
-							}
+
+					if ($n0 == '')
+						$n0 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+					$n0 = strtoupper($n0);
+
+					if (!isset($grouped_temp[$n0])) {
+						if ($gb_keys[0]['is_date'] && $formatDate) {
+							$date = $n0;
+							$grouped_temp[$n0] = array(
+								'id' => $date,
+								'name' => $k0 ? $k0 : lang('unclassified'),
+								'original_gkey' => $gb_keys[0]['k'],
+							);
+							$k0 = $date;
 						} else {
-							$name_k0 = lang('unclassified');
-						}
-						if ($gb_keys[0]['k'] == "_group_id_fp_is_billable") {
-							if($k0 == 0) {
-								$name_k0 = lang('non-billable');
-							} else if($k1 == 1){
-								$name_k0 = lang('billable');
-							}
-						} else if ($gb_keys[0]['k'] == "_group_id_fp_invoicing_status") {
-							$name_k0 = lang("invoicing_status $k0");
-						}
-                        $grouped_temp[$n0] = array(
-                            'id' =>  $k0,
-                            'name' => $name_k0, //$row[$gb_keys[0]['n']] ? $row[$gb_keys[0]['n']] : lang('unclassified'),
-                            'original_gkey' => $gb_keys[0]['k'],
-                        );
-                    }
-				}else{
-				    $k0 = $grouped_temp[$n0]['id'];
-                }
-                
-				if (isset($gb_keys[1])) {
-					$k1 = $row[$gb_keys[1]['k']];
-					//$n1 = isset($row[$gb_keys[1]['k']."_toorder"]) ? $row[$gb_keys[1]['k']."_toorder"] : $row[$gb_keys[1]['n']].'_'.$row[$gb_keys[1]['k']];
-
-                    if (isset($row[$gb_keys[1]['k']."_toorder"])){
-                        $n1 = $row[$gb_keys[1]['k']."_toorder"];
-                    }else{
-                        $n1 = $row[$gb_keys[1]['n']].'_'.$row[$gb_keys[1]['k']];
-                        if ($row[$gb_keys[1]['n']] == ''){
-                            $n1 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
-                        }
-                    }
-
-					
-					if ($gb_keys[1]['is_date']){
-					    //$n1 = gmdate('Y-m-d', strtotime($k1));
-						if (preg_match($mysql_date_format_re, $k1)) {
-							$n1 =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k1),null,0);
-						} else {
-                        	$n1 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k1),null,0);
-						}
-					    $row[$gb_keys[1]['n']] = $n1;					    
-					} 
-					else if (array_var($gb_keys[1], 'cp_contact')) {
-						$n1 = get_cp_contact_name($gb_keys, 1, $row, $cp_contact_cache);
-						$row[$gb_keys[1]['n']] = $n1;
-					}
-                    
-                    if (!isset($grouped_temp[$n0]['groups'][$n1])) {
-                        if ($gb_keys[1]['is_date']){
-							$date = $n1;
-                            $grouped_temp[$n0]['groups'][$n1] = array(
-                                'id' =>  $k0."_".$date,
-                                'name' => $k1 ? $k1 : lang('unclassified'),
-                                'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'],
-                            );
-                            $k1 = $date;
-                        }else{
-							if ($row[$gb_keys[1]['n']]){
-								$member_k1 = null;
-								if (strpos($gb_keys[1]['k'], '_group_id_dim_')) {
-									$member_k1 = Members::getMemberById($k1);
+							if ($row[$gb_keys[0]['n']]) {
+								$member_k0 = null;
+								if (strpos($gb_keys[0]['k'], '_group_id_dim_')) {
+									$member_k0 = Members::getMemberById($k0);
 								}
-								if($member_k1 instanceof Member){
-									$path_k1 = $member_k1->getPath(' - ');
-									$name_k1 = $path_k1 != '' ? $path_k1 . ' - ' . $row[$gb_keys[1]['n']] : $row[$gb_keys[1]['n']];
-									$n1 = $name_k1.'_'.$row[$gb_keys[1]['k']];
+								if ($member_k0 instanceof Member) {
+									$path_k0 = $member_k0->getPath(' - ');
+									$name_k0 = $path_k0 != '' ? $path_k0 . ' - ' . $row[$gb_keys[0]['n']] : $row[$gb_keys[0]['n']];
+									$n0 = $name_k0 . '_' . $row[$gb_keys[0]['k']];
 								} else {
-									$name_k1 = $row[$gb_keys[1]['n']];
+									$name_k0 = $row[$gb_keys[0]['n']];
 								}
 							} else {
-								$name_k1 = lang('unclassified');
+								$name_k0 = lang('unclassified');
 							}
-							if ($gb_keys[1]['k'] == "_group_id_fp_is_billable") {
-								if($k1 == 0) {
-									$name_k1 = lang('non-billable');
-								} else if($k1 == 1){
-									$name_k1 = lang('billable');
+							if ($gb_keys[0]['k'] == "_group_id_fp_is_billable") {
+								if ($k0 == 0) {
+									$name_k0 = lang('non-billable');
+								} else if ($k1 == 1) {
+									$name_k0 = lang('billable');
 								}
-							} else if ($gb_keys[1]['k'] == "_group_id_fp_invoicing_status") {
-								$name_k1 = lang("invoicing_status $k1");
+							} else if ($gb_keys[0]['k'] == "_group_id_fp_invoicing_status") {
+								$name_k0 = lang("invoicing_status $k0");
 							}
-                            $grouped_temp[$n0]['groups'][$n1] = array(
-                                'id' => $k0."_".$k1,
-                                'name' => $name_k1, //$row[$gb_keys[1]['n']] ? $row[$gb_keys[1]['n']] : lang('unclassified'),
-                                'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'],
-                            );
-                        }
-                    }
-                    
-					if (isset($gb_keys[2])) {
-						$k2 = $row[$gb_keys[2]['k']];
-						//$n2 = isset($row[$gb_keys[2]['k']."_toorder"]) ? $row[$gb_keys[2]['k']."_toorder"] : $row[$gb_keys[2]['n']];
-
-                        if (isset($row[$gb_keys[2]['k']."_toorder"])){
-                            $n2 = $row[$gb_keys[2]['k']."_toorder"];
-                        }else{
-                            $n2 = $row[$gb_keys[2]['n']].'_'.$row[$gb_keys[2]['k']];
-                            if ($row[$gb_keys[2]['n']] == ''){
-                                $n2 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
-                            }
-                        }
-						
-						if ($gb_keys[2]['is_date']){
-						    //$n2 = gmdate('Y-m-d', strtotime($k2));
-							if (preg_match($mysql_date_format_re, $k2)) {
-								$n2 =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k2),null,0);
-							} else {
-                            	$n2 =  format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2),null,0);
-							}
-						    $row[$gb_keys[2]['n']] = $n2;
+							$grouped_temp[$n0] = array(
+								'id' => $k0,
+								'name' => $name_k0,
+								//$row[$gb_keys[0]['n']] ? $row[$gb_keys[0]['n']] : lang('unclassified'),
+								'original_gkey' => $gb_keys[0]['k'],
+							);
 						}
-						else if (array_var($gb_keys[2], 'cp_contact')) {
-							$n2 = get_cp_contact_name($gb_keys, 2, $row, $cp_contact_cache);
-							$row[$gb_keys[2]['n']] = $n2;
-						}
-						
-						if ($n2 == '') $n2 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
-						
-						if (!isset($grouped_temp[$n0]['groups'][$n1]['groups'][$n2])) {
-                            if ($gb_keys[2]['is_date']){
-                                
-                                //$date = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2),null,0);
-                                $date = $n2;
-                                $grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
-                                    'id' => $k0."_".$k1."_".$date,
-                                    'name' => $k2 ? $k2 : lang('unclassified'),
-                                    'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'].",".$gb_keys[2]['k']
-                                );
-                                $k2 = $date;
-                            }else{
-								if ($row[$gb_keys[2]['n']]){
-									$member_k2 = null;
-									if (strpos($gb_keys[2]['k'], '_group_id_dim_')) {
-										$member_k2 = Members::getMemberById($k2);
-									}
-									if($member_k2 instanceof Member){
-										$path_k2 = $member_k2->getPath(' - ');
-										$name_k2 = $path_k2 != '' ? $path_k2 . ' - ' . $row[$gb_keys[2]['n']] : $row[$gb_keys[2]['n']];
-										$n2 = $name_k2.'_'.$row[$gb_keys[2]['k']];
-									} else {
-										$name_k2 = $row[$gb_keys[2]['n']];
-									}
-								} else {
-									$name_k2 = lang('unclassified');
-								}
-								if ($gb_keys[2]['k'] == "_group_id_fp_is_billable") {
-									if($k2 == 0) {
-										$name_k2 = lang('non-billable');
-									} else if($k1 == 1){
-										$name_k2 = lang('billable');
-									}
-								} else if ($gb_keys[2]['k'] == "_group_id_fp_invoicing_status") {
-									$name_k2 = lang("invoicing_status $k2");
-								}
-                                $grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
-                                    'id' => $k0."_".$k1."_".$k2,
-                                    'name' => $name_k2, //$row[$gb_keys[2]['n']] ? $row[$gb_keys[2]['n']] : lang('unclassified'),
-                                    'original_gkey' => $gb_keys[0]['k'].",".$gb_keys[1]['k'].",".$gb_keys[2]['k'],
-                                );
-                            }
-						}
-						
-						$grouped_temp[$n0]['groups'][$n1]['groups'][$n2]['items'][] = $row;
-						
 					} else {
-						
-						$grouped_temp[$n0]['groups'][$n1]['items'][] = $row;
-						
+						$k0 = $grouped_temp[$n0]['id'];
 					}
-				} else {
-						
-					$grouped_temp[$n0]['items'][] = $row;
-					
+
+					if (isset($gb_keys[1])) {
+						$k1 = $row[$gb_keys[1]['k']];
+						//$n1 = isset($row[$gb_keys[1]['k']."_toorder"]) ? $row[$gb_keys[1]['k']."_toorder"] : $row[$gb_keys[1]['n']].'_'.$row[$gb_keys[1]['k']];
+
+						if (isset($row[$gb_keys[1]['k'] . "_toorder"])) {
+							$n1 = $row[$gb_keys[1]['k'] . "_toorder"];
+						} else {
+							$n1 = $row[$gb_keys[1]['n']] . '_' . $row[$gb_keys[1]['k']];
+							if ($row[$gb_keys[1]['n']] == '') {
+								$n1 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+							}
+						}
+
+
+						if ($gb_keys[1]['is_date']) {
+							//$n1 = gmdate('Y-m-d', strtotime($k1));
+							if (preg_match($mysql_date_format_re, $k1)) {
+								$n1 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k1), null, 0);
+							} else {
+								$n1 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k1), null, 0);
+							}
+							$row[$gb_keys[1]['n']] = $n1;
+						} else if (array_var($gb_keys[1], 'cp_contact')) {
+							$n1 = get_cp_contact_name($gb_keys, 1, $row, $cp_contact_cache);
+							$row[$gb_keys[1]['n']] = $n1;
+						}
+
+						if (!isset($grouped_temp[$n0]['groups'][$n1])) {
+							if ($gb_keys[1]['is_date']) {
+								$date = $n1;
+								$grouped_temp[$n0]['groups'][$n1] = array(
+									'id' => $k0 . "_" . $date,
+									'name' => $k1 ? $k1 : lang('unclassified'),
+									'original_gkey' => $gb_keys[0]['k'] . "," . $gb_keys[1]['k'],
+								);
+								$k1 = $date;
+							} else {
+								if ($row[$gb_keys[1]['n']]) {
+									$member_k1 = null;
+									if (strpos($gb_keys[1]['k'], '_group_id_dim_')) {
+										$member_k1 = Members::getMemberById($k1);
+									}
+									if ($member_k1 instanceof Member) {
+										$path_k1 = $member_k1->getPath(' - ');
+										$name_k1 = $path_k1 != '' ? $path_k1 . ' - ' . $row[$gb_keys[1]['n']] : $row[$gb_keys[1]['n']];
+										$n1 = $name_k1 . '_' . $row[$gb_keys[1]['k']];
+									} else {
+										$name_k1 = $row[$gb_keys[1]['n']];
+									}
+								} else {
+									$name_k1 = lang('unclassified');
+								}
+								if ($gb_keys[1]['k'] == "_group_id_fp_is_billable") {
+									if ($k1 == 0) {
+										$name_k1 = lang('non-billable');
+									} else if ($k1 == 1) {
+										$name_k1 = lang('billable');
+									}
+								} else if ($gb_keys[1]['k'] == "_group_id_fp_invoicing_status") {
+									$name_k1 = lang("invoicing_status $k1");
+								}
+								$grouped_temp[$n0]['groups'][$n1] = array(
+									'id' => $k0 . "_" . $k1,
+									'name' => $name_k1,
+									//$row[$gb_keys[1]['n']] ? $row[$gb_keys[1]['n']] : lang('unclassified'),
+									'original_gkey' => $gb_keys[0]['k'] . "," . $gb_keys[1]['k'],
+								);
+							}
+						}
+
+						if (isset($gb_keys[2])) {
+							$k2 = $row[$gb_keys[2]['k']];
+							//$n2 = isset($row[$gb_keys[2]['k']."_toorder"]) ? $row[$gb_keys[2]['k']."_toorder"] : $row[$gb_keys[2]['n']];
+
+							if (isset($row[$gb_keys[2]['k'] . "_toorder"])) {
+								$n2 = $row[$gb_keys[2]['k'] . "_toorder"];
+							} else {
+								$n2 = $row[$gb_keys[2]['n']] . '_' . $row[$gb_keys[2]['k']];
+								if ($row[$gb_keys[2]['n']] == '') {
+									$n2 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+								}
+							}
+
+							if ($gb_keys[2]['is_date']) {
+								//$n2 = gmdate('Y-m-d', strtotime($k2));
+								if (preg_match($mysql_date_format_re, $k2)) {
+									$n2 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k2), null, 0);
+								} else {
+									$n2 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2), null, 0);
+								}
+								$row[$gb_keys[2]['n']] = $n2;
+							} else if (array_var($gb_keys[2], 'cp_contact')) {
+								$n2 = get_cp_contact_name($gb_keys, 2, $row, $cp_contact_cache);
+								$row[$gb_keys[2]['n']] = $n2;
+							}
+
+							if ($n2 == '')
+								$n2 = 'zzzzz_unclassified'; // unclassified group must be at the end of the list
+
+							if (!isset($grouped_temp[$n0]['groups'][$n1]['groups'][$n2])) {
+								if ($gb_keys[2]['is_date']) {
+
+									//$date = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2),null,0);
+									$date = $n2;
+									$grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
+										'id' => $k0 . "_" . $k1 . "_" . $date,
+										'name' => $k2 ? $k2 : lang('unclassified'),
+										'original_gkey' => $gb_keys[0]['k'] . "," . $gb_keys[1]['k'] . "," . $gb_keys[2]['k']
+									);
+									$k2 = $date;
+								} else {
+									if ($row[$gb_keys[2]['n']]) {
+										$member_k2 = null;
+										if (strpos($gb_keys[2]['k'], '_group_id_dim_')) {
+											$member_k2 = Members::getMemberById($k2);
+										}
+										if ($member_k2 instanceof Member) {
+											$path_k2 = $member_k2->getPath(' - ');
+											$name_k2 = $path_k2 != '' ? $path_k2 . ' - ' . $row[$gb_keys[2]['n']] : $row[$gb_keys[2]['n']];
+											$n2 = $name_k2 . '_' . $row[$gb_keys[2]['k']];
+										} else {
+											$name_k2 = $row[$gb_keys[2]['n']];
+										}
+									} else {
+										$name_k2 = lang('unclassified');
+									}
+									if ($gb_keys[2]['k'] == "_group_id_fp_is_billable") {
+										if ($k2 == 0) {
+											$name_k2 = lang('non-billable');
+										} else if ($k1 == 1) {
+											$name_k2 = lang('billable');
+										}
+									} else if ($gb_keys[2]['k'] == "_group_id_fp_invoicing_status") {
+										$name_k2 = lang("invoicing_status $k2");
+									}
+									$grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
+										'id' => $k0 . "_" . $k1 . "_" . $k2,
+										'name' => $name_k2,
+										//$row[$gb_keys[2]['n']] ? $row[$gb_keys[2]['n']] : lang('unclassified'),
+										'original_gkey' => $gb_keys[0]['k'] . "," . $gb_keys[1]['k'] . "," . $gb_keys[2]['k'],
+									);
+								}
+							}
+
+							$grouped_temp[$n0]['groups'][$n1]['groups'][$n2]['items'][] = $row;
+
+						} else {
+
+							$grouped_temp[$n0]['groups'][$n1]['items'][] = $row;
+
+						}
+					} else {
+
+						$grouped_temp[$n0]['items'][] = $row;
+
+					}
 				}
 			}
 		}
 	}
-	
+
 	// ensure the correct group order
     // This function is assigning formatting to the data
     // @ToDo - remove all formatting from this function and put it on the "view layer"
@@ -1029,7 +1030,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 		
 		Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[0]), $v0);
 		if (isset($gb_keys[0]['is_date']) && $gb_keys[0]['is_date'] && $formatDate) {
-			if (preg_match($mysql_date_format_re, $v2['name'])) {
+			if ( isset($v2['name']) && preg_match($mysql_date_format_re, $v2['name'])) {
 				$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
 			} else {
 				try {
@@ -1053,7 +1054,7 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 
 
 function build_report_conditions_html($report_id, $parameters=array(), $conditions=null, $disabled_params=array()) {
-	$report = Reports::findById($report_id);
+	$report = Reports::instance()->findById($report_id);
 	if (!$report instanceof Report) return "";
 	
 	if (is_null($conditions)) {
@@ -1066,7 +1067,7 @@ function build_report_conditions_html($report_id, $parameters=array(), $conditio
 
 function build_report_conditions_html_main($report, $parameters=array(), $conditions=array(), $disabled_params=array()) {
 
-	$object_type = ObjectTypes::findById($report->getReportObjectTypeId());
+	$object_type = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	
 	$rc = new ReportingController();
 	$types = $rc->get_report_column_types($report->getId());
@@ -1078,8 +1079,8 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 		if ($conditions_per_block < 4) $conditions_per_block = 4;
 		$conditions_count = 0;
 		
-		$disabled_param_ids = isset($disabled_params) ? array_keys($disabled_params) : null;
-		if (!is_array($disabled_param_ids)) $disabled_param_ids = array();
+		$disabled_param_ids = isset($disabled_params) && is_array($disabled_params) ? array_keys($disabled_params) : null;
+		if (!is_array($disabled_param_ids) ) $disabled_param_ids = array();
 		
 	    $date_format_tip = date_format_tip(user_config_option('date_format'));
 	    $model = $object_type instanceof ObjectType ? $object_type->getHandlerClass() : "Objects";
@@ -1419,9 +1420,9 @@ function build_report_conditions_sql($parameters) {
 				
 				$possible_columns = $model_instance->getColumns();
 				if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
-					$possible_columns = array_merge($possible_columns, Members::getColumns());
+					$possible_columns = array_merge($possible_columns, Members::instance()->getColumns());
 				} else {
-					$possible_columns = array_merge($possible_columns, Objects::getColumns());
+					$possible_columns = array_merge($possible_columns, Objects::instance()->getColumns());
 				}
 				
 				if (in_array($condField->getFieldName(), $possible_columns)) {
@@ -1432,14 +1433,14 @@ function build_report_conditions_sql($parameters) {
 						$field_name = $condField->getFieldName();
 							
 						if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
-							if (in_array($condField->getFieldName(), Members::getColumns())) {
+							if (in_array($condField->getFieldName(), Members::instance()->getColumns())) {
 								$field_name = 'm`.`'.$condField->getFieldName();
 				
-							} else  if (in_array($condField->getFieldName(), Objects::getColumns())) {
+							} else  if (in_array($condField->getFieldName(), Objects::instance()->getColumns())) {
 								$field_name = 'o`.`'.$condField->getFieldName();
 							}
 						} else {
-							if (in_array($condField->getFieldName(), Objects::getColumns())) {
+							if (in_array($condField->getFieldName(), Objects::instance()->getColumns())) {
 								$field_name = 'o`.`'.$condField->getFieldName();
 							} else {
 								$field_name = 'e`.`'.$condField->getFieldName();
@@ -1656,7 +1657,7 @@ function build_report_conditions_sql($parameters) {
 
 
 function build_sql_date_string_using_column_type($value = null, $object_type_id = null, $column = null) {
-	$ot = ObjectTypes::findById($object_type_id);
+	$ot = ObjectTypes::instance()->findById($object_type_id);
 	if (!$ot) return '';
 
 	$ot_class = $ot->getHandlerClass();
@@ -1683,10 +1684,10 @@ function build_sql_date_string_using_column_type($value = null, $object_type_id 
 
 function pickDateOrDatetimeValueType($row, $report){
 	if($row['object_type_id'] == ObjectTypes::findByName('task')->getId()){
-		if(array_var($row, 'start_date') && !ProjectTasks::findById($row['id'])->getUseStartTime()){
+		if(array_var($row, 'start_date') && !ProjectTasks::instance()->findById($row['id'])->getUseStartTime()){
 			return DATA_TYPE_DATE;
 		}
-		if(array_var($row, 'due_date') && !ProjectTasks::findById($row['id'])->getUseDueTime()){
+		if(array_var($row, 'due_date') && !ProjectTasks::instance()->findById($row['id'])->getUseDueTime()){
 			return DATA_TYPE_DATE;
 		}
 	}

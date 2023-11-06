@@ -8,7 +8,7 @@
 class BillingCategories extends BaseBillingCategories {
 	
 	public static function getDefaultBillingAmounts(){
-		$categories = self::findAll();
+		$categories = self::instance()->findAll();
 		$billing_amounts = array();
 		if ($categories){
 			foreach ($categories as $bc){

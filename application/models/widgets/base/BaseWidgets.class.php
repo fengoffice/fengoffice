@@ -127,7 +127,7 @@ abstract class BaseWidgets extends DataManager {
 		}
 	}
 	
-	function instance() {
+	static function instance() {
 		static $instance;
 		if (! instance_of ( $instance, 'Widgets' )) {
 			$instance = new Widgets ();

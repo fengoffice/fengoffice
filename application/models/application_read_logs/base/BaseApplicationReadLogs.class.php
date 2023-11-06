@@ -230,7 +230,7 @@ abstract class BaseApplicationReadLogs extends DataManager {
 	 *
 	 * @return ApplicationReadLogs
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ApplicationReadLogs')) {
 			$instance = new ApplicationReadLogs();

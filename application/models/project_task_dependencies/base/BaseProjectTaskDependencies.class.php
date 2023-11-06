@@ -227,7 +227,7 @@
     *
     * @return  ProjectTaskDependencies 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ProjectTaskDependencies')) {
         $instance = new  ProjectTaskDependencies();

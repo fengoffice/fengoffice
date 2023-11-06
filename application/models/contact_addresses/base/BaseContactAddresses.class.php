@@ -218,7 +218,7 @@
     *
     * @return ContactAddresses 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactAddresses')) {
         $instance = new ContactAddresses();

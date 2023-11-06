@@ -35,7 +35,7 @@ class DimensionController extends ApplicationController {
 		}		
 		
 		//All dimensions
-		$all_dimensions = Dimensions::findAll(array('order'=>'default_order ASC , id ASC'));
+		$all_dimensions = Dimensions::instance()->findAll(array('order'=>'default_order ASC , id ASC'));
 		$dimensions_to_show = array();
 		
 		foreach ($all_dimensions as $dim){
@@ -144,7 +144,7 @@ class DimensionController extends ApplicationController {
 				}
 			}
 			
-			$object_type = ObjectTypes::findById($object_type_id);
+			$object_type = ObjectTypes::instance()->findById($object_type_id);
 			if ($object_type instanceof ObjectType && $object_type->getType() == 'dimension_object' ) {
 				eval('$ot_manager = '.$object_type->getHandlerClass().'::instance();');
 				if (isset($ot_manager)) {
@@ -163,7 +163,7 @@ class DimensionController extends ApplicationController {
 			if (count($filter_by_members) > 0) {
 				$filters = array();
 				foreach ($filter_by_members as $fm) {
-					$dma = DimensionMemberAssociations::findOne(array(
+					$dma = DimensionMemberAssociations::instance()->findOne(array(
 						'conditions' => "dimension_id=".$fm->getDimensionId()." AND object_type_id=".$fm->getObjectTypeId()." AND associated_dimension_id=$dimension_id".
 							" OR associated_dimension_id=".$fm->getDimensionId()." AND associated_object_type_id=".$fm->getObjectTypeId()." AND dimension_id=$dimension_id"
 					));
@@ -256,7 +256,7 @@ class DimensionController extends ApplicationController {
 			$association_ids = DimensionMemberAssociations::getAllAssociationIds($member->getDimensionId(), $dimension->getId());
 			if (count($association_ids) == 0) continue;
 				
-			$associations = DimensionMemberAssociations::findAll(array('conditions' => 'id IN ('.implode(',', $association_ids).')'));
+			$associations = DimensionMemberAssociations::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $association_ids).')'));
 	
 			if (count($associations) > 0) {
 				$associated_members_ids = array();
@@ -358,7 +358,7 @@ class DimensionController extends ApplicationController {
 		$return_all_members = false;
 		
 		$selected_member_ids = json_decode(array_var($_REQUEST, 'selected_ids', "[0]"));
-		$selected_members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
+		$selected_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
 		
 		$limit_obj = array(
 			'offset' => $offset,
@@ -427,14 +427,14 @@ class DimensionController extends ApplicationController {
 		$return_all_members = false;
 	
 		$selected_member_ids = json_decode(array_var($_REQUEST, 'selected_ids', "[0]"));
-		$selected_members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
+		$selected_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
 		
 		Hook::fire('list_dimension_members_tree_modify_member_filter', array('dimension' => $dimension), $selected_members);
 		
 		// check if this dimension has to be filtered by the selected members
 		$real_sel_members = array();
 		foreach ($selected_members as $sel_mem) {
-			$dma = DimensionMemberAssociations::findOne(array(
+			$dma = DimensionMemberAssociations::instance()->findOne(array(
 				'conditions' => "dimension_id=".$sel_mem->getDimensionId()." AND object_type_id=".$sel_mem->getObjectTypeId()." AND associated_dimension_id=$dimension_id"
 			));
 			if ($dma instanceof DimensionMemberAssociation) {
@@ -548,7 +548,7 @@ class DimensionController extends ApplicationController {
 				$object_exist_cond = " AND ( object_id = 0 OR EXISTS ( SELECT id FROM ".TABLE_PREFIX."objects o WHERE o.id = object_id AND o.archived_on = '0000-00-00 00:00:00' AND o.trashed_on = '0000-00-00 00:00:00' ))";
 				
 
-				$memberList = Members::findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
+				$memberList = Members::instance()->findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
 
 				//include all parents
 				//Check hierarchy
@@ -674,7 +674,7 @@ class DimensionController extends ApplicationController {
 			return;
 		}
 
-		$dimensions = Dimensions::findAll(array("conditions" => $dimensions_cond));
+		$dimensions = Dimensions::instance()->findAll(array("conditions" => $dimensions_cond));
 
 		
 		$ot_extra_cond = "";
@@ -719,7 +719,7 @@ class DimensionController extends ApplicationController {
 	
 	function load_dimensions_info() {
 		ajx_current("empty");
-		$dimensions = Dimensions::findAll();
+		$dimensions = Dimensions::instance()->findAll();
 		$enabled_dimension_ids = config_option('enabled_dimensions');
 		
 		$dim_names = array();
@@ -774,7 +774,7 @@ class DimensionController extends ApplicationController {
 						$selected_members = array();
 						$selected_member_ids = array_filter(explode(",", $selected_member_ids_csv));
 						if (count($selected_member_ids) > 0) {
-							$selected_members = Members::findAll(array("conditions"=>"id IN (".implode(',', $selected_member_ids).")"));
+							$selected_members = Members::instance()->findAll(array("conditions"=>"id IN (".implode(',', $selected_member_ids).")"));
 						}
 						if (count($selected_members) > 0) {
 							$applied_filters = null;
@@ -1018,7 +1018,7 @@ class DimensionController extends ApplicationController {
 					$editUrl = '';
 					// If member has an object linked, take object edit url
 					
-					if ($ot = ObjectTypes::findById($m->getObjectTypeId())) {
+					if ($ot = ObjectTypes::instance()->findById($m->getObjectTypeId())) {
 						if ($handler = $ot->getHandlerClass() ){
 							eval ("\$itemClass = $handler::instance()->getItemClass();");
 							if ($itemClass) {
@@ -1106,7 +1106,7 @@ class DimensionController extends ApplicationController {
 		ajx_set_no_toolbar();
 		
 		$dim_id = array_var($_REQUEST, 'dim', 0);
-		$dimension = Dimensions::findById($dim_id);
+		$dimension = Dimensions::instance()->findById($dim_id);
 		if (!$dimension instanceof Dimension) {
 			flash_error(lang('dimension snx'));
 			ajx_current("empty");
@@ -1156,13 +1156,13 @@ class DimensionController extends ApplicationController {
 		$ids = array();
 		$log_data = array();
 		foreach ($rows as $row) {
-			$members[] = Members::findById($row['id']);
+			$members[] = Members::instance()->findById($row['id']);
 			$log_data[$row['id']] = array('created_on' => $row['created_on'], 'created_by_id' => $row['created_by_id']);
 			
 		}
 		
 		$member_type_ids = array_flat(DB::executeAll("SELECT object_type_id FROM ".TABLE_PREFIX."dimension_object_types WHERE dimension_id=$dim_id AND is_root=1"));
-		$member_types = ObjectTypes::findAll(array('conditions' => 'id IN ('.implode(',', $member_type_ids).')'));
+		$member_types = ObjectTypes::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $member_type_ids).')'));
 		
 		tpl_assign('members', $members);
 		tpl_assign('log_data', $log_data);
@@ -1245,7 +1245,7 @@ class DimensionController extends ApplicationController {
 		$return_all_members = false;
 	
 		$selected_member_ids = json_decode(array_var($_REQUEST, 'selected_ids', "[0]"));
-		$selected_members = Members::findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
+		$selected_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
 		
 		$limit_obj = array(
 				'offset' => $offset,
@@ -1356,7 +1356,7 @@ class DimensionController extends ApplicationController {
 		}
 
 		//super admins
-		$admins = Contacts::findAll(array('conditions' => "user_type = 1"));
+		$admins = Contacts::instance()->findAll(array('conditions' => "user_type = 1"));
 		foreach ($admins as $admin) {
 			if(!in_array($admin->getId(),$result) ){
 				$result[] = $admin->getId();
@@ -1530,7 +1530,7 @@ class DimensionController extends ApplicationController {
 		}
 		
 		if (is_numeric($dim_id)) {
-			$dim = Dimensions::findById($dim_id);
+			$dim = Dimensions::instance()->findById($dim_id);
 			tpl_assign('dim', $dim);
 			if (isset($_REQUEST['genid'])) {
 				tpl_assign('selector_genid', $_REQUEST['genid']);

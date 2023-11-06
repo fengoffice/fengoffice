@@ -213,7 +213,7 @@
     *
     * @return  ReadObjects 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ReadObjects')) {
         $instance = new  ReadObjects();

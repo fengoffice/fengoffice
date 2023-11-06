@@ -215,7 +215,7 @@
     *
     * @return  ReportConditions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ReportConditions')) {
         $instance = new ReportConditions();

@@ -136,7 +136,7 @@ function get_url($controller_name = null, $action_name = null, $params = null, $
 	}
 
 	$url_params = array('c=' . $controller, 'a=' . $action);
-	if(is_array($params)) {
+	if($params && is_array($params)) {
 		foreach($params as $param_name => $param_value) {
 			if(is_bool($param_value)) {
 				$url_params[] = $param_name . '=1';
@@ -489,7 +489,7 @@ function active_context_members($full = true ) {
 function get_context_from_array($ids){
 	$context = array();
 	foreach ($ids as $id) {
-		$member = Members::findById($id) ;
+		$member = Members::instance()->findById($id) ;
 		$context[] = $member;
 	}
 	return $context ;
@@ -643,7 +643,7 @@ function user_has_config_option($option_name, $user_id = 0, $workspace_id = 0) {
 	}
 	$option = UserWsConfigOptions::getByName($option_name);
 	if (!$option instanceof UserWsConfigOption) return false;
-	$value = UserWsConfigOptionValues::findById(array(
+	$value = UserWsConfigOptionValues::instance()->findById(array(
 		'option_id' => $option->getId(),
 		'user_id' => $user_id,
 		'workspace_id' => $workspace_id));
@@ -958,7 +958,7 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 	
 	//permissions
 	$additional_name = "";
-	$tmp_pg = PermissionGroups::findOne(array('conditions' => "`name`='User ".$contact->getId()." Personal'"));
+	$tmp_pg = PermissionGroups::instance()->findOne(array('conditions' => "`name`='User ".$contact->getId()." Personal'"));
 	if ($tmp_pg instanceof PermissionGroup) {
 		$additional_name = "_".gen_id();
 	}
@@ -1027,10 +1027,10 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 			$permissions = array();
 			$default_permissions = RoleObjectTypePermissions::instance()->findAll(array('conditions' => 'role_id = '.$contact->getUserType()));
 			
-			$dimensions = Dimensions::findAll();
+			$dimensions = Dimensions::instance()->findAll();
 			foreach ($dimensions as $dimension) {
 				if ($dimension->getDefinesPermissions()) {
-					$cdp = ContactDimensionPermissions::findOne(array("conditions" => "`permission_group_id` = ".$contact->getPermissionGroupId()." AND `dimension_id` = ".$dimension->getId()));
+					$cdp = ContactDimensionPermissions::instance()->findOne(array("conditions" => "`permission_group_id` = ".$contact->getPermissionGroupId()." AND `dimension_id` = ".$dimension->getId()));
 					if (!$cdp instanceof ContactDimensionPermission) {
 						$cdp = new ContactDimensionPermission();
 						$cdp->setPermissionGroupId($contact->getPermissionGroupId());
@@ -1193,7 +1193,7 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 
 // Warning don't use this function inside a mysql transaction, use it after comit.
 function send_notification($user_data, $contact_id, $token_valid_period=null){
-	$contact = Contacts::findById($contact_id);//$contact->getId()
+	$contact = Contacts::instance()->findById($contact_id);//$contact->getId()
 	$password = '';
 	// Send notification
 	try {
@@ -1293,7 +1293,7 @@ function get_enum_values($table, $column) {
 function get_user_dimensions_ids(){
 		
 	//All dimensions
-		$all_dimensions = Dimensions::findAll();
+		$all_dimensions = Dimensions::instance()->findAll();
 		$dimensions_to_show = array();
 		
 		foreach ($all_dimensions as $dim){
@@ -1323,7 +1323,7 @@ function build_context_array($context_plain) {
 					//cambiar
 					foreach ($members as $member) {
 						if ($member && is_numeric($member)) { 
-							$member = Members::findById($member) ;													
+							$member = Members::instance()->findById($member) ;													
 							if ($member instanceof Member ){
 								$context[] = $member ;
 							}
@@ -2181,7 +2181,7 @@ function associate_member_to_status_member($project_member, $old_project_status,
 
 			// add objects to new project_type member
 			if (is_numeric($status_member_id) && $status_member_id > 0) {
-				$member_to_add = Members::findById($status_member_id);
+				$member_to_add = Members::instance()->findById($status_member_id);
 				foreach ($object_members as $om) {
 					ObjectMembers::addObjectToMembers($om->getObjectId(), array($member_to_add));
 				}
@@ -2210,7 +2210,7 @@ function associate_member_to_status_member($project_member, $old_project_status,
 		if ($a instanceof DimensionMemberAssociation) {
 			if (is_numeric($status_member_id) && $status_member_id > 0) {
 
-				$mpm = MemberPropertyMembers::findOne(array('id' => true, 'conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $project_member->getId(), $status_member_id)));
+				$mpm = MemberPropertyMembers::instance()->findOne(array('id' => true, 'conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $project_member->getId(), $status_member_id)));
 				if (is_null($mpm)) {
 					$sql = "INSERT INTO " . TABLE_PREFIX . "member_property_members (association_id, member_id, property_member_id, is_active, created_on, created_by_id)
 						VALUES (" . $a->getId() . "," . $project_member->getId() . "," . $status_member_id . ", 1, NOW()," . logged_user()->getId() . ");";
@@ -2233,7 +2233,7 @@ function associate_member_to_status_member($project_member, $old_project_status,
 		if ($a instanceof DimensionMemberAssociation) {
 			if (is_numeric($status_member_id) && $status_member_id > 0) {
 		
-				$mpm = MemberPropertyMembers::findOne(array('id' => true, 'conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $project_member->getId(), $status_member_id)));
+				$mpm = MemberPropertyMembers::instance()->findOne(array('id' => true, 'conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $project_member->getId(), $status_member_id)));
 				if (is_null($mpm)) {
 					$sql = "INSERT INTO " . TABLE_PREFIX . "member_property_members (association_id, member_id, property_member_id, is_active, created_on, created_by_id)
 						VALUES (" . $a->getId() . "," . $status_member_id . "," . $project_member->getId() . ", 1, NOW()," . logged_user()->getId() . ");";
@@ -2270,7 +2270,7 @@ function get_all_associated_status_member_ids($member, $dimension, $ot=null, $re
 		if ($a instanceof DimensionMemberAssociation) {
 			$field_sql = $reverse ? 'AND property_member_id' : 'AND member_id';
 			
-			$mpms = MemberPropertyMembers::findAll(array('conditions' => array('association_id = ? '.$field_sql.' = ?', $a->getId(), $member->getId())));
+			$mpms = MemberPropertyMembers::instance()->findAll(array('conditions' => array('association_id = ? '.$field_sql.' = ?', $a->getId(), $member->getId())));
 			foreach ($mpms as $mpm) {
 				if ($reverse) $ids[] = intval($mpm->getMemberId());
 				else $ids[] = intval($mpm->getPropertyMemberId());
@@ -2300,7 +2300,7 @@ function get_associated_status_member_id($member, $dimension, $ot=null, $reverse
 		
 		if ($a instanceof DimensionMemberAssociation) {
 			$memcol = $reverse ? "property_member_id" : "member_id";
-			$mpm = MemberPropertyMembers::findOne(array('conditions' => array('association_id = ? AND '.$memcol.' = ?', $a->getId(), $member->getId())));
+			$mpm = MemberPropertyMembers::instance()->findOne(array('conditions' => array('association_id = ? AND '.$memcol.' = ?', $a->getId(), $member->getId())));
 			if ($mpm instanceof MemberPropertyMember) {
 				return $reverse ? $mpm->getMemberId() : $mpm->getPropertyMemberId();
 			}
@@ -2337,7 +2337,7 @@ function find_original_dates_for_template_repetitive_task(ProjectTask $task) {
 	
 	$template_id = $task->getColumnValue('from_template_id');
 	if ($task->getOriginalTaskId() > 0) {
-		$first_task = ProjectTasks::findById($task->getOriginalTaskId());
+		$first_task = ProjectTasks::instance()->findById($task->getOriginalTaskId());
 	} else {
 		$first_task = $task;
 	}
@@ -2959,7 +2959,7 @@ function build_api_members_data(ContentDataObject $object) {
 				'name' => $m->getName(),
 				'dimension_id' => $m->getDimensionId()
 		);
-		$m_ot = ObjectTypes::findById($m->getObjectTypeId());
+		$m_ot = ObjectTypes::instance()->findById($m->getObjectTypeId());
 		if ($m_ot instanceof ObjectType) {
 			$m_data['object_type_name'] = $m_ot->getName();
 		}

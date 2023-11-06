@@ -65,7 +65,7 @@
 	
 	function mail_update_7_8() {
 		
-		$sent_mails = MailContents::findAll(array('conditions' => "`state`=3 AND `has_attachments`=1"));
+		$sent_mails = MailContents::instance()->findAll(array('conditions' => "`state`=3 AND `has_attachments`=1"));
 		foreach ($sent_mails as $mail) {
 			if (!$mail instanceof MailContent) continue;
 			/* @var $mail MailContent */
@@ -348,7 +348,7 @@
 			
 			// update mail account special folders
 			$mu = new MailUtilities();
-			$mail_accounts = MailAccounts::findAll();
+			$mail_accounts = MailAccounts::instance()->findAll();
 			foreach ($mail_accounts as $account) {/* @var $account MailAccount */
 				if ($account->getIsImap()) {
 					$can_detect_special_folders = false;

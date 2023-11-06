@@ -39,7 +39,7 @@
 	'delete member warning' => 'Are you sure you want to delete this {0}?',
 	'tasks list' => 'Tasks list',
 	
-	'add timeslot' => 'Add timeslot',
+	'add timeslot' => 'Add time entry',
 	'add new row' => 'Add new row',
 	
 	'update subtasks' => 'Update subtasks',

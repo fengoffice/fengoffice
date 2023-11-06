@@ -8,7 +8,7 @@
 class  ProjectTaskDependencies extends BaseProjectTaskDependencies {
 
 	static function getDependenciesForTask($task_id) {
-		return self::findAll(array('conditions' => '`task_id` = ' . $task_id . " AND 0 = (SELECT `trashed_by_id` FROM `".TABLE_PREFIX."objects` WHERE `id`=`previous_task_id`)"));
+		return self::instance()->findAll(array('conditions' => '`task_id` = ' . $task_id . " AND 0 = (SELECT `trashed_by_id` FROM `".TABLE_PREFIX."objects` WHERE `id`=`previous_task_id`)"));
 	}
 	
 	static function getDependenciesForTaskOnlyPendingIds($task_id) {
@@ -33,7 +33,7 @@ class  ProjectTaskDependencies extends BaseProjectTaskDependencies {
 	
 	//this function not return temporal dependencies from temporal template tasks
 	static function getDependenciesForTemplateTask($task_id) {
-		return self::findAll(array('conditions' => '`task_id` = ' . $task_id . " AND 0 = (SELECT `trashed_by_id` FROM `".TABLE_PREFIX."objects` WHERE `id`=`previous_task_id`) AND EXISTS(SELECT `template_id` FROM `".TABLE_PREFIX."template_objects` tem WHERE tem.`object_id`=`previous_task_id`)"));
+		return self::instance()->findAll(array('conditions' => '`task_id` = ' . $task_id . " AND 0 = (SELECT `trashed_by_id` FROM `".TABLE_PREFIX."objects` WHERE `id`=`previous_task_id`) AND EXISTS(SELECT `template_id` FROM `".TABLE_PREFIX."template_objects` tem WHERE tem.`object_id`=`previous_task_id`)"));
 	}
 	
 	static function countPendingPreviousTasks($task_id) {
@@ -55,7 +55,7 @@ class  ProjectTaskDependencies extends BaseProjectTaskDependencies {
 	}
 	
 	static function getDependantsForTask($task_id) {
-		return self::findAll(array('conditions' => '`previous_task_id` = ' . $task_id . " AND 0 = (SELECT `trashed_by_id` FROM `".TABLE_PREFIX."objects` WHERE `id`=`task_id`)"));
+		return self::instance()->findAll(array('conditions' => '`previous_task_id` = ' . $task_id . " AND 0 = (SELECT `trashed_by_id` FROM `".TABLE_PREFIX."objects` WHERE `id`=`task_id`)"));
 	}	
 		
 	static function getDependantTasksAssignedUsers($task_id) {
@@ -63,7 +63,7 @@ class  ProjectTaskDependencies extends BaseProjectTaskDependencies {
 		$deps = self::getDependantsForTask($task_id);
 		foreach ($deps as $dep) {
 			/* @var $dep ProjectTaskDependency */
-			$task = ProjectTasks::findById($dep->getTaskId());
+			$task = ProjectTasks::instance()->findById($dep->getTaskId());
 			if ($task instanceof ProjectTask) {
 				$u = $task->getAssignedTo();
 				if ($u instanceof Contact) {
@@ -79,7 +79,7 @@ class  ProjectTaskDependencies extends BaseProjectTaskDependencies {
 		$deps = self::getDependantsForTask($task_id);
 		foreach ($deps as $dep) {
 			/* @var $dep ProjectTaskDependency */
-			$task = ProjectTasks::findById($dep->getTaskId());
+			$task = ProjectTasks::instance()->findById($dep->getTaskId());
 			if ($task instanceof ProjectTask) {
 				$dependant_tasks[] = $task;
 			}
@@ -92,7 +92,7 @@ class  ProjectTaskDependencies extends BaseProjectTaskDependencies {
 		$deps = self::getDependenciesForTask($task_id);
 		foreach ($deps as $dep) {
 			/* @var $dep ProjectTaskDependency */
-			$task = ProjectTasks::findById($dep->getPreviousTaskId());
+			$task = ProjectTasks::instance()->findById($dep->getPreviousTaskId());
 			if ($task instanceof ProjectTask) {
 				$previous_tasks[] = $task;
 			}

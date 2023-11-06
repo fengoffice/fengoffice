@@ -10,7 +10,7 @@ class DimensionObjectTypeOptions extends BaseDimensionObjectTypeOptions {
 	static function getOptionValue($dimension_id, $object_type_id, $name) {
 		
 		$value = null;
-		$option = self::findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND name=?', $dimension_id, $object_type_id, $name)));
+		$option = self::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND name=?', $dimension_id, $object_type_id, $name)));
 		if ($option instanceof DimensionObjectTypeOption) {
 			$value = $option->getValue();
 		}
@@ -20,7 +20,7 @@ class DimensionObjectTypeOptions extends BaseDimensionObjectTypeOptions {
 	
 	static function setOptionValue($dimension_id, $object_type_id, $name, $value) {
 		
-		$option = self::findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND name=?', $dimension_id, $object_type_id, $name)));
+		$option = self::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND name=?', $dimension_id, $object_type_id, $name)));
 		if (!$option instanceof DimensionObjectTypeOption) {
 			$option = new DimensionObjectTypeOption();
 			$option->setDimensionId($dimension_id);
@@ -34,7 +34,7 @@ class DimensionObjectTypeOptions extends BaseDimensionObjectTypeOptions {
 	
 	static function getOptionValuesForAllObjectTypes($dimension_id, $name) {
 	
-		return self::findAll(array('conditions' => array('dimension_id=? AND name=?', $dimension_id, $name)));
+		return self::instance()->findAll(array('conditions' => array('dimension_id=? AND name=?', $dimension_id, $name)));
 		
 	}
 	

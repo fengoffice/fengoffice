@@ -122,7 +122,7 @@ class ProjectWebpage extends BaseProjectWebpage {
 	//  Permissions
 	// ---------------------------------------------------
 
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return can_add($user, $context, ProjectWebpages::instance()->getObjectTypeId(), $notAllowedMember);
 	}
 	

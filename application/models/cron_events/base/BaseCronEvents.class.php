@@ -216,7 +216,7 @@ abstract class BaseCronEvents extends DataManager {
 	 *
 	 * @return CronEvents
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'CronEvents')) {
 			$instance = new CronEvents();

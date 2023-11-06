@@ -16,7 +16,7 @@ class SingleMemberTypeConfigHandler extends ConfigHandler {
     function render($control_name) {
 
     	$dimensions = Dimensions::instance()->findAll(array('conditions' => '`is_manageable` = 1'));
-    	$member_types = ObjectTypes::findAll(array(
+    	$member_types = ObjectTypes::instance()->findAll(array(
 			"conditions" => "`type` IN ('dimension_group', 'dimension_object') AND 
 			`name` <> 'project_folder' AND name <> 'customer_folder' AND 
 			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true)"

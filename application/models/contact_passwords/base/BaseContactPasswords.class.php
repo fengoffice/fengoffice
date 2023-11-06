@@ -192,7 +192,7 @@
     *
     * @return Contacts 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactPasswords')) {
         $instance = new ContactPasswords();

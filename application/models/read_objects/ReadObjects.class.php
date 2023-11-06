@@ -15,7 +15,7 @@
     * @return array
     */
     static function getUnreadByObject(ApplicationDataObject $object, int $contact_id) {
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => array('(`rel_object_id` = ?) and `contact_id` = ? and is_read = 0', 
         		$object->getObjectId(), $contact_id),
         'order' => '`created_on`'
@@ -29,7 +29,7 @@
     * @return array
     */
     static function getReadByObject(ApplicationDataObject $object, int $contact_id) {
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => array('(`rel_object_id` = ?) and `contact_id` = ? and is_read = 1', 
         		$object->getObjectId(), $contact_id),
         'order' => '`created_on`'
@@ -67,7 +67,7 @@
     * @return bool
     */
     static function userHasRead( $contact_id, $object ) {
-	  $perm = self::findOne(array(
+	  $perm = self::instance()->findOne(array(
         'conditions' => array('`contact_id` = ? and `rel_object_id` = ?', $contact_id, $object->getId())
       )); // findAll
       return $perm!=null && $perm->getIsRead();

@@ -204,7 +204,7 @@ abstract class BaseExternalCalendarProperties extends DataManager {
 	 *
 	 * @return ExternalCalendarProperties
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ExternalCalendarProperties')) {
 			$instance = new ExternalCalendarProperties();

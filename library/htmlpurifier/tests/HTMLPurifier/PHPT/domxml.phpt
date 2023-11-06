@@ -9,7 +9,7 @@ if (!extension_loaded('dom')) {
 }
 --FILE--
 <?php
-require '../library/HTMLPurifier.auto.php';
+require_once '../library/HTMLPurifier.auto.php';
 echo get_class(HTMLPurifier_Lexer::create(HTMLPurifier_Config::createDefault()));
 --EXPECT--
 HTMLPurifier_Lexer_DirectLex

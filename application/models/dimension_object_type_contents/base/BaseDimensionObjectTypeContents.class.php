@@ -213,7 +213,7 @@
     *
     * @return DimensionObjectTypeContents 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'DimensionObjectTypeContents')) {
         $instance = new DimensionObjectTypeContents();

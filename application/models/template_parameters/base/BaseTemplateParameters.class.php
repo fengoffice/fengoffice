@@ -213,7 +213,7 @@ abstract class BaseTemplateParameters extends DataManager {
 	 *
 	 * @return  TemplateParameters
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'TemplateParameters')) {
 			$instance = new TemplateParameters();

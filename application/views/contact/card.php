@@ -2,8 +2,9 @@
 <div class="contact">
 <?php
 //    if(isset($contact) && ($contact instanceof Contact)) {
-    
+
     $otname = $contact->getIsCompany() ? 'company' : 'contact';
+    /*
 	if ($contact->hasPicture()){
 		$image = '<div class="cardIcon" style="text-align:center;">';
 		
@@ -20,13 +21,31 @@
 		
 		tpl_assign("image",$image);
 	} else {
-		
+		$image = "";
 		if ($contact->canEdit(logged_user())) {
 			$image .= '<a class="internalLink" href="' . $contact->getUpdatePictureUrl() .'" title="' . lang('edit picture') . '"><div id="2_iconDiv" class="coViewIconImage ico-large-'.$otname.'"></div></a>';
 			tpl_assign("image",$image);
 		}
 	}
-	
+*/
+	$image = '<div class="cardIcon" style="text-align:center;">';
+		
+	if ($contact->canEdit(logged_user())) {
+		$image .= '<a class="internalLink" href="' . $contact->getUpdatePictureUrl() .'" title="' . lang('edit picture') . '">';
+	}
+
+	if ($contact->hasPicture()){
+		$image .= '<img src="' . $contact->getPictureUrl() .'" alt="'. clean($contact->getObjectName()) .' picture" />';
+	}
+
+	if ($contact->canEdit(logged_user())) {
+		$image .= '</a>';
+	}
+
+	$image .= '</div>';
+
+	tpl_assign("image",$image);
+
 	$description = "";
 	$company = $contact->getCompany();
 	if ($company instanceof Contact)

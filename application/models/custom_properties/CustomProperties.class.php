@@ -13,7 +13,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function getHiddenCustomPropertiesByObjectType($object_type) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array("`object_type` = ? AND `is_required` = ? AND `visible_by_default` = ? $extra_conditions", $object_type, false, false),
 			'order' => 'property_order asc'
 		));
@@ -27,7 +27,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function countHiddenCustomPropertiesByObjectType($object_type_id) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::count(array("`object_type_id` = ? AND `is_required` = ? AND `visible_by_default` = ? $extra_conditions", $object_type_id, false, false));
+		return self::instance()->count(array("`object_type_id` = ? AND `is_required` = ? AND `visible_by_default` = ? $extra_conditions", $object_type_id, false, false));
 	}
 
 	/**
@@ -38,7 +38,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function countAllCustomPropertiesByObjectType($object_type_id) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::count(array("`object_type_id` = ? $extra_conditions", $object_type_id));
+		return self::instance()->count(array("`object_type_id` = ? $extra_conditions", $object_type_id));
 	}
 
 	/**
@@ -49,7 +49,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function countVisibleCustomPropertiesByObjectType($object_type_id) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::count(array("`object_type_id` = ? AND (`is_required` = ? OR `visible_by_default` = ?) $extra_conditions", $object_type_id, true, true));
+		return self::instance()->count(array("`object_type_id` = ? AND (`is_required` = ? OR `visible_by_default` = ?) $extra_conditions", $object_type_id, true, true));
 	}
 
 	/**
@@ -79,7 +79,7 @@ class  CustomProperties extends  BaseCustomProperties {
 		}
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_cond);
 		$cond = array("`object_type_id` = ? $extra_cond $disabled_cond", $object_type);
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => $cond,
 			'order' => 'property_order asc'
 		));
@@ -95,7 +95,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function getCustomPropertyIdsByObjectType($object_type) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'id' => true,
 			'conditions' => array("`object_type_id` = ? $extra_conditions", $object_type),
 			'order' => 'property_order asc'
@@ -112,7 +112,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function getCustomPropertyByName($object_type, $custom_property_name) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::findOne(array(
+		return self::instance()->findOne(array(
 			'conditions' => array("`object_type_id` = ? and `name` = ? $extra_conditions", $object_type, $custom_property_name)
 		));
 	} //  getCustomPropertyByName
@@ -132,7 +132,7 @@ class  CustomProperties extends  BaseCustomProperties {
 		if (!$cp instanceof CustomProperty) {
 			$extra_conditions = "";
 			Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-			$cp = self::findOne(array(
+			$cp = self::instance()->findOne(array(
 				'conditions' => array("`object_type_id` = ? and `code` = ? $extra_conditions", $object_type, $custom_property_code)
 			));
 			self::$cp_code_cache[$key] = $cp;
@@ -149,16 +149,16 @@ class  CustomProperties extends  BaseCustomProperties {
 	static function getCustomProperty($prop_id) {
 		$extra_conditions = "";
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_conditions);
-		return self::findOne(array( 'conditions' => array("`id` = ? $extra_conditions", $prop_id) ));
+		return self::instance()->findOne(array( 'conditions' => array("`id` = ? $extra_conditions", $prop_id) ));
 	} //  getCustomProperty
 
 
 	static function deleteAllByObjectType($object_type){
-		return self::delete("`object_type_id` = " . DB::escape($object_type));
+		return self::instance()->delete("`object_type_id` = " . DB::escape($object_type));
 	}
 
 	static function deleteByObjectTypeAndName($object_type, $name) {
-		return self::delete("`object_type_id` = " . DB::escape($object_type) . "' AND `name` = " . DB::escape($name));
+		return self::instance()->delete("`object_type_id` = " . DB::escape($object_type) . "' AND `name` = " . DB::escape($name));
 	}
 
 } // CustomProperties

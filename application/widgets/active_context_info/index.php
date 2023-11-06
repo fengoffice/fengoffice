@@ -18,7 +18,7 @@ if (count($members) == 1){
 	$prop_html = "";
 	Hook::fire("render_widget_member_information", $member, $prop_html);
 	
-	$ot = ObjectTypes::findById($member->getObjectTypeId());
+	$ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
 	if ($ot->getName()=='project_folder' || $ot->getName()=='customer_folder') {
 		$ot = ObjectTypes::findByName('folder');
 	}
@@ -51,9 +51,9 @@ if (count($members) == 1){
 			
 			if ($dim->getCode() != 'feng_persons') {
 				
-				$mems = Members::findAll(array('conditions' => "id IN (".implode(',', $assoc_mem_ids).")"));
+				$mems = Members::instance()->findAll(array('conditions' => "id IN (".implode(',', $assoc_mem_ids).")"));
 				
-				$assoc_ot = ObjectTypes::findById($assoc_otid);
+				$assoc_ot = ObjectTypes::instance()->findById($assoc_otid);
 				$custom_ot_name = Members::getTypeNameToShowByObjectType($dim->getId(), $assoc_ot->getId());
 				$label = ($a->getIsMultiple() || count($assoc_mem_ids) > 1) ? $dim->getName() : $custom_ot_name;
 				

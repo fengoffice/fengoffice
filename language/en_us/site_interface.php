@@ -434,11 +434,11 @@ return array(
 
   'x ago' => '{0} ago',
 
-  'object time slots' => 'Registered timeslots',
+  'object time slots' => 'Registered time entries',
   'start work' => 'Start clock',
   'end work' => 'Stop clock',
-  'confirm delete timeslot' => 'Are you sure you want to permanently delete this timeslot?',
-  'confirm delete all timeslots' => 'Are you sure you want to permanently delete all this timeslots?',
+  'confirm delete timeslot' => 'Are you sure you want to permanently delete this time entry?',
+  'confirm delete all timeslots' => 'Are you sure you want to permanently delete all this time entries?',
   'success open timeslot' => 'Time entry opened successfully',
   'success create timeslot' => 'Time entry created successfully',
   'success cancel timeslot' => 'Time entry canceled successfully',
@@ -454,9 +454,9 @@ return array(
   'pause work' => 'Pause clock',
   'resume work' => 'Resume clock',
   'end work description' => 'End work description',
-  'add timeslot' => 'Add timeslot',
-  'new timeslot' => 'New timeslot',
-  'edit timeslot' => 'Edit timeslot',
+  'add timeslot' => 'Add time entry',
+  'new timeslot' => 'New time entry',
+  'edit timeslot' => 'Edit time entry',
   'start date' => 'Start date',
   'start' => 'Start',
   'end' => 'End',
@@ -525,7 +525,7 @@ return array(
   'last month' => 'Last month',
   'select dates...' => 'Select dates...',
 
-  'task time report description' => 'This report displays the total executed time for a list of tasks, specified by a time period, timeslot type and person (optional).',
+  'task time report description' => 'This report displays the total executed time for a list of tasks, specified by a time period, time entry type and person (optional).',
   'no data to display' => 'No data to display',
 
   'new company name' => 'New company name',
@@ -594,12 +594,12 @@ return array(
   'paused time' => 'Paused time',
   'total pause time' => 'Total pause time',
   'pause time cannot be negative' => 'Pause time cannot be negative',
-  'pause time cannot exceed timeslot time' => 'Pause time cannot exceed timeslot time',
-  'timeslots' => 'Timeslots',
+  'pause time cannot exceed timeslot time' => 'Pause time cannot exceed time entry time',
+  'timeslots' => 'Time entries',
 
-  'task timeslots' => 'Task timeslots',
-  'time timeslots' => 'General timeslots',
-  'all timeslots' => 'Task and general timeslots',
+  'task timeslots' => 'Task time entries',
+  'time timeslots' => 'General time entries',
+  'all timeslots' => 'Task and general time entries',
 
   'print report' => 'Print report',
 
@@ -675,7 +675,7 @@ return array(
   'fixed billing' => 'Total billable',
   'show billing information' => 'Show billing information',
   'no billing categories' => 'There are no billing categories.',
-  'no billing categories desc' => 'If you wish to enable billing support for timeslots and time reports, please add a new billing category.',
+  'no billing categories desc' => 'If you wish to enable billing support for time entries and time reports, please add a new billing category.',
   'billing support is enabled' => 'Billing support is enabled',
   'BillingCategory default_value required' => 'A default hourly rate is required for this billing category',
   'defined in a parent workspace' => 'Defined in a parent workspace',

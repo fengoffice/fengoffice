@@ -213,7 +213,7 @@
     *
     * @return ContactMemberPermissions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactMemberPermissions')) {
         $instance = new ContactMemberPermissions();

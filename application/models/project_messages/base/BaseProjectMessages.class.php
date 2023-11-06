@@ -253,7 +253,7 @@ abstract class BaseProjectMessages extends ContentDataObjects {
 	 *
 	 * @return ProjectMessages
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ProjectMessages')) {
 			$instance = new ProjectMessages();

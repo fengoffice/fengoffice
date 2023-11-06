@@ -626,7 +626,7 @@ class Mime_Types
     *
     * @return Mime_Types 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Mime_Types')) {
         $instance = new Mime_Types(MIME_TYPES_LIST);

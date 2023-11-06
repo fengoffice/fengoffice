@@ -14,7 +14,7 @@
 	}
         
         function findByFile($file_id) {
-                return ProjectFileRevisions::findOne(array('conditions' => array('`file_id` = ?', $file_id)));
+                return ProjectFileRevisions::instance()->findOne(array('conditions' => array('`file_id` = ?', $file_id)));
         }
   		
   } // ProjectFileRevisions 

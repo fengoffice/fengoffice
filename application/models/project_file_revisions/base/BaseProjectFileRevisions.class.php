@@ -216,7 +216,7 @@
     *
     * @return ProjectFileRevisions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ProjectFileRevisions')) {
         $instance = new ProjectFileRevisions();

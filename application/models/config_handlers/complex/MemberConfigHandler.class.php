@@ -31,7 +31,7 @@ class MemberConfigHandler extends ConfigHandler {
     		'hidden_field_name' => $control_name,
     	);
     	
-    	$dimension = Dimensions::findById($options['dim_id']);
+    	$dimension = Dimensions::instance()->findById($options['dim_id']);
     	if (isset($options['mem_type_ids'])) {
     		$sel_options['allowedMemberTypes'] = $options['mem_type_ids'];
     	}

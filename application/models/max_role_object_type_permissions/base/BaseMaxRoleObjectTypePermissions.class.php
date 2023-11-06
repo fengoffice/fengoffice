@@ -212,7 +212,7 @@
     *
     * @return MaxRoleObjectTypePermissions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'MaxRoleObjectTypePermissions')) {
         $instance = new MaxRoleObjectTypePermissions();

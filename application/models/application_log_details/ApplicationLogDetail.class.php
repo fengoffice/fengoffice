@@ -14,7 +14,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 	 * @return Contact
 	 */
 	function getApplicationLog() {
-		return ApplicationLogs::findById($this->getApplicationLogId());
+		return ApplicationLogs::instance()->findById($this->getApplicationLogId());
 	} // getApplicationLog
 
 
@@ -36,7 +36,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 		if ($object->columnExists($property)) {
 
 			$object_type_id = $object->getObjectTypeId();
-			$ot = ObjectTypes::findById($object_type_id);
+			$ot = ObjectTypes::instance()->findById($object_type_id);
 			$task_amount_field = $ot->getName() == 'task' && in_array($property, array('executed_cost', 'earned_value', 'estimated_cost', 'estimated_price'));
 			$time_amount_field = $ot->getName() == 'timeslot' && in_array($property, array('fixed_billing', 'hourly_billing', 'fixed_cost', 'hourly_cost'));
 			$actual_expense_amount_field = $ot->getName() == 'payment_receipt' && in_array($property, array('unit_cost', 'amount', 'unit_price', 'total_price', 'total_cost_without_taxes'));
@@ -52,11 +52,11 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 				} else if($ot->getName() == 'payment_receipt') {
 					$currency_id = $object->getCurrencyId();
 				}
-				$currency = Currencies::getCurrency($currency_id);
+				$currency = Currencies::instance()->getCurrency($currency_id);
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code');
 				$formatted = format_money_amount($value, $c_symbol);
 			} else if ($ot->getName() == 'task' && $property == 'parent_id') {
-				$parent_task = ProjectTasks::findById($value);
+				$parent_task = ProjectTasks::instance()->findById($value);
 				if ($parent_task instanceof ProjectTask) {
 					$formatted = $parent_task->getName();
 				}
@@ -85,7 +85,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 				$members_added_ids = array_diff($current_member_ids, $old_member_ids);
 				$members_removed_ids = array_diff($old_member_ids, $current_member_ids);
 
-				$members_added = Members::findAll(array("conditions" => "id IN (".implode(',',$members_added_ids).")"));
+				$members_added = Members::instance()->findAll(array("conditions" => "id IN (".implode(',',$members_added_ids).")"));
 				if (count($members_added) > 0) {
 					$formatted .= lang('added') . ":<ul>";
 					foreach ($members_added as $m) {
@@ -94,7 +94,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 					$formatted .= "</ul>";
 				}
 
-				$members_removed = Members::findAll(array("conditions" => "id IN (".implode(',',$members_removed_ids).")"));
+				$members_removed = Members::instance()->findAll(array("conditions" => "id IN (".implode(',',$members_removed_ids).")"));
 				if (count($members_removed) > 0) {
 					$formatted .= lang('removed') . ":<ul>";
 					foreach ($members_removed as $m) {
@@ -108,7 +108,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 
 				$mem_ids = array_filter(explode(',', $value));
 				if (count($mem_ids) > 0) {
-					$members = Members::findAll(array("conditions" => "id IN (".implode(',',$mem_ids).")"));
+					$members = Members::instance()->findAll(array("conditions" => "id IN (".implode(',',$mem_ids).")"));
 					foreach ($members as $m) {
 						$formatted .= "<li><span class='link-ico ico-color".$m->getColor()." ".$m->getIconClass()."'>" . $m->getDisplayName() . "</span></li>";
 					}
@@ -127,7 +127,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 				$object_added_ids = array_diff($current_object_ids, $old_object_ids);
 				$object_removed_ids = array_diff($old_object_ids, $current_object_ids);
 
-				$objects_added = Objects::findAll(array("conditions" => "id IN (".implode(',',$object_added_ids).")"));
+				$objects_added = Objects::instance()->findAll(array("conditions" => "id IN (".implode(',',$object_added_ids).")"));
 				if (count($objects_added) > 0) {
 					$formatted .= lang('added') . ":<ul>";
 					foreach ($objects_added as $o) {
@@ -136,7 +136,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 					$formatted .= "</ul>";
 				}
 
-				$object_removed = Objects::findAll(array("conditions" => "id IN (".implode(',',$object_removed_ids).")"));
+				$object_removed = Objects::instance()->findAll(array("conditions" => "id IN (".implode(',',$object_removed_ids).")"));
 				if (count($object_removed) > 0) {
 					$formatted .= lang('removed') . ":<ul>";
 					foreach ($object_removed as $o) {
@@ -150,7 +150,7 @@ class ApplicationLogDetail extends BaseApplicationLogDetail {
 
 				$obj_ids = array_filter(explode(',', $value));
 				if (count($obj_ids) > 0) {
-					$objects = Objects::findAll(array("conditions" => "id IN (".implode(',',$obj_ids).")"));
+					$objects = Objects::instance()->findAll(array("conditions" => "id IN (".implode(',',$obj_ids).")"));
 					foreach ($objects as $o) {
 						$formatted .= '<li><a class="internalLink link-ico ico-'.$o->getObjectTypeName().'" href="'.$o->getViewUrl() .'">' . $o->getName() . "</a></li>";
 					}

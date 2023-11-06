@@ -215,7 +215,7 @@ abstract class BaseTemplateObjects extends DataManager {
 	 *
 	 * @return  TemplateObjects
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'TemplateObjects')) {
 			$instance = new TemplateObjects();

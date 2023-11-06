@@ -8,7 +8,6 @@
  * @return string
  */
 function lang($name) {
-
 	// Get function arguments and remove first one.
 	$args = func_get_args();
 	if(is_array($args)) array_shift($args);
@@ -34,6 +33,19 @@ function langA($name, $args) {
 			if (is_null ( $value )) {
 				$value = Localization::instance ()->lang ( str_replace ( "_", " ", $name ) );
 				if (is_null ( $value )) {
+					$bt = debug_backtrace();
+					$c = array_shift($bt);
+					$c1 = array_shift($c);
+					$c2 = array_shift($c);
+					$c = array_shift($bt);
+					$c1 = array_shift($c);
+					$c2 = array_shift($c);
+					$c = array_shift($bt);
+					$c1 = array_shift($c);
+					$c2 = array_shift($c);
+					$c = array_shift($bt);
+					$c1 = array_shift($c);
+					$c2 = array_shift($c);
 					return "Missing lang: $name";
 				}
 			}

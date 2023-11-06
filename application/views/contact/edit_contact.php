@@ -161,16 +161,16 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 							$member_permissions = array();
 
 							$allowed_user_type_ids = config_option('give_member_permissions_to_new_users');
-							$role_ot_permissions = RoleObjectTypePermissions::findAll(array('conditions' => "role_id = '$user_type' AND object_type_id NOT IN (SELECT id FROM " . TABLE_PREFIX . "object_types WHERE name IN ('template','comment'))"));
+							$role_ot_permissions = RoleObjectTypePermissions::instance()->findAll(array('conditions' => "role_id = '$user_type' AND object_type_id NOT IN (SELECT id FROM " . TABLE_PREFIX . "object_types WHERE name IN ('template','comment'))"));
 							$members_with_permissions = array();
 
 							if (in_array($user_type, $allowed_user_type_ids)) {
 
 								$enabled_dimension_ids = config_option('enabled_dimensions');
 								if (count($enabled_dimension_ids) > 0) {
-									$dimension_ids = Dimensions::findAll(array('id' => true, 'conditions' => "id in (" . implode(',', $enabled_dimension_ids) . ") AND defines_permissions=1 AND is_manageable=1"));
+									$dimension_ids = Dimensions::instance()->findAll(array('id' => true, 'conditions' => "id in (" . implode(',', $enabled_dimension_ids) . ") AND defines_permissions=1 AND is_manageable=1"));
 									if (count($dimension_ids) > 0) {
-										$members_with_permissions = Members::findAll(array('id' => true, 'conditions' => "dimension_id IN (" . implode(',', $dimension_ids) . ")"));
+										$members_with_permissions = Members::instance()->findAll(array('id' => true, 'conditions' => "dimension_id IN (" . implode(',', $dimension_ids) . ")"));
 									}
 								}
 							}
@@ -208,19 +208,19 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 
 
 						// Module Permissions
-						$module_permissions = TabPanelPermissions::findAll(array("conditions" => "`permission_group_id` = $pg_id"));
+						$module_permissions = TabPanelPermissions::instance()->findAll(array("conditions" => "`permission_group_id` = $pg_id"));
 						$module_permissions_info = array();
 						foreach ($module_permissions as $mp) {
 							$module_permissions_info[$mp->getTabPanelId()] = 1;
 						}
-						$all_modules = TabPanels::findAll(array("conditions" => "`enabled` = 1", "order" => "ordering"));
+						$all_modules = TabPanels::instance()->findAll(array("conditions" => "`enabled` = 1", "order" => "ordering"));
 						$all_modules_info = array();
 						foreach ($all_modules as $module) {
 							$all_modules_info[] = array('id' => $module->getId(), 'name' => lang($module->getTitle()), 'ot' => $module->getObjectTypeId());
 						}
 
 						// System Permissions
-						$system_permissions = SystemPermissions::findById($pg_id);
+						$system_permissions = SystemPermissions::instance()->findById($pg_id);
 
 						tpl_assign('module_permissions_info', $module_permissions_info);
 						tpl_assign('all_modules_info', $all_modules_info);

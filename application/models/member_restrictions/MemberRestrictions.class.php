@@ -9,7 +9,7 @@
     
     
     function clearRestrictions($member_id) {
-    	return self::delete(array("`member_id` = ?", $member_id));
+    	return self::instance()->delete(array("`member_id` = ?", $member_id));
     }
     
   } // MemberRestrictions 

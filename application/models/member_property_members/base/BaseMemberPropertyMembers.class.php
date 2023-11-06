@@ -215,7 +215,7 @@
     *
     * @return MemberPropertyMembers 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'MemberPropertyMembers')) {
         $instance = new MemberPropertyMembers();

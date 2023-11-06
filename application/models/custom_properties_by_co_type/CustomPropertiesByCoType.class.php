@@ -44,7 +44,7 @@ class CustomPropertiesByCoType extends BaseCustomPropertiesByCoType {
 	} //  getCustomPropertyValue
 	
 	static function clearCoTypesForCustomProperty($cp_id) {
-		return self::delete("`cp_id` = $cp_id");
+		return self::instance()->delete("`cp_id` = $cp_id");
 	}
 	
 } // CustomProperties

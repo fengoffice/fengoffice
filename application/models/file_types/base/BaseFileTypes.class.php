@@ -221,7 +221,7 @@
     *
     * @return FileTypes 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'FileTypes')) {
         $instance = new FileTypes();

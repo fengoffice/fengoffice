@@ -69,7 +69,7 @@ class ContactController extends ApplicationController
 	function create_user()
 	{
 
-		$contact = Contacts::findById(get_id());
+		$contact = Contacts::instance()->findById(get_id());
 		if (!($contact instanceof Contact)) {
 			flash_error(lang('contact dnx'));
 			ajx_current("empty");
@@ -110,12 +110,12 @@ class ContactController extends ApplicationController
 	function add_user()
 	{
 		$max_users = config_option('max_users');
-		if ($max_users && (Contacts::count() >= $max_users)) {
+		if ($max_users && (Contacts::instance()->count() >= $max_users)) {
 			flash_error(lang('maximum number of users reached error'));
 			ajx_current("empty");
 			return;
 		}
-		$company = Contacts::findById(get_id('company_id'));
+		$company = Contacts::instance()->findById(get_id('company_id'));
 		if (!($company instanceof Contact)) {
 			$company = owner_company();
 		}
@@ -134,7 +134,7 @@ class ContactController extends ApplicationController
 			//if it is a new user
 			$contact_id = get_id('contact_id');
 			tpl_assign('contact_id', $contact_id);
-			$contact = Contacts::findById($contact_id);
+			$contact = Contacts::instance()->findById($contact_id);
 
 			$tz_id = 0;
 			if ($company instanceof Contact) {
@@ -183,7 +183,7 @@ class ContactController extends ApplicationController
 
 			// Module permissions
 			$module_permissions_info = array();
-			$all_modules = TabPanels::findAll(array("conditions" => "`enabled` = 1 AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM " . TABLE_PREFIX . "plugins WHERE is_activated > 0 AND is_installed > 0))", "order" => "ordering"));
+			$all_modules = TabPanels::instance()->findAll(array("conditions" => "`enabled` = 1 AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM " . TABLE_PREFIX . "plugins WHERE is_activated > 0 AND is_installed > 0))", "order" => "ordering"));
 			$all_modules_info = array();
 			foreach ($all_modules as $module) {
 				$all_modules_info[] = array('id' => $module->getId(), 'name' => lang($module->getTitle()), 'ot' => $module->getObjectTypeId());
@@ -272,9 +272,9 @@ class ContactController extends ApplicationController
 	 */
 	function list_user_sub_categories()
 	{
-		tpl_assign('config_categories', ContactConfigCategories::findAll(array('conditions' => "located_under=" . get_id())));
-		tpl_assign('main_category', ContactConfigCategories::findById(get_id()));
-		tpl_assign('title', ContactConfigCategories::findById(get_id())->getName());
+		tpl_assign('config_categories', ContactConfigCategories::instance()->findAll(array('conditions' => "located_under=" . get_id())));
+		tpl_assign('main_category', ContactConfigCategories::instance()->findById(get_id()));
+		tpl_assign('title', ContactConfigCategories::instance()->findById(get_id())->getName());
 	} //list_preferences
 
 	/**
@@ -283,7 +283,7 @@ class ContactController extends ApplicationController
 	 */
 	function update_user_preferences()
 	{
-		$category = ContactConfigCategories::findById(get_id());
+		$category = ContactConfigCategories::instance()->findById(get_id());
 		if (!($category instanceof ContactConfigCategory)) {
 			flash_error(lang('config category dnx'));
 			$this->redirectToReferer(get_url('contact', 'card'));
@@ -308,7 +308,7 @@ class ContactController extends ApplicationController
 				foreach ($options as $option) {
 					// update cache if available
 					if (GlobalCache::isAvailable()) {
-						GlobalCache::delete('user_config_option_' . logged_user()->getId() . '_' . $option->getName());
+						GlobalCache::instance()->delete('user_config_option_' . logged_user()->getId() . '_' . $option->getName());
 					}
 					if ($option->getName() == "reminders_events" || $option->getName() == "reminders_tasks") {
 						$array_value = array_var($submited_values, $option->getName());
@@ -346,7 +346,7 @@ class ContactController extends ApplicationController
 
 			// get user_id
 			if (isset($_POST['cid'])) {
-				$user = Contacts::findById($_POST['cid']);
+				$user = Contacts::instance()->findById($_POST['cid']);
 			}
 			//get members id
 			if (isset($_POST['mid'])) {
@@ -381,7 +381,7 @@ class ContactController extends ApplicationController
 
 			//get the permissions group for the contact
 			$group_id = $user->getPermissionGroupId();
-			$group = PermissionGroups::findById($group_id);
+			$group = PermissionGroups::instance()->findById($group_id);
 			if (!($group instanceof PermissionGroup)) {
 				flash_error(lang('group dnx'));
 				return;
@@ -436,7 +436,7 @@ class ContactController extends ApplicationController
 		$this->setTemplate(get_template_path("json"));
 		ajx_current("empty");
 		$usr_data = array();
-		$users = Contacts::findAll(array("conditions" => "is_company = 0"));
+		$users = Contacts::instance()->findAll(array("conditions" => "is_company = 0"));
 		if ($users) {
 			foreach ($users as $usr) {
 				$usr_data[] = array(
@@ -622,7 +622,7 @@ class ContactController extends ApplicationController
 					$id = $attributes["ids"][$i];
 					$type = $attributes["types"][$i];
 
-					$contact = Contacts::findById($id);
+					$contact = Contacts::instance()->findById($id);
 					if ($contact instanceof Contact && $contact->canDelete(logged_user()) && !$contact->isUser()) {
 						try {
 							DB::beginWork();
@@ -652,7 +652,7 @@ class ContactController extends ApplicationController
 				for ($i = 0; $i < count($attributes["ids"]); $i++) {
 					$id = $attributes["ids"][$i];
 					$type = $attributes["types"][$i];
-					$contact = Contacts::findById($id);
+					$contact = Contacts::instance()->findById($id);
 					if ($contact instanceof Contact && $contact->canEdit(logged_user())) {
 						try {
 							DB::beginWork();
@@ -825,7 +825,7 @@ class ContactController extends ApplicationController
 	 */
 	function view()
 	{
-		$contact = Contacts::findById(get_id());
+		$contact = Contacts::instance()->findById(get_id());
 		if ($contact->getIsCompany())
 			$this->company_card();
 		else
@@ -843,7 +843,7 @@ class ContactController extends ApplicationController
 	function card()
 	{
 		$id = get_id();
-		$contact = Contacts::findById($id);
+		$contact = Contacts::instance()->findById($id);
 		if (!$contact || !$contact->canView(logged_user())) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
@@ -991,7 +991,7 @@ class ContactController extends ApplicationController
 		if (array_var($_GET, 'is_user')) {
 			$contact->setUserType(array_var($_GET, 'type', 4));
 		}
-		$im_types = ImTypes::findAll(array('order' => '`id`'));
+		$im_types = ImTypes::instance()->findAll(array('order' => '`id`'));
 
 		if (!$is_api) {
 			$contact_data = array_var($_POST, 'contact');
@@ -1006,7 +1006,7 @@ class ContactController extends ApplicationController
 		}
 
 		$tz_id = 0;
-		$company = Contacts::findById(get_id('company_id'));
+		$company = Contacts::instance()->findById(get_id('company_id'));
 		if ($company instanceof Contact) {
 			$tz_id = $company->getUserTimezoneId();
 		}
@@ -1040,7 +1040,7 @@ class ContactController extends ApplicationController
 
 		//User From Contact
 		if (array_var($_REQUEST, 'create_user_from_contact')) {
-			$contact_old = Contacts::findById(get_id());
+			$contact_old = Contacts::instance()->findById(get_id());
 			if (!($contact_old instanceof Contact)) {
 				flash_error(lang('contact dnx'));
 				ajx_current("empty");
@@ -1062,7 +1062,7 @@ class ContactController extends ApplicationController
 			tpl_assign('object', $contact_old);
 		}
 		if (array_var($_REQUEST, 'user_from_contact_id') > 0) {
-			$contact = Contacts::findById(array_var($_REQUEST, 'user_from_contact_id'));
+			$contact = Contacts::instance()->findById(array_var($_REQUEST, 'user_from_contact_id'));
 		}
 		//END User From Contact
 
@@ -1285,7 +1285,7 @@ class ContactController extends ApplicationController
 						$combo_val = trim($contact->getFirstName() . ' ' . $contact->getSurname() . ' <' . $contact->getEmailAddress('personal') . '>');
 						evt_add("contact added from mail", array("div_id" => $contact_data['new_contact_from_mail_div_id'], "combo_val" => $combo_val, "hf_contacts" => $contact_data['hf_contacts']));
 					}
-					$contact = Contacts::findById($contact->getId());
+					$contact = Contacts::instance()->findById($contact->getId());
 
 					evt_add("new user added", $contact->getArrayInfo());
 				}
@@ -1300,7 +1300,7 @@ class ContactController extends ApplicationController
 				if ($user) {
 					DB::beginWork();
 
-					$contact = Contacts::findById($contact->getId());
+					$contact = Contacts::instance()->findById($contact->getId());
 					save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest(), array(), false, true);
 
 					// create member cache for the new user
@@ -1411,7 +1411,7 @@ class ContactController extends ApplicationController
 		}
 		$this->setTemplate('edit_contact');
 
-		$contact = Contacts::findById(get_id());
+		$contact = Contacts::instance()->findById(get_id());
 		if (!($contact instanceof Contact)) {
 			flash_error(lang('contact dnx'));
 			ajx_current("empty");
@@ -1424,7 +1424,7 @@ class ContactController extends ApplicationController
 			return;
 		} // if
 
-		$im_types = ImTypes::findAll(array('order' => '`id`'));
+		$im_types = ImTypes::instance()->findAll(array('order' => '`id`'));
 
 		// telephone types
 		$all_telephone_types = TelephoneTypes::getAllTelephoneTypesInfo();
@@ -1730,11 +1730,11 @@ class ContactController extends ApplicationController
 		$default_im = $contact->getMainImType();
 		$contact_data['default_im'] = $default_im instanceof ImType ? $default_im->getId() : '';
 
-		$all_phones = ContactTelephones::findAll(array('conditions' => 'contact_id = ' . $contact->getId()));
+		$all_phones = ContactTelephones::instance()->findAll(array('conditions' => 'contact_id = ' . $contact->getId()));
 		$contact_data['all_phones'] = $all_phones;
-		$all_addresses = ContactAddresses::findAll(array('conditions' => 'contact_id = ' . $contact->getId()));
+		$all_addresses = ContactAddresses::instance()->findAll(array('conditions' => 'contact_id = ' . $contact->getId()));
 		$contact_data['all_addresses'] = $all_addresses;
-		$all_webpages = ContactWebpages::findAll(array('conditions' => 'contact_id = ' . $contact->getId()));
+		$all_webpages = ContactWebpages::instance()->findAll(array('conditions' => 'contact_id = ' . $contact->getId()));
 		$contact_data['all_webpages'] = $all_webpages;
 		$all_emails = $contact->getNonMainEmails();
 		$contact_data['all_emails'] = $all_emails;
@@ -1744,7 +1744,7 @@ class ContactController extends ApplicationController
 
 	private function cut_max_user_permissions(Contact $user)
 	{
-		$admin_pg = PermissionGroups::findOne(array('conditions' => "`name`='Super Administrator'"));
+		$admin_pg = PermissionGroups::instance()->findOne(array('conditions' => "`name`='Super Administrator'"));
 
 		$all_roles_max_permissions = RoleObjectTypePermissions::getAllRoleObjectTypePermissionsInfo();
 
@@ -1790,7 +1790,7 @@ class ContactController extends ApplicationController
 			foreach ($emails_data as $data) {
 				$obj = null;
 				if ($data['id'] > 0) {
-					$obj = ContactEmails::findById($data['id']);
+					$obj = ContactEmails::instance()->findById($data['id']);
 				} else {
 					if (trim($data['email_address']) == '') continue;
 				}
@@ -1822,7 +1822,7 @@ class ContactController extends ApplicationController
 			foreach ($phones_data as $data) {
 				$obj = null;
 				if (array_var($data, 'id') > 0) {
-					$obj = ContactTelephones::findById($data['id']);
+					$obj = ContactTelephones::instance()->findById($data['id']);
 				} else {
 					if (trim($data['number']) == '' && trim($data['name']) == '') continue;
 				}
@@ -1848,7 +1848,7 @@ class ContactController extends ApplicationController
 			foreach ($addresses_data as $data) {
 				$obj = null;
 				if (array_var($data, 'id') > 0) {
-					$obj = ContactAddresses::findById($data['id']);
+					$obj = ContactAddresses::instance()->findById($data['id']);
 				} else {
 					if (trim($data['street']) == '' && trim($data['city']) == '' && trim($data['state']) == '' && trim($data['zip_code']) == '' && trim($data['country']) == '') continue;
 				}
@@ -1879,7 +1879,7 @@ class ContactController extends ApplicationController
 			foreach ($webpages_data as $data) {
 				$obj = null;
 				if ($data['id'] > 0) {
-					$obj = ContactWebpages::findById($data['id']);
+					$obj = ContactWebpages::instance()->findById($data['id']);
 				} else {
 					if (trim($data['url']) == '') continue;
 				}
@@ -1942,7 +1942,7 @@ class ContactController extends ApplicationController
 			return;
 		}
 		if (!array_var($_REQUEST, 'new_contact')) {
-			$contact = Contacts::findById(get_id());
+			$contact = Contacts::instance()->findById(get_id());
 			if (!($contact instanceof Contact)) {
 				flash_error(lang('contact dnx'));
 				ajx_current("empty");
@@ -2061,7 +2061,7 @@ class ContactController extends ApplicationController
 			ajx_current("empty");
 			return;
 		}
-		$contact = Contacts::findById(get_id());
+		$contact = Contacts::instance()->findById(get_id());
 		if (!($contact instanceof Contact)) {
 			flash_error(lang('contact dnx'));
 			ajx_current("empty");
@@ -2120,7 +2120,7 @@ class ContactController extends ApplicationController
 			ajx_current("empty");
 			return;
 		}
-		$contact = Contacts::findById(get_id());
+		$contact = Contacts::instance()->findById(get_id());
 		if (!($contact instanceof Contact)) {
 			flash_error(lang('contact dnx'));
 			ajx_current("empty");
@@ -2231,7 +2231,7 @@ class ContactController extends ApplicationController
 							$fname = DB::escape(array_var($contact_data, "first_name"));
 							$lname = DB::escape(array_var($contact_data, "surname"));
 							$email_cond = array_var($contact_data, "email") != '' ? " OR email_address = " . DB::escape(array_var($contact_data, "email")) : "";
-							$contact = Contacts::findOne(array(
+							$contact = Contacts::instance()->findOne(array(
 								"conditions" => "first_name = " . $fname . " AND surname = " . $lname . " $email_cond",
 								'join' => array(
 									'table' => ContactEmails::instance()->getTableName(),
@@ -2254,14 +2254,14 @@ class ContactController extends ApplicationController
 									$comp_name = '';
 								}
 								if ($comp_name != '') {
-									$company = Contacts::findOne(array("conditions" => "first_name = $comp_name AND is_company = 1"));
+									$company = Contacts::instance()->findOne(array("conditions" => "first_name = $comp_name AND is_company = 1"));
 									if ($company) {
 										$contact_data['company_id'] = $company->getId();
 									}
 									$contact_data['import_status'] .= " " . lang("company") . " $comp_name";
 									// Find client member
-									$client_ot_id = ObjectTypes::findOne(array('conditions' => '`name`="customer"'))->getId();
-									$client_member = Members::findOne(array('conditions' => '`object_type_id`=' . $client_ot_id . ' AND `name`=' . $comp_name));
+									$client_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="customer"'))->getId();
+									$client_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $client_ot_id . ' AND `name`=' . $comp_name));
 								} else {
 									$contact_data['company_id'] = 0;
 								}
@@ -2416,7 +2416,7 @@ class ContactController extends ApplicationController
 							$contact_data = $this->buildCompanyData(array_var($_POST, 'select_company'), array_var($_POST, 'check_company'), $registers[$i]);
 							$contact_data['import_status'] = '(' . lang('updated') . ')';
 							$comp_name = DB::escape(array_var($contact_data, "first_name"));
-							$company = Contacts::findOne(array("conditions" => "first_name = $comp_name AND is_company = 1"));
+							$company = Contacts::instance()->findOne(array("conditions" => "first_name = $comp_name AND is_company = 1"));
 							$log_action = ApplicationLogs::ACTION_EDIT;
 							if (!$company) {
 								$company = new Contact();
@@ -2865,7 +2865,7 @@ class ContactController extends ApplicationController
 							unset($contact_data['photo_tmp_filename']);
 						}
 						if (isset($contact_data['company_name'])) {
-							$company = Contacts::findOne(array("conditions" => "`first_name` = '" . mysqli_real_escape_string(DB::connection()->getLink(), $contact_data['company_name']) . "'"));
+							$company = Contacts::instance()->findOne(array("conditions" => "`first_name` = '" . mysqli_real_escape_string(DB::connection()->getLink(), $contact_data['company_name']) . "'"));
 							if ($company == null) {
 								$company = new Contact();
 								$company->setObjectName($contact_data['company_name']);
@@ -2882,7 +2882,7 @@ class ContactController extends ApplicationController
 						$fname = DB::escape(array_var($contact_data, "first_name"));
 						$lname = DB::escape(array_var($contact_data, "surname"));
 						$email_cond = array_var($contact_data, "email") != '' ? " OR email_address = '" . array_var($contact_data, "email") . "'" : "";
-						$contact = Contacts::findOne(array(
+						$contact = Contacts::instance()->findOne(array(
 							"conditions" => "first_name = " . $fname . " AND surname = " . $lname . " $email_cond",
 							'join' => array(
 								'table' => ContactEmails::instance()->getTableName(),
@@ -2903,7 +2903,7 @@ class ContactController extends ApplicationController
 						if ($can_import) {
 							$comp_name = DB::escape(array_var($contact_data, "company_id"));
 							if ($comp_name != '') {
-								$company = Contacts::findOne(array("conditions" => "first_name = $comp_name AND is_company = 1"));
+								$company = Contacts::instance()->findOne(array("conditions" => "first_name = $comp_name AND is_company = 1"));
 								if ($company) {
 									$contact_data['company_id'] = $company->getId();
 								}
@@ -3390,7 +3390,7 @@ class ContactController extends ApplicationController
 	function company_card()
 	{
 		$this->setTemplate("view_company");
-		$company = Contacts::findById(get_id());
+		$company = Contacts::instance()->findById(get_id());
 		if (!($company instanceof Contact)) {
 			flash_error(lang('company dnx'));
 			ajx_current("empty");
@@ -3510,7 +3510,7 @@ class ContactController extends ApplicationController
 		}
 		$this->setTemplate('add_company');
 
-		$company = Contacts::findById(get_id());
+		$company = Contacts::instance()->findById(get_id());
 
 		if (!($company instanceof Contact)) {
 			flash_error(lang('client dnx'));
@@ -3565,11 +3565,11 @@ class ContactController extends ApplicationController
 			$all_email_types = EmailTypes::getAllEmailTypesInfo();
 			tpl_assign('all_email_types', $all_email_types);
 
-			$all_phones = ContactTelephones::findAll(array('conditions' => 'contact_id = ' . $company->getId()));
+			$all_phones = ContactTelephones::instance()->findAll(array('conditions' => 'contact_id = ' . $company->getId()));
 			$company_data['all_phones'] = $all_phones;
-			$all_addresses = ContactAddresses::findAll(array('conditions' => 'contact_id = ' . $company->getId()));
+			$all_addresses = ContactAddresses::instance()->findAll(array('conditions' => 'contact_id = ' . $company->getId()));
 			$company_data['all_addresses'] = $all_addresses;
-			$all_webpages = ContactWebpages::findAll(array('conditions' => 'contact_id = ' . $company->getId()));
+			$all_webpages = ContactWebpages::instance()->findAll(array('conditions' => 'contact_id = ' . $company->getId()));
 			$company_data['all_webpages'] = $all_webpages;
 			$all_emails = $company->getNonMainEmails();
 			$company_data['all_emails'] = $all_emails;
@@ -3788,7 +3788,7 @@ class ContactController extends ApplicationController
 	{
 		ajx_current("empty");
 		$id = array_var($_GET, 'id');
-		$company = Contacts::findById($id);
+		$company = Contacts::instance()->findById($id);
 
 		if ($company) {
 			$address = $company->getAddress('work');
@@ -3908,7 +3908,7 @@ class ContactController extends ApplicationController
 		// Init variables
 
 		$max_users = config_option('max_users');
-		if ($max_users && (Contacts::count() >= $max_users)) {
+		if ($max_users && (Contacts::instance()->count() >= $max_users)) {
 			flash_error(lang('maximum number of users reached error'));
 			ajx_current("empty");
 			return;
@@ -3928,7 +3928,7 @@ class ContactController extends ApplicationController
 		unset($nameArray[0]);
 		$surname = implode(" ", $nameArray);
 		$parentMemberId = array_var($member, 'parent_member_id');
-		$objectType = ObjectTypes::findById(array_var($member, 'object_type_id'))->getName(); // 'person', 'company'
+		$objectType = ObjectTypes::instance()->findById(array_var($member, 'object_type_id'))->getName(); // 'person', 'company'
 		$dimensionId =  array_var($member, 'dimension_id');
 		$company = array_var(array_var(array_var($_POST, 'contact'), 'user'), 'company_id');
 
@@ -3948,7 +3948,7 @@ class ContactController extends ApplicationController
 		$contact->setCompanyId($company);
 		$contact->setIsCompany($objectType == "company");
 		if ($parentMemberId) {
-			if ($companyId = Members::findById($parentMemberId)->getObjectId()) {
+			if ($companyId = Members::instance()->findById($parentMemberId)->getObjectId()) {
 				$contact->setCompanyId($companyId);
 			}
 		}
@@ -4000,9 +4000,9 @@ class ContactController extends ApplicationController
 		tpl_assign('members', array_var($_GET, 'members'));
 
 		$member_name = lang('view');
-		$obj_member = Members::findById($members);
+		$obj_member = Members::instance()->findById($members);
 		if ($obj_member) {
-			$type_obj = ObjectTypes::findById($obj_member->getObjectTypeId());
+			$type_obj = ObjectTypes::instance()->findById($obj_member->getObjectTypeId());
 			if ($obj_member) {
 				$member_name = lang($type_obj->getName());
 			}
@@ -4050,7 +4050,7 @@ class ContactController extends ApplicationController
 				$filters = ContactConfigOptionValues::getFilterActivityMember($filters_default->getId(), $members);
 				// update cache if available
 				if (GlobalCache::isAvailable()) {
-					GlobalCache::delete('user_config_option_' . logged_user()->getId() . '_' . $filters_default->getName() . "_" . $members);
+					GlobalCache::instance()->delete('user_config_option_' . logged_user()->getId() . '_' . $filters_default->getName() . "_" . $members);
 				}
 
 				if (!$filters) {
@@ -4110,7 +4110,7 @@ class ContactController extends ApplicationController
 	function reload_company_users()
 	{
 
-		$company = Contacts::findById(array_var($_REQUEST, 'company'));
+		$company = Contacts::instance()->findById(array_var($_REQUEST, 'company'));
 		tpl_assign('users', $company->getUsersByCompany());
 
 		$this->setTemplate(get_template_path('list_users', 'administration'));
@@ -4316,11 +4316,11 @@ class ContactController extends ApplicationController
 				'order' => 'o.name ASC',
 			);
 
-			$count = Contacts::count($conditions);
+			$count = Contacts::instance()->count($conditions);
 			$limit = 30;
 
 			$query_params['limit'] = $limit;
-			$contacts = Contacts::findAll($query_params);
+			$contacts = Contacts::instance()->findAll($query_params);
 			foreach ($contacts as $c) {
 				$row = array(
 					"id" => $c->getId(),
@@ -4355,11 +4355,11 @@ class ContactController extends ApplicationController
 
 			$is_user = array_var($filters, 'is_user');
 			if (!$is_user) {
-				$count_unclassifil = Contacts::count($conditions_unclassified);
+				$count_unclassifil = Contacts::instance()->count($conditions_unclassified);
 				$limit = 30;
 
 				$query_params_unclassified['limit'] = $limit;
-				$contacts_unclassified = Contacts::findAll($query_params_unclassified);
+				$contacts_unclassified = Contacts::instance()->findAll($query_params_unclassified);
 				if ($count_unclassifil > 0) {
 					$info[] = array('id' => -1, 'name' => "<div class='task-group-name'>" . lang('not classified here') . "</div>");
 				}

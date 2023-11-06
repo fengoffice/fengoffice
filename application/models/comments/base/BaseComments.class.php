@@ -211,7 +211,7 @@
     *
     * @return Comments 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Comments')) {
         $instance = new Comments();

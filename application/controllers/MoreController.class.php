@@ -105,21 +105,23 @@ class MoreController extends ApplicationController {
 				$order_limit_sql
 			";
 			$rows = DB::executeAll($sql);
-			foreach ($rows as $r) {
-				$dtval = $r['last_activity'] != '0000-00-00 00:00:00' ? format_datetime(DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $r['last_activity'])) : lang('no activity yet');
-				$picture_url = trim($r['picture_file_small'])!='' ? get_url('files', 'get_public_file', array('id' => $r['picture_file_small'])) : get_image_url('default-avatar.png');
-				$users_data[] = array(
+			if (!is_null($rows)) {
+				foreach ($rows as $r) {
+					$dtval = $r['last_activity'] != '0000-00-00 00:00:00' ? format_datetime(DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $r['last_activity'])) : lang('no activity yet');
+					$picture_url = trim($r['picture_file_small']) != '' ? get_url('files', 'get_public_file', array('id' => $r['picture_file_small'])) : get_image_url('default-avatar.png');
+					$users_data[] = array(
 						'object_id' => $r['object_id'],
-						'name' => trim($r['first_name'].' '.$r['surname']),
+						'name' => trim($r['first_name'] . ' ' . $r['surname']),
 						'email' => $r['email_address'],
 						'role' => $r['role'],
 						'last_activity' => $dtval,
-						'company' => trim($r['comp_fname'].' '.$r['comp_surname']),
+						'company' => trim($r['comp_fname'] . ' ' . $r['comp_surname']),
 						'status' => $r['disabled'] ? lang('inactive') : lang('active'),
 						'disabled' => $r['disabled'] ? '1' : '',
 						'type_controller' => 'contact',
 						'picture' => $picture_url,
-				);
+					);
+				}
 			}
 		}
 		
@@ -171,12 +173,12 @@ class MoreController extends ApplicationController {
 		);
 		$disabled_modules[] = $lo_info;*/
 		
-		$tab_panels = TabPanels::findAll(array('conditions' => "id<>'more-panel' AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_installed > 0))", 'order' => 'ordering'));
+		$tab_panels = TabPanels::instance()->findAll(array('conditions' => "id<>'more-panel' AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_installed > 0))", 'order' => 'ordering'));
 		foreach ($tab_panels as $panel) {
 		    if ($panel->getId() == 'mails-panel' && $mail_info != null) continue;
 		    $enabled = $panel->getEnabled();
 		    if ($enabled && $panel->getPluginId() > 0) {
-		        $plugin = Plugins::findById($panel->getPluginId());
+		        $plugin = Plugins::instance()->findById($panel->getPluginId());
 		        $enabled = $enabled && $plugin instanceof Plugin && $plugin->isActive();
 		    }
 		    
@@ -277,7 +279,7 @@ class MoreController extends ApplicationController {
 			$enabled_object_type_ids[] = $enabled_ot->getId();
 		}
 		
-		$active_dimensions_tmp = Dimensions::findAll(array('order' => 'default_order'));
+		$active_dimensions_tmp = Dimensions::instance()->findAll(array('order' => 'default_order'));
 		$active_dimensions = array();
 		foreach ($active_dimensions_tmp as $dim) {
 			if ($dim->getCode() == 'feng_persons') continue;
@@ -353,7 +355,7 @@ class MoreController extends ApplicationController {
 					DB::execute("INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id) VALUES (".logged_user()->getPermissionGroupId().",'".$tab_panel->getId()."') ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;");
 				}
 				if ($tab_panel->getPluginId() > 0 && $tab_panel->getDefaultController() != 'member') {
-					$plugin = Plugins::findById($tab_panel->getPluginId());
+					$plugin = Plugins::instance()->findById($tab_panel->getPluginId());
 					if ($plugin instanceof Plugin) {
 						if ($enabled) $plugin->activate();
 						else $plugin->deactivate();
@@ -416,7 +418,7 @@ class MoreController extends ApplicationController {
 						DB::execute("INSERT INTO ".TABLE_PREFIX."tab_panel_permissions (permission_group_id, tab_panel_id) VALUES (".logged_user()->getPermissionGroupId().",'".$tab_panel->getId()."') ON DUPLICATE KEY UPDATE tab_panel_id=tab_panel_id;");
 					}
 					if ($tab_panel->getPluginId() > 0) {
-						$plugin = Plugins::findById($tab_panel->getPluginId());
+						$plugin = Plugins::instance()->findById($tab_panel->getPluginId());
 						if ($plugin instanceof Plugin) {
 							if ($enabled) $plugin->activate();
 							else $plugin->deactivate();
@@ -500,7 +502,7 @@ class MoreController extends ApplicationController {
 					$update_root_dimensions = true;
 				}
 				
-				$dim = Dimensions::findById($dim_id);
+				$dim = Dimensions::instance()->findById($dim_id);
 				if (($dim->getCode() == 'workspaces' || $dim->getCode() == 'tags') && !Plugins::instance()->isActivePlugin('workspaces')) {
 					$plugin = Plugins::instance()->findOne(array('conditions' => "name='workspaces'"));
 					if ($plugin instanceof Plugin) {

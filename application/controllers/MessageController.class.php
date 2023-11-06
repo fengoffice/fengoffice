@@ -161,7 +161,7 @@ class MessageController extends ApplicationController {
 				$succ = 0; $err = 0;
 				for($i = 0; $i < count($attributes["ids"]); $i++){
 					$id = $attributes["ids"][$i];
-					$message = ProjectMessages::findById($id);
+					$message = ProjectMessages::instance()->findById($id);
 					if ($message instanceof ProjectMessage && $message->canDelete(logged_user())){
 						try{
 							DB::beginWork();
@@ -188,7 +188,7 @@ class MessageController extends ApplicationController {
 				$succ = 0; $err = 0;
 				for($i = 0; $i < count($attributes["ids"]); $i++){
 					$id = $attributes["ids"][$i];
-					$message = ProjectMessages::findById($id);
+					$message = ProjectMessages::instance()->findById($id);
 					if (!$message instanceof ProjectMessage) continue;
 					try {
 						$message->setIsRead(logged_user()->getId(),true);						
@@ -206,7 +206,7 @@ class MessageController extends ApplicationController {
 				$succ = 0; $err = 0;
 				for($i = 0; $i < count($attributes["ids"]); $i++){
 					$id = $attributes["ids"][$i];
-					$message = ProjectMessages::findById($id);
+					$message = ProjectMessages::instance()->findById($id);
 					if (!$message instanceof ProjectMessage) continue;
 					try {
 						$message->setIsRead(logged_user()->getId(),false);						
@@ -224,7 +224,7 @@ class MessageController extends ApplicationController {
 				$succ = 0; $err = 0;
 				for($i = 0; $i < count($attributes["ids"]); $i++){
 					$id = $attributes["ids"][$i];
-					$message = ProjectMessages::findById($id);
+					$message = ProjectMessages::instance()->findById($id);
 					if ($message instanceof ProjectMessage && $message->canEdit(logged_user())){
 						try{
 							DB::beginWork();
@@ -325,7 +325,7 @@ class MessageController extends ApplicationController {
 	function view() {
 		$this->addHelper('textile');
 
-		$message = ProjectMessages::findById(get_id());
+		$message = ProjectMessages::instance()->findById(get_id());
 		if(!($message instanceof ProjectMessage)) {
 			flash_error(lang('message dnx'));
 			ajx_current("empty");
@@ -358,7 +358,7 @@ class MessageController extends ApplicationController {
 		$this->setLayout("html");
 		$this->addHelper('textile');
 		
-		$message = ProjectMessages::findById(get_id());
+		$message = ProjectMessages::instance()->findById(get_id());
 		if(!($message instanceof ProjectMessage)) {
 			flash_error(lang('message dnx'));
 			ajx_current("empty");
@@ -492,7 +492,7 @@ class MessageController extends ApplicationController {
 			return;
 		}
 
-		$message = ProjectMessages::findById(get_id());
+		$message = ProjectMessages::instance()->findById(get_id());
 		if(!($message instanceof ProjectMessage)) {
 			flash_error(lang('message dnx'));
 			ajx_current("empty");
@@ -543,7 +543,7 @@ class MessageController extends ApplicationController {
 				if (array_var($_POST,'merge-changes') == 'true')
 				{
 					$this->setTemplate('view');
-					$edited_note = ProjectMessages::findById($message->getId());
+					$edited_note = ProjectMessages::instance()->findById($message->getId());
 					tpl_assign('message', $edited_note);
 					tpl_assign('subscribers', $edited_note->getSubscribers());
 					ajx_extra_data(array("name" => $edited_note->getObjectName(), 'icon'=>'ico-message'));
@@ -615,7 +615,7 @@ class MessageController extends ApplicationController {
 		}
 		
 		ajx_current("empty");
-		$message = ProjectMessages::findById(get_id());
+		$message = ProjectMessages::instance()->findById(get_id());
 		if(!($message instanceof ProjectMessage)) {
 			flash_error(lang('message dnx'));
 			ajx_current("empty");

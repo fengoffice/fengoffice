@@ -30,11 +30,11 @@ function render_contact_data_tab($genid, $contact, $renderContext, $contact_data
 			'company_id' => $contact->getCompanyId(),
 		); 
 		 
-		$all_phones = ContactTelephones::findAll(array('conditions' => 'contact_id = '.$contact->getId()));
+		$all_phones = ContactTelephones::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
 		$contact_data['all_phones'] = $all_phones;
-		$all_addresses = ContactAddresses::findAll(array('conditions' => 'contact_id = '.$contact->getId()));
+		$all_addresses = ContactAddresses::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
 		$contact_data['all_addresses'] = $all_addresses;
-		$all_webpages = ContactWebpages::findAll(array('conditions' => 'contact_id = '.$contact->getId()));
+		$all_webpages = ContactWebpages::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
 		$contact_data['all_webpages'] = $all_webpages;
 		$all_emails = $contact->getNonMainEmails();
 		$contact_data['all_emails'] = $all_emails;
@@ -88,11 +88,11 @@ function render_company_data_tab($genid, $company, $renderContext, $company_data
 		$all_email_types = EmailTypes::getAllEmailTypesInfo();
 		tpl_assign('all_email_types', $all_email_types);
 			
-		$all_phones = ContactTelephones::findAll(array('conditions' => 'contact_id = '.$company->getId()));
+		$all_phones = ContactTelephones::instance()->findAll(array('conditions' => 'contact_id = '.$company->getId()));
 		$company_data['all_phones'] = $all_phones;
-		$all_addresses = ContactAddresses::findAll(array('conditions' => 'contact_id = '.$company->getId()));
+		$all_addresses = ContactAddresses::instance()->findAll(array('conditions' => 'contact_id = '.$company->getId()));
 		$company_data['all_addresses'] = $all_addresses;
-		$all_webpages = ContactWebpages::findAll(array('conditions' => 'contact_id = '.$company->getId()));
+		$all_webpages = ContactWebpages::instance()->findAll(array('conditions' => 'contact_id = '.$company->getId()));
 		$company_data['all_webpages'] = $all_webpages;
 		$all_emails = $company->getNonMainEmails();
 		$company_data['all_emails'] = $all_emails;
