@@ -9,7 +9,7 @@
 	'chelp emails widget' => 'Este widget muestra los correos clasificados en el área de trabajo actual.',
 	'chelp messages widget' => 'Este widget muestra las últimas notas para el área de trabajo seleccionada.',
 	'chelp active tasks panel' => 'Este panel muestra sus tareas activas sin importar el área de trabajo actual. El sistema le permite pausar, continuar, detenerlas o marcarlas como completadas.',
-	'chelp general timeslots panel' => 'Este panel muestra los tiempos de trabajo realizados dentro del área de trabajo seleccionada.',
+	'chelp general timeslots panel' => 'Este panel muestra las entradas de tiempo realizadas dentro del área de trabajo seleccionada.',
 	'chelp personal account' => 'Esta es su cuenta personal.<br/>En esta vista puedes actualizar tu perfil e imagen ,cambiar tu contraseña y editar tus preferencias personales.',
 	'chelp user account' => 'Esta es una cuenta de usuario.',
 	'chelp user account admin' => 'Siendo administrador, puedes actualizar el perfil e imagen del usuario, cambiar su contraseña y editar sus preferencias a través de esta vista.',

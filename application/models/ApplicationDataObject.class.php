@@ -101,10 +101,10 @@ abstract class ApplicationDataObject extends DataObject {
 				SearchableObjects::dropContentByObjectColumns($this,$columns_to_drop);
 			}
 			
-			$docx_id = FileTypes::findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('docx')));
-			$pdf_id = FileTypes::findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('pdf')));
-			$odt_id = FileTypes::findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('odt')));
-			$fodt_id = FileTypes::findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('fodt')));
+			$docx_id = FileTypes::instance()->findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('docx')));
+			$pdf_id = FileTypes::instance()->findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('pdf')));
+			$odt_id = FileTypes::instance()->findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('odt')));
+			$fodt_id = FileTypes::instance()->findOne(array('id' => true, 'conditions' => '`extension` = '.DB::escape('fodt')));
 			
 			foreach($columns_to_drop as $column_name) {
 				$content = $this->getSearchableColumnContent($column_name);
@@ -112,7 +112,7 @@ abstract class ApplicationDataObject extends DataObject {
 					$content = utf8_encode($content);                                    
 				}elseif(get_class($this->manager()) == 'ProjectFileRevisions'){
 					if($column_name == "filecontent"){
-						$file = ProjectFileRevisions::findById($this->getObjectId());
+						$file = ProjectFileRevisions::instance()->findById($this->getObjectId());
 
 						try {
 							
@@ -381,7 +381,7 @@ abstract class ApplicationDataObject extends DataObject {
 	 */
 	function getCreatedBy() {
 		if(is_null($this->created_by)) {
-			if($this->columnExists('created_by_id')) $this->created_by = Contacts::findById($this->getCreatedById());
+			if($this->columnExists('created_by_id')) $this->created_by = Contacts::instance()->findById($this->getCreatedById());
 		} //
 		return $this->created_by;
 	} // getCreatedBy
@@ -422,7 +422,7 @@ abstract class ApplicationDataObject extends DataObject {
 	 */
 	function getUpdatedBy() {
 		if(is_null($this->updated_by)) {
-			if($this->columnExists('updated_by_id')) $this->updated_by = Contacts::findById($this->getUpdatedById());
+			if($this->columnExists('updated_by_id')) $this->updated_by = Contacts::instance()->findById($this->getUpdatedById());
 		} //
 		return $this->updated_by;
 	} // getCreatedBy
@@ -463,7 +463,7 @@ abstract class ApplicationDataObject extends DataObject {
 	 */
 	function getTrashedBy() {
 		if(is_null($this->trashed_by)) {
-			if($this->columnExists('trashed_by_id')) $this->trashed_by = Contacts::findById($this->getTrashedById());
+			if($this->columnExists('trashed_by_id')) $this->trashed_by = Contacts::instance()->findById($this->getTrashedById());
 		} //
 		return $this->trashed_by;
 	} // getTrashedBy
@@ -514,7 +514,7 @@ abstract class ApplicationDataObject extends DataObject {
 	function linkObject(ApplicationDataObject $object) {
 		$object_id = $this->getObjectId();
 
-		$linked_object = LinkedObjects::findById(array(
+		$linked_object = LinkedObjects::instance()->findById(array(
         'rel_object_id' => $object_id,
         'object_id' => $object->getId(),
 		)); // findById
@@ -524,7 +524,7 @@ abstract class ApplicationDataObject extends DataObject {
 		}
 		else
 		{//check inverse link
-			$linked_object = LinkedObjects::findById(array(
+			$linked_object = LinkedObjects::instance()->findById(array(
 	        'rel_object_id' => $object->getId(),
 	        'object_id' => $object_id,
 			)); // findById
@@ -742,13 +742,13 @@ abstract class ApplicationDataObject extends DataObject {
 				$id = array_var($object_data["property$i"], 'id');
 				$value = array_var($object_data["property$i"], 'value');
 				if($id && trim($name)=='' && trim($value)=='' ){
-					$property = ObjectProperties::findById($id);
+					$property = ObjectProperties::instance()->findById($id);
 					$property->delete( 'id = $id');
 				}else{
 					if($id){
 						{
 							SearchableObjects::dropContentByObjectColumn($this, 'property' . $id);
-							$property = ObjectProperties::findById($id);
+							$property = ObjectProperties::instance()->findById($id);
 						}
 					}else{
 						$property = new ObjectProperty();

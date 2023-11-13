@@ -40,6 +40,8 @@ class Plugin extends BasePlugin {
 				$this->save();
 			}
 		}
+		// If we need to do data modifications we need to do it in a separate step to ensure that we have the db structure in the latest version
+		// do it here, process another file called update_data.php
 	}
 	
 	function getSystemName() {

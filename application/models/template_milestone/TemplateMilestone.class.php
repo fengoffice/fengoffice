@@ -150,7 +150,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	 */
 	function getTasks($is_template = false) {
 		//FIXME check permissions here
-		return TemplateTasks::findAll(array(
+		return TemplateTasks::instance()->findAll(array(
 	        'conditions' => '`is_template` = '.( $is_template ? '1' : '0') .' AND `milestone_id` = ' . DB::escape($this->getId()). " AND `trashed_on` = 0 ",
 	        'order' => 'created_on'
         )); // findAll
@@ -165,7 +165,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	 */
 	function getOpenSubTasks() {
 		if(is_null($this->open_tasks)) {
-			$this->open_tasks = TemplateTasks::findAll(array(
+			$this->open_tasks = TemplateTasks::instance()->findAll(array(
           'conditions' => '`milestone_id` = ' . DB::escape($this->getId()) . ' AND `trashed_on` = 0 AND `completed_on` = ' . DB::escape(EMPTY_DATETIME),
           'order' => '`order`, `created_on`' 
           )); // findAll
@@ -184,7 +184,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	 */
 	function getCompletedSubTasks() {
 		if(is_null($this->completed_tasks)) {
-			$this->completed_tasks = TemplateTasks::findAll(array(
+			$this->completed_tasks = TemplateTasks::instance()->findAll(array(
           'conditions' => '`milestone_id` = ' . DB::escape($this->getId()) . ' AND `trashed_on` = 0 AND `completed_on` > ' . DB::escape(EMPTY_DATETIME),
           'order' => '`completed_on` DESC'
           )); // findAll
@@ -201,7 +201,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	 */
 	function getCompletedBy() {
 		if ($this->isCompleted()){
-			if(is_null($this->completed_by)) $this->completed_by = Contacts::findById($this->getCompletedById());
+			if(is_null($this->completed_by)) $this->completed_by = Contacts::instance()->findById($this->getCompletedById());
 			return $this->completed_by;
 		} else return null;
 	} // getCompletedBy
@@ -210,7 +210,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	//  Permissions
 	// ---------------------------------------------------
 
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return can_add($user, $context, TemplateMilestones::instance()->getObjectTypeId(),$notAllowedMember);
 	}
 	

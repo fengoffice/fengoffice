@@ -25,7 +25,7 @@
 
 	<?php if(is_array($users) && count($users)) { ?>
 		<div onclick="og.subscribeCompany(this)"  class="container-div company-name<?php echo $allChecked ? ' checked' : ''?>" onmouseout="og.rollOut(this,true)" onmouseover="og.rollOver(this)">
-		<?php $theCompany = Contacts::findById($companyId) ?>
+		<?php $theCompany = Contacts::instance()->findById($companyId) ?>
 			<div class="contact-picture-container" style="float:left;margin-left:10px;padding-top:3px;">
 				<img class="commentUserAvatar" src="<?php echo ($theCompany instanceof Contact ? $theCompany->getPictureUrl() : get_image_url('48x48/company.png')) ?>" alt="<?php echo clean($theCompany instanceof Contact ? $theCompany->getObjectName() : '') ?>" />
 			</div>

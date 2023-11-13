@@ -246,7 +246,7 @@
     *
     * @return Timeslots 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Timeslots')) {
         $instance = new Timeslots();

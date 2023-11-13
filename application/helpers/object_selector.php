@@ -9,7 +9,6 @@ function save_selected_objects_ids($ids_to_add, $ids_to_remove) {
 	
 	$select_all = array_var($_GET,'select_all', false);
 	if ($select_all) {
-		
 		$listing = $object_controller->get_objects_list($params);
 		save_tmp_objects_ids($listing['objects']);
 	}

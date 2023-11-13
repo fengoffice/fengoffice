@@ -212,7 +212,7 @@ abstract class BaseTemplateObjectProperties extends DataManager {
 	 *
 	 * @return  TemplateObjectProperties
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'TemplateObjectProperties')) {
 			$instance = new TemplateObjectProperties();

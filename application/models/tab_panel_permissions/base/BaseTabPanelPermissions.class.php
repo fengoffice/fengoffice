@@ -210,7 +210,7 @@
     *
     * @return TabPanelPermissions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'TabPanelPermissions')) {
         $instance = new TabPanelPermissions();

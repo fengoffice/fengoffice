@@ -265,7 +265,7 @@ abstract class BaseProjectFiles extends ContentDataObjects {
 	 *
 	 * @return ProjectFiles
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ProjectFiles')) {
 			$instance = new ProjectFiles();

@@ -78,7 +78,7 @@ $title = $task_list->getObjectName() != '' ? $task_list->getObjectName() : $task
 $description = '';
 $parentInf = '';
 //
-$task = ProjectTasks::findById(get_id());
+$task = ProjectTasks::instance()->findById(get_id());
  
 //start
 if (($task_list->getParent() instanceof ProjectTask)&& $task->canEdit(logged_user())) {

@@ -1475,7 +1475,7 @@ class Google_Service_Calendar_Events_Resource extends Google_Service_Resource
    * participant is returned. Optional.
    * @return Google_Service_Calendar_Events
    */
-  public function instances($calendarId, $eventId, $optParams = array())
+  public static function instances($calendarId, $eventId, $optParams = array())
   {
     $params = array('calendarId' => $calendarId, 'eventId' => $eventId);
     $params = array_merge($params, $optParams);

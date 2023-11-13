@@ -15,7 +15,7 @@
     * @return EmailType
     */
     function getEmailType() {
-      return EmailTypes::findById($this->getEmailTypeId());
+      return EmailTypes::instance()->findById($this->getEmailTypeId());
     } // getEmailType
 
 
@@ -27,7 +27,7 @@
     * @return Contact
     */
     function getContact() {
-      return Contacts::findById($this->getContactId());
+      return Contacts::instance()->findById($this->getContactId());
     } // getContact
 
 

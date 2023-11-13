@@ -77,7 +77,7 @@
     * @return boolean
     */
     static function dropContentByObject(ApplicationDataObject $object) {
-    	return SearchableObjects::delete(array('`rel_object_id` = ?', $object->getObjectId()));
+    	return SearchableObjects::instance()->delete(array('`rel_object_id` = ?', $object->getObjectId()));
     } // dropContentByObject
     
     /**
@@ -87,7 +87,7 @@
     * @return boolean
     */
     static function dropObjectPropertiesByObject(ApplicationDataObject $object) {
-    	return SearchableObjects::delete(array('`rel_object_id` = ? AND `column_name` LIKE "property%" ', $object->getObjectId()));
+    	return SearchableObjects::instance()->delete(array('`rel_object_id` = ? AND `column_name` LIKE "property%" ', $object->getObjectId()));
     } // dropContentByObject
     
     /**
@@ -97,7 +97,7 @@
     * @return boolean
     */
     static function dropContentByObjectColumn(ApplicationDataObject $object, $column = '') {
-    	return SearchableObjects::delete(array('`rel_object_id` = ? AND `column_name` = '. "'". $column . "'" ,  $object->getObjectId(), $column));
+    	return SearchableObjects::instance()->delete(array('`rel_object_id` = ? AND `column_name` = '. "'". $column . "'" ,  $object->getObjectId(), $column));
     } // dropContentByObject
     
     /**
@@ -109,7 +109,7 @@
     static function dropContentByObjectColumns(ApplicationDataObject $object, $columns = array()) {
     	$columns_csv = "'" . implode("','",$columns) . "'";
     	
-    	return SearchableObjects::delete(array('`rel_object_id` = ? AND `column_name` in ('. $columns_csv . ')' , $object->getObjectId()));
+    	return SearchableObjects::instance()->delete(array('`rel_object_id` = ? AND `column_name` in ('. $columns_csv . ')' , $object->getObjectId()));
     }
     
   } 

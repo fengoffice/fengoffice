@@ -15,7 +15,7 @@ class ReportColumns extends BaseReportColumns {
 	 * @return array
 	 */
 	static function getAllReportColumns($report_id) {
-		$columns = self::findAll(array(
+		$columns = self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ?", $report_id)
 		));
 		Hook::fire('override_custom_report_columns', $report_id, $columns);
@@ -30,7 +30,7 @@ class ReportColumns extends BaseReportColumns {
 	 */
 	static function getAllReportColumnNamesForFields($report_id) {
 		$colNames = array();
-		$columns = self::findAll(array(
+		$columns = self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ? AND `field_name` != '' AND `custom_property_id` = 0", $report_id),
 			'order' => '`id` asc'
 		)); // findAll
@@ -48,7 +48,7 @@ class ReportColumns extends BaseReportColumns {
 	 */
 	static function getAllReportColumnsForCustomProperties($report_id) {
 		$colCp = array();
-		$columns = self::findAll(array(
+		$columns = self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ? AND `custom_property_id` > 0", $report_id)
 		)); // findAll
 		foreach($columns as $col){
@@ -65,7 +65,7 @@ class ReportColumns extends BaseReportColumns {
 	 */
 	static function getReportColumnNames($report_id){
 		$colNames = array();
-		$columns = self::findAll(array(
+		$columns = self::instance()->findAll(array(
 			'conditions' => array("`report_id` = ?", $report_id)
 		)); // findAll
 		foreach($columns as $col){

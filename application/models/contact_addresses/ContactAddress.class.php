@@ -15,7 +15,7 @@
     * @return AddressType
     */
     function getAddressType() {
-      return AddressTypes::findById($this->getAddressTypeId());
+      return AddressTypes::instance()->findById($this->getAddressTypeId());
     } // getAddressType
 
     /**
@@ -26,7 +26,7 @@
     * @return Contact
     */
     function getContact() {
-      return Contacts::findById($this->getContactId());
+      return Contacts::instance()->findById($this->getContactId());
     } // getContact
 
         /**

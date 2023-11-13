@@ -92,7 +92,7 @@ if (isset($event) && $event instanceof ProjectEvent) {
 	}
 	elseif($typeofevent=="4") $duration = lang('CAL_NOT_SPECIFIED');
 	
-	$permission = ProjectEvents::findById($id)->canEdit(logged_user());
+	$permission = ProjectEvents::instance()->findById($id)->canEdit(logged_user());
 	
 ?>
 <div style="padding:7px;">
@@ -115,7 +115,7 @@ if (isset($event) && $event instanceof ProjectEvent) {
 
 	$att_form = '';
   	if (!$event->isNew() && !$event->isTrashed()) {
-		$event_inv = EventInvitations::findById(array('event_id' => $event->getId(), 'contact_id' => logged_user()->getId()));
+		$event_inv = EventInvitations::instance()->findById(array('event_id' => $event->getId(), 'contact_id' => logged_user()->getId()));
 		if ($event_inv != null) {
 			$event->addInvitation($event_inv);
 			$event_inv_state = $event_inv->getInvitationState();
@@ -141,7 +141,7 @@ if (isset($event) && $event instanceof ProjectEvent) {
 
 	$otherInvitationsTable = '';
 	if (!$event->isNew()) {
-		$otherInvitations = EventInvitations::findAll(array ('conditions' => 'event_id = ' . $event->getId()));
+		$otherInvitations = EventInvitations::instance()->findAll(array ('conditions' => 'event_id = ' . $event->getId()));
 		if (isset($otherInvitations) && is_array($otherInvitations)) {
 			$otherInvitationsTable .= '<div class="coInputMainBlock adminMainBlock" style="width:70%;">';
 			$otherInvitationsTable .= '<table style="width:100%;"><col width="50%" /><col width="50%" />';
@@ -149,7 +149,7 @@ if (isset($event) && $event instanceof ProjectEvent) {
 			$isAlt = false;
 			$cant = 0;
 			foreach ($otherInvitations as $inv) {
-				$inv_user = Contacts::findById($inv->getContactId());
+				$inv_user = Contacts::instance()->findById($inv->getContactId());
 				if ($inv_user instanceof Contact) {
 					if (can_access($inv_user, $event->getMembers(),ProjectEvents::instance()->getObjectTypeId(), ACCESS_LEVEL_READ)) {
 

@@ -67,10 +67,7 @@
 			    	<div class="nobr" style="margin-bottom: 12px;">
 			    		<?php
 							if ($co_widget_dimensions instanceof ContactConfigOption){
-								$widget_dimensions = array_filter(explode(',', user_config_option('widget_dimensions')));
-								$active_member_ids = active_context_members(false);
-								$member_ids_params = array('exclude_member_ids' => $active_member_ids, 'allowed_dimensions' => $widget_dimensions, 'use_restrictions' => true);
-								$crumbOptions = json_encode($object->getMembersIdsToDisplayPath(false,$member_ids_params));
+								$crumbOptions = json_encode($object->getMembersIdsToDisplayPath(false, get_dashboard_breadcrumbs_options()));
 								if($crumbOptions == ""){
 									$crumbOptions = "{}";
 								}

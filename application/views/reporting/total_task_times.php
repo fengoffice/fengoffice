@@ -139,7 +139,7 @@
 			echo "<td class='person'>" . clean($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') ."</td>";
 			
 			if (array_var($options, 'show_billing') == 'checked') {
-				$currency = Currencies::getCurrency($ts->getRateCurrencyId());
+				$currency = Currencies::instance()->getCurrency($ts->getRateCurrencyId());
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code', '$');
 				
 				if($ts->getIsFixedBilling()){
@@ -153,7 +153,7 @@
 			}
 			
 			if (array_var($options, 'show_cost') == 'checked') {
-				$currency = Currencies::getCurrency($ts->getColumnValue('cost_currency_id'));
+				$currency = Currencies::instance()->getCurrency($ts->getColumnValue('cost_currency_id'));
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code', '$');
 				
 				if($ts->getColumnValue('is_fixed_cost')){

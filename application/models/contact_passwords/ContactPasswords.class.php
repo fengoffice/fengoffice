@@ -15,7 +15,7 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return array
 	 */
 	static function getLastTenContactPasswords($contact_id) {
-		return ContactPasswords::findAll(array(
+		return ContactPasswords::instance()->findAll(array(
         'conditions' => array('`contact_id` = ?', $contact_id),
         'order' => 'password_date desc',
 		'limit' => '10',
@@ -30,7 +30,7 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return array
 	 */
 	static function getOldestContactPassword($contact_id) {
-		return ContactPasswords::findAll(array(
+		return ContactPasswords::instance()->findAll(array(
         'conditions' => array('`contact_id` = ?', $contact_id),
         'order' => 'password_date',
 		'limit' => '1',
@@ -45,7 +45,7 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return ContactPassword
 	 */
 	static function getNewestContactPassword($contact_id) {
-		return ContactPasswords::findOne(array(
+		return ContactPasswords::instance()->findOne(array(
         'conditions' => array('`contact_id` = ?', $contact_id),
         'order' => 'password_date desc',
 		'limit' => '1',
@@ -59,7 +59,7 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return array
 	 */
 	static function getNewestContactPasswords() {
-		return ContactPasswords::findAll(array(
+		return ContactPasswords::instance()->findAll(array(
         'order' => 'password_date desc',
 		'group by' => 'contact_id',
 		)); // findAll
@@ -212,7 +212,7 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return boolean
 	 */
 	static function isContactPasswordExpired($contact_id){
-		$contact = Contacts::findById($contact_id);
+		$contact = Contacts::instance()->findById($contact_id);
 		if($contact instanceof Contact){
 			$current_password = self::getNewestContactPassword($contact_id);
 			$password_expiration_days = config_option('password_expiration', 0);
@@ -307,7 +307,7 @@ class ContactPasswords extends BaseContactPasswords {
 		foreach($contact_passwords as $password){
 			$diff_days = self::getContactPasswordDays($password);
 			if($diff_days == ($password_expiration_days - $password_expiration_notification)){
-				$contact = Contacts::findById($password->getContactId());
+				$contact = Contacts::instance()->findById($password->getContactId());
 				if($contact instanceof Contact){
 					if(Notifier::passwordExpiration($contact, $password_expiration_notification)){
 						$sent++;
@@ -319,7 +319,7 @@ class ContactPasswords extends BaseContactPasswords {
 	}
 	
 	static function clearByContact($contact) {
-		return self::delete('`contact_id` = ' . $contact->getId());
+		return self::instance()->delete('`contact_id` = ' . $contact->getId());
 	}
 
 }

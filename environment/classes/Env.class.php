@@ -107,7 +107,7 @@ class Env {
 	 */
 	static function executeAction($controller_name, $action) {
    		$max_users = config_option('max_users');
-		if ($max_users && Contacts::count() > $max_users) {
+		if ($max_users && Contacts::instance()->count() > $max_users) {
 	        echo lang("error").": ".lang("maximum number of users exceeded error");
 	        return;
     	}

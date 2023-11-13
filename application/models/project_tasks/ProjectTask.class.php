@@ -100,7 +100,7 @@ class ProjectTask extends BaseProjectTask {
 	
 	function getMilestone(){
 		if ($this->getMilestoneId() > 0 && !$this->milestone){
-			$this->milestone = ProjectMilestones::findById($this->getMilestoneId());
+			$this->milestone = ProjectMilestones::instance()->findById($this->getMilestoneId());
 		}
 		return $this->milestone;
 	}
@@ -113,7 +113,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getParent() {
 		if ($this->getParentId()==0) return null;
-		$parent = ProjectTasks::findById($this->getParentId());
+		$parent = ProjectTasks::instance()->findById($this->getParentId());
 		return $parent instanceof ProjectTask  ? $parent : null;
 	} // getParent
 	
@@ -125,7 +125,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @return Contact
 	 */
 	function getAssignedBy() {
-		return Contacts::findById($this->getAssignedById());
+		return Contacts::instance()->findById($this->getAssignedById());
 	} // getAssignedBy()
 
 	/**
@@ -179,7 +179,7 @@ class ProjectTask extends BaseProjectTask {
 	function getAssignedToContact() {
 		$ret = null;
 		if ($this->getAssignedToContactId() > 0) {
-			$ret = Contacts::findById($this->getAssignedToContactId());
+			$ret = Contacts::instance()->findById($this->getAssignedToContactId());
 		}
 		return $ret;
 	} // 
@@ -298,7 +298,7 @@ class ProjectTask extends BaseProjectTask {
 	//  Permissions
 	// ---------------------------------------------------
 
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return can_add($user, $context, ProjectTasks::instance()->getObjectTypeId(), $notAllowedMember);
 	}
 	
@@ -487,23 +487,23 @@ class ProjectTask extends BaseProjectTask {
 		$ignore_task_dependencies = array_var($options, 'ignore_task_dependencies');
 		
 		if (config_option('use tasks dependencies') && !$ignore_task_dependencies) {
-			$saved_ptasks = ProjectTaskDependencies::findAll(array('conditions' => 'task_id = '. $this->getId()));
+			$saved_ptasks = ProjectTaskDependencies::instance()->findAll(array('conditions' => 'task_id = '. $this->getId()));
 			foreach ($saved_ptasks as $pdep) {
-				$ptask = ProjectTasks::findById($pdep->getPreviousTaskId());
+				$ptask = ProjectTasks::instance()->findById($pdep->getPreviousTaskId());
 				if ($ptask instanceof ProjectTask && !$ptask->isCompleted()) {
 					throw new Exception(lang('previous tasks must be completed before completion of this task'));
 				}
 			}
 			//Seeking the subscribers of the completed task not to repeat in the notifications
 			$contact_notification = array();
-			$task = ProjectTasks::findById($this->getId());
+			$task = ProjectTasks::instance()->findById($this->getId());
 			foreach ($task->getSubscribers() as $task_sub){
 				$contact_notification[] = $task_sub->getId();
 			}
 			//Send notification to subscribers of the task_dependency on the task completed
-			$next_dependency = ProjectTaskDependencies::findAll(array('conditions' => 'previous_task_id = '. $this->getId()));
+			$next_dependency = ProjectTaskDependencies::instance()->findAll(array('conditions' => 'previous_task_id = '. $this->getId()));
 			foreach ($next_dependency as $ndep) {
-				$ntask = ProjectTasks::findById($ndep->getTaskId());
+				$ntask = ProjectTasks::instance()->findById($ndep->getTaskId());
 				if ($ntask instanceof ProjectTask) {
 					foreach ($ntask->getSubscribers() as $task_dep){
 						if(!in_array($task_dep->getId(), $contact_notification))
@@ -602,7 +602,7 @@ class ProjectTask extends BaseProjectTask {
 		$this->save();
 
 		if($this->parent_id > 0){
-			$parent_task = ProjectTasks::findById($this->parent_id);
+			$parent_task = ProjectTasks::instance()->findById($this->parent_id);
 			if($parent_task instanceof ProjectTask){
 				$parent_task->calculatePercentComplete();
 				Hook::fire('calculate_executed_cost_and_price', array(), $parent_task);
@@ -617,9 +617,9 @@ class ProjectTask extends BaseProjectTask {
 			foreach ($this->getSubscribers() as $task_sub){
 				$contact_notification[] = $task_sub->getId();
 			}
-			$saved_stasks = ProjectTaskDependencies::findAll(array('conditions' => 'previous_task_id = '. $this->getId()));
+			$saved_stasks = ProjectTaskDependencies::instance()->findAll(array('conditions' => 'previous_task_id = '. $this->getId()));
 			foreach ($saved_stasks as $sdep) {
-				$stask = ProjectTasks::findById($sdep->getTaskId());
+				$stask = ProjectTasks::instance()->findById($sdep->getTaskId());
 				if ($stask instanceof ProjectTask && $stask->isCompleted()) {
 					$stask->openTask();
 				}
@@ -917,7 +917,7 @@ class ProjectTask extends BaseProjectTask {
 			$include .= "`archived_by_id` = 0 AND ";
 		}
 		if(is_null($this->all_tasks) || $dont_get_from_cache) {
-			$this->all_tasks = ProjectTasks::findAll(array(
+			$this->all_tasks = ProjectTasks::instance()->findAll(array(
           'conditions' => $include.'`parent_id` = ' . DB::escape($this->getId()),
           )); // findAll
           if (is_null($this->all_tasks)) $this->all_tasks = array();
@@ -963,7 +963,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getAllSubTasks($include_trashed = true) {
 		if(is_null($this->all_tasks)) {
-			$this->all_tasks = ProjectTasks::findAll(array(
+			$this->all_tasks = ProjectTasks::instance()->findAll(array(
           'conditions' => '`parent_id` = ' . DB::escape($this->getId()),
           'order' => '`order`, `created_on`',
 			'include_trashed' => $include_trashed
@@ -1019,7 +1019,7 @@ class ProjectTask extends BaseProjectTask {
 		$subtasks_ids = $this->getSubTasksIds();
 		foreach ($subtasks_ids as $sub_id) {
 			$all_subtasks_ids[$sub_id] = $sub_id;
-			$sub = ProjectTasks::findById($sub_id);
+			$sub = ProjectTasks::instance()->findById($sub_id);
 			if ($sub instanceof ProjectTask) {
 				$sub->getAllSubtaskIdsInHierarchyRecursive($all_subtasks_ids);
 			}
@@ -1042,7 +1042,7 @@ class ProjectTask extends BaseProjectTask {
 	private function getAllSubtaskInfoInHierarchyRecursive(&$subtasks, $depth=0, $conditions = "") {
 		$subtasks_ids = $this->getSubTasksIds($conditions);
 		foreach ($subtasks_ids as $sub_id) {
-			$sub = ProjectTasks::findById($sub_id);
+			$sub = ProjectTasks::instance()->findById($sub_id);
 			if ($sub instanceof ProjectTask) {
 				$subtasks[$sub_id] = $sub->getArrayInfo();
 				$subtasks[$sub_id]['depth'] = $depth;
@@ -1060,7 +1060,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getOpenSubTasks() {
 		if(is_null($this->open_tasks)) {
-			$subtasks = ProjectTasks::findAll(array(
+			$subtasks = ProjectTasks::instance()->findAll(array(
 	          'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` = ' . DB::escape(EMPTY_DATETIME) . ' AND `trashed_on` = ' . DB::escape(EMPTY_DATETIME),
 	          'order' => '`order`, `created_on`'
 	        )); // findAll
@@ -1079,7 +1079,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getCompletedSubTasks() {
 		if(is_null($this->completed_tasks)) {
-			$subtasks = ProjectTasks::findAll(array(
+			$subtasks = ProjectTasks::instance()->findAll(array(
 	          'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` > ' . DB::escape(EMPTY_DATETIME),
 	          'order' => '`completed_on` DESC'
 	        )); // findAll
@@ -1101,7 +1101,7 @@ class ProjectTask extends BaseProjectTask {
 			if(is_array($this->all_tasks)) {
 				$this->count_all_tasks = count($this->all_tasks);
 			} else {
-				$this->count_all_tasks = ProjectTasks::count('`parent_id` = ' . DB::escape($this->getId()));
+				$this->count_all_tasks = ProjectTasks::instance()->count('`parent_id` = ' . DB::escape($this->getId()));
 			} // if
 		} // if
 		return $this->count_all_tasks;
@@ -1119,7 +1119,7 @@ class ProjectTask extends BaseProjectTask {
 			if(is_array($this->open_tasks)) {
 				$this->count_open_tasks = count($this->open_tasks);
 			} else {
-				$this->count_open_tasks = ProjectTasks::count('`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` = ' . DB::escape(EMPTY_DATETIME));
+				$this->count_open_tasks = ProjectTasks::instance()->count('`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` = ' . DB::escape(EMPTY_DATETIME));
 			} // if
 		} // if
 		return $this->count_open_tasks;
@@ -1137,7 +1137,7 @@ class ProjectTask extends BaseProjectTask {
 			if(is_array($this->completed_tasks)) {
 				$this->count_completed_tasks = count($this->completed_tasks);
 			} else {
-				$this->count_completed_tasks = ProjectTasks::count('`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` > ' . DB::escape(EMPTY_DATETIME));
+				$this->count_completed_tasks = ProjectTasks::instance()->count('`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` > ' . DB::escape(EMPTY_DATETIME));
 			} // if
 		} // if
 		return $this->count_completed_tasks;
@@ -1151,7 +1151,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getRelatedForms() {
 		if(is_null($this->related_forms)) {
-			$this->related_forms = ProjectForms::findAll(array(
+			$this->related_forms = ProjectForms::instance()->findAll(array(
           'conditions' => '`action` = ' . DB::escape(ProjectForm::ADD_TASK_ACTION) . ' AND `in_object_id` = ' . DB::escape($this->getId()),
           'order' => '`order`'
           )); // findAll
@@ -1168,7 +1168,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getCompletedBy() {
 		if(!($this->completed_by instanceof Contact)) {
-			$this->completed_by = Contacts::findById($this->getCompletedById());
+			$this->completed_by = Contacts::instance()->findById($this->getCompletedById());
 		} // if
 		return $this->completed_by;
 	} // getCompletedBy
@@ -1183,7 +1183,7 @@ class ProjectTask extends BaseProjectTask {
 	function getCompletedByName() {
 		if ($this->isCompleted()){
 			if(!($this->completed_by instanceof Contact)) {
-				$this->completed_by = Contacts::findById($this->getCompletedById());
+				$this->completed_by = Contacts::instance()->findById($this->getCompletedById());
 			} // if
 			if ($this->completed_by instanceof Contact) {
 				return $this->completed_by->getObjectName();
@@ -1428,7 +1428,7 @@ class ProjectTask extends BaseProjectTask {
 				$child->delete(true);
 			}
 		}
-		ProjectTaskDependencies::delete('( task_id = '. $this->getId() .' OR previous_task_id = '.$this->getId().')');
+		ProjectTaskDependencies::instance()->delete('( task_id = '. $this->getId() .' OR previous_task_id = '.$this->getId().')');
 				
 		$task_list = $this->getParent();
 		if($task_list instanceof ProjectTask) $task_list->detachTask($this);
@@ -1470,7 +1470,7 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function save() {
 		if (!$this->isNew()) {
-			$old_me = ProjectTasks::findById($this->getId(), true);
+			$old_me = ProjectTasks::instance()->findById($this->getId(), true);
 			if (!$old_me instanceof ProjectTask) return; // TODO: check this!!!
 			// This was added cause deleting some tasks was giving an error, couldn't reproduce it again, but this solved it 
 		}
@@ -1630,7 +1630,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @return boolean
 	 */
 	function deleteSubTasks() {
-		return ProjectTasks::delete(DB::escapeField('parent_id') . ' = ' . DB::escape($this->getId()));
+		return ProjectTasks::instance()->delete(DB::escapeField('parent_id') . ' = ' . DB::escape($this->getId()));
 	} // deleteTasks
 
 
@@ -1675,7 +1675,7 @@ class ProjectTask extends BaseProjectTask {
    	
 		$deletedOn = $this->getTrashedOn() instanceof DateTimeValue ? ($this->getTrashedOn()->isToday() ? format_time($this->getTrashedOn()) : format_datetime($this->getTrashedOn(), 'M j')) : lang('n/a');
 		if ($this->getTrashedById() > 0)
-			$deletedBy = Contacts::findById($this->getTrashedById());
+			$deletedBy = Contacts::instance()->findById($this->getTrashedById());
     	if (isset($deletedBy) && $deletedBy instanceof Contact) {
     		$deletedBy = $deletedBy->getObjectName();
     	} else {
@@ -1684,7 +1684,7 @@ class ProjectTask extends BaseProjectTask {
     	
 		$archivedOn = $this->getArchivedOn() instanceof DateTimeValue ? ($this->getArchivedOn()->isToday() ? format_time($this->getArchivedOn()) : format_datetime($this->getArchivedOn(), 'M j')) : lang('n/a');
 		if ($this->getArchivedById() > 0)
-			$archivedBy = Contacts::findById($this->getArchivedById());
+			$archivedBy = Contacts::instance()->findById($this->getArchivedById());
     	if (isset($archivedBy) && $archivedBy instanceof Contact) {
     		$archivedBy = $archivedBy->getObjectName();
     	} else {
@@ -1741,7 +1741,7 @@ class ProjectTask extends BaseProjectTask {
 	function isParent($task_id = null) {
 		
 		if($task_id) {
-			$task = ProjectTasks::findById($task_id);
+			$task = ProjectTasks::instance()->findById($task_id);
 		} else {
 			$task = $this;
 		}
@@ -1834,7 +1834,7 @@ class ProjectTask extends BaseProjectTask {
 			// dont apply members of dimensions with single selection and subtask has already one of them
 			foreach ($members as $m) {/* @var $m Member */
 				$dim = $m->getDimension();
-				$dotc = DimensionObjectTypeContents::findOne(array("conditions" => array(
+				$dotc = DimensionObjectTypeContents::instance()->findOne(array("conditions" => array(
 					"dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?",
 					$dim->getId(), $m->getObjectTypeId(), ProjectTasks::instance()->getObjectTypeId()
 				)));

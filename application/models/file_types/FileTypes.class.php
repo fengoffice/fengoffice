@@ -16,7 +16,7 @@
     * @return FileType
     */
     static function getByExtension($extension) {
-      return self::findOne(array(
+      return self::instance()->findOne(array(
         'conditions' => '`extension` = ' . DB::escape(strtolower($extension))
       )); // findOne
     } // getByExtension

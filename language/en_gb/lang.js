@@ -86,8 +86,8 @@ addLangs({
     'confirm delete webpage': 'Are you sure you want to delete this link?',
     'confirm delete workspace': 'Are you sure you want to delete workspace \'{0}\'?',
     'confirm delete project': 'Are you sure that you want to delete this workspace and all related data (messages, tasks, milestones, files...)?',
-    'confirm cancel work timeslot': 'Are you sure you want to cancel the current timeslot?',
-    'confirm discard work timeslot': 'Are you sure you want to discard the current timeslot?',
+    'confirm cancel work timeslot': 'Are you sure you want to cancel the current time entry?',
+    'confirm discard work timeslot': 'Are you sure you want to discard the current time entry?',
     'more': 'More',
     'more actions': 'More actions',
     'more actions on first selected object': 'More actions on first selected object',
@@ -641,7 +641,7 @@ addLangs({
     'trash emptied periodically': 'Objects left in the trash more than {0} days will be deleted.',
     'remove': 'Remove',
     'object type not supported': 'This object type is not supported for templates',
-    'confirm delete timeslot': 'Are you sure you want to permanently delete this timeslot?',
+    'confirm delete timeslot': 'Are you sure you want to permanently delete this time entry?',
     'confirm delete permanently this member': 'Are you sure you want to delete this {0}?',
     'confirm delete with keyword': 'Enter \"DELETE\" to confirm',
 
@@ -649,7 +649,7 @@ addLangs({
     'confirm move to trash company': 'Are you sure you want to delete this company?\nNote that all company users will also be deleted.',
 
     'no items selected': 'No items selected',
-    'error adding timeslot': 'An error occurred while adding the timeslot',
+    'error adding timeslot': 'An error occurred while adding the time entry',
     'confirm unclassify email': 'Are you sure you want to unclassify this email?\nThe email will be removed from the workspaces ant its attachments will not appear in Documents tab.',
 
     'no due date': 'No due date',
@@ -974,7 +974,7 @@ addLangs({
     'confirm delete group': 'Are you sure you want to delete this group?',
     'push': 'Push',
     'move tasks forward': 'Move tasks forward',
-    'timeslot': 'Timeslot',
+    'timeslot': 'Time entry',
     'reports': 'Reports',
     'remove filter': 'Remove filter',
     'add contact':'Add contact',

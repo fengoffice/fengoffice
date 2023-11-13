@@ -16,7 +16,7 @@ class  ObjectProperties extends  BaseObjectProperties {
 	 * @return array
 	 */
 	static function getAllPropertiesByObject(ApplicationDataObject $obj) {
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array(
 				"`rel_object_id` = ?",$obj->getId())
 		)); // findAll
@@ -31,7 +31,7 @@ class  ObjectProperties extends  BaseObjectProperties {
 	 * @return array
 	 */
 	static function getPropertyByName(ApplicationDataObject $obj, $property_name) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
         'conditions' => array("`rel_object_id` = ? and `name` = ? ",
 		$obj->getId(), $property_name)
 		)); // findAll
@@ -44,7 +44,7 @@ class  ObjectProperties extends  BaseObjectProperties {
 	 * @return array
 	 */
 	static function getProperty($prop_id) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
         'conditions' => array("`id` = ? ", $prop_id)
 		)); // findOne
 	} //  getProperty
@@ -57,18 +57,18 @@ class  ObjectProperties extends  BaseObjectProperties {
 	 * @return array
 	 */
 	static function getAllProperties(ApplicationDataObject $obj, $property_name) {
-		return self::findAll(array(
+		return self::instance()->findAll(array(
         'conditions' => array("`rel_object_id` = ? and `name` = ? ",
 		$obj->getId(), $property_name)
 		)); // findAll
 	} //  getAllProperties
 
 	static function deleteAllByObject(ApplicationDataObject $object){
-		return self::delete('`rel_object_id` = '.$object->getId());
+		return self::instance()->delete('`rel_object_id` = '.$object->getId());
 	}
 
 	static function deleteByObjectAndName(ApplicationDataObject $object, $name) {
-		return self::delete('`rel_object_id` = '.$object->getId()." AND `name` = " . DB::escape($name));
+		return self::instance()->delete('`rel_object_id` = '.$object->getId()." AND `name` = " . DB::escape($name));
 	}
 
 } // ObjectProperties

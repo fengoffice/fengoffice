@@ -168,10 +168,10 @@ abstract class BaseTemplateTasks extends ContentDataObjects {
     */
     function getTemplateObjectProperties() {
         $templateObjectProperties = array(
-            array('id' => 'name', 'name' => lang('field ProjectTasks name'), 'type' => self::getColumnType('name')),
-            array('id' => 'text', 'name' => lang('field ProjectTasks text'), 'type' => self::getColumnType('text')),
-            array('id' => 'start_date', 'name' => lang('field ProjectTasks start_date'), 'type' => self::getColumnType('start_date')),
-            array('id' => 'due_date', 'name' => lang('field ProjectTasks due_date'), 'type' => self::getColumnType('due_date')),
+            array('id' => 'name', 'name' => lang('field ProjectTasks name'), 'type' => self::instance()->getColumnType('name')),
+            array('id' => 'text', 'name' => lang('field ProjectTasks text'), 'type' => self::instance()->getColumnType('text')),
+            array('id' => 'start_date', 'name' => lang('field ProjectTasks start_date'), 'type' => self::instance()->getColumnType('start_date')),
+            array('id' => 'due_date', 'name' => lang('field ProjectTasks due_date'), 'type' => self::instance()->getColumnType('due_date')),
             array('id' => 'assigned_to_contact_id', 'name' => lang('field ProjectTasks assigned_to_contact_id'), 'type' => 'USER')
     	);
     	
@@ -315,7 +315,7 @@ abstract class BaseTemplateTasks extends ContentDataObjects {
 	 *
 	 * @return TemplateTasks
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'TemplateTasks')) {
 			$instance = new TemplateTasks();

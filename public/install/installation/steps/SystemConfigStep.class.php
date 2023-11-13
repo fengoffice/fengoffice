@@ -90,32 +90,24 @@ class SystemConfigStep extends ScriptInstallerStep {
 
 			//Connect to MySQL
 			$this->database_connection = mysqli_connect($database_host, $database_user, $database_pass);
-
 			//Connect to Database, or create it if it doesn't exist.
-			if ($this->database_connection) {			    
-			    $connected = mysqli_select_db($this->database_connection, $database_name);
-				if (!$connected) {
-				    $error = mysqli_error($this->database_connection);
-				    $errno = mysqli_errno($this->database_connection);
-										
-				    if (($errno == 1049 || $errno == 1044) && strpos($database_name, '`') === false) {
-					    
-						// database doesn't exist. Try to create it.
-				        if (mysqli_query($this->database_connection, 'CREATE DATABASE ' . $database_name)) {
-					        $connected = mysqli_select_db($this->database_connection, $database_name);
-					    } else {
-					        //$error = mysqli_error($database_connection);
-					        //$errno = mysqli_errno($database_connection);
-					        $this->addError('Database does not exist. Failed trying to create it. Error: '. $error . ' - Error number: ' . $errno);
-					    }
+			if ($this->database_connection) {
+				try {
+					$connected = mysqli_select_db($this->database_connection, $database_name);
+				} catch (Exception $e) {
+					$this->addError("ERROR SELECTING DB:\n".$e->getMessage()."\n".$e->getTraceAsString());
+					// database doesn't exist. Try to create it.
+					if (mysqli_query($this->database_connection, 'CREATE DATABASE ' . $database_name)) {
+						$connected = mysqli_select_db($this->database_connection, $database_name);
+					} else {
+						$this->addError('Database does not exist. Failed trying to create it. Error: '. $error . ' - Error number: ' . $errno);
 					}
 				}
 			} else {
-			    $error = mysqli_error($this->database_connection);
-			    $errno = mysqli_errno($this->database_connection);
-			    $this->addError('Could not connect to MySQL: '. $error . ' - Error number: ' . $errno);
+				$error = mysqli_error($this->database_connection);
+				$errno = mysqli_errno($this->database_connection);
+				$this->addError('Could not connect to MySQL: '. $error . ' - Error number: ' . $errno);
 			}
-
 			//If connected to database ... what is this?
 			if($connected) {
 				$this->addToStorage('database_type', $database_type);

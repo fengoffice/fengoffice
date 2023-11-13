@@ -66,7 +66,7 @@
 
                     // if is a member_property_member of another selected member and the association doesn't have the config "allow_remove_from_property_member" => dont let remove
                     $can_remove_classification = true;
-                    $mpm = MemberPropertyMembers::findOne(array('conditions' => 'property_member_id = '.$selected_member->getId() .
+                    $mpm = MemberPropertyMembers::instance()->findOne(array('conditions' => 'property_member_id = '.$selected_member->getId() .
                         " AND member_id IN (".implode(',',$selected_member_ids).")"));
                     if ($mpm instanceof MemberPropertyMember) {
                         $can_remove_classification = DimensionAssociationsConfigs::getConfigValue($mpm->getAssociationId(), 'allow_remove_from_property_member');

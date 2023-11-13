@@ -10,7 +10,7 @@ og.ContactManager = function() {
 	
 	this.fields = [
         'object_id', 'picture', 'type', 'ot_id', 'name', 'companyId', 'companyName', 'email', 'website', 'jobTitle', 'createdBy', 'createdById', 'dateCreated', 'dateCreated_today', 'role', 'tags',
-        'department', 'email2', 'email3', 'workWebsite', 'workAddress', 'workPhone1', 'workPhone2', 'jobTitle', 'birthday', 'postalAddress',
+        'department', 'email2', 'email3', 'workWebsite', 'workAddress', 'workPhone1', 'workPhone2', 'jobTitle', 'birthday', 'postalAddress', 'comments',
         'homeWebsite', 'homeAddress', 'homePhone1', 'homePhone2', 'mobilePhone','wsIds','workspaceColors','updatedBy','updatedById', 'dateUpdated', 'dateUpdated_today', 'ix', 'memPath', 'userType', 'contacts', 'users'
     ];
 	var cps = og.custom_properties_by_type['contact'] ? og.custom_properties_by_type['contact'] : [];
@@ -516,6 +516,14 @@ og.ContactManager = function() {
 			header: lang("birthday"),
 			dataIndex: 'birthday',
 			width: 120,
+			hidden: true,
+			renderer: og.clean,
+			sortable: true
+		},{
+			id: 'comments',
+			header: lang("notes"),
+			dataIndex: 'comments',
+			width: 200,
 			hidden: true,
 			renderer: og.clean,
 			sortable: true

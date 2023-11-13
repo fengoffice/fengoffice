@@ -266,7 +266,7 @@ class Localization {
 	 * @param int $timestamp
 	 * @return string
 	 */
-	function dateByLocalization($format, $timestamp, $timezone = 0, $view_timezone = false) {
+	static function dateByLocalization($format, $timestamp, $timezone = 0, $view_timezone = false) {
 		if ($timestamp == 0) { 
 			$timestamp = time();
 		}
