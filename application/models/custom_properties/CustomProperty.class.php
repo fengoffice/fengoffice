@@ -37,9 +37,9 @@
 	}
 	
 	function delete() {
-		ReportColumns::delete('`custom_property_id` = ' . $this->getId());
-		ReportConditions::delete('`custom_property_id` = ' . $this->getId());
-		CustomPropertyValues::delete('`custom_property_id` = ' . $this->getId());
+		ReportColumns::instance()->delete('`custom_property_id` = ' . $this->getId());
+		ReportConditions::instance()->delete('`custom_property_id` = ' . $this->getId());
+		CustomPropertyValues::instance()->delete('`custom_property_id` = ' . $this->getId());
 		return parent::delete();
 	}
 	

@@ -210,7 +210,7 @@
     *
     * @return ContactPermissionGroups 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactPermissionGroups')) {
         $instance = new ContactPermissionGroups();

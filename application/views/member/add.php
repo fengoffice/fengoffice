@@ -19,14 +19,14 @@
 		$member->setObjectTypeId($obj_type_sel);
 	}
 	
-	$object_type_selected = $obj_type_sel > 0 ? ObjectTypes::findById($obj_type_sel) : null;
+	$object_type_selected = $obj_type_sel > 0 ? ObjectTypes::instance()->findById($obj_type_sel) : null;
 	if ($member instanceof Member) {
 	    $object_type_name = $member->getTypeNameToShow();
 	} else {
 		$object_type_name = $object_type_selected instanceof ObjectType ? lang($object_type_selected->getName()) : null;
 	}
 	
-	$member_ot = ObjectTypes::findById($member->getObjectTypeId());
+	$member_ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
 	$dim_obj = null;
 	if ($member_ot->getType() == 'dimension_object') {
 		if (!$member->isNew()) {
@@ -51,7 +51,7 @@
 	$object_type_name = ucwords($object_type_name);
 	
 	if($member instanceof Member && !$member->isNew()) {
-		$ot = ObjectTypes::findById($member->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
 		$ot_name = lang($ot->getName());
 		if ($member->getArchivedById() == 0) {
 			add_page_action(lang('archive'), "javascript:if(confirm('".lang('confirm archive member',$ot_name)."')) og.openLink('".get_url('member', 'archive', array('id' => $member->getId()))."');", 'ico-archive-obj');
@@ -187,7 +187,7 @@
 		</div>
 		<?php
 		
-		$doths = DimensionObjectTypeHierarchies::findAll(array('conditions' => 'dimension_id='.$current_dimension->getId()." AND child_object_type_id=".$member->getObjectTypeId()));
+		$doths = DimensionObjectTypeHierarchies::instance()->findAll(array('conditions' => 'dimension_id='.$current_dimension->getId()." AND child_object_type_id=".$member->getObjectTypeId()));
 		$can_have_parent = count($doths) > 0;
 		
 		//$can_have_parent = count(DimensionObjectTypeHierarchies::getAllParentObjectTypeIds($current_dimension->getId(), $member_ot->getId())) > 0;

@@ -54,7 +54,7 @@ class GlobalCache {
 	static function delete($key) {
 		foreach (self::$cache_preference as $class) {
 			switch ($class) {
-				case 'APCWrapper': if (APCWrapper::isAvailable()) return APCWrapper::delete($key);
+				case 'APCWrapper': if (APCWrapper::isAvailable()) return APCWrapper::instance()->delete($key);
 				default: return false;
 			}
 		}

@@ -36,7 +36,7 @@ $(function(){
 	$status_filter = $userPreferences['status_filter'];
 	$task_filter = $userPreferences['task_filter'];
 	
-	$user = Contacts::findById(array('id' => $user_filter));
+	$user = Contacts::instance()->findById(array('id' => $user_filter));
 	if ($user == null) $user = logged_user();
 	
 	$use_24_hours = user_config_option('time_format_use_24');
@@ -902,7 +902,7 @@ onmouseup="og.showEventPopup(<?php echo $date->getDay() ?>, <?php echo $date->ge
 		$h_m[0] = ($h_m[0] + 12) % 24;
 		$h_m[1] = substr($h_m[1], 0 , strpos(' ', $h_m[1]));
 	}
-	$defaultScrollTo = PX_HEIGHT * ($h_m[0] + ($h_m[1] / 60));
+	$defaultScrollTo = PX_HEIGHT * ((float)$h_m[0] + ((float)$h_m[1] / 60));
  ?>
 
 

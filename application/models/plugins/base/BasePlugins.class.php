@@ -217,7 +217,7 @@
     *
     * @return Plugins 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Plugins')) {
         $instance = new Plugins();

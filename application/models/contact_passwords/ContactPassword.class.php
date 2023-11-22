@@ -15,7 +15,7 @@ class ContactPassword extends BaseContactPassword {
    	function save() {
    		parent::save();
    		// If more than 10 passwords, delete oldest
-   		$passwords = ContactPasswords::findAll(array(
+   		$passwords = ContactPasswords::instance()->findAll(array(
    			'conditions' => array('`contact_id` = ?', $this->getContactId())
    		));
    		

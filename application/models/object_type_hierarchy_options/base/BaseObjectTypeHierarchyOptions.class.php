@@ -211,7 +211,7 @@
     *
     * @return ObjectTypeHierarchyOptions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ObjectTypeHierarchyOptions')) {
         $instance = new ObjectTypeHierarchyOptions();

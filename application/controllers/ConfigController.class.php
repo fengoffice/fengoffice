@@ -38,7 +38,7 @@ class ConfigController extends ApplicationController {
 			ajx_current("empty");
 			return ;
 		} // if
-		$category = ConfigCategories::findById(get_id());
+		$category = ConfigCategories::instance()->findById(get_id());
 		if(!($category instanceof ConfigCategory)) {
 			flash_error(lang('config category dnx'));
 			$this->redirectToReferer(get_url('administration'));
@@ -63,7 +63,7 @@ class ConfigController extends ApplicationController {
 			foreach($options as $option) {
 				//update global cache if available
 				if (GlobalCache::isAvailable() && GlobalCache::key_exists('config_option_'.$option->getName())) {					
-					GlobalCache::delete('config_option_'.$option->getName());					
+					GlobalCache::instance()->delete('config_option_'.$option->getName());					
 				}
 				if (!$option instanceof ConfigOption) continue;
 				if($option->getName() == "working_days"){
@@ -160,7 +160,7 @@ class ConfigController extends ApplicationController {
 	 *
 	 */
 	function update_default_user_preferences(){
-		$category = ContactConfigCategories::findById(get_id());
+		$category = ContactConfigCategories::instance()->findById(get_id());
 		if(!($category instanceof ContactConfigCategory)) {
 			flash_error(lang('config category dnx'));
 			$this->redirectToReferer(get_url('user','card'));
@@ -185,7 +185,7 @@ class ConfigController extends ApplicationController {
 				foreach ($options as $option) {
 				// update global cache if available					
 					if (GlobalCache::isAvailable()) {							
-						GlobalCache::delete('user_config_option_def_'.$option->getName());
+						GlobalCache::instance()->delete('user_config_option_def_'.$option->getName());
 					}
 					
 					$new_value = array_var($submited_values, $option->getName());

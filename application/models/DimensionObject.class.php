@@ -70,7 +70,7 @@ abstract class DimensionObject extends ContentDataObject {
 				
 				if (trim($property_member_ids_csv) != '') {
 					// foreach associated member add its name and id to searchable objects table
-					$property_members = Members::findAll(array("conditions" => "id IN ($property_member_ids_csv)"));
+					$property_members = Members::instance()->findAll(array("conditions" => "id IN ($property_member_ids_csv)"));
 					foreach ($property_members as $pm) {
 						if ($pm instanceof Member) {
 							$sql_values[] = "('".$this->getId()."','assoc_".$a->getId()."',".DB::escape($pm->getName()).",'".$pm->getId()."')";

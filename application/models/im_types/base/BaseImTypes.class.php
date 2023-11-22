@@ -212,7 +212,7 @@
     *
     * @return ImTypes 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ImTypes')) {
         $instance = new ImTypes();

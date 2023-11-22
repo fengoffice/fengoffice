@@ -731,6 +731,7 @@ addLangs({
 	'to csv': 'A csv',
 	'to vcard': 'A VCard',
 	'to vcard all': 'Todos a VCard',
+	'notes': 'Notas',
 	'task milestone workspace inconsistency': 'NOTA: Esta acción moverá la tarea al espacio del hito seleccionado. ¿Desea continuar?',
 	'updated on': 'Actualizado el',
 	'no recipient': 'Sin destinatarios',

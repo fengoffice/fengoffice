@@ -211,7 +211,7 @@
     *
     * @return TelephoneTypes 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'TelephoneTypes')) {
         $instance = new TelephoneTypes();

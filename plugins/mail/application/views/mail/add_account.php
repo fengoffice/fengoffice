@@ -548,7 +548,7 @@ $show_auth_method_selector = count($oauth2_providers) > 0;
 		if (logged_user() instanceof Contact) {
 			$conditions = '`user_type` <> 0 AND `disabled` = 0';
 			Hook::fire("mail_account_permissions_extra_cond", array('account' => $mailAccount), $conditions);
-			$account_users = Contacts::findAll(array('conditions' => $conditions));
+			$account_users = Contacts::instance()->findAll(array('conditions' => $conditions));
 		}
 		$account_user_ids = is_array($mailAccountUsers) ? array_keys($mailAccountUsers) : array();
 		$num = 0;

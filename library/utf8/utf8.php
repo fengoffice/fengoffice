@@ -34,6 +34,12 @@ if ( !defined('UTF8') ) {
 * Also need to check we have the correct internal mbstring
 * encoding
 */
+
+// SOLUCION PROVISORIA HASTA TENER UN UTF8 QUE FUNCIONE CON PHP8
+if (!defined("MB_OVERLOAD_STRING")) {
+    define("MB_OVERLOAD_STRING", 0);
+}
+
 if ( extension_loaded('mbstring')) {
     if ( ini_get('mbstring.func_overload') & MB_OVERLOAD_STRING ) {
         trigger_error('String functions are overloaded by mbstring',E_USER_ERROR);

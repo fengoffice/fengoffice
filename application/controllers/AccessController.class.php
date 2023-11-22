@@ -317,7 +317,7 @@ class AccessController extends ApplicationController {
 	 * @return null
 	 */
 	function change_password(){
-		$user = Contacts::findById(get_id());
+		$user = Contacts::instance()->findById(get_id());
 					
 		if(!($user instanceof Contact && $user->isUser()) || $user->getDisabled()) return;
 		
@@ -585,7 +585,7 @@ class AccessController extends ApplicationController {
 
 				DB::beginWork();
 
-				Contacts::delete(); // clear users table
+				Contacts::instance()->delete(); // clear users table
 
 				// Create a company
 				$company = new Contact();
@@ -602,7 +602,7 @@ class AccessController extends ApplicationController {
 
 				// Create the administrator user
 				$administrator = new Contact();
-				$pergroup = PermissionGroups::findOne(array('conditions'=>"`name`='Super Administrator'"));
+				$pergroup = PermissionGroups::instance()->findOne(array('conditions'=>"`name`='Super Administrator'"));
 				$administrator->setUserType($pergroup->getId());
 				$administrator->setCompanyId($company->getId());
 				$administrator->setUsername(array_var($form_data, 'admin_username'));
@@ -653,10 +653,10 @@ class AccessController extends ApplicationController {
 				}
 				
 				// dimension permissions
-				$dimensions = Dimensions::findAll();
+				$dimensions = Dimensions::instance()->findAll();
 				foreach ($dimensions as $dimension) {
 					if ($dimension->getDefinesPermissions()) {
-						$cdp = ContactDimensionPermissions::findOne(array("conditions" => "`permission_group_id` = ".$administrator->getPermissionGroupId()." AND `dimension_id` = ".$dimension->getId()));
+						$cdp = ContactDimensionPermissions::instance()->findOne(array("conditions" => "`permission_group_id` = ".$administrator->getPermissionGroupId()." AND `dimension_id` = ".$dimension->getId()));
 						if (!$cdp instanceof ContactDimensionPermission) {
 							$cdp = new ContactDimensionPermission();
 							$cdp->setPermissionGroupId($administrator->getPermissionGroupId());
@@ -671,7 +671,7 @@ class AccessController extends ApplicationController {
 							$ots = DimensionObjectTypeContents::getContentObjectTypeIds($dimension->getId(), $member->getObjectTypeId());
 							$ots[]=$member->getObjectId();
 							foreach ($ots as $ot) {
-								$cmp = ContactMemberPermissions::findOne();
+								$cmp = ContactMemberPermissions::instance()->findOne();
 								if (!$cmp instanceof ContactMemberPermission) {
 									$cmp = new ContactMemberPermission(array("conditions" => "`permission_group_id` = ".$administrator->getPermissionGroupId()." AND `member_id` = ".$member->getId()." AND `object_type_id` = $ot"));
 									$cmp->setPermissionGroupId($administrator->getPermissionGroupId());
@@ -840,7 +840,7 @@ class AccessController extends ApplicationController {
 			flash_error(lang('invalid parameters'));
 			$this->redirectTo('access', 'login');
 		}
-		$user = Contacts::findById($uid);
+		$user = Contacts::instance()->findById($uid);
 		if (!($user instanceof Contact && $user->isUser()) || $user->getDisabled()) {
 			flash_error(lang('user dnx'));
 			$this->redirectTo('access', 'login');

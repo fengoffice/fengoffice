@@ -15,7 +15,7 @@
     	 * @return ProjectChart
     	 */
     	function loadChart($chartId){
-    		$chart = ProjectCharts::findById($chartId);
+    		$chart = ProjectCharts::instance()->findById($chartId);
     		$res = $this->getChart($chart->getTypeId());
     		
     		$res->setFromAttributes($chart->getAcceptableAttributes());

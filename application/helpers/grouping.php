@@ -222,14 +222,14 @@
 			$gb_val = $obj->getColumnValue($column);
 			
 			if ($gb_val > 0 && $only_first_level_task) {
-				$tmp_task = ProjectTasks::findById($gb_val);
+				$tmp_task = ProjectTasks::instance()->findById($gb_val);
 				while ($tmp_task instanceof ProjectTask) {
 					if ($tmp_task->getParentId() > 0) {
 						$gb_val = $tmp_task->getParentId();
 					} else {
 						break;
 					}
-					$tmp_task = ProjectTasks::findById($gb_val);
+					$tmp_task = ProjectTasks::instance()->findById($gb_val);
 				}
 			}
 			
@@ -326,7 +326,7 @@
 	
 	function groupObjectsByCustomPropertyValue($objects, $cp_id, &$parent_group = null) {
 	
-		$cp = CustomProperties::findById($cp_id);
+		$cp = CustomProperties::instance()->findById($cp_id);
 		if (!$cp instanceof CustomProperty) {
 			return array('groups' => array(), 'grouped_objects' => $objects);
 		}

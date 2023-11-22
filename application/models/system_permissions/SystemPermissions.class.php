@@ -27,10 +27,10 @@
 				self::$permission_group_ids_cache[$user->getId()] = $contact_pg_ids;
   			}
   			
-			$permission = self::findOne(array('conditions' => "`$system_permission` = 1 AND `permission_group_id` IN ($contact_pg_ids)"));
+			$permission = self::instance()->findOne(array('conditions' => "`$system_permission` = 1 AND `permission_group_id` IN ($contact_pg_ids)"));
 			
 			// check max system permission
-			$max_role_system_permissions = MaxSystemPermissions::findOne(array('conditions' => 'permission_group_id = '.$user->getUserType()));
+			$max_role_system_permissions = MaxSystemPermissions::instance()->findOne(array('conditions' => 'permission_group_id = '.$user->getUserType()));
 			if ($max_role_system_permissions instanceof MaxSystemPermission) {
 				$max_val = $max_role_system_permissions->getColumnValue($system_permission);
 				if (!$max_val) {
@@ -50,27 +50,27 @@
   			
   		}
   		
-  		function roleHasSystemPermission($role_id,$system_permission){
-  			$permission = self::findOne(array('conditions' => "`$system_permission` = 1 AND `permission_group_id` = '$role_id'"));
+  		static function roleHasSystemPermission($role_id,$system_permission){
+  			$permission = self::instance()->findOne(array('conditions' => "`$system_permission` = 1 AND `permission_group_id` = '$role_id'"));
   			if (!is_null($permission)) return true;
 			return false;
   		}
   	
-  		function getRolePermissions($role_id){
-  			$permission = self::findOne(array('conditions'=>"`permission_group_id` = '$role_id'"));
+  		static function getRolePermissions($role_id){
+  			$permission = self::instance()->findOne(array('conditions'=>"`permission_group_id` = '$role_id'"));
   			if ($permission instanceof SystemPermission) {
   				return $permission->getSettedPermissions();
   			}
   		}
   		
-  		function getNotRolePermissions($role_id){
-  			$permission = self::findOne(array('conditions'=>"`permission_group_id` = '$role_id'"));
+  		static function getNotRolePermissions($role_id){
+  			$permission = self::instance()->findOne(array('conditions'=>"`permission_group_id` = '$role_id'"));
   			if ($permission instanceof SystemPermission) {
   				return $permission->getNotSettedPermissions();
   			}
 		}
   		
-  		function getAllRolesPermissions(){
+  		static function getAllRolesPermissions(){
   			$groups = PermissionGroups::instance()->getNonPersonalSameLevelPermissionsGroups('`parent_id`,`id` ASC');
   			$roles_permissions = array();
   			foreach($groups as $group){

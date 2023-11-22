@@ -43,15 +43,17 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 		$object_count_rows = DB::executeAll("SELECT count(o.id) as cant, ot.id as ot_id, ot.name FROM ".TABLE_PREFIX."objects o INNER JOIN ".TABLE_PREFIX."object_types ot ON o.object_type_id=ot.id 
 			WHERE ot.name IN ('task','message','weblink','file','expense','objective','event') AND o.trashed_by_id=0 AND o.archived_by_id=0 GROUP BY ot_id");
 		$object_count = array();
-		foreach ($object_count_rows as $row) {
-			$object_count[$row['name']] = $row['cant'];
+		if( $object_count_rows) {
+			foreach ($object_count_rows as $row) {
+				$object_count[$row['name']] = $row['cant'];
+			}
 		}
 		
-		$first_tab_panel = TabPanels::findOne(array('conditions' => "object_type_id > 0 AND enabled=1 AND id NOT IN ('more-panel', 'reporting-panel', 'mails-panel') AND 
+		$first_tab_panel = TabPanels::instance()->findOne(array('conditions' => "object_type_id > 0 AND enabled=1 AND id NOT IN ('more-panel', 'reporting-panel', 'mails-panel') AND 
 				(plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))", 'order' => 'ordering'));
 		
 		if ($first_tab_panel instanceof TabPanel) {
-			$ot = ObjectTypes::findById($first_tab_panel->getObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($first_tab_panel->getObjectTypeId());
 			if ($ot instanceof ObjectType) {
 				
 				switch ($ot->getName()) {

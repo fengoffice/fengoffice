@@ -7,8 +7,8 @@
   */
   class TabPanels extends BaseTabPanels {
 	
-  	function getEnabled() {
-  		return self::findAll(array("condtitions" => "`enabled` = 1"));
+  	static function getEnabled() {
+  		return self::instance()->findAll(array("condtitions" => "`enabled` = 1"));
   	}
   } // TabPanels 
 

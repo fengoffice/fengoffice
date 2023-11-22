@@ -13,8 +13,8 @@
     * @param void
     * @return array
     */
-    function getAll() {
-      return self::findAll(array(
+    static function getAll() {
+      return self::instance()->findAll(array(
         'order' => '`order`'
       )); // findAll
     } // getAll
@@ -25,8 +25,8 @@
     * @param string $name
     * @return AdministrationTool
     */
-    function getByName($name) {
-      return self::findOne(array(
+    static function getByName($name) {
+      return self::instance()->findOne(array(
         'conditions' => array('`name` = ?', $name),
       )); // findOne
     } // getByName

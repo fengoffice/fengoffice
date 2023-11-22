@@ -72,7 +72,7 @@ if (isset($file) && $file instanceof ProjectFile) {
 		if (config_option('checkout_notification_dialog')) { 
 			$checkedOutById = $file->getCheckedOutById();
 			if($checkedOutById != 0){
-				$checkedOutByName = ($checkedOutById == logged_user()->getId() ?  "self" : Contacts::findById($checkedOutById)->getObjectName());
+				$checkedOutByName = ($checkedOutById == logged_user()->getId() ?  "self" : Contacts::instance()->findById($checkedOutById)->getObjectName());
 			}else{
 				$checkedOutByName = '';
 			}

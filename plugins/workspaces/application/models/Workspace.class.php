@@ -64,7 +64,7 @@ class Workspace extends BaseWorkspace {
 	 */
 	function getRelatedForms() {
 		if(is_null($this->related_forms)) {
-			$this->related_forms = ProjectForms::findAll(array(
+			$this->related_forms = ProjectForms::instance()->findAll(array(
           'conditions' => '`action` = ' . DB::escape(ProjectForm::ADD_COMMENT_ACTION) . ' AND `in_object_id` = ' . DB::escape($this->getId()),
           'order' => '`order`'
           )); // findAll
@@ -78,7 +78,7 @@ class Workspace extends BaseWorkspace {
 	//  Permissions
 	// ---------------------------------------------------
 
-	function canAdd(Contact $contact, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $contact, $context, &$notAllowedMember = ''){
 		return can_manage_dimension_members($contact);	
 	}
 	

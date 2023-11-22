@@ -93,7 +93,7 @@
 	// add assigned users to users array
 	foreach ($assigned_users as $auser) {
 		if (!in_array($auser, $user_ids)) {
-			$user = Contacts::findById($auser);
+			$user = Contacts::instance()->findById($auser);
 			if ($user instanceof Contact) $users_array[] = $user->getArrayInfo();
 		}
 	}
@@ -348,10 +348,10 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 
     <?php
     $enabled_dimension_ids = config_option('enabled_dimensions');
-    $enabled_dimensions = Dimensions::findAll(array('conditions' => '`id` IN ('. implode(",", $enabled_dimension_ids) .')'));
+    $enabled_dimensions = Dimensions::instance()->findAll(array('conditions' => '`id` IN ('. implode(",", $enabled_dimension_ids) .')'));
     foreach ($enabled_dimensions as $enabled_dimension) {
         $ot_ids = implode(",", DimensionObjectTypes::getObjectTypeIdsByDimension($enabled_dimension->getId()));
-        $dimension_obj_types = ObjectTypes::findAll(array("conditions" => "`id` IN ($ot_ids)"));
+        $dimension_obj_types = ObjectTypes::instance()->findAll(array("conditions" => "`id` IN ($ot_ids)"));
         
         $no_folder_ots_count = 0;
         foreach ($dimension_obj_types as $ot) {

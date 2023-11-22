@@ -200,6 +200,7 @@
                         <?php
                             $object_id = $timeslot->getRelObjectId();
                             $showObjectTask = '';
+                            $showLinkObjectTask = '';  // *** LC 2023-10-03
                             if ($object_id){
                                 $showLinkObjectTask = 'display:none;';
                                 
@@ -216,7 +217,7 @@
                             <div class="template-object-actions og-add-template-object ico-task" style="<?php echo $showObjectTask ?>">
                                 <input id="object_id" type="hidden" name="object_id" value="<?php echo $object_id ?>" />
                                 <input type="hidden" name="old_object_id" value="<?php echo $object_id ?>" />
-                                <span class="name"><?php echo $object_name ?></span>
+                                <span class="name"><?php echo isset($object_name) ? $object_name : "" ?></span>
                                 <a href="#" onclick="og.removeObjectTask(this.parentNode)" class="internalLink coViewAction ico-delete"><?php echo lang('remove') ?></a>
                             </div>
                                     
@@ -369,7 +370,7 @@
 </div>
 
 <script>   
-    var edit_mode = "<?php echo $edit_mode;  //this variable is undefined ?>";
+    var edit_mode = "<?php echo isset($edit_mode) ? $edit_mode : "";  //this variable is undefined  *** LC 2023-10-03 ?>";
 
     var edit_hours_mode = "<?php echo 0; ?>";
     var gen_id = "<?php echo $genid; ?>";
@@ -931,7 +932,7 @@
 	og.related_task_data = {};
 
 	og.enabled_disable_is_billable_from_fixed_fee_task = function(task) {
-		if (!task.is_calculated_estimated_price) {
+		if (!task.is_calculated_estimated_price && task.is_fixed_fee) {
 			
 			var question = lang("You are trying to link a billable time entry to a fixed price task. If you continue, this time entry will be set to non-billable. Continue?");
 			var html = '<div style="padding: 10px;">'+ 
@@ -1251,7 +1252,10 @@
         og.updateLastTimeValue();
     })
     
-    <?php if ($disable_is_billable_if_fixedfee_task && $timeslot->getRelObject() instanceof ProjectTask && !$timeslot->getRelObject()->getColumnValue('is_calculated_estimated_price')) { ?>
+    <?php 
+    $is_calculated_estimated_price = $timeslot->getRelObject() ? $timeslot->getRelObject()->getColumnValue('is_calculated_estimated_price') : true;
+    $is_fixed_fee = $timeslot->getRelObject() ? $timeslot->getRelObject()->getColumnValue('is_fixed_fee') : false;
+    if ($disable_is_billable_if_fixedfee_task && !$is_calculated_estimated_price && $is_fixed_fee) { ?>
 		og.disable_time_form_is_billable_input();
 	<?php } ?>
             

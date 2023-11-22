@@ -222,7 +222,7 @@
     *
     * @return AdministrationTools 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'AdministrationTools')) {
         $instance = new AdministrationTools();

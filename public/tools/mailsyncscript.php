@@ -20,7 +20,7 @@
 
 		$id = get_id();
 		if ($id>0){
-			$account = MailAccounts::findById($id);
+			$account = MailAccounts::instance()->findById($id);
 		}
 		else{ 
 			$email_address = array_var($_GET, 'email');			
@@ -28,7 +28,7 @@
 			if (isset ($email_address) && isset ($user_name)){
 				$user_conditions = array("conditions" => array("`username`='".$user_name."'"));
 			
-				$user = Contacts::findOne($user_conditions);
+				$user = Contacts::instance()->findOne($user_conditions);
 			
 				if (!isset ($user)){	
 					echo(lang('cant find user'));
@@ -37,7 +37,7 @@
 				}			
 											
 				$account_conditions = array("conditions" => array("`email_addr`='".$email_address."' AND `user_id`='".$user->getId()."'"));
-				$account = MailAccounts::findOne($account_conditions);
+				$account = MailAccounts::instance()->findOne($account_conditions);
 				if (!isset ($account)){		
 					echo(lang('cant find account'));
 					?><br><a href="<?php echo ROOT_URL?>/index.php?c=access&a=index" target="_top">Go back to Feng Office</a><?php
@@ -65,7 +65,7 @@
 		$check_sync_box = MailUtilities::checkSyncMailbox($server, $account->getSyncSsl(), $account->getOutgoingTrasnportType(), $account->getSyncSslPort(), $folder, $address, $pass);		
 				
 		if ($check_sync_box){
-			$sent_mails = MailContents::findAll($conditions);			
+			$sent_mails = MailContents::instance()->findAll($conditions);			
 			if (count($sent_mails)==0){
 				echo(lang('mails on imap acc already sync'));											
 				?><br><a href="<?php echo ROOT_URL?>/index.php?c=access&a=index" target="_top">Go back to Feng Office</a><?php

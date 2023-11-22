@@ -222,7 +222,7 @@
     *
     * @return ProjectChartParams 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ProjectChartParams')) {
         $instance = new ProjectChartParams();

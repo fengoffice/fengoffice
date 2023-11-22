@@ -232,7 +232,7 @@
     *
     * @return ConfigOptions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ConfigOptions')) {
         $instance = new ConfigOptions();

@@ -17,7 +17,7 @@ class ApplicationReadLog extends BaseApplicationReadLog {
 	 * @return Contact
 	 */
 	function getTakenBy() {
-		return Contacts::findById($this->getTakenById());
+		return Contacts::instance()->findById($this->getTakenById());
 	} // getTakenBy
 
 	

@@ -227,7 +227,7 @@
     *
     * @return Objects 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Objects')) {
         $instance = new Objects();

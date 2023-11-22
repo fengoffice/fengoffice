@@ -18,7 +18,7 @@ class MailAccountConfigHandler extends ConfigHandler {
 		
 		$accounts = array();
 		if (Plugins::instance()->isActivePlugin('mail')) {
-			$accounts = MailAccounts::findAll();
+			$accounts = MailAccounts::instance()->findAll();
 		}
 		
 		foreach ($accounts as $account) {

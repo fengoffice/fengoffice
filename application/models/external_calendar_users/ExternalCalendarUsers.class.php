@@ -6,16 +6,16 @@
  */
 class ExternalCalendarUsers extends BaseExternalCalendarUsers {
     
-    function findByContactId() {
-            return ExternalCalendarUsers::findOne(array('conditions' => array('`contact_id` = ?', logged_user()->getId())));
+    static function findByContactId() {
+            return ExternalCalendarUsers::instance()->findOne(array('conditions' => array('`contact_id` = ?', logged_user()->getId())));
     }
     
-    function findByGivenContactId($value) {
-    	return ExternalCalendarUsers::findOne(array('conditions' => array('`contact_id` = ?', $value)));
+    static function findByGivenContactId($value) {
+    	return ExternalCalendarUsers::instance()->findOne(array('conditions' => array('`contact_id` = ?', $value)));
     }
     
-    function findByEmail($email) {
-            return ExternalCalendarUsers::findOne(array('conditions' => array('`auth_user` = ? AND `contact_id` = ?', $email, logged_user()->getId())));
+    static function findByEmail($email) {
+            return ExternalCalendarUsers::instance()->findOne(array('conditions' => array('`auth_user` = ? AND `contact_id` = ?', $email, logged_user()->getId())));
     }
 } 
 ?>

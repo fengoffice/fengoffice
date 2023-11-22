@@ -196,7 +196,7 @@ function is_valid_hash($hash) {
  * @param mixed $default
  * @return mixed
  */
-function array_var(&$from, $name, $default = null) {
+function array_var($from, $name, $default = null) {
 	if(is_array($from)) return isset($from[$name]) ? $from[$name] : $default;
 	return $default;
 } // array_var
@@ -332,9 +332,12 @@ function str_replace_first($search_for, $replace_with, $in) {
  * @param string $niddle Needle string
  * @return boolean
  */
-function str_starts_with($string, $niddle) {
-	return substr($string, 0, strlen($niddle)) == $niddle;
-} // end func str_starts with
+
+ if (!function_exists('str_starts_with')) { 
+	 function str_starts_with($string, $niddle) {
+		return substr($string, 0, strlen($niddle)) == $niddle;
+	} // end func str_starts with
+}
 
 /**
  * String ends with something
@@ -346,10 +349,11 @@ function str_starts_with($string, $niddle) {
  * @param string $needdle Needle string
  * @return boolean
  */
-function str_ends_with($string, $needdle) {
-	return substr($string, strlen($string) - strlen($needdle), strlen($needdle)) == $needdle;
-} // end func str_ends_with
-
+if (!function_exists('str_ends_with')) { 
+	function str_ends_with($string, $needdle) {
+		return substr($string, strlen($string) - strlen($needdle), strlen($needdle)) == $needdle;
+	} // end func str_ends_with
+}
 /**
  * Return path with trailing slash
  *
@@ -520,11 +524,11 @@ function php_config_value_to_bytes($val) {
  * @return null
  */
 function fix_input_quotes() {
-	if(get_magic_quotes_gpc()) {
+	// if(get_magic_quotes_gpc()) {
 		array_stripslashes($_GET);
 		array_stripslashes($_POST);
 		array_stripslashes($_COOKIE);
-	} // if
+	// } // if
 } // fix_input_quotes
 
 /**

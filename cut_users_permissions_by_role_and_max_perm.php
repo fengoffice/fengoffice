@@ -6,7 +6,7 @@ include "init.php";
 header("Content-type: text/plain");
 
 
-$admin_pg = PermissionGroups::findOne(array('conditions' => "`name`='Super Administrator'"));
+$admin_pg = PermissionGroups::instance()->findOne(array('conditions' => "`name`='Super Administrator'"));
 
 $all_roles_max_permissions = RoleObjectTypePermissions::getAllRoleObjectTypePermissionsInfo();
 

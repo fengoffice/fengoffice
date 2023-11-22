@@ -14,7 +14,7 @@
 	$token = array_var($argv, 3);
 	
 	// log user in
-	$user = Contacts::findById($user_id);
+	$user = Contacts::instance()->findById($user_id);
 	if(!($user instanceof Contact) || !$user->isValidToken($token)) {
 		die();
 	}

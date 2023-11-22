@@ -211,7 +211,7 @@
     *
     * @return MemberRestrictions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'MemberRestrictions')) {
         $instance = new MemberRestrictions();

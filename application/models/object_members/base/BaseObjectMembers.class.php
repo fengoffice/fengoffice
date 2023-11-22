@@ -211,7 +211,7 @@
     *
     * @return ObjectMembers 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ObjectMembers')) {
         $instance = new ObjectMembers();
