@@ -61,7 +61,7 @@ if (array_var($_REQUEST, 'modal')) {
 							$context = active_context();
 							if (isset($member_id) && $member_id > 0) {
 								// filter by context passed by parameter
-								$additional_member = Members::findById($member_id);
+								$additional_member = Members::instance()->findById($member_id);
 								if ($additional_member instanceof Member) {
 									$context = array($additional_member);
 								}

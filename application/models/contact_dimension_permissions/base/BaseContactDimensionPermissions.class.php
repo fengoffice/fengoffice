@@ -211,7 +211,7 @@
     *
     * @return ContactDimensionPermissions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactDimensionPermissions')) {
         $instance = new ContactDimensionPermissions();

@@ -29,7 +29,7 @@ $genid = gen_id();
 	$status_filter = $userPreferences['status_filter'];
         $task_filter = $userPreferences['task_filter'];
         
-	$user = Contacts::findById(array('id' => $user_filter));
+	$user = Contacts::instance()->findById(array('id' => $user_filter));
 	
 	if ($user == null) $user = logged_user();
 	

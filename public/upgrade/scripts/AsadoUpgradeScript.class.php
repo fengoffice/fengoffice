@@ -169,7 +169,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 
 
 				$member_parents = array();
-				$members = Members::findAll();
+				$members = Members::instance()->findAll();
 				foreach ($members as $member) {
 					$member_parents[$member->getId()] = $member->getAllParentMembersInHierarchy(false, false);
 				}
@@ -195,7 +195,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 					}
 				}
 				
-				$app_move_logs = ApplicationLogs::findAll(array("conditions" => "action = 'move'"));
+				$app_move_logs = ApplicationLogs::instance()->findAll(array("conditions" => "action = 'move'"));
 				foreach ($app_move_logs as &$app_log) {/* @var $app_log ApplicationLog */
 					
 					$exp_log_data = explode(";", $app_log->getLogData());

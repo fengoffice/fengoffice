@@ -18,7 +18,7 @@ try {
 	
 	$command = array_var($argv, 1);
 	$arg1 = array_var($argv, 2);
-	$usr = Contacts::findOne(array("conditions" => "user_type > 0", "order" => "user_type"));
+	$usr = Contacts::instance()->findOne(array("conditions" => "user_type > 0", "order" => "user_type"));
 	$usr or die("No users found\n");
 	CompanyWebsite::instance()->logUserIn($usr);
 	

@@ -8,7 +8,7 @@
 class PermissionGroup extends BasePermissionGroup {
 	
 	function getUsers() {
-		return Contacts::findAll(array("conditions" => "`id` IN ( SELECT `contact_id` FROM ".ContactPermissionGroups::instance()->getTableName(true)." 
+		return Contacts::instance()->findAll(array("conditions" => "`id` IN ( SELECT `contact_id` FROM ".ContactPermissionGroups::instance()->getTableName(true)." 
 			WHERE `permission_group_id` = ".$this->getId().")"));
 	}
 	
@@ -42,7 +42,7 @@ class PermissionGroup extends BasePermissionGroup {
 		//members
 		$members = array();
 		foreach ($members_id as $member_id){
-			$mem = Members::findById($member_id);
+			$mem = Members::instance()->findById($member_id);
 			if (!$mem instanceof Member) {
 				continue;
 			}
@@ -58,15 +58,15 @@ class PermissionGroup extends BasePermissionGroup {
 	
 	function delete() {
 		// delete system permissions
-		SystemPermissions::delete("`permission_group_id` = ".$this->getId());
+		SystemPermissions::instance()->delete("`permission_group_id` = ".$this->getId());
 		// delete member permissions
-		ContactMemberPermissions::delete("`permission_group_id` = ".$this->getId());
+		ContactMemberPermissions::instance()->delete("`permission_group_id` = ".$this->getId());
 		// delte dimension permissions
-		ContactDimensionPermissions::delete("`permission_group_id` = ".$this->getId());
+		ContactDimensionPermissions::instance()->delete("`permission_group_id` = ".$this->getId());
 		// delete contact_permission_group entries
-		ContactPermissionGroups::delete("`permission_group_id` = ".$this->getId());
+		ContactPermissionGroups::instance()->delete("`permission_group_id` = ".$this->getId());
 		// delete tab panel permissions
-		TabPanelPermissions::delete("`permission_group_id` = ".$this->getId());
+		TabPanelPermissions::instance()->delete("`permission_group_id` = ".$this->getId());
 		
 		parent::delete();
 	}

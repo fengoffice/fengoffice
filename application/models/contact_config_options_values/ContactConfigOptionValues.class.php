@@ -26,7 +26,7 @@
     } // getOptionsByCategory
     
     function getFilterActivityMember($id,$member) {
-            return ContactConfigOptionValues::findOne(array('conditions' => array('`option_id` = ? AND `member_id` = ? AND `contact_id` = ?', $id, $member, logged_user()->getId())));
+            return ContactConfigOptionValues::instance()->findOne(array('conditions' => array('`option_id` = ? AND `member_id` = ? AND `contact_id` = ?', $id, $member, logged_user()->getId())));
     }
     
     function getFilterActivityDelete($id) {
@@ -45,7 +45,7 @@
 //        array('`category_name` = ?', $category->getName()) : 
 //        array('`category_name` = ? AND `is_system` = ?', $category->getName(), false);
 //        
-//      return self::findAll(array(
+//      return self::instance()->findAll(array(
 //        'conditions' => $conditions,
 //        'order' => '`option_order`'
 //      )); // findAll
@@ -63,7 +63,7 @@
 //        array('`category_name` = ?', $category->getName()) : 
 //        array('`category_name` = ? AND `is_system` = ?', $category->getName(), false);
 //        
-//      return self::count($conditions);
+//      return self::instance()->count($conditions);
 //    } // countOptionsByCategory
 //    
 //    /**
@@ -87,7 +87,7 @@
 //    * @return ConfigOption
 //    */
 //    static function getByName($name) {
-//      return self::findOne(array(
+//      return self::instance()->findOne(array(
 //        'conditions' => array('`name` = ?', $name)
 //      )); // if
 //    } // getByName

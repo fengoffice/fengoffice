@@ -23,7 +23,7 @@
       }
       
       if (isset($config->assoc_dim_id)) {
-      	$associations = DimensionMemberAssociations::findAll(array(
+      	$associations = DimensionMemberAssociations::instance()->findAll(array(
       			'conditions' => "dimension_id=$main_dim_id AND object_type_id=$main_mem_type_id
   					AND associated_dimension_id='".$config->assoc_dim_id."' AND associated_object_type_id='".$config->assoc_ot_id."'"));
       } else {

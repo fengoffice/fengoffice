@@ -24,15 +24,15 @@ if (!class_exists(AbstractReflectionMacro::class, false)) {
          */
         public function getReflection(): ?Reflection\Adapter\ReflectionMethod
         {
-            if ($this->reflectionFunction instanceof Reflection\Adapter\ReflectionMethod) {
+            if ($this->reflectionstatic function instanceof Reflection\Adapter\ReflectionMethod) {
                 return $this->reflectionFunction;
             }
 
-            if ($this->reflectionFunction instanceof Reflection\ReflectionMethod) {
+            if ($this->reflectionstatic function instanceof Reflection\ReflectionMethod) {
                 return new Reflection\Adapter\ReflectionMethod($this->reflectionFunction);
             }
 
-            return $this->reflectionFunction instanceof ReflectionMethod
+            return $this->reflectionstatic function instanceof ReflectionMethod
                 ? new Reflection\Adapter\ReflectionMethod(
                     Reflection\ReflectionMethod::createFromName(
                         $this->reflectionFunction->getDeclaringClass()->getName(),

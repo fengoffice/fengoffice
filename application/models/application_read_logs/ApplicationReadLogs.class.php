@@ -90,7 +90,7 @@ class ApplicationReadLogs extends BaseApplicationReadLogs {
 	 */
 	static function getObjectLogs($object, $limit = null, $offset = null, $extra_conditions = "") {
 
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array('`rel_object_id` = (?)' . $extra_conditions, $object->getId()),
 			'order' => '`created_on` DESC',
 			'limit' => $limit,
@@ -101,7 +101,7 @@ class ApplicationReadLogs extends BaseApplicationReadLogs {
 	
 	static function countObjectLogs($object, $extra_conditions = "") {
 	
-		return self::count("`rel_object_id` = ".$object->getId() ." ". $extra_conditions);
+		return self::instance()->count("`rel_object_id` = ".$object->getId() ." ". $extra_conditions);
 		
 	}
 

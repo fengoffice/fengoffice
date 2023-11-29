@@ -95,20 +95,20 @@ og.SimpleMemberSelector = function(config) {
 
 }
 
-og.buildPlainStoreFromTree = function(tree_members, store_data) {
-
-	for (var i=0; i<tree_members.length; i++) {
+og.buildPlainStoreFromTree = function (tree_members, store_data) {
+	for (var i = 0; i < tree_members.length; i++) {
 		var member = tree_members[i];
+		if (member) {
+			var mem_name = '<span style="margin-left:' + (20 * (member.depth - 1)) + 'px">' + member.display_name + '</span>';
 
-		var mem_name = '<span style="margin-left:'+(20 * (member.depth-1))+'px">' + member.display_name + '</span>';
+			store_data.push([member.id, mem_name]);
 
-		store_data.push([member.id, mem_name]);
+			og.addMemberToOgDimensions(member.dimension_id, member);
 
-		og.addMemberToOgDimensions(member.dimension_id, member);
-
-		if (!member.leaf) {
-			og.buildPlainStoreFromTree(member.children, store_data);
-		}		
+			if (!member.leaf) {
+				og.buildPlainStoreFromTree(member.children, store_data);
+			}
+		}
 	}
 }
 

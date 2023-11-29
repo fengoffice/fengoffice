@@ -39,7 +39,7 @@
 		</tr>
 		
 		<?php
-		$ot = ObjectTypes::findById($model);
+		$ot = ObjectTypes::instance()->findById($model);
 		$model = $ot->getHandlerClass();
 		$line = 0;
 		?>

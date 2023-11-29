@@ -124,7 +124,7 @@ class WebpageController extends ApplicationController {
 		}
 		$this->setTemplate('add');
 
-		$webpage = ProjectWebpages::findById(get_id());
+		$webpage = ProjectWebpages::instance()->findById(get_id());
 		if(!($webpage instanceof ProjectWebpage)) {
 			flash_error(lang('webpage dnx'));
 			ajx_current("empty");
@@ -209,7 +209,7 @@ class WebpageController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		$webpage = ProjectWebpages::findById(get_id());
+		$webpage = ProjectWebpages::instance()->findById(get_id());
 		if(!($webpage instanceof ProjectWebpage)) {
 			flash_error(lang('webpage dnx'));
 			ajx_current("empty");
@@ -268,7 +268,7 @@ class WebpageController extends ApplicationController {
 			$ids = explode(',', array_var($_GET, 'webpages'));
 			$succ = 0; $err = 0;
 			foreach ($ids as $id) {
-				$web_page = ProjectWebpages::findById($id);
+				$web_page = ProjectWebpages::instance()->findById($id);
 				if ($web_page instanceof ProjectWebpage && $web_page->canDelete(logged_user())) {
 					try{
 						DB::beginWork();
@@ -294,7 +294,7 @@ class WebpageController extends ApplicationController {
 			$ids = explode(',', array_var($_GET, 'ids'));
 			$succ = 0; $err = 0;
 				foreach ($ids as $id) {
-					$webpage = ProjectWebpages::findById($id);
+					$webpage = ProjectWebpages::instance()->findById($id);
 					if (!$webpage instanceof ProjectWebpage) continue;
 					try {
 						$webpage->setIsRead(logged_user()->getId(),true);
@@ -311,7 +311,7 @@ class WebpageController extends ApplicationController {
 			$ids = explode(',', array_var($_GET, 'ids'));
 			$succ = 0; $err = 0;
 				foreach ($ids as $id) {
-					$webpage = ProjectWebpages::findById($id);
+					$webpage = ProjectWebpages::instance()->findById($id);
 					if (!$webpage instanceof ProjectWebpage) continue;
 					try {
 						$webpage->setIsRead(logged_user()->getId(),false);
@@ -328,7 +328,7 @@ class WebpageController extends ApplicationController {
 			$ids = explode(',', array_var($_GET, 'webpages'));
 			$succ = 0; $err = 0;
 			foreach ($ids as $id) {
-				$web_page = ProjectWebpages::findById($id);
+				$web_page = ProjectWebpages::instance()->findById($id);
 				if ($web_page instanceof ProjectWebpage && $web_page->canEdit(logged_user())) {
 					try{
 						DB::beginWork();
@@ -413,7 +413,7 @@ class WebpageController extends ApplicationController {
 	
 	function view() {
 		$this->addHelper("textile");
-		$weblink = ProjectWebpages::findById(get_id());
+		$weblink = ProjectWebpages::instance()->findById(get_id());
 		if(!($weblink instanceof ProjectWebpage)) {
 			flash_error(lang('weblink dnx'));
 			ajx_current("empty");

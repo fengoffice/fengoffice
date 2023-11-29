@@ -211,7 +211,7 @@
     *
     * @return DimensionObjectTypeOptions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'DimensionObjectTypeOptions')) {
         $instance = new DimensionObjectTypeOptions();

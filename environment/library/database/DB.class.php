@@ -95,7 +95,7 @@ final class DB {
 	 * @throws DBAdapterDnx
 	 * @throws DBConnectError
 	 */
-	private function connectAdapter($adapter_name, $params) {
+	private static function connectAdapter($adapter_name, $params) {
 
 		self::useAdapter($adapter_name);
 
@@ -115,7 +115,7 @@ final class DB {
 	 * @param string $adapter_class
 	 * @return void
 	 */
-	private function useAdapter($adapter_name) {
+	private static function useAdapter($adapter_name) {
 		$adapter_class = self::getAdapterClass($adapter_name);
 		$path = dirname(__FILE__) . "/adapters/$adapter_class.class.php";
 		if(!is_readable($path)) throw new FileDnxError($path);
@@ -129,7 +129,7 @@ final class DB {
 	 * @param string $adapter_name
 	 * @return string
 	 */
-	private function getAdapterClass($adapter_name) {
+	private static function getAdapterClass($adapter_name) {
 		return Inflector::camelize($adapter_name) . 'DBAdapter';
 	} // getAdapterClass
 

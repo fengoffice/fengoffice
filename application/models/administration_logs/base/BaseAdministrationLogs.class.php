@@ -228,7 +228,7 @@ abstract class BaseAdministrationLogs extends DataManager {
 	 *
 	 * @return AdministrationLogs
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'AdministrationLogs')) {
 			$instance = new AdministrationLogs();

@@ -267,7 +267,7 @@ abstract class BaseMailContents extends ContentDataObjects {
 	 *
 	 * @return MailContents
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'MailContents')) {
 			$instance = new MailContents();

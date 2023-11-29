@@ -212,7 +212,7 @@
     *
     * @return RoleObjectTypePermissions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'RoleObjectTypePermissions')) {
         $instance = new RoleObjectTypePermissions();

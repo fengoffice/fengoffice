@@ -8,7 +8,7 @@
 class MaxRoleObjectTypePermissions extends BaseMaxRoleObjectTypePermissions {
 	
 	static function getAllMaxRoleObjectTypePermissionsInfo() {
-		$objects = self::findAll(array('raw_data' => true));
+		$objects = self::instance()->findAll(array('raw_data' => true));
 		$info = array();
 		foreach ($objects as $obj) {
 			$data = array();

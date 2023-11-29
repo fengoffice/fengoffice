@@ -269,7 +269,7 @@ class SearchController extends ApplicationController {
 					$where_condiition .= " AND `" . $condition_field_name . "` " . "not like" . " '%" . $value . "%' ";
 					$con = "not like '%" . $value . "%' ";
 				}else if($condition_condition == "=" || $condition_condition == ">" || $condition_condition == "<" || $condition_condition == "<>" || $condition_condition == ">=" || $condition_condition == "<="){
-					$where_condiition .= " AND " . $condition_field_name . " " . $condition_condition . " '" . $value . "' ";
+					$where_condiition .= " AND `" . $condition_field_name . "` " . $condition_condition . " '" . $value . "' ";
 					$con = $condition_condition . " '" . $value . "' ";
 				}else{					
 					$where_condiition .= " AND `" . $condition_field_name . "` " . $conditionLocal . " '" . $value . "' ";
@@ -309,7 +309,7 @@ class SearchController extends ApplicationController {
 			}
 			
 			if($type_object){
-				$object_table = ObjectTypes::findById($type_object);
+				$object_table = ObjectTypes::instance()->findById($type_object);
 				$table = $object_table->getTableName();				
 			}
 
@@ -837,7 +837,7 @@ class SearchController extends ApplicationController {
 				if ($cp->getType() != 'table')
 					$fields[] = array('id' => $cp->getId(), 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
 			}
-			$ot = ObjectTypes::findById($report->getObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($report->getObjectTypeId());
 			eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");	
 	
 			$common_columns = Objects::instance()->getColumns(false);
@@ -881,7 +881,7 @@ class SearchController extends ApplicationController {
 				$values[] = array('id' => $milestone->getId(), 'name' => $milestone->getObjectName());
 			}
 		/*} else if($field == 'object_subtype'){
-			$object_types = ProjectCoTypes::findAll(array('conditions' => (!is_null($manager) ? "`object_manager`='$manager'" : "")));
+			$object_types = ProjectCoTypes::instance()->findAll(array('conditions' => (!is_null($manager) ? "`object_manager`='$manager'" : "")));
 			foreach($object_types as $object_type){
 				$values[] = array('id' => $object_type->getId(), 'name' => $object_type->getName());
 			}*/
@@ -900,7 +900,7 @@ class SearchController extends ApplicationController {
 				$fields[] = array('id' => $cp->getId(), 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
 			}
 			
-			$ot = ObjectTypes::findById($object_type);
+			$ot = ObjectTypes::instance()->findById($object_type);
 			eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
 			$objectColumns = $managerInstance->getColumns();
 			

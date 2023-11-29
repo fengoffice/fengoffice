@@ -13,7 +13,7 @@ class ObjectReminders extends BaseObjectReminders {
 	 * @param ContentDataObject $object
 	 * @param Contact $user
 	 */
-	function getAllRemindersByObjectAndUser($object, $user, $context = null, $include_subscriber_reminders = false) {
+	static function getAllRemindersByObjectAndUser($object, $user, $context = null, $include_subscriber_reminders = false) {
 		if (isset($context)) {
 			$extra = ' AND `context` = ' . DB::escape($context);
 		} else {
@@ -24,7 +24,7 @@ class ObjectReminders extends BaseObjectReminders {
 		} else {
 			$usercond = '`contact_id` = ?';
 		}
-		$reminders = ObjectReminders::findAll(array(
+		$reminders = ObjectReminders::instance()->findAll(array(
         	'conditions' => array("`object_id` = ? AND $usercond" . $extra,
 					$object->getId(),
         			$user->getId()
@@ -37,14 +37,14 @@ class ObjectReminders extends BaseObjectReminders {
 	 * @param $object
 	 * @return unknown_type
 	 */
-	function getByObject($object) {
-		return self::findAll(array(
+	static function getByObject($object) {
+		return self::instance()->findAll(array(
 			'conditions' => array("`object_id` = ?",
 				$object->getId()
 		)));
 	}
 	
-	function getDueReminders($type = null) {
+	static function getDueReminders($type = null) {
 		if (isset($type)) {
 			$extra = ' AND `type` = ' . DB::escape($type);
 		} else {
@@ -56,7 +56,7 @@ class ObjectReminders extends BaseObjectReminders {
 				SELECT ot.id FROM ".TABLE_PREFIX."object_types ot WHERE ot.name IN ('template_task','template_milestone')
 		)";*/
 		
-		return ObjectReminders::findAll(array(
+		return ObjectReminders::instance()->findAll(array(
 			'conditions' => array(
 				"`date` > ? AND `date` < ?" . $extra, $yesterday, DateTimeValueLib::now(),
 			),
@@ -73,7 +73,7 @@ class ObjectReminders extends BaseObjectReminders {
 	 */
 	static function getUsersByObject(ContentDataObject $object) {
 		$users = array();
-		$reminders = ObjectReminders::findAll(array(
+		$reminders = ObjectReminders::instance()->findAll(array(
         	'conditions' => '`object_id` = ' . DB::escape($object->getId())
 		)); // findAll
 		if(is_array($reminders)) {
@@ -93,11 +93,11 @@ class ObjectReminders extends BaseObjectReminders {
 	 */
 	static function getObjectsByUser(Contact $user) {
 		$objects = array();
-		$reminders = ObjectReminders::findAll(array(
+		$reminders = ObjectReminders::instance()->findAll(array(
         	'conditions' => '`contact_id` = ' . DB::escape($user->getId())
 		)); // findAll
-		if(is_array($Reminders)) {
-			foreach($Reminders as $Reminder) {
+		if(is_array($reminders)) {
+			foreach($reminders as $Reminder) {
 				$object = $Reminder->getObject();
 				if($object instanceof ContentDataObject) $objects[] = $object;
 			} // foreach
@@ -112,7 +112,7 @@ class ObjectReminders extends BaseObjectReminders {
 	 * @return boolean
 	 */
 	static function clearByObject(ContentDataObject $object) {
-		return ObjectReminders::delete(
+		return ObjectReminders::instance()->delete(
       		'`object_id` = ' . DB::escape($object->getId()));
 	} // clearByObject
 
@@ -122,7 +122,7 @@ class ObjectReminders extends BaseObjectReminders {
 		} else {
 			$usercond = '`contact_id` = '. DB::escape($user->getId());
 		}
-		return ObjectReminders::delete(
+		return ObjectReminders::instance()->delete(
       		'`object_id` = ' . DB::escape($object->getId()) .
       		" AND $usercond"
 		);
@@ -135,11 +135,11 @@ class ObjectReminders extends BaseObjectReminders {
 	 * @return boolean
 	 */
 	static function clearByUser(Contact $user) {
-		return ObjectReminders::delete('`contact_id` = ' . DB::escape($user->getId()));
+		return ObjectReminders::instance()->delete('`contact_id` = ' . DB::escape($user->getId()));
 	} // clearByUser
         
         function findByEvent($event_id) {
-                return ObjectReminders::findAll(array('conditions' => array('`object_id` = ?', $event_id)));
+                return ObjectReminders::instance()->findAll(array('conditions' => array('`object_id` = ?', $event_id)));
         }
 
 } // ObjectReminders

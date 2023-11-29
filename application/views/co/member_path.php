@@ -3,7 +3,7 @@
 	$hidden_dim_ids = array();
 	
 	$enabled_dimensions = config_option('enabled_dimensions');
-	$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',',$enabled_dimensions).') '));
+	$dimensions = Dimensions::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$enabled_dimensions).') '));
 	foreach ($dimensions as $dimension) {
 		if (in_array($dimension->getCode(), array('feng_users', 'feng_persons'))) continue;
 		
@@ -56,9 +56,9 @@
 	
 	foreach ($dimensions_info as &$dim_info) {
 		if (!isset($dim_info['icon'])) {
-			$dots = DimensionObjectTypes::findAll(array('conditions' => 'dimension_id = '.$dim_info['id']));
+			$dots = DimensionObjectTypes::instance()->findAll(array('conditions' => 'dimension_id = '.$dim_info['id']));
 			if (count($dots) > 0) {
-				$ot = ObjectTypes::findById($dots[0]->getObjectTypeId());
+				$ot = ObjectTypes::instance()->findById($dots[0]->getObjectTypeId());
 				if ($ot instanceof ObjectType) $dim_info['icon'] = $ot->getIconClass();
 			}
 		}

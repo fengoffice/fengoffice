@@ -49,13 +49,13 @@ class Dimension extends BaseDimension {
 			$parameters['conditions'].= " $extra_conditions";
 		}
 		
-		$members = Members::findAll($parameters);
+		$members = Members::instance()->findAll($parameters);
   		return $members;
   	}
   	
   	
 	function getRootMembers() {
-		$members = Members::findAll(array('conditions' => '`parent_member_id`=0 AND `dimension_id` = ' . $this->getId()));
+		$members = Members::instance()->findAll(array('conditions' => '`parent_member_id`=0 AND `dimension_id` = ' . $this->getId()));
   		return $members;
   	}
   	
@@ -112,7 +112,7 @@ class Dimension extends BaseDimension {
   	function setContactDimensionPermission($permission_group_id, $value) {
   		if (!in_array($value, array('allow all','deny all','check'))) return;
   		
-  		$dim_permission = ContactDimensionPermissions::findById(array('dimension_id' => $this->getId(), 'permission_group_id' => $permission_group_id));
+  		$dim_permission = ContactDimensionPermissions::instance()->findById(array('dimension_id' => $this->getId(), 'permission_group_id' => $permission_group_id));
   		if (!$dim_permission instanceof ContactDimensionPermission) {
   			$dim_permission = new ContactDimensionPermission();
   			$dim_permission->setPermissionGroupId($permission_group_id);
@@ -124,12 +124,12 @@ class Dimension extends BaseDimension {
   	
 
   	function getObjectTypeContent($object_type_id){
-  		return DimensionObjectTypeContents::findAll(array('conditions' => array("`dimension_id` = ? AND `content_object_type_id` = ?", $this->getId(), $object_type_id)));
+  		return DimensionObjectTypeContents::instance()->findAll(array('conditions' => array("`dimension_id` = ? AND `content_object_type_id` = ?", $this->getId(), $object_type_id)));
   	}
   	
   	
 	function getAllowedObjectTypeContents(){
-		return DimensionObjectTypeContents::findAll(array(
+		return DimensionObjectTypeContents::instance()->findAll(array(
 		'conditions' => array("`dimension_id` = ?
 			AND (`content_object_type_id` IN (SELECT `id` FROM ".ObjectTypes::instance()->getTableName(true)." WHERE `type` = 'located' AND `name` <> 'template')
 			OR ( 

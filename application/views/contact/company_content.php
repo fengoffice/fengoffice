@@ -7,7 +7,7 @@
     <div  class="link-ico ico-email"><h2><?php echo lang('email address') ?></h2></div>
     <div class="cardBlock">
       <?php 
-		$all_emails = ContactEmails::findAll(array('conditions' => 'contact_id='.$company->getId(), 'order' => 'is_main DESC'));
+		$all_emails = ContactEmails::instance()->findAll(array('conditions' => 'contact_id='.$company->getId(), 'order' => 'is_main DESC'));
 		foreach ($all_emails as $email) {
 			if ($email->getIsMain()) { ?>
 				<div><a <?php echo logged_user()->hasMailAccounts() ? 

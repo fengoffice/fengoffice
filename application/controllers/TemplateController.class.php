@@ -25,14 +25,14 @@ class TemplateController extends ApplicationController {
 		
 		$tasks_with_missing_properties = array();
 		
-		$template_tasks = TemplateTasks::findAll(array(
+		$template_tasks = TemplateTasks::instance()->findAll(array(
 			"conditions" => "(repeat_forever > 0 OR repeat_num > 0 OR repeat_end > 0) AND template_id=".$template->getId()
 		));
 		
 		foreach ($template_tasks as $template_task) {
 			/* @var $template_task TemplateTask */
 			$repeat_by = $template_task->getRepeatBy(); // due_date or start_date
-			$template_obj_prop = TemplateObjectProperties::findOne(array(
+			$template_obj_prop = TemplateObjectProperties::instance()->findOne(array(
 				"conditions" => array("template_id=? AND object_id=? AND property=?", $template->getId(), $template_task->getId(), $repeat_by)
 			));
 			
@@ -46,7 +46,7 @@ class TemplateController extends ApplicationController {
 	
 	function remove_repetition_from_inconsistent_template_tasks() {
 		$template_id = array_var($_REQUEST, 'template_id');
-		$template = COTemplates::findById($template_id);
+		$template = COTemplates::instance()->findById($template_id);
 		if ($template instanceof COTemplate) {
 			$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($template);
 			if (count($tasks_with_missing_properties) > 0) {
@@ -275,8 +275,8 @@ class TemplateController extends ApplicationController {
 		$template_objects_cond = " AND EXISTS (SELECT * FROM ".TABLE_PREFIX."template_objects tobj WHERE tobj.object_id=o.id AND tobj.template_id='$template_id')";
 		$tasks_conditions = array('conditions' => '`template_id` = '.$template_id . $template_objects_cond,  "order" => "depth,name");
 		$milestones_conditions = array('conditions' => '`template_id` = '.$template_id . $template_objects_cond,  "order" => "name");
-		$tasks = TemplateTasks::findAll($tasks_conditions);			
-		$milestones = TemplateMilestones::findAll($milestones_conditions);	
+		$tasks = TemplateTasks::instance()->findAll($tasks_conditions);			
+		$milestones = TemplateMilestones::instance()->findAll($milestones_conditions);	
 				
 		foreach ($milestones as $milestone){
 			$objectId = $milestone->getObjectId();
@@ -331,7 +331,7 @@ class TemplateController extends ApplicationController {
 		$temp_tasks = TemplateTasks::getAllTaskTemplatesBySessionId(logged_user()->getId());
 		foreach ($temp_tasks as $tmp){
 			$id = $tmp->getId();
-			$dep = ProjectTaskDependencies::findOne(array('conditions' => "(`previous_task_id` = $id OR `task_id` = $id )"));
+			$dep = ProjectTaskDependencies::instance()->findOne(array('conditions' => "(`previous_task_id` = $id OR `task_id` = $id )"));
 			if ($dep instanceof ProjectTaskDependency) {
 				$dep->delete();				
 			} 
@@ -340,8 +340,8 @@ class TemplateController extends ApplicationController {
 		//delete obj
 		$conditions = array('conditions' => '`session_id` =  '.logged_user()->getId());
 		if(logged_user()->getId() > 0){
-			TemplateTasks::delete($conditions);
-			TemplateMilestones::delete($conditions);
+			TemplateTasks::instance()->delete($conditions);
+			TemplateMilestones::instance()->delete($conditions);
 		}
 	}
 	
@@ -383,7 +383,7 @@ class TemplateController extends ApplicationController {
 		}
 		$this->setTemplate('add');
 
-		$cotemplate = COTemplates::findById(get_id());
+		$cotemplate = COTemplates::instance()->findById(get_id());
 		if(!($cotemplate instanceof COTemplate)) {
 			flash_error(lang('template dnx'));
 			ajx_current("empty");
@@ -575,7 +575,7 @@ class TemplateController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		$cotemplate = COTemplates::findById(get_id());
+		$cotemplate = COTemplates::instance()->findById(get_id());
 		if(!($cotemplate instanceof COTemplate)) {
 			flash_error(lang('template dnx'));
 			ajx_current("empty");
@@ -601,7 +601,7 @@ class TemplateController extends ApplicationController {
 			return;
 		}
 		ajx_current("empty");
-		$cotemplate = COTemplates::findById(get_id());
+		$cotemplate = COTemplates::instance()->findById(get_id());
 		if(!($cotemplate instanceof COTemplate)) {
 			flash_error(lang('template dnx'));
 			return;
@@ -646,7 +646,7 @@ class TemplateController extends ApplicationController {
 			$template_id =  array_var($template_data, 'template');
 			$go_deep = array_var($template_data, 'copy-tasks',false);
 						
-			$template = COTemplates::findById($template_id);
+			$template = COTemplates::instance()->findById($template_id);
 			if ($template instanceof COTemplate) {
 				try {
 					DB::beginWork();
@@ -660,7 +660,7 @@ class TemplateController extends ApplicationController {
 				}
 			}
 		}
-		tpl_assign('templates', COTemplates::findAll());
+		tpl_assign('templates', COTemplates::instance()->findAll());
 		tpl_assign("object", $object);
 	}
 	
@@ -714,7 +714,7 @@ class TemplateController extends ApplicationController {
 		$id = array_var($arguments, 'id', get_id());
 	
 		
-		$template = COTemplates::findById($id);
+		$template = COTemplates::instance()->findById($id);
 		if (!$template instanceof COTemplate) {
 			flash_error(lang("template dnx"));
 			ajx_current("empty");
@@ -765,7 +765,7 @@ class TemplateController extends ApplicationController {
 		$objects = $template->getObjects() ;
 		$controller  = new ObjectController();
 /*		if (count($selected_members) > 0) {
-			$selected_members_instances = Members::findAll(array('conditions' => 'id IN ('.implode($selected_members).')'));
+			$selected_members_instances = Members::instance()->findAll(array('conditions' => 'id IN ('.implode($selected_members).')'));
 		} else {
 			$selected_members_instances = array();
 		}
@@ -1018,7 +1018,7 @@ class TemplateController extends ApplicationController {
 			Hook::fire('before_instantiate_paramters', array('id' => $template_id, 'params' => array_var($_POST, 'parameterValues')), $error);
 
 			foreach ($params as $param_name => $val) {
-				$tp = TemplateParameters::findOne(array('conditions' => array("template_id=? AND REPLACE(`name`,\"'\",'')=?", $template_id, $param_name)));
+				$tp = TemplateParameters::instance()->findOne(array('conditions' => array("template_id=? AND REPLACE(`name`,\"'\",'')=?", $template_id, $param_name)));
 				if ($tp instanceof TemplateParameter && $tp->getColumnValue('is_required') && !$val) {
 					$error = lang('custom property value required', $param_name);
 				} else if ($tp instanceof TemplateParameter && $tp->getColumnValue('type') == 'date' && !isDate($val)) {
@@ -1045,7 +1045,7 @@ class TemplateController extends ApplicationController {
 				// ensure that new member is in context before rendering the template parameters form
 				if (!in_array($add_mem_id, active_context_members(false))) {
 					$current_context = active_context();
-					$add_mem = Members::findById($add_mem_id);
+					$add_mem = Members::instance()->findById($add_mem_id);
 					if ($add_mem instanceof Member) $current_context[] = $add_mem;
 					CompanyWebsite::instance()->setContext($current_context);
 				}
@@ -1057,7 +1057,7 @@ class TemplateController extends ApplicationController {
 				$params[] = $parameter->getArrayInfo();
 			}
 
-			$template = COTemplates::findById($id);
+			$template = COTemplates::instance()->findById($id);
 			if (!$template instanceof COTemplate) {
 				flash_error(lang("template dnx"));
 				ajx_current("empty");
@@ -1091,7 +1091,7 @@ class TemplateController extends ApplicationController {
 			return;
 		}
 		$template_id = get_id();
-		$cotemplate = COTemplates::findById($template_id);
+		$cotemplate = COTemplates::instance()->findById($template_id);
 		if (!$cotemplate instanceof COTemplate) {
 			flash_error(lang("template dnx"));
 			ajx_current("empty");
@@ -1154,7 +1154,7 @@ class TemplateController extends ApplicationController {
 		}
 		$objects = array();
 		if (count($ids) > 0) {
-			$tasks = TemplateTasks::findAll(array('conditions' => 'id IN ('.implode(',', $ids).')'));
+			$tasks = TemplateTasks::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $ids).')'));
 			$ot = ObjectTypes::findByName('template_task');
 			foreach ($tasks as $task) {
 				$objects[] = $this->prepareObject($task->getId(), $task->getId(), $task->getObjectName(), $ot->getName(), $task->manager(), "", $task->getMilestoneId(), array(), $task->getParentId(), 'ico-task');

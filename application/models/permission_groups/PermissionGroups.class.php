@@ -7,47 +7,47 @@
   */
   class PermissionGroups extends BasePermissionGroups {
     
-  	function getUserTypeGroups($order = '`name` ASC') {
-  		return self::findAll(array("conditions" => "`contact_id` = 0 AND `parent_id` = 0 AND `type`='roles'", "order" => $order));
+  	static function getUserTypeGroups($order = '`name` ASC') {
+  		return self::instance()->findAll(array("conditions" => "`contact_id` = 0 AND `parent_id` = 0 AND `type`='roles'", "order" => $order));
   	}
   	
-    function getNonPersonalPermissionGroups($order = '`name` ASC') {
-    	return self::findAll(array("conditions" => "`contact_id` = 0 AND `parent_id` != 0 AND `type`='roles'", "order" => $order));
+    static function getNonPersonalPermissionGroups($order = '`name` ASC') {
+    	return self::instance()->findAll(array("conditions" => "`contact_id` = 0 AND `parent_id` != 0 AND `type`='roles'", "order" => $order));
     }
-    function getNonPersonalSameLevelPermissionsGroups($order = '`name` ASC') {
-    	return self::findAll(array("conditions" => "`contact_id` = 0 AND `parent_id` != 0 AND `type`='roles' AND `id` >= ".logged_user()->getUserType(), "order" => $order));
+    static function getNonPersonalSameLevelPermissionsGroups($order = '`name` ASC') {
+    	return self::instance()->findAll(array("conditions" => "`contact_id` = 0 AND `parent_id` != 0 AND `type`='roles' AND `id` >= ".logged_user()->getUserType(), "order" => $order));
     }
-    function getParentId($group_id){
-    	return self::findById($group_id)->getParentId();
-    }
-    
-    function getGuestPermissionGroups() {
-    	return self::findAll(array("conditions" => "parent_id IN (SELECT p.id FROM ".TABLE_PREFIX."permission_groups p WHERE p.name='GuestGroup')"));
+    static function getParentId($group_id){
+    	return self::instance()->findById($group_id)->getParentId();
     }
     
-    function getCollaboratorPermissionGroups() {
-    	return self::findAll(array("conditions" => "parent_id IN (SELECT p.id FROM ".TABLE_PREFIX."permission_groups p WHERE p.name='CollaboratorGroup')"));
+    static function getGuestPermissionGroups() {
+    	return self::instance()->findAll(array("conditions" => "parent_id IN (SELECT p.id FROM ".TABLE_PREFIX."permission_groups p WHERE p.name='GuestGroup')"));
     }
     
-    function getExecutivePermissionGroups() {
-    	return self::findAll(array("conditions" => "parent_id IN (SELECT p.id FROM ".TABLE_PREFIX."permission_groups p WHERE p.name='ExecutiveGroup')"));
+    static function getCollaboratorPermissionGroups() {
+    	return self::instance()->findAll(array("conditions" => "parent_id IN (SELECT p.id FROM ".TABLE_PREFIX."permission_groups p WHERE p.name='CollaboratorGroup')"));
+    }
+    
+    static function getExecutivePermissionGroups() {
+    	return self::instance()->findAll(array("conditions" => "parent_id IN (SELECT p.id FROM ".TABLE_PREFIX."permission_groups p WHERE p.name='ExecutiveGroup')"));
     }
     
     static function getNonRolePermissionGroups() {
 		$order = '`name` ASC';
-        return self::findAll(array("conditions" => "`type` = 'user_groups'",  "order" => $order));
+        return self::instance()->findAll(array("conditions" => "`type` = 'user_groups'",  "order" => $order));
     }
     
-    function getDefaultRolesByType() {
+    static function getDefaultRolesByType() {
     	$result = array();
     	
-    	$exe_group = PermissionGroups::findOne(array('id' => true, 'conditions' => "name='ExecutiveGroup' AND type='roles'"));
-    	$col_group = PermissionGroups::findOne(array('id' => true, 'conditions' => "name='CollaboratorGroup' AND type='roles'"));
-    	$gue_group = PermissionGroups::findOne(array('id' => true, 'conditions' => "name='GuestGroup' AND type='roles'"));
+    	$exe_group = PermissionGroups::instance()->findOne(array('id' => true, 'conditions' => "name='ExecutiveGroup' AND type='roles'"));
+    	$col_group = PermissionGroups::instance()->findOne(array('id' => true, 'conditions' => "name='CollaboratorGroup' AND type='roles'"));
+    	$gue_group = PermissionGroups::instance()->findOne(array('id' => true, 'conditions' => "name='GuestGroup' AND type='roles'"));
     	
-    	$exe = PermissionGroups::findOne(array('id' => true, 'conditions' => "name='Executive' AND type='roles'"));
-    	$col = PermissionGroups::findOne(array('id' => true, 'conditions' => "name='Internal Collaborator' AND type='roles'"));
-    	$gue = PermissionGroups::findOne(array('id' => true, 'conditions' => "name='Guest' AND type='roles'"));
+    	$exe = PermissionGroups::instance()->findOne(array('id' => true, 'conditions' => "name='Executive' AND type='roles'"));
+    	$col = PermissionGroups::instance()->findOne(array('id' => true, 'conditions' => "name='Internal Collaborator' AND type='roles'"));
+    	$gue = PermissionGroups::instance()->findOne(array('id' => true, 'conditions' => "name='Guest' AND type='roles'"));
     	
     	$result[$exe_group[0]] = $exe[0];
     	$result[$col_group[0]] = $col[0];
@@ -60,7 +60,7 @@
     	$result = array();
     	$extra_cond = "type = 'user_groups'";
     	$extra_cond .= $extra_conditions ? $extra_conditions : "";
-    	$pgs = self::findAll(array('conditions' => $extra_cond, 'order' => $order));
+    	$pgs = self::instance()->findAll(array('conditions' => $extra_cond, 'order' => $order));
     	foreach ($pgs as $pg) {
     		$result[$pg->getId()] = array('id' => $pg->getId());
     		if ($escape) {
@@ -110,7 +110,7 @@
         }
 
         $mandatory_dims_sql = "";
-        $mandatory_dim_ids = Dimensions::findAll(array(
+        $mandatory_dim_ids = Dimensions::instance()->findAll(array(
             'id' => true,
             'conditions' => "`defines_permissions`=1 $enabled_dimensions_sql AND `permission_query_method`='".DIMENSION_PERMISSION_QUERY_METHOD_MANDATORY."'"
         ));
@@ -190,7 +190,7 @@
 		if (count($excluded_user_pgs) > 0) {
 			$object = Objects::findObject($object_id);
 			if ($object instanceof ContentDataObject) {
-				$users = Contacts::findAll(array("conditions" => "user_type>0 AND permission_group_id IN (".implode(',',$excluded_user_pgs).")"));
+				$users = Contacts::instance()->findAll(array("conditions" => "user_type>0 AND permission_group_id IN (".implode(',',$excluded_user_pgs).")"));
 				foreach ($users as $user) {
 					if ($object->canView($user)) $pgs_with_permission_in_intersection[] = $user->getPermissionGroupId();
 				}
@@ -223,7 +223,7 @@
             $enabled_dimensions_sql = " AND id IN ($enabled_dimensions_ids) ";
         }
         $mandatory_dims_sql = "";
-        $mandatory_dim_ids = Dimensions::findAll(array(
+        $mandatory_dim_ids = Dimensions::instance()->findAll(array(
             'id' => true,
             'conditions' => "`defines_permissions`=1 $enabled_dimensions_sql AND `permission_query_method`='".DIMENSION_PERMISSION_QUERY_METHOD_MANDATORY."'"
         ));
@@ -309,7 +309,7 @@
         	foreach ($oids_with_part_permissions as $object_id) {
         		$object = Objects::findObject($object_id);
         		if ($object instanceof ContentDataObject) {
-        			$user = Contacts::findOne(array("conditions" => "user_type>0 AND permission_group_id = $permission_group_id"));
+        			$user = Contacts::instance()->findOne(array("conditions" => "user_type>0 AND permission_group_id = $permission_group_id"));
         			if ($object->canView($user)) $oids_with_full_permissions_through_intersection[] = $object_id;
         		}
         	}

@@ -15,20 +15,20 @@
     */
   	function getMailAccountImapFolders($accountid)
   	{
-  		return MailAccountImapFolders::findAll(array(
+  		return MailAccountImapFolders::instance()->findAll(array(
         'conditions' => '`account_id` = ' . $accountid
       )); // findAll
   	}
 
 
 	static function getSpecialUseFolder($accountid, $folder_key) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
 			'conditions' => array('`account_id` = ? AND `special_use` = ?', $accountid, $folder_key)
 		)); // findAll
 	}
 	
 	static function getByFolderName($accountid, $folder_name) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
 			'conditions' => array('`account_id` = ? AND `folder_name` = ?', $accountid, $folder_name)
 		)); // findAll
 	}

@@ -211,7 +211,7 @@
     *
     * @return AddressTypes 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'AddressTypes')) {
         $instance = new AddressTypes();
