@@ -370,9 +370,9 @@ function render_money_amount_custom_property_field($custom_property, $configs) {
 
     $html = '';
 	// Currency selector
-	$cp_value = CustomPropertyValues::findOne(array('conditions' => '`custom_property_id`='.$custom_property->getId().' AND `object_id`='.array_var($configs, 'object_id', 0)));
+	$cp_value = CustomPropertyValues::instance()->findOne(array('conditions' => '`custom_property_id`='.$custom_property->getId().' AND `object_id`='.array_var($configs, 'object_id', 0)));
 	$selected_currency = $cp_value instanceof CustomPropertyValue ? $cp_value->getCurrencyId() : 1;
-	$currencies = Currencies::findAll();
+	$currencies = Currencies::instance()->findAll();
 	$options = '';
 	foreach($currencies as $c){
 		$selected = $selected_currency == $c->getId() ? 'selected="selected"' : '';
@@ -549,7 +549,7 @@ function render_color_custom_property_field($custom_property, $configs) {
 	$default_value = $configs['default_value'];
 
 	if (array_var($configs, 'member_is_new') && isset($configs['parent_member_id']) && $configs['parent_member_id'] > 0) {
-		$pmem = Members::findById($configs['parent_member_id']);
+		$pmem = Members::instance()->findById($configs['parent_member_id']);
 		if ($pmem instanceof Member) {
 			$default_value = $pmem->getColor();
 		}
@@ -587,7 +587,7 @@ function render_address_custom_property_field($custom_property, $configs) {
 	
 	$html = '<div class="field" style="float:left;">';
 	
-	$html .= address_field($name, $address_values, $genid, array(
+	$html .= address_field($name, isset($address_values) ? $address_values : "", $genid, array(
 			'container_id' => $genid.'addresscontainer-cp'.$custom_property->getId(),
 			'disabled' => $disabled,
 			'input_base_id' => $name//"cp".$custom_property->getId(),
@@ -638,16 +638,16 @@ function render_contact_custom_property_field($custom_property, $configs) {
 
 	if(is_numeric($default_value) && $default_value > 0){
 		$value = $default_value;
-		$contact = Contacts::findById($value);
+		$contact = Contacts::instance()->findById($value);
 	} else if (!$is_multiple && $cp_value) {
 		$value = $cp_value->getValue();
-		$contact = Contacts::findById($value);
+		$contact = Contacts::instance()->findById($value);
 	}else{
 	    $contacts = array();
 	    if (isset($array_cp_values) && count($array_cp_values) > 0){
 	        foreach ($array_cp_values as $val){
 	            $value .= $val.',';
-	            $contact = Contacts::findById($val);
+	            $contact = Contacts::instance()->findById($val);
 	            if (!empty($contact)){
 	                $contacts[] = $contact;
                 }
@@ -665,7 +665,7 @@ function render_contact_custom_property_field($custom_property, $configs) {
 		$emtpy_text = lang('select user');
 	}
 
-	$ot = ObjectTypes::findById($custom_property->getObjectTypeId());
+	$ot = ObjectTypes::instance()->findById($custom_property->getObjectTypeId());
 	
 	if ($ot->getType() == 'dimension_object') {
 		$obj_member = null;

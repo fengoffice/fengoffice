@@ -35,7 +35,7 @@
     */
     function getUser() {
       if(is_null($this->contact)) {
-        $this->contact = Contacts::findById($this->getContactId());
+        $this->contact = Contacts::instance()->findById($this->getContactId());
       } // if
       return $this->contact;
     } // getUser

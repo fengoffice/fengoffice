@@ -32,7 +32,7 @@ class Workspaces extends BaseWorkspaces {
     static function getWorkspaceById($id) {
     	$ws = array_var(self::$workspaces_by_id, $id);
     	if (!$ws instanceof Workspace) {
-    		$ws = Workspaces::findById($id);
+    		$ws = Workspaces::instance()->findById($id);
     		if ($ws instanceof Workspace) self::$workspaces_by_id[$id] = $ws;
     	}
     	return $ws;
@@ -62,7 +62,7 @@ class Workspaces extends BaseWorkspaces {
     		$sql .= " AND parent_member_id = 0";
     	}
     	 
-    	$members = Members::findAll(array('conditions' => $sql, 'order' => 'name'));
+    	$members = Members::instance()->findAll(array('conditions' => $sql, 'order' => 'name'));
     	$res = array();
     	foreach ($members as $mem) {
     		// FIXME: check permissions

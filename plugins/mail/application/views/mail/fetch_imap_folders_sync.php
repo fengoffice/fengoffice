@@ -37,7 +37,7 @@
 	<?php
 	$options = array();	
 	if (isset($mail_acc_id) && config_option('sent_mails_sync')){		
-		$mail_acc = MailAccounts::findById($mail_acc_id);	
+		$mail_acc = MailAccounts::instance()->findById($mail_acc_id);	
 		$selected_folder = $mail_acc->getSyncFolder();		
 	}
 	foreach($imap_folders as $folder) {			

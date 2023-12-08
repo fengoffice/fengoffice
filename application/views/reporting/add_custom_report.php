@@ -5,12 +5,13 @@ require_javascript('og/modules/doubleListSelCtrl.js');
 require_javascript('og/CSVCombo.js');
 $genid = gen_id();
 if (!isset($conditions)) $conditions = array();
+if (!isset($report_data)) $report_data = array();
 ?>
 <form style='height: 100%; background-color: white' class="internalForm report"
 	action="<?php echo $url  ?>" method="post" onsubmit="return og.validateReport('<?php echo $genid ?>');">
 	
 	<input type="hidden" name="report[report_object_type_id]" id="<?php echo $genid?>report[report_object_type_id]" 
-		value="<?php echo array_var($report_data, 'report_object_type_id', '') ?>" />
+		value="<?php echo array_var($report_data, 'report_object_type_id'); ?>"/>
 
 <div class="coInputHeader">
 
@@ -22,7 +23,7 @@ if (!isset($conditions)) $conditions = array();
 
   <div>
 	<div class="coInputName">
-	<?php echo text_field('report[name]', array_var($report_data, 'name'), array('id' => $genid . 'reportFormName', 'class' => 'title', 'placeholder' => lang('type name here'))); ?>
+	<?php echo text_field('report[name]', isset( $report_data['name']) ? $report_data['name'] : "", array('id' => $genid . 'reportFormName', 'class' => 'title', 'placeholder' => lang('type name here'))); ?>
 	</div>
 		
 	<div class="coInputButtons">
@@ -37,7 +38,7 @@ if (!isset($conditions)) $conditions = array();
 	<div class="dataBlock">
 	<?php
 	echo label_tag(lang('description'), $genid . 'reportFormDescription', false);
-	echo text_field('report[description]', array_var($report_data, 'description'), array('id' => $genid . 'reportFormDescription', 'tabindex' => '2', 'class' => 'title'));
+	echo text_field('report[description]', isset( $report_data['description']) ? $report_data['description'] : "", array('id' => $genid . 'reportFormDescription', 'tabindex' => '2', 'class' => 'title'));
 	?>
 	</div>
 	<div class="clear"></div>
@@ -64,8 +65,8 @@ if (!isset($id)){
     $context_div_display ="display:none;";
     $ignore_context = true;
 }else{    
-    $context_div_display = array_var($report_data, 'ignore_context',false) ? "display:none;" : "";
-    $ignore_context = array_var($report_data, 'ignore_context',false);
+    $ignore_context = isset( $report_data['ignore_context']) ? $report_data['ignore_context'] : false;
+    $context_div_display = $ignore_context ? "display:none;" : "";
 }
 
 $strDisabled = count($options) > 1 ? '' : 'disabled';
@@ -105,14 +106,14 @@ echo select_box('objectTypeSel', $options, array('id' => 'objectTypeSel' ,'oncha
 	</div>
 	<div class="dataBlock" id="<?php echo $genid ?>add_report_select_context_div" style="margin:0;<?php echo $context_div_display ?>">
 	  <div> 
-	<?php
+		<?php
 		$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
 		if ($object->isNew()) {
 			render_member_selectors($object->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
 		} else {
 			render_member_selectors($object->manager()->getObjectTypeId(), $genid, $object->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
 		}
-	?>
+		?>
 	  </div>
 	  <div class="clear"></div>
 	</div>

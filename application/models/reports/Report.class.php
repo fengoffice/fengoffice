@@ -55,8 +55,8 @@
 	 * @param Project $project
 	 * @return booelean
 	 */
-	function canAdd(Contact $user, $context, &$notAllowedMember = '') {
-		return can_add($user, $context, $this->manager()->getObjectTypeId(), $notAllowedMember );
+	static function canAdd(Contact $user, $context, &$notAllowedMember = '') {
+		return can_add($user, $context, Reports::instance()->getObjectTypeId(), $notAllowedMember );
 	} // canAdd
 
 	/**
@@ -92,7 +92,7 @@
 	
 	function getReportExternalColumns() {
 		if (is_null($this->report_external_columns)) {
-			$ot = ObjectTypes::findById($this->getReportObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($this->getReportObjectTypeId());
 			
 			if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
 				eval('$ot_manager = '.$ot->getHandlerClass().'::instance();');

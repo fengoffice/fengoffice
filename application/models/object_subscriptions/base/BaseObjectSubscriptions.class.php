@@ -225,7 +225,7 @@
     *
     * @return ObjectSubscriptions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ObjectSubscriptions')) {
         $instance = new ObjectSubscriptions();

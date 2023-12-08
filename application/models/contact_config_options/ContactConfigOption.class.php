@@ -74,7 +74,7 @@
        		return $this->getContactValueCached($user_id);
        	} else {
     		if (!$this->getContactValueNotFoundCache($user_id)){
-	    		$val = ContactConfigOptionValues::findById(array('option_id' => $this->getId(), 'contact_id'=>$user_id, 'member_id' => $member));
+	    		$val = ContactConfigOptionValues::instance()->findById(array('option_id' => $this->getId(), 'contact_id'=>$user_id, 'member_id' => $member));
 	    		if ($val instanceof ContactConfigOptionValue){
 	    			$this->updateContactValueCache($user_id,$val->getValue());
 	    			return $val->getValue();
@@ -96,7 +96,7 @@
     		return $this->getContactValueCached(0);
     	else {
     		if (!$this->getContactValueNotFoundCache(0)){
-	    		$val = ContactConfigOptionValues::findById(array('option_id' => $this->getId(), 'contact_id'=> 0));
+	    		$val = ContactConfigOptionValues::instance()->findById(array('option_id' => $this->getId(), 'contact_id'=> 0));
 	    		if ($val instanceof ContactConfigOptionValue){
 					$this->updateContactValueCache(0,$val->getValue());
 	    			return $val->getValue();
@@ -141,7 +141,7 @@
      *
      */
     function setContactValue($new_value, $user_id = 0){
-    	$val = ContactConfigOptionValues::findById(array('option_id' => $this->getId(), 'contact_id' => $user_id));
+    	$val = ContactConfigOptionValues::instance()->findById(array('option_id' => $this->getId(), 'contact_id' => $user_id));
         if(!$val){
                 // if value was not found, create it
                 $val = new ContactConfigOptionValue();

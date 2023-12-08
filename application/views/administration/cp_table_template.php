@@ -28,7 +28,7 @@
 				<input type="hidden" id="deleted" name="<?php echo "custom_properties[{number}][is_disabled]"?>" value="0" />
 				
 				<?php
-					if (is_array($extra_params['additional_hidden_fields']) && count($extra_params['additional_hidden_fields']) > 0) {
+					if (isset($extra_params['additional_hidden_fields']) && count($extra_params['additional_hidden_fields']) > 0) {
 						$additional_hidden_fields = $extra_params['additional_hidden_fields'];
 					}
 					
@@ -79,7 +79,7 @@
 				$options = array('all', 'contact', 'user');
 				$options_html = array();
 				foreach($options as $opt){
-					$options_html[] = option_tag(ucwords(lang($opt)), $opt, $attr);
+					$options_html[] = option_tag(ucwords(lang($opt)), $opt);
 				}
 				?>
 			<td class="center" style="max-width:80px;"><?php echo select_box("custom_properties[{number}][contact_type]", $options_html, array("id" => "contact_type"));?></td>

@@ -16,7 +16,7 @@
     */
     static function getUsersByObject(ContentDataObject $object) {
       $users = array();
-      $subscriptions = ObjectSubscriptions::findAll(array(
+      $subscriptions = ObjectSubscriptions::instance()->findAll(array(
         'conditions' => '`object_id` = ' . DB::escape($object->getId())
       )); // findAll
       if(is_array($subscriptions)) {
@@ -38,7 +38,7 @@
     */
     static function getObjectsByUser(Contact $user) {
       $objects = array();
-      $subscriptions = ObjectSubscriptions::findAll(array(
+      $subscriptions = ObjectSubscriptions::instance()->findAll(array(
         'conditions' => '`contact_id` = ' . DB::escape($user->getId())
       )); // findAll
       if(is_array($subscriptions)) {
@@ -57,7 +57,7 @@
     * @return boolean
     */
     static function clearByObject(ContentDataObject $object) {
-      return ObjectSubscriptions::delete(
+      return ObjectSubscriptions::instance()->delete(
       		'`object_id` = ' . DB::escape($object->getId())
       );
     } // clearByObject
@@ -69,18 +69,18 @@
     * @return boolean
     */
     static function clearByUser(Contact $user) {
-      return ObjectSubscriptions::delete('`contact_id` = ' . DB::escape($user->getId()));
+      return ObjectSubscriptions::instance()->delete('`contact_id` = ' . DB::escape($user->getId()));
     } // clearByUser
     
     function findBySubscriptions($event,$contact = '') {
             if (!$contact instanceof Contact) $contact_id = logged_user()->getId();
             else $contact_id = $contact->getId();
             
-            return ObjectSubscriptions::findOne(array('conditions' => array('`contact_id` = ? AND object_id = ?', $contact_id,$event)));
+            return ObjectSubscriptions::instance()->findOne(array('conditions' => array('`contact_id` = ? AND object_id = ?', $contact_id,$event)));
     }
     
     function findByEvent($event_id) {
-            return ObjectSubscriptions::findAll(array('conditions' => array('`object_id` = ?', $event_id)));
+            return ObjectSubscriptions::instance()->findAll(array('conditions' => array('`object_id` = ?', $event_id)));
     }
     
   } // ObjectSubscriptions 

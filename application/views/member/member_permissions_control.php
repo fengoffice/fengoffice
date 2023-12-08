@@ -32,7 +32,7 @@
 		if ($pg->getType() == 'user_groups') {
 			$groups_with_perms[] = $pg;
 		} else {
-			$c = Contacts::findById($pg->getContactId());
+			$c = Contacts::instance()->findById($pg->getContactId());
 			if ($c instanceof Contact && !$c->getDisabled() && ($c->getUserType() >= logged_user()->getUserType() || $c->getId() == logged_user()->getId())) {
 				// key is to order by role and name
 				$users_with_perms[str_pad($c->getUserType(), 2, '0', STR_PAD_LEFT) . "_" . $c->getObjectName()] = $c;

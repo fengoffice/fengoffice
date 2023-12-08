@@ -225,7 +225,7 @@ abstract class BaseObjectReminderTypes extends DataManager {
 	 *
 	 * @return ObjectReminderTypes
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ObjectReminderTypes')) {
 			$instance = new ObjectReminderTypes();

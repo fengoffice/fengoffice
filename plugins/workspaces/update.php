@@ -3,7 +3,7 @@
 	 * Feng2 Plugin update engine 
 	 */
 	function workspaces_update_1_2() {
-		$workspaces = Workspaces::findAll();
+		$workspaces = Workspaces::instance()->findAll();
 		if (!is_array($workspaces)) return;
 		foreach ($workspaces as $ws){
 			if ($ws instanceof ContentDataObject) {
@@ -48,7 +48,7 @@
 		// instantiate actual associations
 		$ws_dim = Dimensions::findByCode('workspaces');
 		$ws_ot = ObjectTypes::findByName('workspace');
-		$ws_members = Members::findAll(array('conditions' => 'dimension_id = '.$ws_dim->getId().' AND object_type_id = '.$ws_ot->getId()));
+		$ws_members = Members::instance()->findAll(array('conditions' => 'dimension_id = '.$ws_dim->getId().' AND object_type_id = '.$ws_ot->getId()));
 		foreach($ws_members as $ws_mem) {
 			// after saving permissions the associations are instantiated by 'core_dimensions' plugin 
 			save_member_permissions($ws_mem);

@@ -211,7 +211,7 @@
     *
     * @return Billings 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Billings')) {
         $instance = new Billings();

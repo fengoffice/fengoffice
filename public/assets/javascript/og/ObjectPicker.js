@@ -1,54 +1,6 @@
 og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_context) {
 	if (!config) config = {};
 
-	
-    //create array for dimension object
-	let dim_ar=[];
-	if(og.dimensions_info!= undefined)
-	{
-		let keys = Object.keys(og.dimensions_info); // claves = ["nombre", "color", "macho", "edad"]
-		for(let i=0; i< keys.length; i++){
-			let key = keys[i];
-			dim_ar[og.dimensions_info[key]['code']]=og.dimensions_info[key];
-		}
-	}
-
-	let customer_project_header='';
-	let customer_project_header_visible=false;
-
-	//if "customer_project" is in og.dimesions_info show "customer_project" header
-	if(dim_ar['customer_project']!=undefined)
-	{
-		customer_project_header=dim_ar['customer_project']['name'];
-		customer_project_header_visible=true;
-	}
-
-	//if exists dimensions set to visible and set header
-	let hour_types_header='';
-	let hour_types_header_visible=false;
-	if(dim_ar['hour_types']!=undefined)
-	{
-		hour_types_header=dim_ar['hour_types']['name'];
-		hour_types_header_visible=true;
-	}
-
-	let client_header='';
-	let client_header_visible=false;
-	if(dim_ar['customers']!=undefined)
-	{
-		client_header=dim_ar['customers']['name'];
-		client_header_visible=true;
-	}
-	
-	let job_phases_header='';
-	let job_phases_header_visible=false;
-	if(dim_ar['job_phases']!=undefined)
-	{
-		job_phases_header=dim_ar['job_phases']['name'];
-		job_phases_header_visible=true;
-	}
-
-	
 	if (!config.extra_list_params) config.extra_list_params = {};
 	extra_list_param = Ext.util.JSON.encode(config.extra_list_params);
 	var url_params = {
@@ -63,6 +15,21 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 	var url_action = 'list_objects';
 	if (config.url_controller) url_controller = config.url_controller;
 	if (config.url_action) url_action = config.url_action;
+
+	var available_fields = [
+		'name', 'object_id', 'type', 'ot_id', 'icon', 'object_id', 'mimeType',
+		'createdBy', 'createdById', 'dateCreated', 'assignedTo',
+		'updatedBy', 'updatedById', 'dateUpdated', 'startDate', 'dueDate',
+		'memPath', // this field contains all the classification information
+	];
+
+	// add dimension keys to available fields
+	var dim_names = [];	
+	for (did in og.dimensions_info) {
+		if (isNaN(did)) continue;
+		dim_names.push('dim_' + did);
+	}
+	available_fields = available_fields.concat(dim_names);
 	
 	var Grid = function(config) {
 		if (!config) config = {};
@@ -75,12 +42,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
             	root: 'objects',
             	totalProperty: 'totalCount',
             	id: 'id',
-            	fields: [
-	                'name', 'object_id', 'type', 'ot_id', 'icon', 'object_id', 'mimeType',
-	                'createdBy', 'createdById', 'dateCreated', 'assignedTo',
-					'updatedBy', 'updatedById', 'dateUpdated', 'startDate', 'dueDate',
-					'project','client','labor_category','job_phase'
-            	]
+            	fields: available_fields
         	}),
         	remoteSort: true,
         	listeners: {
@@ -94,6 +56,9 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
         			/*this.lastOptions.params = this.baseParams;
         			this.lastOptions.params.count_results = 1;
         			Ext.getCmp('obj_picker_grid').reloadGridPagingToolbar('object','list_objects','obj_picker_grid');*/
+
+					// draw classification breadcrumbs
+					og.eventManager.fireEvent('replace all empty breadcrumb', null);
         		}
         	}
     	});
@@ -145,8 +110,8 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				id: 'name',
 				header: lang("name"),
 				dataIndex: 'name',
-				renderer: og.clean
-				,width: 60
+				renderer: og.clean,
+				width: 350
 			},{
 				id: 'type',
 				header: lang('type'),
@@ -158,13 +123,13 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				id: 'last',
 				header: lang("last update"),
 				dataIndex: 'dateUpdated',
-				width: 40,
+				width: 90,
 				renderer: renderDate
 			},{
 				id: 'user',
 				header: lang('updated by'),
 				dataIndex: 'updatedBy',
-				width: 60,
+				width: 90,
 				renderer: og.clean,
 				sortable: false,
 				hidden: true
@@ -172,28 +137,28 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				id: 'created',
 				header: lang("created on"),
 				dataIndex: 'dateCreated',
-				width: 60,
+				width: 90,
 				renderer: renderDate,
 				hidden: true
 			},{
 				id: 'assignedto',
 				header: lang('assigned to'),
 				dataIndex: 'assignedTo',
-				width: 60,
+				width: 120,
 				renderer: 'string',
 				hidden: true
 			},{
 				id: 'author',
 				header: lang("created by"),
 				dataIndex: 'createdBy',
-				width: 60,
+				width: 90,
 				renderer: og.clean,
 				hidden: true
 			},{
 				id: 'start',
 				header: lang("start date"),
 				dataIndex: 'startDate',
-				width: 60,
+				width: 90,
 				renderer: renderDate,
 				sortable: false,
 				hidden: false
@@ -201,49 +166,30 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				id: 'due',
 				header: lang("due date"),
 				dataIndex: 'dueDate',
-				width: 60,
+				width: 90,
 				renderer: renderDate,
 				sortable: false,
 				hidden: false
-			},
-			{
-				id: 'project',
-				header: customer_project_header,
-				dataIndex: 'project',
-				width: 80,
-				renderer: og.clean,
-				sortable: false,
-				hidden: false
-			},
-			{
-				id: 'client',
-				header: client_header,
-				dataIndex: 'client',
-				width: 60,
-				renderer: og.clean,
-				sortable: false,
-				hidden: false
-			},
-			{
-				id: 'labor_category',
-				header: hour_types_header,
-				dataIndex: 'labor_category',
-				width: 60,
-				renderer: og.clean,
-				sortable: false,
-				hidden: false
-			},
-			{
-				id: 'job_phase',
-				header: job_phases_header,
-				dataIndex: 'job_phase',
-				width: 60,
-				renderer: og.clean,
-				sortable: false,
-				hidden: false
-			},
-
+			}
 		];
+
+		// dimension columns for column model
+		// use og.dimensionPanels to put the same order as in the left panel dimension trees
+		for (let i=0; i < og.dimensionPanels.length; i++) {
+			let dim_panel = og.dimensionPanels[i];
+			if (!dim_panel) continue;
+
+			let did = dim_panel.dimensionId;
+			arrayColumns.push({
+				id: 'dim_' + did,
+				header: dim_panel.title,
+				dataIndex: 'dim_' + did,
+				sortable: false,
+				renderer: og.renderDimCol
+			});
+			og.breadcrumbs_skipped_dimensions[did] = did;
+		}
+		// --
 
 		var cm = new Ext.grid.ColumnModel(arrayColumns);
 	    cm.defaultSortable = true;
@@ -265,7 +211,15 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			viewConfig: {
 	            forceFit: false // allow horizontal scroll
 	        },
-			sm: sm
+			sm: sm,
+			listeners: {
+				'columnmove': {
+					fn: function(old_index, new_index) {
+						og.eventManager.fireEvent('replace all empty breadcrumb', null);
+					},
+					scope: this
+				}
+			}
 	    }));
 	}
 
@@ -285,10 +239,6 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			var lastUpdateIndex = this.getColumnModel().findColumnIndex('dateUpdated');
 			var assignedToIndex = this.getColumnModel().findColumnIndex('assignedTo');
 
-			var projectIndex = this.getColumnModel().findColumnIndex('project');
-			var clientIndex = this.getColumnModel().findColumnIndex('client');
-			var labor_categoryIndex = this.getColumnModel().findColumnIndex('labor_category');
-			var job_phaseIndex = this.getColumnModel().findColumnIndex('job_phase');
 			/**
 			 * If the User clicks on Task dimension (in Link Objects modal), the startDate and dueDate
 			 * columns will be visible.
@@ -298,23 +248,14 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			if(filter && filter.type) {
 				let filtersMenu = filter.type.split(',');
 				if(filtersMenu.indexOf("task") > -1) {
-					 this.getColumnModel().setHidden(startDateIndex, false);
+					this.getColumnModel().setHidden(startDateIndex, false);
 					this.getColumnModel().setHidden(dueDateIndex, false);
 					this.getColumnModel().setHidden(assignedToIndex, false);
-
-					if(customer_project_header_visible)this.getColumnModel().setHidden(projectIndex, false);
-					if(client_header_visible)this.getColumnModel().setHidden(clientIndex, false);
-					if(hour_types_header_visible)this.getColumnModel().setHidden(labor_categoryIndex, false);
-					if(job_phases_header_visible)this.getColumnModel().setHidden(job_phaseIndex, false);
 				}
 				else {
 					this.getColumnModel().setHidden(startDateIndex, true);
 					this.getColumnModel().setHidden(dueDateIndex, true);
 					this.getColumnModel().setHidden(assignedToIndex, true);
-					this.getColumnModel().setHidden(projectIndex, true);
-					this.getColumnModel().setHidden(clientIndex, true);
-					this.getColumnModel().setHidden(labor_categoryIndex, true);
-					this.getColumnModel().setHidden(job_phaseIndex, true);
 				}
 				this.getColumnModel().setColumnWidth(nameIndex, 400);//name
 				this.getColumnModel().setColumnWidth(lastUpdateIndex, 130);//last update
@@ -531,9 +472,9 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 	}
 
 	//get the objects id from og.get_object_type_by_name
-	let object_type=[];
-	//set object type id =0 to load default filtes
-	object_type['id']=0;
+	let object_type = {
+		id: 0, //set object type id=0 to load default filtes
+	};
 
 	//if config.selected_type is not undefined, null or empty get the object type
 	if(config.selected_type!=undefined && config.selected_type!='' && config.selected_type!=null) 
@@ -544,7 +485,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 	//construct object picker
 	og.ObjectPicker.superclass.constructor.call(this, Ext.apply(config, {
 		y: 50,
-		width: 640,
+		width: 800,
 		height: 480,
 		id: 'object-picker',
 		layout: 'border',

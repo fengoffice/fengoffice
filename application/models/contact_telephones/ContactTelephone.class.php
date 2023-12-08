@@ -15,7 +15,7 @@
     * @return TelephoneType
     */
     function getTelephoneType() {
-      return TelephoneTypes::findById($this->getTelephoneTypeId());
+      return TelephoneTypes::instance()->findById($this->getTelephoneTypeId());
     } // getTelephoneType
 
 
@@ -27,7 +27,7 @@
     * @return Contact
     */
     function getContact() {
-      return Contacts::findById($this->getContactId());
+      return Contacts::instance()->findById($this->getContactId());
     } // getContact
 
     function getArrayInfo(){

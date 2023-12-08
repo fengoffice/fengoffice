@@ -138,7 +138,7 @@
     * @param void
     * @return BreadCrumbs
     */
-    function instance() {
+    static function instance() {
       static $instance;
       
       // Check instance

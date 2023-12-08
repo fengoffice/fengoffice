@@ -147,7 +147,7 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 		} else if (property.type == 'boolean') {
 			$(pre_id + " #default_value_bool").show();
 			$(pre_id + " #default_value").hide();
-		} else if (property.type == 'numeric') {
+		} else if (property.type == 'numeric' || property.type == 'amount') {
 			$(pre_id + " #numeric_options").show();
 		}
 

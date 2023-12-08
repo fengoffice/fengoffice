@@ -49,7 +49,7 @@ CREATE TABLE `<?php echo $table_prefix ?>members` (
   `object_id` int(10) unsigned,
   `order` int(10) unsigned NOT NULL default '0',
   `color` int(10) unsigned NOT NULL default '0',
-  `archived_on` datetime NOT NULL,
+  `archived_on` datetime NOT NULL default '1000-01-01',
   `archived_by_id` int(10) unsigned default NULL,
   PRIMARY KEY  (`id`),
   KEY `by_parent` USING HASH (`parent_member_id`),

@@ -194,7 +194,7 @@ abstract class BaseContactExternalTokens extends DataManager {
     *
     * @return ContactExternalTokens 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactExternalTokens')) {
           $instance = new ContactExternalTokens();

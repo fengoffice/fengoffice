@@ -8,10 +8,10 @@
   */
   class MaxSystemPermissions extends BaseMaxSystemPermissions {
     
-  	function getAllMaxRolesPermissions(){
+  	static function getAllMaxRolesPermissions(){
   		$result = array();
-  		$all_max_perm = self::findAll();
-  		$cols = self::getColumns();// get_table_columns(self::instance()->getTableName());
+  		$all_max_perm = self::instance()->findAll();
+  		$cols = self::instance()->getColumns();// get_table_columns(self::instance()->getTableName());
   		
   		foreach ($all_max_perm as $perm) {
   			$result[$perm->getPermissionGroupId()] = array();

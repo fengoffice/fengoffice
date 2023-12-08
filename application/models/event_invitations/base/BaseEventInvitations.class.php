@@ -222,7 +222,7 @@
     *
     * @return EventInvitations 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'EventInvitations')) {
         $instance = new EventInvitations();

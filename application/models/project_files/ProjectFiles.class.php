@@ -41,7 +41,7 @@ class ProjectFiles extends BaseProjectFiles {
 			$user = logged_user ();
 		try {
 			$condstr = 'checked_out_by_id = ' . $user->getId () . ' AND was_auto_checked_out = 1 AND checked_out_on <> \'' . EMPTY_DATETIME . '\'';
-			$files = self::findAll ( array ('conditions' => $condstr ) ); // findAll
+			$files = self::instance()->findAll ( array ('conditions' => $condstr ) ); // findAll
 			if ($files) {
 				foreach ( $files as $file ) {
 					$file->setWasAutoCheckedAuto ( $autoCheckOut );
@@ -91,7 +91,7 @@ class ProjectFiles extends BaseProjectFiles {
 		}
 		$conditions = array ('`name` = ?' . $member_sql, $filename );
 		
-		return self::findAll ( array ('conditions' => $conditions ) );
+		return self::instance()->findAll ( array ('conditions' => $conditions ) );
 	} 
 	
 
@@ -185,7 +185,7 @@ class ProjectFiles extends BaseProjectFiles {
 		} else {
 			$additional_conditions = "";
 		}
-		return self::findAll ( array ('conditions' => "`id` IN ($ids) $additional_conditions" ) );
+		return self::instance()->findAll ( array ('conditions' => "`id` IN ($ids) $additional_conditions" ) );
 	}
 	
 } 

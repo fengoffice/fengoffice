@@ -68,7 +68,7 @@ class ReportingController extends ApplicationController {
 
 
 		if (is_array(array_var($_POST, 'chart'))) {
-			$project = Projects::findById(array_var($chart_data, 'project_id'));
+			$project = Projects::instance()->findById(array_var($chart_data, 'project_id'));
 			if (!$project instanceof Project) {
 				flash_error(lang('project dnx'));
 				ajx_current("empty");
@@ -110,7 +110,7 @@ class ReportingController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		$chart = ProjectCharts::findById(get_id());
+		$chart = ProjectCharts::instance()->findById(get_id());
 		if(!($chart instanceof ProjectChart)) {
 			flash_error(lang('chart dnx'));
 			ajx_current("empty");
@@ -217,7 +217,7 @@ class ReportingController extends ApplicationController {
 		$_SESSION['total_task_times_report_data'] = $report_data;
 		tpl_assign('report_data', $report_data);
 		tpl_assign('users', $users);
-		tpl_assign('has_billing', BillingCategories::count() > 0 || Plugins::instance()->isActivePlugin('advanced_billing'));
+		tpl_assign('has_billing', BillingCategories::instance()->count() > 0 || Plugins::instance()->isActivePlugin('advanced_billing'));
 	}
 	
 	function total_task_times_print(){
@@ -297,7 +297,7 @@ class ReportingController extends ApplicationController {
 			}
 		}
 	
-		$user = Contacts::findById(array_var($report_data, 'user'));
+		$user = Contacts::instance()->findById(array_var($report_data, 'user'));
 		
 		$now = DateTimeValueLib::now();
 		$now->advance(logged_user()->getUserTimezoneValue(), true);
@@ -527,7 +527,7 @@ class ReportingController extends ApplicationController {
 	function total_task_times_by_task_print(){
 		$this->setLayout("html");
 
-		$task = ProjectTasks::findById(get_id());
+		$task = ProjectTasks::instance()->findById(get_id());
 
 		$st = DateTimeValueLib::make(0,0,0,1,1,1900);
 		$et = DateTimeValueLib::make(23,59,59,12,31,2036);
@@ -778,7 +778,6 @@ class ReportingController extends ApplicationController {
 				foreach ($report_data as $k => &$v) {
 					$v = remove_scripts($v);
 				}
-				
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				
 				DB::beginWork();
@@ -809,42 +808,47 @@ class ReportingController extends ApplicationController {
 					}
 					$newCondition->setFromAttributes($condition);
 					$newCondition->setReportId($report_id);
-					
-					if($condition['field_type'] == 'boolean'){
-					    $newCondition->setValue(array_key_exists('value', $condition) ? $condition['value'] : '0');
-					}else if($condition['field_type'] == 'date' || $condition['field_type'] == 'datetime'){
-						if (array_var($condition, 'value') == '') $newCondition->setValue('');
-						else {
-							$dtFromWidget = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $condition['value']);
 
-                            if($condition['field_type'] == 'date'){
-							$newCondition->setValue(date("m/d/Y", $dtFromWidget->getTimestamp()));
-                            }elseif ($condition['field_type'] == 'datetime'){
-                                $newCondition->setValue(date("m/d/Y H:i:s", $dtFromWidget->getTimestamp()));
-                            }
+					if (isset($condition['field_type'])) {
+						if ($condition['field_type'] == 'boolean') {
+							$newCondition->setValue(array_key_exists('value', $condition) ? $condition['value'] : '0');
+						} else if ($condition['field_type'] == 'date' || $condition['field_type'] == 'datetime') {
+							if (array_var($condition, 'value') == '')
+								$newCondition->setValue('');
+							else {
+								$dtFromWidget = DateTimeValueLib::dateFromFormatAndString(user_config_option('date_format'), $condition['value']);
+
+								if ($condition['field_type'] == 'date') {
+									$newCondition->setValue(date("m/d/Y", $dtFromWidget->getTimestamp()));
+								} elseif ($condition['field_type'] == 'datetime') {
+									$newCondition->setValue(date("m/d/Y H:i:s", $dtFromWidget->getTimestamp()));
+								}
+							}
+						} else if ($condition['field_type'] == 'date_range_time_range') {
+
+							$from = getDateValue($condition['value']['from']);
+							$to = getDateValue($condition['value']['to']);
+							$from_time = getTimeValue($condition['value']['from_time']);
+							$to_time = getTimeValue($condition['value']['to_time']);
+
+							$from_str = $from instanceof DateTimeValue ? $from->toMySQL() : '';
+							$to_str = $to instanceof DateTimeValue ? $to->toMySQL() : '';
+							$ft = is_array($from_time) ? $from_time['hours'] . ':' . $from_time['mins'] : '';
+							$tt = is_array($to_time) ? $to_time['hours'] . ':' . $to_time['mins'] : '';
+
+							$newCondition->setValue(json_encode(array('from' => $from_str, 'to' => $to_str, 'from_time' => $ft, 'to_time' => $tt)));
+
+						} else {
+							$newCondition->setValue(isset($condition['value']) ? $condition['value'] : '');
 						}
-						
-					} else if($condition['field_type'] == 'date_range_time_range') {
-						
-						$from = getDateValue($condition['value']['from']);
-						$to = getDateValue($condition['value']['to']);
-						$from_time = getTimeValue($condition['value']['from_time']);
-						$to_time = getTimeValue($condition['value']['to_time']);
-						
-						$from_str = $from instanceof DateTimeValue ? $from->toMySQL() : '';
-						$to_str = $to instanceof DateTimeValue ? $to->toMySQL() : '';
-						$ft = is_array($from_time) ? $from_time['hours'].':'.$from_time['mins'] : '';
-						$tt = is_array($to_time) ? $to_time['hours'].':'.$to_time['mins'] : '';
-						
-						$newCondition->setValue(json_encode(array('from' => $from_str, 'to' => $to_str, 'from_time' => $ft, 'to_time' => $tt)));
-						
-					}else{
+					} else {
 						$newCondition->setValue(isset($condition['value']) ? $condition['value'] : '');
+
 					}
 					$newCondition->setIsParametrizable(isset($condition['is_parametrizable']));
 					$newCondition->save();
 				}
-				ReportColumns::delete('report_id = ' . $report_id);
+				ReportColumns::instance()->delete('report_id = ' . $report_id);
 				$columns = array_var($_POST, 'columns');
 				
 				asort($columns); //sort the array by column order
@@ -867,7 +871,7 @@ class ReportingController extends ApplicationController {
                         $newColumn->save();
 					}
 				}
-				
+
 				$object_controller = new ObjectController();
 				if (!is_null($member_ids) && count($member_ids) > 0) {
 					$object_controller->add_to_members($report, $member_ids);
@@ -962,12 +966,19 @@ class ReportingController extends ApplicationController {
 				foreach ($report_data as $k => &$v) {
 					$v = remove_scripts($v);
 				}
+				$member_ids = json_decode(array_var($_POST, 'members'));
 
 				DB::beginWork();
 				$report->setObjectName($report_data['name']);
 				$report->setDescription($report_data['description']);
+				$report->setIgnoreContext(array_var($report_data, 'ignore_context') == 'checked');
 				$report->save();
 				
+				$object_controller = new ObjectController();
+				if (!is_null($member_ids)) {
+					$object_controller->add_to_members($report, $member_ids);
+				}
+
 				DB::commit();
 				flash_success(lang('custom report updated'));
 				ajx_current('back');
@@ -1029,7 +1040,7 @@ class ReportingController extends ApplicationController {
 			}
 		}
 		
-		$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 		if (class_exists($ot->getHandlerClass())) {
 			eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
 			$externalCols = $managerInstance->getExternalColumns();
@@ -1073,8 +1084,8 @@ class ReportingController extends ApplicationController {
 			ajx_set_no_toolbar(true);
 			
 			$parametersUrl = '';
+			if (!is_array($params)) $params = json_decode($params, true);
 			if ($params) {
-				if (!is_array($params)) $params = json_decode($params, true);
 				foreach($params as $id => $value){
 					$parametersUrl .= '&params['.$id.']='.$value;
 				}
@@ -1086,7 +1097,7 @@ class ReportingController extends ApplicationController {
 			$order_by_asc = array_var($_REQUEST, 'order_by_asc', false);
 			
 			$results = Reports::executeReport($report_id, $params, $order_by, $order_by_asc, $offset, $limit);
-			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 
 			tpl_assign('results', $results);
 			tpl_assign('model', $ot->getHandlerClass());
@@ -1301,7 +1312,7 @@ class ReportingController extends ApplicationController {
 			tpl_assign('types', self::get_report_column_types($report_id));
 			tpl_assign('template_name', 'view_custom_report');
 			tpl_assign('title', $report->getObjectName());
-			$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 			tpl_assign('model', $ot->getHandlerClass());
 			tpl_assign('description', $report->getDescription());
 			$conditions = ReportConditions::getAllReportConditions($report_id);
@@ -1364,7 +1375,7 @@ class ReportingController extends ApplicationController {
 	function generateCSVReport($report, $results){
 		$contents = "";
 		
-		$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 		Hook::fire("report_header", $ot, $results['columns']);
 		
 		$types = self::get_report_column_types($report->getId());
@@ -1396,7 +1407,7 @@ class ReportingController extends ApplicationController {
 	function generatePDFReport(Report $report, $results){
 		
 		$types = self::get_report_column_types($report->getId());
-		$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 		if (class_exists($ot->getHandlerClass())) {
 			eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
 			$externalCols = $managerInstance->getExternalColumns();
@@ -1694,7 +1705,7 @@ class ReportingController extends ApplicationController {
 				if ($cp->getType() != 'table')
 					$fields[] = array('id' => $cp->getId(), 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
 			}
-			$ot = ObjectTypes::findById($object_type);
+			$ot = ObjectTypes::instance()->findById($object_type);
 			
 			if (class_exists($ot->getHandlerClass())) {
 				eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
@@ -1779,6 +1790,7 @@ class ReportingController extends ApplicationController {
 		Hook::fire('get_allow_taxes_row_for_reports', array('object_type' => $object_type, 'columns' => $columns),$ret);
 		$allowed_columns = $ret[0];
 		$option_groups = $ret[1];
+
 		Hook::fire('remove_billing_and_cost_columns_from_list', array('object_type' => $object_type),$allowed_columns);
 
 		$this->sort_custom_report_columns_using_option_groups($allowed_columns, $option_groups);
@@ -1796,13 +1808,13 @@ class ReportingController extends ApplicationController {
 	}
 
 	function sort_custom_report_columns_using_option_groups(&$allowed_columns, $option_groups) {
-		if(count($option_groups) == 0) {
+		if(!isset($option_groups) || !is_array($option_groups) || count($option_groups) == 0) {
 			usort($allowed_columns, array(&$this, 'compare_FieldName'));
 			return;
 		}
 		$sorted_allowed_columns = array();
 		$array_start = 0;
-		foreach($option_groups as $group) {
+		foreach ($option_groups as $group) {
 			$array_end = $array_start + $group['count'];
 			$group_columns = array_slice($allowed_columns, $array_start, $group['count']);
 			usort($group_columns, array(&$this, 'compare_FieldName'));
@@ -1858,7 +1870,7 @@ class ReportingController extends ApplicationController {
 				$values[] = array('id' => $milestone->getId(), 'name' => $milestone->getObjectName());
 			}
 		} else if ($field == 'company_id') {
-			$companies = Contacts::findAll(array('conditions' => 'is_company > 0'));
+			$companies = Contacts::instance()->findAll(array('conditions' => 'is_company > 0'));
 			foreach ($companies as $comp) {
 				$values[] = array('id' => $comp->getId(), 'name' => $comp->getObjectName());
 			}
@@ -1886,7 +1898,7 @@ class ReportingController extends ApplicationController {
 				$fields[] = array('id' => $cp->getId(), 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
 			}
 			
-			$ot = ObjectTypes::findById($object_type);
+			$ot = ObjectTypes::instance()->findById($object_type);
 			if (class_exists($ot->getHandlerClass())) {
 				$managerInstance = null;
 				eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
@@ -2001,7 +2013,7 @@ class ReportingController extends ApplicationController {
 		$report = Reports::getReport($report_id);
 		if (!$report instanceof Report) return $col_types;
 		
-		$ot = ObjectTypes::findById($report->getReportObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 		if (!$ot instanceof ObjectType) return $col_types;
 		
 		$model = trim($ot->getHandlerClass());

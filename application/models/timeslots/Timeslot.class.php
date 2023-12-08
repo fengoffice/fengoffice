@@ -65,7 +65,7 @@ class Timeslot extends BaseTimeslot {
     */
     function getUser() {
       if(is_null($this->assigned_user)) {
-        $this->assigned_user = Contacts::findById($this->getContactId());
+        $this->assigned_user = Contacts::instance()->findById($this->getContactId());
       }
       return $this->assigned_user;
     }
@@ -150,9 +150,9 @@ class Timeslot extends BaseTimeslot {
     	}
         	
     	//Billing
-		$user = Contacts::findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
+		$user = Contacts::instance()->findById(array_var($timeslot_data, 'contact_id', logged_user()->getId()));
 		$billing_category_id = $user->getDefaultBillingId();
-		$bc = BillingCategories::findById($billing_category_id);
+		$bc = BillingCategories::instance()->findById($billing_category_id);
 		if ($bc instanceof BillingCategory) {
 			$this->setBillingId($billing_category_id);
 			$hourly_billing = $bc->getDefaultValue();
@@ -367,7 +367,7 @@ class Timeslot extends BaseTimeslot {
 	 * @param array $context
 	 * @return boolean
 	 */
-	function canAdd(Contact $user, $context, &$notAllowedMember = '') {
+	static function canAdd(Contact $user, $context, &$notAllowedMember = '') {
 		return can_add($user, $context, Timeslots::instance()->getObjectTypeId(), $notAllowedMember );
 	}
 
@@ -455,8 +455,8 @@ class Timeslot extends BaseTimeslot {
 	function save() {
 	    $is_new = $this->isNew();
 	    $saved = parent::save();
-	    
-	    if($saved && $this->recalculate_task_values) {	        
+	    $skip_task_calculation = array_var($_SESSION, 'dont_calculate_anything', false);
+	    if($saved && $this->recalculate_task_values && !$skip_task_calculation) {	      
 	        $object = $this->getRelObject();
 	        if($object instanceof ContentDataObject) {
 	            if($is_new) {
@@ -484,7 +484,26 @@ class Timeslot extends BaseTimeslot {
 	 * Override general addToMembers function to classify this time entry in 
 	 * the related task's members of the dimensions where the time doesn't have a value
 	 */
-	function addToMembers($members_array, $remove_old_comment_members = false, $is_multiple = false) {
+	function addToMembers($members_array, $remove_old_comment_members = false, $is_multiple = false, $is_drag_and_drop = false) {
+
+		if ($is_drag_and_drop) {
+			// if classified by drag and drop we only receive the new member
+			// to preven wrong reclassification we need to collect the members of the other dimensions before merging the associated task's members
+			// we need to exclude previous classfication in the same dimension of the new member
+			$new_member = $members_array[0];
+			if (!$new_member) return;
+
+			// iterate through the old members and exclude the one of the dimension of the new member
+			$old_members = $this->getMembers();
+			$diff_members = array();
+			foreach ($old_members as $om) {
+				if ($om->getDimensionId() != $new_member->getDimensionId()) {
+					$diff_members[] = $om;
+				}
+			}
+			// merge old classification with the new member 
+			$members_array = array_merge($diff_members, $members_array);
+		}
 		
 		// inherit task members for dimensions where $members_array doesn't have a value
 		$members_array_merged = $this->getMembersMergedWithTaskMembers($members_array);
@@ -550,7 +569,7 @@ class Timeslot extends BaseTimeslot {
 	function getArrayInfo($return_billing = false, $time_detail = false, $permissions_detail = false, $mem_path = true) {
 		$task_name = '';
 		
-		$user = Contacts::findById($this->getContactId());
+		$user = Contacts::instance()->findById($this->getContactId());
 		if ($user instanceof Contact) {
 			$displayname = $user->getObjectName();
 		} else {
@@ -611,7 +630,7 @@ class Timeslot extends BaseTimeslot {
 			$result['uses_modified_keys'] = true;
 			$result['fixed_billing'] = "";
 			if ($this->getFixedBilling() > 0) {
-				$c = Currencies::getCurrency($this->getRateCurrencyId());
+				$c = Currencies::instance()->getCurrency($this->getRateCurrencyId());
 				$c_symbol = $c instanceof Currency ? $c->getSymbol() : '';
 				$result['rate_currency_id'] = $this->getRateCurrencyId();
 				$result['rate_currency_sym'] = $c_symbol;

@@ -15,7 +15,7 @@ class TemplateObjectProperties extends BaseTemplateObjectProperties {
 	 * @return array
 	 */
 	static function getPropertiesByTemplateObject($template_id, $object_id) {
-		return self::findAll(
+		return self::instance()->findAll(
 			array('conditions' => array('`template_id` = ? AND `object_id` = ?', $template_id, $object_id), 'order' => 'property' )
 		);
 		
@@ -31,7 +31,7 @@ class TemplateObjectProperties extends BaseTemplateObjectProperties {
 	 * @return array
 	 */
 	static function getTemplateObjectPropertyValue($template_id, $object_id, $property) {
-		return self::findAll(
+		return self::instance()->findAll(
 			array('conditions' => array('`template_id` = ? AND `object_id` = ? AND `property` = ?', $template_id, $object_id, $property) )
 		);
 	}
@@ -43,7 +43,7 @@ class TemplateObjectProperties extends BaseTemplateObjectProperties {
 	 * @return array
 	 */
 	static function deletePropertiesByTemplate($template_id) {
-		return self::delete(array('`template_id` = ?', $template_id));
+		return self::instance()->delete(array('`template_id` = ?', $template_id));
 	}
 	
 

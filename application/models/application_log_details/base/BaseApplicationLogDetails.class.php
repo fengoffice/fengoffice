@@ -225,7 +225,7 @@ abstract class BaseApplicationLogDetails extends DataManager {
 	 *
 	 * @return ApplicationLogDetails
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ApplicationLogDetails')) {
 			$instance = new ApplicationLogDetails();

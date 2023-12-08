@@ -45,7 +45,7 @@
 	$first = null;
 		
 	foreach ($activities as $act) {
-		$user = Contacts::findById($act->getCreatedById());
+		$user = Contacts::instance()->findById($act->getCreatedById());
 		$object = Objects::findObject($act->getRelObjectId());
 		if (!$user || !$object) continue;
 /*		if ($user && $object && $act->getAction() != 'login' && $act->getAction() != 'logout' 

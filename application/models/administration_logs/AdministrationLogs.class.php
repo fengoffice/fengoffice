@@ -42,7 +42,7 @@ class AdministrationLogs extends BaseAdministrationLogs {
 		$conditions = "1=1 $cat_cond $title_cond $data_cond";
 		if ($additional_conds != '') $conditions .= " AND $additional_conds";
 		
-		return self::findAll(array('conditions' => $conditions, 'limit' => $limit, 'order' => '`created_on` DESC'));
+		return self::instance()->findAll(array('conditions' => $conditions, 'limit' => $limit, 'order' => '`created_on` DESC'));
 	}
 
 	/**

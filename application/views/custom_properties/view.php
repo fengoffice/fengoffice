@@ -16,7 +16,7 @@
 	
 	    if ($object instanceof ContentDataObject) {
 			
-	        $ot = ObjectTypes::findById($object->getObjectTypeId());
+	        $ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 			$extra_conditions = "";
 			if ($ot->getName() == 'contact'){
 				if($object->isUser()){

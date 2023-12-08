@@ -54,7 +54,7 @@ class ApiController extends ApplicationController {
             		$object_data = $object->getArrayInfo(true, true);
                 } elseif($object instanceof PaymentReceipt){
                     $object_data = $object->getArrayInfo(false, true);
-                    $product_type = ProductTypes::findById($object->getProductTypeId());
+                    $product_type = ProductTypes::instance()->findById($object->getProductTypeId());
                     if($product_type instanceof ProductType){
                         $object_data['product_type'] = $product_type->getName();
                     }
@@ -135,7 +135,7 @@ class ApiController extends ApplicationController {
     }
 
     //provides all of the members from the dimension member in question
-    private function list_members($request) {
+    private function list_members($request) {  
     	$service = $request ['srv'];
         $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
         $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
@@ -191,18 +191,22 @@ class ApiController extends ApplicationController {
 //         );
         
         $extra_conditions = '';
-        if ($name!=""){
-            if (check_column_exists( TABLE_PREFIX ."members", "display_name")) {//TABLE_PREFIX .
-        	    $extra_conditions .= " AND mem.display_name LIKE '%".$name."%'";
-            }else{
-                $extra_conditions .= " AND mem.name LIKE '%".$name."%'";
-            }
-        }
-
 
         if($dimension_id == Dimensions::findByCode('customer_project')->getId() && !$show_subprojects){
             $extra_conditions .= " AND mem.parent_member_id=0";
         }
+
+        //Chek if display_name is abiliable. 
+        if (check_column_exists( TABLE_PREFIX ."members", "display_name")) {
+            $name_type = 'display_name'; 
+        } else {
+            $name_type  = 'name';
+        }
+
+        if ($name!="") {
+            $extra_conditions .= " AND mem.$name_type  LIKE '%".$name."%' ";
+        }
+
         $params = array(
         		'dim_id' => $dimension_id, 
         		'type_id' => $typeId, 
@@ -210,6 +214,7 @@ class ApiController extends ApplicationController {
         		'limit' => $limit, 
         		'extra_conditions' => $extra_conditions,
         		'exclude_associations_data' => true,
+                'sort' => $name_type,
         );
         
         $memberController = new MemberController();
@@ -318,7 +323,7 @@ class ApiController extends ApplicationController {
     ///retrive all payment methods from custom propertie
     private function list_payment_methods($request) {
 
-        $cp_values = [];
+        $cp_values = '';
         $expense_ot = ObjectTypes::findByName('expense');
         $payment_receipt_ot = ObjectTypes::findByName('payment_receipt');
         $payment_receipt_ot->getId();
@@ -374,7 +379,7 @@ class ApiController extends ApplicationController {
 
     private function get_is_billable_by_budget_expense_id($request) {
         $bud_expense_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
-        $expense = Expenses::findById($bud_expense_id);
+        $expense = Expenses::instance()->findById($bud_expense_id);
         $is_billable = 0;
         if($expense instanceof Expense){
             $is_billable = $expense->getIsBillable();
@@ -403,7 +408,7 @@ class ApiController extends ApplicationController {
 
         //get the members from the dimension id if exists
         if ($dimension_dim instanceof Dimension) {
-            $dimensions = Members::findAll(array(
+            $dimensions = Members::instance()->findAll(array(
                 "conditions" => "dimension_id = ".$dimension_dim->getId(),
                 "order" => " name",
             ));
@@ -428,7 +433,7 @@ class ApiController extends ApplicationController {
         $labor_categories_dim = Dimensions::findByCode('hour_types');
 
         if ($labor_categories_dim instanceof Dimension) {
-            $labor_categories = Members::findAll(array(
+            $labor_categories = Members::instance()->findAll(array(
                 "conditions" => "dimension_id = ".$labor_categories_dim->getId(),
                 "order" => " name",
             ));
@@ -453,7 +458,7 @@ class ApiController extends ApplicationController {
         $member_ids = !empty($request['args']['members']) ? $request['args']['members'] : null;
         $members = array();
         foreach($member_ids as $m_id){
-            $mem = Members::findById($m_id);
+            $mem = Members::instance()->findById($m_id);
             if($mem instanceof Member){
                 $members[] = $mem;
             }
@@ -464,7 +469,7 @@ class ApiController extends ApplicationController {
         if($use_associated_members){
             $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($members[0]->getId(), true);
             foreach($project_members as $pm_id){
-                $property_member = Members::findById($pm_id);
+                $property_member = Members::instance()->findById($pm_id);
                 if($property_member instanceof Member){
                     $members[] = $property_member;
                 }
@@ -478,7 +483,7 @@ class ApiController extends ApplicationController {
 
     private function get_product_type_by_id($request) {
         $prod_type_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
-        $prod_type= ProductTypes::findById($prod_type_id);
+        $prod_type= ProductTypes::instance()->findById($prod_type_id);
         $prod_type_data = array();
         if($prod_type instanceof ProductType){
             $prod_type_data = $prod_type->getArrayInfo();
@@ -491,10 +496,10 @@ class ApiController extends ApplicationController {
         $bud_expense_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
         $filtered_product_types = array();
         if($bud_expense_id > 0){
-            $expense_items = ExpenseItems::findAll(array('conditions' => 'expense_id ='.$bud_expense_id));
+            $expense_items = ExpenseItems::instance()->findAll(array('conditions' => 'expense_id ='.$bud_expense_id));
             foreach($expense_items as $item){
                 if($item->getProductTypeId() > 0){
-                    $pt = ProductTypes::findById($item->getProductTypeId());
+                    $pt = ProductTypes::instance()->findById($item->getProductTypeId());
                     if ($pt instanceof ProductType) {
                         $filtered_product_types[] = $pt->getArrayInfo();
                     }
@@ -909,7 +914,7 @@ class ApiController extends ApplicationController {
                             $dim_exp_category = Dimensions::findByCode('expense_categories');
                             if($product_type instanceof ProductType && $dim_exp_category instanceof Dimension){
                                 $dim_id_exp_category = $dim_exp_category->getId();
-                                $expense_category_ptm = ProductTypeMembers::findOne(array('conditions' => 'product_type_id='.$product_type_id.' AND dimension_id='.$dim_id_exp_category)); 
+                                $expense_category_ptm = ProductTypeMembers::instance()->findOne(array('conditions' => 'product_type_id='.$product_type_id.' AND dimension_id='.$dim_id_exp_category)); 
                                 if($expense_category_ptm instanceof ProductTypeMember){
                                     $additional_members[] = $expense_category_ptm->getMemberId();
                                 }
@@ -929,7 +934,7 @@ class ApiController extends ApplicationController {
                             }
                             // Assign new expense category to the object
                             if($request ['args'] ['expense_id'] > 0){
-                                $expense = Expenses::findById($request ['args'] ['expense_id']);
+                                $expense = Expenses::instance()->findById($request ['args'] ['expense_id']);
                                 $expense_members = $expense->getMembers();
                                 foreach ($expense_members as $member){
                                     if($member->getDimensionId() == $expense_category_dimension){
@@ -1000,7 +1005,7 @@ class ApiController extends ApplicationController {
                     {
                         //if it has budgeted expense, get all form bugeted
                         if (!empty($request['args']['expense_id'])) {
-                            $expenseAux = Expenses::findById($request['args'] ['expense_id']);
+                            $expenseAux = Expenses::instance()->findById($request['args'] ['expense_id']);
                             if($expenseAux instanceof Expense)
                             {
                                 $members = $expenseAux->getMemberIds();
@@ -1012,29 +1017,33 @@ class ApiController extends ApplicationController {
 
                         //if it has default aproval status add
                         //get default approval status
-                        $approval_status_dimension_id = Dimensions::findByCode('status_timesheet')->getId();
-                        if($approval_status_dimension_id>0)
-                        {
-                            $default_value = DimensionOptions::instance()->getOptionValue($approval_status_dimension_id, 'default_value');
-                            if($default_value>0)
-                            {
-                                $members[]=$default_value;
-                            }
-                        }
+						$status_dim = Dimensions::findByCode('status_timesheet');
+						if ($status_dim instanceof Dimension) {
+							$approval_status_dimension_id = $status_dim->getId();
+							if($approval_status_dimension_id>0)
+							{
+								$default_value = DimensionOptions::instance()->getOptionValue($approval_status_dimension_id, 'default_value');
+								if($default_value>0)
+								{
+									$members[]=$default_value;
+								}
+							}
+						}
                     }
 
                     //if members exists 
                     if(count($members)>0)
                     {
                         $context = get_context_from_array($members);
-                        if(count($members) == 1) {
+                        if(count($members) >= 1) {
                              // Use associated members if only one member is selected and it is a project
                             $project_ot_id = ObjectTypes::instance()->findByName('project')->getId();
-                            $member = Members::findById($members[0]);
+                            $member = Members::instance()->findById($members[0]);
                             if($member->getObjectTypeId() == $project_ot_id){
-                                $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($member->getId(), true);
+								$skipped_association_codes = array('project_billing_client');
+                                $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($member->getId(), true, true, $skipped_association_codes);
                                 foreach($project_members as $pm_id){
-                                    $property_member = Members::findById($pm_id);
+                                    $property_member = Members::instance()->findById($pm_id);
                                     if($property_member instanceof Member){
                                         $members[] = $property_member->getId();
                                     }
@@ -1076,7 +1085,7 @@ class ApiController extends ApplicationController {
         //if not, get the task and then the members of the task!
         if(!$members)
         {
-            $taskAux = ProjectTasks::findById($request['args'] ['object_id']);
+            $taskAux = ProjectTasks::instance()->findById($request['args'] ['object_id']);
             if($taskAux instanceof ProjectTask)
             {
                 $members = $taskAux->getMemberIds();
@@ -1087,7 +1096,7 @@ class ApiController extends ApplicationController {
 		$project_member = null;
 		$project_ot_id = ObjectTypes::findByName('project')->getId();
 		foreach($members as $m){
-			$member = Members::findById($m);
+			$member = Members::instance()->findById($m);
 			if($member instanceof Member){
 				if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
 			}
@@ -1329,10 +1338,11 @@ class ApiController extends ApplicationController {
 
             $active_members = array();
             $context = active_context();
-            foreach ($context as $selection) {
-                if ($selection instanceof Member) $active_members[] = $selection;
+            if( $context){
+                foreach ($context as $selection) {
+                    if ($selection instanceof Member) $active_members[] = $selection;
+                }
             }
-
             $mnames = array();
             $allowed_contact_ids = array();
             foreach ($active_members as $member) {

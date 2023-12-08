@@ -10,7 +10,7 @@
     
     function render($control_name) {
     	$genid = gen_id();
-    	$groups = PermissionGroups::findAll(array('conditions' => "`type`='roles' AND `parent_id`>0"));
+    	$groups = PermissionGroups::instance()->findAll(array('conditions' => "`type`='roles' AND `parent_id`>0"));
     	
     	$value =  $this->getValue();
     	$out = '';

@@ -21,13 +21,13 @@ class FengObject extends BaseObject {
 	 * @return ObjectType
 	 */
 	function getType() {
-		return ObjectTypes::findById($this->getObjectTypeId());
+		return ObjectTypes::instance()->findById($this->getObjectTypeId());
 	}
 	
 	
 	function getObjectTypeName(){
 		if (!$this->object_type)
-			$this->object_type = ObjectTypes::findById($this->getObjectTypeId());
+			$this->object_type = ObjectTypes::instance()->findById($this->getObjectTypeId());
 		return $this->object_type instanceof ObjectType ? $this->object_type->getName() : "";
 	}
 
@@ -82,7 +82,7 @@ class FengObject extends BaseObject {
 		}
 		if ($include_archive_info) {
 			$dateArchived = $this->getArchivedOn() instanceof DateTimeValue ? ($this->getArchivedOn()->isToday() ? format_time($this->getArchivedOn(), null, $tz_offset) : format_datetime($this->getArchivedOn(), null, $tz_offset)) : lang('n/a');
-			$archived_by = Contacts::findById($this->getArchivedById());
+			$archived_by = Contacts::instance()->findById($this->getArchivedById());
 			$info['archivedBy'] = $archived_by instanceof Contact ? $archived_by->getObjectName() : lang('n/a');
 			$info['archivedById'] = $this->getArchivedById();
 			$info['dateArchived'] = $dateArchived;

@@ -2,7 +2,7 @@
 Hook::register('core_dimensions');
 
 function core_dimensions_after_edit_profile($user, &$ignored) {
-	$person_member = Members::findOne(array("conditions" => "`object_id` = (".$user->getId().") AND `dimension_id` = (SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code` = 'feng_persons')"));
+	$person_member = Members::instance()->findOne(array("conditions" => "`object_id` = (".$user->getId().") AND `dimension_id` = (SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code` = 'feng_persons')"));
 	
 	if ($person_member instanceof Member) {
 		$person_member->setName($user->getObjectName());
@@ -67,13 +67,13 @@ function core_dimensions_after_add_to_members($object, &$added_members) {
 	}
 	if ($object instanceof ProjectEvent) {
 		/* @var $object ProjectEvent */
-		$invitations = EventInvitations::findAll(array("conditions" => "`event_id` = ".$object->getId()));
+		$invitations = EventInvitations::instance()->findAll(array("conditions" => "`event_id` = ".$object->getId()));
 		foreach ($invitations as $inv) $user_ids[] = $inv->getContactId();
 	}
 	
 	// only simple contacts, not users
 	if ($object instanceof Contact && !$object->isUser()) {
-		$member = Members::findOne(array("conditions" => "`object_id` = (".$object->getId().") AND `dimension_id` = (SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code` = 'feng_persons')"));
+		$member = Members::instance()->findOne(array("conditions" => "`object_id` = (".$object->getId().") AND `dimension_id` = (SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code` = 'feng_persons')"));
 		if ($member instanceof Member) {
 			$object->addToMembers(array($member));
 			
@@ -129,7 +129,7 @@ function core_dim_create_member_associations(Contact $contact, $contact_member, 
 		foreach ( $all_members as $m ) {
 			if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
 				
-				$mpm = MemberPropertyMembers::findOne(array('id' => true, 'conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $contact_member->getId(), $m->getId())));
+				$mpm = MemberPropertyMembers::instance()->findOne(array('id' => true, 'conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $contact_member->getId(), $m->getId())));
 				//if (!$mpm instanceof MemberPropertyMember) {
 				if (is_null($mpm)) {
 					$sql = "INSERT INTO " . TABLE_PREFIX . "member_property_members (association_id, member_id, property_member_id, is_active, created_on, created_by_id)
@@ -143,12 +143,12 @@ function core_dim_create_member_associations(Contact $contact, $contact_member, 
 	}
 	
 	// reverse way
-	$associations = DimensionMemberAssociations::findAll(array("conditions" => array("`associated_dimension_id` = ? AND `associated_object_type_id` = ?", $contact_member->getDimensionId(), $contact_member->getObjectTypeId())));
+	$associations = DimensionMemberAssociations::instance()->findAll(array("conditions" => array("`associated_dimension_id` = ? AND `associated_object_type_id` = ?", $contact_member->getDimensionId(), $contact_member->getObjectTypeId())));
 	foreach ( $associations as $a ) {
 		foreach ( $all_members as $m ) {
 			if ($m->getDimensionId() == $a->getDimensionId() && $m->getObjectTypeId() == $a->getObjectTypeId()) {
 				
-				$mpm = MemberPropertyMembers::findOne(array('id' => true, 'conditions' => array('association_id = ? AND property_member_id = ? AND member_id = ?', $a->getId(), $contact_member->getId(), $m->getId())));
+				$mpm = MemberPropertyMembers::instance()->findOne(array('id' => true, 'conditions' => array('association_id = ? AND property_member_id = ? AND member_id = ?', $a->getId(), $contact_member->getId(), $m->getId())));
 				//if (!$mpm instanceof MemberPropertyMember) {
 				if (is_null($mpm)) {
 					$sql = "INSERT INTO " . TABLE_PREFIX . "member_property_members (association_id, property_member_id, member_id, is_active, created_on, created_by_id)
@@ -178,9 +178,9 @@ function core_dim_create_member_associations(Contact $contact, $contact_member, 
  * @param $ignored null
  */
 function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
-	$pg = PermissionGroups::findById($pg_id);
+	$pg = PermissionGroups::instance()->findById($pg_id);
 	if ($pg instanceof PermissionGroup && $pg->getContactId() > 0 && $pg->getType() == 'permission_groups') {
-		$user = Contacts::findById($pg->getContactId());
+		$user = Contacts::instance()->findById($pg->getContactId());
 		if (!$user instanceof Contact || !$user->isUser()) return;
 		
 		$member_ids = array();
@@ -193,7 +193,7 @@ function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
 		}
 		if (count($member_ids) == 0) return;
 		
-		$members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).') AND dimension_id IN (SELECT d.id FROM '.TABLE_PREFIX.'dimensions d WHERE d.defines_permissions=1)'));
+		$members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).') AND dimension_id IN (SELECT d.id FROM '.TABLE_PREFIX.'dimensions d WHERE d.defines_permissions=1)'));
 		
 		//clean member_ids
 		$member_ids= array();
@@ -213,7 +213,7 @@ function core_dimensions_after_save_contact_permissions($pg_id, &$ignored) {
 		
 		// remove from all members of the affected dimensions
 		if (count($affected_dimensions) > 0) {
-			$affected_member_ids = Members::findAll(array('id' => true, 'conditions' => 'dimension_id IN ('.implode(',', $affected_dimensions).')'));
+			$affected_member_ids = Members::instance()->findAll(array('id' => true, 'conditions' => 'dimension_id IN ('.implode(',', $affected_dimensions).')'));
 			if (count($affected_member_ids) > 0) {
 				ObjectMembers::removeObjectFromMembers($user, logged_user(), $members, $affected_member_ids);
 			}
@@ -241,7 +241,7 @@ function core_dimensions_after_save_member_permissions($params, &$ignored) {
 	$contacts = array();
 	// users
 	if (count($permission_group_ids) > 0) {
-		$contacts = Contacts::findAll(array('conditions' => 'user_type > 0 && permission_group_id IN ('.implode(',', $permission_group_ids).')'));
+		$contacts = Contacts::instance()->findAll(array('conditions' => 'user_type > 0 && permission_group_id IN ('.implode(',', $permission_group_ids).')'));
 	}
 
 	$contact_ids = array(0);
@@ -284,10 +284,10 @@ function core_dimensions_after_save_member_permissions($params, &$ignored) {
 
 function core_dim_add_contact_member_associations($contact_member, $member) {
 	// one way
-	$associations = DimensionMemberAssociations::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND `associated_dimension_id` = ? AND `associated_object_type_id` = ?", 
+	$associations = DimensionMemberAssociations::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND `associated_dimension_id` = ? AND `associated_object_type_id` = ?", 
 		$member->getDimensionId(), $member->getObjectTypeId(), $contact_member->getDimensionId(), $contact_member->getObjectTypeId())));
 	foreach ( $associations as $a ) {
-		$mpm = MemberPropertyMembers::findOne(array('conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $member->getId(), $contact_member->getId())));
+		$mpm = MemberPropertyMembers::instance()->findOne(array('conditions' => array('association_id = ? AND member_id = ? AND property_member_id = ?', $a->getId(), $member->getId(), $contact_member->getId())));
 		if (!$mpm instanceof MemberPropertyMember) {
 			$mpm = new MemberPropertyMember();
 			$mpm->setAssociationId($a->getId());		
@@ -299,10 +299,10 @@ function core_dim_add_contact_member_associations($contact_member, $member) {
 	}
 	
 	// reverse way
-	$associations = DimensionMemberAssociations::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND `associated_dimension_id` = ? AND `associated_object_type_id` = ?", 
+	$associations = DimensionMemberAssociations::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND `associated_dimension_id` = ? AND `associated_object_type_id` = ?", 
 		$contact_member->getDimensionId(), $contact_member->getObjectTypeId(), $member->getDimensionId(), $member->getObjectTypeId())));
 	foreach ( $associations as $a ) {
-		$mpm = MemberPropertyMembers::findOne(array('conditions' => array('association_id = ? AND property_member_id = ? AND member_id = ?', $a->getId(), $member->getId(), $contact_member->getId())));
+		$mpm = MemberPropertyMembers::instance()->findOne(array('conditions' => array('association_id = ? AND property_member_id = ? AND member_id = ?', $a->getId(), $member->getId(), $contact_member->getId())));
 		if (!$mpm instanceof MemberPropertyMember) {
 			$mpm = new MemberPropertyMember();
 			$mpm->setAssociationId($a->getId());		
@@ -327,7 +327,7 @@ function core_dim_remove_contacts_member_associations(Member $member) {
 	}
 	
 	// reverse way
-	$associations = DimensionMemberAssociations::findAll(array("conditions" => array("`associated_dimension_id` = ? AND `associated_object_type_id` = ?", $member->getDimensionId(), $member->getObjectTypeId())));
+	$associations = DimensionMemberAssociations::instance()->findAll(array("conditions" => array("`associated_dimension_id` = ? AND `associated_object_type_id` = ?", $member->getDimensionId(), $member->getObjectTypeId())));
 	foreach ( $associations as $a ) {
 		if ($a->getDimensionId() == $persons_dim->getId()) {
 			$condition = "association_id = ".$a->getId()." AND property_member_id = ".$member->getId()." AND member_id IN 
@@ -360,9 +360,9 @@ function core_dimensions_after_update($object, &$ignored) {
 	static $objectsProcessed = array();
 	
 	if ($object instanceof Contact  && !array_var($objectsProcessed,$object->getId())) {
-		$person_dim = Dimensions::findOne(array("conditions" => "`code` = 'feng_persons'"));
-		$person_ot = ObjectTypes::findOne(array("conditions" => "`name` = 'person'"));
-		$company_ot = ObjectTypes::findOne(array("conditions" => "`name` = 'company'"));
+		$person_dim = Dimensions::instance()->findOne(array("conditions" => "`code` = 'feng_persons'"));
+		$person_ot = ObjectTypes::instance()->findOne(array("conditions" => "`name` = 'person'"));
+		$company_ot = ObjectTypes::instance()->findOne(array("conditions" => "`name` = 'company'"));
 		
 		$members = Members::findByObjectId($object->getId(), $person_dim->getId());
 
@@ -373,7 +373,7 @@ function core_dimensions_after_update($object, &$ignored) {
 			$parent_member_id = $member->getParentMemberId() ;
 			$depth = $member->getDepth();
 			if ($object->getCompanyId() > 0) {
-				$pmember = Members::findOne(array('conditions' => '`object_id` = '.$object->getCompanyId().' AND `object_type_id` = '.$company_ot->getId(). ' AND `dimension_id` = '.$person_dim->getId()));
+				$pmember = Members::instance()->findOne(array('conditions' => '`object_id` = '.$object->getCompanyId().' AND `object_type_id` = '.$company_ot->getId(). ' AND `dimension_id` = '.$person_dim->getId()));
 				if ($pmember instanceof Member) {
 					$member->setParentMemberId($pmember->getId());
 					$member->setDepth($pmember->getDepth() + 1);
@@ -412,7 +412,7 @@ function core_dimensions_after_user_add($object, $ignored) {
 function core_dimensions_after_user_deleted(Contact $user, $null) {
 	$uid = $user->getId();
 	
-	if ( $myStuff = Members::findById($user->getPersonalMemberId() ) ) {
+	if ( $myStuff = Members::instance()->findById($user->getPersonalMemberId() ) ) {
 		$myStuff->delete();
 	}
 	
@@ -429,7 +429,7 @@ function core_dimensions_after_user_deleted(Contact $user, $null) {
 
 function core_dimensions_after_object_delete_permanently($object_ids) {
 	$person_dim = Dimensions::findByCode('feng_persons');
-	$members = Members::findAll(array('conditions' => "`object_id` IN (".implode(",",$object_ids).") AND `dimension_id` = " . $person_dim->getId()));
+	$members = Members::instance()->findAll(array('conditions' => "`object_id` IN (".implode(",",$object_ids).") AND `dimension_id` = " . $person_dim->getId()));
 	foreach ($members as $mem) {
 		$obj = Objects::findObject($mem->getObjectId());
 		// ensure that the associated object no longer exists before deleting the member
@@ -443,7 +443,7 @@ function core_dimensions_after_object_controller_trash($ids) {
 	if (!is_array($ids) && $ids > 0) {
 		$person_dim = Dimensions::findByCode('feng_persons');
 		if($person_dim instanceof Dimension) {
-			$ot = ObjectTypes::findOne(array('conditions' => "`id` IN (SELECT `o`.`object_type_id` FROM `".TABLE_PREFIX."objects` `o` WHERE `o`.`id` = ".DB::escape(array_var($_GET, 'object_id')).")"));
+			$ot = ObjectTypes::instance()->findOne(array('conditions' => "`id` IN (SELECT `o`.`object_type_id` FROM `".TABLE_PREFIX."objects` `o` WHERE `o`.`id` = ".DB::escape(array_var($_GET, 'object_id')).")"));
 			if ($ot && $ot->getName() == 'contact') {
 				evt_add('select dimension member', array('dim_id' => $person_dim->getId(), 'node' => 'root'));
 				ajx_current("empty");
@@ -456,13 +456,13 @@ function core_dimensions_after_object_controller_trash($ids) {
 
 function core_dim_add_new_contact_to_person_dimension($object) {
 	/* @var $object Contact */
-	$person_ot = ObjectTypes::findOne(array("conditions" => "`name` = 'person'"));
-	$company_ot = ObjectTypes::findOne(array("conditions" => "`name` = 'company'"));
-	$person_dim = Dimensions::findOne(array("conditions" => "`code` = 'feng_persons'"));
+	$person_ot = ObjectTypes::instance()->findOne(array("conditions" => "`name` = 'person'"));
+	$company_ot = ObjectTypes::instance()->findOne(array("conditions" => "`name` = 'company'"));
+	$person_dim = Dimensions::instance()->findOne(array("conditions" => "`code` = 'feng_persons'"));
 	
 	if ($person_ot instanceof ObjectType && $person_dim instanceof Dimension) {
 		$oid = $object->isCompany() ? $company_ot->getId() : $person_ot->getId();
-		$tmp_mem = Members::findOne(array("conditions" => "`dimension_id` = ".$person_dim->getId()." AND `object_type_id` = $oid AND `object_id` = ".$object->getId()));
+		$tmp_mem = Members::instance()->findOne(array("conditions" => "`dimension_id` = ".$person_dim->getId()." AND `object_type_id` = $oid AND `object_id` = ".$object->getId()));
 		$reload_dimension = true;
 		if ($tmp_mem instanceof Member) {
 			$member = $tmp_mem;
@@ -480,7 +480,7 @@ function core_dim_add_new_contact_to_person_dimension($object) {
 			} else {
 				$member->setObjectTypeId($person_ot->getId());
 				if ($object->getCompanyId() > 0) {
-					$pmember = Members::findOne(array('conditions' => '`object_id` = '.$object->getCompanyId().' AND `object_type_id` = '.$company_ot->getId(). ' AND `dimension_id` = '.$person_dim->getId()));
+					$pmember = Members::instance()->findOne(array('conditions' => '`object_id` = '.$object->getCompanyId().' AND `object_type_id` = '.$company_ot->getId(). ' AND `dimension_id` = '.$person_dim->getId()));
 					if ($pmember instanceof Member) {
 						$parent_member_id = $pmember->getId();
 						$depth = $pmember->getDepth() + 1;
@@ -520,7 +520,7 @@ function core_dim_add_new_contact_to_person_dimension($object) {
 		
 		// add permission to creator
 		if ($object->getCreatedBy() instanceof Contact) {
-			$record_count = ContactMemberPermissions::count(array("`permission_group_id` = ? AND `member_id` = ?", $object->getCreatedBy()->getPermissionGroupId(), $member->getId()));
+			$record_count = ContactMemberPermissions::instance()->count(array("`permission_group_id` = ? AND `member_id` = ?", $object->getCreatedBy()->getPermissionGroupId(), $member->getId()));
 			if ($record_count == 0) {
 				DB::execute("INSERT INTO `".TABLE_PREFIX."contact_member_permissions` (`permission_group_id`, `member_id`, `object_type_id`, `can_write`, `can_delete`)
 				 SELECT ".$object->getCreatedBy()->getPermissionGroupId().", ".$member->getId().", `ot`.`id`, 1, 1
@@ -539,7 +539,7 @@ function core_dim_add_new_contact_to_person_dimension($object) {
 function core_dim_add_to_person_user_dimensions ($object, $user_ids) {
 	if (logged_user() instanceof Contact) {
 		
-		$members = Members::findAll(array("conditions" => "`object_id` IN (".implode(",", $user_ids).") AND `dimension_id` IN (SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code` IN ('feng_persons'))"));
+		$members = Members::instance()->findAll(array("conditions" => "`object_id` IN (".implode(",", $user_ids).") AND `dimension_id` IN (SELECT `id` FROM `".TABLE_PREFIX."dimensions` WHERE `code` IN ('feng_persons'))"));
 		if (is_array($members) && count($members) > 0) {
 			$object->addToMembers($members);
 		}
@@ -596,7 +596,7 @@ function core_dimensions_after_update_config_category($params, &$ret) {
 		$options = array_var($post, 'options', array());
 		$cur_code = array_var($options, "currency_code");
 		if ($cur_code) {
-			$def_currency = Currencies::findOne();
+			$def_currency = Currencies::instance()->findOne();
 			if (!$def_currency instanceof Currency) {
 				$def_currency = new Currency();
 				$def_currency->setIsDefault(true);

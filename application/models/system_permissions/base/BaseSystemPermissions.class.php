@@ -227,7 +227,7 @@
     *
     * @return SystemPermissions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'SystemPermissions')) {
         $instance = new SystemPermissions();

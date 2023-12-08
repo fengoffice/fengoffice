@@ -1,5 +1,5 @@
-	About Feng Office 3.10.6.9
-	================================
+	About Feng Office 3.10.7.5
+	=================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
 	It is licensed under the Affero GPL 3 license.
@@ -105,6 +105,157 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.7.4
+	-----------------------------------
+	improvement: forecast vs actual report (#2296)
+	improvement: Contract status report: rename column to 'Cost remaining budget (vs. contract amount)' (#2298)
+	bugfix: Correct filtering in widgets for the current year (#2297)
+	bugfix: times transferred twice to qbo (#2294)
+
+	Since 3.10.7.3
+	-----------------------------------
+	bugfix: remove default value of text columns to be compatible with Mysql (#2288)
+	bugfix: after time drag and drop the status classification is doubled (#2289)
+
+	Since 3.10.7.2
+	-----------------------------------
+	feature: add description to contract hours custom property (#2282)
+	bugfix: widget breadcrumbs user preference is not using the default value (#2285)
+	bugfix: add slashes to escape quotes (#2284)
+	bugfix: string numbers needs to be casted to float before operating with them in php8 (#2286)
+	bugfix: prevent error in notification manager when $log is not a valid object
+
+	Since 3.10.7.1
+	-----------------------------------
+	feature: create forecasted vs actual revenue report (#2280) 
+	bugfix: invoice print compatibility with line taxes and better alignment of line taxes in form (#2281)
+	bugfix: exclude disabled user's calendar from import/export from google calendar (#2279)
+	bugfix: add total_rows key to the response (#2278)
+	bugfix: fix crpm installer when member_custom_properties is not installed
+
+	Since 3.10.7.0
+	-----------------------------------
+	feature: develop 'contract status' and 'project cost summary' reports (#2259)
+	bugfix: need to call save function on task when time added/edited/deleted (#2276)
+	bugfix: if the user can't modify the associated member in the add/edit object form, then we must always inherit it from the main member, mo matter if it is already classified in a member of the dimension (example: update project type when changing project) (#2269)
+	bugfix: invoice template not appending expense category to line description (#2268)
+	bugfix: Change deleting a contact notification (#2267) 
+
+	Since 3.10.7.0-rc2
+	-----------------------------------
+	bugfix: fix advanced core update script (#2274)
+
+	Since 3.10.7.0-rc1
+	-----------------------------------
+	bugfix: don't use db commit in advanced billing helpers, they are already used in the main transaction, and nested transactions can cause unconsistent data (#2272)
+	bugfix: remove comment that went into html of invoice print
+	bugfix: use en_us as default localization in upgrade script when no language is defined in config.php
+
+	Since 3.10.7.0-beta11
+	-----------------------------------
+	bugfix: client company not classified in new project (#2266) 
+	bugfix: invoice generation excludes expense with no unit price (#2265) 
+	bugfix: fix js errors when getting properties of null or undefined at income.js (#2264)
+	bugfix: recalculate total worked time when subtask added/removed (#2262) 
+	improvement: utilization report improvements (#2263)
+	improvement: Weekly view: add task/subtask structure to the task list (#2261) 
+	improvement: allow to set permissions for non-custom reports (#2257) 
+
+	Since 3.10.7.0-beta10
+	-----------------------------------
+	feature: add contract type to the project member (#2220) 
+	bugfix: can't edit user permissions (#2258) 
+	bugfix: don't use project's parent member data instead of invoice's project data when printing (#2260)
+
+	Since 3.10.7.0-beta9
+	-----------------------------------
+	bugfix: project due and paid amount not recalcualted after saving payment receipt (#2256)
+	bugfix: make expense categories selctor not multiple (#2255)
+	bugfix: fix errors that prevented general search to execute (#2254)
+	bugfix: don't autoclassify objects in billing clients, most important when instantiating task or expense tempaltes (#2252)
+	bugfix: avoid adding one member to the time members (#2251)
+	bugfix: fix infinite reloading when opening a task from external link and task has budgeted expense list
+
+	Since 3.10.7.0-beta8
+	-----------------------------------
+	bugfix: more overview performance issues (#2249) 
+	bugfix: notes column not present in contacts list (#2246)
+	bugfix: error adding expense from mobile when status dim is not installed (#2245)
+	bugfix: php8 compatibility fixes (#2244) (#2247) 
+	bugfix: mobile expenses add: no client assigned if approval status is set
+
+	Since 3.10.7.0-beta7
+	-----------------------------------
+	bugfix: Change Contract hours per day it should say contract hours (#2243)
+	bugfix: clients tab always empty (#2242) 
+	bugfix: performance issues dashboard (#2241) 
+	bugfix: invoice list initial load empty list (#2237) 
+	bugfix: format number and amount custom properties in group totals (#2236) 
+	bugfix: remove static def from function that uses $this, this was causing error when saving permissions (#2235)
+	bugfix: minor php8 compatibility fix (#2239)
+	bugfix: fix mail update fn, column length too big
+
+	Since 3.10.7.0-beta6
+	-----------------------------------
+	bugfix: expenses from mobile are inheriting project's billing client (#2233)
+	bugfix: php8 compatibility fixes (#2232)
+
+	Since 3.10.7.0-beta5
+	-----------------------------------
+	bugfix: in project form get client billing address before main address (#2231) 
+	bugfix: when adding timeslot don't initialize clients selector with billing clients (#2231) 
+	bugfix: fix hardcoded order by "project_number" that was affecting project custom reports (#2230) 
+	bugfix: Remove condition that prevented creating hidden input to read selected member in weekly view (#2228)
+	bugfix: php8 compatibility fixes de 3.10.7.0-beta4 (#2226)
+	bugfix: invoices list order by not working for custom props and due date (#2229)
+	bugfix: import tool expenses importing issues (#2227)
+
+	Since 3.10.7.0-beta4
+	-----------------------------------
+	bugfix: Improve performance for importing time entries (#2224)
+	bugfix: add time: cast operands to use when parsing hours and minutes to prevent errors in php8
+	bugfix: fix the critical issue that puts totals in zero after editing an invoice
+
+	Since 3.10.7.0-beta3
+	-----------------------------------
+	bugfix: fix several critical issues
+
+	Since 3.10.7.0-beta2
+	-----------------------------------
+	feature: new split invoice mode, recalculate each line amounts using allocation percentage (#2203)
+	bugfix: duplicated subtotal line when printing invoice with taxes (#2214)
+	bugfix: subscribers are lost when editing invoice (#2213)
+	bugfix: when using qbo plugin and invoice split feature only the first invoice was being synchronized after creation (#2212)
+	bugfix: lump sum invoices duplicates the expense amount if the project has a subproject (#2211)
+	bugfix: ensure that we can use advanced billing functions before executing them in other plugins (#2208)
+	bugfix: fx function that makes dimension groups in tasks list (#2216)
+	bugfix: missing es_es and es_la translations (#2217) 
+
+	Since 3.10.7.0-beta1
+	-----------------------------------
+	feature: add generic dimension columns in object picker for every object type and use breadcrumbs (#2201)
+	feature: always ask if overwrite expense amount when product type change or budgeted expense change (#2199) 
+	feature: Invoice templates: Automatic generation of line items -> Expenses -> (#2187)
+	bugfix: improve how mandatory labor category field is handled in weekly view (#2194)
+	bugfix: Remove 'Calculated method' duplicate from the task view (#2198)
+	bugfix: plugin update fixes (#2210) 
+	bugfix: broken dashboard in latest beta (#2209) 
+	bugfix: fix some static/non-static function calls (#2207)
+	bugfix: Add the missing columns in the update script for advanced_billing plugin (#2206)
+	bugfix: non static getObjectTypeId() was called with self instead of $this in ContentDataObjects listing (#2204)
+	bugfix: ensure that we can use advanced billing functions before executing them in other plugins (#2208)
+	bugfix: footer sometimes is cut in half instead of rendering complete in next page (#2202)
+	bugfix: fix project name at invoice print (#2193)
+
+	Since 3.10.6.x
+	-----------------------------------
+	feature: invoice templates new option to group by labor category and task (#2175)
+	feature: Rename timeslots to time entries (#2091) 
+	feature: add 'billable' custom property to expense category (#2075) 
+	feature: task financial add tm fixed fee (#2130) 
+	feature: php8 compatibility changes (#2188)
+	bugfix: order project by displayname for mobile (#2186)
 
 	Since 3.10.6.8
 	-----------------------------------

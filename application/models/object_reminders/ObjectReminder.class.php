@@ -29,7 +29,7 @@
     * @return User
     */
     function getUser() {
-      if(is_null($this->user)) $this->user = Contacts::findById($this->getUserId());
+      if(is_null($this->user)) $this->user = Contacts::instance()->findById($this->getUserId());
       return $this->user;
     } // getUser
     

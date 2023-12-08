@@ -60,7 +60,7 @@ require_javascript('og/modules/addMessageForm.js');
 
 <?php 
 	foreach($companyUsers as $companyId => $users) { 
-		$theCompany = Contacts::findById($companyId);
+		$theCompany = Contacts::instance()->findById($companyId);
 	?>
 
 <div id="<?php echo $companyId?>" class="company-users" <?php echo is_array($users) == true? 'style ="margin-bottom: 10px;"' : '' ?>>

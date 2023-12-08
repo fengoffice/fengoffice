@@ -249,7 +249,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	var $created_by = null;
 	function getCreatedBy() {
 		if(is_null($this->created_by)) {
-			if($this->object->columnExists('created_by_id')) $this->created_by = Contacts::findById($this->getCreatedById());
+			if($this->object->columnExists('created_by_id')) $this->created_by = Contacts::instance()->findById($this->getCreatedById());
 		} //
 		return $this->created_by;
 	} // getCreatedBy
@@ -277,7 +277,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	var $updated_by = null;
 	function getUpdatedBy() {
 		if(is_null($this->updated_by)) {
-			if($this->object->columnExists('updated_by_id')) $this->updated_by = Contacts::findById($this->getUpdatedById());
+			if($this->object->columnExists('updated_by_id')) $this->updated_by = Contacts::instance()->findById($this->getUpdatedById());
 		} //
 		return $this->updated_by;
 	} // getUpdatedBy
@@ -342,7 +342,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	var $trashed_by = null;
 	function getTrashedBy() {
 		if(is_null($this->trashed_by)) {
-			if($this->object->columnExists('trashed_by_id')) $this->trashed_by = Contacts::findById($this->getTrashedById());
+			if($this->object->columnExists('trashed_by_id')) $this->trashed_by = Contacts::instance()->findById($this->getTrashedById());
 		} //
 		return $this->trashed_by;
 	} // getTrashedBy	
@@ -609,7 +609,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	function copy_custom_properties($object_from) {
 		if (!$object_from instanceof ContentDataObject) return;
 		
-		$cp_values = CustomPropertyValues::findAll(array('conditions' => 'object_id = '.$object_from->getId()));
+		$cp_values = CustomPropertyValues::instance()->findAll(array('conditions' => 'object_id = '.$object_from->getId()));
 		foreach ($cp_values as $cp_value) {
 			$cp = CustomProperties::getCustomProperty($cp_value->getCustomPropertyId());
 			$new_cp_value = new CustomPropertyValue();
@@ -721,7 +721,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @param array $context_members
 	 * @return boolean
 	 */
-	abstract function canAdd(Contact $user, $context, &$notAlloweMember='');
+	abstract static function canAdd(Contact $user, $context, &$notAlloweMember='');
 	
 	
 	/**
@@ -979,7 +979,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 */
 	function isSubscriber(Contact $user) {
 		if ($this->isNew()) return false;
-		$subscription = ObjectSubscriptions::findById(array(
+		$subscription = ObjectSubscriptions::instance()->findById(array(
         	'object_id' => $this->getId(),
         	'contact_id' => $user->getId()
 		)); // findById
@@ -1019,7 +1019,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * @return boolean
 	 */
 	function unsubscribeUser($user) {
-		$subscription = ObjectSubscriptions::findById(array(
+		$subscription = ObjectSubscriptions::instance()->findById(array(
         'object_id' => $this->getId(),
         'contact_id' => $user->getId()
 		)); // findById
@@ -1187,7 +1187,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			DB::execute("INSERT INTO ".TABLE_PREFIX."read_objects (rel_object_id, contact_id, is_read, created_on) VALUES (?, ?, 1, ?) ON DUPLICATE KEY UPDATE is_read=1", $this->getId(), $contact_id, $now);
 			$this->is_read[$contact_id] = true;
 		} else {
-			ReadObjects::delete('rel_object_id = ' . $this->getId() . ' AND contact_id = ' . $contact_id);
+			ReadObjects::instance()->delete('rel_object_id = ' . $this->getId() . ' AND contact_id = ' . $contact_id);
 		}
 		
 		return true;
@@ -1203,7 +1203,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if (logged_user() instanceof Contact) {
 			$conditions .= " AND `contact_id` <> " . logged_user()->getId();
 		}
-		ReadObjects::delete($conditions);
+		ReadObjects::instance()->delete($conditions);
 	}
 	
 	
@@ -1254,17 +1254,17 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	
 	function clearMembers() {
-		return ObjectMembers::delete(array("`object_id` = ?", $this->getId()));
+		return ObjectMembers::instance()->delete(array("`object_id` = ?", $this->getId()));
 	}
 
 	function clearSharingTable() {
-		return SharingTables::delete("`object_id` = ".$this->getId());
+		return SharingTables::instance()->delete("`object_id` = ".$this->getId());
 		
 	}
 	
 
 	function clearReads() {
-		return ReadObjects::delete(array("`rel_object_id` = ?", $this->getId()));
+		return ReadObjects::instance()->delete(array("`rel_object_id` = ?", $this->getId()));
 	}
 	
 	
@@ -1410,9 +1410,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	/**
 	 * Returns an array with the members that this object belongs to
-	 *
+	 * @param boolean $useCache If true, the members will be cached in the object
 	 */
-	function getMembers() {
+	function getMembers($useCache=true) {
+		//if useCache is false then set $this->members to null
+		if (!$useCache) {
+			$this->members = null;
+		}
 		if ( is_null($this->members) ) {
 			$this->members =  ObjectMembers::getMembersByObject($this->getId());
 		}
@@ -1464,7 +1468,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 	function getMemberIdsOfNonPermissionDimensions() {
 		$no_permission_condition = " AND m.dimension_id IN (SELECT d.id FROM ".TABLE_PREFIX."dimensions d WHERE d.defines_permissions=0) ";
-		$object_mem_rows = ObjectMembers::instance()->getMembersIdsByObjectAndExtraCond($this->getId(), $no_permission_condition, "", false);
+		$object_mem_rows = ObjectMembers::getMembersIdsByObjectAndExtraCond($this->getId(), $no_permission_condition, "", false);
 		$non_permission_member_ids = array_column($object_mem_rows, 'member_id');
 
 		return $non_permission_member_ids;
@@ -1513,10 +1517,10 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return DimensionObjectTypeContents::getDimensionObjectTypesforObject($this->getObjectTypeId());
 	}
 	
-	function addToMembers($members_array, $remove_old_comment_members = false, $is_multiple = false){
+	function addToMembers($members_array, $remove_old_comment_members = false, $is_multiple = false, $is_drag_and_drop = false){
 		ObjectMembers::addObjectToMembers($this->getId(),$members_array);
 		/*if (Plugins::instance()->isActivePlugin('mail') && $this instanceof MailContent) {
-			$inline_images = ProjectFiles::findAll(array("conditions" => "mail_id = ".$this->getId()));
+			$inline_images = ProjectFiles::instance()->findAll(array("conditions" => "mail_id = ".$this->getId()));
 			foreach ($inline_images as $inline_img) {
 				$inline_img->addToMembers($members_array);
 				$inline_img->addToSharingTable();
@@ -1658,13 +1662,13 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if ($user)
 			$userCondition = ' AND `contact_id` = '. $user->getId();
 
-		return Timeslots::findOne(array(
+		return Timeslots::instance()->findOne(array(
           'conditions' => array('`rel_object_id` = ? AND o.trashed_by_id=0 AND end_time = \'' . EMPTY_DATETIME . '\''  . $userCondition, $this->getObjectId()))
 		) instanceof Timeslot;
 	}
 
 	function closeTimeslots(Contact $user, $description = ''){
-		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"')); 
+		$timeslots = Timeslots::instance()->findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"')); 
 
 		foreach($timeslots as $timeslot){
 			// to use when saving the application log
@@ -1681,7 +1685,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 
 	function deleteTimeslots(Contact $user, $description = ''){
-		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"')); 
+		$timeslots = Timeslots::instance()->findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '"')); 
 
 		foreach($timeslots as $timeslot){
 			$timeslot->delete();
@@ -1691,7 +1695,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 
 	function pauseTimeslots(Contact $user){
-		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '" AND paused_on = "' . EMPTY_DATETIME . '"'));
+		$timeslots = Timeslots::instance()->findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '" AND paused_on = "' . EMPTY_DATETIME . '"'));
 
 		if ($timeslots) {
 			foreach($timeslots as $timeslot){
@@ -1707,7 +1711,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 
 	function resumeTimeslots(Contact $user){
-		$timeslots = Timeslots::findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '" AND paused_on != "' . EMPTY_DATETIME . '"'));
+		$timeslots = Timeslots::instance()->findAll(array('conditions' => 'contact_id = ' . $user->getId() . ' AND rel_object_id = ' . $this->getObjectId() . ' AND end_time = "' . EMPTY_DATETIME . '" AND paused_on != "' . EMPTY_DATETIME . '"'));
 
 		if ($timeslots)
 		foreach($timeslots as $timeslot){
@@ -2025,6 +2029,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		$use_restrictions = array_var($params, 'use_restrictions', false);
 		$allowed_dimension_ids = array_var($params, 'allowed_dimensions', array());
 		$exclude_member_ids = array_var($params, 'exclude_member_ids', array());
+		$max_members_per_dimension = array_var($params, 'max_members_per_dimension', 999999); // hack to avoid listing performance issues
 		if(count($selected_members_ids) > 0){
 			$selected_members_cond = ' AND id IN ('.implode(',',$selected_members_ids).')';
 			
@@ -2053,6 +2058,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					Hook::fire("breadcrumbs_extra_conditions", array('dim'=>$dim), $extra_cond);
 					
 					$dim_members = ObjectMembers::getMembersIdsByObjectAndExtraCond($this->getId(), $extra_cond, $to_display, false);
+					$dim_member_count = 0;
 					if (is_array($dim_members)) {
 						foreach ($dim_members as $mem) {
 							if($use_restrictions && in_array($mem['member_id'], $exclude_member_ids)) continue;
@@ -2066,12 +2072,17 @@ abstract class ContentDataObject extends ApplicationDataObject {
 							} else {
 								if (!isset($member_ids[$dimension['dimension_id']][$ot_id])) $member_ids[$dimension['dimension_id']][$ot_id] = array();
 								$member_ids[$dimension['dimension_id']][$ot_id][] = $mem['member_id'];
+
+								$dim_member_count++;
+								if ($dim_member_count == $max_members_per_dimension) {
+									break;
+								}
 							}
 						}
 						
 						if (!user_config_option('show_associated_dims_in_breadcrumbs')) {
 							// check if this dimension is associated to any main dimensions
-							$main_dims_of_this_dim = array_var($_SESSION['main_dims_of_this_dim'], $dimension['dimension_id']);
+							$main_dims_of_this_dim = isset($_SESSION['main_dims_of_this_dim']) ? array_var($_SESSION['main_dims_of_this_dim'], $dimension['dimension_id']) : null;
 							if (is_null($main_dims_of_this_dim)) { 
 								$main_dims_of_this_dim = DimensionMemberAssociations::instance()->getAssociatedDimensions($dimension['dimension_id']);
 								if (!isset($_SESSION['main_dims_of_this_dim'])) $_SESSION['main_dims_of_this_dim'] = array();
@@ -2131,7 +2142,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	
 	function getAddEditFormTitle() {
-		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($this->manager()->getObjectTypeId());
 		if ($ot instanceof ObjectType) {
 			$otname = $ot->getName();
 			$title = $this->isNew() ? lang("new $otname") : lang("edit $otname");
@@ -2146,7 +2157,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 	
 	function getSubmitButtonFormTitle() {
-		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($this->manager()->getObjectTypeId());
 		if ($ot instanceof ObjectType) {
 			$otname = $ot->getName();
 			$title = $this->isNew() ? lang("add $otname") : lang("save changes");
@@ -2160,7 +2171,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 	
 	function getObjectTypeNameLang() {
-		$ot = ObjectTypes::findById($this->manager()->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($this->manager()->getObjectTypeId());
 		if ($ot instanceof ObjectType) {
 			$otname = lang($ot->getName());
 		} else {
@@ -2196,8 +2207,14 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			
 			$associations = array_merge($associations, $transitive_associations);
 			
+			$skipped_association_codes = array();
+			Hook::fire("skipped_associations_in_add_to_realted_members", array('members'=>$members), $skipped_association_codes);
 			
 			foreach ($associations as $a) {/* @var $a DimensionMemberAssociation */
+				// skip the associations where we don't want to autoclassify the object
+				if (in_array($a->getCode(), $skipped_association_codes)) {
+					continue;
+				}
 				$aconfig = $a->getConfig();
 				$classify_it = false;
 				$include_parents_in_query = false;
@@ -2207,17 +2224,36 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$is_already_classified_in_assoc_dim = false;
 				// check in the members sent by the form
 				foreach ($members as $m) {
-					if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
-						$is_already_classified_in_assoc_dim = true;
-						break;
+
+					// if the user can't modify the associated member in the add/edit object form, then we must always inherit it from the main member
+					// mo matter if it is already classified in a member of the dimension
+					$hidden_dim_in_form = false;
+					if (Plugins::instance()->isActivePlugin('advanced_core')) {
+						$hidden_dim_in_form = DimensionContentObjectOptions::getOptionValue($m->getDimensionId(), $this->getObjectTypeId(), 'hide_member_selector_in_forms');
+					}
+					if (!$hidden_dim_in_form) {
+						if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
+							$is_already_classified_in_assoc_dim = true;
+							break;
+						}
 					}
 				}
+
 				if (!$is_already_classified_in_assoc_dim) {
 					// check in the members of the object in the database
 					$object_members = $this->getMembers();
 					foreach ($object_members as $m) {
 						if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
-							if ($remove_previous_associated_members) {
+
+							// if the user can't modify the associated member in the add/edit object form, then we must always inherit it from the main member
+							// mo matter if it is already classified in a member of the dimension
+							$hidden_dim_in_form = false;
+							if (Plugins::instance()->isActivePlugin('advanced_core')) {
+								$hidden_dim_in_form = DimensionContentObjectOptions::getOptionValue($m->getDimensionId(), $this->getObjectTypeId(), 'hide_member_selector_in_forms');
+							}
+							// --
+
+							if ($remove_previous_associated_members || $hidden_dim_in_form) {
 								ObjectMembers::removeObjectFromMembers($this, logged_user(), null, array($m->getId()));
 							} else {
 								$is_already_classified_in_assoc_dim = true;
@@ -2285,7 +2321,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		$related_member_ids = array_unique(array_filter($related_member_ids));
 		if (count($related_member_ids) > 0) {
-			$related_members = Members::findAll(array("conditions" => "id IN (".implode(',', $related_member_ids).")"));
+			$related_members = Members::instance()->findAll(array("conditions" => "id IN (".implode(',', $related_member_ids).")"));
 			if (count($related_members) > 0) {
 				ObjectMembers::addObjectToMembers($this->getId(), $related_members);
 			}

@@ -210,7 +210,7 @@
     *
     * @return ContactWebpages 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactWebpages')) {
         $instance = new ContactWebpages();

@@ -12,9 +12,9 @@
     * @param boolean $include_system_categories
     * @return array
     */
-    function getAll($include_system_categories = false) {
+    static function getAll($include_system_categories = false) {
       $conditions = $include_system_categories ? null : array('`is_system` = ?', false);
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => $conditions,
         'order' => '`category_order`'
       )); // array

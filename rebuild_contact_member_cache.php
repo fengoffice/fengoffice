@@ -49,7 +49,7 @@ if (Plugins::instance()->isActivePlugin('advanced_services')) {
 
 $users = Contacts::getAllUsers($resource_cond);
 
-$dimensions = Dimensions::findAll();
+$dimensions = Dimensions::instance()->findAll();
 $dimensions_ids = array();
 foreach ($dimensions as $dimension) {
 	if ($dimension->getDefinesPermissions() && $dimension->getCode() != 'feng_persons') {

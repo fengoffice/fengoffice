@@ -78,7 +78,7 @@ class FilesServices extends WebServicesBase {
 	function downloadFileBase64($username, $password, $fileid, $do_checkout) {
 		$result = array();
 		if ($this->loginUser($username, $password)) {
-			$file = ProjectFiles::findById($fileid);
+			$file = ProjectFiles::instance()->findById($fileid);
 			$bytes = $file->getFileContent();
 			$extension = trim(get_file_extension($file->getFilename()));
 			$m_type = Mime_Types::get_type($extension);
@@ -95,7 +95,7 @@ class FilesServices extends WebServicesBase {
 	function downloadFile($username, $password, $fileid) {
 		$result = array();
 		if ($this->loginUser($username, $password)) {
-			$file = ProjectFiles::findById($fileid);
+			$file = ProjectFiles::instance()->findById($fileid);
 			$bytes = $file->getFileContent();
 			$extension = trim(get_file_extension($file->getFilename()));
 			$m_type = Mime_Types::get_type($extension);
@@ -121,7 +121,7 @@ class FilesServices extends WebServicesBase {
 				
 				if (is_array($files) && count($files) > 0) {
 					if ($generate_rev) {
-						$file = ProjectFiles::findById($files[0]->getId());
+						$file = ProjectFiles::instance()->findById($files[0]->getId());
 						if ($file->isCheckedOut()) {
 							if (!$file->canCheckin(logged_user())){
 								$result['status'] = false;
@@ -224,7 +224,7 @@ class FilesServices extends WebServicesBase {
 		$result = array('status' => true, 'errorid' => 0, 'message' => '');
 		if ($this->loginUser($username, $password)) {
 			$result = array('status' => true, 'message' => '');
-			$file = ProjectFiles::findById($fileid);
+			$file = ProjectFiles::instance()->findById($fileid);
 			if(!($file instanceof ProjectFile)) {
 				$result['message'] = lang('file dnx');
 				$result['errorid'] = 1001;
@@ -263,7 +263,7 @@ class FilesServices extends WebServicesBase {
 	{
 		$result = array('status' => true, 'errorid' => 0, 'message' => '');
 		if ($this->loginUser($username, $password)) {
-			$file = ProjectFiles::findById($fileid);
+			$file = ProjectFiles::instance()->findById($fileid);
 			if(!($file instanceof ProjectFile)) {
 				$result['message'] = lang('file dnx');
 				$result['errorid'] = 1001;

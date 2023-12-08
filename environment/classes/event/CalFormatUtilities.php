@@ -73,7 +73,7 @@ class CalFormatUtilities {
 		return $result;
 	}
 	
-	function generateICalInfo($events, $calendar_name, $user = null) {
+	static function generateICalInfo($events, $calendar_name, $user = null) {
 		if ($user == null) $user = logged_user();
 		$ical_info = '';
 		$ical_info .= "BEGIN:VCALENDAR\n";

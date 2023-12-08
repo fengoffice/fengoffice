@@ -7,6 +7,7 @@
 	}
 
 	$task_status=$task->getColumnValue('invoicing_status');
+	$task_input_disabled="";
     if($task_status=='invoiced')
     {
     	$task_input_disabled="disabled";
@@ -262,7 +263,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 					</div>
 					<?php if(config_option('use_task_percent_completed')){ ?>
 						<div class="dataBlock">
-							<?php echo label_tag('Manual percent completed'); ?>
+							<?php echo label_tag(lang('manual percent completed')); ?>
 							<?php echo checkbox_field('task[is_manual_percent_completed]', array_var($task_data, 'is_manual_percent_completed', false), array('id' => $genid . '_is_manual_percent_completed', 'onchange' => 'og.updateIsManualPercentCompleted();', 'tabindex' => '100')); ?>
 						</div>
 						<?php 
@@ -300,7 +301,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<?php
 					$listeners = array('on_selection_change' => 'og.reload_task_form_selectors()');
 					if ($task->isNew()) {
-						render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', null), array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
+						render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', null), array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false); 
 					} else {
 						render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', $task->getMemberIds()), array('listeners' => $listeners, 'object' => $object), null, null, false);
 					}
@@ -338,7 +339,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 						<a style="margin-left: 10px" tabindex="999" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
 						
 					<?php }else{
-						$parentTask = ProjectTasks::findById(array_var($task_data, 'parent_id'));
+						$parentTask = ProjectTasks::instance()->findById(array_var($task_data, 'parent_id'));
 						if ($parentTask instanceof ProjectTask){?>
 						<span style="display: none;" id="no-task-selected<?php echo $genid?>"><?php echo lang('none')?></span>
 						<a  tabindex="999" style="display: none;margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a> 
@@ -357,7 +358,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				<?php echo label_tag(lang('previous tasks')) ?><br />
 				<?php 	
 					if (!$task->isNew())
-						$previous_tasks = ProjectTaskDependencies::findAll(array('conditions' => 'task_id = '.$task->getId()));
+						$previous_tasks = ProjectTaskDependencies::instance()->findAll(array('conditions' => 'task_id = '.$task->getId()));
 					else $previous_tasks = array();
 				?>
 					<div>
@@ -374,7 +375,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 						<input type="hidden" name="task[clean_dep]" value="1" />
 						<?php 
 							foreach ($previous_tasks as $task_dep) {
-								$task_prev = ProjectTasks::findById($task_dep->getPreviousTaskId());
+								$task_prev = ProjectTasks::instance()->findById($task_dep->getPreviousTaskId());
 						?>
 							<div class="og-add-template-object previous-task">
 								<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task_prev->getId()?>" />
@@ -763,7 +764,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	if (!is_new_task) {
 		var current_dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
 	} else {
-		var current_dimension_members_json = og.contextManager.plainContext();
+		var current_dimension_members_json = og.contextManager.plainContext(); 
 	}
 
 	var can_manage_repetitive_properties = <?php echo $can_manage_repetitive_properties_of_tasks == 1 ? 'true' : 'false'; ?>;
@@ -771,6 +772,10 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 	var use_is_billable_value_in_tasks = <?php echo config_option('use_is_billable_value_in_tasks') ? '1' : '0'; ?>;
 	var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
 	var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
+	var show_financials_tab = false;
+	if(advanced_billing_active) {
+		show_financials_tab = <?php echo config_option('show_financial_tab_in_task_form') ? '1' : '0'; ?>;
+	}
 
 	
 	og.drawAssignedToSelectBox = function(companies, only_me, groups) {
@@ -1018,6 +1023,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		if(hour_type_active && advanced_billing_active){
 			og.setIsBillable(dimension_members_json);
 		} 
+		if(show_financials_tab) {
+			og.udpate_estimated_price_and_fixed_fee_selector_using_project(current_dimension_members_json, dimension_members_json);
+		}
 		// Update current selected member
 		current_dimension_members_json = dimension_members_json;
 	}
@@ -1222,7 +1230,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		var listenerId = og.eventManager.addListener('after usersStore init',function(){		
 			<?php
 			if (!$task->isNew()) {
-				$subtasks = ProjectTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
+				$subtasks = ProjectTasks::instance()->findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
 				foreach ($subtasks as $st) {
 					$st_name = clean(escape_character($st->getObjectName()));
 					$st_name = preg_replace('/\s+/', ' ', trim($st_name)); // remove enters
