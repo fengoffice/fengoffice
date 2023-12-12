@@ -1,4 +1,4 @@
-<!-- [![Feng Office Banner](https://testphp.fengoffice.com/test-readme/header_readmed.png)](https://www.fengoffice.io) -->
+w<!-- [![Feng Office Banner](https://testphp.fengoffice.com/test-readme/header_readmed.png)](https://www.fengoffice.io) -->
 
 <a>
     <img src="https://images.fengoffice.com/github/header_readme.png" alt="fengoffice Docs & Notes & Wikis" />
@@ -47,6 +47,14 @@
 <h2 align="left" style="color: #2A9D8F;">
     About Feng Office 3.10.7.3
 </h2>
+
+<p style="color: #264653; padding:0 40px;">
+Feng Office is business management platform. It provides powerful and flexible tracking, management and automation tools for running businesses, projects and services large and small. All its modules are seamlessly connected and integrated through an easy to use interface that makes organizing and browsing all your information a very intuitive task.
+</p>
+
+<p style="color: #264653; padding:0 40px;">
+We are constantly adding new and more powerful automation, improving its ease of use and performance, and integrating with external tools to support your business operations, delivering lots of value to our clients and our community.
+</p>
 
 <p style="color: #264653; padding:0 40px;">
 Feng Office is a Collaboration Platform and Project Management System.
