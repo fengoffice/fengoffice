@@ -63,11 +63,6 @@ Feng Office requires a running Web Server, PHP (5.0 or greater) and MySQL (InnoD
  support recommended). The recommended Web Server is Apache.
 </p>
 
-<p style="color: #264653; padding:0 20px;">
- Feng Office is not PHP4 compatible and it will not run on PHP versions prior
- to PHP 5.
-</p>
-
 <!-- ## Languages and tools -->
 <h2 align="left" style="color: #2A9D8F;">
     Languages ​​and tools
