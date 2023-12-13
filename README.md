@@ -29,11 +29,15 @@
 <br/>
 
 <p style="color: #264653; padding:0 40px;">
-Feng Office is business management platform. It provides powerful and flexible tracking, management and automation tools for running businesses, projects and services large and small. All its modules are seamlessly connected and integrated through an easy to use interface that makes organizing and browsing all your information a very intuitive task.
+Feng Office is a business management platform that provides powerful and flexible tracking, management, and automation tools for running businesses, projects, and services, both large and small.
 </p>
 
 <p style="color: #264653; padding:0 40px;">
-We are constantly adding new and more powerful automation, improving its ease of use and performance, and integrating with external tools to support your business operations, delivering lots of value to our clients and our community.
+All its modules are seamlessly connected and integrated through an easy-to-use interface, making organizing and browsing all your information a very intuitive task.
+</p>
+
+<p style="color: #264653; padding:0 40px;">
+We are constantly adding new and more powerful automation features, improving its ease of use and performance, and integrating with external tools to support your business operations, delivering lots of value to our clients and our community.
 </p>
 
 <p style="color: #264653; padding:0 40px;">
