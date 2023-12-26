@@ -27,7 +27,7 @@ foreach ($events as $event) {
 			 !$type ) {
 			 	
 			/* @var $event CronEvent */
-			$event = CronEvents::findById($event->getId());
+			$event = CronEvents::instance()->findById($event->getId());
 			if (!$event instanceof CronEvent || $event->getDate() instanceof DateTimeValue && $event->getDate()->getTimestamp() > DateTimeValueLib::now()->getTimestamp()) {
 				continue;
 			}
@@ -46,7 +46,8 @@ foreach ($events as $event) {
 					echo "Could not execute $function - function does not exists\n";
 				}
 			} catch (Error $e) {
-				echo $e->getMessage();
+				echo $e->getMessage() . "\n";
+				echo $e->getTraceAsString();
 			}
 			
 			if ($event->getRecursive()) {
@@ -57,7 +58,8 @@ foreach ($events as $event) {
 					$event->save();
 					DB::commit();
 				} catch (Exception $e) {
-					echo $e->getMessage();
+					echo $e->getMessage() . "\n";
+					echo $e->getTraceAsString();
 					DB::rollback();
 				}
 			}

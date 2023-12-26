@@ -28,7 +28,7 @@ class MailUtilities {
 		Env::useHelper('permissions');
 		Env::useHelper('format');
 		if (is_null($accounts)) {
-			$accounts = MailAccounts::findAll();
+			$accounts = MailAccounts::instance()->findAll();
 		}
 		if (config_option('user_email_fetch_count') && $maxPerAccount == 0) {
 			$maxPerAccount = config_option('user_email_fetch_count');
@@ -326,7 +326,7 @@ class MailUtilities {
 						$id_condition .= " AND `sent_date`='".$sent_date_str."'";
 					}
 				}
-				$same = MailContents::findOne(array('conditions' => "`account_id`=".$account->getId() . $id_condition, 'include_trashed' => true));
+				$same = MailContents::instance()->findOne(array('conditions' => "`account_id`=".$account->getId() . $id_condition, 'include_trashed' => true));
 				if ($same instanceof MailContent) return;
 			}
 
@@ -602,13 +602,13 @@ class MailUtilities {
 			//check if exists a conversation for this mail
 			$conv_mail = "";
 			if ($in_reply_to_id != "" && $message_id != "") {
-				$conv_mail = MailContents::findOne(array("conditions" => "`account_id`=".$account->getId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
+				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
 
 				//check if this mail is in two diferent conversations and fixit
 				if($conv_mail){
-					$other_conv_mail = MailContents::findOne(array("conditions" => "`account_id`=".$account->getId()." AND `conversation_id` != ".$conv_mail->getConversationId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
+					$other_conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND `conversation_id` != ".$conv_mail->getConversationId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
 					if($other_conv_mail){
-						$other_conv = MailContents::findAll(array("conditions" => "`account_id`=".$account->getId()." AND `conversation_id` = ".$other_conv_mail->getConversationId()));
+						$other_conv = MailContents::instance()->findAll(array("conditions" => "`account_id`=".$account->getId()." AND `conversation_id` = ".$other_conv_mail->getConversationId()));
 						if($other_conv){
 							foreach ($other_conv as $mail_con) {
 								$mail_con->setConversationId($conv_mail->getConversationId());
@@ -619,9 +619,9 @@ class MailUtilities {
 				}
 
 			} elseif ($in_reply_to_id != ""){
-				$conv_mail = MailContents::findOne(array("conditions" => "`account_id`=".$account->getId()." AND `message_id` = ".DB::escape($in_reply_to_id)));
+				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND `message_id` = ".DB::escape($in_reply_to_id)));
 			} elseif ($message_id != ""){
-				$conv_mail = MailContents::findOne(array("conditions" => "`account_id`=".$account->getId()." AND `in_reply_to_id` = ".DB::escape($message_id)));
+				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND `in_reply_to_id` = ".DB::escape($message_id)));
 			}
 
 			if ($conv_mail instanceof MailContent) {
@@ -664,7 +664,7 @@ class MailUtilities {
 			}
 
 			// CLASSIFY MAILS IF THE ACCOUNT HAS A DIMENSION MEMBER AND NOT CLASSIFIED WITH CONVERSATION
-			$account_owner = Contacts::findById($account->getContactId());
+			$account_owner = Contacts::instance()->findById($account->getContactId());
 			if ($account->getMemberId() != '' && !$classified_with_conversation) {
 				$acc_mem_ids = explode(',', $account->getMemberId());
 				foreach ($acc_mem_ids as $acc_mem_id) {
@@ -684,7 +684,7 @@ class MailUtilities {
 				$mail_controller->do_classify_mail($mail, $member_ids, null, false, true);
 			}
 
-			$user = Contacts::findById($account->getContactId());
+			$user = Contacts::instance()->findById($account->getContactId());
 			if ($user instanceof Contact) {
 				$mail->subscribeUser($user);
 			}
@@ -989,7 +989,7 @@ class MailUtilities {
 		$contact = null;
 		$ce = ContactEmails::instance()->findOne(array('conditions' => array("email_address=?", $email)));
 		if ($ce instanceof ContactEmail) {
-			$contact = Contacts::findById($ce->getContactId());
+			$contact = Contacts::instance()->findById($ce->getContactId());
 		}
 		if ($contact instanceof Contact && $contact->canView(logged_user())){
 			$name = $clean ? clean($contact->getObjectName()) : $contact->getObjectName();
@@ -1258,7 +1258,7 @@ class MailUtilities {
 		debug_log("  start getNewImapMails ".$account->getId(), "checkmail_log.php");
 
 		// verify if there are any folders to check, if not add the INBOX
-		$folders_to_check = MailAccountImapFolders::findAll(array("conditions" => "account_id=".$account->getId()." AND check_folder=1"));
+		$folders_to_check = MailAccountImapFolders::instance()->findAll(array("conditions" => "account_id=".$account->getId()." AND check_folder=1"));
 		if (!$folders_to_check || count($folders_to_check) == 0) {
 			DB::execute("
 				INSERT INTO ".TABLE_PREFIX."mail_account_imap_folder (account_id, folder_name, check_folder, last_uid_in_folder) 
@@ -1564,7 +1564,7 @@ class MailUtilities {
 
 		$mail_controller = new MailController();
 
-		$accounts = MailAccounts::findAll();
+		$accounts = MailAccounts::instance()->findAll();
 		foreach ($accounts as $account) {
 			try {
 				if($account instanceof MailAccount){
@@ -1583,7 +1583,7 @@ class MailUtilities {
 	}
 
 	function deleteMailsFromServerAllAccounts() {
-		$accounts = MailAccounts::findAll();
+		$accounts = MailAccounts::instance()->findAll();
 		$count = 0;
 		foreach ($accounts as $account) {
 			try {
@@ -2025,11 +2025,11 @@ class MailUtilities {
 		$permissions_sql = " AND EXISTS (SELECT sh.group_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND sh.group_id IN (".implode(',',$user_pg_ids)."))";
 
 		$conditions = array("conditions" => array("`state` >= 200 AND (`state`%2 = 0) AND `archived_on`=0 AND `trashed_on`=0 $accounts_sql $permissions_sql AND `created_by_id` =".$usu->getId()));
-		$outbox_mails = MailContents::findAll($conditions);
+		$outbox_mails = MailContents::instance()->findAll($conditions);
 		if ($outbox_mails!= null){
 			if (count($outbox_mails)>=1){
 				$arguments = array("conditions" => array("`context` LIKE 'mails_in_outbox%' AND `contact_id` = ".$usu->getId().";"));
-				$exist_reminder = ObjectReminders::find($arguments);
+				$exist_reminder = ObjectReminders::instance()->find($arguments);
 				if (!(count($exist_reminder)>0)){
 					$reminder = new ObjectReminder();
 

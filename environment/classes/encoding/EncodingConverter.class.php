@@ -83,7 +83,7 @@ class EncodingConverter
 		return $this->_last_err_func;
 	}
 	
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'EncodingConverter')) {
 			$instance = new EncodingConverter();

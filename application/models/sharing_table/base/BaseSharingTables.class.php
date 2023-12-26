@@ -205,7 +205,7 @@
     *
     * @return SharingTables 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'SharingTables')) {
         $instance = new SharingTables();

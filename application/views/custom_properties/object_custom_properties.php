@@ -2,7 +2,7 @@
 require_javascript("og/CustomProperties.js");
 
 $object_type_id = $_custom_properties_object instanceof TemplateTask ? ProjectTasks::instance()->getObjectTypeId() : $_custom_properties_object->getObjectTypeId();
-$ot = ObjectTypes::findById($object_type_id);
+$ot = ObjectTypes::instance()->findById($object_type_id);
 $extra_conditions = "";
 Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $object_type_id, 'object' => $_custom_properties_object), $extra_conditions, true);
 
@@ -329,7 +329,7 @@ if(count($cps) > 0){
 					$cp_value = CustomPropertyValues::getCustomPropertyValue($_custom_properties_object->getId(), $customProp->getId());
 					if ($cp_value instanceof CustomPropertyValue && is_numeric($cp_value->getValue())) {
 						$value = $cp_value->getValue();
-						$contact = Contacts::findById($value);
+						$contact = Contacts::instance()->findById($value);
 					}
 					
 					$emtpy_text = lang('select contact');

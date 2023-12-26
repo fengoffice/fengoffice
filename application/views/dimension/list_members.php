@@ -118,7 +118,7 @@
 		$is_alt = false;
 		foreach ($members as $member) {/* @var $member Member */
 			if(!is_null($log_data[$member->getId()]['created_by_id'])){
-				$created_by = Contacts::findById($log_data[$member->getId()]['created_by_id']);
+				$created_by = Contacts::instance()->findById($log_data[$member->getId()]['created_by_id']);
 				$created_by_name = $created_by instanceof Contact ? clean($created_by->getObjectName()) : lang('n/a');
 				$created_on = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $log_data[$member->getId()]['created_on']);
 			}

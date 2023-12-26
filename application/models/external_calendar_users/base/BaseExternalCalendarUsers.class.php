@@ -228,7 +228,7 @@ abstract class BaseExternalCalendarUsers extends DataManager {
 	 *
 	 * @return ExternalCalendarUsers
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ExternalCalendarUsers')) {
 			$instance = new ExternalCalendarUsers();

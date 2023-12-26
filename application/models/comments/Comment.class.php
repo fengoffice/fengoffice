@@ -135,7 +135,7 @@ class Comment extends BaseComment {
 	} // canAdd
 
 	
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		$object = $this->getRelObject();
 		if (!$object instanceof ContentDataObject) {
 			return false;

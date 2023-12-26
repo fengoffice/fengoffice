@@ -49,7 +49,7 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 	 */
 	function getFile() {
 		if(is_null($this->file)) {
-			$this->file = ProjectFiles::findById($this->getFileId());
+			$this->file = ProjectFiles::instance()->findById($this->getFileId());
 		} // if
 		return $this->file;
 	} // getFile
@@ -63,7 +63,7 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 	 */
 	function getFileType() {
 		if(is_null($this->file_type)) {
-			$this->file_type = FileTypes::findById($this->getFileTypeId());
+			$this->file_type = FileTypes::instance()->findById($this->getFileTypeId());
 		} // if
 		return $this->file_type;
 	} // getFileType
@@ -308,7 +308,7 @@ class ProjectFileRevision extends BaseProjectFileRevision {
 	// ---------------------------------------------------
 
 	
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return can_add($user, $context, ProjectFileRevisions::instance()->getObjectTypeId(), $notAllowedMember);
 	}
 	

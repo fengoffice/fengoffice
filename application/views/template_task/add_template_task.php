@@ -262,9 +262,9 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
     			
     		<?php }else{
     			if(array_var($_GET, 'template_task', false)){
-    				$parentTask = TemplateTasks::findById($task_data['parent_id']);
+    				$parentTask = TemplateTasks::instance()->findById($task_data['parent_id']);
     			}else{
-    				$parentTask = ProjectTasks::findById($task_data['parent_id']);
+    				$parentTask = ProjectTasks::instance()->findById($task_data['parent_id']);
     			} 				
  				
  				if ($parentTask instanceof ProjectTask || $parentTask instanceof TemplateTask){?>
@@ -285,7 +285,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 		<?php echo label_tag(lang('previous tasks')) ?><br />
 		<?php 	
 			if (!$task->isNew())
-				$previous_tasks = ProjectTaskDependencies::findAll(array('conditions' => 'task_id = '.$task->getId()));
+				$previous_tasks = ProjectTaskDependencies::instance()->findAll(array('conditions' => 'task_id = '.$task->getId()));
 			else $previous_tasks = array();
 		?>
 			<div>
@@ -303,7 +303,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 				
 				<?php 
 					foreach ($previous_tasks as $task_dep) {
-						$task_prev = TemplateTasks::findById($task_dep->getPreviousTaskId());
+						$task_prev = TemplateTasks::instance()->findById($task_dep->getPreviousTaskId());
 				?>
 					<div class="og-add-template-object previous-task">
 						<input type="hidden" name="task[previous]['<?php echo $k?>']" value="<?php echo $task_prev->getId()?>" />
@@ -980,7 +980,7 @@ og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Pl
 
 		<?php
 			if (!$task->isNew()) {
-				$subtasks = TemplateTasks::findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
+				$subtasks = TemplateTasks::instance()->findAll(array('conditions' => "parent_id=".$task->getId()." AND trashed_by_id=0"));
 				foreach ($subtasks as $st) {
 					$st_name = clean(escape_character($st->getObjectName()));
 					?>

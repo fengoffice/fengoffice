@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_accounts` (
 
 CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_account_imap_folder` (
   `account_id` int(10) unsigned NOT NULL default '0',
-  `folder_name` varchar(500) <?php echo $default_collation ?> NOT NULL default '',
+  `folder_name` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
   `check_folder` tinyint(1) NOT NULL default '0',
   `last_uid_in_folder` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
   `special_use` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_spam_filters` (
 CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_content_imap_folders` (
   `account_id` int(10) unsigned NOT NULL,
   `message_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `folder` varchar(500) COLLATE utf8_unicode_ci NOT NULL,
+  `folder` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `uid` varchar(255) <?php echo $default_collation ?> NOT NULL default '',
   `object_id` int(10) unsigned NOT NULL default 0,
   PRIMARY KEY (`account_id`,`folder`,`object_id`),

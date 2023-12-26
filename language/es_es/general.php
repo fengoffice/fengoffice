@@ -307,8 +307,8 @@
 	'user info' => 'Información de Usuario',
 	'without company' => 'Sin Organización',
 	'persons' => 'Personas',
-	'task timeslots report desc' => ' * Solo los tiempos de trabajo asociados a una tarea serán desplegados.',
-	'general timeslots report desc' => ' * Solo los tiempos de trabajo agregados desde la pestaña "Tiempo" serán desplegados.',
+	'task timeslots report desc' => ' * Solo las entradas de tiempo asociadas a una tarea serán desplegadas.',
+	'general timeslots report desc' => ' * Solo las entradas de tiempo agregadas desde la pestaña "Tiempo" serán desplegadas.',
 	'see all' => 'Ver todos',
 	'view all' => 'Ver todos',
 	'name required' => 'Nombre requerido',
@@ -461,4 +461,5 @@
 	'hide details' => 'Ocultar detalles',
 	'added' => 'Se agregó',
 	'removed' => 'Se quitó',
+	'manual percent completed' => 'Porcentaje completado manual',
 );

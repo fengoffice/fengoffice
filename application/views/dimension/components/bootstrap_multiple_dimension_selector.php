@@ -50,7 +50,7 @@
         $member_type_names = array();
         $member_type_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dimension_id);
         foreach ($member_type_ids as $member_type_id) {
-        	$mem_type = ObjectTypes::findById($member_type_id);
+        	$mem_type = ObjectTypes::instance()->findById($member_type_id);
         	if (in_array($mem_type->getName(), array('folder','project_folder','customer_folder'))) continue;
         	$member_type_names[] = $mem_type->getObjectTypeName();
         }

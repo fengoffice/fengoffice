@@ -146,6 +146,13 @@ class Localization {
 
 		// Get settings file path and include it
 		$settings_file = $this->getLanguageDirPath () . '/' . $this->getLocale () . '.php';
+
+		if(!is_file($settings_file)) {
+			// use en_us in case the language not exists
+			$this->setLocale("en_us");
+			$settings_file = $this->getLanguageDirPath() . '/' . $this->getLocale() . '.php';
+		}
+		
 		if (is_file ( $settings_file )) {
 			include $settings_file;
 		} else {
@@ -266,7 +273,7 @@ class Localization {
 	 * @param int $timestamp
 	 * @return string
 	 */
-	function dateByLocalization($format, $timestamp, $timezone = 0, $view_timezone = false) {
+	static function dateByLocalization($format, $timestamp, $timezone = 0, $view_timezone = false) {
 		if ($timestamp == 0) { 
 			$timestamp = time();
 		}

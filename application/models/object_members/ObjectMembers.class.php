@@ -20,7 +20,7 @@
   				$stop = false;
   				foreach ($parents as $parent){
   					if (!$stop){
-	  					$exists = self::findOne(array("conditions" => array("`object_id` = ? AND `member_id` = ? ", $object_id, $parent->getId())))!= null;
+	  					$exists = self::instance()->findOne(array("conditions" => array("`object_id` = ? AND `member_id` = ? ", $object_id, $parent->getId())))!= null;
 	  					if (!$exists){
 	  						$values = "(".$object_id.",".$parent->getId().",1)";
   							DB::execute("INSERT INTO ".TABLE_PREFIX."object_members (object_id,member_id,is_optimization) VALUES $values ON DUPLICATE KEY UPDATE object_id=object_id");
@@ -77,7 +77,7 @@
 					}
 					
 					if ($can_write){
-						$om = self::findById(array('object_id' => $object->getId(), 'member_id' => $id));
+						$om = self::instance()->findById(array('object_id' => $object->getId(), 'member_id' => $id));
 						if ($om instanceof ObjectMember) {
 							$om->delete();
 							$memebers_deleted_ids[] = $id;
@@ -86,7 +86,7 @@
 						$stop = false;
 						while ($member->getParentMember() != null && !$stop){
 							$member = $member->getParentMember();
-							$obj_member = ObjectMembers::findOne(array("conditions" => array("`object_id` = ? AND `member_id` = ? AND 
+							$obj_member = ObjectMembers::instance()->findOne(array("conditions" => array("`object_id` = ? AND `member_id` = ? AND 
 										`is_optimization` = 1", $object->getId(),$member->getId())));
 							if (!is_null($obj_member)) {
 								$obj_member->delete();
@@ -155,7 +155,7 @@
   		
     	static function getMembersByObject($object_id){
   			$ids = self::getMemberIdsByObject($object_id);
-  			$members = Members::findAll(array("conditions" => "`id` IN (".implode(",", $ids).")"));
+  			$members = Members::instance()->findAll(array("conditions" => "`id` IN (".implode(",", $ids).")"));
   			
   			return $members;				  
   		}

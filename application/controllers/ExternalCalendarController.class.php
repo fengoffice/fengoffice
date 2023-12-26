@@ -30,8 +30,8 @@ class ExternalCalendarController extends ApplicationController {
 	}
 		
 	private function update_sync_cron_events() {
-		$count = ExternalCalendarUsers::count();
-		$events = CronEvents::findAll(array('conditions' => "name IN ('import_google_calendar','export_google_calendar')"));
+		$count = ExternalCalendarUsers::instance()->count();
+		$events = CronEvents::instance()->findAll(array('conditions' => "name IN ('import_google_calendar','export_google_calendar')"));
 		foreach ($events as $event) {
 			if ($count > 0) {
 				if (!$event->getEnabled()) {
@@ -85,7 +85,7 @@ class ExternalCalendarController extends ApplicationController {
 		if(array_var($_GET, 'id')){
 			$objectId = array_var($_GET, 'id');
 			$user = ExternalCalendarUsers::findByContactId();
-			$calendar = ExternalCalendars::findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $objectId, $user->getId())));
+			$calendar = ExternalCalendars::instance()->findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $objectId, $user->getId())));
 			$object_type_id = ProjectEvents::instance()->getObjectTypeId();
 			$members_ids = explode(",", $calendar->getRelatedTo());
 			foreach($members_ids as $members_id){
@@ -129,7 +129,7 @@ class ExternalCalendarController extends ApplicationController {
 	
 		$users = ExternalCalendarUsers::findByContactId();
 	
-		$calendar = ExternalCalendars::findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $users->getId())));
+		$calendar = ExternalCalendars::instance()->findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $users->getId())));
 					 
 		if($calendar){
 			$member_ids = json_decode(array_var($_POST, 'members'));
@@ -413,7 +413,7 @@ class ExternalCalendarController extends ApplicationController {
             		 
             		$google_calendar = $service->calendars->get($original_calendar_id);
             		
-            		$calendar = ExternalCalendars::findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $user->getId())));
+            		$calendar = ExternalCalendars::instance()->findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $user->getId())));
             		if($calendar){
             			$calendar->setOriginalCalendarId($google_calendar->getId());            			
             			$calendar->setCalendarName($google_calendar->getSummary());
@@ -453,7 +453,7 @@ class ExternalCalendarController extends ApplicationController {
 				
 			if($user){
 				try{
-					$calendar = ExternalCalendars::findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $user->getId())));
+					$calendar = ExternalCalendars::instance()->findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $user->getId())));
 					if($calendar){
 						$calendar->setSync(0);
 						$calendar->save();
@@ -515,7 +515,7 @@ class ExternalCalendarController extends ApplicationController {
                 
         $users = ExternalCalendarUsers::findByContactId();
                 
-       	$calendar = ExternalCalendars::findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $users->getId())));
+       	$calendar = ExternalCalendars::instance()->findOne(array('conditions' => array("original_calendar_id=? AND ext_cal_user_id=?", $original_calendar_id, $users->getId())));
         
         $events = ProjectEvents::findByExtCalId($calendar->getId());
                
@@ -535,7 +535,7 @@ class ExternalCalendarController extends ApplicationController {
 
 	function delete_event_calendar_extern($event, $ext_user){
 		if($event->getExtCalId() > 0 && $event->getSpecialID() != ""){
-			$calendar = ExternalCalendars::findById($event->getExtCalId());
+			$calendar = ExternalCalendars::instance()->findById($event->getExtCalId());
 			if($calendar instanceof ExternalCalendar && $calendar->getSync() > 0){
 				try
 				{
@@ -553,14 +553,17 @@ class ExternalCalendarController extends ApplicationController {
 	}
    	
 	function import_google_calendar() {
-		$users = ExternalCalendarUsers::findAll();
+		$users = ExternalCalendarUsers::instance()->findAll();
 		foreach ($users as $user){
 			// log user in
 			try
 			{
-				$contact = Contacts::findById($user->getContactId());
-				CompanyWebsite::instance()->setLoggedUser($contact, false, false, false);
-				ExternalCalendarController::import_google_calendar_for_user($user);
+				$contact = Contacts::instance()->findById($user->getContactId());
+				// don't process calendars of disabled users
+				if ($contact instanceof Contact && $contact->isUser() && !$contact->getDisabled()) {
+					CompanyWebsite::instance()->setLoggedUser($contact, false, false, false);
+					ExternalCalendarController::import_google_calendar_for_user($user);
+				}
 			}catch(Exception $e){
 				Logger::log("Fail to get events from external calendar user: ". $user->getId());
 				Logger::log($e->getMessage());
@@ -577,7 +580,7 @@ class ExternalCalendarController extends ApplicationController {
 			if(!$service instanceof Google_Service_Calendar){
 				return;
 			}
-			$contact = Contacts::findById($user->getContactId());		
+			$contact = Contacts::instance()->findById($user->getContactId());		
 			
 			try
 			{
@@ -696,7 +699,7 @@ class ExternalCalendarController extends ApplicationController {
 								if($is_new_event){
 									//Invitation insert only if not exists
 									$conditions = array('event_id' => $new_event->getId(), 'contact_id' => $user->getContactId());
-									if (EventInvitations::findById($conditions) == null) {
+									if (EventInvitations::instance()->findById($conditions) == null) {
 											$invitation = new EventInvitation();
 											$invitation->setEventId($new_event->getId());
 											$invitation->setContactId($user->getContactId());
@@ -863,7 +866,7 @@ class ExternalCalendarController extends ApplicationController {
 		$event->setExtCalId($ext_calendar->getId());
 		$event->save();
 	
-		$invitation = EventInvitations::findOne(array('conditions' => array('contact_id = '.$ext_user->getContactId().' AND event_id ='.$event->getId())));
+		$invitation = EventInvitations::instance()->findOne(array('conditions' => array('contact_id = '.$ext_user->getContactId().' AND event_id ='.$event->getId())));
 		if($invitation){
 			$invitation->setUpdateSync(ExternalCalendarController::date_google_to_sql($createdEvent->getUpdated()));
 			$invitation->setSpecialId($createdEvent->getId());
@@ -875,7 +878,7 @@ class ExternalCalendarController extends ApplicationController {
 		try {
 			//check external calendar
 			if (is_null($calendar)) {
-				$calendar = ExternalCalendars::findById($event->getExtCalId());
+				$calendar = ExternalCalendars::instance()->findById($event->getExtCalId());
 			}
 			if (!$calendar instanceof ExternalCalendar) return;
 
@@ -887,7 +890,7 @@ class ExternalCalendarController extends ApplicationController {
 
 			//check external user
 			if (is_null($user)) {
-				$user = ExternalCalendarUsers::findById($calendar->getExtCalUserId());
+				$user = ExternalCalendarUsers::instance()->findById($calendar->getExtCalUserId());
 			}
 			if (!$user instanceof ExternalCalendarUser) return;
 
@@ -903,14 +906,17 @@ class ExternalCalendarController extends ApplicationController {
 	}    
    
 	function export_google_calendar() {
-		$users = ExternalCalendarUsers::findAll(array('conditions' => "sync = 1"));
+		$users = ExternalCalendarUsers::instance()->findAll(array('conditions' => "sync = 1"));
 		foreach ($users as $user){
 			try{
                 // log user in
-                $contact = Contacts::findById($user->getContactId());
-                CompanyWebsite::instance()->logUserIn($contact);
-                ExternalCalendarController::export_google_calendar_for_user($user);
-                CompanyWebsite::instance()->logUserOut();
+                $contact = Contacts::instance()->findById($user->getContactId());
+				// don't process calendars of disabled users
+				if ($contact instanceof Contact && $contact->isUser() && !$contact->getDisabled()) {
+					CompanyWebsite::instance()->logUserIn($contact);
+					ExternalCalendarController::export_google_calendar_for_user($user);
+					CompanyWebsite::instance()->logUserOut();
+				}
             }catch(Exception $e){
                 Logger::log("Fail to get events from external calendar user: ". $user->getId());
                 Logger::log($e->getMessage());

@@ -63,7 +63,7 @@ class ProjectMessage extends BaseProjectMessage {
 	 */
 	function getRelatedForms() {
 		if(is_null($this->related_forms)) {
-			$this->related_forms = ProjectForms::findAll(array(
+			$this->related_forms = ProjectForms::instance()->findAll(array(
           'conditions' => '`action` = ' . DB::escape(ProjectForm::ADD_COMMENT_ACTION) . ' AND `in_object_id` = ' . DB::escape($this->getId()),
           'order' => '`order`'
           )); // findAll
@@ -77,7 +77,7 @@ class ProjectMessage extends BaseProjectMessage {
 	//  Permissions
 	// ---------------------------------------------------
 
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return can_add($user, $context, ProjectMessages::instance()->getObjectTypeId(), $notAllowedMember);
 	}
 	

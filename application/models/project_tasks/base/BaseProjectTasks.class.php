@@ -184,10 +184,10 @@ abstract class BaseProjectTasks extends ContentDataObjects {
     */
     function getTemplateObjectProperties() {
     	$templateObjectProperties = array(
-    		array('id' => 'name', 'type' => self::getColumnType('name')),
-    		array('id' => 'text', 'type' => self::getColumnType('text')),
-    		array('id' => 'start_date', 'type' => self::getColumnType('start_date')),
-    		array('id' => 'due_date', 'type' => self::getColumnType('due_date')),
+    		array('id' => 'name', 'type' => self::instance()->getColumnType('name')),
+    		array('id' => 'text', 'type' => self::instance()->getColumnType('text')),
+    		array('id' => 'start_date', 'type' => self::instance()->getColumnType('start_date')),
+    		array('id' => 'due_date', 'type' => self::instance()->getColumnType('due_date')),
             array('id' => 'assigned_to_contact_id', 'type' => 'USER')
     	);
 
@@ -328,7 +328,7 @@ abstract class BaseProjectTasks extends ContentDataObjects {
 	 *
 	 * @return ProjectTasks
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'ProjectTasks')) {
 			$instance = new ProjectTasks();

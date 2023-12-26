@@ -30,7 +30,7 @@
     * @return DateTimeValue
     */
     static function make($hour, $minute, $second, $month, $day, $year) {
-      return new DateTimeValue(mktime($hour, $minute, $second, $month, $day, $year));
+      return new DateTimeValue(mktime((int)$hour, (int)$minute, (int)$second, (int)$month, (int)$day, (int)$year));
     } // make
     
     /**

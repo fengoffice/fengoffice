@@ -26,7 +26,7 @@
 	$user_comp_filter = user_config_option('pending tasks widget assigned to filter');
 	$exploded = explode(":", $user_comp_filter);
 	$user_filter_id = array_var($exploded, 1);
-	$user_filter = $user_filter_id > 0 ? Contacts::findById($user_filter_id) : null;
+	$user_filter = $user_filter_id > 0 ? Contacts::instance()->findById($user_filter_id) : null;
 	
 	$date_start = new DateTimeValue(mktime(0, 0, 0, $currentmonth, $startday, $currentyear)); 
 	$date_end = new DateTimeValue(mktime(0, 0, 0, $currentmonth, $endday, $currentyear)); 

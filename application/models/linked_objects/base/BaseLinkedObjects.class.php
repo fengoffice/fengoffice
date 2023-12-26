@@ -227,7 +227,7 @@
     *
     * @return  LinkedObjects 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'LinkedObjects')) {
         $instance = new  LinkedObjects();

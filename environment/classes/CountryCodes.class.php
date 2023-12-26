@@ -262,7 +262,7 @@
     * @param void
     * @return array
     */
-    function getAll() {
+    static function getAll() {
       return self::$countries;
     } // getAll
     
@@ -273,11 +273,11 @@
     * @param string $code
     * @return string
     */
-    function getCountryNameByCode($code) {
+    static function getCountryNameByCode($code) {
       return array_var(self::$countries, $code);
     } // getCountryNameByCode
   
-  	function getCountryCodeByName($countryName) {
+  	static function getCountryCodeByName($countryName) {
 		$country_codes = array_keys(self::$countries);
 		if (in_array($countryName, $country_codes)) { //name is a code
 			return $countryName;

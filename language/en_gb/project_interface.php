@@ -297,8 +297,8 @@ return array(
 	'set parent task' => 'Set parent task',
 
 	'add milestone change workspace warning' => 'WARNING! This milestone\'s tasks must belong to the same workspace as the milestone, or to one of its sub-workspaces. If the workspace is changed, any tasks that do not comply with this rule will be moved to the selected workspace.',
-	'update unset billing values' => 'Update timeslots with unset billing values',
-	'update unset billing values desc' => 'NOTICE: This action will apply the new billing values to all timeslots without values. Are you sure you wish to proceed?',
+	'update unset billing values' => 'Update time entries with unset billing values',
+	'update unset billing values desc' => 'NOTICE: This action will apply the new billing values to all time entries without values. Are you sure you wish to proceed?',
 
 	'field title' => 'Title',
 	'field text' => 'Text',

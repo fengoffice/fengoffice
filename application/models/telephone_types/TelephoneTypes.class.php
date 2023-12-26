@@ -35,14 +35,14 @@
   	
   	
   	static function getTypeId($type){
-  		$telephone_type = TelephoneTypes::findOne(array('conditions' => array("`name` = ?",$type)));
+  		$telephone_type = TelephoneTypes::instance()->findOne(array('conditions' => array("`name` = ?",$type)));
   		if (!is_null($telephone_type)) return $telephone_type->getId();
   		else return null;
     }
     
     
     static function getAllTelephoneTypesInfo($use_id_as_key = false) {
-    	$types = TelephoneTypes::findAll();
+    	$types = TelephoneTypes::instance()->findAll();
     	$result = array();
     	foreach ($types as $type) {
             if($use_id_as_key){

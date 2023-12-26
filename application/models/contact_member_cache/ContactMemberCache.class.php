@@ -12,7 +12,7 @@ class ContactMemberCache extends BaseContactMemberCache {
 		if ($this->parent_member_cache == null){
 			if ($this->getParentMemberId() != 0) {
 				$id = array('contact_id' => $this->getContactId(), 'member_id' => $this->getParentMemberId());
-				$this->parent_member_cache = ContactMemberCaches::findById($id);
+				$this->parent_member_cache = ContactMemberCaches::instance()->findById($id);
 			}
 		}
 		return $this->parent_member_cache;

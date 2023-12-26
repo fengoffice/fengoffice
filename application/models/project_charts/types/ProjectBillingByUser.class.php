@@ -21,7 +21,7 @@
 			
 	    	foreach ($billing_chart_data as $row){
 	    		$value = 0;
-	    		$user = Users::findById($row['user']);
+	    		$user = Users::instance()->findById($row['user']);
 	    		if ($user instanceof User){
 		    		$this->data['values'][0]['labels'][] = $user->getDisplayName();
 		    		$this->data['values'][0]['values'][] = $row['total_billing'];

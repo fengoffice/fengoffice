@@ -14,7 +14,7 @@
 			$style = '';
 			$row_cls = "";
 			foreach ($comments as $k => $comment): /* @var $comment Comment */
-				$crumbOptions = json_encode($comment->getMembersIdsToDisplayPath());
+				$crumbOptions = json_encode($comment->getMembersIdsToDisplayPath(false, get_dashboard_breadcrumbs_options()));
 				if($crumbOptions == ""){
 					$crumbOptions = "{}";
 				}

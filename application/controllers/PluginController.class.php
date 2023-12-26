@@ -189,12 +189,12 @@ class PluginController extends ApplicationController {
 	
 	function ensure_installed_and_activated($plugin_name) {
 		
-		$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
+		$plugin = Plugins::instance()->findOne(array('conditions' => "name='$plugin_name'"));
 		if (!Plugins::instance()->isActivePlugin($plugin_name)) {
 			if (!$plugin instanceof Plugin) return;
 			if (!$plugin->isInstalled()) {
 				$this->executeInstaller($plugin_name);
-				$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
+				$plugin = Plugins::instance()->findOne(array('conditions' => "name='$plugin_name'"));
 			}
 			$plugin->activate();
 		}
@@ -271,7 +271,7 @@ static function executeInstaller($name) {
 			}
 			
 			//2. IF Plugin defines types, INSERT INTO ITS TABLE
-			if (count ( array_var ( $pluginInfo, 'types' ) )) {
+			if (count ( array_var ( $pluginInfo, 'types', array() ) )) {
 				foreach ( $pluginInfo ['types'] as $k => $type ) {
 					if (isset ( $type ['name'] )) {
 						$sql = "

@@ -26,7 +26,7 @@
 			$params['offset'] = $offset;
 		}
 		
-		$members = Members::findAll($params);
+		$members = Members::instance()->findAll($params);
 		if ($recursive) {
 	  		foreach ($members as $m) {
 	  			$members = array_merge($members, self::getSubmembers($m, $recursive));
@@ -37,7 +37,7 @@
 	}
 	
 	static function getByDimensionObjType($dimension_id, $object_type_id) {
-		return Members::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $dimension_id, $object_type_id)));
+		return Members::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $dimension_id, $object_type_id)));
 	}
 	
 	/**
@@ -51,7 +51,7 @@
 		if (!is_null($dimension_id)) {
 			$conditions .= " AND dimension_id = '$dimension_id' "; 
 		}		
-		return self::findAll(array("conditions" => array($conditions) ));
+		return self::instance()->findAll(array("conditions" => array($conditions) ));
 	}	
 	
 	/**
@@ -72,7 +72,7 @@
 	static function getMemberById($id) {
 		$m = array_var(self::$members_cache, $id);
 		if (!$m instanceof Member) {
-			$m = Members::findById($id);
+			$m = Members::instance()->findById($id);
 			if ($m instanceof Member) {
 				self::$members_cache[$id] = $m;
 			}
@@ -110,7 +110,7 @@
 			return $parent_member_ids;
 		} else {
 			if (count($parent_member_ids) > 0) {
-				$parent_members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $parent_member_ids).')'));
+				$parent_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $parent_member_ids).')'));
 			}
 			return $parent_members;
 		}
@@ -139,7 +139,7 @@
 			return $child_member_ids;
 		} else {
 			if (count($child_member_ids) > 0) {
-				$child_members = Members::findAll(array('conditions' => 'id IN ('.implode(',', $child_member_ids).')'));
+				$child_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $child_member_ids).')'));
 			}
 			return $child_members;
 		}
@@ -181,7 +181,7 @@
 	function getDefinition($ot_id, $dimension_id = null) {
 	    
 	    $result = array();
-	    $ot = ObjectTypes::findById($ot_id);
+	    $ot = ObjectTypes::instance()->findById($ot_id);
 	    
 	    $member_columns = array('id', 'dimension_id', 'object_type_id', 'name', 'parent_member_id');
 	    foreach ($member_columns as $c) {
@@ -207,7 +207,7 @@
 	    
 	    if (is_numeric($dimension_id) && $dimension_id > 0) {
 		    $associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($dimension_id, $ot_id);
-		    $dim_reference = Dimensions::findById($dimension_id);
+		    $dim_reference = Dimensions::instance()->findById($dimension_id);
 		    
 		    foreach ($associations as $association) { /* @var $association DimensionMemberAssociation */
 		    	$key = 'dim_association_'.$association->getId();

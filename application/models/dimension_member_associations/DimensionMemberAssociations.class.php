@@ -9,11 +9,11 @@
   	
   	
   	static function getAssociationByCode($code) {
-  		return self::findOne(array("conditions" => array("`code`=?", $code)));
+  		return self::instance()->findOne(array("conditions" => array("`code`=?", $code)));
   	}
   	
     
-    function getAssociatedDimensions($associated_dimension_id) {
+    static function getAssociatedDimensions($associated_dimension_id) {
 
   		$sql = "SELECT DISTINCT (`dimension_id`) FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `associated_dimension_id` = $associated_dimension_id";
   		
@@ -30,7 +30,7 @@
   	}
   	
   	
-    function getDimensionsToReload($dimension_id) {
+    static function getDimensionsToReload($dimension_id) {
 
   		$sql = "SELECT DISTINCT(`associated_dimension_id`) FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `dimension_id` = $dimension_id
 				UNION SELECT DISTINCT(`dimension_id`) FROM `".TABLE_PREFIX."dimension_member_associations` WHERE `associated_dimension_id` = $dimension_id";
@@ -52,7 +52,7 @@
   	 * Returns an array with the dimensions to reload foreach member type that belongs to this dimension
   	 * Use only the reverse associations (associated dim -> main dim), so only secondary dimensions filter main dimensions
   	 */
-	function getDimensionsToReloadByObjectType($dimension_id) {
+	static function getDimensionsToReloadByObjectType($dimension_id) {
 		
 		$sql = "SELECT `dimension_id` as dim_id, `associated_object_type_id` as ot_id  
 				FROM `".TABLE_PREFIX."dimension_member_associations` 
@@ -88,7 +88,7 @@
 	}
   	
   	
-    function getAllAssociationIds($dimension_id, $associated_dimension_id, $obj_type_id=null) {
+    static function getAllAssociationIds($dimension_id, $associated_dimension_id, $obj_type_id=null) {
     	
     	$ot_cond = "";
     	$associated_ot_cond = "";
@@ -113,34 +113,34 @@
   	}
   	
   	
-    function getAllAssociations($dimension_id, $associated_dimension_id) {
+    static function getAllAssociations($dimension_id, $associated_dimension_id) {
 
-  		$associations =  self::findAll(array('conditions' => '`dimension_id` = ' . 
+  		$associations =  self::instance()->findAll(array('conditions' => '`dimension_id` = ' . 
 								$dimension_id.' AND `associated_dimension_id` = ' . $associated_dimension_id));
 		return $associations;
   	}
   	
   	static function getAssociatations($dimension_id, $object_type_id) {
-  		return self::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $dimension_id, $object_type_id)));
+  		return self::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $dimension_id, $object_type_id)));
   	}
   	
   	static function getAllAssociatationsForObjectType($dimension_id, $object_type_id) {
-  		return self::findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? OR `associated_dimension_id` = ? AND `associated_object_type_id` = ?",
+  		return self::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? OR `associated_dimension_id` = ? AND `associated_object_type_id` = ?",
   				$dimension_id, $object_type_id, $dimension_id, $object_type_id)));
   	}
   	
 	static function getRequiredAssociatations($dimension_id, $object_type_id, $only_ids = false) {
 		$enabled_dimensions = config_option('enabled_dimensions');
 		$enabled_dims_cond = " AND associated_dimension_id IN (".implode(',', $enabled_dimensions).") ";
-  		return self::findAll(array(
+  		return self::instance()->findAll(array(
   			"conditions" => array("`dimension_id` = ? AND `object_type_id` = ? AND is_required = 1 $enabled_dims_cond", $dimension_id, $object_type_id),
   			"id" => $only_ids,
   		));
   	}
   
   	
-    function existsAssociationBetweenDimensions($dimension_id, $associated_dimension_id){
-  		$associations =  self::findOne(array('conditions' => '`dimension_id` = ' . 
+    static function existsAssociationBetweenDimensions($dimension_id, $associated_dimension_id){
+  		$associations =  self::instance()->findOne(array('conditions' => '`dimension_id` = ' . 
 								$dimension_id.' AND `associated_dimension_id` = ' . $associated_dimension_id));
 			
 		if (is_null($associations)) return false;
@@ -149,17 +149,17 @@
   	
   	
   	
-  	function getAllAssociationsInfo($dim_ids = null) {
+  	static function getAllAssociationsInfo($dim_ids = null) {
   		$enabled_dimensions = config_option('enabled_dimensions');
   		if (is_null($dim_ids)) {
   			$dim_ids = $enabled_dimensions;
   		}
-  		$dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',', $dim_ids).')'));
+  		$dimensions = Dimensions::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $dim_ids).')'));
   		
 		$dims_info = array();
 		
 		foreach ($dimensions as $dim) {
-			$associations = self::findAll(array('conditions' => '`dimension_id` = ' .$dim->getId().' OR `associated_dimension_id` = ' . $dim->getId()));
+			$associations = self::instance()->findAll(array('conditions' => '`dimension_id` = ' .$dim->getId().' OR `associated_dimension_id` = ' . $dim->getId()));
 			
 			if (is_array($associations) && count($associations)) {
 				$this_dim_info = array();
@@ -189,8 +189,8 @@
   	}
   	
   	
-  	function getAssociationObject($dimension_id, $object_type_id, $assoc_dimension_id, $assoc_object_type_id) {
-  		return self::findOne(array('conditions' => "dimension_id=$dimension_id AND object_type_id=$object_type_id
+  	static function getAssociationObject($dimension_id, $object_type_id, $assoc_dimension_id, $assoc_object_type_id) {
+  		return self::instance()->findOne(array('conditions' => "dimension_id=$dimension_id AND object_type_id=$object_type_id
   				AND associated_dimension_id=$assoc_dimension_id AND associated_object_type_id=$assoc_object_type_id"));
   	}
   	

@@ -9,7 +9,7 @@
   class ProjectCoTypes extends BaseProjectCoTypes {
   
   	function getObjectTypesByManager($manager, $order = "name") {
-  		return self::findAll(array(
+  		return self::instance()->findAll(array(
   			'conditions' => "`object_manager` = '". $manager . "'", 
   			'order' => "`$order` ASC"));
   	}

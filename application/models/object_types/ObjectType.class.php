@@ -34,8 +34,10 @@ class ObjectType extends BaseObjectType {
 	function getIsLinkableObjectType() {
 		$handler_class = $this->getHandlerClass();
 		try {
-			eval('$item_class = '.$handler_class.'::instance()->getItemClass();  $instance = new $item_class();');
-			return $instance && $instance->isLinkableObject();
+			if (class_exists($handler_class)) {
+				eval('$item_class = '.$handler_class.'::instance()->getItemClass();  $instance = new $item_class();');
+			}
+			return isset($instance) && $instance->isLinkableObject();
 		}catch(Exception $e) {
 			return false ;
 		}

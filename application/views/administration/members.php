@@ -11,7 +11,7 @@
   <div>
 	<div class="coInputName">
 		<div class="coInputTitle">
-		  	<?php echo lang('users') . (config_option('max_users')?(' (' . Contacts::count() .' / ' .  config_option('max_users') . ')'):'') ?>
+		  	<?php echo lang('users') . (config_option('max_users')?(' (' . Contacts::instance()->count() .' / ' .  config_option('max_users') . ')'):'') ?>
 		</div>
 	</div>
 	<div class="clear"></div>

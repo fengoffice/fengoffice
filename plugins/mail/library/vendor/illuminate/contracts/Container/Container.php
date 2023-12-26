@@ -99,7 +99,7 @@ interface Container extends ContainerInterface
      * @param  mixed  $instance
      * @return mixed
      */
-    public function instance($abstract, $instance);
+    public static function instance($abstract, $instance);
 
     /**
      * Add a contextual binding to the container.

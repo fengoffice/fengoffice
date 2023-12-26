@@ -84,8 +84,8 @@
      */
     public static function getConfigOptionText($configOption,$value) {
         
-        $option = ContactConfigOptions::findOne(array('conditions'=>"name = '".$configOption."'"));
-        if (!$option) $option = ConfigOptions::findOne(array('conditions'=>"name = '".$configOption."'"));
+        $option = ContactConfigOptions::instance()->findOne(array('conditions'=>"name = '".$configOption."'"));
+        if (!$option) $option = ConfigOptions::instance()->findOne(array('conditions'=>"name = '".$configOption."'"));
         $data = $option->getColumnValue('options');
         $possible_values = json_decode($data);
         foreach ($possible_values->option as $option) {

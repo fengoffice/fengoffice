@@ -210,7 +210,7 @@
     *
     * @return  CustomPropertiesByCoType 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'CustomPropertiesByCoType')) {
         $instance = new  CustomPropertiesByCoType();

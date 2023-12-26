@@ -22,7 +22,7 @@ class ProjectCharts extends BaseProjectCharts {
 	static function getProjectCharts($project) {
 		$conditions = array(self::getWorkspaceString(), $project->getId());
 
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => $conditions,
 			'order' => '`created_on` DESC',
 		)); // findAll
@@ -40,7 +40,7 @@ class ProjectCharts extends BaseProjectCharts {
 		} else {
 			$tagstr = "";
 		}
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => "$ws $tagstr" ,
 			'order' => $order,
 			'limit' => $limit));

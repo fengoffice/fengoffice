@@ -212,7 +212,7 @@
     *
     * @return  Reports 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Reports')) {
         $instance = new  Reports();

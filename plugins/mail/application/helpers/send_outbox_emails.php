@@ -17,14 +17,14 @@
 	$account_id = array_var($argv, 4);
 	
 	// log user in
-	$user = Contacts::findById($user_id);
+	$user = Contacts::instance()->findById($user_id);
 	if(!($user instanceof Contact) || !$user->isValidToken($token)) {
 		throw new Exception("Cannot login with user $user_id and token '$token'");
 	}
 
 	CompanyWebsite::instance()->setLoggedUser($user, false, false, false);
 	
-	$account = MailAccounts::findById($account_id);
+	$account = MailAccounts::instance()->findById($account_id);
 	if (!$account instanceof MailAccount) {
 		$_GET['acc_id'] = $account_id;
 	}
