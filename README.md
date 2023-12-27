@@ -12,8 +12,8 @@
 </h2>
 
 <p align="center">
-    <a href="https://github.com/fengoffice-IO/fengoffice"><img src="https://img.shields.io/github/stars/fengoffice/fengoffice.svg?style=flat&logo=github&colorB=deeppink&label=stars"></a>
-    <a href="https://github.com/fengoffice-IO/fengoffice"><img src="https://img.shields.io/github/forks/fengoffice/fengoffice.svg"></a>
+    <a href="https://github.com/fengoffice/fengoffice"><img src="https://img.shields.io/github/stars/fengoffice/fengoffice.svg?style=flat&logo=github&colorB=deeppink&label=stars"></a>
+    <a href="https://github.com/fengoffice/fengoffice"><img src="https://img.shields.io/github/forks/fengoffice/fengoffice.svg"></a>
     <a href="https://opensource.org/licenses/AGPL-3.0"><img src="https://img.shields.io/badge/license-AGPL-purple.svg" alt="License: AGPL"></a>
 </p>
 
