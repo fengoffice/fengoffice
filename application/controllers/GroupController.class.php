@@ -285,6 +285,11 @@ class GroupController extends ApplicationController {
 	} // delete_group
 
 	
+	/**
+	 * Retrieves a list of all permission groups.
+	 *
+	 * @return array An array containing the list of permission groups.
+	 */
 	function list_all_permission_groups() {
 		
 		$more_conditions = "";
@@ -292,9 +297,13 @@ class GroupController extends ApplicationController {
 		if (is_numeric($id_no_select)) {
 			$more_conditions .= " AND id != $id_no_select";
 		}
-		
+
+		$name_condition = '';
+		if ($name = array_var($_REQUEST, 'name')) {
+			$name_condition = " AND (`first_name` LIKE '%{$name}%' OR `surname` LIKE '%{$name}%')";
+		}
+
 		$groups = PermissionGroups::instance()->findAll(array("conditions" => "`type` IN ('user_groups','permission_groups') $more_conditions"));;
-		
 		$groups_data = array();
 		foreach ($groups as $group) {
 			
@@ -302,7 +311,12 @@ class GroupController extends ApplicationController {
 				$group_name = escape_character($group->getName());
 				$group_type = 'group';
 			} else if ($group->getType() == 'permission_groups') {
-				$contact = Contacts::instance()->findById($group->getContactId());
+				$conditions = array("conditions" => "`object_id` = {$group->getContactId()}" . $name_condition);
+			
+				//Get the contact of the permission group
+				$contact = Contacts::instance()->findOne(
+					$conditions
+				);
 				if (!$contact instanceof Contact) continue;
 				$group_name = escape_character($contact->getName());
 				$group_type = 'contact';
@@ -314,6 +328,7 @@ class GroupController extends ApplicationController {
 					'type' => $group_type,
 			);
 		}
+		
 		ksort($groups_data);
 		$groups_data = array_values($groups_data);
 		

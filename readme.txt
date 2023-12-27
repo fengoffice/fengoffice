@@ -1,4 +1,4 @@
-	About Feng Office 3.10.7.5
+	About Feng Office 3.10.7.8
 	=================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,6 +105,31 @@
 	
 	Changelog
 	=========
+
+	Since 3.10.7.7
+	-----------------------------------
+	feature: Project earnings report: add 'Project progress' column (#2324)
+	bugfix: Budget by tasks report: Rename select options for the 'group by' option (#2323)
+	bugfix: Notes widget: Keep the styling and line breaks of the notes (#2318)
+
+	Since 3.10.7.6
+	-----------------------------------
+	bugfix: client form not saving associated object properties (#2316)
+	bugfix: Add line breaks in memo custom properties when rendering (#2315)
+	bugfix: Remove 'completed_on' date condition when getting earned value from tasks (#2314)
+	bugfix: don't show the warning in widget when the member is selected (#2313)
+	bugfix: fix time entries qbo sync in background (#2312)
+	bugfix: fix expenses2 installer queries (#2311)
+
+
+	Since 3.10.7.5
+	-----------------------------------
+	bugfix: fixed timesheets report dont uses overtime (#2310)
+	bugfix: 'Forecasted revenue' calc -> exclude bud expenses assigned to tasks (#2309)
+	bugfix: widget show message (#2304)
+	bugfix: time entry cost is not transferred to qbo (#2301)
+	bugfix: Project billing report: in excel export use price in expenses table (#2299)
+	bugfix: the search function under the workflow permission is not working (#2283)
 
 	Since 3.10.7.4
 	-----------------------------------

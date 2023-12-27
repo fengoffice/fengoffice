@@ -436,7 +436,23 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             handler: function() {
                 var tab = Ext.getCmp('reporting-panel');
                 if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);
+				
+				let grid = Ext.getCmp(og.module_timeslots_grid.grid_id);
+
+				// initialize report form with the same filters we have in the time module
+				let post_parameters = {
+					'params[user]': grid.filters.user_filter.value,
+					'params[timeslot_type]': grid.filters.type_filter.value,
+					'params[date_type]': grid.filters.period_filter.value,
+					'params[start_value]': grid.filters.from_filter.value,
+					'params[end_value]': grid.filters.to_filter.value,
+				};
+				if (grid.filters.invoicing_status_filter) {
+					post_parameters['params[invoicing_status]'] = grid.filters.invoicing_status_filter.value;
+				}
+
                 og.openLink(og.getUrl('reporting', 'total_task_times_p'), {
+					post: post_parameters,
                     caller: 'reporting-panel'
                 });
             }

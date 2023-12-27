@@ -167,26 +167,50 @@ class ReportingController extends ApplicationController {
 	// ---------------------------------------------------
 
 	function total_task_times_p(){
-		//set params from config options
-		$report_data['date_type'] = user_config_option('timeReportDate');
-			
+		$report_params = array_var($_POST, 'params');
 		$now_date = DateTimeValueLib::now();
-		if (strtotime(user_config_option('timeReportDateStart'))){//this return null if date is 0000-00-00 00:00:00
-			$report_data['start_value'] = user_config_option('timeReportDateStart');
-		}else{
-			$dateStart = format_date($now_date, DATE_MYSQL, 0);//today
+
+		if (isset($report_params)) {
+			// if time list filters are sent then initialize the report filters with those values
+
+			$report_data['user'] = array_var($report_params, 'user');
+			$report_data['timeslot_type'] = array_var($report_params, 'timeslot_type');
+			$report_data['date_type'] = array_var($report_params, 'date_type');
+
+			$st = getDateValue(array_var($report_params, 'start_value'));
+			$dateStart = $st instanceof DateTimeValue ? $st->toMySQL() : DateTimeValueLib::makeFromString('1900-01-01')->toMySQL();
 			$report_data['start_value'] = $dateStart;
-		}
-		
-		if (strtotime(user_config_option('timeReportDateEnd'))){//this return null if date is 0000-00-00 00:00:00
-			$report_data['end_value'] = user_config_option('timeReportDateEnd');
-		}else{
-			$dateEnd = format_date($now_date, DATE_MYSQL, 0);//today
+			
+			$et = getDateValue(array_var($report_params, 'end_value'));
+			$dateEnd = $et instanceof DateTimeValue ? $et->toMySQL() : DateTimeValueLib::makeFromString('2099-12-31')->toMySQL();
 			$report_data['end_value'] = $dateEnd;
+
+			if (isset($report_params['invoicing_status'])) {
+				$report_data['invoicing_status'] = $report_params['invoicing_status'];
+			}
+
+		} else {
+			
+			//set params from config options
+			$report_data['date_type'] = user_config_option('timeReportDate');
+			
+			if (strtotime(user_config_option('timeReportDateStart'))){//this return null if date is 0000-00-00 00:00:00
+				$report_data['start_value'] = user_config_option('timeReportDateStart');
+			}else{
+				$dateStart = format_date($now_date, DATE_MYSQL, 0);//today
+				$report_data['start_value'] = $dateStart;
+			}
+			
+			if (strtotime(user_config_option('timeReportDateEnd'))){//this return null if date is 0000-00-00 00:00:00
+				$report_data['end_value'] = user_config_option('timeReportDateEnd');
+			}else{
+				$dateEnd = format_date($now_date, DATE_MYSQL, 0);//today
+				$report_data['end_value'] = $dateEnd;
+			}
+						
+			$report_data['user'] = user_config_option('timeReportPerson');
+			$report_data['timeslot_type'] = user_config_option('timeReportTimeslotType');
 		}
-					
-		$report_data['user'] = user_config_option('timeReportPerson');
-		$report_data['timeslot_type'] = user_config_option('timeReportTimeslotType');
 		
 		$report_data['show_estimated_time'] = user_config_option('timeReportShowEstimatedTime');
 		
@@ -333,6 +357,32 @@ class ReportingController extends ApplicationController {
 				
 				$et = getDateValue(array_var($report_data, 'end_value'));
 				$et = $et->endOfDay();
+				break;
+			case 7: //first half of month
+				$st = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), 1, $now->getYear());
+				$et = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), 15, $now->getYear());
+				break;
+			case 8: //second half of month
+				$st = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), 16, $now->getYear());
+				$et = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), 1, $now->getYear())->add('M', 1)->add('d', -1);
+				break;
+			case 9: //First half of last month
+				$st = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), 1, $now->getYear())->add('M', -1);
+				$et = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), 15, $now->getYear())->add('M', -1);
+				break;
+			case 10: //Last half of last month
+				$st = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), 16, $now->getYear())->add('M', -1);
+				$et = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), 1, $now->getYear())->add('d', -1);
+				break;
+			case 11: //Yesterday
+				$st = DateTimeValueLib::make(0, 0, 0, $now->getMonth(), $now->getDay(), $now->getYear())->add('d', -1);
+				$et = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), $now->getDay(), $now->getYear())->add('d', -1);
+				break;
+			case 12: //Year
+				$st = DateTimeValueLib::make(0, 0, 0, 1, 1, $now->getYear());
+				$et = DateTimeValueLib::make(23, 59, 59, $now->getMonth(), $now->getDay(), $now->getYear());
+				break;
+			default:
 				break;
 		}
 		
