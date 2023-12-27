@@ -92,4 +92,10 @@
 	'type webpage' => 'Type',
 	'link webpage' => 'Link',
 	
+	'First half month+' => 'First half of month',
+	'Second half month+' => 'Second half of month',
+	'First half of last month+' => 'First half of last month',
+	'Second half of last month+' => 'Second half of last month',
+	'year to date' => 'Year to date',
+	
 );

@@ -48,12 +48,23 @@
 			<td><span class="bold"><?php echo lang("date") ?>:&nbsp;</span></td>
 			<td align='left'><?php 
 				echo select_box('report[date_type]', array(
+
 					option_tag(lang('today'), 1, array_var($report_data, "date_type") == 1 ? array('selected' => 'selected'):null),
+					option_tag(lang('yesterday'), 11, array_var($report_data, "date_type") == 11 ? array('selected' => 'selected'):null),
+					
 					option_tag(lang('this week'), 2, array_var($report_data, "date_type") == 2 ? array('selected' => 'selected'):null),
 					option_tag(lang('last week'), 3, array_var($report_data, "date_type") == 3 ? array('selected' => 'selected'):null),
+					
+					option_tag(lang('First half month+'), 7, array_var($report_data, "date_type") == 7 ? array('selected' => 'selected'):null),
+					option_tag(lang('Second half month+'), 8, array_var($report_data, "date_type") == 8 ? array('selected' => 'selected'):null),
+					option_tag(lang('First half of last month+'), 9, array_var($report_data, "date_type") == 9 ? array('selected' => 'selected'):null),
+					option_tag(lang('Second half of last month+'), 10, array_var($report_data, "date_type") == 10 ? array('selected' => 'selected'):null),
 					option_tag(lang('this month'), 4, array_var($report_data, "date_type") == 4 ? array('selected' => 'selected'):null),
 					option_tag(lang('last month'), 5, array_var($report_data, "date_type") == 5 ? array('selected' => 'selected'):null),
+
+					option_tag(lang('year to date'), 12, array_var($report_data, "date_type") == 12 ? array('selected' => 'selected'):null),
 					option_tag(lang('select dates...'), 6, array_var($report_data, "date_type") == 6 ? array('selected' => 'selected'):null)
+
 				), array('onchange' => 'og.dateselectchange(this)'));
 			?></td>
 		</tr>
