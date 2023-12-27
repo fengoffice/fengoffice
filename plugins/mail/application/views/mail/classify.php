@@ -28,7 +28,7 @@
 		}
 		?>
 		<div style="float:right;width:70px;margin-left:10px;clear: left;">
-			<?php echo submit_button(lang('save'), array('tabindex' => '50'))?>
+			<?php echo submit_button(lang('save'), null, array('tabindex' => '50'))?>
 		</div>
 	</div>
 	

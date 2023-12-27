@@ -636,6 +636,12 @@ function get_format_value_to_header($col, $obj_type_id)
 						}
 					}
 				}
+
+				if($cp->getType() == 'memo' && $cp_val instanceof CustomPropertyValue){
+					if (!$raw_data) {
+						$cp_val->setValue(nl2br($cp_val->getValue()));
+					}
+				}
 				
 				if ($cp->getType() == 'image' && $cp_val instanceof CustomPropertyValue) {
 					// if raw_data=true then return the json value as it is in the db, else render the feng component
