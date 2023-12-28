@@ -1,5 +1,3 @@
-<!-- [![Feng Office Banner](https://testphp.fengoffice.com/test-readme/header_readmed.png)](https://www.fengoffice.io) -->
-
 <a>
     <img src="https://images.fengoffice.com/github/header_readme.png" alt="fengoffice Docs & Notes & Wikis" />
 </a>
@@ -8,7 +6,7 @@
     <img height="70" src="https://images.fengoffice.com/github/normal_logo.svg">
 </h1>
 <h2 align="center" style="color: #264653;">
-    ⭐️  The open source CRM alternative for your company   ⭐️
+    ⭐️   An open source business and project management platform   ⭐️
 </h2>
 
 <p align="center">
@@ -18,9 +16,9 @@
 </p>
 
 <p align="center">
-    <a href="https://www.fengoffice.io"><b>Website</b></a> •
+    <a href="https://www.fengoffice.com"><b>Website</b></a> •
     <a href="https://twitter.com/fengoffice"><b>Twitter</b></a> •
-    <a href="https://twitter.com/fengoffice"><b>Youtube</b></a>
+    <a href="https://www.youtube.com/fengoffice"><b>Youtube</b></a>
 </p>
 
 <h2 align="left" style="color: #2A9D8F;">
@@ -167,7 +165,7 @@ Apache 2.0+
 </p>
 
 <ul>
-    <li style="color: #264653;padding:0 20px;">XAMPP <a href="http://www.apachefriends.org/en/xampp">http://www.apachefriends.org/en/xampp</a></li>
+    <li style="color: #264653;padding:0 20px;">XAMPP <a href="https://www.apachefriends.org/">https://www.apachefriends.org/</a></li>
 </ul>
 
 <!-- ## Installation -->
