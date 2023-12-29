@@ -1615,6 +1615,8 @@ class Contact extends BaseContact {
     	$url = null; Hook::fire('override_contact_picture_url', $this, $url);
     	if ($url != null) return $url;
     	
+		if($default_img_file==null) $default_img_file = "default-avatar.png";
+
     	switch ($size) {
     		case 'small':
     			return ($this->getPictureFileSmall() != '' ? get_url('files', 'get_public_file', array('id' => $this->getPictureFileSmall())): get_image_url($default_img_file));
