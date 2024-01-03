@@ -1203,9 +1203,9 @@
     
     
     var users_store = [];
-<?php foreach ($users as $u) { ?>
+<?php if( isset($users)){ foreach ($users as $u) { ?>
                 users_store.push(['<?php echo $u->getId() ?>', '<?php echo clean(escape_character($u->getObjectName())) ?>']);
-<?php } ?>
+<?php }} ?>
 
     $(function() {
         $("#<?php echo $genid ?>tabs").tabs();

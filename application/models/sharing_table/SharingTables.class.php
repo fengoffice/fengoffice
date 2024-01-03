@@ -320,23 +320,26 @@ class SharingTables extends BaseSharingTables {
 		if ($end_date instanceof DateTimeValue) {
 			$end_date = $end_date->toMySQL();
 		}
+        $end_cond = "";
 		if ($end_date) {
 			$end_cond = "AND updated_on <= '$end_date'";
 		}
 		
 		try {
 			$object_ids = DB::executeAll("SELECT id, object_type_id FROM ".TABLE_PREFIX."objects WHERE updated_on >= '$start_date' $end_cond");
-			$obj_count = 0;
-			DB::beginWork();
-			foreach ($object_ids as $info) {
-				$oid = $info['id'];
-				$tid = $info['object_type_id'];
-				ContentDataObjects::addObjToSharingTable($oid);
-				$obj_count++;
-			}
-			set_config_option('last_sharing_table_rebuild', DateTimeValueLib::now()->toMySQL());
-			DB::commit();
-		} catch(Exception $e) {
+            if( isset($object_ids)){
+                $obj_count = 0;
+		    	DB::beginWork();
+			    foreach ($object_ids as $info) {
+				    $oid = $info['id'];
+				    $tid = $info['object_type_id'];
+				    ContentDataObjects::addObjToSharingTable($oid);
+				    $obj_count++;
+			    }
+			    set_config_option('last_sharing_table_rebuild', DateTimeValueLib::now()->toMySQL());
+			    DB::commit();
+            }
+        } catch(Exception $e) {
 			DB::rollback();
 			Logger::log("Failed to rebuild sharing table: ".$e->getMessage()."\nTrace: ".$e->getTraceAsString());
 		}

@@ -8,7 +8,7 @@ foreach ($css as $c) {
 	echo stylesheet_tag($c);
 }
 ?>
-
+<?php echo stylesheet_tag("register.css"); ?>
 <!--[if IE 7]>
 <?php echo stylesheet_tag("og/ie7.css"); ?>
 <![endif]-->

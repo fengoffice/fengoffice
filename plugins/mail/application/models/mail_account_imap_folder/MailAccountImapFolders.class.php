@@ -13,7 +13,7 @@
     * @param account id
     * @return array
     */
-  	function getMailAccountImapFolders($accountid)
+  	static function getMailAccountImapFolders($accountid)
   	{
   		return MailAccountImapFolders::instance()->findAll(array(
         'conditions' => '`account_id` = ' . $accountid

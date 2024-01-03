@@ -584,11 +584,12 @@ class SearchController extends ApplicationController {
 			}
 			
 			if(count($object_ids) > 0){
-				$result = ContentDataObjects::listing(array(
-						"extra_conditions" => " AND o.id IN (".implode(",",$object_ids).") ",
-						"include_deleted" => true,
+				// no need to call "listing", the permissions and member filters were already applied in the main query
+				// we can call the findAll methond of Objects class because we only need the generic properties
+				$objects = Objects::instance()->findAll(array(
+					"conditions" => "id IN (". implode(',', $object_ids) .")"
 				));
-				$objects = $result->objects;
+				
 				foreach ($objects as $object) {
 					foreach ($search_results as $key => $search_result) {
 						if($search_result['id'] == $object->getId()){

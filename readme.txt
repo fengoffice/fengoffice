@@ -1,4 +1,4 @@
-	About Feng Office 3.10.7.8
+	About Feng Office 3.10.8.0-beta3
 	=================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
@@ -105,14 +105,18 @@
 	
 	Changelog
 	=========
-
-	Since 3.10.7.7
+	
+	Since 3.10.8.0-beta2
 	-----------------------------------
+	feature: invoice templates allow to show subprojects in projects tabl… (#2326)
+	feature: add new column for markup amount at invoice templates (#2322)
+	feature: allow to select date format in invoice templates (#2319)
 	feature: Project earnings report: add 'Project progress' column (#2324)
+	feature: new readme.md (#2321)
 	bugfix: Budget by tasks report: Rename select options for the 'group by' option (#2323)
 	bugfix: Notes widget: Keep the styling and line breaks of the notes (#2318)
 
-	Since 3.10.7.6
+	Since 3.10.8.0-beta1
 	-----------------------------------
 	bugfix: client form not saving associated object properties (#2316)
 	bugfix: Add line breaks in memo custom properties when rendering (#2315)
@@ -120,16 +124,25 @@
 	bugfix: don't show the warning in widget when the member is selected (#2313)
 	bugfix: fix time entries qbo sync in background (#2312)
 	bugfix: fix expenses2 installer queries (#2311)
-
-
-	Since 3.10.7.5
-	-----------------------------------
 	bugfix: fixed timesheets report dont uses overtime (#2310)
 	bugfix: 'Forecasted revenue' calc -> exclude bud expenses assigned to tasks (#2309)
 	bugfix: widget show message (#2304)
 	bugfix: time entry cost is not transferred to qbo (#2301)
 	bugfix: Project billing report: in excel export use price in expenses table (#2299)
 	bugfix: the search function under the workflow permission is not working (#2283)
+	bugfix/auto scroll issue (#2317)
+	bugfix: can't add lines to invoice in php8 (#2308)
+	bugfix: cant classify email with attachments by drag and drop (#2307)
+	bugfix: can't add task with subtasks (#2305)
+	bugfix: can't instantiate templates in php8 (#2302)
+
+	Since 3.10.7.x
+	-----------------------------------
+	bugfix: php8 compatibility fixes (#2295)
+	bugfix: when sending vars to invoice print view 'invoice_notebook' must be an array always (#2292)
+	bugfix: don't call abstract class ContentDataObjects methods directly, it gives errors in php8 and also we don't need to do that (#2291)
+	bugfix: resize work performed data table in task module (#2273)
+	bugfix: Remove manual estimated cost option for tasks (#2234)
 
 	Since 3.10.7.4
 	-----------------------------------
