@@ -1809,8 +1809,8 @@ class ContactController extends ApplicationController
 				$obj->setEmailTypeId($data['type']);
 				$obj->setEmailAddress(trim($data['email_address']));
 				if(Plugins::instance()->isActivePlugin('income')):
-					$obj->setIsMain((!is_null($data['is_main_email']) ? true : false));
-					$obj->setDefaultEmail((!is_null($data['default_billing_email']) ? true : false));
+					$obj->setIsMain((!isset($data['is_main_email']) ? true : false));
+					$obj->setDefaultEmail((!isset($data['default_billing_email']) ? true : false));
 				endif;
 				$obj->save();
 			}
@@ -1871,7 +1871,7 @@ class ContactController extends ApplicationController
 				$obj->setZipCode($data['zip_code']);
 				$obj->setCountry($data['country']);
 				if (Plugins::instance()->isActivePlugin('income')) :
-					$obj->setDefaultAddress((!is_null($data['default_billing_address']) ? true : false));
+					$obj->setDefaultAddress((!isset($data['default_billing_address']) ? true : false));
 				endif;
 				$obj->save();
 			}

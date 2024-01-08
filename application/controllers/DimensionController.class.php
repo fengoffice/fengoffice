@@ -758,10 +758,13 @@ class DimensionController extends ApplicationController {
 				if (!$ignore_context_filters) {
 					// check for other dimensions filtering this dimension
 					$selected_members = array();
-					foreach (active_context() as $selection) {
+					$sels = active_context();
+					if( isset($sels)){
+					foreach ($sels as $selection) {
 						if ($selection instanceof Member && $selection->getDimensionId() != $mem->getDimensionId()) {
 							$selected_members[] = $selection;
 						}
+					}
 					}
 					if (count($selected_members) > 0) {
 						$applied_filters = null;

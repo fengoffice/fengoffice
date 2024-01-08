@@ -2174,8 +2174,10 @@ class mime_parser_class
 		$results = array();
 		if(!IsSet($message['Headers']['content-type:']))
 			$content_type = 'text/plain';
-		elseif(count($message['Headers']['content-type:']) == 1)
+		elseif(is_string($message['Headers']['content-type:']))
 			$content_type = $message['Headers']['content-type:'];
+		elseif(count($message['Headers']['content-type:']) == 1)
+			$content_type = $message['Headers']['content-type:'][0];
 		else
 		{
 			if(!$this->SetPositionedWarning('message contains multiple content-type headers', $message['Position']))

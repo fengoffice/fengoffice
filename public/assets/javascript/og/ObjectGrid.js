@@ -544,8 +544,16 @@ og.ObjectGrid = function(config, ignore_context) {
 								$("#"+v.grid.id+" .x-grid3 .x-grid3-header-inner").css('width', '');
 								$("#"+v.grid.id+" .x-grid3 .x-grid3-scroller").css('width', '');
 								// adjust panel height
-								var h = $("#"+v.grid.id).parent().height();
-								v.grid.setSize({height:h});
+
+								/*
+								* Danilo Zurita 15/12/2023
+								* These two lines were commented for reasons of identifying if they are used f
+								* or something specific, the link of the task was left for quick tracking
+								* Link to Task: https://c12.fengoffice.com/_feng/index.php?c=task&a=view&id=4712562
+								*/
+
+								// var h = $("#"+v.grid.id).parent().height();
+								// v.grid.setSize({height:h});
 							}, 200);
 						}
 					}

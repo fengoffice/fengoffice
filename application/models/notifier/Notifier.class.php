@@ -51,6 +51,7 @@ class Notifier {
 		}
 
 		//Remove contacts from $exclude_contacts_ids
+		$tmp_subs = array();
 		if(is_array($exclude_contacts_ids)){
 			foreach ($subscribers as $person) {
 				if (!in_array($person->getId(), $exclude_contacts_ids)) $tmp_subs[] = $person;

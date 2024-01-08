@@ -347,6 +347,9 @@ function core_dimensions_update_18_19() {
 }
 
 function core_dimensions_update_19_20() {
+	/** 
+	 * THIS PROCEDURE IS NOT NEEDED ANYMORE, THIS WAS DONE TO FIX CALCULATIONS FOR SOME CLIENTS THAT WERE IN A SPECIFIC VERSiON WiTH AN ERROR IN TIME CALCULATIONS
+	 * THAT VERSION IS NO LONGER USED IN ANY CLIENT, SO FOR PERFORMANCE WE CAN AVOID RECALCULATING THIS
 	Env::useHelper('dimension');
 
 	// ensure that expenses plugin is in the latest version before making calculations
@@ -374,5 +377,6 @@ function core_dimensions_update_19_20() {
 			$tasks_processed[] = $task->getId();
 		}
 	}
+	*/
 }
 
