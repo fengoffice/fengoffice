@@ -1147,10 +1147,12 @@ class TaskController extends ApplicationController {
     }
 
     private function getDateGroups($date_field, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
-        $groupId = $show_more_conditions['groupId'];
-        $start = $show_more_conditions['start'];
-        $limit = $show_more_conditions['limit'];
-        $groups_conditions = $this->getDateGroupsConditions($date_field);
+		if (!isset($show_more_conditions)) $show_more_conditions = array();
+        $groupId = array_var($show_more_conditions, 'groupId');
+        $start   = array_var($show_more_conditions, 'start', 0);
+        $limit   = array_var($show_more_conditions, 'limit', user_config_option('noOfTasks'));
+
+		$groups_conditions = $this->getDateGroupsConditions($date_field);
         
         // move to offset
         if ($groups_count > 0) {
@@ -1468,9 +1470,10 @@ class TaskController extends ApplicationController {
 
     private function getPriorityGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $priority_field = "`priority`";
-        $groupId = $show_more_conditions['groupId'];
-        $start = $show_more_conditions['start'];
-        $limit = $show_more_conditions['limit'];
+		if (!isset($show_more_conditions)) $show_more_conditions = array();
+        $groupId = array_var($show_more_conditions, 'groupId');
+        $start   = array_var($show_more_conditions, 'start', 0);
+        $limit   = array_var($show_more_conditions, 'limit', user_config_option('noOfTasks'));
         
         if ($groups_offset < 4) {
         	$groups_offset += $groups_count;
@@ -1488,6 +1491,8 @@ class TaskController extends ApplicationController {
 					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
+		
+		if (!$groups) $groups = array();
 
         $more_group_ret = array();
         foreach ($groups as $key => $group) {
@@ -1535,16 +1540,19 @@ class TaskController extends ApplicationController {
         if (!is_null($groupId)) {
             return $more_group_ret;
         } else {
-            usort($groups, array("TaskController", "cmpGroupOrder"));
+			if (isset($groups) && is_array($groups)) {
+				usort($groups, array("TaskController", "cmpGroupOrder"));
+			}
             return $groups;
         }
     }
 
     private function getMilestoneGroups($conditions, $show_more_conditions, $list_subtasks_cond, $include_empty_milestones = true, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
         $milestone_field = "`milestone_id`";
-        $groupId = $show_more_conditions['groupId'];
-        $start = $show_more_conditions['start'];
-        $limit = $show_more_conditions['limit'];
+		if (!isset($show_more_conditions)) $show_more_conditions = array();
+        $groupId = array_var($show_more_conditions, 'groupId');
+        $start   = array_var($show_more_conditions, 'start', 0);
+        $limit   = array_var($show_more_conditions, 'limit', user_config_option('noOfTasks'));
 
         $join_params['join_type'] = "LEFT ";
         $join_params['table'] = TABLE_PREFIX . "project_milestones";
@@ -1562,7 +1570,8 @@ class TaskController extends ApplicationController {
 					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
-
+		
+		if (!$groups) $groups = array();
 		if ($groups_count > 0) {
 			$groups = array_slice($groups, $groups_offset, count($groups));
 		}
@@ -1645,9 +1654,11 @@ class TaskController extends ApplicationController {
             default:
                 return array();
         }
-        $groupId = $show_more_conditions['groupId'];
-        $start = $show_more_conditions['start'];
-        $limit = $show_more_conditions['limit'];
+		
+		if (!isset($show_more_conditions)) $show_more_conditions = array();
+        $groupId = array_var($show_more_conditions, 'groupId');
+        $start   = array_var($show_more_conditions, 'start', 0);
+        $limit   = array_var($show_more_conditions, 'limit', user_config_option('noOfTasks'));
 
         $users_groups = array();
 
@@ -1660,7 +1671,8 @@ class TaskController extends ApplicationController {
 					"fire_additional_data_hook" => false,
                     "raw_data" => true,
                 ))->objects;
-        
+		
+		if (!$groups) $groups = array();
         if ($groups_count > 0) {
         	$groups = array_slice($groups, $groups_offset, count($groups));
         }
@@ -1705,9 +1717,11 @@ class TaskController extends ApplicationController {
     }
 
     private function getStatusGroups($conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
-        $groupId = $show_more_conditions['groupId'];
-        $start = $show_more_conditions['start'];
-        $limit = $show_more_conditions['limit'];
+
+		if (!isset($show_more_conditions)) $show_more_conditions = array();
+        $groupId = array_var($show_more_conditions, 'groupId');
+        $start   = array_var($show_more_conditions, 'start', 0);
+        $limit   = array_var($show_more_conditions, 'limit', user_config_option('noOfTasks'));
         
         if ($groups_offset < 2) {
         	$groups_offset += $groups_count;
@@ -1769,6 +1783,7 @@ class TaskController extends ApplicationController {
     }
 
     private function getDimensionGroups($dim_id, $member_type_id, $conditions, $show_more_conditions, $list_subtasks_cond, $only_totals = false, &$groups_offset = 0, $groups_count = 0) {
+		if (!isset($show_more_conditions)) $show_more_conditions = array();
         $groupId = array_var($show_more_conditions, 'groupId');
         $start   = array_var($show_more_conditions, 'start', 0);
         $limit   = array_var($show_more_conditions, 'limit', user_config_option('noOfTasks'));
@@ -1811,6 +1826,7 @@ class TaskController extends ApplicationController {
                         "raw_data" => true,
                     ))->objects;
 
+			if (!$groups) $groups = array();
             $total_groups = count($groups);
 			// move to offset
 			if ($groups_count > 0) {
@@ -2876,9 +2892,14 @@ class TaskController extends ApplicationController {
         tpl_assign('pending_task_id', 0);
 
         $subtasks = array();
-        if (array_var($_POST, 'multi_assignment')) {
-            $subtasks = json_decode(array_var($_POST, 'multi_assignment'), true);
-        }
+		$subtasks_data = array_var($_POST, 'multi_assignment');
+		if (isset($subtasks_data)) {
+			if (is_array($subtasks_data)) {
+				$subtasks = $subtasks_data;
+			} else if (is_string($subtasks_data)) {
+				$subtasks = json_decode(array_var($_POST, 'multi_assignment'), true);
+			}
+		}
         tpl_assign('multi_assignment', $subtasks);
 
         if (is_array(array_var($_POST, 'task'))) {
@@ -2947,7 +2968,7 @@ class TaskController extends ApplicationController {
                 	$task->setAssignedToContactId(logged_user()->getId());
                 }
                 
-                $totalMinutes = (array_var($task_data, 'time_estimate_hours', 0) * 60) + (array_var($task_data, 'time_estimate_minutes', 0));
+                $totalMinutes = ((int)array_var($task_data, 'time_estimate_hours', 0) * 60) + (int)(array_var($task_data, 'time_estimate_minutes', 0));
                 $task->setTimeEstimate($totalMinutes);
 
                 $id = array_var($_GET, 'id', 0);
@@ -3443,7 +3464,7 @@ class TaskController extends ApplicationController {
         }
 
         $task_data = array_var($_POST, 'task');
-        $time_estimate = (array_var($_POST, 'hours', 0) * 60) + array_var($_POST, 'minutes', 0);
+        $time_estimate = ((int)array_var($_POST, 'hours', 0) * 60) + (int)array_var($_POST, 'minutes', 0);
         if ($time_estimate > 0) {
             $estimatedTime = $time_estimate;
         } else {
@@ -3815,7 +3836,7 @@ class TaskController extends ApplicationController {
                     if (!is_array($member_ids) || count($member_ids) == 0)
                         $member_ids = array(0);
                     
-                    Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => $parent), $member_ids);
+                    Hook::fire('modify_subtasks_member_ids', array('task' => $task, 'parent' => isset($parent) ? $parent : null), $member_ids);
                     $members = Members::instance()->findAll(array('conditions' => "id IN (" . implode(',', $member_ids) . ")"));
                     
                     if($previous_member_ids != $member_ids){ 
@@ -4792,6 +4813,8 @@ class TaskController extends ApplicationController {
         $forever = 0;
         $jump = array_var($task_data, 'occurance_jump');
 
+        $rnum = "";
+        
         if (array_var($task_data, 'repeat_option') == 1) {
             $forever = 1; 
         } elseif (array_var($task_data, 'repeat_option') == 2) {

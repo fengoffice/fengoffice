@@ -21,7 +21,7 @@ class MailUtilities {
 		return $this->special_imap_folder_codes;
 	}
 
-	function getmails($accounts = null, &$err, &$succ, &$errAccounts, &$mailsReceived, $maxPerAccount = 0) {
+	static function getmails($accounts = null, &$err, &$succ, &$errAccounts, &$mailsReceived, $maxPerAccount = 0) {
 		if (defined('DONT_CHECK_MAIL') && DONT_CHECK_MAIL) {
 			return;
 		}
@@ -67,7 +67,7 @@ class MailUtilities {
 				// don't check the accounts of disabled users
 				if (in_array($account->getEmailAddress(), $disabled_user_emails)) {
 					debug_log("SKIPPING Account (".$account->getEmailAddress().") ".$account->getId(), "checkmail_log.php");
-					Logger::log_r("CHECKMAIL: Skipping disabled user account: ".$account->getEmailAddress());
+					// Logger::log_r("CHECKMAIL: Skipping disabled user account: ".$account->getEmailAddress());
 					continue;
 				}
 
@@ -173,7 +173,7 @@ class MailUtilities {
 		}
 	}*/
 
-	function getAddresses($field) {
+	static function getAddresses($field) {
 		$f = '';
 		if ($field) {
 			foreach($field as $add) {
@@ -188,7 +188,7 @@ class MailUtilities {
 		return $f;
 	}
 
-	private function SaveContentToFilesystem($uid, &$content) {
+	private static function SaveContentToFilesystem($uid, &$content) {
 		$tmp = ROOT . '/tmp/' . rand();
 		$handle = fopen($tmp, "wb");
 		fputs($handle, $content);
@@ -201,7 +201,7 @@ class MailUtilities {
 		return $repository_id;
 	}
 
-	private function getFromAddressFromContent($content) {
+	private static function getFromAddressFromContent($content) {
 		$address = array(array('name' => '', 'address' => ''));
 		if (strpos($content, 'From') !== false) {
 			$ini = strpos($content, 'From');
@@ -215,7 +215,7 @@ class MailUtilities {
 		return $address;
 	}
 
-	private function getHeaderValueFromContent($content, $headerName) {
+	private static function getHeaderValueFromContent($content, $headerName) {
 		if (stripos($content, $headerName) !== FALSE && stripos($content, $headerName) == 0) {
 			$ini = 0;
 		} else {
@@ -232,7 +232,7 @@ class MailUtilities {
 		return $res;
 	}
 
-	private function getMessageIdHeaderValueFromContent($content) {
+	private static function getMessageIdHeaderValueFromContent($content) {
 		$headerName = "Message-ID";
 		if (stripos($content, $headerName) !== FALSE && stripos($content, $headerName) == 0) {
 			$ini = 0;
@@ -252,7 +252,7 @@ class MailUtilities {
 		return $res;
 	}
 
-	function SaveMail(&$content, MailAccount $account, $uidl, $state = 0, $imap_folder_name = '', $read = null, &$received_count) {
+	static function SaveMail(&$content, MailAccount $account, $uidl, $state = 0, $imap_folder_name = '', $read = null, &$received_count) {
 
 		try {
 
@@ -733,7 +733,7 @@ class MailUtilities {
 		return false;
 	}
 
-	function parseMail(&$message, &$decoded, &$results, &$warnings) {
+	static function parseMail(&$message, &$decoded, &$results, &$warnings) {
 		$mime = new mime_parser_class;
 		$mime->mbox = 0;
 		$mime->decode_bodies = 1;
@@ -858,7 +858,7 @@ class MailUtilities {
 	 * @param MailAccount $account
 	 * @return array
 	 */
-	private function getNewPOP3Mails(MailAccount $account, $max = 0) {
+	private static function getNewPOP3Mails(MailAccount $account, $max = 0) {
 		$pop3 = new Net_POP3();
 		debug_log("  START getNewPOP3Mails ".$account->getId(), "checkmail_log.php");
 
@@ -930,7 +930,7 @@ class MailUtilities {
 		return $received;
 	}
 
-	public function displayMultipleAddresses($addresses, $clean = true, $add_contact_link = true) {
+	public static function displayMultipleAddresses($addresses, $clean = true, $add_contact_link = true) {
 		$addresses = self::parse_to(html_entity_decode($addresses));
 		$list = self::parse_to(explode(',', $addresses));
 		$result = "";
@@ -953,7 +953,7 @@ class MailUtilities {
 		return $result;
 	}
 
-	public function ENCRYPT_DECRYPT($Str_Message) {
+	static public function ENCRYPT_DECRYPT($Str_Message) {
 		//Function : encrypt/decrypt a string message v.1.0  without a known key
 		//Author   : Aitor Solozabal Merino (spain)
 		//Email    : aitor-3@euskalnet.net
@@ -1011,11 +1011,11 @@ class MailUtilities {
 	}
 
 
-	function prepareEmailAddresses($addr_str) {
+	static function prepareEmailAddresses($addr_str) {
 		return prepare_email_addresses($addr_str);
 	}
 
-	function sendMail($smtp_server, $to, $from, $subject, $body, $cc, $bcc, $attachments=null, $smtp_port=25, $smtp_username = null, $smtp_password ='', $type='text/plain', $transport=0, $message_id=null, $in_reply_to=null, $inline_images = null, &$complete_mail, $att_version, $mail_account) {
+	static function sendMail($smtp_server, $to, $from, $subject, $body, $cc, $bcc, $attachments=null, $smtp_port=25, $smtp_username = null, $smtp_password ='', $type='text/plain', $transport=0, $message_id=null, $in_reply_to=null, $inline_images = null, &$complete_mail, $att_version, $mail_account) {
 		//Load in the files we'll need
 		Env::useLibrary('swift');
 		try {
@@ -1153,7 +1153,7 @@ class MailUtilities {
 
 	}
 
-	private function retrieve_original_mail_code(Swift_Message $message) {
+	private static function retrieve_original_mail_code(Swift_Message $message) {
 		$complete_mail = "";
 		try {
 			$complete_mail = $message->toString();
@@ -1173,7 +1173,7 @@ class MailUtilities {
 		return $complete_mail;
 	}
 
-	private function adjustBody($message, $type, &$body) {
+	private static function adjustBody($message, $type, &$body) {
 		// add <html> tag
 		if ($type == 'text/html' && stripos($body, '<html>') === FALSE) {
 			$pre = '<html>';
@@ -1192,7 +1192,7 @@ class MailUtilities {
  		}
 	}
 
-	function parse_to($to) {
+	static function parse_to($to) {
 		if (!is_array($to)) return $to;
 		$return = array();
 		foreach ($to as $elem){
@@ -1253,7 +1253,7 @@ class MailUtilities {
 	}
 
 
-	function getNewImapMails(MailAccount $account, $max = 0, $imap_folders_to_check = null) {
+	static function getNewImapMails(MailAccount $account, $max = 0, $imap_folders_to_check = null) {
 		$received = 0;
 		debug_log("  start getNewImapMails ".$account->getId(), "checkmail_log.php");
 
@@ -1398,7 +1398,7 @@ class MailUtilities {
 
 									debug_log(print_r("complete server list of uids and msgids since $max_uid to $range_end", true), "checkmail_log.php");
 									debug_log(print_r($server_uids_list, true), "checkmail_log.php");
-									if(count($server_uids_list)){
+									if(isset($server_uids_list) && count($server_uids_list)){
 										$lastReceived = $server_uids_list[0]["msg_id"];
 										// overwrite the numMessages variable with the last msg_id in server
 										//$numMessages = $server_uids_list[count($server_uids_list)-1]["msg_id"];
@@ -1526,7 +1526,7 @@ class MailUtilities {
 		return $received;
 	}
 
-	function getImapFolders(MailAccount $account) {
+	static function getImapFolders(MailAccount $account) {
 
 		$imap = $account->imapConnect();
 
@@ -1557,7 +1557,7 @@ class MailUtilities {
 		return $result;
 	}
 
-	function sendOutboxMailsAllAccounts($from_time) {
+	static function sendOutboxMailsAllAccounts($from_time) {
 		if(is_null($from_time) || !$from_time instanceof DateTimeValue){
 			return;
 		}
@@ -1582,7 +1582,7 @@ class MailUtilities {
 		}
 	}
 
-	function deleteMailsFromServerAllAccounts() {
+	static function deleteMailsFromServerAllAccounts() {
 		$accounts = MailAccounts::instance()->findAll();
 		$count = 0;
 		foreach ($accounts as $account) {
@@ -1595,7 +1595,7 @@ class MailUtilities {
 		return $count;
 	}
 
-	function deleteMailsFromServer(MailAccount $account) {
+	static function deleteMailsFromServer(MailAccount $account) {
 		$count = 0;
 		if ($account->getDelFromServer() > 0) {
 			debug_log("Account ".$account->getId()." : Start deleting mails older than ".$account->getDelFromServer()." days.", "delete_mails_from_server.log");
@@ -1687,7 +1687,7 @@ class MailUtilities {
 		return $count;
 	}
 
-	function getContent($smtp_server, $smtp_port, $transport, $smtp_username, $smtp_password, $body, $attachments)
+	static function getContent($smtp_server, $smtp_port, $transport, $smtp_username, $smtp_password, $body, $attachments)
 	{
 		//Load in the files we'll need
 		Env::useLibrary('swift');
@@ -1726,7 +1726,7 @@ class MailUtilities {
 	}
 
 	// to check an IMAP mailbox for syncrhonization
-	function checkSyncMailbox($server, $with_ssl, $transport, $ssl_port, $box, $from, $password){
+	static function checkSyncMailbox($server, $with_ssl, $transport, $ssl_port, $box, $from, $password){
 
 		if (!function_exists('imap_open')) {
 			flash_error(lang('php-imap extension not installed'));
@@ -1761,7 +1761,7 @@ class MailUtilities {
 	}
 
 	// to send an email to the email server through IMAP
-	function sendToServerThroughIMAP($server, $with_ssl, $transport, $ssl_port, $box, $from, $password, $content, $mail_id=0){
+	static function sendToServerThroughIMAP($server, $with_ssl, $transport, $ssl_port, $box, $from, $password, $content, $mail_id=0){
 
 		if (!function_exists('imap_open')) {
 			flash_error(lang('php-imap extension not installed'));
@@ -1789,7 +1789,7 @@ class MailUtilities {
 	}
 
 
-	function getSentImapFolderToSync($account) {
+	static function getSentImapFolderToSync($account) {
 		$sync_folder_obj = null;
 
 		if ($account->getSyncFolder() != "") {
@@ -1812,7 +1812,7 @@ class MailUtilities {
 		return $sync_folder_obj;
 	}
 
-	function appendMailThroughIMAP($account, $mail, $content, $imap = null) {
+	static function appendMailThroughIMAP($account, $mail, $content, $imap = null) {
 		
 		if ($account instanceof MailAccount && $account->getIsImap() && $content != "") {
 			
@@ -1855,7 +1855,7 @@ class MailUtilities {
 		return $this->saveContentToFilesystem("UID".rand(), $content);
 	}
 
-	public function replaceQuotedText($text, $replacement = "") {
+	static public function replaceQuotedText($text, $replacement = "") {
 		$lines = explode("\n", $text);
 		$text = "";
 		$quoted = false;
@@ -1871,11 +1871,11 @@ class MailUtilities {
 		return $text;
 	}
 
-	public function hasQuotedText($text) {
+	static public function hasQuotedText($text) {
 		return strpos($text, "\n>") === false ? false : true;
 	}
 
-	public function replaceQuotedBlocks($html, $replacement = "") {
+	public static function replaceQuotedBlocks($html, $replacement = "") {
 		$start = stripos($html, "<blockquote");
 		while ($start !== false) {
 			$end = stripos($html, "</blockquote>", $start);
@@ -1892,7 +1892,7 @@ class MailUtilities {
 		return $html;
 	}
 
-	public function hasQuotedBlocks($html) {
+	public static function hasQuotedBlocks($html) {
 		return stripos($html, "<blockquote") !== false;
 	}
 
@@ -2007,7 +2007,7 @@ class MailUtilities {
 
 
 	// if there are mails in outbox -> then put a reminder
-	function check_if_outbox_has_pending_mails($usu) {
+	static function check_if_outbox_has_pending_mails($usu) {
 		//$usu = logged_user();
 		$accounts = MailAccounts::instance()->getMailAccountsByUser($usu);
 		$account_ids = array();
@@ -2047,7 +2047,7 @@ class MailUtilities {
 	}
 
 
-	function get_imap_account_mailboxes($account, &$can_detect_special_folders, $imap = null) {
+	static function get_imap_account_mailboxes($account, &$can_detect_special_folders, $imap = null) {
 
 		$has_to_disconnect = false;
 

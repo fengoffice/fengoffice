@@ -5566,6 +5566,14 @@ og.format_money_amount = function(amount, decimals) {
 	return amount.toLocaleString(locale, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
 }
 
+// renders an amount cell in extjs gird
+og.render_grid_amount = function(value, p, r) {
+	if (r.data.id == '__total_row__') return value;
+	var currency = og.get_currency_by_id(r.data.currency_id);
+	var sym = currency ? currency.symbol : '$';
+	return '<div class="right">' + sym + ' ' + og.format_money_amount(value, 2) + '</div>';
+}
+
 og.updateElementMoneyAmount = function(id, value){
 	var formatted_value = og.format_money_amount(value);
 	$('#'+id).val(formatted_value);

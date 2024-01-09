@@ -71,6 +71,10 @@ class PluginController extends ApplicationController {
 			$name = '';
 			if ( $plg = Plugins::instance()->findById($id)) {
 				if ($plg->isInstalled() && $plg->updateAvailable()){
+					
+					// ensure that some specific columns are present before using objects in any update
+					$this->check_columns_exist_before_updates();
+
 					$name = $plg->getName();
 					$plg->update();
 					
@@ -87,6 +91,10 @@ class PluginController extends ApplicationController {
 	}
 	
 	function updateAll() {
+
+		// ensure that some specific columns are present before using objects in any update
+		$this->check_columns_exist_before_updates();
+
 		try {
 			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1'));
 			foreach ($plugins as $plg) {
@@ -175,11 +183,33 @@ class PluginController extends ApplicationController {
 			die(lang('no access permissions'));
 		}
 	}
+
+	private function get_deprecated_plugins() {
+		return array(
+			"advanced_expenses",
+			"aoac",
+			"attendance_absence_tracking",
+			"bca",
+			"diprode",
+			"expenses",
+			"fidelis",
+			"interra_networks",
+			"inventory_management",
+			"overtime_calculations",
+			"paemfe",
+			"status_dimension_1",
+			"weill_cornell_reports",
+		);
+	}
 	
 	function index() {
 		require_javascript("og/modules/plugins.js");
 		$this->scanPlugins(); // If there are plguins not scanned		
+
+		$deprecated_plugins = $this->get_deprecated_plugins();
+
 		$plugins = Plugins::instance()->findAll(array(
+			"conditions" => "name NOT IN ('".implode("','", $deprecated_plugins)."')",
 			"order"=>"name ASC",
 		));
 				
@@ -212,6 +242,21 @@ class PluginController extends ApplicationController {
 	 */
 	function check_installed_and_activated($plugin_name) {
 		return Plugins::instance()->isActivePlugin($plugin_name);
+	}
+
+	/**
+	 * Here add the columns that are needed before executing any update that use objects
+	 * that tries to load columns that not exists because they are added in a future update
+	 * 
+	 * This is a temporary patch before developing a more structured way to prevent this kind of errors
+	 */
+	function check_columns_exist_before_updates() {
+		
+		if ($this->check_installed_and_activated('advanced_billing')) {
+			Env::useHelper('update_script_functions', 'advanced_billing');
+			add_fixed_fee_and_eaned_value_columns_to_task_table();
+		}
+
 	}
 	
 	

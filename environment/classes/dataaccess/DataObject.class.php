@@ -372,7 +372,7 @@
   	function getColumnValue($column_name, $default = null) {
   	  
   	  // Do we have it cached?
-  	  if(isset($this->column_values[$column_name])) return $this->column_values[$column_name];
+  	  if(is_string($column_name) && isset($this->column_values[$column_name])) return $this->column_values[$column_name];
   	  
   	  // We don't have it cached. Exists?
   	  if(!$this->columnExists($column_name) && $this->isLazyLoadColumn($column_name)) {

@@ -23,6 +23,11 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		'memPath', // this field contains all the classification information
 	];
 
+	// let plugins add more fields to use in this component
+	if (og.object_picker_additional_fields) {
+		available_fields = available_fields.concat(og.object_picker_additional_fields);
+	}
+
 	// add dimension keys to available fields
 	var dim_names = [];	
 	for (did in og.dimensions_info) {
