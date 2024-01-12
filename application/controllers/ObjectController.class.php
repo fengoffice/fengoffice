@@ -142,7 +142,7 @@ class ObjectController extends ApplicationController {
 				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, !$send_notification, true, $log_info_unsubscribe);
 			}
 		}else{
-			logger::log(' aver por aca!');
+			// logger::log(' aver por aca!');
 			$subscribers_to_remove = $object->getSubscriberIds();
 			foreach ($subscribers_to_remove as $user_id_remove) {
 				$log_info_unsubscribe.= ($log_info_unsubscribe == "" ? "" : ",") . $user_id_remove;
@@ -2775,6 +2775,8 @@ class ObjectController extends ApplicationController {
 							$info_elem['assignedTo'] = $instance->getAssignedToName();
 						}
 					}
+
+					Hook::fire('get_objects_list_more_element_data', array('object'=>$instance), $info_elem);
 
 					$info[] = $info_elem;
 				}else{

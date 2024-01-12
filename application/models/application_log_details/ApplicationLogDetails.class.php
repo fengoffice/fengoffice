@@ -23,6 +23,9 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 
 		// ensure that we have the latest version of the object
 		$object = Objects::findObject($object->getId(), true);
+		if (!$object instanceof ContentDataObject) {
+			return;
+		}
 		
 		$manager = $object->manager();
 		$object_columns = array_merge(array('name'), $manager->getColumns());
@@ -141,7 +144,8 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 	
 	
 	static function saveObjectDifferences(ApplicationLog $log, $object_differences) {
-		
+
+		$differences_to_save = array();
 		if ($log->getAction() == ApplicationLogs::ACTION_LINK) {
 			if (array_var($object_differences, 'linked_objects')) {
 				$differences_to_save = array('linked_objects' => $object_differences['linked_objects']);

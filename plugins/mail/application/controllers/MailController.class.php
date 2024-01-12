@@ -136,6 +136,9 @@ class MailController extends ApplicationController {
 		}else{
 			$re_body = $original_mail->getBodyPlain();
 		}
+                $pre_quote = "";
+                $post_quote = "";
+		
 		if ($type == 'html') {
 
 		} else {
@@ -165,7 +168,9 @@ class MailController extends ApplicationController {
 
 		// Put original mail images in the reply or foward
 		if ($original_mail->getBodyHtml() != '') {
-			MailUtilities::parseMail($original_mail->getContent(), $decoded, $parsedEmail, $warnings);
+
+                        $content1 = $original_mail->getContent();
+                        MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 			$tmp_folder = "/tmp/" . $original_mail->getId() . "_reply";
 			if (is_dir(ROOT . $tmp_folder)) remove_dir(ROOT . $tmp_folder);
 			if ($parts_container = array_var($decoded, 0)) {
@@ -358,7 +363,8 @@ class MailController extends ApplicationController {
 		tpl_assign('mail_data', $mail_data);
 		tpl_assign('mail_accounts', $mail_accounts);
 
-		Hook::fire('send_to', array_var($_GET, 'ids'),array_var($_GET, 'me'));
+		$me = array_var($_GET, 'me');
+		Hook::fire('send_to', array_var($_GET, 'ids'),$me);
 
 		// Form is submited
 		if (is_array($mail_data)) {
@@ -1320,11 +1326,12 @@ class MailController extends ApplicationController {
 			}
 			ini_set('memory_limit', $old_memory_limit);
 		} else {
-			MailUtilities::parseMail($email->getContent(), $decoded, $parsedEmail, $warnings);
+			$content1 = $email->getContent(); 
+			MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 			$parsed_attachments = array_var($parsedEmail, "Attachments", array());
 			$parsed_attachments = array_merge($parsed_attachments, array_var($parsedEmail, "Related", array()));
 
-			if ($parsedEmail['Type'] == 'text' && $parsedEmail['SubType'] == 'calendar') {
+			if ($parsedEmail['Type'] == 'text' && isset($parsedEmail['SubType']) && $parsedEmail['SubType'] == 'calendar') {
 				$attach = array(
 						'Data' => $parsedEmail['Data'],
 						'Type' => 'text/calendar',
@@ -1562,7 +1569,8 @@ class MailController extends ApplicationController {
 			$name_field = "name";
 
 		} else {
-			MailUtilities::parseMail($email->getContent(), $decoded, $parsedEmail, $warnings);
+			$content1 = $email->getContent(); 
+			MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 			$parsed_attachments = array_var($parsedEmail, "Attachments", array());
 			$parsed_attachments = array_merge($parsed_attachments, array_var($parsedEmail, "Related", array()));
 
@@ -1734,7 +1742,8 @@ class MailController extends ApplicationController {
 				*/
 				// unclassify attachments, remove all allowed ws, then if file has no ws -> delete it
 				if ($email->getHasAttachments()) {
-					MailUtilities::parseMail($email->getContent(),$decoded,$parsedEmail,$warnings);
+					$content1 = $email->getContent(); 
+					MailUtilities::parseMail($content1,$decoded,$parsedEmail,$warnings);
 					if (isset($parsedEmail['Attachments'])) {
 						$files = ProjectFiles::instance()->findAll(array('conditions' => 'mail_id = '.$email->getId()));
 						foreach ($files as $file) {
@@ -1792,7 +1801,8 @@ class MailController extends ApplicationController {
 
 		$only_attachments = array_var($_REQUEST, 'only_attachments');
 
-		MailUtilities::parseMail($email->getContent(), $decoded, $parsedEmail, $warnings);
+		$content1 = $email->getContent(); 
+		MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 		if (array_var($_POST,'submit')){
 			$members = json_decode(array_var($_POST, 'members'));
 
@@ -1832,7 +1842,9 @@ class MailController extends ApplicationController {
 
 			if (is_null($classification_data)) {
 				$classification_data = array();
-				MailUtilities::parseMail($email->getContent(), $decoded, $parsedEmail, $warnings);
+				$content1 = $email->getContent(); 
+				MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
+				
 				for ($j=0; $j < count(array_var($parsedEmail, "Attachments", array())); $j++) {
 					$classification_data["att_".$j] = true;
 				}
@@ -1872,7 +1884,8 @@ class MailController extends ApplicationController {
 
 						if (count($members) > 0) {
 							$member_instances = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$members).')'));
-							if (!$parsedEmail) MailUtilities::parseMail($email->getContent(), $decoded, $parsedEmail, $warnings);
+							$content1 = $email->getContent(); 
+							if (!$parsedEmail) MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 							$this->classifyFile($classification_data, $email, $parsedEmail, $member_instances, false, !$after_receiving);
 						}
 					}
@@ -1903,7 +1916,8 @@ class MailController extends ApplicationController {
 							if (!$only_attachments) {
 								$ctrl->add_to_members($conv_email, $members, $account_owner, null, $after_receiving); // if $after_receiving set $is_multiple=true to avoid the mail rule creation form
 							}
-							MailUtilities::parseMail($conv_email->getContent(), $decoded, $parsedEmail, $warnings);
+							$content1 = $conv_email->getContent(); 
+							MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 
 							if ($conv_email->getHasAttachments()) {
 								if ($after_receiving && user_config_option('auto_classify_attachments')
@@ -3594,7 +3608,8 @@ class MailController extends ApplicationController {
 		}
 
 		if ($email->getBodyHtml() != '') {
-			MailUtilities::parseMail($email->getContent(), $decoded, $parsedEmail, $warnings);
+			$content1 = $email->getContent(); 
+			MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 			$tmp_folder = "/tmp/" . $email->getAccountId() . "_" . logged_user()->getId()."_". $email->getId() . "_temp_mail_content_res";
 			if (is_dir(ROOT . $tmp_folder)) remove_dir(ROOT . $tmp_folder);
 			if ($parts_container = array_var($decoded, 0)) {

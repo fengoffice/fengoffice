@@ -846,20 +846,23 @@ class Net_IMAPProtocol
     {
         $mailbox_name = $this->_createQuotedString($mailbox);
         $ret          = $this->_genericCommand('EXAMINE', $mailbox_name);
-        $parsed       = '';
+        $parsed       = [];
 
-        if (isset($ret['PARSED'])) {
-            for ($i=0; $i<count($ret['PARSED']); $i++) {
-                $command               = $ret['PARSED'][$i]['EXT'];
-                if(!empty ($command)){
-                	$parsed[key($command)] = $command[key($command)];
-                };
+        if( !PEAR::isError( $ret)){
+            if (isset($ret['PARSED'])) {
+                for ($i=0; $i<count($ret['PARSED']); $i++) {
+                    $command               = $ret['PARSED'][$i]['EXT'];
+                    if(!empty ($command)){
+                	    $parsed[key($command)] = $command[key($command)];
+                    };
                 
+                }
             }
+            return array('PARSED'   => $parsed, 
+            'RESPONSE' => $ret['RESPONSE']);
+        }else{
+            return $ret;
         }
-
-        return array('PARSED'   => $parsed, 
-                     'RESPONSE' => $ret['RESPONSE']);
     }
 
 

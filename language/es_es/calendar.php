@@ -188,6 +188,7 @@
 	'without title' => 'Sin título',
 	'date' => 'Fecha',
 	'time' => 'Hora',
+	'include tasks' => 'Incluir tareas',
 		'connect with google' => 'Conectar con Google',
 		'start sync' => 'Iniciar sincronización',
 		'stop sync' => 'Parar sincronización',

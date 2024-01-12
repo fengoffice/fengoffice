@@ -2,7 +2,7 @@
 
 // The following section renders a selector of one or multiple members for a dimension filter
 
-if ($dim instanceof Dimension) {
+if (isset($dim) && $dim instanceof Dimension) {
 	
 	if (!isset($selector_genid)) {
 		$selector_genid = gen_id();
