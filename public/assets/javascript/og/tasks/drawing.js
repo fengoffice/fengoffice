@@ -907,8 +907,8 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
     for (var key in ogTasks.TotalCols) {
         var row_field = ogTasks.TotalCols[key].row_field;
         var color = '#888';
-        if (row_field == 'worked_time_string' && task.TimeEstimate != '0' && task.TimeEstimate < task.worked_time) {
-            color = '#f00';
+        if (row_field == 'worked_time_string' && task.TimeEstimate != '0' && parseInt(task.TimeEstimate) < parseInt(task.worked_time)) {
+            color = '#f00'; 
         }
         row_total_cols.push({text: task[row_field], color: color});
     }
@@ -1574,7 +1574,7 @@ ogTasks.initTasksList = function () {
                 id: 'task_worked',
                 title: lang('worked'),
                 group_total_field: 'worked_time_string',
-                row_field: 'worked_time_string',
+                row_field: 'worked_time_string', 
                 col_width: '100px'
             }
         );

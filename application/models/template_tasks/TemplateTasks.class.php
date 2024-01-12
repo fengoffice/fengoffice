@@ -63,7 +63,7 @@ class TemplateTasks extends BaseTemplateTasks {
 		if ($only_parent_task_templates)
 			$conditions .= "  and `parent_id` = 0  ";
 		$order_by = "`title` ASC";
-		$tasks = TemplateTasks::find ( array ('conditions' => $conditions, 'order' => $order_by ) );
+		$tasks = TemplateTasks::instance()->find ( array ('conditions' => $conditions, 'order' => $order_by ) );
 		if (! is_array ( $tasks ))
 			$tasks = array ();
 		return $tasks;
@@ -77,7 +77,7 @@ class TemplateTasks extends BaseTemplateTasks {
 		
 		$conditions = " `template_id` = $template_id";
 		$conditions .= "  AND `parent_id` = 0  ";
-		$tasks = TemplateTasks::find ( array ('conditions' => $conditions) );
+		$tasks = TemplateTasks::instance()->find ( array ('conditions' => $conditions) );
 		if (! is_array ( $tasks ))
 			$tasks = array ();
 		return $tasks;
@@ -90,7 +90,7 @@ class TemplateTasks extends BaseTemplateTasks {
 	static function getAllTaskTemplatesBySessionId($session_id) {
 	
 		$conditions = "`session_id` = $session_id";
-		$tasks = TemplateTasks::find ( array ('conditions' => $conditions) );
+		$tasks = TemplateTasks::instance()->find ( array ('conditions' => $conditions) );
 		if (! is_array ( $tasks ))
 			$tasks = array ();
 		return $tasks;

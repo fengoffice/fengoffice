@@ -2351,15 +2351,17 @@ class MemberController extends ApplicationController {
 					$objects[] = $obj;					
 									
 					if (Plugins::instance()->isActivePlugin('mail') && $obj instanceof MailContent) {
+						$mc = new MailController();
 						$conversation = MailContents::getMailsFromConversation($obj);
 						foreach ($conversation as $conv_email) {
 							if (array_var($_POST, 'attachment') && $conv_email->getHasAttachments()) {
-								MailUtilities::parseMail($conv_email->getContent(), $decoded, $parsedEmail, $warnings);
+								$conv_email_content = $conv_email->getContent();
+								MailUtilities::parseMail($conv_email_content, $decoded, $parsedEmail, $warnings);
 								$classification_data = array();
 								for ($j=0; $j < count(array_var($parsedEmail, "Attachments", array())); $j++) {
 									$classification_data["att_".$j] = true;
 								}
-								MailController::classifyFile($classification_data, $conv_email, $parsedEmail, array($member), array_var($_POST, 'remove_prev'), false);
+								$mc->classifyFile($classification_data, $conv_email, $parsedEmail, array($member), array_var($_POST, 'remove_prev'), false);
 							}
 						}
 					}
@@ -2696,7 +2698,7 @@ class MemberController extends ApplicationController {
 		//$response['contacts']['Company'][0]['client billing address']=$client_billing_address;
 
 		//fix patch if billing address is null (not have billing in project), override with CLIENT billing address
-		if($response['contacts']['Company'][0]['billing_address'][0]['parsed']=='')
+		if(isset($response['contacts']['Company'][0]['billing_address'][0]['parsed']) && $response['contacts']['Company'][0]['billing_address'][0]['parsed']=='')
 		{
 			$response['contacts']['Company'][0]['billing_address']=$client_billing_address;
 		}

@@ -201,7 +201,7 @@ class MailContents extends BaseMailContents {
 		$sql = "SELECT mc.object_id FROM `".TABLE_PREFIX."mail_contents` mc $join_sql WHERE $conditions limit 1";
 
 		$rows = DB::executeAll($sql);
-		return count($rows) > 0 ? $rows[0]['object_id'] : false;
+		return isset( $rows) && count($rows) > 0 ? $rows[0]['object_id'] : false;
 	}
 	
 	static function getUidsFromAccount($account_id, $folder = null) {
@@ -398,7 +398,7 @@ class MailContents extends BaseMailContents {
 		return self::instance()->findOne(array('conditions' => array('`message_id` = ?', $message_id)));
 	}
 	
-	function countUserInboxUnreadEmails() {
+	static function countUserInboxUnreadEmails() {
 		$tp = TABLE_PREFIX;
 		$uid = logged_user()->getId();
 		$sql = "SELECT count(*) `c` FROM `{$tp}mail_contents` `a`, `{$tp}read_objects` `b` WHERE `b`.`rel_object_manager` = 'MailContents' AND `b`.`rel_object_id` = `a`.`id` AND `b`.`user_id` = '$uid' AND `b`.`is_read` = '1' AND `a`.`trashed_on` = '0000-00-00 00:00:00' AND `a`.`is_deleted` = 0 AND `a`.`archived_by_id` = 0 AND (`a`.`state` = '0' OR `a`.`state` = '5') AND " . permissions_sql_for_listings(MailContents::instance(), ACCESS_LEVEL_READ, logged_user(), null, '`a`');
@@ -487,7 +487,7 @@ class MailContents extends BaseMailContents {
          * @param string $condition
          * @return object 
          */
-        function getConditionsRules($condition){
+        static function getConditionsRules($condition){
 		return MailContents::instance()->findAll(array(
 			'conditions' => $condition,
 			'join' => array(

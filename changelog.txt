@@ -1,6 +1,93 @@
 
 Changelog
 =========
+
+Since 3.10.8.2
+-----------------------------------
+bugfix: fix php8 compatibility issue when trying to edit a task template (#2367)
+bugfix: when selecting first contact at invoice billing information t… (#2366)
+bugfix: feng office calendar export issues (#2360)
+improvement: project earnings report more groupings (#2365)
+
+Since 3.10.8.1
+-----------------------------------
+improvement: highlight invoice payment positive balances in the list (#2364)
+bugfix: issues with invoice payments module (#2363)
+bugfix: issue income update plugin (#2363)
+bugfix: Use correct color code in the task list for worked time that exceeded estimated time (#2362)
+
+Since 3.10.8.1-alpha1
+-----------------------------------
+bugfix: replace jquery.js symlink with actual file
+bugfix: add/edit time not calculating billing when qbo is active (#2358)
+bugfix: Exclude subtasks from cost/revenue calculations (#2357)
+bugfix: Use project's contract type to set task's template calculation methods (#2354)
+
+Since 3.10.8.0
+-----------------------------------
+feature: improve credit notes features (#2342)
+feature: new user preference to show/hide cost inputs in actual expense form (#2327)
+feature: aging invoices add group by (#2320)
+
+Since 3.10.8.0-rc1
+-----------------------------------
+bugfix: exhausted memory when loading expenses quick add inputs (#2353)
+
+Since 3.10.8.0-beta3
+-----------------------------------
+feature: add task selector quick expense add (#2328)
+bugfix: When checking cached columns in DataObject verify that the column received is a string to prevent error (#2337)
+bugfix: Added new Stylesheet to the register page, as it used the same as the login, causing a visual bug. The footer page appears wrong. (#2329)
+bugfix: Budget by tasks report: Increase the width of columns in the PDF exports (#2344)
+bugfix: fixed the default image in the system. now the default image gets rendered if the user does not have one. (#2333)
+bugfix: moved some labor related langs to better plugin (#2339)
+improvement: separate changelog from readme (#2335)
+
+Since 3.10.8.0-beta2
+-----------------------------------
+feature: invoice templates allow to show subprojects in projects tabl… (#2326)
+feature: add new column for markup amount at invoice templates (#2322)
+feature: allow to select date format in invoice templates (#2319)
+feature: Project earnings report: add 'Project progress' column (#2324)
+feature: new readme.md (#2321)
+
+Since 3.10.8.0-beta1
+-----------------------------------
+bugfix: client form not saving associated object properties (#2316)
+bugfix: Add line breaks in memo custom properties when rendering (#2315)
+bugfix: Remove 'completed_on' date condition when getting earned value from tasks (#2314)
+bugfix: don't show the warning in widget when the member is selected (#2313)
+bugfix: fix time entries qbo sync in background (#2312)
+bugfix: fix expenses2 installer queries (#2311)
+bugfix: fixed timesheets report dont uses overtime (#2310)
+bugfix: 'Forecasted revenue' calc -> exclude bud expenses assigned to tasks (#2309)
+bugfix: widget show message (#2304)
+bugfix: time entry cost is not transferred to qbo (#2301)
+bugfix: Project billing report: in excel export use price in expenses table (#2299)
+bugfix: the search function under the workflow permission is not working (#2283)
+bugfix: auto scroll issue (#2317)
+bugfix: can't add lines to invoice in php8 (#2308)
+bugfix: cant classify email with attachments by drag and drop (#2307)
+bugfix: can't add task with subtasks (#2305)
+bugfix: can't instantiate templates in php8 (#2302)
+
+Since 3.10.7.x
+-----------------------------------
+bugfix: php8 compatibility fixes (#2295)
+bugfix: when sending vars to invoice print view 'invoice_notebook' must be an array always (#2292)
+bugfix: don't call abstract class ContentDataObjects methods directly, it gives errors in php8 and also we don't need to do that (#2291)
+bugfix: resize work performed data table in task module (#2273)
+bugfix: Remove manual estimated cost option for tasks (#2234)
+
+Since 3.10.7.9
+-----------------------------------
+bugfix: when adding time and client is not sent, assign the associated client of the project instead of throwing an error (#2352)
+bugfix: prevent errors in update when using objects and columns are not in the database yet (#2351)
+bugfix: task invoicing status column not taking in account the "is billable" property (#2350)
+bugfix: round amounts before calculatung invoice status (#2348)
+bugfix: Fix typo that prevented creating the 'task assigned' notification (#2347)
+bugfix: remove deprecated plugins from plugins administration page
+
 Since 3.10.7.8
 -----------------------------------
 bugfix: fixed the default image in the system. now the default image gets rendered if the user does not have one. (#2333)

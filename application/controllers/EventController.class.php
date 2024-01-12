@@ -1240,7 +1240,46 @@ class EventController extends ApplicationController {
 			else if (array_var($_POST, 'atimportform', 0)) ajx_current("empty");
 		}
 	}
-        
+
+	/**
+	 * This is the new function used for downloading 
+	 * the ICS file for calendar migrations.
+	 */
+	function icalendar_export_new()
+	{
+		$from = getDateValue(array_var($_POST, 'from_date'));
+		$to = getDateValue(array_var($_POST, 'to_date'));
+		$calendar_name = array_var($_POST, 'calendar_name');
+		$export_tasks = array_var($_POST, 'export_tasks');
+		
+		$buffer = null;
+		$events = ProjectEvents::getRangeProjectEvents($from, $to);
+		if($export_tasks=="on")
+		{
+			$tasks = ProjectTasks::getRangeTasksByUser($from, $to, logged_user());
+			$buffer = CalFormatUtilities::generateICalInfo($events, $calendar_name, null, $tasks);
+		}
+		else
+		{
+			$buffer = CalFormatUtilities::generateICalInfo($events, $calendar_name);
+		}
+
+		$filename = rand().'.ics';
+		$handle = fopen(ROOT.'/tmp/'.$filename, 'wb');
+		fwrite($handle, $buffer);
+		fclose($handle);
+		
+		$_SESSION['calendar_export_filename'] = $filename;
+		$_SESSION['calendar_name'] = $calendar_name;
+
+		$size = filesize(ROOT.'/tmp/'.$filename);
+		download_file(ROOT.'/tmp/'.$filename, 'text/ics', $calendar_name.'_events.ics', $size, false);
+		flash_success(lang('success export calendar', count($events)));
+		ajx_current("back");
+	}
+
+
+	//Deprecated
 	function icalendar_export() {
 		$this->setTemplate('cal_export');
 		$calendar_name = array_var($_POST, 'calendar_name');			
@@ -1249,18 +1288,21 @@ class EventController extends ApplicationController {
 			$to = getDateValue(array_var($_POST, 'to_date'));
 			
 			$events = ProjectEvents::getRangeProjectEvents($from, $to);
+			$tasks = ProjectTasks::getRangeTasksByUser($from, $to, logged_user());			
+			$buffer = CalFormatUtilities::generateICalInfoWithTasks($events + $tasks, $calendar_name);
 			
-			$buffer = CalFormatUtilities::generateICalInfo($events, $calendar_name);
-			
-			$filename = rand().'.tmp';
+			$filename = rand().'.ics';
 			$handle = fopen(ROOT.'/tmp/'.$filename, 'wb');
 			fwrite($handle, $buffer);
 			fclose($handle);
 			
 			$_SESSION['calendar_export_filename'] = $filename;
 			$_SESSION['calendar_name'] = $calendar_name;
+
+			$size = filesize(ROOT.'/tmp/'.$filename);
+			download_file(ROOT.'/tmp/'.$filename, 'text/ics', $calendar_name.'_events.ics', $size, false);
 			flash_success(lang('success export calendar', count($events)));
-			ajx_current("empty");
+			ajx_current("back");
 		} else {
 			unset($_SESSION['calendar_export_filename']);
 			unset($_SESSION['calendar_name']);

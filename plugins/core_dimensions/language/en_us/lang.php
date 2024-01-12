@@ -97,5 +97,7 @@
 	'First half of last month+' => 'First half of last month',
 	'Second half of last month+' => 'Second half of last month',
 	'year to date' => 'Year to date',
-	
+
+	'not assigned' => 'Not assigned',
+	'labor' => 'Labor',
 );

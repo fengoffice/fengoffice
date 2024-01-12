@@ -2742,11 +2742,13 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 				$copy->setText(html_to_text($copy->getText()));
 			}
 
-			Hook::fire('after_task_template_param_assigned', array('template_task'=>$object, 'property'=>$propName, 'value'=>$value), $copy);
+			Hook::fire('after_task_template_param_assigned', array('template_task'=>$object, 'property'=>$propName, 'value'=>$value), $copy);  
 			
 			$save_copy = true;
 		}	
 	}
+
+	Hook::fire('after_setting_all_task_template_params', array(), $copy);
 
 	if ($save_copy) {
 		$copy->save();

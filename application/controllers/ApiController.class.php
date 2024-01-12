@@ -697,6 +697,11 @@ class ApiController extends ApplicationController {
                     $object_data['payments'] = $payments;
                     $object_data['members_data'] = build_api_members_data($object);
                     array_push($temp_objects['budgeted_expenses'], $object_data);
+
+					$temp_objects['preferences'] = array(
+						'hide_cost_in_actual_expenses_form' => user_config_option('hide_cost_in_actual_expenses_form'),
+					);
+
                 } else {
                 	if ($object instanceof Timeslot) {
                 		$object_data = $object->getArrayInfo(false, true);
@@ -738,6 +743,10 @@ class ApiController extends ApplicationController {
                 }
                 $object_data['payments'] = $payments;
                 array_push($temp_objects['actual_expenses'], $object_data);
+				
+				$temp_objects['preferences'] = array(
+					'hide_cost_in_actual_expenses_form' => user_config_option('hide_cost_in_actual_expenses_form'),
+				);
             }
 
             return $this->response('json', $temp_objects);

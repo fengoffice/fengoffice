@@ -829,7 +829,7 @@ function get_object_members_by_type($object, $object_type_id) {
 	return $result;
 }
 
-function check_project_client_compatibility($member_ids) {
+function check_project_client_compatibility(&$member_ids) {
 	$result = array('result' => true, 'error_message' => '');
 
 	// Check if the CRPM plugin is active
@@ -878,17 +878,16 @@ function check_project_client_compatibility($member_ids) {
     // Return true if project doesn't have any client associations
 	if(count($mpms) == 0) return $result;
 
-	// Return false if no client is associated, but project has client associations
-	if(!$client_member instanceof Member){
-		$result['result'] = false;
-		$result['error_message'] = lang('client is not assigned');
-		return $result;
-	}
-
 	// build an array with all the associated client member ids
 	$eligible_client_member_ids = array();
 	foreach($mpms as $mpm){
 		$eligible_client_member_ids[] = $mpm->getPropertyMemberId();
+	}
+
+	// if we didn't receive a client and the project has a client then assign it to the timeslot so we can continue with the process
+	if(!$client_member instanceof Member){
+		$member_ids[] = $eligible_client_member_ids[0];
+		return $result;
 	}
 
 	// Check if client member is in the list of eligible client members
