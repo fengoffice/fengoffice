@@ -4455,6 +4455,14 @@ class ContactController extends ApplicationController
 				GROUP BY object_id,email_address
 				");
 
+		/**
+		 * Check if contacts actually exists 
+		 * before looping over. Older PHP servers
+		 * (and some modern too) will throw notice
+		 * level errors looping over nulls.
+		 */
+		if(!$contacts_addresses) return null;
+
 		foreach ($contacts_addresses as $contact) { //first_name	surname	email_address
 			/* @var $contact Contact */
 			$name = str_replace(",", " ", $contact['first_name'] . " " . $contact['surname']);

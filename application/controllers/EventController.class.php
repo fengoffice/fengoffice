@@ -578,7 +578,7 @@ class EventController extends ApplicationController {
 						$ext_user = ExternalCalendarUsers::findByContactId();
 						if ($ext_user instanceof ExternalCalendarUser) {
 							$externalCalendarController = new ExternalCalendarController();
-							$externalCalendarController->delete_event_calendar_extern($event, $ext_user);
+							$externalCalendarController->delete_event_calendar_extern($event, $ext_user); 
 						}
 					}					
 				}catch(Exception $e) {

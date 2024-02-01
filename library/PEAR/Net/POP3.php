@@ -51,9 +51,9 @@ require_once('Net/Socket.php');
 * For usage see the example script
 */
 
-define('NET_POP3_STATE_DISCONNECTED',  1);
-define('NET_POP3_STATE_AUTHORISATION', 2);
-define('NET_POP3_STATE_TRANSACTION',   4);
+define('NET_POP3_STATE_DISCONNECTED',  1, false);
+define('NET_POP3_STATE_AUTHORISATION', 2, false);
+define('NET_POP3_STATE_TRANSACTION',   4, false);
 
 class Net_POP3 {
 

@@ -101,7 +101,7 @@ if (isset($email)){
 
 	<?php $description = '<div class="coInfo">
 	<table>
-	<tr><td style="width:100px">' . lang('from') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getFromName()." <".$email->getFrom().">")) . '</td></tr>
+	<tr><td style="width:100px">' . lang('from') . ':</td><td>' . $email->getFromName() ." &lt;".$email->getFrom()."&gt;". '</td></tr>
 	<tr><td>' . lang('to') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getTo())) . '</td></tr>';
 	if ($email->getCc() != '') {
 		$description .= '<tr><td>' . lang('mail CC') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getCc())) . '</td></tr>';

@@ -2,6 +2,29 @@
 Changelog
 =========
 
+Since 3.10.8.5
+-----------------------------------
+feature: add 'Gross margin' report to the system (#2385)
+feature: add upload support to email templates body (#2378)
+bugfix: bubgeted-report-flexbox-attr-conflicts (#2388)
+bugfix: email-says-sent-but-never-arrived (#2349)
+bugfix: remove deprecated invoice config option that prevents using layout (#2384)
+bugfix: can't change default payment term in actual expenses (#2382)
+bugfix: can't add subtask with 15 min estimated time in tasks form (#2355)
+bugfix: prevent deleting event from MS (#2381)
+bugfix: if user trashes an invoice before synchronization ends then it was not removed from qbo (#2386)
+
+Since 3.10.8.4
+-----------------------------------
+feature: budget report add options (#2379)
+bugfix: fix invoice generation when approval statu splugin is not active
+bugfix: fix edit contact/company form
+
+Since 3.10.8.3
+-----------------------------------
+improvement: add qbo id field at invoices form only for evx admin user (#2371)
+improvement: add images support on email signatures (#2376)
+
 Since 3.10.8.2
 -----------------------------------
 bugfix: fix php8 compatibility issue when trying to edit a task template (#2367)
