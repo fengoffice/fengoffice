@@ -1099,6 +1099,9 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				return;
 			}
 			var name = Ext.getCmp('paramName').getValue();
+			if(typeof name == 'string') {
+				name = name.trim();
+			}
 			if(name == ""){
 				alert(lang('parameter name empty'));
 				return;

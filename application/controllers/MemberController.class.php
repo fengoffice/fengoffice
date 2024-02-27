@@ -121,7 +121,7 @@ class MemberController extends ApplicationController {
 								$order_join_sql .= " LEFT JOIN ".TABLE_PREFIX."objects ocpv ON ocpv.id=cpv.`value`";
 								$order = "ocpv.`name`";
 							} else {
-								if($cp->getType() == 'numeric'){
+								if($cp->getType() == 'numeric' || $cp->getType() == 'amount'){
                                     $order = "CAST(cpv.value AS DECIMAL(10,4))";
                                 }else{
                                     $order = "cpv.`value`";
@@ -140,7 +140,7 @@ class MemberController extends ApplicationController {
 									$order_join_sql .= " LEFT JOIN ".TABLE_PREFIX."objects ocpv ON ocpv.id=cpv.`value`";
 									$order = "ocpv.`name`";
 								} else {
-									if($cp->getType() == 'numeric'){
+									if($cp->getType() == 'numeric' || $cp->getType() == 'amount'){
 										$order = "CAST(cpv.value AS DECIMAL(10,4))";
 									}else{
 										$order = "cpv.`value`";
@@ -2669,6 +2669,7 @@ class MemberController extends ApplicationController {
         ajx_current("empty");
         
         $response = null;
+		$client_billing_address = null;
         $member_ids = explode(',', array_var($_REQUEST, 'customer_id', ''));
         $invoice_id = array_var($_REQUEST, 'invoice_id');
         
@@ -2679,17 +2680,32 @@ class MemberController extends ApplicationController {
 	        if (is_null($response)) {
 	        	$response = $member_data;
 	        } else {
-	        	if (isset($member_data['contacts']['Company']) && count($member_data['contacts']['Company']) > 0) {
+				// don't override previous key 'Company'
+	        	if (!isset($response['contacts']['Company']) && isset($member_data['contacts']['Company']) && count($member_data['contacts']['Company']) > 0) {
 	        		
 					$response['contacts']['Company'] = array_merge($response['contacts']['Company'], $member_data['contacts']['Company']);
-					$client_billing_address=$response['contacts']['Company'][0]['billing_address'];
+					
+					// set this var only if we have a new value
+					$ba = $response['contacts']['Company'][0]['billing_address'];
+					if (isset($ba) && is_array($ba) && count($ba) > 0) {
+						$client_billing_address = $ba;
+					}
 	        	}
+
 	        	if (isset($member_data['contacts']['Billing Company']) && count($member_data['contacts']['Billing Company']) > 0) {
 	        		$response['contacts']['Billing Company'] = array_merge($response['contacts']['Billing Company'], $member_data['contacts']['Billing Company']);
 	        	}
+
 				if (count($member_data['contacts']) > 0) {
+
 	        		$response['custom_properties'] = array_merge($response['custom_properties'], $member_data['custom_properties']);
-	        		$response['contacts'] = array_merge($response['contacts'], $member_data['contacts']);
+					
+					// don't override previous contacts found with same key
+					foreach ($member_data['contacts'] as $k => $c) {
+						if (!isset($response['contacts'][$k])) {
+							$response['contacts'][$k] = $c;
+						}
+					}
 	        	}
 	        }
         }
@@ -2698,7 +2714,7 @@ class MemberController extends ApplicationController {
 		//$response['contacts']['Company'][0]['client billing address']=$client_billing_address;
 
 		//fix patch if billing address is null (not have billing in project), override with CLIENT billing address
-		if(isset($response['contacts']['Company'][0]['billing_address'][0]['parsed']) && $response['contacts']['Company'][0]['billing_address'][0]['parsed']=='')
+		if(isset($client_billing_address) && isset($response['contacts']['Company'][0]['billing_address'][0]['parsed']) && $response['contacts']['Company'][0]['billing_address'][0]['parsed']=='')
 		{
 			$response['contacts']['Company'][0]['billing_address']=$client_billing_address;
 		}

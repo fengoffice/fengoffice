@@ -578,7 +578,7 @@ class EventController extends ApplicationController {
 						$ext_user = ExternalCalendarUsers::findByContactId();
 						if ($ext_user instanceof ExternalCalendarUser) {
 							$externalCalendarController = new ExternalCalendarController();
-							$externalCalendarController->delete_event_calendar_extern($event, $ext_user);
+							$externalCalendarController->delete_event_calendar_extern($event, $ext_user); 
 						}
 					}					
 				}catch(Exception $e) {
@@ -1266,7 +1266,7 @@ class EventController extends ApplicationController {
 
 		$filename = rand().'.ics';
 		$handle = fopen(ROOT.'/tmp/'.$filename, 'wb');
-		fwrite($handle, $buffer);
+		fwrite($handle, CalFormatUtilities::strip_tags_content($buffer));
 		fclose($handle);
 		
 		$_SESSION['calendar_export_filename'] = $filename;

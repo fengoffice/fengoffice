@@ -72,4 +72,8 @@
   hyphens: auto;
 }
 
+.information-widget-table-value br {
+    display: none;
+}
+
 

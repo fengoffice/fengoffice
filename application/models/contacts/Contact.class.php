@@ -185,7 +185,7 @@ class Contact extends BaseContact {
 			
 		// Check direct references
 		$references = DB::executeAll("SELECT id FROM ".TABLE_PREFIX."objects WHERE `created_by_id` = $id OR `updated_by_id` = $id OR `trashed_by_id` = $id OR `archived_by_id` = $id limit 1");
-		if (count($references) > 0){
+		if (isset($references) && count($references) > 0){
 			return true;
 		}
 		

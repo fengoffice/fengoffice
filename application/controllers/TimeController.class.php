@@ -30,14 +30,13 @@ class TimeController extends ApplicationController
         //Get Users Info
         $users = array();
         $context = active_context();
-        if (!can_manage_time(logged_user())) {
-            $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-        } else {
-            //if (logged_user()->isMemberOfOwnerCompany()) {
+        
+        if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')) {
+            $users = array(logged_user());
+        } else if (logged_user()->isMemberOfOwnerCompany()) {
             $users = Contacts::getAllUsers();
-            /*} else {
-        $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-        }*/
+        } else {
+            $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
         }
 
         // filter users by permissions only if any member is selected.

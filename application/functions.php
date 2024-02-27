@@ -2080,7 +2080,7 @@ function process_uploaded_cropped_picture_file($picture, $crop_data) {
 			
 		$ext = strtolower(pathinfo($picture['name'], PATHINFO_EXTENSION));
 		if (in_array($ext, $valid_exts)) {
-			$path = 'tmp/' . uniqid() . '.' . $ext;
+			$path = ROOT . '/tmp/' . uniqid() . '.' . $ext;
 			$size = getimagesize($picture['tmp_name']);
 			
 			$x = (int) $crop_data['x'];

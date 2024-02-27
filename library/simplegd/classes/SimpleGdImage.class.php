@@ -119,7 +119,7 @@
           throw new ImageTypeNotSupportedError($file_path, $image_type);
       } // switch
       
-      if(!is_resource($this->resource)) {
+      if(!isset($this->resource)) {
         $this->resource = null;
         throw new FailedToLoadImageError($file_path);
       } // if

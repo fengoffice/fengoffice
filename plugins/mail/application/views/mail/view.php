@@ -101,7 +101,7 @@ if (isset($email)){
 
 	<?php $description = '<div class="coInfo">
 	<table>
-	<tr><td style="width:100px">' . lang('from') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getFromName()." <".$email->getFrom().">")) . '</td></tr>
+	<tr><td style="width:100px">' . lang('from') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getFrom())) . '</td></tr>
 	<tr><td>' . lang('to') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getTo())) . '</td></tr>';
 	if ($email->getCc() != '') {
 		$description .= '<tr><td>' . lang('mail CC') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getCc())) . '</td></tr>';
@@ -157,7 +157,7 @@ if (isset($email)){
 					
 					$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
 					<td><div id="att-link-container-'.$c.'">
-						<a target="_self" href="' . $download_url . '" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
+						<a target="_self" href="' . $download_url . '&fileAttachName='.$fName.'&winmailtype='.$winmailDat.'" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
 					</div></td></tr>';
 				}
 	      		$c++;

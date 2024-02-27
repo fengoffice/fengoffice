@@ -21,6 +21,11 @@ class MailController extends ApplicationController {
 		prepare_company_website_controller($this, 'website');
 		Env::useHelper('MailUtilities.class', $this->plugin_name);
 		require_javascript("AddMail.js",  $this->plugin_name);
+
+		//Set the default tnef library path
+		if (!defined('TNEF_LIBRARY')) {
+			define('TNEF_LIBRARY', "/usr/bin/tnef");
+		}
 	}
 
 	function init() {
@@ -1326,6 +1331,7 @@ class MailController extends ApplicationController {
 			}
 			ini_set('memory_limit', $old_memory_limit);
 		} else {
+			
 			$content1 = $email->getContent(); 
 			MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 			$parsed_attachments = array_var($parsedEmail, "Attachments", array());
@@ -1339,7 +1345,6 @@ class MailController extends ApplicationController {
 				);
 				$parsed_attachments[] = $attach;
 			}
-
 			if (!empty($parsed_attachments)) {
 				$attachments = $parsed_attachments;
 			} else if ($email->getHasAttachments() && !in_array($parsedEmail['Type'], array('html', 'text', 'delivery-status')) && isset($parsedEmail['FileName'])) {
@@ -1377,6 +1382,26 @@ class MailController extends ApplicationController {
 					//break;
 				}
 
+				if (array_var($attach, 'FileName') == 'winmail.dat') {
+                    file_put_contents('tmp/attachment.dat', $attach["Data"]);
+					chdir(ROOT . '/tmp/');
+
+					//Get the name of the file.
+					$cmd = TNEF_LIBRARY . " attachment.dat --list";
+					$result = "";
+					$return_var = 0;
+					exec($cmd, $result, $return_var);
+					$file_name_extracted = strtok($result[0], '|');
+
+					//Extract it from .dat to the original value
+					$cmd = TNEF_LIBRARY . " attachment.dat --overwrite";
+					$result = "";
+					$return_var = 0;
+					exec($cmd, $result, $return_var);
+					$attach['FileName'] = $file_name_extracted;
+					tpl_assign('winmailDat','1');
+                }
+
 				// if attachment is an email add the email attachments to the view
 				if (array_var($attach, 'Type') == 'message') {
 
@@ -1401,7 +1426,6 @@ class MailController extends ApplicationController {
 			$parts_array = array_var($decoded, 0, array('Parts' => ''));
 			$email->setBodyHtml(self::rebuild_body_html($email->getBodyHtml(), array_var($parts_array, 'Parts'), $tmp_folder) . $additional_body);
 		}
-
 		tpl_assign('attachments', $attachments);
 		ajx_extra_data(array("title" => $email->getSubject(), 'icon' => 'ico-email'));
 		ajx_set_no_toolbar(true);
@@ -1558,6 +1582,8 @@ class MailController extends ApplicationController {
 		$emailId = array_var($_GET, 'email_id');
 		$email = MailContents::instance()->findById($emailId);
 		$attId = array_var($_GET, 'attachment_id');
+		$attachFileGet = array_var($_GET, 'fileAttachName');
+		$winmailtype = array_var($_GET, 'winmailtype');
 
 		if ($email->getState() >= 200) {
 			$attachments = self::readAttachmentsFromFileSystem($email, $att_ver);
@@ -1569,8 +1595,10 @@ class MailController extends ApplicationController {
 			$name_field = "name";
 
 		} else {
-			$content1 = $email->getContent(); 
-			MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
+
+			$emailContent = $email->getContent();
+			MailUtilities::parseMail($emailContent, $decoded, $parsedEmail, $warnings);
+      
 			$parsed_attachments = array_var($parsedEmail, "Attachments", array());
 			$parsed_attachments = array_merge($parsed_attachments, array_var($parsedEmail, "Related", array()));
 
@@ -1585,7 +1613,6 @@ class MailController extends ApplicationController {
 
 			if (isset($parsed_attachments[$attId])) {
 				$attachment = $parsed_attachments[$attId];
-
 			} else {
 
 				if ($email->getHasAttachments() && !in_array($parsedEmail['Type'], array('html', 'text', 'delivery-status')) && isset($parsedEmail['FileName'])) {
@@ -1648,6 +1675,16 @@ class MailController extends ApplicationController {
 		$filesize = strlen($content);
 		$inline = false;
 
+		if ($winmailtype == '1') {
+			$file_att_name = $attachFileGet;
+			$file_url = ROOT . '/tmp/' . $file_att_name;
+			header('Content-Type: application/octet-stream');
+			header("Content-Transfer-Encoding: Binary"); 
+			header("Content-disposition: attachment; filename=\"" . basename($file_url) . "\""); 
+			readfile($file_url); 
+			die();
+		}
+		
 		download_contents($content, $typeString, $filename, $filesize, !$inline);
 		die();
 	} // download_file
@@ -2161,7 +2198,7 @@ class MailController extends ApplicationController {
 		}
 
 		$content = file_get_contents($filename);
-		$encoding = detect_encoding($content, array('UTF-8', 'ISO-8859-1', 'WINDOWS-1252'));
+		$encoding = mb_detect_encoding($content);
 
 		header("Expires: " . gmdate("D, d M Y H:i:s", mktime(date("H") + 2, date("i"), date("s"), date("m"), date("d"), date("Y"))) . " GMT");
 		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");

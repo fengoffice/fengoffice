@@ -2,6 +2,104 @@
 Changelog
 =========
 
+Since 3.10.8.15
+-----------------------------------
+feature: no click through working for the contacts on the emails (#2447)
+Improvement: add project location section to invoice print view (#2436)
+Improvement: support ordering member list by amount CP (#2440)
+bugfix: fix php8 issues when saving task with empty estimated time (#2442)
+bugfix: ordering tasks list by numeric cp is wrong if cp values have too many characters (#2443)
+
+Since 3.10.8.14
+-----------------------------------
+bugfix: invoice templates, when using date of earliest item or most recent item it puts any random date (#2438)
+bugfix: invoice print billing period not using template's date format (#2437)
+bugfix: Set project_reports plugin to correct version (#2435)
+bugfix: Recalculate total worked time when subtask is assigned or removed (#2434)
+bugfix: fix php8 compatibility issues (#2433)
+
+Since 3.10.8.13
+-----------------------------------
+bugfix: EVX appearance _Description Box is not wrapping (#2430)
+bugfix: Utilization report improvements (#2430)
+
+Since 3.10.8.12
+-----------------------------------
+feature: Add option to exclude users with undefined utilization goal (#2421)
+bugfix: related to adding email to the user (#2426)
+bugfix: task templates used static function (#2425)
+bugfix: Remove whitespace from the variable names in templates (#2422)
+bugfix: Check module permissions when rendering clients widget (#2330)
+
+Since 3.10.8.11
+-----------------------------------
+bugfix: support winmail.dat files (#2419)
+bugfix: at invoices module created on column was forcing to use timezone=0 (#2418)
+bugfix: added fix to the email utf 8 encoding (#2417)
+bugfix: fix error getColumnValue on null when sync invoice to QBO (#2416)
+
+Since 3.10.8.10
+-----------------------------------
+bugfix: fix errors downloading attachments and viewing emails introduced in latest 2 versions
+
+Since 3.10.8.9
+-----------------------------------
+bugfix: Set width boundaries for the logo; Fit the logo without distortion (#2410)
+bugfix: Recalculate total estimated time of the previous parent task (#2409)
+bugfix: Use 'estimated_price' instead of billing category to calculate price (#2408)
+
+Since 3.10.8.8
+-----------------------------------
+bugfix: billable task showing status non-billable (#2405)
+bugfix: show attachments on sent emails (#2406)
+
+Since 3.10.8.7
+-----------------------------------
+feature: support winmail.dat files (#2369)
+bugfix: invoice generation does not have to include expenses with proce = 0 (#2398)
+bugfix: when you edit a client and remove association with a project the linked contact object is not unclassfied from the project (#2401)
+bugfix: fix bugs in invoice get billing info (typos, override of vars and confuse logic) (#2402)
+
+Since 3.10.8.6
+-----------------------------------
+feature: support winmail.dat files (#2369)
+bugfix: invoice generation does not have to include expenses with proce = 0 (#2398)
+bugfix: when you edit a client and remove association with a project the linked contact object is not unclassfied from the project (#2401)
+bugfix: fix bugs in invoice get billing info (typos, override of vars and confuse logic) (#2402)
+
+Since 3.10.8.6
+-----------------------------------
+bugfix: In project quoting report remove some labels (#2390)
+bugfix: Remove relative link that caused error in the PDF export (#2390)
+bugfix: mark timeslots with sync errors as "needs_to_sync" so the cron can try again if an error occurred (#2391)
+bugfix: bad variable handling when getting project type name (#2396)
+bugfix: bad usage of round when calculating invoice status after payment add/edit (#2396)
+bugfix: Fix permission that generates the users list in the time list (#2394)
+bugfix: Exclude 'invoice preview' when sending the invoice via email (#2392)
+
+Since 3.10.8.5
+-----------------------------------
+feature: add 'Gross margin' report to the system (#2385)
+feature: add upload support to email templates body (#2378)
+bugfix: bubgeted-report-flexbox-attr-conflicts (#2388)
+bugfix: email-says-sent-but-never-arrived (#2349)
+bugfix: remove deprecated invoice config option that prevents using layout (#2384)
+bugfix: can't change default payment term in actual expenses (#2382)
+bugfix: can't add subtask with 15 min estimated time in tasks form (#2355)
+bugfix: prevent deleting event from MS (#2381)
+bugfix: if user trashes an invoice before synchronization ends then it was not removed from qbo (#2386)
+
+Since 3.10.8.4
+-----------------------------------
+feature: budget report add options (#2379)
+bugfix: fix invoice generation when approval statu splugin is not active
+bugfix: fix edit contact/company form
+
+Since 3.10.8.3
+-----------------------------------
+improvement: add qbo id field at invoices form only for evx admin user (#2371)
+improvement: add images support on email signatures (#2376)
+
 Since 3.10.8.2
 -----------------------------------
 bugfix: fix php8 compatibility issue when trying to edit a task template (#2367)
