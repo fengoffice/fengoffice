@@ -1510,6 +1510,7 @@ class ProjectTask extends BaseProjectTask {
 		parent::save();
 		
 		$this->calculateTotalTimeEstimate();
+		$this->calculateAndSaveOverallTotalWorkedTime();
 
 		Hook::fire('save_additional_data_in_related_members', array('object' => $this), $this);
 
@@ -1952,7 +1953,6 @@ class ProjectTask extends BaseProjectTask {
 
 	function calculateAndSaveOverallTotalWorkedTime() {
 		$this->calculateAndSetOverallTotalWorkedTime();
-		$this->save();
 		
 		$parent = $this->getParent();
 		if($parent instanceof ProjectTask) {
@@ -1976,8 +1976,10 @@ class ProjectTask extends BaseProjectTask {
 		}
 		$overall_total_minutes += $subtask_total_minutes;
 
-		// Set total time estimate
-		$this->setOverallWorkedTime($overall_total_minutes);
+		// Set total worked time
+		$task_id = $this->getId();
+		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` SET `overall_worked_time_plus_subtasks` = $overall_total_minutes WHERE `object_id` = $task_id;";
+		DB::execute($sql);
 	}
 
 	function changeInvoicingStatus($status) {

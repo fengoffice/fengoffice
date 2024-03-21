@@ -163,15 +163,15 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 				$options['filter_by_ids'] = $additional_filters;
 			}
 
-			
 			$selected_members = count($selected_member_ids) > 0 ? Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $selected_member_ids).') ')) : array();
+
 			foreach($dimensions as $dimension){
 				$dimension_id = $dimension['dimension_id'];
 				$dim_sel_mems = array();
 				foreach ($selected_members as $selected_member) {
 					if ($selected_member->getDimensionId() == $dimension_id) $dim_sel_mems[] = $selected_member;
 				}
-				if (count($dim_sel_mems) == 0 && array_var($options, 'select_current_context')) {
+				if (count($dim_sel_mems) == 0 && array_var($options, 'select_current_context') && !array_var($options, 'skip_default_member_selections', false)) {
 					$default_value = DimensionOptions::instance()->getOptionValue($dimension_id, 'default_value');
 					if ($default_value) {
 						$default_member = Members::getMemberById($default_value);
@@ -179,8 +179,6 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 					}
 				}
 			}
-			
-			
 			
 			$skipped_dimensions_cond = "";
 			if (is_array($skipped_dimensions) && count($skipped_dimensions) > 0) {

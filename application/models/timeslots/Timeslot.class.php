@@ -464,6 +464,7 @@ class Timeslot extends BaseTimeslot {
 	            } else {
 	                $object->onEditTimeslot($this);
 	            }
+				$object->save();
 	        }
 	    }
 		// calculate worked time using dates and paused time

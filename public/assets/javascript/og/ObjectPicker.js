@@ -436,7 +436,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			            tooltip: lang('refresh desc'),
 			            iconCls: 'op-ico-refresh',
 						handler: function() {
-							//this.loadFilters();
+							this.grid.filterSelect();
 							this.grid.store.reload();
 						},
 						scope: this
@@ -543,7 +543,12 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 						split: true,
 						autoLoad: {
 							scripts: true,
-							url: og.getUrl('dimension', 'linked_object_filters', {context: og.contextManager.plainContext(),object_type_id:object_type.id})//send object type id
+							url: og.getUrl('dimension', 'linked_object_filters', 
+											{context: og.contextManager.plainContext(),
+											 object_type_id:object_type.id,
+											 skip_default_member_selections: true,
+											 add_on_remove_function: true
+											})
 						},
 						listeners: {
 							memberselected: {
@@ -551,7 +556,6 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 									var grid = Ext.getCmp('obj_picker_grid');
 									if (grid) {
 										grid.member_filter = context;
-										//grid.member_filter[member.dim] = member.id;
 										grid.filterSelect();
 									}
 								}

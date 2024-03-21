@@ -262,7 +262,7 @@ return array(
 	'save template' => 'Save template',
 	'delete template' => 'Delete template',
 	'variables' => 'Variables',
-	'add a variable to this template' => 'Add a variable to this template',
+	'add a variable to this template' => 'Add a parameter to this template',
 	'add a new task to this template' => 'Add a new task to this template',
 	'add a new milestone to this template' => 'Add a new milestone to this template',
 	'new milestone template' => 'New milestone template',

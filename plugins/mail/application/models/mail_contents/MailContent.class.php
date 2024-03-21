@@ -708,10 +708,10 @@ class MailContent extends BaseMailContent {
 	 * @return string
 	 */
 	function getTextBody() {
-		if ($this->getBodyHtml()) {
-			return html_to_text(html_entity_decode($this->getBodyHtml(),null, "UTF-8"));
-		} else {
+		if ($this->getBodyPlain()) {
 			return $this->getBodyPlain();
+		} else {
+			return html_to_text(html_entity_decode($this->getBodyHtml(),null, "UTF-8"));
 		}
 	}
 	

@@ -161,7 +161,7 @@ class PastafrolaUpgradeScript extends ScriptUpgraderScript {
 					  `id` int(10) unsigned NOT NULL auto_increment,
 					  `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
 					  `title` varchar(50) NOT NULL default '',
-					  `log_data` text NOT NULL,
+					  `log_data` TEXT NULL,
 					  `category` enum('system','security') NOT NULL,
 					  PRIMARY KEY  (`id`),
 					  KEY `created_on` (`created_on`),

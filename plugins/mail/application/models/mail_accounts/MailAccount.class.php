@@ -387,6 +387,9 @@ class MailAccount extends BaseMailAccount {
 			$imap = new Net_IMAP($ret, "tcp://" . $this->getServer());
 		}
 		
+		//This function is not static. A better exception handler should be applied.
+		//Investigate isError, and wich errors can IMAP throw.
+		//This library is long deprecated and should be replaced.
 		if (PEAR::isError($ret)) {
 			debug_log("IMAP connection error: ".$ret->getMessage(), "sent_emails_sync.log");
 			throw new Exception($ret->getMessage());

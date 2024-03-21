@@ -40,7 +40,7 @@ require_once 'DB.php';
  * CREATE TABLE `sessiondata` (
  *     `id` CHAR(32) NOT NULL,
  *     `expiry` INT UNSIGNED NOT NULL DEFAULT 0,
- *     `data` TEXT NOT NULL,
+ *     `data` TEXT NULL,
  *     PRIMARY KEY (`id`)
  * );
  * </code>

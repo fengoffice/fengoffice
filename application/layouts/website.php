@@ -329,7 +329,9 @@ og.config = {
 	'enable_time_module': <?php echo json_encode(module_enabled("time") && can_manage_time(logged_user())) ?>,
 	'enable_reporting_module': <?php echo json_encode(module_enabled("reporting")) ?>,
 	'use_tasks_dependencies': <?php echo json_encode(module_enabled("tasks")) ?>,
+	'customers_module': <?php echo json_encode(module_enabled("customers")) ?>,
 	'default_country_address': <?php echo json_encode(config_option('default_country_address', '')) ?>,
+	'default_type_address': <?php echo json_encode(config_option('default_type_address', '')) ?>,
 	'enabled_dimensions': Ext.util.JSON.decode('<?php echo json_encode(config_option('enabled_dimensions')) ?>'),
 	'brand_colors': {
 		brand_colors_head_back: '<?php echo config_option('brand_colors_head_back')?>',

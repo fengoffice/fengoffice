@@ -225,6 +225,12 @@ og.addNewTelephoneInput = function(container_id, pre_id, sel_type, sel_number, s
 
 
 og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignore_pre_id) {
+
+	// use the default address type defined in the config option if we don't have any in the parameter
+	if (typeof sel_type == 'undefined' || sel_type == '') {
+		sel_type = og.config.default_type_address;
+	}
+	
 	if (!pre_id) pre_id = 'contact';
 	if (!og.addressCount) og.addressCount = {};
 	if (!og.addressCount[container_id]) og.addressCount[container_id] = 0;

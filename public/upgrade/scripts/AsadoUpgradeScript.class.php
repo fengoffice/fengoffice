@@ -295,7 +295,7 @@ class AsadoUpgradeScript extends ScriptUpgraderScript {
 						  `title` varchar(255) NOT NULL,
 						  `plugin_id` int(10) unsigned NOT NULL,
 						  `path` varchar(512) NOT NULL,
-						  `default_options` text NOT NULL,
+						  `default_options` TEXT NULL,
 						  `default_section` varchar(64) NOT NULL,
 						  `default_order` int(10) NOT NULL,
 						  PRIMARY KEY (`name`)

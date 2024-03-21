@@ -3118,7 +3118,8 @@ class TaskController extends ApplicationController {
                     $parentId = $task->getParentId();
                     $ico = "ico-task";
                     $action = "add";
-                    $object = TemplateController::prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action, $milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId(), $task->isRepetitive());
+					$template_controller = new TemplateController();
+                    $object = $template_controller->prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action, $milestoneId, $subTasks, $parentId, $ico, $task->getObjectTypeId(), $task->isRepetitive());
 
                     $template_task_data = array('object' => $object);
 
@@ -3683,7 +3684,7 @@ class TaskController extends ApplicationController {
                         $parent->setUseDueTime(array_var($task_data, 'use_due_time', 0));
                     }
                     // calculate and set estimated time
-                    $totalMinutes = (array_var($task_data, 'time_estimate_hours') * 60) + (array_var($task_data, 'time_estimate_minutes'));
+                    $totalMinutes = ((int)array_var($task_data, 'time_estimate_hours') * 60) + (int)(array_var($task_data, 'time_estimate_minutes'));
                     $parent->setTimeEstimate($totalMinutes);
                     $parent->save();
                 }
@@ -3703,6 +3704,13 @@ class TaskController extends ApplicationController {
                 $old_start_date = $task->getStartDate();
                 $old_due_date = $task->getDueDate();
 
+                // Save previous parent task to recalculate total values and percent complete
+                $recalculate_old_parent = false;
+                if($task->getParentId() > 0 && $task->getParentId() != $task_data['parent_id']){
+                    $recalculate_old_parent = true;
+                    $old_parent = $task->getParent();
+                }
+
                 if (config_option("wysiwyg_tasks")) {
                     $task_data['type_content'] = "html";
                     $task_data['text'] = str_replace(array("\r", "\n", "\r\n"), array('', '', ''), array_var($task_data, 'text'));
@@ -3712,7 +3720,7 @@ class TaskController extends ApplicationController {
                 $task->setFromAttributes($task_data);
 
 
-                $totalMinutes = (array_var($task_data, 'time_estimate_hours') * 60) + (array_var($task_data, 'time_estimate_minutes'));
+                $totalMinutes = ((int)array_var($task_data, 'time_estimate_hours') * 60) + (int)(array_var($task_data, 'time_estimate_minutes'));
                 $task->setTimeEstimate($totalMinutes);
 
                 if ($task->getParentId() > 0 && $task->hasChild($task->getParentId())) {
@@ -3748,9 +3756,13 @@ class TaskController extends ApplicationController {
                 	}
                 }
 
-                $task->save();
-
+                $task->save(); 
                 $task->calculatePercentComplete();
+
+                if ($recalculate_old_parent) {
+                    $old_parent->save();
+                    $old_parent->calculatePercentComplete();
+                }
 
                 // dependencies
                 if (config_option('use tasks dependencies')) {
@@ -5349,7 +5361,7 @@ class TaskController extends ApplicationController {
 
         $task->setFromAttributes($task_data);
 
-        $totalMinutes = (array_var($task_data, 'time_estimate_hours') * 60) + (array_var($task_data, 'time_estimate_minutes'));
+        $totalMinutes = ((int)array_var($task_data, 'time_estimate_hours') * 60) + (int)(array_var($task_data, 'time_estimate_minutes'));
         $task->setTimeEstimate($totalMinutes);
 
         if ($task->getParentId() > 0 && $task->hasChild($task->getParentId())) {

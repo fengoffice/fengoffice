@@ -112,7 +112,12 @@ class TemplateController extends ApplicationController {
 			$cotemplate->setFromAttributes($template_data);
 			$object_ids = array();
 			try {
-				$decoded_prop_inputs = json_decode($_POST['all_prop_inputs'], true);
+				$all_prop_inputs_json = urldecode(array_var($_POST, 'all_prop_inputs', ''));
+    			$decoded_prop_inputs = json_decode($all_prop_inputs_json, true);
+
+				if(json_last_error() != JSON_ERROR_NONE){
+					throw new Exception(lang('The variable contains an invalid JSON format. Please check the JSON format and try again.'));
+				}
 				
 				DB::beginWork();
 				$cotemplate->save();
@@ -306,7 +311,7 @@ class TemplateController extends ApplicationController {
 		return $objects;
 	}
 		
-	function prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId = null , $subTasks = null, $parentId = null, $ico = null, $objectTypeId=0, $is_repetitive=0) {
+	static function prepareObject($objectId, $id, $objectName, $objectTypeName, $manager, $action,$milestoneId = null , $subTasks = null, $parentId = null, $ico = null, $objectTypeId=0, $is_repetitive=0) {
 		$object = array(
 				"object_id" => $objectId,
 				"object_type_id" => $objectTypeId,
@@ -348,7 +353,11 @@ class TemplateController extends ApplicationController {
 	
 	function get_prop_input_decoded($decoded_prop_inputs, $prefix) {
 		$decoded_var = array();
-		
+
+		if (!is_array($decoded_prop_inputs)){
+			return $decoded_var;
+		}
+
 		foreach ($decoded_prop_inputs as $key => $value) {
 			if (str_starts_with($key, $prefix)) {
 				preg_match_all("/\[(.*?)\]/", $key, $matches);
@@ -371,7 +380,7 @@ class TemplateController extends ApplicationController {
 				}
 			}
 		}
-		
+
 		return $decoded_var;
 	}
 	
@@ -416,8 +425,13 @@ class TemplateController extends ApplicationController {
 		} else {
 			$cotemplate->setFromAttributes($template_data);
 			try {
-				$decoded_prop_inputs = json_decode($_POST['all_prop_inputs'], true);
+				$all_prop_inputs_json = urldecode(array_var($_POST, 'all_prop_inputs', ''));
+    			$decoded_prop_inputs = json_decode($all_prop_inputs_json, true);
 				
+				if(json_last_error() != JSON_ERROR_NONE){
+					throw new Exception(lang('The variable contains an invalid JSON format. Please check the JSON format and try again.'));
+				}
+
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				DB::beginWork();
 				$tmp_objects = $cotemplate->getObjects();

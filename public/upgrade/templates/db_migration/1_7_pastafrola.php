@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>administration_logs` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `created_on` datetime NOT NULL default '0000-00-00 00:00:00',
   `title` varchar(50) NOT NULL default '',
-  `log_data` text NOT NULL,
+  `log_data` TEXT NULL,
   `category` enum('system','security') NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `created_on` (`created_on`),
@@ -163,7 +163,7 @@ ALTER TABLE `<?php echo $table_prefix ?>custom_property_values` ADD INDEX ( `cus
 ALTER TABLE `<?php echo $table_prefix ?>custom_properties` ADD INDEX ( `object_type` );
 ALTER TABLE `<?php echo $table_prefix ?>project_files` CHANGE `filename` `filename` VARCHAR( 255 );
 ALTER TABLE `<?php echo $table_prefix ?>project_files` ADD `attach_to_notification` TINYINT( 1 ) NOT NULL;
-ALTER TABLE `<?php echo $table_prefix ?>project_files` ADD `default_subject` TEXT NOT NULL;
+ALTER TABLE `<?php echo $table_prefix ?>project_files` ADD `default_subject` TEXT NULL;
 
 ALTER TABLE `<?php echo $table_prefix ?>queued_emails`
  ADD COLUMN `cc` TEXT <?php echo $default_collation ?>,

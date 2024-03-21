@@ -817,6 +817,7 @@
     'client is not assigned' => 'Client is not assigned',
 	'there are no timeslots to delete' => 'There are no time entries to delete',
 	'task is linked to time expenses are you sure you want to delete' => 'Any time entry and/or expense linked to this task won\'t be deleted but it will remain now unlinked. Do you want to proceed?',
+    'The variable contains an invalid JSON format. Please check the JSON format and try again.' => 'The variable contains an invalid JSON format. Please check the JSON format and try again.',
   ); // array
 
 ?>

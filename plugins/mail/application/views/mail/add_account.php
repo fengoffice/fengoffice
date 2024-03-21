@@ -504,12 +504,13 @@ $show_auth_method_selector = count($oauth2_providers) > 0;
                 customConfig: '',
             	contentsCss: ['<?php echo get_javascript_url('ckeditor/contents.css').'?rev='.product_version_revision();?>', '<?php echo get_stylesheet_url('og/ckeditor_override.css').'?rev='.product_version_revision();?>'],
                 toolbar: [
-							[	'Source','-','Font','FontSize','-','Bold','Italic','Underline','-', 'SpellChecker', 'Scayt','-',
+							[	'Source','-','Font','FontSize','-', 'Image', '-','Bold','Italic','Underline','-', 'SpellChecker', 'Scayt','-',
 								'Link','Unlink','-',
 								'TextColor','BGColor','RemoveFormat','-',
 								'JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock'
 							]
 						],
+				filebrowserImageUploadUrl : '<?php echo ROOT_URL ?>/ck_upload_handler.php',
                 on: {
                         instanceReady: function(ev) {
                                 og.adjustCkEditorArea('<?php echo $genid ?>');

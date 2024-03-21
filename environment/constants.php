@@ -25,7 +25,7 @@
   // Some nice to have regexps
   define('EMAIL_FORMAT', "/^([a-z0-9+_']|\\-|\\.)+@(([a-z0-9_]|\\-)+\\.)+[a-z]{1,50}\$/i");
   //define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i");
-  define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*((:[0-9]{1,5})?\/.*)?$/i"); // be a little more flexible with urls (allow ips or machine names)
+  define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9_]+([\-\.]{1}[a-z0-9_]+)*((:[0-9]{1,5})?\/.*)?$/i"); // be a little more flexible with urls (allow ips or machine names)
   
   define('DATE_MYSQL', 'Y-m-d H:i:s');
   define('EMPTY_DATETIME', '0000-00-00 00:00:00');
