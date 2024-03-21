@@ -92,7 +92,7 @@ if (array_var($options, 'readonly')) {
 		foreach ($selected_members as $selected_member) {
 			if ($selected_member->getDimensionId() == $dimension_id) $dimension_selected_members[] = $selected_member;
 		}
-		if (count($dimension_selected_members) == 0 && array_var($options, 'select_current_context')) {
+		if (count($dimension_selected_members) == 0 && array_var($options, 'select_current_context' && !array_var($options, 'skip_default_member_selections', false))) {
 			$default_value = DimensionOptions::instance()->getOptionValue($dimension_id, 'default_value');
 			if ($default_value) {
 				$default_member = Members::getMemberById($default_value);

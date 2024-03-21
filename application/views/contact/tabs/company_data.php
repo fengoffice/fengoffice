@@ -188,7 +188,7 @@
 		<?php endif; ?>
 
 		<?php if (Plugins::instance()->isActivePlugin('income')) : ?>
-			og.income.onAppendDefaultBilling('companyEmail', 'company[isMainBilling]', 'mainEmailWrapper', 'email', <?= (isset($company_data['default_billing_email'])  ? $company_data['default_billing_email'] : 0); ?>, true);
+			og.income.onAppendDefaultBilling('companyEmail', 'company[isMainBilling]', 'mainEmailWrapper', 'email', '<?php echo array_var($company_data,'default_billing_email','') ?>', true);
 		<?php endif; ?>
 
 	});

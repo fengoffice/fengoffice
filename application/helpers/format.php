@@ -378,7 +378,8 @@ function date_format_tip($format) {
 				break;
 			case DATA_TYPE_BOOLEAN:
 				
-				if(!is_numeric($value) && $value != '') {
+				if(!is_numeric($value) && $value != '' && $value != '1') {
+					// if the boolean value is already formatted keep it as it is
 					$formatted = $value;
 				}else if ($value == 1){
 					$formatted = lang('yes');

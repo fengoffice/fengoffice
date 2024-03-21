@@ -311,12 +311,13 @@ class ApplicationLog extends BaseApplicationLog {
 			case ApplicationLogs::ACTION_MOVE :
 			case ApplicationLogs::ACTION_COPY :
 				$exploded = explode(";", $this->getLogData());
+				$from_names = array();
+				$to_names = array();
 				foreach ($exploded as $str) {
 					if (str_starts_with($str, "from:")) {
 						$from_ids_csv = str_replace("from:", "", $str);
 						if ($from_ids_csv != '') {
 							$from_rows = DB::executeAll("SELECT name FROM ".TABLE_PREFIX."members WHERE id IN ($from_ids_csv)");
-							$from_names = array();
 							foreach ($from_rows as $r) {
 								$from_names[] = $r['name'];
 							}
@@ -325,7 +326,6 @@ class ApplicationLog extends BaseApplicationLog {
 						$to_ids_csv = str_replace("to:", "", $str);
 						if ($to_ids_csv != '') {
 							$to_rows = DB::executeAll("SELECT name FROM ".TABLE_PREFIX."members WHERE id IN ($to_ids_csv)");
-							$to_names = array();
 							foreach ($to_rows as $r) {
 								$to_names[] = $r['name'];
 							}

@@ -1083,14 +1083,22 @@ class DimensionController extends ApplicationController {
 	function linked_object_filters() {
 		$genid = gen_id();
 		
-		$listeners = array('on_selection_change' => "Ext.getCmp('dimFilter').fireEvent('memberselected', member_selector['$genid'].sel_context);");		
+		$listeners = array(
+			'on_selection_change' => "Ext.getCmp('dimFilter').fireEvent('memberselected', member_selector['$genid'].sel_context);"
+		);
+		if (array_var($_REQUEST, 'add_on_remove_function')) {
+			$listeners['on_remove_relation'] .= "Ext.getCmp('dimFilter').fireEvent('memberselected', member_selector['$genid'].sel_context);";
+		}
+
 		$options = array('select_current_context' => true, 'listeners' => $listeners, 'width' => 300, 'horizontal' => true);
-		
 		if (array_var($_REQUEST, 'show_associated_dimension_filters')) {
 			$options['allow_non_manageable'] = true;
 			$options['dont_exclude_hidden_selectors'] = true;
 		}
 		$options['dont_select_associated_members'] = true;
+		if (array_var($_REQUEST, 'skip_default_member_selections')) {
+			$options['skip_default_member_selections'] = true;
+		}
 		
         $object_type_id = ProjectMessages::instance()->getObjectTypeId();
         if (array_var($_REQUEST, 'object_id')) {

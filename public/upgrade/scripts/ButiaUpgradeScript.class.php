@@ -149,7 +149,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 				  `template_id` INTEGER UNSIGNED NOT NULL,
 				  `instantiation_id` INTEGER UNSIGNED NOT NULL,
 				  `parameter_name` VARCHAR(255) NOT NULL DEFAULT '',
-				  `value` TEXT NOT NULL,
+				  `value` TEXT NULL,
 				  PRIMARY KEY (`template_id`, `instantiation_id`, `parameter_name`)
 				) ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
@@ -163,8 +163,8 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 			if (!$this->checkColumnExists($t_prefix."queued_emails", "cc", $this->database_connection)) {
 				$upgrade_script .= "
 					ALTER TABLE `".$t_prefix."queued_emails`
-					 ADD COLUMN `cc` TEXT NOT NULL AFTER `to`,
-					 ADD COLUMN `bcc` TEXT NOT NULL AFTER `cc`;
+					 ADD COLUMN `cc` TEXT NULL AFTER `to`,
+					 ADD COLUMN `bcc` TEXT NULL AFTER `cc`;
 				";
 			}
 			
@@ -201,7 +201,7 @@ class ButiaUpgradeScript extends ScriptUpgraderScript {
 			if (!$this->checkColumnExists($t_prefix."template_parameters", "default_value", $this->database_connection)) {
 				$upgrade_script .= "
 					ALTER TABLE `".$t_prefix."template_parameters`
-					 ADD COLUMN `default_value` TEXT NOT NULL;
+					 ADD COLUMN `default_value` TEXT NULL;
 				";
 			}
 			

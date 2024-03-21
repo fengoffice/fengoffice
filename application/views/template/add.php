@@ -70,7 +70,7 @@ onsubmit="return og.submitTemplateForm();">
 	</div>
 	
 	<div id="<?php echo $genid ?>add_template_parameters_div">
-		<fieldset><legend><?php echo lang("variables")?></legend>
+		<fieldset><legend><?php echo lang("parameters")?></legend>
 			<a id="<?php echo $genid ?>params" href="#" onclick="og.promptAddParameter(this, 0)"><?php echo lang('add a variable to this template') ?></a>
 		</fieldset>
 	</div>
@@ -320,7 +320,7 @@ onsubmit="return og.submitTemplateForm();">
 			    type: 'hidden',
 			    id: 'all_prop_inputs',
 			    name: 'all_prop_inputs',
-			    value: Ext.util.JSON.encode(all_prop_inputs),
+			    value: encodeURIComponent(JSON.stringify(all_prop_inputs)),
 			}).appendTo('form');
 			
 			return true;

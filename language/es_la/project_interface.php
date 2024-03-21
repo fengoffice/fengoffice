@@ -209,7 +209,7 @@
 	'save template' => 'Guardar plantilla',
 	'delete template' => 'Borrar plantilla',
 	'variables' => 'Variables',
-	'add a variable to this template' => 'Agregar variable a esta plantilla',
+	'add a variable to this template' => 'Agregar parámetro a esta plantilla',
 	'add a new task to this template' => 'Agregar una nueva tarea a esta plantilla',
 	'add a new milestone to this template' => 'Agregar un nuevo hito a esta plantilla',
 	'new milestone template' => 'Nueva plantilla de hito',

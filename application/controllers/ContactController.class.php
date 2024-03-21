@@ -552,9 +552,8 @@ class ContactController extends ApplicationController
 				$join_params['table'] = TABLE_PREFIX . "contact_emails";
 				$join_params['jt_field'] = "contact_id";
 				$join_params['e_field'] = "object_id";
-				//$join_params['on_extra'] = " AND is_main =1";
+				$join_params['on_extra'] = " AND jt.is_main=1";
 				$select_columns = array("DISTINCT o.*", "e.*");
-				//$order = '`email_address`';
 				$email_order_dir = strtolower($order_dir) == 'desc' ? "1,0" : "0,1";
 				$order = 'IF(ISNULL(jt.email_address),' . $email_order_dir . '),jt.email_address';
 				break;
@@ -594,7 +593,7 @@ class ContactController extends ApplicationController
 			'only_count_results' => $only_count_result,
 			"join_params" => $join_params,
 			"select_columns" => $select_columns
-		));
+		)); 
 
 
 		// Prepare response object
@@ -1209,7 +1208,7 @@ class ContactController extends ApplicationController
 					$object_controller->add_to_members($contact, $member_ids);
 				}
 				$no_perm_members_ids = json_decode(array_var($_POST, 'no_perm_members'));
-				if (count($no_perm_members_ids)) {
+				if (isset($no_perm_members_ids) && count($no_perm_members_ids)) {
 					$object_controller->add_to_members($contact, $no_perm_members_ids);
 				}
 				if ($newCompany) {
@@ -1460,7 +1459,7 @@ class ContactController extends ApplicationController
 				tpl_assign('user_type', $contact->getUserType());
 			}
 
-			if (is_array($im_types)) {
+			if (isset($im_types) && is_array($im_types)) {
 				foreach ($im_types as $im_type) {
 					$contact_data['im_' . $im_type->getId()] = $contact->getImValue($im_type);
 				} // foreach
@@ -1610,7 +1609,7 @@ class ContactController extends ApplicationController
 					$member_ids_to_add = array_merge($member_ids_to_add, $member_ids);
 				}
 				$no_perm_members_ids = json_decode(array_var($_POST, 'no_perm_members'));
-				if (count($no_perm_members_ids) > 0) {
+				if (isset($no_perm_members_ids) && count($no_perm_members_ids) > 0) {
 					$member_ids_to_add = array_merge($member_ids_to_add, $no_perm_members_ids);
 				}
 
@@ -1808,9 +1807,9 @@ class ContactController extends ApplicationController
 				}
 				$obj->setEmailTypeId($data['type']);
 				$obj->setEmailAddress(trim($data['email_address']));
+				$obj->setIsMain(false);
 				if(Plugins::instance()->isActivePlugin('income')):
-					$obj->setIsMain((!isset($data['is_main_email']) ? true : false));
-					$obj->setDefaultEmail((!isset($data['default_billing_email']) ? true : false));
+					$obj->setDefaultEmail(isset($data['default_billing_email']) ? true : false);
 				endif;
 				$obj->save();
 			}
@@ -4454,6 +4453,14 @@ class ContactController extends ApplicationController
 				$conditions
 				GROUP BY object_id,email_address
 				");
+
+		/**
+		 * Check if contacts actually exists 
+		 * before looping over. Older PHP servers
+		 * (and some modern too) will throw notice
+		 * level errors looping over nulls.
+		 */
+		if(!$contacts_addresses) return null;
 
 		foreach ($contacts_addresses as $contact) { //first_name	surname	email_address
 			/* @var $contact Contact */

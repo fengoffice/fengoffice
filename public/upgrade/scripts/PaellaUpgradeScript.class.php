@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.10.8.3');
+		$this->setVersionTo('3.10.8.21');
 	} // __construct
 
 	function getCheckIsWritable() {

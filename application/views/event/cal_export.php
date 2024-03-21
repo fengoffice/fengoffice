@@ -10,9 +10,6 @@
 <div class="coInputHeaderUpperRow">
 <div class="coInputTitle">
 	<table style="width:535px"><tr><td><?php echo lang('export calendar');?></td>
-	<?php if (!isset($result_msg)) { ?>
-	<td style="text-align:right"><?php echo button(lang('export'), 'e', array('style'=>'margin-top:0px;margin-left:10px', 'tabindex' => '1', 'id' => $genid.'cal_export_submit1', 'onclick'=>"og.submitCalendarExport();")) ?></td>
-	<?php } //if ?>
 	</tr></table>
 </div>
 </div>
@@ -43,9 +40,9 @@
 		<td align="right" style="padding-right:10px;padding-bottom:6px;padding-top:2px"><?php echo lang('name') ?></td>
 		<td><?php echo text_field('calendar_name', logged_user()->getObjectName(), array("style" => "width:120px;", 'tabindex' => '40')) ?></td><td><span class="desc"><?php echo lang('calendar name desc') ?></span></td></tr>
 	</table>
-</fieldset>
 	<table style="width:535px">
-	<tr><td><?php echo button(lang('export'), 'e', array('style'=>'margin-top:0px;margin-left:10px', 'tabindex' => '50', 'id' => $genid.'cal_export_submit1', 'onclick'=>"og.submitCalendarExport();")) ?></td></tr></table>
+	<tr><td><?php echo button(lang('export'), 'e', array('style'=>'margin-top:10px;margin-left:10px', 'tabindex' => '50', 'id' => $genid.'cal_export_submit1', 'onclick'=>"og.submitCalendarExport();")) ?></td></tr></table>
+</fieldset>
 </div>
 <?php } else { ?>
 	<div><b><?php echo $result_msg ?></b></div>

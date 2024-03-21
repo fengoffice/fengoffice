@@ -15,7 +15,7 @@ if (!defined('MAIL_SIGNATURE_DIV_ATTRIBUTES')) {
 
 class MailUtilities {
 
-	private $special_imap_folder_codes = array("\\All", "\\Archive", "\\Drafts", "\\Flagged", "\\Junk", "\\Sent", "\\Trash", "\\Important");
+	static $special_imap_folder_codes = array("\\All", "\\Archive", "\\Drafts", "\\Flagged", "\\Junk", "\\Sent", "\\Trash", "\\Important");
 
 	function getSpecialImapFolderCodes() {
 		return $this->special_imap_folder_codes;
@@ -733,6 +733,9 @@ class MailUtilities {
 		return false;
 	}
 
+	/**
+	 * This function is always called statically, but here it was defined as non static
+	 */
 	static function parseMail(&$message, &$decoded, &$results, &$warnings) {
 		$mime = new mime_parser_class;
 		$mime->mbox = 0;
@@ -930,9 +933,12 @@ class MailUtilities {
 		return $received;
 	}
 
+	/**
+	 * This function is always called statically, but here it was defined as non static
+	 */
 	public static function displayMultipleAddresses($addresses, $clean = true, $add_contact_link = true) {
-		$addresses = self::parse_to(html_entity_decode($addresses));
-		$list = self::parse_to(explode(',', $addresses));
+		$addresses = self::parse_to_static(html_entity_decode($addresses));
+		$list = self::parse_to_static(explode(',', $addresses));
 		$result = "";
 
 		foreach($list as $addr){
@@ -1193,6 +1199,17 @@ class MailUtilities {
 	}
 
 	static function parse_to($to) {
+		if (!is_array($to)) return $to;
+		$return = array();
+		foreach ($to as $elem){
+			$mail= preg_replace("/.*\<(.*)\>.*/", "$1", $elem, 1);
+			$nam = explode('<', $elem);
+			$return[]= array(trim($nam[0]),trim($mail));
+		}
+		return $return;
+	}
+
+	static function parse_to_static($to) {
 		if (!is_array($to)) return $to;
 		$return = array();
 		foreach ($to as $elem){
@@ -1816,7 +1833,7 @@ class MailUtilities {
 		
 		if ($account instanceof MailAccount && $account->getIsImap() && $content != "") {
 			
-			$sync_folder_obj = $this->getSentImapFolderToSync($account);
+			$sync_folder_obj = self::getSentImapFolderToSync($account);
 
 			if ($sync_folder_obj instanceof MailAccountImapFolder && $sync_folder_obj->getFolderName() != "") {
 				
@@ -2030,17 +2047,27 @@ class MailUtilities {
 			if (count($outbox_mails)>=1){
 				$arguments = array("conditions" => array("`context` LIKE 'mails_in_outbox%' AND `contact_id` = ".$usu->getId().";"));
 				$exist_reminder = ObjectReminders::instance()->find($arguments);
-				if (!(count($exist_reminder)>0)){
-					$reminder = new ObjectReminder();
 
-					$minutes = 0;
-					$reminder->setMinutesBefore($minutes);
-					$reminder->setType("reminder_popup");
-					$reminder->setContext("mails_in_outbox ".count($outbox_mails));
-					$reminder->setObject($usu);
-					$reminder->setUserId($usu->getId());
-					$reminder->setDate(DateTimeValueLib::now());
-					$reminder->save();
+				/**
+				 * Variables must be checked not to be null
+				 * before sent to count() function. If null 
+				 * is sent as parameter of count(), most of
+				 * PHP servers will Throw Fatal Error.
+				 */
+				if($exist_reminder)
+				{
+					if (!(count($exist_reminder)>0)){
+						$reminder = new ObjectReminder();
+	
+						$minutes = 0;
+						$reminder->setMinutesBefore($minutes);
+						$reminder->setType("reminder_popup");
+						$reminder->setContext("mails_in_outbox ".count($outbox_mails));
+						$reminder->setObject($usu);
+						$reminder->setUserId($usu->getId());
+						$reminder->setDate(DateTimeValueLib::now());
+						$reminder->save();
+					}
 				}
 			}
 		}
@@ -2081,7 +2108,7 @@ class MailUtilities {
 
 				if ($select) {
 					$special_use = '';
-					foreach ($this->special_imap_folder_codes as $code) {
+					foreach (self::$special_imap_folder_codes as $code) {
 						if (in_array($code, $attributes) || str_replace("\\", "", $code)==array_var($mbox, 'MAILBOX')) {
 							$special_use = $code;
 							$can_detect_special_folders = true;

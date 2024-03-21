@@ -4251,6 +4251,20 @@ og.gridObjectNameRenderer = function(value, p, r) {
 	return String.format('<a href="#" onclick="{1}" title="{2}" style="font-size:120%;"><span class="bold">{0}</span></a>', og.clean(value), onclick, og.clean(value));
 }
 
+og.gridObjectNameRendererWithLink = function(value, p, r) {
+	if (r.data.id == 'quick_add_row') {
+		return value;
+	}
+	if (r.data.id == '__total_row__' || r.data.object_id <= 0) return '<span id="__total_row__">'+value+'</span>';
+
+	var controller = r.data.type_controller ? r.data.type_controller : r.store.baseParams.url_controller;
+
+	var object_link = og.getUrl(controller, 'view', {id: r.data.object_id});
+	var onclick = "og.openLink(og.getUrl('"+ controller +"', 'view', {id: "+ r.data.object_id +"})); return false;";
+	
+	return String.format('<a href="{2}" onclick="{1}" title="{0}" style="font-size:120%;"><span class="bold">{0}</span></a>', og.clean(value), onclick, object_link);
+}
+
 og.gridPictureRenderer = function(value, p, r) {
 	if (r.data.picture) {
 		var picture_url = r.data.picture;
