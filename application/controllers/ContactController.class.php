@@ -962,7 +962,7 @@ class ContactController extends ApplicationController
 		$user_get = array_var($_GET, 'is_user');
 		$contact_post = array_var($_POST, 'contact');
 		$user_post = array_var($contact_post, 'user');
-		$create_user = array_var($user_post, 'create-user');
+		$create_user = array_var($user_post, 'create-user'); 
 
 		if ($user_get || $create_user) {
 			if (!can_manage_security(logged_user())) {
@@ -1184,6 +1184,10 @@ class ContactController extends ApplicationController
 				$this->save_phones_addresses_webpages($contact_data, $contact);
 
 
+				// Delete emails from the DB if contact is converted to user
+				if (array_var($_REQUEST, 'user_from_contact_id') > 0) {
+					ContactEmails::clearByContact($contact);
+				}
 				// main email
 				if ($contact_data['email'] != "") $contact->addEmail($contact_data['email'], 'personal', true, isset($contact_data['isMainBilling']));
 
@@ -1502,6 +1506,36 @@ class ContactController extends ApplicationController
 						return;
 					}
 				}
+				/*
+				* Validate the email is not empty
+				*/
+				if(strlen($contact_data['email'])==0)
+				{
+					flash_error(lang("email value is required"));
+					ajx_current("empty");
+					return;
+				}
+
+				/*
+				* Validate the email is a valid format
+				*/
+				if (!preg_match(EMAIL_FORMAT, trim($contact_data['email']))) {
+					flash_error(lang("invalid email address"));
+					ajx_current("empty");
+					return;
+				}
+
+				/*
+				* If the user is admin and editing another user
+				* check the email is not in use.
+				*/
+				if(logged_user()->getEmailAddress() == $contact_data['email'] && !Contacts::validateEmailIsNotTaken(logged_user()->getEmailAddress(), $contact_data['email']))
+				{
+					flash_error(lang("username must be unique"));
+					ajx_current("empty");
+					return;
+				}
+
 				Contacts::validate($contact_data, get_id());
 				$newCompany = false;
 				if (array_var($contact_data, 'isNewCompany') == 'true' && is_array(array_var($_POST, 'company'))) {
@@ -1692,6 +1726,10 @@ class ContactController extends ApplicationController
 				if (array_var($_REQUEST, 'modal')) {
 					evt_add("reload current panel");
 				}
+			} catch (DAOValidationError $e) {
+				flash_error(lang("invalid email address"));
+				ajx_current("empty");
+				return;
 			} catch (Exception $e) {
 				DB::rollback();
 				flash_error($e->getMessage());
@@ -4328,6 +4366,7 @@ class ContactController extends ApplicationController
 				$row = array(
 					"id" => $c->getId(),
 					"name" => $c->getObjectName(),
+					"data" => $c->getArrayInfo()
 				);
 
 				if (!empty($columns_filter_array)) {
@@ -4370,6 +4409,7 @@ class ContactController extends ApplicationController
 					$row = array(
 						"id" => $c->getId(),
 						"name" => $c->getObjectName(),
+						"data" => $c->getArrayInfo()
 					);
 
 					if (!empty($columns_filter_array)) {

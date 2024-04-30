@@ -87,6 +87,40 @@ class Contacts extends BaseContacts {
 			return self::instance()->findById($contact_email->getContactId());
 		return null;
 	} // getByEmail
+
+
+	/**
+	 * Check if email is already in use
+	 *
+	 * @param string $email
+	 * @param string $currentUser
+	 * @return Contact
+	 */
+	static function validateEmailIsNotTaken($email, $currentUser, $id_contact = 0, $only_users = false) : bool
+	{
+		if($email == $currentUser)
+		{
+			return true;
+		}
+		$is_user_cond = "";
+		if ($only_users) {
+			$is_user_cond = "AND (SELECT c2.user_type FROM ".TABLE_PREFIX."contacts c2 WHERE c2.object_id=contact_id)>0";
+		}
+		if (is_null($id_contact)) {
+			$id_contact = "0";
+		}
+		$contact_email = ContactEmails::instance()->findOne(array(
+				'conditions' => array(
+						"`email_address` = ? AND `contact_id` <> ? 
+						AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0
+						$is_user_cond", 
+						$email, $id_contact
+				)
+		));
+		if (!is_null($contact_email))
+			return false;
+		return true;
+	} // getByEmail
 	
 	
 	/**
@@ -470,7 +504,11 @@ class Contacts extends BaseContacts {
 			$errors[] = lang("invalid webpage");			
 		}
 */		
-		if (trim($attributes['email']) && !self::validateUniqueEmail(trim($attributes['email']), $id, array_var($attributes, 'contact_type'))){
+		if (!trim($attributes['email'])){
+			$errors[] = lang("email value is required");
+		}
+
+		if (!self::validateUniqueEmail(trim($attributes['email']), $id, array_var($attributes, 'contact_type'))){
 			$errors[] = lang("email address must be unique");
 		}
 		
@@ -481,6 +519,8 @@ class Contacts extends BaseContacts {
 			throw new DAOValidationError(self::instance(), $errors);
 		} 
 	}
+
+
 	
 	/**
 	 * Do a first validation directly from parameters (before the object is loading)

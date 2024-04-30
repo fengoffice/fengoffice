@@ -116,27 +116,29 @@
 		        <?php echo $mem_path_html; ?>
 		    </div>
 		  </td>
-		  <?php } ?>
-		
-		  <?php foreach (array_var($draw_options, 'show_dimension_cols') as $dim_col) {
-		  			if ($dim_col == 0) continue;
-		  			$dim_member_path = json_decode(str_replace("'", '"', $task['memPath']), true);
-		  			$dim_mem_path_html = "";
-		  			
-		  			$mem_ids = array_var($dim_member_path, $dim_col);
-		  			if (is_array($mem_ids) && count($mem_ids) > 0) {
-		  				$sep = '<span class="print-breadcrumb">-</span>';
-						foreach ($mem_ids as $mem_ids_array) { // member ids are grouped by object_type
-							foreach ($mem_ids_array as $mem_id) {
-								$mem = Members::getMemberById($mem_id);
-								if ($mem instanceof Member) {
-									$this_mem_path = $mem->getPathToPrint($sep, '<span class="print-breadcrumb">', '</span>');
-									$this_mem_path .= ($this_mem_path=="" ? "" : $sep) .'<span class="print-breadcrumb wide">'. $mem->getName() .'</span>';
-									$dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-'.$mem->getColor().'">'.$this_mem_path.'</span>';
-								}
-							}
-						}
-					}
+		  <?php 
+          } 
+          foreach (array_var($draw_options, 'show_dimension_cols') as $dim_col) {
+            if ($dim_col == 0) 
+                continue;
+            $dim_member_path = json_decode(str_replace("'", '"', $task['memPath']), true);
+            $dim_mem_path_html = "";
+            $mem_ids = array_var($dim_member_path, $dim_col);
+            if (is_array($mem_ids) && count($mem_ids) > 0) {
+                $sep = '<span class="print-breadcrumb">-</span>';
+                foreach ($mem_ids as $k => $mem_ids_array) { // member ids are grouped by object_type
+                    if (is_numeric($k)) {
+                        foreach ($mem_ids_array as $mem_id) {
+                            $mem = Members::getMemberById($mem_id);
+                            if ($mem instanceof Member) {
+                                $this_mem_path = $mem->getPathToPrint($sep, '<span class="print-breadcrumb">', '</span>');
+                                $this_mem_path .= ($this_mem_path == "" ? "" : $sep) . '<span class="print-breadcrumb wide">' . $mem->getName() . '</span>';
+                                $dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-' . $mem->getColor() . '">' . $this_mem_path . '</span>';
+                            }
+                        }
+                    }
+                }
+            }
 		  ?>
 		  <td class='task_name'>
 		    <div class='task-breadcrumb-container'>      

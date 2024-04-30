@@ -23,7 +23,7 @@ function workspaces_custom_reports_additional_columns($args, &$ret) {
 	$ot = array_var($args, 'object_type');
 	if ($ot instanceof ObjectType && in_array($ot->getType(), array('dimension_object','dimension_group'))) return;
 	
-	$dimensions = Dimensions::findAll ( array("conditions" => "code IN ('workspaces','tags')") );
+	$dimensions = Dimensions::instance()->findAll ( array("conditions" => "code IN ('workspaces','tags')") );
 	foreach ($dimensions as $dimension) {
 		if (in_array($dimension->getId(), config_option('enabled_dimensions'))) {
 			

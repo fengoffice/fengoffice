@@ -23,7 +23,17 @@ function mail_additional_general_config_option($params, &$options) {
 			'url' => get_url('administration', 'mail_accounts'),
 			'name' => lang('mail accounts'),
 		);
+
+		if(Plugins::instance()->isActivePlugin('mail_rules')) {
+			$options[] = array(
+				'id' => 'email_rules',
+				'url' => get_url('mail_rules', 'list_rules'),
+				'name' => lang('mail rules'),
+			);
+		}
 	}
+
+
 	
 }
 

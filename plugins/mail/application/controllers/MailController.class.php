@@ -49,13 +49,17 @@ class MailController extends ApplicationController {
 		$loc->setDateTimeFormat("D, d M Y H:i:s O");
 
 		$offset_hours = logged_user()->getUserTimezoneHoursOffset();
+		$sent_date_str = "";
+		if ($original_mail->getSentDate() instanceof DateTimeValue) {
+			$sent_date_str = lang('mail sent').": ".$loc->formatDateTime($original_mail->getSentDate(), $offset_hours);
+		}
 
 		if ($type == 'plain') {
 			$cc_cell = $original_mail->getCc() == '' ? '' : "\n".lang('mail CC').": ".$original_mail->getCc();
-			$str = "\n\n----- ".lang('original message')."-----\n".lang('mail from').": ".$original_mail->getFrom()."\n".lang('mail to').": ".$original_mail->getTo()."$cc_cell\n".lang('mail sent').": ".$loc->formatDateTime($original_mail->getSentDate(), $offset_hours)."\n".lang('mail subject').": ".$original_mail->getSubject()."\n\n";
+			$str = "\n\n----- ".lang('original message')."-----\n".lang('mail from').": ".$original_mail->getFrom()."\n".lang('mail to').": ".$original_mail->getTo()."$cc_cell\n". $sent_date_str ."\n".lang('mail subject').": ".$original_mail->getSubject()."\n\n";
 		} else {
 			$cc_cell = $original_mail->getCc() == '' ? '' : "<tr><td>".lang('mail CC').": ".$original_mail->getCc()."</td></tr>";
-			$str = "<br><br><table><tr><td>----- ".lang('original message')." -----</td></tr><tr><td>".lang('mail from').": ".$original_mail->getFrom()."</td></tr><tr><td>".lang('mail to').": ".$original_mail->getTo()."</td></tr>$cc_cell<tr><td>".lang('mail sent').": ".$loc->formatDateTime($original_mail->getSentDate(), $offset_hours)."</td></tr><tr><td>".lang('mail subject').": ".$original_mail->getSubject()."</td></tr></table><br>";
+			$str = "<br><br><table><tr><td>----- ".lang('original message')." -----</td></tr><tr><td>".lang('mail from').": ".$original_mail->getFrom()."</td></tr><tr><td>".lang('mail to').": ".$original_mail->getTo()."</td></tr>$cc_cell<tr><td>". $sent_date_str ."</td></tr><tr><td>".lang('mail subject').": ".$original_mail->getSubject()."</td></tr></table><br>";
 		}
 		return $str;
 	}

@@ -118,6 +118,27 @@ class ProjectTask extends BaseProjectTask {
 	} // getParent
 	
 	/**
+	 * Return all parent tasks that this task belongs to
+	 *
+	 * @param void
+	 * @return array of ProjectTasks objects or empty array
+	 */
+	function getAllParents() {
+		$parents = array();
+		$current_task = $this;
+		while($current_task->getParentId()!=0) {
+			$parent = ProjectTasks::instance()->findById($current_task->getParentId());
+			if($parent instanceof ProjectTask) {
+				$parents[] = $parent;
+				$current_task = $parent;
+			} else {
+				break;
+			}
+		}
+		return $parents;
+	} // getAllParents
+
+	/**
 	 * Return the user that last assigned the task
 	 *
 	 * @access public
@@ -1468,7 +1489,7 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return boolean
 	 */
-	function save() {
+	function save() { 
 		if (!$this->isNew()) {
 			$old_me = ProjectTasks::instance()->findById($this->getId(), true);
 			if (!$old_me instanceof ProjectTask) return; // TODO: check this!!!
@@ -1506,6 +1527,8 @@ class ProjectTask extends BaseProjectTask {
 		}else{
 			$this->updateDepthAndParentsPath($new_parent_id);
 		}
+
+		Hook::fire('set_non_billable_property_using_old_task_and_new_task', array('new_task' => $this, 'old_task' => $old_me ?? null), $this);
 
 		parent::save();
 		
@@ -1864,6 +1887,112 @@ class ProjectTask extends BaseProjectTask {
 				$subtask->apply_members_to_subtasks($members, $recursive);
 			}
 		}
+	}
+
+
+	private function get_ignored_dimensions_when_reclassify_related_objects() {
+
+		$ignored_dimension_ids = config_option("ignored_dims_task_related_objs");
+
+		$clients_dimension_id = 0;
+		$projects_dimension_id = 0;
+		if (Plugins::instance()->isActivePlugin('crpm')) {
+			Env::useHelper('functions', 'crpm');
+			$clients_dimension_id = get_customers_dimension()->getId();
+			$projects_dimension_id = Dimensions::findByCode('customer_project')->getId();
+
+			// don't allow to ignore clients or projects dimension in reclassification
+			$ignored_dimension_ids = array_diff($ignored_dimension_ids, array($projects_dimension_id, $clients_dimension_id));
+		}
+
+		return $ignored_dimension_ids;
+	}
+
+	function override_related_objects_classification() {
+
+		$ignored_dimension_ids = $this->get_ignored_dimensions_when_reclassify_related_objects();
+
+		$task_members = $this->getMembers(false);
+
+		// remove client and project dimension members of the members set to apply to other objects, also the ones that belong to the ignored dimensions config option
+		$members_to_override = array();
+		foreach ($task_members as $member) {
+			if (!in_array($member->getDimensionId(), $ignored_dimension_ids)) {
+				$members_to_override[] = $member;
+			}
+		}
+
+		// get the related time entries
+		$timeslots = $this->getTimeslots();
+		foreach ($timeslots as $timeslot) {
+			$old_content_object = $timeslot->generateOldContentObjectData();
+
+			// override each time entry classification
+			$this->override_related_object_classification($timeslot, $members_to_override);
+
+		
+			$timeslot->setForceRecalculateBilling(true);
+			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+				Env::useHelper('functions', 'advanced_billing');
+				calculate_timeslot_rate_and_cost($timeslot);
+			}
+			// save log
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true);
+		}
+
+
+		if (Plugins::instance()->isActivePlugin('expenses2')) {
+
+			$b_expenses = Expenses::getBudgetedExpensesByTask($this->getId());
+			foreach ($b_expenses as $expense) {
+				$old_content_object = $expense->generateOldContentObjectData();
+
+				// override each time entry classification
+				$this->override_related_object_classification($expense, $members_to_override);
+	
+				// save log
+				ApplicationLogs::createLog($expense, ApplicationLogs::ACTION_EDIT, false, true);
+			}
+
+			$a_expenses = PaymentReceipts::getActualExpensesByTask($this->getId());
+			foreach ($a_expenses as $expense) {
+				$old_content_object = $expense->generateOldContentObjectData();
+
+				// override each time entry classification
+				$this->override_related_object_classification($expense, $members_to_override);
+	
+				// save log
+				ApplicationLogs::createLog($expense, ApplicationLogs::ACTION_EDIT, false, true);
+			}
+		}
+
+	}
+
+	function override_related_object_classification(ContentDataObject $object, $members_to_override) {
+
+		$ignored_dimension_ids = $this->get_ignored_dimensions_when_reclassify_related_objects();
+
+		$members_to_remove = array();
+		foreach ($members_to_override as $m) {
+			// check if we should ignore this member using the config option
+			if (!in_array($m->getDimensionId(), $ignored_dimension_ids)) {
+				// get the related object member of the same type
+				$rel_obj_member = $object->getMemberOfType($m->getObjectTypeId());
+				if ($rel_obj_member instanceof Member) {
+					// if the related object is classified in a member of the same type we have to remove that classification
+					$members_to_remove[] = $rel_obj_member->getId();
+				}
+			}
+		}
+
+		// remove classification in members that we are going to override
+		if (count($members_to_remove) > 0) {
+			ObjectMembers::removeObjectFromMembers($object, logged_user(), null, $members_to_remove, false);
+		}
+
+		// classify related object in task's members
+		ObjectMembers::addObjectToMembers($object->getId(), $members_to_override);
+
 	}
 
 

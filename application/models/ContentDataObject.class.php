@@ -1765,7 +1765,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 * Return all timeslots
 	 *
 	 * @param void
-	 * @return boolean
+	 * @return array
 	 */
 	function getTimeslots() {
 		if(!isset($this->timeslots) || is_null($this->timeslots)) {

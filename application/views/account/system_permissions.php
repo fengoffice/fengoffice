@@ -214,7 +214,11 @@ og.ogRootPermValueChanged = function() {
 	var assigned_vals = [];
 	for (i=0; i<og.perm_root_object_type_ids.length; i++) {
 		var ot = og.perm_root_object_type_ids[i];
-		var v = og.ogGetCheckedValue(document.getElementsByName(genid + "rg_root_" + ot));
+		
+		// get the checked radio button, exclude the hidden inputs because they are the ones of the template used to build the form
+		var radio_name = genid + "rg_root_" + ot;
+		var v = $('input[name="' + radio_name + '"]:checked:visible').val();
+
 		if (assigned_vals.indexOf(v) == -1) assigned_vals.push(v);
 	}
 	

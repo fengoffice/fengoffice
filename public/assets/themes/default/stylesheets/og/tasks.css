@@ -208,6 +208,7 @@
 
 .form-tab .subtasks-container .subtask-inputs-container {
     margin-top: 5px;
+    width: 100%;
 }
 .form-tab .subtasks-container .subtask-inputs-container .inputs-container {
     float: left;

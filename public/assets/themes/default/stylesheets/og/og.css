@@ -1512,7 +1512,7 @@ span.member-path span a:hover {
 
 .address-input-container {
 	margin-bottom: 2px;
-	min-width: 400px;
+	min-width: 329px;
 }
 .address-input-container.custom-property {
 	margin-left: 200px;
@@ -1558,16 +1558,22 @@ span.member-path span a:hover {
 } */
 
 .task .address-input-container .address_street_input {
-	width: 400px;
+	width: 150px;
 }
 .task .address-input-container .address_city_input, .task .address-input-container .address_state_input, .task .address-input-container .address_zipcode_input {
-	width: 195px;
+	width: 154px !important;
 }
 .task .address-input-container .country-selector {
-	width: 203px;
+	width: 162px !important;
+	height: 33px !important;
 }
 .task .address-input-container .undo-delete, .task .address-input-container .delete-link {
 	margin-left: 275px;
+}
+
+.task .task-data div.og-add-custom-properties table td input.name,
+.task .task-data div.og-add-custom-properties table td input.value {
+	width: 300px !important;
 }
 
 .contact_form_container .input-container {
@@ -2058,12 +2064,14 @@ table.og-custom-properties.main td {
 
 /****** Styles of custom properties wrapper ****/
 .custom-properties-wrapper {
-	width:400px;
-	height:115px;
+	/*width:400px;*/
+	/*height:115px;*/
 	overflow: scroll;
 	margin-left: -8px;
-	padding: 5px;
-	border: 1px solid #d0caca;
+	padding-left: 10px;
+
+	/*padding: 5px;
+	border: 1px solid #d0caca;*/
 }
 /******* Styles of wrapper image of users ****/
 
@@ -2099,7 +2107,7 @@ div[id$="uploadPreviewContainer"] {
 	max-width: 530px !important;
 }
 .address-custom-properties-parent .address-input-container {
-	max-width: 530px !important;
+	max-width: 329px !important;
 	justify-content: space-between;
 	flex-wrap: wrap;
 	/* border: 1px solid #CCCCCC; */
@@ -2171,7 +2179,7 @@ div[id$="uploadPreviewContainer"] {
 .address-custom-properties-parent .address-input-container .address_zipcode_input {
 	order: 5;
     height: 25px;
-    width: 220px;
+    width: 164px;
     grid-area: 4 / 1 / 5 / 3;
 }
 

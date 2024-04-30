@@ -345,7 +345,7 @@ function render_plain_member_selector_using_cache($config) {
 	$onchange = array_var($config, 'onchange', '');
 
 	$cache_key = $dim_id . '_dimension_members_tree';
-	$member_tree_data = $_SESSION[$cache_key];
+	$member_tree_data = $_SESSION[$cache_key] ?? [];
 	$identation = 0;
  
 	// build HTML selector with members as options

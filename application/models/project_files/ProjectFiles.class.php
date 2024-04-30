@@ -70,7 +70,7 @@ class ProjectFiles extends BaseProjectFiles {
 	static function getByFilename($filename, $order = '`id` DESC') {
 		$conditions = array ('`name` = ?', $filename );
 		
-		return self::findOne ( array ('conditions' => $conditions, 'order' => $order ) );
+		return self::instance()->findOne ( array ('conditions' => $conditions, 'order' => $order ) );
 	} // getByFilename
 	
 	

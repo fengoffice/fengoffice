@@ -279,7 +279,9 @@ function render_custom_property_by_type($custom_property, $configs) {
 			$html .= render_text_custom_property_field($custom_property, $configs);
 			break;
 		case 'amount':
+			$html .= '<div class="amount-container-fields">';
 			$html .= render_money_amount_custom_property_field($custom_property, $configs);
+			$html .= '</div>';
 			break;	
 		case 'numeric':
 			$html .= render_numeric_custom_property_field($custom_property, $configs);

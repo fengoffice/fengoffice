@@ -3852,7 +3852,11 @@ class TaskController extends ApplicationController {
                     $members = Members::instance()->findAll(array('conditions' => "id IN (" . implode(',', $member_ids) . ")"));
                     
                     if($previous_member_ids != $member_ids){ 
+						// apply the classification changes to all the subtasks
                         $task->apply_members_to_subtasks($members, true);
+
+						// apply the classification changes to related time entries and expenses
+						$task->override_related_objects_classification();
                     }
                 } 
 
@@ -4264,15 +4268,11 @@ class TaskController extends ApplicationController {
         } else if ($task->getRepeatM() > 0) {
                 if ($new_st_date instanceof DateTimeValue) {
                     if (isset($original_st_date) && isset($count)) {
-                        $new_st_date = getMonthlyRepetitionDate($task, $new_st_date, $original_st_date, $count);
-                    } else {
                         $new_st_date = $new_st_date->add('M', $task->getRepeatM());
                     }
                 }
                 if ($new_due_date instanceof DateTimeValue) {
                     if(isset($original_due_date) && isset($count)) {
-                        $new_due_date = getMonthlyRepetitionDate($task, $new_due_date, $original_due_date, $count);
-                    } else {
                         $new_due_date = $new_due_date->add('M', $task->getRepeatM());
                     }
                 }  
