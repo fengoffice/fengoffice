@@ -24,7 +24,7 @@ foreach($fieldValues as $value){
 	?>
 		<div id="value<?php echo $count?>" class="cp-val">
 	<?php
-		echo text_field($name.'['.$count.']', $value, array('id' => $name.'[]','style'=>'width: 400px; padding: 5px;'));
+		echo text_field($name.'['.$count.']', $value, array('id' => $name.'[]','style'=>'width: 340px; padding: 5px; box-sizing: border-box;'));
 		
 		?><a href="#" class="link-ico ico-delete"
 				onclick="og.removeCPTextValue('<?php echo $cp->getId()?>', '<?php echo $genid?>', '<?php echo $count?>',0)" ></a>
@@ -36,7 +36,7 @@ foreach($fieldValues as $value){
 ?>
 	<div id="value<?php echo $count?>" class="cp-val">
 <?php 
-	echo text_field($name.'['.$count.']', '', array('id' => $name.'[]','style'=>'width: 400px; padding: 5px;'));
+	echo text_field($name.'['.$count.']', '', array('id' => $name.'[]','style'=>'width: 340px; padding: 5px; box-sizing: border-box;'));
 		
 	?><a href="#" class="link-ico ico-add" onclick="og.addCPTextValue(<?php echo $cp->getId()?>, '<?php echo $genid?>', <?php echo ($is_mem_cp ? "1" : "0")?>)"><?php echo lang('add value')?></a>
 	</div>

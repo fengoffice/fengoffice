@@ -1650,6 +1650,20 @@ class MemberController extends ApplicationController {
 					
 					// ensure that no user is going to be trashed
 					$object_ids_to_keep = array_merge($object_ids_to_keep, $user_ids);
+
+					// also exclude contacts that are used in any custom property
+					$contact_ids_in_cp_sql = "
+						SELECT DISTINCT cpv.`value` 
+						FROM ".TABLE_PREFIX."custom_property_values cpv
+						INNER JOIN ".TABLE_PREFIX."custom_properties cp ON cp.id=cpv.custom_property_id
+						WHERE cpv.`value` != '' AND cp.`type` = 'contact'
+					";
+					$contact_ids_rows = DB::executeAll($contact_ids_in_cp_sql);
+					$contact_ids_in_cp = $contact_ids_rows ? array_flat($contact_ids_rows) : array();
+					$object_ids_to_keep = array_merge($object_ids_to_keep, $contact_ids_in_cp);
+
+					// let plugins specify which other objects can't be deleted (such as client's contact info, etc.)
+					Hook::fire('member_delete_more_objects_to_keep', array('member'=>$member), $object_ids_to_keep);
 					
 					// calculate the object ids that can be trashed
 					$object_ids_to_trash = array_diff($all_affeceted_object_ids, $object_ids_to_keep);
@@ -2390,6 +2404,9 @@ class MemberController extends ApplicationController {
 							// classify
 							$obj_controller->add_to_members($st, $st_mem_ids);
 						}
+
+						// apply the classification changes to related time entries and expenses
+						$obj->override_related_objects_classification();
 					}
 					
 					// if object is contact ask to add default permissions in member

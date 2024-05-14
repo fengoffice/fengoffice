@@ -1243,22 +1243,22 @@ class ApiController extends ApplicationController {
 
             $res_data = array(
                 array( 
-                'name' => "'".lang('upcoming')."'",
+                'name' => " ".lang('upcoming')." ",
                 'value' => array_var($task_stats, 'upcoming'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(15)',
                 'color' => '#fbc85a' // Yellow
                 ) , array( 
-                'name' => "'".lang('overdue')."'",
+                'name' => " ".lang('overdue')." ",
                 'value' => array_var($task_stats, 'late'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(11)',
                 'color' => '#fd7066' // Red
                 ) , array( 
-                'name' => "'".lang('completed')."'",
+                'name' => " ".lang('completed')." ",
                 'value' => array_var($task_stats, 'complete'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(1)',
                 'color' => '#0cbe9b' // Green
                 ) , array( 
-                'name' => "'".lang('without due date')."'",
+                'name' => " ".lang('without due date')." ",
                 'value' => array_var($task_stats, 'no_due_date'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(14)',
                 'color' => '#b4b3b3' // Grey

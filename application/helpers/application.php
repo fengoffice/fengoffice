@@ -1161,11 +1161,11 @@ function render_add_custom_properties(ContentDataObject $object) {
 	$genid = gen_id();
 	$output = '
         <label>'.lang('properties').'</label>
-		<div id="'.$genid.'" class="og-add-custom-properties" style="float:left;">
-			<table><tbody><tr>
+		<div id="'.$genid.'" class="og-add-custom-properties" style="float:left; width:564px">
+			<table style="width:100%"><tbody><tr>
 			<th>' . lang('name') . '</th>
 			<th>' . lang('value') . '</th>
-			<th class="actions"></th>
+			<th class="actions" style="width:30px;align:center"></th>
 			</tr></tbody></table>
 			<a href="#" onclick="og.addObjectCustomProperty(this.parentNode, \'\', \'\', true);return false;">' . lang("add custom property") . '</a>
 		</div>
@@ -1177,14 +1177,15 @@ function render_add_custom_properties(ContentDataObject $object) {
 			var tbody = parent.getElementsByTagName("tbody")[0];
 			var tr = document.createElement("tr");
 			var td = document.createElement("td");
-			td.innerHTML = \'<input class="name" type="text" name="custom_prop_names[\' + count + \']" value="\' + name + \'" tabindex=\' + ti + \'>\';;
+			td.innerHTML = \'<input class="name" type="text" name="custom_prop_names[\' + count + \']" value="\' + name + \'" tabindex=\' + ti + \' style="width:250px !important">\';
 			if (td.children) var input = td.children[0];
 			tr.appendChild(td);
 			var td = document.createElement("td");
-			td.innerHTML = \'<input class="value" type="text" name="custom_prop_values[\' + count + \']" value="\' + value + \'" tabindex=\' + (ti + 1) + \'>\';;
+			td.innerHTML = \'<input class="value" type="text" name="custom_prop_values[\' + count + \']" value="\' + value + \'" tabindex=\' + (ti + 1) + \' style="width:250px  !important">\';
 			tr.appendChild(td);
 			var td = document.createElement("td");
-			td.innerHTML = \'<div class="db-ico ico-delete" style="margin-left:2px;height:20px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
+            td.style.verticalAlign = "middle";
+			td.innerHTML = \'<div class="db-ico ico-delete" style="height:20px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
 			tr.appendChild(td);
 			tbody.appendChild(tr);
 			if (input && focus)

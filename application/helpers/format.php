@@ -867,14 +867,16 @@ function get_format_value_to_header($col, $obj_type_id)
 	}
 	
 	
-	function format_money_amount($number, $symbol = '$', $decimals = null, $decimals_separator = null, $thousand_separator = null) {
+	function format_money_amount($number, $symbol = '$', $decimals = null, $decimals_separator = null, $thousand_separator = null, $excel = false) {
 		
-		// *** LC 2023-09-29
 		if( gettype($number) == "string"){  
-			$number = (float)$number;
-			
+			$number = (float) $number;
 		}
-		// END
+
+        if($excel) {
+            $currency_format = '"' . $symbol . ' "#,##0.00_-';
+            return 'FORMAT:::' . $currency_format . ':::' .($number ?? 0);
+        }
 
 		if (is_null($decimals)) {
 			$decimals = user_config_option('decimal_digits');
@@ -891,7 +893,7 @@ function get_format_value_to_header($col, $obj_type_id)
 			$sign = "- ";
 		}
 		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
-		
+
 		return trim($formatted);
 	}
 

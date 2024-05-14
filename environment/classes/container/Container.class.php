@@ -121,17 +121,17 @@
     } // export
     
     // Implement Iterator
-    public function current() { return current($this->__data); }
-    public function key() { return key($this->__data); }
-    public function next() { return next($this->__data); }
-    public function rewind() { return reset($this->__data); }
-    public function valid() { return current($this->__data) !== false; }
+    public function current(): mixed { return current($this->__data); }
+    public function key(): mixed { return key($this->__data); }
+    public function next(): void { next($this->__data); }
+    public function rewind(): void { reset($this->__data); }
+    public function valid(): bool { return current($this->__data) !== false; }
     
     // Implement ArrayAccess
-    public function offsetExists($offset) { return isset($this->__data[$offset]); }
-    public function offsetSet($offset, $value) { return $this->set($offset, $value); }
-    public function offsetGet($offset) { return $this->get($offset); }
-    public function offsetUnset($offset) { unset($this->__data[$offset]); } 
+    public function offsetExists($offset): bool { return isset($this->__data[$offset]); }
+    public function offsetSet($offset, $value): void { $this->set($offset, $value); }
+    public function offsetGet($offset): mixed { return $this->get($offset); }
+    public function offsetUnset($offset): void { unset($this->__data[$offset]); } 
     
   } // Container
 

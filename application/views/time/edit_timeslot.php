@@ -16,12 +16,6 @@
 	if (!isset($pre_selected_member_ids)) $pre_selected_member_ids = null;
 	
     $has_custom_properties = CustomProperties::countAllCustomPropertiesByObjectType($object->getObjectTypeId()) > 0;
-
-	$disable_is_billable_if_fixedfee_task = false;
-	if (Plugins::instance()->isActivePlugin('income')) {
-		Env::useHelper('functions', 'income');
-		$disable_is_billable_if_fixedfee_task = income_config_option('set_objects_non_billable_if_price_is_manual');
-	}
 ?>
 
 <form onsubmit="<?php echo $on_submit?>" class="add-timeslot" id="<?php echo $genid ?>submit-edit-form" action="<?php echo $timeslot->isNew() ? get_url('time', 'add') : get_url('time', 'edit_timeslot', array('id' => $timeslot->getId())); ?>" method="post" enctype="multipart/form-data">
@@ -378,8 +372,6 @@
     var div;
 
     og.reclassify_time_when_linking_task = <?php echo (config_option('reclassify_time_when_linking_task') ? '1' : '0') ?>;
-
-	og.disable_is_billable_if_fixedfee_task = <?php echo $disable_is_billable_if_fixedfee_task ? '1' : '0' ?>;
     
     og.toggle_specify_end_time = function(input, genid) {
         $(input).hide();
@@ -964,33 +956,27 @@
 	}
 
 	og.setTimeslotIsBillableUsingTaskWrapper = function(task_id) {
-
-		if (og.disable_is_billable_if_fixedfee_task) {
-			let task = og.related_task_data[task_id];
-			if (!task) {
-				og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
-					hideLoading: true,
-					callback: function(success, data) {
-						let task = data.task;
-						if (task) {
-							og.related_task_data[task.id] = task;
-							og.enabled_disable_is_billable_from_fixed_fee_task(task);
-							if (task.is_calculated_estimated_price) {
-								og.setTimeslotIsBillableUsingTask(task_id);
-							}
-						}
-					}
-				});
-			} else {
-				og.enabled_disable_is_billable_from_fixed_fee_task(task);
-				if (task.is_calculated_estimated_price) {
-					og.setTimeslotIsBillableUsingTask(task_id);
-				}
-			}
-
-		} else {
-			og.setTimeslotIsBillableUsingTask(task_id);
-		}
+        let task = og.related_task_data[task_id];
+        if (!task) {
+            og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
+                hideLoading: true,
+                callback: function(success, data) {
+                    let task = data.task;
+                    if (task) {
+                        og.related_task_data[task.id] = task;
+                        og.enabled_disable_is_billable_from_fixed_fee_task(task);
+                        if (task.is_calculated_estimated_price) {
+                            og.setTimeslotIsBillableUsingTask(task_id);
+                        }
+                    }
+                }
+            });
+        } else {
+            og.enabled_disable_is_billable_from_fixed_fee_task(task);
+            if (task.is_calculated_estimated_price) {
+                og.setTimeslotIsBillableUsingTask(task_id);
+            }
+        }
 	}
 
     og.setTimeslotIsBillableUsingTask = function(task_id){
@@ -999,8 +985,7 @@
 		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
         var income_active = <?php echo Plugins::instance()->isActivePlugin('income') ? '1' : '0'; ?>;
         var genid = gen_id;
-        var use_task_billable = og.config['use_is_billable_value_in_tasks']; 
-		if(use_task_billable && hour_type_active && advanced_billing_active && income_active){
+		if(hour_type_active && advanced_billing_active && income_active){
             var is_invoiced = $('#'+genid+'invoicing_status').val() == 'invoiced';
             if(!is_invoiced){
                 var current_billable = $('#'+genid+'is_billableYes').attr('checked') == 'checked' ? 1 : 0;
@@ -1017,6 +1002,7 @@
                                 $('#'+genid+'is_billableYes').removeAttr('checked');
                                 $('#'+genid+'is_billableNo').attr('checked','checked');
                                 $('#'+genid+'invoicing_status').val('non_billable');
+                                og.disable_time_form_is_billable_input();
                             }
                         }
                     }
@@ -1027,7 +1013,7 @@
 
 	og.set_time_is_billable_using_labor_wrapper = function(genid) {
 		let task_id = $("#object_id").val();
-		if (og.disable_is_billable_if_fixedfee_task && task_id > 0) {
+		if (task_id > 0) {
 			let task = og.related_task_data[task_id];
 			if (!task) {
 				og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
@@ -1255,7 +1241,14 @@
     <?php 
     $is_calculated_estimated_price = $timeslot->getRelObject() ? $timeslot->getRelObject()->getColumnValue('is_calculated_estimated_price') : true;
     $is_fixed_fee = $timeslot->getRelObject() ? $timeslot->getRelObject()->getColumnValue('is_fixed_fee') : false;
-    if ($disable_is_billable_if_fixedfee_task && !$is_calculated_estimated_price && $is_fixed_fee) { ?>
+    $task_non_billable = false;
+    if(Plugins::instance()->isActivePlugin('advanced_billing')){
+        $task = $timeslot->getRelObject();
+        $task_non_billable = $task instanceof ProjectTask && $task->getColumnValue('is_billable') == 0;
+    }
+   
+        
+    if ((!$is_calculated_estimated_price && $is_fixed_fee) || $task_non_billable) { ?>
 		og.disable_time_form_is_billable_input();
 	<?php } ?>
             

@@ -207,7 +207,8 @@ if (isset($email)){
 					$conversation_block .= '<div class="db-ico ico-user"></div>';
 				}
 				
-				$info_text = $info->getTextBody();
+				// use strip_tags function to ensure we are not adding html code in this section, no matter the content we have in the text
+				$info_text = strip_tags($info->getTextBody());
 				if (strlen_utf($info_text) > 90) $info_text = substr_utf($info_text, 0, 90) . "...";		
 				
 				$view_url = get_url('mail', 'view', array('id' => $info->getId(), 'replace' => 1));

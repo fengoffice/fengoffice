@@ -120,7 +120,9 @@ og.ogPermValueChanged = function(genid, dim_id, obj_type){
 	}
 	if (!perm) return;
 		
-	var value = og.ogGetCheckedValue(document.getElementsByName(genid + "rg_" + dim_id + "_" + obj_type));
+	// get the checked radio button, exclude the hidden inputs because they are the ones of the template used to build the form
+	var radio_name = genid + "rg_" + dim_id + "_" + obj_type;
+	var value = $('input[name="' + radio_name + '"]:checked:visible').val();
 
 	perm.modified = true;
 	perm.d = (value == 3);
@@ -800,6 +802,9 @@ og.removeAllPermissionsForObjType = function(genid, obj_type) {
 }
 
 //	Returns the value of the radio button that is checked
+/**
+ * @deprecated
+ */
 og.ogGetCheckedValue = function(radioObj) {
 	if(!radioObj)
 		return "";
@@ -1086,7 +1091,9 @@ og.userPermissions.ogPermValueChanged = function(genid, obj_type){
 	}
 	if (perm == null) return;
 		
-	var value = og.ogGetCheckedValue(document.getElementsByName(genid + "rg_" + obj_type));
+	// get the checked radio button, exclude the hidden inputs because they are the ones of the template used to build the form
+	var radio_name = genid + "rg_" + obj_type;
+	var value = $('input[name="' + radio_name + '"]:checked:visible').val();
 
 	perm.modified = true;
 	perm.d = (value == 3);

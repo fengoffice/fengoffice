@@ -203,10 +203,8 @@
     while(!checkdate($month, $day, $year)) {
         $day -=  1;
     }
-    
-    // Set day to 1, to avoid month adjustments
-    $new_date->setDay(1);
 
+    
     // Set year, month and day
     $new_date->setYear($year);
     $new_date->setMonth($month);

@@ -185,6 +185,7 @@ div.linked-objects-member-filters div.buttons {
 
 .coInputMainBlock .dimension-selector-container {
 	margin: 0 0 14px 0;
+	display: flex;
 }
 
 .coInputMainBlock .task-data .dimension-selector-container .input-container {

@@ -109,7 +109,7 @@ if (isset($default_selection_checkboxes)) {
 	
 <script>
 $(function() {
-	$("#<?php echo $genid; ?>-member-chooser-panel-<?php echo $dimension_id?>-tree").css('width', '<?php echo $container_width?>px');
+	$("#<?php echo $genid; ?>-member-chooser-panel-<?php echo $dimension_id?>-tree").css('width', '100%');
 	$("#<?php echo $genid; ?>-member-chooser-panel-<?php echo $dimension_id?>-tree .x-panel-body.collapsible-body").css('width', '<?php echo $container_width - 2?>px');
 });
 

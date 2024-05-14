@@ -1084,10 +1084,11 @@ class TaskController extends ApplicationController {
         $join_params['jt_field'] = "rel_object_id";
         $join_params['e_field'] = "object_id";
         $join_params['on_extra'] = $join_on_extra;
-
+ 
         $total_estimated = "SUM(time_estimate) AS group_time_estimate ";
 
         // Worked time
+        /*  Save for future reference
         $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM ".TABLE_PREFIX."timeslots tt 
 			INNER JOIN ".TABLE_PREFIX."objects oo ON oo.id=tt.object_id
             WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0";
@@ -1095,29 +1096,30 @@ class TaskController extends ApplicationController {
             $total_worked_subquery .= " AND contact_id = " . logged_user()->getId();
         }
         $total_worked = $total_worked_subquery . ") AS group_time_worked ";
-
+        */
+        $total_worked = "SUM(total_worked_time) AS group_time_worked";
 
         //querys returning total worked time, total estimated time and total pending time
         //time worked is the addition of all timeslots minus the addition of all pauses
         //time estimated is the addition of the substractions of estimated and worked, grouping by task to substract
         $group_totals = ProjectTasks::instance()->listing(array(
-            "select_columns" => array("time_estimate", $total_worked, "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
+            "select_columns" => array("time_estimate", "total_worked_time", "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
                 "join_params" => $join_params,
                 "extra_conditions" => $conditions,
                 "group_by" => "e.`object_id`",
-                "query_wraper_start" => "SELECT $total_estimated,  SUM(group_time_worked) AS group_time_worked, COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
+                "query_wraper_start" => "SELECT $total_estimated,  $total_worked, COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
                 "query_wraper_end" => ") AS pending_calc",
                 "count_results" => false,
                 "fire_additional_data_hook" => false,
                 "raw_data" => true,
-            ))->objects;
-        
+            ))->objects;  
 
         $group_time_estimate = $group_totals[0]['group_time_estimate'];
-        //$group_time_pending = $group_totals[0]['group_time_pending'];
         $group_time_worked = $group_totals[0]['group_time_worked'];
         $group_time_worked = is_null($group_time_worked) ? 0 : $group_time_worked;
-        $group_time_pending = $group_time_estimate - $group_time_worked;
+        
+        //$group_time_pending = $group_time_estimate - $group_time_worked;
+        $group_time_pending = $group_totals[0]['group_time_pending'];
         if ($group_time_pending < 0) $group_time_pending = 0;
 
         // Overall group worked time includes subtasks time
@@ -1129,7 +1131,7 @@ class TaskController extends ApplicationController {
 
         $totals['worked_time'] = $group_time_worked;
         $totals['worked_time_string'] = ($group_time_worked <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_worked * 60), 'hm', 60));
-        $totals['pending_time'] = $group_time_pending;
+        $totals['pending_time'] = $group_time_pending; 
         $totals['pending_time_string'] = ($group_time_pending <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_pending * 60), 'hm', 60));
 
         // Overall worked time includes subtasks time
@@ -3852,7 +3854,11 @@ class TaskController extends ApplicationController {
                     $members = Members::instance()->findAll(array('conditions' => "id IN (" . implode(',', $member_ids) . ")"));
                     
                     if($previous_member_ids != $member_ids){ 
+						// apply the classification changes to all the subtasks
                         $task->apply_members_to_subtasks($members, true);
+
+						// apply the classification changes to related time entries and expenses
+						$task->override_related_objects_classification();
                     }
                 } 
 
@@ -4241,7 +4247,7 @@ class TaskController extends ApplicationController {
     // ---------------------------------------------------
 
     //function that generate repetiion dates
-    function getNextRepetitionDates($task, $opt_rep_day, &$new_st_date, &$new_due_date, $repetition_params) {
+    function getNextRepetitionDates($task, $opt_rep_day, &$new_st_date, &$new_due_date, $repetition_params = array()) { 
         $new_due_date = null;
         $new_st_date = null;
         $original_st_date = array_var($repetition_params, 'original_st_date');
@@ -4262,20 +4268,12 @@ class TaskController extends ApplicationController {
                 $new_due_date = $new_due_date->add('d', $task->getRepeatD());
             }
         } else if ($task->getRepeatM() > 0) {
-                if ($new_st_date instanceof DateTimeValue) {
-                    if (isset($original_st_date) && isset($count)) {
-                        $new_st_date = getMonthlyRepetitionDate($task, $new_st_date, $original_st_date, $count);
-                    } else {
-                        $new_st_date = $new_st_date->add('M', $task->getRepeatM());
-                    }
-                }
-                if ($new_due_date instanceof DateTimeValue) {
-                    if(isset($original_due_date) && isset($count)) {
-                        $new_due_date = getMonthlyRepetitionDate($task, $new_due_date, $original_due_date, $count);
-                    } else {
-                        $new_due_date = $new_due_date->add('M', $task->getRepeatM());
-                    }
-                }  
+            if ($new_st_date instanceof DateTimeValue) {
+                $new_st_date = $new_st_date->add('M', $task->getRepeatM());
+            }
+            if ($new_due_date instanceof DateTimeValue) {
+                $new_due_date = $new_due_date->add('M', $task->getRepeatM());
+            }  
         } else if ($task->getRepeatY() > 0) {
             if ($new_st_date instanceof DateTimeValue) {
                 $new_st_date = $new_st_date->add('y', $task->getRepeatY());
@@ -4314,7 +4312,7 @@ class TaskController extends ApplicationController {
             return;
         }
 
-        $this->getNextRepetitionDates($task, array(), $new_st_date, $new_due_date, array());
+        $this->getNextRepetitionDates($task, array(), $new_st_date, $new_due_date);
 
         $daystoadd = 0;
         $params = array('task' => $task, 'new_st_date' => $new_st_date, 'new_due_date' => $new_due_date);
@@ -4382,7 +4380,7 @@ class TaskController extends ApplicationController {
      * @param void
      * @return null
      */
-    function complete_task() {
+    function complete_task() { 
         $options = array_var($_GET, 'options');
         if (logged_user()->isGuest()) {
             flash_error(lang('no access permissions'));

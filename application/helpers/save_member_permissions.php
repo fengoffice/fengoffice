@@ -73,7 +73,7 @@
 		// transactions to update_sharing table
 		$sharingTablecontroller = new SharingTableController();
 		if (is_array($changed_pgs)) {
-			$perm_array = json_decode($permissions);
+			$perm_array = json_decode($permissions) ?? [];
 			foreach ($perm_array as $pa) {
 				if (!isset($pa->m)) $pa->m = $member->getId();
 			}

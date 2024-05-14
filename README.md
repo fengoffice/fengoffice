@@ -154,7 +154,7 @@ Apache 2.0+
  Please have a look at our requirements here:
 </p>
 
-<a style="padding:0 20px;" href="http://www.fengoffice.com/web/wiki/doku.php/installation:server_reqs">http://www.fengoffice.com/web/wiki/doku.php/installation:server_reqs</a>
+<a style="padding:0 20px;" href="https://wiki.fengoffice.com/doku.php/installation:server_reqs">https://wiki.fengoffice.com/doku.php/installation:server_reqs</a>
 
 <p style="color: #264653; padding:0 20px;">
  Alternatively, if you just want to test Feng Office and you don't care about security
@@ -178,13 +178,13 @@ Apache 2.0+
     <li style="color: #264653;">Unpack and upload to your web server</li>
     <li style="color: #264653;">Direct your browser to the public/install directory and follow the installation procedure</li>
     <p style="color: #264653;">
-    Further information can be found here: <a href="http://www.fengoffice.com/web/wiki/doku.php/installation:installation">http://www.fengoffice.com/web/wiki/doku.php/installation:installation</a>
+    Further information can be found here: <a href="https://wiki.fengoffice.com/doku.php/installation:installation">https://wiki.fengoffice.com/doku.php/installation:installation</a>
     </p>
     <p style="color: #264653;">
     You should be finished in a matter of minutes.
     </p>
     <li style="color: #264653;">Some functionality may require further configuration, like setting up a cron job.
-    Check the wiki for more information: <a href="http://fengoffice.com/web/wiki/doku.php/setup">http://fengoffice.com/web/wiki/doku.php/setup</a></li>
+    Check the wiki for more information: <a href="https://wiki.fengoffice.com/doku.php/setup">https://wiki.fengoffice.com/doku.php/setup</a></li>
     <p style="color: #264653;">
     WARNING: Default memory limit por PHP is 8MB. As a new Feng Office install consumes about 10 MB,
     administrators could get a message similar to "Allowed memory size of 8388608 bytes exhausted".
@@ -208,7 +208,7 @@ Apache 2.0+
 
 <p style="color: #264653; padding:0 20px;">
   Either way, we strongly suggest reading the following article in our Wiki for further information:
- <a href="http://www.fengoffice.com/web/wiki/doku.php/installation:migration">http://www.fengoffice.com/web/wiki/doku.php/installation:migrationinstallation:installation</a>
+ <a href="https://wiki.fengoffice.com/doku.php/installation:migration">https://wiki.fengoffice.com/doku.php/installation:migration</a>
 </p>
 
 <p style="color: #264653; padding:0 20px;">

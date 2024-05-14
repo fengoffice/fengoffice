@@ -23,6 +23,11 @@
 			$infos = self::getCurrenciesInfo();
 			return array_var($infos, 0, array());
 		}
+
+		static function getDefaultCurrencySymbol() {
+			$currency = self::getDefaultCurrencyInfo();
+			return array_var($currency, 'symbol', '$');
+		}
 		
 		private $cache = null;
 		static function getCurrency($id) {

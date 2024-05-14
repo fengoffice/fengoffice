@@ -1,0 +1,130 @@
+.accordion, .previewContents { width: 100%; max-width: 500px; margin: auto; }
+.accordion-item { border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 16px; }
+.accordion-button {  background: #FFF; border: none; width: 100%; text-align: left; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; }
+.accordion-button i.icon { color: #264653; font-size: 25px; }
+.accordion-content { padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease-out; background: #F4F7F8; border-top: 1px solid #ccc; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; }
+.accordion-content.show { max-height: inherit; padding: 10px; transition: max-height 0.3s ease-in, padding 0.3s ease-in; }
+.contentSelectable{ margin: 8px 0; }
+.checkValidation{ width: 28px; position: relative; }
+.subcontenBillContact{ width: 100%; padding-right: 10px; list-style: none; }
+.gridItems{ display: grid; grid-template-columns: 1fr; gap: 16px; }
+.wrapperBillingContact{ background: #F5F3F3; border-radius: 12px; padding: 10px; box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); display: flex; align-items: flex-start; justify-content: space-between; }
+.flexcontent{ display: flex; align-items: flex-start; }
+.brothersContents{ max-width: 100%; width: 100%;  }
+.container_data_contact{ display: grid; width: calc(100% - 30px);}
+.container_data_contact.two_columns { grid-template-columns: 1fr 1fr; }
+.container_data_contact.three_columns { grid-template-columns: 1fr 1fr 1fr; }
+.wrapper_content_rows {
+		display: flex;
+	align-items: center;
+	margin-bottom: 20px;
+	}
+.wrapper_content_rows:last-child {
+margin-bottom: 0;
+}
+.data_icon_contact {
+margin-right: 5px;
+min-width: 30px;
+max-width: 30px;
+}
+.data_icon_contact img, .contact_profile_image img {
+max-width: 100%;
+display: block;
+}
+.item_data {
+padding: 2px 5px;
+color: #7E7E7E;
+font-size: 14px;
+}
+.contact_profile_image {
+max-width: 40px;
+margin-right: 5px;
+}
+.flex_internal_items {
+display: flex;
+align-items: center;
+}
+.top_bar_content {
+padding: 0 5px;
+}
+.card_title_contact {
+font-size: 14px;
+color: #264653;
+font-style: italic;
+font-weight: 700;
+}
+.card_description_contact {
+	font-size: 13px;
+	color: #7E7E7E;
+					font-style: italic;
+	font-weight: 700;
+}
+.expand_button_contact {
+	background-image: url(../../images/expandir.png);
+    
+	background-color: #2A9D8F;
+	background-position: center;
+	width: 30px;
+	height: 30px;
+	background-size: 16px;
+	background-repeat: no-repeat;
+	border-radius: 100px;
+	outline: none;
+	border: none;
+	color: white;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	margin-right: 10px;
+	cursor: pointer;
+	}
+.collapse_button_contact {
+	background-image: url(../../images/collapse.png);
+	background-color: #7E7E7E;
+	background-position: center;
+	width: 30px;
+	height: 30px;
+	background-size: 16px;
+	background-repeat: no-repeat;
+	border-radius: 100px;
+	outline: none;
+	border: none;
+	color: white;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	margin-right: 10px;
+	cursor: pointer;
+	display: none;
+}
+.delete_button_contact {
+	background-image: url(../../images/cancelar.png);
+	background-color: #C30000;
+	background-size: 32px;
+	background-repeat: no-repeat;
+	width: 30px;
+	height: 30px;
+	border-radius: 100px;
+	outline: none;
+	border: none;
+	background-position: center;
+	cursor: pointer;
+	}
+.view_button_contact {
+	background-image: url(../../images/pencil.png);
+	background-color: #480F95;
+	width: 30px;
+	height: 30px;
+	background-size: 16px;
+	background-repeat: no-repeat;
+	border-radius: 100px;
+	outline: none;
+	border: none;
+	color: white;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	margin-right: 10px;
+	background-position: center;
+	cursor: pointer;
+}

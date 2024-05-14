@@ -280,11 +280,13 @@ og.renderContactSelector = function(config) {
 	}
 }
 
-og.selectContactFromCombo = function(contact_id, contact_name, combo, container_id, hf_id, onchange_fn, is_multiple,custom_selected_class,no_style_in_selected,unclassified) {
 
+og.selectContactFromCombo = function(contact_id, contact_name, combo, container_id, hf_id, onchange_fn, is_multiple,custom_selected_class,no_style_in_selected,unclassified) {
 	if(no_style_in_selected==null){
         no_style_in_selected=false;
     }
+
+	
     // set hidden field values
 	if (is_multiple){
 
@@ -328,7 +330,6 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 	if (!is_multiple) combo.hide();
 	var style = "";// "min-width:300px; width:300px;";
 	var remove_text = lang('remove');
-	//console.log(combo.config_parameters);
 	if (combo.config_parameters.remove_text) remove_text = combo.config_parameters.remove_text;
 	var rem_float_dir = 'right';
 
@@ -346,7 +347,6 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 		onchange_fn(contact_id);
 		onchange_fn_str = onchange_fn.name + "("+contact_id+");";
 	}
-
     if (combo.initialConfig.is_bootstrap) {
         var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="font-size: 1rem;white-space: nowrap;'+style+'">' +
 			'<label>'+ contact_name + '</label>' +
@@ -356,14 +356,14 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 			'style="padding-left:18px;font-size: 0.75rem;padding-top: 1px;padding-bottom: 19px;">'+remove_text+'</a>' +
 			'</div>';
     }else{
-
 		if (!is_multiple){
 			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="'+style+'"><div style="float:left;margin-right:5px;">'+ contact_name + '</div>' +
 			'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" style="padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
-		}else{
 
+		}else{
 			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="white-space: nowrap;'+style+'"><div class="multiple-cp-contact-div-name">'+ contact_name + '</div>' +
 			'<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" class="link-ico ico-delete multiple-cp-contact-a-remove">'+remove_text+'</a></div>';
+			
 		}
 	}
 
@@ -383,6 +383,9 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
             Ext.get(container_id).insertHtml('beforeEnd', html);
         }
     }
+
+
+
 
 }
 

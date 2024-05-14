@@ -7,7 +7,7 @@
 
 #templateConteiner .coInputMainBlock label {
 	float: none;
-	min-width: 0px;
+	min-width: fit-content;
 }
 
 .template-add-template-object {

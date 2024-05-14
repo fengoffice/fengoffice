@@ -2,6 +2,179 @@
 Changelog
 =========
 
+Since 3.11.1.1
+-----------------------------------
+bugfix: make the import tool compatible with php8 (#2555)
+bugfix: fix unit price on invoice lines (#2552)
+bugfix: Fix calculation of the total billable utilization (#2553)
+
+Since 3.11.1.0
+-----------------------------------
+bugfix: store trials info for non trials installations (#2549)
+bugfix: create notification default configuration plugin (#2547)
+bugfix: improve spanish redaction for perrmisson releated pop up (#2543)
+
+Since 3.11.1.0-rc4
+-----------------------------------
+bugfix: Fix calculation of the total worked time for groups in tasks (#2550)
+bugfix: when the attachments are embeeded in an attached email meessage, the forward feature does not attach them to the new email (#2548)
+
+Since 3.11.1.0-rc3
+-----------------------------------
+bugfix: function that generates the next repetition dates (#2545)
+bugfix: Improve the group totals calculation for pending time (#2544)
+bugfix: actual expense billable warnings (#2542)
+bugfix: fix task form custom properties (#2539)
+bugfix: ensure that conversation email descriptions don't include html code (#2546)
+
+Since 3.11.1.0-rc2
+-----------------------------------
+improvements: collections information report (#2532)
+improvement: add mail_rules as a config option (#2529)
+bugfix: fix several bugs in task forms (#2537)
+bugfix: disable total row selection in budgeted expense list (#2526)
+
+Since 3.11.1.0-rc1
+-----------------------------------
+bugfix: Don't run the update script in the advanced billing (#2528)
+bugfix: fix task templates form labels
+
+Since 3.11.1.0-beta3
+-----------------------------------
+bugfix: blank page in time with php8 (#2524)
+bugfix: Rerun the script that calculates total estimated and total worked time (#2523)
+bugfix: financial inconsistency bugs (#2521)
+bugfix: editor_in_the_task_description_no_visible_100 (#2517)
+
+Since 3.11.1.0-beta2
+-----------------------------------
+feature: enable mark as tool for superadmins (#2503)
+bugfix: disorganized_task_form_minified_css
+bugfix apply date format to payment status widget (#2505)
+bugfix: changes in task form cep guzi (#2504)
+bugfix: add accuracy to the query that fetches the mail rule list (#2498)
+
+Since 3.11.1.0-beta1
+-----------------------------------
+bugfix: don't show client and project dimensions in config option ignored_dims_task_related_objs
+bugfix: tasks form is disorganized (#2497)
+
+Since 3.11.0.x
+-----------------------------------
+feature: reclassify tasks must reclassify related objects (#2484)
+feature: add configuration interface on sharepoint plugin (#2482)
+feature: In the 'Budget by tasks' classify time and expenses when grouping by job phase (#2463)
+bugfix: Support excel currecy format (#2493)
+bugfix: add_lang_view_history (#2485)
+bugfix: Guzi invoice template align columns (#2481)
+bugfix: disorganized-task-form-poor-info-presentation (#2456)
+
+Since 3.11.0.0-beta5
+-----------------------------------
+bugfix: invoices widget css not loaded correctly in the widget,, it must be done using @import at income.css when page loads (#2477)
+bugfix: remove invoice status filter and make "view all" button go to invoices module (#2477)
+
+Since 3.11.0.0-beta4
+-----------------------------------
+bugfix: can't edit subtask when edit task templates (#2475)
+
+Since 3.11.0.0-beta3
+-----------------------------------
+improvements: invoicing widget redesign (#2446)
+bugfix: collections info report: remove project total row from Excel and CSV exports (#2449)
+bugfix: prioritize the warning message in the financials tab (#2453)
+bugfix: at overview list, we must only show content objects, eclude reports and members (the click doesn't work) (#2468)
+bugfix: php8 compatibility issue saving tasks and other use cases (#2467)
+bugfix: after key pressed wrong transformation were made to unit price input (#2466)
+bugfix: public upgrade errors (#2460)
+
+Since 3.11.0.0-beta2
+-----------------------------------
+bugfix: trigger saving task when the time is edited or added (#2451)
+bugfix: rollback buggy component for contact selector (PR: #2200) (#2445)
+bugfix: invoice line discount unit value input sometimes deletes content, event param wrongly passed and wrong logic applied (#2444)
+
+Since 3.11.0.0-beta1
+-----------------------------------
+improvement: In the 'collections' report add and remove some columns (#2431)
+bugfix: cant save doc with image in php8 (#2439)
+bugfix: Use CSS to zoom out the PDF exports instead of WKHTMLTOPDF library command (#2432)
+bugfix: Delete contact emails when converting contact to user (#2423)
+
+Since 3.11.0.0-alpha6
+-----------------------------------
+bugfix: Fix js errors that broke the edit project and task forms (#2429)
+bugfix: Add missing EMPTY_IMAGE s.gif to the root of application (#2428)
+bugfix: Remove translation that caused errors in the email list and email view (#2427)
+bugfix: Set correct version for the 'project_reports' plugin (#2424)
+bugfix: invoices widget bugs (#2420)
+
+Since 3.11.0.0-alpha5
+-----------------------------------
+feature: Create: 'collections information' report (#2415)
+feature: Utilization report: added the values requested by client (#2413)
+feature: add filters to invoice widget (#2411)
+bugfix: invoice templates, when using date of earliest item or most recent item it puts any random date (#2414)
+
+Since 3.11.0.0-alpha4
+-----------------------------------
+feature: improve email rules list
+bugfix: description box is not wrapping text
+bugfix: cannot enter invoice discounts using decimal
+
+Since 3.11.0.0-alpha3
+-----------------------------------
+feature: Invoice widget added with new functions (#2368)
+bugfix: change flexbox properties for invoices pdf (#2395)
+bugfix: adv billing query syntax error when there are no tasks (#2397)
+bugfix: avoid html tags on calendar export ics file. (#2370)
+bugfix: phpexcel library to avoid conflicts in php7. (#2380)
+
+Since 3.11.0.0-alpha2
+-----------------------------------
+bugfix: added to fixes on texts from the widgets suppliers and tasks status (#2375)
+bugfix: Set quoted price to zero and disable input if changed to non-billable; revert in opposite case (#2374)
+
+Since 3.11.0.0-alpha1
+-----------------------------------
+feature: Develop task financials' constraints (#2345)
+
+Since 3.10.X
+-----------------------------------
+feature: "Project billing" report -> add ability to show cost (#2306)
+bugfix: Updated the PHPExcel Library, so older PHP versions, > 7.4, can keep exporting Excel reports. Updated some functions that needed validation over some variables. (#2356)
+bugfix: Added a new exception control. Now the email address on user edit is validated before throwing exceptions, and new error messages are being displayed for better UI experience (#2340)
+bugfix: add_expand_collapse_icon_projects_widget (#2271)
+improvement: improve contact selector in forms (#2200)
+
+Since 3.10.9.0-rc1
+-----------------------------------
+bugfix: deleting member is deleting contacts associated to clients and cps (#2513)
+bugfix: Rerun the script that calculates total estimated and total worked time (#2522)
+bugfix: fix monthly repetition task calculation (#2520)
+bugfix: fix print button on task module (#2519)
+bugfix: fix harcoded logic to generate and display invoice names. (#2514)
+
+Since 3.10.8.24
+-----------------------------------
+feature: qbo sync allow to override expense class with the one defined for the project
+
+Since 3.10.8.23
+-----------------------------------
+bugfix: fix utilization report variation total (#2494)
+
+Since 3.10.8.22
+-----------------------------------
+bugfix: fix utilization report totals calculations (#2491)
+bugfix: edit member permissions, user selector was showing inactive users (#2490)
+bugfix: invoice due amount not set after creation (#2489)
+bugfix: update wiki links on readme (#2480)
+
+Since 3.10.8.21
+-----------------------------------
+bugfix: when email has no sent date, an error occurs when trying to reply or forward it (#2483)
+bugfix: perm component: after clicking the columns 'none', 'read only… (#2479)
+
 Since 3.10.8.20
 -----------------------------------
 bugfix: some boolean values are not correctly formatted in custom reports (#2478)
@@ -89,12 +262,6 @@ bugfix: invoice generation does not have to include expenses with proce = 0 (#23
 bugfix: when you edit a client and remove association with a project the linked contact object is not unclassfied from the project (#2401)
 bugfix: fix bugs in invoice get billing info (typos, override of vars and confuse logic) (#2402)
 
-Since 3.10.8.6
------------------------------------
-feature: support winmail.dat files (#2369)
-bugfix: invoice generation does not have to include expenses with proce = 0 (#2398)
-bugfix: when you edit a client and remove association with a project the linked contact object is not unclassfied from the project (#2401)
-bugfix: fix bugs in invoice get billing info (typos, override of vars and confuse logic) (#2402)
 
 Since 3.10.8.6
 -----------------------------------

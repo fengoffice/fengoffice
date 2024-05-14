@@ -1057,6 +1057,9 @@
 
     'config option name default_country_address' => 'Default country in address',  
     'config option desc default_country_address' => 'Select the default option within the countries',
+
+	'config option name ignored_dims_task_related_objs' => 'When re-classifying tasks: time entries and expenses will also be re-classified. If you want this not to happen for specific dimensions, please select them from this list',
+	'config option desc ignored_dims_task_related_objs' => '',
   ); // array
 
 
