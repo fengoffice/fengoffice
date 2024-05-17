@@ -97,6 +97,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('reports', 'show_company_info_report_print', '1', 'BoolConfigHandler', '0', '0', NULL),
 	('general', 'use_time_quick_add_row', '1', 'BoolConfigHandler', 0, 0, NULL),
 	('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, ''),
+	('general', 'ignored_dims_task_related_objs', '', 'ManageableDimensionsConfigHandler', '0', '0', ''),
 	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, ''),
 	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, '');

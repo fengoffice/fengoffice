@@ -2466,6 +2466,9 @@ class ObjectController extends ApplicationController {
 		$context = active_context();
 
 		$obj_type_types = array('content_object', 'dimension_object', 'located');
+		if (array_var($_GET, 'only_content_objects')) {
+			$obj_type_types = array('content_object');
+		}
 		if (array_var($_GET, 'include_comments')) $obj_type_types[] = 'comment';
 
 		$type_condition = "";
@@ -2474,6 +2477,10 @@ class ObjectController extends ApplicationController {
 		}
 		if ($type_filter > 0) {
 			$type_condition .= " AND ot.id=$type_filter";
+		}
+
+		if (count($obj_type_types) > 0) {
+			$type_condition .= " AND ot.type IN ('". implode("','", $obj_type_types) ."')";
 		}
 
 		$extra_conditions = array();

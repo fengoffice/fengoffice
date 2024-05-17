@@ -625,6 +625,9 @@ class Timeslot extends BaseTimeslot {
 			$result['can_delete'] = $this->canDelete(logged_user());
 		}
 		if ($return_billing) {
+			$result['is_fixed_cost'] = $this->getColumnValue('is_fixed_cost');
+			$result['hourly_cost'] = $this->getColumnValue('hourly_cost');
+			$result['total_cost'] = $this->getColumnValue('fixed_cost');
 			$result['is_fixed_billing'] = $this->getColumnValue('is_fixed_billing');
 			$result['hourlybilling'] = $this->getHourlyBilling();
 			$result['totalbilling'] = $this->getFixedBilling();

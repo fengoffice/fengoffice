@@ -366,7 +366,7 @@ class DimensionController extends ApplicationController {
 		);
 		
 		$list_dim_members = $this->initial_list_dimension_members($dimension_id, $objectTypeId, $allowedMemberTypes, $return_all_members, $extra_cond, $limit_obj, false, null, $only_names, $selected_members);
-		$memberList = $list_dim_members['members'];
+		$memberList = $list_dim_members['members'] ?? [];
 		
 		// add view more and remove last element
 		$more_nodes_left = false;
@@ -1087,6 +1087,7 @@ class DimensionController extends ApplicationController {
 			'on_selection_change' => "Ext.getCmp('dimFilter').fireEvent('memberselected', member_selector['$genid'].sel_context);"
 		);
 		if (array_var($_REQUEST, 'add_on_remove_function')) {
+			if (!isset($listeners['on_remove_relation'])) $listeners['on_remove_relation'] = '';
 			$listeners['on_remove_relation'] .= "Ext.getCmp('dimFilter').fireEvent('memberselected', member_selector['$genid'].sel_context);";
 		}
 

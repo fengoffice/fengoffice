@@ -613,4 +613,6 @@
 	'config option desc reclassify_time_when_linking_task' => 'Al editar un tiempo de trabajo y asiociarlo a una tarea, la clasificación del mismo será reemplazada por la clasificación de la tarea',
 	'config option name show_company_info_report_print' => 'Mostrar datos de empresa al imprimimr reporte',
 	'config option desc show_company_info_report_print' => 'Se muestra la dirección, correo, sitio web de la empresa en la esquina superior derecha de la página al imprimir un reporte',
+	'config option name ignored_dims_task_related_objs' => 'Al reclasificar tareas: los tiempos de trabajo y gastos relacionados serán reclasificados también. Si no desea que esto suceda para algunas dimensiones en particular, por favor seleccionelas en la siguiente lista',
+	'config option desc ignored_dims_task_related_objs' => '',
 ); ?>

@@ -443,7 +443,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 			't' => $this->getTitle(),
 			'tnum' => $tnum,
 			'tc' => $tc,
-			'dd' => $this->getDueDate()->getTimestamp()
+			'dd' => $this->getDueDate() ? $this->getDueDate()->getTimestamp() : null
 		);
 		
 		if ($this->getCompletedById() > 0){

@@ -1214,7 +1214,7 @@
 	function save_member_permissions($member, $permissionsString = null, $save_cmps = true, $update_sharing_table = true, $fire_hook = true, $update_contact_member_cache = true) {
 		@set_time_limit(0);
 		ini_set('memory_limit', '1024M');
-
+        $permissions = false;
 		if (!$member instanceof Member) return;
 		if (is_null($permissionsString)) {
 			$permissionsString = array_var($_POST, 'permissions');

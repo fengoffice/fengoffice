@@ -442,7 +442,7 @@
 	'set r permissions for all object types' => 'Asignar permisos de solo lectura para todos los tipos de objeto.',
 	'set none permissions for all object types' => 'Quitar todos los permisos en todos los tipos de objeto.',
 		
-	'object could not be classfied in due to permissions' => 'No se pudo clasificar {0} en \'{1}\' porque usted not tiene permisos para {2} ahí.',
+	'object could not be classfied in due to permissions' => 'No se pudo clasificar {0} porque usted no tiene permisos sobre {2}  en \'{1}\'',
 	'if not specified then current time will be used' => 'Si no se especifica se utilizará la hora actual.',
 
 	'couldnt assign user to task due to permissions' => 'No se pudo asignar {0} a la tarea {1} porque el usuario no tiene permisos donde la tarea está clasificada.',
