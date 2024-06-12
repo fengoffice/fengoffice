@@ -2553,7 +2553,11 @@ class mime_parser_class
 			elseif(IsSet($message['BodyLength']))
 				$results['DataLength'] = $message['BodyLength'];
 			if(IsSet($message['FileName']))
-				$results['FileName'] = $message['FileName'];
+			{
+				$enc_conv = EncodingConverter::instance();
+				$utf8_fn = $enc_conv->convert($message['FileNameCharacterSet'], 'UTF-8', $message['FileName']);
+				$results['FileName'] = $utf8_fn;
+			}
 			if(IsSet($message['FileDisposition']))
 				$results['FileDisposition'] = $message['FileDisposition'];
 			if(IsSet($message['Headers']['content-id:']))
