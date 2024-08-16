@@ -441,6 +441,7 @@
 	'updated' => 'Actualizado',
 	'group by' => 'Agrupar por',
 	'last updated by' => 'Última actualización por',
+	'last updated on' => 'Última actualización en',
 	'enter tags desc' => 'Ingrese etiquetas separadas por coma ...',
 	'user subscribed to object' => 'Está subscripto a este objeto.',
 	'user not subscribed to object' => 'No está subscripto a este objeto.',

@@ -873,11 +873,6 @@ function get_format_value_to_header($col, $obj_type_id)
 			$number = (float) $number;
 		}
 
-        if($excel) {
-            $currency_format = '"' . $symbol . ' "#,##0.00_-';
-            return 'FORMAT:::' . $currency_format . ':::' .($number ?? 0);
-        }
-
 		if (is_null($decimals)) {
 			$decimals = user_config_option('decimal_digits');
 		}
@@ -887,6 +882,14 @@ function get_format_value_to_header($col, $obj_type_id)
 		if (is_null($thousand_separator)) {
 			$thousand_separator = user_config_option('thousand_separator');
 		}
+
+		if($excel) {
+			$decimal_string = $decimals > 0 ? $decimals_separator : '';
+			$decimal_string .= str_repeat('0', $decimals);
+
+            $currency_format = '"' . $symbol . ' "#'.$thousand_separator.'##0'.$decimal_string.'_-';
+            return 'FORMAT:::' . $currency_format . ':::' .($number ?? 0);
+        }
 		
 		$sign = "";
 		if ($number < 0) {
@@ -983,3 +986,57 @@ function get_format_value_to_header($col, $obj_type_id)
 		$testing = FileTypes::instance()->findById($id);
 		return ($id > 0 && !is_null($testing)) ? $testing->getColumnValue('friendly_name') : 'unknown';
 	} // file_types_friendly_name
+
+	function format_percentage_value_for_excel($value, $params = array()) {
+		if (is_null($value)) {
+			return '';
+		}
+
+		if (is_string($value)) {
+			$value = (float) $value;
+		}
+
+		$decimals = array_var($params, 'decimal_digits', user_config_option('decimal_digits'));
+		$decimals_separator = array_var($params, 'decimals_separator', user_config_option('decimals_separator'));
+
+		$decimal_string = $decimals > 0 ? '.' : '';
+		$decimal_string .= str_repeat('0', $decimals);
+
+		$percentage_format = '##0'.$decimal_string.'_-'. ' ' . '"%"';
+
+		return 'FORMAT:::' . $percentage_format . ':::' .($value ?? 0);
+	}
+
+
+
+	/**
+	 * Replaces temporary images in HTML with base64 encoded image data.
+	 *
+	 * @param string $html The HTML content to search for images.
+	 * @return string The HTML content with temporary images replaced.
+	 */
+	function replace_tmp_images_with_content($html) {
+
+		// Find all image tags in the HTML with the src attribute
+		$matches = array();
+		preg_match_all('/<img[^>]*src="([^"]+)"/', $html, $matches);
+		$images = $matches[1];
+
+		// If there are images, loop through each one and replace it with base64 encoded image data
+		if (count($images) > 0) {
+			foreach ($images as $image) {
+				// Check if the image source starts with the temporary image URL
+				if (str_starts_with($image, with_slash(ROOT_URL).'tmp/')) {
+					// Replace the URL with the ROOT constant to get the actual image path
+					$image_path = str_replace(ROOT_URL, ROOT, $image);
+					// Read the image content
+					$content = file_get_contents($image_path);
+					// Replace the image source with base64 encoded image data
+					$html = str_replace($image, 'data:image;base64,'.base64_encode($content), $html);
+				}
+			}
+		}
+
+		// Return the modified HTML content
+		return $html;
+	}

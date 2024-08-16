@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_account_contacts` (
  `contact_id` INT(10) NOT NULL,
  `can_edit` BOOLEAN NOT NULL default '0',
  `is_default` BOOLEAN NOT NULL default '0',
- `signature` text <?php echo $default_collation ?> NOT NULL,
+ `signature` MEDIUMTEXT <?php echo $default_collation ?> NOT NULL,
  `sender_name` varchar(100) <?php echo $default_collation ?> NOT NULL default '',
  `last_error_state` int(1) unsigned NOT NULL default '0' COMMENT '0:no error,1:err unread, 2:err read',
  PRIMARY KEY (`id`),

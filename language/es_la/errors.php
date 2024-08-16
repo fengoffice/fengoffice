@@ -73,6 +73,7 @@
 	'mail account server required' => 'Servidor requerido, intente nuevamente',
 	'mail account password required' => 'Contraseña requerida, intente nuevamente',
 	'send mail error' => 'Ha ocurrido un error al enviar el correo.',
+	'sub emails invalid email' => 'La dirección de correo {1}, del tipo {0}, añadida en "Otros correos" no es válida',
 	'email address already exists' => 'Ya existe una cuenta creada con esa dirección de correo.',
 	'session expired error' => 'Sesión cerrada debido a su inactividad por tiempo prolongado',
 	'unimplemented type' => 'Tipo no implementado',

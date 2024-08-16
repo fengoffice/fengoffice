@@ -2465,7 +2465,7 @@ class ObjectController extends ApplicationController {
 
 		$context = active_context();
 
-		$obj_type_types = array('content_object', 'dimension_object', 'located');
+		$obj_type_types = array('content_object', 'located');
 		if (array_var($_GET, 'only_content_objects')) {
 			$obj_type_types = array('content_object');
 		}
@@ -2526,7 +2526,7 @@ class ObjectController extends ApplicationController {
 							AND cmp.member_id=".DB::escape($mem_id)."
 							AND cmp.object_type_id NOT IN (SELECT tp.object_type_id FROM ".TABLE_PREFIX."tab_panels tp WHERE tp.enabled=0)
 					AND cmp.object_type_id NOT IN (SELECT oott.id FROM ".TABLE_PREFIX."object_types oott WHERE oott.name IN ('comment','template'))
-					AND cmp.object_type_id IN (SELECT oott2.id FROM ".TABLE_PREFIX."object_types oott2 WHERE oott2.type IN ('content_object','dimension_object'))
+					AND cmp.object_type_id IN (SELECT oott2.id FROM ".TABLE_PREFIX."object_types oott2 WHERE oott2.type IN ('content_object'))
 				)";
 			}
 		}

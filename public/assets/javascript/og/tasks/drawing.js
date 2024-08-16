@@ -1761,24 +1761,24 @@ ogTasks.processTaskDrop = function (event, object) {
         ids_str += (ids_str == '' ? '' : ',') + task_id;
         var task_ids = ids_str.split(',');
 
-        var valid_dropzone = $(event.toElement).closest(".tasks-panel-group-droppable");
+        var valid_dropzone = $(event.srcElement).closest(".tasks-panel-group-droppable");
 
         // check if dropped to a dimension tree node
         var member_id = null;
         var dimension_id = null;
-        if (event.toElement.hasAttribute("ext:tree-node-id")) {
-            var node_id = $(event.toElement).attr("ext:tree-node-id");
+        if (event.srcElement.hasAttribute("ext:tree-node-id")) {
+            var node_id = $(event.srcElement).attr("ext:tree-node-id");
             if (!isNaN(node_id)) {
                 member_id = node_id;
             }
-            dimension_id = parseInt($(event.toElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-', ''));
+            dimension_id = parseInt($(event.srcElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-', ''));
 
-        } else if (event.toElement.id.indexOf("extdd-") >= 0) {
-            var node_id = $(event.toElement).closest(".x-tree-node-el").attr("ext:tree-node-id");
+        } else if (event.srcElement.id.indexOf("extdd-") >= 0) {
+            var node_id = $(event.srcElement).closest(".x-tree-node-el").attr("ext:tree-node-id");
             if (!isNaN(node_id)) {
                 member_id = node_id;
             }
-            dimension_id = parseInt($(event.toElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-', ''));
+            dimension_id = parseInt($(event.srcElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-', ''));
         }
 
         // classify task

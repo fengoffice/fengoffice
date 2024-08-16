@@ -1281,6 +1281,10 @@ class ContactController extends ApplicationController
 						if ($insert_values != "") {
 							DB::execute("INSERT INTO " . TABLE_PREFIX . "contact_permission_groups VALUES $insert_values ON DUPLICATE KEY UPDATE contact_id=contact_id;");
 						}
+
+						// recalculate contact member cache for user after adding the user to the groups
+						recalculate_contact_member_cache_for_user($contact, logged_user());
+
 					}
 
 					if (array_var($contact_data, 'isNewCompany') == 'true' && is_array(array_var($_POST, 'company'))) {
@@ -1726,6 +1730,7 @@ class ContactController extends ApplicationController
 				if (array_var($_REQUEST, 'modal')) {
 					evt_add("reload current panel");
 				}
+
 			} catch (DAOValidationError $e) {
 				flash_error(lang("invalid email address"));
 				ajx_current("empty");
@@ -3681,6 +3686,10 @@ class ContactController extends ApplicationController
 				if (array_var($_REQUEST, 'modal')) {
 					evt_add("reload current panel");
 				}
+			} catch (DAOValidationError $e) {
+				DB::rollback();
+				ajx_current("empty");
+				flash_error($e->getMessage());
 			} catch (Exception $e) {
 				DB::rollback();
 				ajx_current("empty");
@@ -3811,6 +3820,10 @@ class ContactController extends ApplicationController
 				if (array_var($_REQUEST, 'modal')) {
 					evt_add("reload current panel");
 				}
+			} catch (DAOValidationError $e) {
+				DB::rollback();
+				ajx_current("empty");
+				flash_error($e->getMessage());
 			} catch (Exception $e) {
 				DB::rollback();
 				ajx_current("empty");

@@ -19,6 +19,7 @@ class MailController extends ApplicationController {
 	function __construct() {
 		parent::__construct();
 		prepare_company_website_controller($this, 'website');
+		Env::useHelper('format');
 		Env::useHelper('MailUtilities.class', $this->plugin_name);
 		require_javascript("AddMail.js",  $this->plugin_name);
 
@@ -1494,7 +1495,10 @@ class MailController extends ApplicationController {
 	 * Images that are attachments are saved to the filesystem and the links to them are rebuilt
 	 * files are saved in root/tmp directory
 	 */
-	private function rebuild_body_html($html, $parts, $tmp_folder) {
+	private function rebuild_body_html($html, $parts, $tmp_folder, $recursion_level=0) {
+		// don't allow more than 10 nested levels of processing, it is performance killer and those amount of levels are due to a malformed email body, not worthy to process.
+		if ($recursion_level > 10) return $html;
+		
 		$enc_conv = EncodingConverter::instance();
 		$html = preg_replace("/src=cid:([^[:space:]>]*)/i", "src=\"cid:$1\"", $html);
 		$end_find = false;
@@ -1529,7 +1533,10 @@ class MailController extends ApplicationController {
 							$html = str_replace('src="cid:'.$part_name.'"', "src=\"".ROOT_URL."$tmp_folder/$filename\"", $html);
 							$html = str_replace('src="cid:'.$part_name, "src=\"".ROOT_URL."$tmp_folder/$filename\"", $html);
 						} else {
-							if (isset($part['Parts'])) $html = self::rebuild_body_html($html, $part['Parts'], $tmp_folder);
+							if (isset($part['Parts']) && is_array($part['Parts']) && count($part['Parts']) > 0) {
+								$recursion_level++;
+								$html = self::rebuild_body_html($html, $part['Parts'], $tmp_folder, $recursion_level);
+							}
 						}
 					}
 				}
@@ -2465,7 +2472,10 @@ class MailController extends ApplicationController {
 				}
 				$logged_user_settings = MailAccountContacts::getByAccountAndContact($mailAccount, logged_user());
 				if ($logged_user_settings instanceof MailAccountContact) {
-					$logged_user_settings->setSignature(array_var($_POST, 'signature'));
+					// Replace temporary images in HTML with base64 encoded image data.
+					$signature = replace_tmp_images_with_content(array_var($_POST, 'signature'));
+
+					$logged_user_settings->setSignature($signature);
 					$logged_user_settings->setSenderName(array_var($_POST, 'sender_name'));
 					$logged_user_settings->save();
 				}
@@ -2713,7 +2723,10 @@ class MailController extends ApplicationController {
 				// loggued user signature and from name
 				$logged_user_settings = MailAccountContacts::getByAccountAndContact($mailAccount, logged_user());
 				if ($logged_user_settings instanceof MailAccountContact) {
-					$logged_user_settings->setSignature(array_var($_POST, 'signature'));
+					// Replace temporary images in HTML with base64 encoded image data.
+					$signature = replace_tmp_images_with_content(array_var($_POST, 'signature'));
+
+					$logged_user_settings->setSignature($signature);
 					$logged_user_settings->setSenderName(array_var($_POST, 'sender_name'));
 					$logged_user_settings->save();
 				}

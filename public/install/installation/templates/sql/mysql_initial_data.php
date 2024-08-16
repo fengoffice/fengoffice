@@ -99,6 +99,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, ''),
 	('general', 'ignored_dims_task_related_objs', '', 'ManageableDimensionsConfigHandler', '0', '0', ''),
 	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, ''),
+	('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, '');
 

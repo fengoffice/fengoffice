@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.1.2');
+		$this->setVersionTo('3.11.1.19');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1074,6 +1074,15 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				$upgrade_script .= "
 					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
 					VALUES ('general', 'ignored_dims_task_related_objs', '', 'ManageableDimensionsConfigHandler', '0', '0', '', '');
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.1.12') < 0) {
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "users_that_can_mark_as_invoiced", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', '', '');
 				";
 			}
 		}

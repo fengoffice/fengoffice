@@ -580,8 +580,9 @@ class TaskController extends ApplicationController {
             return;
         }
 
-		// let ObjectController handle the trash operations
-		if ($action == 'delete') {
+		// let ObjectController handle the trash operations 
+        // if the task is not repetitive and more tasks needs to be deleted
+		if ($action == 'delete' && !($options == "news" || $options == "all")) {
 			$object_controller = new ObjectController();
 			$object_controller->trash();
 			ajx_current("reload");
@@ -603,7 +604,6 @@ class TaskController extends ApplicationController {
                 $task = Objects::findObject($id);
                 if (!$task instanceof ProjectTask)
                     continue;
-
                 $task->setDontMakeCalculations(true); // all the calculations should be after all tasks are saved
                 $all_tasks[] = $task;
                 
@@ -2906,6 +2906,9 @@ class TaskController extends ApplicationController {
 
         if (is_array(array_var($_POST, 'task'))) {
             try {
+                $estimated_price = array_var(array_var($_POST, 'task'),'estimated_price');
+                $estimated_price = str_replace(',', '', $estimated_price);
+                $task_data['estimated_price'] = $estimated_price;
                 // order
                 $task->setOrder(ProjectTasks::maxOrder(array_var($task_data, "parent_id", 0), array_var($task_data, "milestone_id", 0)));
 
@@ -3074,6 +3077,7 @@ class TaskController extends ApplicationController {
                 if (config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) {
                     $subtasks = array_var($_POST, 'multi_assignment');
                     Hook::fire('save_subtasks', array('task' => $task, 'is_new' => true), $subtasks);
+                    Hook::fire('calculate_estimated_executed_financials', array(), $task);
                 }
 
                 if ($task instanceof ProjectTask) {
@@ -3603,6 +3607,9 @@ class TaskController extends ApplicationController {
 
 
         if (is_array(array_var($_POST, 'task'))) {
+            $estimated_price = array_var(array_var($_POST, 'task'),'estimated_price');
+            $estimated_price = str_replace(',', '', $estimated_price);
+            $task_data['estimated_price'] = $estimated_price;
             foreach ($task_data as $k => &$v) {
                 $v = remove_scripts($v);
             }
@@ -3709,8 +3716,10 @@ class TaskController extends ApplicationController {
                 // Save previous parent task to recalculate total values and percent complete
                 $recalculate_old_parent = false;
                 if($task->getParentId() > 0 && $task->getParentId() != $task_data['parent_id']){
-                    $recalculate_old_parent = true;
                     $old_parent = $task->getParent();
+                    if ($old_parent instanceof ProjectTask) {
+                        $recalculate_old_parent = true;
+                    }
                 }
 
                 if (config_option("wysiwyg_tasks")) {
@@ -5241,7 +5250,7 @@ class TaskController extends ApplicationController {
         }
     }
 
-    function repetitive_tasks_related($task, $action, $type_related = "", $task_data = array()) {
+    function repetitive_tasks_related($task, $action, $type_related = "", $task_data = array()) { 
     	
     	// if task is completed, only modify the current task, don't affect the rest of the sequence
     	if ($task->isCompleted()) return array();

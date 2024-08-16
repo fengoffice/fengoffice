@@ -289,6 +289,30 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         renderer: og.module_timeslots_grid.task_name_renderer,
         sortable: true
     });
+	// created on column
+    timeslots_columns.push({
+        name: 'dateCreated',
+        header: '<?php echo lang('created on') ?>',
+        sortable: true
+    });
+	// created by column
+    timeslots_columns.push({
+        name: 'createdBy',
+        header: '<?php echo lang('created by') ?>',
+        sortable: true
+    });
+	// updated on column
+    timeslots_columns.push({
+        name: 'dateUpdated',
+        header: '<?php echo lang('last updated on') ?>',
+        sortable: true
+    });
+	// created by column
+    timeslots_columns.push({
+        name: 'updatedBy',
+        header: '<?php echo lang('last updated by') ?>',
+        sortable: true
+    });
     <?php if ($show_billing) { ?>
         timeslots_columns.push({
             name: 'fixed_billing',

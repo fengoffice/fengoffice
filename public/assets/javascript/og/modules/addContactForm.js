@@ -379,5 +379,3 @@ og.addNewEmailInput = function(container_id, pre_id, sel_type, sel_address, sel_
 		og.checkEmailAddress('#' + element.getAttribute('id'), '', '', 'contact');
 	});
 }
-
-og

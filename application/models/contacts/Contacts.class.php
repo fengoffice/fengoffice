@@ -515,12 +515,33 @@ class Contacts extends BaseContacts {
 		if (trim($attributes['email']) &&  !preg_match(EMAIL_FORMAT, trim($attributes['email']))) {
 			$errors[] = lang("invalid email");
 		}
+
+		// Validate secondary emails
+		$invalidEmail = self::validateSubEmails($attributes['emails']);
+		if ($invalidEmail) {
+			$errors[] = lang('sub emails invalid email', $invalidEmail['email_type'], $invalidEmail['email_address']);
+		}
+
 		if(is_array($errors) && count($errors)) {
 			throw new DAOValidationError(self::instance(), $errors);
 		} 
 	}
 
-
+	private static function validateSubEmails($emails) {
+		foreach ($emails as $email) {
+			if (trim($email['email_address']) && !preg_match(EMAIL_FORMAT, trim($email['email_address']))) {
+				$all_email_types = EmailTypes::getAllEmailTypesInfo();
+				foreach ($all_email_types as $email_type) {
+					if ($email_type['id'] == $email['type']) {
+						$email['email_type'] = $email_type['name'];
+						return $email;
+					}
+				}
+			}
+		}
+		return null; // Ensure it returns null if all emails are valid
+	}
+	
 	
 	/**
 	 * Do a first validation directly from parameters (before the object is loading)
