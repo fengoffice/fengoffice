@@ -1465,6 +1465,214 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $members_to_return;
 	}
 
+	function getMemberIdsOfType($member_type_id) {
+
+		$member_ids_to_return = array();
+		$members = $this->getMembersOfType($member_type_id); // Utiliza la función anterior
+		foreach ($members as $m) {
+			$member_ids_to_return[] = $m->getId();
+		}
+		return $member_ids_to_return;
+	}
+
+
+	function validateObjMembersWithObjectRelatedMembers($member_ids, $is_drag_and_drop = false, $related_task_id = null) {
+		
+		$objectName = $this->getObjectTypeName();
+		if ($objectName != 'timeslot' && $objectName != 'payment_receipt') {
+			return;
+		}
+
+		if (is_numeric($related_task_id) && $related_task_id > 0) {
+			$taskId = $related_task_id;
+		} else {
+			if ($objectName == 'timeslot') {
+				/** @var Timeslot $this */
+				$taskId = $this->getRelObjectId();
+			}
+			if($objectName == 'payment_receipt') {
+				/** @var PaymentReceipt $this */
+				$taskId = $this->getTaskId();
+			}
+		}
+
+		// Get object types for project, customer, and job_phase
+		$projectOt = ObjectTypes::instance()->findByName('project');
+		$projectOtId = $projectOt ? $projectOt->getId() : null;
+	
+		$otClient = ObjectTypes::instance()->findByName('customer');
+		$otIdClient = $otClient ? $otClient->getId() : null;
+	
+		$jobPhaseOt = ObjectTypes::instance()->findByName('job_phase');
+		$jobPhaseOtId = $jobPhaseOt ? $jobPhaseOt->getId() : null;
+	
+		// Get related projects, clients, and job_phase members from the task
+		$task = ProjectTasks::instance()->findById($taskId);
+		$taskProjectMembersIds = ($task && $projectOtId !== null) ? $task->getMemberIdsOfType($projectOtId) : [];
+		$taskClientMembersIds = ($task && $otIdClient !== null) ? $task->getMemberIdsOfType($otIdClient) : [];
+		$taskJobPhaseMembersIds = ($task && $jobPhaseOtId !== null) ? $task->getMemberIdsOfType($jobPhaseOtId) : [];
+
+
+		// Initialize arrays for member IDs from the current object
+		$objProjectsMembersIds = [];
+		$objClientsMembersIds = [];
+		$objJobPhaseMembersIds = [];
+	
+		// Separate member IDs by object type
+		foreach ($member_ids as $memid) {
+			$m = Members::instance()->findById($memid);
+	
+			if ($m->getObjectTypeId() == $projectOtId) {
+				$objProjectsMembersIds[] = $memid;
+			} 
+	
+			if ($m->getObjectTypeId() == $otIdClient) {
+				$objClientsMembersIds[] = $memid;
+			}
+	
+			if ($m->getObjectTypeId() == $jobPhaseOtId) {
+				$objJobPhaseMembersIds[] = $memid;
+			}
+		}
+
+		// Validate that project, client, and job_phase IDs match between task and current object
+		if ($task !== null) {
+			$projectIdsMatch = empty($taskProjectMembersIds) || !empty(array_intersect($taskProjectMembersIds, $objProjectsMembersIds));
+			$clientIdsMatch = empty($taskClientMembersIds) || !empty(array_intersect($taskClientMembersIds, $objClientsMembersIds));
+			if ($objJobPhaseMembersIds != []) {
+			$jobPhaseIdsMatch = empty($taskJobPhaseMembersIds) || !empty(array_intersect($taskJobPhaseMembersIds, $objJobPhaseMembersIds));
+			} else {
+				$jobPhaseIdsMatch = true;
+			}
+			// Return information about which conditions did not match
+			$result = [
+			'projectIdsMatch' => $projectIdsMatch,
+			'clientIdsMatch' => $clientIdsMatch,
+			'jobPhaseIdsMatch' => $jobPhaseIdsMatch,
+			];
+
+			// If any of these are false, return the result
+			if (!$projectIdsMatch || !$clientIdsMatch || !$jobPhaseIdsMatch) {
+			return $result;
+			}
+		}
+		return ['projectIdsMatch' => true, 'clientIdsMatch' => true, 'jobPhaseIdsMatch' => true];
+	}
+
+
+	function validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result) {
+		
+		// Construct a message based on which conditions did not match
+		$errorMessages = [];
+		if (!$result['projectIdsMatch']) {
+			$project_ot = ObjectTypes::findByName('project');
+			$errorMessages[] = $project_ot ? $project_ot->getObjectTypeName() : '';
+		}
+		if (!$result['clientIdsMatch']) {
+			$client_ot = ObjectTypes::findByName('customer');
+			$errorMessages[] = $client_ot ? $client_ot->getObjectTypeName() : '';
+		}
+		if (!$result['jobPhaseIdsMatch']) {
+			$job_phase_ot = ObjectTypes::findByName('job_phase');
+			$errorMessages[] = $job_phase_ot ? $job_phase_ot->getObjectTypeName() : '';
+		}
+
+		// Prepare the arguments for the lang function
+		$errorMessagesString = implode(', ', $errorMessages); // Join error messages
+
+		// Construct the error message
+		$errorMessage = lang(
+			'invalid object related members classification on object',
+			$errorMessagesString,
+			$this->getObjectTypeNameLang(),
+		);
+		return $errorMessage;
+	}
+	
+
+
+	/**
+	 * Checks if a user can assign a task to this content object
+	 *
+	 * @param ProjectTask $task The task to be assigned.
+	 * @return array An array with two keys: 'can_assign' (boolean) and 'error_msg' (string).
+	 */
+	function canAssignTask(ProjectTask $task) {
+
+		$can_assign = true;
+		$error_msg = '';
+
+		$ot_name = $this->getObjectTypeName();
+		if (!in_array($ot_name, ['timeslot','payment_receipt'])) {
+			return array(
+				'can_assign' => $can_assign,
+				'error_msg' => $error_msg,
+			);
+		}
+
+		// Check if user can edit this time entry
+		if (!$this->canEdit(logged_user())) {
+			$can_assign = false;
+			$error_msg = lang("no edit permissions for object", $this->getName());
+		}
+
+		if ($ot_name == 'timeslot') {
+			/** @var Timeslot $this */
+			$current_task = $this->getRelObject();
+		} else if ($ot_name == 'payment_receipt') {
+			/** @var PaymentReceipt $this */
+			$current_task = $this->getTask();
+		}
+
+		// Check if user can edit current time entry's task
+		if ($can_assign && $current_task instanceof ProjectTask) {
+			if (!$current_task->canEdit(logged_user())) {
+				$can_assign = false;
+				$error_msg = lang("no edit permissions for object", $current_task->getName());
+			}
+		}
+
+		// Check if task and time entry belong to the same project, client and phase
+		if ($can_assign) {
+
+			$result = $this->validateObjMembersWithObjectRelatedMembers($this->getMemberIds(), false, $task->getId());
+			if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
+
+				$can_assign = false;
+				$error_msg = $this->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
+			}
+		}
+		
+
+		// Verify invoicing status of the time entry, new task and current task
+		if (Plugins::instance()->isActivePlugin('income')) {
+
+			if ($this->getColumnValue('invoicing_status') == 'invoiced') {
+				$can_assign = false;
+				$error_msg = lang('you cannot edit invoiced '.($ot_name == "timeslot" ? 'time entry' : 'actual expense'));
+			}
+			
+			if ($can_assign && $current_task instanceof ProjectTask && ($current_task->getInvoicingStatus() == 'invoiced' || $current_task->getInvoicingStatus() == 'partially_invoiced')) {
+				$can_assign = false;
+				$error_msg = lang("no edit permissions for object", $current_task->getName());
+			}
+
+			if ($can_assign && ($task->getInvoicingStatus() == 'invoiced' || $task->getInvoicingStatus() == 'partially_invoiced')) {
+				$can_assign = false;
+				$error_msg = lang("no edit permissions for object", $task->getName());
+			}
+		}
+		
+
+		return array(
+			'can_assign' => $can_assign,
+			'error_msg' => $error_msg,
+		);
+	}
+
+
+
+
 
 	function getMemberIdsOfNonPermissionDimensions() {
 		$no_permission_condition = " AND m.dimension_id IN (SELECT d.id FROM ".TABLE_PREFIX."dimensions d WHERE d.defines_permissions=0) ";

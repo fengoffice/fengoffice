@@ -708,8 +708,13 @@ $projectTask = new ProjectTask();
 </form>
 
 <script>
-    if (!ogTasks.usersStore) ogTasks.usersStore = {};
-    og.add_task_genid = '<?php echo $genid ?>';
+	var current_dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
+	var show_financials_tab = false;
+	if(advanced_billing_active) {
+		show_financials_tab = <?php echo config_option('show_financial_tab_in_task_form') ? '1' : '0'; ?>;
+	}
+	if (!ogTasks.usersStore) ogTasks.usersStore = {};
+	og.add_task_genid = '<?php echo $genid ?>';
 
     var assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
     var start = true;
@@ -838,63 +843,84 @@ $projectTask = new ProjectTask();
     }
 
 
+	og.reload_task_form_selectors = function(is_new, render_add_subscribers) {
+		render_add_subscribers = (typeof render_add_subscribers == "undefined") ? true : render_add_subscribers;
+		if (!is_new) {
+			var dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
+		} else {
+			var dimension_members_json = og.contextManager.plainContext();
+		}
+		var milestone_el = document.getElementById('<?php echo $genid ?>taskListFormMilestone');
+		var actual_value = milestone_el ? milestone_el.value : 0;
+		var milestone_div = Ext.get('<?php $genid ?>add_task_more_div_milestone_combo');
+	
+	
+		var uids = App.modules.addMessageForm.getCheckedUsers('<?php echo $genid ?>');
 
-    og.reload_task_form_selectors = function(is_new, render_add_subscribers) {
-        render_add_subscribers = (typeof render_add_subscribers == "undefined") ? true : render_add_subscribers;
-        if (!is_new) {
-            var dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
-        } else {
-            var dimension_members_json = og.contextManager.plainContext();
-        }
-        var milestone_el = document.getElementById('<?php echo $genid ?>taskListFormMilestone');
-        var actual_value = milestone_el ? milestone_el.value : 0;
-        var milestone_div = Ext.get('<?php $genid ?>add_task_more_div_milestone_combo');
+		// Change billable if hour_types and and advanced billing plugins are activated
+		var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
+		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
+		if(hour_type_active && advanced_billing_active){
+			og.setIsBillableUsingMembers(dimension_members_json);
+		} 
+		if(show_financials_tab) {
+			og.udpate_estimated_price_and_fixed_fee_selector_using_project(current_dimension_members_json, dimension_members_json);
+		}
+		// Update current selected member
+		current_dimension_members_json = dimension_members_json;
+	}
 
+	og.setIsBillableUsingMembers = function(dimension_members_json){
 
-        var uids = App.modules.addMessageForm.getCheckedUsers('<?php echo $genid ?>');
+		// Check is parent is non-billable, if so, avoid checking if hour type member is billable
+		var parent_is_billable = $('#<?php echo $genid ?>parent_is_billable').val();
+		var parent_is_fixed_fee = $('#<?php echo $genid ?>parent_is_fixed_fee').val();
+		if(parent_is_billable == 0 || parent_is_fixed_fee == 1){
+			return;
+		}
 
-        if (render_add_subscribers) {
-            Ext.get('<?php echo $genid ?>add_subscribers_content').load({
-                url: og.getUrl('object', 'render_add_subscribers', {
-                    context: dimension_members_json,
-                    users: uids,
-                    genid: '<?php echo $genid ?>',
-                    otype: '<?php echo $task->manager()->getObjectTypeId() ?>'
-                }),
-                scripts: true
-            });
-        }
+		var current_billable = $('#<?php echo $genid ?>is_billableYes').attr('checked') == 'checked' ? 1 : 0;
+		var member_params = {member_ids: dimension_members_json, current_member_ids: current_dimension_members_json, current_billable: current_billable};
 
-        og.redrawUserListsTempTask(dimension_members_json);
+		og.openLink(og.getUrl('billing_definition','get_labor_category_billable_for_task_form', member_params), {
+			callback: function(success, data) {
+				if(data.has_value){
+					if(current_billable == data.is_billable) {
+						return;
+					}
 
-        // Change billable if hour_types and and advanced billing plugins are activated
-        var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
-        var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
-        if (hour_type_active && advanced_billing_active) {
-            og.setIsBillable(dimension_members_json);
-        }
-    }
-
-    og.setIsBillable = function(dimension_members_json) {
-        var current_billable = $('#<?php echo $genid ?>is_billableYes').attr('checked') == 'checked' ? 1 : 0;
-        var member_params = {
-            member_ids: dimension_members_json,
-            current_billable: current_billable
-        };
-        og.openLink(og.getUrl('billing_definition', 'get_labor_category_billable_for_task_form', member_params), {
-            callback: function(success, data) {
-                if (data.has_value) {
-                    if (data.is_billable) {
-                        $('#<?php echo $genid ?>is_billableYes').attr('checked', 'checked');
-                    } else {
-                        $('#<?php echo $genid ?>is_billableNo').attr('checked', 'checked');
-                    }
-                }
-            }
-        });
-    }
-
-
+					if(data.is_billable){
+						if(use_is_billable_value_in_tasks) {
+							if(confirm(lang('You are changing from a non-billable labor category to a billable one. This will set the \'Billable\' property for this task to \'Yes\''))){
+								$('#<?php echo $genid ?>is_billableNo').removeAttr('checked');
+								$('#<?php echo $genid ?>is_billableYes').attr('checked','checked');
+								og.onBillableValueChange();
+							}
+						} else {
+							alert(lang('You are changing from a non-billable labor category to a billable one. This will set the \'Billable\' property for this task to \'Yes\''));
+							$('#<?php echo $genid ?>is_billableNo').removeAttr('checked');
+							$('#<?php echo $genid ?>is_billableYes').attr('checked','checked');
+							og.onBillableValueChange();
+						}
+					} else {
+						if(use_is_billable_value_in_tasks) {
+							if(confirm(lang('You are changing from a billable labor category to a non-billable one. This will set the \'Billable\' property for this task to \'No\''))){
+								$('#<?php echo $genid ?>is_billableYes').removeAttr('checked');
+								$('#<?php echo $genid ?>is_billableNo').attr('checked','checked');
+								og.onBillableValueChange();
+							}
+						} else {
+							alert(lang('You are changing from a billable labor category to a non-billable one. This will set the \'Billable\' property for this task to \'No\''));
+							$('#<?php echo $genid ?>is_billableYes').removeAttr('checked');
+							$('#<?php echo $genid ?>is_billableNo').attr('checked','checked');
+							og.onBillableValueChange();
+						}
+					}
+				}
+			}
+		});
+	}
+	
 
     Ext.extend(og.TaskPopUp, Ext.Window, {
         accept: function() {

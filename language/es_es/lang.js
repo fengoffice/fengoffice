@@ -6,6 +6,9 @@ addLangs({
 	'work in progress' : 'Trabajo en progreso',
 	'to date' : 'Hasta',
 	'from date' : 'Desde',
+	"listing order" : 'Orden del listado',
+    "ASC" : "ASC",
+    "DESC" : "DESC"
 	'add as new revision to': 'Añadir como nueva revisión a',
 	'error loading content': 'Error cargando contenido. Inténtelo nuevamente en otro momento.\nSi los problemas persisten no dude en contactar al administrador.',
 	'projects': 'Áreas de trabajo',

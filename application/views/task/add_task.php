@@ -312,7 +312,11 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                         if ($task->isNew()) {
                                             render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', null), array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
                                         } else {
-                                            render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', $task->getMemberIds()), array('listeners' => $listeners, 'object' => $object), null, null, false);
+											$member_selector_options = array('listeners' => $listeners, 'object' => $task);
+											// let plugins add or modify the member selector options when editing task
+											Hook::fire('on_edit_task_member_selector_options', array('object' => $task), $member_selector_options);
+											
+                                            render_member_selectors($task->manager()->getObjectTypeId(), $genid, array_var($task_data, 'selected_members_ids', $task->getMemberIds()), $member_selector_options, null, null, false);
                                         }
                                         ?>
                                         <div class="clear"></div>
@@ -446,7 +450,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                             }
 
                             var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor', {
-                                height: h,
+                                height: 400,
                                 allowedContent: true,
                                 enterMode: CKEDITOR.ENTER_BR,
                                 shiftEnterMode: CKEDITOR.ENTER_BR,
@@ -626,11 +630,13 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                                     </script>
                                                     <div style="padding-top: 4px;">
                                                         <?php echo lang('repeat by') . ' ' ?>
-                                                        <select name="task[repeat_by]" id="<?php echo $genid ?>_rep_by">
+                                                        <select name="task[repeat_by]" id="<?php echo $genid ?>_rep_by" onChange="og.change_repeat_by('<?php echo $genid; ?>');">
                                                             <option value="start_date" id="<?php echo $genid ?>rep_by_start_date" <?php if (array_var($task_data, 'repeat_by') == 'start_date') echo ' selected="selected"' ?>><?php echo lang('field ProjectTasks start_date') ?></option>
                                                             <option value="due_date" id="<?php echo $genid ?>rep_by_due_date" <?php if (array_var($task_data, 'repeat_by') == 'due_date') echo ' selected="selected"' ?>><?php echo lang('field ProjectTasks due_date') ?></option>
                                                         </select>
                                                         <span id="<?php echo $genid ?>_rep_by_warning" class="form-message error" style="display:none;"><?php echo lang('repeat by date warning') ?></span>
+                                                        <span id="<?php echo $genid ?>_rep_by_no_sd" class="form-message error" style="display:none;"><?php echo lang('repeat by no start date') ?></span>
+                                                        <span id="<?php echo $genid ?>_rep_by_no_dd" class="form-message error" style="display:none;"><?php echo lang('repeat by no due date') ?></span>
                                                     </div>
                                                 </div>
                                             </td>
@@ -788,7 +794,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     var original_assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
     var can_notify_assigned = <?php echo $can_notify_assigned ? '1' : '0' ?>;
     var start = true;
-    if (!is_new_task) {
+    if (!is_new_task && member_selector['<?php echo $genid ?>']) {
         var current_dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
     } else {
         var current_dimension_members_json = og.contextManager.plainContext();

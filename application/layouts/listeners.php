@@ -778,6 +778,11 @@ og.eventManager.addListener('after grid panel load', function(data){
 	if (data.man && data.man.id.indexOf('_timeslots_module_grid') >= 0) {
 		og.module_timeslots_grid.start_clocks();
 	}
+
+	if (data.man && (data.man.id.indexOf('_timeslots_module_grid') >= 0) || data.man.id == 'payment-receipt-manager') {
+		// init task column inline actions for time and expenses grids
+		og.init_task_link_popovers(data.man.id);
+	}
 });
 
 og.eventManager.addListener('update tasks in list', function(data) {

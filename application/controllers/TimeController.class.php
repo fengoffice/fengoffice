@@ -258,7 +258,7 @@ class TimeController extends ApplicationController
         return array('hours' => $hoursToAdd, 'minutes' => $minutes);
     }
 
-    public function add_timeslot($parameters = null, $use_transaction = true)
+    public function add_timeslot($parameters = null, $use_transaction = true, $validate_task_member_relations = true)
     {
         Env::useHelper('dimension');
 
@@ -483,6 +483,15 @@ class TimeController extends ApplicationController
             }
             $timeslot->setFromAttributes($timeslot_data);
 
+			if ($validate_task_member_relations) {
+				$result = $timeslot->validateObjMembersWithObjectRelatedMembers($member_ids);
+				if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
+
+					$errorMessage = $timeslot->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
+					throw new Exception($errorMessage);
+				}
+			}
+            
             // Billing
             if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
                 $user = Contacts::instance()->findById($timeslot_data['contact_id']);
@@ -570,7 +579,6 @@ class TimeController extends ApplicationController
 
             $show_billing = can_manage_billing(logged_user());
             ajx_extra_data(array("timeslot" => $timeslot->getArrayInfo($show_billing, true, true), "real_obj_id" => $timeslot->getRelObjectId()));
-
             return $timeslot;
         } catch (Exception $e) {
             if ($use_transaction) {
@@ -709,6 +717,13 @@ class TimeController extends ApplicationController
             }
 
             try {
+
+                $result = $timeslot->validateObjMembersWithObjectRelatedMembers($member_ids);
+                if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
+
+                    $errorMessage = $timeslot->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
+                    throw new Exception($errorMessage);
+                }
 
                 //check task mandatory config option
                 $result_task_mandatory=true;
@@ -926,6 +941,10 @@ class TimeController extends ApplicationController
             ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_TRASH);
 
             ajx_extra_data(array("timeslotId" => get_id()));
+
+			if (array_var($_REQUEST, 'force_reload')) {
+				ajx_current("reload");
+			}
         } catch (Exception $e) {
             DB::rollback();
             flash_error($e->getMessage());
@@ -1447,6 +1466,121 @@ class TimeController extends ApplicationController
         } // switch
         return array("errorMessage" => $resultMessage, "errorCode" => $resultCode);
     }
+
+
+
+
+	/**
+	 * Assigns a task to multiple timeslots.
+	 *
+	 * This function is called when the user wants to assign a task to multiple
+	 * timeslots. It first checks if the user has permission to edit the task
+	 * and the timeslots. If not, it will display an error message. If the user
+	 * has permission, it will check if each timeslot can be assigned the task.
+	 * If not, it will throw an exception. If all checks pass, it will assign the
+	 * task to each timeslot and update the financials.
+	 *
+	 * @return void
+	 */
+	function assign_task_to_timeslots() {
+
+		// Return ajax response immediately
+		ajx_current("empty");
+
+		// Get the ids of the selected timeslots
+		$timeslot_ids = array_filter(explode(',', array_var($_REQUEST, "object_ids", "")), 'is_numeric');
+
+		// Get the id of the task to be assigned
+		$task_id = array_var($_REQUEST, "task_id");
+
+		$inline_action = array_var($_REQUEST, "inline_action");
+
+		// If no timeslots are selected, display an error message and return
+		if (empty($timeslot_ids)) {
+			flash_error(lang("no object type selected", lang('timeslots')));
+			return;
+		}
+
+		// Get the task object
+		$task = ProjectTasks::instance()->findById($task_id);
+
+		// If the task object does not exist, display an error message and return
+		if (!$task instanceof ProjectTask) {
+			flash_error(lang("task dnx"));
+			return;
+		}
+
+		// If the user does not have permission to edit the task or the timeslots,
+		// display an error message and return
+		if (!$task->canEdit(logged_user()) || !$task->canAddTimeslot(logged_user())) {
+			flash_error(lang("no edit permissions for object", $task->getName()));
+			return;
+		}
+
+		try {
+			// Start a database transaction
+			DB::beginWork();
+
+			// Get the timeslots objects
+			$timeslots = Timeslots::instance()->findAll(array('conditions' => array('id IN (' . implode(',', $timeslot_ids) . ')')));
+
+			// Check if each timeslot can be assigned the task
+			foreach ($timeslots as $timeslot) {
+				if ($timeslot instanceof Timeslot) {
+					$can_assing_task = $timeslot->canAssignTask($task);
+					if (!$can_assing_task['can_assign']) {
+						throw new Exception($can_assing_task['error_msg']);
+					}
+				}
+			}
+
+			// If all checks pass, assign the task to each timeslot and update the financials
+			foreach ($timeslots as $timeslot) {
+				if ($timeslot instanceof Timeslot) {
+
+					// Generate old object for logs
+					$old_content_object = $timeslot->generateOldContentObjectData();
+
+					// Get former task
+					$old_related_task = $timeslot->getRelObject();
+
+					$timeslot->setRelObjectId($task->getId());
+					$timeslot->save();
+
+					// Recalculate financials for new and old related tasks
+					Hook::fire('calculate_executed_cost_and_price', array(), $task);
+					if ($old_related_task instanceof ProjectTask) {
+						Hook::fire('calculate_executed_cost_and_price', array(), $old_related_task);
+					}
+				}
+			}
+
+			// Commit the database transaction
+			DB::commit();
+
+			// Create logs for each timeslot
+			foreach ($timeslots as $timeslot) {
+				ApplicationLogs::instance()->createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true, true, "");
+			}
+
+			// Return ajax response with success message
+			if ($inline_action) {
+				ajx_current("empty");
+				ajx_extra_data(["object" => $timeslot->getObjectData()]);
+			} else {
+				ajx_current("reload");
+			}
+			flash_success(lang("success assigning timeslots to task", $task->getName()));
+
+		} catch (Exception $e) {
+			// Rollback the database transaction if an exception occurs
+			DB::rollback();
+			ajx_current("empty");
+			flash_error($e->getMessage());
+			return;
+		}
+
+	}
 
 }
 

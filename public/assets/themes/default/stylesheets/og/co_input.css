@@ -165,6 +165,21 @@ form.add-task {
 }
 
 
+.edit-password label {
+	padding-top: 2px;
+}
+.edit-password .internalForm {
+	margin-top: 20px;
+}
+
+.passoword-requirements {
+	margin: 30px 0 15px;
+}
+.passoword-requirements ul {
+	list-style: disc;
+	list-style-position: inside;
+}
+
 /* Messages */
 
 .message .coInputHeader {

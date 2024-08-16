@@ -82,5 +82,6 @@ return array(
 
 		'custom system member module hint' => 'Ver lista de {0} en tab separado.',
 
-		'all_expenses' => 'Gastos'
+		'all_expenses' => 'Gastos',
+		'no activity yet' => 'Todavía no hay actividad',
 );

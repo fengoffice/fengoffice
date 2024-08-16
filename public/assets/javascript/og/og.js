@@ -5893,3 +5893,205 @@ og.preload_small_dimension_members = function() {
 	});
 }
 
+
+
+/**
+ * Opens the object picker and assigns the selected task to the selected objects.
+ * @param {string} grid_id - The id of the grid where the selected objects are.
+ * @param {string} controller - The name of the controller to send the request to.
+ * @param {string} action - The action to perform on the controller.
+ * @param {string} request_channel - The channel to use for the request.
+ */
+og.assign_task_to_objects = function(grid_id, controller, action, request_channel) {
+
+	let cmp = Ext.getCmp(grid_id);
+	// Get the ids of the selected objects
+	let object_ids = cmp.getSelectedIds();
+
+	og.select_task_and_make_reassign_request(object_ids, controller, action, request_channel);
+
+}
+
+/**
+ * Opens a link to a specified controller with the given action and sends a POST request with the object_ids, task_id, and req_channel parameters.
+ *
+ * @param {string} object_id - The id of the object to be changed.
+ * @param {string} controller - The name of the controller to send the request to.
+ * @param {string} action - The action to perform on the controller.
+ * @param {string} grid_id - The ID of the grid that contains the list.
+ * @return {void} This function does not return anything.
+ */
+og.inline_change_object_task = function(object_id, controller, action, grid_id) {
+
+	// open the object picker to select the new task
+	og.select_task_and_make_reassign_request(object_id, controller, action, 'task link inline edit', grid_id);
+
+	// remove the popover
+	$('.task-link-popover').remove();
+}
+
+/**
+ * Selects a task and makes a reassign request to the specified controller.
+ *
+ * @param {string} object_ids - The IDs of the objects to be reassigned.
+ * @param {string} controller - The name of the controller to send the request to.
+ * @param {string} action - The action to perform on the controller.
+ * @param {string} request_channel - The channel of the request.
+ * @param {string} grid_id - The ID of the grid that contains the list.
+ * @return {void} This function does not return anything.
+ */
+og.select_task_and_make_reassign_request = function(object_ids, controller, action, request_channel, grid_id) {
+
+	// Open the object picker and get the selected objects
+	og.ObjectPicker.show(function(objs) {
+
+		if (objs && objs.length > 0) {
+			var obj = objs[0].data;
+
+			// Check if the selected object is a task
+			if (obj.type != 'task') {
+				// If not, display an error message
+				og.msg(lang("error"), lang("object type not supported"), 4, "err");
+
+			} else {
+				
+				let task_id = obj.object_id;
+				let inline_action = typeof grid_id !== 'undefined';
+	
+				// Send a request to the specified controller with the selected task and objects
+				og.openLink(og.getUrl(controller, action), {
+					post: {
+						object_ids: object_ids,
+						task_id: task_id,
+						req_channel: request_channel,
+						inline_action: inline_action
+					},
+					callback: function(success, data) {
+						if (success && typeof grid_id !== 'undefined') {
+							// redraw the task cell for the edited object
+							if (data.object) {
+								/** @TODO: replace this call for a function that only redraws the edited cell */
+								og.reload_current_grid_page(data.object, grid_id);
+							}
+						}
+					}
+				});
+	
+			}
+		}
+	}, null, {
+		types: ['task'],
+		selected_type: 'task'
+	});
+}
+
+
+/**
+ * Sends a request to remove a task from an object.
+ *
+ * @param {string} object_id - The ID of the object.
+ * @param {string} task_id - The ID of the task.
+ * @param {string} grid_id - The ID of the grid that contains the list.
+ * @return {void} This function does not return anything.
+ */
+og.inline_remove_task_from_object = function(object_id, task_id, grid_id) {
+
+	// Send a request to the specified controller with the object_id and task_id
+	og.openLink(og.getUrl('object', 'remove_task_from_object'), {
+		post: {
+			object_id: object_id,
+			task_id: task_id,
+			req_channel: 'task link inline remove'
+		},
+		callback: function(success, data) {
+			if (success) {
+				// redraw the task cell for the edited object
+				if (data.object) {
+					/** @TODO: replace this call for a function that only redraws the edited cell */
+					og.reload_current_grid_page(data.object, grid_id);
+				}
+			}
+		}
+	});
+
+	// remove the popover
+	$('.task-link-popover').remove();
+
+}
+
+/**
+ * Reloads the current grid page.
+ *
+ * @param {object} object - The object associated with the grid.
+ * @param {string} grid_id - The ID of the grid to reload.
+ * @return {void} This function does not return anything.
+ */
+og.reload_current_grid_page = function(object, grid_id) {
+	let grid = Ext.getCmp(grid_id);
+	if (grid) {
+		grid.load(); // reloads current page
+	}
+}
+
+	
+/**
+ * Initializes the popovers for task links in a grid.
+ * 
+ * @param {string} grid_id - The ID of the grid.
+ */
+og.init_task_link_popovers = function(grid_id) {
+
+	// Initialize the popovers for task links in the grid.
+	$("#" + grid_id + " .task-link").popover({
+		
+		// Define the content of the popover.
+		content: function() {
+
+			// Get the data attributes of the task link.
+			let object_id = $(this).data("object-id");
+			let task_id = $(this).data("task-id");
+			let controller = $(this).data("controller");
+			let action = $(this).data("action");
+
+			// Define the click event handlers for the edit and delete links.
+			let on_edit_click = String.format("og.inline_change_object_task('{0}', '{1}', '{2}', '{3}');", object_id, controller, action, grid_id);
+			let on_delete_click = String.format("og.inline_remove_task_from_object('{0}', '{1}', '{2}');", object_id, task_id, grid_id);
+
+			// Generate the HTML for the popover content.
+			let html = '<div class="task-link-popover-actions">';
+			html += '<a class="link-ico ico-edit" onclick="' + on_edit_click + '"></a>';
+			html += '<a class="link-ico ico-delete" onclick="' + on_delete_click + '"></a>';
+			html += '</div>';
+
+			return html;
+		},
+
+		// Define the template for the popover.
+		template: '<div class="popover task-link-popover"><div class="popover-body"><div class="popover-content"></div></div></div>',
+		
+		// Enable HTML content in the popover.
+		html: true,
+		
+		// Define the delay for showing and hiding the popover.
+		delay: { 
+			show: '10',
+			hide: '5000'
+		},
+		
+		// Set the container for the popover.
+		container: false, // to make the popover stick with the task link
+		
+		// Set the trigger for the popover.
+		trigger: 'hover',
+		
+		// Set the placement of the popover.
+		placement: 'right',
+	});
+
+	$("#" + grid_id + " .task-link").on('mouseover', function() {
+		$('.task-link-popover').remove();
+	});
+}
+
+
+

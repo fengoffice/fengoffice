@@ -1161,6 +1161,9 @@ function webpage_field($name, $values_array = null, $genid, $attributes = null) 
 }
 
 function email_field($name, $values_array = null, $genid, $attributes = null) {
+
+    $EmailTypeActive = config_option('default_type_email');
+
     if (is_null($values_array)) {
         $values_array = array();
     } else if (!is_array($values_array)) {
@@ -1174,7 +1177,7 @@ function email_field($name, $values_array = null, $genid, $attributes = null) {
         <div id="' . $container_id . '" class="emails-input-container"></div>
     </div>';
     if (array_var($attributes, 'multiple')) {
-        $html .= '<a href="#" onclick="og.addNewEmailInput(\'' . $container_id . '\', \'' . $input_base_id . '\', 3)" class="coViewAction ico-add">' . lang('add new email address') . '</a>';
+        $html .= '<a href="#" onclick="og.addNewEmailInput(\'' . $container_id . '\', \'' . $input_base_id . '\', \'' . $EmailTypeActive . '\')" class="coViewAction ico-add">' . lang('add new email address') . '</a>';
     }
 
     $html .= "<script>$(function() {";
@@ -1201,11 +1204,11 @@ function email_field($name, $values_array = null, $genid, $attributes = null) {
                 $id = array_var($exploded, 2, '');
                 $html .= "og.addNewEmailInput('" . $container_id . "', '" . $input_base_id . "', '$type', '$email', '$id');";
             } else {
-                $html .= "og.addNewEmailInput('" . $container_id . "', '" . $input_base_id . "', 3);";
+                $html .= "og.addNewEmailInput('" . $container_id . "', '" . $input_base_id . "', $EmailTypeActive);";
             }
         }
     } else {
-        $html .= "og.addNewEmailInput('" . $container_id . "', '" . $input_base_id . "', 3);";
+        $html .= "og.addNewEmailInput('" . $container_id . "', '" . $input_base_id . "', $EmailTypeActive);";
     }
     
     if (array_var($attributes, 'disabled')) {
@@ -1224,6 +1227,9 @@ function email_field($name, $values_array = null, $genid, $attributes = null) {
 }
 
 function phone_field($name, $values_array = null, $genid, $attributes = null) {
+
+    $PhoneTypeActive = config_option('default_type_phone');
+
     if (is_null($values_array)) {
         $values_array = array();
     } else if (!is_array($values_array)) {
@@ -1237,7 +1243,7 @@ function phone_field($name, $values_array = null, $genid, $attributes = null) {
         <div id="' . $container_id . '" class="phones-input-container"></div>
     </div>';
     if (array_var($attributes, 'multiple')) {
-        $html .= '<a href="#" onclick="og.addNewTelephoneInput(\'' . $container_id . '\', \'' . $input_base_id . '\')" class="coViewAction ico-add">' . lang('add new phone number') . '</a>';
+        $html .= '<a href="#" onclick="og.addNewTelephoneInput(\'' . $container_id . '\', \'' . $input_base_id . '\', \'' . $PhoneTypeActive . '\')" class="coViewAction ico-add">' . lang('add new phone number') . '</a>';
     }
 
     $html .= "<script>$(function() {";
@@ -1264,11 +1270,11 @@ function phone_field($name, $values_array = null, $genid, $attributes = null) {
                 $id = array_var($exploded, 3, '');
                 $html .= "og.addNewTelephoneInput('" . $container_id . "', '$input_base_id', '$type', '$number', '$name', '$id');";
             } else {
-                $html .= "og.addNewTelephoneInput('" . $container_id . "', '$input_base_id');";
+                $html .= "og.addNewTelephoneInput('" . $container_id . "', '$input_base_id', $PhoneTypeActive);";
             }
         }
     } else {
-        $html .= "og.addNewTelephoneInput('" . $container_id . "', '$input_base_id');";
+        $html .= "og.addNewTelephoneInput('" . $container_id . "', '$input_base_id', $PhoneTypeActive);";
     }
     
     

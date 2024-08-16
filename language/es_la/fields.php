@@ -331,4 +331,8 @@
 
 
     'field Objects prefix' => 'Prefijo',
+
+	'field Users can_manage_mail_templates' => 'Puede gestionar plantillas de correo',
+	'field ProjectTasks overall_worked_time_plus_subtasks' => 'Tiempo total trabajado',
+	'field ProjectTasks total_time_estimate' => 'Tiempo estimado total',
 );

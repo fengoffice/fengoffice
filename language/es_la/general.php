@@ -13,6 +13,12 @@
 	'password again' => 'Repita su nueva contraseña',
 	'old password' => 'Contraseña anterior',
 	'new password' => 'Nueva contraseña',
+	'password requirements' => 'Requisitos de contraseña',
+	'admin password' => 'Contraseña de administrador',
+	'please enter your current administrator password' => 'Por favor, introduzca su contraseña de administrador actual',
+	'admin password required' => 'La contraseña de administrador es obligatoria',
+	'invalid admin password' => 'La contraseña de administrador es incorrecta',
+	'new password does not fulfill password requirements' => 'La contraseña nueva no cumple los requisitos de contraseña',
     'token title' => 'Token',
     'token external key' => 'Referencia a',
     'token external name' => 'Referencia a',
@@ -462,4 +468,5 @@
 	'added' => 'Se agregó',
 	'removed' => 'Se quitó',
 	'manual percent completed' => 'Porcentaje completado manual',
+	'invalid object related members classification on object' => 'No es posible asignar este {1} a una tarea clasificada en diferentes {0}',
 );

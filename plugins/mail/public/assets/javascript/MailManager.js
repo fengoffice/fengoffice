@@ -78,6 +78,9 @@ og.MailManager = function() {
 					//Ext.getCmp('mails-manager').getView().focusRow(og.lastSelectedRow.mails+1);
 					if (typeof d.unreadCount != 'undefined') {
 						og.updateUnreadEmail(d.unreadCount);
+					}					
+					if(store.baseParams.state_type == 'junk') {
+						this.fireEvent('messageToShow', lang("all spam messages will be deleted after days", og.config['spam_deletion_days']), 'spam-deletion-warning');
 					}
 					
 					
@@ -1324,7 +1327,7 @@ og.MailManager = function() {
 					var elem = Ext.get(this.getEl());
 					var scroller = elem.select('.x-grid3-scroller');
 					scroller.each(function() {
-						this.dom.appendChild(msg);
+						this.dom.prepend(msg);
 					});
 				},
 				scope: this
@@ -1483,8 +1486,13 @@ Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 		this.getSelectionModel().clearSelections();
 	},
 	
-	showMessage: function(text) {
+	showMessage: function(text, className = '') {
 		this.innerMessage.innerHTML = text;
+		this.addClassToShowMessage(className);
+	},
+
+	addClassToShowMessage: function(className) {
+		this.innerMessage.className = 'inner-message ' + className;
 	},
 
 	trashObjects: function() {

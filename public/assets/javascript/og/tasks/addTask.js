@@ -1071,6 +1071,8 @@ ogTasks.undoRemoveSubtasks = function(genid) {
 
 // if no start date defined, then set it to repeat by due date if it is defined
 og.init_rep_by_selectbox = function(genid) {
+	$("#" + genid + "_rep_by_no_sd").hide();
+	$("#" + genid + "_rep_by_no_dd").hide();
 	var sd = Ext.getCmp(genid + "start_date").getValue();
 	var dd = Ext.getCmp(genid + "due_date").getValue();
 	if (!dd || !sd) {
@@ -1085,4 +1087,22 @@ og.init_rep_by_selectbox = function(genid) {
 			}
 		}
 	}
+}
+
+og.change_repeat_by = function(genid) {
+	$("#" + genid + "_rep_by_warning").hide();
+	$("#" + genid + "_rep_by_no_sd").hide();
+	$("#" + genid + "_rep_by_no_dd").hide();
+	var start_date = Ext.getCmp(genid + "start_date").getValue();
+	var due_date = Ext.getCmp(genid + "due_date").getValue();
+
+	// Repeat by value
+	var selectedValue = document.getElementById(genid + "_rep_by").value;
+
+	if(selectedValue === 'start_date' && !start_date) {
+		$("#" + genid + "_rep_by_no_sd").show();
+	} else if(selectedValue === 'due_date' && !due_date) {
+		$("#" + genid + "_rep_by_no_dd").show();
+	}
+
 }

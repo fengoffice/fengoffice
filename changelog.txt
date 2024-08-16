@@ -2,6 +2,69 @@
 Changelog
 =========
 
+Since 3.11.2.0-rc6
+-----------------------------------
+bugfix: non billable task set to approved when adding billable time (#2679)
+bugfix: cant filter by project when selecting budgeted expense at actual expense form (#2678)
+bugfix: qbo client mapping: don't search by CompanyName (it can bring projects), use DisplayName always (#2676)
+bugfix: fixes to user password requirements (#2675)
+bugfix: restrict changes to tasks with invoiced elements (#2671)
+
+Since 3.11.2.0-rc5
+-----------------------------------
+bugfix: budgeted expenses list not loading (#2669)
+bugfix: fix drag and drop task member match validation for time and expenses (#2668)
+bugfix: add time using import tool always throws error of different project than task (#2667)
+
+Since 3.11.2.0-rc4
+-----------------------------------
+bugfix: dont allow to reclassify invoiced task (#2661)
+bugfix: billing contact is not shown correctly in projects list (#2660)
+bugfix: Refactor mail validation for contacts actions edit and save (#2651)
+bugfix: validate releated object memebrs with current object (#2650)
+bugfix: improve the error message shown when trying to assign a task of a different project/client to a time entry (#2663)
+bugfix: improve inline actions when add/edit/remove task from time/expenses list (#2663)
+feature: allow inline task change at time and expenses list (#2659)
+feature: allow to reassing multiple time entries and expenses to a task (#2657)
+feature: add "+" icon to assign a task to an expense or time entry fr… (#2663)
+
+Since 3.11.2.0-rc3
+-----------------------------------
+bugfix: fix invoicing status column not shown in tasks list (#2649)
+bugfix: remove hardcoded invoice number, and add logic to display dinamic document number (#2645)
+improvement: Add config option for spam deletion limit (#2644)
+improvement: craete new language Canadian, and add translations (#2562)
+
+Since 3.11.2.0-rc2
+-----------------------------------
+improvement: task template add calculation method (#2540)
+bugfix: fixes on multicurrency lines (#2634)
+bugfix: fix amount alignment in product type form (#2630)
+
+Since 3.11.2.0-rc1
+-----------------------------------
+bugfix: ConfOpt to select main email as mandatory or not (#2628)
+bugfix: Modify subtask description height (#2618)
+
+Since 3.11.2.0-beta3
+-----------------------------------
+bugfix: change-total-symbol-and-fix-e.rate-field (#2626)
+bugfix: Modify height and margin for CKEditor fields on subtasks (#2623)
+bugfix: issues at task invoicing status feature (#2624)
+
+Since 3.11.2.0-beta2
+-----------------------------------
+feature: Add combo to order Tasks ASC or DESC (#2535)
+feature: Delete emails from spam folder (#2587)
+bugfix: Fix invoice lines fields (#2617)
+bugfix: Remove SQL Query that set tasks to fixed fee during update (#2620)
+bugfix: Fix billing category and product type layouts (#2603)
+bugfix: In object picker use only dimensions that are allowed for member selectors in object type (#2616)
+bugfix: fix email image on system modules (#2619)
+bugfix: fixes infinite tasks on templates with no start date or due date variables (#2613)
+bugfix: Fix mail rules description (#2600)
+bugfix: Fix minor bug (#2621)
+
 Since 3.11.1.18
 -----------------------------------
 bugfix: project financials were not recalculated in background when adding time entries (#2677)
@@ -56,6 +119,24 @@ improvement: In excel export for 'Gross Margin' report align amounts to right (#
 improvement: In 'Gross margin' add option to run report without month range (#2606)
 improvement: Check cost/billing permissions for the 'Cost/Revenue Forecast' report (#2589)
 improvement: In weekly view support both dot and comma as decimal separator (#2580)
+
+Since 3.11.2.0-beta1
+-----------------------------------
+bugfix: default type for the email and phone numbers (#2595)
+bugfix: the update queries for 3.11.2.0-beta1 were added to the scrip… (#2584)
+
+Since 3.11.1.X
+-----------------------------------
+bugfix: inconsistencies tasks invoicing status (#2536)
+bugfix: Add more detail logs to email (#2557)
+bugfix: cant add address to vendors form (#2518)
+bugfix: fix email icons (#2560)
+bugfix: Change default type for email and phone (#2492)
+bugfix: translations to es_la (#2501)
+bugfix: find substitute lang in a compatible language (#2506)
+bugfix: fixes to project budget report (#2495)
+bugfix: fix issues using the config option "ignored_dimensions_for_subtasks" when reclassifying a task (#2486)
+feature: Move user is valid password to config (#2531)
 
 Since 3.11.1.8
 -----------------------------------

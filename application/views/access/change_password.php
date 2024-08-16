@@ -25,11 +25,11 @@ foreach ($css as $c) {
 	<?php } ?>
 	</div>
 </div>
-<div class="login-body">
+<div class="login-body change-password">
 
 <form action="<?php echo get_url('access', 'change_password', array('id' => $user_id)) ?>" method="post">
 
-<div class="form-container" style="width: 700px;">
+<div class="form-container" style="width: auto;">
 <h2><?php echo lang('change password') ?></h2>
 
 <div style="color:red;">
@@ -61,14 +61,7 @@ foreach ($css as $c) {
   <div id="loginSubmit"><?php echo submit_button(lang('change')) ?></div>
   
   <?php 
-  	$min_pass_length = config_option('min_password_length', 0);	
-  	if($min_pass_length > 0) echo '*'.lang('password invalid min length', $min_pass_length).'<br/>';
-  	$pass_numbers = config_option('password_numbers', 0);			
-	if($pass_numbers > 0) echo '*'.lang('password invalid numbers', $pass_numbers).'<br/>';
-	$pass_uppercase = config_option('password_uppercase_characters', 0);		
-	if($pass_uppercase) echo '*'.lang('password invalid uppercase', $pass_uppercase).'<br/>';
-	$pass_metacharacters = config_option('password_metacharacters', 0);		
-	if($pass_metacharacters) echo '*'.lang('password invalid metacharacters', $pass_metacharacters).'<br/>';
+  	echo render_password_requirements();
   ?>
 
 </div>

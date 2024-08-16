@@ -1612,6 +1612,7 @@ class MailUtilities {
 		return $count;
 	}
 
+
 	static function deleteMailsFromServer(MailAccount $account) {
 		$count = 0;
 		if ($account->getDelFromServer() > 0) {
@@ -1702,6 +1703,54 @@ class MailUtilities {
 			debug_log("Account ".$account->getId()." : $count mails deleted.", "delete_mails_from_server.log");
 		}
 		return $count;
+	}
+
+	static function deleteSpamMailsFromServerAllAccounts() {
+		$accounts = MailAccounts::instance()->findAll();
+		$limit = config_option('spam_delete_limit_per_run', 100);
+		$count = 0;
+		foreach ($accounts as $account) {
+			if ($limit <= 0) break;
+			
+			try {
+				$spams_deleted = self::deleteSpamMailsFromServer($account, $limit);
+				$limit -= $spams_deleted;
+				$count += $spams_deleted;
+			} catch (Exception $e) {
+				Logger::log($e->getMessage());
+			}
+		}
+		return $count;
+	}
+
+	static function deleteSpamMailsFromServer(MailAccount $account, $limit) {
+		$deleted_object_ids_count = array();
+
+		$spam_deletion_days = config_option('spam_deletion_days');
+		$spam_deletion_days = is_numeric($spam_deletion_days) && $spam_deletion_days > 0  ? $spam_deletion_days : 30;
+		$max_date = DateTimeValueLib::now();
+		$max_date->add('d', -1 * $spam_deletion_days);
+		$max_date_sql = $max_date->toMySQL();
+
+		$conditions = array("conditions" => array("`state` = 4 AND `trashed_on`=0 AND `is_deleted`=0 AND `received_date`<'".$max_date_sql."' AND `account_id`=".$account->getId()), "limit" => $limit, "order" => "received_date ASC");
+		$spam_email_objects = MailContents::instance()->findAll($conditions);
+
+		if (is_array($spam_email_objects) && count($spam_email_objects) > 0) {
+			foreach ($spam_email_objects as $spam_obj) {
+				try {
+					if($spam_obj instanceof MailContent) {
+						$deleted_object_ids_count[] = $spam_obj->getId();
+						$spam_obj->delete();
+						ApplicationLogs::createLog($obj, ApplicationLogs::ACTION_DELETE);
+					}
+				} catch (Exception $e) {
+					Logger::log($e->getMessage());
+					continue;
+				}
+			}
+		}
+
+		return count($deleted_object_ids_count);
 	}
 
 	static function getContent($smtp_server, $smtp_port, $transport, $smtp_username, $smtp_password, $body, $attachments)
@@ -2001,6 +2050,7 @@ class MailUtilities {
 			'in_reply_to_id' => $original_mail->getMessageId(),
 			'original_id' => $original_mail->getId(),
 			'last_mail_in_conversation' => MailContents::getLastMailIdInConversation($original_mail->getConversationId(), true),
+			'additional_info' => array(),
 
 		); // array
 

@@ -409,11 +409,10 @@ class Contacts extends BaseContacts {
 	static function validateUniqueEmail ($email, $id = null, $contact_type = "", $is_user = false) {
 		
 		$do_validate_unique_mail = true;
-		Hook::fire('validate_contact_unique_mail', null, $do_validate_unique_mail);
+		//Hook::fire('validate_contact_unique_mail', null, $do_validate_unique_mail);
 		if (!$do_validate_unique_mail) {
 			return true;
 		}
-		
 		$email = trim($email);
 		if ($id) {
 			$id_cond = " AND o.id <> $id ";
@@ -490,36 +489,51 @@ class Contacts extends BaseContacts {
 	 * 
 	 * @param array $attributes
 	 */
-	static function validate($attributes, $id = null) {
+	static function validateMail($attributes, $id = null) {
+
 		$errors = array() ;
-		//contact form 
-
-/* URL validations removed		
-		if (trim($attributes['w_web_page']) && !preg_match(URL_FORMAT, $attributes['w_web_page'])){
-			$errors[] = lang("invalid webpage");			
-		}
-		
-		//company form
-		if (trim($attributes['homepage']) && !preg_match(URL_FORMAT, $attributes['homepage'])){
-			$errors[] = lang("invalid webpage");			
-		}
-*/		
-		if (!trim($attributes['email'])){
-			$errors[] = lang("email value is required");
+		if (is_array($attributes['user'])) {
+			$user_type = array_var($attributes['user'], 'type', 0);
 		}
 
-		if (!self::validateUniqueEmail(trim($attributes['email']), $id, array_var($attributes, 'contact_type'))){
-			$errors[] = lang("email address must be unique");
-		}
-		
+		//validat email format
 		if (trim($attributes['email']) &&  !preg_match(EMAIL_FORMAT, trim($attributes['email']))) {
 			$errors[] = lang("invalid email");
 		}
 
-		// Validate secondary emails
-		$invalidEmail = self::validateSubEmails($attributes['emails']);
-		if ($invalidEmail) {
-			$errors[] = lang('sub emails invalid email', $invalidEmail['email_type'], $invalidEmail['email_address']);
+		//validate main email for user contact type always.
+		if($user_type > 0 && !trim($attributes['email'])) {
+			$errors[] = lang("email value is required");
+		} else {
+			//for contacts and companyes use custom prop.
+			$co = config_option("mandatory_email_on_contacts");
+			if (isset($co) && $co) {
+				if (!trim($attributes['email'])){
+				$errors[] = lang("email value is required");
+				}
+			}
+		}
+
+		//Validate unique email
+		//for users mail must be unique
+		if ($user_type > 0) {
+			if (!self::validateUniqueEmail(trim($attributes['email']), $id, "",true)){
+				$errors[] = lang("email address must be unique");
+			} 
+		//for contacts and companyes use CP 
+		} else {
+			$email_exists = Contacts::getByEmailCheck(trim($attributes['email']));
+			if ($email_exists && !config_option('allow_duplicated_contact_emails')) {
+				$errors[] = lang("email address must be unique");
+			}
+		}		
+
+		// Validate secondary emails with less restrictions
+		if (isset($attributes['emails']) && !empty($attributes['emails'])) {
+			$invalidEmail = self::validateSubEmails($attributes['emails']);
+			if ($invalidEmail) {
+				$errors[] = lang('sub emails invalid email', $invalidEmail['email_type'], $invalidEmail['email_address']);
+			}
 		}
 
 		if(is_array($errors) && count($errors)) {

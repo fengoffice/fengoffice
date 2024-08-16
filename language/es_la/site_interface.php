@@ -645,5 +645,10 @@
     'repeat options' => 'Opciones de repetición',
 	'other properties' => 'Otras propiedades',
     'delete all timeslots' => 'Eliminar todo',
-    'time will be rounded to 15 minutes' => 'El tiempo se redondeara a un multiplo de 15 minutos'
+    'time will be rounded to 15 minutes' => 'El tiempo se redondeara a un multiplo de 15 minutos',
+	'full name' => 'Nombre completo',
+	'start' => 'Comienzo',
+	'end' => 'Fin',
+	'total estimated time' => 'Tiempo estimado total',
+	'overall worked time' => 'Tiempo total trabajado',
 );

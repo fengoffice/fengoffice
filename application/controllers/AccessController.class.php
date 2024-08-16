@@ -142,8 +142,9 @@ class AccessController extends ApplicationController {
                 }
 
 			} // if
-			$userIsValidPassword = false;
-			// If ldap authentication is enabled ldap.config.php will return trsue.
+			$userIsValidPassword = defined("VALID_PASSWORD") ? VALID_PASSWORD : false;
+
+			// If ldap authentication is enabled ldap.config.php will return true.
 			$config_ldap_file_path = ROOT . '/config/ldap.config.php'; 
 			$config_ldap_is_set = file_exists($config_ldap_file_path) && include_once($config_ldap_file_path);				
 			if($config_ldap_is_set === true) {

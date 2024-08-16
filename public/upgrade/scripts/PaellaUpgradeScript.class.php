@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.1.19');
+		$this->setVersionTo('3.11.2.0-rc7');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1078,6 +1078,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			}
 		}
 
+
 		if (version_compare($installed_version, '3.11.1.12') < 0) {
 			if (!$this->checkValueExists($t_prefix."config_options", "name", "users_that_can_mark_as_invoiced", $this->database_connection)) {
 				$upgrade_script .= "
@@ -1086,6 +1087,59 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
 			}
 		}
+
+		
+		if (version_compare($installed_version, '3.11.2.0-beta2') < 0) {
+			// add more possible actions to application logs table
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."application_logs`
+				CHANGE `action` `action` enum('upload','open','close','delete','edit','add','trash','untrash','subscribe','unsubscribe','tag','comment','link','unlink','login','logout','untag','archive','unarchive','move','copy','read','download','checkin','checkout','relation_added','relation_edited','relation_removed','print','mark_as_spam','unmark_as_spam','forward','reply','reply_all');
+			";
+
+			$upgrade_script .= "
+    			UPDATE `".$t_prefix."tab_panels` 
+    			SET `icon_cls` = 'ico-mails' 
+   				WHERE id='mails-panel';
+			";
+		
+			// default type for Email inputs
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "default_type_email", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `" . $t_prefix . "config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('clients_and_contacts', 'default_type_email', '1', 'DefaultTypeEmailConfigHandler', '0', '0', '');
+				";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "default_type_phone", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `" . $t_prefix . "config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('clients_and_contacts', 'default_type_phone', '1', 'DefaultTypePhoneConfigHandler', '0', '0', '');
+				";
+			}
+		}
+    
+		// Add 'listing order' contact config option
+		if (version_compare($installed_version, '3.11.2.0-beta3') < 0) {
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksListingOrder", $this->database_connection)) {
+				$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+				VALUES ('task panel', 'tasksListingOrder', 'ASC', 'StringConfigHandler', 1, 0, NULL, NULL);
+				";
+			}
+		}
+		
+
+		if (version_compare($installed_version, '3.11.2.0') < 0) {
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "mandatory_email_on_contacts", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+    			VALUES ('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', '', '');
+			";
+			}
+
+		}
+
+		//ADD NEXT UPDATE SCRIPTS HERE
 
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
@@ -1104,6 +1158,8 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				-- to the original sql_mode setting, from the value we saved
 				SET @@sql_mode := @old_sql_mode ;
 		";
+
+		
         
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
@@ -1112,7 +1168,6 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		}
 
 		// Calculate after new columns added
-
 		if (version_compare($installed_version, '3.11.1.0-rc1') < 0) {
 			@set_time_limit(0);
 			ini_set("memory_limit", "2G");
@@ -1167,9 +1222,10 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 						mysqli_query($this->database_connection, $update_task_sql);
 					}
 				}
-				$max_depth--;
+				$max_depth--;	
 			}
         }
+
 
 		$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 		

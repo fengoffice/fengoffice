@@ -1321,7 +1321,7 @@ class ObjectController extends ApplicationController {
 		}
 	}
 
-	function do_delete_objects($objects, $permanent = false, &$deleted_object_ids, $raw_data=false) {
+	function do_delete_objects($objects, $permanent = false, &$deleted_object_ids, $raw_data=false, $check_permissions=true) { 
 		$err = 0; // count errors
 		$succ = 0; // count files deleted
 		foreach ($objects as $object) {
@@ -1329,8 +1329,9 @@ class ObjectController extends ApplicationController {
 				$obj = Objects::findObject($raw_data ? $object['id'] : $object->getId());
 				// do not delete users from here
 				if ($obj instanceof Contact && $obj->isUser()) continue;
-
-				if ($obj instanceof ContentDataObject && $obj->canDelete(logged_user())) {
+				$allowed_to_delete = $check_permissions ? $obj->canDelete(logged_user()) : true;
+				
+				if ($obj instanceof ContentDataObject && $allowed_to_delete) {
 					if ($permanent) {
 						if (Plugins::instance()->isActivePlugin('mail') && $obj instanceof MailContent) {
 							$obj->delete(false);
@@ -2164,7 +2165,7 @@ class ObjectController extends ApplicationController {
 			$objects = Objects::instance()->findAll(array("conditions" => "id IN (".implode(",",$ids).")"));
 
 			$real_deleted_ids = array();
-			list($succ, $err) = $this->do_delete_objects($objects, true, $real_deleted_ids);
+			list($succ, $err) = $this->do_delete_objects($objects, true, $real_deleted_ids); 
 
 			if ($err > 0) {
 				flash_error(lang('error delete objects', $err));
@@ -2883,6 +2884,109 @@ class ObjectController extends ApplicationController {
 
 		if (isset($reload) && $reload) ajx_current("reload");
 		else ajx_current("empty");
+	}
+
+
+
+
+	/**
+	 * Removes a task from a timeslot or expense.
+	 *
+	 * This function is called when the user wants to remove a task from a timeslot/expense.
+	 * It first checks if the user has permission to edit the timeslot/expense and the task.
+	 * If not, it will display an error message and return. If the user has permission,
+	 * it will remove the task from the timeslot/expense and recalculate the financials for the task.
+	 * It also generates a log entry for the action.
+	 *
+	 * @return void
+	 * @throws Exception if an error occurs during the process
+	 */
+	function remove_task_from_object() {
+		// Return ajax response immediately
+		ajx_current("empty");
+
+		// Get the ids of the selected timeslots
+		$object_id = array_var($_REQUEST, "object_id");
+
+		// Get the time entry or expense object
+		$object = Objects::findObject($object_id);
+		$object_type_name = $object->getObjectTypeName();
+
+		// If no timeslots are selected, display an error message and return
+		if (!$object instanceof ContentDataObject) {
+			flash_error(lang("object dnx"));
+			return;
+		}
+
+		// If the user does not have permission to edit the timeslot, display an error message and return
+		if (!$object->canEdit(logged_user())) {
+			flash_error(lang("no edit permissions for object", $object->getName()));
+			return;
+		}
+
+		if ($object->getColumnValue('invoicing_status') == 'invoiced'){
+			flash_error(lang('you cannot edit invoiced '.($object_type_name == "timeslot" ? 'time entry' : 'actual expense')));
+			return;
+        }
+
+		// Get the task object
+		$task = null;
+		if ($object_type_name == "timeslot") {
+			/** @var Timeslot $object */
+			$task = $object->getRelObject();
+		} else if ($object_type_name == "payment_receipt") {
+			/** @var PaymentReceipt $object */
+			$task = $object->getTask();
+		}
+
+		// If the task object does not exist, display an error message and return
+		if ($task instanceof ProjectTask) {
+			
+			// If the user does not have permission to edit the task, display an error message and return
+			if (!$task->canEdit(logged_user()) || $task->isInvoicedOrPartiallyInvoiced()) {
+				flash_error(lang("no edit permissions for object", $task->getName()));
+				return;
+			}
+
+			try {
+				DB::beginWork();
+
+				// Generate old object for logs
+				$old_content_object = $object->generateOldContentObjectData();
+
+				if ($object_type_name == "timeslot") {
+					/** @var Timeslot $object */
+					$object->setRelObjectId(0);
+				} else if ($object_type_name == "payment_receipt") {
+					/** @var PaymentReceipt $object */
+					$object->setTaskId(0);
+				}
+				
+				$object->save();
+
+				// Recalculate financials for new and old related tasks
+				Hook::fire('calculate_executed_cost_and_price', array(), $task);
+
+				DB::commit();
+
+				// Create log for the object edition
+				ApplicationLogs::instance()->createLog($object, ApplicationLogs::ACTION_EDIT, false, true, true, "");
+
+				// Return ajax response with success message
+				ajx_current("empty");
+				ajx_extra_data(["object" => $object->getObjectData()]);
+				flash_success(lang("success removing task from object", $task->getName()));
+
+			} catch (Exception $e) {
+				// Rollback the database transaction if an exception occurs
+				DB::rollback();
+				ajx_current("empty");
+				flash_error($e->getMessage());
+				return;
+			}
+
+		}
+
 	}
 
 }

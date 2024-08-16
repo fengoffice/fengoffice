@@ -42,4 +42,10 @@
 	'success mail enqueued' => 'El correo ha sido puesto en cola de envío',
 	'config option name send_outbox_emails_in_background' => 'Enviar correos en un proceso en paralelo',
 	'config option desc send_outbox_emails_in_background' => 'Si se habilita esta opción, al enviar correos estos serán puestos en una cola de envío, la cual será procesada por otro proceso en paralelo para enviar los correos en ella.',
+	'select a provider' => 'Seleccionar un proveedor',
+	'connect to' => 'Conectar a',
+	'basic' => 'Básico',
+	'oauth2' => 'Proveedor OAUTH2',
+	'auth method' => 'Método de autenticación',
+	'use oauth2' => 'Usar OAUTH2',
 );

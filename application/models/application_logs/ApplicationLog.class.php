@@ -232,6 +232,9 @@ class ApplicationLog extends BaseApplicationLog {
 			case ApplicationLogs::ACTION_UPLOAD :				
 			case ApplicationLogs::ACTION_CHECKIN :
 			case ApplicationLogs::ACTION_CHECKOUT :
+			case ApplicationLogs::ACTION_PRINT :
+			case ApplicationLogs::ACTION_MARK_AS_SPAM :
+			case ApplicationLogs::ACTION_UNMARK_AS_SPAM :
 				
 				return lang('activity ' . $this->getAction(), ($type ? lang('the '.$type) : ""), $user->getDisplayName(), $object_link);
 				
@@ -263,6 +266,9 @@ class ApplicationLog extends BaseApplicationLog {
 					if ($object)
 						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, utf8_safe($this->getLogData()));
 				}
+			case ApplicationLogs::ACTION_FORWARD :
+			case ApplicationLogs::ACTION_REPLY :
+			case ApplicationLogs::ACTION_REPLY_ALL :
 			case ApplicationLogs::ACTION_LINK :
 			case ApplicationLogs::ACTION_UNLINK :
 				$linked_object = Objects::findObject($this->getLogData());
@@ -486,6 +492,9 @@ class ApplicationLog extends BaseApplicationLog {
 			case ApplicationLogs::ACTION_UPLOAD :
 			case ApplicationLogs::ACTION_CHECKIN :
 			case ApplicationLogs::ACTION_CHECKOUT :
+			case ApplicationLogs::ACTION_PRINT :
+			case ApplicationLogs::ACTION_MARK_AS_SPAM :
+			case ApplicationLogs::ACTION_UNMARK_AS_SPAM :
 				if ($object instanceof ContentDataObject) {
 					return lang('activity ' . $this->getAction(), lang('the '.$type," "), $userName, $object_link);
 				}
@@ -523,6 +532,9 @@ class ApplicationLog extends BaseApplicationLog {
 					return lang('activity ' . $this->getAction(), lang('the '.$obj_type_name," "), $userName, $object_link, $comentText);
 					
 				}
+			case ApplicationLogs::ACTION_FORWARD :
+			case ApplicationLogs::ACTION_REPLY :
+			case ApplicationLogs::ACTION_REPLY_ALL :
 			case ApplicationLogs::ACTION_LINK :
 			case ApplicationLogs::ACTION_UNLINK :
 				$linked_object_link = '';

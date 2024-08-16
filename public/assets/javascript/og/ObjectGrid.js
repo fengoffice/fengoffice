@@ -113,6 +113,7 @@ og.ObjectGrid = function(config, ignore_context) {
         	id: 'id',
         	fields: this.fields
     	}),
+		parentGrid: this,
     	remoteSort: true,
     	listeners: {
     		'load': function(store, result) {

@@ -21,7 +21,7 @@
   define('DEFAULT_LOCALIZATION', 'en_us'); 
   define('DEBUG', true); 
   define('DB_CHARSET', 'utf8'); 
-  
+  define('VALID_PASSWORD', false);
   return true;
   
 ?>

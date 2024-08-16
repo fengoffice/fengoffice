@@ -12,7 +12,11 @@ if (array_var($options, 'readonly')) {
 		
 		$dim_mem_path[$sm->getDimensionId()][$sm->getObjectTypeId()][] = $sm->getId();
 	}
-	foreach ($dim_mem_path as $dim_mem_path_dim_id => $dim_mem_path_ot_array) {
+
+	foreach ($dimensions as $dimension) {
+		$dim_mem_path_dim_id = $dimension['dimension_id'];
+		$dim_mem_path_ot_array = array_var($dim_mem_path, $dim_mem_path_dim_id, array());
+
 		$dmp = array($dim_mem_path_dim_id => $dim_mem_path_ot_array);
 		
 		if (!isset($hide_label) || !$hide_label) {
@@ -22,31 +26,37 @@ if (array_var($options, 'readonly')) {
 			$custom_name = DimensionOptions::getOptionValue($dim_mem_path_dim_id, 'custom_dimension_name');
 			$dimension_name = $custom_name && trim($custom_name) != "" ? $custom_name : $dimension_name;
 	?>
-		<label style="font-size: 100%; <?php  if (!$horizontal) echo "float:left;";?>"><?php echo (isset($label) && $label != '' ? $label : $dimension_name) ?>:</label>
+		<label style="font-size: 100%; <?php  if (!$horizontal) echo "float:left; height: 21px; padding-top: 3px;";?>"><?php 
+			echo (isset($label) && $label != '' ? $label : $dimension_name);
+		?>:</label>
 	<?php 
 		}
 	?>
 	<div class='breadcrumb-container' style='display:contents;max-width:800px; width:100%;' id="<?php echo $genid?>-breadcrumb-container-<?php echo $dim_mem_path_dim_id?>">
-	<script>
-    	var dim_mem_path = '<?php echo json_encode($dmp)?>';
-		var mpath = null;
-		if (dim_mem_path){
-			mpath = Ext.util.JSON.decode(dim_mem_path);
-		}
-		var mem_path = "";			
-		if (mpath){
-			mem_path = og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', null, false, null, true);
-		}
-		$("#<?php echo $genid?>-breadcrumb-container-<?php echo $dim_mem_path_dim_id?>").html(mem_path);
+		<script>
+			var dim_mem_path = '<?php echo json_encode($dmp)?>';
+			var mpath = null;
+			if (dim_mem_path){
+				mpath = Ext.util.JSON.decode(dim_mem_path);
+			}
+			var mem_path = "";
+			if (mpath){
+				mem_path = og.getEmptyCrumbHtml(mpath, '.breadcrumb-container', null, false, null, true);
+			}
+			$("#<?php echo $genid?>-breadcrumb-container-<?php echo $dim_mem_path_dim_id?>").html(mem_path);
 
-		$(function() {
-			og.eventManager.fireEvent('replace all empty breadcrumb', null);
-		});
+			$(function() {
+				og.eventManager.fireEvent('replace all empty breadcrumb', null);
+			});
 		</script>
 	</div>
+	<div class="clear"></div>
 	<?php
 	}
 	
+	// add an empty block to separate sections
+	?><div class="dataBlock"></div><?php
+
 } else {
 	
 	$is_ie = isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false);

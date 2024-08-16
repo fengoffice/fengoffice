@@ -20,6 +20,12 @@ return array(
         'password again' => 'Repeat password',
         'old password' => 'Old password',
   	'new password' => 'New password',
+	'password requirements' => 'Password requirements',
+	'admin password' => 'Administrator password',
+	'please enter your current administrator password' => 'Please enter your current administrator password.',
+	'admin password required' => 'Administrator password is required.',
+	'invalid admin password' => 'Invalid administrator password.',
+	'new password does not fulfill password requirements' => 'New password does not fulfill password requirements.',
     'token title' => 'Token',
     'token external key' => 'External key',
     'token external name' => 'External name',
@@ -482,6 +488,8 @@ return array(
 	'start date cannot be greater than due date' => 'Start date cannot be greater than due date',
     'link task'=>'Link Task',
 	'repeat by date warning' => 'You need to specify start or due date before marking a task as repetitive',
+	'repeat by no start date' => 'To repeat by start date you must specify task start date',
+	'repeat by no due date' => 'To repeat by due date you must specify task due date',
 	'pick a color' => 'Pick a color',
 	'you need to be in a client or a project in order to perform this action' => 'You need to be in a client or a project in order to perform this action',
 	'remove filters' => 'Remove filters',
@@ -494,4 +502,6 @@ return array(
 	'added' => 'Added',
 	'removed' => 'Removed',
 	'manual percent completed' => 'Manual percent completed',
+
+	'invalid object related members classification on object' => 'It is not possible to link this {1} to a task classified into a different {0}',
 );
