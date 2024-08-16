@@ -151,7 +151,7 @@
 		$sql = "
 				SELECT DISTINCT(id) as id  
 				FROM ".TABLE_PREFIX."object_types ot
-				WHERE ot.type IN ('content_object', 'dimension_object', 'comment', 'located') 
+				WHERE ot.type IN ('content_object', 'comment', 'located') 
 				AND (
 				  ot.plugin_id IS NULL OR ot.plugin_id = 0 OR 
 				  ot.plugin_id IN (

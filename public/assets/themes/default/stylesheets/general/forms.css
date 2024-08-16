@@ -748,15 +748,22 @@ a.cke_combo_button, a.cke_button {
 /* .cp-multiple .cp-val:first-child a.ico-add { margin-left: 10px; } */
 .cp-multiple .cp-val input, .cp-multiple .cp-val textarea { max-width: calc(340px - 13px); box-sizing: border-box; width: 100%; }
 /* .cp-multiple .cp-val textarea { margin-left: 10px; } */
+
 .amount-container-fields {
 	overflow: auto;
 	max-width: 350px;
 	box-sizing: border-box;
 }
 
-.amount-container-fields select,
-.amount-container-fields input {width: 100% !important; box-sizing: border-box;}
-
 .amount-container-fields select {
 	margin-bottom: 5px;
+	margin-right: 5px;
+	width: 60px;
 }
+.amount-container-fields input {
+	width: 155px;
+	box-sizing: border-box;
+	text-align: right;
+
+}
+

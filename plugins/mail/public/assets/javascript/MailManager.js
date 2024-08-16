@@ -1286,7 +1286,7 @@ og.MailManager = function() {
 	}
 	
 	this.topTbar2 = new Ext.Toolbar({
-		style: 'border:0px none; padding-top:0px;',
+		style: 'border:0px none; padding-top:0px; min-width:800px;',
 		items: top2
 	});
 		    

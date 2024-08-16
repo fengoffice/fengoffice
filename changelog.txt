@@ -2,6 +2,113 @@
 Changelog
 =========
 
+Since 3.11.1.18
+-----------------------------------
+bugfix: project financials were not recalculated in background when adding time entries (#2677)
+
+Since 3.11.1.17
+-----------------------------------
+bugfix: don't store mail signtaures with links to tmp folder, store i… (#2666)
+
+Since 3.11.1.16
+-----------------------------------
+feature: add created on, created by, updated on, updated by columns to time list (#2662)
+bugfix: add missing langs to task financials columns (#2656)
+bugfix: fix quickbooks plugin installer, a column was missing and another query was wrongly placed
+
+Since 3.11.1.15
+-----------------------------------
+bugfix: double client after drag and drop a time with task to a project with different client (#2652)
+
+Since 3.11.1.14
+-----------------------------------
+bugfix: fix invoicing status calculation when saving actual expenses (#2647)
+Bugfix: Remove script (old business rule) that set tasks to fixed fee (#2643)
+
+Since 3.11.1.13
+-----------------------------------
+bugfix: invoice generation had bad algorithm to build the invoice line date for each expense group (#2640)
+bugfix: performance issue when processing mail to view (#2635)
+
+Since 3.11.1.12
+-----------------------------------
+Improvement: don't enforce time recalculation during import (#2633)
+
+Since 3.11.1.11
+-----------------------------------
+bugfix: fixes task templates estimated revenue amount when saving (#2632)
+bugfix: fix error 500 in gross margin report expense price query (#2629)
+improvement: new hidden config option to allow some users to use the "mark as invoiced" option in time and expenses (#2625)
+
+Since 3.11.1.10
+-----------------------------------
+bugfix: Before recalculating prev parent task, check if it exists (#2622)
+
+Since 3.11.1.9
+-----------------------------------
+bugfix: Separate expenses from task when grouping and fix timezone issues (#2610)
+bugfix: add class to invoice template custom detail. (#2615)
+bugfix: when generating project invoice the financials recalculations were triggered one time per involved object (#2612)
+bugfix: Fix description toolbar on add subtask (#2611)
+bugfix: white screen when adding contact (#2607)
+bugfix: Adds email toolbar min width (#2599)
+improvement: In excel export for 'Gross Margin' report align amounts to right (#2608)
+improvement: In 'Gross margin' add option to run report without month range (#2606)
+improvement: Check cost/billing permissions for the 'Cost/Revenue Forecast' report (#2589)
+improvement: In weekly view support both dot and comma as decimal separator (#2580)
+
+Since 3.11.1.8
+-----------------------------------
+bugfix: improve delete member function (#2605)
+bugfix: Fix calculation in the 'Gross margin' report (#2604)
+bugfix: Web plugin fix constant definition (#2602)
+bugfix: ui ux bugfixes (#2601)
+bugfix: Don't ask billable change confirmation when assigning the task to timeslot (#2596)
+feature: Develop a 'Project financials' report (#2592)
+
+Since 3.11.1.7
+-----------------------------------
+bugfix: when saving expense ensure that the invoicing status is consi… (#2598)
+bugfix: Fix the value in the excel export for project billing values (#2597)
+bugfix: cp-multiple css class has a overflow:auto directive that hides the list of values when 2 cp multiple are next to each other (#2590)
+
+Since 3.11.1.6
+-----------------------------------
+bugfix: Changes web plugin links (#2588)
+bugfix: fix PDF export for gross margin (#2586)
+bugfix: when adding new user and assigning user group the member cache of the user is not built (#2583)
+bugfix: Add 'invoice sent' column to the 'Aging invoices - extended details' report (#2582)
+Improvement: In calculating worked time for the task (#2581)
+bugfix: align-custom-detail-field-on-invoice-template-for-fixed-fee-type (#2578)
+bugfix: don't allow to change invoice status manually if payments plu… (#2573)
+
+Since 3.11.1.5
+-----------------------------------
+bugfix: crpm_installer was assuming that client members were always in "Clients and projects" dimension (#2579)
+bugfix: fix project relation on import timeslots (#2577)
+bugfix: blank screen when exporting project quote report excel (#2574)
+bugfix: exclude users without utilization goal checkbox not working (#2572)
+bugfix: can't add expense from budgeted expense, declare last_expense_line_price (#2567)
+
+Since 3.11.1.4
+-----------------------------------
+bugfix: php8 compatibility issue when using strings in numeric operations, now we need to cast the values (#2571)
+
+Since 3.11.1.3
+-----------------------------------
+bugfix: Set tasks to billable if estimated price is greater than zero during update (#2569)
+bugfix: solve printing issues problem (#2568)
+bugfix: in actual expenses selecting billable prod type doesnt fill price (#2566)
+
+Since 3.11.1.2
+-----------------------------------
+bugfix: expenses qbo sync: put description in the memo field of the expense. (#2551)
+bugfix: fix empty conditions in member controller (#2559)
+bugfix: gross margin report calculations and visuals (#2558)
+bugfix: fix js error in drag and drop of tasks in firefox (#2556)
+improve: In 'Utilization report' the option and calc totals for contract hours (#2554)
+bugfix: when generating project invoice the invoice number is not set (#2563)
+
 Since 3.11.1.1
 -----------------------------------
 bugfix: make the import tool compatible with php8 (#2555)
@@ -146,6 +253,20 @@ bugfix: Updated the PHPExcel Library, so older PHP versions, > 7.4, can keep exp
 bugfix: Added a new exception control. Now the email address on user edit is validated before throwing exceptions, and new error messages are being displayed for better UI experience (#2340)
 bugfix: add_expand_collapse_icon_projects_widget (#2271)
 improvement: improve contact selector in forms (#2200)
+
+Since 3.10.9.2
+-----------------------------------
+bugfix: don't show dimension objects in content objects listings (dashboard, object picker, linked objects list, tash, archived) (#2665)
+
+Since 3.10.9.1
+-----------------------------------
+bugfix: Before recalculating prev parent task, check if it exists (#2622)
+
+Since 3.10.9.0
+-----------------------------------
+bugfix: Let repetitive tasks delete following or all repetitive tasks (#2570)
+bugfix: Group taskless expenses and time by job phase, add changes to view and exports (#2565)
+bugfix: Trigger task financial recalculation when subtask added in the form (#2561)
 
 Since 3.10.9.0-rc1
 -----------------------------------

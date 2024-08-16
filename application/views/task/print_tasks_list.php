@@ -88,26 +88,28 @@
 			foreach ($member_path as $dim_id => $mem_ids) {
 				if (in_array($dim_id, $separate_dimensions)) continue;
 		  		$sep = '<span class="print-breadcrumb">-</span>';
-		  		foreach ($mem_ids as $mem_ids_array) { // member ids are grouped by object_type
-		  		  foreach ($mem_ids_array as $mem_id) {
-					if (!is_numeric($mem_id)) {
-						$exp = explode(',',$mem_id);
-						$mids = array();
-						if (is_array($exp)) {
-							$mids = array_filter(array_unique($exp));
-						};
-					} else {
-						$mids = array($mem_id);
+		  		foreach ($mem_ids as $mem_ids_array) {
+					foreach ($mem_ids_array as $key => $mem_ids_array_id) { // member ids are grouped by object_type
+						foreach ($mem_ids_array_id as $mem_id) {
+							if (!is_numeric($mem_id)) {
+								$exp = explode(',',$mem_id);
+								$mids = array();
+								if (is_array($exp)) {
+									$mids = array_filter(array_unique($exp));
+								};
+							} else {
+								$mids = array($mem_id);
+							}
+							foreach ($mids as $mid) {
+								$mem = Members::getMemberById($mem_id);
+								if ($mem instanceof Member) {
+									$this_mem_path = $mem->getPathToPrint($sep, '<span class="print-breadcrumb">', '</span>');
+									$this_mem_path .= ($this_mem_path=="" ? "" : $sep) . '<span class="print-breadcrumb wide">'. $mem->getName() .'</span>';
+									$dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-'.$mem->getColor().'">'.$this_mem_path.'</span>';
+								}
+							}
+		  		  		}
 					}
-					foreach ($mids as $mid) {
-						$mem = Members::getMemberById($mem_id);
-						if ($mem instanceof Member) {
-							$this_mem_path = $mem->getPathToPrint($sep, '<span class="print-breadcrumb">', '</span>');
-							$this_mem_path .= ($this_mem_path=="" ? "" : $sep) . '<span class="print-breadcrumb wide">'. $mem->getName() .'</span>';
-							$dim_mem_path_html .= '<span class="member-path real-breadcrumb og-wsname-color-'.$mem->getColor().'">'.$this_mem_path.'</span>';
-						}
-					}
-		  		  }
 				}
 			}
 		  	?>

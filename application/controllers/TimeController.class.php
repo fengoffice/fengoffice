@@ -554,6 +554,11 @@ class TimeController extends ApplicationController
 
             $object_controller = new ObjectController();
             $object_controller->add_custom_properties($timeslot);
+            // Skip force recalculation if needed
+            $skip_force_recalculation = array_var($timeslot_data, 'skip_force_recalculation', false);
+            if($skip_force_recalculation) {
+                $timeslot->setForceRecalculateBilling(false);
+            }
             if (!is_null($member_ids)) {
                 $object_controller->add_to_members($timeslot, $member_ids, null, false);
             }
@@ -1148,6 +1153,22 @@ class TimeController extends ApplicationController
 					'e_field' => 'rel_object_id',
 				);
 				$select_columns = array("e.*, o.*, jt.`name` as task_name");
+				break;
+			case 'dateCreated':
+			case 'dateUpdated':
+				$order = $order == 'dateCreated' ? '`created_on`' : '`updated_on`';
+				break;
+			case 'createdBy':
+			case 'updatedBy':
+				$join_params = array(
+					'join_type' => 'INNER',
+					'table' => Objects::instance()->getTableName(),
+					'jt_field' => 'id',
+					'e_field' => $order == 'createdBy' ? 'created_by_id' : 'updated_by_id',
+					'get_object_data' => true,
+				);
+				$order = 'user_name';
+				$select_columns = array("e.*, o.*, jt.`name` as user_name");
 				break;
 			case 'description':
 			case 'start_time':

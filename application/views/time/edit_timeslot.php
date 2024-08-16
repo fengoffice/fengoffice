@@ -1021,18 +1021,20 @@
 					callback: function(success, data) {
 						let task = data.task;
 						if (task) {
+                            var ask_confirmation = false;
 							og.related_task_data[task.id] = task;
 							og.enabled_disable_is_billable_from_fixed_fee_task(task);
 							if (task.is_calculated_estimated_price) {
-								og.set_time_is_billable_using_labor(genid);
+								og.set_time_is_billable_using_labor(genid, ask_confirmation);
 							}
 						}
 					}
 				});
 			} else {
+                var ask_confirmation = false;
 				og.enabled_disable_is_billable_from_fixed_fee_task(task);
 				if (task.is_calculated_estimated_price) {
-					og.set_time_is_billable_using_labor(genid);
+					og.set_time_is_billable_using_labor(genid, ask_confirmation);
 				}
 			}
 
@@ -1041,7 +1043,7 @@
 		}
 	}
 
-    og.set_time_is_billable_using_labor = function (genid) {
+    og.set_time_is_billable_using_labor = function (genid, ask_confirmation = true) { 
         // Change billable if hour_types, advanced_billing and income plugins are activated
 		var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
 		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
@@ -1059,7 +1061,13 @@
                         if(data.has_value){
                             if(data.is_billable){
                                 if(current_billable != data.is_billable){
-                                    if(confirm(lang('You are changing from a non-billable labor category to a billable one. This will set the \'Billable\' property for this task to \'Yes\''))){
+                                    if(ask_confirmation) {
+                                        if(confirm(lang('You are changing from a non-billable labor category to a billable one. This will set the \'Billable\' property for this task to \'Yes\''))){
+                                            $('#'+genid+'is_billableNo').removeAttr('checked');
+                                            $('#'+genid+'is_billableYes').attr('checked','checked');
+                                            $('#'+genid+'invoicing_status').val('pending');
+                                        }
+                                    } else {
                                         $('#'+genid+'is_billableNo').removeAttr('checked');
                                         $('#'+genid+'is_billableYes').attr('checked','checked');
                                         $('#'+genid+'invoicing_status').val('pending');
@@ -1067,10 +1075,12 @@
                                 }
                             } else {
                                 if(current_billable != data.is_billable){
-							        if(confirm(lang('You are changing from a billable labor category to a non-billable one. This will set the \'Billable\' property for this task to \'No\''))){
-                                        $('#'+genid+'is_billableYes').removeAttr('checked');
-                                        $('#'+genid+'is_billableNo').attr('checked','checked');
-                                        $('#'+genid+'invoicing_status').val('non_billable');
+                                    if(ask_confirmation) {
+                                        if(confirm(lang('You are changing from a billable labor category to a non-billable one. This will set the \'Billable\' property for this task to \'No\''))){
+                                            $('#'+genid+'is_billableYes').removeAttr('checked');
+                                            $('#'+genid+'is_billableNo').attr('checked','checked');
+                                            $('#'+genid+'invoicing_status').val('non_billable');
+                                        }
                                     }
                                 }
                             }

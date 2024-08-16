@@ -2097,6 +2097,7 @@ class ProjectTask extends BaseProjectTask {
 		
 		$row = DB::executeOne($sql);
 		$overall_total_minutes = array_var($row, 'overall_total_minutes', 0);
+		$total_minutes = $overall_total_minutes;
 
 		$subtasks = $this->getSubTasks(false, false, true);
 		$subtask_total_minutes = 0;
@@ -2107,7 +2108,10 @@ class ProjectTask extends BaseProjectTask {
 
 		// Set total worked time
 		$task_id = $this->getId();
-		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` SET `overall_worked_time_plus_subtasks` = $overall_total_minutes WHERE `object_id` = $task_id;";
+		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` 
+				SET `overall_worked_time_plus_subtasks` = $overall_total_minutes,
+				`total_worked_time` = $total_minutes
+				WHERE `object_id` = $task_id;";
 		DB::execute($sql);
 	}
 

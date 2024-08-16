@@ -461,3 +461,10 @@
 			");
 		}
 	}
+
+	function mail_update_32_33() {
+		DB::execute("
+			ALTER TABLE `".TABLE_PREFIX."mail_account_contacts`
+			CHANGE `signature` `signature` mediumtext COLLATE 'utf8_unicode_ci' NOT NULL;
+		");
+	}

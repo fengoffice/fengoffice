@@ -1290,7 +1290,12 @@ class MemberController extends ApplicationController {
 					$conditions = "`association_id` = $assoc_id AND `member_id` = ".$member->getId()." AND `is_active` = 1";
 					
 					$active_associations = MemberPropertyMembers::instance()->find(array('conditions'=>$conditions));
-					if (count($active_associations)>0) $active_association = $active_associations[0];
+                    
+                    if(null === $active_associations) {
+                        $active_associations = [];
+                    } else {
+                        if (count($active_associations)>0) $active_association = $active_associations[0];
+                    }
 					
 					$association = DimensionMemberAssociations::instance()->findById($assoc_id);
 					if ($active_association instanceof MemberPropertyMember){
@@ -1594,8 +1599,21 @@ class MemberController extends ApplicationController {
 			// commented bacause triggers a lock wait timeout in large databases
 			//DB::execute($sqlDeleteSharingTable);
 			
-			$affectedObjectsRows = DB::executeAll("SELECT distinct(object_id) AS object_id FROM ".TABLE_PREFIX."object_members where member_id = ".$member->getId()." AND is_optimization = 0") ;
-			
+			$affectedObjectsRows = DB::executeAll(
+				"SELECT DISTINCT(om.object_id) AS object_id 
+				 FROM " . TABLE_PREFIX . "object_members om
+				 INNER JOIN " . TABLE_PREFIX . "objects o ON om.object_id = o.id
+				 INNER JOIN " . TABLE_PREFIX . "object_types ot ON o.object_type_id = ot.id
+				 WHERE om.member_id = " . $member->getId() . "
+				   AND om.is_optimization = 0
+				   AND ot.type != 'dimension_object'
+				   AND NOT (
+					 ot.type = 'located'
+					 AND (ot.name = 'report' OR ot.name = 'template')
+				   )"
+			);
+
+
 			if (is_array($affectedObjectsRows) && count($affectedObjectsRows) > 0) {
 				// build an array with all the affected object ids
 				$all_affeceted_object_ids = array();

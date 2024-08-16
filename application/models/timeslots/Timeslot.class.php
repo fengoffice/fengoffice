@@ -176,7 +176,7 @@ class Timeslot extends BaseTimeslot {
 
 			if ($task instanceof ProjectTask) {
 	
-				$time_members = $this->getMembersMergedWithTaskMembers($this->getMembers());
+				$time_members = $this->getMembersMergedWithTaskMembers($this->getMembers(false));
 	
 				ObjectMembers::addObjectToMembers($this->getId(), $time_members);
 				
@@ -199,7 +199,7 @@ class Timeslot extends BaseTimeslot {
 			if ($task instanceof ProjectTask) {
 
 				if (is_null($time_members)) {
-					$time_members = $this->getMembers();
+					$time_members = $this->getMembers(false);
 				}
 
 				$task_members = $task->getMembers();

@@ -42,7 +42,6 @@
 .coInputMainBlock .dataBlock {
 	margin: 0 0 12px 0;
 	min-height: 20px;
-	display: flex;
 	align-items: center;
 }
 

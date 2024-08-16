@@ -838,6 +838,26 @@ class DimensionController extends ApplicationController {
 		}
 		ajx_current("empty");
 	}
+
+	function get_active_context_association_filter_conditions(Dimension $dimension) {
+		// check for other dimensions filtering this dimension
+		$selected_members = array();
+		$current_selections = active_context();
+		if(isset($current_selections)){
+			foreach ($current_selections as $selection) {
+				if ($selection instanceof Member && $selection->getDimensionId() != $dimension->getId()) {
+					$selected_members[] = $selection;
+				}
+			}
+		}
+		$dim_filter_conds = "";
+		if (count($selected_members) > 0) {
+			$applied_filters = null;
+			$dim_filter_conds = $this->get_association_filter_conditions($dimension, $selected_members, $applied_filters);
+		}
+
+		return $dim_filter_conds;
+	}
 	
 	//return all parents of a member
 	function get_member_parents() {

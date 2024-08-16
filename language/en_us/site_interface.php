@@ -568,6 +568,7 @@ return array(
   'updated' => 'Updated',
   'group by' => 'Group by',
   'last updated by' => 'Last updated by',
+  'last updated on' => 'Last updated on',
 
   'total' => 'Total',
   'enter tags desc' => 'Enter comma separated tag names...',
