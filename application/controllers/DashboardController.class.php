@@ -18,16 +18,6 @@ class DashboardController extends ApplicationController {
 		prepare_company_website_controller($this, 'website');
 		$this->addHelper('calendar');
 	} // __construct
-
-	function init_overview() {
-		if (user_config_option("overviewAsList")){
-			require_javascript("og/OverviewManager.js");
-			ajx_current("panel", "overview", null, null, true);
-			ajx_replace(true);
-		}else{
-			ajx_set_no_toolbar(true);
-		}
-	}
 	
 	/**
 	 * 
@@ -131,7 +121,7 @@ class DashboardController extends ApplicationController {
 			$charts = ProjectCharts::getChartsAtProject(active_project(), active_tag());
 			tpl_assign('charts', $charts);
 			
-			if (BillingCategories::count() > 0 && active_project() instanceof Project){
+			if (BillingCategories::instance()->count() > 0 && active_project() instanceof Project){
 				tpl_assign('billing_chart_data', active_project()->getBillingTotalByUsers(logged_user()));
 			}
 		}*/
@@ -191,7 +181,7 @@ class DashboardController extends ApplicationController {
 		
 		$usu = logged_user();
 		$conditions = array("conditions" => array("`state` >= 200 AND (`state`%2 = 0) AND `trashed_on=0 AND `created_by_id` =".$usu->getId()));
-		//FIXME $outbox_mails = MailContents::findAll($conditions);
+		//FIXME $outbox_mails = MailContents::instance()->findAll($conditions);
 		if ($outbox_mails!= null){
 			if (count($outbox_mails)==1){		
 				flash_error(lang('outbox mail not sent', 1));

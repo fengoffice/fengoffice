@@ -13,7 +13,7 @@ class ContactExternalTokens extends BaseContactExternalTokens {
 	 * @return ContactExternalToken
 	 */
 	function findByToken($token){
-	    return self::findOne(array(
+	    return self::instance()->findOne(array(
 	       'conditions' => array('`token` = ?', $token) 
 	    ));
 	}

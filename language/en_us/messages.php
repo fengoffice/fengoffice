@@ -255,15 +255,15 @@
 	'success delete billing category' => 'Billing category deleted successfully',
 	'success edit billing category' => 'Billing category updated successfully',
   	'success assign user billing categories' => 'Billing categories were successfully assigned to users',
-  	'success update billing values' => 'Timeslot billing values updated succesfully: {0} entries modified.',
+  	'success update billing values' => 'Time entry billing values updated succesfully: {0} entries modified.',
     
     // Failures
-    'error edit timeslot' => 'Failed to save timeslot',
-  	'error delete timeslot' => 'Failed to delete the selected timeslot',
-  	'error add timeslot' => 'Failed to add timeslot',
-  	'error open timeslot' => 'Failed to open timeslot',
-  	'error close timeslot' => 'Failed to close timeslot',
-    'error start time after end time' => 'Failed to save timeslot: the start time must happen before the end time',
+    'error edit timeslot' => 'Failed to save time entry',
+  	'error delete timeslot' => 'Failed to delete the selected time entry',
+  	'error add timeslot' => 'Failed to add time entry',
+  	'error open timeslot' => 'Failed to open time entry',
+  	'error close timeslot' => 'Failed to close time entry',
+    'error start time after end time' => 'Failed to save time entry: the start time must happen before the end time',
     'error form validation' => 'Failed to save object because some of its properties are not valid',
     'error delete owner company' => 'Owner company can\'t be deleted',
     'error delete message' => 'Failed to delete selected note',
@@ -335,8 +335,8 @@
     
     // Confirmation
     'confirm delete billing category' => "Are you sure you want to delete the selected billing category?",
-    'confirm cancel work timeslot' => "Are you sure you want to cancel the current timeslot?",
-    'confirm discard work timeslot' => 'Are you sure you want to discard the current timeslot?',
+    'confirm cancel work timeslot' => "Are you sure you want to cancel the current time entry?",
+    'confirm discard work timeslot' => 'Are you sure you want to discard the current time entry?',
     'confirm delete mail account' => 'Warning: All emails belonging to this account will be deleted as well, are you sure that you want to delete this mail account?',
     'confirm delete message' => 'Are you sure that you want to delete this note?',
     'confirm delete milestone' => 'Are you sure that you want to delete this milestone?',
@@ -602,6 +602,7 @@
   	'confirm delete template' => 'Are you sure that you want to delete this template?',
   	'success delete template' => 'Template \'{0}\' has been deleted',
   	'success add template' => 'Template has been added',
+	'success copy template' => 'Template copied successfully',
   
   	'log add companies' => '\'{0}\' added',
   	'log edit companies' => '\'{0}\' updated',
@@ -751,8 +752,8 @@
   	'the Projects' => 'the workspace',
   	'the ProjectTasks' => 'the task',
   	'the ProjectWebpages' => 'the webpage',
-  	'the Timeslots' => 'the timeslot',
-        'the Time' => 'the timeslot',
+  	'the Timeslots' => 'the time entry',
+        'the Time' => 'the time entry',
       
         'the user notification' => 'the user',
   	'the comment notification' => 'the comment',
@@ -766,8 +767,8 @@
   	'the task notification' => 'the task',
   	'the webpage notification' => 'the webpage',
     'the weblink notification' => 'the link',
-  	'the timeslot notification' => 'the timeslot',
-        'the time notification' => 'the timeslot',
+  	'the timeslot notification' => 'the time entry',
+        'the time notification' => 'the time entry',
   
   	'objects moved to member success' => 'The objects has been added to {0} successfully',
 	'object moved to member success' => 'The object has been added to {0} successfully',
@@ -813,7 +814,10 @@
   	'x members deleted' => '{1} {0} deleted succesfully.',
   	'x members deleted y members not deleted' => '{1} {0} deleted succesfully, {2} {0} not deleted.',
     'project and client are not associated with each other' => 'Project and client are not associated with each other',
-    'client is not assigned' => 'Client is not assigned'
+    'client is not assigned' => 'Client is not assigned',
+	'there are no timeslots to delete' => 'There are no time entries to delete',
+	'task is linked to time expenses are you sure you want to delete' => 'Any time entry and/or expense linked to this task won\'t be deleted but it will remain now unlinked. Do you want to proceed?',
+    'The variable contains an invalid JSON format. Please check the JSON format and try again.' => 'The variable contains an invalid JSON format. Please check the JSON format and try again.',
   ); // array
 
 ?>

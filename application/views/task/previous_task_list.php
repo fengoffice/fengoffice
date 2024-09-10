@@ -26,19 +26,19 @@
 		$all_dep_completed = true;
 		
 		if($object instanceof ProjectTask){
-			$ptask = ProjectTasks::findById($pt->getPreviousTaskId());
+			$ptask = ProjectTasks::instance()->findById($pt->getPreviousTaskId());
 			$task_link = get_url('task','view',array('id'=>$ptask->getId()));
 			
 			$ptask_deps = ProjectTaskDependencies::getDependenciesForTask($ptask->getId());
 			foreach ($ptask_deps as $pt_dep) {
-				$pptask = ProjectTasks::findById($pt_dep->getPreviousTaskId());
+				$pptask = ProjectTasks::instance()->findById($pt_dep->getPreviousTaskId());
 				if (!$pptask->isCompleted()) {
 					$all_dep_completed = false;
 					break;
 				}
 			}
 		}elseif ($object instanceof TemplateTask){
-			$ptask = TemplateTasks::findById($pt->getPreviousTaskId());
+			$ptask = TemplateTasks::instance()->findById($pt->getPreviousTaskId());
 			$task_link = get_url('task','view',array('id'=>$ptask->getId(), 'template_task'=>1));
 		}		
 		if (!$ptask instanceof ProjectTask && !$ptask instanceof TemplateTask) {

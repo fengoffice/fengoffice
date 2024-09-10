@@ -15,7 +15,7 @@
     * @return EventReminder
     */
     static function getById($id) {
-      return self::findOne(array(
+      return self::instance()->findOne(array(
         'conditions' => '`id` = ' . DB::escape($extension)
       )); // findOne
     } // getByExtension

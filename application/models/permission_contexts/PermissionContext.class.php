@@ -8,7 +8,7 @@
 class PermissionContext extends BasePermissionContext {
 	
 	function getMember(){
-		return Members::findById($this->getMemberId());
+		return Members::instance()->findById($this->getMemberId());
 	}
 	
 } // PermissionContext

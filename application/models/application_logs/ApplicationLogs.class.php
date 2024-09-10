@@ -56,6 +56,16 @@ class ApplicationLogs extends BaseApplicationLogs {
 			}
 			$object_differences = ApplicationLogDetails::calculateSavedObjectDifferences($object, $object->old_content_object);
 		}
+
+		if (!empty($_REQUEST)) {
+			// get all the request parameters and store them
+			$full_request = var_export($_REQUEST, true);
+			$request_channel = array_var($_REQUEST, 'req_channel', '');
+		} else {
+			// we are inside a script execution like cron.php or any data import script => get the full trace of the execution
+			$full_request = get_back_trace();
+			$request_channel = 'script';
+		}
 		
 		$args = array (
 			'action' => &$action,
@@ -104,6 +114,9 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$log->setIsPrivate($is_private);
 		$log->setIsSilent($is_silent);
 		$log->setLogData($log_data);
+
+		$log->setFullRequest($full_request);
+		$log->setRequestChannel($request_channel);
 		
 		if($save) {
 			$log->save();
@@ -178,11 +191,11 @@ class ApplicationLogs extends BaseApplicationLogs {
 			
 			$userCond = " AND `taken_by_id` = " . $object->getId();
 			
-			return self::count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' '.$userCond. $extra_conditions);
+			return self::instance()->count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' '.$userCond. $extra_conditions);
 			
 		} else {
 			
-			return self::count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' AND 
+			return self::instance()->count('`is_private` <= '.$private_filter.' AND `is_silent` <= '.$silent_filter.' AND 
 				(`rel_object_id` = ('.$object->getId().') OR `rel_object_id` IN (SELECT com.object_id FROM '.TABLE_PREFIX.'comments com WHERE com.rel_object_id='.$object->getId().' )) 
 				' . $extra_conditions
 			);
@@ -207,7 +220,12 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$private_filter = $include_private ? 1 : 0;
 		$silent_filter = $include_silent ? 1 : 0;		
 		
+		/* 
+			COMMENTED SO WE CAN ANALYZE WHAT WAS INTENDED TO DO AND HOW TO FIX IT, 
+			AND SHOW USER LOGS IN THE SAME WAY AS OTHER OBJECTS
+
 		// User History
+
 		if ($object instanceof Contact && $object->isUser()){		
 			$private_filter = $include_private ? 1 : 0;
 			$silent_filter = $include_silent ? 1 : 0;		
@@ -218,18 +236,21 @@ class ApplicationLogs extends BaseApplicationLogs {
 				$private_filter, 
 				$silent_filter); 
 				
-			return self::findAll(array(
+			return self::instance()->findAll(array(
 				'conditions' => $conditions ,
 				'order' => '`created_on` DESC',
 				'limit' => $limit,
 				'offset' => $offset,
 			)); // findAll				
 		} else {
-			$comment_ids = Comments::findAll(array('id'=>true, 'conditions'=>'rel_object_id = '.$object->getId()));
+			-------------------------------------------- */
+	
+			$comment_ids = Comments::instance()->findAll(array('id'=>true, 'conditions'=>'rel_object_id = '.$object->getId()));
+			$comments_conditions = "";
 			if (is_array($comment_ids) && count($comment_ids) > 0) {
 				$comments_conditions = "OR `rel_object_id` IN (".implode(',', $comment_ids).")";
 			}
-			$logs = self::findAll(array(
+			$logs = self::instance()->findAll(array(
 				'conditions' => array('`is_private` <= ? AND `is_silent` <= ? AND 
 					(`rel_object_id` = (?) '.$comments_conditions.') 
 					'.$extra_conditions, $private_filter, $silent_filter, $object->getId()),
@@ -237,7 +258,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 				'limit' => $limit,
 				'offset' => $offset,
 			)); // findAll
-		}
+		//}
 		
 		$next_offset = $offset + $limit;
 		do {
@@ -254,7 +275,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 			}
 			// Get more objects to substitute the removed ones
 			if ($limit && $removed > 0) {
-				$other_logs = self::findAll(array(
+				$other_logs = self::instance()->findAll(array(
 			        'conditions' => array('`is_private` <= ? AND `is_silent` <= ? AND `rel_object_id` = (?) AND `is_private` <= ? AND `is_silent` <= ? 
 			        	AND (`rel_object_id`IN (SELECT `id` FROM '.Comments::instance()->getTableName(true).' WHERE `rel_object_id` = (?)) 
 			        	AND `rel_object_id`IN (SELECT `object_id` FROM '.Timeslots::instance()->getTableName(true).' WHERE `rel_object_id` = (?)))'.$extra_conditions, $private_filter, $silent_filter, $object->getId(),$private_filter, $silent_filter, $object->getId(), $object->getId()),
@@ -361,8 +382,10 @@ class ApplicationLogs extends BaseApplicationLogs {
 		";
 		$rows = DB::executeAll($sql);
 		$id_rows = array();
-		foreach ($rows as $r) {
-			if (!in_array($r['object_type_id'], $excluded_object_type_ids)) $id_rows[] = $r['id'];
+		if( $rows) {
+			foreach ($rows as $r) {
+				if (!in_array($r['object_type_id'], $excluded_object_type_ids)) $id_rows[] = $r['id'];
+			}
 		}
 		
 		// if logged user is guest dont show other users logs
@@ -385,7 +408,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		$logs = array();
 		if (count($id_rows) > 0) {
-			$logs = ApplicationLogs::findAll(array("condition" => "id IN (".implode(',',$id_rows).")", "order" => "created_on DESC"));
+			$logs = ApplicationLogs::instance()->findAll(array("condition" => "id IN (".implode(',',$id_rows).")", "order" => "created_on DESC"));
 		}
 		return $logs;
 	}

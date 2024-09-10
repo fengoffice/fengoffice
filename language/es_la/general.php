@@ -291,8 +291,8 @@
 	'will this person use feng office?' => 'Esta persona va a usar Feng Office?',
 	'specify username?' => 'Especificar nombre de usuario',
 	'persons' => 'Personas',
-	'task timeslots report desc' => ' * Solo los tiempos de trabajo asociados a una tarea serán desplegados.',
-	'general timeslots report desc' => ' * Solo los tiempos de trabajo agregados desde la pestaña "Tiempo" serán desplegados.',
+	'task timeslots report desc' => ' * Solo las entradas de tiempo asociadas a una tarea serán desplegadas.',
+	'general timeslots report desc' => ' * Solo las entradas de tiempo agregadas desde la pestaña "Tiempo" serán desplegadas.',
 	'see all' => 'Ver todos',
 	'view all' => 'Ver todos',
 	'name required' => 'Nombre requerido',
@@ -442,7 +442,7 @@
 	'set r permissions for all object types' => 'Asignar permisos de solo lectura para todos los tipos de objeto.',
 	'set none permissions for all object types' => 'Quitar todos los permisos en todos los tipos de objeto.',
 		
-	'object could not be classfied in due to permissions' => 'No se pudo clasificar {0} en \'{1}\' porque usted not tiene permisos para {2} ahí.',
+	'object could not be classfied in due to permissions' => 'No se pudo clasificar {0} porque usted no tiene permisos sobre {2}  en \'{1}\'',
 	'if not specified then current time will be used' => 'Si no se especifica se utilizará la hora actual.',
 
 	'couldnt assign user to task due to permissions' => 'No se pudo asignar {0} a la tarea {1} porque el usuario no tiene permisos donde la tarea está clasificada.',
@@ -461,4 +461,5 @@
 	'hide details' => 'Ocultar detalles',
 	'added' => 'Se agregó',
 	'removed' => 'Se quitó',
+	'manual percent completed' => 'Porcentaje completado manual',
 );

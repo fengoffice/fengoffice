@@ -152,7 +152,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	 */
 	function getTasks($is_template = false) {
 		//FIXME check permissions here
-		return ProjectTasks::findAll(array(
+		return ProjectTasks::instance()->findAll(array(
 	        'conditions' => '`is_template` = '.( $is_template ? '1' : '0') .' AND `milestone_id` = ' . DB::escape($this->getId()). " AND `trashed_on` = 0 ",
 	        'order' => 'created_on'
         )); // findAll
@@ -167,7 +167,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	 */
 	function getOpenSubTasks() {
 		if(is_null($this->open_tasks)) {
-			$this->open_tasks = ProjectTasks::findAll(array(
+			$this->open_tasks = ProjectTasks::instance()->findAll(array(
           'conditions' => '`milestone_id` = ' . DB::escape($this->getId()) . ' AND `trashed_on` = 0 AND `completed_on` = ' . DB::escape(EMPTY_DATETIME),
           'order' => '`order`, `created_on`' 
           )); // findAll
@@ -186,7 +186,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	 */
 	function getCompletedSubTasks() {
 		if(is_null($this->completed_tasks)) {
-			$this->completed_tasks = ProjectTasks::findAll(array(
+			$this->completed_tasks = ProjectTasks::instance()->findAll(array(
           'conditions' => '`milestone_id` = ' . DB::escape($this->getId()) . ' AND `trashed_on` = 0 AND `completed_on` > ' . DB::escape(EMPTY_DATETIME),
           'order' => '`completed_on` DESC'
           )); // findAll
@@ -203,7 +203,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	 */
 	function getCompletedBy() {
 		if ($this->isCompleted()){
-			if(is_null($this->completed_by)) $this->completed_by = Contacts::findById($this->getCompletedById());
+			if(is_null($this->completed_by)) $this->completed_by = Contacts::instance()->findById($this->getCompletedById());
 			return $this->completed_by;
 		} else return null;
 	} // getCompletedBy
@@ -212,7 +212,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 	//  Permissions
 	// ---------------------------------------------------
 
-	function canAdd(Contact $user, $context, &$notAllowedMember = ''){
+	static function canAdd(Contact $user, $context, &$notAllowedMember = ''){
 		return can_add($user, $context, ProjectMilestones::instance()->getObjectTypeId(),$notAllowedMember);
 	}
 	
@@ -443,7 +443,7 @@ class ProjectMilestone extends BaseProjectMilestone {
 			't' => $this->getTitle(),
 			'tnum' => $tnum,
 			'tc' => $tc,
-			'dd' => $this->getDueDate()->getTimestamp()
+			'dd' => $this->getDueDate() ? $this->getDueDate()->getTimestamp() : null
 		);
 		
 		if ($this->getCompletedById() > 0){

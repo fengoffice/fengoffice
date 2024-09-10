@@ -55,6 +55,9 @@ if (array_var($options, 'readonly')) {
 	
 	$members_dimension = array();
 	$sel_mem_ids = array();
+
+	// ids of the dimensions that are read-only
+	$disabled_dimension_ids = array_var($options, 'disabled_dimension_ids', array());
 	
 	$original_options = $options;
 
@@ -89,7 +92,7 @@ if (array_var($options, 'readonly')) {
 		foreach ($selected_members as $selected_member) {
 			if ($selected_member->getDimensionId() == $dimension_id) $dimension_selected_members[] = $selected_member;
 		}
-		if (count($dimension_selected_members) == 0 && array_var($options, 'select_current_context')) {
+		if (count($dimension_selected_members) == 0 && array_var($options, 'select_current_context' && !array_var($options, 'skip_default_member_selections', false))) {
 			$default_value = DimensionOptions::instance()->getOptionValue($dimension_id, 'default_value');
 			if ($default_value) {
 				$default_member = Members::getMemberById($default_value);
@@ -103,7 +106,7 @@ if (array_var($options, 'readonly')) {
 		$member_type_names = array();
 		$member_type_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dimension_id);
 		foreach ($member_type_ids as $member_type_id) {
-			$mem_type = ObjectTypes::findById($member_type_id);
+			$mem_type = ObjectTypes::instance()->findById($member_type_id);
 			if (in_array($mem_type->getName(), array('folder','project_folder','customer_folder'))) continue;
 			$member_type_names[] = $mem_type->getObjectTypeName();
 		}

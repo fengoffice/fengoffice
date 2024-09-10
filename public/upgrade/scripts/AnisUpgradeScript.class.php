@@ -114,7 +114,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 				CREATE TABLE IF NOT EXISTS `".$t_prefix."dimension_options` (
 				  `dimension_id` INTEGER UNSIGNED NOT NULL,
 				  `name` VARCHAR(100) NOT NULL,
-				  `value` TEXT NOT NULL,
+				  `value` TEXT NULL,
 				  PRIMARY KEY (`dimension_id`, `name`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
@@ -124,7 +124,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 				  `dimension_id` INTEGER UNSIGNED NOT NULL,
 				  `object_type_id` INTEGER UNSIGNED NOT NULL,
 				  `name` VARCHAR(100) NOT NULL,
-				  `value` TEXT NOT NULL,
+				  `value` TEXT NULL,
 				  PRIMARY KEY (`dimension_id`, object_type_id, `name`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			";
@@ -132,7 +132,7 @@ class AnisUpgradeScript extends ScriptUpgraderScript {
 			
 			if (!$this->checkColumnExists($t_prefix."members", "description", $this->database_connection)) {
 				$upgrade_script .= "
-					ALTER TABLE `".$t_prefix."members` ADD COLUMN `description` TEXT NOT NULL;
+					ALTER TABLE `".$t_prefix."members` ADD COLUMN `description` TEXT NULL;
 				";
 			}
 			

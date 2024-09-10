@@ -39,6 +39,27 @@ class PluginController extends ApplicationController {
 		}
 	} 
 	
+	function show_error_message($plugin, $error, $action) {
+
+		$name = $plugin instanceof Plugin ? $plugin->getName() : 'n/a';
+		$message = "Error executing $action for plugin '$name':\n\n" . $error->getMessage() . "\n\n" . $error->getTraceAsString();
+
+		if (defined('CONSOLE_MODE')) { // executing by command line
+			
+			fwrite(STDERR, $message . "\n");
+			throw $error; // for plugin-console.php to catch and exit with error
+
+		} else { // executing by interface
+			ajx_extra_data(array('errorMessage' => nl2br($message)));
+		}
+	}
+
+	function show_success_message($message) {
+		if (defined('CONSOLE_MODE')) { // executing by command line
+			echo $message . "\n";
+		}
+	}
+
 	function update($id = null) {
 		ajx_current("empty");
 		$from_post = false;
@@ -50,31 +71,43 @@ class PluginController extends ApplicationController {
 			$name = '';
 			if ( $plg = Plugins::instance()->findById($id)) {
 				if ($plg->isInstalled() && $plg->updateAvailable()){
+					
+					// ensure that some specific columns are present before using objects in any update
+					$this->check_columns_exist_before_updates();
+
 					$name = $plg->getName();
 					$plg->update();
 					
 					DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
+
+					$this->show_success_message("Plugin $name updated successfully");
 				}
 			}
+		} catch (Error $e) {
+			$this->show_error_message($plg, $e, 'update');
 		} catch (Exception $e) {
-			if ($from_post) {
-				ajx_extra_data(array('errorMessage' => "Error updating plugin '$name': " . $e->getMessage()));
-			} else {
-				throw new Error("Error installing plugin '$name': " . $e->getMessage());
-			}
+			$this->show_error_message($plg, $e, 'update');
 		}
 	}
 	
 	function updateAll() {
+
+		// ensure that some specific columns are present before using objects in any update
+		$this->check_columns_exist_before_updates();
+
 		try {
-			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1 AND is_activated=1'));
+			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1'));
 			foreach ($plugins as $plg) {
-				$plg->update();
+				if ($plg->updateAvailable()) {
+					$plg->update();
+					$this->show_success_message("Plugin ".$plg->getName()." updated successfully");
+				}
 			}
 			DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
+		} catch (Error $e) {
+			$this->show_error_message($plg, $e, 'update');
 		} catch (Exception $e) {
-			$name = $plg instanceof Plugin ? $plg->getName() : 'n/a';
-			throw new Error("Error updating plugin '$name': " . $e->getMessage());
+			$this->show_error_message($plg, $e, 'update');
 		}
 	}
 	
@@ -92,6 +125,7 @@ class PluginController extends ApplicationController {
 			if (file_exists($path)){
 				include_once $path;
 			}
+			$this->show_success_message("Plugin $name uninstalled successfully");
 		}
 	}
 	
@@ -110,14 +144,14 @@ class PluginController extends ApplicationController {
 				$plg->save();
 				
 				DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
-				
+
+				$this->show_success_message("Plugin ".$plg->getName()." installed successfully");
+
+			} catch (Error $e) {
+				$this->show_error_message($plg, $e, 'install');
 			} catch (Exception $e) {
-				if ($from_post) {
-					ajx_extra_data(array('errorMessage' => "Error installing plugin '$name': " . $e->getMessage()));
-				} else {
-					throw new Error("Error installing plugin '$name': " . $e->getMessage());
-				}
-			}	
+				$this->show_error_message($plg, $e, 'install');
+			}
 		}
 	}
 	
@@ -126,6 +160,7 @@ class PluginController extends ApplicationController {
 		$id=array_var($_POST,'id');
 		if ( $plg  = Plugins::instance()->findById($id)) {
 			$plg->activate();
+			$this->show_success_message("Plugin ".$plg->getName()." activated successfully");
 		}
 	}
 	
@@ -134,10 +169,9 @@ class PluginController extends ApplicationController {
 		$id=array_var($_POST,'id');
 		if ( $plg  = Plugins::instance()->findById($id)) {
 			$plg->deactivate();
+			$this->show_success_message("Plugin ".$plg->getName()." deactivated successfully");
 		}
 	}
-
-
 	
 	function __construct() {
 		if (!defined('PLUGIN_MANAGER') && !defined('PLUGIN_MANAGER_CONSOLE')) {
@@ -149,11 +183,33 @@ class PluginController extends ApplicationController {
 			die(lang('no access permissions'));
 		}
 	}
+
+	private function get_deprecated_plugins() {
+		return array(
+			"advanced_expenses",
+			"aoac",
+			"attendance_absence_tracking",
+			"bca",
+			"diprode",
+			"expenses",
+			"fidelis",
+			"interra_networks",
+			"inventory_management",
+			"overtime_calculations",
+			"paemfe",
+			"status_dimension_1",
+			"weill_cornell_reports",
+		);
+	}
 	
 	function index() {
 		require_javascript("og/modules/plugins.js");
 		$this->scanPlugins(); // If there are plguins not scanned		
+
+		$deprecated_plugins = $this->get_deprecated_plugins();
+
 		$plugins = Plugins::instance()->findAll(array(
+			"conditions" => "name NOT IN ('".implode("','", $deprecated_plugins)."')",
 			"order"=>"name ASC",
 		));
 				
@@ -161,19 +217,15 @@ class PluginController extends ApplicationController {
 		return $plugins ;
 	}
 	
-	
 	function ensure_installed_and_activated($plugin_name) {
 		
-		$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
+		$plugin = Plugins::instance()->findOne(array('conditions' => "name='$plugin_name'"));
 		if (!Plugins::instance()->isActivePlugin($plugin_name)) {
 			if (!$plugin instanceof Plugin) return;
 			if (!$plugin->isInstalled()) {
-				
 				$this->executeInstaller($plugin_name);
-		
-				$plugin = Plugins::findOne(array('conditions' => "name='$plugin_name'"));
+				$plugin = Plugins::instance()->findOne(array('conditions' => "name='$plugin_name'"));
 			}
-				
 			$plugin->activate();
 		}
 		
@@ -183,7 +235,30 @@ class PluginController extends ApplicationController {
 		}
 		
 		return true;
-	} 
+	}
+
+	/**
+	 * check that plugin is installed and activated
+	 */
+	function check_installed_and_activated($plugin_name) {
+		return Plugins::instance()->isActivePlugin($plugin_name);
+	}
+
+	/**
+	 * Here add the columns that are needed before executing any update that use objects
+	 * that tries to load columns that not exists because they are added in a future update
+	 * 
+	 * This is a temporary patch before developing a more structured way to prevent this kind of errors
+	 */
+	function check_columns_exist_before_updates() {
+		
+		if ($this->check_installed_and_activated('advanced_billing')) {
+			Env::useHelper('update_script_functions', 'advanced_billing');
+			add_fixed_fee_and_eaned_value_columns_to_task_table();
+		}
+
+	}
+	
 	
 /**
  * @param array of string $pluginNames
@@ -241,7 +316,7 @@ static function executeInstaller($name) {
 			}
 			
 			//2. IF Plugin defines types, INSERT INTO ITS TABLE
-			if (count ( array_var ( $pluginInfo, 'types' ) )) {
+			if (count ( array_var ( $pluginInfo, 'types', array() ) )) {
 				foreach ( $pluginInfo ['types'] as $k => $type ) {
 					if (isset ( $type ['name'] )) {
 						$sql = "
@@ -264,7 +339,7 @@ static function executeInstaller($name) {
 			}
 			
 			//2. IF Plugin defines tabs, INSERT INTO ITS TABLE
-			if (count ( array_var ( $pluginInfo, 'tabs' ) )) {
+			if (count ( array_var ( $pluginInfo, 'tabs', array() ) ) > 0) {
 				foreach ( $pluginInfo ['tabs'] as $k => $tab ) {
 					if (isset ( $tab ['title'] )) {
 						$type_id = array_var ( $type, "id" );

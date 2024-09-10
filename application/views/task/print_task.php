@@ -77,7 +77,7 @@ table.print-task-timeslots th {
 						$dim = $member->getDimension();
 						if($dim->getIsManageable()){
 							if ($dim->getCode() == "customer_project" || $dim->getCode() == "customers"){
-								$obj_type = ObjectTypes::findById($member->getObjectTypeId());
+								$obj_type = ObjectTypes::instance()->findById($member->getObjectTypeId());
 								if ($obj_type instanceof ObjectType) {
 									echo $dim->getName(). ": ";
 									echo $contexts[$dim->getCode()][$obj_type->getName()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
@@ -195,7 +195,7 @@ if ($pending_time > 0) {
 <table class="print-task-timeslots">
 	<tr><th><?php echo lang('name')?></th><th><?php echo lang('worked time')?></th><th><?php echo lang('start time')?></th><th><?php echo lang('description')?></th></tr>
 <?php foreach ($timeslots as $timeslot) { /* @var $timeslot Timeslot */
-	$contact = Contacts::findById($timeslot->getContactId());
+	$contact = Contacts::instance()->findById($timeslot->getContactId());
 	$contact_name = $contact ? $contact->getName() : '';
 	format_time_column_value($value)
 	?>

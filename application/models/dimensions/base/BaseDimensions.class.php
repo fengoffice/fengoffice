@@ -235,7 +235,7 @@ define('DIMENSION_PERMISSION_QUERY_METHOD_NOT_MANDATORY', 'not_mandatory');
     *
     * @return Dimensions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'Dimensions')) {
         $instance = new Dimensions();

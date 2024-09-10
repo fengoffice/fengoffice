@@ -103,7 +103,7 @@
     			<?php echo lang('archived by') ?>:
 			</span>
 			<?php
-			$archive_user = Contacts::findById($object->getArchivedById());
+			$archive_user = Contacts::instance()->findById($object->getArchivedById());
 			if ($archive_user instanceof Contact && $archive_user->isUser()) {
 				if (logged_user()->getId() == $archive_user->getId()) {
 					$username = lang('me');
@@ -130,7 +130,7 @@
     			<?php echo lang('deleted by') ?>:
 			</span>
 			<?php
-			$trash_user = Contacts::findById($object->getTrashedById());
+			$trash_user = Contacts::instance()->findById($object->getTrashedById());
 			if ($trash_user instanceof Contact && $trash_user->isUser()){
 				if (logged_user()->getId() == $trash_user->getId())
 					$username = lang('me');
@@ -167,7 +167,7 @@
 	    			<?php echo lang('checked out by') ?>:
 				</span><br/><div style="padding-left:10px">
 				<?php
-				$checkout_user = Contacts::findById($object->getCheckedOutById());
+				$checkout_user = Contacts::instance()->findById($object->getCheckedOutById());
 				if ($checkout_user instanceof Contact && $checkout_user->isUser()){
 					if (logged_user()->getId() == $checkout_user->getId())
 						$username = lang('me');

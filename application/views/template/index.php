@@ -30,15 +30,19 @@
 				if ($cotemplate->canEdit(logged_user())) {
 					$options[] = '<a class="internalLink link-ico ico-edit" href="' . $cotemplate->getEditUrl() .'&popup=true" title="'.lang('edit').'">&nbsp;</a>';
 				}
+				if (can_manage_templates(logged_user())) {
+					$options[] = '<a class="internalLink link-ico ico-copy" href="' . get_url('template','copy_task_template',array('template_id'=>$cotemplate->getId())) .'" title="'.lang('copy').'">&nbsp;</a>';
+				}
 				if($cotemplate->canDelete(logged_user())) {
 					$options[] = '<a class="internalLink link-ico ico-delete" href="' . $cotemplate->getDeleteUrl() .'&popup=true" onclick="return confirm(\'' . escape_single_quotes(lang('confirm delete template')) . '\')" title="'.lang('delete template').'">&nbsp;</a>';
 				}
+				//Hook::fire('additional_task_template_actions', array('template'=>$cotemplate, 'genid'=>$genid), $options);
 			?>
 			<tr class="<?php echo $isAlt? 'altRow' : ''?>">
 				<td><a class="internalLink ico-template bg-ico"
 					href="<?php echo $cotemplate->getEditUrl() ?>"><?php echo clean($cotemplate->getObjectName()) ?></a></td>
 				
-				<td style="width:65px;"><?php echo implode(' ', $options) ?></td>
+				<td style="width:90px;"><?php echo implode(' ', $options) ?></td>
 			</tr>
 			<?php endforeach; ?>
 		</table>

@@ -227,7 +227,7 @@
     *
     * @return  ObjectProperties 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ObjectProperties')) {
         $instance = new  ObjectProperties();

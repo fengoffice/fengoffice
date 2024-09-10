@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.10.4.3');
+		$this->setVersionTo('3.11.1.19');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1049,6 +1049,44 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			}
 		}
 
+		if (version_compare($installed_version, '3.10.5.0') < 0) {
+			// Add 'total_time_estimate' column to template_tasks table
+			if (!$this->checkColumnExists($t_prefix."application_logs", "full_request", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."application_logs`
+					ADD `full_request` text COLLATE 'utf8_unicode_ci' NULL,
+					ADD `request_channel` varchar(511) COLLATE 'utf8_unicode_ci' DEFAULT '';
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.10.6.3') < 0) {
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "installed_version", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+					VALUES ('system', 'installed_version', '', 'StringConfigHandler', '1', '0', '');
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.1.0') < 0) {
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "ignored_dims_task_related_objs", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('general', 'ignored_dims_task_related_objs', '', 'ManageableDimensionsConfigHandler', '0', '0', '', '');
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.1.12') < 0) {
+			if (!$this->checkValueExists($t_prefix."config_options", "name", "users_that_can_mark_as_invoiced", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', '', '');
+				";
+			}
+		}
+
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
 			UPDATE `".$t_prefix."objects` SET `archived_on` = '0000-00-00 00:00:00' WHERE `archived_on` IS NULL;
@@ -1074,7 +1112,8 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		}
 
 		// Calculate after new columns added
-		if (version_compare($installed_version, '3.10.4.0-beta1') < 0) {
+
+		if (version_compare($installed_version, '3.11.1.0-rc1') < 0) {
 			@set_time_limit(0);
 			ini_set("memory_limit", "2G");
 			// Calculate 'overall_worked_time_plus_subtasks' and 'total_time_estimate' for all tasks

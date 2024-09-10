@@ -32,6 +32,7 @@
     'invalid old password' => 'Old password is not valid',
     'users must belong to a company' => 'Person must belong to a company in order to generate a user',
     'contact linked to user' => 'Person is linked to user {0}',
+    'sub emails invalid email' => 'The email address {1}, added in "Other email adresses", is not valid',
   
   	// Password validation errors
   	'password invalid min length' => 'Password length must be at least {0} characters',
@@ -195,7 +196,7 @@
 	'content too long not loaded' => 'Previous email content is too long and was not loaded, but will be sent with this email.',
   	'member name already exists in dimension' => 'Member \'{0}\' already exists in selected dimension.',  
 	'must choose at least one member of' => 'Please select a member of {0}.',
-	'timeslot dnx' => 'Timeslot does not exist',
+	'timeslot dnx' => 'Time entry does not exist',
 	'you dont have permissions to classify object in member' => 'You don\'t have permissions to classify \'{0}\' in \'{1}\'',
   
   	'uploaded file bigger than max upload size' => 'You are trying to upload a document that is over your current upload size limit of {0}.',

@@ -6,6 +6,7 @@
 ?>
 
 <form onsubmit="og.submit_modal_form('<?php echo $genid ?>submit-close-timer-form'); og.eventManager.fireEvent('reload current panel'); return false;" id="<?php echo $genid ?>submit-close-timer-form" action="<?php echo get_url('timeslot', 'close', array('id' => $object->getId())); ?>" method="post" class="internalForm" style='min-width: 400px;' enctype="multipart/form-data">
+	<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'modal form') ?>" />
     <div class="modal-container" style="background-color: white;padding: 10px;">      
         <div>
             <?php echo label_tag(lang('description')) ?>

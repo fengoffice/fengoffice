@@ -72,8 +72,30 @@ class CalFormatUtilities {
 		
 		return $result;
 	}
+
+	static function strip_tags_content($text, $tags = '', $invert = FALSE) {
+		preg_match_all('/<(.+?)[\s]*\/?[\s]*>/si', trim($tags), $tags);
+		$tags = array_unique($tags[1]);
+	  
+		if(is_array($tags) AND count($tags) > 0) {
+		  	if($invert == FALSE) {	  
+				return preg_replace('@<(?!(?:'. implode('|', $tags) .')\b)(\w+)\b.*?>.*?</\1>@si', '', $text);	  
+		  	}
+	  
+		  	else {	  
+				return preg_replace('@<('. implode('|', $tags) .')\b.*?>.*?</\1>@si', '', $text);
+		  	}	  
+		}
+	  
+		elseif($invert == FALSE) {
+			return preg_replace('@<(\w+)\b.*?>.*?</\1>@si', '', $text);
+		}
+		return $text;
+	}
+	  
+	  
 	
-	function generateICalInfo($events, $calendar_name, $user = null) {
+	static function generateICalInfo($events, $calendar_name, $user = null, $tasks = null) {
 		if ($user == null) $user = logged_user();
 		$ical_info = '';
 		$ical_info .= "BEGIN:VCALENDAR\n";
@@ -180,6 +202,52 @@ class CalFormatUtilities {
 		    
 		    $ical_info .= "END:VEVENT\n";
 		}
+
+		/**
+		 * This loop, generates the ICS calendar file with tasks attached
+		 * as events. This allows to generate a new ics file that contains both
+		 * Events and Tasks presents in the calendar.
+		 */
+		if($tasks != null)
+		{
+			foreach ($tasks as $task) {
+				$ical_info .= "BEGIN:VEVENT\n";
+	
+				$description = $task->getName();
+				$uid = $task->getObjectId();
+				$timestamp = $task->getStartDate()->format('Ymd') . "T" . $task->getStartDate()->format('His');
+	
+				$ical_info .= "DTSTART;VALUE=DATE:" . $task->getStartDate()->format('Ymd') ."\n";
+				$ical_info .= "DTEND;VALUE=DATE:" . $task->getDueDate()->format('Ymd') ."\n";
+	
+				$ical_info .= "DESCRIPTION:$description\n";
+				$ical_info .= "SUMMARY:$description\n";
+				$ical_info .= "UID:".$uid.'@fengoffice.com/html'."\n";
+				$ical_info .= "SEQUENCE:0\n";
+				$ical_info .= "DTSTAMP:$timestamp\n";
+				$ical_info .= "STATUS:CONFIRMED\n";
+				$recurrent = "";
+				if($task->getRepeatForever() > 0)
+				{
+					if ($task->getRepeatD() > 0) {
+						if ($task->getRepeatD() % 7 == 0) {
+							$recurrent = "RRULE:FREQ=WEEKLY;UNTIL=30240101T000000Z\n";
+						} else {
+							$recurrent = "RRULE:FREQ=DAILY;UNTIL=30240101T000000Z\n";
+						}
+					} else if ($task->getRepeatM() > 0) {
+						$recurrent = "RRULE:FREQ=MONTHLY;UNTIL=30240101T000000Z\n";
+					} else if ($task->getRepeatY() > 0) {
+						$recurrent = "RRULE:FREQ=YEARLY;UNTIL=30240101T000000Z\n";
+					}
+					$ical_info .= $recurrent;
+				}
+	
+				$ical_info .= "END:VEVENT\n";
+			}
+		}
+
+
 		
 		$ical_info .= "END:VCALENDAR\n";
 		

@@ -70,7 +70,7 @@ function render_system_notices(Contact $user) {
  */
 function select_company($name, $selected = null, $attributes = null, $allow_none = true, $check_permissions = false) {
 	if (!$check_permissions) {
-		$companies = Contacts::findAll(array('conditions' => 'is_company = 1 AND trashed_by_id = 0 AND archived_by_id = 0 ', 'order' => 'first_name ASC'));
+		$companies = Contacts::instance()->findAll(array('conditions' => 'is_company = 1 AND trashed_by_id = 0 AND archived_by_id = 0 ', 'order' => 'first_name ASC'));
 	} else {
 		$companies = Contacts::getVisibleCompanies(logged_user(), "`id` <> " . owner_company()->getId());
 		if (logged_user()->isMemberOfOwnerCompany() || owner_company()->canAddUser(logged_user())) {
@@ -238,7 +238,7 @@ function allowed_users_to_assign($context = null, $filter_by_permissions = true,
 			if ($contact->getCompanyId() == 0) {
 				$comp_array[0] = array('id' => "0", 'name' => lang('without company'), 'users' => array());
 			} else {
-				$comp = Contacts::findById($contact->getCompanyId());
+				$comp = Contacts::instance()->findById($contact->getCompanyId());
 				$comp_array[$contact->getCompanyId()] = array('id' => $contact->getCompanyId(), 'name' => $comp->getObjectName(), 'users' => array());
 			}
 		}
@@ -251,7 +251,7 @@ function allowed_users_to_assign($context = null, $filter_by_permissions = true,
 function allowed_users_to_assign_all_mobile($member_id = null) {
 	$context = null;
 	if ($member_id != null) {
-		$member = Members::findById($member_id);
+		$member = Members::instance()->findById($member_id);
 		if ($member instanceof Member){
 			$context = array($member);
 		}
@@ -353,7 +353,7 @@ function select_milestone($name, $context = null, $selected = null, $attributes 
 		}else{
 			$conditions = '`session_id` =  '.logged_user()->getId();
 		}
-		$milestones = TemplateMilestones::findAll(array('conditions' => $conditions));
+		$milestones = TemplateMilestones::instance()->findAll(array('conditions' => $conditions));
 	}
 	
 	if(is_array($attributes)) {
@@ -446,7 +446,7 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 		$properties = null;
 		/*$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
 		Hook::fire('override_render_properties', $params, $properties);*/
-		$ot = ObjectTypes::findById($object->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 		if ($ot->getType() != 'content_object') {
 			$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
 			Hook::fire('override_render_properties', $params, $properties);
@@ -454,7 +454,7 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 
         if (is_null($properties)) {
 			$properties = array();
-			$ot = ObjectTypes::findById($object->getObjectTypeId());
+			$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 			
 			$extra_conditions = "";
 			Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions, true);
@@ -499,7 +499,7 @@ function get_aligned_object_custom_properties($object, $visibility='all') {
 		$properties = array();
 		/*$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
 		Hook::fire('override_render_properties', $params, $properties);*/
-		$ot = ObjectTypes::findById($object->getObjectTypeId());
+		$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 		if ($ot->getName() == 'invoice') {
 			$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other', 'align_group_properties' => true);
 			Hook::fire('override_render_properties', $params, $properties);
@@ -524,7 +524,7 @@ function render_object_custom_properties_bootstrap($object, $required, $co_type=
     if ($object instanceof ContentDataObject) {
 
         $properties = null;
-        $ot = ObjectTypes::findById($object->getObjectTypeId());
+        $ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
         if ($ot->getType() != 'content_object') {
             $params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
             Hook::fire('override_render_properties', $params, $properties);
@@ -532,7 +532,7 @@ function render_object_custom_properties_bootstrap($object, $required, $co_type=
 
         if (is_null($properties)) {
             $properties = array();
-            $ot = ObjectTypes::findById($object->getObjectTypeId());
+            $ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 
             $extra_conditions = "";
             Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions, true);
@@ -1047,7 +1047,7 @@ function render_add_reminders($object, $context, $defaults = null, $genid = null
 	if (is_null($genid)) {
 		$genid = gen_id();
 	}
-	$types = ObjectReminderTypes::findAll();
+	$types = ObjectReminderTypes::instance()->findAll();
 	$typecsv = "";
 	foreach ($types as $type) {
 		if ($typecsv != "") {
@@ -1105,7 +1105,7 @@ function render_add_reminders_config($reminder_opt) {
 	foreach ($default_defaults as $k => $v) {
 		if (!isset($defaults[$k])) $defaults[$k] = $v;
 	}
-	$types = ObjectReminderTypes::findAll();
+	$types = ObjectReminderTypes::instance()->findAll();
 	$typecsv = array();
 	foreach ($types as $type) {
 		$typecsv []= $type->getName();
@@ -1161,11 +1161,11 @@ function render_add_custom_properties(ContentDataObject $object) {
 	$genid = gen_id();
 	$output = '
         <label>'.lang('properties').'</label>
-		<div id="'.$genid.'" class="og-add-custom-properties" style="float:left;">
-			<table><tbody><tr>
+		<div id="'.$genid.'" class="og-add-custom-properties" style="float:left; width:564px">
+			<table style="width:100%"><tbody><tr>
 			<th>' . lang('name') . '</th>
 			<th>' . lang('value') . '</th>
-			<th class="actions"></th>
+			<th class="actions" style="width:30px;align:center"></th>
 			</tr></tbody></table>
 			<a href="#" onclick="og.addObjectCustomProperty(this.parentNode, \'\', \'\', true);return false;">' . lang("add custom property") . '</a>
 		</div>
@@ -1177,14 +1177,15 @@ function render_add_custom_properties(ContentDataObject $object) {
 			var tbody = parent.getElementsByTagName("tbody")[0];
 			var tr = document.createElement("tr");
 			var td = document.createElement("td");
-			td.innerHTML = \'<input class="name" type="text" name="custom_prop_names[\' + count + \']" value="\' + name + \'" tabindex=\' + ti + \'>\';;
+			td.innerHTML = \'<input class="name" type="text" name="custom_prop_names[\' + count + \']" value="\' + name + \'" tabindex=\' + ti + \' style="width:250px !important">\';
 			if (td.children) var input = td.children[0];
 			tr.appendChild(td);
 			var td = document.createElement("td");
-			td.innerHTML = \'<input class="value" type="text" name="custom_prop_values[\' + count + \']" value="\' + value + \'" tabindex=\' + (ti + 1) + \'>\';;
+			td.innerHTML = \'<input class="value" type="text" name="custom_prop_values[\' + count + \']" value="\' + value + \'" tabindex=\' + (ti + 1) + \' style="width:250px  !important">\';
 			tr.appendChild(td);
 			var td = document.createElement("td");
-			td.innerHTML = \'<div class="db-ico ico-delete" style="margin-left:2px;height:20px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
+            td.style.verticalAlign = "middle";
+			td.innerHTML = \'<div class="db-ico ico-delete" style="height:20px;cursor:pointer" onclick="og.removeCustomProperty(this.parentNode.parentNode);return false;">&nbsp;</div>\';
 			tr.appendChild(td);
 			tbody.appendChild(tr);
 			if (input && focus)
@@ -1300,7 +1301,7 @@ function filter_assigned_to_select_box($list_name, $project = null, $selected = 
 	
 	if(is_array($grouped_users) && count($grouped_users)) {
 		foreach($grouped_users as $company_id => $users) {
-			$company = Contacts::findById($company_id);
+			$company = Contacts::instance()->findById($company_id);
 			if(!($company instanceof Contact)) {
 				continue;
 			} // if
@@ -1580,20 +1581,25 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 	return $tree  ;
 }
 
-	function build_member_list_text_to_show_in_trees(&$memberList) { 
+function build_member_list_text_to_show_in_trees(&$memberList)
+{
+	if ($memberList) {
 		foreach ($memberList as &$member_data) {
-			if ($member_data instanceof Member) {
-				$display_name = $member_data->getDisplayName();
-				$member_data->setName($display_name);
-			} else {
-				$display_name = $member_data['display_name'];
-				$member_data['name'] = $display_name;
-				$member_data['text'] = $display_name;
+			if( $member_data){
+				if ($member_data instanceof Member) {
+					$display_name = $member_data->getDisplayName();
+					$member_data->setName($display_name);
+				} else {
+					$display_name = $member_data['display_name'];
+					$member_data['name'] = $display_name;
+					$member_data['text'] = $display_name;
+				}
 			}
 		}
 	}
+}
 
-	function build_member_display_name($member) {
+function build_member_display_name($member) {
 		$display_name = "";
 
 		if(!$member instanceof Member){
@@ -1611,7 +1617,7 @@ function buildTree ($nodeList , $parentField = "parent", $childField = "children
 		$option_decoded = json_decode($opt_val, true);
 			
 		// use this tmp member object (with the raw data from the database) to prevent that the name has been overriden by previous iterations
-		$tmp_mem = Members::findById($member_id, true);
+		$tmp_mem = Members::instance()->findById($member_id, true);
 		// when member is new, there is no member in the database so we have to use the one received by parameter
 		if (!$tmp_mem) {
 			$tmp_mem = $member;
@@ -2266,7 +2272,7 @@ function get_timeslots_from_grid_parameters() {
 
 		$timeslots = array();
 		if (count($ids) > 0) {
-			$timeslots = Timeslots::findAll(array('conditions' => "id IN (" . implode(',', $ids) . ")"));
+			$timeslots = Timeslots::instance()->findAll(array('conditions' => "id IN (" . implode(',', $ids) . ")"));
 		}
 
 	} else if (array_var($_GET, 'all_timeslots')) {

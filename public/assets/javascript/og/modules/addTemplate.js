@@ -944,7 +944,7 @@ og.editStringTemplateObjectProperty = function(obj_id, prop, value_field_id){
 	var params = [];
 	for(var j=0; j < og.templateParameters.length; j++){
 		var item = og.templateParameters[j];
-		if(item.type == "string"){
+		if(item.type == "string" || item.type == "numeric"){
 			params.push([item['name']]);
 		}
 	}
@@ -1099,6 +1099,9 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				return;
 			}
 			var name = Ext.getCmp('paramName').getValue();
+			if(typeof name == 'string') {
+				name = name.trim();
+			}
 			if(name == ""){
 				alert(lang('parameter name empty'));
 				return;

@@ -218,7 +218,7 @@
     *
     * @return ContactConfigOptions 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactConfigOptions')) {
         $instance = new ContactConfigOptions();

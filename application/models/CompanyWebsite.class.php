@@ -107,7 +107,7 @@ final class CompanyWebsite {
         if((isset($_REQUEST['auth']) && !empty($_REQUEST['auth'])) || array_var($_REQUEST, 'm') == "login")
         {
             if(array_var($_REQUEST, 'm') != "login"){
-                $contact = Contacts::findAll(array("conditions" => "`token` = '".$_REQUEST['auth']. "'"));
+                $contact = Contacts::instance()->findAll(array("conditions" => "`token` = '".$_REQUEST['auth']. "'"));
                 $contact = $contact[0];
             }else{
                 $username = urldecode($_REQUEST['username']);
@@ -161,7 +161,7 @@ final class CompanyWebsite {
 			return false; // we don't have a user
 		} // if
 
-		$user = Contacts::findById($user_id);
+		$user = Contacts::instance()->findById($user_id);
 		if(!($user instanceof Contact)) {
 			return false; // failed to find user
 		} // if

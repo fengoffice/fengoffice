@@ -67,7 +67,7 @@
   {{#if draw_options.showMore}}
   <tr>
   <td colspan={{total_cols.length}}>
-    <div style="clear: left;">
+    <div style="clear: left; margin-bottom: 20px;">
            <a class="internalLink nobr" style="margin-left: 15px;font-size: 12px;" href="#" onclick="ogTasks.showMoreTasks('{{draw_options.groupId}}');return false;" id="show_more_group_{{draw_options.groupId}}">
             {{lang 'show more'}}../
            </a>

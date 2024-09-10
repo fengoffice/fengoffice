@@ -1,5 +1,15 @@
 <?php
 require_javascript("og/ReportingFunctions.js");
+
+// *** LC 2023-09-04 ***  on defina variables if are not defined
+if (!isset($parameters)) $parameters = "";  			// ***
+if (!isset($disabled_paramss)) $disabled_params = "";  	// ***
+if (!isset($id)) $id = 0;								// ***
+if (!isset($results)) $results = "";					// ***
+if (!isset($order_by)) $order_by = "";					// ***
+if (!isset($order_by_asc)) $order_by_asc = "";			// ***
+
+
 if (!isset($genid)) $genid = gen_id();
 if (!isset($allow_export)) $allow_export = true;
   	/*add_page_action(lang('print view'), '#', "ico-print", "_blank", array('onclick' => 'this.form' . $genid . '.submit'));*/
@@ -23,7 +33,7 @@ if (!isset($allow_export)) $allow_export = true;
 	            </div>
 				
 	            <p class="coViewDesc">
-	                <?php  if ($description != '') echo clean($description); ?>
+	                <?php  if (isset($description) && $description != '') echo clean($description); ?>
 	            </p>
 	        </div>
           </td><td style="min-width:400px;">

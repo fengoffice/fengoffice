@@ -13,7 +13,7 @@ class TemplateObject extends BaseTemplateObject {
 	 * @return Template
 	 */
 	function getTemplate() {
-		return Templates::findById($this->getTemplateId());
+		return Templates::instance()->findById($this->getTemplateId());
 	}
 	
 	function getObject() {

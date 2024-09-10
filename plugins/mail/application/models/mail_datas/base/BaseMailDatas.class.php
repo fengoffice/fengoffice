@@ -225,7 +225,7 @@ abstract class BaseMailDatas extends DataManager {
 	 *
 	 * @return MailDatas
 	 */
-	function instance() {
+	static function instance() {
 		static $instance;
 		if(!instance_of($instance, 'MailDatas')) {
 			$instance = new MailDatas();

@@ -17,7 +17,7 @@ class MailContents extends BaseMailContents {
 	public static function getMailsFromConversation(MailContent $mail) {
 		$conversation_id = $mail->getConversationId();
 		if ($conversation_id == 0 || $mail->getIsDraft()) return array($mail);
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			"conditions" => "`conversation_id` = '$conversation_id' AND `account_id` = " . $mail->getAccountId() . " AND `state` <> 2",
 			"order" => "`received_date` DESC"
 		));
@@ -201,7 +201,7 @@ class MailContents extends BaseMailContents {
 		$sql = "SELECT mc.object_id FROM `".TABLE_PREFIX."mail_contents` mc $join_sql WHERE $conditions limit 1";
 
 		$rows = DB::executeAll($sql);
-		return count($rows) > 0 ? $rows[0]['object_id'] : false;
+		return isset( $rows) && count($rows) > 0 ? $rows[0]['object_id'] : false;
 	}
 	
 	static function getUidsFromAccount($account_id, $folder = null) {
@@ -225,7 +225,7 @@ class MailContents extends BaseMailContents {
 	 */
 	static function getProjectMails(Project $project, $start = 0, $limit = 0) {
 		$condstr = self::getWorkspaceString();
-		return self::findAll(array(
+		return self::instance()->findAll(array(
 			'conditions' => array($condstr, $project->getId()),
 			'offset' => $start,
 			'limit' => $limit,
@@ -267,7 +267,7 @@ class MailContents extends BaseMailContents {
 	 * @param Project $project
 	 * @return array
 	 */
-	function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = 'unarchived', $conversation_list = null, $only_count_result = false, $extra_cond="", $is_email_widget = false) { 
+	static function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = 'unarchived', $conversation_list = null, $only_count_result = false, $extra_cond="", $is_email_widget = false) { 
 		$mailTablePrefix = "e";
 		if (!$limit) $limit = user_config_option('mails_per_page') ? user_config_option('mails_per_page') : config_option('files_per_page');
 		$accountConditions = "";
@@ -394,11 +394,11 @@ class MailContents extends BaseMailContents {
 		
 	}
 	
-	function getByMessageId($message_id) {
-		return self::findOne(array('conditions' => array('`message_id` = ?', $message_id)));
+	static function getByMessageId($message_id) {
+		return self::instance()->findOne(array('conditions' => array('`message_id` = ?', $message_id)));
 	}
 	
-	function countUserInboxUnreadEmails() {
+	static function countUserInboxUnreadEmails() {
 		$tp = TABLE_PREFIX;
 		$uid = logged_user()->getId();
 		$sql = "SELECT count(*) `c` FROM `{$tp}mail_contents` `a`, `{$tp}read_objects` `b` WHERE `b`.`rel_object_manager` = 'MailContents' AND `b`.`rel_object_id` = `a`.`id` AND `b`.`user_id` = '$uid' AND `b`.`is_read` = '1' AND `a`.`trashed_on` = '0000-00-00 00:00:00' AND `a`.`is_deleted` = 0 AND `a`.`archived_by_id` = 0 AND (`a`.`state` = '0' OR `a`.`state` = '5') AND " . permissions_sql_for_listings(MailContents::instance(), ACCESS_LEVEL_READ, logged_user(), null, '`a`');
@@ -474,7 +474,7 @@ class MailContents extends BaseMailContents {
 	    	$mail_ids[] = $row['id'];
 		}
 		
-		$result->objects = MailContents::findAll(array(
+		$result->objects = MailContents::instance()->findAll(array(
 			"conditions" => "object_id IN (".implode(",", $mail_ids).")",
 			"order" => array_var($options, 'order')
 		));
@@ -487,8 +487,8 @@ class MailContents extends BaseMailContents {
          * @param string $condition
          * @return object 
          */
-        function getConditionsRules($condition){
-		return MailContents::findAll(array(
+        static function getConditionsRules($condition){
+		return MailContents::instance()->findAll(array(
 			'conditions' => $condition,
 			'join' => array(
 				'table' => MailDatas::instance()->getTableName(),

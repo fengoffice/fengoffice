@@ -344,6 +344,7 @@
 	'confirm delete template' => '¿Realmente desea eliminar esta plantilla?',
 	'success delete template' => 'Plantilla \'{0}\' ha sido borrada',
 	'success add template' => 'La plantilla ha sido añadida',
+	'success copy template' => 'Plantilla copiada exitosamente',
 	'log add companies' => '\'{0}\' añadida',
 	'log edit companies' => '\'{0}\' editada',
 	'log delete companies' => '\'{0}\' eliminada',
@@ -729,4 +730,6 @@
     'not classified here'=>'No clasificado aquí',
   	'x members deleted' => '{1} {0} eliminados exitosamente.',
   	'x members deleted y members not deleted' => '{1} {0} eliminados exitosamente, {2} {0} no eliminados.',
+	  'there are no timeslots to delete' => 'No hay registros de tiempo para eliminar',
+	  'task is linked to time expenses are you sure you want to delete' => 'Los tiempos de trabajo o gastos asociados a la tarea no serán eliminados pero serán desvinculados de la tarea. ¿Desea continuar?',
 ); ?>

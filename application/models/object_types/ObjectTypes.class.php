@@ -36,7 +36,7 @@
 	}
 
   	static function getAllObjectTypes($external_conditions = "") {
-  		$object_types = self::findAll(array(
+  		$object_types = self::instance()->findAll(array(
   			"conditions" => "IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) $external_conditions"
   		));
   		return $object_types;
@@ -46,7 +46,7 @@
   	 * @param unknown_type $external_conditions
   	 */
 	static function getAvailableObjectTypesWithDimensionObjects($external_conditions = "") {
-		$object_types = self::findAll(array(
+		$object_types = self::instance()->findAll(array(
 			"conditions" => "`type` IN ('content_object', 'dimension_object') AND 
 			`name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  AND 
 			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) $external_conditions"
@@ -58,7 +58,7 @@
   	 * @param unknown_type $external_conditions
   	 */
 	static function getAvailableObjectTypes($external_conditions = "") {
-		$object_types = self::findAll(array(
+		$object_types = self::instance()->findAll(array(
 			"conditions" => "`type` = 'content_object' AND 
 			`name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  AND 
 			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) AND
@@ -71,7 +71,7 @@
   	 * @param unknown_type $external_conditions
   	 */
 	static function getAvailableObjectTypesWithTimeslots($external_conditions = "") {
-		$object_types = self::findAll(array(
+		$object_types = self::instance()->findAll(array(
 			"conditions" => "`type` IN ('content_object', 'located') AND 
 			`name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND 
 			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) AND
@@ -112,7 +112,7 @@
 		$ot = array_var(self::$object_types_by_name, $name);
 		if (!$ot instanceof ObjectType) {
 			// cache all object types, they are very few
-			$ots = self::findAll();
+			$ots = self::instance()->findAll();
 			foreach ($ots as $ot) {
 				self::$object_types_by_name[$ot->getName()] = $ot;
 			}
@@ -126,7 +126,7 @@
 			$ot = array_var(self::$object_types_by_id, $id);
 			if (!$ot instanceof ObjectType) {
 				// cache all object types, they are very few
-				$ots = self::findAll();
+				$ots = self::instance()->findAll();
 				foreach ($ots as $ot) {
 					self::$object_types_by_id[$ot->getId()] = $ot;
 				}
@@ -139,7 +139,7 @@
 	}
 	
 	static function getPluralObjectTypeName($object_type_id) {
-		$ot = ObjectTypes::findById($object_type_id);
+		$ot = ObjectTypes::instance()->findById($object_type_id);
 		if ($ot instanceof ObjectType) {
 			return $ot->getPluralObjectTypeName();
 		}
@@ -151,7 +151,7 @@
 		$sql = "
 				SELECT DISTINCT(id) as id  
 				FROM ".TABLE_PREFIX."object_types ot
-				WHERE ot.type IN ('content_object', 'dimension_object', 'comment', 'located') 
+				WHERE ot.type IN ('content_object', 'comment', 'located') 
 				AND (
 				  ot.plugin_id IS NULL OR ot.plugin_id = 0 OR 
 				  ot.plugin_id IN (

@@ -274,13 +274,15 @@ sig.actualHtmlSignature = '';
 	</div>
 	<?php } ?>
 
-	<?php if (count($visible_cps) > 0) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" style="<?php echo ($visible_cps > 0 ? "" : "display:none") ?>">
-			<fieldset>
-				<legend><?php echo lang('custom properties') ?></legend>
-				<?php echo render_object_custom_properties($object, false) ?>
-			</fieldset>
-		</div>
+	<?php if ($visible_cps) { ?>
+		<?php if (count($visible_cps) > 0) { ?>
+			<div id="<?php echo $genid ?>add_custom_properties_div" style="<?php echo ($visible_cps > 0 ? "" : "display:none") ?>">
+				<fieldset>
+					<legend><?php echo lang('custom properties') ?></legend>
+					<?php echo render_object_custom_properties($object, false) ?>
+				</fieldset>
+			</div>
+		<?php } ?>
 	<?php } ?>
 
 </div>

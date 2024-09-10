@@ -1,7 +1,7 @@
 <?php
 set_page_title(lang('calendar sinchronization'));
 $genid = gen_id();
-if(array_var($user, 'id')){
+if(isset($user['id'])){
     add_page_action(lang('delete'), "javascript:if(confirm('".lang('confirm delete permanently sync')."')) og.openLink('".get_url('external_calendar', 'delete_calendar_user')."');", 'ico-delete');
 }
 ?>
@@ -14,7 +14,7 @@ if(array_var($user, 'id')){
 	</div> 
 	<div class="coInputMainBlock adminMainBlock">
 		<div class="google-cal-account">
-			<?php if(array_var($user, 'auth_user',false)){?>
+			<?php if(isset($user['auth_user'])){?>
 			<label style="min-width: 0px; margin-right: 5px;"><?php echo lang('account').": "; ?></label>
 			<div class="google-cal-account-name"><?php echo array_var($user, 'auth_user') ?></div>
 			
@@ -22,7 +22,7 @@ if(array_var($user, 'id')){
 			<?php }	?> 
 			<div class="google-cal-account-status">
 				<?php if(isset($auth_url)){?>	
-					<?php if(array_var($user, 'auth_user',false)){?>				
+					<?php if(isset($user['auth_user'])){?>				
 					<div style="float:left;">
 						<img style="float:left;" class="ico-color6" src="s.gif">
 						<?php echo lang('out of sync'); ?>
@@ -39,7 +39,7 @@ if(array_var($user, 'id')){
 			</div>     
        	</div>
        	
-       	<?php if(array_var($user, 'auth_user',false)){?>
+       	<?php if(isset($user['auth_user'])){?>
        	
        	<div class="google-cal-calendars">
        		<div class="google-cal-title"><?php echo lang('sync from feng office to google') ?></div>
@@ -287,7 +287,7 @@ og.google_calendar_classify = function(original_calendar_id) {
 
 
 $(function() {
-<?php if(count($external_calendars) > 0){            
+<?php if(isset($external_calendars) && count($external_calendars) > 0){            
 	foreach ($external_calendars as $e_cal){
 		if(isset($e_cal['members'])){
 		?>

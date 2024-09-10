@@ -42,12 +42,12 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>template_object_propertie
 `object_id` INT( 10 ) NOT NULL ,
 `object_manager` varchar(50) NOT NULL,
 `property` VARCHAR( 255 ) NOT NULL ,
-`value` TEXT NOT NULL ,
+`value` TEXT NULL ,
 PRIMARY KEY ( `template_id` , `object_id` ,`object_manager`, `property` )
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
-ALTER TABLE `<?php echo $table_prefix ?>mail_contents` ADD COLUMN `cc` TEXT NOT NULL AFTER `to`;
-ALTER TABLE `<?php echo $table_prefix ?>mail_contents` ADD COLUMN `bcc` TEXT NOT NULL AFTER `cc`;
+ALTER TABLE `<?php echo $table_prefix ?>mail_contents` ADD COLUMN `cc` TEXT NULL AFTER `to`;
+ALTER TABLE `<?php echo $table_prefix ?>mail_contents` ADD COLUMN `bcc` TEXT NULL AFTER `cc`;
 ALTER TABLE `<?php echo $table_prefix ?>mail_contents` DROP COLUMN `date`;
 ALTER TABLE `<?php echo $table_prefix ?>mail_contents` ADD INDEX `uid`(`uid`);
 

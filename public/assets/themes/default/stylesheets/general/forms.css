@@ -584,7 +584,7 @@ div.add-person-form div.field label.checkbox {
 
 .edit-form-tabs .ui-tabs-panel.ui-widget-content a {
 	color: #003562;
-	height: 14px;
+	/*height: 14px;*/
 }
 .removeUndo > a{
 	height: 21px !important;
@@ -738,3 +738,32 @@ a.wiki-link {
 a.cke_combo_button, a.cke_button {
 	height: auto !important;
 }
+
+.cp-multiple .cp-val { display: flex; align-items: center; margin-bottom: 5px;}
+.cp-multiple .cp-val:last-child { display: block; margin-top: 20px; }
+/* .cp-multiple .cp-val:last-child input, .cp-multiple .cp-val:last-child textarea { border: 2px solid #2A9D8F; } */
+.cp-multiple .cp-val a.ico-delete { margin-left: 10px !important; }
+.cp-multiple .cp-val a.ico-add { margin-top: 10px; display: inline-block; }
+/* .cp-multiple .cp-val:first-child { padding: 10px 0; } */
+/* .cp-multiple .cp-val:first-child a.ico-add { margin-left: 10px; } */
+.cp-multiple .cp-val input, .cp-multiple .cp-val textarea { max-width: calc(340px - 13px); box-sizing: border-box; width: 100%; }
+/* .cp-multiple .cp-val textarea { margin-left: 10px; } */
+
+.amount-container-fields {
+	overflow: auto;
+	max-width: 350px;
+	box-sizing: border-box;
+}
+
+.amount-container-fields select {
+	margin-bottom: 5px;
+	margin-right: 5px;
+	width: 60px;
+}
+.amount-container-fields input {
+	width: 155px;
+	box-sizing: border-box;
+	text-align: right;
+
+}
+

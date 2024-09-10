@@ -223,7 +223,7 @@
     *
     * @return EventReminders 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'EventReminders')) {
         $instance = new EventReminders();

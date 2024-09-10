@@ -57,7 +57,7 @@ class Contacts extends BaseContacts {
 	static function getAllUsers($extra_conditions = "", $include_disabled = false, $order_by = "") {
 		if ($order_by == "") $order_by = "first_name, surname, username";
 		if (!$include_disabled) $extra_conditions .= " AND `disabled` = 0";
-		return self::findAll(array("conditions" => "`user_type` <> 0 $extra_conditions", "order" => $order_by));
+		return self::instance()->findAll(array("conditions" => "`user_type` <> 0 $extra_conditions", "order" => $order_by));
 	}
 	
 	
@@ -75,7 +75,7 @@ class Contacts extends BaseContacts {
 		if (is_null($id_contact)) {
 			$id_contact = "0";
 		}
-		$contact_email = ContactEmails::findOne(array(
+		$contact_email = ContactEmails::instance()->findOne(array(
 				'conditions' => array(
 						"`email_address` = ? AND `contact_id` <> ? 
 						AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0
@@ -84,8 +84,42 @@ class Contacts extends BaseContacts {
 				)
 		));
 		if (!is_null($contact_email))
-			return self::findById($contact_email->getContactId());
+			return self::instance()->findById($contact_email->getContactId());
 		return null;
+	} // getByEmail
+
+
+	/**
+	 * Check if email is already in use
+	 *
+	 * @param string $email
+	 * @param string $currentUser
+	 * @return Contact
+	 */
+	static function validateEmailIsNotTaken($email, $currentUser, $id_contact = 0, $only_users = false) : bool
+	{
+		if($email == $currentUser)
+		{
+			return true;
+		}
+		$is_user_cond = "";
+		if ($only_users) {
+			$is_user_cond = "AND (SELECT c2.user_type FROM ".TABLE_PREFIX."contacts c2 WHERE c2.object_id=contact_id)>0";
+		}
+		if (is_null($id_contact)) {
+			$id_contact = "0";
+		}
+		$contact_email = ContactEmails::instance()->findOne(array(
+				'conditions' => array(
+						"`email_address` = ? AND `contact_id` <> ? 
+						AND (SELECT c.is_company FROM ".TABLE_PREFIX."contacts c WHERE c.object_id=contact_id)=0
+						$is_user_cond", 
+						$email, $id_contact
+				)
+		));
+		if (!is_null($contact_email))
+			return false;
+		return true;
 	} // getByEmail
 	
 	
@@ -103,7 +137,7 @@ class Contacts extends BaseContacts {
 					WHERE ce.email_address=".DB::escape($email)." AND ce.contact_id=e.object_id
 			)";
 		}
-		$contact = Contacts::findOne(array(
+		$contact = Contacts::instance()->findOne(array(
 				"conditions" => array("first_name=? AND surname=? $email_cond", $first_name, $surname)
 		));
 		return $contact;
@@ -125,7 +159,7 @@ class Contacts extends BaseContacts {
 			$contact_type_str = " AND is_company=1";
 		}
 		
-		$contact_email = Contacts::findOne(array(
+		$contact_email = Contacts::instance()->findOne(array(
 			'conditions' => array("`email_address` = ? AND `contact_id` <> ? $contact_type_str", $email, $id_contact),
 			'join' => array(
 				'table' => ContactEmails::instance()->getTableName(),
@@ -134,7 +168,7 @@ class Contacts extends BaseContacts {
 			)
 		));
 		if (!is_null($contact_email))
-			return self::findById($contact_email->getObjectId());
+			return self::instance()->findById($contact_email->getObjectId());
 		return null;
 	} // getByEmail
 	
@@ -147,7 +181,7 @@ class Contacts extends BaseContacts {
 	 * @return Contact
 	 */
 	static function getByUsername($username) {
-		return self::findOne(array(
+		return self::instance()->findOne(array(
         	'conditions' => array('`username` = ?', $username)
 		)); // array
 	} // getByUsername
@@ -160,7 +194,7 @@ class Contacts extends BaseContacts {
 	 * @return array
 	 */
 	static function getCompaniesWithUsers() {
-		$companies = self::findAll(array('conditions' => array("`is_company` = 1 AND EXISTS (SELECT c.object_id FROM ".TABLE_PREFIX."contacts c WHERE c.company_id=o.id AND c.user_type > 0)")));
+		$companies = self::instance()->findAll(array('conditions' => array("`is_company` = 1 AND EXISTS (SELECT c.object_id FROM ".TABLE_PREFIX."contacts c WHERE c.company_id=o.id AND c.user_type > 0)")));
 		return is_array($companies) ? $companies : array();
 	} // getCompaniesWithUsers
 	
@@ -172,7 +206,7 @@ class Contacts extends BaseContacts {
 	 * @return array
 	 */
 	static function getGroupedByCompany($include_disabled = true) {
-		$companies = self::findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 ".($include_disabled ? "" :"AND disabled=0").")"));
+		$companies = self::instance()->findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 ".($include_disabled ? "" :"AND disabled=0").")"));
 		if(!is_array($companies) || !count($companies)) {
 			//return null;
 		}
@@ -187,7 +221,7 @@ class Contacts extends BaseContacts {
 			);
 		}
 		
-		$company_users = Contacts::findAll(array('order' => 'company_id, first_name, surname', 'conditions' => 'user_type<>0 AND company_id IN ('.implode(',', $comp_ids).')' . ($include_disabled ? "" : " AND disabled=0")));
+		$company_users = Contacts::instance()->findAll(array('order' => 'company_id, first_name, surname', 'conditions' => 'user_type<>0 AND company_id IN ('.implode(',', $comp_ids).')' . ($include_disabled ? "" : " AND disabled=0")));
 		foreach ($company_users as $user) {
 			$result[$user->getCompanyId()]['users'][] = $user;
 		}
@@ -213,7 +247,7 @@ class Contacts extends BaseContacts {
 	static function getVisibleCompanies(Contact $user, $additional_conditions = null){
 		$conditions = $additional_conditions ? "`is_company` = 1 AND $additional_conditions" : "`is_company` = 1";
 		//FIXME 
-		return self::findAll(array('conditions' => $conditions));
+		return self::instance()->findAll(array('conditions' => $conditions));
 	}
 	
 	function getRangeContactsByBirthday($from, $to, $member_ids=null) {
@@ -341,7 +375,7 @@ class Contacts extends BaseContacts {
 			}
 		}
 
-		$owner_company = Contacts::findOne(array(
+		$owner_company = Contacts::instance()->findOne(array(
 			"conditions" => " is_company > 0",
 			"limit" => 1,
 			"order" => "object_id ASC"
@@ -362,7 +396,7 @@ class Contacts extends BaseContacts {
 	 * @return boolean
 	 */
 	static function tokenExists($token) {
-		return self::count(array('`token` = ?', $token)) > 0;
+		return self::instance()->count(array('`token` = ?', $token)) > 0;
 	} // tokenExists
 	
 
@@ -470,17 +504,44 @@ class Contacts extends BaseContacts {
 			$errors[] = lang("invalid webpage");			
 		}
 */		
-		if (trim($attributes['email']) && !self::validateUniqueEmail(trim($attributes['email']), $id, array_var($attributes, 'contact_type'))){
+		if (!trim($attributes['email'])){
+			$errors[] = lang("email value is required");
+		}
+
+		if (!self::validateUniqueEmail(trim($attributes['email']), $id, array_var($attributes, 'contact_type'))){
 			$errors[] = lang("email address must be unique");
 		}
 		
 		if (trim($attributes['email']) &&  !preg_match(EMAIL_FORMAT, trim($attributes['email']))) {
 			$errors[] = lang("invalid email");
 		}
+
+		// Validate secondary emails
+		$invalidEmail = self::validateSubEmails($attributes['emails']);
+		if ($invalidEmail) {
+			$errors[] = lang('sub emails invalid email', $invalidEmail['email_type'], $invalidEmail['email_address']);
+		}
+
 		if(is_array($errors) && count($errors)) {
 			throw new DAOValidationError(self::instance(), $errors);
 		} 
 	}
+
+	private static function validateSubEmails($emails) {
+		foreach ($emails as $email) {
+			if (trim($email['email_address']) && !preg_match(EMAIL_FORMAT, trim($email['email_address']))) {
+				$all_email_types = EmailTypes::getAllEmailTypesInfo();
+				foreach ($all_email_types as $email_type) {
+					if ($email_type['id'] == $email['type']) {
+						$email['email_type'] = $email_type['name'];
+						return $email;
+					}
+				}
+			}
+		}
+		return null; // Ensure it returns null if all emails are valid
+	}
+	
 	
 	/**
 	 * Do a first validation directly from parameters (before the object is loading)
@@ -508,11 +569,11 @@ class Contacts extends BaseContacts {
 	}
         
         function getUserDisplayName($user_id) {
-		$user = Contacts::findById($user_id);
+		$user = Contacts::instance()->findById($user_id);
 		if ($user) {
 			return $user->getDisplayName();
 		} else {
-			$log = ApplicationLogs::findOne(array('conditions' => "`rel_object_id` = '$user_id' AND `action` = 'add'"));
+			$log = ApplicationLogs::instance()->findOne(array('conditions' => "`rel_object_id` = '$user_id' AND `action` = 'add'"));
 			if ($log) return $log->getObjectName();
 			else return lang('n/a');
 		}

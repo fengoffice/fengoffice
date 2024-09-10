@@ -3,7 +3,7 @@
 class ContactMemberCaches extends BaseContactMemberCaches {
 	
 	static function getContactMemberCacheById($id) {
-		$m = ContactMemberCaches::findById($id);
+		$m = ContactMemberCaches::instance()->findById($id);
 		return $m;
 	}
 	
@@ -347,7 +347,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 	 */
 	static function updateContactMemberCacheAllMembers($user) {
 		if ($user instanceof Contact && $user->isUser()) {
-			$dimensions = Dimensions::findAll();
+			$dimensions = Dimensions::instance()->findAll();
 			$dimensions_ids = array();
 			foreach ($dimensions as $dimension) {
 				if ($dimension->getDefinesPermissions() && $dimension->getCode() != 'feng_persons') {

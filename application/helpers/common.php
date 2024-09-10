@@ -203,10 +203,8 @@
     while(!checkdate($month, $day, $year)) {
         $day -=  1;
     }
-    
-    // Set day to 1, to avoid month adjustments
-    $new_date->setDay(1);
 
+    
     // Set year, month and day
     $new_date->setYear($year);
     $new_date->setMonth($month);
@@ -219,6 +217,23 @@ function moveElement(&$array, $a, $b) {
     $p1 = array_splice($array, $a, 1);
     $p2 = array_splice($array, 0, $b);
     $array = array_merge($p2,$p1,$array);
+}
+
+
+function get_dashboard_breadcrumbs_options() {
+	
+	// common data to be used by every widget
+	$active_member_ids = active_context_members(false);
+	$widget_dimensions_csv = user_config_option('widget_dimensions');
+	$widget_dimensions = array_filter(explode(',', $widget_dimensions_csv));
+
+	$get_breadcrumbs_params = array(
+		'exclude_member_ids' => $active_member_ids,
+		'allowed_dimensions' => $widget_dimensions,
+		'use_restrictions' => true
+	);
+
+	return $get_breadcrumbs_params;
 }
 
 ?>

@@ -129,6 +129,8 @@
 
 		og.email_types = Ext.util.JSON.decode('<?php echo json_encode($all_email_types) ?>');
 
+		og.checkEmailAddress("#<?php echo $genid ?>clientFormEmail", '<?php echo $company->getId(); ?>', '<?php echo $genid ?>', 'company');
+		
 		<?php if (!$object->isNew()) { ?>
 			<?php foreach ($company_data['all_phones'] as $phone) { ?>
 				og.addNewTelephoneInput('<?php echo $genid ?>_company_phones_container', 'company', '<?php echo $phone->getTelephoneTypeId() ?>', '<?php echo str_replace("'", "\'", $phone->getNumber()) ?>', '<?php echo str_replace("'", "\'", $phone->getName()) ?>', '<?php echo $phone->getId() ?>');
@@ -186,7 +188,7 @@
 		<?php endif; ?>
 
 		<?php if (Plugins::instance()->isActivePlugin('income')) : ?>
-			og.income.onAppendDefaultBilling('companyEmail', 'company[isMainBilling]', 'mainEmailWrapper', 'email', <?= ($company_data['default_billing_email'] != '' ? $company_data['default_billing_email'] : 0); ?>, true);
+			og.income.onAppendDefaultBilling('companyEmail', 'company[isMainBilling]', 'mainEmailWrapper', 'email', '<?php echo array_var($company_data,'default_billing_email','') ?>', true);
 		<?php endif; ?>
 
 	});

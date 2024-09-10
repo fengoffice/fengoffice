@@ -15,13 +15,13 @@
   			$this->data = array();
   			$date = new DateTimeValue(Time());
   			
-			$notYet = ProjectTasks::findAll(array(
+			$notYet = ProjectTasks::instance()->findAll(array(
   				'conditions' => 'created_by_id = ' . logged_user()->getId() . ' AND ( due_date = \'0000-00-00 00:00:00\' OR due_date > \'' . substr($date->toMySQL(),0,strpos($date->toMySQL(), ' ')) . "')"));
 			
-			$today = ProjectTasks::findAll(array(
+			$today = ProjectTasks::instance()->findAll(array(
   				'conditions' => 'created_by_id = ' . logged_user()->getId() . ' AND due_date = \'' . substr($date->toMySQL(),0,strpos($date->toMySQL(), ' ')) . "'"));
 			
-			$past = ProjectTasks::findAll(array(
+			$past = ProjectTasks::instance()->findAll(array(
   				'conditions' => 'created_by_id = ' . logged_user()->getId() . ' AND due_date > \'1900-01-01 00:00:00\' AND due_date < \'' . substr($date->toMySQL(),0,strpos($date->toMySQL(), ' ')) . "'"));
   			
 	    	

@@ -9,10 +9,10 @@
 //*		Draw add new task form
 //************************************
 
-ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload){
+ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload, req_channel){
 	var additionalParams = {};
 	var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-	if (toolbar.filterNamesCompaniesCombo.isVisible()){
+	if (toolbar && toolbar.filterNamesCompaniesCombo.isVisible()){
 		var value = toolbar.filterNamesCompaniesCombo.getValue();
 		if (value) {
 			additionalParams.assigned_to_contact_id = value;
@@ -24,105 +24,19 @@ ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, relo
 	if (reload > 0)
 		additionalParams.reload = 1;
 
+	if (req_channel) {
+		additionalParams.req_channel = req_channel;
+	}
+
 	og.render_modal_form('', {c:'task', a:'add_task', params: additionalParams});
 	return;
-	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
-	var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-	var filters = bottomToolbar.getFilters();
-	var displayCriteria = bottomToolbar.getDisplayCriteria();
-	var drawOptions = topToolbar.getDrawOptions();
-	
-	if (parent_id > 0)
-		var parentTask = ogTasks.getTask(parent_id);
-	
-	if (displayCriteria.group_by == 'milestone' && group_id != 'unclassified'){
-		var milestone_id = group_id;
-	} else if (parentTask && parentTask.milestoneId > 0){
-		var milestone_id = parentTask.milestoneId;
-	} else if (filters.filter == 'milestone') {
-		var milestone_id = Ext.getCmp('ogTasksFilterMilestonesCombo').getValue();
-	} else {
-		var milestone_id = 0;
-	}
-	
-	var assignedToValue = null;
-	if (displayCriteria.group_by == 'assigned_to' && group_id != 'unclassified'){
-		assignedToValue = group_id;
-	} else if(parentTask && parentTask.assignedToId){
-		assignedToValue = parentTask.assignedToId;
-	} else if (filters.filter == 'assigned_to') {
-		assignedToValue = filters.fval;
-	}
-	
-	var member_id = null;
-	if (displayCriteria.group_by.indexOf('dimension_') == 0) {
-		var dim_id = displayCriteria.group_by.replace('dimension_', '');
-		member_id = group_id;
-	}
-	
-	
-	var priority = 200;
-	if (displayCriteria.group_by == 'priority' && group_id != 'unclassified'){
-		priority = group_id;
-	}
-	
-	if (parent_id > 0)
-		var containerName = 'ogTasksPanelTask' + parent_id + 'G' + group_id;
-	else
-		var containerName = 'ogTasksPanelGroup' + group_id;
-	
-	var task = {
-		parentId: parent_id,
-		milestoneId: milestone_id,
-		member_id: member_id,
-		title: '',
-		description: '',
-		priority: priority,
-		dueDate: '',
-		startDate: '',
-		assignedTo: assignedToValue,
-		taskId: 0,
-		time_estimated: 0,
-		multiAssignment: 0,
-		isEdit: false,
-		position: position
-	};
-
-	this.drawTaskForm(containerName, task);
-	
-	if(og.config.wysiwyg_tasks){
-		var height = $("#tasks_quick_add_selectors").height();
-		height = "auto";
-		loadCKeditor(0,height);
-	}
 }
 
 ogTasks.drawEditTaskForm = function(task_id, group_id){
 	var task = this.getTask(task_id);
 	var containerName = 'ogTasksPanelTask' + task.id + 'G' + group_id;
 	if (task){
-		og.render_modal_form('', {c:'task', a:'edit_task', params: {id:task.id, use_ajx:1}});
-	}
-}
-
-ogTasks.performDrawEditTaskForm = function(containerName, task) {
-	this.drawTaskForm(containerName, {
-		title: task.title,
-		description: task.description,
-		priority: task.priority,
-		members: task.members,
-		dueDate: task.dueDate,
-		startDate: task.startDate,
-		assignedTo: task.assignedToId,
-		taskId: task.id,
-		time_estimated: task.TimeEstimate,
-		multiAssignment: task.multiAssignment,
-		isEdit: true
-	});
-	if(og.config.wysiwyg_tasks){
-		var height = $("#tasks_quick_add_selectors").height();
-		height = "auto";
-		loadCKeditor(task.id, height);
+		og.render_modal_form('', {c:'task', a:'edit_task', params: {id:task.id, use_ajx:1, req_channel:'task list - line edit task'}});
 	}
 }
 
@@ -143,8 +57,11 @@ ogTasks.checkEnterPress = function (e,id)
 	return true;
 }
 
-ogTasks.drawAddNewTaskFromData = function(container_id){
+ogTasks.drawAddNewTaskFromData = function(container_id, req_channel){
+	if (!req_channel) req_channel = 'task list - grid add task';
+
 	var task = {
+		req_channel: req_channel,
 		name:'',
         assigned_to_contact_id: 0
 	};
@@ -155,7 +72,7 @@ ogTasks.drawAddNewTaskFromData = function(container_id){
 	});
 
     var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-    if (toolbar.filterNamesCompaniesCombo.isVisible()){
+    if (toolbar && toolbar.filterNamesCompaniesCombo.isVisible()){
         var value = toolbar.filterNamesCompaniesCombo.getValue();
         if (value) {
             task['assigned_to_contact_id'] = value;

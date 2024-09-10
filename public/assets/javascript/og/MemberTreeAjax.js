@@ -251,7 +251,7 @@ og.MemberTreeAjax = function(config) {
 						// if we are in a modal form then ensure the whole dropdown list is visible
 						tree.adjustDropDownListHeight();
 
-						if(!tree.initialized){
+						if(!tree.initialized || tree.totalNodes == 0){
                             tree.initialized = true;
 							tree.init();
 						}
@@ -293,7 +293,7 @@ og.MemberTreeAjax = function(config) {
 							// if we are in a modal form then ensure the whole dropdown list is visible
 							tree.adjustDropDownListHeight();
 
-							if(!tree.initialized){
+							if(!tree.initialized || tree.totalNodes == 0){
                                 tree.initialized = true;
 								tree.init();
 							}

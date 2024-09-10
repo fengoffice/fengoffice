@@ -199,18 +199,23 @@ og.timeslotTypeSelectChange = function(select, genid) {
 	if (st_row) st_row.style.display = select.value == 1 ? 'none' : '';
 }
 
+og.switchDashboardView = function(view_as_list) {
+	og.openLink(og.getUrl('account', 'update_user_preference', {name:'overviewAsList', value: view_as_list}), {
+		hideLoading:true,
+		callback: function(success, data) {
+			var opanel = Ext.getCmp('overview-panel');
+			opanel.defaultContent = {type: 'url', data: og.getUrl('dashboard', 'main_dashboard')};
+			opanel.load(opanel.defaultContent);
+		}
+	});
+}
+
 og.switchToOverview = function(){
-	og.openLink(og.getUrl('account', 'update_user_preference', {name:'overviewAsList', value:1}), {hideLoading:true});
-	var opanel = Ext.getCmp('overview-panel');
-	opanel.defaultContent = {type: 'url', data: og.getUrl('dashboard', 'init_overview')};
-	opanel.load(opanel.defaultContent);
+	og.switchDashboardView(1);
 };
 
 og.switchToDashboard = function(){
-	og.openLink(og.getUrl('account', 'update_user_preference', {name:'overviewAsList', value:0}), {hideLoading:true});
-	var opanel = Ext.getCmp('overview-panel');
-	opanel.defaultContent = {type: "url", data: og.getUrl('dashboard','main_dashboard')};
-	opanel.load(opanel.defaultContent);
+	og.switchDashboardView(0);
 };
 
 og.customDashboard = function (controller,action,params, reload) {
@@ -231,7 +236,7 @@ og.customDashboard = function (controller,action,params, reload) {
 og.resetDashboard = function () {
 	var opanel = Ext.getCmp('overview-panel');
 	if (opanel && opanel.defaultContent.data != "overview"){
-		opanel.defaultContent = {type: "url", data: og.getUrl('dashboard','init_overview')};
+		opanel.defaultContent = {type: "url", data: og.getUrl('dashboard','main_dashboard')};
 		opanel.load(opanel.defaultContent);
 	}
 }
@@ -2367,6 +2372,10 @@ og.checkValidEmailAddress = function(email) {
 }
 
 og.checkEmailAddress = function(element, id_contact, contact_type) {
+	var elementCheck = document.querySelector(element);
+	elementCheck.addEventListener("keyup", (e) => {
+		e.target.value = e.target.value.replace(/\s/g, '')
+	})
 	$(element).blur(function(){
 		var field = $(this);
 		// Ajax to ?c=contact&a=check_existing_email&email=admin@admin.com&ajax=true
@@ -4242,6 +4251,20 @@ og.gridObjectNameRenderer = function(value, p, r) {
 	return String.format('<a href="#" onclick="{1}" title="{2}" style="font-size:120%;"><span class="bold">{0}</span></a>', og.clean(value), onclick, og.clean(value));
 }
 
+og.gridObjectNameRendererWithLink = function(value, p, r) {
+	if (r.data.id == 'quick_add_row') {
+		return value;
+	}
+	if (r.data.id == '__total_row__' || r.data.object_id <= 0) return '<span id="__total_row__">'+value+'</span>';
+
+	var controller = r.data.type_controller ? r.data.type_controller : r.store.baseParams.url_controller;
+
+	var object_link = og.getUrl(controller, 'view', {id: r.data.object_id});
+	var onclick = "og.openLink(og.getUrl('"+ controller +"', 'view', {id: "+ r.data.object_id +"})); return false;";
+	
+	return String.format('<a href="{2}" onclick="{1}" title="{0}" style="font-size:120%;"><span class="bold">{0}</span></a>', og.clean(value), onclick, object_link);
+}
+
 og.gridPictureRenderer = function(value, p, r) {
 	if (r.data.picture) {
 		var picture_url = r.data.picture;
@@ -4892,6 +4915,8 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 	var user_id = Ext.getCmp(grid.genid + 'add_ts_contact_id').getValue();
 	params['timeslot[contact_id]'] = user_id;
 
+	params['req_channel'] = 'time list - quick add';
+
 	return params;
 }
 
@@ -5469,6 +5494,8 @@ og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassi
 	if (reclassify_in_associations) params.reclassify_in_associations = reclassify_in_associations;
 	if (remove_prev) params.remove_prev = remove_prev;
 	
+	params.req_channel = 'drag and drop';
+	
 	og.openLink(og.getUrl('member', 'add_objects_to_member'),{
 		method: 'POST',
 		post: params,
@@ -5551,6 +5578,14 @@ og.format_money_amount = function(amount, decimals) {
 	var locale = og.preferences.thousand_separator == ',' ? 'en' : 'it';
 	
 	return amount.toLocaleString(locale, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+
+// renders an amount cell in extjs gird
+og.render_grid_amount = function(value, p, r) {
+	if (r.data.id == '__total_row__') return value;
+	var currency = og.get_currency_by_id(r.data.currency_id);
+	var sym = currency ? currency.symbol : '$';
+	return '<div class="right">' + sym + ' ' + og.format_money_amount(value, 2) + '</div>';
 }
 
 og.updateElementMoneyAmount = function(id, value){

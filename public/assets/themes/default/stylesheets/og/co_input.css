@@ -42,24 +42,30 @@
 .coInputMainBlock .dataBlock {
 	margin: 0 0 12px 0;
 	min-height: 20px;
+	align-items: center;
+}
+
+.cke_chrome{
+	width: 100% !important;
 }
 
 
 .dataBlock .og-add-template-object {
 	float: left;
 	padding-left: 0;
-	max-width: 260px;
+    width: 100%;
+
 }
 .dataBlock .og-add-template-object .parent-task-name {
 	float: left;
-	max-width: 250px;
+	width: 285px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 .dataBlock .og-add-template-object .previous-task-name {
 	float: left;
-	max-width: 360px;
+	width: 285px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -67,8 +73,7 @@
 .dataBlock .og-add-template-object.previous-task {
 	float: none;
 	clear: both;
-	max-width: 460px;
-	margin: 3px;
+    width: 100%;
 }
 .dataBlock .removeDiv {
 	position: relative;
@@ -94,6 +99,7 @@
 	float: left;
 	min-width: 150px;
 	padding-right: 20px;
+	flex-basis: 0;
 }
 
 .coInputMainBlock .report-conditions label {

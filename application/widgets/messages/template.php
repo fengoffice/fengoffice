@@ -12,7 +12,7 @@
 			<?php 
 			$row_cls = "";
 			foreach ($messages as $k => $message): /* @var $message ProjectMessage */
-				$crumbOptions = json_encode($message->getMembersIdsToDisplayPath());
+				$crumbOptions = json_encode($message->getMembersIdsToDisplayPath(false, get_dashboard_breadcrumbs_options()));
 				if($crumbOptions == ""){
 					$crumbOptions = "{}";
 				}
@@ -21,7 +21,7 @@
 				<li id="<?php echo "message-".$message->getId()?>" class="message-row ico-message <?php echo $row_cls ?>">
 					<a href="<?php echo $message->getViewUrl() ?>"><span class="message-title"><?php echo clean($message->getName());?></span></a>
 					<?php if (trim($message->getText()) != "") { ?>
-					<span class="message-text"> - <?php echo clean(substr_utf(html_to_text($message->getText()), 0, 200)); ?></span>
+					<div class="message-text"><?php echo $message->getText(); ?></div>
 					<?php } ?>
 					<?php if ($message->getUpdatedBy() instanceof Contact) { ?>
 					<div class="desc date-container"><?php 

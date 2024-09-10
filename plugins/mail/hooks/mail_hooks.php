@@ -1,6 +1,17 @@
 <?php
 Hook::register('mail');
 
+// when deactivating mail plugin we also need to deactivate mail_rules to avoid issues
+function mail_on_plugin_deactivate($params, &$ignored) {
+
+	if (array_var($params, 'plugin') == 'mail') {
+
+		$mail_rules_plugin = Plugins::instance()->getByName("mail_rules");
+		if ($mail_rules_plugin instanceof Plugin) {
+			$mail_rules_plugin->deactivate();
+		}
+	}
+}
 
 function mail_additional_general_config_option($params, &$options) {
 	$cat = array_var($params, 'category');
@@ -12,7 +23,17 @@ function mail_additional_general_config_option($params, &$options) {
 			'url' => get_url('administration', 'mail_accounts'),
 			'name' => lang('mail accounts'),
 		);
+
+		if(Plugins::instance()->isActivePlugin('mail_rules')) {
+			$options[] = array(
+				'id' => 'email_rules',
+				'url' => get_url('mail_rules', 'list_rules'),
+				'name' => lang('mail rules'),
+			);
+		}
 	}
+
+
 	
 }
 
@@ -63,11 +84,11 @@ function mail_on_page_load(){
 	$permissions_sql = " AND EXISTS (SELECT sh.group_id FROM ".TABLE_PREFIX."sharing_table sh WHERE sh.object_id=o.id AND sh.group_id IN (".implode(',',$user_pg_ids)."))";
 	
 	$conditions = array("conditions" => array("`state` >= 200 AND (`state`%2 = 0) AND `archived_on`=0 AND `trashed_on`=0 $accounts_sql $permissions_sql AND `created_by_id` =".$usu->getId()));
-	$outbox_mails = MailContents::findAll($conditions);
+	$outbox_mails = MailContents::instance()->findAll($conditions);
 	if ($outbox_mails!= null){
 		if (count($outbox_mails)>=1){
 			$arguments = array("conditions" => array("`context` LIKE 'mails_in_outbox%' AND `contact_id` = ".$usu->getId().";"));
-			$exist_reminder = ObjectReminders::find($arguments);
+			$exist_reminder = ObjectReminders::instance()->find($arguments);
 			if (!(count($exist_reminder)>0)){
 				$reminder = new ObjectReminder();
 			

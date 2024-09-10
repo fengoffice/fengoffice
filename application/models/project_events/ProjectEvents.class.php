@@ -26,35 +26,35 @@ class ProjectEvents extends BaseProjectEvents {
 	const ORDER_BY_POSTTIME = 'dateCreated';
 	const ORDER_BY_MODIFYTIME = 'dateUpdated';
         
-        function findBySpecialId($special_id, $ext_cal_id) {
-                return ProjectEvents::findOne(array('conditions' => array('`special_id` = ? AND `ext_cal_id` = ? AND trashed_on =\''.EMPTY_DATETIME.'\' AND trashed_by_id = 0', $special_id, $ext_cal_id)));
+        static function findBySpecialId($special_id, $ext_cal_id) {
+                return ProjectEvents::instance()->findOne(array('conditions' => array('`special_id` = ? AND `ext_cal_id` = ? AND trashed_on =\''.EMPTY_DATETIME.'\' AND trashed_by_id = 0', $special_id, $ext_cal_id)));
         }
         
-        function findByExtCalId($ext_cal_id) {
-                return ProjectEvents::findAll(array('conditions' => array('`ext_cal_id` = ?', $ext_cal_id)));
+        static function findByExtCalId($ext_cal_id) {
+                return ProjectEvents::instance()->findAll(array('conditions' => array('`ext_cal_id` = ?', $ext_cal_id)));
         }
         function findById($id, $force_reload = false) {
-        	return ProjectEvents::findOne(array('conditions' => array('`object_id` = ?', $id)));
+        	return ProjectEvents::instance()->findOne(array('conditions' => array('`object_id` = ?', $id)));
         }
-        function findNoSync($contact_id, $date_from = null, $limit = 0) {
+        static function findNoSync($contact_id, $date_from = null, $limit = 0) {
         	if(is_null($date_from)){
         		$date_from = '';
         	}else{
         		$date_from = " AND `start` > '".$date_from."'";
         	}        	
         	
-            return ProjectEvents::findAll(array(
+            return ProjectEvents::instance()->findAll(array(
             		'limit' => $limit,
                     'conditions' => array('special_id = "" AND trashed_by_id = 0 AND trashed_on =\''.EMPTY_DATETIME.'\' AND update_sync  =\''.EMPTY_DATETIME.'\' AND created_by_id = '.$contact_id.$date_from)));
         }
-        function findNoSyncInvitations($contact_id, $date_from = null, $limit = 0) {
+        static function findNoSyncInvitations($contact_id, $date_from = null, $limit = 0) {
         	if(is_null($date_from)){
         		$date_from = '';
         	}else{
         		$date_from = " AND `start` > '".$date_from."'";
         	}
         	
-        	return ProjectEvents::findAll(array(
+        	return ProjectEvents::instance()->findAll(array(
         			'limit' => $limit,
         			'conditions' => array(' trashed_by_id = 0 AND created_by_id <> '.$contact_id.' AND trashed_on =\''.EMPTY_DATETIME.'\' AND synced = 0 AND contact_id = '.$contact_id.$date_from),
         			 'join' => array(
@@ -193,7 +193,7 @@ class ProjectEvents extends BaseProjectEvents {
 					foreach ($result_events as $k => $event) {
 						$conditions = '`event_id` = ' . $event->getId();
 						if ($user != -1) $conditions .= ' AND `contact_id` = ' . $user;
-						$inv = EventInvitations::findAll(array ('conditions' => $conditions));
+						$inv = EventInvitations::instance()->findAll(array ('conditions' => $conditions));
 						if (!is_array($inv)) {
 							if ($inv == null || (trim($inv_state) != '-1' && !strstr($inv_state, ''.$inv->getInvitationState()) && $inv->getContactId() == logged_user()->getId())) {
 								unset($result_events[$k]);
@@ -240,7 +240,7 @@ class ProjectEvents extends BaseProjectEvents {
 		
 		$user = null;
 		if ($user_filter > 0) {
-			$user = Contacts::findById($user_filter);
+			$user = Contacts::instance()->findById($user_filter);
 		}
 		if ($user_filter != -1 && !$user instanceof Contact) $user = logged_user();
 
@@ -364,7 +364,7 @@ class ProjectEvents extends BaseProjectEvents {
 				$event_ids[] = $event->getId();
 			}
 			
-			$invitations_res = EventInvitations::findAll(array('conditions' => 'contact_id = ' . $user_id));
+			$invitations_res = EventInvitations::instance()->findAll(array('conditions' => 'contact_id = ' . $user_id));
 			$invitations = array();
 			foreach ($invitations_res as $i) {
 				if (!isset($invitations[$i->getEventId()])) $invitations[$i->getEventId()] = array();
@@ -384,12 +384,12 @@ class ProjectEvents extends BaseProjectEvents {
         
       
         
-        function findByRelated($event_id) {
-                return ProjectEvents::findAll(array('conditions' => array('`original_event_id` = ?', $event_id)));
+        static function findByRelated($event_id) {
+                return ProjectEvents::instance()->findAll(array('conditions' => array('`original_event_id` = ?', $event_id)));
         }
         
-        function findByEventAndRelated($event_id,$original_event_id) {
-                return ProjectEvents::findAll(array('conditions' => array('(`original_event_id` = ? OR `object_id` = ?) AND `object_id` <> ?', $original_event_id,$original_event_id,$event_id)));
+        static function findByEventAndRelated($event_id,$original_event_id) {
+                return ProjectEvents::instance()->findAll(array('conditions' => array('(`original_event_id` = ? OR `object_id` = ?) AND `object_id` <> ?', $original_event_id,$original_event_id,$event_id)));
         }
         
         

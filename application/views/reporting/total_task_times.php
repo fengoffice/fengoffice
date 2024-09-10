@@ -139,21 +139,16 @@
 			echo "<td class='person'>" . clean($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') ."</td>";
 			
 			if (array_var($options, 'show_billing') == 'checked') {
-				$currency = Currencies::getCurrency($ts->getRateCurrencyId());
+				$currency = Currencies::instance()->getCurrency($ts->getRateCurrencyId());
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code', '$');
 				
-				if($ts->getIsFixedBilling()){
-					echo "<td class='nobr right'>" . $c_symbol . " " . number_format($ts->getFixedBilling(), 2) . "</td>";
-					$sub_total_billing += $ts->getFixedBilling();
-				}else{
-					$min = $ts->getMinutes();
-					echo "<td class='nobr right'>" . $c_symbol . " " . number_format(($ts->getHourlyBilling()/60) * $min, 2) . "</td>";
-					$sub_total_billing += ($ts->getHourlyBilling()/60) * $min;
-				}
+			
+				echo "<td class='nobr right'>" . $c_symbol . " " . number_format($ts->getFixedBilling(), 2) . "</td>";
+				$sub_total_billing += $ts->getFixedBilling();
 			}
 			
 			if (array_var($options, 'show_cost') == 'checked') {
-				$currency = Currencies::getCurrency($ts->getColumnValue('cost_currency_id'));
+				$currency = Currencies::instance()->getCurrency($ts->getColumnValue('cost_currency_id'));
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code', '$');
 				
 				if($ts->getColumnValue('is_fixed_cost')){

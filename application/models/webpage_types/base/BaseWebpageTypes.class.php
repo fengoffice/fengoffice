@@ -211,7 +211,7 @@
     *
     * @return WebpageTypes 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'WebpageTypes')) {
         $instance = new WebpageTypes();

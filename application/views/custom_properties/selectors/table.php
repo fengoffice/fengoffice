@@ -63,7 +63,7 @@ $name = $configs['name'];
 $genid = $configs['genid'];
 
 $is_member_cp = '0';
-$ot = ObjectTypes::findById($custom_property->getObjectTypeId());
+$ot = ObjectTypes::instance()->findById($custom_property->getObjectTypeId());
 if ($ot instanceof ObjectType && $ot->getType() == 'dimension_group') {
 	$is_member_cp = '1';
 }

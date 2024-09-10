@@ -23,7 +23,7 @@ function workspaces_custom_reports_additional_columns($args, &$ret) {
 	$ot = array_var($args, 'object_type');
 	if ($ot instanceof ObjectType && in_array($ot->getType(), array('dimension_object','dimension_group'))) return;
 	
-	$dimensions = Dimensions::findAll ( array("conditions" => "code IN ('workspaces','tags')") );
+	$dimensions = Dimensions::instance()->findAll ( array("conditions" => "code IN ('workspaces','tags')") );
 	foreach ($dimensions as $dimension) {
 		if (in_array($dimension->getId(), config_option('enabled_dimensions'))) {
 			
@@ -58,7 +58,7 @@ function workspaces_total_tasks_times_csv_column_values($ts, &$new_values) {
 
 function workspaces_quickadd_extra_fields($parameters) {
 	if (array_var($parameters, 'dimension_id') == Dimensions::findByCode("workspaces")->getId()) {
-		$parent_member = Members::findById(array_var($parameters, 'parent_id'));
+		$parent_member = Members::instance()->findById(array_var($parameters, 'parent_id'));
 		if ($parent_member instanceof Member && $parent_member->getObjectId() > 0) {
 			$dimension_object = Objects::findObject($parent_member->getObjectId());
 			
@@ -130,7 +130,7 @@ function workspaces_page_rendered() {
 	if (!Plugins::instance()->isActivePlugin('crpm')) {
 		$did = Dimensions::instance()->findByCode('workspaces')->getId();
 		
-		$one_member = Members::findOne(array('conditions' => 'dimension_id = '.$did));
+		$one_member = Members::instance()->findOne(array('conditions' => 'dimension_id = '.$did));
 		if (!$one_member instanceof Member) {
 			echo "<script>";
 			echo "og.menuPanelCollapsed = true;";
@@ -162,7 +162,7 @@ function workspaces_render_widget_member_information(Member $member, &$prop_html
 
 function workspaces_after_user_add($object, $ignored) {
 	/* @var $object Contact */
-	$workspaces_dim = Dimensions::findOne(array("conditions" => "`code` = 'workspaces'"));
+	$workspaces_dim = Dimensions::instance()->findOne(array("conditions" => "`code` = 'workspaces'"));
 
 	if ($workspaces_dim instanceof Dimension) {
 

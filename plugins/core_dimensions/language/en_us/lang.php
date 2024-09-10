@@ -39,7 +39,7 @@
 	'delete member warning' => 'Are you sure you want to delete this {0}?',
 	'tasks list' => 'Tasks list',
 	
-	'add timeslot' => 'Add timeslot',
+	'add timeslot' => 'Add time entry',
 	'add new row' => 'Add new row',
 	
 	'update subtasks' => 'Update subtasks',
@@ -92,4 +92,12 @@
 	'type webpage' => 'Type',
 	'link webpage' => 'Link',
 	
+	'First half month+' => 'First half of month',
+	'Second half month+' => 'Second half of month',
+	'First half of last month+' => 'First half of last month',
+	'Second half of last month+' => 'Second half of last month',
+	'year to date' => 'Year to date',
+
+	'not assigned' => 'Not assigned',
+	'labor' => 'Labor',
 );

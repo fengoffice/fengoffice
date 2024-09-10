@@ -15,7 +15,7 @@ class ContactConfigOptions extends BaseContactConfigOptions {
   	protected $config_options = array();
   	
   	function loadConfigOptionsCache(){
-  		$options = self::findAll();
+  		$options = self::instance()->findAll();
   		foreach ($options as $option)
   			$this->config_options[$option->getName()] = $option; 
   	}
@@ -40,7 +40,7 @@ class ContactConfigOptions extends BaseContactConfigOptions {
 		array('`category_name` = ?', $category->getName()) :
 		array('`category_name` = ? AND `is_system` = ?', $category->getName(), false);
 
-		$options = self::findAll(array(
+		$options = self::instance()->findAll(array(
         'conditions' => $conditions,
         'order' => '`option_order`'
         )); // findAll
@@ -63,7 +63,7 @@ class ContactConfigOptions extends BaseContactConfigOptions {
 		array('`category_name` = ?', $category_name) :
 		array('`category_name` = ? AND `is_system` = ?', $category_name, false);
 
-		$options = self::findAll(array(
+		$options = self::instance()->findAll(array(
         'conditions' => $conditions,
         'order' => '`option_order`'
         )); // findAll
@@ -86,7 +86,7 @@ class ContactConfigOptions extends BaseContactConfigOptions {
 		array('`category_name` = ?', $category->getName()) :
 		array('`category_name` = ? AND `is_system` = ?', $category->getName(), false);
 
-		return self::count($conditions);
+		return self::instance()->count($conditions);
 	} // countOptionsByCategory
 
 	/**
@@ -143,7 +143,7 @@ class ContactConfigOptions extends BaseContactConfigOptions {
 			if ($success) return $object;
 		}
 		
-		$object = self::findOne(array('conditions' => array('`name` = ?', $name)));
+		$object = self::instance()->findOne(array('conditions' => array('`name` = ?', $name)));
 		
 		if (GlobalCache::isAvailable()) {
 			GlobalCache::update('user_copt_obj_'.$name, $object);
@@ -153,7 +153,7 @@ class ContactConfigOptions extends BaseContactConfigOptions {
 	} // getByName
         
         function getFilterActivity() {
-                return ContactConfigOptions::findOne(array('conditions' => array('`name` = "filters_dashboard"')));
+                return ContactConfigOptions::instance()->findOne(array('conditions' => array('`name` = "filters_dashboard"')));
         }
 
 } // ConfigOptions

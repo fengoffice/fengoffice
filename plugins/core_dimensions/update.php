@@ -118,7 +118,7 @@ function core_dimensions_update_7_8() {
 	ini_set('memory_limit', '512M');
 	$users = Contacts::getAllUsers();
 		
-	$dimensions = Dimensions::findAll();
+	$dimensions = Dimensions::instance()->findAll();
 	$dimensions_ids = array();
 	foreach ($dimensions as $dimension) {
 		if ($dimension->getDefinesPermissions()) {
@@ -152,10 +152,10 @@ function core_dimensions_update_8_9() {
 		}
 		
 		$role_id = $user->getUserType();
-		$sys_perm = SystemPermissions::findOne(array('conditions' => 'permission_group_id='.$user->getPermissionGroupId()));
+		$sys_perm = SystemPermissions::instance()->findOne(array('conditions' => 'permission_group_id='.$user->getPermissionGroupId()));
 		
 		// check max system permissions
-		$max_role_system_permissions = MaxSystemPermissions::findOne(array('conditions' => 'permission_group_id = '.$role_id));
+		$max_role_system_permissions = MaxSystemPermissions::instance()->findOne(array('conditions' => 'permission_group_id = '.$role_id));
 		if ($max_role_system_permissions instanceof MaxSystemPermission) {
 			$sys_perm_cols = get_table_columns(TABLE_PREFIX."system_permissions");
 			foreach ($sys_perm_cols as $col) {
@@ -193,7 +193,7 @@ function core_dimensions_update_9_10() {
 		}
 	}
 	
-	$pgs = PermissionGroups::findAll(array("conditions" => "`name` in ('Super Administrator','Administrator')"));
+	$pgs = PermissionGroups::instance()->findAll(array("conditions" => "`name` in ('Super Administrator','Administrator')"));
 	foreach ($pgs as $pg) {
 		DB::executeAll("UPDATE ".TABLE_PREFIX."role_object_type_permissions SET can_write=1, can_delete=1 WHERE object_type_id=".$template_ot->getId()." AND role_id=".$user->getPermissionGroupId());
 	}
@@ -202,7 +202,7 @@ function core_dimensions_update_9_10() {
 
 function core_dimensions_update_10_11() {
 	// generate small, medium and large size images for users, contacts and companies
-	$all_contacts_with_picture = Contacts::findAll(array('conditions' => "picture_file <> ''"));
+	$all_contacts_with_picture = Contacts::instance()->findAll(array('conditions' => "picture_file <> ''"));
 
 	foreach ($all_contacts_with_picture as $contact) {
 		$result = $contact->generateAllSizePictures($contact->getPictureFile());
@@ -212,7 +212,7 @@ function core_dimensions_update_10_11() {
 
 function core_dimensions_update_11_12() {
 	// normaize dimension options
-	$dimensions = Dimensions::findAll();
+	$dimensions = Dimensions::instance()->findAll();
 	
 	foreach ($dimensions as $dimension) {/* @var $dimension Dimension */
 		$options_json = $dimension->getOptions();
@@ -269,7 +269,7 @@ function core_dimensions_update_13_14() {
 	
 	if (!Plugins::instance()->isActivePlugin("multiple_currencies")) {
 		$cur_code = config_option("currency_code");
-		$def_currency = Currencies::findOne();
+		$def_currency = Currencies::instance()->findOne();
 		if (!$def_currency instanceof Currency) {
 			$def_currency = new Currency();
 			$def_currency->setIsDefault(true);
@@ -287,7 +287,7 @@ function core_dimensions_update_13_14() {
 
 function core_dimensions_update_14_15() {
 	// add reports to sharing table for all users, because after the listing permissions changes in a recent version, they were not regenerated
-	$reports = Reports::findAll();
+	$reports = Reports::instance()->findAll();
 	foreach ($reports as $report) {
 		/* @var $report Report */
 		$report->addToSharingTable();
@@ -298,7 +298,7 @@ function core_dimensions_update_14_15() {
 
 function core_dimensions_update_15_16() {
 	// rebuild sharing table for timesltos, as its permissions algorithm has changed (don't check in the task members for permissions, only in timelot's members)
-	$timeslots = Timeslots::findAll(array('id' => 'true'));
+	$timeslots = Timeslots::instance()->findAll(array('id' => 'true'));
 	foreach ($timeslots as $t_id) {
 		ContentDataObjects::addObjToSharingTable($t_id);
 	}
@@ -337,12 +337,46 @@ function core_dimensions_update_18_19() {
 		$prevent_parent_update = true;
 		foreach ($rows as $row) {
 			$task_id = $row['object_id'];
-			$project_task = ProjectTasks::findOne(array('conditions' => "object_id = $task_id"));
+			$project_task = ProjectTasks::instance()->findOne(array('conditions' => "object_id = $task_id"));
 			if($project_task instanceof ProjectTask){
 				$project_task->calculatePercentComplete($prevent_parent_update);
 			}
 		}
 		$max_depth--;
 	}
+}
+
+function core_dimensions_update_19_20() {
+	/** 
+	 * THIS PROCEDURE IS NOT NEEDED ANYMORE, THIS WAS DONE TO FIX CALCULATIONS FOR SOME CLIENTS THAT WERE IN A SPECIFIC VERSiON WiTH AN ERROR IN TIME CALCULATIONS
+	 * THAT VERSION IS NO LONGER USED IN ANY CLIENT, SO FOR PERFORMANCE WE CAN AVOID RECALCULATING THIS
+	Env::useHelper('dimension');
+
+	// ensure that expenses plugin is in the latest version before making calculations
+	// after saving a time some other calculations involving expenses can be triggered by advanced_billing plugin
+	if (Plugins::instance()->isActivePlugin('expenses2')) {
+		$expenses_plugin = Plugins::instance()->findOne(array("conditions" => "`name`='expenses2'"));
+		$expenses_plugin->update();
+	}
+
+	// get timeslots affected by recalculation bug
+	$timeslots = Timeslots::instance()->findAll(array(
+		"conditions" => "updated_on > '2023-08-01' AND trashed_by_id=0"
+	));
+
+	$tasks_processed = array();
+	// call save function to recalculate the values correcctly
+	foreach ($timeslots as $timeslot) {
+		$task = $timeslot->getRelObject();
+		// only recalculate tasks once and don't process timeslots without task
+		if ($task instanceof ProjectTask && !in_array($task->getId(), $tasks_processed)) {
+			$task->dont_calculate_project_financials = true; // don't calculate for projects, it will generate a loop
+
+			$timeslot->save(); // save to trigger the related task's calculations
+			
+			$tasks_processed[] = $task->getId();
+		}
+	}
+	*/
 }
 

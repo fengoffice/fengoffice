@@ -8,6 +8,7 @@ if (array_var($_REQUEST, 'modal')) {
 }
 ?>
 <form onsubmit="<?php echo $on_submit?>" id="<?php echo $genid?>template_params" class="internalForm" action="<?php echo get_url('template', 'instantiate_parameters', array('id' => $id, 'back' => '1')) ?>" method="post">
+	<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'instantiate task template') ?>" />
 
 <div class="template">
 <div class="coInputHeader">
@@ -49,7 +50,7 @@ if (array_var($_REQUEST, 'modal')) {
 					
 					<?php } else if ($parameter['type'] == 'numeric') { ?>
 
-						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>" type="number" />
+						<input id="parameterValues[<?php echo $parameter_js_key; ?>]" name="parameterValues[<?php echo $parameter['name'] ?>]" class="title" value="<?php echo $default_value?>" type="number" step="0.01" />
 					
 					<?php } else if ($parameter['type'] == 'date'){
 							echo pick_date_widget2('parameterValues['.$parameter_js_key.']');
@@ -60,7 +61,7 @@ if (array_var($_REQUEST, 'modal')) {
 							$context = active_context();
 							if (isset($member_id) && $member_id > 0) {
 								// filter by context passed by parameter
-								$additional_member = Members::findById($member_id);
+								$additional_member = Members::instance()->findById($member_id);
 								if ($additional_member instanceof Member) {
 									$context = array($additional_member);
 								}

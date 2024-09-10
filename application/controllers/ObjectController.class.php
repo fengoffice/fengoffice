@@ -37,7 +37,7 @@ class ObjectController extends ApplicationController {
 
 		// if object not found, use a new object with the same object type
 		if (!$object instanceof ContentDataObject) {
-			$object_type = ObjectTypes::findById(get_id('ot_id'));
+			$object_type = ObjectTypes::instance()->findById(get_id('ot_id'));
 			if ($object_type instanceof ObjectType && class_exists($object_type->getHandlerClass()) ) {
 				eval('$ot_manager = '.$object_type->getHandlerClass().'::instance();');
 				if ($ot_manager) {
@@ -67,7 +67,7 @@ class ObjectController extends ApplicationController {
 
         // if object not found, use a new object with the same object type
         if (!$object instanceof ContentDataObject) {
-            $object_type = ObjectTypes::findById(get_id('ot_id'));
+            $object_type = ObjectTypes::instance()->findById(get_id('ot_id'));
             if ($object_type instanceof ObjectType && class_exists($object_type->getHandlerClass()) ) {
                 eval('$ot_manager = '.$object_type->getHandlerClass().'::instance();');
                 if ($ot_manager) {
@@ -113,7 +113,7 @@ class ObjectController extends ApplicationController {
 				$user_id = substr($key, 5);
 				$subscribers_ids[] = $user_id;
 				if ($checked == "1" && !in_array($user_id, $object->getSubscriberIds())) {
-					$user = Contacts::findById($user_id);
+					$user = Contacts::instance()->findById($user_id);
 					if ($user instanceof Contact) {
 						$object->subscribeUser($user);
 						$log_info .= ($log_info == "" ? "" : ",") . $user->getId();
@@ -126,7 +126,7 @@ class ObjectController extends ApplicationController {
 
 			
 			foreach ($subscribers_to_remove as $subs_remove) {
-				$user = Contacts::findById($subs_remove);
+				$user = Contacts::instance()->findById($subs_remove);
 				if ($user instanceof Contact) {
 					$object->unsubscribeUser($user);
 					$log_info_unsubscribe .= ($log_info_unsubscribe == "" ? "" : ",") . $user->getId();
@@ -142,7 +142,7 @@ class ObjectController extends ApplicationController {
 				ApplicationLogs::createLog($object, ApplicationLogs::ACTION_UNSUBSCRIBE, false, !$send_notification, true, $log_info_unsubscribe);
 			}
 		}else{
-			logger::log(' aver por aca!');
+			// logger::log(' aver por aca!');
 			$subscribers_to_remove = $object->getSubscriberIds();
 			foreach ($subscribers_to_remove as $user_id_remove) {
 				$log_info_unsubscribe.= ($log_info_unsubscribe == "" ? "" : ",") . $user_id_remove;
@@ -295,10 +295,10 @@ class ObjectController extends ApplicationController {
 				$required_dimension_ids[] = $dot->getDimensionId();
 			}
 		}		
-		$required_dimensions = Dimensions::findAll(array("conditions" => "id IN (".implode(",",$required_dimension_ids).") OR is_required=1"));
+		$required_dimensions = Dimensions::instance()->findAll(array("conditions" => "id IN (".implode(",",$required_dimension_ids).") OR is_required=1"));
 
 		if (count($member_ids) > 0) {
-			$enteredMembers = Members::findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
+			$enteredMembers = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(",", $member_ids).')'));
 		} else {
 			$enteredMembers = array();
 		}
@@ -331,6 +331,10 @@ class ObjectController extends ApplicationController {
 			return;
 		  }
 		}
+
+		$continue = true;
+		Hook::fire('before_changing_classification', array('object' => $object, 'members' => $enteredMembers), $continue);
+		if (!$continue) return;
 
 		$removedMemebersIds = $object->removeFromAllMembers($user, $enteredMembers);
 		
@@ -401,7 +405,7 @@ class ObjectController extends ApplicationController {
 			if (count($not_valid_mem_names_array) > 0) {
 				$not_valid_mem_names = implode(', ', $not_valid_mem_names_array);
 
-				$ot = ObjectTypes::findById($object->getObjectTypeId());
+				$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 				$ot_name = $ot instanceof ObjectType ? $ot->getPluralObjectTypeName() : '';
 				
 				evt_add("popup", array(
@@ -578,7 +582,7 @@ class ObjectController extends ApplicationController {
 				$object = $object_original;
 				// if custom property does not belong to the object, look for an associated object for current cp
 				if (is_null($custom_property)) {
-					$custom_property = CustomProperties::findById($id);
+					$custom_property = CustomProperties::instance()->findById($id);
 					$object = $object_original->getAdditionalCustomPropertyAssociatedObject($custom_property);
 
 					if (!$custom_property instanceof CustomProperty || !$object instanceof ContentDataObject) {
@@ -690,7 +694,7 @@ class ObjectController extends ApplicationController {
                                     $custom_property_value->setCustomPropertyId($id);
                                     $custom_property_value->setValue($list_val);
                                     $custom_property_value->save();
-                                    $contact = Contacts::findById($list_val);
+                                    $contact = Contacts::instance()->findById($list_val);
                                     $member = Members::findOneByObjectId($object->getObjectId());
                                     if($member instanceof Member && $contact instanceof Contact) {
                                         $object_controller = new ObjectController();
@@ -731,7 +735,7 @@ class ObjectController extends ApplicationController {
                             $custom_property_value->setValue($value);
                             $custom_property_value->save();
 
-                            $contact = Contacts::findById($value);
+                            $contact = Contacts::instance()->findById($value);
                             $member = Members::findOneByObjectId($object->getObjectId());
 							
 							if($member instanceof Member && $contact instanceof Contact && !$contact->isUser()) {
@@ -1100,13 +1104,13 @@ class ObjectController extends ApplicationController {
 					return;
 				} // if
 
-				$linked_object = LinkedObjects::findById(array(
+				$linked_object = LinkedObjects::instance()->findById(array(
 					'rel_object_id' => $object_id,
 					'object_id' => $rel_object_id,
 				)); // findById
 				if(!($linked_object instanceof LinkedObject ))
 				{ //search for reverse link
-					$linked_object = LinkedObjects::findById(array(
+					$linked_object = LinkedObjects::instance()->findById(array(
 						'rel_object_id' => $rel_object_id,
 						'object_id' => $object_id,
 					)); // findById
@@ -1307,7 +1311,7 @@ class ObjectController extends ApplicationController {
 			return;
 		} // if
 
-		$object_type = ObjectTypes::findById($obj->getObjectTypeId());
+		$object_type = ObjectTypes::instance()->findById($obj->getObjectTypeId());
 		if($object_type->getType() == 'dimension_object'){
 			ajx_current("empty");
 		}elseif($object_type->getType() == 'dimension_group'){
@@ -1658,9 +1662,9 @@ class ObjectController extends ApplicationController {
 			return;
 		}
 		ajx_current("empty");
-		$csvids = array_var($_GET, 'ids');
-		if (!$csvids && array_var($_GET, 'object_id')) {
-			$csvids = array_var($_GET, 'object_id');
+		$csvids = array_var($_REQUEST, 'ids');
+		if (!$csvids && array_var($_REQUEST, 'object_id')) {
+			$csvids = array_var($_REQUEST, 'object_id');
 			
 			if (array_var($_REQUEST, 'reload')) {
 				ajx_current("reload");
@@ -1669,6 +1673,22 @@ class ObjectController extends ApplicationController {
 			}
 		}
 		$ids = explode(",", $csvids);
+
+		$prompt_user_already_done = array_var($_REQUEST, 'prompt_confirmed');
+		if (!$prompt_user_already_done) {
+			$can_trash_result = $this->check_if_can_trash_directly($ids);
+			if (!$can_trash_result['can_trash']) {
+				evt_add('prompt user trash objects', array(
+					'message' => $can_trash_result['prompt_message'],
+					'ids' => $ids,
+					'from_view' => array_var($_REQUEST, 'object_id', 0) > 0,
+					'req_channel' => array_var($_REQUEST, 'req_channel', ''),
+				));
+				ajx_current("empty");
+				return;
+			}
+		}
+
 		$count_persons = 0;
 		$count = 0;
 		$err = 0;
@@ -1679,6 +1699,10 @@ class ObjectController extends ApplicationController {
 				DB::beginWork();
 				$object = Objects::findObject($id);
 				if ($object instanceof ContentDataObject && $object->canDelete(logged_user())) {
+					if ($object instanceof ProjectTask) {
+						// set flag to skip calculations in this step, they will be done later
+						$object->dont_calculate_project_financials = true;
+					}
 					$object->trash(null, false);
 					Hook::fire('after_object_trash', $object, $null );
 					ApplicationLogs::createLog($object, ApplicationLogs::ACTION_TRASH, null, true);
@@ -1698,10 +1722,52 @@ class ObjectController extends ApplicationController {
 			$errorString = is_null($errorMessage)? lang("error delete objects", $err) . $error_details : $errorMessage;
 			flash_error($errorString);
 		} else {
+			if (array_var($_REQUEST, 'reload')) {
+				ajx_current("reload");
+			}
 			flash_success(lang("success trash objects", $count));
 			if ($count_persons > 0) self::reloadPersonsDimension();
-			Hook::fire('after_object_controller_trash', array_var($_GET, 'ids', array_var($_GET, 'object_id')), $ignored);
+			Hook::fire('after_object_controller_trash', array_var($_REQUEST, 'ids', array_var($_REQUEST, 'object_id')), $ignored);
 		}
+	}
+
+	/**
+	 * Call this function before trashing so we can check if the objects are associated to other objects
+	 * If so, we can prompt the user for confirmation and explain what will be done
+	 * Example: when trashing a task that has timeslots
+	 */
+	function check_if_can_trash_directly($ids) {
+		$result = array('can_trash' => true);
+		if (count($ids) == 0) {
+			return $result;
+		}
+
+		// get the tasks among the objects to be deleted
+		$task_ids = Objects::instance()->findAll(array(
+			"conditions" => array("id IN (?) AND object_type_id = ?", implode(',',$ids), ProjectTasks::instance()->getObjectTypeId()),
+			"id" => true
+		));
+		// check if the tasks found have any time or expense associated
+		if (count($task_ids) > 0) {
+			$times_count = Timeslots::instance()->count("rel_object_id IN (".implode(',',$task_ids).")");
+			$times_associated = $times_count > 0;
+			$expenses_associated = false;
+			if (PLugins::instance()->isActivePlugin('expenses2')) {
+				$b_expenses_count = Expenses::instance()->count("task_id IN (".implode(',',$task_ids).")");
+				$a_expenses_count = PaymentReceipts::instance()->count("task_id IN (".implode(',',$task_ids).")");
+				$expenses_associated = ($b_expenses_count + $a_expenses_count) > 0;
+			}
+
+			if ($times_associated || $expenses_associated) {
+				$result = array(
+					'can_trash' => false,
+					'prompt_message' => lang('task is linked to time expenses are you sure you want to delete'),
+				);
+			}
+		}
+
+
+		return $result;
 	}
 
 	/**
@@ -1905,7 +1971,7 @@ class ObjectController extends ApplicationController {
 
 		// popup reminders already checked for logged user
 		if (GlobalCache::isAvailable()) {
-			$today_next_reminders = ObjectReminders::findAll(array(
+			$today_next_reminders = ObjectReminders::instance()->findAll(array(
 				'conditions' => array("`date` > ? AND `date` < ?", DateTimeValueLib::now(), DateTimeValueLib::now()->endOfDay()),
 				'limit' => config_option('cron reminder limit', 100)
 			));
@@ -1951,7 +2017,7 @@ class ObjectController extends ApplicationController {
 	function get_co_types() {
 		$object_type = array_var($_GET, 'object_type', '');
 		if($object_type != ''){
-			$types = ProjectCoTypes::findAll(array("conditions" => "`object_manager` = ".DB::escape($object_type)));
+			$types = ProjectCoTypes::instance()->findAll(array("conditions" => "`object_manager` = ".DB::escape($object_type)));
 			$co_types = array();
 			foreach($types as $type){
 				$t = array();
@@ -2021,6 +2087,13 @@ class ObjectController extends ApplicationController {
 					if (!is_null($label_value)) $cp_name = $label_value;
 				}
 
+				if ($row['cp_type'] == 'list') {
+					$cp_values = $row['cp_values'];
+					$cp = CustomProperties::getCustomProperty($row['id']);
+					Hook::fire('override_list_custom_property_values', array('cp' => $cp), $cp_values);
+					$row['cp_values'] = $cp_values;
+				}
+				
 				$cp_info = array('id' => $row['id'], 'name' => $cp_name, 'code' => $row['cp_code'], 'visible_def' => $row['visible_def'], 'cp_type' => $row['cp_type'], 'cp_values' => $row['cp_values'], 'cp_default_value' => $row['cp_default_value'], 'show_in_lists' => $row['show_in_lists']);
 
 				$ot = ObjectTypes::findByName($row['obj_type']);
@@ -2057,6 +2130,11 @@ class ObjectController extends ApplicationController {
 				if (is_numeric($exp)) $ids[] = $exp;
 			}
 
+			// let ObjectController::trash() function handle the trash operations
+			$_REQUEST['ids'] = implode(',', $ids);
+			$this->trash();
+			return;
+/*
 			$result = ContentDataObjects::listing(array(
 					"extra_conditions" => " AND o.id IN (".implode(",",$ids).") ",
 					"include_deleted" => true
@@ -2075,7 +2153,7 @@ class ObjectController extends ApplicationController {
 			} else {
 				Hook::fire('after_object_delete_permanently', $real_deleted_ids, $ignored);
 				flash_success(lang('success delete objects', $succ));
-			}
+			}*/
 		} else if (array_var($_GET, 'action') == 'delete_permanently') {
 			$ids = array();
 			$exploded = explode(',', array_var($_GET, 'objects'));
@@ -2148,7 +2226,7 @@ class ObjectController extends ApplicationController {
 				$split = explode(":", $id);
 				$type = $split[0];
 				if (Plugins::instance()->isActivePlugin('mail') && $type == 'MailContents') {
-					$email = MailContents::findById($split[1]);
+					$email = MailContents::instance()->findById($split[1]);
 					if ($email instanceof MailContent && !$email->isDeleted() && $email->canEdit(logged_user())){
 						if (MailController::do_unclassify($email)) $succ++;
 						else $err++;
@@ -2177,7 +2255,7 @@ class ObjectController extends ApplicationController {
 							$obj->untrash();
 
 							if($obj->getObjectTypeId() == 11){
-								$event = ProjectEvents::findById($obj->getId());
+								$event = ProjectEvents::instance()->findById($obj->getId());
 								if($event->getExtCalId() != ""){
 									$this->created_event_google_calendar($obj,$event);
 								}
@@ -2358,9 +2436,8 @@ class ObjectController extends ApplicationController {
 		$template_extra_condition = "true";
 
 		$template_objects = false;
-
 		//if(in_array("template_task", array_var($filters, 'types', array())) || in_array("template_milestone", array_var($filters, 'types', array()))){
-		if (in_array("template_task", $filters['types']) || in_array("template_milestone", $filters['types'])){
+		if ($filters['types'] && ( in_array("template_task", $filters['types']) || in_array("template_milestone", $filters['types']))){
 			$template_id = 0;
 			$template_objects = true;
 			if(isset($extra_list_params->template_id)){
@@ -2370,7 +2447,7 @@ class ObjectController extends ApplicationController {
 				$id_no_select = $extra_list_params->id_no_select;
 			}
 			
-			$tmpl_task = TemplateTasks::findById(intval($id_no_select));
+			$tmpl_task = TemplateTasks::instance()->findById(intval($id_no_select));
 			if($tmpl_task instanceof TemplateTask){
 				$template_extra_condition = "o.id IN (SELECT object_id from ".TABLE_PREFIX."template_tasks WHERE `template_id`=".$tmpl_task->getTemplateId()." OR `template_id`=0 AND `session_id`=".logged_user()->getId()." )";
 			}else{
@@ -2388,7 +2465,10 @@ class ObjectController extends ApplicationController {
 
 		$context = active_context();
 
-		$obj_type_types = array('content_object', 'dimension_object', 'located');
+		$obj_type_types = array('content_object', 'located');
+		if (array_var($_GET, 'only_content_objects')) {
+			$obj_type_types = array('content_object');
+		}
 		if (array_var($_GET, 'include_comments')) $obj_type_types[] = 'comment';
 
 		$type_condition = "";
@@ -2399,8 +2479,11 @@ class ObjectController extends ApplicationController {
 			$type_condition .= " AND ot.id=$type_filter";
 		}
 
-		$extra_conditions = array();
+		if (count($obj_type_types) > 0) {
+			$type_condition .= " AND ot.type IN ('". implode("','", $obj_type_types) ."')";
+		}
 
+		$extra_conditions = array();
 		if (array_var($filters, 'contact_type_filter')) {
 			$joins[] = " LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id";
 
@@ -2429,7 +2512,7 @@ class ObjectController extends ApplicationController {
 
 		}
 		// user filter
-		if (in_array("contact", array_var($filters, 'types', array())) && isset($extra_list_params->is_user)) {
+		if ($filters['types'] && in_array("contact", $filters['types']) && isset($extra_list_params->is_user)) {
 			$joins[] = " LEFT JOIN ".TABLE_PREFIX."contacts c on c.object_id=o.id";
 			
 			$extra_conditions[] = "
@@ -2443,7 +2526,7 @@ class ObjectController extends ApplicationController {
 							AND cmp.member_id=".DB::escape($mem_id)."
 							AND cmp.object_type_id NOT IN (SELECT tp.object_type_id FROM ".TABLE_PREFIX."tab_panels tp WHERE tp.enabled=0)
 					AND cmp.object_type_id NOT IN (SELECT oott.id FROM ".TABLE_PREFIX."object_types oott WHERE oott.name IN ('comment','template'))
-					AND cmp.object_type_id IN (SELECT oott2.id FROM ".TABLE_PREFIX."object_types oott2 WHERE oott2.type IN ('content_object','dimension_object'))
+					AND cmp.object_type_id IN (SELECT oott2.id FROM ".TABLE_PREFIX."object_types oott2 WHERE oott2.type IN ('content_object'))
 				)";
 			}
 		}
@@ -2558,7 +2641,7 @@ class ObjectController extends ApplicationController {
 		$sql_members = "";
 		if (!$ignore_context && !$member_ids) {
 			$members = active_context_members(false); // Context Members Ids
-		} elseif ( count($member_ids) ) {
+		} elseif ( !is_null($member_ids) && count($member_ids) ) {
 			$members = $member_ids;
 		} else {
 			// get members from context
@@ -2678,7 +2761,16 @@ class ObjectController extends ApplicationController {
 								$info_elem['icon'] = 'ico-company';
 								$info_elem['type'] = 'company';
 							}else{
-								$info_elem['memPath'] = json_encode($instance->getUserType()?"":$instance->getMembersIdsToDisplayPath());
+								// cut users and contacts amount of members to show in the object picker, they can lead to performance issues
+								if ($instance->isUser()) {
+									$max_members_to_show = 5; // to avoid performance issues when lisiting users 
+								} else {
+									$max_members_to_show = 20; // to avoid performance issues when lisiting contacts, some may be classified in many projects 
+								}
+								$members_path = $instance->getMembersIdsToDisplayPath(false, array(
+									"max_members_per_dimension" => $max_members_to_show, // to avoid performance issues when lisiting users 
+								));
+								$info_elem['memPath'] = json_encode($members_path);
 							}
 						} else if ($instance instanceof ProjectFile) {
 							$info_elem['mimeType'] = $instance->getTypeString();
@@ -2690,6 +2782,8 @@ class ObjectController extends ApplicationController {
 							$info_elem['assignedTo'] = $instance->getAssignedToName();
 						}
 					}
+
+					Hook::fire('get_objects_list_more_element_data', array('object'=>$instance), $info_elem);
 
 					$info[] = $info_elem;
 				}else{
@@ -2704,7 +2798,7 @@ class ObjectController extends ApplicationController {
 				"objects" => $info
 		);
 
-		$object_types = ObjectTypes::findAll(array(
+		$object_types = ObjectTypes::instance()->findAll(array(
 			'conditions' => "type IN ('content_object') AND 
 							(plugin_id = 0 OR plugin_id IS NULL OR (SELECT is_activated FROM ".TABLE_PREFIX."plugins WHERE id=plugin_id) = 1)"
 		));
@@ -2777,7 +2871,6 @@ class ObjectController extends ApplicationController {
 		$this->addHelper('object_selector');
 
 		$params = $this->get_list_objects_params();
-
 		$listing = $this->get_objects_list($params);
 
 		$selected_ids = get_selected_objects_ids();

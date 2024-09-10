@@ -14,7 +14,7 @@
 	$token = array_var($argv, 3);
 	
 	// log user in
-	$user = Contacts::findById($user_id);
+	$user = Contacts::instance()->findById($user_id);
 	if(!($user instanceof Contact) || !$user->isValidToken($token)) {
 		die();
 	}
@@ -22,7 +22,7 @@
 	
 	// get the user
 	$contact_id = array_var($argv, 4);
-	$contact = Contacts::findById($contact_id);
+	$contact = Contacts::instance()->findById($contact_id);
 	
 	// recalculate the member cache
 	if ($contact instanceof Contact) {

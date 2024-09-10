@@ -1,6 +1,5 @@
-
-	About Feng Office 3.10.4.3
-	================================
+	About Feng Office 3.10.8.0-beta3
+	=================================
 	
 	Feng Office is a Collaboration Platform and Project Management System.
 	It is licensed under the Affero GPL 3 license.
@@ -106,6 +105,471 @@
 	
 	Changelog
 	=========
+	
+	Since 3.10.8.0-beta2
+	-----------------------------------
+	feature: invoice templates allow to show subprojects in projects tabl… (#2326)
+	feature: add new column for markup amount at invoice templates (#2322)
+	feature: allow to select date format in invoice templates (#2319)
+	feature: Project earnings report: add 'Project progress' column (#2324)
+	feature: new readme.md (#2321)
+	bugfix: Budget by tasks report: Rename select options for the 'group by' option (#2323)
+	bugfix: Notes widget: Keep the styling and line breaks of the notes (#2318)
+
+	Since 3.10.8.0-beta1
+	-----------------------------------
+	bugfix: client form not saving associated object properties (#2316)
+	bugfix: Add line breaks in memo custom properties when rendering (#2315)
+	bugfix: Remove 'completed_on' date condition when getting earned value from tasks (#2314)
+	bugfix: don't show the warning in widget when the member is selected (#2313)
+	bugfix: fix time entries qbo sync in background (#2312)
+	bugfix: fix expenses2 installer queries (#2311)
+	bugfix: fixed timesheets report dont uses overtime (#2310)
+	bugfix: 'Forecasted revenue' calc -> exclude bud expenses assigned to tasks (#2309)
+	bugfix: widget show message (#2304)
+	bugfix: time entry cost is not transferred to qbo (#2301)
+	bugfix: Project billing report: in excel export use price in expenses table (#2299)
+	bugfix: the search function under the workflow permission is not working (#2283)
+	bugfix/auto scroll issue (#2317)
+	bugfix: can't add lines to invoice in php8 (#2308)
+	bugfix: cant classify email with attachments by drag and drop (#2307)
+	bugfix: can't add task with subtasks (#2305)
+	bugfix: can't instantiate templates in php8 (#2302)
+
+	Since 3.10.7.x
+	-----------------------------------
+	bugfix: php8 compatibility fixes (#2295)
+	bugfix: when sending vars to invoice print view 'invoice_notebook' must be an array always (#2292)
+	bugfix: don't call abstract class ContentDataObjects methods directly, it gives errors in php8 and also we don't need to do that (#2291)
+	bugfix: resize work performed data table in task module (#2273)
+	bugfix: Remove manual estimated cost option for tasks (#2234)
+
+	Since 3.10.7.4
+	-----------------------------------
+	improvement: forecast vs actual report (#2296)
+	improvement: Contract status report: rename column to 'Cost remaining budget (vs. contract amount)' (#2298)
+	bugfix: Correct filtering in widgets for the current year (#2297)
+	bugfix: times transferred twice to qbo (#2294)
+
+	Since 3.10.7.3
+	-----------------------------------
+	bugfix: remove default value of text columns to be compatible with Mysql (#2288)
+	bugfix: after time drag and drop the status classification is doubled (#2289)
+
+	Since 3.10.7.2
+	-----------------------------------
+	feature: add description to contract hours custom property (#2282)
+	bugfix: widget breadcrumbs user preference is not using the default value (#2285)
+	bugfix: add slashes to escape quotes (#2284)
+	bugfix: string numbers needs to be casted to float before operating with them in php8 (#2286)
+	bugfix: prevent error in notification manager when $log is not a valid object
+
+	Since 3.10.7.1
+	-----------------------------------
+	feature: create forecasted vs actual revenue report (#2280) 
+	bugfix: invoice print compatibility with line taxes and better alignment of line taxes in form (#2281)
+	bugfix: exclude disabled user's calendar from import/export from google calendar (#2279)
+	bugfix: add total_rows key to the response (#2278)
+	bugfix: fix crpm installer when member_custom_properties is not installed
+
+	Since 3.10.7.0
+	-----------------------------------
+	feature: develop 'contract status' and 'project cost summary' reports (#2259)
+	bugfix: need to call save function on task when time added/edited/deleted (#2276)
+	bugfix: if the user can't modify the associated member in the add/edit object form, then we must always inherit it from the main member, mo matter if it is already classified in a member of the dimension (example: update project type when changing project) (#2269)
+	bugfix: invoice template not appending expense category to line description (#2268)
+	bugfix: Change deleting a contact notification (#2267) 
+
+	Since 3.10.7.0-rc2
+	-----------------------------------
+	bugfix: fix advanced core update script (#2274)
+
+	Since 3.10.7.0-rc1
+	-----------------------------------
+	bugfix: don't use db commit in advanced billing helpers, they are already used in the main transaction, and nested transactions can cause unconsistent data (#2272)
+	bugfix: remove comment that went into html of invoice print
+	bugfix: use en_us as default localization in upgrade script when no language is defined in config.php
+
+	Since 3.10.7.0-beta11
+	-----------------------------------
+	bugfix: client company not classified in new project (#2266) 
+	bugfix: invoice generation excludes expense with no unit price (#2265) 
+	bugfix: fix js errors when getting properties of null or undefined at income.js (#2264)
+	bugfix: recalculate total worked time when subtask added/removed (#2262) 
+	improvement: utilization report improvements (#2263)
+	improvement: Weekly view: add task/subtask structure to the task list (#2261) 
+	improvement: allow to set permissions for non-custom reports (#2257) 
+
+	Since 3.10.7.0-beta10
+	-----------------------------------
+	feature: add contract type to the project member (#2220) 
+	bugfix: can't edit user permissions (#2258) 
+	bugfix: don't use project's parent member data instead of invoice's project data when printing (#2260)
+
+	Since 3.10.7.0-beta9
+	-----------------------------------
+	bugfix: project due and paid amount not recalcualted after saving payment receipt (#2256)
+	bugfix: make expense categories selctor not multiple (#2255)
+	bugfix: fix errors that prevented general search to execute (#2254)
+	bugfix: don't autoclassify objects in billing clients, most important when instantiating task or expense tempaltes (#2252)
+	bugfix: avoid adding one member to the time members (#2251)
+	bugfix: fix infinite reloading when opening a task from external link and task has budgeted expense list
+
+	Since 3.10.7.0-beta8
+	-----------------------------------
+	bugfix: more overview performance issues (#2249) 
+	bugfix: notes column not present in contacts list (#2246)
+	bugfix: error adding expense from mobile when status dim is not installed (#2245)
+	bugfix: php8 compatibility fixes (#2244) (#2247) 
+	bugfix: mobile expenses add: no client assigned if approval status is set
+
+	Since 3.10.7.0-beta7
+	-----------------------------------
+	bugfix: Change Contract hours per day it should say contract hours (#2243)
+	bugfix: clients tab always empty (#2242) 
+	bugfix: performance issues dashboard (#2241) 
+	bugfix: invoice list initial load empty list (#2237) 
+	bugfix: format number and amount custom properties in group totals (#2236) 
+	bugfix: remove static def from function that uses $this, this was causing error when saving permissions (#2235)
+	bugfix: minor php8 compatibility fix (#2239)
+	bugfix: fix mail update fn, column length too big
+
+	Since 3.10.7.0-beta6
+	-----------------------------------
+	bugfix: expenses from mobile are inheriting project's billing client (#2233)
+	bugfix: php8 compatibility fixes (#2232)
+
+	Since 3.10.7.0-beta5
+	-----------------------------------
+	bugfix: in project form get client billing address before main address (#2231) 
+	bugfix: when adding timeslot don't initialize clients selector with billing clients (#2231) 
+	bugfix: fix hardcoded order by "project_number" that was affecting project custom reports (#2230) 
+	bugfix: Remove condition that prevented creating hidden input to read selected member in weekly view (#2228)
+	bugfix: php8 compatibility fixes de 3.10.7.0-beta4 (#2226)
+	bugfix: invoices list order by not working for custom props and due date (#2229)
+	bugfix: import tool expenses importing issues (#2227)
+
+	Since 3.10.7.0-beta4
+	-----------------------------------
+	bugfix: Improve performance for importing time entries (#2224)
+	bugfix: add time: cast operands to use when parsing hours and minutes to prevent errors in php8
+	bugfix: fix the critical issue that puts totals in zero after editing an invoice
+
+	Since 3.10.7.0-beta3
+	-----------------------------------
+	bugfix: fix several critical issues
+
+	Since 3.10.7.0-beta2
+	-----------------------------------
+	feature: new split invoice mode, recalculate each line amounts using allocation percentage (#2203)
+	bugfix: duplicated subtotal line when printing invoice with taxes (#2214)
+	bugfix: subscribers are lost when editing invoice (#2213)
+	bugfix: when using qbo plugin and invoice split feature only the first invoice was being synchronized after creation (#2212)
+	bugfix: lump sum invoices duplicates the expense amount if the project has a subproject (#2211)
+	bugfix: ensure that we can use advanced billing functions before executing them in other plugins (#2208)
+	bugfix: fx function that makes dimension groups in tasks list (#2216)
+	bugfix: missing es_es and es_la translations (#2217) 
+
+	Since 3.10.7.0-beta1
+	-----------------------------------
+	feature: add generic dimension columns in object picker for every object type and use breadcrumbs (#2201)
+	feature: always ask if overwrite expense amount when product type change or budgeted expense change (#2199) 
+	feature: Invoice templates: Automatic generation of line items -> Expenses -> (#2187)
+	bugfix: improve how mandatory labor category field is handled in weekly view (#2194)
+	bugfix: Remove 'Calculated method' duplicate from the task view (#2198)
+	bugfix: plugin update fixes (#2210) 
+	bugfix: broken dashboard in latest beta (#2209) 
+	bugfix: fix some static/non-static function calls (#2207)
+	bugfix: Add the missing columns in the update script for advanced_billing plugin (#2206)
+	bugfix: non static getObjectTypeId() was called with self instead of $this in ContentDataObjects listing (#2204)
+	bugfix: ensure that we can use advanced billing functions before executing them in other plugins (#2208)
+	bugfix: footer sometimes is cut in half instead of rendering complete in next page (#2202)
+	bugfix: fix project name at invoice print (#2193)
+
+	Since 3.10.6.x
+	-----------------------------------
+	feature: invoice templates new option to group by labor category and task (#2175)
+	feature: Rename timeslots to time entries (#2091) 
+	feature: add 'billable' custom property to expense category (#2075) 
+	feature: task financial add tm fixed fee (#2130) 
+	feature: php8 compatibility changes (#2188)
+	bugfix: order project by displayname for mobile (#2186)
+
+	Since 3.10.6.8
+	-----------------------------------
+	bugfix: recalculate financials when the subtask is edited in the task form (#2195)
+	bugfix: suggest using command line to upgrade plugins when no error message is found
+
+	Since 3.10.6.7
+	-----------------------------------
+	feature: copy task templates (#2192)
+	bugfix: member custom report issues (#2190) 
+	bugfix: calculation for executed cost/price for tasks and project financials (#2191)
+
+	Since 3.10.6.6
+	-----------------------------------
+	feature: Import tool: Ability to search tasks by name, project and job phase members (#2184)
+	feature: Import tool: Add functionality to connect actual expense to task (#2184)
+	feature: append member names to weekly view task selector (#2183) 
+	bugfix: when adding/editing email templates the subject and to fields were initialized always as if were an email tempate for invoicing, (#2185)
+	bugfix: in budget by tasks report excel export: include subtasks like in the print view (#2182)
+	bugfix: deactivate mail rules plugin when deactivating mail plugin (#2181)
+	bugfix: add default hardcoded mail template to use only when no email template is found for notifications (#2180)
+	Invoice Margins need adjustment (#2178)
+	bugfix: member selector based on extjs sometimes don't load the initial list (#2177)
+
+	Since 3.10.6.5
+	-----------------------------------
+	bugfix: in core dim plugin update: expenses plugin must be in latest version before saving timeslot and triggering project calculations (#2176)
+	bugfix: Project earnings report: Rename 'percent complete' to 'Revenue vs. Budget %' (#2173)
+	bugfix: Fix time entry imports, avoid force recalculations (#2172)
+	bugfix: prevent inconsistencies with tsheets time off sync (#2171) 
+	bugfix: project financial calculations invoiced, due, paid amounts (#2170) 
+	bugfix: remove the condition that the description is mandatory under time tab for mobile (#2166)
+
+	Since 3.10.6.4
+	-----------------------------------
+	bugfix: fix error when trying to add subtask if task in not opened in tasks tab (#2167)
+	bugfix: When generating invoice using tasks, remove 'is_billable' constraint (#2164)
+	bugfix: multi assignment subtasks are not inheriting is_billable property (#2163)
+
+	Since 3.10.6.3
+	-----------------------------------
+	feature: Add columns and filters to task picker (#2150) 
+	feature: add app log details to user edition (#2143) 
+	bugfix: fix plugin installer scripts (#2135)
+
+	Since 3.10.6.2
+	-----------------------------------
+	bugfix: job task members not shown in time list (#2160) 
+	bugfix: rollback Task: In budgeted expenses: When you enter an actual expense is not taking the price and the cost (#2159)
+	bugfix: if vendors dimension not used then use paid_by when sync expenses to qbo (#2158)
+	bugfix: time entries added using import tool ended with a company instead of an user, the query was searching only by name (#2155)
+	bugfix: Show invoicing status; Fix 'is_billable' inheriting from labor category (#2154)
+	improvement: run plugins update within general update process (#2157)
+	improvement: Actual expenses quick add: Support payment method and payment account fields (#2156)
+	improvement: custom login plugin - suport svg for custom logo (#2153) 
+
+	Since 3.10.6.1
+	-----------------------------------
+	feature: new api (#2112)
+	bugfix: Change password, picture, etc. loses user default labor category. Any call to save() function of an user was updating the category no matter if it was from add/edit form or not (#2152)
+	bugfix: don't trigger qbo sync after each action in weekly view, queue the timeslots to be synchronized later by a cron event (#2151)
+	bugfix: Fix scenarios when the labor category is mandatory in the weekly view (#2149)
+	bugfix: add-vendor-name-and-bill-to-in-description-invoice-fields
+	bugfix: fix all line discounts and labor subtotal (#2147) 
+	bugfix: fix financials totals query when not grouping task list, the listing joins were duplicating several values depending on the dimension filters (#2146)
+	bugfix: in widget use task's earned value if the estimated price is manual (#2145)
+	bugfix: fix bad lang definition that overwrites empty langs (affecting invoice template selector) (#2144)
+	bugfix: fix-invoice-preview-max-width (#2140)
+
+	Since 3.10.6.0
+	-----------------------------------
+	feature: QBO: new config option to select dimension to map with classes for expenses (#2120)
+	bugfix: qbo sync pay methods and accounts for expenses are not enabled the first time (#2138)
+	bugfix: invoice print: fix project name (#2136)
+	bugfix: bad error handling when sync timeslots to tsheets (#2129)
+	bugfix: fix user classification in non-permission dimensions (#2139)
+	bugfix: installer errors in plugins (#2119)
+	bugfix: remove default values for TEXT columns in install/upgrade scripts.
+	bugfix; remove horizontal scroll from invoice view (#2133)
+	bugfix: sent to thsheets button was not re synchronizing already synchronized timeslots (#2137)
+	bugfix: fix logic that adds the subtotal line to not add it when not necesary (#2134)
+	bugfix: subtotal appearing twice in invoice template (#2131)
+
+	Since 3.10.6.0-rc1
+	-----------------------------------
+	bugfix: Remove special query for user "view history" and use the same query as for other objects (#2127)
+
+	Since 3.10.6.0-beta3
+	-----------------------------------
+	bugfix: Fix the total calculations when 'advanced_payment_receipts' is inactive (#2117)
+	bugfix: project earnings report remap to use persisted values (#2118)
+	bugfix: installer errors in plugins (#2119) 
+	bugfix: mobile-fix-search-project-by-display (#2122) 
+	bugfix: Remove redundant logs (#2124)
+	bugfix: fix-lang-on-expenses
+	bugfix: editing invoice in the form loses break down by exp category (#2126)
+	bugfix: Add Excel/CSV exports to the 'Budget by tasks' report (#2123)
+	bugfix: Fix bug that prevented PDF exports in budget by tasks report (#2123)
+	bugfix: Fix invoice tabs horizontal scroll and set main tab with preview (#2121)
+
+	Since 3.10.6.0-beta2
+	-----------------------------------
+	feature: add default approval status to expenses in mobile (#2111)
+	bugfix: Minor fixes for the 'Budget by tasks' report (#2114)
+	bugfix: task change classification triggers is billable question always (#2113)
+	bugfix: fix income hooks that renders task invoicing status in list and view (#2110)
+	bugfix: invoice print fix show hide subtotals and break down by exp cat (#2108)
+	bugfix: in time form after assign task, don't let user save before the classification is fully updated (#2116)
+	bugfix: fix reset password error handling (#2109)
+
+	Since 3.10.6.0-beta1
+	-----------------------------------
+	feature: improve inv template break down by exp category (#2105) 
+	feature: Redesign "Budget by tasks" report (#2090) 
+	feature: config option qbo sync only approved objects (#2072)
+	bugfix: if labor cat is required the add time button is not present when no context is selected in time list (#2107)
+	bugfix: when labor cat is required for time and we remove it from a time entry in the weekly view, it breaks (#2106)
+	bugfix: fix-remove-generate-project-invoice-buttom-in-time-module (#2104)
+	bugfix: fix/remove-blank-spaces-in-email-address-contacts-module (#2099) 
+
+	Since 3.10.5.5
+	-----------------------------------
+	bugfix: some tasks had wrong executed labor and that transferred the error to the project financials (#2103)
+	bugfix: add expense type to add/edit form in mobile (#2102)
+
+	Since 3.10.5.4
+	-----------------------------------
+	feature: Add 'remaining budgeted (vs Contract)' column to the project earnings report (#2096)
+	feature: make more flexible the due date calculation using payment terms, so we can add new terms and use the amount of days in the name to calculate the due date (#2089)
+	bugfix: ensure that tasks are added only once when calculating task group financial totals for list (#2100)
+	bugfix: Fix bugs that prevented running the report (#2095)
+	bugfix: fix-api-timeslot-with-members (#2094)
+	bugfix: after code refactor time is wrongly linked to invoices (#2093)
+	bugfix: fix loop in upgrade when saving timeslots for worked time recalculation and project financials (#2092)
+	bugfix: Expenses from a budget expense are not taking the info in the mobile version (#2101)
+
+	Since 3.10.5.3
+	-----------------------------------
+	bugfix: Fix the project financials calculation (#2088) 
+	bugfix: memory exhausted when calculating financial totals for tasks list without filters and without grouping (#2087)
+	bugfix: several fixes in installer
+
+    Since 3.10.5.2
+	-----------------------------------
+	bugfix: when changing project's client the old client's company is not unclassified from the project member #2086
+	bugfix: show avergae billing rate at project billing report labor summary for each labor category, mark blend ones in bold #2079
+	bugfix: company csv export, when a company does not have an address the csv data is not aligned correctly, because no empty cells are written to the file #2085
+	bugfix: Translate 'weekly view' to spanish #2076
+	bugfix: when editing member the color is overriden by parent's color #2084
+
+	Since 3.10.5.1
+	-----------------------------------
+	bugfix: fix invoice lines table when account does not have project managers dimension (#2083)
+	bugfix: feature that remembers last report conditions causes bug in other forms replacing the members when editing objects (#2082)
+	bugfix: dont allow to change project or client when editing invoice (#2081)
+	bugfix: when instantiating task template don't recalculate financials each time a task is saved, do it only once after all tasks are created (#2080) 
+	bugfix: improve performance calculating project financials in background when instantiating task template or massive task deletion (#2080) 
+	bugfix: fix financial totals for groups in tasks list and move code to "advanced_billing" plugin (#2080) 
+	bugfix: improve plugin manager to show better error messages (#2077)
+	bugfix: fix advanced_core plugin update script, was failing when executed by command line (#2077)
+
+	Since 3.10.5.0
+	-----------------------------------
+	feature: new widget and listing for vendors (#2069)
+	feature: config option to set non billable time expenses for fixedfee tasks (#2065)
+	bugfix: can't define variable for expenses that have several lines with same prod type (#2068)
+	
+	Since 3.10.5.0-rc2
+	-----------------------------------
+	bugfix: Issue with total worked time calculation after performance fixes (#2073)
+	bugfix:Weekly view fix: Escape special charachtes in the task tooltip (#2071)
+	bugfix: include subtotals in the project billing report subtotals (#2070)
+
+    Since 3.10.5.0-rc1
+	-----------------------------------
+	bugfix: Fix discount title on split invoice
+	bugfix: can't download excel export for custom report if report name has /
+
+	Since 3.10.5.0-beta4
+    -----------------------------------
+	bugfix: fix-fixed-fee-tasks-split-trash-invoiced #2064
+
+	Since 3.10.5.0-beta3
+    -----------------------------------
+	bugfix: Don't trigger task and project calculations after changing timeslot status, also improve performance at task calculations and save
+	Bugfix: Cant edit parent task when subtask has multiline desc (#2052)
+	Bugfix: Wrong members autoselected in forms and automatic invoice #2053
+	Bugfix: fix-site-address-in-invoice-project-table #2019
+	Bugfix: Develop fixed fee tasks for multi client invoices #2057
+	Bugfix: fix hook that adds financial tab to tasks #2055
+	Bugfix: Remove miscalculations by calculating project financials for estimated and executed values #2051
+	Bugfix: Fix the calculations of the estimated financials in the widgets #2056
+	Bugfix: unlink expenses and timeslots when trashing a task, ask confirmation to the user #2061
+	Bugfix: Fix totals calculation in the task module for financial values #2059
+	bugfix: Fix custom report calculation: 'profit margin' columns for the tasks #2063
+
+
+
+	Since 3.10.5.0-beta2
+	-----------------------------------
+	bugfix: Fix installation with custom tables prefixes (#2037)
+	bugfix: Check if config option for sync sent mails is present, if not the add (#2048)
+	bugfix: Fix calcultion fee column on invoice (#2044)
+	bugfix: Fix reasign button (#2049)
+	bugfix: Fix calculate overtime based on week days (#2046)
+	bugfix: In time module organize the columns by "Overtime"
+
+	Since 3.10.5.0-beta1
+	-----------------------------------
+	feature: revamp old feature that sends sent email to the "sent emails" folder of an email account in the mail server (#2043)
+	feature: new config option to define start date for overttime calculations (#2039)
+	bugfix: Fix display cost fee unitprice in invoice v2 (#2041)
+	bugfix: invoice generation not using overtime calcualted values for time lines (#2040)
+	bugfix: work progress widget not counting time entries without task (#2038)
+	bugfix: fix-install-prefix (#2037)
+
+	Since 3.10.4.x
+	-----------------------------------
+	feature: qbo sync cc expenses with qbo purchase (#2024)
+	feature: Improvement/save action channel in application logs (#2020)
+	bugfix: in-task-form-set-tab-order (#2036)
+	bugfix: fix-config-option-always-select-task-in-time-entries (#2029)
+	bugfix: in-expenses-do-not-inherit-cost-and-price-values (#2028)
+	bugfix: features-ermi-split (#2026)
+	bugfix: fix-display-cost-fee-unitprice-in-invoice (#2023)
+	
+	Since 3.10.4.8
+	-----------------------------------
+	bugfix: invoice-preview-get-main-project-name (#2006)
+
+	Since 3.10.4.7
+	-----------------------------------
+	bugfix: Fix invoice address config option (#2042)
+
+	Since 3.10.4.6
+	-----------------------------------
+	bugfix: if-no-contact-billing-address-let-use-blank-addres (#2035)
+	bugfix: Calculate estimated expenses financials when the task is changed (#2034)
+	bugfix: fix-po_number_and_labor_detail_on_inoive_generation (#2033)
+	bugfix: qbo sync must be triggered after drag and drop classification (#2032)
+	bugfix: add needed columns for tasks when updating advanced_billing (#2031)
+	bugfix: When showing error message in widgets, base it on 'total_time_estimate' (#2030)
+	bugfix: Remove conditions that prevented percent complete calculations (#2027)
+	bugfix: hotfix-save-detail-in-lump-sum-generation (#2025)
+	bugfix: template numeric variables don't allow to enter decimals (#2022)
+	bugfix: need to check if advanced_core plugin is installed before using its classes, add time from task didn't work (#2021)
+	bugfix: fix-invoice-generate-fixed-fee-tasks-name-duplicated (#2018)
+
+	Since 3.10.4.5
+	-----------------------------------
+	bugfix: configure ermi invoice layout (#2017)
+	bugfix: not all expense types are available in qbo sync (#2016)
+	bugfix: never allow expenses to be saved with currency_id=0 (#2015)
+	bugfix: fix-permission-can-manage-email-template (#2014)
+	bugfix: update default Feng Office logo and favicon (#2013)
+	bugfix: add margin to task list 'show all/more' actions to prevent overlap with scrollbar (#2012)
+
+	Since 3.10.4.4
+	-----------------------------------
+	bugfix: disable deprecated mandatory expense custom properties once used for qbo sync (#2009)
+	bugifx: fix permissions check in weekly view controller before making any change to times (#2005)
+	Bugfix: add total cost and price columns to budgeted exp reports (#1998)
+	bugfix: fix-notifications (#2003)
+	Bugfix: overtime make same calculations for billing as for cost (#2010)
+	bugfix: if task list date filter is empty then use empty datetime constant to prevent wrong filter initialization with now() (#2011)
+	bugfix: fix context manager function that gets member node, don't assume the tree is always present (#2004)
+	bugfix: add get/set for cost currency in timeslot model (#2008)
+	bugfix: fix-invoice-duplicate-taks-name-for-fixed-fee-tasks (#2007)
+
+	Since 3.10.4.3
+	-----------------------------------
+	fix-langs-invoices (#2002)
+	bugfix: rollback batch invoicing functions to previous code and check if project member exists before building lines data (#2001)
+	Bugfix: Check if 'income' plugin is installed (#2000)
+	fix-bill-to-invoice-order (#1996) 
+	Stop adding already existing column in the NM installer (#1988)
 
     Since 3.10.4.2
 	-----------------------------------

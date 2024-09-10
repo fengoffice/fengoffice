@@ -97,7 +97,9 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('reports', 'show_company_info_report_print', '1', 'BoolConfigHandler', '0', '0', NULL),
 	('general', 'use_time_quick_add_row', '1', 'BoolConfigHandler', 0, 0, NULL),
 	('general', 'reclassify_time_when_linking_task', '1', 'BoolConfigHandler', 0, 0, ''),
+	('general', 'ignored_dims_task_related_objs', '', 'ManageableDimensionsConfigHandler', '0', '0', ''),
 	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, ''),
+	('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, '');
 
@@ -185,8 +187,8 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_categories` (`name`, `is_
 	('connected systems', 0, 0, 9, 0);
 	
 INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES 
- ('task panel','tasksDateStart','','DateTimeConfigHandler',1,0,'date from to filter out task list'),
- ('task panel','tasksDateEnd','','DateTimeConfigHandler',1,0,'the date up to filter the list of tasks'),
+ ('task panel','tasksDateStart','0000-00-00 00:00:00','DateTimeConfigHandler',1,0,'date from to filter out task list'),
+ ('task panel','tasksDateEnd','0000-00-00 00:00:00','DateTimeConfigHandler',1,0,'the date up to filter the list of tasks'),
  ('task panel', 'show_notify_checkbox_in_quick_add', '1', 'BoolConfigHandler', 1, 0, 'Show notification checkbox in quick add task view'),
  ('task panel', 'can notify from quick add', '1', 'BoolConfigHandler', 0, 0, 'Notification checkbox default value'),
  ('task panel', 'can notify subscribers', '1', 'BoolConfigHandler', 0, 0, 'Notification checkbox default value'),
@@ -413,8 +415,7 @@ INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`t
  ('file revision', 'ProjectFileRevisions', 'project_file_revisions', 'content_object', 'file', 0),
  ('timeslot', 'Timeslots', 'timeslots', 'located', 'time', 0),
  ('template_task', 'TemplateTasks', 'template_tasks', 'content_object', 'task', 0),
- ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0),
- ('report_category', 'ReportCategories', 'report_category', 'located', 'reporting', 0);
+ ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0);
 
 UPDATE `<?php echo $table_prefix ?>contact_config_options` 
 SET `options`='{"no_empty_value":1, "option": [{"value": "1","text": "config_allow_stop_timer"},{"value": "2","text": "config_allow_pause_timer"},{"value": "3","text": "config_let_timer_continue"}]}'
@@ -1390,5 +1391,5 @@ INSERT INTO `<?php echo $table_prefix ?>timezones` (`id`, `country_code`, `name`
 (421,	'ZW',	'Africa/Harare',	0,	7200,	7200,	0);
 
 -- option Minimum number of characters for dimension search
-INSERT INTO `fo_config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
 VALUES ('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '');

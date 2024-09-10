@@ -11,7 +11,7 @@ class  SharingTableController extends ApplicationController {
 	 * 			[r] => 1 //read 
 	 * @throws Exception
 	 */
-	function afterPermissionChanged($groups, $permissions, $root_perm_info = null) {
+	function afterPermissionChanged($groups, $permissions = [], $root_perm_info = null) {
 		if (!is_array($groups)) {
 			if (is_numeric($groups)) $groups = array($groups);
 			else return;

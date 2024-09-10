@@ -90,4 +90,10 @@
 
 	'type webpage' => 'Tipo',
 	'link webpage' => 'Link',
+	
+	'First half month+' => 'Primer quincena del mes',
+	'Second half month+' => 'Segunda quincena del mes',
+	'First half of last month+' => 'Primer quincena mes pasado',
+	'Second half of last month+' => 'Segunda quincena mes pasado',
+	'year to date' => 'Año hasta la fecha',
 );

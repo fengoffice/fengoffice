@@ -157,7 +157,7 @@ class ProjectChart extends BaseProjectChart {
 	 * @param Project $project
 	 * @return booelean
 	 */
-	function canAdd(User $user, Project $project) {
+	static function canAdd(User $user, Project $project) {
 		return true;
 	} // canAdd
 

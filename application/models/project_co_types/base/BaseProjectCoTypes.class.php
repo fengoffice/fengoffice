@@ -230,7 +230,7 @@
     *
     * @return ProjectCoTypes 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ProjectCoTypes')) {
         $instance = new ProjectCoTypes();

@@ -28,7 +28,7 @@ CREATE TABLE `<?php echo $table_prefix ?>dimensions` (
   `is_system` tinyint(1) unsigned NOT NULL default '0',
   `is_default` tinyint(1) unsigned NOT NULL default '0',
   `default_order` int(10) NOT NULL default '0',
-  `options` TEXT NOT NULL,
+  `options` TEXT NULL,
   `permission_query_method` enum('mandatory','not_mandatory') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'mandatory',
   `is_required` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY  (`id`),
@@ -45,11 +45,11 @@ CREATE TABLE `<?php echo $table_prefix ?>members` (
   `depth` int(2) unsigned NOT NULL,
   `name` varchar(511) <?php echo $default_collation ?> NOT NULL default '',
   `display_name` varchar(511) <?php echo $default_collation ?> NOT NULL default '',
-  `description` TEXT NOT NULL,
+  `description` TEXT NULL,
   `object_id` int(10) unsigned,
   `order` int(10) unsigned NOT NULL default '0',
   `color` int(10) unsigned NOT NULL default '0',
-  `archived_on` datetime NOT NULL,
+  `archived_on` datetime NOT NULL default '1000-01-01',
   `archived_by_id` int(10) unsigned default NULL,
   PRIMARY KEY  (`id`),
   KEY `by_parent` USING HASH (`parent_member_id`),
@@ -111,7 +111,7 @@ CREATE TABLE `<?php echo $table_prefix ?>dimension_object_types` (
   `dimension_id` int(10) unsigned NOT NULL,
   `object_type_id` int(10) unsigned NOT NULL,
   `is_root` tinyint(1) unsigned NOT NULL default '0',
-  `options` TEXT NOT NULL,
+  `options` TEXT NULL,
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY  (`dimension_id`,`object_type_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -126,7 +126,7 @@ CREATE TABLE `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (
 CREATE TABLE `<?php echo $table_prefix ?>dimension_options` (
   `dimension_id` INTEGER UNSIGNED NOT NULL,
   `name` VARCHAR(100) NOT NULL,
-  `value` TEXT NOT NULL,
+  `value` TEXT NULL,
   PRIMARY KEY (`dimension_id`, `name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -134,7 +134,7 @@ CREATE TABLE `<?php echo $table_prefix ?>dimension_object_type_options` (
   `dimension_id` INTEGER UNSIGNED NOT NULL,
   `object_type_id` INTEGER UNSIGNED NOT NULL,
   `name` VARCHAR(100) NOT NULL,
-  `value` TEXT NOT NULL,
+  `value` TEXT NULL,
   PRIMARY KEY (`dimension_id`, object_type_id, `name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -463,6 +463,8 @@ CREATE TABLE `<?php echo $table_prefix ?>application_logs` (
   `is_silent` tinyint(1) unsigned NOT NULL default '0',
   `member_id` int(10) NOT NULL default '0',
   `log_data` text <?php echo $default_collation ?>,
+  `full_request` text <?php echo $default_collation ?> NULL,
+  `request_channel` varchar(511) <?php echo $default_collation ?> DEFAULT '',
   PRIMARY KEY  (`id`),
   KEY `created_on` USING BTREE (`created_on`,`is_silent`),
   KEY `object` (`rel_object_id`,`created_on`,`is_silent`),
@@ -589,8 +591,8 @@ CREATE TABLE `<?php echo $table_prefix ?>object_contact_permissions` (
 CREATE TABLE  `<?php echo $table_prefix ?>object_properties` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `rel_object_id` int(10) unsigned NOT NULL,
-  `name` text NOT NULL,
-  `value` text NOT NULL,
+  `name` TEXT NULL,
+  `value` TEXT NULL,
   PRIMARY KEY  (`id`),
   INDEX `ObjectID` (`rel_object_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
@@ -777,7 +779,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>project_webpages` (
 CREATE TABLE  `<?php echo $table_prefix ?>guistate` (
   `contact_id` int(10) unsigned NOT NULL default '1',
   `name` varchar(100) NOT NULL,
-  `value` text NOT NULL,
+  `value` TEXT NULL,
   PRIMARY KEY  (`contact_id`,`name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -1006,7 +1008,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>template_object_propertie
 `template_id` INT( 10 ) NOT NULL ,
 `object_id` INT( 10 ) NOT NULL ,
 `property` VARCHAR( 255 ) <?php echo $default_collation ?> NOT NULL ,
-`value` TEXT NOT NULL ,
+`value` TEXT NULL ,
 PRIMARY KEY ( `template_id` , `object_id` ,`property` )
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -1027,7 +1029,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>administration_logs` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `created_on` datetime NOT NULL,
   `title` varchar(50) NOT NULL default '',
-  `log_data` text NOT NULL,
+  `log_data` TEXT NULL,
   `category` enum('system','security') NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `created_on` (`created_on`),
@@ -1129,7 +1131,7 @@ CREATE TABLE  `<?php echo $table_prefix ?>widgets` (
   `title` varchar(255) NOT NULL,
   `plugin_id` int(10) unsigned NOT NULL DEFAULT 0,
   `path` varchar(512) NOT NULL,
-  `default_options` text NOT NULL,
+  `default_options` TEXT NULL,
   `default_section` varchar(64) NOT NULL,
   `default_order` int(10) NOT NULL,
   `icon_cls` varchar(64) NOT NULL DEFAULT '',
@@ -1284,7 +1286,7 @@ CREATE TABLE `<?php echo $table_prefix ?>template_instantiated_parameters` (
   `template_id` INTEGER UNSIGNED NOT NULL,
   `instantiation_id` INTEGER UNSIGNED NOT NULL,
   `parameter_name` varchar(255) <?php echo $default_collation ?> NOT NULL,
-  `value` TEXT NOT NULL,
+  `value` TEXT NULL,
   PRIMARY KEY (`template_id`, `instantiation_id`, `parameter_name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 

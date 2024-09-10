@@ -9,7 +9,7 @@ $all_webpage_types = WebpageTypes::getAllWebpageTypesInfo();
 // email types
 $all_email_types = EmailTypes::getAllEmailTypesInfo();
 // instant messenger types
-$im_types = ImTypes::findAll(array('conditions' => array('`disabled`=0'), 'order' => '`id`'));
+$im_types = ImTypes::instance()->findAll(array('conditions' => array('`disabled`=0'), 'order' => '`id`'));
 
 if (!isset($id_prefix)) {
 	$id_prefix = '';
@@ -127,7 +127,7 @@ if (!isset($id_prefix)) {
 		<div class="clear"></div>
 
 		<?php
-		$job_title_cp = CustomProperties::findOne(array('conditions' => "code='job_title' AND object_type_id=" . $contact->manager()->getObjectTypeId()));
+		$job_title_cp = CustomProperties::instance()->findOne(array('conditions' => "code='job_title' AND object_type_id=" . $contact->manager()->getObjectTypeId()));
 		$style = "";
 		if ($job_title_cp instanceof CustomProperty) $style = "display:none;";
 		?>
@@ -196,7 +196,7 @@ if (!isset($id_prefix)) {
 		<?php if (!$renderContext) { ?>
 			<div id="<?php echo $genid ?>add_contact_select_context_div" class="dataBlock"><?php
 																							$skipped_dimensions = array();
-																							$dims_with_perm = Dimensions::findAll(array('conditions' => 'defines_permissions=1'));
+																							$dims_with_perm = Dimensions::instance()->findAll(array('conditions' => 'defines_permissions=1'));
 																							foreach ($dims_with_perm as $dim_with_perm) {
 																								$skipped_dimensions[] = $dim_with_perm->getId();
 																							}

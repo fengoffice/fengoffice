@@ -2,6 +2,19 @@
 og.Breadcrumbs = {
 		
 	resetSelection: function () {
+		// delete any pending request to select a node
+		if (og.try_to_select_member_intervals) {
+			for (x in og.try_to_select_member_intervals) {
+				clearInterval(og.try_to_select_member_intervals[x]);
+			}
+			og.try_to_select_member_intervals = {};
+		}
+
+		// remove everything from the context
+		for (dimId in og.contextManager.dimensionMembers) {
+			og.contextManager.cleanActiveMembers(dimId);
+		}
+
 		// click root node in first tree, then call the next
 		for (dimId in og.contextManager.dimensionMembers) {
 			og.clickRootNodeAndCallNext(dimId, 0);
@@ -101,10 +114,11 @@ og.Breadcrumbs = {
 			var user_link_w = $('.header-content-right #userboxWrapper #userLink').width();
 			$('.header-content-right #userboxWrapper').css('width', (user_link_w + 65)+'px');
 			var right_w = $('.header-content-right').outerWidth();
-			if ($.browser.msie) {
+/*			if ($.browser.msie) {
 				if (right_w > 600) right_w = 600;
 				else if (right_w < 370) right_w = 370;
 			}
+*/
 			$('#right-header-cell').css('min-width', (right_w + 30)+'px');
 			$('#right-header-cell').css('width', (right_w + 30)+'px');
 			

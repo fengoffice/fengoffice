@@ -38,7 +38,7 @@ if (isset($email)){
 	add_page_action(lang('mark as unread'), get_url('mail', 'mark_as_unread', array('id' => $email->getId())), 'ico-mark-as-unread');
 	
 	if ( !logged_user()->isGuest()) {
-		add_page_action(lang('create task from email'), "javascript:og.render_modal_form('', {c:'task', a:'add_task', params: {id:".$email->getId().", from_email:".$email->getId().", assigned_to_contact_id:".logged_user()->getId()."}});", 'ico-task', null, null, true);
+		add_page_action(lang('create task from email'), "javascript:og.render_modal_form('', {c:'task', a:'add_task', params: {id:".$email->getId().", from_email:".$email->getId().", assigned_to_contact_id:".logged_user()->getId().", req_channel:'mail view - create task from email'}});", 'ico-task', null, null, true);
 		$ret = null;
 		Hook::fire('additional_email_actions', array('email' => $email), $ret);
 	}
@@ -101,7 +101,7 @@ if (isset($email)){
 
 	<?php $description = '<div class="coInfo">
 	<table>
-	<tr><td style="width:100px">' . lang('from') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getFromName()." <".$email->getFrom().">")) . '</td></tr>
+	<tr><td style="width:100px">' . lang('from') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getFrom())) . '</td></tr>
 	<tr><td>' . lang('to') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getTo())) . '</td></tr>';
 	if ($email->getCc() != '') {
 		$description .= '<tr><td>' . lang('mail CC') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getCc())) . '</td></tr>';
@@ -157,7 +157,7 @@ if (isset($email)){
 					
 					$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
 					<td><div id="att-link-container-'.$c.'">
-						<a target="_self" href="' . $download_url . '" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
+						<a target="_self" href="' . $download_url . '&fileAttachName='.$fName.'&winmailtype='.$winmailDat.'" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
 					</div></td></tr>';
 				}
 	      		$c++;
@@ -207,7 +207,8 @@ if (isset($email)){
 					$conversation_block .= '<div class="db-ico ico-user"></div>';
 				}
 				
-				$info_text = html_to_text($info->getTextBody());
+				// use strip_tags function to ensure we are not adding html code in this section, no matter the content we have in the text
+				$info_text = strip_tags($info->getTextBody());
 				if (strlen_utf($info_text) > 90) $info_text = substr_utf($info_text, 0, 90) . "...";		
 				
 				$view_url = get_url('mail', 'view', array('id' => $info->getId(), 'replace' => 1));

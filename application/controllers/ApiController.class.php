@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Console\View\Components\Task;
+
 /**
  * Middle class to API - FengOffice integration
  */
@@ -52,7 +54,7 @@ class ApiController extends ApplicationController {
             		$object_data = $object->getArrayInfo(true, true);
                 } elseif($object instanceof PaymentReceipt){
                     $object_data = $object->getArrayInfo(false, true);
-                    $product_type = ProductTypes::findById($object->getProductTypeId());
+                    $product_type = ProductTypes::instance()->findById($object->getProductTypeId());
                     if($product_type instanceof ProductType){
                         $object_data['product_type'] = $product_type->getName();
                     }
@@ -133,7 +135,7 @@ class ApiController extends ApplicationController {
     }
 
     //provides all of the members from the dimension member in question
-    private function list_members($request) {
+    private function list_members($request) {  
     	$service = $request ['srv'];
         $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
         $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
@@ -162,11 +164,11 @@ class ApiController extends ApplicationController {
         $type = ObjectTypes::instance()->findByName($service);
         
         //Debugging. Delete:
-        //Logger::log_r("Service: ". $service);
         
         if (!is_null($type))
           $typeId = $type->getId();
         
+
         switch ($service){
             case "workspace":
                 $dimension_id = Dimensions::findByCode('workspaces')->getId();
@@ -189,12 +191,22 @@ class ApiController extends ApplicationController {
 //         );
         
         $extra_conditions = '';
-        if ($name!=""){
-        	$extra_conditions .= " AND mem.name LIKE '%".$name."%'";
-        }
+
         if($dimension_id == Dimensions::findByCode('customer_project')->getId() && !$show_subprojects){
             $extra_conditions .= " AND mem.parent_member_id=0";
         }
+
+        //Chek if display_name is abiliable. 
+        if (check_column_exists( TABLE_PREFIX ."members", "display_name")) {
+            $name_type = 'display_name'; 
+        } else {
+            $name_type  = 'name';
+        }
+
+        if ($name!="") {
+            $extra_conditions .= " AND mem.$name_type  LIKE '%".$name."%' ";
+        }
+
         $params = array(
         		'dim_id' => $dimension_id, 
         		'type_id' => $typeId, 
@@ -202,6 +214,7 @@ class ApiController extends ApplicationController {
         		'limit' => $limit, 
         		'extra_conditions' => $extra_conditions,
         		'exclude_associations_data' => true,
+                'sort' => $name_type,
         );
         
         $memberController = new MemberController();
@@ -286,9 +299,87 @@ class ApiController extends ApplicationController {
         return $this->response('json', $tmp_objects);
     }
 
+    private function list_expense_types($request) {
+        $members = !empty($request['args']['members']) ? $request['args']['members'] : null;
+        $query_options = array(
+            'member_ids' => $members,
+        );
+
+        $actual_expense_types = config_option('set_actual_expense_type');
+        $filter_actual_expense_types = array_filter($actual_expense_types);
+        $tmp_objects = array();
+        $tmp_array=[];
+        $i=0;
+        foreach($actual_expense_types as $type)
+        {
+            $tmp_array[$i]['key']=$type;
+            $tmp_array[$i]['value']=lang($type);
+            $i++;
+        }
+        array_push($tmp_objects, $tmp_array);
+        return $this->response('json', $tmp_objects);
+    }
+
+    ///retrive all payment methods from custom propertie
+    private function list_payment_methods($request) {
+
+        $cp_values = '';
+        $expense_ot = ObjectTypes::findByName('expense');
+        $payment_receipt_ot = ObjectTypes::findByName('payment_receipt');
+        $payment_receipt_ot->getId();
+
+        $cp = CustomProperties::getCustomPropertyByCode($payment_receipt_ot->getId(), 'quickbooks_payment_method');
+        Hook::fire('override_list_custom_property_values', array('cp' => $cp), $cp_values);
+        $cp_values_arr=[];
+        $tmp_objects=[];
+        $cp_values_arr=explode(",",$cp_values);
+        
+        $tmp_array=[];
+        $i=0;
+        foreach($cp_values_arr as $type)
+        {
+            $tmp_value=explode("@",$type);
+            $tmp_array[$i]['key']=$tmp_value[0];
+            $tmp_array[$i]['value']=$tmp_value[1];
+            $i++;
+        }
+
+       array_push($tmp_objects, $tmp_array);
+       return $this->response('json', $tmp_objects);
+    }
+
+    ///retrive all payment methods from custom propertie
+    private function list_payment_accounts($request) {
+
+        $cp_values = [];
+        $expense_ot = ObjectTypes::findByName('expense');
+        $payment_receipt_ot = ObjectTypes::findByName('payment_receipt');
+        $payment_receipt_ot->getId();
+        //quickbooks_payment_account
+        //quickbooks_payment_method
+        $cp = CustomProperties::getCustomPropertyByCode($payment_receipt_ot->getId(), 'quickbooks_payment_account');
+        Hook::fire('override_list_custom_property_values', array('cp' => $cp), $cp_values);
+
+        $cp_values_arr=[];
+        $cp_values_arr=explode(",",$cp_values);
+        $tmp_array=[];
+        $tmp_objects=[];
+        $i=0;
+        foreach($cp_values_arr as $type)
+        {
+            $tmp_value=explode("@",$type);
+            $tmp_array[$i]['key']=$tmp_value[0];
+            $tmp_array[$i]['value']=$tmp_value[1];
+            $i++;
+        }
+        
+       array_push($tmp_objects, $tmp_array);
+      return $this->response('json', $tmp_objects);
+    }
+
     private function get_is_billable_by_budget_expense_id($request) {
         $bud_expense_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
-        $expense = Expenses::findById($bud_expense_id);
+        $expense = Expenses::instance()->findById($bud_expense_id);
         $is_billable = 0;
         if($expense instanceof Expense){
             $is_billable = $expense->getIsBillable();
@@ -298,11 +389,76 @@ class ApiController extends ApplicationController {
         return $this->response('json', $result);
     }
 
+
+    /**
+     * Retrive list of members for a specific dimension
+     * @params mixed options
+     * receives $request['args']['params']['dimension_code']
+     * @return object list
+     */
+    private function list_dimension_members($request)
+    {
+        //get the dimension id from the dimension code
+        $dimension_dim = Dimensions::findByCode($request['args']['params']['dimension_code']);//hour_types
+
+        //set auxiliar variables
+        $tmp_array=[];
+        $tmp_objects=[];
+        $i=0;
+
+        //get the members from the dimension id if exists
+        if ($dimension_dim instanceof Dimension) {
+            $dimensions = Members::instance()->findAll(array(
+                "conditions" => "dimension_id = ".$dimension_dim->getId(),
+                "order" => " name",
+            ));
+        
+            foreach($dimensions as $dimension)
+            {
+                $tmp_array[$i]['key']=$dimension->getId();
+                $tmp_array[$i]['value']=$dimension->getName();
+                $i++;
+            }
+        }
+       
+        //push the array to the object
+        array_push($tmp_objects, $tmp_array);
+       
+        //return the object
+        return $this->response('json', $tmp_objects);
+    }
+
+    private function list_labor_categories($request) {
+
+        $labor_categories_dim = Dimensions::findByCode('hour_types');
+
+        if ($labor_categories_dim instanceof Dimension) {
+            $labor_categories = Members::instance()->findAll(array(
+                "conditions" => "dimension_id = ".$labor_categories_dim->getId(),
+                "order" => " name",
+            ));
+        }
+
+        $tmp_array=[];
+        $tmp_objects=[];
+        $i=0;
+        foreach($labor_categories as $labor_category)
+        {
+            $tmp_array[$i]['key']=$labor_category->getId();
+            $tmp_array[$i]['value']=$labor_category->getName();
+            $i++;
+        }
+        
+       array_push($tmp_objects, $tmp_array);
+       
+       return $this->response('json', $tmp_objects);
+    }
+
     private function list_product_types($request) {
         $member_ids = !empty($request['args']['members']) ? $request['args']['members'] : null;
         $members = array();
         foreach($member_ids as $m_id){
-            $mem = Members::findById($m_id);
+            $mem = Members::instance()->findById($m_id);
             if($mem instanceof Member){
                 $members[] = $mem;
             }
@@ -313,7 +469,7 @@ class ApiController extends ApplicationController {
         if($use_associated_members){
             $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($members[0]->getId(), true);
             foreach($project_members as $pm_id){
-                $property_member = Members::findById($pm_id);
+                $property_member = Members::instance()->findById($pm_id);
                 if($property_member instanceof Member){
                     $members[] = $property_member;
                 }
@@ -327,7 +483,7 @@ class ApiController extends ApplicationController {
 
     private function get_product_type_by_id($request) {
         $prod_type_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
-        $prod_type= ProductTypes::findById($prod_type_id);
+        $prod_type= ProductTypes::instance()->findById($prod_type_id);
         $prod_type_data = array();
         if($prod_type instanceof ProductType){
             $prod_type_data = $prod_type->getArrayInfo();
@@ -340,10 +496,10 @@ class ApiController extends ApplicationController {
         $bud_expense_id = !empty($request['args']['id']) ? $request['args']['id'] : 0;
         $filtered_product_types = array();
         if($bud_expense_id > 0){
-            $expense_items = ExpenseItems::findAll(array('conditions' => 'expense_id ='.$bud_expense_id));
+            $expense_items = ExpenseItems::instance()->findAll(array('conditions' => 'expense_id ='.$bud_expense_id));
             foreach($expense_items as $item){
                 if($item->getProductTypeId() > 0){
-                    $pt = ProductTypes::findById($item->getProductTypeId());
+                    $pt = ProductTypes::instance()->findById($item->getProductTypeId());
                     if ($pt instanceof ProductType) {
                         $filtered_product_types[] = $pt->getArrayInfo();
                     }
@@ -541,6 +697,11 @@ class ApiController extends ApplicationController {
                     $object_data['payments'] = $payments;
                     $object_data['members_data'] = build_api_members_data($object);
                     array_push($temp_objects['budgeted_expenses'], $object_data);
+
+					$temp_objects['preferences'] = array(
+						'hide_cost_in_actual_expenses_form' => user_config_option('hide_cost_in_actual_expenses_form'),
+					);
+
                 } else {
                 	if ($object instanceof Timeslot) {
                 		$object_data = $object->getArrayInfo(false, true);
@@ -582,6 +743,10 @@ class ApiController extends ApplicationController {
                 }
                 $object_data['payments'] = $payments;
                 array_push($temp_objects['actual_expenses'], $object_data);
+				
+				$temp_objects['preferences'] = array(
+					'hide_cost_in_actual_expenses_form' => user_config_option('hide_cost_in_actual_expenses_form'),
+				);
             }
 
             return $this->response('json', $temp_objects);
@@ -758,7 +923,7 @@ class ApiController extends ApplicationController {
                             $dim_exp_category = Dimensions::findByCode('expense_categories');
                             if($product_type instanceof ProductType && $dim_exp_category instanceof Dimension){
                                 $dim_id_exp_category = $dim_exp_category->getId();
-                                $expense_category_ptm = ProductTypeMembers::findOne(array('conditions' => 'product_type_id='.$product_type_id.' AND dimension_id='.$dim_id_exp_category)); 
+                                $expense_category_ptm = ProductTypeMembers::instance()->findOne(array('conditions' => 'product_type_id='.$product_type_id.' AND dimension_id='.$dim_id_exp_category)); 
                                 if($expense_category_ptm instanceof ProductTypeMember){
                                     $additional_members[] = $expense_category_ptm->getMemberId();
                                 }
@@ -778,7 +943,7 @@ class ApiController extends ApplicationController {
                             }
                             // Assign new expense category to the object
                             if($request ['args'] ['expense_id'] > 0){
-                                $expense = Expenses::findById($request ['args'] ['expense_id']);
+                                $expense = Expenses::instance()->findById($request ['args'] ['expense_id']);
                                 $expense_members = $expense->getMembers();
                                 foreach ($expense_members as $member){
                                     if($member->getDimensionId() == $expense_category_dimension){
@@ -816,6 +981,9 @@ class ApiController extends ApplicationController {
                         		$object->setDocumentId($document_id);
                         	}
                         }
+                        if (!empty($request ['args'] ['payment_receipt']['expense_type'])) {
+                            $object->setExpenseType($request ['args'] ['payment_receipt']['expense_type']);
+                        }
                     }
                     break;
 
@@ -840,17 +1008,51 @@ class ApiController extends ApplicationController {
                 try {
                     $context = array();
                     $members = array();
-                    if (!empty($request['args']['members'])) {
-                        $members = $request['args']['members'];
+
+
+                    if($request ['srv']=='expense')//if object is expense
+                    {
+                        //if it has budgeted expense, get all form bugeted
+                        if (!empty($request['args']['expense_id'])) {
+                            $expenseAux = Expenses::instance()->findById($request['args'] ['expense_id']);
+                            if($expenseAux instanceof Expense)
+                            {
+                                $members = $expenseAux->getMemberIds();
+                            }
+
+                        }else if(!empty($request['args']['members'])){
+                                $members = $request['args']['members'];
+                        }
+
+                        //if it has default aproval status add
+                        //get default approval status
+						$status_dim = Dimensions::findByCode('status_timesheet');
+						if ($status_dim instanceof Dimension) {
+							$approval_status_dimension_id = $status_dim->getId();
+							if($approval_status_dimension_id>0)
+							{
+								$default_value = DimensionOptions::instance()->getOptionValue($approval_status_dimension_id, 'default_value');
+								if($default_value>0)
+								{
+									$members[]=$default_value;
+								}
+							}
+						}
+                    }
+
+                    //if members exists 
+                    if(count($members)>0)
+                    {
                         $context = get_context_from_array($members);
-                        if(count($members) == 1) {
+                        if(count($members) >= 1) {
                              // Use associated members if only one member is selected and it is a project
                             $project_ot_id = ObjectTypes::instance()->findByName('project')->getId();
-                            $member = Members::findById($members[0]);
+                            $member = Members::instance()->findById($members[0]);
                             if($member->getObjectTypeId() == $project_ot_id){
-                                $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($member->getId(), true);
+								$skipped_association_codes = array('project_billing_client');
+                                $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($member->getId(), true, true, $skipped_association_codes);
                                 foreach($project_members as $pm_id){
-                                    $property_member = Members::findById($pm_id);
+                                    $property_member = Members::instance()->findById($pm_id);
                                     if($property_member instanceof Member){
                                         $members[] = $property_member->getId();
                                     }
@@ -886,16 +1088,29 @@ class ApiController extends ApplicationController {
 
 	private function add_timeslot($request) {
 	
-		$members = array_var($request['args'], 'members', array());
+		//if member came by args 
+        $members = array_var($request['args'], 'members', array());
+        
+        //if not, get the task and then the members of the task!
+        if(!$members)
+        {
+            $taskAux = ProjectTasks::instance()->findById($request['args'] ['object_id']);
+            if($taskAux instanceof ProjectTask)
+            {
+                $members = $taskAux->getMemberIds();
+            }
+        }
+
 		// Get project member
 		$project_member = null;
 		$project_ot_id = ObjectTypes::findByName('project')->getId();
 		foreach($members as $m){
-			$member = Members::findById($m);
+			$member = Members::instance()->findById($m);
 			if($member instanceof Member){
 				if($member->getObjectTypeId() == $project_ot_id) $project_member = $member;
 			}
 		}
+
 		// Get client member associated to the project
 		if($project_member instanceof Member){
 			Env::useHelper('functions', 'crpm');
@@ -931,16 +1146,20 @@ class ApiController extends ApplicationController {
 
 		$controller = new TimeController();
 		$timeslot = $controller->add_timeslot($parameters);
+        if($timeslot instanceof Timeslot){
 		
-		$modified = false;
-		Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
-		
-		if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
-			Env::useHelper('functions', 'advanced_billing');
-			calculate_timeslot_rate_and_cost($timeslot);
-		}
+            $modified = false;
+            Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
+            
+            if ($modified && Plugins::instance()->isActivePlugin('advanced_billing')) {
+                Env::useHelper('functions', 'advanced_billing');
+                calculate_timeslot_rate_and_cost($timeslot);
+            }
 
-		return $this->response('json', true);
+            return $this->response('json', true);
+        }else{
+            return $this->response('json', false);
+        }
     }
     
     private function add_comment($request) {
@@ -1024,22 +1243,22 @@ class ApiController extends ApplicationController {
 
             $res_data = array(
                 array( 
-                'name' => "'".lang('upcoming')."'",
+                'name' => " ".lang('upcoming')." ",
                 'value' => array_var($task_stats, 'upcoming'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(15)',
                 'color' => '#fbc85a' // Yellow
                 ) , array( 
-                'name' => "'".lang('overdue')."'",
+                'name' => " ".lang('overdue')." ",
                 'value' => array_var($task_stats, 'late'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(11)',
                 'color' => '#fd7066' // Red
                 ) , array( 
-                'name' => "'".lang('completed')."'",
+                'name' => " ".lang('completed')." ",
                 'value' => array_var($task_stats, 'complete'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(1)',
                 'color' => '#0cbe9b' // Green
                 ) , array( 
-                'name' => "'".lang('without due date')."'",
+                'name' => " ".lang('without due date')." ",
                 'value' => array_var($task_stats, 'no_due_date'),
                 'list_url' => 'javascript:og.reload_tasks_list_with_status(14)',
                 'color' => '#b4b3b3' // Grey
@@ -1113,7 +1332,7 @@ class ApiController extends ApplicationController {
                     }
                 }
                 
-                if ($task['time_estimate'] == 0){
+                if ($task['total_time_estimate'] == 0){
                     $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
                     $tasks_without_estimated_time[] = $task;
                     $all_has_estimated_time = false;
@@ -1128,10 +1347,11 @@ class ApiController extends ApplicationController {
 
             $active_members = array();
             $context = active_context();
-            foreach ($context as $selection) {
-                if ($selection instanceof Member) $active_members[] = $selection;
+            if( $context){
+                foreach ($context as $selection) {
+                    if ($selection instanceof Member) $active_members[] = $selection;
+                }
             }
-
             $mnames = array();
             $allowed_contact_ids = array();
             foreach ($active_members as $member) {

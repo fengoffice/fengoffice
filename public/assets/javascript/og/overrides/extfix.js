@@ -318,18 +318,18 @@ Ext.grid.GridPanel.override({
 		
 		// disable prev,first buttons if first page
 		if(parseInt(current_page) == 1) {					
-			bba.first.disable();
-			bba.prev.disable();
+			if (bba.first) bba.first.disable();
+			if (bba.prev) bba.prev.disable();
 		}
 		if(parseInt(current_page) == 1 && total_pag > 1){
-			bba.last.enable();
-			bba.next.enable();
+			if (bba.last) bba.last.enable();
+			if (bba.next) bba.next.enable();
 		}
 		
 		//if((parseInt(data.totalCount) - parseInt(data.start))<= parseInt(bba.pageSize)){
 		if(Math.ceil(parseInt(data.totalCount) / parseInt(bba.pageSize)) == current_page){
-			bba.last.disable();
-			bba.next.disable();
+			if (bba.last) bba.last.disable();
+			if (bba.next) bba.next.disable();
 		}
 		
 		if (bba.loading) bba.loading.enable();

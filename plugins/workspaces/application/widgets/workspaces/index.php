@@ -46,7 +46,7 @@ if ($show_widget) {
 	$pg_array = logged_user()->getPermissionGroupIds();
 	$current_member_cond = $parent instanceof Member ? "AND parent_member_id=".$parent->getId() : "";
 	
-	$members = Members::findAll(array(
+	$members = Members::instance()->findAll(array(
 		'limit' => $limit,
 		'order' => "depth, name",
 		'conditions' => "object_type_id=$ws_ot_id $current_member_cond AND archived_by_id=0 AND EXISTS (

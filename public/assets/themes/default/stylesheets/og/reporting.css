@@ -756,6 +756,11 @@ table.report.custom-report.to-print tr.custom-report-table-heading th {
 
 /* Header Custom Fields*/
 
+#print-pdf table.report.custom-report {
+	min-width: 100%;
+	width: 100%;
+}
+
 #print-pdf .flex-cols{
 	width: 100%;
 	text-align: left;

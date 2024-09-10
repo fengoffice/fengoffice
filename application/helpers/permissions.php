@@ -28,7 +28,7 @@
   		$can_manage_contacts = false;
 		$pg_ids = $user->getPermissionGroupIds();
 		if (count($pg_ids) > 0) {
-			$pgs = SystemPermissions::findAll(array('conditions' => 'permission_group_id IN ('.implode(',',$pg_ids).')'));
+			$pgs = SystemPermissions::instance()->findAll(array('conditions' => 'permission_group_id IN ('.implode(',',$pg_ids).')'));
 			foreach ($pgs as $pg) {
 				if ($pg->getColumnValue('can_manage_contacts')) {
 					$can_manage_contacts = true;
@@ -89,7 +89,7 @@
   	
   	
   	function can_add_timeslots($user, $members) {
-  		return can_access($user, $members, Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+		return can_add($user, $members, Timeslots::instance()->getObjectTypeId());
   	}
   	
   	/**
@@ -138,7 +138,7 @@
 			$object_type_id = ProjectMilestones::instance()->getObjectTypeId();
 		}
 		if (!$member instanceof Member && is_array($member) && isset($member['id'])) {
-			$member = Members::findById($member['id']);
+			$member = Members::instance()->findById($member['id']);
 		}
 		
 		if ( $user->isGuest() || !$member || !$member->canContainObject($object_type_id)) {
@@ -255,7 +255,7 @@
 			} else {
 				$can_add = false;
 				if (config_option('let_users_create_objects_in_root') && $contact_pg_ids != '' && ($user->isAdminGroup() || $user->isExecutive() || $user->isManager())) {
-					$cmp = ContactMemberPermissions::findOne(array('conditions' => 'member_id=0 AND object_type_id='.$object_type_id.' AND permission_group_id IN ('.$contact_pg_ids.')'));
+					$cmp = ContactMemberPermissions::instance()->findOne(array('conditions' => 'member_id=0 AND object_type_id='.$object_type_id.' AND permission_group_id IN ('.$contact_pg_ids.')'));
 					$can_add = $cmp instanceof ContactMemberPermission && $cmp->getCanWrite();
 				}
 			}
@@ -265,7 +265,7 @@
 		// if there are required dimensions and no members selected then show correct error message.
 		if (!$no_required_dimensions && $membersInContext == 0 && !$can_add) {
 			$dim_names = array();
-			$required_dimensions = Dimensions::findAll(array('conditions' => 'id IN ('.implode(',',$required_dimensions_ids).')'));
+			$required_dimensions = Dimensions::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$required_dimensions_ids).')'));
 			foreach ($required_dimensions as $dim) {
 				$dim_names[] = $dim->getName();
 			}
@@ -366,7 +366,7 @@
 				$return = false;
 				if (config_option('let_users_create_objects_in_root') && $contact_pg_ids != "" && ($user->isAdminGroup() || $user->isExecutive() || $user->isManager())) {
 					$cond = $delete ? 'AND can_delete = 1' : ($write ? 'AND can_write = 1' : '');
-					$cmp = ContactMemberPermissions::findOne(array('conditions' => "member_id=0 AND object_type_id=$object_type_id AND permission_group_id IN ($contact_pg_ids) $cond"));
+					$cmp = ContactMemberPermissions::instance()->findOne(array('conditions' => "member_id=0 AND object_type_id=$object_type_id AND permission_group_id IN ($contact_pg_ids) $cond"));
 					$return = $cmp instanceof ContactMemberPermission;
 				}
 				return $return;
@@ -519,7 +519,7 @@
 		ini_set('memory_limit', '512M');
 		$member_permissions = array();		
 		$dimensions = array();
-		$dims = Dimensions::findAll(array('order' => 'default_order'));
+		$dims = Dimensions::instance()->findAll(array('order' => 'default_order'));
 		$members = array();
 		$member_types = array();
 		$allowed_object_types = array();
@@ -557,7 +557,7 @@
 				}
 				
 				if ($dim->deniesAllForContact($pg_id)) {
-					$cmp_count = ContactMemberPermissions::count("`permission_group_id` = $pg_id and member_id in (select m.id from ".TABLE_PREFIX."members m where m.dimension_id=".$dim->getId().")");
+					$cmp_count = ContactMemberPermissions::instance()->count("`permission_group_id` = $pg_id and member_id in (select m.id from ".TABLE_PREFIX."members m where m.dimension_id=".$dim->getId().")");
 					if ($cmp_count > 0) {
 						$dim->setContactDimensionPermission($pg_id, 'check');
 					}
@@ -622,13 +622,13 @@
 		}
 		
 		if (config_option('let_users_create_objects_in_root')) {
-			$root_cmps = ContactMemberPermissions::findAll(array('conditions' => 'permission_group_id = '.$pg_id.' AND member_id = 0'));
+			$root_cmps = ContactMemberPermissions::instance()->findAll(array('conditions' => 'permission_group_id = '.$pg_id.' AND member_id = 0'));
 			foreach ($root_cmps as $root_cmp) {
 				$root_permissions[$root_cmp->getObjectTypeId()] = array('w' => $root_cmp->getCanWrite(), 'd' => $root_cmp->getCanDelete(), 'r' => 1);
 			}
 		}
 		
-		$all_object_types = ObjectTypes::findAll(array("conditions" => "`type` IN ('content_object', 'located') AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND `name` <> 'file revision'"));
+		$all_object_types = ObjectTypes::instance()->findAll(array("conditions" => "`type` IN ('content_object', 'located') AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND `name` <> 'file revision'"));
 		return array(
 			'member_types' => $member_types,
 			'allowed_object_types_by_member_type' => $allowed_object_types_by_member_type,
@@ -703,7 +703,7 @@
 					
 				  if (!$only_member_permissions) {
 					// save system permissions
-					$system_permissions = SystemPermissions::findById($pg_id);
+					$system_permissions = SystemPermissions::instance()->findById($pg_id);
 					if (!$system_permissions instanceof SystemPermission) {
 						$system_permissions = new SystemPermission();
 						$system_permissions->setPermissionGroupId($pg_id);
@@ -717,11 +717,11 @@
 					
 					// check max permissions for role, in case of modifying user's permissions
 					$role_id = "-1";
-					$tmp_contact = Contacts::findOne(array('conditions' => 'permission_group_id = '.$pg_id));
+					$tmp_contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.$pg_id));
 					if ($tmp_contact instanceof Contact) {
 						$role_id = $tmp_contact->getUserType();
 					}
-					$max_role_system_permissions = MaxSystemPermissions::findOne(array('conditions' => 'permission_group_id = '.$role_id));
+					$max_role_system_permissions = MaxSystemPermissions::instance()->findOne(array('conditions' => 'permission_group_id = '.$role_id));
 					if ($max_role_system_permissions instanceof MaxSystemPermission) {
 						foreach ($sys_permissions_data as $col => &$val) {
 							$max_val = $max_role_system_permissions->getColumnValue($col);
@@ -749,14 +749,14 @@
 					//object type root permissions
 					$can_have_root_permissions = config_option('let_users_create_objects_in_root') && in_array($user_type_name, array('Super Administrator','Administrator','Manager','Executive'));
 					if ($rp_genid && $can_have_root_permissions) {
-						//ContactMemberPermissions::delete("permission_group_id = $pg_id AND member_id = 0");
+						//ContactMemberPermissions::instance()->delete("permission_group_id = $pg_id AND member_id = 0");
 						foreach ($rp_permissions_data as $name => $value) {
 							if (str_starts_with($name, $rp_genid . 'rg_root_')) {
 								$rp_ot = substr($name, strrpos($name, '_')+1);
 
                                 if (!is_numeric($rp_ot) || $rp_ot <= 0) continue;
 
-                                $root_perm_cmp = ContactMemberPermissions::findById(array('permission_group_id' => $pg_id, 'member_id' => 0, 'object_type_id' => $rp_ot));
+                                $root_perm_cmp = ContactMemberPermissions::instance()->findById(array('permission_group_id' => $pg_id, 'member_id' => 0, 'object_type_id' => $rp_ot));
                                 if (!$root_perm_cmp instanceof ContactMemberPermission) {
                                     if($value >= 1){
                                         $root_perm_cmp = new ContactMemberPermission();
@@ -770,7 +770,7 @@
                                     }
                                 }elseif($value == 0){
                                     //DELETE
-                                    ContactMemberPermissions::delete("permission_group_id = $pg_id AND member_id = 0 AND object_type_id = $rp_ot");
+                                    ContactMemberPermissions::instance()->delete("permission_group_id = $pg_id AND member_id = 0 AND object_type_id = $rp_ot");
                                     $root_permissions_sharing_table_delete[] = $rp_ot;
                                 }
 
@@ -799,7 +799,7 @@
 			// set all permissions to read_only if user is guest
 			if ($is_guest) {
 				try {
-					$all_saved_permissions = ContactMemberPermissions::findAll(array("conditions" => "`permission_group_id` = $pg_id"));
+					$all_saved_permissions = ContactMemberPermissions::instance()->findAll(array("conditions" => "`permission_group_id` = $pg_id"));
 					foreach ($all_saved_permissions as $sp) {/* @var $sp ContactMemberPermission */
 						if ($sp->getCanDelete() || $sp->getCanWrite()) {
 							$sp->setCanDelete(false);
@@ -807,7 +807,7 @@
 							$sp->save();
 						}
 					}
-					$cdps = ContactDimensionPermissions::findAll(array("conditions" => "`permission_type` = 'allow all'"));
+					$cdps = ContactDimensionPermissions::instance()->findAll(array("conditions" => "`permission_type` = 'allow all'"));
 					foreach ($cdps as $cdp) {
 						$cdp->setPermissionType('check');
 						$cdp->save();
@@ -821,7 +821,7 @@
 			// check the status of the changed dimensions to set 'allow_all', 'deny_all' or 'check'
 			try {
 					
-				$dimensions = Dimensions::findAll(array("conditions" => array("`id` IN (SELECT DISTINCT `dimension_id` FROM ".Members::instance()->getTableName(true)." WHERE `id` IN (?))", $changed_members)));
+				$dimensions = Dimensions::instance()->findAll(array("conditions" => array("`id` IN (SELECT DISTINCT `dimension_id` FROM ".Members::instance()->getTableName(true)." WHERE `id` IN (?))", $changed_members)));
 				foreach ($dimensions as $dimension) {
 					$dimension->setContactDimensionPermission($pg_id, 'check');
 				}
@@ -839,7 +839,7 @@
 			
 			if (isset($permissions) && !is_null($permissions) && is_array($permissions)) {
 				try {
-					$tmp_contact = Contacts::findOne(array('conditions' => 'permission_group_id = '.$pg_id));
+					$tmp_contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.$pg_id));
 					if ($tmp_contact instanceof Contact) {
 						$user_type_name = $tmp_contact->getUserTypeName();
 						$role_id = $tmp_contact->getUserType();
@@ -927,7 +927,7 @@
 							foreach ($all_perm_deleted as $mid => $del) {
 								if ($del) {
 									// also check in contact_member_permissions
-									$cmps = ContactMemberPermissions::findAll(array('conditions' => 'permission_group_id='.$pg_id." AND member_id=$mid"));
+									$cmps = ContactMemberPermissions::instance()->findAll(array('conditions' => 'permission_group_id='.$pg_id." AND member_id=$mid"));
 									if (!is_array($cmps) || count($cmps) == 0) {
 										$member_ids_to_delete[] = $mid;
 									}
@@ -997,7 +997,7 @@
 				if ($update_contact_member_cache) {
 					try {
 						$contactMemberCacheController = new ContactMemberCacheController();
-						$group = PermissionGroups::findById($pg_id);
+						$group = PermissionGroups::instance()->findById($pg_id);
 						
 						$real_group = null;
 						if($group->getType() == 'user_groups'){
@@ -1015,7 +1015,7 @@
 						foreach ($users_ids_to_check as $us_id) {
 							if(!in_array($us_id, $users_ids_checked)){
 								$users_ids_checked[] = $us_id;
-								$us = Contacts::findById($us_id);
+								$us = Contacts::instance()->findById($us_id);
 								if($us instanceof Contact){
 									$contactMemberCacheController->afterUserPermissionChanged($us, $permissions, $real_group);
 								}
@@ -1038,7 +1038,7 @@
 		}
 		
 		// remove contact object from members where permissions were deleted
-		$user = Contacts::findOne(array('conditions' => 'permission_group_id='.$pg_id));
+		$user = Contacts::instance()->findOne(array('conditions' => 'permission_group_id='.$pg_id));
 		if ($user instanceof Contact) {
 			$to_remove = array();
 			if (isset($all_perm_deleted) && is_array($all_perm_deleted)) {
@@ -1069,7 +1069,7 @@
 		}
 		
 		if (logged_user()->isMemberOfOwnerCompany() || logged_user()->isAdminGroup()) {
-			$companies = Contacts::findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", 'order' => 'first_name'));
+			$companies = Contacts::instance()->findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", 'order' => 'first_name'));
 		} else {
 			$companies = array(owner_company());
 			if (logged_user()->getCompany() instanceof Contact) $companies[] = logged_user()->getCompany();
@@ -1080,7 +1080,7 @@
 		foreach ($dim_obj_types as $dim_obj_type) {
 			// To draw a row for each object type of the dimension
 			if ( !array_key_exists($dim_obj_type->getContentObjectTypeId(), $allowed_object_types) && (!$member || $dim_obj_type->getDimensionObjectTypeId() == $member->getObjectTypeId()) ) {
-				$allowed_object_types[$dim_obj_type->getContentObjectTypeId()] = ObjectTypes::findById($dim_obj_type->getContentObjectTypeId());
+				$allowed_object_types[$dim_obj_type->getContentObjectTypeId()] = ObjectTypes::instance()->findById($dim_obj_type->getContentObjectTypeId());
 				$allowed_object_types_json[] = $dim_obj_type->getContentObjectTypeId();
 			}
 		}
@@ -1142,7 +1142,7 @@
 				// query the permissions for user groups and contacts that are not denied in all members of the dimension
 				$member_permissions[$pg_id] = array();
 				if ($member) {
-					$mpgs = ContactMemberPermissions::findAll(array("conditions" => array("`permission_group_id` = ? AND `member_id` = ? 
+					$mpgs = ContactMemberPermissions::instance()->findAll(array("conditions" => array("`permission_group_id` = ? AND `member_id` = ? 
 							AND object_type_id IN (".implode(',', $allowed_object_types_json).") $disabled_ot_cond", $pg_id, $member->getId())));
 					if (is_array($mpgs)) {
 						foreach ($mpgs as $mpg) {
@@ -1185,13 +1185,13 @@
 			if ($parent == 0) {
 				$user_types = implode(',', config_option('give_member_permissions_to_new_users'));
 				if (trim($user_types) != "") {
-					$users = Contacts::findAll(array('conditions' => "user_type IN (".$user_types.")"));
+					$users = Contacts::instance()->findAll(array('conditions' => "user_type IN (".$user_types.")"));
 					
 					foreach ($users as $user) {
 						if (!isset($permission_parameters['member_permissions'][$user->getPermissionGroupId()]) || count($permission_parameters['member_permissions'][$user->getPermissionGroupId()]) == 0) {
 							$user_pg = array();
 							foreach ($permission_parameters['allowed_object_types'] as $ot){
-								$role_perm = RoleObjectTypePermissions::findOne(array('conditions' => array("role_id=? AND object_type_id=?", $user->getUserType(), $ot->getId())));
+								$role_perm = RoleObjectTypePermissions::instance()->findOne(array('conditions' => array("role_id=? AND object_type_id=?", $user->getUserType(), $ot->getId())));
 								$user_pg[] = array(
 										'o' => $ot->getId(),
 										'w' => $role_perm instanceof RoleObjectTypePermission ? ($role_perm->getCanWrite()?1:0) : 0,
@@ -1214,7 +1214,7 @@
 	function save_member_permissions($member, $permissionsString = null, $save_cmps = true, $update_sharing_table = true, $fire_hook = true, $update_contact_member_cache = true) {
 		@set_time_limit(0);
 		ini_set('memory_limit', '1024M');
-
+        $permissions = false;
 		if (!$member instanceof Member) return;
 		if (is_null($permissionsString)) {
 			$permissionsString = array_var($_POST, 'permissions');
@@ -1230,7 +1230,7 @@
 		// if the user does not have privileges to set the permissions
 		// then build the default permissions based on the config options and the parent
 		if (!$permissions) {
-			$add_log = ApplicationLogs::findOne(array("order"=>"id DESC", "conditions"=>array("member_id=?", $member->getId())));
+			$add_log = ApplicationLogs::instance()->findOne(array("order"=>"id DESC", "conditions"=>array("member_id=?", $member->getId())));
 			$is_new_member = !($add_log instanceof ApplicationLog) || $add_log->getAction()=='add';
 			
 			if ($is_new_member) {
@@ -1279,7 +1279,7 @@
 					}
 					
 					// check max permissions for user type
-					$tmp_contact = Contacts::findOne(array('conditions' => 'permission_group_id = '.$perm->pg));
+					$tmp_contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.$perm->pg));
 					if ($tmp_contact instanceof Contact) {
 						$max_role_ot_perms = MaxRoleObjectTypePermissions::instance()->findAll(array('conditions' => "role_id = '". $tmp_contact->getUserType() ."'"));
 						$max_perm = null;
@@ -1336,7 +1336,7 @@
 			
 			
 			foreach ($allowed_pg_ids as $key=>$mids){
-				$root_cmp = ContactMemberPermissions::findById(array('permission_group_id' => $key, 'member_id' => $member->getId(), 'object_type_id' => $member->getObjectTypeId()));
+				$root_cmp = ContactMemberPermissions::instance()->findById(array('permission_group_id' => $key, 'member_id' => $member->getId(), 'object_type_id' => $member->getObjectTypeId()));
 				if (!$root_cmp instanceof ContactMemberPermission) {
 					$root_cmp = new ContactMemberPermission();
 					$root_cmp->setPermissionGroupId($key);
@@ -1392,7 +1392,7 @@
                 // users with permissions in root
                 if (config_option('let_users_create_objects_in_root')) {
 
-                    /*$users_with_permissions = Contacts::findAll(array("conditions" => "
+                    /*$users_with_permissions = Contacts::instance()->findAll(array("conditions" => "
 						disabled=0 AND permission_group_id IN (
 							SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
 							INNER JOIN ".TABLE_PREFIX."permission_groups pg ON pg.id=cmp.permission_group_id
@@ -1429,7 +1429,7 @@
 		$permission_group_ids = SystemPermissions::getAllPermissionGroupIdsWithSystemPermission($system_permission_name);
 		$contacts_ids = ContactPermissionGroups::getAllContactsIdsByPermissionGroupIds($permission_group_ids);
 
-		$users_with_permissions = Contacts::findAll(array("conditions" => "
+		$users_with_permissions = Contacts::instance()->findAll(array("conditions" => "
 						disabled=0 AND object_id IN (".implode(",", $contacts_ids).")
 					"));
 
@@ -1555,7 +1555,7 @@
 			//foreach ($apply_to_sub as $dim_id => $dim_perms) {
 				//foreach ($dim_perms as $parent_id => $perms) {
 				foreach ($apply_to_sub as $parent_id => $perms) {
-					//$dim_member_ids = Members::findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
+					//$dim_member_ids = Members::instance()->findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
 					$parent_member = Members::getMemberById($parent_id);
 					if ($parent_member instanceof Member) {
 						$dim_member_ids = $parent_member->getAllChildrenIds(true);
@@ -1571,7 +1571,7 @@
 			$apply_to_all = json_decode($apply_to_all_json);
 			
 			foreach ($apply_to_all as $dim_id => $perms) {
-				$dim_member_ids = Members::findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
+				$dim_member_ids = Members::instance()->findAll(array("id"=>true, "conditions"=>array("dimension_id=?",$dim_id)));
 				if (count($dim_member_ids) > 0) {
 					$_POST['permissions'] = generate_perm_objects_from_apply_to_permissions($perms, $dim_member_ids);
 				}
@@ -1589,7 +1589,7 @@
 		// root permissions
 		$rp_permissions_data = array();
 		$set_root_permissions = false;
-		$tmp_contact = Contacts::findOne(array('conditions' => "permission_group_id=$pg_id"));
+		$tmp_contact = Contacts::instance()->findOne(array('conditions' => "permission_group_id=$pg_id"));
 		if ($tmp_contact instanceof Contact && $tmp_contact->getUserType() > 0) {
 			if (in_array($tmp_contact->getUserTypeName(), array('Super Administrator','Administrator','Manager','Executive'))) {
 				$set_root_permissions = true;
@@ -1712,14 +1712,14 @@
 	}
 	
 	function do_member_parent_changed_refresh_object_permisssions($member_id, $old_parent_id, $new_parent_id) {
-		$member = Members::findById($member_id);
+		$member = Members::instance()->findById($member_id);
 		if (!$member instanceof Member) {
 			return;
 		}
 		
 		if ($old_parent_id > 0) {
 			$parent_ids = array();
-				$all_parents = Members::findById($old_parent_id)->getAllParentMembersInHierarchy(true);
+				$all_parents = Members::instance()->findById($old_parent_id)->getAllParentMembersInHierarchy(true);
 			foreach ($all_parents as $p){
 				$parent_ids[] = $p->getId();
 				}
@@ -1767,7 +1767,7 @@
 		//Add optimization for new parent hierarchy
 		if ($new_parent_id > 0) {
 			$new_parent_ids = array();
-			$all_new_parents = Members::findById($new_parent_id)->getAllParentMembersInHierarchy(true);;
+			$all_new_parents = Members::instance()->findById($new_parent_id)->getAllParentMembersInHierarchy(true);;
 
 			foreach ($all_new_parents as $np) {
 				$new_parent_ids[] = $np->getId();
@@ -1792,7 +1792,7 @@
 	 */
 	function get_users_with_permissions_in_root() {
 		if (config_option('let_users_create_objects_in_root')){
-			$users_with_permissions_in_root = Contacts::findAll(array("conditions" => "
+			$users_with_permissions_in_root = Contacts::instance()->findAll(array("conditions" => "
 						disabled=0 AND permission_group_id IN (
 							SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
 							INNER JOIN ".TABLE_PREFIX."permission_groups pg ON pg.id=cmp.permission_group_id
@@ -1806,7 +1806,7 @@
 			}
 
 			//super admins
-			$admins = Contacts::findAll(array('conditions' => "user_type = 1"));
+			$admins = Contacts::instance()->findAll(array('conditions' => "user_type = 1"));
 			foreach ($admins as $admin) {
 				if(!in_array($admin->getId(),$users_ids) ){
 					$users_with_permissions_in_root[] = $admin;

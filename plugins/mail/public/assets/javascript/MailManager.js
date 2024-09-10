@@ -92,12 +92,12 @@ og.MailManager = function() {
 					//reload columns for this folder
 					showFolderColumns();
 
-					if (d && d.totals) {
+/*					if (d && d.totals) {
 						manager.updateGridPagingToolbar({totalCount: d.totals.total_rows});
 					} else {
 						manager.reloadGridPagingToolbar('mail','list_all','mails-manager');
 					}
-					
+*/					
 					og.eventManager.fireEvent('replace all empty breadcrumb', null);
 					
 					// save last email date in a variable
@@ -1286,7 +1286,7 @@ og.MailManager = function() {
 	}
 	
 	this.topTbar2 = new Ext.Toolbar({
-		style: 'border:0px none; padding-top:0px;',
+		style: 'border:0px none; padding-top:0px; min-width:800px;',
 		items: top2
 	});
 		    
@@ -1303,7 +1303,7 @@ og.MailManager = function() {
 		closable: true,
 		loadMask: false,
 		id: 'mails-manager',
-		bbar: new og.CurrentPagingToolbar({
+		bbar: new og.InfinitePagingToolbar({
 			pageSize: mails_per_page,
 			store: this.store,
 			displayInfo: true,

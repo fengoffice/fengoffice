@@ -63,7 +63,7 @@ class TemplateTasks extends BaseTemplateTasks {
 		if ($only_parent_task_templates)
 			$conditions .= "  and `parent_id` = 0  ";
 		$order_by = "`title` ASC";
-		$tasks = TemplateTasks::find ( array ('conditions' => $conditions, 'order' => $order_by ) );
+		$tasks = TemplateTasks::instance()->find ( array ('conditions' => $conditions, 'order' => $order_by ) );
 		if (! is_array ( $tasks ))
 			$tasks = array ();
 		return $tasks;
@@ -77,7 +77,7 @@ class TemplateTasks extends BaseTemplateTasks {
 		
 		$conditions = " `template_id` = $template_id";
 		$conditions .= "  AND `parent_id` = 0  ";
-		$tasks = TemplateTasks::find ( array ('conditions' => $conditions) );
+		$tasks = TemplateTasks::instance()->find ( array ('conditions' => $conditions) );
 		if (! is_array ( $tasks ))
 			$tasks = array ();
 		return $tasks;
@@ -90,7 +90,7 @@ class TemplateTasks extends BaseTemplateTasks {
 	static function getAllTaskTemplatesBySessionId($session_id) {
 	
 		$conditions = "`session_id` = $session_id";
-		$tasks = TemplateTasks::find ( array ('conditions' => $conditions) );
+		$tasks = TemplateTasks::instance()->find ( array ('conditions' => $conditions) );
 		if (! is_array ( $tasks ))
 			$tasks = array ();
 		return $tasks;
@@ -352,7 +352,7 @@ class TemplateTasks extends BaseTemplateTasks {
 		// Execute query and build the resultset	
 	    $rows = DB::executeAll($sql);
 		foreach ($rows as $row) {
-    		$task =  TemplateTasks::findById($row['id']);
+    		$task =  TemplateTasks::instance()->findById($row['id']);
     		if ($task && $task instanceof TemplateTask) {
     			if($task->getDueDate()){
 	    			$k  = "#".$task->getDueDate()->getTimestamp().$task->getId();
@@ -400,17 +400,17 @@ class TemplateTasks extends BaseTemplateTasks {
 		
 		$related = array_var($this->cached_related, $task_id, array());
 		if (count($related) > 0) {
-			return self::findAll(array('conditions' => 'object_id IN ('.implode(',', $related).')'));
+			return self::instance()->findAll(array('conditions' => 'object_id IN ('.implode(',', $related).')'));
 		}
 		return array();
 	}
 
 	function findByRelated($task_id) {
-		return TemplateTasks::findAll(array('conditions' => array('`original_task_id` = ?', $task_id)));
+		return TemplateTasks::instance()->findAll(array('conditions' => array('`original_task_id` = ?', $task_id)));
 	}
 
 	function findByTaskAndRelated($task_id,$original_task_id) {
-		return TemplateTasks::findAll(array('conditions' => array('(`original_task_id` = ? OR `object_id` = ?) AND `object_id` <> ?', $original_task_id,$original_task_id,$task_id)));
+		return TemplateTasks::instance()->findAll(array('conditions' => array('(`original_task_id` = ? OR `object_id` = ?) AND `object_id` <> ?', $original_task_id,$original_task_id,$task_id)));
 	}
 	
 	

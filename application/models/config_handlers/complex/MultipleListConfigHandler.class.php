@@ -45,7 +45,21 @@
       		}
       		
       		$keys_to_unset[] = $k;
-      	}
+      	} else if (str_starts_with($value, "<config_option:") && str_ends_with($value, ">")) {
+			$config_option_name = str_replace(array("<config_option:",">"), "", $value);
+			$config_option = ConfigOptions::getByName($config_option_name);
+			if ($config_option instanceof ConfigOption) {
+				$list_values = explode(',', $config_option->getOptions());
+				foreach ($list_values as $list_value) {
+					$more_values[] = array(
+						'id' => $list_value,
+						'text' => lang($list_value),
+					);
+				}
+			}
+			
+			$keys_to_unset[] = $k;
+		} 
       }
       foreach ($keys_to_unset as $k) unset($possible_values[$k]);
       

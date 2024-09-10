@@ -75,7 +75,7 @@ class FeedController extends PageController {
 			die();
 		} // if
 
-		$project = Projects::findById(array_var($_GET, 'project'));
+		$project = Projects::instance()->findById(array_var($_GET, 'project'));
 		if(!($project instanceof Project)) {
 			header("HTTP/1.0 404 Not Found");
 			die();
@@ -133,7 +133,7 @@ class FeedController extends PageController {
 			die();
 		} // if
 
-		$project = Projects::findById(array_var($_GET, 'project'));
+		$project = Projects::instance()->findById(array_var($_GET, 'project'));
 		if(!($project instanceof Project)) {
 			header('HTTP/1.0 404 Not Found');
 			die();
@@ -158,7 +158,7 @@ class FeedController extends PageController {
 		$token = $_GET['t'];
 		$cal = $_GET['cal'];
 		if (Contacts::tokenExists($token)) {
-			$user = Contacts::findOne(array('conditions' => "token='$token'"));
+			$user = Contacts::instance()->findOne(array('conditions' => "token='$token'"));
 			
 			$conditions = " AND EXISTS (SELECT i.contact_id FROM ".TABLE_PREFIX."event_invitations i WHERE i.event_id=e.object_id AND  i.contact_id=".$user->getId().")";
 			
@@ -170,7 +170,7 @@ class FeedController extends PageController {
 			$user_pgs = $user->getPermissionGroupIds();
 			$perm_cond = " AND EXISTS (SELECT st.object_id FROM ".TABLE_PREFIX."sharing_table st WHERE st.object_id=e.object_id AND st.group_id IN (".implode(',', $user_pgs)."))";
 			
-			$events = ProjectEvents::findAll(array('conditions' => "$mem_cond $perm_cond $conditions"));
+			$events = ProjectEvents::instance()->findAll(array('conditions' => "$mem_cond $perm_cond $conditions"));
 			
 			$calendar_name = isset($_GET['n']) ? $_GET['n'] : $user->getObjectName();
 			$calendar_name = str_replace(' ', '_', $calendar_name);
@@ -256,7 +256,7 @@ class FeedController extends PageController {
 	 * @return User
 	 */
 	private function loginUserByToken($idname = 'id') {
-		$user = Contacts::findById(array_var($_GET, $idname));
+		$user = Contacts::instance()->findById(array_var($_GET, $idname));
 		if(!($user instanceof Contact)) {
 			header("HTTP/1.0 404 Not Found");
 			die();
@@ -294,7 +294,7 @@ class FeedController extends PageController {
 			$member_id = json_decode(array_var($_REQUEST, 'member_id'));
 			$permissions = array_var($_REQUEST, 'permissions');
 			
-			$member = Members::findById($member_id);
+			$member = Members::instance()->findById($member_id);
 			if ($member instanceof Member) {
 				$_POST['permissions'] = $permissions;
 				save_member_permissions($member);

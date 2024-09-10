@@ -213,7 +213,7 @@
     *
     * @return ContactEmails 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'ContactEmails')) {
         $instance = new ContactEmails();

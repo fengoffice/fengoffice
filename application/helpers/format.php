@@ -98,7 +98,7 @@
   * @return string
   */
   function format_date_using_object($value = null, $format = null, $timezone = null, $object_type_id = null, $column = null) {
-	$ot = ObjectTypes::findById($object_type_id);
+	$ot = ObjectTypes::instance()->findById($object_type_id);
 	$object_name = $ot->getHandlerClass();
 
 	$obj = new $object_name();
@@ -280,7 +280,7 @@ function date_format_tip($format) {
 		switch ($format) {
 			case 'seconds': $formatted = $value * 60; break;
 			case 'minutes': $formatted = $value; break;
-			case 'hours': $formatted = number_format($value / 60, 2); break;
+			case 'hours': $formatted = number_format((int)$value / 60, 2); break;
 			case 'hh:mm':
 		
 				$formatted = sprintf('%02d', intval($value / 60)).':'.sprintf('%02d', $value % 60);
@@ -305,7 +305,7 @@ function date_format_tip($format) {
 		// Used when needs to display conditions on report conditions, without time format
 		if($setDateTimeAsDate && $type == DATA_TYPE_DATETIME ) $type = DATA_TYPE_DATE;
 		
-		$ot = ObjectTypes::findById($obj_type_id);
+		$ot = ObjectTypes::instance()->findById($obj_type_id);
 		if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
 			eval('$manager = '.$ot->getHandlerClass()."::instance();");
 			if ($manager) {
@@ -378,7 +378,8 @@ function date_format_tip($format) {
 				break;
 			case DATA_TYPE_BOOLEAN:
 				
-				if(!is_numeric($value) && $value != '') {
+				if(!is_numeric($value) && $value != '' && $value != '1') {
+					// if the boolean value is already formatted keep it as it is
 					$formatted = $value;
 				}else if ($value == 1){
 					$formatted = lang('yes');
@@ -446,7 +447,7 @@ function date_format_tip($format) {
 function get_format_value_to_header($col, $obj_type_id)
 {
     $formatted = '';
-    $ot = ObjectTypes::findById($obj_type_id);
+    $ot = ObjectTypes::instance()->findById($obj_type_id);
     if ($ot instanceof ObjectType && $ot->getHandlerClass() != '') {
         eval('$manager = ' . $ot->getHandlerClass() . "::instance();");
         if ($manager) {
@@ -525,7 +526,7 @@ function get_format_value_to_header($col, $obj_type_id)
 			
 			foreach ($cp_vals as $cp_val) {
 				if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof CustomPropertyValue) {
-					$cp_contact = Contacts::findById($cp_val->getValue());
+					$cp_contact = Contacts::instance()->findById($cp_val->getValue());
 					if ($cp_contact instanceof Contact) {
 						$cp_val->setValue($cp_contact->getObjectName());
 					} else {
@@ -559,7 +560,7 @@ function get_format_value_to_header($col, $obj_type_id)
 							}
 						}
 					}
-					if (!is_null($lang_value)) {
+					if ( isset( $lang_value)) {
 						$cp_val->setValue($lang_value);
 					}
 				}
@@ -636,6 +637,12 @@ function get_format_value_to_header($col, $obj_type_id)
 						}
 					}
 				}
+
+				if($cp->getType() == 'memo' && $cp_val instanceof CustomPropertyValue){
+					if (!$raw_data) {
+						$cp_val->setValue(nl2br($cp_val->getValue()));
+					}
+				}
 				
 				if ($cp->getType() == 'image' && $cp_val instanceof CustomPropertyValue) {
 					// if raw_data=true then return the json value as it is in the db, else render the feng component
@@ -649,7 +656,7 @@ function get_format_value_to_header($col, $obj_type_id)
 					// if raw_data=true then return the json value as it is in the db, else render the feng component
 					if (!$raw_data) {
 						$currency_id = $cp_val->getCurrencyId();
-						$currency = Currencies::findById($currency_id);
+						$currency = Currencies::instance()->findById($currency_id);
                         if ($currency instanceof Currency) {
 							$currency_symbol = $currency->getSymbol();
 						} else {
@@ -726,7 +733,7 @@ function get_format_value_to_header($col, $obj_type_id)
 			
 			foreach ($cp_vals as $cp_val) {
 				if (in_array($cp->getType(), array('contact', 'user')) && $cp_val instanceof MemberCustomPropertyValue) {
-					$cp_contact = Contacts::findById($cp_val->getValue());
+					$cp_contact = Contacts::instance()->findById($cp_val->getValue());
 					if ($cp_contact instanceof Contact) {
 						$cp_val->setValue($cp_contact->getObjectName());
 					} else {
@@ -860,8 +867,12 @@ function get_format_value_to_header($col, $obj_type_id)
 	}
 	
 	
-	function format_money_amount($number, $symbol = '$', $decimals = null, $decimals_separator = null, $thousand_separator = null) {
+	function format_money_amount($number, $symbol = '$', $decimals = null, $decimals_separator = null, $thousand_separator = null, $excel = false) {
 		
+		if( gettype($number) == "string"){  
+			$number = (float) $number;
+		}
+
 		if (is_null($decimals)) {
 			$decimals = user_config_option('decimal_digits');
 		}
@@ -871,13 +882,21 @@ function get_format_value_to_header($col, $obj_type_id)
 		if (is_null($thousand_separator)) {
 			$thousand_separator = user_config_option('thousand_separator');
 		}
+
+		if($excel) {
+			$decimal_string = $decimals > 0 ? $decimals_separator : '';
+			$decimal_string .= str_repeat('0', $decimals);
+
+            $currency_format = '"' . $symbol . ' "#'.$thousand_separator.'##0'.$decimal_string.'_-';
+            return 'FORMAT:::' . $currency_format . ':::' .($number ?? 0);
+        }
 		
 		$sign = "";
 		if ($number < 0) {
 			$sign = "- ";
 		}
 		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
-		
+
 		return trim($formatted);
 	}
 
@@ -893,7 +912,7 @@ function get_format_value_to_header($col, $obj_type_id)
 		if ($number < 0) {
 			$sign = "- ";
 		}
-		$formatted = $sign . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
+		$formatted = $sign . number_format(abs((float)$number), $decimals, $decimals_separator, $thousand_separator);
 		
 		return trim($formatted);
 	}
@@ -964,6 +983,60 @@ function get_format_value_to_header($col, $obj_type_id)
 	* @return string
 	*/
   	function file_types_friendly_name($id) {
-		$testing = FileTypes::findById($id);
+		$testing = FileTypes::instance()->findById($id);
 		return ($id > 0 && !is_null($testing)) ? $testing->getColumnValue('friendly_name') : 'unknown';
 	} // file_types_friendly_name
+
+	function format_percentage_value_for_excel($value, $params = array()) {
+		if (is_null($value)) {
+			return '';
+		}
+
+		if (is_string($value)) {
+			$value = (float) $value;
+		}
+
+		$decimals = array_var($params, 'decimal_digits', user_config_option('decimal_digits'));
+		$decimals_separator = array_var($params, 'decimals_separator', user_config_option('decimals_separator'));
+
+		$decimal_string = $decimals > 0 ? '.' : '';
+		$decimal_string .= str_repeat('0', $decimals);
+
+		$percentage_format = '##0'.$decimal_string.'_-'. ' ' . '"%"';
+
+		return 'FORMAT:::' . $percentage_format . ':::' .($value ?? 0);
+	}
+
+
+
+	/**
+	 * Replaces temporary images in HTML with base64 encoded image data.
+	 *
+	 * @param string $html The HTML content to search for images.
+	 * @return string The HTML content with temporary images replaced.
+	 */
+	function replace_tmp_images_with_content($html) {
+
+		// Find all image tags in the HTML with the src attribute
+		$matches = array();
+		preg_match_all('/<img[^>]*src="([^"]+)"/', $html, $matches);
+		$images = $matches[1];
+
+		// If there are images, loop through each one and replace it with base64 encoded image data
+		if (count($images) > 0) {
+			foreach ($images as $image) {
+				// Check if the image source starts with the temporary image URL
+				if (str_starts_with($image, with_slash(ROOT_URL).'tmp/')) {
+					// Replace the URL with the ROOT constant to get the actual image path
+					$image_path = str_replace(ROOT_URL, ROOT, $image);
+					// Read the image content
+					$content = file_get_contents($image_path);
+					// Replace the image source with base64 encoded image data
+					$html = str_replace($image, 'data:image;base64,'.base64_encode($content), $html);
+				}
+			}
+		}
+
+		// Return the modified HTML content
+		return $html;
+	}

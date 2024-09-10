@@ -211,7 +211,7 @@
     *
     * @return  CustomPropertyValues 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'CustomPropertyValues')) {
         $instance = new  CustomPropertyValues();

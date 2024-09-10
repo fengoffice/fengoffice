@@ -188,7 +188,7 @@ og.contextManager  = new function() {
     
     this.getTreeNode = function (dimId, memberId){ 
     	var tree =  Ext.getCmp("dimension-panel-"+dimId);
-    	return  tree.getNodeById(memberId);
+    	return tree ? tree.getNodeById(memberId) : null;
     	
     }
     

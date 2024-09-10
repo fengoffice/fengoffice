@@ -159,6 +159,7 @@ og.pluginManager.init = function () {
 				}
 				if (jsonData.errorMessage != "") {
 					$(".error").html(jsonData.errorMessage).fadeIn();
+					$(".page.plugin-manager").closest(".x-panel-body.x-panel-body-noheader").animate({scrollTop:0}, '500');
 					$(".contextualHelp.reload").hide();
 				} else {
 					$(button).closest('tr').fadeOut("slow") ;

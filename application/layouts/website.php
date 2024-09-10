@@ -329,7 +329,9 @@ og.config = {
 	'enable_time_module': <?php echo json_encode(module_enabled("time") && can_manage_time(logged_user())) ?>,
 	'enable_reporting_module': <?php echo json_encode(module_enabled("reporting")) ?>,
 	'use_tasks_dependencies': <?php echo json_encode(module_enabled("tasks")) ?>,
+	'customers_module': <?php echo json_encode(module_enabled("customers")) ?>,
 	'default_country_address': <?php echo json_encode(config_option('default_country_address', '')) ?>,
+	'default_type_address': <?php echo json_encode(config_option('default_type_address', '')) ?>,
 	'enabled_dimensions': Ext.util.JSON.decode('<?php echo json_encode(config_option('enabled_dimensions')) ?>'),
 	'brand_colors': {
 		brand_colors_head_back: '<?php echo config_option('brand_colors_head_back')?>',
@@ -564,7 +566,7 @@ foreach ($actions as $action) {
 	og.emailFilters.classif = '<?php echo user_config_option('mails classification filter') ?>';
 	og.emailFilters.read = '<?php echo user_config_option('mails read filter') ?>';
 	<?php
-		$acc = MailAccounts::findById(user_config_option('mails account filter'));
+		$acc = MailAccounts::instance()->findById(user_config_option('mails account filter'));
 		if ($acc instanceof MailAccount) {
 			?>
 			og.emailFilters.account = '<?php echo user_config_option('mails account filter') ?>';
@@ -639,7 +641,7 @@ og.dimension_object_type_descendants = Ext.util.JSON.decode('<?php echo json_enc
 og.contextManager.construct();
 og.objPickerTypeFilters = [];
 <?php
-	$obj_picker_type_filters = ObjectTypes::findAll(array("conditions" => "`type` = 'content_object'
+	$obj_picker_type_filters = ObjectTypes::instance()->findAll(array("conditions" => "`type` = 'content_object'
 		AND (plugin_id IS NULL OR plugin_id = 0 OR plugin_id IN (SELECT distinct(id) FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1 AND is_activated = 1 ))
 		AND `name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `id` NOT IN (
 			SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0
@@ -678,7 +680,7 @@ og.objPickerTypeFilters = [];
 	og.additional_on_dimension_object_click = [];
 	og.dimension_object_types = [];
 <?php
-	$dimension_object_types = ObjectTypes::findAll(array('conditions' => "`type` IN ('dimension_object', 'dimension_group')"));
+	$dimension_object_types = ObjectTypes::instance()->findAll(array('conditions' => "`type` IN ('dimension_object', 'dimension_group')"));
 	foreach ($dimension_object_types as $dot) { ?>
 		og.dimension_object_types[<?php echo $dot->getId()?>] = '<?php echo $dot->getName()?>';
 <?php
@@ -691,7 +693,7 @@ og.objPickerTypeFilters = [];
 
 og.dimension_object_type_contents = {};
 <?php 
-	$dotcs = DimensionObjectTypeContents::findAll();
+	$dotcs = DimensionObjectTypeContents::instance()->findAll();
 	foreach ($dotcs as $dotc) { /* @var $dotc DimensionObjectTypeContent */?>
 		var dim = <?php echo $dotc->getDimensionId() ?>;
 		var dot = <?php echo $dotc->getDimensionObjectTypeId() ?>;
@@ -747,7 +749,7 @@ $(document).ready(function() {
 					og.enabled_dimensions_by_code[value.code] = key;
 				}
 			}
-
+			og.eventManager.fireEvent('after dimensions info loaded', null);
 		}
 	});
 

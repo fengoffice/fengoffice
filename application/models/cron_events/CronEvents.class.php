@@ -7,12 +7,12 @@
  */
 class CronEvents extends BaseCronEvents {
 
-	function getDueEvents($date = null) {
+	static function getDueEvents($date = null) {
 		if (defined('REMOVE_AUTOLOADER_BEFORE_CRON') && REMOVE_AUTOLOADER_BEFORE_CRON) {
 			@unlink(CACHE_DIR . "/autoloader.php");
 		}
 		if (!$date instanceof DateTimeValue) $date = DateTimeValueLib::now();
-		$events = self::findAll(array(
+		$events = self::instance()->findAll(array(
 			'conditions' => array(
 				'`date` <= ?',
 				$date
@@ -22,8 +22,8 @@ class CronEvents extends BaseCronEvents {
 		return $events;
 	}
 	
-	function getUserEvents() {
-		return self::findAll(array(
+	static function getUserEvents() {
+		return self::instance()->findAll(array(
 			'conditions' => array(
 				'`is_system` = ?',
 				false
@@ -36,8 +36,8 @@ class CronEvents extends BaseCronEvents {
 	 * @param $name string
 	 * @return CronEvent
 	 */
-	function getByName($name) {
-		return self::findOne(array(
+	static function getByName($name) {
+		return self::instance()->findOne(array(
 			'conditions' => array(
 				'`name` = ?',
 				$name

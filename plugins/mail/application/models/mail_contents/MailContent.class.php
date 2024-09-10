@@ -145,7 +145,7 @@ class MailContent extends BaseMailContent {
 	 * @return MailData
 	 */
 	function getMailData() {
-		if (!$this->mail_data instanceof MailData) $this->mail_data = MailDatas::findById($this->getObjectId());
+		if (!$this->mail_data instanceof MailData) $this->mail_data = MailDatas::instance()->findById($this->getObjectId());
 		if (!$this->mail_data instanceof MailData) $this->mail_data = new MailData();
 		return $this->mail_data;
 	}
@@ -480,7 +480,7 @@ class MailContent extends BaseMailContent {
 	 * @param Project $project
 	 * @return boolean
 	 */
-	function canAdd(Contact $user, $context, &$notAllowedMember = '') {
+	static function canAdd(Contact $user, $context, &$notAllowedMember = '') {
 		return can_add($user, $context, $this->getObjectTypeId(), $notAllowedMember);
 	} // canAdd
 
@@ -559,7 +559,7 @@ class MailContent extends BaseMailContent {
     			$content = $this->getSearchableColumnContent($column_name);
     			if(trim($content) != '') {
 
-    				$searchable_object = SearchableObjects::findById(array('rel_object_id' => $this->getObjectId(), 'column_name' => $column_name));
+    				$searchable_object = SearchableObjects::instance()->findById(array('rel_object_id' => $this->getObjectId(), 'column_name' => $column_name));
     				if (!$searchable_object instanceof SearchableObject) {
     					$searchable_object = new SearchableObject();
     					$searchable_object->setRelObjectId($this->getObjectId());
@@ -648,7 +648,7 @@ class MailContent extends BaseMailContent {
     	
     	$deletedOn = $this->getTrashedOn() instanceof DateTimeValue ? ($this->getTrashedOn()->isToday() ? format_time($this->getTrashedOn()) : format_datetime($this->getTrashedOn(), 'M j')) : lang('n/a');
 		if ($this->getTrashedById() > 0)
-			$deletedBy = Contacts::findById($this->getTrashedById());
+			$deletedBy = Contacts::instance()->findById($this->getTrashedById());
     	if (isset($deletedBy) && $deletedBy instanceof Contact) {
     		$deletedBy = $deletedBy->getObjectName();
     	} else {
@@ -668,7 +668,7 @@ class MailContent extends BaseMailContent {
     	
   		$archivedOn = $this->getArchivedOn() instanceof DateTimeValue ? ($this->getArchivedOn()->isToday() ? format_time($this->getArchivedOn()) : format_datetime($this->getArchivedOn(), 'M j')) : lang('n/a');
   		if ($this->getArchivedById() > 0)
-			$archivedBy = Contacts::findById($this->getArchivedById());
+			$archivedBy = Contacts::instance()->findById($this->getArchivedById());
     	if (isset($archivedBy) &&  $archivedBy instanceof Contact) {
     		$archivedBy = $archivedBy->getObjectName();
     	} else {
@@ -708,16 +708,16 @@ class MailContent extends BaseMailContent {
 	 * @return string
 	 */
 	function getTextBody() {
-		if ($this->getBodyHtml()) {
-			return html_to_text(html_entity_decode($this->getBodyHtml(),null, "UTF-8"));
-		} else {
+		if ($this->getBodyPlain()) {
 			return $this->getBodyPlain();
+		} else {
+			return html_to_text(html_entity_decode($this->getBodyHtml(),null, "UTF-8"));
 		}
 	}
 	
 	
 	function getFromContact(){
-		$contacts = Contacts::findAll(array(
+		$contacts = Contacts::instance()->findAll(array(
 			'conditions' => " jt.email_address = '".clean($this->getFrom())."'",
 			'join' => array(
 				'jt_table' => ContactEmails::instance()->getTableName(),

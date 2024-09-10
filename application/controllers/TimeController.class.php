@@ -30,14 +30,13 @@ class TimeController extends ApplicationController
         //Get Users Info
         $users = array();
         $context = active_context();
-        if (!can_manage_time(logged_user())) {
-            $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-        } else {
-            //if (logged_user()->isMemberOfOwnerCompany()) {
+        
+        if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')) {
+            $users = array(logged_user());
+        } else if (logged_user()->isMemberOfOwnerCompany()) {
             $users = Contacts::getAllUsers();
-            /*} else {
-        $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-        }*/
+        } else {
+            $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
         }
 
         // filter users by permissions only if any member is selected.
@@ -165,7 +164,10 @@ class TimeController extends ApplicationController
                 $task_members = $rel_obj->getMembers();
 				// only preload the task's members that we can in the time form, this will prevent wrong members in dimension selectors filtering when initializing
 				foreach ($task_members as $task_member) {
-					$hidden_dim = DimensionContentObjectOptions::getOptionValue($task_member->getDimensionId(), Timeslots::instance()->getObjectTypeId(), 'hide_member_selector_in_forms');
+					$hidden_dim = false;
+					if (Plugins::instance()->isActivePlugin('advanced_core')) {
+						$hidden_dim = DimensionContentObjectOptions::getOptionValue($task_member->getDimensionId(), Timeslots::instance()->getObjectTypeId(), 'hide_member_selector_in_forms');
+					}
 					if (!$hidden_dim) {
 						$pre_selected_member_ids[] = $task_member->getId();
 					}
@@ -174,7 +176,8 @@ class TimeController extends ApplicationController
                 $pre_selected_member_ids = active_context_members(false);
                 $all_assoc_member_ids = array();
                 foreach ($pre_selected_member_ids as $mid) {
-                    $assoc_ids = MemberPropertyMembers::getAllAssociatedMemberIds($mid, true);
+					$skipped_association_codes = array('project_billing_client');
+                    $assoc_ids = MemberPropertyMembers::getAllAssociatedMemberIds($mid, true, true, $skipped_association_codes);
                     $assoc_ids = array_flat($assoc_ids);
                     $all_assoc_member_ids = array_unique(array_merge($all_assoc_member_ids, $assoc_ids));
                 }
@@ -200,7 +203,7 @@ class TimeController extends ApplicationController
             if ($ok) {
                 $dont_reload = array_var($_REQUEST, "dont_reload");
                 if ($dont_reload) {
-                    $task = ProjectTasks::findById(array_var($_REQUEST, "object_id"), true);
+                    $task = ProjectTasks::instance()->findById(array_var($_REQUEST, "object_id"), true);
 
                     if ($task instanceof ProjectTask) {
                         $task_data = $task->getArrayInfo();
@@ -271,7 +274,7 @@ class TimeController extends ApplicationController
         $timeslot_data = array_var($parameters, 'timeslot');
         $sd = getDateValue(array_var($timeslot_data, 'date'));
 
-        if($timeslot_data['billable'] == 0){
+        if( array_var( $timeslot_data, 'billable', 0) == 0){  // *** LC 2023-10-03
             $timeslot_data['hourly_billing'] = 0;
             $timeslot_data['fixed_billing'] = 0; 
         }
@@ -341,7 +344,7 @@ class TimeController extends ApplicationController
                     return;
                 }
                 if (count($member_ids) > 0) {
-                    $enteredMembers = Members::findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
+                    $enteredMembers = Members::instance()->findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
                 } else {
                     $enteredMembers = array();
                 }
@@ -373,7 +376,7 @@ class TimeController extends ApplicationController
                     $hoursToAdd += 1;
                 }
             }
-            $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
+            $timeslot_data['subtract'] = 60 * ((float)$sub_hours * 60 + (float)$sub_minutes);
 
             if (strpos($hoursToAdd, ',') && !strpos($hoursToAdd, '.')) {
                 $hoursToAdd = str_replace(',', '.', $hoursToAdd);
@@ -386,13 +389,13 @@ class TimeController extends ApplicationController
                 if (!strlen($minutesToAdd) <= 2 || !strlen($minutesToAdd) > 0) {
                     $minutesToAdd = substr($minutesToAdd, 0, 2);
                 }
-                $mins = $minutesToAdd / 60;
-                $hours = substr($hoursToAdd, 0, $pos - 1);
+                $mins = (float)$minutesToAdd / 60;
+                $hours = (float)substr($hoursToAdd, 0, $pos - 1);
                 $hoursToAdd = $hours + $mins;
             }
             if ($minutes) {
                 $min = str_replace('.', '', ($minutes / 6));
-                $hoursToAdd = $hoursToAdd + ("0." . $min);
+                $hoursToAdd = (float)$hoursToAdd + (float)("0." . $min);
             }
 
             if ($hoursToAdd <= 0) {
@@ -482,10 +485,10 @@ class TimeController extends ApplicationController
 
             // Billing
             if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
-                $user = Contacts::findById($timeslot_data['contact_id']);
+                $user = Contacts::instance()->findById($timeslot_data['contact_id']);
                 if ($user instanceof Contact && $user->isUser()) {
                     $billing_category_id = $user->getDefaultBillingId();
-                    $bc = BillingCategories::findById($billing_category_id);
+                    $bc = BillingCategories::instance()->findById($billing_category_id);
                     if ($bc instanceof BillingCategory) {
                         $timeslot->setBillingId($billing_category_id);
                         $hourly_billing = $bc->getDefaultValue();
@@ -498,6 +501,11 @@ class TimeController extends ApplicationController
                 }
             } else {
                 $timeslot->setForceRecalculateBilling(true);
+                // Skip force recalculation if needed
+                $skip_force_recalculation = array_var($timeslot_data, 'skip_force_recalculation', false);
+                if($skip_force_recalculation) {
+                    $timeslot->setForceRecalculateBilling(false);
+                }
             }
 
             if ($use_transaction) {
@@ -517,9 +525,10 @@ class TimeController extends ApplicationController
 
             $timeslot->save();
 
-            $task = ProjectTasks::findById($object_id);
+            $task = ProjectTasks::instance()->findById($object_id);
             if ($task instanceof ProjectTask) {
                 $task->calculatePercentComplete();
+                $task->save();
             }
 
             if (!isset($member_ids) || !is_array($member_ids) || count($member_ids) == 0) {
@@ -545,6 +554,11 @@ class TimeController extends ApplicationController
 
             $object_controller = new ObjectController();
             $object_controller->add_custom_properties($timeslot);
+            // Skip force recalculation if needed
+            $skip_force_recalculation = array_var($timeslot_data, 'skip_force_recalculation', false);
+            if($skip_force_recalculation) {
+                $timeslot->setForceRecalculateBilling(false);
+            }
             if (!is_null($member_ids)) {
                 $object_controller->add_to_members($timeslot, $member_ids, null, false);
             }
@@ -570,15 +584,15 @@ class TimeController extends ApplicationController
     public function edit_timeslot()
     {
 
-        $timeslot = Timeslots::findById(get_id());
+        $timeslot = Timeslots::instance()->findById(get_id());
         if (!$timeslot instanceof Timeslot) {
             flash_error(lang('timeslot dnx'));
             ajx_current("empty");
             return;
         }
 
-        if (!can_write(logged_user(), $timeslot->getMembers(), Timeslots::instance()->getObjectTypeId())) {
-            flash_error(lang('no access permissions'));
+        if (!$timeslot->canEdit(logged_user())) {
+            flash_error(array_var($_REQUEST, 'timeslot_cant_edit_message', lang('no access permissions')));
             ajx_current("empty");
             return;
         }
@@ -629,7 +643,7 @@ class TimeController extends ApplicationController
 
                 tpl_assign('users', $users);
             } else {
-                if (can_add(logged_user(), $context, Timeslots::instance()->getObjectTypeId())) {
+                if (can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId())) {
                     $users = array(logged_user());
                 }
 
@@ -683,7 +697,7 @@ class TimeController extends ApplicationController
                     return;
                 }
                 if (count($member_ids) > 0) {
-                    $enteredMembers = Members::findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
+                    $enteredMembers = Members::instance()->findAll(array('conditions' => 'id IN (' . implode(",", $member_ids) . ')'));
                 } else {
                     $enteredMembers = array();
                 }
@@ -724,7 +738,8 @@ class TimeController extends ApplicationController
                         $hoursToAdd += 1;
                     }
                 }
-                $timeslot_data['subtract'] = 60 * ($sub_hours * 60 + $sub_minutes);
+		
+                $timeslot_data['subtract'] = 60 * ((float)$sub_hours * 60 + (float)$sub_minutes);
 
                 if (strpos($hoursToAdd, ',') && !strpos($hoursToAdd, '.')) {
                     $hoursToAdd = str_replace(',', '.', $hoursToAdd);
@@ -736,14 +751,14 @@ class TimeController extends ApplicationController
                     if (!strlen($minutesToAdd) <= 2 || !strlen($minutesToAdd) > 0) {
                         $minutesToAdd = substr($minutesToAdd, 0, 2);
                     }
-                    $mins = $minutesToAdd / 60;
-                    $hours = substr($hoursToAdd, 0, $pos - 1);
+                    $mins = (float)$minutesToAdd / 60;
+                    $hours = (float)substr($hoursToAdd, 0, $pos - 1);
                     $hoursToAdd = $hours + $mins;
                 }
 
                 if ($minutes) {
                     $min = str_replace('.', '', ($minutes / 6));
-                    $hoursToAdd = $hoursToAdd + ("0." . $min);
+                    $hoursToAdd = (float)$hoursToAdd + (float)("0." . $min);
                 }
 
                 if ($hoursToAdd <= 0) {
@@ -806,10 +821,10 @@ class TimeController extends ApplicationController
                 }
 
                 if (!Plugins::instance()->isActivePlugin('advanced_billing')) {
-                    $user = Contacts::findById($timeslot_data['contact_id']);
+                    $user = Contacts::instance()->findById($timeslot_data['contact_id']);
                     if ($user instanceof Contact && $user->isUser()) {
                         $billing_category_id = $user->getDefaultBillingId();
-                        $bc = BillingCategories::findById($billing_category_id);
+                        $bc = BillingCategories::instance()->findById($billing_category_id);
                         if ($bc instanceof BillingCategory) {
                             $timeslot->setBillingId($billing_category_id);
                             $hourly_billing = $bc->getDefaultValue();
@@ -862,7 +877,7 @@ class TimeController extends ApplicationController
 
     public function check_time_invoicing_status(){
         ajx_current("empty");
-        $timeslot = Timeslots::findById(get_id());
+        $timeslot = Timeslots::instance()->findById(get_id());
 
         if (!$timeslot instanceof Timeslot) {
             flash_error(lang('timeslot dnx'));
@@ -886,7 +901,7 @@ class TimeController extends ApplicationController
     public function delete_timeslot()
     {
         ajx_current("empty");
-        $timeslot = Timeslots::findById(get_id());
+        $timeslot = Timeslots::instance()->findById(get_id());
 
         if (!$timeslot instanceof Timeslot) {
             flash_error(lang('timeslot dnx'));
@@ -1139,6 +1154,22 @@ class TimeController extends ApplicationController
 				);
 				$select_columns = array("e.*, o.*, jt.`name` as task_name");
 				break;
+			case 'dateCreated':
+			case 'dateUpdated':
+				$order = $order == 'dateCreated' ? '`created_on`' : '`updated_on`';
+				break;
+			case 'createdBy':
+			case 'updatedBy':
+				$join_params = array(
+					'join_type' => 'INNER',
+					'table' => Objects::instance()->getTableName(),
+					'jt_field' => 'id',
+					'e_field' => $order == 'createdBy' ? 'created_by_id' : 'updated_by_id',
+					'get_object_data' => true,
+				);
+				$order = 'user_name';
+				$select_columns = array("e.*, o.*, jt.`name` as user_name");
+				break;
 			case 'description':
 			case 'start_time':
 			case 'end_time':
@@ -1340,7 +1371,7 @@ class TimeController extends ApplicationController
                         continue;
                     }
 
-                    $message = Timeslots::findById($id);
+                    $message = Timeslots::instance()->findById($id);
                     if (!$message instanceof Timeslot) {
                         continue;
                     }
@@ -1382,7 +1413,7 @@ class TimeController extends ApplicationController
                         continue;
                     }
 
-                    $message = Timeslots::findById($id);
+                    $message = Timeslots::instance()->findById($id);
                     if (!$message instanceof Timeslot) {
                         continue;
                     }

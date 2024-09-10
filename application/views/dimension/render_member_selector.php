@@ -2,7 +2,7 @@
 
 // The following section renders a selector of one or multiple members for a dimension filter
 
-if ($dim instanceof Dimension) {
+if (isset($dim) && $dim instanceof Dimension) {
 	
 	if (!isset($selector_genid)) {
 		$selector_genid = gen_id();
@@ -23,17 +23,20 @@ if ($dim instanceof Dimension) {
 	}
 	
 	if (!is_array($selected_member_ids)) $selected_member_ids = explode(',', $selected_member_ids);
+
+	$selector_params = array(
+		'is_multiple' => $is_multiple, 
+		'label' => $label, 
+		'hide_label' => $hide_label, 
+		'root_lang' => $root_lang, 
+		'listeners' => $listeners,
+		'allowedMemberTypes' => $member_type_id, 
+		'dont_filter_this_selector' => true
+	);
 	
-	$selector_params = array('is_multiple' => $is_multiple, 
-							 'label' => $label, 
-							 'hide_label' => $hide_label, 
-							 'root_lang' => $root_lang, 
-							 'listeners' => $listeners,
-							 'hidden_field_name' => $hf_name, 
-							 'allowedMemberTypes' => $member_type_id, 
-							 'dont_filter_this_selector' => true);
-	
+	if (isset($hf_name)) $selector_params['hidden_field_name'] = $hf_name;
 	if (isset($width)) $selector_params['width'] = $width;
+
 	if ($select_current_context) {
 		foreach (active_context() as $selection) {
 			if ($selection instanceof Member) {
@@ -41,7 +44,7 @@ if ($dim instanceof Dimension) {
 				if ($select_context_associated_members) {
 					$assoc_mem_ids = MemberPropertyMembers::getAllAssociatedMemberIds($selection->getId(),true);
 					foreach ($assoc_mem_ids as $aid => $amids) {
-						$a = DimensionMemberAssociations::findById($aid);
+						$a = DimensionMemberAssociations::instance()->findById($aid);
 						// use only default associations
 						$tmp_ot = ObjectTypes::instance()->findById($a->getObjectTypeId());
 						$tmp_assoc_ot = ObjectTypes::instance()->findById($a->getAssociatedObjectType());

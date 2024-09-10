@@ -437,6 +437,7 @@
 	'can manage security' => 'Puede modificar configuraciones de seguridad (usuarios, grupos y permisos)',
 	'can manage configuration' => 'Puede modificar las configuraciones, datos de la organización propietaria, pestañas, logos y colores',
 	'can manage templates' => 'Puede crear y editar plantillas de tareas',
+	'can_manage_mail_templates'=>'Puede crear y editar plantillas de emails',
 	'can manage time' => 'Puede administrar tiempos de trabajo',
 	'can add mail accounts' => 'Puede agregar cuentas de correo',
 	'can_manage_dimensions' => 'Puede administrar la configuración de dimensiones',
@@ -612,4 +613,6 @@
 	'config option desc reclassify_time_when_linking_task' => 'Al editar un tiempo de trabajo y asiociarlo a una tarea, la clasificación del mismo será reemplazada por la clasificación de la tarea',
 	'config option name show_company_info_report_print' => 'Mostrar datos de empresa al imprimimr reporte',
 	'config option desc show_company_info_report_print' => 'Se muestra la dirección, correo, sitio web de la empresa en la esquina superior derecha de la página al imprimir un reporte',
+	'config option name ignored_dims_task_related_objs' => 'Al reclasificar tareas: los tiempos de trabajo y gastos relacionados serán reclasificados también. Si no desea que esto suceda para algunas dimensiones en particular, por favor seleccionelas en la siguiente lista',
+	'config option desc ignored_dims_task_related_objs' => '',
 ); ?>

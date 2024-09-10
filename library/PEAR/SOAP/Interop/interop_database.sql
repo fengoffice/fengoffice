@@ -39,7 +39,7 @@ CREATE TABLE results (
   function varchar(255) NOT NULL default '',
   result varchar(25) NOT NULL default '',
   error text,
-  wire text NOT NULL,
+  wire TEXT NULL,
   PRIMARY KEY  (id)
 ) TYPE=MyISAM;
 # --------------------------------------------------------

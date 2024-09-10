@@ -16,7 +16,7 @@
 	$token = array_var($argv, 3);
 	
 	// log user in
-	$user = Contacts::findById($user_id);
+	$user = Contacts::instance()->findById($user_id);
 	if(!($user instanceof Contact) || !$user->isValidToken($token)) {
 		throw new Exception("Cannot login with user $user_id and token '$token'");
 	}
@@ -30,7 +30,7 @@
 	
 	$permissions = file_get_contents($permissions_filename);
 	
-	$member = Members::findById($member_id);
+	$member = Members::instance()->findById($member_id);
 	if ($member instanceof Member) {
 		// transaction to save permission tables
 		try {
@@ -73,7 +73,7 @@
 		// transactions to update_sharing table
 		$sharingTablecontroller = new SharingTableController();
 		if (is_array($changed_pgs)) {
-			$perm_array = json_decode($permissions);
+			$perm_array = json_decode($permissions) ?? [];
 			foreach ($perm_array as $pa) {
 				if (!isset($pa->m)) $pa->m = $member->getId();
 			}
@@ -109,7 +109,9 @@
 		// transaction for the hooks
 		try {
 			DB::beginWork();
-			Hook::fire('after_save_member_permissions', array('member' => array_var($result, 'member'), 'user_id' => $user_id), array_var($result, 'member'));
+			$varret = array_var($result, 'member');
+			Hook::fire('after_save_member_permissions', array('member' => array_var($result, 'member'), 'user_id' => $user_id), $varret);
+			
 			DB::commit();
 		} catch (Exception $e) {
 			DB::rollback();
@@ -123,7 +125,7 @@
 				DB::beginWork();
 				
 				// delete flags
-				SharingTableFlags::delete("member_id=$member_id AND permission_group_id IN (".implode(',', $flags_to_delete).")");
+				SharingTableFlags::instance()->delete("member_id=$member_id AND permission_group_id IN (".implode(',', $flags_to_delete).")");
 				
 				DB::commit();
 			} catch (Exception $e) {

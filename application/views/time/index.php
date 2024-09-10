@@ -19,7 +19,13 @@ foreach (active_context() as $selection) {
     if ($selection instanceof Member)
         $active_members[] = $selection;
 }
-$can_add_timeslots = can_add_timeslots(logged_user(), $active_members);
+if (count($active_members) > 0) {
+	// when we are filtering by anything use the usual can_add_timeslots function to check permissions
+	$can_add_timeslots = can_add_timeslots(logged_user(), $active_members);
+} else {
+	// when no context is selected use this function to check permissions, it will not verify required dimensions, so we can put the button and the quick add row
+	$can_add_timeslots = can_access(logged_user(), $active_members, Timeslots::instance()->getObjectTypeId(), ACCESS_LEVEL_WRITE);
+}
 
 Hook::fire('time_tab_override_can_add_timeslots_permission', array('user' => logged_user()), $can_add_timeslots);
 
@@ -89,9 +95,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
                 callback: function (success, data) {
                     if(data.timeslotId > 0){
                         if (confirm('<?php echo escape_single_quotes(lang('confirm delete timeslot')) ?>')) {
-                            og.openLink(og.getUrl('time', 'delete_timeslot', {id: tid}), {
+                            og.openLink(og.getUrl('time', 'delete_timeslot', {id: tid, req_channel:'time list - line delete'}), {
                                 callback: function (success, data) {
-                                    console.log(data);
                                     var g = Ext.getCmp(og.module_timeslots_grid.grid_id);
                                     if (g)
                                         g.reset();
@@ -113,7 +118,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             if (r.data.end_time) {
                 if (r.data.can_edit) {
                     actions += String.format(
-                        '<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:' + r.data.id + '}});" title="{0}" ' +
+                        '<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:' + r.data.id + ', req_channel:\'time list - line edit\'}});" title="{0}" ' +
                         actionStyle + '>&nbsp;</a>', lang('edit')
                     );
                 }
@@ -194,10 +199,12 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
 
         close_work: function(tid) {
             og.render_modal_form('', {
-                c: 'timeslot',
-                a: 'close_timer',
-                params: {
-                    id: tid                }
+				c: 'timeslot',
+				a: 'close_timer',
+				params: {
+					id: tid,
+					req_channel: 'time list - close'
+				}
             });
         },
 
@@ -218,7 +225,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         execute_action: function(action, id, cancel = false) {
             og.openLink(og.getUrl('timeslot', action, {
                 id: id,
-                cancel: cancel
+                cancel: cancel,
+				req_channel: 'time list - ' + (cancel ? 'cancel' : action)
             }));
         },
 
@@ -281,6 +289,30 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         renderer: og.module_timeslots_grid.task_name_renderer,
         sortable: true
     });
+	// created on column
+    timeslots_columns.push({
+        name: 'dateCreated',
+        header: '<?php echo lang('created on') ?>',
+        sortable: true
+    });
+	// created by column
+    timeslots_columns.push({
+        name: 'createdBy',
+        header: '<?php echo lang('created by') ?>',
+        sortable: true
+    });
+	// updated on column
+    timeslots_columns.push({
+        name: 'dateUpdated',
+        header: '<?php echo lang('last updated on') ?>',
+        sortable: true
+    });
+	// created by column
+    timeslots_columns.push({
+        name: 'updatedBy',
+        header: '<?php echo lang('last updated by') ?>',
+        sortable: true
+    });
     <?php if ($show_billing) { ?>
         timeslots_columns.push({
             name: 'fixed_billing',
@@ -341,7 +373,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
                     c: 'time',
                     a: 'add',
                     params: {
-                        contact_id: <?php echo logged_user()->getId() ?>
+                        contact_id: <?php echo logged_user()->getId() ?>,
+						req_channel: 'time list - toolbar add button'
                     }
                 });
             }
@@ -352,7 +385,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             text: '<?php echo lang('start work') ?>',
             id: 'start_work_btn',
             handler: function() {
-                og.openLink(og.getUrl('timeslot', 'open'));
+                og.openLink(og.getUrl('timeslot', 'open', {req_channel: 'time list - toolbar start clock'}));
             }
         }),
 
@@ -370,7 +403,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
                     cmp.store.load({
                         params: Ext.apply({}, {
                             action: 'archive',
-                            ids: cmp.getSelectedIds()
+                            ids: cmp.getSelectedIds(),
+							req_channel: 'time list - toolbar archive button'
                         })
                     });
                 }
@@ -391,7 +425,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
                     c: 'time',
                     a: 'edit_timeslot',
                     params: {
-                        id: cmp.getFirstSelectedId()
+                        id: cmp.getFirstSelectedId(),
+						req_channel: 'time list - toolbar edit button'
                     }
                 });
             }
@@ -411,7 +446,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
                     cmp.store.load({
                         params: Ext.apply({}, {
                             action: 'trash',
-                            ids: cmp.getSelectedIds()
+                            ids: cmp.getSelectedIds(),
+							req_channel: 'time list - toolbar trash button'
                         })
                     });
                 }
@@ -424,7 +460,23 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             handler: function() {
                 var tab = Ext.getCmp('reporting-panel');
                 if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);
+				
+				let grid = Ext.getCmp(og.module_timeslots_grid.grid_id);
+
+				// initialize report form with the same filters we have in the time module
+				let post_parameters = {
+					'params[user]': grid.filters.user_filter.value,
+					'params[timeslot_type]': grid.filters.type_filter.value,
+					'params[date_type]': grid.filters.period_filter.value,
+					'params[start_value]': grid.filters.from_filter.value,
+					'params[end_value]': grid.filters.to_filter.value,
+				};
+				if (grid.filters.invoicing_status_filter) {
+					post_parameters['params[invoicing_status]'] = grid.filters.invoicing_status_filter.value;
+				}
+
                 og.openLink(og.getUrl('reporting', 'total_task_times_p'), {
+					post: post_parameters,
                     caller: 'reporting-panel'
                 });
             }
@@ -433,9 +485,9 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
 
     var timeslots_tbar_items = [];
 
-    <?php if ($can_add_timeslots) { ?>
+    <?php if ($can_add_timeslots ) { ?>
         timeslots_tbar_items.push(botonera.newtimeslot);
-        <?php if (user_config_option('show_start_time_action')) { ?>
+        <?php if (user_config_option('show_start_time_action') && !config_option('select_task_for_time_entry')) { ?>
             timeslots_tbar_items.push(botonera.start);
         <?php } ?>
     <?php } ?>

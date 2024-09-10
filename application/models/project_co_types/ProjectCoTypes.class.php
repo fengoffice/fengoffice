@@ -8,8 +8,8 @@
   */
   class ProjectCoTypes extends BaseProjectCoTypes {
   
-  	function getObjectTypesByManager($manager, $order = "name") {
-  		return self::findAll(array(
+  	static function getObjectTypesByManager($manager, $order = "name") {
+  		return self::instance()->findAll(array(
   			'conditions' => "`object_manager` = '". $manager . "'", 
   			'order' => "`$order` ASC"));
   	}

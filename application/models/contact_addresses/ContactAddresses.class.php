@@ -36,7 +36,7 @@
     * @return array
     */
     function getByContact(Contact $contact) {
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => '`contact_id` = ' . DB::escape($contact->getId())
       )); // findAll
     } // getByContact
@@ -48,7 +48,7 @@
     * @param Contact $contact
     * @return boolean
     */
-    function clearByContact(Contact $contact) {
+    static function clearByContact(Contact $contact) {
       return DB::execute('DELETE FROM ' . self::instance()->getTableName(true) . ' WHERE `contact_id` = ?', $contact->getId());
     } // clearByContact
     
@@ -63,7 +63,7 @@
     * @return ContactAddress
     */
     function getAddressByTypeId(Contact $contact,$typeId ,$main = 1 ) {
-      return self::findOne(array(
+      return self::instance()->findOne(array(
         'conditions' => '`contact_id` = ' . DB::escape($contact->getId()) . 'AND is_main = '. $main. ' AND address_type_id = '.$typeId
       )); // findOne
     } // getAddressByTypeId 

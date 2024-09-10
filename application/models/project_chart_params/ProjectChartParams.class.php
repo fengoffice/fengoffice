@@ -14,7 +14,7 @@
     static function getProjectChartParams(ProjectChart $chart) {
       $conditions = array('`chart_id` = ?', $chart->getId());
       
-      return self::findAll(array(
+      return self::instance()->findAll(array(
         'conditions' => $conditions,
         'order' => '`id` ASC',
       )); // findAll

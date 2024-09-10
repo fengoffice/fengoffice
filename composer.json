@@ -1,8 +1,0 @@
-{
-    "name": "federicogarateguy/branch_3_5_3",
-    "description": "Feng",
-    "type": "oroject",
-    "require": {
-        "symfony/var-dumper": "^3.4"
-    }
-}

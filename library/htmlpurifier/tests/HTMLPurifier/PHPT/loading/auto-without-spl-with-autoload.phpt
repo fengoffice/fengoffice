@@ -13,7 +13,7 @@ function __autoload($class) {
 ";
     eval("class $class {}");
 }
-require '../library/HTMLPurifier.auto.php';
+require_once '../library/HTMLPurifier.auto.php';
 require 'HTMLPurifier/PHPT/loading/_no-autoload.inc';
 $purifier = new HTMLPurifier();
 

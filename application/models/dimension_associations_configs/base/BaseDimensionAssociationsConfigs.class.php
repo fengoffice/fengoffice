@@ -210,7 +210,7 @@
     *
     * @return DimensionAssociationsConfigs 
     */
-    function instance() {
+    static function instance() {
       static $instance;
       if(!instance_of($instance, 'DimensionAssociationsConfigs')) {
         $instance = new DimensionAssociationsConfigs();
