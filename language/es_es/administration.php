@@ -751,6 +751,18 @@
 		
 		'config option name show_company_info_report_print' => 'Mostrar datos de empresa al imprimimr reporte',
 		'config option desc show_company_info_report_print' => 'Se muestra la dirección, correo, sitio web de la empresa en la esquina superior derecha de la página al imprimir un reporte',
+
+		'config option name default_type_address' => 'Tipo de dirección por defecto',
+		'config option desc default_type_address' => 'Seleccione la opción predeterminada dentro del tipo de dirección.',
+
+		'config option name default_type_email' => 'Tipo de correo electrónico por defecto',
+		'config option desc default_type_email' => 'Seleccione la opción predeterminada dentro del tipo de correo electrónico.',
+
+		'config option name default_type_phone' => 'Tipo de teléfono por defecto',
+		'config option desc default_type_phone' => 'Seleccione la opción predeterminada dentro del tipo de teléfono.',
+
+		'config option name default_country_address' => 'País predeterminado en la dirección',  
+		'config option desc default_country_address' => 'Seleccione la opción predeterminada dentro de los países.',
 		
 	'config option name ignored_dims_task_related_objs' => 'Al reclasificar tareas: los tiempos de trabajo y gastos relacionados serán reclasificados también. Si no desea que esto suceda para algunas dimensiones en particular, por favor seleccionelas en la siguiente lista',
 	'config option desc ignored_dims_task_related_objs' => '',

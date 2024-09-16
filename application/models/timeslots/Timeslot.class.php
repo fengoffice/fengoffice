@@ -396,6 +396,12 @@ class Timeslot extends BaseTimeslot {
 	 * @return boolean
 	 */
 	function canDelete(Contact $user) {
+		// additional validations that can be done by plugins to see if time can be deleted
+		if (Plugins::instance()->isActivePlugin('income') && 
+			$this->getColumnValue('invoicing_status') == 'invoiced') {
+				// don't allow to delete if expense is invoiced
+				return false;
+		}
 		return can_delete($user, $this->getMembers(), $this->getObjectTypeId());
 		//return ($user->getId() == $this->getContactId() || can_manage_time($user));
 	}

@@ -92,8 +92,11 @@ class MailController extends ApplicationController {
 				'original_id' => $original_mail->getId(),
 				'last_mail_in_conversation' => MailContents::getLastMailIdInConversation($original_mail->getConversationId(), true),
 				'pre_body_fname' => $clean_mail['cache_fname'],
+				'additional_info' => array()
 			); // array
 		} // if
+		$mail_data['additional_info']['called_from'] = ApplicationLogs::ACTION_REPLY;
+		$mail_data['additional_info']['original_mail_id'] = $original_mail->getId();
 		$mail_accounts = MailAccounts::getMailAccountsByUser(logged_user());
 		if(!$mail_accounts) {
 			flash_error(lang('no mail accounts set'));
@@ -799,7 +802,12 @@ class MailController extends ApplicationController {
 	                                $this->send_outbox_mails(null,$account,$from_time);
 	                            }
                         	}
-                        	
+							$called_from = array_var($mail_data['additional_info'], 'called_from');
+							if ($called_from != '') {
+								$original_email = MailContents::instance()->findById(array_var($mail_data['additional_info'], 'original_mail_id'));
+								ApplicationLogs::createLog($original_email, $called_from, false, null, true, $mail->getId());
+							}
+
                         } catch (Exception $e) {
                             Logger::log("Fail to send the mail the first time object id: ".$mail->getObjectId());
                             Logger::log($e->getMessage());
@@ -1866,12 +1874,14 @@ class MailController extends ApplicationController {
 
 		$content1 = $email->getContent(); 
 		MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
+		$old_content_object = $email->generateOldContentObjectData();
 		if (array_var($_POST,'submit')){
 			$members = json_decode(array_var($_POST, 'members'));
 
 			$classify_conv = user_config_option('classify_mail_with_conversation');
 			$this->do_classify_mail($email, $members, null, $classify_conv, false, $only_attachments);
 
+			ApplicationLogs::createLog($email, ApplicationLogs::ACTION_EDIT);
 			// update mail list
 			if (user_config_option('mails classification filter') == 'unclassified' && count($members)>0
 				|| user_config_option('mails classification filter') == 'classified' && count($members)==0) {
@@ -1954,7 +1964,7 @@ class MailController extends ApplicationController {
 					}
 					$new_member_ids = $members;
 				} else {
-					$email->removeFromMembers(logged_user() instanceof contact ? logged_user() : Contacts::instance()->findById($email->getAccount()->getContactId(), $email->getMembers()));
+					$email->removeFromMembers(logged_user() instanceof contact ? logged_user() : Contacts::instance()->findById($email->getAccount()->getContactId()), $email->getMembers());
 					$new_member_ids = array();
 				}
 
@@ -1995,7 +2005,7 @@ class MailController extends ApplicationController {
 					} else {
 						if (!$after_receiving) {
 							foreach ($conversation as $conv_email) {
-								$conv_email->removeFromMembers(logged_user() instanceof contact ? logged_user() : Contacts::instance()->findById($email->getAccount()->getContactId(), $conv_email->getMembers()));
+								$conv_email->removeFromMembers(logged_user() instanceof contact ? logged_user() : Contacts::instance()->findById($email->getAccount()->getContactId()), $conv_email->getMembers());
 							}
 						}
 					}
@@ -2887,12 +2897,15 @@ class MailController extends ApplicationController {
 		if(!is_array($mail_data)) {
 			$mail_data = MailUtilities::construct_mail_data_foward($original_mail);
 		} // if
+
+		$mail_data['additional_info']['called_from'] = ApplicationLogs::ACTION_FORWARD;
+		$mail_data['additional_info']['original_mail_id'] = $original_mail->getId();
+		
 		$mail_accounts = MailAccounts::getMailAccountsByUser(logged_user());
 		tpl_assign('link_to_objects', 'MailContents-' . $original_mail->getId());
 		tpl_assign('mail', $mail);
 		tpl_assign('mail_data', $mail_data);
 		tpl_assign('mail_accounts', $mail_accounts);
-
 	}//forward_mail
 
 
@@ -3248,7 +3261,7 @@ class MailController extends ApplicationController {
 	 * @param array $attributes
 	 * @return string $message
 	 */
-	private function resolveAction($action, $attributes){
+	private function resolveAction($action, $attributes){ 
 		$resultMessage = "";
 		$resultCode = 0;
 		switch ($action){
@@ -3686,6 +3699,7 @@ class MailController extends ApplicationController {
 			}
 		}
 
+		ApplicationLogs::createLog($email, ApplicationLogs::ACTION_PRINT);
 		tpl_assign('email', $email);
 		$this->setTemplate("print_view");
 		//ajx_current("empty");
@@ -3707,6 +3721,7 @@ class MailController extends ApplicationController {
 			download_contents($email->getContent(), 'message/rfc822', $email->getSubject() . ".eml", strlen($email->getContent()), true);
 			die();
 		} else {
+			ApplicationLogs::createLog($email, ApplicationLogs::ACTION_DOWNLOAD);
 			download_from_repository($email->getContentFileId(), 'message/rfc822', $email->getSubject() . ".eml", true);
 			die();
 		}
@@ -3748,8 +3763,12 @@ class MailController extends ApplicationController {
                         $spam_filter->setSpamState($spam_state);
                         $spam_filter->save();
                     }
-
-                    evt_add("remove from email list", array('ids' => array($email->getId())));
+					if ($spam_state == 'no spam') {
+						ApplicationLogs::createLog($email, ApplicationLogs::ACTION_UNMARK_AS_SPAM);
+					} else if ($spam_state == 'spam') {
+						ApplicationLogs::createLog($email, ApplicationLogs::ACTION_MARK_AS_SPAM);
+					}
+					evt_add("remove from email list", array('ids' => array($email->getId())));
             }
             catch(Exception $e) {
                     flash_error($e->getMessage());

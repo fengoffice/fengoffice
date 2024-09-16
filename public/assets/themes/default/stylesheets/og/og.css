@@ -268,11 +268,6 @@
     float: right;
     margin: 5px;
 }
-.ico-email, .ico-emails, .ico-mail {
-	/*background: transparent url(../../images/16x16/mail_mark_unread.png) no-repeat !important;*/
-	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
-	background-position: 0 center !important;
-}
 
 .ico-check_mails {
 	/*background-image: url(../../images/16x16/mail_receive.png) !important;*/
@@ -299,7 +294,7 @@
 }
 .ico-mark-as-unread {
 	/*background-image: url(../../images/16x16/mail_mark_unread.png) !important;*/
-	background-image: url(../../images/icons-feng-3/16x16/email.png) !important;
+	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
 	background-size: 16px 16px!important;
 }
 .ico-mail-mark-spam {
@@ -309,7 +304,8 @@
 	background-image: url(../../images/16x16/mail_mark_ham.png) !important;
 }
 .ico-email_menu {
-	background-image: url(../../images/16x16/email.png) !important;
+	background-image: url(../../images/24x22/email.png) !important;
+	background-size: 16px 16px!important;
 }
 .ico-select {
 	background-image: url(../../images/16x16/select.png) !important;
@@ -749,6 +745,14 @@
 	background-color: #FFDADA;
 	color: #330000;
 	padding: 10px 0;
+}
+
+.x-grid3-scroller .inner-message.spam-deletion-warning{
+	position: initial;
+	background-color: #EEEEEE;
+	color: #63666a;
+	padding-top: 15px;
+	padding-bottom: 15px;
 }
 
 .subwscrumbs {
@@ -2408,3 +2412,22 @@ div[id$="uploadPreviewContainer"] {
 	align-items: center;
 	padding: 20px;
 } */
+
+/** popover styles for task link in time and expenses list */
+.x-grid3-cell-inner .task-link {
+	width: fit-content;
+	max-width: 100%;
+}
+.x-grid3-cell-inner .assign-task-link {
+	text-align: right;
+}
+.popover.task-link-popover {
+	border: none;
+}
+.popover.task-link-popover .popover-content {
+	padding: 4px;
+}
+.popover.task-link-popover .popover-content .link-ico {
+	cursor: pointer;
+}
+/** end popover styles for task link in time and expenses list */

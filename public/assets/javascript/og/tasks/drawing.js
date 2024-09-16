@@ -1932,13 +1932,9 @@ ogTasks.classifyTasks = function (task_ids, member_id, dimension_id, from_group_
 
 	// this fn will be executed after classification
 	var after_classification_fn = function(ids, mem_id) {
-		for (var x = 0; x < ids.length; x++) {
-			var t = ogTasks.getTask(ids[x]);
-			if (t) {
-				$("#ogTasksPanelTask" + t.id + "G" + from_group_id).remove();
-				ogTasks.UpdateTask(t.id, true);
-			}
-		}
+		// redraw the tasks list from scratch, because if we update each task 
+		// it will trigger the group totals recalculation once per task, and that causes performance issues
+		ogTasks.draw();
 	}
 
 	// find member type id

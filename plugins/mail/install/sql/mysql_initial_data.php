@@ -3,7 +3,7 @@ INSERT INTO <?php echo $table_prefix ?>object_types (name, handler_class, table_
 ON DUPLICATE KEY UPDATE name=name;
 
 INSERT INTO `<?php echo $table_prefix ?>tab_panels` (`id`,`ordering`,`title`,`icon_cls`,`refresh_on_context_change`,`default_controller`,`default_action`,`initial_controller`,`initial_action`,`type`,`object_type_id`, `enabled`, `plugin_id`) VALUES
- ('mails-panel', 12, 'email tab', 'ico-mail', 1, 'mail', 'init', '', '', 'system', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'), 1, (SELECT id FROM <?php echo $table_prefix ?>plugins WHERE name='mail'))
+ ('mails-panel', 12, 'email tab', 'ico-mails', 1, 'mail', 'init', '', '', 'system', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'), 1, (SELECT id FROM <?php echo $table_prefix ?>plugins WHERE name='mail'))
 ON DUPLICATE KEY UPDATE id=id;
 
 INSERT INTO `<?php echo $table_prefix ?>config_categories` (`name`, `is_system`, `category_order`) VALUES ('mail module', 0, 60);
@@ -13,7 +13,9 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
  ('mail module', 'sent_mails_sync', '0', 'BoolConfigHandler', 0, 0, 'imap email accounts synchronization possibility'),
  ('mail module', 'check_spam_in_subject', '0', 'BoolConfigHandler', 0, 0, ''),
  ('mail module', 'use_mail_accounts_to_send_nots', '0', 'BoolConfigHandler', 0, 0, ''),
- ('mail module', 'send_outbox_emails_in_background', '0', 'BoolConfigHandler', 0, 0, '')
+ ('mail module', 'send_outbox_emails_in_background', '0', 'BoolConfigHandler', 0, 0, ''),
+ ('mail module', 'spam_deletion_days', '30', 'IntegerConfigHandler', 0, 10, ''),
+ ('mail module', 'spam_delete_limit_per_run', '100', 'IntegerConfigHandler', 0, 11, '')
  ON DUPLICATE KEY UPDATE name=name;
 
 INSERT INTO <?php echo $table_prefix ?>contact_config_options (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
@@ -68,6 +70,10 @@ WHERE permission_group_id IN (
 );
 
 INSERT INTO `<?php echo $table_prefix ?>cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES ('check_mail', 1, 10, 0, 1, now()) ON DUPLICATE KEY UPDATE `name`=`name`;
+
+INSERT INTO `<?php echo $table_prefix ?>cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES 
+('delete_spam_emails', 1, 60, 1, 1, now())
+ON DUPLICATE KEY UPDATE `name`=`name`;
 
 INSERT INTO <?php echo $table_prefix ?>dimension_object_type_contents (dimension_id,dimension_object_type_id,content_object_type_id,is_required,is_multiple) VALUES 
  ((SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='feng_persons'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='person'), (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name='mail'),0,1),

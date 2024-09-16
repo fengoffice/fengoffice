@@ -10,6 +10,8 @@ $all_email_types = EmailTypes::getAllEmailTypesInfo();
 // instant messenger types
 $im_types = ImTypes::instance()->findAll(array('conditions' => array('`disabled`=0'), 'order' => '`id`'));
 
+$PhoneTypeActive = config_option('default_type_phone');
+
 if (!isset($id_prefix)) {
 	$id_prefix = '';
 }
@@ -93,6 +95,8 @@ if (!isset($id_prefix)) {
 
 		og.telephone_types = Ext.util.JSON.decode('<?php echo json_encode($all_telephone_types) ?>');
 
+		var phoneType = <?= $PhoneTypeActive ?>;
+
 		if (!og.is_new_contact) {
 			<?php $index = 0;
 			foreach (array_var($contact_data, 'all_addresses') as $address) { ?>
@@ -157,7 +161,7 @@ if (!isset($id_prefix)) {
 			// og.addNewEmailInput('<?php echo $genid . $id_prefix ?>_emails_container', 'contact', def_email_type);
 		<?php } ?>
 
-		og.addNewTelephoneInput('<?php echo $genid . $id_prefix ?>_comp_phones_container', 'company', def_phone_type);
+		og.addNewTelephoneInput('<?php echo $genid . $id_prefix ?>_comp_phones_container', 'company', phoneType);
 		og.addNewAddressInput('<?php echo $genid . $id_prefix ?>_comp_addresses_container', 'company', def_address_type);
 		og.addNewWebpageInput('<?php echo $genid . $id_prefix ?>_comp_webpages_container', 'company', def_web_type);
 

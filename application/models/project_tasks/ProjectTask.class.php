@@ -1858,24 +1858,27 @@ class ProjectTask extends BaseProjectTask {
 			// dont apply members of dimensions with single selection and subtask has already one of them
 			foreach ($members as $m) {/* @var $m Member */
 				$dim = $m->getDimension();
-				$dotc = DimensionObjectTypeContents::instance()->findOne(array("conditions" => array(
-					"dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?",
-					$dim->getId(), $m->getObjectTypeId(), ProjectTasks::instance()->getObjectTypeId()
-				)));
-				if ($dotc->getIsMultiple()) {
-					$members_to_apply[] = $m;
-				} else {
-					// check if subtask as one in this dimension
-					$subtask_members = $subtask->getMembers();
-					$has_one = false;
-					foreach ($subtask_members as $sm) {
-						if ($sm->getDimensionId() == $dim->getId()) {
-							$has_one = true;
-							break;
-						}
-					}
-					if (!$has_one) {
+				// don't process members included in the ignored dimensions
+				if (!in_array($dim->getId(), $ignored_dimension_ids)) {
+					$dotc = DimensionObjectTypeContents::instance()->findOne(array("conditions" => array(
+						"dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?",
+						$dim->getId(), $m->getObjectTypeId(), ProjectTasks::instance()->getObjectTypeId()
+					)));
+					if ($dotc->getIsMultiple()) {
 						$members_to_apply[] = $m;
+					} else {
+						// check if subtask as one in this dimension
+						$subtask_members = $subtask->getMembers();
+						$has_one = false;
+						foreach ($subtask_members as $sm) {
+							if ($sm->getDimensionId() == $dim->getId()) {
+								$has_one = true;
+								break;
+							}
+						}
+						if (!$has_one) {
+							$members_to_apply[] = $m;
+						}
 					}
 				}
 			}
@@ -2133,6 +2136,24 @@ class ProjectTask extends BaseProjectTask {
 
 			ApplicationLogs::createLog($this, ApplicationLogs::ACTION_EDIT, false, true);
 		}
+	}
+	
+	/**
+	 * Check if the task is fully or partially invoiced.
+	 * It triggers the "task_check_invoiced_or_partially_invoiced" hook with the task object.
+	 *
+	 * @return bool True if the task is fully or partially invoiced, false otherwise.
+	 */
+	function isInvoicedOrPartiallyInvoiced() {
+		
+		// Initialize the invoicing status as false
+		$is_invoiced = false;
+
+		// Trigger the "task_check_invoiced_or_partially_invoiced" hook with the task object
+		Hook::fire("task_check_invoiced_or_partially_invoiced", array('object' => $this), $is_invoiced);
+
+		// Return the invoicing status
+		return $is_invoiced;
 	}
 	
 } // ProjectTask

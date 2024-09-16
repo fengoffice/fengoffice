@@ -28,16 +28,22 @@ class TemplateController extends ApplicationController {
 		$template_tasks = TemplateTasks::instance()->findAll(array(
 			"conditions" => "(repeat_forever > 0 OR repeat_num > 0 OR repeat_end > 0) AND template_id=".$template->getId()
 		));
-		
+
 		foreach ($template_tasks as $template_task) {
 			/* @var $template_task TemplateTask */
 			$repeat_by = $template_task->getRepeatBy(); // due_date or start_date
+			$start_date = $template_task->getStartDate();
+			$due_date = $template_task->getDueDate();
+
 			$template_obj_prop = TemplateObjectProperties::instance()->findOne(array(
 				"conditions" => array("template_id=? AND object_id=? AND property=?", $template->getId(), $template_task->getId(), $repeat_by)
 			));
-			
+
+			// No variables set and no start_date on the task template (same with due date)
 			if (!$template_obj_prop instanceof TemplateObjectProperty) {
-				$tasks_with_missing_properties[] = $template_task;
+				if(($repeat_by === 'start_date' && !$start_date) || ($repeat_by === 'due_date' && !$due_date)){
+					$tasks_with_missing_properties[] = $template_task;
+				}
 			}
 		}
 		
@@ -734,6 +740,14 @@ class TemplateController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
+
+		$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($template);
+		if(count($tasks_with_missing_properties) > 0) {
+			flash_error(lang('error repetitive tasks'));
+			ajx_current("empty");
+			return;
+		}
+
 		$parameters = TemplateParameters::getParametersByTemplate($id);
 		$parameterValues = array_var($arguments, 'parameterValues', array_var($_POST, 'parameterValues'));
 		if(count($parameters) > 0 && !isset($parameterValues)) {

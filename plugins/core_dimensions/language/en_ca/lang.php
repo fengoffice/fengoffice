@@ -60,7 +60,6 @@
 	'load more task groups' => 'Load more task groups...',
 	'fix repetitive tasks' => 'Fix repetitive tasks',
 	'warning you have added some repetitive tasks for this template that do not have date variables for their date' => 'Warning: You have added some repetitive tasks for this template that do not have date variables for their date.',
-	'error repetitive tasks' => 'This template has repetitive tasks that don\'t have date variables set.',
 	'yes let me add those variables' => 'Oh, thank you. Let me add those variables.',
 	'no time now remove repetition' => 'Oh, OK. No time now. Just remove the repetition for now.',
 	'trash objects in member' => 'Also delete (move to trash) all objects classified here.',
@@ -100,7 +99,5 @@
 	'year to date' => 'Year to date',
 
 	'not assigned' => 'Not assigned',
-	'labor' => 'Labor',
-	'nothing' => 'Nothing',
-	'do not group' => 'Do not group',
+	'labor' => 'Labour',
 );

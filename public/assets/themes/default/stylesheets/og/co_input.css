@@ -24,6 +24,10 @@
     margin-bottom: 10px;
 }
 
+.coInputHeaderBottomRow {
+	padding-top: 15px; /* Adds top padding */
+  }
+
 .coInputTitle {
   	font-size: 150%;
   	font-weight: bolder;
@@ -164,6 +168,21 @@ form.add-task {
 	margin-left:10px;
 }
 
+
+.edit-password label {
+	padding-top: 2px;
+}
+.edit-password .internalForm {
+	margin-top: 20px;
+}
+
+.passoword-requirements {
+	margin: 30px 0 15px;
+}
+.passoword-requirements ul {
+	list-style: disc;
+	list-style-position: inside;
+}
 
 /* Messages */
 

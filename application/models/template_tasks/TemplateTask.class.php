@@ -109,6 +109,27 @@ class TemplateTask extends BaseTemplateTask {
 		$parent = TemplateTasks::instance()->findById($this->getParentId());
 		return $parent instanceof TemplateTask  ? $parent : null;
 	} // getParent
+
+	/** 
+	 * Return all parent tasks that this task belongs to
+	 *
+	 * @param void
+	 * @return array of TemplateTasks objects or empty array
+	 */
+	function getAllParents() {
+		$parents = array();
+		$current_task = $this;
+		while($current_task->getParentId()!=0) {
+			$parent = TemplateTasks::instance()->findById($current_task->getParentId());
+			if($parent instanceof TemplateTask) {
+				$parents[] = $parent;
+				$current_task = $parent;
+			} else {
+				break;
+			}
+		}
+		return $parents;
+	} // getAllParents
 	
 	/**
 	 * Return the user that last assigned the task
@@ -1817,6 +1838,13 @@ class TemplateTask extends BaseTemplateTask {
 			$this->setPercentCompleted($total_percentComplete);
 			$this->save();
 		}
+	}
+
+	/**
+	 * @return false
+	 */
+	function isInvoicedOrPartiallyInvoiced() {
+		return false;
 	}
 	
 } // TemplateTask

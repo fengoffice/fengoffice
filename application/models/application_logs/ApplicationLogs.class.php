@@ -34,6 +34,12 @@ class ApplicationLogs extends BaseApplicationLogs {
 	const ACTION_RELATION_EDITED = 'relation_edited';
 	const ACTION_RELATION_REMOVED = 'relation_removed';
     const ACTION_MADE_SEVERAL_CHANGES     = 'made several changes';
+	const ACTION_PRINT = 'print';
+	const ACTION_MARK_AS_SPAM = 'mark_as_spam';
+	const ACTION_UNMARK_AS_SPAM = 'unmark_as_spam';
+	const ACTION_FORWARD = 'forward';
+	const ACTION_REPLY = 'reply';
+	const ACTION_REPLY_ALL = 'reply_all';	
 	
 	/**
 	 * Create new log entry and return it
@@ -172,9 +178,15 @@ class ApplicationLogs extends BaseApplicationLogs {
 			self::ACTION_DOWNLOAD,
 			self::ACTION_CHECKOUT,
 			self::ACTION_CHECKIN,
+			self::ACTION_PRINT,
+			self::ACTION_MARK_AS_SPAM,
+			self::ACTION_UNMARK_AS_SPAM,
 			self::ACTION_RELATION_ADDED,
 			self::ACTION_RELATION_EDITED,
-			self::ACTION_RELATION_REMOVED
+			self::ACTION_RELATION_REMOVED,
+			self::ACTION_FORWARD, 
+			self::ACTION_REPLY,
+			self::ACTION_REPLY_ALL,
 			); // array
 		} // if
 		

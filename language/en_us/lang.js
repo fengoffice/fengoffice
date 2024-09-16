@@ -320,6 +320,7 @@ addLangs({
 
     'no objects message': 'There are no {0} in {1}',
     'no more objects message': 'There are no more {0} to display',
+    'all spam messages will be deleted after days':'Messages that have been in Spam more than {0} days will be automatically deleted',
     'no objects with tag message': 'There are no {0} tagged as \'{2}\' in \'{1}\'',
     'objects': 'Objects',
 
@@ -1031,5 +1032,8 @@ addLangs({
     "You are about to set a quoted estimated price. Moving forward it will set estimated price of all sub-tasks to zero. This can't be un-done. Do you want to proceed?": "You are about to set a quoted estimated price. Moving forward it will set estimated price of all sub-tasks to zero. This can't be un-done. Do you want to proceed?",
     "The parent task in non-billable. You cannot set this task as billable.":  "The parent task in non-billable. You cannot set this task as billable.",
     "The parent task is fixed fee. You cannot set this task as billable.": "The parent task is fixed fee. You cannot set this task as billable.",
-
+    "listing order" : 'Listing Order',
+    "ASC" : "ASC",
+    "DESC" : "DESC",
+	'assign task': 'Assign task',
 });

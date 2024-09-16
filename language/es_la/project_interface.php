@@ -295,5 +295,6 @@ Asunto:   {0}<br/>
 	'apply assignee to subtasks' => 'Aplicar asignado actual a subtareas',
 	'undo remove subtasks' => 'Restaurar las subtareas removidas',
 	'urgent priority' => 'Urgente',
-	'attachment from email' => 'Adjunto al correo "{0}"',	
+	'attachment from email' => 'Adjunto al correo "{0}"',
+	'total estimated time' => 'Tiempo estimado total',	
 ); ?>

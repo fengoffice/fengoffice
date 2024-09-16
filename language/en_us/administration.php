@@ -141,6 +141,8 @@
     'config option name smtp_secure_connection' => 'Use secure SMTP connection',
     'config option name user_email_fetch_count' => 'Email fetch limit',
     'config option desc user_email_fetch_count' => 'How many emails to fetch when a user clicks on the "Check mail accounts" button. Using a large value may cause timeout errors to the user. Use 0 for no limit. Note, this doesn\'t affect email fetching through cron.',
+    'config option name spam_deletion_days' => 'Days to keep spam emails before deletion',
+    'config option name spam_delete_limit_per_run' => 'Deletion limit of spam emails per cron run',
     'config option name check_spam_in_subject' => 'Check spam in subject',
   	'config option desc check_spam_in_subject' => 'Filter all the emails that contain the word "Spam" in the subject',
     'config option name show images in document notifications' => 'Attach images in document notifications',
@@ -232,7 +234,7 @@
   	'config option desc mandatory_address_fields' => 'Select which of these fields will be mandatory in every form where an address input is present.',
 	
   	'group users' => 'Group users',
-    'timeslot' => 'Time',
+    'timeslot' => 'Time entry',
     'module permissions' => 'Module Permissions',
     'module permission uncheck warning' => 'Module Permission Uncheck Warning',
 
@@ -1055,11 +1057,19 @@
     'config option name default_type_address' => 'Default Type Address',
 	  'config option desc default_type_address' => 'Select the default option within the address type',
 
+    'config option name default_type_email' => 'Default type email',
+	  'config option desc default_type_email' => 'Select the default option within the email type',
+
+    'config option name default_type_phone' => 'Default type phone',
+	  'config option desc default_type_phone' => 'Select the default option within the phone type',
+
     'config option name default_country_address' => 'Default country in address',  
     'config option desc default_country_address' => 'Select the default option within the countries',
 
 	'config option name ignored_dims_task_related_objs' => 'When re-classifying tasks: time entries and expenses will also be re-classified. If you want this not to happen for specific dimensions, please select them from this list',
 	'config option desc ignored_dims_task_related_objs' => '',
-  ); // array
 
+  'config option name mandatory_email_on_contacts' => 'Mandatory Email for Contacts and Companies', 
+  'config option desc mandatory_email_on_contacts' => 'Select whether the main email for contacts and companies should be mandatory.',
+  ); // array
 

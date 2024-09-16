@@ -36,8 +36,7 @@
 	'show always' => 'Mostrar siempre este reporte',
 	'subtotal'=> 'Subtotal',
 	'print this page'=> 'Imprimir esta página',
-  	'show estimated time column' => 'Mostrar la columna de tiempo estimado',
-		
+  	'show estimated time column' => 'Mostrar la columna de tiempo estimado',	
 	'field Objects rel_object_id' => 'Id',
 	'field Objects start_time' => 'Fecha de inicio',
 	'field Objects end_time' => 'Fecha de fin',
@@ -58,8 +57,8 @@
 	'field Objects archived_on' => 'Archivado el',
 	'field Objects time' => 'Tiempo',
 	'field Objects billing' => 'Facturación',
-        'field Objects mark_as_started' => 'Marcada como iniciada',
-        'field Objects worked_time' => 'Tiempo trabajado',
+    'field Objects mark_as_started' => 'Marcada como iniciada',
+    'field Objects worked_time' => 'Tiempo trabajado',
 	'field Timeslots start_time' => 'Fecha de inicio',
   	'field Timeslots worked_time' => 'Tiempo trabajado',
 	'field ProjectTasks assigned_by_id' => 'Asignado por',
@@ -80,4 +79,7 @@
   	'excel' => 'Excel',
 	'page size' => 'Tamaño de página',
 	'first level task only' => 'Solo tareas del primer nivel',
+	'edit report' => 'Editar reporte',
+	'field Objects move_direction_non_working_days' => 'Mover direccion si es un día no laborable',
+	'field Objects subscribers_list' => 'Suscriptores',
 ); ?>

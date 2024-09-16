@@ -49,7 +49,7 @@ og.TasksBottomToolbar = function(config) {
 			if (!found) groupcombo_store_data.push(['dimmembertypeid_' + gb.dim_id + '_' + gb.mem_type_id, gb.mem_type_name]);
 		}
 	}
-	
+
     this.groupcombo = new Ext.form.ComboBox({
     	id: 'ogTasksGroupByCombo',
         store: new Ext.data.SimpleStore({
@@ -83,7 +83,7 @@ og.TasksBottomToolbar = function(config) {
         }
     });
     this.groupcombo.setValue(ogTasks.userPreferences.groupBy);
-    
+	
     var ordercombo_data = [
     			['priority',lang('priority')]
 	        	,['name', lang('task name')]
@@ -103,8 +103,8 @@ og.TasksBottomToolbar = function(config) {
 			}
 		}
 	}
-	
-    this.ordercombo = new Ext.form.ComboBox({
+
+	this.ordercombo = new Ext.form.ComboBox({
     	id: 'ogTasksOrderByCombo',
         store: new Ext.data.SimpleStore({
 	        fields: ['value', 'text'],
@@ -136,7 +136,36 @@ og.TasksBottomToolbar = function(config) {
         }
     });
     this.ordercombo.setValue(ogTasks.userPreferences.orderBy);
-    
+
+this.listingOrderCombo = new Ext.form.ComboBox({
+    id: 'ogListingOrderCombo',
+    store: new Ext.data.SimpleStore({
+        fields: ['value', 'text'],
+        data: [['ASC', lang('ASC')], ['DESC', lang('DESC')]]
+    }),
+    displayField: 'text',
+    mode: 'local',
+    triggerAction: 'all',
+    selectOnFocus: true,
+    width: 60,
+    valueField: 'value',
+    listeners: {
+        'select': function (combo, record) {
+			ogTasks.userPreferences.listingOrder = record.data.value;
+            var url = og.getUrl('account', 'update_user_preference', {name: 'tasksListingOrder', value:record.data.value});
+
+            og.openLink(url, {
+                hideLoading:true,
+                callback: function(success, data) {
+                    var tp = Ext.getCmp("tasks-panel");
+                    if (tp) tp.reset();
+                }
+            });
+        }
+    }
+});
+this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
+
     var filtercombo_store_data = [['no_filter','--' + lang('no filter') + '--']
 		,['created_by',lang('created by')]
 		,['completed_by', lang('completed by')]
@@ -530,7 +559,7 @@ setTimeout(function() {
         	}
         }
     });
-    
+
   if (og.config.tasks_use_date_filters) {
     // DatePicker Menu  
     this.dateFieldStart = new og.DateField({
@@ -680,6 +709,7 @@ setTimeout(function() {
     this.add(this.groupcombo);
     this.add('&nbsp;&nbsp;&nbsp;' + lang('order by') + ':');
     this.add(this.ordercombo);
+	this.add(this.listingOrderCombo);
     
     if (og.config.tasks_use_date_filters) {
 	    this.add('&nbsp;&nbsp;&nbsp;' + lang('from date') + ':');

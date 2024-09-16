@@ -2364,6 +2364,24 @@ class MemberController extends ApplicationController {
 					$null = null;
 					Hook::fire('before_classify_additional_verifications', array('object' => $obj, 'member_ids' => array($member->getId())), $null);
 					
+					
+					if (in_array($obj->getObjectTypeName(), array('timeslot', 'payment_receipt'))) {
+						
+						// get the current members of the object with different member type than the new member
+						$memArray = ObjectMembers::getMemberIdsByObject($obj->getId(), [$member->getObjectTypeId()]);
+						// add the new member to the array
+						$memArray[] = $member->getId();
+						// after having all the new members of the object, check if the members match with the task
+						$result = $obj->validateObjMembersWithObjectRelatedMembers($memArray,true);
+				
+						if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
+			
+							$errorMessage = $obj->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
+							throw new Exception($errorMessage);
+						}
+					}
+
+
 					$dim_obj_type_content = DimensionObjectTypeContents::instance()->findOne(array('conditions' => array('`dimension_id`=? AND `dimension_object_type_id`=? AND `content_object_type_id`=?', $member->getDimensionId(), $member->getObjectTypeId(), $obj->getObjectTypeId())));
 					if (!($dim_obj_type_content instanceof DimensionObjectTypeContent)) continue;
 					if (!$dim_obj_type_content->getIsMultiple() || array_var($_POST, 'remove_prev')) {
@@ -2400,31 +2418,17 @@ class MemberController extends ApplicationController {
 
 					// if object is a task, then apply classification to subtasks
 					if ($obj instanceof ProjectTask) {
-						// get the classification configuration to see if this dimension allows classification in multiple members for tasks
-						$dotc = DimensionObjectTypeContents::instance()->findOne(array(
-							"conditions" => array("dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?", $member->getDimensionId(), $member->getObjectTypeId(), $obj->getObjectTypeId())
-						));
 
-						$obj_controller = new ObjectController();
-						$subtasks = array_reverse($obj->getAllSubTasks(false));
-						// reclassify each subtask in the same member as the parent task
-						foreach ($subtasks as $st) {
-							$st_members = $st->getMembers();
-							$st_mem_ids = array();
-							foreach ($st_members as $st_mem) {
-								// keep other dimension members, also keep prev classification if dim allows multiple classification
-								if ($dotc->getIsMultiple() || $st_mem->getDimensionId() != $member->getDimensionId()) {
-									$st_mem_ids[] = $st_mem->getId();
-								}
-							}
-							// add new member to members array
-							$st_mem_ids[] = $member->getId();
-							// classify
-							$obj_controller->add_to_members($st, $st_mem_ids);
-						}
+						// apply the same logic used in tasks controller to override subtasks classification
+						$member_ids = array($mem_id);
+						Hook::fire('modify_subtasks_member_ids', array('task' => $obj, 'parent' => $obj->getParent()), $member_ids);
+	                  	$members_for_subtasks = Members::instance()->findAll(array('conditions' => "id IN (" . implode(',', $member_ids) . ")"));
+
+						$obj->apply_members_to_subtasks($members_for_subtasks, true);
 
 						// apply the classification changes to related time entries and expenses
 						$obj->override_related_objects_classification();
+
 					}
 					
 					// if object is contact ask to add default permissions in member

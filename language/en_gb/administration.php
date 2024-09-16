@@ -131,6 +131,8 @@ return array(
     'config option name smtp_secure_connection' => 'Use secure SMTP connection',
     'config option name user_email_fetch_count' => 'Email fetch limit',
     'config option desc user_email_fetch_count' => 'How many emails to fetch when a user clicks on the "Check mail accounts" button. Using a large value may cause timeout errors to the user. Use 0 for no limit. Note, this doesn\'t affect email fetching through cron.',
+    'config option name spam_deletion_days' => 'Days to keep spam emails before deletion',
+    'config option name spam_delete_limit_per_run' => 'Deletion limit of spam emails per cron run',
     'config option name check_spam_in_subject' => 'Check spam in subject',
   	'config option desc check_spam_in_subject' => 'Filter all the emails that contain the word "Spam" in the subject',
     'config option name show images in document notifications' => 'Attach images in document notifications',
@@ -214,7 +216,7 @@ return array(
   	'notify myself too' => 'Include myself in automatic notifications',
 	
   	'group users' => 'Group users',
-    'timeslot' => 'Time',
+    'timeslot' => 'Time entry',
     'module permissions' => 'Module Permissions',
     'module permission uncheck warning' => 'Module Permission Uncheck Warning',
 

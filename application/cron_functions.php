@@ -80,6 +80,18 @@ function delete_mails_from_server() {
 	}
 }
 
+function delete_spam_emails() {
+	if (Plugins::instance()->isActivePlugin('mail')) {
+		try {
+			_log("Checking mail accounts to delete spam emails from server...");
+			$count = MailUtilities::deleteSpamMailsFromServerAllAccounts();
+			_log("Deleted $count spam mails from server...");
+		} catch (Exception $e) {
+			_log("Error deleting spam mails from server: " . $e->getMessage());
+		}
+	}
+}
+
 function clear_tmp_folder($dir = null) {
 	try {
 		if (!$dir) $dir = ROOT . "/tmp";

@@ -117,7 +117,9 @@ class MailContent extends BaseMailContent {
 	function setBodyPlain($plain) {
 		return $this->getMailData()->setBodyPlain($plain);
 	}
-	
+	function setForwarded($forwarded) {
+		return $this->getMailData()->setForwarded($forwarded);
+	}
 	 
 	/**
 	 * Validate before save

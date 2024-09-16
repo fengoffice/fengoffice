@@ -269,6 +269,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				this.getColumnModel().setColumnWidth(assignedToIndex, 130);//assignedTo date
 			}
 
+			var use_single_filter_type = true;
 			if (filter && filter.filter == 'type') {
 				this.type = filter.type;
 				this.store.baseParams.type = this.type;
@@ -278,11 +279,24 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 					for (var i=0; i<og.objPickerTypeFilters.length; i++) {
 						types.push(og.objPickerTypeFilters[i].type);
 					}
+					var use_single_filter_type = false;
 					this.store.baseParams.type = types.join(',');
 				}
 			}
 			var member_ids = [];
+
+			var check_ot_member_selector = false;
+			if (use_single_filter_type && this.store.baseParams.type != '') {
+				var object_type_dimensions = og.dimensionsByObjectTypeInMemberSelector[this.store.baseParams.type];
+				if (object_type_dimensions) {
+					check_ot_member_selector = true;
+				}
+			}
+
 			for (x in this.member_filter) {
+				if (check_ot_member_selector && object_type_dimensions.indexOf(parseInt(x)) == -1) {
+					continue;
+				}
 				for (var mi=0; mi<this.member_filter[x].length; mi++) {
 					member_ids.push(this.member_filter[x][mi]);
 				}
@@ -543,12 +557,12 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 						split: true,
 						autoLoad: {
 							scripts: true,
-							url: og.getUrl('dimension', 'linked_object_filters', 
-											{context: og.contextManager.plainContext(),
-											 object_type_id:object_type.id,
-											 skip_default_member_selections: true,
-											 add_on_remove_function: true
-											})
+							url: og.getUrl('dimension', 'linked_object_filters', {
+								context: config.context ? config.context : og.contextManager.plainContext(),
+								object_type_id: object_type.id,
+								skip_default_member_selections: true,
+								add_on_remove_function: true
+							})
 						},
 						listeners: {
 							memberselected: {
@@ -602,7 +616,7 @@ Ext.extend(og.ObjectPicker, Ext.Window, {
 		this.grid.store.baseParams.name = value;
 	},
 	load: function() {
-		this.grid.store.baseParams.context = og.contextManager.plainContext();
+		this.grid.filterSelect();
 		this.grid.load();
 	}
 });
@@ -615,7 +629,7 @@ og.ObjectPicker.show = function(callback, scope, config, object_id, object_id_no
 	this.dialog.loadFilters(config);
 	if (config.context) {
 		this.dialog.grid.store.baseParams.context = config.context;
-		var con = eval(config.context);
+		var con = Ext.util.JSON.decode(config.context);
 	} else {
 		var con = og.contextManager.dimensionMembers;
 	}

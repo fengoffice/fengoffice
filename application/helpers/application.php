@@ -2128,6 +2128,44 @@ function render_widget_option_input($widget_option, $genid=null) {
 }
 
 
+/**
+ * Renders the password requirements as an unordered list.
+ *
+ * @return string The HTML representation of the password requirements.
+ */
+function render_password_requirements() {
+	
+	$min_pass_length = config_option('min_password_length', 0);
+	$pass_numbers = config_option('password_numbers', 0);
+	$pass_uppercase = config_option('password_uppercase_characters', 0);
+	$pass_metacharacters = config_option('password_metacharacters', 0);
+	
+	if ($min_pass_length == 0 && $pass_numbers == 0 && $pass_uppercase == 0 && $pass_metacharacters == 0) {
+		return '';
+	}
+
+	$output = '<div class="passoword-requirements"><ul>';
+	$output .= '<h1>' . lang('password requirements') . '</h1>';
+	
+	if ($min_pass_length > 0) {
+		$output .= '<li>' . lang('password invalid min length', $min_pass_length) . '</li>';
+	}
+	if ($pass_numbers > 0) {
+		$output .= '<li>' . lang('password invalid numbers', $pass_numbers) . '</li>';
+	}
+	if ($pass_uppercase) {
+		$output .= '<li>' . lang('password invalid uppercase', $pass_uppercase) . '</li>';
+	}
+	if ($pass_metacharacters) {
+		$output .= '<li>' . lang('password invalid metacharacters', $pass_metacharacters) . '</li>';
+	}
+
+	$output .= '</ul></div>';
+
+	return $output;
+}
+
+
 function get_dates_for_date_range_config($data_saved) {
     $st = '';
     $et = '';

@@ -577,7 +577,7 @@ function render_associated_dimensions_selectors($params) {
 				}
 			}
 			
-			if ($dim_association->getIsRequired()) {
+			if ($dim_association->getIsRequired() && !$reverse_relation) {
 				$label .= ' <span class="label_required">*</span>';
 				
 			}
