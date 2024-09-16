@@ -23,34 +23,34 @@
 
 <div class="webpage">
 
-<div class="coInputHeader">
-
-  <div class="coInputHeaderUpperRow" id="<?php echo $genid?>_title_label">
-	<div class="coInputTitle">
-		<?php echo $object->getAddEditFormTitle(); ?>
-	</div>
-  </div>
-
-  <div>
-	<div class="coInputName">
-		<?php echo text_field('webpage[name]', array_var($webpage_data, 'name'), array('class' => 'title', 'id' => $genid.'webpageFormTitle')) ?>
-	</div>
+	<div class="coInputHeader">
+ 		<div class="coInputHeaderUpperRow" id="<?php echo $genid?>_title_label">
+			<div class="coInputTitle">
+				<?php echo $object->getAddEditFormTitle(); ?>
+			</div>
+		</div>
+  		
+			<div class="coInputName">
+				<?php echo text_field('webpage[name]', array_var($webpage_data, 'name'), array('class' => 'title', 'id' => $genid.'webpageFormTitle')) ?>
+			</div>
 		
-	<div class="coInputButtons">
-		<?php echo submit_button($object->getSubmitButtonFormTitle(),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
-	</div>
-	<div class="clear"></div>
-  </div>
-  
-  <div class="coInputHeaderUpperRow" id="<?php echo $genid?>_url_label">
-	<div class="coInputTitle"><?php echo lang('url').' *' ?></div>
-  </div>
-  <div class="coInputName"><?php
-  	echo text_field('webpage[url]', array_var($webpage_data, 'url'), array('class' => 'title', 'id' => 'webpageFormURL'));
-?></div>
-  <div class="clear"></div>
-  
-  
+			<div class="coInputButtons">
+				<?php echo submit_button($object->getSubmitButtonFormTitle(),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+			</div>
+			<div class="clear"></div>
+
+		<div class="coInputHeaderBottomRow">
+			<div class="coInputHeaderUpperRow" id="<?php echo $genid?>_url_label">
+				<div class="coInputTitle">
+					<?php echo lang('url').' *' ?>
+				</div>
+  			</div>
+  			<div class="coInputName">
+				<?php echo text_field('webpage[url]', array_var($webpage_data, 'url'), array('class' => 'title', 'id' => 'webpageFormURL'));?>
+			</div>
+	  		<div class="clear"></div>	
+		</div>
+  	</div>
 </div>
 
 <div class="coInputMainBlock">

@@ -82,12 +82,30 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         },
 
         task_name_renderer: function(value, p, r) {
-            if (r.id == 'quick_add_row')
+            if (r.id == 'quick_add_row') {
                 return value;
-            if (r.data.id == '__total_row__' || r.data.object_id <= 0)
+			}
+
+            if (r.data.id == '__total_row__' || r.data.object_id < 0) {
                 return '';
+			}
+
+			if (r.data.rel_object_id == 0) {
+				let onclick = String.format("og.inline_change_object_task('{0}', '{1}', '{2}', '{3}'); return false;", r.data.object_id, 'time', 'assign_task_to_timeslots', grid_id);
+				return '<div class="assign-task-link"><a href="#" onclick="' + onclick + '" class="link-ico ico-add" title="' + lang('assign task') + '"></a></div>';
+			}
+
             var onclick = "og.openLink(og.getUrl('task', 'view', {id: " + r.data.rel_object_id + "})); return false;";
-            return String.format('<a href="#" onclick="{1}" title="{2}" class="underline">{0}</a>', og.clean(value), onclick, og.clean(value));
+
+			return String.format(
+				'<div class="task-link" data-object-id="{2}" data-task-id="{3}" data-controller="{4}" data-action="{5}"><a href="#" onclick="{1}" class="underline">{0}</a></div>', 
+				og.clean(value), 
+				onclick, 
+				r.data.object_id, 
+				r.data.rel_object_id,
+				'time',
+				'assign_task_to_timeslots',
+			);
         },
 
         delete_timeslot: function (tid) {
@@ -480,6 +498,19 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
                     caller: 'reporting-panel'
                 });
             }
+        }),
+		assign_task: new Ext.Button({
+			iconCls: 'ico-task',
+			text: '<?php echo lang('assign task') ?>',
+			id: 'ts_assign_task_btn',
+			handler: function() {
+
+				og.assign_task_to_objects(grid_id, 'time', 'assign_task_to_timeslots', 'time list - toolbar assign task button');
+				
+			},
+			disabled: true,
+			selection_dependant: true,
+			is_multiple: true
         })
     };
 
@@ -495,6 +526,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
     timeslots_tbar_items.push(botonera.archive);
     timeslots_tbar_items.push(botonera.trash);
     timeslots_tbar_items.push(botonera.print);
+	timeslots_tbar_items.push(botonera.assign_task);
 
 
     <?php foreach ($additional_actions as $add_action) {

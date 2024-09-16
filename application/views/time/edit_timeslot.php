@@ -205,7 +205,7 @@
                             }
                         ?>
                         
-                        <a id="<?php echo $genid ?>before" class="add-linked-object " href="#" onclick="og.openObjectTaskPicker()" style="<?php echo $showLinkObjectTask ?>"><span class="action-ico ico-task"><?php echo lang('link task') ?></span></a>
+                        <a id="<?php echo $genid ?>before" class="add-linked-object " href="#" onclick="og.openObjectTaskPicker('<?php echo $genid ?>')" style="<?php echo $showLinkObjectTask ?>"><span class="action-ico ico-task"><?php echo lang('link task') ?></span></a>
 
                             
                             <div class="template-object-actions og-add-template-object ico-task" style="<?php echo $showObjectTask ?>">
@@ -876,14 +876,14 @@
     }
 
     
-    og.openObjectTaskPicker = function () { 
+    og.openObjectTaskPicker = function (genid) { 
         og.ObjectPicker.show(function (objs) {
             if (objs && objs.length > 0) {
                 var obj = objs[0].data;
                 if (obj.type != 'task') {
                     og.msg(lang("error"), lang("object type not supported"), 4, "err");
                 } else {
-                    og.addObjectTask(obj.object_id,obj.name);
+                    og.addObjectTask(genid, obj.object_id, obj.name);
                 }
             }
         },'',{
@@ -892,7 +892,7 @@
         });
     };
     
-    og.addObjectTask = function (object_id, object_name) {
+    og.addObjectTask = function (genid, object_id, object_name) {
 
         
         var Link = $('.add-linked-object:first');
@@ -905,6 +905,32 @@
         } else {
             og.setTimeslotIsBillableUsingTaskWrapper(object_id);
         }
+
+		// if advanced billing plugin is actuve => if task is not billable then disable is_billable input and set it to no
+		if (og.advanced_billing) {
+			// get task details
+			og.openLink(og.getUrl('task','get_task_data',{id: object_id, task_info: true}),{
+				callback: function(success, data) {
+					// process response
+					if (data && data.task) {
+						var task_is_fixed_fee = !data.task.is_calculated_estimated_price && data.task.is_fixed_fee;
+						var task_non_billable = !data.task.is_billable;
+
+						if (task_is_fixed_fee || task_non_billable) {
+							// if task is fixed fee or non billable then disable is_billable input and set it to no
+							$("#" + genid + "is_billableNo").click();
+							$("#" + genid + "is_billableNo.yes_no").attr('disabled', 'disabled');
+							$("#" + genid + "is_billableYes.yes_no").attr('disabled', 'disabled');
+
+						} else {
+							// if billable then let the user change the billable input
+							$("#" + genid + "is_billableNo.yes_no").removeAttr('disabled');
+							$("#" + genid + "is_billableYes.yes_no").removeAttr('disabled');
+						}
+					}
+				}
+			});
+		}
 		
         Link.hide()
         Object.show();

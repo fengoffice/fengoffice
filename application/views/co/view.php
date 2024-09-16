@@ -163,6 +163,7 @@ if ($object instanceof ContentDataObject && (!$isUser && $object->canView(logged
 
 							$null = null;
 							Hook::fire('task_view_after_timeslots_list', array('task' => $object), $null);
+							Hook::fire('task_view_after_other_sections', array('task' => $object), $null);
 
 							tpl_assign('show_timeslot_section', $show_timeslot_section);
 						?><div id="<?php echo $genid ?>_work_performed_summary"><?php

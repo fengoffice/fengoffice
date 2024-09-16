@@ -11,6 +11,9 @@ $all_email_types = EmailTypes::getAllEmailTypesInfo();
 // instant messenger types
 $im_types = ImTypes::instance()->findAll(array('conditions' => array('`disabled`=0'), 'order' => '`id`'));
 
+$emailType = config_option('default_type_email');
+$PhoneTypeActive = config_option('default_type_phone');
+
 if (!isset($id_prefix)) {
 	$id_prefix = '';
 }
@@ -72,7 +75,7 @@ if (!isset($id_prefix)) {
 							<!-- <div style="float:left;" id="<?php echo $genid . $id_prefix ?>_emails_container"></div> -->
 							<div class="clear"></div>
 							<div class="addNewLineButton" style="margin: 10px 0 0;">
-								<a href="#" onclick="og.addNewEmailInput('<?php echo $genid . $id_prefix ?>_emails_container')" class="coViewAction ico-add" data-defaultBilling="<?php echo Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new email address') ?></a>
+								<a href="#" onclick="og.addNewEmailInput('<?php echo $genid . $id_prefix ?>_emails_container', undefined, <?= $emailType ?>)" class="coViewAction ico-add" data-defaultBilling="<?php echo Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new email address') ?></a>
 							</div>
 						</div>
 					</div>
@@ -98,7 +101,7 @@ if (!isset($id_prefix)) {
 				<div style="float:left;" id="<?php echo $genid ?>_comp_phones_container"></div>
 				<div class="clear"></div>
 				<div style="margin:5px 0 10px 200px;">
-					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_comp_phones_container', 'company')" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
+					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_comp_phones_container', 'company', <?= $PhoneTypeActive ?>)" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
 				</div>
 			</div>
 
@@ -160,7 +163,7 @@ if (!isset($id_prefix)) {
 				<div id="<?php echo $genid ?>_phones_container"></div>
 				<!-- <div style="float:left;" id="<?php echo $genid ?>_phones_container"></div> -->
 				<div style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_phones_container')" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
+					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_phones_container', undefined, <?= $PhoneTypeActive ?>)" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
 				</div>
 			</div>
 			<div class="clear"></div>
@@ -234,6 +237,8 @@ if (!isset($id_prefix)) {
 		og.load_company_combo("<?php echo $genid ?>profileFormCompany", '<?php echo (isset($_POST['widget_company']) ? $_POST['widget_company'] : array_var($contact_data, 'company_id', '0')) ?>');
 
 		og.telephone_types = Ext.util.JSON.decode('<?php echo json_encode($all_telephone_types) ?>');
+
+		var phoneType = <?= $PhoneTypeActive ?>;
 
 		for (var i = 0; i < og.telephone_types.length; i++) {
 			if (og.telephone_types[i].code == 'work') def_phone_type = og.telephone_types[i].id;

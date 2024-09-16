@@ -1098,6 +1098,8 @@ class ContactController extends ApplicationController
 			ajx_current("empty");
 			try {
 
+				Contacts::validateMail($contact_data);
+
 				//when creating user from contact remove classification from contact first
 				if (array_var($_REQUEST, 'user_from_contact_id') > 0) {
 					$members_to_remove = array_flat(DB::executeAll("SELECT m.id FROM " . TABLE_PREFIX . "members m INNER JOIN " . TABLE_PREFIX . "dimensions d ON d.id=m.dimension_id WHERE d.defines_permissions=1"));
@@ -1129,26 +1131,6 @@ class ContactController extends ApplicationController
 
 				$contact_data['birthday'] = getDateValue(array_var($contact_data, "birthday"));
 				$contact_data['name'] = $contact_data['first_name'] . " " . $contact_data['surname'];
-
-				// Check if the email is unique when the contact is user
-				if (is_array(array_var($contact_data, 'user')) && $contact_data['email'] != '') {
-					$is_user = is_array($contact_data['user']) && array_var($contact_data['user'], 'type', 0) > 0;
-					$is_email_valid = Contacts::validateUniqueEmail($contact_data['email'], $contact->getObjectId(), "", $is_user);
-					if (!$is_email_valid) {
-						flash_error(lang('this email already exists for another user. please use a different email.'));
-						ajx_current("empty");
-						return;
-					}
-				} else {
-
-					// Check if the email is unique when the contact is not user
-					$email_exists = Contacts::getByEmailCheck(trim($contact_data['email']));
-					if ($email_exists && !config_option('allow_duplicated_contact_emails')) {
-						flash_error(lang('this email already exists for another contact. please use a different email.'));
-						ajx_current("empty");
-						return;
-					}
-				}
 
 				$contact->setFromAttributes($contact_data);
 
@@ -1188,9 +1170,9 @@ class ContactController extends ApplicationController
 				if (array_var($_REQUEST, 'user_from_contact_id') > 0) {
 					ContactEmails::clearByContact($contact);
 				}
+
 				// main email
 				if ($contact_data['email'] != "") $contact->addEmail($contact_data['email'], 'personal', true, isset($contact_data['isMainBilling']));
-
 				// save additional emails
 				$this->save_non_main_emails($contact_data, $contact);
 
@@ -1340,7 +1322,11 @@ class ContactController extends ApplicationController
 						"contact_id" => $contact->getId()
 					);
 				}
-
+			} catch (DAOValidationError $e) {
+				DB::rollback();
+				flash_error($e->getMessage());
+				ajx_current("empty");
+				return;
 				// Error...
 			} catch (Exception $e) {
 				DB::rollback();
@@ -1394,7 +1380,7 @@ class ContactController extends ApplicationController
 		if ($contact instanceof Contact) {
 			ajx_extra_data(array(
 				"contact" => array(
-					"name" => $contact->getFirstName(),
+					"name" => $contact->getObjectName(),
 					"email" => $contact->getEmailAddress(),
 					"id" => $contact->getEmailAddress(),
 					"status" => true,
@@ -1490,6 +1476,7 @@ class ContactController extends ApplicationController
 				$v = remove_scripts($v);
 			}
 
+
 			// escape all parameters
 			//$contact_data = escape_parameters_array($contact_data);
 
@@ -1497,10 +1484,13 @@ class ContactController extends ApplicationController
 			$old_content_object = $contact->generateOldContentObjectData();
 
 			try {
+
+				Contacts::validateMail($contact_data, $_REQUEST['id']);
 				DB::beginWork();
 				$contact_data['email'] = trim($contact_data['email']);
 				$contact_data['contact_type'] = 'contact';
 				// Check if the email is unique when the contact is user
+				// OTRA VALIDACION QUE SE PUEDE SIMPLIFICAR
 				if (is_array(array_var($contact_data, 'user')) && $contact_data['email'] != '') {
 					$is_user = is_array($contact_data['user']) && array_var($contact_data['user'], 'type', 0) > 0;
 					$is_email_valid = Contacts::validateUniqueEmail($contact_data['email'], get_id(), "", $is_user);
@@ -1509,24 +1499,6 @@ class ContactController extends ApplicationController
 						ajx_current("empty");
 						return;
 					}
-				}
-				/*
-				* Validate the email is not empty
-				*/
-				if(strlen($contact_data['email'])==0)
-				{
-					flash_error(lang("email value is required"));
-					ajx_current("empty");
-					return;
-				}
-
-				/*
-				* Validate the email is a valid format
-				*/
-				if (!preg_match(EMAIL_FORMAT, trim($contact_data['email']))) {
-					flash_error(lang("invalid email address"));
-					ajx_current("empty");
-					return;
 				}
 
 				/*
@@ -1540,13 +1512,11 @@ class ContactController extends ApplicationController
 					return;
 				}
 
-				Contacts::validate($contact_data, get_id());
 				$newCompany = false;
 				if (array_var($contact_data, 'isNewCompany') == 'true' && is_array(array_var($_POST, 'company'))) {
 					$company_data = array_var($_POST, 'company');
 					$company_data['contact_type'] = 'company';
 
-					Contacts::validate($company_data);
 
 					$company = new Contact();
 					$company->setFromAttributes($company_data);
@@ -1732,7 +1702,8 @@ class ContactController extends ApplicationController
 				}
 
 			} catch (DAOValidationError $e) {
-				flash_error(lang("invalid email address"));
+				DB::rollback();
+				flash_error($e->getMessage());
 				ajx_current("empty");
 				return;
 			} catch (Exception $e) {
@@ -3633,7 +3604,7 @@ class ContactController extends ApplicationController
 			}
 			try {
 				$company_data['contact_type'] = 'company';
-				Contacts::validate($company_data, $_REQUEST['id']);
+				Contacts::validateMail($company_data, $_REQUEST['id']);
 				DB::beginWork();
 
 				$company->setFromAttributes($company_data);
@@ -3778,7 +3749,7 @@ class ContactController extends ApplicationController
 
 			try {
 				$company_data['contact_type'] = 'company';
-				Contacts::validate($company_data);
+				Contacts::validateMail($company_data, $_REQUEST['id']);
 				DB::beginWork();
 				if (isset($_SESSION['new_contact_picture']) && $_SESSION['new_contact_picture']) {
 					$company->setPicture($_SESSION['new_contact_picture'], 'image/png');

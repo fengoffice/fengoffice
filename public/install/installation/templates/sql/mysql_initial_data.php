@@ -43,16 +43,16 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('mailing', 'notification_recipients_field', 'to', 'MailFieldConfigHandler', '0', '10', NULL),
     ('mailing', 'disable_notifications_for_object_type', '', 'MultipleObjectTypeConfigHandler', 0, 0, NULL),
     ('mailing', 'notifications_add_members_in_subject', '', 'ManageableDimensionsConfigHandler', 0, 0, NULL),
-	('passwords', 'min_password_length', '0', 'IntegerConfigHandler', 0, '1', NULL),
-	('passwords', 'password_numbers', '0', 'IntegerConfigHandler', 0, '2', NULL),
-	('passwords', 'password_uppercase_characters', '0', 'IntegerConfigHandler', 0, '3', NULL),
-	('passwords', 'password_metacharacters', '0', 'IntegerConfigHandler', 0, '4', NULL),
-	('passwords', 'password_expiration', '0', 'IntegerConfigHandler', 0, '5', NULL),
-	('passwords', 'password_expiration_notification', '0', 'IntegerConfigHandler', 0, '6', NULL),
+	('passwords', 'min_password_length', '8', 'IntegerConfigHandler', 0, '1', NULL),
+	('passwords', 'password_numbers', '1', 'IntegerConfigHandler', 0, '2', NULL),
+	('passwords', 'password_uppercase_characters', '1', 'IntegerConfigHandler', 0, '3', NULL),
+	('passwords', 'password_metacharacters', '1', 'IntegerConfigHandler', 0, '4', NULL),
+	('passwords', 'password_expiration', '90', 'IntegerConfigHandler', 0, '5', NULL),
+	('passwords', 'password_expiration_notification', '5', 'IntegerConfigHandler', 0, '6', NULL),
 	('passwords', 'account_block', '0', 'BoolConfigHandler', 0, '7', NULL),
 	('passwords', 'new_password_char_difference', '0', 'BoolConfigHandler', '0', '8', NULL),
 	('passwords', 'validate_password_history', '0', 'BoolConfigHandler', '0', '9', NULL),
-	('passwords', 'block_login_after_x_tries', '0', 'BoolConfigHandler', '0', '20', NULL),
+	('passwords', 'block_login_after_x_tries', '1', 'BoolConfigHandler', '0', '20', NULL),
 	('general', 'checkout_notification_dialog', '0', 'BoolConfigHandler', '0', '0', NULL),
 	('general', 'file_revision_comments_required', '0', 'BoolConfigHandler', '0', '0', NULL),
 	('general', 'currency_code', '$', 'StringConfigHandler', '0', '0', NULL),
@@ -102,7 +102,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, '');
-
+	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', '');
 		
 INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
 	('zip', 'archive.png', 0, 0, 'compressed archive file zip'),
@@ -218,6 +218,7 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('task panel', 'tasksPreviousPendingTasks', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksGroupBy', 'due_date', 'StringConfigHandler', 1, 0, ''),
  ('task panel', 'tasksOrderBy', 'priority', 'StringConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksListingOrder', 'ASC', 'StringConfigHandler', 1, 0, ''),
  ('task panel', 'task panel status', '1', 'IntegerConfigHandler', 1, 0, ''),
  ('task panel', 'task panel filter', 'assigned_to', 'StringConfigHandler', 1, 0, ''),
  ('task panel', 'task panel filter value', '0', 'UserCompanyConfigHandler', 1, 0, ''),

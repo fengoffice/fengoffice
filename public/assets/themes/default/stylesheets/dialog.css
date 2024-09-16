@@ -241,7 +241,22 @@ span.required {
 }
 
 #repeatPasswordDiv {
-  margin-left: 170px;
+	float: right;
+}
+
+.login-body.change-password .passoword-requirements {
+	margin: 30px 0 15px;
+	text-align: left;
+}
+.login-body.change-password label {
+	text-align: left;
+}
+.login-body.change-password .passoword-requirements h1 {
+	font-weight: normal;
+}
+.login-body.change-password .passoword-requirements ul {
+	list-style: disc;
+	list-style-position: inside;
 }
 
 #loginSubmit {

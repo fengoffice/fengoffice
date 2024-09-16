@@ -2,18 +2,27 @@
 $genid = gen_id();
 
 $members = array();
+$project_ot = ObjectTypes::findByName('project');
+$project_member = null;
 
 $context = active_context();
 if(isset($context)){
 	foreach ($context as $selection) {
 		if ($selection instanceof Member) {
 			$members[] = $selection;
+			if ($project_ot instanceof ObjectType && $selection->getObjectTypeId() == $project_ot->getId()) {
+				$project_member = $selection;
+			}
 		}
 	}	
 }
 
-if (count($members) == 1){
-	$member = $members[0];
+if (count($members) == 1 || $project_member instanceof Member) {
+	if ($project_member instanceof Member) {
+		$member = $project_member;
+	} else {
+		$member = $members[0];
+	}
 	
 	$prop_html = "";
 	Hook::fire("render_widget_member_information", $member, $prop_html);

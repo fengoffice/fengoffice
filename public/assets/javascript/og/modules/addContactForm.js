@@ -156,6 +156,12 @@ og.markAsDeleted = function(del_el, container_id, input_id) {
 	$('#'+input_id+'_id').removeAttr('disabled');
 
 	$('#'+container_id+' .undo-delete').css('display', '');
+
+	// when marking email field as deleted remove error msg and enable form if there was an error before
+	$('#'+input_id+'_email_address').removeClass('field-error');
+	$('#'+container_id+' .field-error-msg').html('');
+	$('.submit').attr('disabled', false);
+	$('.submit').removeClass('disabled');
 }
 og.undoMarkAsDeleted = function(undo_el, container_id, input_id) {
 	$('#'+input_id+'_deleted').val(0);
@@ -171,7 +177,7 @@ og.undoMarkAsDeleted = function(undo_el, container_id, input_id) {
 
 og.renderTelephoneTypeSelector = function(id, name, container_id, selected_value) {
 	
-	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:60px;max-width:100px;"></select>');
+	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
 	for (var i=0; i<og.telephone_types.length; i++) {
 		var type = og.telephone_types[i];
 		var option = $('<option></option>');
@@ -265,7 +271,7 @@ og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignor
 
 og.renderWebpageTypeSelector = function(id, name, container_id, selected_value) {
 	
-	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:60px;max-width:100px;"></select>');
+	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
 	for (var i=0; i<og.webpage_types.length; i++) {
 		var type = og.webpage_types[i];
 		var option = $('<option></option>');
@@ -318,7 +324,7 @@ og.addNewWebpageInput = function(container_id, pre_id, sel_type, sel_url, sel_id
 
 og.renderEmailTypeSelector = function(id, name, container_id, selected_value) {
 	
-	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:60px;max-width:100px;"></select>');
+	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
 	for (var i=0; i<og.email_types.length; i++) {
 		var type = og.email_types[i];
 		var option = $('<option></option>');
@@ -352,27 +358,53 @@ og.renderEmailInput = function(id, name, container_id, sel_type, sel_address, se
 
 }
 
-og.addNewEmailInput = function(container_id, pre_id, sel_type, sel_address, sel_id, default_email_value=0) {
-
+og.addNewEmailInput = function (container_id, pre_id, sel_type, sel_address, sel_id, default_email_value = 0) {
 	if (!pre_id) pre_id = 'contact';
 	if (!og.emailCount) og.emailCount = {};
 	if (!og.emailCount[container_id]) og.emailCount[container_id] = 0;
 	var tcount = og.emailCount[container_id];
-	
-	var id = pre_id+'Email_' + tcount;
-	var name = pre_id + '[emails][' + tcount + ']';
 
-	$('#'+container_id).append('<div id="'+ container_id + tcount +'" class="email-input-container"></div>');
-	
-	og.renderEmailInput(id, name, container_id + tcount, sel_type, sel_address, sel_id, default_email_value);
-	
-	// DEFAULT BILLING EMAIL VERIFICATION ::
-	let dataBillingAttr = $('#' + container_id).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
-	if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
-		og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'email', default_email_value, false);
-	};
+	let visibleContainers = $('.contact_form_container').filter(function () {
+		return $(this).css('display') === 'block';
+	});
 
-	og.emailCount[container_id] = og.emailCount[container_id] + 1;
+	if (visibleContainers.length > 0) {
+		visibleContainers.each(function () {
+			let childContainer = $(this).find('#' + container_id);
+			if (childContainer.length === 0) {
+				return;
+			}
+
+			tcount = og.emailCount[container_id] = og.emailCount[container_id] + 1;
+			var id = pre_id + 'Email_' + tcount;
+			var name = pre_id + '[emails][' + tcount + ']';
+
+			childContainer.append('<div id="' + container_id + tcount + '" class="email-input-container"></div>');
+			og.renderEmailInput(id, name, container_id + tcount, sel_type, sel_address, sel_id, default_email_value);
+
+			if (og.income) {
+				let dataBillingAttr = $(childContainer).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
+				if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
+					og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'email', default_email_value, false);
+				}
+			}
+		});
+	}else{
+		var id = pre_id + 'Email_' + tcount;
+		var name = pre_id + '[emails][' + tcount + ']';
+
+		$('#' + container_id).append('<div id="' + container_id + tcount + '" class="email-input-container"></div>');
+		og.renderEmailInput(id, name, container_id + tcount, sel_type, sel_address, sel_id, default_email_value);
+		
+		if (og.income) {
+			let dataBillingAttr = $('#' + container_id).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
+			if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
+				og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'email', default_email_value, false);
+			};
+		}
+
+		og.emailCount[container_id] = og.emailCount[container_id] + 1;
+	}
 
 	let othersEmail = document.querySelectorAll('.moreEmailInputs');
 	othersEmail.forEach((element) => {

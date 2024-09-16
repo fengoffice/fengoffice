@@ -13,18 +13,18 @@
 .ico-emails {
 	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -437px !important;
 }
-.ico-mailcontent, .ico-email, .ico-mail, .x-tab-strip-text.ico-mail{
+.ico-mailcontent, .x-tab-strip-text.ico-mails, .ico-mails {
 	/*background: transparent url(../../images/16x16/mail_mark_unread.png) no-repeat !important;*/
 	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
 	background-position: 0 center !important;
 }
 
-.ico-email{
-	background-image: url(../../images/icons-feng-3/16x16/email.png) !important;
+.ico-email, .ico-mail{
+	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
 	background-size: 16px 16px!important;
 	background-repeat: no-repeat;
+	background-position: 0 center !important;
 }
-
 .ico-emailunclassified {
 	/*background-image: url(../../images/16x16/types/classify.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/classify.png) !important;
@@ -61,7 +61,7 @@
 	background-size: 17px 17px !important;
 }
 .x-tree-node-icon.ico-mail {
-	background-image: url(../../images/icons-feng-3/16x16/email.png) !important;
+	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
 	background-size: 17px 17px !important;
 }
 .ico-company {

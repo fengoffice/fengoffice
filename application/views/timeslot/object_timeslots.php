@@ -49,9 +49,13 @@
                 callback: function (success, data) {
                     if(data.timeslotId > 0){
 						if (confirm('<?php echo escape_single_quotes(lang('confirm delete timeslot'))?>')) {
-							og.openLink(og.getUrl('time', 'delete_timeslot', {id:tid, req_channel:'task view - line delete'}), {
+							og.openLink(og.getUrl('time', 'delete_timeslot', {
+									id: tid, 
+									force_reload: true,
+									req_channel: 'task view - line delete'
+								}), {
 								callback: function(success, data) {
-									var g = Ext.getCmp(og.task_timeslots_grid.grid_id);
+								/*	var g = Ext.getCmp(og.task_timeslots_grid.grid_id);
 									if (g) {
 										og.openLink(og.getUrl('task','render_task_work_performed_summary',{id:g.store.baseParams.rel_object_id}), {
 											callback: function(success,data){
@@ -68,7 +72,7 @@
 											}
 										});
 									}
-									if (g) g.reset();
+									if (g) g.reset();*/
 								}
 							});
 						}

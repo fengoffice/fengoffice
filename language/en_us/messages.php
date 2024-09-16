@@ -811,6 +811,12 @@
       'accept'=>'Accept',
       'not classified here'=>'Not classified here',
 
+	  'assign task' => 'Assign task',
+	  'no object type selected' => 'No {0} selected',
+	  'no edit permissions for object' => 'You don\'t have permissions to edit: \'{0}\'.',
+	  'success assigning timeslots to task' => 'The time entries have been assigned to the task \'{0}\' successfully.',
+	  'success removing task from object' => 'Task \'{0}\' removed successfully',
+
   	'x members deleted' => '{1} {0} deleted succesfully.',
   	'x members deleted y members not deleted' => '{1} {0} deleted succesfully, {2} {0} not deleted.',
     'project and client are not associated with each other' => 'Project and client are not associated with each other',

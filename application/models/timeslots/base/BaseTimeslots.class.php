@@ -148,7 +148,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or Timeslots objects
+    * @return array objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'Timeslots')) {

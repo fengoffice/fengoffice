@@ -352,6 +352,12 @@ if (advanced_billing_active){
 	og.config['show_financial_tab_in_task_form'] ='<?php echo config_option('show_financial_tab_in_task_form')?>';
 }
 
+var mail_active = <?php echo Plugins::instance()->isActivePlugin('mail') ? '1' : '0'; ?>;
+if (mail_active) {
+	og.config['spam_deletion_days'] = <?php echo json_encode(config_option('spam_deletion_days', 30)) ?>;
+	og.config['spam_delete_limit_per_run'] = <?php echo json_encode(config_option('spam_delete_limit_per_run', 100)) ?>;
+}
+
 og.preferences = {
 	'viewContactsChecked': <?php echo json_encode(user_config_option('viewContactsChecked')) ?>,
 	'viewUsersChecked': <?php echo json_encode(user_config_option('viewUsersChecked')) ?>,
@@ -379,6 +385,22 @@ og.preferences = {
 	'decimals_separator': '<?php echo user_config_option('decimals_separator') ?>',
 	'thousand_separator': '<?php echo user_config_option('thousand_separator') ?>',
 };
+
+// Add object type dimensions that are used in forms as member selectors
+og.dimensionsByObjectTypeInMemberSelector = {};
+<?php 
+$all_object_types = ObjectTypes::getAvailableObjectTypes();
+foreach($all_object_types as $object_type) {
+	$object_type_id = $object_type->getId();
+	$object_type_name = $object_type->getName();
+	$all_dimensions = Dimensions::getAllowedDimensions($object_type_id);
+	Hook::fire("allowed_dimensions_in_member_selector", array('ot' => $object_type_id), $all_dimensions);
+	?>
+	og.dimensionsByObjectTypeInMemberSelector['<?php echo $object_type_name?>'] = [];
+	<?php foreach ($all_dimensions as $dimension) { ?>
+		og.dimensionsByObjectTypeInMemberSelector['<?php echo $object_type_name?>'].push(<?php echo $dimension['dimension_id']?>);
+	<?php }
+} ?>
 
 og.userRoles = {};
 <?php $all_roles = PermissionGroups::instance()->getNonPersonalSameLevelPermissionsGroups();

@@ -181,11 +181,14 @@ class AccountController extends ApplicationController {
 		tpl_assign('user', $user);
 
 		if(is_array($password_data)) {
+			$admin_password = array_var($password_data, 'admin_password');
 			$old_password = array_var($password_data, 'old_password');
 			$new_password = array_var($password_data, 'new_password');
 			$new_password_again = array_var($password_data, 'new_password_again');
 
 			try {
+				DB::beginWork();
+
 				if(!logged_user()->isAdminGroup()) {
 					if(trim($old_password) == '') {
 						throw new Exception(lang('old password required'));
@@ -193,7 +196,15 @@ class AccountController extends ApplicationController {
 					if(!$user->isValidPassword($old_password)) {
 						throw new Exception(lang('invalid old password'));
 					} // if
-				} // if
+				} else {
+					// validate administrator password
+					if(trim($admin_password) == '') {
+						throw new Exception(lang('admin password required'));
+					} // if
+					if(!logged_user()->isValidPassword($admin_password)) {
+						throw new Exception(lang('invalid admin password'));
+					} // if
+				}
 
 				if(trim($new_password) == '') {
 					throw new Exception(lang('password value required'));
@@ -201,6 +212,10 @@ class AccountController extends ApplicationController {
 				if($new_password <> $new_password_again) {
 					throw new Exception(lang('passwords dont match'));
 				} // if
+
+				if (!ContactPasswords::validatePassword($new_password)) {
+					throw new Exception(lang('new password does not fulfill password requirements'));
+				}
 				
 				$user_password = new ContactPassword();
 				$user_password->setContactId(get_id());
@@ -221,7 +236,10 @@ class AccountController extends ApplicationController {
 				flash_success(lang('success edit user', $user->getUsername()));
 				ajx_current("back");
 
+				DB::commit();
+
 			} catch(Exception $e) {
+				DB::rollback();
 				ajx_current("empty");
 				flash_error($e->getMessage());
 			} // try

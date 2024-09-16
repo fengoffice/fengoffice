@@ -2748,8 +2748,6 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 		}	
 	}
 
-	Hook::fire('after_setting_all_task_template_params', array(), $copy);
-
 	if ($save_copy) {
 		$copy->save();
 	}

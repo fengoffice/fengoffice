@@ -73,6 +73,11 @@
 	
 	
 		<div id="<?php echo $genid?>add_webpage_description_div" class="form-tab">
+
+			<div class="dataBlock">
+				<?php echo label_tag(lang('url'), 'webpageFormURL', true) ?>
+				<?php echo text_field('webpage[url]', array_var($file_data, 'url'), array('class' => 'title', 'tabindex' => '50', 'id' => 'webpageFormURL')) ?>
+			</div>
 		
 			<div id="<?php echo $genid ?>add_webpage_select_context_div">
 				
@@ -84,11 +89,6 @@
 					render_member_selectors($file->manager()->getObjectTypeId(), $genid, $file->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false); 
 				} ?>
 			
-			</div>
-		
-			<div class="dataBlock">
-				<?php echo label_tag(lang('url'), 'webpageFormURL', true) ?>
-				<?php echo text_field('webpage[url]', array_var($file_data, 'url'), array('class' => 'title', 'tabindex' => '50', 'id' => 'webpageFormURL')) ?>
 			</div>
 		
 			<div class="dataBlock">

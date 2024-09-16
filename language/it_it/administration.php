@@ -660,6 +660,10 @@ Code explanations: d = Day number (2 digits with leading zeros), D = Day name (t
 'user' => 'Utente',
 'config option name default_type_address' => 'Tipo di indirizzo predefinito',
 'config option desc default_type_address' => 'Seleziona l\'opzione predefinita per il tipo di indirizzo',
+'config option name default_type_email' => 'Tipo di email predefinito',
+'config option desc default_type_email' => 'Seleziona l\'opzione predefinita per tipo di email',
+'config option name default_type_phone' => 'Tipo di telefono predefinito',
+'config option desc default_type_phone' => 'Seleziona l\'opzione predefinita per il tipo di telefono',
 'config option name default_country_address' => 'Paese predefinito nell\'indirizzo',
 'config option desc default_country_address' => 'Seleziona l\'opzione predefinita per il paese',
 

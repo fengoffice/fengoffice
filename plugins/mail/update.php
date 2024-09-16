@@ -463,6 +463,38 @@
 	}
 
 	function mail_update_32_33() {
+		$spam_config_option = ConfigOptions::getByName('spam_deletion_days');
+
+		if (!$spam_config_option instanceof ConfigOption) {
+			DB::execute("
+				INSERT INTO `".TABLE_PREFIX."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`) VALUES
+				('mail module', 'spam_deletion_days', '30', 'IntegerConfigHandler', 0, 10)
+			");
+		}
+
+		$cron_event = CronEvents::instance()->findOne(array('conditions' => array('name=?', 'delete_spam_emails')));
+		if (!$cron_event instanceof CronEvent) {
+			DB::execute("
+				INSERT INTO `".TABLE_PREFIX."cron_events` (`name`, `recursive`, `delay`, `is_system`, `enabled`, `date`) VALUES 
+				('delete_spam_emails', 1, 60, 1, 1, now())
+				ON DUPLICATE KEY UPDATE `name`=`name`;
+			");
+		}
+		
+	}
+
+	function mail_update_33_34() {
+		$spam_limit_config_option = ConfigOptions::getByName('spam_delete_limit_per_run');
+
+		if (!$spam_limit_config_option instanceof ConfigOption) {
+			DB::execute("
+				INSERT INTO `".TABLE_PREFIX."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`) VALUES
+				('mail module', 'spam_delete_limit_per_run', '100', 'IntegerConfigHandler', 0, 11)
+			");
+		}
+	}
+
+	function mail_update_34_35() {
 		DB::execute("
 			ALTER TABLE `".TABLE_PREFIX."mail_account_contacts`
 			CHANGE `signature` `signature` mediumtext COLLATE 'utf8_unicode_ci' NOT NULL;

@@ -1996,8 +1996,6 @@ class TaskController extends ApplicationController {
     }
 
     private function getTasksInGroup($conditions, $start, $limit, $join_params = null, $group_by = null) {
-        $order = 'name';
-        $order_dir = 'ASC';
         $this->getListingOrderBy($order, $order_dir);
 
         //START tasks tree
@@ -2273,21 +2271,18 @@ class TaskController extends ApplicationController {
 
     private function getListingOrderBy(&$order_by, &$order_dir) {
         $order_by = user_config_option('tasksOrderBy');
-        $order_dir = 'DESC';
+        $order_dir = user_config_option('tasksListingOrder');
         switch ($order_by) {
             case 'name':
-                $order_dir = 'ASC';
                 break;
             case 'assigned_to':
                 $order_by = 'assigned_to_contact_id';
-                $order_dir = 'ASC';
                 break;
+            case 'created_on':
             case 'due_date':
             case 'start_date':
-            case 'created_on':
             case 'completed_on':
                 $order_by = "($order_by='0000-00-00 00:00:00'), $order_by";
-                $order_dir = 'ASC';
                 break;
         }
     }
@@ -2301,8 +2296,6 @@ class TaskController extends ApplicationController {
         if (is_array($tasks_ids)) {
             $conditions = " AND e.`object_id` IN (" . implode(',', $tasks_ids) . ")";
 
-            $order_by = 'name';
-            $order_dir = 'ASC';
             $this->getListingOrderBy($order_by, $order_dir);
             
             $join_params = null;
@@ -2540,6 +2533,7 @@ class TaskController extends ApplicationController {
                 'showDimensionCols' => $showDimensionCols,
                 'groupBy' => user_config_option('tasksGroupBy'),
                 'orderBy' => user_config_option('tasksOrderBy'),
+                'listingOrder' => user_config_option('tasksListingOrder'),
                 'previousPendingTasks' => user_config_option('tasksPreviousPendingTasks', 1),
                 'defaultNotifyValue' => user_config_option('can notify from quick add'),
                 'groupsPaginationCount' => user_config_option('tasksGroupsPaginationCount'),
@@ -2549,7 +2543,6 @@ class TaskController extends ApplicationController {
             if (user_config_option('show_start_time_action')) {
                 $userPref['showTime'] = user_config_option('tasksShowTime');
             }
-            
             
             foreach ($cps as $cp) {/* @var $cp CustomProperty */
                 $config_option_name = 'tasksShowCP_' . $cp->getId();

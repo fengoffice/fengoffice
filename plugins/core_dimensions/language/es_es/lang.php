@@ -96,4 +96,6 @@
 	'First half of last month+' => 'Primer quincena mes pasado',
 	'Second half of last month+' => 'Segunda quincena mes pasado',
 	'year to date' => 'Año hasta la fecha',
+	'nothing' => 'Nada',
+	'do not group' => 'No agrupar',
 );
