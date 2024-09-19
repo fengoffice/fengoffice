@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Since 3.11.2.6
+-----------------------------------
+bugfix: error in core installer query (#2745)
+bugfix: changes on all italian and us langs (#2744)
+bugfix: js langs not escaped correctly causes that some texts are in en_us (#2741)
+
 Since 3.11.2.5
 -----------------------------------
 bugfix: fix tasks list invoicing status filter (#2735)

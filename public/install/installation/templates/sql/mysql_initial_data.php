@@ -101,7 +101,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('system', 'default_timezone', '', 'TimezoneConfigHandler', 1, 0, ''),
 	('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
-	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, '');
+	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', '');
 		
 INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
