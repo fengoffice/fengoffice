@@ -1584,7 +1584,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		$errorMessage = lang(
 			'invalid object related members classification on object',
 			$errorMessagesString,
-			$this->getObjectTypeNameLang(),
+			$this->getObjectTypeNameLang()
 		);
 		return $errorMessage;
 	}
