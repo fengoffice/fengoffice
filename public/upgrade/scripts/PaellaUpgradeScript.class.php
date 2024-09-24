@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.2.7');
+		$this->setVersionTo('3.11.2.8');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -241,7 +241,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         	
         	if (!$this->checkKeyExists($t_prefix."sharing_table", "group_id", $this->database_connection)) {
 	        	$upgrade_script .= "
-					ALTER TABLE `".$t_prefix."sharing_table` ADD INDEX `group_id` (`group_id`);
+					ALTER TABLE `".$t_prefix."sharing_table` ADD INDEX (`group_id`);
 				";
         	}
         }
@@ -349,19 +349,19 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
             if (!$this->checkKeyExists($t_prefix."custom_property_values", "object_id", $this->database_connection)) {
                 $upgrade_script .= "
 					ALTER TABLE `".$t_prefix."custom_property_values`
-					ADD INDEX `object_id` (`object_id`);
+					ADD INDEX (`object_id`);
 				";
             }
             if (!$this->checkKeyExists($t_prefix."custom_property_values", "custom_property_id", $this->database_connection)) {
                 $upgrade_script .= "
 					ALTER TABLE `".$t_prefix."custom_property_values`
-					ADD INDEX `custom_property_id` (`custom_property_id`);
+					ADD INDEX (`custom_property_id`);
 				";
             }
             if (!$this->checkKeyExists($t_prefix."custom_property_values", "value", $this->database_connection)) {
                 $upgrade_script .= "
 					ALTER TABLE `".$t_prefix."custom_property_values`
-					ADD INDEX `value` (`value`(255));
+					ADD INDEX (`value`(255));
 				";
             }
         }
@@ -460,7 +460,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
             if (!$this->checkColumnExists($t_prefix."searchable_objects", "assoc_member_id", $this->database_connection)) {
                 $upgrade_script .= "
 					ALTER TABLE `".$t_prefix."searchable_objects` ADD `assoc_member_id` int(10) unsigned NOT NULL DEFAULT 0;
-					ALTER TABLE `".$t_prefix."searchable_objects` ADD INDEX `assoc_member_id` (`assoc_member_id`);
+					ALTER TABLE `".$t_prefix."searchable_objects` ADD INDEX (`assoc_member_id`);
 				";
             }
         }
@@ -489,9 +489,9 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
         	if (!$this->checkKeyExists($t_prefix."project_tasks", "start_date", $this->database_connection)) {
         		$upgrade_script .= "
 			        ALTER TABLE `".$t_prefix."project_tasks`
-			        ADD INDEX `start_date` (`start_date`),
-			        ADD INDEX `due_date` (`due_date`),
-			        ADD INDEX `completed_by_id` (`completed_by_id`);
+			        ADD INDEX (`start_date`),
+			        ADD INDEX (`due_date`),
+			        ADD INDEX (`completed_by_id`);
 				";
         	}
         }
@@ -707,7 +707,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		if (version_compare($installed_version, '3.8.1.24') < 0) {
 			
 			$upgrade_script .= "
-				ALTER TABLE `".$t_prefix."project_tasks` ADD INDEX `original_task_id` (`original_task_id`);
+				ALTER TABLE `".$t_prefix."project_tasks` ADD INDEX (`original_task_id`);
 			";
 			$upgrade_script .= "
 				ALTER TABLE `".$t_prefix."config_options` CHANGE `options` `options` varchar(511) COLLATE 'utf8_unicode_ci' DEFAULT '';
@@ -885,7 +885,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				// archived_on index is causing performance issues in queries
 				$upgrade_script .= "
 					ALTER TABLE `".$t_prefix."objects`
-					ADD INDEX `archived_by_id` (`archived_by_id`),
+					ADD INDEX (`archived_by_id`),
 					DROP INDEX `archived_on`;
 				";
 			}

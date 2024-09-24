@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Since 3.11.2.7
+-----------------------------------
+bugfix: fix syntax error when building error message after validation (#2752)
+bugfix: remove index names to prevent duplicate key name error if the upgrade is executed twice (#2750)
+
 Since 3.11.2.6
 -----------------------------------
 bugfix: error in core installer query (#2745)
