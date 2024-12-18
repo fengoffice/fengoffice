@@ -685,6 +685,8 @@ class ProjectTasks extends BaseProjectTasks {
 		if (Plugins::instance()->isActivePlugin('advanced_billing') && ($task instanceof ProjectTask || $task instanceof TemplateTask))
 		{
 		    $project_ot=ObjectTypes::findByName('project');
+			$project_member = null;
+			$invoice_template = null;
 
 		    $task_members = $task->getMembers();
 		    foreach($task_members as $task_member)

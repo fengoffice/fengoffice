@@ -2,7 +2,6 @@
 
 	$can_see_billing_info = true;
 	Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
-	$show_billing = can_manage_billing(logged_user()) && $can_see_billing_info;
 	
 	if (!isset($genid)) $genid = gen_id();
 	/* @var $__timeslots_object ProjectTask */
@@ -140,7 +139,7 @@
     	header: lang('description'),
     	sortable: true
     });
-    <?php if ($show_billing) { ?>
+    <?php if ($can_see_billing_info) { ?>
 	    timeslots_columns.push({
 	    	name: 'fixed_billing',
 	    	header: '<?php echo lang('billing') ?>',

@@ -223,6 +223,7 @@
 	'after' => 'luego de',
 	'delete mails from server' => 'Eliminar correos del serviror',
 	'get read state from server' => 'Conservar el estado (leido, no leído) de los mails cuando se descargan en Feng Office',
+	'exclude from synchronizing' => 'Excluir de sincronización',
 	'mark as read mails from server' => 'Marcar los correos como leídos en el servidor de correo al recibirlos en Feng Office',
 	'mail account delete mails from server description' => 'Habilite esta opción para que los correos sean eliminados del servidor luego de cierto tiempo.',
 	'show images' => 'Mostrar imágenes.',

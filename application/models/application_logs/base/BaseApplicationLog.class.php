@@ -208,6 +208,28 @@
     function setIsSilent($value) {
       return $this->setColumnValue('is_silent', $value);
     } // setIsSilent() 
+
+    /**
+    * Return value of 'is_mail_rule' field
+    *
+    * @access public
+    * @param void
+    * @return boolean 
+    */
+    function getIsMailRule() {
+      return $this->getColumnValue('is_mail_rule');
+    } // getIsMailRule()
+
+        /**
+    * Set value of 'is_mail_rule' field
+    *
+    * @access public   
+    * @param boolean $value
+    * @return boolean
+    */
+    function setIsMailRule($value) {
+      return $this->setColumnValue('is_mail_rule', $value);
+    } // setIsMailRule()
      
     /**
     * Return value of 'log_data' field

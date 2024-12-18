@@ -100,7 +100,7 @@
 	onsubmit="<?php echo $on_submit ?>"
 >
 	<input type="hidden" name="member[dimension_id]" value="<?php echo $current_dimension->getId()?>"/>
-	
+	<input type="hidden" name="genid" value="<?php echo $genid?>" id="genid" />
 	<input type="hidden" name="temp_member_id" id="<?php echo $genid?>member_id" value="<?php echo ($member instanceof Member && !$member->isNew() ? $member->getId() : 0)?>"/>
 
 	<div class="coInputHeader">

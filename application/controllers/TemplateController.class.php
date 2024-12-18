@@ -16,7 +16,7 @@ class TemplateController extends ApplicationController {
 			return;
 		}
 		
-		$templates=COTemplates::instance()->findAll();
+		$templates=COTemplates::instance()->findAll(array('order' => 'name'));
 		tpl_assign('templates', $templates);
 	}
 	
@@ -156,6 +156,7 @@ class TemplateController extends ApplicationController {
 				$propValueNumOp = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumOp');
 				$propValueNumConst = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumConst');
 				
+				// Adds parameters to fo_object_template_properties
 				if (is_array($objectPropertyValues)) {
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
 						foreach($propertyValues as $property => $value){
@@ -338,8 +339,9 @@ class TemplateController extends ApplicationController {
 	
 	//delete old temporaly template tasks
 	private function deleteOldTemporalyTemplateObj(){
-		//delete Dependencies
+		// Obtains task templates with session_id (temporary task from logged user)
 		$temp_tasks = TemplateTasks::getAllTaskTemplatesBySessionId(logged_user()->getId());
+		// Deletes project tasks related to template task
 		foreach ($temp_tasks as $tmp){
 			$id = $tmp->getId();
 			$dep = ProjectTaskDependencies::instance()->findOne(array('conditions' => "(`previous_task_id` = $id OR `task_id` = $id )"));
@@ -348,7 +350,7 @@ class TemplateController extends ApplicationController {
 			} 
 		}
 		
-		//delete obj
+		// Deletes template tasks and template milestones with session id 
 		$conditions = array('conditions' => '`session_id` =  '.logged_user()->getId());
 		if(logged_user()->getId() > 0){
 			TemplateTasks::instance()->delete($conditions);
@@ -413,6 +415,7 @@ class TemplateController extends ApplicationController {
 
 		$template_data = array_var($_POST, 'template');
 		$object_properties = array();
+		// When modal is open, loads objects and deletes everything that is temporary
 		if(!is_array($template_data)) {
 			$template_data = array(
 				'name' => $cotemplate->getObjectName(),
@@ -431,8 +434,11 @@ class TemplateController extends ApplicationController {
 		} else {
 			$cotemplate->setFromAttributes($template_data);
 			try {
+				// POST
 				$all_prop_inputs_json = urldecode(array_var($_POST, 'all_prop_inputs', ''));
-    			$decoded_prop_inputs = json_decode($all_prop_inputs_json, true);
+
+				// Array with objects and variables from the template
+				$decoded_prop_inputs = json_decode($all_prop_inputs_json, true);
 				
 				if(json_last_error() != JSON_ERROR_NONE){
 					throw new Exception(lang('The variable contains an invalid JSON format. Please check the JSON format and try again.'));
@@ -441,11 +447,14 @@ class TemplateController extends ApplicationController {
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				DB::beginWork();
 				$tmp_objects = $cotemplate->getObjects();
+
+				// Associated objects to the template are deleted (fo_template_objects)
 				$cotemplate->removeObjects();
 				$cotemplate->save();
-				
+				// Gets objects sent by frontend with POST
 				$objects = $this->get_prop_input_decoded($decoded_prop_inputs, 'objects');
 				
+				// Inserts new objects
 				foreach ($objects as $objid) {
 					
 					$object = Objects::findObject($objid);
@@ -459,8 +468,10 @@ class TemplateController extends ApplicationController {
 					if ($oid) $object_ids[$objid] = $oid;
 				}
 
+				// Deletes template object properties (variables)
 				TemplateObjectProperties::deletePropertiesByTemplate(get_id());
-				
+
+				// Gets template object properties sent by POST (variables)
 				$objectPropertyValues = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValues');
 				$propValueParams = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueParam');
 				$propValueOperation = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueOperation');
@@ -474,7 +485,9 @@ class TemplateController extends ApplicationController {
 				$propValueNumConst = $this->get_prop_input_decoded($decoded_prop_inputs, 'propValueNumConst');
 				
 				if (is_array($objectPropertyValues)) {
+					// Foreach template task
 					foreach($objectPropertyValues as $objInfo => $propertyValues){
+						// foreach variable of the template task
 						foreach($propertyValues as $property => $value){
 
 							if (!isset($object_ids[$objInfo])) $object_ids[$objInfo] = $objInfo;
@@ -531,6 +544,8 @@ class TemplateController extends ApplicationController {
 						}
 					}
 				}
+
+				// Delete template parameters
 				TemplateParameters::deleteParametersByTemplate(get_id());
 				$parameters = array_var($_POST, 'parameters');
 				if (is_array($parameters)) {
@@ -547,7 +562,7 @@ class TemplateController extends ApplicationController {
 					}
 				}
 				
-				//delete permanently objs
+				// Previous task objects are deleted
 				foreach ($tmp_objects as $obj){
 					if(is_null($objects)){
 						$objects = array();

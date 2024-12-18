@@ -65,7 +65,9 @@
 	'no time now remove repetition' => 'Oh, OK. No time now. Just remove the repetition for now.',
 	'trash objects in member' => 'Also delete (move to trash) all objects classified here.',
 	'trash objects in member desc' => 'If you choose \'yes\' then all objects that are classified here will be deleted (moved to the trash can).',
-
+	'delete template parameter' => 'Delete template parameter',
+	'yes' => 'Yes',
+	'no' => 'No',
 	'add or condition' => 'Add \'OR\' condition',
 		
 	'classification' => 'Classification',
@@ -103,4 +105,6 @@
 	'labor' => 'Labor',
 	'nothing' => 'Nothing',
 	'do not group' => 'Do not group',
+
+	'object id' => 'Object Id',
 );

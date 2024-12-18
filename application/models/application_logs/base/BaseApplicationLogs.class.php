@@ -28,6 +28,7 @@ abstract class BaseApplicationLogs extends DataManager {
 		'member_id' => DATA_TYPE_INTEGER,
     	'full_request' => DATA_TYPE_STRING,
     	'request_channel' => DATA_TYPE_STRING,
+		'is_mail_rule' => DATA_TYPE_BOOLEAN,
 	);
 
 	/**

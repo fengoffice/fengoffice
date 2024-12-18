@@ -489,10 +489,8 @@ function render_url_custom_property_field($custom_property, $configs) {
 
         $class = '';
         $placeholder = '';
-        $type = 'url';
-        $onchange = "";
+        $onchange = "og.check_if_valid_url(this);";
         if (array_var($configs,'is_bootstrap')){
-	        $onchange = '';
             $style = '';
             $class = 'form-control';
             $placeholder = $configs['label'];

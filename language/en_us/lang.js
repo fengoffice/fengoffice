@@ -89,6 +89,7 @@ addLangs({
     'confirm delete webpage': 'Are you sure you want to delete this link?',
     'confirm delete workspace': 'Are you sure you want to delete workspace \'{0}\'?',
     'confirm delete project': 'Are you sure that you want to delete this workspace and all related data (messages, tasks, milestones, files...)?',
+    'confirm delete parameter': 'This parameter is used for at least one variable within this task template. If you delete it, all variables using this parameter will be removed. Do you want to proceed?',
     'confirm cancel work timeslot': 'Are you sure you want to cancel the current time entry?',
     'confirm discard work timeslot': 'Are you sure you want to discard the current time entry?',
     'more': 'More',
@@ -1036,4 +1037,10 @@ addLangs({
     "ASC" : "ASC",
     "DESC" : "DESC",
 	'assign task': 'Assign task',
+    'System by a Mail Rule' : 'System by a Mail Rule',
+	'System' : 'System',
+    'quickbooks' : 'Quickbooks',
+    'field Objects is_manual_billing' : 'Is manual billing',
+    'field Objects is_manual_cost' : 'Is manual cost',
+    'paid' : 'Paid',
 });

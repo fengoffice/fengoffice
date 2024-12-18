@@ -724,6 +724,43 @@ div.layout-container.contact .right-column {
 .modal-container{
 	border-radius: 5px;
 }
+
+
+.modal-container-mail-rule {
+	background-color: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+	min-width: 400px;
+    max-width: 600px; 
+	position: relative;
+	top: 70%;
+	left: 50%;
+	transform: translate(-50%, -70%);
+}
+
+/* Estilos para el botón de cierre con imagen */
+.modal-close-button {
+    position: absolute;
+    top: 5px; 
+    right: 5px; 
+    width: 16px; 
+    height: 16px; 
+    border: none;
+    cursor: pointer;
+    padding: 0; 
+    border-radius: 50%; 
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s ease;
+}
+
+
+.modal-close-button:hover {
+    background-color: rgba(0, 0, 0, 0.1); /* Fondo sutil al pasar el cursor */
+}
+
+
+
 .modal-close-img {
 	cursor: pointer;
 	background: transparent url(../../images/layout/close16.png) no-repeat;

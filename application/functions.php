@@ -2561,9 +2561,22 @@ function calculate_template_task_parameter_date($parameterValues, $value, $propN
 		}
 		$dateNum = substr($value, $opPos+1, strlen($value) - $opPos - 2);
 
-		Hook::fire('template_param_date_calculation', array('parameterValues' => $parameterValues, 'op' => $operator, 'date' => $date, 'unit' => $dateUnit, 'template_id' => $object->getTemplateId(), 'original' => $object, 'copy' => $copy), $dateNum);
+		Hook::fire('template_param_date_calculation', array(
+			'parameterValues' => $parameterValues, 
+			'op' => $operator, 
+			'date' => $date, 
+			'unit' => $dateUnit, 
+			'template_id' => $object->getTemplateId(), 
+			'original' => $object, 
+			'copy' => $copy
+		), $dateNum);
 		
 		$dateNum = (int)$dateNum;
+		if ($operator === '-' && $dateNum < 0) {
+			$dateNum = abs($dateNum); // dateNum turns positive
+		} elseif ($operator === '-' && $dateNum > 0) {
+			$dateNum = -$dateNum; //dateNum turns negative
+		}
 		$value = $date->add($dateUnit, $dateNum);
 		
 	}else{

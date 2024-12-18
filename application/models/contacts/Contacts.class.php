@@ -522,7 +522,12 @@ class Contacts extends BaseContacts {
 			} 
 		//for contacts and companyes use CP 
 		} else {
-			$email_exists = Contacts::getByEmailCheck(trim($attributes['email']));
+			$object = Contacts::instance()->findById($id);
+			$contact_type = 'contact';
+			if ($object instanceof Contact) {
+				$contact_type = $object->getIsCompany() ? 'company' : 'contact';
+			}
+			$email_exists = Contacts::getByEmailCheck(trim($attributes['email']), $id, $contact_type);
 			if ($email_exists && !config_option('allow_duplicated_contact_emails')) {
 				$errors[] = lang("email address must be unique");
 			}

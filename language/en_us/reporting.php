@@ -66,6 +66,8 @@
   	'field Objects time' => 'Time',
   	'field Objects billing' => 'Billing',
     'field Objects worked_time' => 'Worked time',
+	'field Objects remaining_time' => 'Remaining time',
+	'field Objects total_remaining_time' => 'Total remaining time',
   	'field Timeslots worked_time' => 'Worked time',
   	'field Timeslots start_time' => 'Start time',
 	'field ProjectTasks is_billable' => 'Is billable',

@@ -2,6 +2,238 @@
 Changelog
 =========
 
+Since 3.11.4.13
+-----------------------------------
+bugfix: in expenses form when selecting vendor it always changes the payment terms to net 30. (#2898)
+
+Since 3.11.4.12
+-----------------------------------
+bugfix: expenses quick add not setting price if user does not have permissions to see billing info (#2895)
+
+Since 3.11.4.11
+-----------------------------------
+bugfix: In 'budget report' use all members when getting billing category for task (#2879)
+
+Since 3.11.4.10
+-----------------------------------
+bugfix: In 'Weekly view' exclude completed tasks (#2876)
+bugfix: In expense quick add check permission can see other tasks (#2877)
+
+Since 3.11.4.9
+-----------------------------------
+bugfix: Add spanish translation to 'is_fixed_fee' (#2857)
+bugfix: Add permission to check if the user can see tasks for others in weekly view (#2874)
+bugfix: user with no delete perms in approved status could delete approved exepnse (#2872)
+bugfix: missing ot_id in invoices list js objects caused bug in drag and drop classification (#2869)
+
+Since 3.11.4.8
+-----------------------------------
+bugfix: Custom reports for tasks: exclude system columns; add langs (#2853)
+bugfix: Modify email account exclude from synchronizing (#2852)
+bugfix: In custom reports show correct 'billable' status for time (#2851)
+improvement: In import tool add ability to set tasks billable/non-billable (#2840)
+
+Since 3.11.4.7
+-----------------------------------
+Improvement: add 'remaining_time' to task table (#2849)
+
+Since 3.11.4.6
+-----------------------------------
+bugfix: typo rendering qbo status column, caused to show times as not sync (#2845)
+bugfix: Bump mail plugin version to 36 (#2843)
+bugfix: the recalculate billing btn uses different data keys and sets the total cost to 0 if it is fixed cost (#2847)
+
+Since 3.11.4.5
+-----------------------------------
+feature: set rows to red when sum of all act expenses exceed the budg exp (#2838)
+bugfix: fix default date on date budgeted expenses templates (#2836)
+bugfix: fix logo in the reports, it was too small (#2839)
+bugfix: exclude account from automatic sync (#2837)
+bugfix: permission issues seeing the time billing info (#2835)
+
+Since 3.11.4.4
+-----------------------------------
+bugfix: POST overwrote the paramaters that used later in the import tool (#2820)
+bugfix: In 'project quoting' report fix logo by adding it as base 64 to the PDF (#2831)
+bugfix: Add hook to trigger task financial recalculations (#2796)
+refactor is_disable to is_disabled in property group properties (#2832)
+
+Since 3.11.4.3
+-----------------------------------
+bugfix: Allow line breaks on additional info field (#2823)
+bugfix: Project billing report colspan for expenses (#2821)
+bugfix: Update language files for manual billing and cost fields (#2824)
+bugfix: Add language support for Canadian English (en_ca) (#2827)
+
+Since 3.11.4.2
+-----------------------------------
+bugfix: In time list use correct permissions for cost/billing info (#2816)
+bugfix: fix console script to force utf8mb4 (#2804)
+
+Since 3.11.4.1
+-----------------------------------
+bugfix: In import tool set financials from the form when importing time (#2812)
+bugfix: time list filters don't go to first page when changing filter value (#2811)
+bugfix: invoice form does not respect lines order (#2810)
+bugfix: Fix alignment of input field in advanced_billing.css and remove unnecessary inline styling in add.php (#2800)
+feature: Add option to 'Budget report' to exclude zero price tasks (#2814)
+
+Since 3.11.4.0
+-----------------------------------
+feature: invoice template options to show/hide expenses/labor subtotals (#2808)
+bugfix: Fix listing users in time entry forms (#2806)
+
+Since 3.11.4.0-rc1
+-----------------------------------
+feature: config option to select entities to sync with qbo (#2791)
+
+Since 3.11.4.0-beta4
+-----------------------------------
+bugfix: Add true to jsondecode to return an empty array (#2799)
+bugfix: Add missing translation for "Mark as" in expenses plugin (#2802)
+
+Since 3.11.4.0-beta3
+-----------------------------------
+bugfix: add missing queries detected in installer and upgrade of installations in very old version (#2784)
+bugfix: fix invoicing langs (#2783)
+bugfix: unify qbop payment method sync options and include payment accounts for expenses, also improve option title and description (#2776)
+
+Since 3.11.4.0-beta2
+-----------------------------------
+bugfix: tabs added by plugin uses lang as div id and can break the form (#2781)
+bugfix: Fix langs for ofimar (#2780)
+bugfix: cant generate e-invoice if invoice was marked as paid (#2770)
+bugfix: Rename labels in the task financials tab (#2639)
+bugfix: Ask confirmation and notify when task changed to fixed fee or non-billable (#2637)
+bugfix: Use config decimal digits when formatting number in JS (#2541)
+feature: store qbo sync status and modify how it is shown in lists, so we can track if sync is needed (#2729)
+
+Since 3.11.4.0-beta1
+-----------------------------------
+bugfix: renaming task template parameter breaks instantiation of existiing variables (#2766)
+bugfix: prevent member list from breaking if the order by is using an incorrect custom property (#2765)
+bugfix: tasks shouldn't have approval status (#2763)
+bugfix: station member type not shown in object properties, also custom names are not applied in that section (#2764)
+bugfix: fix url cp input width (#2736)
+bugfix: Orders parameters and task templates by name (#2754)
+bugfix: updates jquery version to 1.9.1 (#2593)
+
+Since 3.11.3.x
+-----------------------------------
+feature: Allows selecting customer ID and payment status on invoices (#2748)
+feature: Adds css classes to be used on the new layout (#2747)
+
+Since 3.11.3.4
+-----------------------------------
+bugfix: update expense payment term when selecting vendor is not recalculating expense due date (#2789)
+bugfix: Remove condition that blocked clients widget (#2788)
+bugfix: Order alphabetically all types of templates (#2790)
+
+Since 3.11.3.3
+-----------------------------------
+bugfix: add template task to members does not save some dimensions (#2786)
+bugfix: fixed js errors when editin task template (#2786)
+bugfix: fixed template task render after edition that moved it at the bottom (#2786)
+
+Since 3.11.3.2
+-----------------------------------
+bugfix: Check and apply cost and billing permissions for all appropriate project reports (#2782)
+bugfix: Set proper trashed and archived dates for reports (#2777)
+
+Since 3.11.3.1
+-----------------------------------
+bugfix: application log details are not using billing and cost permissions when showing amount properties details (#2775)
+Bugfix/edit dimension group properties duplicates them (#2774)
+Use owner company url to render the company logo (#2778)
+
+Since 3.11.3.0
+-----------------------------------
+bugfix: only the first image was correctly embeeded (preg match result was not handled properly) (#2704)
+
+Since 3.11.3.0-rc2
+-----------------------------------
+bugfix: minor bugfixes added in 3.11.2.11
+
+Since 3.11.3.0-rc1
+-----------------------------------
+bugfix: fix invoice tamplate layout default (#2756)
+bugfix: fix last permission query on paella script (#2751)
+
+Since 3.11.3.0-beta6
+-----------------------------------
+bugfix: incorrect input name makes some address inputs to be ignored when saving (#2749)
+
+Since 3.11.3.0-beta5
+-----------------------------------
+bugfix: Fix mail rule log popup on mail logs (#2742)
+bugfix: can't add task from milestone view (#2740)
+
+Since 3.11.3.0-beta4
+-----------------------------------
+bugfix: remove total row for object id (#2737)
+bugfix: fix statistics information (#2728)
+bugfix: adds permissions to user groups on paella upgrade script (#2724)
+bugfix: fixes substraction on task templates (#2738)
+feature: new option at invoice template project section to show or not the project properties if they are empty (#2734)
+feature: Allows invoice memo config on invoice templates (#2739)
+
+Since 3.11.3.0-beta3
+-----------------------------------
+bugfix: remove shadow from invoice print view (#2727)
+bugfix: remove some corrupted css (#2726)
+bugfix: email addresses bugs in client and vendor forms (#2722)
+bugfix: Removes object type hardcoded id in installer query (#2721)
+feature: add claim number and contract number cps to project info section at invoice templates (#2719)
+feature: invoice templates - allow to show project information in 2 columns (label-value) (#2719)
+
+Since 3.11.3.0-beta2
+-----------------------------------
+feature: Adds permission to reopen task (#2718)
+bugfix: Add rate to the Excel export in Project quoting report (#2716)
+bugfix: ux improvements in time entry financials tab (#2712)
+bugfix: fix link to support tickets (#2700)
+
+Since 3.11.3.0-beta1
+-----------------------------------
+feature: add "Object Id" column to expenses lists (#2705)
+
+Since 3.11.2.x
+-----------------------------------
+feature: Add shadow to invoice print view (#2674)
+feature: Notification Manager MVP improvements (#2673)
+feature: fine tune project quoting report (#2670)
+feature: add vendor payment terms to expense (#2664)
+feature: Adds sage plugin (#2658)
+feature: change the display for the mail rules (#2654)
+feature: Add MailRule actions Log to mails view history (#2653)
+bugfix: Adds links to url custom properties (#2696)
+bugfix: quick add expenses and time entries taking the project (#2688)
+bugfix: trigger project recalculations in background (#2681)
+bugfix: add/edit time entry ignores cost/rate manual input, it was al… (#2680)
+bugfix: fixes template task losing all tasks (#2631)
+bugfix: add logic to add address on vendor (#2609)
+bugfix: Set task when the expense is changed in the actual expense quick row (#2387)
+
+Since 3.11.2.11
+-----------------------------------
+bugfix: only the first image was correctly embeeded (preg match result was not handled properly) (#2704)
+
+Since 3.11.2.10
+-----------------------------------
+bugfix: archived objects list does not include members (#2767)
+bugfix: add missing langs on timsheets (#2762)
+bugfix: set to calculated estimated price when changed from non-billable (#2758)
+bugfix: Fixes typos in language files(#2695)
+
+Since 3.11.2.9
+-----------------------------------
+bugfix: fix php 8 compantibility issues (#2760)
+bugfix: remove invoicing status control on drag and drop for tasks (#2761)
+
+Since 3.11.2.8
+-----------------------------------
+bugfix: remove un wanted restrictions when changing time/expense task (#2757)
+
 Since 3.11.2.7
 -----------------------------------
 bugfix: fix syntax error when building error message after validation (#2752)

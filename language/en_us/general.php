@@ -502,6 +502,11 @@ return array(
 	'added' => 'Added',
 	'removed' => 'Removed',
 	'manual percent completed' => 'Manual percent completed',
-
+	'System by a Mail Rule' => 'System by a Mail Rule',
+	'System' => 'System',
 	'invalid object related members classification on object' => 'It is not possible to link this {1} to a task classified into a different {0}',
+	'quickbooks' => 'Quickbooks',
+	'field Objects is_manual_billing' => 'Is manual billing',
+    'field Objects is_manual_cost' => 'Is manual cost',
+    'paid' => 'Paid',
 );

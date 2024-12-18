@@ -1,4 +1,11 @@
-<?php require_javascript("og/modules/addContactForm.js"); $emailType = config_option('default_type_email'); $PhoneTypeActive = config_option('default_type_phone'); ?>
+<?php 
+require_javascript("og/modules/addContactForm.js"); 
+
+$emailType = config_option('default_type_email'); 
+$PhoneTypeActive = config_option('default_type_phone');
+?>
+<input type="hidden" id="genid" name="genid" value="<?php echo $genid ?>">
+<input type="hidden" id="<?php echo $genid ?>existing_contact_id" name="existing_contact_id" value="<?php echo $company->getId() ?>">
 <div class="contact_form_container form-tab" id="<?php echo $genid ?>company_data">
 	<div class="information-block no-border-bottom">
 		<!-- <div class="main-data-title"><?php //echo lang('main data')
@@ -19,7 +26,7 @@
 		<div class="input-container">
 			<div><?php echo label_tag(lang('email address')) ?></div>
 			<div style="display: flex; flex-direction: column; align-items: flex-start;">
-				<div id="mainEmailWrapper" class="mainWrapper">
+				<div id="mainEmailWrapperCompany" class="mainWrapper">
 					<div class="itemInput" style="width: 270px;">
 						<?php echo text_field('company[email]', array_var($company_data, 'email'), array('id' => $genid . 'clientFormEmail')) ?>
 						<i class="uis uis-at"></i>
@@ -36,7 +43,7 @@
 				</div>
 				<div class="clear"></div>
 				<div class="addNewLineButton" style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewEmailInput('<?php echo $genid ?>_emails_container', 'company', <?= $emailType ?>)" class="coViewAction ico-add" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new email address') ?></a>
+					<a href="#" onclick="og.addNewEmailInput('<?php echo $genid ?>_emails_container', 'company', '<?= $emailType ?>')" class="coViewAction ico-add" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new email address') ?></a>
 				</div>
 			</div>
 		</div>
@@ -46,7 +53,7 @@
 			<div style="display: flex; flex-direction: column; align-items: flex-start;">
 				<div id="<?php echo $genid ?>_company_phones_container"></div>
 				<div style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_company_phones_container', 'company', <?= $PhoneTypeActive ?>)" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
+					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_company_phones_container', 'company', '<?= $PhoneTypeActive ?>')" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
 				</div>
 			</div>
 		</div>
@@ -131,8 +138,8 @@
 
 		og.checkEmailAddress("#<?php echo $genid ?>clientFormEmail", '<?php echo $company->getId(); ?>', '<?php echo $genid ?>', 'company');
 
-		var emailType = <?= $emailType ?>;
-		var phoneType = <?= $PhoneTypeActive ?>;
+		var emailType = '<?= $emailType ?>';
+		var phoneType = '<?= $PhoneTypeActive ?>';
 		
 		<?php if (!$object->isNew()) { ?>
 			<?php foreach ($company_data['all_phones'] as $phone) { ?>
@@ -173,25 +180,25 @@
 			if (og.email_types[i].code == 'work') def_email_type = og.email_types[i].id;
 		}
 
-		<?php if (count(array_var($company_data, 'all_phones')) == 0) { ?>
+		<?php if (count(array_var($company_data, 'all_phones', [])) == 0) { ?>
 			og.addNewTelephoneInput('<?php echo $genid ?>_company_phones_container', 'company', phoneType);
 		<?php } ?>
-		<?php if (count(array_var($company_data, 'all_addresses')) == 0) { ?>
+		<?php if (count(array_var($company_data, 'all_addresses', [])) == 0) { ?>
 			og.addNewAddressInput('<?php echo $genid ?>_addresses_container', 'company', def_address_type);
 		<?php } ?>
-		<?php if (count(array_var($company_data, 'all_webpages')) == 0) { ?>
+		<?php if (count(array_var($company_data, 'all_webpages', [])) == 0) { ?>
 			og.addNewWebpageInput('<?php echo $genid ?>_webpages_container', 'company', def_web_type);
 		<?php } ?>
-		<?php if (count(array_var($company_data, 'all_emails')) == 0) { ?>
+		<?php if (count(array_var($company_data, 'all_emails', [])) == 0) { ?>
 			og.addNewEmailInput('<?php echo $genid ?>_emails_container', 'company', emailType);
 		<?php } ?>
 
 		<?php if ($object->isNew()) : ?>
-			if (og.income) og.income.activeDefaultRadioButton();
+			if (og.income) og.income.activeDefaultRadioButton('<?php echo $genid ?>company_data');
 		<?php endif; ?>
 
 		<?php if (Plugins::instance()->isActivePlugin('income')) : ?>
-			og.income.onAppendDefaultBilling('companyEmail', 'company[isMainBilling]', 'mainEmailWrapper', 'email', '<?php echo array_var($company_data,'default_billing_email','') ?>', true);
+			og.income.onAppendDefaultBilling('companyEmail', 'company[isMainBilling]', 'mainEmailWrapperCompany', 'email', '<?php echo array_var($company_data,'default_billing_email','') ?>', true);
 		<?php endif; ?>
 
 	});

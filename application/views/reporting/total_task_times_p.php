@@ -168,7 +168,7 @@
 		</tr>
 		<?php } ?>
 		
-		<?php if ($has_billing && can_manage_billing(logged_user()) && $can_see_billing_info) {?>
+		<?php if ($has_billing && $can_see_billing_info) {?>
 		<tr style='height:30px;'>
 			<td><span class="bold"><?php echo lang('show billing information') ?></span></td>
 			<td align='left' style="padding-left:10px;">

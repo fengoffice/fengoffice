@@ -1651,16 +1651,6 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$can_assign = false;
 				$error_msg = lang('you cannot edit invoiced '.($ot_name == "timeslot" ? 'time entry' : 'actual expense'));
 			}
-			
-			if ($can_assign && $current_task instanceof ProjectTask && ($current_task->getInvoicingStatus() == 'invoiced' || $current_task->getInvoicingStatus() == 'partially_invoiced')) {
-				$can_assign = false;
-				$error_msg = lang("no edit permissions for object", $current_task->getName());
-			}
-
-			if ($can_assign && ($task->getInvoicingStatus() == 'invoiced' || $task->getInvoicingStatus() == 'partially_invoiced')) {
-				$can_assign = false;
-				$error_msg = lang("no edit permissions for object", $task->getName());
-			}
 		}
 		
 
@@ -2397,6 +2387,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 	function addToRelatedMembers($members, $from_form = false, $remove_previous_associated_members = false){
 		$related_member_ids = array();
+		$object_type_id = $this->getObjectTypeId();
+		// when adding related members to a template task, we need to set the object type id to 'task' (not 'template_task')
+		// otherwise, it can lead to error in classification or missing associations because of the missing relations for object type 'template_task'
+		if ($this instanceof TemplateTask) {
+			$object_type_id = ObjectTypes::findByName('task')->getId();
+		}
 		
 		foreach ($members as $member) {
 			// get normal associations
@@ -2440,7 +2436,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					// mo matter if it is already classified in a member of the dimension
 					$hidden_dim_in_form = false;
 					if (Plugins::instance()->isActivePlugin('advanced_core')) {
-						$hidden_dim_in_form = DimensionContentObjectOptions::getOptionValue($m->getDimensionId(), $this->getObjectTypeId(), 'hide_member_selector_in_forms');
+						$hidden_dim_in_form = DimensionContentObjectOptions::getOptionValue($m->getDimensionId(), $object_type_id, 'hide_member_selector_in_forms');
 					}
 					if (!$hidden_dim_in_form) {
 						if ($m->getDimensionId() == $a->getAssociatedDimensionMemberAssociationId() && $m->getObjectTypeId() == $a->getAssociatedObjectType()) {
@@ -2460,7 +2456,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 							// mo matter if it is already classified in a member of the dimension
 							$hidden_dim_in_form = false;
 							if (Plugins::instance()->isActivePlugin('advanced_core')) {
-								$hidden_dim_in_form = DimensionContentObjectOptions::getOptionValue($m->getDimensionId(), $this->getObjectTypeId(), 'hide_member_selector_in_forms');
+								$hidden_dim_in_form = DimensionContentObjectOptions::getOptionValue($m->getDimensionId(), $object_type_id, 'hide_member_selector_in_forms');
 							}
 							// --
 
@@ -2496,7 +2492,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 								
 							} else {
 								// to check if this dimension selector is hidden in forms or not
-								$hookparams = array('dim_id' => $a->getAssociatedDimensionMemberAssociationId(), 'ot_id' => $this->getObjectTypeId());
+								$hookparams = array('dim_id' => $a->getAssociatedDimensionMemberAssociationId(), 'ot_id' => $object_type_id);
 								Hook::fire('more_autoclassify_in_related_checks', $hookparams, $classify_it);
 								
 							}

@@ -709,7 +709,10 @@ $projectTask = new ProjectTask();
 </form>
 
 <script>
-	var current_dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
+	var use_is_billable_value_in_tasks = <?php echo config_option('use_is_billable_value_in_tasks') ? '1' : '0'; ?>;
+	var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
+    var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
+    var current_dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
 	var show_financials_tab = false;
 	if(advanced_billing_active) {
 		show_financials_tab = <?php echo config_option('show_financial_tab_in_task_form') ? '1' : '0'; ?>;
@@ -885,7 +888,7 @@ $projectTask = new ProjectTask();
 
 		og.openLink(og.getUrl('billing_definition','get_labor_category_billable_for_task_form', member_params), {
 			callback: function(success, data) {
-				if(data.has_value){
+				if(data && data.has_value){
 					if(current_billable == data.is_billable) {
 						return;
 					}

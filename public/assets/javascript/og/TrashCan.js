@@ -24,7 +24,7 @@ og.TrashCan = function() {
 					'createdBy', 'createdById', 'dateCreated',
 					'updatedBy', 'updatedById',	'dateUpdated',
 					'deletedBy', 'deletedById',	'dateDeleted',
-					'icon', 'manager', 'mimeType', 'url', 'memPath'
+					'icon', 'manager', 'mimeType', 'url', 'memPath', 'is_mail_rule'
 				]
 			}),
 			remoteSort: true,
@@ -130,6 +130,9 @@ og.TrashCan = function() {
 	}
 
 	function renderAuthor(value, p, r) {
+		if (r.data.is_mail_rule == 1) {
+			return lang('System by a Mail Rule');
+		}
 		if (r.data.createdById) {
 			return String.format('<a href="#" onclick="og.openLink(\'{1}\')">{0}</a>', og.clean(value), og.getUrl('user', 'card', {id: r.data.createdById}));
 		} else {
@@ -138,6 +141,9 @@ og.TrashCan = function() {
 	}
 	
 	function renderDeletedBy(value, p, r) {
+		if (r.data.is_mail_rule == 1) {
+			return lang('System by a Mail Rule');
+		}
 		if (r.data.deletedById) {
 			return String.format('<a href="#" onclick="og.openLink(\'{1}\')">{0}</a>', og.clean(value), og.getUrl('user', 'card', {id: r.data.deletedById}));
 		} else {

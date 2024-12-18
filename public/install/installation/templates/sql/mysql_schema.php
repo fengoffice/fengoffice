@@ -240,6 +240,7 @@ CREATE TABLE `<?php echo $table_prefix ?>system_permissions` (
   `can_link_objects` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_instantiate_templates` tinyint(1) unsigned NOT NULL default '0',
   `can_manage_repetitive_properties_of_tasks` tinyint(1) unsigned NOT NULL default '0',
+  `can_reopen_task` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`permission_group_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -263,6 +264,7 @@ CREATE TABLE `<?php echo $table_prefix ?>max_system_permissions` (
   `can_link_objects` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `can_instantiate_templates` tinyint(1) unsigned NOT NULL default '0',
   `can_manage_repetitive_properties_of_tasks` tinyint(1) unsigned NOT NULL default '0',
+  `can_reopen_task` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`permission_group_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -461,6 +463,7 @@ CREATE TABLE `<?php echo $table_prefix ?>application_logs` (
   `action` enum('upload','open','close','delete','edit','add','trash','untrash','subscribe','unsubscribe','tag','comment','link','unlink','login','logout','untag','archive','unarchive','move','copy','read','download','checkin','checkout','relation_added','relation_edited','relation_removed') <?php echo $default_collation ?> default NULL,
   `is_private` tinyint(1) unsigned NOT NULL default '0',
   `is_silent` tinyint(1) unsigned NOT NULL default '0',
+  `is_mail_rule` tinyint(1) unsigned NOT NULL default '0',
   `member_id` int(10) NOT NULL default '0',
   `log_data` text <?php echo $default_collation ?>,
   `full_request` text <?php echo $default_collation ?> NULL,
@@ -729,10 +732,12 @@ CREATE TABLE `<?php echo $table_prefix ?>project_tasks` (
   `instantiation_id` int(10) unsigned NOT NULL default '0',
   `type_content` ENUM( 'text', 'html' ) NOT NULL DEFAULT 'text',
   `total_worked_time` int(10) unsigned NOT NULL DEFAULT '0',
+  `remaining_time` int(10) NOT NULL DEFAULT '0',
   `mark_as_started` BOOLEAN NOT NULL default '0',
   `move_direction_non_working_days` varchar(255) DEFAULT 'advance',
   `overall_worked_time_plus_subtasks` int(10) unsigned NOT NULL DEFAULT '0',
   `total_time_estimate` int(10) unsigned NOT NULL default '0',
+  `total_remaining_time` int(10) NOT NULL default '0',
   `is_manual_percent_completed` BOOLEAN NOT NULL default '0',
   PRIMARY KEY  (`object_id`),
   KEY `parent_id` (`parent_id`),

@@ -20,14 +20,17 @@ og.SimpleMemberSelector = function(config) {
 		var parameters = {
 			genid: config.genid,
 			dimension_id: config.dimensionId,
-			limit: 100,
-			offset: 0,
 		};
+
+		var mem_id = og.getMemberIdByDimension(config.dimensionId, "customer_project");
+		if (mem_id !== undefined) {
+			parameters.id = mem_id;
+		}
 
 		var store = new Ext.data.Store({
 			proxy: new Ext.data.HttpProxy({
 				method: "GET",
-				url: og.makeAjaxUrl(og.getUrl('dimension', 'initial_list_dimension_members_tree', parameters))
+				url: og.makeAjaxUrl(og.getUrl('dimension', 'quick_add_row_members_tree', parameters))
 			}),
 			reader: new Ext.data.JsonReader({
 				root: "dimension_members",
@@ -95,6 +98,19 @@ og.SimpleMemberSelector = function(config) {
 
 }
 
+og.getMemberIdByDimension = function (dimensionId, dimensionCode) {
+    var mem_id;
+    
+    if (og.dimensions_info[dimensionId].code == dimensionCode) {
+        var members = og.contextManager.getDimensionMembers(dimensionId);
+        if (members.length > 1) {
+            mem_id = members[1];
+        }
+    }
+
+    return mem_id;
+}
+
 og.buildPlainStoreFromTree = function (tree_members, store_data) {
 	for (var i = 0; i < tree_members.length; i++) {
 		var member = tree_members[i];
@@ -145,12 +161,15 @@ Ext.extend(og.SimpleMemberSelector, Ext.form.ComboBox, {
 				var parameters = {
 					genid: this.genid,
 					dimension_id: this.dimensionId,
-					limit: 20000,
-					offset: 0,
 				};
-	
+
+				var mem_id = og.getMemberIdByDimension(this.dimensionId, "customer_project");
+				if (mem_id !== undefined) {
+					parameters.id = mem_id;
+				}
+
 				// get members from server
-				og.openLink(og.getUrl('dimension', 'initial_list_dimension_members_tree', parameters), {
+				og.openLink(og.getUrl('dimension', 'quick_add_row_members_tree', parameters), {
 					hideLoading:true,
 					hideErrors:true,
 					callback: function(success, data){					

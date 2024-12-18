@@ -67,7 +67,7 @@
 			<?php foreach ($categories as $category) {
 					if (array_var($category, 'hidden')) continue;
 				?>
-			<li><a href="#<?php echo $genid . $category['name'] ?>"><?php echo $category['name'] ?></a></li>
+			<li><a href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
 			<?php } ?>
 		</ul>
 	
@@ -210,7 +210,7 @@
 		<?php } // if ?>
 		
 		<?php foreach ($categories as $category) { ?>
-		<div id="<?php echo $genid . $category['name'] ?>" class="form-tab">
+		<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
 			<?php echo $category['content'] ?>
 		</div>
 		<?php } ?>

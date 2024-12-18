@@ -276,6 +276,10 @@ function date_format_tip($format) {
 		if ($format == null) {
 			$format = user_config_option('report_time_colums_display');
 		}
+
+		$is_negative = $value < 0;
+		if ($is_negative) $value = abs($value);
+
 		$formatted = '';
 		switch ($format) {
 			case 'seconds': $formatted = $value * 60; break;
@@ -295,6 +299,9 @@ function date_format_tip($format) {
 				}
 				break;
 		}
+
+		if ($is_negative) $formatted = '-'.$formatted;
+
 		return $formatted;
 	}
 

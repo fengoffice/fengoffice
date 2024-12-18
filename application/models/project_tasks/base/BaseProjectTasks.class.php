@@ -55,6 +55,8 @@ abstract class BaseProjectTasks extends ContentDataObjects {
 		'move_direction_non_working_days' => DATA_TYPE_STRING,
 		'overall_worked_time_plus_subtasks' => DATA_TYPE_INTEGER,
 		'total_time_estimate' => DATA_TYPE_INTEGER,
+		'remaining_time' => DATA_TYPE_INTEGER,
+		'total_remaining_time' => DATA_TYPE_INTEGER,
 		'is_manual_percent_completed' => DATA_TYPE_BOOLEAN,
 
 		
@@ -128,8 +130,9 @@ abstract class BaseProjectTasks extends ContentDataObjects {
 	function getSystemColumns() {
 		return array_merge(parent::getSystemColumns(), array(
       		'object_subtype', 'parents_path', 'depth', 'milestone_id', 'state', 'started_by_id', 'started_on',
-                'from_template_id', 'from_template_object_id', 'use_due_time', 'use_start_time', 'original_task_id', 'multi_assignment', 'instantiation_id')
-		);
+                'from_template_id', 'from_template_object_id', 'use_due_time', 'use_start_time', 'original_task_id', 'multi_assignment', 'instantiation_id',
+				'earned_value_fixed_fee', 'earned_value_time_material')
+		); 
 	} // getSystemColumns
 	
 	/**
@@ -149,7 +152,7 @@ abstract class BaseProjectTasks extends ContentDataObjects {
      * Must be overriden by the specific object classes
      */
     function getTimeColumns() {
-    	return array('time_estimate', 'total_worked_time', 'overall_worked_time_plus_subtasks', 'total_time_estimate');
+    	return array('time_estimate', 'total_worked_time', 'overall_worked_time_plus_subtasks', 'total_time_estimate', 'remaining_time', 'total_remaining_time');
     }
 	
 	/**
