@@ -2716,6 +2716,7 @@ class TaskController extends ApplicationController {
      */
     function add_task() {
         //is template task?
+        // Frontend sends template_task 1 and template_id, or 0 if it's a new template
         $isTemplateTask = false;
         if (array_var($_REQUEST, 'template_task') == true) {
             $isTemplateTask = true;
@@ -2898,6 +2899,7 @@ class TaskController extends ApplicationController {
         tpl_assign('multi_assignment', $subtasks);
 
         if (is_array(array_var($_POST, 'task'))) {
+            // Adds a new task via POST
             try {
                 $estimated_price = array_var(array_var($_POST, 'task'),'estimated_price');
                 $estimated_price = str_replace(',', '', $estimated_price);

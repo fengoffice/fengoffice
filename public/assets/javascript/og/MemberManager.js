@@ -467,6 +467,14 @@ og.MemberManager = function(config) {
 				align: cps[i].cp_type=='numeric' ? 'right' : 'left',
 				sortable: true,
 				//renderer: og.clean
+				renderer: cps[i].cp_type === 'url' ? function(value) {
+					if (!value) return '';
+					var url = value;
+					if (!/^https?:\/\//i.test(value)) {
+						url = "https://" + value;
+					}
+					return '<a href="' + url + '" target="_blank">' + url + '</a>';
+				} : null
 			});
 		}
 	}

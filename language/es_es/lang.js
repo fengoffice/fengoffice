@@ -86,6 +86,7 @@ addLangs({
 	'confirm delete webpage': '¿Está seguro de que desea eliminar este enlace web?',
 	'confirm delete workspace': '¿Está seguro de que desea eliminar el área de trabajo \'{0}\'?',
 	'confirm delete project': '¿Está seguro de que desea eliminar esta área de trabajo y todos los datos relacionados con él (notas, tareas, hitos, archivos...)?',
+	'confirm delete parameter': 'Este parámetro es usado por al menos una variable en este template. Si lo elimina, todas las variables que usan este parametro serán eliminadas. ¿Desea continuar?',
 	'confirm delete permanently this member': 'Está seguro que desea eliminar este {0}?',
 	'confirm delete with keyword': 'Escriba \"DELETE\" para confirmar',
 	
@@ -917,4 +918,8 @@ addLangs({
     'time will be rounded to 15 minutes': 'El tiempo se redondeara a un multiplo de 15 minutos',
 	 "the user assign to this task doesn't have permission over the selected project. The task is now unassigned": "El usuario asignado a esta tarea no tiene permisos sobre el proyecto seleccionado. La tarea ha sido desasignada.",
 	 "the user assign to this timeslot doesn't have permission over the selected project. The timeslot is now unassigned": "El usuario asignado a éste tiempo de trabajo no tiene permisos sobre el proyecto seleccionado. El tiempo de trabajo ha sido desasignado.",
+	 'total worked': 'Total trabajado',
+	 'field Objects is_manual_billing' : 'La facturación es manual',
+	 'field Objects is_manual_cost' : 'El costo es manual',
+	 'paid' : 'Pago',
 });

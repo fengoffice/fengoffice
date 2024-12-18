@@ -291,3 +291,20 @@ og.check_if_valid_cp_num = function (inp) {
 	}
 
 }
+
+og.check_if_valid_url = function (input) {
+
+	const expression = 
+	'^(https?:\\/\\/)?' + //http or https optional
+    '(([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+' + // domains + subdomains
+	'[a-z]{2,}' + // i.e com.ar
+	'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // optional ports i.e :8000 and route after domain
+	'(\\?[;&a-z\\d%_.~+=-]*)?' + //  optional params starting with ?
+	'(\\#[-a-z\\d_]*)?$'; // optional additional string starting with #
+
+	const regex = new RegExp(expression, 'i'); // Insensitive to uppercase or lowercase
+
+	if (!input.value.match(regex)) {
+		input.value = '';
+	}
+}

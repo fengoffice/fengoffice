@@ -10,7 +10,7 @@
 	$(function(){
 		$(".quick-add-object-type").closest(".field").hide();
 		$(".extra-fields").closest("form").find("a.more").remove();
-		og.checkEmailAddress(".quick-form-mail",'','contact');
+		og.checkEmailAddress(".quick-form-mail",'','','contact');
 		H5F.setup($("#quick-form form"));
 	});
 </script>

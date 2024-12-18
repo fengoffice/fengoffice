@@ -28,7 +28,7 @@ class MailUtilities {
 		Env::useHelper('permissions');
 		Env::useHelper('format');
 		if (is_null($accounts)) {
-			$accounts = MailAccounts::instance()->findAll();
+			$accounts = MailAccounts::instance()->findAllSyncAccounts();
 		}
 		if (config_option('user_email_fetch_count') && $maxPerAccount == 0) {
 			$maxPerAccount = config_option('user_email_fetch_count');

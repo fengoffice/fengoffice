@@ -10,7 +10,7 @@ if (isset($milestone) && $milestone instanceof ProjectMilestone) {
 		if (!$milestone->isCompleted()) {
 			$m_members = $milestone->getMembers();
 			if(array_var($m_members, 0) instanceof Member && $milestone->canAddToMember(logged_user(), array_var($m_members, 0), active_context())) {
-				add_page_action(lang('add task list'), $milestone->getAddTaskUrl(), 'ico-task');
+				add_page_action(lang('add task list'), "javascript:og.render_modal_form('', {c:'task', a:'add_task', params: {milestone_id:".$milestone->getId().", reload:1}});", 'ico-task');
 			}
 		} // if
 		if ($milestone->canEdit(logged_user())) {

@@ -38,6 +38,7 @@
         </div>
 
         <div class="coInputMainBlock">
+			<input type="hidden" name="genid" value="<?php echo $genid?>" id="genid"/>
             <input type="hidden" name="object_id" value="<?php echo $timeslot->getRelObjectId()?>" />
             <input type="hidden" name="dont_reload" value="<?php echo isset($dont_reload) ? $dont_reload : '0'?>" />
 			<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'modal form') ?>" />
@@ -232,6 +233,10 @@
                 <div id="<?php echo $genid ?>add_timeslot_related_to" class="editor-container form-tab">
                     <?php 
                         $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.set_time_is_billable_using_labor_wrapper("'.$genid.'");');
+						
+						// allow to add more listeners to this component
+						Hook::fire('timeslot_form_member_selector_listeners', array('genid' => $genid, 'object' => $object), $listeners);
+
                         if ($timeslot->isNew()) {
                             render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $pre_selected_member_ids, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
                         } else {

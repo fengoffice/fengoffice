@@ -747,12 +747,14 @@
 	padding: 10px 0;
 }
 
-.x-grid3-scroller .inner-message.spam-deletion-warning{
+.x-grid3-scroller .inner-message-spam.spam-deletion-warning{
 	position: initial;
 	background-color: #EEEEEE;
 	color: #63666a;
 	padding-top: 15px;
 	padding-bottom: 15px;
+	font-size: 14px;
+	text-align: center;
 }
 
 .subwscrumbs {

@@ -18,8 +18,8 @@ if (isset($task_list) && $task_list instanceof ProjectTask) {
 			    add_page_action(lang('mark as started this task'), $task_list->getChangeMarkStartedUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId()))), 'task view - mark as started') , 'ico-start', null, null, true);
 			}
 		} // if
-		if ($task_list->isCompleted() && ($task_list->canEdit(logged_user()) || $task_list->getAssignedTo() == logged_user())) {
-			add_page_action(lang('open task'), $task_list->getOpenUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId()))), 'task view - reopen') , 'ico-reopen', null, null, true);
+		if ($task_list->isCompleted() && ($task_list->canEdit(logged_user()) || $task_list->getAssignedTo() == logged_user()) && can_reopen_task(logged_user())) {
+				add_page_action(lang('open task'), $task_list->getOpenUrl(rawurlencode(get_url('task','view',array('id'=>$task_list->getId()))), 'task view - reopen') , 'ico-reopen', null, null, true);
 		} // if
 
 		if($task_list->canEdit(logged_user())) {

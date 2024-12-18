@@ -14,7 +14,7 @@ class TemplateParameters extends BaseTemplateParameters {
 	 * @return array
 	 */
 	static function getParametersByTemplate($template_id) {
-		return self::instance()->findAll(array('conditions' => array('`template_id` = ?', $template_id) ));
+		return self::instance()->findAll(array('conditions' => array('`template_id` = ?', $template_id), 'order' => "`name` ASC" ));
 	}
 	
 	/**

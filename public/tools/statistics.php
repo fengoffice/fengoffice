@@ -1,13 +1,16 @@
 <?php
+
 if (!isset($_REQUEST['inst'])) die();
-chdir(dirname(__FILE__)."/../../../".$_REQUEST['inst']);
-include "config/config.php";
+$root = strpos($_SERVER['DOCUMENT_ROOT'], $_REQUEST['inst'])  ? $_SERVER['DOCUMENT_ROOT'] : $_SERVER['DOCUMENT_ROOT']."/".$_REQUEST['inst'];
+chdir($root);
+
+include $root . "/config/config.php";
 
 // connect to db
 $db_link = mysqli_connect(DB_HOST, DB_USER, DB_PASS) or die();
 if (!mysqli_select_db($db_link, DB_NAME)) die();
 
-$version = include 'version.php';
+$version = include $root . '/version.php';
 $all_statistics = array('config' => array('db_host' => DB_HOST, 'db_name' => DB_NAME, 'url' => ROOT_URL, 'version' => $version));
 
 // build module usage information
@@ -59,7 +62,7 @@ if (isset($_REQUEST['logins']) && $_REQUEST['logins']) {
 	$db_res = mysqli_query($db_link, "SELECT `created_on`, `object_name`, `rel_object_id` FROM `".TABLE_PREFIX."application_logs` 
 			WHERE `action` = 'login' AND `created_on` > ADDDATE(NOW(), INTERVAL -15 DAY) 
 			GROUP BY DATE(created_on), rel_object_id
-			ORDER BY `rel_object_id`, `created_on` desc", $db_link);
+			ORDER BY `rel_object_id`, `created_on` desc");
 	while ($row = mysqli_fetch_assoc($db_res)) {
 		$last_logins[] = array(
 			'id' => $row['rel_object_id'],

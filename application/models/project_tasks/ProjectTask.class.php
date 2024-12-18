@@ -937,6 +937,9 @@ class ProjectTask extends BaseProjectTask {
 		if(!$include_archived){
 			$include .= "`archived_by_id` = 0 AND ";
 		}
+		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+			$include .= "`assigned_to_contact_id` = ".logged_user()->getId() . " AND ";
+		}
 		if(is_null($this->all_tasks) || $dont_get_from_cache) {
 			$this->all_tasks = ProjectTasks::instance()->findAll(array(
           'conditions' => $include.'`parent_id` = ' . DB::escape($this->getId()),
@@ -957,6 +960,11 @@ class ProjectTask extends BaseProjectTask {
 	function getSubTasksIds($extra_conditions = "") {
 		$subtasks_ids = array();
 		$condition = $extra_conditions . ' AND `parent_id` = ' . DB::escape($this->getId());
+
+		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+			$condition .= " AND assigned_to_contact_id = ".logged_user()->getId();
+		}
+
 				
 		$subtasks_rows = ProjectTasks::instance()->listing(array(
 				"select_columns" => array("e.`object_id`"),
@@ -2090,7 +2098,7 @@ class ProjectTask extends BaseProjectTask {
 		if($parent instanceof ProjectTask) {
 			$parent->calculateAndSaveOverallTotalWorkedTime();
 		}
-	}
+	} 
 
 	function calculateAndSetOverallTotalWorkedTime() {
 		$sql = "SELECT (SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60)) as overall_total_minutes 
@@ -2113,11 +2121,21 @@ class ProjectTask extends BaseProjectTask {
 		$task_id = $this->getId();
 		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` 
 				SET `overall_worked_time_plus_subtasks` = $overall_total_minutes,
-				`total_worked_time` = $total_minutes
-				WHERE `object_id` = $task_id;";
+				`total_worked_time` = $total_minutes,
+				`remaining_time` = CAST(`time_estimate` as SIGNED) - CAST($total_minutes as SIGNED),
+				`total_remaining_time` = CAST(`total_time_estimate` as SIGNED) - CAST($overall_total_minutes as SIGNED)
+				WHERE `object_id` = $task_id;"; 
 		DB::execute($sql);
 	}
 
+	/**
+	 * Changes the invoicing status of the task.
+	 * If the column 'invoicing_status' exists in the project_tasks table, it changes the status of the task and saves it.
+	 * If the new status is 'pending', it also sets the invoice_id to 0.
+	 * It creates an application log of the action.
+	 *
+	 * @param string $status The new invoicing status.
+	 */
 	function changeInvoicingStatus($status) {
 		if (ProjectTasks::instance()->columnExists('invoicing_status')) {
 			// to use when saving the application log
@@ -2131,9 +2149,7 @@ class ProjectTask extends BaseProjectTask {
 			}
 			$this->save();
 			
-			$ret = null;
-			Hook::fire("after_change_object_inv_status", array('object' => $this, 'old_status' => $old_status), $ret);
-
+			// create log
 			ApplicationLogs::createLog($this, ApplicationLogs::ACTION_EDIT, false, true);
 		}
 	}

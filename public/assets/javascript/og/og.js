@@ -2371,7 +2371,15 @@ og.checkValidEmailAddress = function(email) {
 
 }
 
-og.checkEmailAddress = function(element, id_contact, contact_type) {
+og.checkEmailAddress = function(element, id_contact, genid, contact_type) {
+	if (!genid || genid == '') {
+		genid = $("#genid").val();
+	}
+	if (!id_contact || id_contact == '' || id_contact == 0) {
+		id_contact = $('#'+genid+'existing_contact_id').val();
+		if (typeof id_contact == 'undefined') id_contact = '';
+	}
+
 	var elementCheck = document.querySelector(element);
 	elementCheck.addEventListener("keyup", (e) => {
 		e.target.value = e.target.value.replace(/\s/g, '')
@@ -4311,7 +4319,9 @@ og.getDateToolbarFilterComponent = function (config) {
 						
 						man[config.name] = ''
 						                       
-                        man.load();
+                        man.load({
+							start: 0 // start from the first page
+						});
                         this.hide();
                         Ext.getCmp(genid + config.name).setText(lang('select a date'));
                         //Ext.getCmp(uid + config.name).setText(lang('select a date'));
@@ -4329,7 +4339,9 @@ og.getDateToolbarFilterComponent = function (config) {
 											
 					man[dp.id] = date.format(og.preferences['date_format']);
 															
-                    man.load();
+                    man.load({
+						start: 0 // start from the first page
+					});
                     Ext.getCmp(genid + config.name + '_remove').show();
                     //Ext.getCmp(uid + config.name + '_remove').show();
                 }
@@ -4367,7 +4379,9 @@ og.getListToolbarFilterComponent = function(config) {
                     var man = Ext.getCmp(combo.grid_id);
                     man.filters[config.name].value = combo.getValue();
                     if (man.store_params) man.store_params[config.name] = combo.getValue();
-                    man.load();
+                    man.load({
+						start: 0 // start from the first page
+					});
         	},
         }
 	});
@@ -4433,7 +4447,9 @@ og.getListToolbarFilterComponentWithEvents = function(config) {
 							}			
                         }
                     }
-                    man.load();
+                    man.load({
+						start: 0 // start from the first page
+					});
                 }
             },
             'initComponent': function () {
@@ -5103,7 +5119,7 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		}
 	}
 	
-	// user selector
+	// user selector of the quick add
 	var user_combo = og.quick_add_row_combo_input({
 		id: config.genid + 'add_ts_contact_id',
 		genid: config.genid,
@@ -5576,7 +5592,9 @@ og.format_money_amount = function(amount, decimals) {
 	// get the number
 	amount = parseFloat(amount);
 	
-	if (!decimals) decimals = 2;
+	if (!decimals) {
+		decimals = og.preferences.decimal_digits == '' ? 2 : og.preferences.decimal_digits;
+	}
 
 	// if not using any thousand separator then only put the correct decimals separator in the string
 	if (og.preferences.thousand_separator == '') {
@@ -6102,4 +6120,32 @@ og.init_task_link_popovers = function(grid_id) {
 }
 
 
+og.showModal = function (content) {
+var html = '<div class="modal-container" style="background-color: white;padding: 10px;">'+content+'</div>';
+setTimeout(function() {
+    $.modal (html, {
+        close: true,
+        escapeClose: true,
+        clickClose: true,
+        showClose: true
+    });
+}, 100);
+}
 
+og.showMailRuleModal = function (content) {
+	var html = `
+	<div class="modal-container modal-container-mail-rule">
+		<button class="modal-close-button" onclick="$.modal.close();">×</button>
+		${content}
+	</div>
+`;
+	// var html = '<div class="modal-container modal-container-mail-rule" style="background-color: white;padding: 10px;">'+content+'</div>';
+	setTimeout(function() {
+		$.modal (html, {
+			close: true,
+			escapeClose: true,
+			clickClose: true,
+			showClose: true
+		});
+	}, 100);
+	}

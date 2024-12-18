@@ -854,6 +854,52 @@ abstract class BaseProjectTask extends ContentDataObject {
 	function setOverallWorkedTime($value) {
 		return $this->setColumnValue('overall_worked_time_plus_subtasks', $value);
 	}
+
+	/**
+	 * Return value of 'remaining_time' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getRemainingTime() {
+		return $this->getColumnValue('remaining_time');
+	}
+
+	/**
+	 * Set value of 'remaining_time' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setRemainingTime($value) {
+		return $this->setColumnValue('remaining_time', $value);
+	}
+
+	/**
+	 * Return value of 'total_remaining_time' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getTotalRemainingTime() {
+		return $this->getColumnValue('total_remaining_time');
+	}
+
+	/**
+	 * Set value of 'total_remaining_time' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setTotalRemainingTime($value) {
+		return $this->setColumnValue('total_remaining_time', $value);
+	}
+	
+
 	
 	/**
 	 * Set value of 'mark_as_started' field

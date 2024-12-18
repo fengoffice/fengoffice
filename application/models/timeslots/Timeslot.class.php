@@ -573,7 +573,7 @@ class Timeslot extends BaseTimeslot {
 		return $this->getViewUrl();
 	}
 
-	function getArrayInfo($return_billing = false, $time_detail = false, $permissions_detail = false, $mem_path = true) {
+	function getArrayInfo($return_billing = true, $time_detail = false, $permissions_detail = false, $mem_path = true) {
 		$task_name = '';
 		
 		$user = Contacts::instance()->findById($this->getContactId());
@@ -646,6 +646,8 @@ class Timeslot extends BaseTimeslot {
 				$result['rate_currency_sym'] = $c_symbol;
 				$result['fixed_billing'] = format_money_amount($this->getFixedBilling(), $c_symbol);
 			}
+			$result['is_manual_cost'] = $this->getColumnValue('is_manual_cost');
+			$result['is_manual_billing'] = $this->getColumnValue('is_manual_billing');
 		}
 		
 		if ($this->getDescription() != '')
@@ -692,7 +694,42 @@ class Timeslot extends BaseTimeslot {
 		return $changed_relations;
 	}
 
+	public static function getUsersFilteredByMembersAndPermissions($members = null) {
 
+		$context = active_context();	
+		$users = array();
+		if (can_manage_time(logged_user())) {
+			$users = Contacts::getAllUsers();
+			// filter users by permissions only if any member is selected.
+			if ($members && count($members) > 0) {
+				$tmp_users = array();
+				foreach ($users as $user) {
+					if (can_add($user, $members, Timeslots::instance()->getObjectTypeId())) {
+						$tmp_users[] = $user;
+					}
+				}
+				$users = $tmp_users;
+			}
+		} else {
+			if (can_add(logged_user(), $context, Timeslots::instance()->getObjectTypeId())) {
+				$users = array(logged_user());
+			}
+		}
+
+		return $users;
+	}
+
+
+	/**
+	 * Changes the invoicing status of the timeslot.
+	 * If the column 'invoicing_status' exists in the timeslots table, it changes the status of the timeslot and saves it.
+	 * If the new status is 'pending', it also sets the invoice_id to 0.
+	 * It creates an application log of the action.
+	 *
+	 * @param string $status The new invoicing status.
+	 * @param int $invoice_id The id of the invoice associated with the timeslot.
+	 * @return void
+	 */
 	function changeInvoicingStatus($status, $invoice_id = 0) {
 		// to use when saving the application log
 		$old_content_object = $this->generateOldContentObjectData();

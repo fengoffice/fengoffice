@@ -95,7 +95,7 @@ if (!isset($id_prefix)) {
 
 		og.telephone_types = Ext.util.JSON.decode('<?php echo json_encode($all_telephone_types) ?>');
 
-		var phoneType = <?= $PhoneTypeActive ?>;
+		var phoneType = '<?= $PhoneTypeActive ?>';
 
 		if (!og.is_new_contact) {
 			<?php $index = 0;

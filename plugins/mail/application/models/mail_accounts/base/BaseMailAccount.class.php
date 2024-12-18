@@ -433,6 +433,26 @@ abstract class BaseMailAccount extends DataObject {
 		return $this->setColumnValue('get_read_state_from_server', $value);
 	} // setGetReadStateFromServer()
 
+	/**
+	 * Return value of 'exclude_from_synchronizing' field
+	 *
+	 * @access public
+	 * @return boolean
+	 */
+	function getExcludeFromSynchronizing() {
+		return $this->getColumnValue('exclude_from_synchronizing');
+	} // getExcludeFromSynchronizing()   
+
+	/**
+	 * Set value of 'exclude_from_synchronizing' field
+	 *
+	 * @access public
+	 * @param boolean $value
+	 * @return boolean
+	 */
+	function setExcludeFromSynchronizing($value) {
+		return $this->setColumnValue('exclude_from_synchronizing', $value);
+	} // setExcludeFromSynchronizing()
 
 	/**
 	 * Return value of 'outgoing_transport_type' field

@@ -27,6 +27,7 @@ class TimeController extends ApplicationController
     public function index()
     {
 
+        //this is used for the filter ciombo
         //Get Users Info
         $users = array();
         $context = active_context();
@@ -51,6 +52,10 @@ class TimeController extends ApplicationController
             $users = $tmp_users;
         }
 
+        //This is used for the quickadd
+        $members = active_context_members(false);
+        $users_for_quick_add = Timeslot::getUsersFilteredByMembersAndPermissions($members);
+        
         /*
         $required_dimensions = DimensionObjectTypeContents::getRequiredDimensions(Timeslots::instance()->getObjectTypeId());
         $draw_inputs = !$required_dimensions || count($required_dimensions) == 0;
@@ -72,6 +77,7 @@ class TimeController extends ApplicationController
          */
 
         tpl_assign('users', $users);
+        tpl_assign('usersForQuickAdd', $users_for_quick_add);
         ajx_set_no_toolbar(true);
     }
 
@@ -127,36 +133,9 @@ class TimeController extends ApplicationController
             tpl_assign('time_preferences', $preferences);
 
             //Get Users Info
-            $users = array();
-            if (can_manage_time(logged_user())) {
-
-                /*if (logged_user()->isMemberOfOwnerCompany()) {
-                $users = Contacts::getAllUsers();
-                } else {
-                $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-                }*/
-                $users = Contacts::getAllUsers();
-                // filter users by permissions only if any member is selected.
-                $members = $timeslot->getMembers();
-                if (count($members) > 0) {
-                    $tmp_users = array();
-                    foreach ($users as $user) {
-                        if (can_add($user, $members, Timeslots::instance()->getObjectTypeId())) {
-                            $tmp_users[] = $user;
-                        }
-
-                    }
-                    $users = $tmp_users;
-                }
-
-                tpl_assign('users', $users);
-            } else {
-                if (can_add(logged_user(), $context, Timeslots::instance()->getObjectTypeId())) {
-                    $users = array(logged_user());
-                }
-
-            }
-
+            $members = $timeslot->getMembers();
+            $users = Timeslot::getUsersFilteredByMembersAndPermissions($members);
+            tpl_assign('users', $users);
             $pre_selected_member_ids = null;
             $rel_obj = $timeslot->getRelObject();
             if ($rel_obj instanceof ContentDataObject) {
@@ -297,7 +276,7 @@ class TimeController extends ApplicationController
             }
 
             if (array_var($parameters, 'members')) {
-                $member_ids = json_decode(array_var($parameters, 'members'));
+                $member_ids = json_decode(array_var($parameters, 'members'),true);
             } else {
                 $member_ids = $object->getMemberIds();
             }
@@ -310,7 +289,7 @@ class TimeController extends ApplicationController
             }
 
         } else {
-            $member_ids = json_decode(array_var($parameters, 'members', array()));
+            $member_ids = json_decode(array_var($parameters, 'members', array()),true);
             // clean member_ids
             $tmp_mids = array();
             foreach ($member_ids as $mid) {
@@ -577,8 +556,7 @@ class TimeController extends ApplicationController
             }
             ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_ADD);
 
-            $show_billing = can_manage_billing(logged_user());
-            ajx_extra_data(array("timeslot" => $timeslot->getArrayInfo($show_billing, true, true), "real_obj_id" => $timeslot->getRelObjectId()));
+            ajx_extra_data(array("timeslot" => $timeslot->getArrayInfo(true, true, true), "real_obj_id" => $timeslot->getRelObjectId()));
             return $timeslot;
         } catch (Exception $e) {
             if ($use_transaction) {
@@ -626,36 +604,12 @@ class TimeController extends ApplicationController
 
         $timeslot_data = array_var($_POST, 'timeslot');
         if (!is_array($timeslot_data)) {
+
             //Get Users Info
-            $users = array();
-            if (can_manage_time(logged_user())) {
+            $members = $timeslot->getMembers();
+            $users = Timeslot::getUsersFilteredByMembersAndPermissions($members);
+            tpl_assign('users', $users);
 
-                /*if (logged_user()->isMemberOfOwnerCompany()) {
-                $users = Contacts::getAllUsers();
-                } else {
-                $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
-                }*/
-                $users = Contacts::getAllUsers();
-                // filter users by permissions only if any member is selected.
-                $members = $timeslot->getMembers();
-                if (count($members) > 0) {
-                    $tmp_users = array();
-                    foreach ($users as $user) {
-                        if (can_read($user, $members, Timeslots::instance()->getObjectTypeId())) {
-                            $tmp_users[] = $user;
-                        }
-
-                    }
-                    $users = $tmp_users;
-                }
-
-                tpl_assign('users', $users);
-            } else {
-                if (can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId())) {
-                    $users = array(logged_user());
-                }
-
-            }
 
             Hook::fire('modify_timeslot_before_edit', array('request' => $_REQUEST), $timeslot);
 
@@ -679,7 +633,7 @@ class TimeController extends ApplicationController
 
             // FORM SENT...
             //context permissions or members
-            $member_ids = json_decode(array_var($_POST, 'members', array()));
+            $member_ids = json_decode(array_var($_POST, 'members', array()),true);
             // clean member_ids
             $tmp_mids = array();
             foreach ($member_ids as $mid) {
@@ -1283,8 +1237,6 @@ class TimeController extends ApplicationController
 
         }
 
-        $show_billing = can_manage_billing(logged_user());
-
         $rel_object_ids = array();
 
         $custom_properties = CustomProperties::getAllCustomPropertiesByObjectType(Timeslots::instance()->getObjectTypeId());
@@ -1295,7 +1247,7 @@ class TimeController extends ApplicationController
                 if ($msg instanceof Timeslot) {
                     $msg->setObjectTypeId(Timeslots::instance()->getObjectTypeId());
                     $general_info = $msg->getObject()->getArrayInfo();
-                    $info = array_merge($msg->getArrayInfo($show_billing, true, true), $general_info);
+                    $info = array_merge($msg->getArrayInfo(true, true, true), $general_info);
                     $info["ix"] = $i;
 
                     if ($msg->getRelObjectId() > 0) {
@@ -1316,10 +1268,7 @@ class TimeController extends ApplicationController
                     $function = "view_timeslot_render_more_columns";
                     Hook::fire($function, $msg, $add_columns);
                     foreach ($add_columns as $col_id => $val) {
-                        if (!isset($info[$col_id])) {
-                            $info[$col_id] = $val;
-                        }
-
+                    	$info[$col_id] = $val;
                     }
 
                     $info['can_view_history'] = logged_user()->isAdminGroup();

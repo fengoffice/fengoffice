@@ -65,6 +65,9 @@
 	'no time now remove repetition' => 'Ahora no. Solo remover las repeticiones por el momento.',
 	'trash objects in member' => 'Eliminar objetos clasificados en este {0}',
 	'trash objects in member desc' => 'Si utiliza esta opción los objetos que están clasificados solamente en este {0} serán enviados a la papelera.',
+	'delete template parameter' => 'Eliminar parámetro de template',
+	'yes' => 'Sí',
+	'no' => 'No',
 
 	'add or condition' => 'Agregar condición \'O\'',
 	'classification' => 'Clasificación',

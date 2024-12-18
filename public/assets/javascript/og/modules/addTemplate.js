@@ -240,7 +240,14 @@ og.addObjectToTemplate = function(target, obj, dont_draw_milestone_combo) {
 	var objectDiv = document.createElement('div');
 	objectDiv.id = 'objectDiv' + obj.object_id;
 			
-	objectDiv.className = "template-object-div" + (count % 2 ? " odd" : " pair");
+	// If the task is not a subtask of any other task and does not belong to any milestone, then it is a root task for the list
+	let is_root = obj.parent_id == 0 && obj.milestone_id == 0;
+	
+	// this line adds the following classes to the object div:
+	// - template-object-div
+	// - odd or pair depending on the count (to alternate colors)
+	// - root if the task is a root task (i.e. it is not a subtask of any other task and does not belong to any milestone)
+	objectDiv.className = "template-object-div" + (count % 2 ? " odd" : " pair") + (is_root ? " root" : "");
 		
 	objectDiv.appendChild(div);
 	objectDiv.appendChild(divActions);
@@ -923,7 +930,10 @@ og.integerPropertyTypeSel = function(count, obj_id, callback){
 				integerPropTD.innerHTML = selectParam;
 			}
 			if(selectParam == ''){
-				alert(lang('no user parameters in template'));
+				selectParam = '<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']" id="propValues[' + obj_id + '][' + prop + ']" value="" />'
+				selectParam += '<select name="propValueParam[' + obj_id + '][' + prop + ']" id="propValueParam[' + obj_id + '][' + prop + ']" onChange="og.changeIntegerParam(this)" />';
+				selectParam += '</select>';
+				integerPropTD.innerHTML = selectParam;
 				integerPropTypeSel.selectedIndex = 0;
 			}
 		}
@@ -1111,13 +1121,27 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				return;
 			}
 			var type = Ext.getCmp('paramType').getValue();
-			if(!edit){
+
+			// Add or edit param
+			if(!edit) {
 				og.addParameterToTemplate(before, name, type);
-			}else{
+			} else {
 				var oldname = paramName.value;
 				for (var i=0; i < og.templateParameters.length; i++) {
 					if (og.templateParameters[i].name == oldname) {
 						og.templateParameters[i].name = name;
+						
+						// replace all selector options that contain this property with the new property name and value
+						$('#templateConteiner.template option[value="'+oldname+'"]').each(function() {
+							$(this).attr('value', name);
+							$(this).html(name);
+						});
+						// replace all textarea variables that contain this property with the new property name
+						$('#templateConteiner.template textarea').each(function() {
+							let new_content = $(this).val().replace('{'+oldname+'}', '{'+name+'}');
+							$(this).val(new_content);
+						});
+						
 						break;
 					}
 				}
@@ -1126,6 +1150,35 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				paramNameSpan.innerHTML = '<b>' + name + '</b>&nbsp;(' + lang(type) + ') ';
 			}
 			
+			// Order template parameters by name
+			og.templateParameters.sort(function(a, b) {
+				return a.name.localeCompare(b.name);
+			});
+
+			// Retrieves container fieldset to update DOM
+			const container = document.querySelector('[id$="add_template_parameters_div"]');
+			const fieldset = container.querySelector('fieldset');
+			const elements = container.querySelectorAll('div.og-add-template-object');
+			const link = document.querySelector('a[id$="params"]');
+
+			elements.forEach(element => {
+				element.remove();
+			});
+
+			for (i = 0; i < og.templateParameters.length; i++) {
+				var parameter = og.templateParameters[i];
+				
+				var div = document.createElement('div');
+				div.className = "og-add-template-object";
+				div.innerHTML =
+				'<input type="hidden" name="parameters[' + i + '][name]" id="parameters[' + i + '][name]" value="' + parameter.name + '"/>&nbsp;' +
+				'<input type="hidden" name="parameters[' + i + '][type]" id="parameters[' + i + '][type]" value="' + parameter.type + '"/>&nbsp;' +
+				'<span class="name" id="paramName_' + i + '"><b>' + parameter.name + '</b>&nbsp;(' + lang(parameter.type) + ') </span>' +
+				'<span id="editRemoveParam' + i + '" style="cursor:pointer;line-height:25px;position:absolute;right:0;top:0;"><a href="#" onclick="og.promptAddParameter(this, 1, ' + i + ')" >'+lang('edit')+'</a>' +
+				'&nbsp;|&nbsp;<a href="#" onclick="og.removeParameterFromTemplate(this.parentNode.parentNode, \'' + parameter.name + '\')" class="removeParamDiv">'+lang('remove')+'</a></span>';
+				fieldset.insertBefore(div, link)
+			}
+
 			if (og.templates.after_param_prompt_ok) {
 				for (var i=0; i<og.templates.after_param_prompt_ok.length; i++) {
 					var fn = og.templates.after_param_prompt_ok[i];
@@ -1175,18 +1228,77 @@ og.addParameterToTemplate = function(params, name, type, default_value) {
 	og.eventManager.fireEvent('after add tempalte parameter', {param: param});
 };
 
-og.removeParameterFromTemplate = function(div, name) {
-	var parent = div.parentNode;
-	parent.removeChild(div);
-	var inputs = parent.getElementsByTagName('input');
-	var count = 0;
-	for (var i=0; i < inputs.length; i=i+2) {
-		inputs[i].id = 'parameters[' + count + '][name]';
-		inputs[i].name = 'parameters[' + count + '][name]';
-		inputs[i + 1].id = 'parameters[' + count + '][type]';
-		inputs[i + 1].name = 'parameters[' + count + '][type]';
-		count++;
+og.removeParameterFromTemplate = function(paramDiv, name) {
+	const selects = document.querySelectorAll('select[id*="propValueParam"]');
+	var found = false;
+
+	var divsToRemove = [];
+	// Removes variables using param that is deleted
+	for (let i = 0; i < selects.length; i++) {
+        var selectedValue = selects[i].value;
+        if (selectedValue === name) {
+			// store divs con "propDiv[][]"" to delete
+			var containerDiv = selects[i].closest('div');
+			if (containerDiv) {
+                divsToRemove.push(containerDiv);
+            }
+            found = true;
+        }
+    }
+
+	// if found variables with the parameter that is being deleted show warning modal, otherwise just delete parameter 
+	if(found) {
+		og.askUserToDeleteParameter(divsToRemove, name, paramDiv);
+	} else {
+		og.deleteParameter(paramDiv, name);
 	}
+};
+
+
+og.askUserToDeleteParameter = function(divsToRemove, name, paramDiv) {
+
+	var info = lang('confirm delete parameter');
+	var div = document.createElement('div');
+	div.style = "border-radius: 5px; background-color: #fff; padding: 10px; width: 500px;";
+	var genid = Ext.id();
+	
+	div.innerHTML = '<div><label class="coInputTitle">'+lang('delete template parameter')+'</label></div>'+
+	'<div id="'+genid+'_question">'+ info+'</div>'+
+	'<div id="'+genid+'_buttons" style="text-align:center">'+
+	'<button class="yes submit blue" style="width:40%;">'+lang('yes')+'</button>'+
+	'<button class="no submit blue" style="width:40%;">'+lang('no')+'</button>'+
+	'</div><div class="clear"></div>';
+
+	var modal_params = {
+		'escClose': false,
+		'overlayClose': false,
+		'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'" style="display:none;"></a>',
+		'onShow': function (dialog) {
+			$("#"+genid+"_close_link").addClass("modal-close-img");
+			$("#"+genid+"_buttons").css('text-align', 'center').css('margin', '10px 0');
+			$("#"+genid+"_question").css('margin', '10px 0');
+			$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+				// Removes parameter and variables using it
+				divsToRemove.forEach(divToRemove => divToRemove.remove());
+				og.deleteParameter(paramDiv, name);
+				$('.modal-close').click();
+			});
+			$("#"+genid+"_buttons button.no").css('margin-left', '10px').click(function(){
+				$('.modal-close').click();
+			});
+	    }
+	};
+	setTimeout(function() {
+		$.modal(div, modal_params);
+	}, 100);
+	
+}
+
+og.deleteParameter = function(paramDiv, name){
+	var parent = paramDiv.parentNode;
+	parent.removeChild(paramDiv);
+
+	// Deletes param from og.templateParameters
 	for(var j=0; j < og.templateParameters.length; j++){
 		var param = og.templateParameters[j];
 		if(param['name'] == name){
@@ -1194,16 +1306,18 @@ og.removeParameterFromTemplate = function(div, name) {
 		}
 	}
 	og.templateParameters.splice(j,1);
-	for(var k=j+1; k <= og.templateParameters.length; k++){
-		var paramNameSpan = document.getElementById('paramName_' + k);
-		paramNameSpan.id = 'paramName_' + (k - 1);
-		paramNameSpan.name = 'paramName[' + (k - 1) + ']';
-		var editRemoveParamSpan = document.getElementById('editRemoveParam' + k);
-		editRemoveParamSpan.id = 'editRemoveParam' + (k - 1)
-		editRemoveParamSpan.innerHTML = '<a href="#" onclick="og.promptAddParameter(this, 1, ' + (k - 1) + ')" >'+lang('edit')+'</a>' +
-		'&nbsp;|&nbsp;<a href="#" onclick="og.removeParameterFromTemplate(this.parentNode.parentNode, \'' + name + '\')" class="removeParamDiv">'+lang('remove')+'</a>';
-	}
 	
+	// Deletes the param option from all selects 
+	const selects = document.querySelectorAll('select[id*="propValueParam"]');
+	for (let i = 0; i < selects.length; i++) {
+		var options = selects[i].options;
+		for (let j = 0; j < options.length; j++) {
+			if (options[j].value === name) {
+				selects[i].remove(j);
+				break;
+			}
+		}
+	}
 	og.eventManager.fireEvent('after remove tempalte parameter', {param: param});
 };
 

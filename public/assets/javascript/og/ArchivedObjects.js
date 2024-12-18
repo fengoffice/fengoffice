@@ -24,7 +24,7 @@ og.ArchivedObjects = function() {
 					'createdBy', 'createdById', 'dateCreated',
 					'updatedBy', 'updatedById',	'dateUpdated',
 					'archivedBy', 'archivedById', 'dateArchived',
-					'icon', 'manager', 'mimeType', 'url', 'ix', 'memPath'
+					'icon', 'manager', 'mimeType', 'url', 'ix', 'memPath','is_mail_rule'
 				]
 			}),
 			remoteSort: true,
@@ -141,6 +141,9 @@ og.ArchivedObjects = function() {
 	}
 
 	function renderAuthor(value, p, r) {
+		if (r.data.is_mail_rule == 1) {
+			return lang('System by a Mail Rule');
+		}
 		if (r.data.createdById) {
 			return String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>', og.clean(value), og.getUrl('user', 'card', {id: r.data.createdById}));
 		} else {
@@ -149,6 +152,9 @@ og.ArchivedObjects = function() {
 	}
 	
 	function renderArchivedBy(value, p, r) {
+		if (r.data.is_mail_rule == 1) {
+			return lang('System by a Mail Rule');
+		}
 		if (r.data.archivedById) {
 			return String.format('<a href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>', og.clean(value), og.getUrl('user', 'card', {id: r.data.archivedById}));
 		} else {

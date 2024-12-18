@@ -35,18 +35,31 @@
 		$isAlt = true;
 		if (is_array($logs)) {
 			foreach ($logs as $log) {
-				$isAlt = !$isAlt;
-				echo '<tr' . ($isAlt? ' class="altRow"' : '') . '><td  style="padding:5px;padding-right:15px;">';
-				if ($log->getCreatedOn()->getYear() != DateTimeValueLib::now()->getYear())
-					$date = format_time($log->getCreatedOn(), "M d Y, H:i", $tz_offset);
-				else{
-					if ($log->isToday())
-						$date = lang('today') . format_time($log->getCreatedOn(), ", H:i:s", $tz_offset);
-					else
-						$date = format_time($log->getCreatedOn(), "M d, H:i", $tz_offset);
+				$userName = clean($log->getTakenByDisplayName());
+				if ($log->getIsMailRule()) { 
+					$userName = lang('System');
 				}
-				if($log->getAction()==ApplicationLogs::ACTION_LOGIN  /*FIXME || ($log->getRelObjectManager() == 'Timeslots' && ($log->getAction()==ApplicationLogs::ACTION_OPEN || $log->getAction()==ApplicationLogs::ACTION_CLOSE))*/) {
-					echo $date . ' </td><td style="padding:5px;padding-right:15px;"><a class="internalLink" href="' . ($log->getTakenBy() instanceof Contact ? $log->getTakenBy()->getCardUserUrl() : '#') . '">'  . clean($log->getTakenByDisplayName()) . '</a></td><td style="padding:5px;padding-right:15px;"> ' . $log->getText();
+				// DATE COLUMN
+				$isAlt = !$isAlt;
+				echo '<tr' . ($isAlt ? ' class="altRow"' : '') . '><td  style="padding:5px;padding-right:15px;">';
+				if ($log->getCreatedOn()->getYear() != DateTimeValueLib::now()->getYear()) {
+					$date = format_time($log->getCreatedOn(), "M d Y, H:i", $tz_offset);
+				} else {
+					if ($log->isToday()) {
+						$date = lang('today') . format_time($log->getCreatedOn(), ", H:i:s", $tz_offset);
+					} else {
+						$date = format_time($log->getCreatedOn(), "M d, H:i", $tz_offset);
+					}
+				}
+				// USER AND DETAIL COLUMNS
+				if($log->getAction()==ApplicationLogs::ACTION_LOGIN  /*FIXME || ($log->getRelObjectManager() == 'Timeslots' && ($log->getAction()  ==ApplicationLogs::ACTION_OPEN || $log->getAction()==ApplicationLogs::ACTION_CLOSE))*/) {
+					echo $date . ' </td><td style="padding:5px;padding-right:15px;">';
+					if (!$log->getIsMailRule()) {
+						echo '<a class="internalLink" href="' . ($log->getTakenBy() instanceof Contact ? $log->getTakenBy()->getCardUserUrl() : '#') . '">' . $userName . '</a>';
+					} else {
+						echo $userName;
+					}
+					echo '</td><td style="padding:5px;padding-right:15px;"> ' . $log->getText();
 				} else {
 					$output = null;
 					Hook::fire('override_view_history_log', array('object' => $object, 'log' => $log), $output);
@@ -55,7 +68,13 @@
 					} else {
 						$activity_data = $output;
 					}
-					echo $date . ' </td><td style="padding:5px;padding-right:15px;"><a class="internalLink" href="' . ($log->getTakenBy() instanceof Contact ? $log->getTakenBy()->getCardUserUrl() : '#') . '">'  . clean($log->getTakenByDisplayName()) . '</a></td><td style="padding:5px;padding-right:15px;"> ' . $activity_data;
+					echo $date . ' </td><td style="padding:5px;padding-right:15px;">';
+					if (!$log->getIsMailRule()) {
+						echo '<a class="internalLink" href="' . ($log->getTakenBy() instanceof Contact ? $log->getTakenBy()->getCardUserUrl() : '#') . '">' . $userName . '</a>';
+					} else {
+						echo $userName;
+					}
+					echo '</td><td style="padding:5px;padding-right:15px;"> ' . $activity_data;
 				}
 				echo '</td></tr>';
 			}

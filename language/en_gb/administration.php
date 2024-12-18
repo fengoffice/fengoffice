@@ -822,6 +822,7 @@ return array(
 
     // System permissions
     'can manage security' => 'Can manage security configuration (users, groups and permissions)',
+    'can reopen task' => 'Can reopen task',
     'can manage configuration' => 'Can manage configuration, owner company data, tabs, logos and colors',
     'can manage templates' => 'Can manage task templates',
 	'can_instantiate_templates' => 'Can use task templates',
@@ -849,7 +850,7 @@ return array(
   'can_see_expenses_of_others description'=>'If enabled then the user will be able to see actual expenses that are not paid by him/her.',
   	'can_update_other_users_invitations description' => 'If enabled then the user will be able to change the status of other users event invitations.',
   	'can_link_objects description' => 'If this permission is checked the user will be able to link and unlink objects',
-  		
+  'can_reopen_task description' => 'If enabled then the user will be able to reopen a task',
   //HIDDEN 
     'can_task_assignee'=>'Can task asignee',
     'can_manage_billing'=>'Can manage billing',

@@ -500,3 +500,30 @@
 			CHANGE `signature` `signature` mediumtext COLLATE 'utf8_unicode_ci' NOT NULL;
 		");
 	}
+
+    function mail_update_35_36() {
+		// befor this function was adding a new column to the mail_accounts table
+		// that column (sync_account) is no longer needed
+	}
+
+	/**
+	 * Mail update 36_37
+	 * 
+	 * This update removes the sync_account column and adds a new column exclude_from_synchronizing
+	 * 
+	 * @return void
+	 */
+	function mail_update_36_37() {
+		if (check_column_exists(TABLE_PREFIX."mail_accounts", "sync_account")) {
+			// remove the sync_account column if it exists
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_accounts`
+				DROP COLUMN `sync_account`;
+			");
+		}
+		// add the new column exclude_from_synchronizing
+		DB::execute("
+			ALTER TABLE `".TABLE_PREFIX."mail_accounts`
+			ADD COLUMN `exclude_from_synchronizing` tinyint(1) NOT NULL DEFAULT 0;
+		");
+	}

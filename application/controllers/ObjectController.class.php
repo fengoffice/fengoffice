@@ -1371,11 +1371,11 @@ class ObjectController extends ApplicationController {
 						if ($action == 'archive') {
 							$obj->archive();
 							$succ++;
-							ApplicationLogs::createLog($obj, null, ApplicationLogs::ACTION_ARCHIVE);
+							ApplicationLogs::createLog($obj, ApplicationLogs::ACTION_ARCHIVE);
 						} else if ($action == 'unarchive') {
 							$obj->unarchive();
 							$succ++;
-							ApplicationLogs::createLog($obj, null, ApplicationLogs::ACTION_UNARCHIVE);
+							ApplicationLogs::createLog($obj, ApplicationLogs::ACTION_UNARCHIVE);
 						}
 					} else {
 						$err ++;
@@ -2293,6 +2293,7 @@ class ObjectController extends ApplicationController {
 
 
 	function list_objects() {
+
 		$params = $this->get_list_objects_params();
 		$listing = $this->get_objects_list($params);
 
@@ -2304,6 +2305,7 @@ class ObjectController extends ApplicationController {
 	}
 
 	function get_list_objects_params() {
+
 		$params = array();
 		$filesPerPage = config_option('files_per_page');
 		$typeCSV = array_var($_GET, 'type');
@@ -2430,8 +2432,6 @@ class ObjectController extends ApplicationController {
 		if (!$show_all_linked_objects){
 			$this->processListActions();
 		}
-
-		
 		
 		$template_object_names = "";
 		$template_extra_condition = "true";
@@ -2466,21 +2466,39 @@ class ObjectController extends ApplicationController {
 
 		$context = active_context();
 
+		// select only content objects if asked to, otherwise select all listable types
 		$obj_type_types = array('content_object', 'located');
+		
+		// for the archived objects list, include dimension member types
+		$show_dim_members = array_var($params, 'archived');
+		if ($show_dim_members) {
+			// select dimension group and dimension objects if asked to
+			$obj_type_types[] = 'dimension_group';
+			$obj_type_types[] = 'dimension_object';
+		}
+
 		if (array_var($_GET, 'only_content_objects')) {
+			// select only content objects if asked to
 			$obj_type_types = array('content_object');
 		}
-		if (array_var($_GET, 'include_comments')) $obj_type_types[] = 'comment';
+		if (array_var($_GET, 'include_comments')) {
+			// select comments if asked to
+			$obj_type_types[] = 'comment';
+		}
 
+		// generate the condition for the object type
 		$type_condition = "";
 		if ($types) {
+			// select only the object types in the list if one is provided
 			$type_condition = " AND ot.name IN ('".implode("','",$types) ."')";
 		}
 		if ($type_filter > 0) {
+			// select only the object type with the given id if one is provided
 			$type_condition .= " AND ot.id=$type_filter";
 		}
 
 		if (count($obj_type_types) > 0) {
+			// select only the object types in the list
 			$type_condition .= " AND ot.type IN ('". implode("','", $obj_type_types) ."')";
 		}
 
@@ -2550,7 +2568,9 @@ class ObjectController extends ApplicationController {
 		$extra_object_type_conditions = "
 		AND ot.name <> 'file revision' $template_object_names $type_condition";
 
-		$extra_conditions[] = ObjectTypes::getListableObjectsSqlCondition($extra_object_type_conditions);
+		// this will filter out object types that are not listable and also filters out dimension members if $show_dim_members is false
+		// this is used in the object picker to filter out object types that should not be available for selection
+		$extra_conditions[] = ObjectTypes::getListableObjectsSqlCondition($extra_object_type_conditions, $show_dim_members);
 		// --
 
 
@@ -2713,6 +2733,24 @@ class ObjectController extends ApplicationController {
 		if (!$only_count_result) {
 			$rows = DB::executeAll($sql);
 		}
+		if ($rows) {
+			foreach ($rows as &$row) {
+				$res = DB::executeOne(
+					"SELECT al.is_mail_rule 
+					 FROM " . TABLE_PREFIX . "application_logs al 
+					 WHERE al.rel_object_id = ? 
+					   AND al.is_silent != 1 
+					 ORDER BY al.id DESC 
+					 LIMIT 1",
+					$row['id']
+				);
+		
+				// Assign the more recent is_mail_rule log value that is not silent
+				$row['is_mail_rule'] = isset($res['is_mail_rule']) ? $res['is_mail_rule'] : null;
+			}
+			unset($row);
+		}
+	
 
 		// get total items
 		if ($count_results) {
@@ -2756,6 +2794,7 @@ class ObjectController extends ApplicationController {
 						$info_elem['isRead'] = $instance->getIsRead(logged_user()->getId()) ;
 						$info_elem['manager'] = get_class($instance->manager()) ;
 						$info_elem['memPath'] = json_encode($instance->getMembersIdsToDisplayPath());
+						$info_elem['is_mail_rule'] = $row['is_mail_rule'];
 
 						if ($instance instanceof Contact) {
 							if( $instance->isCompany() ) {
@@ -2799,8 +2838,27 @@ class ObjectController extends ApplicationController {
 				"objects" => $info
 		);
 
+		// We need to provide the object types that can be selected
+		// so that the UI can present them to the user.
+		// The object types that can be selected are all the content objects
+		// and dimension objects, except for the following:
+		// - template_task
+		// - template_milestone
+		// - project_folder
+		// - customer_folder
+		// - file revision
+		// - company
+		// - person
+		// In addition, only the object types that have an activated plugin
+		// are shown, unless the plugin is not installed, in which case
+		// the object type is shown anyway.
+		$filter_types = "'content_object'";
+		if ($show_dim_members) {
+			$filter_types .= ", 'dimension_group', 'dimension_object'";
+		}
+
 		$object_types = ObjectTypes::instance()->findAll(array(
-			'conditions' => "type IN ('content_object') AND 
+			'conditions' => "type IN ($filter_types) AND 
 							(plugin_id = 0 OR plugin_id IS NULL OR (SELECT is_activated FROM ".TABLE_PREFIX."plugins WHERE id=plugin_id) = 1)"
 		));
 		$object_types_info = array();
@@ -2943,7 +3001,7 @@ class ObjectController extends ApplicationController {
 		if ($task instanceof ProjectTask) {
 			
 			// If the user does not have permission to edit the task, display an error message and return
-			if (!$task->canEdit(logged_user()) || $task->isInvoicedOrPartiallyInvoiced()) {
+			if (!$task->canEdit(logged_user())) {
 				flash_error(lang("no edit permissions for object", $task->getName()));
 				return;
 			}

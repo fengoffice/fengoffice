@@ -31,8 +31,9 @@
       'can_see_assigned_to_other_tasks' => DATA_TYPE_BOOLEAN,
 	    'can_update_other_users_invitations' => DATA_TYPE_BOOLEAN,
     	'can_link_objects' => DATA_TYPE_BOOLEAN,
-        'can_manage_repetitive_properties_of_tasks' => DATA_TYPE_BOOLEAN,
+      'can_manage_repetitive_properties_of_tasks' => DATA_TYPE_BOOLEAN,
       'can_see_others_timeslots' => DATA_TYPE_BOOLEAN,
+      'can_reopen_task' => DATA_TYPE_BOOLEAN,
     );
   
     /**

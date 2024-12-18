@@ -1492,7 +1492,8 @@ Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 	},
 
 	addClassToShowMessage: function(className) {
-		this.innerMessage.className = 'inner-message ' + className;
+
+		this.innerMessage.className = 'inner-message-spam ' + className;
 	},
 
 	trashObjects: function() {

@@ -279,6 +279,9 @@ og.ownerCompany = {
 	id: '<?php echo owner_company()->getId()?>',
 	name: '<?php echo escape_character(clean(owner_company()->getObjectName()))?>',
 	logo_url: '<?php echo (owner_company()->getPictureFile() != '' ? owner_company()->getPictureUrl() : '')?>',
+	small_logo_url: '<?php echo (owner_company()->getPictureFile() != '' ? owner_company()->getPictureUrl('small') : '')?>',
+	medium_logo_url: '<?php echo (owner_company()->getPictureFile() != '' ? owner_company()->getPictureUrl('medium') : '')?>',
+	large_logo_url: '<?php echo (owner_company()->getPictureFile() != '' ? owner_company()->getPictureUrl('large') : '')?>',
 	email: '<?php echo escape_character(clean(owner_company()->getEmailAddress('work'))) ?>',
 	phone: '<?php echo escape_character(clean(owner_company()->getPhoneNumber('work'))) ?>',
 	address: '<?php echo str_replace("\n", " ", escape_character(clean(owner_company()->getStringAddress('work')))) ?>',
@@ -384,6 +387,7 @@ og.preferences = {
 	'trash_objects_in_member_after_delete': <?php echo user_config_option('trash_objects_in_member_after_delete') ? '1' : '0' ?>,
 	'decimals_separator': '<?php echo user_config_option('decimals_separator') ?>',
 	'thousand_separator': '<?php echo user_config_option('thousand_separator') ?>',
+	'decimal_digits': <?php echo user_config_option('decimal_digits') ?>,
 };
 
 // Add object type dimensions that are used in forms as member selectors

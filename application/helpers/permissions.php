@@ -64,6 +64,10 @@
 		return SystemPermissions::userHasSystemPermission($user, 'can_manage_templates');
   	}
 
+	function can_reopen_task(Contact $user) {
+		return SystemPermissions::userHasSystemPermission($user, 'can_reopen_task');
+  	}
+
 	function can_instantiate_templates(Contact $user) {
 		return SystemPermissions::userHasSystemPermission($user, 'can_instantiate_templates');
 	}

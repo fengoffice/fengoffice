@@ -102,6 +102,8 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('system', 'users_that_can_mark_as_invoiced', '', 'StringConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_address', '1', 'DefaultTypeAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, ''),
+	('clients_and_contacts', 'default_type_phone', '1', 'DefaultTypePhoneConfigHandler', '0', '0', ''),
+	('clients_and_contacts', 'default_type_email', '1', 'DefaultTypeEmailConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', '');
 		
 INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
@@ -587,29 +589,29 @@ INSERT INTO `<?php echo $table_prefix ?>tab_panel_permissions` (`permission_grou
 ((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Non-Exec Director'),	'more-panel');
 
 
-INSERT INTO `<?php echo $table_prefix ?>system_permissions` (`permission_group_id`, `can_manage_security`, `can_manage_configuration`, `can_manage_templates`, `can_manage_time`, `can_add_mail_accounts`, `can_manage_dimensions`, `can_manage_dimension_members`, `can_manage_tasks`, `can_task_assignee`, `can_manage_billing`, `can_view_billing`, `can_see_assigned_to_other_tasks`, `can_manage_contacts`, `can_update_other_users_invitations`, `can_link_objects`, `can_instantiate_templates`, `can_manage_repetitive_properties_of_tasks`, `can_see_others_timeslots`) VALUES
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Super Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 0, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Manager'),	1,	0,	1,	1,	1,		0,	1,	1,	1,	1,	1,	1, 0, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Executive'),	0,	0,	0,	0,	1,		0,	1,	1,	1,	0,	1,	0, 0, 0, 1, 1, 1, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Collaborator Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Internal Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'External Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	0, 0, 0, 0, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	0, 0, 0, 0, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Non-Exec Director'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	1,	1, 0, 0, 0, 0, 0, 1);
+INSERT INTO `<?php echo $table_prefix ?>system_permissions` (`permission_group_id`, `can_manage_security`, `can_manage_configuration`, `can_manage_templates`, `can_manage_time`, `can_add_mail_accounts`, `can_manage_dimensions`, `can_manage_dimension_members`, `can_manage_tasks`, `can_task_assignee`, `can_manage_billing`, `can_view_billing`, `can_see_assigned_to_other_tasks`, `can_manage_contacts`, `can_update_other_users_invitations`, `can_link_objects`, `can_instantiate_templates`, `can_manage_repetitive_properties_of_tasks`, `can_see_others_timeslots`, `can_reopen_task`) VALUES
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Super Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 0, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Manager'),	1,	0,	1,	1,	1,		0,	1,	1,	1,	1,	1,	1, 0, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Executive'),	0,	0,	0,	0,	1,		0,	1,	1,	1,	0,	1,	0, 0, 0, 1, 1, 1, 0, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Collaborator Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Internal Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'External Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	0, 0, 0, 0, 0, 0, 0, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	0, 0, 0, 0, 0, 0, 0, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Non-Exec Director'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	1,	1, 0, 0, 0, 0, 0, 1, 0);
 
-INSERT INTO `<?php echo $table_prefix ?>max_system_permissions` (`permission_group_id`, `can_manage_security`, `can_manage_configuration`, `can_manage_templates`, `can_manage_time`, `can_add_mail_accounts`, `can_manage_dimensions`, `can_manage_dimension_members`, `can_manage_tasks`, `can_task_assignee`, `can_manage_billing`, `can_view_billing`, `can_see_assigned_to_other_tasks`, `can_manage_contacts`, `can_update_other_users_invitations`, `can_link_objects`, `can_instantiate_templates`, `can_manage_repetitive_properties_of_tasks`,`can_see_others_timeslots`) VALUES
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Super Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Manager'),	1,	0,	1,	1,	1,		0,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Executive'),	1,	0,	0,	0,	1,		0,	1,	1,	1,	0,	1,	1, 1, 1, 1, 1, 1, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Collaborator Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	1, 0, 0, 1, 0, 0, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Internal Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'External Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	1, 0, 0, 0, 0, 0, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	1, 0, 0, 0, 0, 0, 1),
-((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Non-Exec Director'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	1,	1, 0, 0, 0, 0, 0, 1);
+INSERT INTO `<?php echo $table_prefix ?>max_system_permissions` (`permission_group_id`, `can_manage_security`, `can_manage_configuration`, `can_manage_templates`, `can_manage_time`, `can_add_mail_accounts`, `can_manage_dimensions`, `can_manage_dimension_members`, `can_manage_tasks`, `can_task_assignee`, `can_manage_billing`, `can_view_billing`, `can_see_assigned_to_other_tasks`, `can_manage_contacts`, `can_update_other_users_invitations`, `can_link_objects`, `can_instantiate_templates`, `can_manage_repetitive_properties_of_tasks`,`can_see_others_timeslots`, `can_reopen_task`) VALUES
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Super Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Administrator'),	1,	1,	1,	1,	1,		1,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Manager'),	1,	0,	1,	1,	1,		0,	1,	1,	1,	1,	1,	1, 1, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Executive'),	1,	0,	0,	0,	1,		0,	1,	1,	1,	0,	1,	1, 1, 1, 1, 1, 1, 1, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Collaborator Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	1, 0, 0, 1, 0, 0, 1, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Internal Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0, 1),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'External Collaborator'),	0,	0,	0,	0,	0,		0,	0,	0,	1,	0,	0,	0, 0, 0, 1, 0, 0, 0, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest Customer'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	1, 0, 0, 0, 0, 0, 1, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	1, 0, 0, 0, 0, 0, 1, 0),
+((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Non-Exec Director'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	1,	1, 0, 0, 0, 0, 0, 1, 0);
 
 INSERT INTO `<?php echo $table_prefix ?>widgets` (`name`,`title`,`plugin_id`,`path`,`default_options`,`default_section`,`default_order`,`icon_cls`) VALUES 
  ('overdue_upcoming','overdue and upcoming',0,'','','left',3,'ico-task'),

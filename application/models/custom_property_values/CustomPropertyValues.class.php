@@ -72,8 +72,8 @@ class CustomPropertyValues extends BaseCustomPropertyValues {
 				CustomProperties::instance()->getTableName(true) . " where `object_type_id` = ? $visibility_cond)"  , $object->getObjectId(), $object->getObjectTypeId())
 		))); // findAll
 	} //  getCustomPropertyValue
-	
 
+	
 } // CustomProperties
 
 ?>

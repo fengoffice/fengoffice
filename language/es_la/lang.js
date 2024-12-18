@@ -927,4 +927,11 @@ addLangs({
 	'total estimated': 'Total estimado',
 	"the user assign to this timeslot doesn't have permission over the selected project. The timeslot is now unassigned": 'El usuario asignado a esta entrada de tiempo no tiene permisos sobre el proyecto seleccionado.La entrada de tiempo ahora está sin asignar',
 	'assign task': 'Asignar tarea',
+	'System by a Mail Rule' : 'El sistema a través de una Regla de Correo',
+	'System' : 'Sistema',
+	'total worked': 'Total trabajado',
+	'quickbooks' : 'Quickbooks',
+	'field Objects is_manual_billing' : 'La facturación es manual',
+    'field Objects is_manual_cost' : 'El costo es manual',
+    'paid' : 'Pago',
 });

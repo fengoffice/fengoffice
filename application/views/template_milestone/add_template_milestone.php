@@ -153,7 +153,7 @@
 
 		
 		<?php foreach ($categories as $category) { ?>
-		<div id="<?php echo $genid . $category['name'] ?>" class="form-tab">
+		<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
 			<?php echo $category['content'] ?>
 		</div>
 		<?php } ?>

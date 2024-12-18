@@ -67,7 +67,7 @@ class WorkedHoursWidget extends React.Component {
       }
 
 
-
+      
       render() {
          // Define variables that will be used in the returned component
          const decimals = this.state.decimals;

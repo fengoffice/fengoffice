@@ -147,8 +147,23 @@ class MemberController extends ApplicationController {
 									}
 								}
 							} else {
-								$order_join_sql .= "";
-								$order = "cpval_".$cp_id.".`value`";
+								// get additional custom properties of the dimension object
+								$cp_ids = [];
+								$manager_class = $member_type->getHandlerClass();
+								$manager = new $manager_class();
+								if ($manager instanceof ContentDataObjects) {
+									$add_cps = $manager->getAdditionalCustomProperties();
+									foreach ($add_cps as $add_cp) {
+										$cp_ids[] = $add_cp->getId();
+									}
+								}
+								// only order by $cp_id if it is one of the additional custom properties of the dimension object
+								if (in_array($cp_id, $cp_ids)) {
+									$order_join_sql .= "";
+									$order = "cpval_".$cp_id.".`value`";
+								} else {
+									$order = 'mem.`name`';
+								}
 							}
 
 						} else {
