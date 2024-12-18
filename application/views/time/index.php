@@ -331,9 +331,9 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         header: '<?php echo lang('last updated by') ?>',
         sortable: true
     });
-    <?php if ($show_billing) { ?>
+    <?php if ($can_see_billing_info) { ?>
         timeslots_columns.push({
-            name: 'fixed_billing',
+            name: 'fixed_billing', 
             header: '<?php echo lang('billing') ?>',
             hidden: true,
             align: 'right',
@@ -586,6 +586,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
     }
 
     var add_row_user_options = [];
+    var add_users_to_quick_add_combo = [];
     var user_options = [
         [0, lang('everyone')]
     ];
@@ -612,6 +613,12 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
     ?>
         user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
         add_row_user_options.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
+    <?php } ?>
+
+    <?php foreach ($usersForQuickAdd as $user) {
+            $user_display_name = str_replace("\\'", "'", $user->getObjectName());
+    ?>
+            add_users_to_quick_add_combo.push([<?php echo $user->getId() ?>, '<?php echo clean(escape_character($user_display_name)) ?>']);
     <?php } ?>
 
     var type_ini_val = '<?php echo array_var($current_filters, 'type_filter', '0') ?>';
@@ -720,7 +727,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         tbar_right_items: timeslots_tbar_right_items,
         quick_add_row: <?php echo $add_quick_add_row ? '1' : '0' ?>,
         quick_add_row_fn: og.add_timeslot_module_quick_add_row,
-        quick_add_row_user_options: add_row_user_options,
+        quick_add_row_user_options: add_users_to_quick_add_combo,
         add_default_actions_column: false,
         name_fixed: true,
         name_width: 200,

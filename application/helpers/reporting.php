@@ -219,6 +219,10 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 
 				$value = array_var($row, $col);
 				$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;  // *** LC 2023-09-04 
+				if(is_numeric($col) && !$type){
+					$cp = CustomProperties::getCustomProperty($col);
+					$type = $cp->getType();
+				}
                 $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
 		?>
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
@@ -239,7 +243,17 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				}
 
 				$tz_offset = array_var($row, 'tz_offset');
-				echo format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+				$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+				// URL type must be linkable
+				if($type == 'url' && $value != ''){ 
+					if (!preg_match("~^(?:f|ht)tps?://~i", $formatted_val)) {
+						$formatted_val = "https://" . $formatted_val;
+					} ?>
+					<a href=<?= $formatted_val ?> target="_blank"><?= $formatted_val ?> </a>
+				<?php	
+				} else {
+					echo $formatted_val;
+				}
 
 		?>
 			</td>

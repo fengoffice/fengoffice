@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.2.8');
+		$this->setVersionTo('3.11.5.0-rc2');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -78,10 +78,10 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 
 		$mysql_version = mysqli_get_server_info($this->database_connection);
 		if($mysql_version && version_compare($mysql_version, '4.1', '>=')) {
-			$constants['DB_CHARSET'] = 'utf8';
-			@mysqli_query($this->database_connection, "SET NAMES 'utf8'");
-			tpl_assign('default_collation', $default_collation = 'collate utf8_unicode_ci');
-			tpl_assign('default_charset', $default_charset = 'DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci');
+			$constants['DB_CHARSET'] = 'utf8mb4';
+			mysqli_query($this->database_connection, "SET NAMES 'utf8mb4'");
+			tpl_assign('default_collation', $default_collation = 'collate utf8mb4_unicode_ci');
+			tpl_assign('default_charset', $default_charset = 'DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 		} else {
 			tpl_assign('default_collation', $default_collation = '');
 			tpl_assign('default_charset', $default_charset = '');
@@ -1139,7 +1139,80 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 
 		}
 
+
+		if (version_compare($installed_version, '3.11.3.0-beta1') < 0) {
+      if (!$this->checkColumnExists($t_prefix."application_logs", "is_mail_rule", $this->database_connection)) {
+			  $upgrade_script .= "
+			  ALTER TABLE `".$t_prefix."application_logs`
+			  ADD COLUMN `is_mail_rule` TINYINT(1) DEFAULT 0;
+			  ";
+      }
+		}
+
+		// Adds reopen task permission 
+		if (version_compare($installed_version, '3.11.3.0-rc2') < 0) {
+			if (!$this->checkColumnExists($t_prefix."system_permissions", "can_reopen_task", $this->database_connection)) {
+				$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."system_permissions`
+				ADD COLUMN `can_reopen_task` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0;";
+			}
+			if (!$this->checkColumnExists($t_prefix."max_system_permissions", "can_reopen_task", $this->database_connection)) {
+				$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."max_system_permissions`
+				ADD COLUMN `can_reopen_task` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0;";
+			}
+
+			$upgrade_script .= "
+			UPDATE `".$t_prefix."system_permissions` set `can_reopen_task` = 1
+			WHERE `permission_group_id` IN ( 
+				SELECT `id` 
+				FROM `".$t_prefix."permission_groups`
+				WHERE `name` IN ('Super Administrator', 'Administrator', 'Manager','Executive')
+			);";
+
+			$upgrade_script .= "
+			UPDATE `".$t_prefix."max_system_permissions` set `can_reopen_task` = 1
+			WHERE `permission_group_id` IN ( 
+				SELECT `id` 
+				FROM `".$t_prefix."permission_groups`
+				WHERE `name` IN ('Super Administrator', 'Administrator', 'Manager','Executive', 'Internal Collaborator')
+			);";
+		}
+
+		if (version_compare($installed_version, '3.11.5.1') < 0) {
+			// Add 'remaining_time' column to project_tasks table
+        	if (!$this->checkColumnExists($t_prefix."project_tasks", "remaining_time", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."project_tasks` ADD `remaining_time` int(10) NOT NULL DEFAULT '0';
+				";
+        	}
+			// Add 'total_remaining_time' column to project_tasks table
+			if (!$this->checkColumnExists($t_prefix."project_tasks", "total_remaining_time", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."project_tasks` ADD `total_remaining_time` int(10) NOT NULL DEFAULT '0';
+				";
+        	}
+
+			// Add 'tasksShowRemainingTime' contact config option
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowRemainingTime", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES ('task panel', 'tasksShowRemainingTime', '0', 'BoolConfigHandler', 1, 0, '')
+					ON DUPLICATE KEY UPDATE name=name;
+				";
+			}
+
+			// Add 'tasksShowTotalRemainingTime' contact config option
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowTotalRemainingTime", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES ('task panel', 'tasksShowTotalRemainingTime', '0', 'BoolConfigHandler', 1, 0, '')
+					ON DUPLICATE KEY UPDATE name=name;
+				";
+			}
+		}
+		
 		//ADD NEXT UPDATE SCRIPTS HERE
+
+    
 
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
@@ -1169,7 +1242,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 
 		// Calculate after new columns added
 		if (version_compare($installed_version, '3.11.1.0-rc1') < 0) {
-			@set_time_limit(0);
+@set_time_limit(0);
 			ini_set("memory_limit", "2G");
 			// Calculate 'overall_worked_time_plus_subtasks' and 'total_time_estimate' for all tasks
 			$max_depth_sql = "SELECT MAX(depth) as max_depth  FROM " .$t_prefix. "project_tasks;";
@@ -1226,6 +1299,16 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			}
         }
 
+		if (version_compare($installed_version, '3.11.4.8') < 0) {
+			@set_time_limit(0);
+			ini_set("memory_limit", "2G");
+
+			// Calculate 'remaining_time' and 'total_remaining_time' for all tasks using SQL
+			$update_task_sql = "UPDATE ".TABLE_PREFIX."project_tasks ";
+			$update_task_sql .= "SET remaining_time=CAST(time_estimate as SIGNED)-CAST(total_worked_time as SIGNED), "; 
+			$update_task_sql .= "total_remaining_time=CAST(total_time_estimate as SIGNED)-CASt(overall_worked_time_plus_subtasks as SIGNED);";
+			mysqli_query($this->database_connection, $update_task_sql);
+		}
 
 		$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
 		

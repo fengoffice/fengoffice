@@ -68,7 +68,7 @@
 		if ($dontshow) continue; // to prevent showing the linked objects two times
 		$linked_object_actions[] = array('action' => $act->getAction(), 'source' => $tmp_id, 'dest' => $act->getLogData());
 		
-		$activity_data = $act->getActivityData();
+		$activity_data = $act->getActivityData('hideSystemActivity');
 		
 		$act_data = array('avatar' => $avatar_url, 'date' => $date, 'act_data' => $activity_data);
 	/*	

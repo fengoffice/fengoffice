@@ -81,7 +81,7 @@ onsubmit="return og.submitTemplateForm();">
 	?>
 	
 	<?php foreach ($categories as $category) { ?>
-	<div <?php if (!$category['visible']) echo 'style="display:none"' ?> id="<?php echo $genid . $category['name'] ?>">
+	<div <?php if (!$category['visible']) echo 'style="display:none"' ?> id="<?php echo $genid . $category['id'] ?>">
 	<fieldset>
 		<legend><?php echo lang($category['name'])?><?php if ($category['required']) echo ' <span class="label_required">*</span>'; ?></legend>
 		<?php echo $category['content'] ?>
@@ -161,8 +161,11 @@ onsubmit="return og.submitTemplateForm();">
 			//if not have parent or milestone
 			if(data.milestone_id == 0 && data.parent_id == 0){
 				var div = $('#objectDiv'+data.id);
-				$('#objectDiv'+data.id).remove();
-				$('#<?php echo $genid ?>template_tasks_div').append(div);				
+				// remove and add again only if it is not already in the root of the list
+				if (!$(div).hasClass('root')) {
+					$('#objectDiv'+data.id).remove();
+					$('#<?php echo $genid ?>template_tasks_div').append(div);				
+				}
 			}
 					
 		}else{
@@ -177,6 +180,31 @@ onsubmit="return og.submitTemplateForm();">
 			}
 		}
 		
+		// Retrieve all templateObjects
+		const templateObjects = document.querySelectorAll('.template-add-template-object');
+
+		const mainTasks = Array.from(templateObjects).filter(div => {
+			return !div.closest('.template-subtasks-div');
+		});
+
+		// Retrieve anchors inside those divs
+		const taskAnchors = mainTasks.map(div => div.querySelector('a.internalLink'));
+		
+		// Order anchors by name
+		taskAnchors.sort((a, b) => {
+			const textA = a.textContent.trim().toUpperCase();
+			const textB = b.textContent.trim().toUpperCase();
+			return textA.localeCompare(textB);
+		});
+
+		// Retrieve container and insert divs in the correct order
+		const container = document.querySelector("div[id$='template_tasks_div']");
+
+		taskAnchors.forEach(anchor => {
+			const div = anchor.closest('div.template-object-div');
+			container.appendChild(div);
+		});
+
 	}
 
 	og.redrawTemplateMilestoneList = function(data){

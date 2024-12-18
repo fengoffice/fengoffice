@@ -388,6 +388,50 @@ class DimensionController extends ApplicationController {
 
 		ajx_extra_data(array('dimension_members' => $tree, 'dimension_id' => $dimension_id, 'more_nodes_left' => $more_nodes_left, 'genid' => array_var($_REQUEST, 'genid', ''),));
 	}
+
+	//return members for quick add rows
+	function quick_add_row_members_tree() {
+
+		$dimension_id = array_var($_REQUEST, 'dimension_id');
+		$objectTypeId = array_var($_REQUEST, 'object_type_id', null );
+		$memberId = array_var($_REQUEST, 'id', null );
+		$allowedMemberTypes = json_decode(array_var($_REQUEST, 'allowedMemberTypes', null ));	
+		if (!is_array($allowedMemberTypes)) {
+			$allowedMemberTypes = null;
+		}
+		
+		$only_names = array_var($_REQUEST, 'onlyname', false);
+		
+		$name = trim(array_var($_REQUEST, 'query', ''));
+		$extra_cond = $name == "" ? "" : " AND display_name LIKE '%".$name."%'";
+		if ($memberId && is_numeric($memberId)) {
+			$extra_cond .= " AND id=$memberId";
+		}
+		
+		$return_all_members = false;
+		
+		$selected_member_ids = json_decode(array_var($_REQUEST, 'selected_ids', "[0]"));
+		$selected_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
+		
+		$limit_obj = array();
+		
+		$list_dim_members = $this->initial_list_dimension_members(
+			$dimension_id, 
+			$objectTypeId, 
+			$allowedMemberTypes, 
+			$return_all_members, 
+			$extra_cond, 
+			$limit_obj, 
+			false, 
+			null, 
+			$only_names, 
+			$selected_members
+		);
+		$memberList = $list_dim_members['members'] ?? [];
+
+		ajx_current("empty");
+		ajx_extra_data(array('dimension_members' => $memberList, 'dimension_id' => $dimension_id, 'genid' => array_var($_REQUEST, 'genid', ''),));
+	}
 	
 	//return only root members
 	function initial_list_dimension_members_tree_root() {

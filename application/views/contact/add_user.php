@@ -76,7 +76,7 @@
 			- <a href="#" class="option <?php echo $visible_cps>0 ? 'bold' : ''?>" onclick="og.toggleAndBolden('<?php echo $genid ?>add_custom_properties_div',this)"><?php echo lang('custom properties') ?></a>
 		<?php } ?>
 		<?php foreach ($categories as $category) { ?>
-			- <a href="#" class="option" onclick="og.toggleAndBolden('<?php echo $genid . $category['name'] ?>', this)"><?php echo lang($category['name'])?></a>
+			- <a href="#" class="option" onclick="og.toggleAndBolden('<?php echo $genid . $category['id'] ?>', this)"><?php echo lang($category['name'])?></a>
 		<?php } ?>
 	  </div>
   </div>
@@ -163,7 +163,7 @@
 	</div>
 	
 	<?php foreach ($categories as $category) { ?>
-	<div style="display:none" id="<?php echo $genid . $category['name'] ?>">
+	<div style="display:none" id="<?php echo $genid . $category['id'] ?>">
 	<fieldset>
 		<legend><?php echo lang($category['name'])?></legend>
 		<?php echo $category['content'] ?>

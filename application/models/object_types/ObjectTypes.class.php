@@ -147,11 +147,27 @@
 	}
 	
 	
-	static function getListableObjectsSqlCondition($extra_conditions = "") {
+	/**
+	 * Get the SQL condition for selecting the object types that are listable.
+	 * 
+	 * @param string $extra_conditions Extra conditions to add to the SQL query.
+	 * @param boolean $show_dim_members Whether to include dimension members in the results.
+	 * @return string The SQL condition.
+	 */
+	static function getListableObjectsSqlCondition($extra_conditions = "", $show_dim_members = false) {
+		// The object types that are listable
+		$ot_types = "'content_object', 'comment', 'located'";
+		
+		// If the user wants to include dimension members, add them to the list of object types
+		if ($show_dim_members) {
+			$ot_types .= ", 'dimension_group', 'dimension_object'";
+		}
+		
+		// Build the SQL query
 		$sql = "
 				SELECT DISTINCT(id) as id  
 				FROM ".TABLE_PREFIX."object_types ot
-				WHERE ot.type IN ('content_object', 'comment', 'located') 
+				WHERE ot.type IN ($ot_types) 
 				AND (
 				  ot.plugin_id IS NULL OR ot.plugin_id = 0 OR 
 				  ot.plugin_id IN (
@@ -160,12 +176,17 @@
 				)
 				$extra_conditions
 		";
+		
+		// Execute the query and get the IDs of the object types
 		$rows = DB::executeAll($sql);
 		$ids = [];
 		foreach($rows as $k=>$v){
 			$ids[]=$rows[$k]['id'];
 		}
+		
+		// Build the final SQL condition
 		$sql = "o.object_type_id IN (".implode(",",$ids).")";
+		
 		return $sql;
 	}
     

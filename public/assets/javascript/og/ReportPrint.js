@@ -25,8 +25,10 @@ og.reports.createPrintWindow = function(title, hide_report_header) {
 og.reports.buildReportHeader = function(title) {
 	var html = '<div class="report-print-header"><div class="title-container"><h1>' + title + '</h1></div>';
 	html += '<div class="company-info">';
-	if (og.ownerCompany.logo_url) {
-		html += '<div class="logo-container"><img src="'+og.ownerCompany.logo_url+'"/></div>';
+	
+	
+	if (og.ownerCompany.medium_logo_url) {
+		html += '<div class="logo-container"><img src="'+og.ownerCompany.medium_logo_url+'"=/></div>';
 	} else {
 		html += '<div class="comp-name-container">'+ og.ownerCompany.name +'</div><br />';
 	}
@@ -96,7 +98,7 @@ og.reports.printNoPaginatedReport = function(genid, title, hide_report_header) {
 	if (typeof(hide_report_header) == 'undefined') {
 		hide_report_header = !og.config.show_company_info_report_print;
 	}
-	var printWindow = og.reports.createPrintWindow(title, hide_report_header);
+	var printWindow = og.reports.createPrintWindow(title, hide_report_header); 
 
 	var has_scroll = $('#' + genid + 'report_container .report.custom-report').hasClass('scroll');
 	if (has_scroll) {

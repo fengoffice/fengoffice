@@ -23,7 +23,7 @@
 	if ($member instanceof Member) {
 	    $object_type_name = $member->getTypeNameToShow();
 	} else {
-		$object_type_name = $object_type_selected instanceof ObjectType ? lang($object_type_selected->getName()) : null;
+		$object_type_name = $object_type_selected instanceof ObjectType ? $object_type_selected->getObjectTypeName() : null;
 	}
 	
 	$member_ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
@@ -52,7 +52,7 @@
 	
 	if($member instanceof Member && !$member->isNew()) {
 		$ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
-		$ot_name = lang($ot->getName());
+		$ot_name = $ot->getObjectTypeName();
 		if ($member->getArchivedById() == 0) {
 			add_page_action(lang('archive'), "javascript:if(confirm('".lang('confirm archive member',$ot_name)."')) og.openLink('".get_url('member', 'archive', array('id' => $member->getId()))."');", 'ico-archive-obj');
 		} else {
@@ -100,7 +100,7 @@
 	onsubmit="<?php echo $on_submit ?>"
 >
 	<input type="hidden" name="member[dimension_id]" value="<?php echo $current_dimension->getId()?>"/>
-	
+	<input type="hidden" name="genid" value="<?php echo $genid?>" id="genid" />
 	<input type="hidden" name="temp_member_id" id="<?php echo $genid?>member_id" value="<?php echo ($member instanceof Member && !$member->isNew() ? $member->getId() : 0)?>"/>
 
 	<div class="coInputHeader">

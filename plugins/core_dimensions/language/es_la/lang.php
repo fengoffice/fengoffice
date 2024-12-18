@@ -97,4 +97,6 @@
 	'year to date' => 'Año hasta la fecha',
 	'nothing' => 'Nada',
 	'do not group' => 'No agrupar',
+
+	'object id' => 'Id de objeto',
 );

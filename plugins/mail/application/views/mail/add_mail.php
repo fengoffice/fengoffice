@@ -193,7 +193,7 @@ sig.actualHtmlSignature = '';
 		<?php foreach ($categories as $category) {
 				if (array_var($category, 'hidden')) continue;
 			?>
-			- <a href="#" class="option" <?php if ($category['visible']) echo 'style="font-weight: bold"'; ?> onclick="og.toggleAndBolden('<?php echo $genid . $category['name'] ?>', this);og.resizeMailDiv();"><?php echo lang($category['name'])?></a>
+			- <a href="#" class="option" <?php if ($category['visible']) echo 'style="font-weight: bold"'; ?> onclick="og.toggleAndBolden('<?php echo $genid . $category['id'] ?>', this);og.resizeMailDiv();"><?php echo lang($category['name'])?></a>
 		<?php } ?>
 	</div>
 
@@ -266,7 +266,7 @@ sig.actualHtmlSignature = '';
  	</div>
 
 	<?php foreach ($categories as $category) { ?>
-	<div <?php if (!$category['visible']) echo 'style="display:none"' ?> id="<?php echo $genid . $category['name'] ?>">
+	<div <?php if (!$category['visible']) echo 'style="display:none"' ?> id="<?php echo $genid . $category['id'] ?>">
 	<fieldset>
 		<legend><?php echo lang($category['name'])?><?php if ($category['required']) echo ' <span class="label_required">*</span>'; ?></legend>
 		<?php echo $category['content'] ?>

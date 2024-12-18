@@ -231,7 +231,6 @@ og.addNewTelephoneInput = function(container_id, pre_id, sel_type, sel_number, s
 
 
 og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignore_pre_id) {
-
 	// use the default address type defined in the config option if we don't have any in the parameter
 	if (typeof sel_type == 'undefined' || sel_type == '') {
 		sel_type = og.config.default_type_address;
@@ -247,26 +246,70 @@ og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignor
 	pre_id = pre_id.replace("[","_").replace("]","_");
 	
 	var id = pre_id + 'Address_' + tcount;
-	if (!ignore_pre_id) {
-		var name = pre_name + '[address][' + tcount + ']';
-	} else {
-		var name = pre_name;
+	var name = pre_name + '[address][' + tcount + ']';
+	if (ignore_pre_id) {
+		name = pre_name;
 	}
 
 	$('#'+container_id).append('<div id="'+ container_id + tcount +'" class="address-input-container"></div>');
 	
-	og.renderAddressInput(id, name, container_id + tcount, sel_type, sel_data);
+//	og.renderAddressInput(id, name, container_id + tcount, sel_type, sel_data);
 
 	// DEFAULT BILLING ADDRESS VERIFICATION ::
 	let dataBillingAttr = $('#' + container_id).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
 	if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
 		og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'address', sel_data, false);
-	};
+	}
 
-	$(".address-input-container").css('max-width', ($('#'+container_id).width()-270)+'px');
+	let visibleContainers = $('.contact_form_container').filter(function () {
+		return $(this).css('display') === 'block';
+	});
+
+	if (visibleContainers.length > 0) {
+		visibleContainers.each(function () {
+			let childContainer = $(this).find('#' + container_id);
+			if (childContainer.length === 0) {
+				return;
+			}
+
+			tcount = og.addressCount[container_id] = og.addressCount[container_id] + 1;
+			var id = pre_id + 'Address_' + tcount;
+			if (!ignore_pre_id) {
+				name = pre_name + '[address][' + tcount + ']';
+			}
+			childContainer.append('<div id="' + container_id + tcount + '" class="address-input-container"></div>');
+			og.renderAddressInput(id, name, container_id + tcount, sel_type, sel_data);
+
+			if (og.income) {
+				let dataBillingAttr = $(childContainer).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
+				if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
+					og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'address', sel_data, false);
+				}
+			}
+		});
+	} else {
+
+		$('#' + container_id).append('<div id="' + container_id + tcount + '" class="address-input-container"></div>');
+		og.renderAddressInput(id, name, container_id + tcount, sel_type, sel_data);
+
+		if (og.income) {
+			let dataBillingAttr = $('#' + container_id).parent().siblings(".addNewLineButton").children('a').attr('data-defaultBilling');
+			if (dataBillingAttr != undefined && Number(dataBillingAttr) == 1) {
+				og.income.onAppendDefaultBilling(id, name, container_id + tcount, 'address', sel_data, false);
+			}
+		}
+
+		og.addressCount[container_id] = og.addressCount[container_id] + 1;
+	}
+
+	let othersAddress = document.querySelectorAll('.moreAddressInputs');
+	othersAddress.forEach((element) => {
+		og.checkAddress('#' + element.getAttribute('id'), '', '', 'contact');
+	});
 	
-	og.addressCount[container_id] = og.addressCount[container_id] + 1;
+	$(".address-input-container").css('max-width', ($('#'+container_id).width()-270)+'px');
 }
+
 
 
 og.renderWebpageTypeSelector = function(id, name, container_id, selected_value) {
@@ -406,8 +449,9 @@ og.addNewEmailInput = function (container_id, pre_id, sel_type, sel_address, sel
 		og.emailCount[container_id] = og.emailCount[container_id] + 1;
 	}
 
+	let contact_type = pre_id;
 	let othersEmail = document.querySelectorAll('.moreEmailInputs');
 	othersEmail.forEach((element) => {
-		og.checkEmailAddress('#' + element.getAttribute('id'), '', '', 'contact');
+		og.checkEmailAddress('#' + element.getAttribute('id'), '', '', contact_type);
 	});
 }

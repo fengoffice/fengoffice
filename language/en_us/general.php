@@ -399,7 +399,7 @@ return array(
 	'completed tasks list' => 'Completed tasks',
 	'crpm_people' => 'People',
 	'estimated_worked_time' => 'Estimated and worked time',
-	'pending time' => 'Remaining budgeted time',
+	'pending time' => 'Open/pending',
 	'worked time' => 'Worked time',
 	'overdue and upcoming' => 'Late and upcoming tasks',
 	'projects widget title' => 'Projects',
@@ -502,6 +502,19 @@ return array(
 	'added' => 'Added',
 	'removed' => 'Removed',
 	'manual percent completed' => 'Manual percent completed',
-
+	'System by a Mail Rule' => 'System by a Mail Rule',
+	'System' => 'System',
 	'invalid object related members classification on object' => 'It is not possible to link this {1} to a task classified into a different {0}',
+	'quickbooks' => 'Quickbooks',
+	'field Objects is_manual_billing' => 'Is manual billing',
+    'field Objects is_manual_cost' => 'Is manual cost',
+    'paid' => 'Paid',
+
+	'edit weblink' => 'Edit link',
+
+	'invalid_cp_amount_value' => 'Invalid Amount value',
+    'invalid_cp_numeric_value' => 'Invalid Numeric value',
+    'invalid_cp_url_value' => 'Invalid URL value',
+	'wrong_cp_values' => 'Unable to save, this inputs has invalid values: {0}',
+
 );

@@ -13,7 +13,7 @@
   	
   		static function userHasSystemPermission(Contact $user, $system_permission){
   			if($user instanceof Contact && $user->isAdministrator()) return true;
-  			
+					
   			if (array_var(self::$permission_cache, $user->getId())) {
   				if (array_key_exists($system_permission, self::$permission_cache[$user->getId()])) {
   					return array_var(self::$permission_cache[$user->getId()], $system_permission);

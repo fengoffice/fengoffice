@@ -1085,29 +1085,24 @@ class TaskController extends ApplicationController {
         $join_params['e_field'] = "object_id";
         $join_params['on_extra'] = $join_on_extra;
  
+        // Estimated time
         $total_estimated = "SUM(time_estimate) AS group_time_estimate ";
 
         // Worked time
-        /*  Save for future reference
-        $total_worked_subquery = " (SELECT SUM(tt.worked_time) FROM ".TABLE_PREFIX."timeslots tt 
-			INNER JOIN ".TABLE_PREFIX."objects oo ON oo.id=tt.object_id
-            WHERE tt.rel_object_id=o.id AND oo.trashed_by_id=0";
-        if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
-            $total_worked_subquery .= " AND contact_id = " . logged_user()->getId();
-        }
-        $total_worked = $total_worked_subquery . ") AS group_time_worked ";
-        */
         $total_worked = "SUM(total_worked_time) AS group_time_worked";
+        
+        // Remaining time
+        $remaining_time = "SUM(remaining_time) AS group_remaining_time";
 
         //querys returning total worked time, total estimated time and total pending time
         //time worked is the addition of all timeslots minus the addition of all pauses
         //time estimated is the addition of the substractions of estimated and worked, grouping by task to substract
         $group_totals = ProjectTasks::instance()->listing(array(
-            "select_columns" => array("time_estimate", "total_worked_time", "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
+            "select_columns" => array("time_estimate", "total_worked_time", "remaining_time", "GREATEST(CONVERT(time_estimate, SIGNED INTEGER) - CONVERT(total_worked_time, SIGNED INTEGER), 0) AS pending"),
                 "join_params" => $join_params,
                 "extra_conditions" => $conditions,
                 "group_by" => "e.`object_id`",
-                "query_wraper_start" => "SELECT $total_estimated,  $total_worked, COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
+                "query_wraper_start" => "SELECT $total_estimated,  $total_worked, $remaining_time,  COALESCE(SUM(pending), 0) AS group_time_pending FROM (",
                 "query_wraper_end" => ") AS pending_calc",
                 "count_results" => false,
                 "fire_additional_data_hook" => false,
@@ -1117,6 +1112,7 @@ class TaskController extends ApplicationController {
         $group_time_estimate = $group_totals[0]['group_time_estimate'];
         $group_time_worked = $group_totals[0]['group_time_worked'];
         $group_time_worked = is_null($group_time_worked) ? 0 : $group_time_worked;
+        $group_time_remaining = $group_totals[0]['group_remaining_time'];
         
         //$group_time_pending = $group_time_estimate - $group_time_worked;
         $group_time_pending = $group_totals[0]['group_time_pending'];
@@ -1133,6 +1129,13 @@ class TaskController extends ApplicationController {
         $totals['worked_time_string'] = ($group_time_worked <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_worked * 60), 'hm', 60));
         $totals['pending_time'] = $group_time_pending; 
         $totals['pending_time_string'] = ($group_time_pending <= 0) ? "" : str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_pending * 60), 'hm', 60));
+
+        // Remaining time and Total remaining time
+        $totals['remaining_time'] = $group_time_remaining;
+        $totals['remaining_time_string'] = str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_remaining * 60), 'hm', 60));
+        $totals['total_remaining_time'] = $group_time_remaining;
+        $totals['total_remaining_time_string'] = str_replace(',', ',<br>', DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($group_time_remaining * 60), 'hm', 60));
+
 
         // Overall worked time includes subtasks time
         $totals['overall_worked_time'] = $group_overall_time_worked;
@@ -2524,6 +2527,8 @@ class TaskController extends ApplicationController {
                 'showTimePending' => user_config_option('tasksShowTimePending', 1),
                 'showTimeWorked' => user_config_option('tasksShowTimeWorked', 1),
                 'showTotalTimeWorked' => user_config_option('tasksShowTotalTimeWorked', 1),
+                'showRemainingTime' => user_config_option('tasksShowRemainingTime', 0),
+                'showTotalRemainingTime' => user_config_option('tasksShowTotalRemainingTime', 0),
                 'showPercentCompletedBar' => user_config_option('tasksShowPercentCompletedBar', 1),
                 'showQuickEdit' => user_config_option('tasksShowQuickEdit', 1),
                 'showQuickComplete' => user_config_option('tasksShowQuickComplete', 1),
@@ -2716,6 +2721,7 @@ class TaskController extends ApplicationController {
      */
     function add_task() {
         //is template task?
+        // Frontend sends template_task 1 and template_id, or 0 if it's a new template
         $isTemplateTask = false;
         if (array_var($_REQUEST, 'template_task') == true) {
             $isTemplateTask = true;
@@ -2898,6 +2904,7 @@ class TaskController extends ApplicationController {
         tpl_assign('multi_assignment', $subtasks);
 
         if (is_array(array_var($_POST, 'task'))) {
+            // Adds a new task via POST
             try {
                 $estimated_price = array_var(array_var($_POST, 'task'),'estimated_price');
                 $estimated_price = str_replace(',', '', $estimated_price);

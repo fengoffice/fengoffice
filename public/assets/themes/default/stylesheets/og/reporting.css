@@ -450,9 +450,15 @@
 	font-size: 14px;
 }
 .report-print-header .company-info .logo-container img {
-	max-height: 60px;
+	float: left;
+	object-fit: contain; 
+	width: auto; 
+	max-width: 220px; 
+	height: auto;
+	max-height: 220px;
 }
 .report-print-header .company-info .address-container {
+	clear:both;
 	float: left;
 	max-width: 200px;
 }

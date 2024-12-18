@@ -147,8 +147,23 @@ class MemberController extends ApplicationController {
 									}
 								}
 							} else {
-								$order_join_sql .= "";
-								$order = "cpval_".$cp_id.".`value`";
+								// get additional custom properties of the dimension object
+								$cp_ids = [];
+								$manager_class = $member_type->getHandlerClass();
+								$manager = new $manager_class();
+								if ($manager instanceof ContentDataObjects) {
+									$add_cps = $manager->getAdditionalCustomProperties();
+									foreach ($add_cps as $add_cp) {
+										$cp_ids[] = $add_cp->getId();
+									}
+								}
+								// only order by $cp_id if it is one of the additional custom properties of the dimension object
+								if (in_array($cp_id, $cp_ids)) {
+									$order_join_sql .= "";
+									$order = "cpval_".$cp_id.".`value`";
+								} else {
+									$order = 'mem.`name`';
+								}
 							}
 
 						} else {
@@ -1465,7 +1480,7 @@ class MemberController extends ApplicationController {
 			Hook::fire('after_member_save_and_commit', array('member' => $member, 'is_new' => $is_new), $ret);
 
             if(!$is_api_call){
-                flash_success(lang('success save member', lang(ObjectTypes::instance()->findById($member->getObjectTypeId())->getName()), $member->getName()));
+				flash_success(lang('success save member', ObjectTypes::instance()->findById($member->getObjectTypeId())->getObjectTypeName(), $member->getName()));
                 ajx_current("back");
                 if (array_var($_REQUEST, 'modal')) {
                     evt_add("reload current panel");
@@ -2196,6 +2211,7 @@ class MemberController extends ApplicationController {
 	
 	
 	function quick_add_form() {
+
 		ajx_current("empty");
 		$this->setLayout('empty');
 		$dimension_id = array_var($_GET, 'dimension_id');

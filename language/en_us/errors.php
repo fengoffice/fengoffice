@@ -33,6 +33,8 @@
     'users must belong to a company' => 'Person must belong to a company in order to generate a user',
     'contact linked to user' => 'Person is linked to user {0}',
     'sub emails invalid email' => 'The email address {1}, added in "Other email adresses", is not valid',
+    'There is a contact on the trash bin with this email address. User on trash bin' => 'This email address is already associated with a trashed user : {0}',
+    'There is a contact archived with this email address. User on archive' => 'This email address is already associated with an archived user : {0}',
   
   	// Password validation errors
   	'password invalid min length' => 'Password length must be at least {0} characters',

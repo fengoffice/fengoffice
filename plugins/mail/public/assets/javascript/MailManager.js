@@ -1258,7 +1258,7 @@ og.MailManager = function() {
 	}
 	
 	this.topTbar1 = new Ext.Toolbar({
-		style: 'border:0px none;',
+		style: 'border:0px none; min-width:800px',
 		items: top1
 	});
 	
@@ -1492,7 +1492,8 @@ Ext.extend(og.MailManager, Ext.grid.GridPanel, {
 	},
 
 	addClassToShowMessage: function(className) {
-		this.innerMessage.className = 'inner-message ' + className;
+
+		this.innerMessage.className = 'inner-message-spam ' + className;
 	},
 
 	trashObjects: function() {

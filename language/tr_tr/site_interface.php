@@ -626,5 +626,6 @@
 	'repeat options' => 'Yinelenme Ayarları',
 	'new account step update account' => '{0}. adım: Kişisel hesabınızı güncelleyin',
 	'get read state from server' => 'FengOffice tarafından alınan e-postaların durumu korunsun (okundu, okunmadı)',
+	'exclude from synchronizing' => 'Sınırlandırılmış e-postaları senkronize etme',
 	'other properties' => 'Diğer Özellikler',
 ); ?>

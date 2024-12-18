@@ -31,7 +31,7 @@ if (is_array($logs)) {
 		/*FIXME if($log->getRelObjectManager() == 'Timeslots' && ($log->getAction()==ApplicationLogs::ACTION_OPEN || $log->getAction()==ApplicationLogs::ACTION_CLOSE))
 			echo $date . ' </td><td style="padding:5px;padding-right:15px;"> ' . $log->getText();
 		else*/
-			echo $date . ' </td><td style="padding:5px;padding-right:15px;"> ' . $log->getActivityData();
+			echo $date . ' </td><td style="padding:5px;padding-right:15px;"> ' . $log->getActivityData('hideSystemActivity');
 		echo '</td></tr>';
 	}
 }

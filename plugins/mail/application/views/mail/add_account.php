@@ -326,6 +326,14 @@ $show_auth_method_selector = count($oauth2_providers) > 0;
 
 		</div>
 		
+        <div id="<?php echo $genid ?>exclude_from_synchronizing" class="mail-account-item dataBlock">
+            <label for="exclude_from_synchronizing">
+                <?php echo lang('exclude from synchronizing')?>
+            </label>&nbsp;
+            <?php $exclude_from_synchronizing = array_var($mailAccount_data, 'exclude_from_synchronizing', 1) ?>
+            <?php echo yes_no_widget('mailAccount[exclude_from_synchronizing]', 'exclude_from_synchronizing', $exclude_from_synchronizing > 0, lang('yes'), lang('no'), 130) ?>   
+        </div>
+
 		<?php $null=null; Hook::fire('more_mail_account_imap_options', array('account' => $mailAccount, 'genid' => $genid), $null)?>
 		<div class="clear"></div>
 		</div>

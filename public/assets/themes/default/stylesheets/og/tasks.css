@@ -432,6 +432,12 @@ button.add-first-btn.no-tasks-add-task-btn {
 .task-list-col-names-template .task_pending,
 .task-list-col-names-template .task_worked,
 .task-list-col-names-template .task_total_worked,
+.task-list-col-names-template .task_remaining,
+.task-list-col-names-template .task_total_remaining,
+.task-list-col-names-template .tasksShowBillableWorkedTime,
+.task-list-col-names-template .tasksShowNonBillableWorkedTime,
+.task-list-col-names-template .tasksShowBillableTotalWorkedTime,
+.task-list-col-names-template .tasksShowNonBillableTotalWorkedTime,
 .task-list-col-names-template .task_quick_actions{
     min-width: 70px;
     max-width: 70px;
@@ -460,7 +466,14 @@ button.add-first-btn.no-tasks-add-task-btn {
 .task-list-group-totals-template .task_total_estimated,
 .task-list-group-totals-template .task_pending,
 .task-list-group-totals-template .task_worked,
-.task-list-group-totals-template .task_total_worked{
+.task-list-group-totals-template .task_remaining,
+.task-list-group-totals-template .task_total_remaining,
+.task-list-group-totals-template .task_total_worked,
+.task-list-group-totals-template .tasksShowBillableWorkedTime,
+.task-list-group-totals-template .tasksShowNonBillableWorkedTime,
+.task-list-group-totals-template .tasksShowBillableTotalWorkedTime,
+.task-list-group-totals-template .tasksShowNonBillableTotalWorkedTime
+{
     width: 70px;
     line-height: 12px;
     font-size: 9px;

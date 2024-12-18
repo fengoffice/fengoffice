@@ -468,5 +468,36 @@
 	'added' => 'Se agregó',
 	'removed' => 'Se quitó',
 	'manual percent completed' => 'Porcentaje completado manual',
+	'System by a Mail Rule' => 'El sistema a través de una Regla de Correo',
+	'System' => 'Sistema',
 	'invalid object related members classification on object' => 'No es posible asignar este {1} a una tarea clasificada en diferentes {0}',
+
+	'invalid_cp_amount_value' => 'Valor invalido en un campo de monto',
+  'invalid_cp_numeric_value' => 'Valor invalido en un campo numérico',
+  'invalid_cp_url_value' => 'Valor invalido en un campo URL',
+	'wrong_cp_values' => 'Hay campos con valores inválidos: {0}',
+
+	'created on' => 'Creado el',
+	'active_context_info' => 'Información de la Entidad',
+	'gantt_chart' => 'Diagrama de Gantt',
+	'status summary' => 'Resumen de estado',
+	'evx projects widget title' => 'Proyectos',
+	'earned value on labor widget title' => 'Valor generado por trabajo',
+	'expenses progress' => 'Avance de gastos',
+	'financials widget title' => 'Finanzas',
+	'total worked' => 'Total trabajado',
+	'total estimated' => 'Total estimado',
+	'quickbooks' => 'Quickbooks',	
+	'edit weblink' => 'Editar link',	
+
+	'total estimated' => 'Total estimado',
+	'quickbooks' => 'Quickbooks',	
+	'total estimated' => 'Total estimado',	
+	'field Objects is_manual_billing' => 'La facturación es manual',
+    'field Objects is_manual_cost' => 'El costo es manual',
+    'paid' => 'Pago',
+	
+	'There is a contact on the trash bin with this email address. User on trash bin' => 'Este email esta asociado a un contacto en la papelera: {0}',
+    'There is a contact archived with this email address. User on archive' => 'Este email esta asociado a un contacto archivado: {0}',
+
 );

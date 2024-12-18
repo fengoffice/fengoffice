@@ -52,6 +52,48 @@ class  CustomProperties extends  BaseCustomProperties {
 		return self::instance()->count(array("`object_type_id` = ? AND (`is_required` = ? OR `visible_by_default` = ?) $extra_conditions", $object_type_id, true, true));
 	}
 
+
+
+	/**
+	 * Return custom properties that are visilbe by default.
+	 * @param $object_type
+	 * @return unknown_type
+	 */
+	function get_cp_names_from_ids($cp_ids) {
+		$cp_names = array();
+		foreach ($cp_ids as $cp_id) {
+			$cp = CustomProperties::getCustomProperty($cp_id);
+			$cp_names[] = $cp->getName();
+		}	
+		return $cp_names;
+	}
+
+	/**
+	 * Return custom properties that are visilbe by default.
+	 * @param $object_type
+	 * @return unknown_type
+	 */
+	function get_cp_names_from_cp_inputsId_on_forms($cp_ids) {
+		
+		$cleaned_ids = [];
+		if (is_string($cp_ids)) {
+			$cp_ids = explode(',', $cp_ids);
+		}
+
+		// Clean the error ids using get_cp_codes_from_inputs_id
+		foreach ($cp_ids as $id) {
+			// Extract only the numeric part of the id after 'cp'
+			if (preg_match('/cp(\d+)/', $id, $matches)) {
+				$cleaned_ids[] = $matches[1]; // Add the cleaned code to the array
+			}
+		}
+    
+		$cpNames_with_errors_on_form = CustomProperties::instance()->get_cp_names_from_ids($cleaned_ids);
+		return $cpNames_with_errors_on_form;
+	}
+
+
+	
 	/**
 	 * Return all custom properties that an object type has
 	 *

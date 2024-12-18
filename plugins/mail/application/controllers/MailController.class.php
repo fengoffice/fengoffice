@@ -1004,11 +1004,16 @@ class MailController extends ApplicationController {
 						}
 
 						// Inline images
-						preg_match_all("/<img[^>]*src=[\"'][^\"']*[\"']/", $body, $matches);
+						$img_matches = array();
+						preg_match_all("/<img[^>]*src=[\"'][^\"']*[\"']/", $body, $img_matches);
+						$matches = array();
+						if (count($img_matches) > 0) {
+							$matches = $img_matches[0];
+						}
+						
 						foreach ($matches as $match) {
-							if (!isset($match[0])) continue;
-							$pos = strpos($match[0], 'src="');
-							$url = substr($match[0], $pos + 5);
+							$pos = strpos($match, 'src="');
+							$url = substr($match, $pos + 5);
 							$url = substr($url, 0, -1);
 							if (str_starts_with($url, ROOT_URL."/tmp/")) {
 								$path = str_replace(ROOT_URL, ROOT, $url);
@@ -1018,7 +1023,11 @@ class MailController extends ApplicationController {
 
 							if (str_starts_with($url, "data:")) {
 								$mime_type = substr($url, 5, strpos($url, ';') - 5 );
-								$extension = substr($mime_type, strpos($mime_type, "/")+1);
+								if (strpos($mime_type, "/") === false) {
+									$extension = 'png';
+								} else {
+									$extension = substr($mime_type, strpos($mime_type, "/")+1);
+								}
 
 								if (!is_array($images)) $images = array();
 								$file_url = ROOT_URL."/tmp/".gen_id().".$extension";
@@ -2390,6 +2399,7 @@ class MailController extends ApplicationController {
 				if (!array_var($mailAccount_data, 'del_mails_from_server', false)) $mailAccount_data['del_from_server'] = 0;
 				if (!array_var($mailAccount_data, 'mark_read_on_server', false)) $mailAccount_data['mark_read_on_server'] = 0;
 				if (!array_var($mailAccount_data, 'get_read_state_from_server', false)) $mailAccount_data['get_read_state_from_server'] = 0;
+				if (!array_var($mailAccount_data, 'exclude_from_synchronizing', false)) $mailAccount_data['exclude_from_synchronizing'] = 0;
 				$mailAccount->setFromAttributes($mailAccount_data);
 				$mailAccount->setServer(trim($mailAccount->getServer()));
 				$mailAccount->setPassword(MailUtilities::ENCRYPT_DECRYPT($mailAccount->getPassword()));
@@ -2600,6 +2610,7 @@ class MailController extends ApplicationController {
 		          'del_from_server' => $mailAccount->getDelFromServer(),
 				  'mark_read_on_server' => $mailAccount->getMarkReadOnServer(),
 				  'get_read_state_from_server' => $mailAccount->getGetReadStateFromServer(),
+				  'exclude_from_synchronizing' => $mailAccount->getExcludeFromSynchronizing(),
 		          'outgoing_transport_type' => $mailAccount->getOutgoingTrasnportType(),
 			); // array
 			
@@ -2639,6 +2650,7 @@ class MailController extends ApplicationController {
 					if (!array_var($mailAccount_data, 'del_mails_from_server', false)) $mailAccount_data['del_from_server'] = 0;
 					if (!array_var($mailAccount_data, 'mark_read_on_server', false)) $mailAccount_data['mark_read_on_server'] = 0;
 					if (!array_var($mailAccount_data, 'get_read_state_from_server', false)) $mailAccount_data['get_read_state_from_server'] = 0;
+					if (!array_var($mailAccount_data, 'exclude_from_synchronizing', false)) $mailAccount_data['exclude_from_synchronizing'] = 0;
 					$mailAccount->setFromAttributes($mailAccount_data);
 					$mailAccount->setServer(trim($mailAccount->getServer()));
 					$mailAccount->setPassword(MailUtilities::ENCRYPT_DECRYPT($mailAccount->getPassword()));

@@ -188,10 +188,28 @@ class ApplicationLog extends BaseApplicationLog {
 	} // getObjectTypeName
 
 	
-	function getActivityData() {
+	function getActivityData($caller = null) {
 		$user = Contacts::instance()->findById($this->getCreatedById());
 		$object = Objects::findObject($this->getRelObjectId());
-		if (!$user) return false;
+		if($caller === 'hideSystemActivity' && !$user) return false;
+		
+		if ($this->getIsMailRule()) {
+			$ruleData = json_decode($this->getLogData());
+		
+			$ruleDataName = htmlspecialchars($ruleData->rule_name, ENT_QUOTES);
+			$ruleDataDescription = htmlspecialchars($ruleData->rule_detail, ENT_QUOTES);
+		
+			$userName = lang('mail rule') . ' <a href="#" onclick="og.showMailRuleModal(\'' 
+            			. '<strong>' . lang('rule name') . ' </strong><br>' . addslashes($ruleDataName) . '<br><br>'
+            			. '<strong>' . lang('rule detail') . ' </strong><br>' . addslashes($ruleDataDescription) 
+           				. '\'); return false;">'
+            			. htmlspecialchars($ruleDataName, ENT_QUOTES) 
+            			. '</a>';
+
+
+		} else {
+			$userName = htmlspecialchars($user->getDisplayName());
+		}
 		
 		$icon_class = "";
 		if ($object instanceof ProjectFile) {
@@ -236,7 +254,7 @@ class ApplicationLog extends BaseApplicationLog {
 			case ApplicationLogs::ACTION_MARK_AS_SPAM :
 			case ApplicationLogs::ACTION_UNMARK_AS_SPAM :
 				
-				return lang('activity ' . $this->getAction(), ($type ? lang('the '.$type) : ""), $user->getDisplayName(), $object_link);
+				return lang('activity ' . $this->getAction(), ($type ? lang('the '.$type) : ""), $userName, $object_link);
 				
 			case ApplicationLogs::ACTION_SUBSCRIBE :
 			case ApplicationLogs::ACTION_UNSUBSCRIBE :
@@ -257,14 +275,14 @@ class ApplicationLog extends BaseApplicationLog {
 					$users_text = lang('x users', count($user_ids), "");
 				}
 				if ($object)
-					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $users_text);
+					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()),$userName, $object_link, $users_text);
 			case ApplicationLogs::ACTION_COMMENT :
 				if ($object instanceof Comment) {
 					$rel_object = $object->getRelObject();
-					return lang('activity ' . $this->getAction(), lang('the '.$rel_object instanceof ContentDataObject ? $rel_object->getObjectTypeName() : 'object'), $user->getDisplayName(), $object_link, utf8_safe($this->getLogData()));
+					return lang('activity ' . $this->getAction(), lang('the '.$rel_object instanceof ContentDataObject ? $rel_object->getObjectTypeName() : 'object'),  $userName, $object_link, utf8_safe($this->getLogData()));
 				} else {
 					if ($object)
-						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, utf8_safe($this->getLogData()));
+						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()),  $userName, $object_link, utf8_safe($this->getLogData()));
 				}
 			case ApplicationLogs::ACTION_FORWARD :
 			case ApplicationLogs::ACTION_REPLY :
@@ -286,7 +304,7 @@ class ApplicationLog extends BaseApplicationLog {
 					$linked_object_link = '<a href="' . $linked_object->getObjectUrl() . '">&nbsp;<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-'.$linked_object->getObjectTypeName() . $icon_class . '"/>'.clean($linked_object->getObjectName()).'</a>';
 				} else $linked_object_link = '';
 				if ($object) {
-					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);
+					return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()),  $userName, $object_link, $linked_object instanceof ApplicationDataObject ? lang('the '.$linked_object->getObjectTypeName()) : '', $linked_object_link);
 				}
 				break;
 
@@ -308,7 +326,7 @@ class ApplicationLog extends BaseApplicationLog {
 						
 						$related_object_link = '<a href="' . $related_object_url . '">&nbsp;<span style="padding: 1px 0 3px 24px;" class="db-ico ico-unknown ico-'. $related_object->getObjectTypeName() .'"/>'. clean($related_object->getObjectName()) .'</a>';
 	
-						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()) . $object_link, $user->getDisplayName(), lang('the '.$related_object->getObjectTypeName()) . $related_object_link);
+						return lang('activity ' . $this->getAction(), lang('the '.$object->getObjectTypeName()) . $object_link,  $userName, lang('the '.$related_object->getObjectTypeName()) . $related_object_link);
 					}
 				}
 
@@ -345,19 +363,19 @@ class ApplicationLog extends BaseApplicationLog {
 					$from_str = '<span class="bold">'.implode(', ', $from_names).'</span>';
 					$to_str = '<span class="bold">'.implode(', ', $to_names).'</span>';
 					if (count($from_names) > 0 && count($to_names) > 0) {
-						return lang('activity ' . $this->getAction() . ' from to', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $from_str, $to_str);
+						return lang('activity ' . $this->getAction() . ' from to', lang('the '.$object->getObjectTypeName()),  $userName, $object_link, $from_str, $to_str);
 					} else if (count($from_names) > 0) {
-						return lang('activity ' . $this->getAction() . ' from', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $from_str);
+						return lang('activity ' . $this->getAction() . ' from', lang('the '.$object->getObjectTypeName()),  $userName, $object_link, $from_str);
 					} else if (count($to_names) > 0) {
-						return lang('activity ' . $this->getAction() . ' to', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link, $to_str);
+						return lang('activity ' . $this->getAction() . ' to', lang('the '.$object->getObjectTypeName()),  $userName, $object_link, $to_str);
 					} else {
-						return lang('activity ' . $this->getAction() . ' no ws', lang('the '.$object->getObjectTypeName()), $user->getDisplayName(), $object_link);
+						return lang('activity ' . $this->getAction() . ' no ws', lang('the '.$object->getObjectTypeName()),  $userName, $object_link);
 					}
 				}
 				
 			case ApplicationLogs::ACTION_LOGIN :
 			case ApplicationLogs::ACTION_LOGOUT :
-				return lang('activity ' . $this->getAction(), $user->getDisplayName());					
+				return lang('activity ' . $this->getAction(),  $userName);					
 			/*FIXME when D&D is implemented case ApplicationLogs::ACTION_MOVE :
 				$exploded = explode(";", $this->getLogData());
 				$to_str = "";

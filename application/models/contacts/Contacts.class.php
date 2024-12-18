@@ -150,6 +150,7 @@ class Contacts extends BaseContacts {
 	 * @return Contact
 	 */
 	static function getByEmailCheck($email, $id_contact = 0, $contact_type = '') {
+
 		if (is_null($email) || $email == '') return null;
 		
 		$contact_type_str = "";
@@ -406,7 +407,7 @@ class Contacts extends BaseContacts {
 	 * @param unknown_type $email
 	 * @param unknown_type $id
 	 */
-	static function validateUniqueEmail ($email, $id = null, $contact_type = "", $is_user = false) {
+	static function validateUniqueEmail ($email, $id = null, $contact_type = "", $is_user = false, $return_object = false) {
 		
 		$do_validate_unique_mail = true;
 		//Hook::fire('validate_contact_unique_mail', null, $do_validate_unique_mail);
@@ -440,8 +441,6 @@ class Contacts extends BaseContacts {
 			INNER JOIN ".TABLE_PREFIX."objects o ON  ce.contact_id = o.id
 			INNER JOIN ".TABLE_PREFIX."contacts c ON  c.object_id = o.id
 			WHERE 
-				o.archived_by_id = 0 AND 
-				o.trashed_by_id = 0 AND 
 				ce.email_address = '$email'
 				$id_cond
 				$contact_type_cond
@@ -449,7 +448,17 @@ class Contacts extends BaseContacts {
 				LIMIT 1 ";
 		
 		$res  = DB::execute($sql);
-		return !(bool)$res->numRows();
+		if (!$return_object) {
+			return !(bool)$res->numRows();
+		} else {
+			if ($res->numRows() > 0) {
+				$row = $res->fetchRow();
+				//hacer el instance
+				$contact = Contacts::instance()->findById($row['contact_id']);
+				return $contact;
+			} 
+		}
+		return null;
 	}
 	
 	
@@ -516,17 +525,35 @@ class Contacts extends BaseContacts {
 
 		//Validate unique email
 		//for users mail must be unique
+		$user_with_same_mail = null;
+
 		if ($user_type > 0) {
-			if (!self::validateUniqueEmail(trim($attributes['email']), $id, "",true)){
-				$errors[] = lang("email address must be unique");
-			} 
-		//for contacts and companyes use CP 
+			$user_with_same_mail = self::validateUniqueEmail(trim($attributes['email']), $id, "", true, true);
 		} else {
-			$email_exists = Contacts::getByEmailCheck(trim($attributes['email']));
-			if ($email_exists && !config_option('allow_duplicated_contact_emails')) {
+			$object = Contacts::instance()->findById($id);
+			$contact_type = 'contact';
+			if ($object instanceof Contact) {
+				$contact_type = $object->getIsCompany() ? 'company' : 'contact';
+			}
+			$user_with_same_mail = Contacts::getByEmailCheck(trim($attributes['email']), $id, $contact_type);
+		
+			// Verificamos si se permiten duplicados para contactos
+			if ($user_with_same_mail && config_option('allow_duplicated_contact_emails')) {
+				$user_with_same_mail = null;
+			}
+		}
+		
+		//Prepare error message
+		if ($user_with_same_mail) {
+			if ($user_with_same_mail->isTrashed()) {
+				$errors[] = lang("There is a contact on the trash bin with this email address. User on trash bin", $user_with_same_mail->getUsername());
+			} else if ($user_with_same_mail->isArchived()) {
+				$errors[] = lang("There is a contact archived with this email address. User on archive", $user_with_same_mail->getUsername());
+			} else {
 				$errors[] = lang("email address must be unique");
 			}
-		}		
+		}
+		
 
 		// Validate secondary emails with less restrictions
 		if (isset($attributes['emails']) && !empty($attributes['emails'])) {

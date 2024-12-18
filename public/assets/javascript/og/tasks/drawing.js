@@ -1593,6 +1593,32 @@ ogTasks.initTasksList = function () {
         );
     }
 
+    // Remaining time
+    if(drawOptions.show_remaining_time) {
+        tasks_list_cols.push(
+            {
+                id: 'task_remaining',
+                title: lang('remaining time'),
+                group_total_field: 'remaining_time_string',
+                row_field: 'remaining_time_string',
+                col_width: '100px'
+            }
+        );
+    }
+
+    // Total remaining time
+    if(drawOptions.show_total_remaining_time) {
+        tasks_list_cols.push(
+            {
+                id: 'task_total_remaining',
+                title: lang('total remaining time'),
+                group_total_field: 'total_remaining_time_string',
+                row_field: 'total_remaining_time_string',
+                col_width: '100px'
+            }
+        );
+    }
+
     // additional columns
     if (ogTasks.additional_task_list_columns) {
         for (var i = 0; i < ogTasks.additional_task_list_columns.length; i++) {
@@ -1773,7 +1799,12 @@ ogTasks.processTaskDrop = function (event, object) {
             }
             dimension_id = parseInt($(event.srcElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-', ''));
 
-        } else if (event.srcElement.id.indexOf("extdd-") >= 0) {
+        } else if (event.srcElement.id.indexOf("extdd-") >= 0 // dropped in the text of the tree node
+            || $(event.srcElement).hasClass("x-tree-icon") // dropped in the emtpy space that identates a tree node
+            || $(event.srcElement).hasClass("x-tree-elbow") // dropped in the elbow icon before a tree node
+            || $(event.srcElement).hasClass("x-tree-node-icon") // dropped in the member icon
+            || $(event.srcElement).hasClass("ico-edit")) { // dropped in the member edit icon
+            
             var node_id = $(event.srcElement).closest(".x-tree-node-el").attr("ext:tree-node-id");
             if (!isNaN(node_id)) {
                 member_id = node_id;

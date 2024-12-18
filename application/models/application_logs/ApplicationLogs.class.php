@@ -52,7 +52,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 	 * @param boolean $save Save log object before you save it
 	 * @return ApplicationLog
 	 */
-	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '', $exclude_contacts_ids = null) {
+	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '', $exclude_contacts_ids = null, $isMailRule = false) {
 		
 		$object_differences = null;
 		if ($action == ApplicationLogs::ACTION_ADD || isset($object->old_content_object) && $object->old_content_object instanceof ContentDataObject) {
@@ -114,6 +114,9 @@ class ApplicationLogs extends BaseApplicationLogs {
 			$log->setMemberId($object->getId());
 			$log->setRelObjectId($object->getObjectId());
 			$log->setObjectName($object->getName());
+		}
+		if($isMailRule) {
+			$log->setIsMailRule(true);
 		}
 		
 		$log->setAction($action);
