@@ -152,7 +152,16 @@ abstract class BaseProjectTasks extends ContentDataObjects {
      * Must be overriden by the specific object classes
      */
     function getTimeColumns() {
-    	return array('time_estimate', 'total_worked_time', 'overall_worked_time_plus_subtasks', 'total_time_estimate', 'remaining_time', 'total_remaining_time');
+    	return array('time_estimate', 
+					 'total_worked_time', 
+					 'overall_worked_time_plus_subtasks', 
+					 'total_time_estimate', 
+					 'remaining_time', 
+					 'total_remaining_time', 
+					 'billable_worked_time',
+					 'non_billable_worked_time',
+					 'billable_total_worked_time',
+					 'non_billable_total_worked_time');
     }
 	
 	/**

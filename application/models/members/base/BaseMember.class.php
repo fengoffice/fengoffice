@@ -220,7 +220,7 @@
     *
     * @access public
     * @param void
-    * @return string 
+    * @return DateTimeValue 
     */
     function getArchivedOn() {
       return $this->getColumnValue('archived_on');

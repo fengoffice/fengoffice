@@ -132,7 +132,9 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.pending_time_string) this.pending_time_string = tdata.pending_time_string; else this.pending_time_string = '';
 	if (tdata.worked_time) this.worked_time = tdata.worked_time; else this.worked_time = 0;
 	if (tdata.worked_time_string) this.worked_time_string = tdata.worked_time_string; else this.worked_time_string = '';
-	if (tdata.overall_worked_time_string) this.overall_worked_time_string = tdata.overall_worked_time_string; else this.overall_worked_time_string = '';
+	if (tdata.overall_worked_time_string) this.overall_worked_time_string = tdata.overall_worked_time_string; else this.overall_worked_time_string = ''; 
+	if (tdata.remaining_time_string) this.remaining_time_string = tdata.remaining_time_string; else this.remaining_time_string = '';
+	if (tdata.total_remaining_time_string) this.total_remaining_time_string = tdata.total_remaining_time_string; else this.total_remaining_time_string = '';
 	if(tdata.totalTimeEstimate) this.totalTimeEstimate = tdata.totalTimeEstimate; else this.totalTimeEstimate = 0;
 	if (tdata.totalTimeEstimateString) this.totalTimeEstimateString = tdata.totalTimeEstimateString; else this.totalTimeEstimateString = '';
 	
@@ -245,6 +247,12 @@ ogTasks.loadData = function(data){
 	}
 	if (drawOptions.show_total_time_worked) {
 		this.TotalCols.totalWorkedTime = {title: 'total worked', group_total_field: 'overall_worked_time', row_field: 'overall_worked_time_string'};	
+	}
+	if (drawOptions.show_remaining_time) {
+		this.TotalCols.remainingTime = {title: 'remaining', group_total_field: 'remaining_time', row_field: 'remaining_time_string'};	
+	}
+	if (drawOptions.show_total_remaining_time) {
+		this.TotalCols.totalRemainingTime = {title: 'total remaining', group_total_field: 'total_remaining_time', row_field: 'total_remaining_time_string'};
 	}
 	
 	this.AllUsers = [];

@@ -1,6 +1,6 @@
 <?php
 class Trash {
-	function purge_trash($days = null, $limit = null, $extra_conditions = "") {
+	static function purge_trash($days = null, $limit = null, $extra_conditions = "") {
 		ini_set('memory_limit', '512M');
 		Env::useHelper("permissions");
 		
@@ -57,6 +57,19 @@ class Trash {
 					$tables_to_delete = self::get_tables_to_clean($ot_name);
 					if ($ot_name != 'mail' && $ot_name != 'invoice') {
 						$tables_to_delete[] = array('table' => TABLE_PREFIX . $table_name, 'column' => 'object_id');
+					}
+
+					// special case for tasks -> we have to reassign parent of the subtasks
+					if ($ot_name == 'task') {
+						$task = ProjectTasks::instance()->findById($id);
+						if ($task instanceof ProjectTask) {
+							$children = $task->getSubTasks();
+							foreach($children as $child) {
+								$child->setDontMakeCalculations($task->getDontMakeCalculations());
+								$child->setParentId($task->getParentId());
+								$child->save();
+							}
+						}
 					}
 					
 					foreach ($tables_to_delete as $table_info) {

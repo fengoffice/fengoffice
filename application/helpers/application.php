@@ -472,12 +472,12 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 				$properties[] = array('id' => '', 'html' => $html);
 			}
 		}
-		
+
 		echo '<div class="custom-properties">';
 		foreach ($properties as $main_property){
 			echo $main_property['html'];
 		}
-		
+		echo '<input type="hidden" id="error_ids" name="error_ids" value="">';
 		echo '</div>';
 	}
 	

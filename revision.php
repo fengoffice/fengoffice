@@ -1,2 +1,2 @@
 <?php
-return '2';
+return include dirname(__FILE__) . '/version.php';

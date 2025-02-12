@@ -19,6 +19,7 @@ $count = 0;
 ?>
 <div class="custom-properties-wrapper">
 <?php
+
     foreach(explode(',', $cp->getValues()) as $value){
 
 	$text = null;

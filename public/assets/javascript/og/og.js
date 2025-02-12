@@ -2403,7 +2403,13 @@ og.checkEmailAddress = function(element, id_contact, genid, contact_type) {
 			var contact = data.contact;
 			if (contact.status) {
 				$(field).addClass("field-error");
-				$(field).after("<div class='field-error-msg'>"+lang("email already taken by",contact.name)+" </div>");
+				if (contact.is_trashed) {
+					$(field).after("<div class='field-error-msg'>"+lang("There is a contact on the trash bin with this email address. User on trash bin",contact.name)+" </div>");
+				} else if (contact.is_archived) {
+					$(field).after("<div class='field-error-msg'>"+lang("There is a contact archived with this email address. User on archive",contact.name)+" </div>");
+				} else {
+					$(field).after("<div class='field-error-msg'>"+lang("email already taken by",contact.name)+" </div>");
+				}				
 				$('.submit').attr('disabled', true);
 				$('.submit').addClass('disabled');
 			}else{
@@ -6119,6 +6125,32 @@ og.init_task_link_popovers = function(grid_id) {
 	});
 }
 
+
+/**
+ * Returns a custom property object based on the given id and object type name.
+ * The custom property object contains the id, name, type, description, default value, and other
+ * properties of the custom property.
+ * @param {number} cp_id The id of the custom property.
+ * @param {string} object_type_name The name of the object type the custom property belongs to.
+ * @return {object|null} The custom property object or null if no custom property is found.
+ */
+og.get_custom_property_by_id_and_type = function(cp_id, object_type_name) {
+	let cp = null;
+	// If the object type name is "client", change it to "customer" to match the property name in the
+	// custom_properties_by_type object.
+	if (object_type_name == 'client') object_type_name = 'customer';
+	if (og.custom_properties_by_type && og.custom_properties_by_type[object_type_name]) {
+		// Iterate through the custom properties of the given object type and find the one with the
+		// given id.
+		for (let i = 0; i < og.custom_properties_by_type[object_type_name].length; i++) {
+			if (og.custom_properties_by_type[object_type_name][i].id == cp_id) {
+				cp = og.custom_properties_by_type[object_type_name][i];
+				break;
+			}
+		}
+	}
+	return cp;
+}
 
 og.showModal = function (content) {
 var html = '<div class="modal-container" style="background-color: white;padding: 10px;">'+content+'</div>';

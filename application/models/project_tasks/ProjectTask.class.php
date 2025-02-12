@@ -315,6 +315,7 @@ class ProjectTask extends BaseProjectTask {
 		return $this->getText();
 	}
 
+
 	// ---------------------------------------------------
 	//  Permissions
 	// ---------------------------------------------------
@@ -365,6 +366,11 @@ class ProjectTask extends BaseProjectTask {
 	 * @return boolean
 	 */
 	function canEdit(Contact $user) {
+		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+			if (logged_user()->getId() != $this->getAssignedToContactId()) {
+				return false;
+			}
+		}
 		if(can_write($user, $this->getMembers(), $this->getObjectTypeId())) {
 			return true;
 		} // if
@@ -478,6 +484,11 @@ class ProjectTask extends BaseProjectTask {
 			flash_error('no access permissions');
 			ajx_current("empty");
 			return;
+		}
+
+		// don't complete the same task twice
+		if ($this->isCompleted()) {
+			return array('log_info' => "", 'new_task' => $this, 'save_log' => false);
 		}
 		
 		$ret=null;
@@ -598,7 +609,7 @@ class ProjectTask extends BaseProjectTask {
 		$null = null;
 		Hook::fire("after_task_complete", array('task' => $this), $null);
 		
-		return array('log_info' => $log_info, 'new_task' => $new_task);
+		return array('log_info' => $log_info, 'new_task' => $new_task, 'save_log' => true);
 	} // completeTask
 
 	/**
@@ -1456,6 +1467,14 @@ class ProjectTask extends BaseProjectTask {
 				$child->setDontMakeCalculations($this->getDontMakeCalculations());
 				$child->delete(true);
 			}
+		} else {
+			// assign children the parent of the current task so we don't lose the hierarchy
+			$children = $this->getSubTasks();
+			foreach($children as $child) {
+				$child->setDontMakeCalculations($this->getDontMakeCalculations());
+				$child->setParentId($this->getParentId());
+				$child->save();
+			}
 		}
 		ProjectTaskDependencies::instance()->delete('( task_id = '. $this->getId() .' OR previous_task_id = '.$this->getId().')');
 				
@@ -1777,8 +1796,29 @@ class ProjectTask extends BaseProjectTask {
 		} else {
 			$task = $this;
 		}
-		
+
 		return count($task->getSubTasks()) > 0 ;
+	}
+
+	function hasParent() {
+		return $this->getParent() instanceof ProjectTask;
+	}
+
+	function getfirstParentOfTheHierarchy() {
+		$parents = $this->getAllParents();
+		return end($parents);
+	}
+
+	function getIsFixedFee() {
+		return $this->getColumnValue('is_fixed_fee');
+	}
+
+	function setIsFixedFee($value) {
+		$this->setColumnValue('is_fixed_fee', $value);
+	}
+
+	function getIsBillable() {
+		return $this->getColumnValue('is_billable');
 	}
 	
 	/**
@@ -2101,30 +2141,72 @@ class ProjectTask extends BaseProjectTask {
 	} 
 
 	function calculateAndSetOverallTotalWorkedTime() {
-		$sql = "SELECT (SUM(GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0)) - SUM(subtract/60)) as overall_total_minutes 
+		// Get worked time of the task
+		$select_sql = "GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - subtract/60 as worked_time";
+
+		if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+			$select_sql .= ", invoicing_status";
+		}
+
+		$sql = "SELECT ".$select_sql." 
 				FROM ".TABLE_PREFIX."timeslots ts 
 				INNER JOIN ".TABLE_PREFIX."objects o ON o.id=ts.object_id 
 				WHERE ts.rel_object_id=".$this->getId()." AND o.trashed_by_id=0";
 		
-		$row = DB::executeOne($sql);
-		$overall_total_minutes = array_var($row, 'overall_total_minutes', 0);
-		$total_minutes = $overall_total_minutes;
+		$rows = DB::executeAll($sql);
 
-		$subtasks = $this->getSubTasks(false, false, true);
-		$subtask_total_minutes = 0;
-		foreach($subtasks as $subtask){
-			$subtask_total_minutes += $subtask->getOverallWorkedTime();
+		// Calculate worked time for the task
+		$worked_minutes = 0;
+		$billable_worked_minutes = 0;
+		$non_billable_worked_minutes = 0;
+
+		foreach($rows as $row) {
+			$worked_minutes += array_var($row, 'worked_time', 0);
+			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+				$invoicing_status = array_var($row, 'invoicing_status', 'pending');
+				if ($invoicing_status == 'non_billable') {
+					$non_billable_worked_minutes += array_var($row, 'worked_time', 0);
+				} else {
+					$billable_worked_minutes += array_var($row, 'worked_time', 0);
+				}
+			}
 		}
-		$overall_total_minutes += $subtask_total_minutes;
+
+
+		// Get subtasks and calculate total worked time
+		$subtasks = $this->getSubTasks(false, false, true);
+
+		$total_worked_minutes = $worked_minutes;
+		$billable_total_worked_minutes = $billable_worked_minutes;
+		$non_billable_total_worked_minutes = $non_billable_worked_minutes;
+
+		foreach($subtasks as $subtask){
+			$total_worked_minutes += $subtask->getTotalWorkedTime();
+			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+				$billable_total_worked_minutes += $subtask->getBillableTotalWorkedTime();
+				$non_billable_total_worked_minutes += $subtask->getNonBillableTotalWorkedTime();
+			}
+		}
+
+		// Add additional set clause for advanced billing plugin
+		$additional_set_clause = '';
+		if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+			$additional_set_clause .= ", `billable_worked_time` = $billable_worked_minutes";
+			$additional_set_clause .= ", `non_billable_worked_time` = $non_billable_worked_minutes";
+			$additional_set_clause .= ", `billable_total_worked_time` = $billable_total_worked_minutes";
+			$additional_set_clause .= ", `non_billable_total_worked_time` = $non_billable_total_worked_minutes";
+		}
+		
 
 		// Set total worked time
 		$task_id = $this->getId();
 		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` 
-				SET `overall_worked_time_plus_subtasks` = $overall_total_minutes,
-				`total_worked_time` = $total_minutes,
-				`remaining_time` = CAST(`time_estimate` as SIGNED) - CAST($total_minutes as SIGNED),
-				`total_remaining_time` = CAST(`total_time_estimate` as SIGNED) - CAST($overall_total_minutes as SIGNED)
+				SET `overall_worked_time_plus_subtasks` = $total_worked_minutes,
+				`total_worked_time` = $worked_minutes,
+				`remaining_time` = CAST(`time_estimate` as SIGNED) - CAST($worked_minutes as SIGNED),
+				`total_remaining_time` = CAST(`total_time_estimate` as SIGNED) - CAST($total_worked_minutes as SIGNED) ".$additional_set_clause."
 				WHERE `object_id` = $task_id;"; 
+
 		DB::execute($sql);
 	}
 

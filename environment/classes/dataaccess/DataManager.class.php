@@ -275,6 +275,7 @@
       // Prepare SQL
       $sql = "SELECT $distinct" . $columns_string . " FROM " . $this->getTableName(true) . " $where_string $order_by_string $limit_string";
 
+      Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => ''), $where_string);
        
       //Logger::log_r("Table name: \n");
       //Logger::log_r($this->getTableName());

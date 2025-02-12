@@ -442,7 +442,7 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 			save_default_associated_member_selections($a->getId(), $member->getId(), $default_selection);
 		}
 		
-		if (count($assoc_mem_ids) > 0) {
+		if (is_array($assoc_mem_ids) && count($assoc_mem_ids) > 0) {
 			$required_associations_present[$a->getId()] = true;
 		}
 		

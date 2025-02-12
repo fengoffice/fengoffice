@@ -246,7 +246,7 @@ class DimensionController extends ApplicationController {
 	 * @param array $selected_members The member ids that will filter the member list
 	 * @param array $members_used_to_filter The subset of $selected_members that was actually used to filter
 	 */
-	function get_association_filter_conditions($dimension, $selected_members, &$members_used_to_filter) {
+	function get_association_filter_conditions($dimension, $selected_members, &$members_used_to_filter, $include_self = false) {
 		$sql_str = "";
 		$mem_ids = array();
 		$members_used_to_filter = array();
@@ -254,7 +254,14 @@ class DimensionController extends ApplicationController {
 		foreach ($selected_members as $member) {
 			if (!$member instanceof Member) continue;
 			$association_ids = DimensionMemberAssociations::getAllAssociationIds($member->getDimensionId(), $dimension->getId());
-			if (count($association_ids) == 0) continue;
+
+			// Include selected member with matching dimension
+			$mem_ids = array();
+			if ($include_self && $member->getDimensionId() == $dimension->getId()) {
+				$mem_ids[] = $member->getId();
+			}
+
+			if (count($association_ids) == 0 && count($mem_ids) == 0) continue;
 				
 			$associations = DimensionMemberAssociations::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $association_ids).')'));
 	
@@ -883,13 +890,13 @@ class DimensionController extends ApplicationController {
 		ajx_current("empty");
 	}
 
-	function get_active_context_association_filter_conditions(Dimension $dimension) {
+	function get_active_context_association_filter_conditions(Dimension $dimension, $include_self = false) {
 		// check for other dimensions filtering this dimension
 		$selected_members = array();
 		$current_selections = active_context();
 		if(isset($current_selections)){
 			foreach ($current_selections as $selection) {
-				if ($selection instanceof Member && $selection->getDimensionId() != $dimension->getId()) {
+				if ($selection instanceof Member && ($include_self || $selection->getDimensionId() != $dimension->getId())) {
 					$selected_members[] = $selection;
 				}
 			}
@@ -897,7 +904,7 @@ class DimensionController extends ApplicationController {
 		$dim_filter_conds = "";
 		if (count($selected_members) > 0) {
 			$applied_filters = null;
-			$dim_filter_conds = $this->get_association_filter_conditions($dimension, $selected_members, $applied_filters);
+			$dim_filter_conds = $this->get_association_filter_conditions($dimension, $selected_members, $applied_filters, $include_self);
 		}
 
 		return $dim_filter_conds;

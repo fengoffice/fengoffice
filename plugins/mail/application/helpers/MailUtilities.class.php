@@ -512,6 +512,7 @@ class MailUtilities {
 				}
 			}
 			$mail->setHasAttachments($has_attachments);
+            debug_log("SaveMail: has_attachments: $has_attachments", "checkmail_log.php");
 
 			$mail->setUid($uid);
 			$type = array_var($parsedMail, 'Type', 'text');
@@ -746,6 +747,7 @@ class MailUtilities {
         if(defined('CONVERT_MAIL_ENCODING_TO_ASCII_FROM_UTF8') && CONVERT_MAIL_ENCODING_TO_ASCII_FROM_UTF8 && mb_detect_encoding($message) == 'UTF-8'){
             $enc_conv = EncodingConverter::instance();
             $message = $enc_conv->convert("UTF-8", "ASCII", $message);
+            debug_log("parseMail: message converted to ASCII", "checkmail_log.php");
 		};
 
 		$parameters=array('Data'=>$message);
@@ -769,6 +771,7 @@ class MailUtilities {
 				$w = Key($mime->warnings);
 				$warnings[$warning] = 'Warning: '. $mime->warnings[$w]. ' at position '. $w. "\n";
 			}
+            debug_log("parseMail: warnings: " . json_encode($warnings), "checkmail_log.php");
 
 			// check for uuencoded attachments
 			if (isset($results['Data'])) {
@@ -780,6 +783,7 @@ class MailUtilities {
 						'FileName' => trim($att['name']),
 						'Data' => $att['data'],
 					);
+                    debug_log("parseMail: attachment name: " . $att['name'], "checkmail_log.php");
 				}
 			}
 		}
@@ -806,6 +810,7 @@ class MailUtilities {
 					'name' => $matches[1][0],
 					'data' => $parsed_data,
 			);
+            debug_log("removeUuencodedAttachments: parsed attachment name: " . $matches[1][0], "checkmail_log.php");
 
 			$body = str_replace($matches[0][0], "", $body);
 		}
@@ -849,6 +854,7 @@ class MailUtilities {
 			);
 			$more_attachments[] = $att;
 		}
+        debug_log("getAttachmentsFromEmlAttachment: more_attachments: " . json_encode($more_attachments), "checkmail_log.php");
 
 		return $more_attachments;
 	}
@@ -902,6 +908,7 @@ class MailUtilities {
 		$mailsToGet = array_reverse($mailsToGet, true);
 		$checked = 0;
 		foreach ($mailsToGet as $idx) {
+            debug_log("getNewPOP3Mails: summary: " . json_encode($summary), "checkmail_pop3_log.php");
 			if ($toGet <= $checked) break;
 			$content = $pop3->getMsg($idx+1); // message index is 1..N
 
@@ -924,11 +931,13 @@ class MailUtilities {
 				}
 				unset($content);
 				$checked++;
+			} else {
+				debug_log("getNewPOP3Mails: No content for index:$idx - uid:".$summary[0]['UID'], "checkmail_log.php");
 			}
 		}
 		$pop3->disconnect();
 
-		debug_log("  END getNewPOP3Mails ".$account->getId(), "checkmail_log.php");
+		debug_log("getNewPOP3Mails: END ".$account->getId(), "checkmail_log.php");
 
 		return $received;
 	}
@@ -1113,8 +1122,12 @@ class MailUtilities {
 	         		if ($att_version < 2) {
 	         			$swift_att = Swift_Attachment::newInstance($att["data"], $att["name"], $att["type"]);
 	         		} else {
-		         		$swift_att = Swift_Attachment::fromPath($att['path'], $att['type']);
-		         		$swift_att->setFilename($att["name"]);
+						if (file_exists($att['path'])) {
+							$swift_att = Swift_Attachment::fromPath($att['path'], $att['type']);
+							$swift_att->setFilename($att["name"]);
+						} else {
+							Logger::log("ERROR SENDING EMAIL: File not found: ".$att['path'], Logger::ERROR);
+						}
 	         		}
 	         		if (substr($att['name'], -4) == '.eml') {
 	         			$swift_att->setEncoder(Swift_Encoding::get7BitEncoding());
@@ -1126,8 +1139,12 @@ class MailUtilities {
 	 		// add inline images
 	 		if (is_array($inline_images)) {
 	 			foreach ($inline_images as $image_url => $image_path) {
-	 				$cid = $message->embed(Swift_Image::fromPath($image_path));
-	 				$body = str_replace($image_url, $cid, $body);
+					if (file_exists($image_path)) {
+						$cid = $message->embed(Swift_Image::fromPath($image_path));
+						$body = str_replace($image_url, $cid, $body);
+					} else {
+						Logger::log("ERROR SENDING EMAIL: Image not found: ".$image_path, Logger::ERROR);
+					}
 	 			}
 	 		}
 
@@ -1139,18 +1156,34 @@ class MailUtilities {
 			$failed_recipients = array();
 			$result = $mailer->send($message, $failed_recipients);
 			if ($swift_logger_level >= 2 || ($swift_logger_level > 0 && !$result) || count($failed_recipients)>0) {
+                Logger::log("ERROR SENDING EMAIL (Swift Exception): ". $swift_logger->dump(), Logger::ERROR);
 				$fail_recipients_str = count($failed_recipients)>0 ? "FAILED RECIPIENTS: ".print_r($failed_recipients,1)."\n" : "";
-				file_put_contents(CACHE_DIR."/swift_log.txt", "\n".gmdate("Y-m-d H:i:s")." $fail_recipients_str DEBUG:\n" . $swift_logger->dump() . "----------------------------------------------------------------------------", FILE_APPEND);
+                file_put_contents(CACHE_DIR . "/swift_log.txt", "\n"
+                    . gmdate("Y-m-d H:i:s")
+                    . " ERROR SENDING EMAIL (Swift Exception): "
+                    . " - fail recipients: {$fail_recipients_str}"
+                    . " - id: {$message_id}"
+                    . " - subject: {$subject}"
+                    . " - body length: " . strlen($body) 
+                    . " - Dump: " . $swift_logger->dump() . "----------------------------------------------------------------------------", FILE_APPEND);
 				$swift_logger->clear();
 			}
 			return $result;
 
 		} catch (Exception $e) {
-			Logger::log("ERROR SENDING EMAIL: ". $e->getTraceAsString(), Logger::ERROR);
+			Logger::log("ERROR SENDING EMAIL (PHP Exception): ". $e->getTraceAsString(), Logger::ERROR);
 			// save the swift log
 			if (isset($swift_logger) && $swift_logger && $swift_logger_level > 0) {
 				$fail_recipients_str = count($failed_recipients)>0 ? "FAILED RECIPIENTS: ".print_r($failed_recipients,1)."\n" : "";
-				file_put_contents(CACHE_DIR."/swift_log.txt", "\n".gmdate("Y-m-d H:i:s")." $fail_recipients_str ERROR SENDING EMAIL:\n" . $swift_logger->dump() . "----------------------------------------------------------------------------", FILE_APPEND);
+                file_put_contents(CACHE_DIR . "/swift_log.txt", "\n"
+                    . gmdate("Y-m-d H:i:s")
+                    . " ERROR SENDING EMAIL (PHP Exception): "
+                    . " - fail recipients: {$fail_recipients_str}"
+                    . " - id: {$message_id}"
+                    . " - subject: {$subject}"
+                    . " - body length: " . strlen($body) 
+                    . " - Error message: " . $e->getMessage()
+                    . " - Dump: " . $swift_logger->dump() . "----------------------------------------------------------------------------", FILE_APPEND);
 				$swift_logger->clear();
 			}
 
@@ -1272,7 +1305,7 @@ class MailUtilities {
 
 	static function getNewImapMails(MailAccount $account, $max = 0, $imap_folders_to_check = null) {
 		$received = 0;
-		debug_log("  start getNewImapMails ".$account->getId(), "checkmail_log.php");
+		debug_log("getNewImapMails: start ".$account->getId(), "checkmail_imap_log.php");
 
 		// verify if there are any folders to check, if not add the INBOX
 		$folders_to_check = MailAccountImapFolders::instance()->findAll(array("conditions" => "account_id=".$account->getId()." AND check_folder=1"));
@@ -1301,7 +1334,7 @@ class MailUtilities {
 								continue;
 					}
 
-					debug_log("  getting imap folder ".$account->getId()." - ".$box->getFolderName(), "checkmail_log.php");
+					debug_log("getNewImapMails: getting imap folder ".$account->getId()." - ".$box->getFolderName(), "checkmail_imap_log.php");
 					//if the account is configured to mark as read emails on server call selectMailBox else call examineMailBox.
 					if ($account->getMarkReadOnServer() > 0 ? $imap->selectMailbox(utf8_decode($box->getFolderName())) : $imap->examineMailbox(utf8_decode($box->getFolderName()))) {
 						$oldUids = $account->getUids($box->getFolderName(), 1);
@@ -1315,12 +1348,12 @@ class MailUtilities {
 									$box->save();
 								}
 								
-								debug_log("    PEAR ERROR numMessages has error: ".$numMessages->getMessage(), "checkmail_log.php");
+								debug_log("getNewImapMails: PEAR ERROR numMessages has error: ".$numMessages->getMessage(), "checkmail_imap_log.php");
 								continue;
 							}
 						}
 						if ($numMessages == 0) continue;
-						debug_log("    numMessages=$numMessages", "checkmail_log.php");
+						debug_log("getNewImapMails: numMessages=$numMessages", "checkmail_imap_log.php");
 
 						// determine the starting uid and number of message
 						$max_uid = $account->getImapMaxUID($box->getFolderName());
@@ -1328,7 +1361,7 @@ class MailUtilities {
 						if($max_uid){
 							$max_summary = $imap->getSummary($max_uid, true);
 							if (PEAR::isError($max_summary)) {
-								debug_log("    PEAR ERROR max_summary has error: ".$max_summary->getMessage(), "checkmail_log.php");
+								debug_log("getNewImapMails: PEAR ERROR max_summary has error: ".$max_summary->getMessage(), "checkmail_imap_log.php");
 								Logger::log($max_summary->getMessage());
 								throw new Exception($max_summary->getMessage());
 							}
@@ -1341,28 +1374,28 @@ class MailUtilities {
 						}else{
 							$is_last_mail_on_mail_server = false;
 						}
-						debug_log("    is_last_mail_on_mail_server = $is_last_mail_on_mail_server", "checkmail_log.php");
+						debug_log("getNewImapMails: is_last_mail_on_mail_server = $is_last_mail_on_mail_server", "checkmail_imap_log.php");
 
 						//Server Data
 						$server_max_uid = null;
 						if ($numMessages != null) {
 							$server_max_summary = $imap->getSummary($numMessages);
 							if (PEAR::isError($server_max_summary)) {
-								debug_log("    PEAR ERROR in imap->getSummary(numMessages). numMessages=$numMessages. errmsg: ".$server_max_summary->getMessage(), "checkmail_log.php");
+								debug_log("getNewImapMails: PEAR ERROR in imap->getSummary(numMessages). numMessages=$numMessages. errmsg: ".$server_max_summary->getMessage(), "checkmail_imap_log.php");
 								Logger::log($server_max_summary->getMessage());
 							}else{
 								if ($server_max_summary && $server_max_summary[0]['UID']) {
 									$server_max_uid = $server_max_summary[0]['UID'];
 								} else {
 									$is_last_mail_on_mail_server = false;
-									debug_log("    imap->getSummary(numMessages) NO ESTA EN EL SERVIDOR => pongo is_last_mail_on_mail_server=false", "checkmail_log.php");
+									debug_log("getNewImapMails: imap->getSummary(numMessages) NO ESTA EN EL SERVIDOR => pongo is_last_mail_on_mail_server=false", "checkmail_imap_log.php");
 								}
 							}
-							debug_log("    summary of msg:$numMessages received", "checkmail_log.php");
+							debug_log("getNewImapMails: summary of msg:$numMessages received", "checkmail_imap_log.php");
 						} else {
-							debug_log("    numMessages is null, server_max_uid not calculated", "checkmail_log.php");
+							debug_log("getNewImapMails: numMessages is null, server_max_uid not calculated", "checkmail_imap_log.php");
 						}
-						debug_log("    server_max_uid = $server_max_uid", "checkmail_log.php");
+						debug_log("getNewImapMails: server_max_uid = $server_max_uid", "checkmail_imap_log.php");
 
 						$server_min_summary = $imap->getSummary(1, false);
 						$server_min_uid = null;
@@ -1371,7 +1404,7 @@ class MailUtilities {
 						}else{
 							$server_min_uid = $server_min_summary[0]['UID'];
 						}
-						debug_log("    server_min_uid = $server_min_uid", "checkmail_log.php");
+						debug_log("getNewImapMails: server_min_uid = $server_min_uid", "checkmail_imap_log.php");
 
 						if($max_uid){
 							if($is_last_mail_on_mail_server){
@@ -1413,8 +1446,8 @@ class MailUtilities {
 										$range_end += 100;
 									}
 
-									debug_log(print_r("complete server list of uids and msgids since $max_uid to $range_end", true), "checkmail_log.php");
-									debug_log(print_r($server_uids_list, true), "checkmail_log.php");
+									debug_log(print_r("complete server list of uids and msgids since $max_uid to $range_end", true), "checkmail_imap_log.php");
+									debug_log(print_r($server_uids_list, true), "checkmail_imap_log.php");
 									if(isset($server_uids_list) && count($server_uids_list)){
 										$lastReceived = $server_uids_list[0]["msg_id"];
 										// overwrite the numMessages variable with the last msg_id in server
@@ -1462,9 +1495,9 @@ class MailUtilities {
 									continue;
 								}
 							}
-							debug_log("			max_uid es null - lastReceived=$lastReceived - numMessages=$numMessages", "checkmail_log.php");
+							debug_log("getNewImapMails: max_uid es null - lastReceived=$lastReceived - numMessages=$numMessages", "checkmail_imap_log.php");
 						}
-						debug_log("    lastReceived = $lastReceived", "checkmail_log.php");
+						debug_log("getNewImapMails: lastReceived = $lastReceived", "checkmail_imap_log.php");
 
 						if($lastReceived < 0){
 							$lastReceived = 0;
@@ -1474,15 +1507,16 @@ class MailUtilities {
 						// get mails since last received (last received is not included)
 						for ($i = $lastReceived; ($max == 0 || $received < $max) && $i < $numMessages; $i++) {
 							$index = $i+1;
-							debug_log("      get email summary $index", "checkmail_log.php");
+							debug_log("getNewImapMails: get email summary $index", "checkmail_imap_log.php");
 
 							$summary = $imap->getSummary($index);
 							if (PEAR::isError($summary)) {
 								Logger::log($summary->getMessage());
-								debug_log("      Error getting summary $index", "checkmail_log.php");
+								debug_log("getNewImapMails: Error getting summary $index", "checkmail_imap_log.php");
 							} else {
+                                debug_log("getNewImapMails: Summary: " . json_encode($summary), 'checkmail_imap_log.php');
 								if ($summary[0]['UID']) {
-									debug_log("      reading email status index:$index - uid:".$summary[0]['UID'], "checkmail_log.php");
+									debug_log("getNewImapMails: reading email status index:$index - uid:".$summary[0]['UID'], "checkmail_imap_log.php");
 									if ($imap->isDraft($index)) $state = 2;
 									else $state = 0;
 
@@ -1490,7 +1524,7 @@ class MailUtilities {
 									if ($account->getGetReadStateFromServer() > 0 && $imap->isSeen($index)) $read = 1;
 									else $read = 0;
 
-									debug_log("      getting email content index:$index - uid:".$summary[0]['UID'], "checkmail_log.php");
+									debug_log("getNewImapMails: getting email content index:$index - uid:".$summary[0]['UID'], "checkmail_imap_log.php");
 
 									$messages = $imap->getMessages($index);
 									if (PEAR::isError($messages)) {
@@ -1500,7 +1534,7 @@ class MailUtilities {
 
 									if ($content != '') {
 										try {
-											debug_log("      SaveMail $index", "checkmail_log.php");
+											debug_log("getNewImapMails: SaveMail $index", "checkmail_imap_log.php");
 											$stop_checking = self::SaveMail($content, $account, $summary[0]['UID'], $state, $box->getFolderName(), $read, $received);
 											if ($stop_checking) break;
 											//$received++;
@@ -2033,6 +2067,7 @@ class MailUtilities {
 	}
 
 	static function construct_mail_data_foward($original_mail) {
+		Logger::log("CONSTRUCTING MAIL DATA FOR FORWARD", Logger::DEBUG);
 		$mail_contr = new MailController();
 
 		$fwd_subject = (str_starts_with(strtolower($original_mail->getSubject()),'fwd:') ? $original_mail->getSubject() : 'Fwd: ') . $original_mail->getSubject();

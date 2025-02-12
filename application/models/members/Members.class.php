@@ -62,7 +62,7 @@
 	 */
 	static function findOneByObjectId($id, $dimension_id = null ) {
 		$allMembers = self::findByObjectId($id, $dimension_id);
-		if(count($allMembers)) {
+		if(is_array($allMembers) && count($allMembers)) {
 			return $allMembers[0];	
 		}
 		return null;

@@ -71,8 +71,14 @@
       		$option_id = $value['id'];
       		$option_text = $value['text'];
       	} else {
-      		$option_id = $value;
-      		$option_text = lang($value);
+			if (strpos($value, '@') !== false) {
+				$exploded = explode('@', $value);
+				$option_id = array_var($exploded, 0);
+				$option_text = array_var($exploded, 1);
+			} else {
+				$option_id = $value;
+				$option_text = lang($value);
+			}
       	}
       	
       	$checked = array_search($option_id, $current_values) !== false;

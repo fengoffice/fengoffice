@@ -460,8 +460,19 @@ class ObjectController extends ApplicationController {
 	    );
 	    $this->add_custom_properties($object_original, $cp_data);
 	}
-	    
+	
+	
+	/**
+	 * Check if there are visible custom property inputs with errors on the form
+	 *
+	 * @return array|bool
+	 */
+	function hasVisibleCpErrors() {
 
+		$cp_error_ids = array_var($_REQUEST, 'error_ids', []); // Get error IDs from request
+		$cp_inputs_with_errors = CustomProperties::instance()->get_cp_names_from_cp_inputsId_on_forms($cp_error_ids);
+		return !empty($cp_inputs_with_errors) ? $cp_inputs_with_errors : false;
+	}
 	/**
 	 * Adds the custom properties of an object into the database.
 	 *
@@ -469,12 +480,22 @@ class ObjectController extends ApplicationController {
 	 * 
 	 */
 	function add_custom_properties($object_original, $cp_data=null) {
+
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			return;
 		}
 		$object = $object_original;
+
+
+		if ($visible_cp_errors = $this->hasVisibleCpErrors()) {
+			$visible_cp_errors = implode(', ', $visible_cp_errors);
+			flash_error(lang('wrong_cp_values', $visible_cp_errors));
+			ajx_current('empty'); // Detener la acción si hay errores
+			throw new Exception(lang('wrong_cp_values', $visible_cp_errors));
+			return;
+		}
 
 		if (!is_null($cp_data)) {
 			$obj_custom_properties = $cp_data;
@@ -1388,6 +1409,21 @@ class ObjectController extends ApplicationController {
 		return array($succ, $err);
 	}
 
+	/**
+	 * Unarchive multiple members
+	 * @param string|array $ids Member IDs to unarchive
+	 * @return array [success_count, error_count]
+	 */
+	function do_unarchive_members($ids) {
+		if (is_string($ids)) $ids = explode(',', $ids);
+		
+		// use the member controller to unarchive multiple members
+		$member_controller = new MemberController();
+		list($succ, $err) = $member_controller->unarchive_multiple($ids, logged_user());
+		
+		return array($succ, $err);
+	}
+
 	function do_mark_as_read_unread_objects($ids, $read) {
 		$err = 0; // count errors
 		$succ = 0; // count updated objects
@@ -2212,7 +2248,13 @@ class ObjectController extends ApplicationController {
 			}
 		} else if (array_var($_GET, 'action') == 'unarchive') {
 			$ids = explode(',', array_var($_GET, 'objects'));
+			$member_ids = explode(',', array_var($_GET, 'members'));
 			list($succ, $err) = $this->do_archive_unarchive_objects($ids, 'unarchive');
+			if (!empty($member_ids)) {
+				list($succ2, $err2) = $this->do_unarchive_members($member_ids);
+				$succ += $succ2;
+				$err += $err2;
+			}
 			if ($err > 0) {
 				flash_error(lang('error unarchive objects', $err));
 			} else {
@@ -2425,12 +2467,37 @@ class ObjectController extends ApplicationController {
         $count_results = array_var($_GET, 'count_results', false);
         if(isset($params['count_results'])){
             $count_results = $params['count_results'];
-        }
-
+		}
 
 		/* if there's an action to execute, do so */
 		if (!$show_all_linked_objects){
 			$this->processListActions();
+		}
+
+		if ($archived && $type_filter > 0) {
+			$ot = ObjectTypes::instance()->findById($type_filter);
+			if ($ot instanceof ObjectType && $ot->getType() == 'dimension_group') {
+				// call member controller to get list of members
+				$member_controller = new MemberController();
+				$dim_ids = DimensionObjectTypes::getDimensionIdsByObjectTypeId($type_filter);
+				
+				$mem_controller_params = $params;
+				$mem_controller_params['archived'] = $archived;
+				$mem_controller_params['dim_id'] = $dim_ids[0];
+				$mem_controller_params['type_id'] = $type_filter;
+				$mem_controller_params['exclude_associations_data'] = true;
+
+				$members_list = $member_controller->listing($mem_controller_params);
+
+				$listing = array(
+					"totalCount" => $members_list['totalCount'],
+					"start" => $start,
+					"objects" => $members_list['members'],
+					"filters" => $this->get_available_object_filter_types($archived),
+				);
+		
+				return $listing;
+			}
 		}
 		
 		$template_object_names = "";
@@ -2689,7 +2756,7 @@ class ObjectController extends ApplicationController {
 		}
 		// --
 		// External extra conditions
-		Hook::fire("get_objects_list_extra_conditions", null, $extra_conditions);
+		Hook::fire("get_objects_list_extra_conditions", $params, $extra_conditions);
 		// --
 
 		// Permissions filter
@@ -2852,6 +2919,15 @@ class ObjectController extends ApplicationController {
 		// In addition, only the object types that have an activated plugin
 		// are shown, unless the plugin is not installed, in which case
 		// the object type is shown anyway.
+		
+		$listing['filters'] = array(
+				'types' => $this->get_available_object_filter_types($show_dim_members),
+		);
+
+		return $listing;
+	}
+
+	private function get_available_object_filter_types($show_dim_members = false) {
 		$filter_types = "'content_object'";
 		if ($show_dim_members) {
 			$filter_types .= ", 'dimension_group', 'dimension_object'";
@@ -2868,11 +2944,8 @@ class ObjectController extends ApplicationController {
 			}
 			$object_types_info[] = array('id' => $ot->getId(), 'name' => clean($ot->getPluralObjectTypeName()));
 		}
-		$listing['filters'] = array(
-				'types' => $object_types_info,
-		);
 
-		return $listing;
+		return $object_types_info;
 	}
 
 	function save_selected_objects() {

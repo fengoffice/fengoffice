@@ -431,6 +431,36 @@ og.TasksTopToolbar = function(config) {
 				}
 											
 			},
+			remaining_time: {
+				text: lang('remaining time'),
+				checked: (ogTasks.userPreferences.showRemainingTime == 1),
+				hideOnClick: false,	
+				checkHandler: function() {
+					if(this.checked){
+						ogTasks.TotalCols.totalWorkedTime = {title: 'remaining time', group_total_field: 'remaining_time', row_field: 'remaining_time_string'};
+					}else{
+						delete ogTasks.TotalCols.remainingTime;				
+					}
+					
+					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowRemainingTime', value:(this.checked?1:0)});
+					ogTasksMakeRequestAndReloadWithTimeout(url);
+				}
+			},
+			total_remaining_time: {
+				text: lang('total remaining time'),
+				checked: (ogTasks.userPreferences.showTotalRemainingTime == 1),
+				hideOnClick: false,
+				checkHandler: function() {
+					if(this.checked){
+						ogTasks.TotalCols.remainingTime = {title: 'total remaining time', group_total_field: 'total_remaining_time', row_field: 'total_remaining_time_string'};
+					}else{
+						delete ogTasks.TotalCols.remainingTime;                
+					}
+					
+					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTotalRemainingTime', value:(this.checked?1:0)});
+					ogTasksMakeRequestAndReloadWithTimeout(url);
+				}
+			},
 			percent_completed_bar: {
 		        text: lang('percent completed'),
 				checked: (ogTasks.userPreferences.showPercentCompletedBar == 1),
@@ -535,6 +565,8 @@ og.TasksTopToolbar = function(config) {
                 this.displayOptions.show_classification,
                 this.displayOptions.previous_pending_tasks,
                 this.displayOptions.show_subtasks_structure,
+				this.displayOptions.remaining_time,
+				this.displayOptions.total_remaining_time,
     ];
 
 	for (var cp_order=0; cp_order < ogTasks.custom_properties.length; cp_order++) {
@@ -723,7 +755,9 @@ Ext.extend(og.TasksTopToolbar, Ext.Toolbar, {
 			show_classification : this.show_menu.items[0].menu.items.items[16].checked,
 			show_previous_pending_tasks : this.show_menu.items[0].menu.items.items[17].checked,
 			show_subtasks_structure : this.show_menu.items[0].menu.items.items[18].checked,
-			show_dimension_cols : ogTasks.userPreferences.showDimensionCols            
+			show_remaining_time: this.show_menu.items[0].menu.items.items[19].checked,
+			show_total_remaining_time: this.show_menu.items[0].menu.items.items[20].checked,
+			show_dimension_cols : ogTasks.userPreferences.showDimensionCols           
 		}
 		
 		var show_cp_config = {};

@@ -988,6 +988,99 @@ abstract class BaseProjectTask extends ContentDataObject {
 	function setIsManualPercentCompleted($value) {
 	    return $this->setColumnValue('is_manual_percent_completed', $value);
 	}
+
+	/**
+	 * Return value of 'billable_worked_time' field
+	 * 
+	 * @access public
+	 * @param void
+	 * @return integer
+	 * 
+	 */
+	function getBillableWorkedTime() {
+	    return $this->getColumnValue('billable_worked_time');
+	}
+
+	/**
+	 * Set value of 'billable_worked_time' field
+	 * 
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 * 
+	 */	
+	function setBillableWorkedTime($value) {
+	    return $this->setColumnValue('billable_worked_time', $value);
+	}
+
+	/**
+	 * Return value of 'non_billable_worked_time' field
+	 * 
+	 * @access public
+	 * @param void
+	 * @return integer
+	 * 
+	 */
+	function getNonBillableWorkedTime() {
+	    return $this->getColumnValue('non_billable_worked_time');
+	}
+
+	/**
+	 * Set value of 'non_billable_worked_time' field
+	 * 
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 * 
+	 */
+	function setNonBillableWorkedTime($value) {
+		return $this->setColumnValue('non_billable_worked_time', $value);
+	}
+
+	
+	/**
+	 * Return value of 'billable_total_worked_time' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getBillableTotalWorkedTime() {
+		return $this->getColumnValue('billable_total_worked_time');
+	}
+
+	/**
+	 * Set value of 'billable_total_worked_time' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setBillableTotalWorkedTime($value) {
+		return $this->setColumnValue('billable_total_worked_time', $value);
+	}
+
+	/**
+	 * Return value of 'non_billable_total_worked_time' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getNonBillableTotalWorkedTime() {
+		return $this->getColumnValue('non_billable_total_worked_time');
+	}
+
+	/**
+	 * Set value of 'non_billable_total_worked_time' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setNonBillableTotalWorkedTime($value) {
+		return $this->setColumnValue('non_billable_total_worked_time', $value);
+	}
 	
     /**
 	 * Return manager instance

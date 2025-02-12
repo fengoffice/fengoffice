@@ -260,6 +260,12 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 	return $html;
 }
 
+function render_custom_property_error_field($error_message_code, $configs, $custom_property) {
+	$html = '<label style="display:inline-block; visibility: hidden; height: 0.5px; padding-top: 5px;" for="' . $configs['genid'] . 'cp' . $custom_property->getId() . '">&nbsp;</label>';
+	$html .= '<span id="' . $configs['genid'] . 'cp' . $custom_property->getId() . '_error" class="cp-error-message" style="display: none; color:red">' . lang($error_message_code) . '</span>';
+	return $html;
+}
+
 
 
 function render_custom_property_by_type($custom_property, $configs) {
@@ -279,9 +285,7 @@ function render_custom_property_by_type($custom_property, $configs) {
 			$html .= render_text_custom_property_field($custom_property, $configs);
 			break;
 		case 'amount':
-			$html .= '<div class="amount-container-fields">';
 			$html .= render_money_amount_custom_property_field($custom_property, $configs);
-			$html .= '</div>';
 			break;	
 		case 'numeric':
 			$html .= render_numeric_custom_property_field($custom_property, $configs);
@@ -328,7 +332,6 @@ function render_custom_property_by_type($custom_property, $configs) {
         // the label is set to pad the description
         $html .= '<div><label>&nbsp;</label><span class="desc">' . clean($custom_property->getDescription()) . '</span></div>';
     }
-
 	$html .= '</div>';
 	
 	Hook::fire("after_render_custom_property_input", array('cp'=>$custom_property, 'config'=>$configs), $html);
@@ -351,7 +354,7 @@ function render_text_custom_property_field($custom_property, $configs) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 
-	    $class = '';
+	    $class = 'cp-text';
 	    $placeholder = '';
 	    if (array_var($configs,'is_bootstrap')){
             $style = '';
@@ -371,6 +374,7 @@ function render_text_custom_property_field($custom_property, $configs) {
 function render_money_amount_custom_property_field($custom_property, $configs) {
 
     $html = '';
+	$html .= '<div class="amount-container-fields">';
 	// Currency selector
 	$cp_value = CustomPropertyValues::instance()->findOne(array('conditions' => '`custom_property_id`='.$custom_property->getId().' AND `object_id`='.array_var($configs, 'object_id', 0)));
 	$selected_currency = $cp_value instanceof CustomPropertyValue ? $cp_value->getCurrencyId() : 1;
@@ -387,12 +391,15 @@ function render_money_amount_custom_property_field($custom_property, $configs) {
 	$id = $configs['genid'] . 'cp' . $custom_property->getId();
 	$class = '';
 	$placeholder = '';
-	$onChange = 'og.formatAmount(\''.$id.'\')';
+	$onChange = 'og.formatAmount(\''.$id.'\'); og.check_if_valid_amount_field(this);';
 	$name = 'object_custom_properties['.$custom_property->getId().'][amount]';
 	$attributes = array('id' => $id,'class'=>$class,'placeholder'=>$placeholder, 'onChange' => $onChange, 'name' => $name);
 	if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
 	$value = format_amount($configs['default_value']);
 	$html .= text_field($name, $value, $attributes);
+	$html .= '</div>';
+	$html .= render_custom_property_error_field('invalid_cp_amount_value', $configs, $custom_property);
+
 
 	return $html;
 }
@@ -462,9 +469,9 @@ function render_numeric_custom_property_field($custom_property, $configs) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 
-        $class = '';
+        $class = 'cp-numeric';
         $placeholder = '';
-        $type = '';
+        $type = 'numeric';
         $onchange = "og.check_if_valid_cp_num(this);";
         if (array_var($configs,'is_bootstrap')){
 	        $type = 'number';
@@ -477,17 +484,21 @@ function render_numeric_custom_property_field($custom_property, $configs) {
         
         if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
 
-		$html = text_field($configs['name'], $configs['default_value'], $attributes);
+		$html = numeric_field($configs['name'], $configs['default_value'], $attributes);
+		$html .= render_custom_property_error_field('invalid_cp_numeric_value', $configs,$custom_property);	
+		
 	}
 	return $html;
 }
+
 
 function render_url_custom_property_field($custom_property, $configs) {
 	if ($custom_property->getIsMultipleValues()) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 
-        $class = '';
+        $class = 'cp-url';
+		$type = '';
         $placeholder = '';
         $onchange = "og.check_if_valid_url(this);";
         if (array_var($configs,'is_bootstrap')){
@@ -498,8 +509,8 @@ function render_url_custom_property_field($custom_property, $configs) {
         $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'onchange'=>$onchange,'class'=>$class,'placeholder'=>$placeholder);
         
         if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
-
-		$html = text_field($configs['name'], $configs['default_value'], $attributes);
+		$html = url_field($configs['name'], $configs['default_value'], $attributes);
+		$html .= render_custom_property_error_field('invalid_cp_url_value',$configs,$custom_property);
 	}
 	return $html;
 }
@@ -528,7 +539,7 @@ function render_list_custom_property_field($custom_property, $configs) {
 		$html = render_multiple_custom_property_field($custom_property, $configs);
 	} else {
 		$options_html = render_list_options_custom_property_field(explode(',', $custom_property->getValues()), $custom_property, $configs);
-        $class = '';
+        $class = 'cp-list';
         if (array_var($configs,'is_bootstrap')){
             $style = '';
             $class = 'form-control';

@@ -71,6 +71,48 @@ function text_field($name, $value = null, $attributes = null) {
 
 // text_field
 
+
+/**
+ * Render url field
+ *
+ * @access public
+ * @param string $name
+ * @param mixed $value
+ * @param array $attributes
+ * @return string
+ */
+function url_field($name, $value = null, $attributes = null) {
+
+    // If we don't have type attribute set it
+    if (array_var($attributes, 'type', false) === false) {
+        if (is_array($attributes)) {
+            if(array_var($attributes, 'type') != 'hidden'){
+                $attributes['type'] = 'text';
+            }
+        } else {
+            $attributes = array('type' => 'text');
+        } // if
+    } // if
+    // And done!
+    return input_field($name, $value, $attributes);
+}
+
+function numeric_field($name, $value = null, $attributes = null) {
+    // If we don't have type attribute set it
+    if (array_var($attributes, 'type', false) === false) {
+        if (is_array($attributes)) {
+            if(array_var($attributes, 'type') != 'hidden'){
+                $attributes['type'] = 'numeric';
+            }
+        } else {
+            $attributes = array('type' => 'numeric');
+        } // if
+    } // if
+    // And done!
+    return input_field($name, $value, $attributes);
+}
+
+
 /**
  * Return password field
  *

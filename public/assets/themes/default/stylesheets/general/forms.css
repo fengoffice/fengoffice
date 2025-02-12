@@ -751,19 +751,56 @@ a.cke_combo_button, a.cke_button {
 
 .amount-container-fields {
 	overflow: auto;
-	max-width: 350px;
+	/* max-width: 350px; */
 	box-sizing: border-box;
 }
 
 .amount-container-fields select {
-	margin-bottom: 5px;
+	/* margin-bottom: 5px; */
 	margin-right: 5px;
 	width: 60px;
+	height: 30px;
 }
 .amount-container-fields input {
-	width: 155px;
+	width: 287px;
 	box-sizing: border-box;
 	text-align: right;
-
+	height: 30px;
 }
 
+.cp-url {
+	display: block;
+    width: 340px;
+    padding: 5px;
+}
+
+ .cp-number {
+	display: block;
+    width: 340px;
+    padding: 5px;
+} 
+
+.cp-numeric {
+	display: block;
+    width: 340px;
+    padding: 5px;
+}
+
+ .cp-text {
+	display: block;
+    width: 340px;
+    padding: 5px;
+}
+
+ .cp-list {
+	display: block;
+    width: 351px;
+    padding: 5px;
+} 
+
+.cp-error-message {
+	color: red;
+    display: none;
+	/* padding-left: 170px; */
+	padding-top: 5px;
+}

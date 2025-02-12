@@ -157,10 +157,9 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 			$(pre_id + " #undo_delete_action").hide();
 
 			$(pre_id + " #name").attr('disabled', 'disabled');
-			$(pre_id + " #type").hide();
-			$(pre_id + " #values").hide();
+			$(pre_id + " #type").attr('disabled', 'disabled');
+			$(pre_id + " #values").attr('disabled', 'disabled').addClass('disabled');
 			$(pre_id + " #values_hint").hide();
-			$(pre_id + " #default_value").hide();
 		
 			if(!property.override_is_required) {
 				$(pre_id + " #is_required").hide();	

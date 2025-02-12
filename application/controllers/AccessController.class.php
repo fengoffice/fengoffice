@@ -83,6 +83,9 @@ class AccessController extends ApplicationController {
 			$username = array_var($login_data, 'username');
 			$password = array_var($login_data, 'password');
 			$remember = array_var($login_data, 'remember') == 'checked';
+            //Log username, password and remember and ip address
+            Logger::log("username: $username, remember: $remember, ip: " . array_var($_SERVER, 'REMOTE_ADDR'), Logger::DEBUG);
+
 
 			if (config_option('block_login_after_x_tries')) {
 				$from_time = DateTimeValueLib::now();

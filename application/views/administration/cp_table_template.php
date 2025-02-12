@@ -95,7 +95,7 @@
 		</tr>
 		<tr class="bottom-row">
 			<td colspan="4">
-				<input id="description" style="width:97%;" type="text" placeholder="<?php echo lang('description')?>" name="<?php echo "custom_properties[{number}][description]"?>" value="" />
+				<input id="description" type="text" placeholder="<?php echo lang('description')?>" name="<?php echo "custom_properties[{number}][description]"?>" value="" />
 				<div id="numeric_options" style="display:none;"><?php 
 					$num_opt_html = "";
 					Hook::fire("custom_prop_numeric_options", null, $num_opt_html);

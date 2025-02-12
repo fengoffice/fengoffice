@@ -399,7 +399,7 @@ return array(
 	'completed tasks list' => 'Completed tasks',
 	'crpm_people' => 'People',
 	'estimated_worked_time' => 'Estimated and worked time',
-	'pending time' => 'Remaining budgeted time',
+	'pending time' => 'Open/pending',
 	'worked time' => 'Worked time',
 	'overdue and upcoming' => 'Late and upcoming tasks',
 	'projects widget title' => 'Projects',
@@ -509,4 +509,13 @@ return array(
 	'field Objects is_manual_billing' => 'Is manual billing',
     'field Objects is_manual_cost' => 'Is manual cost',
     'paid' => 'Paid',
+
+	'edit weblink' => 'Edit link',
+
+	'invalid_cp_amount_value' => 'Invalid Amount value',
+    'invalid_cp_numeric_value' => 'Invalid Numeric value',
+    'invalid_cp_url_value' => 'Invalid URL value',
+	'wrong_cp_values' => 'The following inputs have invalid values: {0}',
+	'format' => 'Format',
+
 );

@@ -204,6 +204,8 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('task panel', 'tasksShowTimePending', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowTimeWorked', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowTotalTimeWorked', '0', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksShowRemainingTime', '0', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksShowTotalRemainingTime', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickEdit', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickComplete', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickComment', '0', 'BoolConfigHandler', 1, 0, ''),

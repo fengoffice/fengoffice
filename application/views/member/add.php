@@ -23,7 +23,7 @@
 	if ($member instanceof Member) {
 	    $object_type_name = $member->getTypeNameToShow();
 	} else {
-		$object_type_name = $object_type_selected instanceof ObjectType ? lang($object_type_selected->getName()) : null;
+		$object_type_name = $object_type_selected instanceof ObjectType ? $object_type_selected->getObjectTypeName() : null;
 	}
 	
 	$member_ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
@@ -52,7 +52,7 @@
 	
 	if($member instanceof Member && !$member->isNew()) {
 		$ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
-		$ot_name = lang($ot->getName());
+		$ot_name = $ot->getObjectTypeName();
 		if ($member->getArchivedById() == 0) {
 			add_page_action(lang('archive'), "javascript:if(confirm('".lang('confirm archive member',$ot_name)."')) og.openLink('".get_url('member', 'archive', array('id' => $member->getId()))."');", 'ico-archive-obj');
 		} else {
