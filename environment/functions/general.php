@@ -657,23 +657,18 @@ function gen_id() {
 function purify_html($html) {
 	include(LIBRARY_PATH . '/htmlpurifier/library/HTMLPurifier.auto.php');
 
-	$config = null;
+	/*$config = null;
 	if (defined('CUSTOM_HTMLPURIFIER_CACHEDIR') && is_dir(CUSTOM_HTMLPURIFIER_CACHEDIR)) {
 		$config = HTMLPurifier_Config::createDefault();
 		$config->set('Cache.SerializerPath', CACHE_DIR);
-	}
+	}*/
+
+	// set cache dir as the usual cache dir, to ensure a writtable dir is used
+	$config = HTMLPurifier_Config::createDefault();
+	$config->set('Cache.SerializerPath', CACHE_DIR);
 	
 	$p = new HTMLPurifier($config);
 	return $p->purify($html);
-
-	// require_once LIBRARY_PATH . "/htmlpurifier/HTMLPurifier.standalone.php";
-	// $config = null;
-	// if (defined('CUSTOM_HTMLPURIFIER_CACHEDIR') && is_dir(CUSTOM_HTMLPURIFIER_CACHEDIR)) {
-	// 	$config = HTMLPurifier_Config::createDefault();
-	// 	$config->set('Cache.SerializerPath', CACHE_DIR);
-	// }
-	// $p = new HTMLPurifier($config);
-	// return $p->purify($html);
 }
 
 /**

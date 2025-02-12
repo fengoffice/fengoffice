@@ -346,6 +346,10 @@ div.checkbox-config-option {
 	cursor: move;
 }
 
+.custom-properties-admin.object-type .custom-property-list .cp-container input {
+	width: calc(100% - 5px);
+}
+
 .custom-properties-admin.object-type .custom-property-list .cp-container input[disabled="disabled"] {
 	color: black;
 	border: 0;

@@ -475,4 +475,8 @@
 	'field Objects is_manual_billing' => 'La facturación es manual',
     'field Objects is_manual_cost' => 'El costo es manual',
     'paid' => 'Pago',
+
+	'There is a contact on the trash bin with this email address. User on trash bin' => 'Este email esta asociado a un contacto en la papelera: {0}',
+    'There is a contact archived with this email address. User on archive' => 'Este email esta asociado a un contacto archivado: {0}',
+	'edit weblink' => 'Editar link',
 );

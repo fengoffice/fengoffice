@@ -59,6 +59,7 @@ class Contact extends BaseContact {
 		
 		return $name;
 	}
+
 	
 	
 	/**
@@ -359,6 +360,15 @@ class Contact extends BaseContact {
 		return $this->getFirstName()." ".$this->getSurname();
 	} // getDisplayName
 	
+
+	function getInitials() {
+		$initials = '';
+		$names = explode(' ', $this->getDisplayName());
+		foreach ($names as $name) {
+			$initials .= strtoupper(substr($name, 0, 1));
+		}
+		return $initials; 
+	}
 
 	/**
 	 * Return display name with last name first for this contact

@@ -174,7 +174,6 @@ class ApiController extends ApplicationController {
                 $dimension_id = Dimensions::findByCode('workspaces')->getId();
                 break;
             case "customer":
-                //$dimension_id = Dimensions::findByCode('customers')->getId();
                 Env::useHelper('functions', 'crpm');
                 $dimension_id = get_customers_dimension()->getId();
                 break;

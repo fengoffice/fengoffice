@@ -1383,6 +1383,8 @@ class ContactController extends ApplicationController
 					"name" => $contact->getObjectName(),
 					"email" => $contact->getEmailAddress(),
 					"id" => $contact->getEmailAddress(),
+					"is_trashed" => $contact->isTrashed(),
+					"is_archived" => $contact->isArchived(),
 					"status" => true,
 				)
 			));

@@ -120,7 +120,14 @@ $(function() {
 		    if ($object_type->getName() == 'contact') {
 				$prop['contact_type'] = $cp['contact_type'];
 			}
-			
+
+			if (str_starts_with($prop['id'], 'fixed')) {
+				$pgp = PropertyGroups::getPropertyGroupPropertyByObjectTypeAndPropertyId($object_type->getId(), $prop['id']);
+				if ($pgp instanceof PropertyGroupProperty) {
+					$prop['is_inheritable'] = $pgp->getIsInheritable() == 1 ? 'checked' : '';
+					$prop['is_disabled'] = $pgp->getIsDisabled() == 1 ? 'checked' : '';
+				}
+			}		
 
 			Hook::fire('overrides_special_cp',null, $prop);
 			

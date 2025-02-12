@@ -2030,6 +2030,7 @@ function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid, $page
 		    $command_location = (defined('WKHTMLTOPDF_PATH') ? with_slash(WKHTMLTOPDF_PATH) : "");
 		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 $zoom  -L 1 -R 1 ". $flag_header ."  ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		}
+        Logger::log("command: $command", Logger::DEBUG);
 
 		exec($command, $result, $return_var);
 		

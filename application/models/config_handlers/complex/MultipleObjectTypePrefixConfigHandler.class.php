@@ -10,7 +10,8 @@
     
     function render($control_name) {
     	$genid = gen_id();
-    	$object_types = ObjectTypes::getAvailableObjectTypesWithDimensionObjects(" AND `name` IN ('task', 'project', 'sample', 'payment', 'quota')");
+		// for now we show only a few content_objects and all dimension_objects (without person and company that are deprecated)
+    	$object_types = ObjectTypes::getAvailableObjectTypesWithDimensionObjects(" AND IF (`type` = 'content_object', `name` IN ('task', 'sample', 'payment', 'quota'), `name` NOT IN ('person','company'))");
     	
     	$value =  $this->getValue();
     	$out = '';
@@ -18,7 +19,7 @@
 		
 			$checked = array_search($ot->getId(), $value) !== false;
 			$out .= '<div style="float:left; margin-right: 15px; min-width: 130px;">';
-			$out .= label_tag(lang($ot->getName()), $genid.'_'.$control_name.'_'.$ot->getId(), false, array('style' => 'cursor:pointer;'), '');
+			$out .= label_tag($ot->getObjectTypeName(), $genid.'_'.$control_name.'_'.$ot->getId(), false, array('style' => 'cursor:pointer;'), '');
 			$out .= checkbox_field($control_name . '[' . $ot->getId () . ']', $checked, array('id' => $genid.'_'.$control_name.'_'.$ot->getId()));
 			$out .= '</div >';
 			

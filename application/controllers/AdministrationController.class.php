@@ -379,8 +379,7 @@ class AdministrationController extends ApplicationController {
 					
 					$new_cp->save();
 				}
-				
-				
+								
 				$ret = null;
 				Hook::fire('after_custom_property_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'order' => $order), $ret);
 			}

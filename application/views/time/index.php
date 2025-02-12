@@ -98,13 +98,14 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             var onclick = "og.openLink(og.getUrl('task', 'view', {id: " + r.data.rel_object_id + "})); return false;";
 
 			return String.format(
-				'<div class="task-link" data-object-id="{2}" data-task-id="{3}" data-controller="{4}" data-action="{5}"><a href="#" onclick="{1}" class="underline">{0}</a></div>', 
+				'<div class="task-link" data-object-id="{2}" data-task-id="{3}" data-controller="{4}" data-action="{5}"><a href="{6}" onclick="{1}" class="underline">{0}</a></div>', 
 				og.clean(value), 
 				onclick, 
 				r.data.object_id, 
 				r.data.rel_object_id,
 				'time',
 				'assign_task_to_timeslots',
+				og.getUrl('task', 'view', {id: r.data.rel_object_id})
 			);
         },
 

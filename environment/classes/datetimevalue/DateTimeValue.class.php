@@ -454,7 +454,7 @@ class DateTimeValue {
 		return self::FormatTimeDiff($dt, null, $format, $modulus, $subtract, $return_raw_data);
 	}
 	
-	static function FormatTimeDiff(DateTimeValue $dt1, DateTimeValue $dt2=null, $format='yfwdhms', $modulus = 1, $subtract = 0, $return_raw_data = false){
+	static function FormatTimeDiff(DateTimeValue $dt1, DateTimeValue $dt2=null, $format='yfwdhms', $modulus = 1, $subtract = 0, $return_raw_data = false){ 
 		$t1 = $dt1->getTimestamp();
 		if ($dt2)
 			$t2 = $dt2->getTimestamp();
@@ -474,10 +474,10 @@ class DateTimeValue {
 			if(in_array($k, $format)){
 				++$i;
 				if($i != $format_count){
-					$out[$k] = $sign * (int)($left / $v);
+					$out[$k] = (int)($left / $v);
 					$left = $left % $v;
 				}else{
-					$out[$k] = $sign * ($left / $v);
+					$out[$k] = (int)($left / $v);
 				}
 			}else{
 				$out[$k] = 0;
@@ -502,8 +502,12 @@ class DateTimeValue {
 		if ($out['s'] > 0)
 			$result .= ($result != ''? ', ':'') . ($out['s'] > 1 ? lang("x seconds", $out['s']) : lang("1 second"));
 			
-		if ($result == '')
+		if ($result == '') {
 			$result = '< ' . lang("1 minute");
+		} else if ($sign == -1) {
+			$result = '- ' . $result;
+		}
+
 		return $result;
 	}
 } // DateTimeValue

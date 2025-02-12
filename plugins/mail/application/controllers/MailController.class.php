@@ -119,6 +119,7 @@ class MailController extends ApplicationController {
 	}
 
 	function cleanMailBodyAndGetMailData($original_mail, $copy_attachments = false) {
+		Logger::log("CLEANING MAIL BODY AND GETTING MAIL DATA", Logger::DEBUG);
 		$return_mail_data = array();
 
 		if ($original_mail->getBodyHtml() != '') $type = 'html';
@@ -185,8 +186,11 @@ class MailController extends ApplicationController {
 			$content1 = $original_mail->getContent();
 			MailUtilities::parseMail($content1, $decoded, $parsedEmail, $warnings);
 			$tmp_folder = "/tmp/" . $original_mail->getId() . "_reply";
+			Logger::log("TMP FOLDER: ".ROOT . $tmp_folder, Logger::DEBUG);
 			if (is_dir(ROOT . $tmp_folder)) remove_dir(ROOT . $tmp_folder);
+
 			if ($parts_container = array_var($decoded, 0)) {
+				Logger::log("REBUILDING BODY HTML", Logger::DEBUG);
 				$re_body = self::rebuild_body_html($re_body, array_var($parts_container, 'Parts'), $tmp_folder);
 			}
 		}
@@ -217,14 +221,18 @@ class MailController extends ApplicationController {
 				}
 				// add the additional attachments found in the attached email to the final result
 				$attachments = array_merge($attachments, $more_attachments);
-
-				foreach($attachments as $att) {
-					$fName = utf8_encode_mime_header_value($att["FileName"]);
-					$fName = str_replace(':', ' ', $fName);
-					$fileType = $att["content-type"];
-					$fid = gen_id();
-					$attachs[] = "FwdMailAttach:$fName:$fileType:$fid";
-					file_put_contents(ROOT . "/tmp/" . logged_user()->getId() . "_" .$original_mail->getAccountId() . "_FwdMailAttach_$fid", $att['Data']);
+				foreach($attachments as &$att) {
+					if ($data  = $att['Data']) {
+						unset($att['Data']);
+						$fName = utf8_encode_mime_header_value($att["FileName"]);
+						$fName = str_replace(':', ' ', $fName);
+						$fileType = $this->get_mime_type($att, $fName);
+						$fid = gen_id();
+						$attachs[] = "FwdMailAttach:$fName:$fileType:$fid";
+						if(!file_put_contents(ROOT . "/tmp/" . logged_user()->getId() . "_" .$original_mail->getAccountId() . "_FwdMailAttach_$fid", $data)){
+							unset($att);
+						}
+					}
 				}
 			}
 		}
@@ -934,11 +942,13 @@ class MailController extends ApplicationController {
 					$extra_state_cond = " AND `state` < " . MAILS_MAX_OUTBOX_STATE;
 				}
 
+                Logger::log("Sending outbox mails for account: ".$account->getId());
 				$mails = MailContents::instance()->findAll(array(
 					"conditions" => array("`is_deleted`=0 AND `state` >= 200 $extra_state_cond AND `account_id` = ? AND `created_by_id` = ? $from_time_cond", $account->getId(), $accountUser->getContactId()),
 					"order" => "`state` ASC"
 				));
 				$count = 0;
+                Logger::log("Found ".count($mails)." mails to send for account: ".$account->getId());
 				foreach ($mails as $mail) {
 					/* @var $mail MailContent */
 					if ($mail->getTrashedById() > 0) continue;
@@ -1320,6 +1330,10 @@ class MailController extends ApplicationController {
 	 *
 	 */
 	function view() {
+		$decoded = array();
+		$parsedEmail = array();
+		$warnings = array();
+
 		$this->addHelper('textile');
 		$email = MailContents::instance()->findById(get_id());
 		if (!$email instanceof MailContent) {
@@ -1396,7 +1410,7 @@ class MailController extends ApplicationController {
 
 			$to_remove = array();
 			$more_attachments = array();
-
+			$winmailDat = 0;
 			foreach($attachments as $k => &$attach) {
 
 				// dont show inline images in attachments box
@@ -1436,7 +1450,7 @@ class MailController extends ApplicationController {
 					$return_var = 0;
 					exec($cmd, $result, $return_var);
 					$attach['FileName'] = $file_name_extracted;
-					tpl_assign('winmailDat','1');
+					$winmailDat = 1;
                 }
 
 				// if attachment is an email add the email attachments to the view
@@ -1454,7 +1468,7 @@ class MailController extends ApplicationController {
 			 	$attach['size'] = format_filesize(strlen($attach["Data"]));
 			 	unset($attach['Data']);
 			}
-
+			tpl_assign('winmailDat',$winmailDat);
 			$attachments = array_merge($attachments, $more_attachments);
 		}
 		if ($email->getBodyHtml() != '') {
@@ -1543,6 +1557,7 @@ class MailController extends ApplicationController {
 							$filename = $enc_conv->convert(detect_encoding($filename), "UTF-8", $filename, false);*/
 							$filename = gen_id() . "_attachment";
 							$file_content = $part['Body'];
+
 							$handle = fopen(ROOT."$tmp_folder/$filename", "wb");
 							fwrite($handle, $file_content);
 							fclose($handle);
@@ -2143,18 +2158,6 @@ class MailController extends ApplicationController {
 						// fill sharing table in background
 						add_object_to_sharing_table($file, $account_owner);
 						//$file->addToSharingTable();
-
-						$enc = array_var($parsedMail,'Encoding','UTF-8');
-						$ext = utf8_substr($fName, strrpos($fName, '.') + 1, utf8_strlen($fName, $enc), $enc);
-
-						$mime_type = '';
-						if (Mime_Types::instance()->has_type($att["content-type"])) {
-							$mime_type = $att["content-type"]; //mime type is listed & valid
-						} else {
-							$mime_type = Mime_Types::instance()->get_type($ext); //Attempt to infer mime type
-						}
-
-
 						// if file is binary, then get the content using another mail parser, because mime_parser_class sometimes returns corrupt pdfs
 						if ($att['Type'] == 'binary') {
 							$new_content = MailUtilities::getCorrectlyParsedAttachmentBody($email->getContent(), $att['FileName'], "application/octet-stream");
@@ -2168,7 +2171,7 @@ class MailController extends ApplicationController {
 						$fh = fopen($tempFileName, 'w') or die("Can't open file");
 						fwrite($fh, $att["Data"]);
 						fclose($fh);
-
+						$mime_type = $this->get_mime_type($att, $fName);
 						$fileToSave = array(
 							"name" => $fName,
 							"type" => $mime_type,
@@ -3857,5 +3860,23 @@ class MailController extends ApplicationController {
 
 		}
 	}
+	private function get_mime_type($att, $filename){
+		if(isset($att["content-type"])){
+			$mime_type = $att["content-type"];
+		} elseif (isset($att["ContentType"])){	
+			$mime_type = $att["ContentType"];
+		} elseif (isset($att["Type"]) && isset($att["SubType"])){
+			$mime_type = $att["Type"]."/".$att["SubType"];
+		}
 
+		if (isset($mime_type) && !Mime_Types::instance()->has_type($mime_type)) {
+			$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+			$mime_type = Mime_Types::instance()->get_type($ext); //Attempt to infer mime type
+		} else {
+			$mime_type = 'application/octet-stream';
+		}
+		Logger::log("GETTING MIME TYPE: ".$mime_type . " - from att: ".json_encode($att) . " - and filename: ".$filename, Logger::DEBUG);
+
+		return $mime_type;
+	}
 } // MailController

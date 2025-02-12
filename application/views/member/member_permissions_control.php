@@ -8,18 +8,23 @@
 	$allowed_object_types_json = array_var($permission_parameters, 'allowed_object_types_json');
 	$permission_groups = array_var($permission_parameters, 'permission_groups');
 	$member_permissions = array_var($permission_parameters, 'member_permissions');
+	$add_default_permissions_for_users = ConfigOptions::getOptionValue('add_default_permissions_for_users', false);
 	
 	$pg_condition = " AND EXISTS (SELECT pg.id FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.type<>'roles' AND pg.id=cmp.permission_group_id)";
 	$with_perm_pg_ids = array();
+	//If we are edditing an existing member
 	if ($member instanceof Member) {
 		$with_perm_pg_ids = DB::executeAll("SELECT DISTINCT(cmp.permission_group_id) FROM ".TABLE_PREFIX."contact_member_permissions cmp where cmp.member_id=".$member->getId()." $pg_condition AND object_type_id IN (".implode(',', $allowed_object_types_json).")");
-	} else {
+	} else if ($add_default_permissions_for_users) {
+		// If is a new project without a parent one.
 		if (isset($parent_sel) && $parent_sel > 0) {
 			$with_perm_pg_ids = DB::executeAll("SELECT DISTINCT(cmp.permission_group_id) FROM ".TABLE_PREFIX."contact_member_permissions cmp where cmp.member_id=".$parent_sel." $pg_condition AND object_type_id IN (".implode(',', $allowed_object_types_json).")");
-		} else {
+		//If is a new project without a parent one.
+		} else  {
 			$with_perm_pg_ids = DB::executeAll("SELECT c.permission_group_id FROM ".TABLE_PREFIX."contacts c where c.user_type IN (SELECT id FROM ".TABLE_PREFIX."permission_groups WHERE type='roles' AND name IN ('Executive','Manager','Administrator','Super Administrator'));");
 		}
 	}
+
 	if (count($with_perm_pg_ids)) $with_perm_pg_ids = array_flat($with_perm_pg_ids);
 	else $with_perm_pg_ids = array(0);
 	
@@ -40,7 +45,7 @@
 		}
 	}
 	ksort($users_with_perms);
-	
+
 	if (!isset($obj_type_sel)) $obj_type_sel=null;
 	if (!isset($current_dimension)) $current_dimension=null;
 ?>

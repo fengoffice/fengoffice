@@ -78,6 +78,8 @@
 	'field ProjectTasks mark_as_started' => 'Mark as started',
 	'field ProjectTasks is_manual_percent_completed' => 'Is manual percent completed',
 	'field ProjectTasks move_direction_non_working_days' => 'Move direction non-working days',
+	'field ProjectTasks total_remaining_time' => 'Total remaining time',
+	'field ProjectTasks remaining_time' => 'Remaining time',
   
   	'field ProjectTasks assigned_by_id' => 'Assigned by',
   	'field ProjectTasks type_content' => 'Type content',

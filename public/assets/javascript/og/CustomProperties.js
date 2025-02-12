@@ -277,34 +277,90 @@ og.cp_list_selected = function(combo, genid, name, cp_id, is_multiple) {
 }
 
 og.check_if_valid_cp_num = function (inp) {
-	if (inp.value.includes('%')) {
-		let removePorcent = inp.value.replace(/[%.]/g, '');
-		if (Number(removePorcent)) {
-			inp.value = removePorcent;
-		} else {
-			inp.value = '';
-		}
-	} else {
-		if (isNaN(inp.value)) {
-			inp.value = '';
-		}
-	}
+    let errorMessage = document.getElementById(inp.id + '_error');
+    let errorIdsInput = document.getElementById('error_ids');
+    let currentErrorIds = errorIdsInput.value.split(','); 
 
-}
+    if (isNaN(inp.value)) {
+        errorMessage.style.display = 'block';  // show error message
+        if (!currentErrorIds.includes(inp.id)) {
+            currentErrorIds.push(inp.id);
+            errorIdsInput.value = currentErrorIds.join(','); // update hidden input
+            //toggleSubmitButton(); // Actualizar el estado del botón
+        }
+    } else {
+        errorMessage.style.display = 'none'; 
+        if (currentErrorIds.includes(inp.id)) {
+            currentErrorIds = currentErrorIds.filter(id => id !== inp.id);
+            errorIdsInput.value = currentErrorIds.join(','); // update hidden input
+            //toggleSubmitButton(); // Actualizar el estado del botón
+        }
+    }
+};
 
 og.check_if_valid_url = function (input) {
+    const expression = 
+        '^(https?:\\/\\/)?' + // http or https optional
+        '(([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+' + // domains + subdomains
+        '[a-z]{2,}' + // e.g., com, org
+        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // optional ports i.e :8000 and route after domain
+        '(\\?[;&a-z\\d%_.~+=-]*)?' + // optional params starting with ?
+        '(\\#[-a-z\\d_]*)?$'; // optional additional string starting with #
 
-	const expression = 
-	'^(https?:\\/\\/)?' + //http or https optional
-    '(([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+' + // domains + subdomains
-	'[a-z]{2,}' + // i.e com.ar
-	'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // optional ports i.e :8000 and route after domain
-	'(\\?[;&a-z\\d%_.~+=-]*)?' + //  optional params starting with ?
-	'(\\#[-a-z\\d_]*)?$'; // optional additional string starting with #
+    const regex = new RegExp(expression, 'i'); // Insensitive to uppercase or lowercase
+    let errorMessage = document.getElementById(input.id + '_error');
+    let errorIdsInput = document.getElementById('error_ids');
+    let currentErrorIds = errorIdsInput.value.split(',');
 
-	const regex = new RegExp(expression, 'i'); // Insensitive to uppercase or lowercase
+    // Allow empty input as valid
+    if (input.value.trim() === '') {
+        errorMessage.style.display = 'none'; // Hide error message if the input is empty
+        if (currentErrorIds.includes(input.id)) {
+            currentErrorIds = currentErrorIds.filter(id => id !== input.id); // Remove input ID from error array
+            errorIdsInput.value = currentErrorIds.join(','); // Update the hidden input
+        }
+        return; // Exit the function early
+    }
 
-	if (!input.value.match(regex)) {
-		input.value = '';
-	}
-}
+    if (!input.value.match(regex)) {
+        errorMessage.style.display = 'block';  // Show error message
+        if (!currentErrorIds.includes(input.id)) {
+            currentErrorIds.push(input.id); // Add the input ID to the error array
+            errorIdsInput.value = currentErrorIds.join(','); // Update the hidden input
+        }
+    } else {
+        errorMessage.style.display = 'none';  // Hide error message
+        if (currentErrorIds.includes(input.id)) {
+            currentErrorIds = currentErrorIds.filter(id => id !== input.id); // Remove input ID from error array
+            errorIdsInput.value = currentErrorIds.join(','); // Update the hidden input
+        }
+    }
+
+    //toggleSubmitButton();
+};
+
+
+og.check_if_valid_amount_field = function (input) {
+    let errorMessage = document.getElementById(input.id + '_error');
+    let errorIdsInput = document.getElementById('error_ids');
+    let currentErrorIds = errorIdsInput.value.split(',');
+
+    // Show error message if input value is NaN
+    if (isNaN(amount)) {
+        errorMessage.style.display = 'block';  //Show error message
+        if (!currentErrorIds.includes(input.id)) {
+            currentErrorIds.push(input.id); // Add the input ID to the error array
+            errorIdsInput.value = currentErrorIds.join(','); // Actualizar el campo oculto
+        }
+    } else {
+        errorMessage.style.display = 'none';  // Hide error message
+        if (currentErrorIds.includes(input.id)) {
+            currentErrorIds = currentErrorIds.filter(id => id !== input.id); // Remove the input ID from the error array
+            errorIdsInput.value = currentErrorIds.join(','); // Update the hidden input
+        }
+    }
+
+    //toggleSubmitButton();
+};
+
+

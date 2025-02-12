@@ -1593,6 +1593,32 @@ ogTasks.initTasksList = function () {
         );
     }
 
+    // Remaining time
+    if(drawOptions.show_remaining_time) {
+        tasks_list_cols.push(
+            {
+                id: 'task_remaining',
+                title: lang('remaining time'),
+                group_total_field: 'remaining_time_string',
+                row_field: 'remaining_time_string',
+                col_width: '100px'
+            }
+        );
+    }
+
+    // Total remaining time
+    if(drawOptions.show_total_remaining_time) {
+        tasks_list_cols.push(
+            {
+                id: 'task_total_remaining',
+                title: lang('total remaining time'),
+                group_total_field: 'total_remaining_time_string',
+                row_field: 'total_remaining_time_string',
+                col_width: '100px'
+            }
+        );
+    }
+
     // additional columns
     if (ogTasks.additional_task_list_columns) {
         for (var i = 0; i < ogTasks.additional_task_list_columns.length; i++) {
@@ -1718,7 +1744,7 @@ ogTasks.initDragDrop = function () {
             var selected_ids = ids_str.split(',');
             $(item).addClass('dragging');
 
-            var html = item;
+            var html = $(item).clone(); // Clone original item to not manipulate DOM directly
             var processed_ids = [item[0].id];
 
             for (var i = 0; i < selected_ids.length; i++) {
@@ -1726,10 +1752,10 @@ ogTasks.initDragDrop = function () {
                 if (sel_task && sel_task.divInfo && sel_task.divInfo[0]) {
                     var sel_el_id = "ogTasksPanelTask" + sel_task.id + "G" + sel_task.divInfo[0].group_id;
                     var sel_el = $("#" + sel_el_id);
-                    if (sel_el.length > 0 && processed_ids.indexOf(sel_el[0].id) == -1) {
+                    if (sel_el.length > 0 && processed_ids.indexOf(sel_el[0].id) == -1 && sel_el[0] !== item[0]) {
                         $(sel_el).addClass('dragging');
 
-                        $(html).append(sel_el[0]);
+                        html.append(sel_el[0]);
                         processed_ids.push(sel_el[0].id);
                     }
                 }
@@ -1773,7 +1799,12 @@ ogTasks.processTaskDrop = function (event, object) {
             }
             dimension_id = parseInt($(event.srcElement).closest(".x-panel.x-tree").attr('id').replace('dimension-panel-', ''));
 
-        } else if (event.srcElement.id.indexOf("extdd-") >= 0) {
+        } else if (event.srcElement.id.indexOf("extdd-") >= 0 // dropped in the text of the tree node
+            || $(event.srcElement).hasClass("x-tree-icon") // dropped in the emtpy space that identates a tree node
+            || $(event.srcElement).hasClass("x-tree-elbow") // dropped in the elbow icon before a tree node
+            || $(event.srcElement).hasClass("x-tree-node-icon") // dropped in the member icon
+            || $(event.srcElement).hasClass("ico-edit")) { // dropped in the member edit icon
+            
             var node_id = $(event.srcElement).closest(".x-tree-node-el").attr("ext:tree-node-id");
             if (!isNaN(node_id)) {
                 member_id = node_id;

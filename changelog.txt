@@ -2,6 +2,235 @@
 Changelog
 =========
 
+Since 3.11.6.5
+-----------------------------------
+bugfix: Refactor TimeController to filter users for quick add by selected members (#2980)
+bugfix: Fix sorting of projects when not grouped (#2983)
+
+Since 3.11.6.4
+-----------------------------------
+bugfix: subtasks parent must be reassigned after deleting task (#2971)
+bugfix: cant open task link in new tab (#2973)
+feature: create a new report 'Aging unbilled values' (#2975)
+
+Since 3.11.6.3
+-----------------------------------
+bugfix: Calculate the discounts in place for the report and use it to get the correct "unbilled" value (#2970)
+
+Since 3.11.6.2
+-----------------------------------
+bugfix: use function to get clients dimension instead of find by code (it may be different in some cases). (#2969)
+
+Since 3.11.6.1
+-----------------------------------
+feature: In 'project billing' report add 'hide summaries' option (#2960)
+
+Since 3.11.6.0
+-----------------------------------
+feature: In the 'Project Financials' report add 'display unbilled' option (#2959)
+
+Since 3.11.6.0-beta7
+-----------------------------------
+bugfix: Update language files to include new translations for total remaining time (#2947)
+
+Since 3.11.6.0-beta6
+-----------------------------------
+bugfix: split invoice wrong qbo sync for expense lines (#2953)
+
+Since 3.11.6.0-beta5
+-----------------------------------
+feature: change task to fixed fee must init quoted price with current t&m estimated price (#2943)
+feature: add column format for invoice template address properties (#2942)
+bugfix: split invoice discount must use qty not rate (#2946)
+bugfix: Save subtask description by fixing bug in the JS file (#2945)
+bugfix: qbo invoice sync - inconsistency in global markup line if line cost > line price, also for split invoices (#2941)
+
+Since 3.11.6.0-beta4
+-----------------------------------
+feature: allow "Locations" to have subtypes (#2934)
+
+Since 3.11.6.0-beta3
+-----------------------------------
+bugfix: Improve the invoce templates options (#2929)
+
+Since 3.11.6.0-beta2
+-----------------------------------
+feature: Develop report "Work in progress (WIP) summary by project" (#2920)
+bugfix: when selecting budgeted expense the actual expense type is not autocompleted (#2921)
+bugfix: new invoice repetition is copying einvoice id (#2917)
+
+Since 3.11.6.0-beta1
+-----------------------------------
+bugfix: don't show sync button if times are not set to sync (#2916)
+bugfix: fixes drag and drop issue (#2914)
+feature: Create a centralized permission check for content data objects (#2915)
+feature: for split invoices, ignore discount line and apply discount percentage to each line (#2913)
+
+Since 3.11.5.X
+-----------------------------------
+bugfix: fixes information lines order and fix ui table (#2912)
+bugfix: permissions with expenses associated to tasks (#2907)
+bugfix: cant unarchive members dimension group (#2885)
+feature: allow to change default value for "system" custom properties (#2909)
+feature: adds config option on invoice templates (#2897)
+feature: add type attribute to budgeted expenses (#2882)
+feature: persist billable worked time v2 (#2861)
+feature: ask to reclassify objects after changing project relation (#2860)
+
+Since 3.11.5.6
+-----------------------------------
+bugfix: Expense calculations for widgets (#2968)
+
+Since 3.11.5.5
+-----------------------------------
+bugfix: qbo installer does not initialize correctly the object types to sync config option (#2940)
+bugfix: Refactor language strings and update UI labels in time_weekly_view_functions.php and lang.php (#2938)
+bugfix: can't edit invoice template if any project cp was deleted (#2937)
+
+Since 3.11.5.4
+-----------------------------------
+bugfix: qbo installer: syntax error when adding qbo_sync_status to expenses (#2932)
+bugfix: In weekly view remove condition that prevented recalculation (#2930)
+bugfix: some task columns weren't added in 3.11.5 and plugin update failed (#2928)
+
+Since 3.11.5.3
+-----------------------------------
+bugfix: fix error with email attachments (#2927)
+bugfix: removes sage expenses validation and adds paid by id on export file (#2925)
+bugfix: actual expenses list in task view does not include "date" column (#2924)
+
+Since 3.11.5.2
+-----------------------------------
+bugfix: fix export when generating project invoice (#2922)
+bugfix: Apply timezone to the due date in notification manager (#2918)
+
+Since 3.11.5.1
+-----------------------------------
+bugfix: add email logs on incoming emails and attachments (#2911)
+bugfix: autonumbering section langs are not updated for en_gb (#2910)
+bugfix: fixes email not shown on contact card (#2906)
+bugfix: Fix the issues related to options and columns in double list (#2905)
+bugfix: fixes field column on invoice template options (#2904)
+bugfix: align numeric columns at invoice print (#2901)
+
+Since 3.11.5.0
+-----------------------------------
+bugfix: dont complete already completed tasks (#2903)
+bugfix: The report 'project financials (with task details)' (#2896)
+bugfix: improvements, taxes and other fixes (#2893)
+bugfix: Adds fixed width to date column (#2888)
+bugfix: show labor subtotal and expenses subtotal checked by default (#2871)
+bugfix: Refactor language files to improve error messages (#2859)
+improvement: add project and client members when generating invoice (#2892)
+improvement: update new original invoice layout (#2881)
+improvement: Export expenses with settings and vendor mandatory if sage plugin ena… (#2866)
+improvement: QBO Allow to sync expenses with no type (#2855)
+
+Since 3.11.5.0-rc1
+-----------------------------------
+bugfix: fix invoice display of complete project name (#2899)
+bugfix: adding contact config option of new task columns check correct version (#2894)
+
+Since 3.11.5.0-beta8
+-----------------------------------
+bugfix: adv. billing plugin update cant execute if object does not have all columns added in the table (#2889)
+bugfix: unescaped char makes task form not loading if subtask has it in the description (#2890)
+
+Since 3.11.5.0-beta7
+-----------------------------------
+bugfix: can't order expenses by qbo sync status (#2887)
+bugfix: Refactor language files for some plugins (#2886)
+bugfix: Refactor MoreController to improve member module hint retrieval (#2884)
+bugfix: Add new language strings for invoice ID and invoicing status (#2883)
+bugfix: add missing langs in en_ca (#2878)
+bugfix: can't order billing cat and product types lists by dimension … (#2875)
+bugfix: In invoice template renderer before declaring function check if it exists (#2873)
+bugfix: drag and drop tasks to member icon does not work (#2868)
+improvement: allow to define autonumbering with 2, 3, and 4 as max digits (#2880)
+feature: show new task columns in task module (#2858)
+
+Since 3.11.5.0-beta6
+-----------------------------------
+improvement: Add 'remaining time' totals to custom reports (#2870)
+bugfix: invoice template issues generating fixed fee task invoices (#2867)
+bugfix: Add missing activity log actions in Spanish translation (#2865)
+bugfix: Fix on invoice lines of type labor information and expenses information (#2864)
+bugfix: Fix typo in task billable status language key (#2863)
+bugfix: Adds sage support for discount on line above (#2848)
+
+Since 3.11.5.0-beta5
+-----------------------------------
+bugfix: remove 'name' from available properties in autonumbering settings (#2862)
+
+Since 3.11.5.0-beta4
+-----------------------------------
+bugfix: adds missing langs (#2854)
+bugfix: missing lang when showing error of expense with no amout in i… (#2850)
+bugfix: In invoice template task detail use project name option (#2846)
+bugfix: Add user's 'Initials' to time detail in invoice template generation (#2844)
+bugfix: fix ordering invoice lines on backend (#2841)
+feature: Adds project name and number to export file (#2834)
+feature: develop report 'projects financials with tasks details' (#2833)
+feature: Add is_disable prop to fixedprop (#2817)
+
+Since 3.11.4.8
+-----------------------------------
+bugfix: Custom reports for tasks: exclude system columns; add langs (#2853)
+bugfix: Modify email account exclude from synchronizing (#2852)
+bugfix: In custom reports show correct 'billable' status for time (#2851)
+improvement: In import tool add ability to set tasks billable/non-billable (#2840)
+
+Since 3.11.4.7
+-----------------------------------
+Improvement: add 'remaining_time' to task table (#2849)
+
+Since 3.11.4.6
+-----------------------------------
+bugfix: typo rendering qbo status column, caused to show times as not sync (#2845)
+bugfix: Bump mail plugin version to 36 (#2843)
+bugfix: the recalculate billing btn uses different data keys and sets the total cost to 0 if it is fixed cost (#2847)
+
+Since 3.11.4.5
+-----------------------------------
+feature: set rows to red when sum of all act expenses exceed the budg exp (#2838)
+bugfix: fix default date on date budgeted expenses templates (#2836)
+bugfix: fix logo in the reports, it was too small (#2839)
+bugfix: exclude account from automatic sync (#2837)
+bugfix: permission issues seeing the time billing info (#2835)
+
+Since 3.11.4.4
+-----------------------------------
+bugfix: POST overwrote the paramaters that used later in the import tool (#2820)
+bugfix: In 'project quoting' report fix logo by adding it as base 64 to the PDF (#2831)
+bugfix: Add hook to trigger task financial recalculations (#2796)
+refactor is_disable to is_disabled in property group properties (#2832)
+
+Since 3.11.4.x
+-----------------------------------
+feature: Adds vertical align top to project table vertical information (#2829)
+feature: Adds task description to invoice line detail (#2825)
+feature: Refactor: invoice template invoice generation (#2771)
+feature: Adds feature dynamic properties on invoice templates (#2807)
+feature: add admin fee and discount to invoice generation (#2795)
+feature: create general invoice template type (#2792)
+feature: invoice template options to show/hide expenses/labor subtotals (#2808)
+feature: Improvement/projects autonumbering (#2798)
+feature: new columns to store financials for labor and expenses for tasks (#2805)
+bugfix: Invoice memo multiline and not override additional info with invoice (#2826)
+bugfix: Set correct function name for update income plugin script (#2830)
+bugfix: Fix listing users (#2806)
+bugfix: display member custom ot name (#2787)
+bugfix: improve error message on duplicated emails (#2794)
+bugfix: make a more generic lang (#2809)
+bugfix: Update MailManager.js to set a minimum width for the top toolbar (#2815)
+bugfix: add weblink lang (#2819)
+bugfix: Remove users without permissions on new objects (#2785)
+bugfix: url cp change their type to text (#2773)
+
+Since 3.11.4.14
+-----------------------------------
+improvement: add log information on sending emails (#2900)
+
 Since 3.11.4.13
 -----------------------------------
 bugfix: in expenses form when selecting vendor it always changes the payment terms to net 30. (#2898)

@@ -391,7 +391,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 						}
 						
 						$type = array_var($columns['types'], $col);
-						$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'));
+						$numeric_type = (!in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'))) || is_numeric($value);
 						Hook::fire('check_is_numeric_column_type', array('report' => $report, 'column' => $col), $numeric_type);
 				?>
 					<?php
@@ -834,6 +834,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 								}
 							} else if ($gb_keys[0]['k'] == "_group_id_fp_invoicing_status") {
 								$name_k0 = lang("invoicing_status $k0");
+							} else if ($gb_keys[0]['k'] == "_group_id_fp_expense_type") {
+								$name_k0 = lang($k0);
 							}
 							$grouped_temp[$n0] = array(
 								'id' => $k0,
@@ -906,6 +908,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 									}
 								} else if ($gb_keys[1]['k'] == "_group_id_fp_invoicing_status") {
 									$name_k1 = lang("invoicing_status $k1");
+								} else if ($gb_keys[0]['k'] == "_group_id_fp_expense_type") {
+									$name_k1 = lang($k1);
 								}
 								$grouped_temp[$n0]['groups'][$n1] = array(
 									'id' => $k0 . "_" . $k1,
@@ -980,6 +984,8 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 										}
 									} else if ($gb_keys[2]['k'] == "_group_id_fp_invoicing_status") {
 										$name_k2 = lang("invoicing_status $k2");
+									} else if ($gb_keys[2]['k'] == "_group_id_fp_expense_type") {
+										$name_k2 = lang("$k2");
 									}
 									$grouped_temp[$n0]['groups'][$n1]['groups'][$n2] = array(
 										'id' => $k0 . "_" . $k1 . "_" . $k2,

@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.4.14');
+		$this->setVersionTo('3.11.6.6');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1179,7 +1179,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			);";
 		}
 
-		if (version_compare($installed_version, '3.11.4.8') < 0) {
+		if (version_compare($installed_version, '3.11.6.0') < 0) { // check if the column doesn't exist for all versions below 3.11.6
 			// Add 'remaining_time' column to project_tasks table
         	if (!$this->checkColumnExists($t_prefix."project_tasks", "remaining_time", $this->database_connection)) {
         		$upgrade_script .= "
@@ -1192,6 +1192,32 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 					ALTER TABLE `".$t_prefix."project_tasks` ADD `total_remaining_time` int(10) NOT NULL DEFAULT '0';
 				";
         	}
+
+
+			// Ensure that is_mail_rule column exists in app logs table
+			if (!$this->checkColumnExists($t_prefix . "application_logs", "is_mail_rule", $this->database_connection)) {
+				$upgrade_script .= "
+						ALTER TABLE `" . $t_prefix . "application_logs`
+						ADD COLUMN `is_mail_rule` TINYINT(1) DEFAULT 0;
+						";
+			}
+			
+			// Add 'tasksShowRemainingTime' contact config option
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowRemainingTime", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES ('task panel', 'tasksShowRemainingTime', '0', 'BoolConfigHandler', 1, 0, '')
+					ON DUPLICATE KEY UPDATE name=name;
+				";
+			}
+
+			// Add 'tasksShowTotalRemainingTime' contact config option
+			if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowTotalRemainingTime", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES ('task panel', 'tasksShowTotalRemainingTime', '0', 'BoolConfigHandler', 1, 0, '')
+					ON DUPLICATE KEY UPDATE name=name;
+				";
+			}
+
 		}
 		
 		//ADD NEXT UPDATE SCRIPTS HERE

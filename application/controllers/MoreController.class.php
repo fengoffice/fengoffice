@@ -185,7 +185,7 @@ class MoreController extends ApplicationController {
 		    $url_params = json_decode($panel->getUrlParams(), true);
 		    
 		    if ( $panel->getDefaultController() == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {
-		        $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id']);
+		        $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id'],null,true);
 		        $hint = escape_character(lang('custom system member module hint', $name_tab));
 		    }else{
 		        $name_tab = lang($panel->getTitle());

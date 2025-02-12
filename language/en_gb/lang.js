@@ -986,5 +986,6 @@ addLangs({
     'add unclassified contact':'Add unclassified contact',
     'template name required': 'Template name is required',
     'upcoming tasks w': 'Upcoming',
-    'time will be rounded to 15 minutes': 'Time will be rounded to 15 minutes'
+    'time will be rounded to 15 minutes': 'Time will be rounded to 15 minutes',
+    'total_remaining_time': 'Total remaining time',
 });

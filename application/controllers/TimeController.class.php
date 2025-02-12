@@ -27,7 +27,7 @@ class TimeController extends ApplicationController
     public function index()
     {
 
-        //this is used for the filter ciombo
+        //this is used for the filter combo
         //Get Users Info
         $users = array();
         $context = active_context();
@@ -53,8 +53,9 @@ class TimeController extends ApplicationController
         }
 
         //This is used for the quickadd
-        $members = active_context_members(false);
-        $users_for_quick_add = Timeslot::getUsersFilteredByMembersAndPermissions($members);
+        $selected_member_ids = active_context_members(false);
+		$selected_members_object = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
+        $users_for_quick_add = Timeslot::getUsersFilteredByMembersAndPermissions($selected_members_object);
         
         /*
         $required_dimensions = DimensionObjectTypeContents::getRequiredDimensions(Timeslots::instance()->getObjectTypeId());

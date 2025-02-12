@@ -423,6 +423,7 @@ class MemberController extends ApplicationController {
 		$member_type_id = array_var($parameters, 'type_id');
 		$parent_id = array_var($parameters, 'parent_id');
 		$filter_members_id = array_var($parameters,"filter_members_id");
+		$archived = array_var($parameters,"archived");
 		
         //this is to bring just the first levels of sonf of the defined parent_id in the otherside just will bring all the element with unde the parent_id
         $just_parent_sons = array_var($parameters, 'just_parent_sons',false);
@@ -569,9 +570,11 @@ class MemberController extends ApplicationController {
 		//extra joins
         $joins_sql .= $SQL_EXTRA_JOINS;
 
+		$archived_cond = ($archived ? "AND mem.archived_by_id>0" : "AND mem.archived_by_id=0");
+
 		// sql conditions part
 		$all_conditions_sql = "
-				mem.dimension_id=".$dimension->getId()." AND mem.archived_by_id=0
+				mem.dimension_id=".$dimension->getId()." $archived_cond
 				$permission_conditions
 				$member_association_cond
 				$parent_member_cond
@@ -667,6 +670,7 @@ class MemberController extends ApplicationController {
 	function prepareObject($rows, $start, $limit, $dimension, $member_type_id, $total, $groups_info=null) {
 		
 		$ot = ObjectTypes::instance()->findById($member_type_id);
+		$tz_offset = logged_user()->getTimezone();
 		
 		$object = array(
 			"totalCount" => $total,
@@ -702,6 +706,15 @@ class MemberController extends ApplicationController {
 					break;
 				}
 				$info['mem_path'] = json_encode($path_ids);
+
+				$info['ot_id'] = $m->getObjectTypeId();
+				$info['type'] = $m->getTypeNameToShow();
+
+				$dateArchived = $m->getArchivedOn() instanceof DateTimeValue ? ($m->getArchivedOn()->isToday() ? format_time($m->getArchivedOn(), null, $tz_offset) : format_datetime($m->getArchivedOn(), null, $tz_offset)) : lang('n/a');
+				$archived_by = Contacts::instance()->findById($m->getArchivedById());
+				$info['archivedBy'] = $archived_by instanceof Contact ? $archived_by->getObjectName() : lang('n/a');
+				$info['archivedById'] = $m->getArchivedById();
+				$info['dateArchived'] = $dateArchived;
 				
 				// calculated info
 			/*	$more_info = array(
@@ -1361,9 +1374,14 @@ class MemberController extends ApplicationController {
 				Hook::fire('edit_member_properties', $args, $ret);
 			}
 			
-			
+			$associated_members = array_var($_POST, 'associated_members', array());
 			$ret = null;
-			Hook::fire('after_member_save', array('member' => $member, 'previous_data' => $previous_data, 'is_new' => $is_new), $ret);
+			Hook::fire('after_member_save', array(
+				'member' => $member,
+				'previous_data' => $previous_data,
+				'is_new' => $is_new,
+				'associated_members' => $associated_members
+			), $ret);
 			
 			if ($is_new) {
 				// set all permissions for the creator
@@ -1480,7 +1498,7 @@ class MemberController extends ApplicationController {
 			Hook::fire('after_member_save_and_commit', array('member' => $member, 'is_new' => $is_new), $ret);
 
             if(!$is_api_call){
-                flash_success(lang('success save member', lang(ObjectTypes::instance()->findById($member->getObjectTypeId())->getName()), $member->getName()));
+				flash_success(lang('success save member', ObjectTypes::instance()->findById($member->getObjectTypeId())->getObjectTypeName(), $member->getName()));
                 ajx_current("back");
                 if (array_var($_REQUEST, 'modal')) {
                     evt_add("reload current panel");
@@ -2211,6 +2229,7 @@ class MemberController extends ApplicationController {
 	
 	
 	function quick_add_form() {
+
 		ajx_current("empty");
 		$this->setLayout('empty');
 		$dimension_id = array_var($_GET, 'dimension_id');
@@ -2586,7 +2605,7 @@ class MemberController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		if (get_id('user')) $user = Contacts::instance()->findById($get_id('user'));
+		if (get_id('user')) $user = Contacts::instance()->findById(get_id('user'));
 		else $user = logged_user();
 		
 		if (!$user instanceof Contact) {
@@ -2612,6 +2631,74 @@ class MemberController extends ApplicationController {
 			flash_error($e->getMessage());
 			ajx_current("empty");
 		}
+	}
+
+
+	/**
+	 * Unarchive multiple members.
+	 *
+	 * This function will unarchive the given members and return an array with the
+	 * number of successful unarchives and the number of errors encountered.
+	 *
+	 * @param array $member_ids Array of member IDs to unarchive.
+	 * @param Contact|null $user User performing the unarchive action, defaults to logged user.
+	 *
+	 * @return array An array with 2 elements: [0] is the number of successful unarchives,
+	 *               and [1] is the number of errors encountered.
+	 */
+	function unarchive_multiple($member_ids, $user = null) {
+		$succ = 0;
+		$err = 0;
+
+		if (is_null($user)) $user = logged_user();
+		
+		// Ensure the user is a valid contact
+		if (!$user instanceof Contact) {
+			ajx_current("empty");
+			return;
+		}
+		
+		// Filter out non-numeric member IDs
+		$member_ids = array_filter($member_ids, 'is_numeric');
+		if (count($member_ids) == 0) {
+			ajx_current("empty");
+			return;
+		}
+		
+		// Retrieve members based on filtered IDs
+		$members = Members::instance()->findAll(array('conditions' => 'id IN (' . implode(',', $member_ids) . ')'));
+		if (count($members) == 0) {
+			ajx_current("empty");
+			return;
+		}
+		
+		try {
+			DB::beginWork();
+			set_time_limit(0);
+			$dimension_ids = array();
+			// Unarchive each member
+			foreach ($members as $member) {
+				$member->unarchive($user);
+				$dimension_ids[] = $member->getDimensionId();
+				$succ++;
+			}
+			
+			DB::commit();
+			flash_success(lang('success unarchive members', count($members)));
+
+			$dimension_ids = array_unique(array_filter($dimension_ids));
+			foreach ($dimension_ids as $dim_id) {
+				evt_add("reload dimension tree", array('dim_id' => $dim_id));
+			}
+			
+		} catch (Exception $e) {
+			$err++;
+			DB::rollback();
+			flash_error($e->getMessage());
+			ajx_current("empty");
+		}
+		
+		return [$succ, $err];
 	}
 	
 	// get member selectors for add to the view 

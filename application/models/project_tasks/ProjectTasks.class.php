@@ -426,7 +426,7 @@ class ProjectTasks extends BaseProjectTasks {
 	
 	
 	static function getArrayInfo($raw_data, $full = false, $include_members_data = false, $include_mem_path = true, $include_open_timeslots = true, $include_subtasks_ids = true){
-		$desc = "";
+		$desc = isset($raw_data['text']) ? $raw_data['text'] : '';
 		if ($full) {
 			if(config_option("wysiwyg_tasks")){
 				if($raw_data['type_content'] == "text"){
@@ -603,6 +603,26 @@ class ProjectTasks extends BaseProjectTasks {
 			$result['overall_worked_time'] = 0;
 		}
 
+		// Remaining time
+		$remaining_time = $raw_data['remaining_time'];
+		if ($remaining_time != 0){
+			$result['remaining_time'] = $remaining_time;
+			$result['remaining_time_string'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($remaining_time * 60), 'hm', 60));
+		}else{
+			$result['remaining_time'] = 0;
+		}
+
+		// Total remaining time
+		$total_remaining_time = $raw_data['total_remaining_time'];
+		if ($total_remaining_time != 0){
+			$result['total_remaining_time'] = $total_remaining_time;
+			$result['total_remaining_time_string'] = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($total_remaining_time * 60), 'hm', 60));
+		}else{
+			$result['total_remaining_time'] = 0;
+		}
+
+
+		// Pending time
 		$pending_time = $time_estimate - $total_minutes;		
 		if ($pending_time > 0){
 			$result['pending_time'] = $pending_time;
@@ -675,6 +695,7 @@ class ProjectTasks extends BaseProjectTasks {
 		$cols = array(
 			'time_estimate' => array('operation' => 'sum', 'format' => 'time'),
 			'total_worked_time' => array('operation' => 'sum', 'format' => 'time'),
+			'remaining_time' => array('operation' => 'sum', 'format' => 'time'),
 		);
 
 		return array_merge($parent_cols, $cols);

@@ -20,7 +20,7 @@ og.ArchivedObjects = function() {
 				totalProperty: 'totalCount',
 				id: 'id',
 				fields: [
-					'name', 'object_id', 'type', 'ot_id',
+					'name', 'object_id', 'type', 'ot_id', 'member_id',
 					'createdBy', 'createdById', 'dateCreated',
 					'updatedBy', 'updatedById',	'dateUpdated',
 					'archivedBy', 'archivedById', 'dateArchived',
@@ -115,7 +115,7 @@ og.ArchivedObjects = function() {
 	}
 
 	function renderType(value, p, r){
-		return String.format('<i>' + lang(value) + '</i>')
+		return String.format('<i>' + value + '</i>')
 	}
 	
 	function renderIcon(value, p, r) {
@@ -169,14 +169,20 @@ og.ArchivedObjects = function() {
 		return value;
 	}
 
-	function getSelectedIds() {
+	function getSelectedIds(get_member_ids = false) {
 		var selections = sm.getSelections();
 		if (selections.length <= 0) {
 			return '';
 		} else {
 			var ret = '';
 			for (var i=0; i < selections.length; i++) {
-				ret += "," + selections[i].data.object_id;
+				if (get_member_ids) {
+					if (!isNaN(selections[i].data.member_id)) {
+						ret += "," + selections[i].data.member_id;
+					}
+				} else {
+					ret += "," + selections[i].data.object_id;
+				}
 			}
 			og.lastSelectedRow.archived = selections[selections.length-1].data.ix;
 			return ret.substring(1);
@@ -298,7 +304,8 @@ og.ArchivedObjects = function() {
 				if (confirm(lang("confirm unarchive selected objects"))) {
 					this.load({
 						action: 'unarchive',
-						objects: getSelectedIds()
+						objects: getSelectedIds(),
+						members: getSelectedIds(true)
 					});
 					this.getSelectionModel().clearSelections();
 				}

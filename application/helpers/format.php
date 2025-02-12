@@ -272,11 +272,17 @@ function date_format_tip($format) {
 	return $result;
 }
 
+function format_time_diff_to_print_in_list($minutes) {
+	$formatted_time = str_replace(',',',<br>',DateTimeValue::FormatTimeDiff(new DateTimeValue(0), new DateTimeValue($minutes * 60), 'hm', 60));
+    return $formatted_time;
+}
+
 	function format_time_column_value($value, $format=null) {
 		if ($format == null) {
 			$format = user_config_option('report_time_colums_display');
 		}
 
+		$value = floatval($value);
 		$is_negative = $value < 0;
 		if ($is_negative) $value = abs($value);
 

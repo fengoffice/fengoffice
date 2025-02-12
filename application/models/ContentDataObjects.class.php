@@ -194,7 +194,7 @@ abstract class ContentDataObjects extends DataManager {
     * @return array
     * @throws DBQueryError
     */
-    function find($arguments = null) {
+    function find($arguments = null) { 
       
       if (isset($arguments['conditions'])) {
       	$conditions = $arguments['conditions'];
@@ -242,6 +242,8 @@ abstract class ContentDataObjects extends DataManager {
       	}
       	$join_string = "$join_type JOIN " . array_var($join, 'table') . " jt ON jt." . array_var($join, 'jt_field') . " = " . $join_cond;
       }
+
+	  Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => 'e.'), $where_string);
       
       // Prepare SQL
       $sql = "
@@ -742,6 +744,8 @@ abstract class ContentDataObjects extends DataManager {
 				}
 			}
 			
+
+			Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => 'e.'), $permissions_condition);
 			
 			/*
 			 * Check that the objects to list does not belong only to a non-manageable dimension that defines permissions

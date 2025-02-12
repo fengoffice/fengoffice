@@ -4,8 +4,12 @@
 	$contact = $object;
 	$hasEmailAddrs = false;
 	
-	$main_email = $contact->getEmailAddress('personal');
-	$personal_emails = $contact->getContactEmails('personal');
+	$main_email =  (($contact->getMainEmails()) ? $contact->getMainEmails()[0]->getEmailAddress() : "");
+	$user_emails = $contact->getContactEmails('user');
+
+	if (empty($main_email) && !empty($user_emails[0])) {
+		$main_email = $user_emails[0]->getEmailAddress();
+	}
 	
 	$all_phones = ContactTelephones::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
 	$all_addresses = ContactAddresses::instance()->findAll(array('conditions' => 'contact_id = '.$contact->getId()));
