@@ -91,7 +91,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 				} else {
 				
 					$step = 98;
-					$hint_text = lang('click here to add a new', strtolower(lang($ot->getName())));
+					$hint_text = lang('click here to add a new', strtolower($ot->getObjectTypeName()));
 					$acitvate_tab_js = "var panel = Ext.getCmp('".$first_tab_panel->getId()."'); Ext.getCmp('tabs-panel').setActiveTab(panel); og.highlight_link({selector:'$selector', step:$step, time_active:30000, timeout:500, hint_text:'$hint_text', hint_pos:'right', animate_opacity:10, reload_panel:true})";
 					$add_first_obj_url = "javascript:$acitvate_tab_js";
 					
@@ -100,7 +100,7 @@ if (config_option('getting_started_step') < 99 && !$more_settings_expanded) {
 							'id' => 'add_first_object',
 							'ico' => $icon_class,
 							'url' => $add_first_obj_url,
-							'name' => lang('add your first', strtolower(lang($ot->getName()))),
+							'name' => lang('add your first', strtolower($ot->getObjectTypeName())),
 							'extra' => '',
 					);
 					if (isset($add_first_obj_onclick) && $add_first_obj_onclick != null) {

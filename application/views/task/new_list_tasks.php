@@ -360,7 +360,7 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
         	}
         }
         foreach ($dimension_obj_types as $ot) {
-        	$mem_type_name = lang($ot->getName());
+        	$mem_type_name = $ot->getObjectTypeName();
         	if ($no_folder_ots_count == 1 && $ot->getName() != 'folder') {
         		$mem_type_name = $enabled_dimension->getName();
         	}

@@ -2,6 +2,22 @@
 Changelog
 =========
 
+Since 3.11.6.7
+-----------------------------------
+bugfix/when creating user don't send permission inputs if not explic… by @alvarotm01 in https://github.com/fengoffice/FO_Internal/pull/2993
+bugfix/refactor custom property handling in ObjectController by @nico-lois in https://github.com/fengoffice/FO_Internal/pull/2991
+bugfix/aging unbilled report add excel alignment and fix rounding by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2986
+bugfix/property groups list not using custom ot name by @alvarotm01 in https://github.com/fengoffice/FO_Internal/pull/2994
+bugfix/js error fn not found when running report by @alvarotm01 in https://github.com/fengoffice/FO_Internal/pull/2996
+bugfix/editing calendar events by @ces27 in https://github.com/fengoffice/FO_Internal/pull/2988
+bugfix/apply correct invoicing status and billable property to timer by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2992
+bugfix/display totals for subprojects by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2995
+feature/option wording in project financials by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2990
+
+Since 3.11.6.6
+-----------------------------------
+bugfix: Fix another sorting of projects at aging unbilled report (#2985)
+
 Since 3.11.6.5
 -----------------------------------
 bugfix: Refactor TimeController to filter users for quick add by selected members (#2980)

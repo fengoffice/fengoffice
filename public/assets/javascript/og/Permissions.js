@@ -761,6 +761,11 @@ og.ogPermPrepareSendData = function(genid){
 	if (!og.permissionInfo[genid]) {
 		return true;
 	}
+	if ($('#' + genid + '_set_manual_permissions_checkbox').length > 0 
+		&& $('#' + genid + '_set_manual_permissions_checkbox').attr('checked') != 'checked') {
+			
+		return true;
+	}
 	var permissions = og.permissionInfo[genid].permissions;
 	for (i in permissions){
 		for (var j = 0; j < permissions[i].length; j++){

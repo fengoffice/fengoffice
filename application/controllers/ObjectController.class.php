@@ -520,7 +520,7 @@ class ObjectController extends ApplicationController {
 		$extra_conditions = "";
 		Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $object->getObjectTypeId(), 'object' => $object), $extra_conditions);
 
-		$customProps = CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, 'all', $extra_conditions, true);
+		$customProps = CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, 'all', $extra_conditions, true, null, $object);
 
 		//Sets all boolean custom properties to 0. If any boolean properties are returned, they are subsequently set to 1.
 		foreach($customProps as $cp){
@@ -570,13 +570,11 @@ class ObjectController extends ApplicationController {
 							}
 							
 						} else if ($req_cp->getType() == 'user' || $req_cp->getType() == 'contact') {
-							
 							$cp_val_contact_id = array_var($obj_custom_properties, $req_cp->getId());
 							if (!is_numeric($cp_val_contact_id) || $cp_val_contact_id == 0) {
 								$obj_custom_properties[$req_cp->getId()] = "";
 							}
 						}
-						
 						$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || trim($obj_custom_properties[$req_cp->getId()]) == "";
 					}
 				}
