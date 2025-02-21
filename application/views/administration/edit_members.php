@@ -33,7 +33,7 @@
 					$alt = !$alt;
 					$indent = 16 * $mem->getDepth();
 					$ot = ObjectTypes::instance()->findById($mem->getObjectTypeId());
-					$ot_name = $ot instanceof ObjectType ? lang($ot->getName()) : $mem->getName();
+					$ot_name = $ot instanceof ObjectType ? $ot->getObjectTypeName() : $mem->getName();
 ?>
 						<div style="margin-left:<?php echo $indent?>px;width:<?php echo 800 - $indent?>px;" id="abm-members-item-container-<?php echo $mem->getId() ?>"
 							class="<?php echo ($mem->getArchivedById() > 0 ? "member-item-archived" : "")?><?php echo ($alt ? " edit-mem-alt" : "")?>"

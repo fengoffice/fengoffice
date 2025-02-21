@@ -789,7 +789,7 @@ class ReportingController extends ApplicationController {
 			        $types[] = array($ot->getId(), Members::getTypeNameToShowByObjectType($dimension_ids[0], $ot->getId()) );
 			    }			    
 			}else{
-			    $types[] = array($ot->getId(), lang($ot->getName()));
+			    $types[] = array($ot->getId(), $ot->getObjectTypeName());
 			}
 		    
 		}
@@ -979,7 +979,7 @@ class ReportingController extends ApplicationController {
 			Hook::fire('custom_reports_object_types', array('object_types' => $object_types), $object_types);
 			
 			foreach ($object_types as $ot) {
-				$types[] = array($ot->getId(), lang($ot->getName()));
+				$types[] = array($ot->getId(), $ot->getObjectTypeName());
 			}
 			
 			tpl_assign('object_types', $types);

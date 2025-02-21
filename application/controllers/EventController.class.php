@@ -987,7 +987,7 @@ class EventController extends ApplicationController {
 				// subscribe or not the invited users
 				if (array_var($data, 'subscribe_invited')){
 					foreach ( $data ['users_to_invite'] as $us => $v ) {
-						$_POST['subscribers']['user_' + $us] = '1';
+						$_POST['subscribers']['user_' . $us] = '1';
 					}
 				}
 				

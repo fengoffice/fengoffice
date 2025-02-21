@@ -101,7 +101,7 @@ class  CustomProperties extends  BaseCustomProperties {
 	 * @return array
 	 *
 	 */
-	static function getAllCustomPropertiesByObjectType($object_type, $visibility = 'all', $extra_cond = "", $fire_cond_hook=false, $include_disabled=false) {
+	static function getAllCustomPropertiesByObjectType($object_type, $visibility = 'all', $extra_cond = "", $fire_cond_hook=false, $include_disabled=false, $object = null) {
 
 		if ($fire_cond_hook) {
 			Hook::fire('get_custom_properties_conditions', array('ot' => $object_type), $extra_cond);
@@ -112,6 +112,14 @@ class  CustomProperties extends  BaseCustomProperties {
 				$extra_cond .= " AND (visible_by_default = 1 OR is_required = 1)";
 			} else {
 				$extra_cond .= " AND (visible_by_default = 0 AND is_required = 0)";
+			}
+		}
+
+		 if ($object && $object->getObjectTypeName() == 'contact'){
+			if($object->isUser()){
+				$extra_cond .= " AND (contact_type LIKE 'user' OR contact_type LIKE 'all') ";
+			} else {
+				$extra_cond .= " AND (contact_type LIKE 'contact' OR contact_type LIKE 'all') ";
 			}
 		}
 

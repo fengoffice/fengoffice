@@ -418,7 +418,7 @@ class SearchController extends ApplicationController {
 		$object_types = ObjectTypes::getAvailableObjectTypes();
 
 		foreach ($object_types as $ot) {
-			$types[] = array($ot->getId(), lang($ot->getName()));
+			$types[] = array($ot->getId(), $ot->getObjectTypeName());
 		}
 //		if ($selected_type != '')
 //		tpl_assign('allowed_columns', $this->get_allowed_columns($selected_type));

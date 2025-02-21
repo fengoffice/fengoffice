@@ -177,7 +177,7 @@
 		$can_read = array_var($root_perm_actual_info, 'd') == 0 && array_var($root_perm_actual_info, 'w') == 0 && array_var($root_perm_actual_info, 'r') == 1;
 
 ?><tr class="<?php echo $row_cls?>">
-  	<td style="padding-left:20px;"><span id="<?php echo $genid.'obj_type_label'.$id_suffix?>"><?php echo lang($ot->getName()) ?></span></td>
+  	<td style="padding-left:20px;"><span id="<?php echo $genid.'obj_type_label'.$id_suffix?>"><?php echo $ot->getObjectTypeName() ?></span></td>
   	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_delete, array('value' => '3', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
   	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_write, array('value' => '2', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
   	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_read, array('value' => '1', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>

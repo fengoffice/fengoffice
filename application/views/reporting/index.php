@@ -17,7 +17,7 @@
 	Hook::fire('custom_reports_object_types', array('object_types' => $object_types), $object_types);
 	
 	foreach ($object_types as $ot) {
-		$reports_by_type[$ot->getId()] = array("name" => $ot->getName(), "display_name" => lang($ot->getName()), "icon_class" => $ot->getIconClass());
+		$reports_by_type[$ot->getId()] = array("name" => $ot->getName(), "display_name" => $ot->getObjectTypeName(), "icon_class" => $ot->getIconClass());
 	}
 	
 	$ignored = null;

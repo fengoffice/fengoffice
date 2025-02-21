@@ -2374,7 +2374,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	function getObjectTypeNameLang() {
 		$ot = ObjectTypes::instance()->findById($this->manager()->getObjectTypeId());
 		if ($ot instanceof ObjectType) {
-			$otname = lang($ot->getName());
+			$otname = $ot->getObjectTypeName();
 		} else {
 			$otname = lang('object');
 		}
