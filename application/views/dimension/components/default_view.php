@@ -9,7 +9,7 @@ if (array_var($options, 'width')) {
 	$opts['width'] = array_var($options, 'width');
 }
 ?>
-<div style="display: inline-block;float:right;width: <?php echo $container_width ?>px;">
+<div class="selector" style="display: inline-block;float:right;width: <?php echo $container_width ?>px;">
 <?php
 
 // don't reneder the input to select the member if the dimension id is in the disabled dimension ids

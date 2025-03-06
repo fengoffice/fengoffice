@@ -257,9 +257,60 @@
 			<div class="main-custom-properties-div">
             <?php
             if (count($main_properties) > 0) {
-                foreach ($main_properties as $main_property){
-                    echo $main_property['html'];
-                }
+				$left = false;
+				$right = false;
+				foreach ($main_properties as $property) {
+
+					if (isset($property['alignment']) && $property['alignment'] == 'left'){
+						$left = true;
+					}
+					if (isset($property['alignment']) && $property['alignment'] == 'right'){
+						$right = true;
+					}
+					if($left && $right) {
+						break;
+					}
+				}
+
+				if($left && $right) {
+					echo stylesheet_tag(get_stylesheet_url('general/forms_override.css'));
+
+					// Container
+					echo '<div class="custom-properties-container">';
+					// Left column
+					echo '<div class="custom-properties-left">';
+
+					foreach ($main_properties as $main_property){
+
+						// some hidden inputs doesn't have alignment, those goes to the left column
+						if (
+							!isset($main_property['alignment']) ||
+							isset($main_property['alignment']) && $main_property['alignment'] == 'left'
+						) {
+							echo $main_property['html'];
+						}
+
+					}
+
+					echo '</div>'; // Close left column
+
+					echo '<div class="custom-properties-right">'; // Right column
+
+					foreach ($main_properties as $main_property) {
+						if (isset($main_property['alignment']) && $main_property['alignment'] == 'right') {
+							echo $main_property['html']; // Renderizamos la propiedad en la columna derecha
+						}
+					}
+		
+					echo '</div>'; // Close right column
+		
+					echo '</div>'; // Close container
+
+				} else {
+					foreach ($main_properties as $main_property){
+						echo $main_property['html'];
+					}
+				}
             }
             ?>
             </div>

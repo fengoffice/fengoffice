@@ -1821,13 +1821,14 @@ class Notifier {
 		    }
 		}
 
+		if (!is_array($to)) {
+			$to = array($to);
+		}
+
 		$cron = CronEvents::getByName('send_notifications_through_cron');
 		if ($cron instanceof CronEvent && $cron->getEnabled()) {
 			$qm = new QueuedEmail();
 			// set To
-			if (!is_array($to)) {
-				$to = array($to);
-			}
 			$qm->setTo(implode(";", $to));
 			// set CC
 			if ($cc != null) {

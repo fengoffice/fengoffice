@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.6.8');
+		$this->setVersionTo('3.11.7.4');
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1219,6 +1219,29 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			}
 
 		}
+
+		if (version_compare($installed_version, '3.11.7.0') < 0) {
+			// We must add this columns here because objects table is used before plugin updates are executed
+			if ($this->checkPluginInstalled("quickbooks", TABLE_PREFIX, $this->database_connection) && 
+				!$this->checkColumnExists($t_prefix."objects", "quickbooks_online_error_id", $this->database_connection)) {
+				
+					$upgrade_script .= "
+						ALTER TABLE `".TABLE_PREFIX."objects`
+						ADD `quickbooks_online_error_id` int(10) unsigned NOT NULL DEFAULT '0',
+						ADD `quickbooks_online_error_message` varchar(255) NOT NULL DEFAULT '',
+						ADD `quickbooks_online_sync_attempts` int(10) unsigned NOT NULL DEFAULT '0';
+					";
+
+			}
+
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "filter_users_by_company", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` 
+					(`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES 
+					('general', 'filter_users_by_company', '0', 'BoolConfigHandler', '0', '0', 'is used to enable or not, the list of users on different objects filter by company or not.', '');
+				";
+			}
+		}
 		
 		//ADD NEXT UPDATE SCRIPTS HERE
 
@@ -1252,7 +1275,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 
 		// Calculate after new columns added
 		if (version_compare($installed_version, '3.11.1.0-rc1') < 0) {
-@set_time_limit(0);
+			@set_time_limit(0);
 			ini_set("memory_limit", "2G");
 			// Calculate 'overall_worked_time_plus_subtasks' and 'total_time_estimate' for all tasks
 			$max_depth_sql = "SELECT MAX(depth) as max_depth  FROM " .$t_prefix. "project_tasks;";

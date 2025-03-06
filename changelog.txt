@@ -2,17 +2,99 @@
 Changelog
 =========
 
+Since 3.11.7.3
+-----------------------------------
+bugfix: Enhance linked object tab labels and add missing translations for project interface (#3020)
+
+Since 3.11.7.2
+-----------------------------------
+feature: import tool allow to set parent when importing members (#3018)
+bugfix: fixes form responsiveness when using 2 columns on project, client and member form (#3017)
+bugfix: Refactor gross margin report functions and view (#3016)
+bugfix: Refactor object subtype deletion pop up in cp_subtypes_list.php (#3014)
+bugfix: Refactor language files for advanced billing, income, and project reports (#3013)
+
+Since 3.11.7.1
+-----------------------------------
+bugfix: fixes import tool for countries (#3004)
+feature: adds subtypes feature to import tool (#3004)
+bugfix: refactor user filtering logic of owner company on new installations (#3005)
+bugfix: when expenses custom report is ordered by date, ambiguous column (#3006)
+bugfix: Bugfix/list config handler broken and cant disable budgeted expense module (#3008)
+bugfix: Users required cp are affecting company form (#3009)
+
+Since 3.11.7.0
+-----------------------------------
+bugfix: inline task assign does not remove price and billable attributes when assigning fixes fees taxs to expenses (#3003)
+bugfix: invoice print info lines are rendering additional td that other lines ignore (#3002)
+bugfix: cant add invoice columns to time custom reports  (#2999)
+
+Since 3.11.7.0-rc2
+-----------------------------------
+bugfix: more verifications needed before calling generic qbo sync fun… (#2997)
+
+Since 3.11.7.0-rc1
+-----------------------------------
+bugfix: fixes visual styles on contact form (#2987)
+bugfix: income plugin - move queries to a next update function to ens… (#2984)
+
+Since 3.11.7.0-beta4
+-----------------------------------
+bugfix: Remove hardcoded integers and replace with class constants (#2982)
+bugfix: fixes payment form ui (#2981)
+
+Since 3.11.7.0-beta3
+-----------------------------------
+feature: adds property groups left or right on project, client and member form (#2978)
+bugfix: fix CSS styles added dim options custom name table (#2979)
+
+Since 3.11.7.0-beta2
+-----------------------------------
+feature: Make project name configurable (#2977)
+bugfix: more fixes/improvements after first version of qbo sync improvements (#2972)
+bugfix: Refactor user filtering logic of owner company (#2974)
+
+Since 3.11.7.0-beta1
+-----------------------------------
+feature: autonumbering - option to assign only when creating object/member (#2961)
+feature: add "Groups" column to users list (#2956)
+feature: change links for buttons in task view, and add link to exist… (#2955)
+feature: adds red color to selected filters on task module (#2954)
+bugfix: Fix custom label empty (#2967)
+bugfix: ensure that all property groups have all properties (#2966)
+bugfix: if project has template id that was deleted, generate project… (#2965)
+bugfix: Fixes css on task module toolbar and invoice lines on invoice form (#2964)
+bugfix: edit subtask does not update parents data in list (#2963)
+bugfix: columns in objects table must be added always in core updater, because it is used before plugin installer (#2962)
+bugfix: can't add invoice template if labor categories is not installed (#2958)
+bugfix: expenses list shows drop down on focus when loading (#2957)
+bugfix: Bugfix and improvement to conditional discount (#2951)
+
+Since 3.11.6.X
+-----------------------------------
+bugfix: fix dates mandatory dates, requested only when needed (#2919)
+bugfix: don't allow some attributes to special properties in cps form (located under, associations, etc) (#2936)
+bugfix: many issues at Add task to template feature (#2948)
+feature: In invoice template add configs to show/hide table titles (#2933)
+feature: In invoice template add configs to for bill to section (#2933)
+feature: For invoices add conditional discounts (#2933)
+feature: special billing period prop at invoice tempalte project data (#2950)
+feature: invoice print, allow to remove date and due date from header (#2949)
+feature: in time custom reports allow associated contact first name and surname as columns (#2944)
+feature: change tasks list sections order, move subtasks after expenses (#2939)
+improvement: several qbo sync issues and improvements (#2931)
+
 Since 3.11.6.7
 -----------------------------------
-bugfix/when creating user don't send permission inputs if not explic… by @alvarotm01 in https://github.com/fengoffice/FO_Internal/pull/2993
-bugfix/refactor custom property handling in ObjectController by @nico-lois in https://github.com/fengoffice/FO_Internal/pull/2991
-bugfix/aging unbilled report add excel alignment and fix rounding by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2986
-bugfix/property groups list not using custom ot name by @alvarotm01 in https://github.com/fengoffice/FO_Internal/pull/2994
-bugfix/js error fn not found when running report by @alvarotm01 in https://github.com/fengoffice/FO_Internal/pull/2996
-bugfix/editing calendar events by @ces27 in https://github.com/fengoffice/FO_Internal/pull/2988
-bugfix/apply correct invoicing status and billable property to timer by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2992
-bugfix/display totals for subprojects by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2995
-feature/option wording in project financials by @AlikZi in https://github.com/fengoffice/FO_Internal/pull/2990
+bugfix/when creating user don't send permission inputs if not explic… by @alvarotm01 in (#2993)
+bugfix/refactor custom property handling in ObjectController by @nico-lois in (#2991)
+bugfix/aging unbilled report add excel alignment and fix rounding by @AlikZi in (#2986)
+bugfix/property groups list not using custom ot name by @alvarotm01 in (#2994)
+bugfix/js error fn not found when running report by @alvarotm01 in (#2996)
+bugfix/editing calendar events by @ces27 in (#2988)
+bugfix/apply correct invoicing status and billable property to timer by @AlikZi in (#2992)
+bugfix/display totals for subprojects by @AlikZi in (#2995)
+feature/option wording in project financials by @AlikZi in (#2990)
 
 Since 3.11.6.6
 -----------------------------------

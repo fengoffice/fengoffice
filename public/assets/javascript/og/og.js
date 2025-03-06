@@ -2668,7 +2668,8 @@ og.load_company_combo = function(combo_id, selected_id) {
 				var html = "";
 				for (var i=0; i<data.length; i++) {
 					sel = selected_id && selected_id == data[i].id ? " selected=selected " : "";
-					html += "<option value=\"" + data[i].id + "\"" + sel + ">" + data[i].name + "</option>";
+					var optionStyle = (data[i].id == og.ownerCompany.id) ? 'style="font-weight: bold;"' : '';
+					html += "<option value=\"" + data[i].id + "\"" + sel + optionStyle + ">" + data[i].name + "</option>";
 				}
 				$("#"+combo_id).empty().append(html);
 
@@ -2689,7 +2690,8 @@ og.load_company_combo = function(combo_id, selected_id) {
 		var html = "";
 		for (var i=0; i<data.length; i++) {
 			sel = selected_id && selected_id == data[i].id ? " selected=selected " : "";
-			html += "<option value=\"" + data[i].id + "\"" + sel + ">" + data[i].name + "</option>";
+			var optionStyle = (data[i].id == og.ownerCompany.id) ? 'style="font-weight: bold;"' : '';
+			html += "<option value=\"" + data[i].id + "\"" + sel + optionStyle + ">" + data[i].name + "</option>";
 		}
 		$("#"+combo_id).empty().append(html);
 
@@ -6181,3 +6183,119 @@ og.showMailRuleModal = function (content) {
 		});
 	}, 100);
 	}
+
+
+	og.initCustomNameSelects = function(count) {
+
+		addSelectListeners(); // Add listeners to the "Add Select" buttons
+		addDeleteListeners(); // Add listeners to the "Delete Select" buttons
+	  
+		function addSelectListeners() {
+		  const buttons = document.querySelectorAll('button[id^="add_custom_name_select_"]');
+		  buttons.forEach(function (button) {
+			button.removeEventListener('click', handleAddSelect); // Avoid duplicates
+			button.addEventListener('click', handleAddSelect);
+		  });
+		}
+	  
+		function handleAddSelect(event) {
+		  const buttonId = event.target.id;
+		  const wrapper = event.target.closest('tr').querySelector('.custom-name-wrapper');
+	  
+		  // Obtener las opciones del primer select (o del último si ya hay varios)
+		  const firstSelect = wrapper.querySelector('select.custom-name-select');
+		  const options = Array.from(firstSelect.options).map(option => option.cloneNode(true));
+	  
+		  // Crear un nuevo select con las mismas opciones
+		  addNewSelect(wrapper, options);
+		}
+	  
+		function addNewSelect(wrapper, options) {
+		  count++;
+	  
+		  // Create the new select
+		  const newSelect = document.createElement('select');
+		  newSelect.className = 'custom-name-select';
+	  
+		  // Generate a unique id and name for the new select
+		  const dimensionId = wrapper.getAttribute('data-dimension-id');
+		  const objectTypeId = wrapper.getAttribute('data-object-type-id');
+		  const uniqueId = `${dimensionId}_${objectTypeId}_${count}`;
+		  newSelect.id = `custom_name_select_${uniqueId}`;
+		  newSelect.name = `custom_name_select[${dimensionId}][${objectTypeId}][]`;
+	  
+		  // Add the options to the new select
+		  options.forEach(option => newSelect.appendChild(option));
+	  
+		  // Create the delete button
+		  const deleteButton = document.createElement('button');
+		  deleteButton.type = 'button';
+		  deleteButton.textContent = 'x';
+		  deleteButton.className = 'delete-select';
+	  
+		  // Add new event listeners to the delete button
+		  deleteButton.addEventListener('click', function () {
+			newSelect.remove();
+			deleteButton.remove();
+	  
+			// If all selects are deleted, add the default select
+			if (wrapper.querySelectorAll('select').length === 0) {
+			  addDefaultSelect(wrapper);
+			}
+		  });
+	  
+		  // Add the new select and delete button
+		  wrapper.appendChild(newSelect);
+		  wrapper.appendChild(deleteButton);
+		}
+	  
+		function addDefaultSelect(wrapper) {
+		  count++;
+		  const newSelect = document.createElement('select');
+		  newSelect.className = 'custom-name-select';
+		  const dimensionId = wrapper.getAttribute('data-dimension-id');
+		  const objectTypeId = wrapper.getAttribute('data-object-type-id');
+		  const uniqueId = `${dimensionId}_${objectTypeId}_${count}`;
+		  newSelect.id = `custom_name_select_${uniqueId}`;
+		  newSelect.name = `custom_name_select[${dimensionId}][${objectTypeId}][]`;
+	  
+		  const defaultOption = document.createElement('option');
+		  defaultOption.value = 'name';
+		  defaultOption.textContent = 'Name';
+		  newSelect.appendChild(defaultOption);
+	  
+		  wrapper.appendChild(newSelect);
+		}
+	  
+		function addDeleteListeners() {
+		  const deleteButtons = document.querySelectorAll('.delete-select');
+		  deleteButtons.forEach(function (deleteButton) {
+			deleteButton.removeEventListener('click', handleDelete); // Evitar duplicados
+			deleteButton.addEventListener('click', handleDelete);
+		  });
+		}
+	  
+		function handleDelete(event) {
+		  const button = event.target;
+		  const select = button.previousElementSibling;
+	  
+		  if (select) select.remove();
+		  button.remove();
+	  
+		  // check if all selects are deleted
+		  const wrapper = button.closest('.custom-name-wrapper');
+		  if (wrapper && wrapper.querySelectorAll('select').length === 0) {
+			addDefaultSelect(wrapper);
+		  }
+		}
+	  
+		og.toggleInfo = function() {
+		  var infoText = document.getElementById('more-info-text');
+		  if (infoText.style.display === "none" || infoText.style.display === "") {
+			infoText.style.display = "block";
+		  } else {
+			infoText.style.display = "none";
+		  }
+		}
+	  }
+	  

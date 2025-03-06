@@ -87,9 +87,16 @@
 <?php } ?>
 
 <?php if ($object->canEdit(logged_user())) { ?>
-<div style="margin-top:5px;">
-	<a onclick="<?php echo $picker_func ?>" href="#" class="coViewAction ico-add"><?php echo lang('add previous task')?></a>
+<div style="margin:5px 0;">
+	<button class="ico-new object-view-btn blue" id="<?php echo $genid ?>_add_prev_task_link"><?php echo lang('add previous task') ?></button>
 </div>
 <?php } ?>
 
 <div class="desc"><?php echo lang('this task has x previous open tasks', $incomplete_previous); ?></div>
+<script>
+$(document).ready(function() {
+	$("#<?php echo $genid ?>_add_prev_task_link").click(function() {
+		<?php echo $picker_func ?>
+	});
+});
+</script>

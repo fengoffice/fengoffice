@@ -1233,7 +1233,11 @@ class MemberController extends ApplicationController {
 				}
 				if ($dimension_object) {
 					$dimension_object->modifyMemberValidations($member);
-					$dimension_obj_data = array_var($_POST, 'dim_obj');
+					if (isset($member_data['dim_obj'])) {
+						$dimension_obj_data = array_var($member_data, 'dim_obj');	
+					} else {
+						$dimension_obj_data = array_var($_POST, 'dim_obj');
+					}
 					if (!array_var($dimension_obj_data, 'name')) $dimension_obj_data['name'] = $member->getName();
 					
 					eval('$fields = '.$handler_class.'::instance()->getPublicColumns();');
@@ -2834,6 +2838,7 @@ class MemberController extends ApplicationController {
 	        	}
 
 	        	if (isset($member_data['contacts']['Billing Company']) && count($member_data['contacts']['Billing Company']) > 0) {
+					if (!isset($response['contacts']['Billing Company'])) $response['contacts']['Billing Company'] = [];
 	        		$response['contacts']['Billing Company'] = array_merge($response['contacts']['Billing Company'], $member_data['contacts']['Billing Company']);
 	        	}
 

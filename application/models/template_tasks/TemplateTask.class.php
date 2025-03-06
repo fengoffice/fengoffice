@@ -624,7 +624,7 @@ class TemplateTask extends BaseTemplateTask {
 	}
 	
 	/**
-	 * Copy a project task to a template task
+	 * Create a template task inside a template using an actual task object.
 	 *
 	 * @access public
 	 * @param $project_task ProjectTask project task
@@ -632,32 +632,35 @@ class TemplateTask extends BaseTemplateTask {
 	 * @param $parent_id int the parent id if is a subtask
 	 * @return TemplateTask
 	 */
-	function copyFromProjectTask($project_task, $template_id, $parent_id = 0, $milestone_id = 0) {
-		//param
-		$parent_subtask=0;
-		$new_st_date='';
-		$new_due_date='';
-			
-		$new_task = new TemplateTask();			
+	static function copyFromProjectTask($project_task, $template_id, $parent_id = 0, $milestone_id = 0) {
+		
+		// create new task for template
+		$new_task = new TemplateTask();
+		
+		// get all the columns to copy
+		$columns_to_copy = TemplateTasks::instance()->getColumns();
+		
+		// specify which columns we don't want to copy
+		$columns_to_ignore = array(
+			'object_id', 'session_id', 'template_id', 'original_task_id', 'parent_id', 
+			'milestone_id', 'from_template_id', 'from_template_object_id', 'instantiation_id'
+		);
+		$columns_to_ignore = array_merge($columns_to_ignore, Objects::instance()->getColumns());
+		
+		// copy columns dinamically, here we don't know all the columns (some are added by plugins)
+		foreach ($columns_to_copy as $column) {
+			if (!in_array($column, $columns_to_ignore)) {
+				$new_task->setColumnValue($column, $project_task->getColumnValue($column));
+			}
+		}
+		// these columns need to be copied manually
 		$new_task->setObjectName($project_task->getObjectName());
-		$new_task->setText($project_task->getText());
-		$new_task->setAssignedToContactId($project_task->getAssignedToContactId());
-		$new_task->setAssignedOn($project_task->getAssignedOn());
-		$new_task->setAssignedById($project_task->getAssignedById());
-		$new_task->setTimeEstimate($project_task->getTimeEstimate());
-		$new_task->setStartedOn($project_task->getStartedOn());
-		$new_task->setStartedById($project_task->getStartedById());
-		$new_task->setPriority(($project_task->getPriority()));
-		$new_task->setOrder($project_task->getOrder());
-		$new_task->setUseStartTime($project_task->getUseStartTime());
-		$new_task->setUseDueTime($project_task->getUseDueTime());
-		$new_task->setTypeContent($project_task->getTypeContent());
-		$new_task->setParentId($project_task->getParentId());
 		$new_task->setOriginalTaskId($project_task->getId());
 		$new_task->setTemplateId($template_id);
 		$new_task->setSessionId(null);
 		$new_task->setParentId($parent_id);
 		$new_task->setMilestoneId($milestone_id);
+		
 		if ($project_task->getDueDate() instanceof DateTimeValue ) {
 			$new_task->setDueDate(new DateTimeValue($project_task->getDueDate()->getTimestamp()));
 		}
@@ -665,19 +668,14 @@ class TemplateTask extends BaseTemplateTask {
 			$new_task->setStartDate(new DateTimeValue($project_task->getStartDate()->getTimestamp()));
 		}
 		
-		if($new_st_date != "") {
-			if ($new_task->getStartDate() instanceof DateTimeValue) $new_task->setStartDate($new_st_date);
-		}
-		if($new_due_date != "") {
-			if ($new_task->getDueDate() instanceof DateTimeValue) $new_task->setDueDate($new_due_date);
-		}
-		
 		$new_task->getObject()->setColumnValue('object_subtype_id', $project_task->getColumnValue('object_subtype_id'));
 		
 		$new_task->save();
 		
 		// Copy members, linked_objects, custom_properties, subscribers, reminders and comments
-		copy_additional_object_data($project_task, $new_task);
+		// Don't copy classification in project or client
+		$options = array('dimensions_to_ignore' => array('customers', 'customer_project'));
+		copy_additional_object_data($project_task, $new_task, $options);
 		
 		// Ensure that assigned user is subscribed
 		if ($new_task->getAssignedTo() instanceof Contact) {
@@ -696,7 +694,7 @@ class TemplateTask extends BaseTemplateTask {
 	 * @param $parent_id int the parent id if is a subtask
 	 * @return TemplateTask
 	 */
-	function copyFromProjectTaskIncludeSubTasks($project_task, $template_id, $parent_id = 0, $milestone_id = 0) {
+	static function copyFromProjectTaskIncludeSubTasks($project_task, $template_id, $parent_id = 0, $milestone_id = 0) {
 		//Copy task
 		$tmp_task = TemplateTask::copyFromProjectTask($project_task, $template_id, $parent_id, $milestone_id);
 		

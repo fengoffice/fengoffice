@@ -1795,17 +1795,29 @@ class ReportingController extends ApplicationController {
 		$allowed_columns = $this->get_allowed_columns($object_type);
 		$columns = array_var($_GET, 'columns', array());
 		if ($object_type == Timeslots::instance()->getObjectTypeId()) {
+			
+			$ret = array($allowed_columns,$option_groups);
+			Hook::fire('get_allow_columns_for_timeslot_reports', array('object_type' => $object_type, 'columns' => $allowed_columns),$ret);
+			$allowed_columns = $ret[0];
+			$option_groups = $ret[1];
+
 			$task_ot = ObjectTypes::findByName('task');
 			$task_columns = $this->get_allowed_columns($task_ot->getId());
 			
 			$ts_group_count = count($allowed_columns);
+			$allowed_column_ids = array_map(function($t) { return $t['id']; }, $allowed_columns);
 			$task_columns_count = 0;
 
 			foreach ($task_columns as $t) {
 				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
-						|| in_array($t['id'], array('id','name', 'project_number'))) continue;
-						$allowed_columns[] = $t;
-						$task_columns_count++;
+					|| in_array($t['id'], array('id','name', 'project_number'))
+					|| in_array($t['id'], $allowed_column_ids)) {
+
+					continue;
+				}
+
+				$allowed_columns[] = $t;
+				$task_columns_count++;
 			}
 			
 			$contact_ot = ObjectTypes::findByName('contact');
@@ -1816,8 +1828,9 @@ class ReportingController extends ApplicationController {
 				if (str_starts_with($t['id'], 'dim_') || str_starts_with($t['id'], 'repeat_')
 						|| in_array($t['id'], array('id','name', 'project_number'))) continue;
 				
-				// only custom properties for now
-				if (is_numeric($t['id'])) { 
+				// For time reports allow associated contact's first name, surname and custom properties columns.
+				$name_col_ids = ['first_name', 'surname'];
+				if (is_numeric($t['id']) || in_array($t['id'], $name_col_ids)) {
 					$allowed_columns[] = $t;
 					$contact_columns_count++;
 				}

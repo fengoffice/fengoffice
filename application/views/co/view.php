@@ -88,7 +88,9 @@ if ($object instanceof ContentDataObject && (!$isUser && $object->canView(logged
 					<td class="coViewBody" colspan=3>
 						<?php
 							// INITIAL TEMPLATE PART FOR INVOICE VIEW TABS ::
-							if ($object instanceof IncomeInvoice) Hook::fire('render_invoice_view_before_tab', array(), $invoice);
+							if ($object->getObjectTypeName() == "invoice") {
+								Hook::fire('render_invoice_view_before_tab', array(), $invoice);
+							}
 						?>
 						<div>
 							<?php
@@ -108,8 +110,9 @@ if ($object instanceof ContentDataObject && (!$isUser && $object->canView(logged
 							<?php } ?>
 						</div>
 						<?php if (isset($internalDivs)) {
-							foreach ($internalDivs as $idiv)
+							foreach ($internalDivs as $idiv) {
 								echo $idiv;
+							}
 						}
 
 
@@ -123,8 +126,9 @@ if ($object instanceof ContentDataObject && (!$isUser && $object->canView(logged
 						}
 
 						// Main properties
-						if ($object instanceof ApplicationDataObject)
+						if ($object instanceof ApplicationDataObject) {
 							echo render_custom_properties($object, 'visible_by_default');
+						}
 
 						//Extra templates to include
 						if (isset($extra_templates_to_include) && is_array($extra_templates_to_include)) {
@@ -134,27 +138,24 @@ if ($object instanceof ContentDataObject && (!$isUser && $object->canView(logged
 							}
 						}
 
-						if ($object instanceof ContentDataObject)
+						// Classification
+						if ($object instanceof ContentDataObject) {
 							echo render_co_view_member_path($object);
-
-						// Other properties
-						if ($object instanceof ApplicationDataObject)
-							echo render_custom_properties($object, 'other');
-
-						if ($object instanceof ProjectTask || $object instanceof TemplateTask) {
-							tpl_assign('genid', $genid);
-							$object instanceof TemplateTask ? tpl_assign('template_task', 1) : tpl_assign('template_task', 0);
-
-							$this->includeTemplate(get_template_path('subtasks_info', 'task'));
-							//$this->includeTemplate(get_template_path('work_performed', 'task'));
 						}
 
+						// Other properties
+						if ($object instanceof ApplicationDataObject) {
+							echo render_custom_properties($object, 'other');
+						}
+
+						// Time entries list
 						$logged_user_pgs = logged_user()->getPermissionGroupIds();
 						if ($object instanceof ContentDataObject && $object->allowsTimeslots()) {
 							$show_timeslot_section = config_option('use_task_work_performed');
 							if ($show_timeslot_section) {
 								echo render_object_timeslots($object, $object->getViewUrl());
 							}
+							tpl_assign('show_timeslot_section', $show_timeslot_section);
 						}
 
 
@@ -162,20 +163,28 @@ if ($object instanceof ContentDataObject && (!$isUser && $object->canView(logged
 						if ($object instanceof ProjectTask) {
 
 							$null = null;
-							Hook::fire('task_view_after_timeslots_list', array('task' => $object), $null);
-							Hook::fire('task_view_after_other_sections', array('task' => $object), $null);
+							// used to render budgeted and actual expenses list
+							Hook::fire('task_view_after_timeslots_list', array('task' => $object, 'genid' => $genid), $null);
+							// used to render other sections after the ones rendered with the hook above
+							Hook::fire('task_view_after_other_sections', array('task' => $object, 'genid' => $genid), $null);
 
-							tpl_assign('show_timeslot_section', $show_timeslot_section);
+							// render subtasks and task dependency sections
+							if ($object instanceof ProjectTask || $object instanceof TemplateTask) {
+								tpl_assign('genid', $genid);
+								$object instanceof TemplateTask ? tpl_assign('template_task', 1) : tpl_assign('template_task', 0);
+	
+								$this->includeTemplate(get_template_path('subtasks_info', 'task'));
+							}
+
 						?><div id="<?php echo $genid ?>_work_performed_summary"><?php
-																				$this->includeTemplate(get_template_path('work_performed', 'task'));
-																				?></div><?php
+							// Work performed summary section
+							$this->includeTemplate(get_template_path('work_performed', 'task'));
 
-																				$estimated_executed_info = '';
-																				Hook::fire("add_estimated_executed_info_to_view", $object, $estimated_executed_info); ?>
-							<div id="<?php echo $genid ?>_task_financials_summary">
-								<?php echo $estimated_executed_info; ?>
-							</div>
-						<?php
+						?></div><?php
+							// Let plugins add more info to the Work performed summary section
+							$estimated_executed_info = '';
+							Hook::fire("add_estimated_executed_info_to_view", array('object'=>$object, 'genid'=>$genid), $estimated_executed_info);
+							echo $estimated_executed_info;
 						}
 
 

@@ -473,7 +473,7 @@ class TemplateMilestone extends BaseTemplateMilestone {
 	 * @param $go_deep bool copy all tasks
 	 * @return null
 	 */
-	function copyFromProjectMilestone($project_milestone, $template_id, $go_deep = true) {
+	static function copyFromProjectMilestone($project_milestone, $template_id, $go_deep = true) {
 		$new = new TemplateMilestone();
 		$new->setObjectName($project_milestone->getObjectName());
 		$new->setDescription($project_milestone->getDescription());

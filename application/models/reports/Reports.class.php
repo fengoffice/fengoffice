@@ -235,7 +235,7 @@ class Reports extends BaseReports {
             $cond_sql_obj = build_report_conditions_sql(array('report' => $report, 'params' => $params));
             $allConditions = array_var($cond_sql_obj, 'all_conditions');
 
-            $select_columns = array('*');
+            $select_columns = array("e.*", "o.*");
             $join_params = null;
             if ($order_by_col == '') {
                 $order_by_col = $report->getOrderBy();
@@ -401,6 +401,14 @@ class Reports extends BaseReports {
                     if ($order_by_col == "order") {
                         $order_by_col = "`$order_by_col`";
                     };
+
+					// add table alias to the order by to prevent ambiguity
+					if (in_array($order_by_col, $managerInstance->getColumns())) {
+						$order_by_col = "e.$order_by_col";
+					} else if (in_array($order_by_col, Objects::instance()->getColumns())) {
+						$order_by_col = "o.$order_by_col";
+					}
+
                     $listing_parameters = array(
                         "select_columns" => $select_columns,
                         "order" => "$order_by_col",
@@ -478,6 +486,9 @@ class Reports extends BaseReports {
                             } else if ($ot->getHandlerClass() == 'Timeslots') {
                                 if (in_array($field, array('time', 'billing'))) {
                                     $results['columns']['names'][$field] = lang('field Objects ' . $field);
+                                    $results['columns']['order'][] = $field;
+								} else if (in_array($field, Contacts::instance()->getColumns())) {
+									$results['columns']['names'][$field] = lang('field Contacts ' . $field);
                                     $results['columns']['order'][] = $field;
                                 } else if (in_array($field, ProjectTasks::instance()->getColumns())) {
 									$results['columns']['names'][$field] = lang('field ProjectTasks ' . $field);
@@ -561,8 +572,10 @@ class Reports extends BaseReports {
                                     $value = $object->getObjectId();
                                 } else {
                                     $value = $object->getColumnValue($field);
+
+									$is_timeslot_column = in_array($field, Timeslots::instance()->getColumns());
                                     // if it is a task column
-                                    if ($field == 'name' || in_array($field, ProjectTasks::instance()->getColumns()) || in_array($field, ProjectTasks::instance()->getCalculatedColumns())) {
+                                    if ($field == 'name' || !$is_timeslot_column && (in_array($field, ProjectTasks::instance()->getColumns()) || in_array($field, ProjectTasks::instance()->getCalculatedColumns()))) {
                                         $task = ProjectTasks::instance()->findById($object->getRelObjectId());
                                         // if task exists
                                         if ($task instanceof ProjectTask) {
@@ -589,7 +602,13 @@ class Reports extends BaseReports {
                                             $results['columns']['order'][] = $field;
                                             $results['columns']['types'][$field] = ProjectTasks::instance()->getColumnType($field);
                                         }
-                                    }
+									} else if (in_array($field, Contacts::instance()->getColumns())) {
+										// if it is a contact column, get the associated contact and get the column value
+										$contact = $object->getUser();
+										if ($contact instanceof Contact) {
+											$value = $contact->getColumnValue($field);
+										}
+									}
                                 }
                             } else if ($object instanceof ProjectTask && $field == 'percent_completed') {
                                 $value = $object->getColumnValue($field) < 100 ? $object->getColumnValue($field) : 100;

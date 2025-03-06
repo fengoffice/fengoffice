@@ -1,0 +1,92 @@
+/* CONTAINERS AND FORM */
+.custom-properties-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.custom-properties-left,
+.custom-properties-right {
+    flex: 1; /* Both columns equal */
+    padding: 10px;
+    max-width: 510px;
+}
+
+#simplemodal-container{
+    width: 1100px!important;
+    left: 74px!important;
+}
+
+.simplemodal-data form {
+	width: 1100px;
+}
+
+/* HEADER TITLE */
+.simplemodal-data .coInputHeader .coInputName input.title {
+	width: 750px!important;
+}
+
+/* TEXT INPUTS */
+.cp-text {
+    width: 290px;
+}
+.selector{
+    width: 300px!important;
+}
+.x-form-text, .x-form-text.x-form-field {
+    width: 275px!important;
+}
+
+/* DATE TIME PICKER */
+table.date-picker input[type="text"] {
+    width: 100px !important;
+}
+table.time-picker input[type="text"] {
+    width: 100px !important;
+}
+
+/* LIST */
+.cp-list{
+    width: 300px!important;
+}
+
+/* LONG TEXT */
+textarea{
+    width: 293px;
+}
+
+/* SEARCH SELECTOR */
+.dimension-selector-container .dimension-panel-textfilter.ico-search-m.search-filter {
+    width: 298px !important;
+}
+
+/* AMOUNT */
+.amount-container-fields {
+    width: 300px!important;
+}
+.amount-container-fields input {
+    width: 235px!important;
+}
+
+/* TABLE */
+table:has(input.value) {
+    width: 298px!important;
+}
+.value{
+    max-width: 298px!important;
+}
+
+/* NUMERIC */
+.cp-numeric{
+    width: 290px;
+}
+
+/* CONTACT SELECT */
+.og-edit-contact-select-company{
+    width: 300px;
+}
+
+/*ADDRESS*/
+.address-custom-properties-parent .address-input-container {
+    max-width: none !important;
+}

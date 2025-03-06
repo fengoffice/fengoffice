@@ -120,7 +120,9 @@ if($showOpenSubtasksDiv) { ?>
   
   <div class="addTask">
 <?php if($task_list->canAddSubTask(logged_user()) && !$task_list->isTrashed()) { ?>
-    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink"><a class="internalLink" href="<?php echo $task_list->getAddTaskUrl(false) ?>" onclick="ogTasks.drawAddNewTaskForm (null,<?php echo $task_list->getId() ?>,null, null,1,'task view - add subtask'); return false"><?php echo lang('add sub task') ?></a></div>
+    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink" style="margin-bottom:3px;">
+		<button class="ico-new object-view-btn blue" id="<?php echo $genid ?>_add_subtask_link"><?php echo lang('add sub task') ?></button>
+	</div>
   
 <?php } // if ?>
   </div>
@@ -176,7 +178,15 @@ if($showCompletedSubtasksDiv) { ?>
     </table>
   </div>
 </td></tr></table>
-<?php } // if 
+<?php } // if ?>
+<script>
+$(document).ready(function() {
+	$("#<?php echo $genid ?>_add_subtask_link").click(function() {
+		ogTasks.drawAddNewTaskForm (null, <?php echo $task_list->getId() ?>, null, null, 1, 'task view - add subtask');
+	});
+});
+</script>
+<?php
 if (config_option('use tasks dependencies')) {
 	echo '<div style="margin-top:10px">';
 	$this->includeTemplate(get_template_path('previous_task_list', 'task'));

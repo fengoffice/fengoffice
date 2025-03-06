@@ -3214,6 +3214,9 @@ class TaskController extends ApplicationController {
 
                 $null = null;
                 Hook::fire('after_task_controller_add_task', array('task' => $task), $null);
+
+				// reload all the task parents in the list
+				$this->reload_task_parents_in_list($task);
                 
                 return $task;
                 
@@ -4112,6 +4115,10 @@ class TaskController extends ApplicationController {
                     $old_parent_task = ProjectTasks::instance()->findById($old_parent_id);
                     Hook::fire('calculate_estimated_and_executed_financials', $params, $old_parent_task);
                 }
+
+				// reload all the task parents in the list
+				$this->reload_task_parents_in_list($task);
+
             } catch (Exception $e) {
                 DB::rollback();
                 if (array_var($_REQUEST, 'modal')) {
@@ -4125,8 +4132,29 @@ class TaskController extends ApplicationController {
             } // try
         } // if
     }
+	// edit_task
 
-// edit_task
+	/**
+	 * Reloads the parents of a task in the task list
+	 *
+	 * @param ProjectTask $task The task to reload its parents
+	 * @return void
+	 */
+	private function reload_task_parents_in_list($task)
+	{
+		// Get all the parents of the task and get the data to send to the event
+		$all_parents = $task->getAllParents();
+		$parents_data = array();
+		foreach ($all_parents as $parent) {
+			$parents_data[] = $parent->getArrayInfo();
+		}
+
+		// Add an event to update the tasks in list
+		if (count($parents_data) > 0) {
+			evt_add('update tasks in list', array('tasks' => $parents_data));
+		}
+	}
+
 
     function updateLastTaskRepetitive($last_repetitive_task, $task) {
         $last_repetitive_task->setRepeatForever($task->getRepeatForever());

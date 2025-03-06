@@ -22,6 +22,9 @@
 	<?php if (!$object instanceof Timeslot) { ?>
 		<li><a id="<?php echo $genid?>views-tab" href="#<?php echo $genid?>views"><?php echo lang('views tab') ?></a></li>
 	<?php } ?>
+	<?php foreach ($more_view_history_tabs as $tab) { ?>
+		<li><a id="<?php echo $genid . $tab['id']; ?>-tab" href="#<?php echo $genid . $tab['id']; ?>"><?php echo $tab['title'] ?></a></li>
+	<?php } ?>
 	</ul>
 
 	<div id="<?php echo $genid?>modifications" class="form-tab">
@@ -125,6 +128,13 @@
 		
 	</div>
 	<?php } ?>
+
+
+	<?php foreach ($more_view_history_tabs as $tab) { ?>
+		<div id="<?php echo $genid . $tab['id']?>" class="form-tab">
+			<?php echo $tab['content'] ?>
+		</div>
+	<?php } ?>	
 </div>
 
 </div>
@@ -142,6 +152,10 @@ $(function() {
 				clearInterval(hist_tab_int);
 			}
 		}, 100);
+	} else {
+		if ($("#<?php echo $genid?>" + curtab + "-tab").length > 0) {
+			$("#<?php echo $genid?>" + curtab + "-tab").click();
+		}
 	}
 });
 </script>

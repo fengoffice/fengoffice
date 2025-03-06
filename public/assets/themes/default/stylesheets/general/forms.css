@@ -155,7 +155,8 @@ button.tasksActionsBtn.tasksBtn.addBtn,
 button.x-btn-text.blue,
 #mails-panel button.x-btn-text.mail.blue,
 button.submit.blue, 
-button.add-first-btn.blue {
+button.add-first-btn.blue,
+button.object-view-btn.blue {
 	background-color: #4d82cc;
 	border-color: #5d92dc;
 	color: #fff;
@@ -187,8 +188,31 @@ button.add-first-btn.blue:hover {
 	height: 26px;
 	padding-right: 4px;
     padding-left: 22px;
-	background-position-x: 2px;
+	background-position-x: 3px !important;
 	min-width: 50px;
+}
+
+button.object-view-btn {
+	height: 26px;
+	padding-right: 4px;
+	padding-left: 22px;
+	background-position: 3px center !important;
+	background-repeat: no-repeat;
+	background-color: #f8f8f8;
+	min-width: 50px;
+	cursor: pointer;
+	margin: 0 3px;
+	border-color: #c4c4c4;
+	border-radius: 2px;
+	border-style: solid; 
+	border-width: 1px;
+	color: #333;
+	box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
+	-webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+	-moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+}
+button.object-view-btn:hover {
+	opacity: 0.8;
 }
 
 
@@ -795,7 +819,7 @@ a.cke_combo_button, a.cke_button {
  .cp-list {
 	display: block;
     width: 351px;
-    padding: 5px;
+    padding: 2px 5px;
 } 
 
 .cp-error-message {

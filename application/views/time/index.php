@@ -343,7 +343,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
     <?php } ?>
 
     // system columns
-    var system_columns = ['uid', 'uname', 'can_edit', 'can_delete', 'can_view_history', 'add_cls', 'start_time_ts', 'paused_on_ts', 'paused_time_sec', 'rel_object_id'];
+    var system_columns = ['uid', 'uname', 'can_edit', 'can_delete', 'can_view_history', 'add_cls', 'start_time_ts', 'paused_on_ts', 'paused_time_sec', 'rel_object_id', 'quickbooks_online_error_message'];
     for (var j = 0; j < system_columns.length; j++) {
         timeslots_columns.push({
             name: system_columns[j],
@@ -555,19 +555,23 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         <?php
         } else {
         ?>
-            timeslots_tbar_items.push(new Ext.Button({
-                iconCls: '<?php echo array_var($add_action, 'cls') ?>',
-                text: '<?php echo array_var($add_action, 'text') ?>',
-                handler: function() {
-                    <?php if (isset($add_action['onclick'])) { ?>
-                        eval("<?php echo $add_action['onclick'] ?>");
-                    <?php } else if (isset($add_action['url'])) { ?>
-                        og.openLink("<?php echo $add_action['url'] ?>");
-                    <?php } ?>
-                }
-            }));
+			timeslots_tbar_items.push(new Ext.Button({
+				id: '<?php echo array_var($add_action, 'id') ?>',
+				iconCls: '<?php echo array_var($add_action, 'cls') ?>',
+				text: '<?php echo array_var($add_action, 'text') ?>',
+				selection_dependant: <?php echo array_var($add_action, 'selection_dependant', 'false') ?>,
+				is_multiple: <?php echo array_var($add_action, 'is_multiple', 'false') ?>,
+				disabled: <?php echo array_var($add_action, 'selection_dependant', 'false') ?>,
+				handler: function() {
+					<?php if (isset($add_action['onclick'])) { ?>
+						eval("<?php echo $add_action['onclick'] ?>");
+					<?php } else if (isset($add_action['url'])) { ?>
+						og.openLink("<?php echo $add_action['url'] ?>");
+					<?php } ?>
+				}
+			}));
 
-    <?php     }
+    <?php }
     } ?>
 
 

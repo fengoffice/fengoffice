@@ -115,7 +115,7 @@ class  CustomProperties extends  BaseCustomProperties {
 			}
 		}
 
-		 if ($object && $object->getObjectTypeName() == 'contact'){
+		 if ($object && ($object->getObjectTypeName() == 'contact' || $object->getObjectTypeName() == 'company')){
 			if($object->isUser()){
 				$extra_cond .= " AND (contact_type LIKE 'user' OR contact_type LIKE 'all') ";
 			} else {

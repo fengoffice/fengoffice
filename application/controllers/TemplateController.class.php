@@ -664,39 +664,60 @@ class TemplateController extends ApplicationController {
 		} // try
 	}
 
+	/**
+	 * Adds an object to a template.
+	 * Checks if the user has permissions and retrieves necessary data from the request.
+	 * If the template data is valid, adds the object to the specified template.
+	 * Commits the transaction on success or rolls back on failure.
+	 */
 	function add_to() {
+		// Check if the logged user has permissions to manage templates
 		if (!can_manage_templates(logged_user())) {
 			flash_error(lang("no access permissions"));
 			ajx_current("empty");
 			return;
 		}
+
+		// Retrieve manager and object ID from the request
 		$manager = array_var($_GET, 'manager');
-		$id = get_id('id',$_REQUEST);
-		
+		$id = get_id('id', $_REQUEST);
+
+		// Retrieve template data from POST request
 		$template_data = array_var($_POST, 'add_to_temp');
-		
+
+		// Find the object by ID
 		$object = Objects::findObject($id);
-		
+
 		if (is_array($template_data)) {
-			$template_id =  array_var($template_data, 'template');
-			$go_deep = array_var($template_data, 'copy-tasks',false);
-						
+			// Retrieve template ID and copy-tasks flag from template data
+			$template_id = array_var($template_data, 'template');
+			$go_deep = array_var($template_data, 'copy-tasks', false);
+
+			// Find the template by ID
 			$template = COTemplates::instance()->findById($template_id);
 			if ($template instanceof COTemplate) {
 				try {
+					// Begin database transaction
 					DB::beginWork();
+					// Add object to the template
 					$template->addObject($object, null, $go_deep);
+					// Commit transaction on success
 					DB::commit();
 					flash_success(lang('success add object to template'));
-					ajx_current("start");
-				} catch(Exception $e) {
+					ajx_current("back");
+				} catch (Exception $e) {
+					// Rollback transaction on failure
 					DB::rollback();
 					flash_error($e->getMessage());
+					ajx_current("empty");
 				}
 			}
+		} else {
+			// Assign templates and object to the form
+			tpl_assign('templates', COTemplates::instance()->findAll(array('order' => 'name')));
+			tpl_assign("object", $object);
 		}
-		tpl_assign('templates', COTemplates::instance()->findAll());
-		tpl_assign("object", $object);
+
 	}
 	
 
@@ -1064,8 +1085,48 @@ class TemplateController extends ApplicationController {
 				$tp = TemplateParameters::instance()->findOne(array('conditions' => array("template_id=? AND REPLACE(`name`,\"'\",'')=?", $template_id, $param_name)));
 				if ($tp instanceof TemplateParameter && $tp->getColumnValue('is_required') && !$val) {
 					$error = lang('custom property value required', $param_name);
-				} else if ($tp instanceof TemplateParameter && $tp->getColumnValue('type') == 'date' && !isDate($val)) {
+				} else if ($tp instanceof TemplateParameter && $tp->getColumnValue('is_required') && $tp->getColumnValue('type') == 'date' && !isDate($val)) {
 					$error = lang('custom property value required', $param_name);
+				} else if ($tp instanceof TemplateParameter && $tp->getColumnValue('type') == 'date' && !isDate($val)) {
+					// If param is of type date and not required
+
+					// Retrieve template tasks
+					$template_tasks = TemplateTasks::instance()->findAll(array(
+						"conditions" => "(repeat_forever > 0 OR repeat_num > 0 OR repeat_end > 0) AND template_id=".$template_id
+					));
+
+					// Loop them to see if have start_date or due_date set, or variable set
+					foreach ($template_tasks as $template_task) {
+						/* @var $template_task TemplateTask */
+						$repeat_by = $template_task->getRepeatBy(); // due_date or start_date
+						$start_date = $template_task->getStartDate();
+						$due_date = $template_task->getDueDate();
+						
+						$template_variable = TemplateObjectProperties::instance()->findOne(array(
+							"conditions" => array("template_id=? AND object_id=? AND property=?", $template_id, $template_task->getId(), $repeat_by)
+						));
+			
+						// Error if there is a variable set, the param_name sent on request matches and is not a date 
+						// and the repetitive task does not have start_date set (same with due_date)
+						if ($template_variable instanceof TemplateObjectProperty) {
+							if(
+								($repeat_by === 'start_date' && !$start_date) || 
+								($repeat_by === 'due_date' && !$due_date)
+							) {
+								$value = $template_variable->getValue();
+
+								// on database are stored like this {Mi date}+d
+								if (preg_match('/\{(.*?)\}\+d/', $value, $matches)) {
+									$value = $matches[1];  // "Mi date"
+								}
+
+								if (strpos($value, $param_name) !== false) {
+									$error = lang('error repetitive tasks');
+									break 2;
+								}
+							}
+						}
+					}
 				}
 			}
 

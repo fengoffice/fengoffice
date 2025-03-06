@@ -151,6 +151,21 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 			$(pre_id + " #numeric_options").show();
 		}
 
+		// if it is a fixed property or is the 'located_under'
+		// don't show desription and other inputs that don't apply
+		if (isNaN(property.id)) {
+			$(pre_id + " #description").css('visibility', 'hidden');// use 'visibility=hidden' in this field so we keep the same row height
+			$(pre_id + " #default_value").hide();
+			$(pre_id + " #values").hide();
+			$(pre_id + " #show_in_lists").hide();
+			$(pre_id + " #visible_by_default").hide();
+			// for dimension member associations let the user define 'is_multiple' and 'is_required'
+			if (property.id.indexOf('assoc_') != 0) {
+				$(pre_id + " #is_required").hide();
+				$(pre_id + " #is_multiple_values").hide();
+			}
+		}
+
 		if (property.is_special) {
 			
 			$(pre_id + " #delete_action").hide();

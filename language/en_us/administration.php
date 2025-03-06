@@ -126,6 +126,10 @@
 
   	'config option name let_users_create_objects_in_root' => 'Let users create objects without classifying them',
     'config option name minimum_characters_dimension_search' => 'Minimum number of characters for dimension search',
+
+    'config option name filter_users_by_company' => 'Filter users by company',
+    'config option desc filter_users_by_company' => 'If set to \'Yes\', the users list on the time module will be filtered by company. For example, if a user is assigned to a company, the user will only be able to see users from that company.',
+    
     // Mailing
     'config option name exchange_compatible' => 'Microsoft Exchange compatibility mode',
     'config option desc exchange_compatible' => 'If you are using Microsoft Exchange Server set this option to yes to avoid some known mailing problems.',
@@ -411,6 +415,7 @@
   	'add an object to template' => 'Add an object to this template',
   	'add a parameter to template' => 'Add a parameter to this template',
 	'you are adding object to template' => 'You are adding {0} \'{1}\' to a template. Choose a template below or create a new one.',
+	'add task to template' => 'Add task to template',
 	'success add object to template' => 'Object added to template successfully',
 	'object type not supported' => 'This object type is not supported for templates',
   	'assign template to workspace' => 'Assign template to workspace',
