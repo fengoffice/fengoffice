@@ -214,6 +214,24 @@ abstract class ScriptUpgraderScript {
 		}
 		return false;
 	} // checkValueExists
+
+	/**
+	 * Check if a plugin is installed
+	 *
+	 * This function queries the plugins table of Feng Office database and checks
+	 * if a plugin with the given name is installed and enabled.
+	 *
+	 * @param string $plugin_name Name of the plugin.
+	 * @param mysqli $connection MySQL connection link.
+	 * @return boolean True if the plugin is installed and enabled, false otherwise.
+	 */
+	function checkPluginInstalled($plugin_name, $table_prefix, $connection) {
+	    $res = mysqli_query($connection, "SELECT * FROM `".$table_prefix."plugins` WHERE `name` = '$plugin_name' AND `is_installed` = 1 LIMIT 1");
+		while($row = mysqli_fetch_array($res)) {
+			return true;
+		}
+		return false;
+	}
 	
 	// ---------------------------------------------------
 	//  Getters and setters

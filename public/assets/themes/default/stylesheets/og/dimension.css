@@ -202,3 +202,7 @@ div.linked-objects-member-filters div.buttons {
 	width: 250px;
 	float: left;
 }
+
+div[id*="add_payment_select"] .dimension-selector-container {
+    display: table!important;
+}

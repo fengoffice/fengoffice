@@ -65,6 +65,7 @@
       
       foreach ($more_values as $v) $possible_values[] = $v;
       
+	  $out = '';
       foreach ($possible_values as $value) {
       	
       	if (is_array($value)) {

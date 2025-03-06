@@ -454,3 +454,105 @@ div.checkbox-config-option {
     max-width: 200px;
     min-width: 200px;
 }
+
+.table-custom-name-container {
+	overflow-x: auto; /* Habilita el scroll horizontal */
+	width: 100%; /* Ocupa el ancho completo del contenedor */
+}
+
+ .table-custom-name-container th, .table-custom-name-container td {
+	white-space: nowrap; /* Evita el ajuste de texto en las celdas */
+} 
+
+.custom-name-select {
+	width: 180px; 
+}
+
+.delete-select {
+	margin-right: 8px; /* Espacio a la derecha del botón de cruz */
+}
+
+.more-info-link {
+	  display: inline-block;
+	  margin-top: 5px;
+	  color: #007bff;
+	  text-decoration: none;
+}
+
+.more-info-link:hover {
+	  text-decoration: underline;
+}
+
+.more-info-text {
+	  margin-top: 10px;
+	  color: #555;
+	  border-top: 1px solid #ccc;
+	  padding-top: 10px;
+}
+
+table.custom-bordered {
+	border-collapse: collapse;
+	width: 100%;
+  }
+
+  table.custom-bordered th, table.custom-bordered td {
+	padding: 10px 20px; /* Incrementa el espacio entre columnas */
+	text-align: left;
+	border: 1px solid #ddd; /* Agrega bordes alrededor de cada celda */
+  }
+
+
+table.custom-bordered th:nth-child(5), 
+ table.custom-bordered td:nth-child(5) {
+	border-right: none;
+  }
+
+  table.custom-bordered th:nth-child(6), 
+  table.custom-bordered td:nth-child(6) {
+	border-left: none;
+  }
+
+  table.custom-bordered th:nth-child(1), 
+ table.custom-bordered td:nth-child(1) {
+	border-right: none;
+  }
+
+  table.custom-bordered th:nth-child(2), 
+  table.custom-bordered td:nth-child(2) {
+	border-left: none;
+  }
+
+.add-select {
+	cursor: pointer;
+	background-color: transparent;
+	color: black;
+	border: 1px solid black; 
+	border-radius: 5px; 
+	font-size: 10px; 
+	font-weight: bold; 
+	padding: 4px 8px; 
+	transition: all 0.1s ease;
+}
+
+.add-select:hover {
+	color: #32CD32; /* light green */
+	border-color: #32CD32; 
+}
+
+.delete-select {
+	cursor: pointer;
+	background-color: transparent; 
+	color: black; 
+	border: 1px solid black; 
+	border-radius: 5px; 
+	padding: 4px 8px; 
+	font-size: 10px; 
+	font-weight: bold; 
+	transition: all 0.1s ease; 
+}
+
+.delete-select:hover {
+	color: red; 
+	border-color: red; 
+}
+

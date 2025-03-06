@@ -86,6 +86,11 @@ class MoreController extends ApplicationController {
 		
 		$columns_sql = "c.object_id, c.first_name, c.surname, c.last_activity, p.name as role, c.disabled,
 		c_emails.email_address, comp.first_name as comp_fname, comp.surname as comp_surname, c.picture_file_small";
+
+		// add subquery for user groups column
+		$columns_sql .= ", (SELECT GROUP_CONCAT(' ', pg.name) FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.id IN (
+			SELECT permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups WHERE contact_id=c.object_id
+		) AND pg.type='user_groups') as groups";
 		
 		$main_sql = "FROM ".TABLE_PREFIX."contacts c
 				INNER JOIN ".TABLE_PREFIX."permission_groups p ON p.id=c.user_type
@@ -114,6 +119,7 @@ class MoreController extends ApplicationController {
 						'name' => trim($r['first_name'] . ' ' . $r['surname']),
 						'email' => $r['email_address'],
 						'role' => $r['role'],
+						'groups' => trim($r['groups']),
 						'last_activity' => $dtval,
 						'company' => trim($r['comp_fname'] . ' ' . $r['comp_surname']),
 						'status' => $r['disabled'] ? lang('inactive') : lang('active'),

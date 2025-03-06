@@ -170,15 +170,17 @@
 
 .report-list-section .report-name {
     font-weight: bold;
-    padding: 2px 25px;
-    margin: 10px 0;
+    padding: 10px 25px;
+    margin: 0px 0;
     
 }
 .report-list-section .report-name .desc {
     font-weight: normal;
     
 }
-
+.report-list-section .report-name.alt {
+	background-color: #f2f2f2;
+}
 
 .report_parameters_table tr {
 	height: 30px;

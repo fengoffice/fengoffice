@@ -26,7 +26,12 @@
     
     
     <div id="<?php echo $genid ?>_timeslots_grid_container" class="object-view-grid-container"></div>
-    
+
+	<div id="<?php echo $genid ?>_add_time_link_container" class="" style="display:none;">
+		<button class="ico-new object-view-btn blue" id="<?php echo $genid ?>_add_time_link"><?php echo lang('add work') ?></button>
+		<button class="ico-time object-view-btn" id="<?php echo $genid ?>_start_time_link"><?php echo lang('start work') ?></button>
+		<div class="clear"></div>
+	</div>
 
     <script>
 	
@@ -319,6 +324,24 @@ if ($can_delete_timeslots && $show_delete_all_button){
 
     timeslots_grid.load();
 
+	$("#<?php echo $genid ?>_add_time_link").click(function() {
+		og.render_modal_form('', {
+			c: 'time', 
+			a: 'add', 
+			params: {
+				object_id: <?php echo $__timeslots_object->getId() ?>,
+				contact_id: <?php echo logged_user()->getId() ?>,
+				req_channel: 'task view - add time link'
+			}
+		});
+	});
+	$("#<?php echo $genid ?>_start_time_link").click(function() {
+		og.openLink(og.getUrl('timeslot', 'open', {
+			object_id: <?php echo $__timeslots_object->getId() ?>,
+			req_channel: 'task view - start clock link'
+		}));
+	});
+
     </script>
     
 <?php 
@@ -326,6 +349,15 @@ if (!$__timeslots_object->isTrashed()) {
 	if ($open_timeslot) {
 		echo render_open_timeslot_form($__timeslots_object, $open_timeslot);
 	}
+
+	// if there are no time entries to show, don't show the empty grid, only show a link to add a new one
+	if ($__timeslots_object->getColumnValue('total_worked_time') == 0) {
+	?>
+	<script>
+		$("#" + grid_id + "_container").hide();
+		$("#<?php echo $genid ?>_add_time_link_container").css('display', 'flex');
+	</script>
+	<?php
+	}
 }
 ?>
-<br/>

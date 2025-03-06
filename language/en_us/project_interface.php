@@ -355,6 +355,25 @@ Subject:   {0}<br/>
 	'linked task tab' => 'Tasks',
 	'linked event tab' => 'Events',
 	'linked objective tab' => 'Objectives',
+
+	
+
+	'emailunclassified' => 'Unclassified email',
+	'file' => 'Files',
+	'email' => 'Emails',
+	'weblink' => 'Links',
+	'message' => 'Notes',
+	'contact' => 'People',
+	'comment' => 'Comments',
+	'webpage' => 'Web links',
+	'company' => 'Companies',
+	'milestone' => 'Milestones',
+	'task' => 'Tasks',
+	'event' => 'Events',
+	'objective' => 'Objectives',
+	'form' => 'Forms',
+	'linked object tab' => '{0}',
+
 	'apply assignee to subtasks' => 'Apply current assignee to subtasks',
 	'undo remove subtasks' => 'Restore removed subtasks',
 

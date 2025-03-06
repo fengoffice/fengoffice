@@ -2795,14 +2795,22 @@ function copy_additional_object_data($object, &$copy, $options=array()) {
 	$copy_subscribers = !array_var($options, 'dont_copy_subscribers');
 	$copy_reminders = !array_var($options, 'dont_copy_reminders');
 	$copy_comments = !array_var($options, 'dont_copy_comments');
+	$dimensions_to_ignore = array_var($options, 'dimensions_to_ignore', array());
 
 	$controller = new ObjectController();
 
 	// copy members
 	if ($copy_members) {
 		$object_members = $object->getMembers();
-		$copy->addToMembers($object_members);
-		Hook::fire ('after_add_to_members', $copy, $object_members);
+		$filtered_members = array();
+		foreach ($object_members as $member) {
+			$dim = $member->getDimension();
+			if ($dim && !in_array($dim->getCode(), $dimensions_to_ignore)) {
+				$filtered_members[] = $member;
+			}
+		}
+		$copy->addToMembers($filtered_members);
+		Hook::fire ('after_add_to_members', $copy, $filtered_members);
 		$copy->addToSharingTable();
 		//add_object_to_sharing_table($copy, logged_user());
 	}

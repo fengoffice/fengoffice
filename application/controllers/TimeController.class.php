@@ -34,7 +34,7 @@ class TimeController extends ApplicationController
         
         if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')) {
             $users = array(logged_user());
-        } else if (logged_user()->isMemberOfOwnerCompany()) {
+        } else if (logged_user()->isMemberOfOwnerCompany() || !config_option('filter_users_by_company')) {
             $users = Contacts::getAllUsers();
         } else {
             $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
@@ -1274,7 +1274,7 @@ class TimeController extends ApplicationController
 
                     $info['can_view_history'] = logged_user()->isAdminGroup();
 
-                    Hook::fire('timeslots_list_additional_column_values', array('timelot' => $msg), $info);
+                    Hook::fire('timeslots_list_additional_column_values', array('timeslot' => $msg), $info);
 
                     $object["timeslots"][$i] = $info;
                     $ids[] = $msg->getId();

@@ -22,10 +22,10 @@ if (isset($linked_objects) && is_array($linked_objects) && count($linked_objects
 				$maxkey = $linked_object->getObjectTypeName();
 			}
 		}
-	}	
+	}
 	foreach ($sorted_objects as $key => $object_group){ ?>
 		<a href="#" style="<?php echo $key == $maxkey ? 'font-weight:bold' : 'font-weight:normal'?>;margin-right:10px" onclick="og.toggleSimpleTab('<?php echo $genid . $key ?>LO', 'hp<?php echo $genid ?>', 'bt<?php echo $genid ?>', this)">
-		<?php echo lang("linked $key tab") ?><span style="font-size:80%"><?php echo ' (' . count($object_group) . ')' ?></span></a>
+		<?php echo lang("linked object tab", lang($key)) ?><span style="font-size:80%"><?php echo ' (' . count($object_group) . ')' ?></span></a>
 		
 	<?php
 	}

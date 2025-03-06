@@ -33,6 +33,13 @@
   	private $is_new = true;
   	
   	/**
+  	* Indicates if this object was new before applying changes
+  	*
+  	* @var boolean
+  	*/
+  	private $was_new = false;
+
+	/**
   	* Indicates if this object have been deleted from database
   	*
   	* @var boolean
@@ -446,6 +453,7 @@
   	  } // if
   	  
   	  Hook::fire('before_object_save', $this, $ret);
+	  $this->setWasNew($this->isNew());
   	  $saved = $this->doSave();
   	  Hook::fire('after_object_save', $this, $ret);
   	  return $saved;
@@ -886,6 +894,28 @@
   	function setNew($value) {
   	  $this->is_new = (boolean) $value;
   	} // setNew
+
+	/**
+	 * Returns true if this object was new when it was loaded
+	 *
+	 * @access public
+	 * @param void
+	 * @return boolean
+	 */
+	function getWasNew() {
+		return (boolean) $this->was_new;
+	}
+	/**
+	 * Set the value of the was_new variable
+	 *
+	 * @access public
+	 * @param boolean $value New value
+	 * @return void
+	 */
+	function setWasNew($value) {
+		// Cast the value to boolean and set it to was_new
+		$this->was_new = (boolean) $value;
+	}
   	
   	/**
   	* Returns true if this object has modified columns

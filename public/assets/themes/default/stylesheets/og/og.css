@@ -390,7 +390,9 @@
 	/*background-image: url(../../images/16x16/locked.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/locked.png) !important;
 }
-
+.ico-exclamation {
+	background: transparent url(../../images/icons-feng-3/16x16/exclamation.png) no-repeat !important;
+}
 .ico-comment {
 	/*background: transparent url(../../images/16x16/comment.png) no-repeat !important;*/
 	background: transparent url(../../images/icons-feng-3/16x16/comment.png) no-repeat !important;
@@ -1995,6 +1997,15 @@ a.underline {
 	color: #dd4b39;
 }
 
+.x-btn-text .number-in-red-circle {
+	background: #dd4b39;
+    color: white;
+    height: 20px;
+    width: 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 15px;
+}
 
 
 .x-tab-panel.subtab ul.x-tab-strip-top {

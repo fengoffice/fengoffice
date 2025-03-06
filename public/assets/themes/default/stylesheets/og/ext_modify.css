@@ -697,3 +697,27 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 #object-picker .x-tool.x-tool-toggle.x-tool-collapse-west{background: url(../../images/icons-feng-3/16x16/upload.png) !important;}
 
 .x-combo-list-inner{max-height: 300px;}
+
+#ogTasksFilterCombo,
+#ogTasksStatusCombo,
+#ogTasksGroupByCombo,
+#ogTasksOrderByCombo,
+#ogListingOrderCombo,
+#ogTasksDateFieldStart,
+#ogTasksDateFieldEnd {
+    height: 18.5px !important;
+}
+
+div[id*="user_id_combo_container"] .x-form-arrow-trigger,
+div[id*="line_date_container"] .x-form-date-trigger {
+	-webkit-transform: scale(1.4);
+    -moz-transform: scale(1.4);
+    -ms-transform: scale(1.4);
+    transform: scale(1.4);
+    margin-top: 4.3px;
+    margin-left: 3.5px;
+}
+div[id*="user_id_combo_container"] .x-form-field-wrap,
+div[id*="line_date_container"] .x-form-field-wrap {
+	padding-right:25px!important;
+}

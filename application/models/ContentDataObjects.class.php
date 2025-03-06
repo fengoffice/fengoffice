@@ -1040,19 +1040,21 @@ abstract class ContentDataObjects extends DataManager {
     		}else{
     			$join_type = "INNER";
     		}
+
+			$jt_table_alias = array_var($join_params, 'jt_alias', 'jt');
 			
 			if(array_var($join_params, 'e_field') && array_var($join_params, 'get_object_data')){
-				$on_cond = "`o`.`".$join_params['e_field']."` = `jt`.`".$join_params['jt_field']."`";
+				$on_cond = "`o`.`".$join_params['e_field']."` = `$jt_table_alias`.`".$join_params['jt_field']."`";
 			} else if (array_var($join_params, 'e_field')) {
-	      		$on_cond = "`e`.`".$join_params['e_field']."` = `jt`.`".$join_params['jt_field']."`";
+	      		$on_cond = "`e`.`".$join_params['e_field']."` = `$jt_table_alias`.`".$join_params['jt_field']."`";
 	      		if (array_var($join_params, 'on_extra')) {
-	      			$on_cond = "`e`.`".$join_params['e_field']."` = `jt`.`".$join_params['jt_field']."` ".$join_params['on_extra'];
+	      			$on_cond = "`e`.`".$join_params['e_field']."` = `$jt_table_alias`.`".$join_params['jt_field']."` ".$join_params['on_extra'];
 	      		}
 	      	} else if (array_var($join_params, 'j_sub_q')) {
-	      		$on_cond = "`jt`.`".$join_params['jt_field']."` = (" . array_var($join_params, 'j_sub_q') . ")";
+	      		$on_cond = "`$jt_table_alias`.`".$join_params['jt_field']."` = (" . array_var($join_params, 'j_sub_q') . ")";
 			  }
 
-			$join_conditions = $join_type." JOIN `".$join_params['table']."` `jt` ON " . $on_cond;
+			$join_conditions = $join_type." JOIN `".$join_params['table']."` `$jt_table_alias` ON " . $on_cond;
 			
 		}
     	return $join_conditions;

@@ -737,7 +737,7 @@ class TimeslotController extends ApplicationController {
 			}
 			
 			if (can_manage_time(logged_user())) {
-				if (logged_user()->isMemberOfOwnerCompany()) {
+				if (logged_user()->isMemberOfOwnerCompany()|| !config_option('filter_users_by_company')) {
 					$users = Contacts::getAllUsers();
 				} else {
 					$users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = ". logged_user()->getCompanyId()) : array(logged_user());

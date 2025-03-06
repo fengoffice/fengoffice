@@ -2154,6 +2154,7 @@ class ProjectTask extends BaseProjectTask {
 				WHERE ts.rel_object_id=".$this->getId()." AND o.trashed_by_id=0";
 		
 		$rows = DB::executeAll($sql);
+		if (!$rows) $rows = array();
 
 		// Calculate worked time for the task
 		$worked_minutes = 0;

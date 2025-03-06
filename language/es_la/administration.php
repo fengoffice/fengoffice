@@ -240,6 +240,7 @@
 	'add to a template' => 'Agregar a plantilla',
 	'add an object to template' => 'Agregar un objeto a esta plantilla',
 	'you are adding object to template' => 'Está agregando {0} \'{1}\' a una plantilla. Elija una plantilla o cree una nueva.',
+	'add task to template' => 'Agregar tarea a plantilla',
 	'success add object to template' => 'Objeto correctamente agregado a template',
 	'object type not supported' => 'Este tipo de objeto no está soportado para plantillas',
 	'assign template to workspace' => 'Asignar template a espacio de trabajo',
@@ -331,6 +332,10 @@
 	'user config option desc attach_docs_content' => 'Cuando esta opcioón está habilitada, los documentos van a ser adjuntados de manera usual. Sino se adjunta un link al documento.',
 	'user config option name max_spam_level' => 'Máximo nivel para Spam',
 	'user config option desc max_spam_level' => 'Al verificar el correo, los mensajes cuya evaluación de spam sea mayor que este valor serán enviados a la carpeta "Basura". Valor =0para un máximo filtrado,10sin filtro. Esta opción solo funcionará si en su servidor se encuentra instalada na herrmaienta para el filtro de Spam.',
+    'config option name filter_users_by_company' => 'Filtrar usuarios por empresa',
+    'config option desc filter_users_by_company' => 'Si esta opció esta habilitada, las listas de usuarios para el modulo de tiempo va a ser filtrada ademas de por los permisos habituales, por la pertenencia a una empresas.',
+
+
 	'edit default user preferences' => 'Editar preferencias de usuario por defecto',
 	'default user preferences' => 'Preferencias de usuario por defecto',
 	'default user preferences desc' => 'Determine los valores por defecto de las preferencias de usuario. Estos valores se aplicarán mientras el usuario no determine los valores sus preferencias.',

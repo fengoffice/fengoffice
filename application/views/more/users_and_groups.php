@@ -91,6 +91,12 @@ user_group_columns.push({
 	sortable: true
 });
 user_group_columns.push({
+	name: 'groups',
+	header: lang('groups'),
+	width: 200,
+	sortable: false
+});
+user_group_columns.push({
 	name: 'company',
 	header: lang('company'),
 	sortable: true

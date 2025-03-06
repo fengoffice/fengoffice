@@ -71,7 +71,7 @@
   	'copy milestone' => 'Create a copy of this milestone',
     
     // Task
-    'add task' => 'Add task',
+    'add task' => 'Save task',
 	'add sub task' => 'Add sub task',
     'edit task' => 'Edit task',
     'delete task' => 'Delete task',

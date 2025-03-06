@@ -410,7 +410,15 @@ setTimeout(function() {
         				ogTasks.UserCompanySelected(this.initialConfig.controlName, record.data.value, this.initialConfig.taskId);
         			}
         		}
-        	}
+        	},
+			'render': function (combo) {
+				var selectedValue = combo.getValue();  
+				if(selectedValue == '0') {
+					combo.el.dom.style.color = 'black'; 
+				} else {
+					combo.el.dom.style.color = 'red'; 
+				}
+			}
         }
     });
     this.filterNamesCompaniesCombo.setValue(ogTasks.userPreferences.filterValue);
@@ -556,7 +564,22 @@ setTimeout(function() {
         	'select' : function(combo, record) {
 				var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
         		toolbar.load();
-        	}
+        	},
+			'render': function (combo) {
+				var selectedValue = combo.getValue();
+
+				// Look for selected record in store
+				var record = combo.findRecord(combo.valueField, selectedValue);
+				
+				if (record) {
+					var selectedText = record.get(combo.displayField);
+					if(selectedText == '--' + lang('no filter') + '--') {
+						combo.el.dom.style.color = 'black'; 
+					} else {
+						combo.el.dom.style.color = 'red'; 
+					}
+				}
+			}
         }
     });
 
@@ -593,6 +616,14 @@ setTimeout(function() {
 							from_date : from_date
 						});
 					}
+				}
+			},
+			'render': function(dateField) {
+				var value = dateField.value;
+				if (value === null || value === '' || value == undefined) {
+					dateField.el.dom.style.color = 'black';
+				} else {
+					dateField.el.dom.style.color = 'red';
 				}
 			}
 		},
@@ -647,6 +678,14 @@ setTimeout(function() {
 							to_date : to_date
 						});
 					}
+				}
+			},
+			'render': function(dateField) {
+				var value = dateField.value;
+				if (value === null || value === '' || value == undefined) {
+					dateField.el.dom.style.color = 'black';
+				} else {
+					dateField.el.dom.style.color = 'red';
 				}
 			}
 		},

@@ -1519,6 +1519,10 @@ class ObjectController extends ApplicationController {
 		tpl_assign('mod_logs_pagination', $mod_logs_pagination);
 		tpl_assign('view_logs_pagination', $view_logs_pagination);
 
+		$more_view_history_tabs = array();
+		Hook::fire('more_view_history_tabs', array('object' => $obj, 'logs' => $logs, 'logs_read' => $logs_read), $more_view_history_tabs);
+		tpl_assign('more_view_history_tabs', $more_view_history_tabs);
+
 		tpl_assign('curtab', array_var($_REQUEST, 'curtab', ''));
 	}
 
@@ -2025,6 +2029,8 @@ class ObjectController extends ApplicationController {
 				$extra_data['reload_dims'] = 1;
 			}
 		}
+
+		Hook::fire('after_check_for_popup_reminders', array(), $extra_data);
 
 		ajx_extra_data($extra_data);
 	}

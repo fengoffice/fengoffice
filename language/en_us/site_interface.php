@@ -455,7 +455,7 @@ return array(
   'pause work' => 'Pause clock',
   'resume work' => 'Resume clock',
   'end work description' => 'End work description',
-  'add timeslot' => 'Add time entry',
+  'add timeslot' => 'Save time entry',
   'new timeslot' => 'New time entry',
   'edit timeslot' => 'Edit time entry',
   'start date' => 'Start date',
