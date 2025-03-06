@@ -957,7 +957,7 @@ abstract class ContentDataObjects extends DataManager {
 	 * param unknown_type $limit
 	 */
 	static function getContentObjects($context, $object_type, $order=null, $order_dir=null, $extra_conditions=null, $join_params=null, $trashed=false, $archived=false, $start = 0 , $limit=null){
-		$table_name = $object_type->getTableName();
+		$table_name = $object_type->getObjectTableName();
 		$object_type_id = $object_type->getId();
 		
 		//Join conditions

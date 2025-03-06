@@ -50,6 +50,8 @@ og.TasksBottomToolbar = function(config) {
 		}
 	}
 
+	groupcombo_store_data.sort(function(a,b) { return a[1].localeCompare(b[1]); });
+
     this.groupcombo = new Ext.form.ComboBox({
     	id: 'ogTasksGroupByCombo',
         store: new Ext.data.SimpleStore({
@@ -103,6 +105,7 @@ og.TasksBottomToolbar = function(config) {
 			}
 		}
 	}
+	ordercombo_data.sort(function(a,b) { return a[1].localeCompare(b[1]); });
 
 	this.ordercombo = new Ext.form.ComboBox({
     	id: 'ogTasksOrderByCombo',
@@ -197,6 +200,8 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
 			if (!found) filtercombo_store_data.push([gb.id, gb.name]);
 		}
 	}
+
+	filtercombo_store_data.sort(function(a,b) { return a[1].localeCompare(b[1]); });
     
     this.filtercombo = new Ext.form.ComboBox({
     	id: 'ogTasksFilterCombo',
@@ -313,6 +318,8 @@ setTimeout(function() {
     				currentUser = usersArray[i].id;
     			}
     		}
+
+			ucsOtherUsers.sort(function(a,b){return a[1].localeCompare(b[1]);});
     		
     		var compData = [];
     		if (og.config.can_assign_tasks_to_companies) {
@@ -321,6 +328,8 @@ setTimeout(function() {
     				if (companiesArray[i].id) compData[compData.length] = [companiesArray[i].id, og.clean(companiesArray[i].name)];
     			}
     		}
+
+			compData.sort(function(a,b){return a[1].localeCompare(b[1]);});
     		
     		//var namesCompaniesComboShowIf = ['completed_by','created_by','assigned_to','assigned_by','subscribed_to'];
     		var namesCompaniesComboShowIf = ['assigned_to'];
@@ -357,6 +366,8 @@ setTimeout(function() {
     				uDOtherUsers[uDOtherUsers.length] = [usersArray[i].id, toshow];
     			}
     		}
+			uDOtherUsers.sort(function(a,b){return a[1].localeCompare(b[1]);});
+
     		uData = uData.concat(uDOtherUsers).concat(compData);
     		
     		var com2 = Ext.getCmp('ogTasksFilterNamesCombo');
@@ -447,7 +458,15 @@ setTimeout(function() {
         	'select' : function(combo, record) {
 				var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
         		toolbar.load();
-        	}
+        	},
+			'render': function (combo) {
+				var selectedValue = combo.getValue();  
+				if(selectedValue == '0') {
+					combo.el.dom.style.color = 'black'; 
+				} else {
+					combo.el.dom.style.color = 'red'; 
+				}
+			}
 		}
 	});
     this.filterNamesCombo.setValue(ogTasks.userPreferences.filterValue);

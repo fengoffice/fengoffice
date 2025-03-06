@@ -2,6 +2,17 @@
 Changelog
 =========
 
+Since 3.11.7.X
+-----------------------------------
+feature: filter properties by OT and subtype on import tool (#3019)
+feature: Refactor language files for consistent terminology (#3012)
+feature: Adds more date formats and tooltips (#3011)
+feature: Allow to change date format on invoice header (#3007)
+feature: project billing report: add new parameter for ordering time and expenses inside each project's data section (#3000)
+feature: allow to disable generic member type instantiation (#2989)
+Feature: Don't allow time recalculations based on timesheet approval (#2923)
+bugfix: tasks modules dropdown menus are not ordered alphabetically (#3001)
+
 Since 3.11.7.3
 -----------------------------------
 bugfix: Enhance linked object tab labels and add missing translations for project interface (#3020)

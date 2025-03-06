@@ -201,7 +201,6 @@ class Reports extends BaseReports {
         $show_archived = false;
         if ($report instanceof Report) {
             $ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
-            $table = $ot->getTableName();
 
             $contact_ot = ObjectTypes::findByName('contact');
 

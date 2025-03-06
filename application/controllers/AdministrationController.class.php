@@ -330,16 +330,15 @@ class AdministrationController extends ApplicationController {
 					$new_cp = new CustomProperty();
 				}
 			
-				if($data['deleted'] == "1"){
+				if(array_var($data, 'deleted') == "1"){
 					if (!$new_cp->isNew()) {
 						$new_cp->delete();
 					}
 					continue;
 				}
-                                if($data['is_disabled'] == "1"){
-                                        $new_cp->setIsDisabled(1);
-                                        $new_cp->save();
-					//continue;
+				if(array_var($data, 'is_disabled') == "1"){
+					$new_cp->setIsDisabled(1);
+					$new_cp->save();
 				}
 				
 				if (array_var($data, 'name') == '') {
@@ -365,7 +364,7 @@ class AdministrationController extends ApplicationController {
 					$new_cp->setObjectTypeId($obj_type_id);
 					$new_cp->setOrder($order);
 					
-					if ($data['type'] == 'list' || $data['type'] == 'table') {
+					if (array_var($data, 'type') == 'list' || array_var($data, 'type') == 'table') {
 						$values = array();
 						$list = explode(",", $data['values']);
 						foreach ($list as $l) {
@@ -383,6 +382,9 @@ class AdministrationController extends ApplicationController {
 				$ret = null;
 				Hook::fire('after_custom_property_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'order' => $order), $ret);
 			}
+
+			$ignored = null;
+			Hook::fire('after_all_custom_properties_save', array('ot_id' => $obj_type_id, 'request' => $_REQUEST), $ignored);
 			
 			DB::commit();
 			flash_success(lang('custom properties updated'));

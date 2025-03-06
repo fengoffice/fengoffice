@@ -561,7 +561,7 @@ og.ContactManager = function() {
     
 	displayOptions = {
 		contacts : {
-			text : lang('contacts'),
+			text : lang('individual contacts'),
 			checked : (og.preferences['viewContactsChecked'] == 1),
 			checkHandler : function(){
 				var url = og.getUrl('account', 'update_user_preference', {name: 'viewContactsChecked', value:(this.checked?1:0)});
@@ -630,7 +630,7 @@ og.ContactManager = function() {
 	}
 	
 	var addMenuItems = [];
-	addMenuItems.push({text: lang('contact'), iconCls: 'ico-contact-small', handler: function() {
+	addMenuItems.push({text: lang('individual contact'), iconCls: 'ico-contact-small', handler: function() {
 		//og.render_modal_form('', {c:'contact', a:'add'});
 		var url = og.getUrl('contact', 'add');
 		og.openLink(url);

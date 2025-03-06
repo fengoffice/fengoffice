@@ -1049,4 +1049,6 @@ addLangs({
     'field Objects is_manual_billing' : 'Is manual billing',
     'field Objects is_manual_cost' : 'Is manual cost',
     'paid' : 'Paid',
+    'individual contacts' : 'Individual contacts',
+	'individual contact' : 'Individual contact',
 });

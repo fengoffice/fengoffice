@@ -298,6 +298,7 @@ og.TasksTopToolbar = function(config) {
         
 	this.displayOptions = {
 			by: {
+				id: 'show_by',
 		        text: lang('assigned by'),
 				checked: (ogTasks.userPreferences.showBy == 1),
 				hideOnClick: false,	           
@@ -307,8 +308,9 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			time: {
+				id: 'show_time',
+				text: lang('time'),
 				hidden: (typeof(ogTasks.userPreferences.showTime) == "undefined"),
-                                text: lang('time'),
 				checked: (ogTasks.userPreferences.showTime == 1),
 				hideOnClick: false,
 				checkHandler: function() {
@@ -317,8 +319,9 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
             time_quick: {
+				id: 'show_time_quick',
 				hidden: (typeof(ogTasks.userPreferences.showTimeQuick) == "undefined"),
-                                text: lang('quick time'),
+				text: lang('quick time'),
 				checked: (ogTasks.userPreferences.showTimeQuick == 1),
 				hideOnClick: false,
 				checkHandler: function() {
@@ -327,6 +330,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			dates_start: {
+				id: 'show_dates_start',
 		        text: lang('start date'),
 				checked: (ogTasks.userPreferences.showStartDates == 1),
 				hideOnClick: false,
@@ -336,6 +340,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			dates_end: {
+				id: 'show_dates_end',
 		        text: lang('due date'),
 				checked: (ogTasks.userPreferences.showEndDates == 1),
 				hideOnClick: false,
@@ -345,6 +350,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			empty_milestones: {
+				id: 'show_empty_milestones',
 		        text: lang('empty milestones'),
 				checked: (ogTasks.userPreferences.showEmptyMilestones == 1),
 				hideOnClick: false,
@@ -356,6 +362,7 @@ og.TasksTopToolbar = function(config) {
 				hidden: (!og.config.use_milestones)
 			},
             time_estimates: {
+		        id: 'show_time_estimates',
 		        text: lang('estimated time'),
 				checked: (ogTasks.userPreferences.showTimeEstimates == 1),
 				hideOnClick: false,
@@ -371,6 +378,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			total_time_estimates: {
+		        id: 'show_total_time_estimates',
 		        text: lang('total estimated time'),
 				checked: (ogTasks.userPreferences.showTotalTimeEstimates == 1),
 				hideOnClick: false,
@@ -386,6 +394,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			time_pending: {
+		        id: 'show_time_pending',
 		        text: lang('pending time'),
 				checked: (ogTasks.userPreferences.showTimePending == 1),
 				hideOnClick: false,
@@ -401,6 +410,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			time_worked: {
+		        id: 'show_time_worked',
 		        text: lang('worked time'),
 				checked: (ogTasks.userPreferences.showTimeWorked == 1),
 				hideOnClick: false,
@@ -416,6 +426,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			total_worked_time: {
+				id: 'show_total_time_worked',
 				text: lang('total worked time'),
 				checked: (ogTasks.userPreferences.showTotalTimeWorked == 1),
 				hideOnClick: false,	
@@ -432,6 +443,7 @@ og.TasksTopToolbar = function(config) {
 											
 			},
 			remaining_time: {
+				id: 'show_remaining_time',
 				text: lang('remaining time'),
 				checked: (ogTasks.userPreferences.showRemainingTime == 1),
 				hideOnClick: false,	
@@ -447,6 +459,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			total_remaining_time: {
+				id: 'show_total_remaining_time',
 				text: lang('total remaining time'),
 				checked: (ogTasks.userPreferences.showTotalRemainingTime == 1),
 				hideOnClick: false,
@@ -462,6 +475,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			percent_completed_bar: {
+		        id: 'show_percent_completed_bar',
 		        text: lang('percent completed'),
 				checked: (ogTasks.userPreferences.showPercentCompletedBar == 1),
 				hideOnClick: false,
@@ -471,6 +485,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},			
 			show_quick_edit: {
+		        id: 'show_quick_edit',
 		        text: lang('quick edit'),
 				checked: (ogTasks.userPreferences.showQuickEdit == 1),
 				hideOnClick: false,
@@ -480,6 +495,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			show_quick_mark_as_started: {
+		        id: 'show_quick_mark_as_started',
 		        text: lang('quick mark as started'),
 				checked: (parseInt(ogTasks.userPreferences.showQuickMarkAsStarted) == 1),
 				hideOnClick: false,
@@ -489,6 +505,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			show_quick_complete: {
+		        id: 'show_quick_complete',
 		        text: lang('quick complete'),
 				checked: (ogTasks.userPreferences.showQuickComplete == 1),
 				hideOnClick: false,
@@ -498,6 +515,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			show_quick_comment: {
+		        id: 'show_quick_comment',
 		        text: lang('quick comment'),
 				checked: (ogTasks.userPreferences.showQuickComment == 1),
 				hideOnClick: false,
@@ -507,6 +525,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			show_quick_add_sub_tasks: {
+		        id: 'show_quick_add_sub_tasks',
 		        text: lang('quick add sub tasks'),
 				checked: (ogTasks.userPreferences.showQuickAddSubTasks == 1),
 				hideOnClick: false,
@@ -516,6 +535,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			show_classification: {
+		        id: 'show_classification',
 		        text: lang('classified under'),
 				checked: (ogTasks.userPreferences.showClassification == 1),
 				hideOnClick: false,
@@ -525,6 +545,7 @@ og.TasksTopToolbar = function(config) {
 				}
 			},
 			previous_pending_tasks: {
+		        id: 'show_previous_pending_tasks',
 		        text: lang('previous pending tasks'),
 				checked: (ogTasks.userPreferences.previousPendingTasks == 1),
 				hideOnClick: false,
@@ -536,6 +557,7 @@ og.TasksTopToolbar = function(config) {
 				hidden: (!og.config.use_tasks_dependencies)
 			},
 			show_subtasks_structure: {
+		        id: 'show_subtasks_structure',
 		        text: lang('subtasks structure'),
 				checked: (ogTasks.userPreferences.showSubtasksStructure == 1),
 				hideOnClick: false,
@@ -612,6 +634,8 @@ og.TasksTopToolbar = function(config) {
 			});
 		}
 	}
+
+	menu_items.sort(function(a,b){return (a.text > b.text) ? 1 : ((b.text > a.text) ? -1 : 0);});
 
 	this.show_menu = new Ext.Action({
 		id: 'table-show-columns-task',
@@ -734,29 +758,52 @@ function ogTasksWaitTimeOutAndDraw (){
 
 
 Ext.extend(og.TasksTopToolbar, Ext.Toolbar, {
+	/**
+	 * Returns true if the menu item with the given id is checked, false otherwise.
+	 *
+	 * @param {String} item_id The id of the menu item to check.
+	 * @return {Boolean} True if the item is checked, false otherwise.
+	 */
+	isShowMenuItemChecked : function(item_id) {
+		// Iterate over the menu items
+		var the_menu_items = this.show_menu.items[0].menu.items.items;
+		for (var x=0; x < the_menu_items.length; x++) {
+			var mitem = the_menu_items[x];
+			if (mitem.id == item_id) {
+				// If the id matches, return the checked status
+				return mitem.checked;
+			}
+		}
+		// If the item is not found, return false
+		return false;
+	},
+	/**
+	 * Returns an object with the options to draw the task list.
+	 * The options are obtained from the checked status of the menu items in the "Show" menu.
+	 */
 	getDrawOptions : function(){
 		var draw_options = {
-			show_by : this.show_menu.items[0].menu.items.items[0].checked,
-			show_time : this.show_menu.items[0].menu.items.items[1].checked,
-			show_time_quick : this.show_menu.items[0].menu.items.items[2].checked,
-			show_start_dates : this.show_menu.items[0].menu.items.items[3].checked,
-			show_end_dates : this.show_menu.items[0].menu.items.items[4].checked,
-			show_ms : this.show_menu.items[0].menu.items.items[5].checked,
-			show_time_estimates : this.show_menu.items[0].menu.items.items[6].checked,  
-			show_total_time_estimates : this.show_menu.items[0].menu.items.items[7].checked,          
-			show_time_pending : this.show_menu.items[0].menu.items.items[8].checked,
-			show_time_worked : this.show_menu.items[0].menu.items.items[9].checked,
-			show_total_time_worked: this.show_menu.items[0].menu.items.items[10].checked,   
-			show_percent_completed_bar : this.show_menu.items[0].menu.items.items[11].checked,
-			show_quick_edit : this.show_menu.items[0].menu.items.items[12].checked,
-			show_quick_mark_as_started : this.show_menu.items[0].menu.items.items[13].checked,
-			show_quick_complete : this.show_menu.items[0].menu.items.items[14].checked,
-			show_quick_add_sub_tasks : this.show_menu.items[0].menu.items.items[15].checked,
-			show_classification : this.show_menu.items[0].menu.items.items[16].checked,
-			show_previous_pending_tasks : this.show_menu.items[0].menu.items.items[17].checked,
-			show_subtasks_structure : this.show_menu.items[0].menu.items.items[18].checked,
-			show_remaining_time: this.show_menu.items[0].menu.items.items[19].checked,
-			show_total_remaining_time: this.show_menu.items[0].menu.items.items[20].checked,
+			show_by : this.isShowMenuItemChecked('show_by'),
+			show_time : this.isShowMenuItemChecked('show_time'),
+			show_time_quick : this.isShowMenuItemChecked('show_time_quick'),
+			show_start_dates : this.isShowMenuItemChecked('show_start_dates'),
+			show_end_dates : this.isShowMenuItemChecked('show_end_dates'),
+			show_ms : this.isShowMenuItemChecked('show_empty_milestones'),
+			show_time_estimates : this.isShowMenuItemChecked('show_time_estimates'),
+			show_total_time_estimates : this.isShowMenuItemChecked('show_total_time_estimates'),
+			show_time_pending : this.isShowMenuItemChecked('show_time_pending'),
+			show_time_worked : this.isShowMenuItemChecked('show_time_worked'),
+			show_total_time_worked: this.isShowMenuItemChecked('show_total_time_worked'),
+			show_percent_completed_bar : this.isShowMenuItemChecked('show_percent_completed_bar'),
+			show_quick_edit : this.isShowMenuItemChecked('show_quick_edit'),
+			show_quick_mark_as_started : this.isShowMenuItemChecked('show_quick_mark_as_started'),
+			show_quick_complete : this.isShowMenuItemChecked('show_quick_complete'),
+			show_quick_add_sub_tasks : this.isShowMenuItemChecked('show_quick_add_sub_tasks'),
+			show_classification : this.isShowMenuItemChecked('show_classification'),
+			show_previous_pending_tasks : this.isShowMenuItemChecked('show_previous_pending_tasks'),
+			show_subtasks_structure : this.isShowMenuItemChecked('show_subtasks_structure'),
+			show_remaining_time: this.isShowMenuItemChecked('show_remaining_time'),
+			show_total_remaining_time: this.isShowMenuItemChecked('show_total_remaining_time'),
 			show_dimension_cols : ogTasks.userPreferences.showDimensionCols           
 		}
 		

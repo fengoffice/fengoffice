@@ -517,5 +517,7 @@ return array(
     'invalid_cp_url_value' => 'Invalid URL value',
 	'wrong_cp_values' => 'The following inputs have invalid values: {0}',
 	'format' => 'Format',
+	'individual contacts' => 'Individual contacts',
+	'individual contact' => 'Individual contact',
 
 );

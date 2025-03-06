@@ -2241,7 +2241,7 @@ class MemberController extends ApplicationController {
 		
 		if ($dimension instanceof Dimension){
 
-			$object_Types = array();
+			$object_types = array();
 			$parent_member_id = array_var($_GET, 'parent_member_id');
 			
 			$parent_member = Members::instance()->findById($parent_member_id);
@@ -2292,14 +2292,20 @@ class MemberController extends ApplicationController {
 			$urls = array();
 			foreach ($editUrls as $ot_id => $url) {
 				$ot = array_var($obj_types, $ot_id);
-				if ($ot instanceof ObjectType) {
-					$link_text = ucfirst(Members::getTypeNameToShowByObjectType($dimension_id, $ot->getId()));
-					$iconcls = $ot->getIconClass();
-				} else {
-					$link_text = lang('new');
-					$iconcls = "";
+
+				$can_create_object_type = true;
+				Hook::fire('can_create_object_type', array('ot' => $ot), $can_create_object_type);
+				
+				if ($can_create_object_type) {
+					if ($ot instanceof ObjectType) {
+						$link_text = ucfirst(Members::getTypeNameToShowByObjectType($dimension_id, $ot->getId()));
+						$iconcls = $ot->getIconClass();
+					} else {
+						$link_text = lang('new');
+						$iconcls = "";
+					}
+					$urls[] = array('link_text' => $link_text, 'url' => $url, 'iconcls' => $iconcls);
 				}
-				$urls[] = array('link_text' => $link_text, 'url' => $url, 'iconcls' => $iconcls);
 			}
 			
 			Hook::fire('member_quick_add_urls', array('dimension' => $dimension, 'object_types' => $object_types, 'parent_member' => $parent_member), $urls);

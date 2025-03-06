@@ -31,6 +31,7 @@
     * @return BaseObjectTypes 
     */
     function __construct() {
+	  Hook::fire('object_definition', 'ObjectType', self::$columns);
       parent::__construct('ObjectType', 'object_types', true);
     } // __construct
     
