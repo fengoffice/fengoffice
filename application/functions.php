@@ -1859,7 +1859,9 @@ function readZippedXML($archiveFile, $dataFile, $type = null) {
             $zip->close();
             // Load XML from a string
             // Skip errors and warnings
-            $xml = DOMDocument::loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+            $doc = new DOMDocument();
+			$doc->loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+			$xml = $doc;
             // Return data without XML formatting tags
             return strip_tags($xml->saveXML());
         }
