@@ -3491,10 +3491,10 @@ class ContactController extends ApplicationController
 		if (isset($checked['zipcode']) && $checked['zipcode'] == 'checked') $str .= self::build_csv_field($zipcode_string, $delimiter);
 		if (isset($checked['country']) && $checked['country'] == 'checked') $str .= self::build_csv_field($country_string, $delimiter);
 		
-		if (isset($checked['phone_number']) && $checked['phone_number'] == 'checked') $str .= self::build_csv_field($company->getPhoneNumber('work', true), $delimiter);
-		if (isset($checked['fax_number']) && $checked['fax_number'] == 'checked') $str .= self::build_csv_field($company->getPhoneNumber('fax', true), $delimiter);
-		if (isset($checked['email']) && $checked['email'] == 'checked') $str .= self::build_csv_field($company->getEmailAddress(), $delimiter);
-		if (isset($checked['homepage']) && $checked['homepage'] == 'checked') $str .= self::build_csv_field($company->getWebpageUrl('work'), $delimiter);
+		if (isset($checked['phone_number']) && $checked['phone_number'] == 'checked') $str .= self::build_csv_field($company->getAllPhoneNumbersCSV('work'), $delimiter);
+		if (isset($checked['fax_number']) && $checked['fax_number'] == 'checked') $str .= self::build_csv_field($company->getAllPhoneNumbersCSV('fax'), $delimiter);
+		if (isset($checked['email']) && $checked['email'] == 'checked') $str .= self::build_csv_field($company->getAllEmailsCSV(), $delimiter);
+		if (isset($checked['homepage']) && $checked['homepage'] == 'checked') $str .= self::build_csv_field($company->getAllWebpageUrlsCSV('work'), $delimiter);
 
 		foreach ($checked as $key => $param) {
 			if ($param == 'checked' && is_numeric($key)) {

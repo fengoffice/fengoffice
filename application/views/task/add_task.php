@@ -795,11 +795,6 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     var original_assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
     var can_notify_assigned = <?php echo $can_notify_assigned ? '1' : '0' ?>;
     var start = true;
-    if (!is_new_task && member_selector['<?php echo $genid ?>']) {
-        var current_dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
-    } else {
-        var current_dimension_members_json = og.contextManager.plainContext();
-    }
 
     var can_manage_repetitive_properties = <?php echo $can_manage_repetitive_properties_of_tasks == 1 ? 'true' : 'false'; ?>;
 
@@ -1059,10 +1054,10 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
             og.setIsBillableUsingMembers(dimension_members_json);
         }
         if (show_financials_tab) {
-            og.udpate_estimated_price_and_fixed_fee_selector_using_project(current_dimension_members_json, dimension_members_json);
+            og.udpate_estimated_price_and_fixed_fee_selector_using_project(og.task_form_current_dimension_members_json, dimension_members_json);
         }
         // Update current selected member
-        current_dimension_members_json = dimension_members_json;
+        og.task_form_current_dimension_members_json = dimension_members_json;
     }
 
     og.setIsBillableUsingMembers = function(dimension_members_json) {
@@ -1077,13 +1072,13 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
         var current_billable = $('#<?php echo $genid ?>is_billableYes').attr('checked') == 'checked' ? 1 : 0;
         var member_params = {
             member_ids: dimension_members_json,
-            current_member_ids: current_dimension_members_json,
+            current_member_ids: og.task_form_current_dimension_members_json,
             current_billable: current_billable
         };
 
         og.openLink(og.getUrl('billing_definition', 'get_labor_category_billable_for_task_form', member_params), {
             callback: function(success, data) {
-                if (data.has_value) {
+                if (data && data.has_value) {
                     if (current_billable == data.is_billable) {
                         return;
                     }
@@ -1367,6 +1362,19 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
         $("#<?php echo $genid ?>tabs").tabs();
 
+		// wait for the member selector to be ready and then 
+		// initialize the og.task_form_current_dimension_members_json
+		var listenerId = og.eventManager.addListener('after member_selector init', function(params) {
+			let genid = '<?php echo $genid ?>';
+			if (params && params.genid == genid) {
+				if (member_selector[genid] && member_selector[genid].sel_context) {
+					// update the variable with the current selected members json string
+					og.task_form_current_dimension_members_json = Ext.util.JSON.encode(member_selector[genid].sel_context);
+				}
+			}
+			// remove the listener, no need anymore
+			og.eventManager.removeListener(listenerId);
+		});
 
         $("#ogTasksPanelATTitle").focus();
     });

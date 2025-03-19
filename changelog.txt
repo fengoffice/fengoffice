@@ -2,6 +2,34 @@
 Changelog
 =========
 
+Since 3.11.7.8
+-----------------------------------
+bugfix: custom member name: differentiate custom properties retrieval based on object type (#3047)
+
+Since 3.11.7.7
+-----------------------------------
+bugfix: update default value for expense_type to an empty string in expenses table (#3045)
+bugfix: vendors tab is cut (#3044)
+
+Since 3.11.7.6
+-----------------------------------
+bugfix: fix XML loading by using a new DOMDocument instance (#3042)
+bugfix: uninitialized variable makes the comparison of prev and new labor category to fail always the first time you change task classification, and triggers question to the user to change billable (…
+bugfix: modify expense_type column to set to empty (#3040)
+bugfix: qbo non-sync object count was not taking in account the optio… (#3032)
+bugfix: time total cost calculations (#3041)
+
+Since 3.11.7.5
+-----------------------------------
+bugfix: voided invoices should not be included in listing and report totals (#3029)
+
+Since 3.11.7.4
+-----------------------------------
+bugfix: expenses not sync count was not taking in account disabled expense types (#3027)
+bugfix: missing langs for financial columns in time custom report (#3026)
+bugfix: Update contract hours label in utilization report and add language support (#3024)
+bugfix: client reports and contact tab export not including all emails (#3021)
+
 Since 3.11.7.3
 -----------------------------------
 bugfix: Enhance linked object tab labels and add missing translations for project interface (#3020)

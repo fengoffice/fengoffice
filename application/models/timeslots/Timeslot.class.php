@@ -631,6 +631,8 @@ class Timeslot extends BaseTimeslot {
 			$result['can_delete'] = $this->canDelete(logged_user());
 		}
 		if ($return_billing) {
+			$result['cost_currency_id'] = $this->getCostCurrencyId();
+			$result['rate_currency_id'] = $this->getRateCurrencyId();
 			$result['is_fixed_cost'] = $this->getColumnValue('is_fixed_cost');
 			$result['hourly_cost'] = $this->getColumnValue('hourly_cost');
 			$result['total_cost'] = $this->getColumnValue('fixed_cost');
@@ -642,7 +644,6 @@ class Timeslot extends BaseTimeslot {
 			if ($this->getFixedBilling() > 0) {
 				$c = Currencies::instance()->getCurrency($this->getRateCurrencyId());
 				$c_symbol = $c instanceof Currency ? $c->getSymbol() : '';
-				$result['rate_currency_id'] = $this->getRateCurrencyId();
 				$result['rate_currency_sym'] = $c_symbol;
 				$result['fixed_billing'] = format_money_amount($this->getFixedBilling(), $c_symbol);
 			}
