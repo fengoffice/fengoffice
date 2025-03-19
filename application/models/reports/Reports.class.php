@@ -491,7 +491,11 @@ class Reports extends BaseReports {
 									$results['columns']['names'][$field] = lang('field Contacts ' . $field);
                                     $results['columns']['order'][] = $field;
                                 } else if (in_array($field, ProjectTasks::instance()->getColumns())) {
-									$results['columns']['names'][$field] = lang('field ProjectTasks ' . $field);
+									$col_name = Localization::instance()->lang('field ProjectTasks ' . $field);
+									if (is_null($col_name)) {
+										$col_name = lang('field Objects ' . $field);
+									}
+									$results['columns']['names'][$field] = $col_name;
                                     $results['columns']['order'][] = $field;
 								}
                             } else if ($ot->getHandlerClass() == 'MailContents') {

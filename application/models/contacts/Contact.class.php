@@ -512,6 +512,25 @@ class Contact extends BaseContact {
 	 function getMainEmails() {
 	 	return ContactEmails::instance()->findAll(array('conditions' => 'is_main=1 AND contact_id = '.$this->getId()));
 	 }
+
+	/**
+	 * Retrieve all email addresses of the contact as a CSV string.
+	 *
+	 * @return string A comma-separated string of all email addresses.
+	 */
+	function getAllEmailsCSV() {
+		$all_email_addresses = [];
+		$all_emails = $this->getAllEmails(); // Fetch all email objects associated with the contact.
+		
+		// Iterate through each email object and extract the email address.
+		foreach ($all_emails as $email) {
+			$all_email_addresses[] = $email->getEmailAddress();
+		}
+		
+		// Concatenate all email addresses into a single CSV string.
+		$all_emails_string = implode(",", $all_email_addresses);
+		return $all_emails_string;
+	}
 	 
 
 	/**
@@ -612,6 +631,29 @@ class Contact extends BaseContact {
 		$number = is_null($telephone)? '' : $telephone->getNumber();
 		return $number;
 	} // getPhoneNumber
+
+	/**
+	 * Get all phone numbers of a contact in a single CSV string.
+	 *
+	 * This function will return a comma separated list of phone numbers associated with the contact.
+	 * The list will include all phone numbers, regardless of their type.
+	 *
+	 * @param string $type (optional) If provided, only phone numbers of the specified type will be returned.
+	 *
+	 * @return string A comma separated list of phone numbers.
+	 */
+	function getAllPhoneNumbersCSV($type = '') {
+		$all_phone_numbers = []; // Initialize an empty array to store phone numbers.
+		$all_phones = $this->getAllPhones($type); // Fetch all phone objects associated with the contact.
+		
+		// Loop through all phone objects and add the phone number to the array.
+		foreach ($all_phones as $phone) {
+			$all_phone_numbers[] = $phone->getNumber();
+		}
+		
+		// Join the array of phone numbers into a single string using a comma as the separator.
+		return implode(',', $all_phone_numbers);
+	}
 	
 	function getPhoneName($type, $is_main = false, $check_is_main = true) {
 		$telephone = $this->getPhone($type, $is_main, $check_is_main);
@@ -656,6 +698,27 @@ class Contact extends BaseContact {
 		$address = is_null($webpage) ? '' : $webpage->getUrl();
 		return $address;
 	} // getWebpageURL
+
+	/**
+	 * Return all webpage URLs associated with this contact as a comma-separated string.
+	 *
+	 * If the $type parameter is provided, only webpage URLs of the specified type will be returned.
+	 *
+	 * @param string $type (optional) Webpage type to filter by.
+	 * @return string A comma-separated list of webpage URLs associated with the contact.
+	 */
+	function getAllWebpageUrlsCSV($type = '') {
+		$all_webpage_urls = []; // Initialize an empty array to store webpage URLs.
+		$all_webpages = $this->getAllWebpages($type); // Fetch all webpage objects associated with the contact.
+		
+		// Loop through all webpage objects and add the webpage URL to the array.
+		foreach ($all_webpages as $webpage) {
+			$all_webpage_urls[] = $webpage->getUrl();
+		}
+		
+		// Join the array of webpage URLs into a single string using a comma as the separator.
+		return implode(',', $all_webpage_urls);
+	}
 	
 
 	
