@@ -2806,6 +2806,9 @@ class ObjectController extends ApplicationController {
 		if (!$only_count_result) {
 			$rows = DB::executeAll($sql);
 		}
+		else {
+    $rows = []; // Initialize as an empty array if $only_count_result is true
+}
 		if ($rows) {
 			foreach ($rows as &$row) {
 				$res = DB::executeOne(
