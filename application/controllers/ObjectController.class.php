@@ -868,53 +868,69 @@ class ObjectController extends ApplicationController {
 	}
 
 	function add_reminders($object) {
-		if (logged_user()->isGuest()) {
-			flash_error(lang('no access permissions'));
-			ajx_current("empty");
-			return;
-		}
-		$object->clearReminders(logged_user(), true);
-		$typesC = array_var($_POST, 'reminder_type');
-		if (!is_array($typesC)) return;
+	if (logged_user()->isGuest()) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
 
-		$durationsC = array_var($_POST, 'reminder_duration');
-		$duration_typesC = array_var($_POST, 'reminder_duration_type');
-		$subscribersC = array_var($_POST, 'reminder_subscribers');
-		$contextC = array_var($_POST, 'reminder_context'); 
+	$object->clearReminders(logged_user(), true);
 
-		foreach ($typesC as $context => $types) {
-			$durations = $durationsC[$context];
-			$duration_types = $duration_typesC[$context];
-			$subscribers = $subscribersC[$context];
-			$context_row = $contextC[$context]; 
+	$typesC = array_var($_POST, 'reminder_type');
+	if (!is_array($typesC)) return;
 
-			for ($i=0; $i < count($types); $i++) {
-				$type = $types[$i];
-				$duration = $durations[$i];
-				$duration_type = $duration_types[$i];
-				$minutes = $duration * $duration_type;
+	$durationsC = array_var($_POST, 'reminder_duration', []);
+	$duration_typesC = array_var($_POST, 'reminder_duration_type', []);
+	$subscribersC = array_var($_POST, 'reminder_subscribers', []);
+	$contextC = array_var($_POST, 'reminder_context', []);
 
-				Hook::fire('validate_reminder_minutes', array('context' => $context, 'i' => $i, 'request'=>$_POST), $minutes);
+	foreach ($typesC as $context => $types) {
+		$durations = isset($durationsC[$context]) ? $durationsC[$context] : [];
+		$duration_types = isset($duration_typesC[$context]) ? $duration_typesC[$context] : [];
+		$subscribers = isset($subscribersC[$context]) ? $subscribersC[$context] : [];
+		$context_row = isset($contextC[$context]) ? $contextC[$context] : [];
 
-				$reminder = new ObjectReminder();
-				$reminder->setMinutesBefore($minutes);
-				$reminder->setType($type);
-				$reminder->setContext($context_row[$i]);
-				$reminder->setObject($object);
-				if (isset($subscribers[$i]) && $subscribers[$i]) {
-					$reminder->setUserId(0);
-				} else {
-					$reminder->setUser(logged_user());
-				}
-				$date = $object->getColumnValue($context);
-				if ($date instanceof DateTimeValue) {
-					$rdate = new DateTimeValue($date->getTimestamp() - $minutes * 60);
-					$reminder->setDate($rdate);
-				}
-				$reminder->save();
+		for ($i = 0; $i < count($types); $i++) {
+			$type = $types[$i];
+			$duration = isset($durations[$i]) ? $durations[$i] : 0;
+			$duration_type = isset($duration_types[$i]) ? $duration_types[$i] : 1;
+
+			// Protect against division or zero/invalid types
+			if (!is_numeric($duration) || !is_numeric($duration_type)) {
+				continue;
 			}
+
+			$minutes = $duration * $duration_type;
+
+			Hook::fire('validate_reminder_minutes', [
+				'context' => $context,
+				'i' => $i,
+				'request' => $_POST
+			], $minutes);
+
+			$reminder = new ObjectReminder();
+			$reminder->setMinutesBefore($minutes);
+			$reminder->setType($type);
+			$reminder->setContext(isset($context_row[$i]) ? $context_row[$i] : null);
+			$reminder->setObject($object);
+
+			if (!empty($subscribers[$i])) {
+				$reminder->setUserId(0);
+			} else {
+				$reminder->setUser(logged_user());
+			}
+
+			$date = $object->getColumnValue($context);
+			if ($date instanceof DateTimeValue) {
+				$rdate = new DateTimeValue($date->getTimestamp() - ($minutes * 60));
+				$reminder->setDate($rdate);
+			}
+
+			$reminder->save();
 		}
 	}
+}
+
 
 	function update_reminders($object, $reminders) {
 		if (logged_user()->isGuest()) {
