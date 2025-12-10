@@ -139,7 +139,7 @@
   	*
   	* @access public
   	* @param void
-  	* @return DataManager
+  	* @return DataManager|ContentDataObjects
   	*/
   	abstract function manager();
 

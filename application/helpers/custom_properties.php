@@ -117,6 +117,9 @@ function render_object_fixed_property_input($genid, $input_name, $col_info, $val
 			break;
 	}
 	$html .= '<div class="clear"></div>';
+	if (array_var($col_info, 'description', '') != '') {
+		$html .= '<div class="desc">'.clean($col_info['description']).'</div>';
+	}
 	$html .= '</div>';
 
 	return $html;
@@ -192,36 +195,37 @@ function render_object_fixed_property_for_view($col_info, $value, ContentDataObj
 
 
 
-function get_custom_property_input_html($customProp, $object, $genid, $input_base_name = 'object_custom_properties',$member_parent, $property_perm = null, $is_bootstrap = false) {
+function get_custom_property_input_html($customProp, $object, $genid, $input_base_name = 'object_custom_properties',$member_parent, $property_perm = null, $is_bootstrap = false, $hide_label = false, $override_input_name = null, $selected_value = null) {
 
 	$label = clean($customProp->getName());
-	if ($customProp->getIsSpecial()) {
-		$label_code = str_replace("_special", "", $customProp->getCode());
-		$label_value = Localization::instance()->lang($label_code);
-		if (!is_null($label_value)) $label = $label_value;
-	}
 
-    $default_value = null;
-	Hook::fire("custom_property_input_default_value", array('customProp' => $customProp, 'object' => $object, 'member_parent_id' => array_var($_REQUEST, 'parent')), $default_value);
-	
-	if (is_null($default_value)) {
-		if ($customProp->getIsMultipleValues() || $customProp->getType() == 'table'){
-			$default_value = CustomPropertyValues::getCustomPropertyValues($object->getId(), $customProp->getId());
-	
-			if (!is_array($default_value) || count($default_value) == 0) {
+	if (is_null($selected_value)) {
+		
+		$default_value = null;
+		Hook::fire("custom_property_input_default_value", array('customProp' => $customProp, 'object' => $object, 'member_parent_id' => array_var($_REQUEST, 'parent')), $default_value);
+
+		if (is_null($default_value)) {
+			if ($customProp->getIsMultipleValues() || $customProp->getType() == 'table'){
+				$default_value = CustomPropertyValues::getCustomPropertyValues($object->getId(), $customProp->getId());
+		
+				if (!is_array($default_value) || count($default_value) == 0) {
+					$default_value = $customProp->getDefaultValue();
+				}
+			}else{
+				if ($object instanceof ContentDataObject) {
+					$cpv = CustomPropertyValues::getCustomPropertyValue($object->getId(), $customProp->getId());
+				} else {
+					$cpv = null;
+				}
 				$default_value = $customProp->getDefaultValue();
-			}
-		}else{
-			if ($object instanceof ContentDataObject) {
-				$cpv = CustomPropertyValues::getCustomPropertyValue($object->getId(), $customProp->getId());
-			} else {
-				$cpv = null;
-			}
-			$default_value = $customProp->getDefaultValue();
-			if($cpv instanceof CustomPropertyValue){
-				$default_value = $cpv->getValue();
+				if($cpv instanceof CustomPropertyValue){
+					$default_value = $cpv->getValue();
+				}
 			}
 		}
+		
+	} else {
+		$default_value = $selected_value;
 	}
 	
 	// hard patch to correct the color cp values (when editing member) if they are not consistent with the color attribute of the member
@@ -230,6 +234,9 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 	}
 
 	$name = $input_base_name . '[' . $customProp->getId() . ']';
+	if ($override_input_name) {
+		$name = $override_input_name;
+	}
     
 	$config = array();
 	$config['name'] = $name;
@@ -250,6 +257,9 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 		$config['object_is_new'] = $object->isNew();
 		$config['object'] = $object;
 	}
+	if ($hide_label) {
+		$config['hide_label'] = true;
+	}
 
 	Hook::fire('custom_property_additional_style', array('object' => $object, 'custom_property' => $customProp), $config);
 	
@@ -261,7 +271,10 @@ function get_custom_property_input_html($customProp, $object, $genid, $input_bas
 }
 
 function render_custom_property_error_field($error_message_code, $configs, $custom_property) {
-	$html = '<label style="display:inline-block; visibility: hidden; height: 0.5px; padding-top: 5px;" for="' . $configs['genid'] . 'cp' . $custom_property->getId() . '">&nbsp;</label>';
+	$html = '';
+	if (!array_var($configs, 'hide_label')) {
+		$html = '<label style="display:inline-block; visibility: hidden; height: 0.5px; padding-top: 5px;" for="' . $configs['genid'] . 'cp' . $custom_property->getId() . '">&nbsp;</label>';
+	}
 	$html .= '<span id="' . $configs['genid'] . 'cp' . $custom_property->getId() . '_error" class="cp-error-message" style="display: none; color:red">' . lang($error_message_code) . '</span>';
 	return $html;
 }
@@ -277,7 +290,10 @@ function render_custom_property_by_type($custom_property, $configs) {
 	$custom_property_id = $custom_property->getId();
 	$container_id = $configs['genid'] . '-container-cp' . $custom_property_id;
 	$html = '<div class="input-container" style="'.$style.'" id="'.$container_id.'">';
-	$html .= label_tag($configs['label'], $configs['genid'] . 'cp' . $custom_property->getId(), $custom_property->getIsRequired(), array('style' => 'display:inline-block;'), $custom_property->getType() == 'boolean'?'':':');
+
+	if (!array_var($configs, 'hide_label')) {
+		$html .= label_tag($configs['label'], $configs['genid'] . 'cp' . $custom_property->getId(), $custom_property->getIsRequired(), array('style' => 'display:inline-block;'), $custom_property->getType() == 'boolean'?'':':');
+	}
 	//if (isset($configs['member'])) $html .= '<br>';
 	
 	switch ($custom_property->getType()) {
@@ -330,7 +346,7 @@ function render_custom_property_by_type($custom_property, $configs) {
 
     if ($custom_property->getDescription() != ''){
         // the label is set to pad the description
-        $html .= '<div><label>&nbsp;</label><span class="desc">' . clean($custom_property->getDescription()) . '</span></div>';
+        $html .= '<div class="cp-description"><label>&nbsp;</label><span class="desc">' . clean($custom_property->getDescription()) . '</span></div>';
     }
 	$html .= '</div>';
 	
@@ -385,7 +401,10 @@ function render_money_amount_custom_property_field($custom_property, $configs) {
 		$options .= '<option '.$selected.' value='.$c->getId().'>'.$c->getSymbol().'</option>';
 	}
 	$disabled = count($currencies) == 1 || array_var($configs, 'property_perm') == 'view' ? ' disabled="disabled" ' : '';
-	$html .= '<select name="object_custom_properties['.$custom_property->getId().'][currency_id]" style="min-width: 40px;" '.$disabled.'>'.$options.'</select>';
+	
+	$cur_readonly = '';
+	Hook::fire('cp_amount_currency_selector_readonly', array('cp' => $custom_property, 'configs' => $configs), $cur_readonly);
+	$html .= '<select name="object_custom_properties['.$custom_property->getId().'][currency_id]" style="min-width: 40px;" '.$disabled.' '.$cur_readonly.'>'.$options.'</select>';
 
 	// Amount input
 	$id = $configs['genid'] . 'cp' . $custom_property->getId();
@@ -393,7 +412,10 @@ function render_money_amount_custom_property_field($custom_property, $configs) {
 	$placeholder = '';
 	$onChange = 'og.formatAmount(\''.$id.'\'); og.check_if_valid_amount_field(this);';
 	$name = 'object_custom_properties['.$custom_property->getId().'][amount]';
-	$attributes = array('id' => $id,'class'=>$class,'placeholder'=>$placeholder, 'onChange' => $onChange, 'name' => $name);
+	$attributes = array('id' => $id,'class'=>$class,'placeholder'=>$placeholder, 'onchange' => $onChange, 'name' => $name);
+
+	Hook::fire('override_numeric_custom_property_attributes', array('cp' => $custom_property, 'configs' => $configs), $attributes);
+
 	if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
 	$value = format_amount($configs['default_value']);
 	$html .= text_field($name, $value, $attributes);
@@ -483,6 +505,8 @@ function render_numeric_custom_property_field($custom_property, $configs) {
         $attributes = array('id' => $configs['genid'] . 'cp' . $custom_property->getId(),'type'=>$type,'onchange'=>$onchange,'class'=>$class,'placeholder'=>$placeholder);
         
         if (array_var($configs, 'property_perm') == 'view') $attributes['disabled'] = 'disabled';
+
+		Hook::fire('override_numeric_custom_property_attributes', array('cp' => $custom_property, 'configs' => $configs), $attributes);
 
 		$html = numeric_field($configs['name'], $configs['default_value'], $attributes);
 		$html .= render_custom_property_error_field('invalid_cp_numeric_value', $configs,$custom_property);	

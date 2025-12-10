@@ -105,90 +105,102 @@ og.Breadcrumbs = {
 	resizeHeaderBreadcrumbs: function() {
 		setTimeout(function() {
 			$(".header-breadcrumb.home").show();
-			// left td
+	
+			// Rezize the header breadcrumb container
 			var left_w = $('.header-content-left').width();
-			if (left_w < 60) left_w=60;
-			$('#left-header-cell').css('min-width', (left_w)+'px');
-			$('#left-header-cell').css('width', (left_w)+'px');
-			// right td
+			if (left_w < 60) left_w = 60;
+			$('#left-header-cell').css('min-width', left_w + 'px');
+			$('#left-header-cell').css('width', left_w + 'px');
+	
+			// Calculate the width of the user box
 			var user_link_w = $('.header-content-right #userboxWrapper #userLink').width();
-			$('.header-content-right #userboxWrapper').css('width', (user_link_w + 65)+'px');
+			$('.header-content-right #userboxWrapper').css('width', (user_link_w + 65) + 'px');
 			var right_w = $('.header-content-right').outerWidth();
-/*			if ($.browser.msie) {
-				if (right_w > 600) right_w = 600;
-				else if (right_w < 370) right_w = 370;
-			}
-*/
-			$('#right-header-cell').css('min-width', (right_w + 30)+'px');
-			$('#right-header-cell').css('width', (right_w + 30)+'px');
-			
+			$('#right-header-cell').css('min-width', (right_w + 30) + 'px');
+			$('#right-header-cell').css('width', (right_w + 30) + 'px');
+	
+			// Calculate the width of the breadcrumb container
 			var center_w = $("#headerContent").outerWidth() - left_w - right_w - 100;
 			$('#center-header-cell').css('width', center_w + 'px');
-			
-			// breadcrumbs
-	    	$('.header-breadcrumb-container').css('max-width', (center_w)+'px');
-	    	$('.breadcrumb-members').css('width', (center_w - $('.header-breadcrumb.home').width() - 15)+'px');
-	    	$('.primary-breadcrumb').css('width', $('.breadcrumb-members').width());
-	    	$('.secondary-breadcrumb').css('width', $('.breadcrumb-members').width());
+	
+			// Calculate the width of the breadcrumb container
+			$('.header-breadcrumb-container').css('max-width', center_w + 'px');
+			$('.breadcrumb-members').css('width', (center_w - $('.header-breadcrumb.home').width() - 15) + 'px');
+			$('.primary-breadcrumb').css('width', $('.breadcrumb-members').width());
+			$('.secondary-breadcrumb').css('width', $('.breadcrumb-members').width());
+	
+			// Rezize the primary breadcrumb container
+			var prim_bcs = $('.primary-breadcrumb .header-breadcrumb');
+			var primaryBreadcrumbWidth = $('.primary-breadcrumb').width();
+			var totalBreadcrumbWidth = 0;
+	
+			prim_bcs.each(function() {
+				totalBreadcrumbWidth += $(this).outerWidth(true);
+			});
+	
 
-	    	// resize primary breadcrumb
-	    	var prim_bcs = $('.primary-breadcrumb .header-breadcrumb');
-	    	if (prim_bcs.length > 1) {
-	    		og.Breadcrumbs.resizeHeaderBreadcrumbLine(prim_bcs, 22);
-	    	}
-	    	
-	    	// resize secondary breadcrumb
-	    	var sec_bcs = $('.secondary-breadcrumb .header-breadcrumb');
-	    	if (sec_bcs.length > 1) {
-	    		og.Breadcrumbs.resizeHeaderBreadcrumbLine(sec_bcs, 15);
-	    	}
-		}, 500);
-		
-    },
-    
-    resizeHeaderBreadcrumbLine: function(br_array, max_font_size) {
-    	
-    	var min_font_size = 14;
-    	var next_font_size = max_font_size - 1;
-    	var total_w = $('.breadcrumb-members').width();
-    	
-    	var sum_w = 0;
-		for (var i=0; i < br_array.length; i++) {
-			// reset font-size and max-width
-			$(br_array[i]).css('max-width','1000px').css('font-size', max_font_size+'px');
-			// sum total width
-			sum_w += $(br_array[i]).width();
-		}
-		
-		// while total width > container widtg => decrease font-size
-		while (sum_w > total_w && next_font_size >= min_font_size) {
-			sum_w = 0;
-			for (var i=0; i < br_array.length; i++) {
-				$(br_array[i]).css('font-size', next_font_size + 'px');
-				sum_w += $(br_array[i]).width() + 10;
+			if (totalBreadcrumbWidth > primaryBreadcrumbWidth || prim_bcs.length > 1) {
+				og.Breadcrumbs.resizeHeaderBreadcrumbLine(prim_bcs, 22);
 			}
-			next_font_size = next_font_size - 1 ;
+	
+			// Rezize the secondary breadcrumb container
+			var sec_bcs = $('.secondary-breadcrumb .header-breadcrumb');
+			if (sec_bcs.length > 1) {
+				og.Breadcrumbs.resizeHeaderBreadcrumbLine(sec_bcs, 15);
+			}
+	
+		}, 500);
+	},
+	
+    
+	resizeHeaderBreadcrumbLine: function(br_array, max_font_size) {
+		var min_font_size = 14;
+		var next_font_size = max_font_size - 1;
+		var containerWidth = $('.breadcrumb-members').width();
+		var sumWidth = 0;
+		
+		// Aplicar font-size inicial y resetear max-width
+		br_array.css({'max-width':'1000px', 'font-size': max_font_size + 'px'});
+		
+		// Calcular ancho total actual de los breadcrumbs
+		br_array.each(function() {
+			 sumWidth += $(this).outerWidth(true);
+		});
+		
+		// Mientras el ancho total supere el ancho del contenedor y podamos reducir la fuente...
+		while (sumWidth > containerWidth && next_font_size >= min_font_size) {
+			// Reducir el font-size de todos los elementos
+			br_array.css('font-size', next_font_size + 'px');
+			
+			// Recalcular el ancho total
+			sumWidth = 0;
+			br_array.each(function() {
+				sumWidth += $(this).outerWidth(true);
+			});
+			
+			next_font_size--;
 		}
 		
-		// if still not all breadcrumbs are visible, cut the first ones
-		if (sum_w > total_w) {
+		// Si aún no cabe, recortar los elementos (por ejemplo, acortar el max-width de los primeros)
+		if (sumWidth > containerWidth) {
+			var $last = br_array.last();
+			var lastWidth = $last.outerWidth(true);
+			var remainingWidth = containerWidth - lastWidth;
+			var singleWidth = Math.floor(remainingWidth / (br_array.length - 1)) - 15;
+			if (singleWidth < 40) singleWidth = 40;
 			
-			var last_w = $(br_array[br_array.length - 1]).width();
-			var tw = total_w - last_w;
+			// Asignar max-width a todos menos el último
+			var actualWidth = 0;
+			br_array.slice(0, br_array.length - 1).css('max-width', singleWidth + 'px');
+			br_array.slice(0, br_array.length - 1).each(function() {
+				actualWidth += $(this).outerWidth(true);
+			});
 			
-			var single_w = Math.floor(tw / (br_array.length - 1)) - 15;
-			if (single_w < 40) single_w = 40;
-			
-			var actual_w = 0;
-			for (var i=0; i < (br_array.length - 1); i++) {
-	    		$(br_array[i]).css('max-width', single_w + 'px');
-	    		actual_w += single_w + 10;
-	    	}
-			
-			// if still not visible, cut the last one
-			if (total_w - actual_w < last_w) {
-				$(br_array[br_array.length - 1]).css('max-width', (total_w - actual_w - 15)+'px');
-	    	}
+			// Si aún sobra overflow, ajustar el último
+			if (containerWidth - actualWidth < lastWidth) {
+				$last.css('max-width', (containerWidth - actualWidth - 15) + 'px');
+			}
 		}
-    }
+	}
+	
 }

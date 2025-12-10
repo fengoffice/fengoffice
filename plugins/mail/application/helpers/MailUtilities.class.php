@@ -604,6 +604,9 @@ class MailUtilities {
 			// Conversation
 			//check if exists a conversation for this mail
 			$conv_mail = "";
+			// escape the ids to prevent sql injection
+			$in_reply_to_id = escape_single_quotes($in_reply_to_id);
+			$message_id = escape_single_quotes($message_id);
 			if ($in_reply_to_id != "" && $message_id != "") {
 				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
 
@@ -1289,16 +1292,20 @@ class MailUtilities {
 		if(!empty ($ret)){
 			$msg_id = array();
 			foreach ($ret as $msg){
-				$msg_id[] = $msg['msg_id'];
+				if (is_array($msg) && isset($msg['msg_id'])) {
+					$msg_id[] = $msg['msg_id'];
+				}
 			}
 
-			//mark as read or unread by msg id
-			if($read){
-				//mark as read
-				$imap->addSeen($msg_id);
-			}else{
-				//mark as unread
-				$imap->removeSeen($msg_id);
+			if (count($msg_id) > 0) {
+				//mark as read or unread by msg id
+				if($read){
+					//mark as read
+					$imap->addSeen($msg_id);
+				}else{
+					//mark as unread
+					$imap->removeSeen($msg_id);
+				}
 			}
 
 

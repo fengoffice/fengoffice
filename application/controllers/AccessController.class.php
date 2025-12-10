@@ -493,6 +493,13 @@ class AccessController extends ApplicationController {
 			return;
 		} // if
 
+		if(ContactPasswords::isContactPasswordExpired($user->getId())){
+			//$this->redirectTo('access', 'change_password', array('id' => $user->getId(), 'msg' => 'expired'));
+			ajx_extra_data(array('go_to_url' => get_url('access', 'change_password', array('id' => $user->getId(), 'msg' => 'expired'))));
+			flash_error(lang('password expired'));
+			return;
+		}
+
 		try {
 			CompanyWebsite::instance()->logUserIn($user, $remember);
 		} catch(Exception $e) {

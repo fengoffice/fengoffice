@@ -346,37 +346,44 @@ function core_dimensions_update_18_19() {
 	}
 }
 
-function core_dimensions_update_19_20() {
-	/** 
-	 * THIS PROCEDURE IS NOT NEEDED ANYMORE, THIS WAS DONE TO FIX CALCULATIONS FOR SOME CLIENTS THAT WERE IN A SPECIFIC VERSiON WiTH AN ERROR IN TIME CALCULATIONS
-	 * THAT VERSION IS NO LONGER USED IN ANY CLIENT, SO FOR PERFORMANCE WE CAN AVOID RECALCULATING THIS
-	Env::useHelper('dimension');
-
-	// ensure that expenses plugin is in the latest version before making calculations
-	// after saving a time some other calculations involving expenses can be triggered by advanced_billing plugin
-	if (Plugins::instance()->isActivePlugin('expenses2')) {
-		$expenses_plugin = Plugins::instance()->findOne(array("conditions" => "`name`='expenses2'"));
-		$expenses_plugin->update();
-	}
-
-	// get timeslots affected by recalculation bug
-	$timeslots = Timeslots::instance()->findAll(array(
-		"conditions" => "updated_on > '2023-08-01' AND trashed_by_id=0"
+/**
+ * Recalculate worked time for each grandparent task.
+ * This function will update the total worked time for all project tasks that have 2 or more levels of childs.
+ */
+function core_dimensions_update_20_21() {
+	// Get all tasks that have a depth of 2 or more
+	$grand_childs = ProjectTasks::instance()->findAll(array(
+		'conditions' => 'depth > 1',
 	));
 
-	$tasks_processed = array();
-	// call save function to recalculate the values correcctly
-	foreach ($timeslots as $timeslot) {
-		$task = $timeslot->getRelObject();
-		// only recalculate tasks once and don't process timeslots without task
-		if ($task instanceof ProjectTask && !in_array($task->getId(), $tasks_processed)) {
-			$task->dont_calculate_project_financials = true; // don't calculate for projects, it will generate a loop
+	// Initialize an array of tasks to recalculate
+	$tasks_to_recalculate = [];
 
-			$timeslot->save(); // save to trigger the related task's calculations
-			
-			$tasks_processed[] = $task->getId();
+	foreach ($grand_childs as $grand_child) {
+		if ($grand_child instanceof ProjectTask) {
+			// Get the parent of the grandchild task
+			$parent = $grand_child->getParent();
+
+			// Check if the parent is a project task
+			if ($parent instanceof ProjectTask) {
+				// Get the grandparent of the task
+				$grand_parent = $parent->getParent();
+
+				// Check if the grandparent is a project task
+				if ($grand_parent instanceof ProjectTask) {
+					// Add the grandparent to the array of tasks to recalculate
+					$tasks_to_recalculate[$grand_parent->getId()] = $grand_parent;
+				}
+			}
 		}
 	}
-	*/
+
+	// Recalculate the total worked time for each task in the array
+	foreach ($tasks_to_recalculate as $task) {
+		if ($task instanceof ProjectTask) {
+			// Calculate the total worked time for the task
+			$task->calculateAndSetOverallTotalWorkedTime();
+		}
+	}
 }
 

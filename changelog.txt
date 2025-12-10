@@ -2,6 +2,525 @@
 Changelog
 =========
 
+Since 3.13.0.0-rc1
+-----------------------------------
+Fixes done in latest 3.11.13.11 version
+
+Since 3.11.X
+-----------------------------------
+bugfix: Search mail index and query changes (#3505)
+
+Since 3.11.13.10
+-----------------------------------
+bugfix: fix wiki links (#3520)
+bugfix: fix CE installer (#3518)
+bugfix: 1. Added function in format.php that returns clean numeric values for Excel (#3512)
+bugfix: budg. expense picker not filtering by selected project (#3508)
+bugfix: total worked time not calculated correctly when having more t… (#3500)
+
+Since 3.11.13.9
+-----------------------------------
+bugfix: Missing "Payment received" column: Added conditional logic to include the "Payment received" column header only when the invoice_payment_receipts plugin is active (#3501)
+bugfix: add actual expense not always filters projects by selected client (#3498)
+bugfix:Add Title and Date to Project Billing (T&M) report (#3494)
+
+Since 3.11.13.8
+-----------------------------------
+bugfix: Fix Work Progress widget showing incorrect hours when no tasks exist (#3488)
+
+Since 3.11.13.7
+-----------------------------------
+feature: Add overrun hours tracking to project financials budget control (#3486)
+bugfix: Remove () for conditional discount amount (#3484)
+
+Since 3.11.13.6
+-----------------------------------
+bugfix: invoice print not rounding before accumulating subtotals (#3478)
+bugfix: Fix project status changes report inconsistencies and optimize performance (#3477)
+
+Since 3.11.13.5
+-----------------------------------
+bugfix: Check if the parent project has any child projects and subtract all those amounts. Only the total related to the parent project is shown. (#3465)
+
+Since 3.11.13.4
+-----------------------------------
+bugfix: Add total of estimated price, located under, and prevent double-counting of child project prices in reports (#3464)
+
+Since 3.11.13.3
+-----------------------------------
+bugfix: wrong financial totals when no grouping tasks list (#3460)
+bugfix: move mail account filter checkboxes to advanced core plugin (#3455)
+bugfix: fixed fee tasks invoicing status broken after edit invoice (#3447)
+
+Since 3.11.13.2
+-----------------------------------
+feature: improve Project Status Changes report query and add previou… (#3418)
+infra: add .settings file for infra to read and use
+
+Since 3.11.13.1
+-----------------------------------
+feature: Project Status Changes Tracks projects that changed contract stages within a date range (#3404)
+bugfix: add missing language translations (#3392)
+bugfix: check subscriber's notification trigger (#3391)
+bugfix: import tool error importing times (#3390)
+bugfix: remove " from langs to avoid errors in js
+bugfix: fix gesl remote actions update query syntax
+
+Since 3.11.13.0
+-----------------------------------
+bugfix: Migrate gesl_remote_actions to Microsoft Graph SDK v2.48 (#3387)
+feature: add new field nroCompra to factura lista invoice (#3385)
+
+Since 3.11.13.0-rc2
+-----------------------------------
+bugfix: can't load tasks when filtering by project (#3384)
+bugfix: project complete name is not shown (#3384)
+bugfix: internationalize object_templates plugin table headers (#3377)
+bugfix: blank screen in clients list when all client's contact cps are disabled (#3376)
+bugfix: sql error in weekly view query and js broken when time weekly user filter is empty
+
+Since 3.11.13.0-rc1
+-----------------------------------
+bugfix: template task is skipping sunday but is working day (#3367)
+bugfix: es_la language has error with " inside it (#3372)
+
+Since 3.11.13.0-beta6
+-----------------------------------
+bugfix: add more regex controls to formulas (#3311)
+bugfix: don't try to sync non billable time to invoice when sync to qbo (#3330)
+
+Since 3.11.13.0-beta5
+-----------------------------------
+Include changes made in latest 3.11.12.X version
+
+Since 3.11.13.0-beta4
+-----------------------------------
+bugfix: fix conditional discount (#3319)
+bugfix: Add validation to "Mark as" feature in time module (#3322)
+improvement: in expense list show invoice number as link instead of "view invoice" (#3317)
+
+Since 3.11.13.0-beta3
+-----------------------------------
+bugfix: mark as spam is not moving email to "Junk" imap folder in server (#3316)
+bugfix: format new columns in custom report (#3307)
+feature: in custom reports add condition and order by capability for project financials (#3306)
+
+Since 3.11.13.0-beta2
+-----------------------------------
+bugfix: make lab_samples plugin work in latest version (#3280)
+bugfix: stop adding unwanted subclient to client when subclient assigned (#3296)
+improvement: conditional discount fixes (#3288)
+
+Since 3.11.13.0-beta1
+-----------------------------------
+feature: allow to use associated member custom properties in project display name (#3269)
+feature: create new project financials report with other values (#3270)
+bugfix: bugs in company member forms (#3271)
+
+Since 3.11.12.X
+-----------------------------------
+bugfix: organization and vendors properties must be like clients (#3266)
+feature: add unbilled time expenses to project totals (#3264)
+feature: project financials report new columns (#3252)
+feature: Add new payment summary on invoices (#3239)
+feature: develop new notification for 'rejected time' (#3214)
+feature: Create cron job to consolidate "tasks assigned" notification (#3118)
+
+Since 3.11.12.10
+-----------------------------------
+bugfix: aging unbilled report is not including subproject time/expenses/ff_tasks (#3348)
+bugfix: invoice module date filters dont work for some date formats (#3346)
+bugfix: make defensive logic to get the next autonumeric available value and prevent duplicated (check in legacy data for cps) (#3343)
+
+Since 3.11.12.9
+-----------------------------------
+bugfix: Change subtotal line langs in invoice print (#3335)
+bugfix: improve error messages when sharepoint integration fails (#3336)
+bugfix: when creating two events, when queuing the second one's notifications, the first one's are deleted and the cron cant send them (#3328)
+bugfix: task not using cotract type cp correctly when setting if the … (#3331)
+
+Since 3.11.12.8
+-----------------------------------
+bugfix: function called in lang files is not defined when executing upgrade
+
+Since 3.11.12.7
+-----------------------------------
+bugfix: invoice generation - when generating autonumber var not used correctly, it is not an array. (#3325)
+bugfix: Add missing langs (#3326)
+
+Since 3.11.12.6
+-----------------------------------
+bugfix: utilization report when formatting labor cat columns, the variation column is overriden (#3324)
+
+Since 3.11.12.5
+-----------------------------------
+bugfix: too many mysql connections used after instantiating template (#3323)
+bugfix: fix autonumbering issues (#3261)
+
+Since 3.11.12.4
+-----------------------------------
+bugfix: after edit split invoice summary amounts are not correct (#3318)
+
+Since 3.11.12.3
+-----------------------------------
+feature: Add capability to order by "billable" in custom reports for timeslots (#3308)
+bugfix: add several missing langs (#3305)
+bugfix: dimension name comparison (#3313)
+bugfix: invoice summary wrong and edit invoice changes discount type (#3314)
+bugfix: sql name causes conflict (#3310)
+bugfix: comply mail templates to php8 (#3309)
+bugfix: cant search in clients tree if a project is selected (#3315)
+
+Since 3.11.12.2
+-----------------------------------
+bugfix: fixed fee invoice generated with no currency (#3302)
+bugfix: Add missing file (#3301)
+bugfix: Adjust rate lang (#3290)
+bugfix: Fixes to confirmation pop up (#3265)
+
+Since 3.11.12.1
+-----------------------------------
+bugfix: mail reply/forward sends attachments with no extension for some images, depending on the original email headers (#3286)
+bugfix: Improve invoicing status for task algorithm (#3282)
+bugfix: Build reusable title and date component for reports (#3292)
+
+Since 3.11.12.0
+-----------------------------------
+feature: Round invoice lines when calculating invoice totals (#3279)
+bugfix: fix function call (#3277)
+bugfix: In custom reports alignment and pdf export multiple members (#3259)
+bugfix: change es_la langs for invoice print (#3275)
+bugfix: php8 error in notif manager hook when saving event (#3274)
+
+Since 3.11.12.0-rc2
+-----------------------------------
+bugfix: fix ical generation so outlook can parse ics correctly and show invitation buttons when receiving event invitation email. (#3273)
+bugfix: improve management of event invitation replies (#3273)
+
+Since 3.11.12.0-rc1
+-----------------------------------
+bugfix: member tree expandedNodes is a numeric prop and it is used as a function causing js errors (#3267)
+
+Since 3.11.12.0-beta4
+-----------------------------------
+bugfix: dont let user change organizer (#3263)
+bugfix: and don't check for required cp in contact quickadd (#3263)
+
+Since 3.11.12.0-beta3
+-----------------------------------
+bugfix: event not deleted when receiving ical with cancellation (#3262)
+bugfix: remove reminder breaks inputs and causes fatal error when saving task (#3258)
+bugfix: edit mail account switches to exclude from sync (#3257)
+bugfix: error in dim controller query (#3256)
+
+Since 3.11.12.0-beta2
+-----------------------------------
+bugfix: attendee names not parsed correctly sometimes (#3255)
+bugfix: sometimes the view more node is shown and there are no more nodes left (#3244)
+bugfix: load langs of all installed plugins (#3251)
+
+Since 3.11.12.0-beta1
+-----------------------------------
+feature: invite any contact and send ics (#3237)
+bugfix: draft email sent twice (#3235)
+bugfix: don't use exif_imagetype fn if not ready in the environment (#3233)
+feature: Improvements to re classify pop up (#3229)
+
+Since 3.11.11.X
+-----------------------------------
+bugfix: replay or forward emails accumulates attachments with no type (#3228)
+feature: Add project custom report 'created on' and 'updated on' columns and conditions (#3227)
+feature: show special html block for .ics attachments (#3218)
+
+Since 3.11.11.5
+-----------------------------------
+bugfix: fix e-invoice generation for credit/debit notes and its references (#3303)
+bugfix: fix issues in the utilization report (#3300)
+bugfix: In expenses widget exclude non-billable budget expenses (#3299)
+bugfix: check group by value properly (#3298)
+bugfix on template calculations (#3297)
+
+Since 3.11.11.4
+-----------------------------------
+bugfix: on template calculation (#3291)
+bugfix: improve styling of financials in task module (#3287)
+bugfix: Fix fatal error causing bug (#3285)
+bugfix: php8 error (#3294)
+
+Since 3.11.11.3
+-----------------------------------
+bugfix: can't reuse last invoice number after send invoice to trash (#3283)
+bugfix: In widgets add date validations for custom range (#3284)
+
+Since 3.11.11.2
+-----------------------------------
+bugfix: In widgets add totals from tasks without due date (#3281)
+bugfix: pass info to worked hours widget (#3276)
+
+Since 3.11.11.1
+-----------------------------------
+bugfix: Add 'All time' to all widgets, remove time contstraint when member is selected (#3272)
+
+Since 3.11.11.0
+-----------------------------------
+bugfix: don't use disabled cps in formulas (#3268)
+bugfix: fix save formula, use getInput and replace var names with ids, don't use getExpression, it has bugs. (#3268)
+bugfix: onchange of amount cps had an issue when registering the recalculation function (#3268)
+bugfix: prevent numeric/amount inputs to use more than the max numeric value (#3268)
+
+Since 3.11.11.0-rc4
+-----------------------------------
+bugfix: in Utilization report add consistent formatting (#3254)
+bugfix: add confirmation void modal (#3247)
+bugfix: remove count on null (#3250)
+
+Since 3.11.11.0-rc3
+-----------------------------------
+fix forms tabs (#3245)
+
+Since 3.11.11.0-rc2
+-----------------------------------
+bugfix: fix lang (#3243)
+bugfix: Hide "print" button in the task module (#3242)
+bugfix: Make invoice receipts compatible with PHP7 (#3241)
+bugfix: prevent invoice sync error if a linked time entry is marked as invoiced in qbo (#3240)
+bugfix: Fill in missing days from date range in widgets (#3238)
+bugfix: Improve queries to correct the grouping by billable/non-billable (#3236)
+
+Since 3.11.11.0-rc1
+-----------------------------------
+bugfix: sales tax not sent to qbo, sales mapping was including inactive taxes (#3234)
+bugfix: add css word-break porp, label too long overlaps (#3232)
+bugfix: fix client form css when 2 columns (#3231)
+bugfix: fix password reminder query (#3230)
+bugfix: Add contact module horizontal scroll (#3226)
+
+Since 3.11.11.0-beta4
+-----------------------------------
+bugfix: fix query error in overtime reports update (#3225)
+bugfix: limit task list to load max 500 tasks per request (#3222)
+improvement: In 'Utilization' report add time with empty 'labor category' (#3221)
+
+Since 3.11.11.0-beta3
+-----------------------------------
+bugfix: overtime project/client cp ensure belongs to prop group and with default = "no" (#3220)
+bugfix: calculated cps fixes and improvements after feedback (#3219)
+
+Since 3.11.11.0-beta2
+-----------------------------------
+improvement: Add re-clasification confirmation config option (#3217)
+improvement: update qbo sdk to version 6.2.0 (#3205)
+feature: calculated custom properties (#3216)
+feature: Add last project payment on form (#3212)
+feature: allow to select project or client level to sync objects (#3203)
+
+Since 3.11.11.0-beta1
+-----------------------------------
+bugfix: fix discounts and ad better display on amount and info. (#3199)
+feature: Add capability to group by 'Billable' in timeslot reports (#3197)
+feature: overtime calculations for billing (#3196)
+feature: add range selector widgets (#3194)
+feature: Add support to date formats for to use only 2 digits for year (#3190)
+feature: Add automatic invoice number generation using object prefix (#3176)
+
+Since 3.11.10.X
+-----------------------------------
+feature: add filter function to logs (#3169)
+feature: Add new field 'is_paid' to actual expenses (#3164)
+feature: Add inactive user to filters (#3162)
+Since 3.11.10.7
+-----------------------------------
+feature: In import tool add option to calculate timeslots (#3249)
+
+Since 3.11.10.6
+-----------------------------------
+bugfix:Remove hardcoded langs in invoice header (#3215)
+
+Since 3.11.10.5
+-----------------------------------
+improvement: Add dynamic default rate type for time in import tool (#3208)
+bugfix: Fix batch invoicing bug in the invoice template object collection (#3213)
+bugfix: when creating/editing a project that is a template, the template name is not shown in the form, only 'Project' is shown (#3211)
+bugfix: fix project form css (#3210)
+bugfix: fix language issues in settings (#3207)
+
+Since 3.11.10.4
+-----------------------------------
+bugfix: fix customer id and status hardcoded lang on invoices (#3206)
+bugfix: Refactor on display names for the project widget (#3204)
+bugfix: don't send simultaneous qbo sync requests, they can generate duplicate client (#3202)
+Bugfix: Calculate billable worked time for groups in the task list (#3201)
+bugfix: allow generic type option not working (#3200)
+bugfix: Run a script to set the default value "invoice_header_date_format" to default date format (#3195)
+
+Since 3.11.10.3
+-----------------------------------
+bugfix: contact selector full data card is not good to use in every form such as invoice lines, actual expenses, billing cat, etc. (#3192)
+bugfix: Add other organization member when importing contacts (#3193)
+
+Since 3.11.10.2
+-----------------------------------
+improvement: In weekly view add visual alignment impovements (#3189)
+bugfix: stop setting task to non billable (#3191)
+bugfix: unescaped msg id breaks mail query if it has special chars (#3188)
+bugfix: login default session too short (#3187)
+bugfix: big performance issue causes timeout when editing repetitive task with more than 150 repetitions (#3186)
+bugfix: Use default date format when adding new date format for invoice (#3185)
+bugfix: fix fatal error on selecting parent memeber for an object (#3184)
+bugfix: when tree needs to laod nodes from server the text filter does not work (#3183)
+bugfix: remove deprecated search conditions by member properties and use the already built "display_name" column (#3183)
+
+Since 3.11.10.1
+-----------------------------------
+bugfix: other organizations import does not include contact fields. (#3181)
+bugfix: login form not centered after receiving error (#3180)
+bugfix: undefined method in objects for subtypeid (#3179)
+bugfix: income update 114 not checking if dimension assoc or cps exists before using them. (#3178)
+bugfix: add invoice payment always tries to generate next invoice repetition. (#3177)
+bugfix: ensure that Swift mailer is initialized and dependencies are loaded when using it. (#3175)
+bugfix: move langs from deprecated plugin (#3174)
+bugfix: fix budgeted expenses tempaltes add when there are special chars (#3171)
+
+Since 3.11.10.0
+-----------------------------------
+bugfix: wrong dim id in clients panel record causes error msg to show when loading clients tab (#3160)
+bugfix NaN on payment recipit (#3157)
+bugfix: Absolute path to the Google Chrome executable (#3154)
+bugfix: qbo n/a status is showing as not sync in invoices (#3152)
+improvement: change messages of latest developments (#3159)
+improvement: Set "Fixed Fee" as default EVCM during update (#3153)
+feature: project financials report group by job phase (#3155)
+feature: allow to select contact properties to show after select in contact selector (#3151)
+
+Since 3.11.10.0-beta2
+-----------------------------------
+improvement: add 'group by' option to the 'Work in progress summary' report (#3150)
+bugfix: performance issue when saving task with lots of timeslots due to deprecated unperformant feature (#3149)
+bugfix: php8 compatibility issue with new notif. manager development (#3148)
+bugfix: correct formatting in member display name information in Spanish language file (#3147)
+bugfix: reorganize autoloading logic in init.php (#3146)
+
+Since 3.11.10.0-beta1
+-----------------------------------
+bugfix: evx login form not centered, also remove blue box and fix evx website link (#3143)
+bugfix: edit client removes other classifications of related contact (#3142)
+bugfix: edit client always shows popup to reclassify objects (#3142)
+bugfix: don't let quickbooks remove the invoice number after sync (#3140)
+bugfix: Improve logic when sending notifications through Not Manager (#3139)
+bugfix: fix invoicing status when having subtasks (#3129)
+feature: when reclassifyng time to different project, ask the user to remove task (#3141)
+feature: ask to reclassify in task members after assign new task to time if needed (#3141)
+feature: Add new config option "Budgeted expense full name" (#3135)
+feature: allow user to define which fields will appear in the contact quick add form (#3132)
+
+Since 3.11.10.0-alpha2
+-----------------------------------
+feature: Add chrome php library (#3128)
+bugfix: js error loading langs into js variables (#3116)
+
+Since 3.11.10.0-alpha1
+-----------------------------------
+feature: Add new expense columns (#3107)
+feature: set percent complete for subtasks using parent task (#3101)
+
+Since 3.11.9.X
+-----------------------------------
+feature: new plugin that adds a new dimension: Other organizations (#3086)
+feature: improvements to custom properties form (#3049)
+bugfix: Fix header breadcrumbs display (#3081)
+
+Since 3.11.9.1
+-----------------------------------
+bugfix: when editing project and saving associated members, the affected obj permissions cache are not calculated in background, and the association is remade if already existed (#3134)
+bugfix: performance issues when loading expenses tab without filtering (#3136)
+bugfix: In expense module remove buggy focus from inputs in the quick add row (#3137)
+
+Since 3.11.9.0
+-----------------------------------
+bugfix: activity widgtet gear icon not working (#3127)
+bugfix: assign task to time/expenses fails if interface sends ids as strings (#3130)
+
+Since 3.11.9.0-rc1
+-----------------------------------
+bugfix: lump sum line quantity must be always one (#3124)
+bugfix: when changing project stage and reclassifying objects, users are included and memory limit is reached (#3123)
+bugfix: In invoice remove subrpojects from project's complete name (#3122)
+bugfix: add php8 compatibility for external calendar class (#3117)
+
+Since 3.11.9.0-beta2
+-----------------------------------
+bugfix: Use correct class names (#3114)
+bugfix: Ensure php8 compatibility in weekly view codebase (#3111)
+bugfix: add CSS adjustments for PDF generation in InvoiceController (#3109)
+bugfix: update 'remember me' text to remove duration (#3103)
+
+Since 3.11.9.0-beta1
+-----------------------------------
+bugfix: Fix subtotal values when grouping by supbrojects (#3099)
+bugfix: dates in invoice header not using date format defined in template (#3095)
+bugfix: when calculatiung task invoicing_status, dont get subtasks invoiced amounts of the same parent invoice, it duplicates invoiced amount (#3092)
+improve: Rename EVCM "T&M" to "Calculated" (#3087)
+feature: Add config option "Default earned value calculation method" (#3090)
+
+Since 3.11.9.0-alpha3
+-----------------------------------
+bugfix: Refactor print CSS injection and update footer position column additi… (#3082)
+bugfix: Add error handling for timeslot status removal and update language strings (#3079)
+bugfix: weekly view new development issue and improvements (#3078)
+
+Since 3.11.9.0-alpha2
+-----------------------------------
+bugfix: Assign vendor member when importing contacts and link to vendor (#3075)
+bugfix: wrong invoicing status calculation when invoicing partially completed fixed fee tasks (#3073)
+bugfix: Refactor timezone selector function and update CSS for country and ti… (#3072)
+bugfix: Set default timezone when creating and importing new vendor (#3071)
+bugfix: Import tool- Display all CPs for subtype, handle saving CPs for subtype in backend (#3070)
+feature: In the import tool add "Price/Cost rate type" to timelsot objects (#3067)
+feature: Css adjustment to display remit to at the bottom of the invoice (#3059)
+
+Since 3.11.9.0-alpha1
+-----------------------------------
+feature: Recover option for utilization report (#3061)
+feature: add new columns weekly view (#3055)
+feature: increase minimum width of name input field in custom properties (#3053)
+bugfix: improve handling of custom properties and associated objects in ObjectController (#3064)
+bugfix: adjust list style position for expense items in invoice (#3060)
+bugfix: Fix typo in success message for generating invoices in language files (#3058)
+bugfix: update error message for email size limit to improve clarity (#3057)
+bugfix: prevent voiding of confirmed invoices (#3056)
+bugfix: add Spanish translations and modify version return (#3054)
+
+Since 3.11.8.X
+-----------------------------------
+improvement: invoice generation: aggregate subtasks into one line using parent task (#3038)
+feature: Allows to add billing contact name on bill to section (#3039)
+feature: adds bold column on invoice template options (#3035)
+bugfix: batch invoicing does not generate fixed fee invoices (#3033)
+
+Since 3.11.8.3
+----------------------------------
+bugfix: fix quickbooks plugin installer (#3113)
+bugfix: unused constraint gives error when replicating db (#3108)
+bugfix: overview widgets performance issues (#3104)
+bugfix: infobar subscribe link not working (#3112)
+
+Since 3.11.8.2
+----------------------------------
+bugfix: Fix query that broke member custom report (#3100)
+
+Since 3.11.8.1
+----------------------------------
+bugfix: invoice processing with safe_count utility and refactor logic for multiple invoicing (#3098)
+
+Since 3.11.8.0
+-----------------------------------
+bugfix: advanced billing plugin update fails because column invoicing_status does not exist (#3096)
+bugfix: config controller always checks for can_manager_configuration permission and it has some methods that don't require this permission (#3094)
+bugfix: invoice print not using initials custom property (#3093)
+bugfix: Issue exporting PDF for gross margin report (#3091)
+bugfix: don't let QBO manage the invoice numbers, generate it in EVX and send it when sync. (#3089)
+bugfix: relogin popup not checking if password expired. (#3088)
+
 Since 3.11.8.0-rc4
 -----------------------------------
 bugfix: fix link object list elements without filter (#3085)
@@ -5291,7 +5810,7 @@ Since 3.7.2.6
 -----------------
 bugfix: fix task list filters when filtering by subscribed by user and completed tasks
 bugfix: fix notifications manager config options and user new template for due date reminders
-fearure: make overtime_hours dimension hierarchical
+feature: make overtime_hours dimension hierarchical
 
 Since 3.7.2.5
 -----------------
@@ -6145,7 +6664,7 @@ bugfix: report list not working
 bugfix: automatic calculation of worked time on add time modal
 bugfix: time list add no filter by date option
 bugfix: task list tasks displayed twice
-bugfis: totals on grouped reports
+bugfix: totals on grouped reports
 
 Since 3.6.0-beta.2
 ----------------

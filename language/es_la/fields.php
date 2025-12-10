@@ -107,6 +107,8 @@
 	'field ProjectEvents repeat_forever' => 'Repetir para siempre',
 	'field ProjectEvents description' => 'Descripción',
 	'field ProjectEvents private' => 'Privado',
+	'field ProjectEvents organizer_id' => 'Organizador',
+	'field ProjectEvents uid' => 'Uid',
 	'field ProjectEvents repeat_end' => 'Fin de repetición',
 	'field ProjectEvents repeat_num' => 'Número de repetición',
 	'field ProjectEvents repeat_d' => 'Día de repetición',

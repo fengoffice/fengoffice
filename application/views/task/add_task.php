@@ -177,6 +177,11 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                     $show_notif_checkbox_div = $can_notify_assigned && $task->isNew() && $is_assigned && !$assigned_to_me;
                                     $check_notif_checkbox = $show_notif_checkbox_div;
 
+                                    // Hide the checkbox if the 'notifications_manager' plugin is active
+                                    if(Plugins::instance()->isActivePlugin('notifications_manager')) {
+                                        $show_notif_checkbox_div = false;
+                                    }
+
                                     ?>
 
                                     <div id="<?php echo $genid ?>taskFormSendNotificationDiv" style="display:<?php echo ($show_notif_checkbox_div ? 'block' : 'none') ?>" class="dataBlock">
@@ -865,6 +870,11 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     }
 
     og.enableDisableNotifyAssignedCheckbox = function(assigned_user, genid) {
+        // Ignore if notifications manager plugin is active
+        var notification_manager_plugin_active = <?php echo Plugins::instance()->isActivePlugin('notifications_manager') ? '1' : '0' ?>;
+        if (notification_manager_plugin_active) {
+            return;
+        }
 
         var original_assigned = $("#" + genid + "originalAssignedUser").val();
 

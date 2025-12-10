@@ -160,6 +160,24 @@ abstract class BaseCronEvents extends DataManager {
 	} // findById
 
 	/**
+	 * Return object by its name
+	 *
+	 * @access public
+	 * @param string $name
+	 * @return CronEvents
+	 */
+	function findByName($name) {
+		$args = array(
+			'conditions' => array('`name` = ?', $name)
+		);
+		if(isset($this) && instance_of($this, 'CronEvents')) {
+			return parent::findOne($args);
+		} else {
+			return CronEvents::instance()->findOne($args);
+		} // if
+	} // findByName
+
+	/**
 	 * Return number of rows in this table
 	 *
 	 * @access public

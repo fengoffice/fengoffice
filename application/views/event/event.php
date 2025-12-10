@@ -241,7 +241,7 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 		
 		  <div id="<?php echo $genid ?>add_event_select_context_div">
 			<?php
-			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.redrawPeopleList("'.$genid.'");');
+			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().');');
 			if ($event->isNew()) {
 				render_member_selectors($event->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
 			} else {
@@ -320,6 +320,15 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 		  <div id="<?php echo $genid ?>add_event_description_div" class="dataBlock">
 		    <?php echo label_tag(lang('description')) ?>
 			<?php echo textarea_field('event[description]',array_var($event_data, 'description'), array('id' => 'descriptionFormText', 'rows' => '5', 'style' => "width:500px;"));?>
+		  </div>
+		  <div class="clear"></div>
+		  
+		  <div id="<?php echo $genid ?>add_event_organizer_div" class="dataBlock">
+		    <?php echo label_tag(lang('organizer')) ?>
+			<input type="hidden" name="event[organizer_id]" id="<?php echo $genid?>hf_organizer" value="<?php echo $event->isNew() ? logged_user()->getId() : $event->getOrganizerId() ?>" />
+			<div id="<?php echo $genid ?>event_organizer_selector" class="event-organizer-selector" style="display: inline-block;"><?php 
+				echo $event->isNew() ? logged_user()->getName() : $event->getOrganizer()->getName();
+			?></div>
 		  </div>
 		  <div class="clear"></div>
 		  
@@ -538,47 +547,38 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 
 	<div id="<?php echo $genid ?>add_event_invitation_div" class="og-add-subscribers form-tab">
 	
+		
+
+		<div class="dataBlock invited-people-container">
+			<div class="property-group-header"><?php echo lang('select people to invite to this event') ?></div>
+			
+			<div class="desc"><?php echo lang('select people to invite to this event help') ?></div>
+
+			<div id="<?php echo $genid ?>invited_people_selector" class="invited-people-selector"></div>
+		</div>
+
+
+
 		<div class="dataBlock">
-			<p><?php echo lang('event invitations desc') ?></p>
-			<p><?php $event_send_invitations = (user_config_option("event_send_invitations") ) ? true : false;
-					 $event_subscribe_invited = (user_config_option("event_subscribe_invited") ) ? true : false;
-					 echo checkbox_field('event[send_notification]', array_var($event_data, 'send_notification', $event_send_invitations), array('id' => $genid . 'eventFormSendNotification')) ?>
-			<label for="<?php echo $genid ?>eventFormSendNotification" class="checkbox"><?php echo lang('send new event notification') ?></label></p>
+			
+			<p>
+				<?php 
+					$event_send_invitations = (user_config_option("event_send_invitations") ) ? true : false;
+					echo checkbox_field('event[send_notification]', 
+						array_var($event_data, 'send_notification', $event_send_invitations), 
+						array('id' => $genid . 'eventFormSendNotification')
+					);
+				?>
+				<label for="<?php echo $genid ?>eventFormSendNotification" class="checkbox">
+					<?php echo lang('send new event notification') ?>
+				</label>
+			</p>
 			
 			<div class="clear"></div>
-			<p><?php echo checkbox_field('event[subscribe_invited]', array_var($event_data, 'subscribe_invited', $event_subscribe_invited), array('id' => $genid . 'eventFormSubscribeInvited')) ?>
-			<label for="<?php echo $genid ?>eventFormSubscribeInvited" class="checkbox"><?php echo lang('subscribe invited users') ?></label></p>
+
 		</div>
 		<div class="clear"></div>
-		
-		<div id="emailNotification">
-		<?php // ComboBox for Assistance confirmation 
-			if (!$event->isNew()) {
-				$event_invs = $event->getInvitations();
-				if (isset($event_invs[$filter_user])) {
-					$event_inv_state = $event_invs[$filter_user]->getInvitationState();
-				} else {
-					$event_inv_state = -1;
-				}
-				
-				if ($event_inv_state != -1) {
-					$options = array(
-						option_tag(lang('yes'), 1, ($event_inv_state == 1)?array('selected' => 'selected'):null),
-						option_tag(lang('no'), 2, ($event_inv_state == 2)?array('selected' => 'selected'):null),
-						option_tag(lang('maybe'), 3, ($event_inv_state == 3)?array('selected' => 'selected'):null)
-					);
-					if ($event_inv_state == 0) {
-						$options[] = option_tag(lang('decide later'), 0, ($event_inv_state == 0) ? array('selected' => 'selected'):null);
-					}
-					?>
-					<table><tr><td style="padding-right: 6px;"><label for="eventFormComboAttendance" class="combobox"><?php echo lang('confirm attendance') ?></label></td><td>
-					<?php echo select_box('event[confirmAttendance]', $options, array('id' => 'eventFormComboAttendance'));?>
-					</td></tr></table>	
-			<?php	} //if			
-			} // if ?>
-		</div>
-		<div class="clear"></div>
-		
+
 	</div>	
 	
 
@@ -604,83 +604,6 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 
 <script>
 var is_new_event = <?php echo $event->isNew() ? '1' : '0'?>;
-og.eventInvitationsUserFilter = '<?php echo $filter_user ?>';
-
-og.drawInnerHtml = function(companies) {
-	var htmlStr = '';
-	var script = "";
-	var genid = Ext.id();
-	htmlStr += '<div id="' + genid + 'invite_companies"></div>';
-	htmlStr += '&nbsp;';
-	script += 'var div = Ext.getDom(genid + \'invite_companies\');';
-	script += 'div.invite_companies = {};';
-	script += 'var cos = div.invite_companies;';
-	htmlStr += '<div class="company-users">';
-	if (companies != null) {
-		var calendar_user_filter = <?php echo user_config_option('calendar user filter'); ?>;
-		for (i = 0; i < companies.length; i++) {
-			comp_id = companies[i].object_id;
-			comp_name = companies[i].name;
-			comp_img = companies[i].logo_url;			
-			script += 'cos.company_' + comp_id + ' = {id:\'' + genid + 'inviteCompany' + comp_id + '\', checkbox_id : \'inviteCompany' + comp_id + '\',users : []};';
-			
-			htmlStr += '<div onclick="App.modules.addMessageForm.emailNotifyClickCompany('+comp_id+',\'' + genid + '\',\'invite_companies\', \'invitation\')" class="company-name container-div" onmouseover="og.rollOver(this)" onmouseout="og.rollOut(this,true ,true)" >';
-			
-			htmlStr += '<div class="contact-picture-container" style="float:left;padding-top:3px;">' +
-				(comp_id > 0 ? '<img class="commentUserAvatar" src="'+comp_img+'" alt="'+og.clean(comp_name)+'" />' : '') +'</div>' +
-				'<label style="float:left;padding-left:5px;" for="'+comp_id+'">' +
-				'<span class="ico-company link-ico">'+og.clean(comp_name)+'</span>' + '</label><div class="clear"></div>';
-			
-			htmlStr += '<input type="checkbox" style="display:none;" name="event[invite_company_'+comp_id+']" id="' + genid + 'inviteCompany'+comp_id+'" ></input>';
-			
-			htmlStr += '</div>';
-			
-			htmlStr += '<div class="company-users" style="padding-left:10px;">';
-			for (j = 0; j < companies[i].users.length; j++) {
-				usr = companies[i].users[j];
-				var cls = (usr.invited || (is_new_event && usr.id == calendar_user_filter) ? 'checked-user' : 'user-name');
-				htmlStr += '<div id="div' + genid + 'inviteUser'+usr.id+'" class="container-div '+cls+'" style="margin-left:5px;" onmouseover="og.rollOver(this)" onmouseout="og.rollOut(this,false ,true)" onclick="og.checkUser(this)">'
-
-				htmlStr += '<input id="'+genid+'inviteUser'+usr.id+'" type="hidden" name="event[invite_user_'+usr.id+']" value="'+(usr.invited || (is_new_event && usr.id == calendar_user_filter)?'1':'0')+'" />';
-
-				htmlStr += '<div class="contact-picture-container" style="float:left;padding-top:3px;">' +
-					'<img class="commentUserAvatar" src="'+ og.allUsers[usr.id].img_url +'" alt="'+og.clean(usr.name)+'" /></div>';
-				
-				htmlStr += '<label for="' + genid + 'notifyUser' + usr.id + '" style="float:left; width: 125px; min-width:0px; overflow:hidden; padding-left: 5px; padding-right: 5px;">' +
-					'<span class="ico-user link-ico">'+og.clean(usr.name)+'</span><br>' +
-					'<span style="color:#888888;font-size:90%;font-weight:normal;">'+ usr.mail+ '</span></label>';
-				
-				script += 'cos.company_' + comp_id + '.users.push({ id:'+usr.id+', checkbox_id : \'inviteUser' + usr.id + '\'});';
-				htmlStr += '</div>';
-			}
-			htmlStr += '</div>';
-		}
-		htmlStr += '</div>';
-	}
-	Ext.lib.Event.onAvailable(genid + 'invite_companies', function() {
-		eval(script);
-	});
-	return htmlStr;
-};
-
-og.drawUserList = function(success, data) {
-	var companies = data.companies;
-
-	var inv_div = Ext.get('<?php echo $genid ?>inv_companies_div');
-	if (inv_div != null) inv_div.remove();
-	inv_div = Ext.get('emailNotification');
-	
-	if (inv_div != null) {
-		inv_div.insertHtml('beforeEnd', '<div id="<?php echo $genid ?>inv_companies_div">' + og.drawInnerHtml(companies) + '</div>');	
-		if (Ext.isIE) inv_div.update(Ext.getDom("emailNotification").innerHTML, true);
-	}
-};
-
-og.redrawPeopleList = function(genid){
-	var dimension_members_json = Ext.util.JSON.encode(member_selector[genid].sel_context);
-	og.openLink(og.getUrl('event', 'allowed_users_view_events', {context:dimension_members_json, user:og.eventInvitationsUserFilter, evid:<?php echo $event->isNew() ? 0 : $event->getId()?>}), {callback:og.drawUserList});
-};
-
 
 Ext.getCmp(genid + 'event[start_value]Cmp').on({
 	change: og.updateRepeatHParams
@@ -710,6 +633,24 @@ function selectEventRelated(val){
 
 $(function() {
 	$("#<?php echo $genid?>tabs").tabs();
-	og.redrawPeopleList('<?php echo $genid?>');
+
+	// Render contact selector for event invitations
+	og.renderContactSelector({
+		genid: '<?php echo $genid ?>',
+		id: genid + 'event_invited_contact_ids',
+		name: 'event[invited_contact_ids]',
+		render_to: "invited_people_selector",
+		listWidth: 285,
+		width: 285,
+		filters: {},
+		cp_type: 'contact', // needed for quick add link
+		selected: '<?php echo implode(',', $invited_contact_ids) ?>',
+		selected_name: '',
+		empty_text: '<?php echo lang ('select contact').'...' ?>',
+		show_only_name: false,
+		is_multiple: true
+	});
+
+		
 });
 </script>

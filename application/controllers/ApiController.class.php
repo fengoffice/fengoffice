@@ -219,14 +219,12 @@ class ApiController extends ApplicationController {
         $memberController = new MemberController();
         $object = $memberController->listing($params);
         
-        // updates the name of the members using the configuration if exists.
-        build_member_list_text_to_show_in_trees($object["members"]);
         
         foreach ($object["members"] as $m) {
         	$member = Members::getMemberById($m['id']);
         	$memberInfo = array(
         			'id' => $m['id'],
-        			'name' => $m['name'],
+        			'name' => $m['display_name'],
         			'type' => $service,
         			'path' => $member->getPath()
         	//@TODO If name should have custom property concatenated 
@@ -275,7 +273,7 @@ class ApiController extends ApplicationController {
     }
 
     private function list_contacts_assigned_to($request) {
-        $members = (!empty($request['args']['members']) && count(empty($request['args']['members']))) ? $request['args']['members'] : null;
+        $members = (!empty($request['args']['members']) && count($request['args']['members'])) ? $request['args']['members'] : null;
         $contacts = allowed_users_to_assign_all_mobile($members);
         return $this->response('json', $contacts);
     }
@@ -360,7 +358,11 @@ class ApiController extends ApplicationController {
         Hook::fire('override_list_custom_property_values', array('cp' => $cp), $cp_values);
 
         $cp_values_arr=[];
-        $cp_values_arr=explode(",",$cp_values);
+		if (is_string($cp_values)) {
+			$cp_values_arr=explode(",",$cp_values);
+		} else {
+			$cp_values_arr=$cp_values;
+		}
         $tmp_array=[];
         $tmp_objects=[];
         $i=0;
@@ -526,7 +528,7 @@ class ApiController extends ApplicationController {
             
             $order = (!empty($request['args']['order'])) ? $request['args']['order'] : null;
             $order_dir = (!empty($request['args']['order_dir'])) ? $request['args']['order_dir'] : null;
-            $members = (!empty($request['args']['members']) && count(empty($request['args']['members']))) ? $request['args']['members'] : null;
+            $members = (!empty($request['args']['members']) && count($request['args']['members'])) ? $request['args']['members'] : null;
             $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
             $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
             
@@ -668,7 +670,9 @@ class ApiController extends ApplicationController {
 
             foreach ($result->objects as $object) {
                 if ($service == "ProjectTasks") {
-                    array_push($temp_objects, $object->getArrayInfo(1,true));
+					$object_data = $object->getArrayInfo(1,true);
+					$object_data['members_data'] = build_api_members_data($object);
+                    array_push($temp_objects, $object_data);
                 } elseif($service == "Expenses") {
                     $object_data = $object->getArrayInfo();
                     $extra_conditions = " AND `expense_id` = ".$object->getObjectId();
@@ -1269,184 +1273,5 @@ class ApiController extends ApplicationController {
         $this->setLayout("json");
 		$this->renderText(json_encode($res_data), true);
     }
-
-    /**
-     * API responds to get data for Project Statistics Widget
-     */
-    public function get_widget_work_progress_info() {
-        // IMPORTANT save and close sessions to allow other processes to run in parallel
-        session_write_close();
-
-        $members = array_var($_REQUEST, 'members', array());
-        $res_data = array();
-        if (Plugins::instance()->isActivePlugin('crpm')) {
-            Env::useHelper('widget_functions', 'crpm');
-            Env::useHelper('chart');
-            Env::useHelper("api", "crpm");
-            ini_set('memory_limit', '1G');
-
-            $tasks = get_tasks_for_work_progress_widget($members);
-            if (!$tasks) $tasks = array();
-            $task_ids = array(0);
-            foreach ($tasks as $task) {
-                $task_ids[] = $task['object_id'];
-            }
-
-            $extra_conditions = " AND e.rel_object_id IN (". implode(',', $task_ids) .")";
-            if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
-                $extra_conditions .= " AND e.contact_id = " . logged_user()->getId();
-            }
-
-            $timeslots_objects = get_timeslots_for_work_progress_widget($members, $extra_conditions);
-            $tasks_timeslots = array();
-            if (is_array($timeslots_objects)) {
-                foreach ($timeslots_objects as $ts_data) {
-                    if (!isset($tasks_timeslots[$ts_data['rel_object_id']])) $tasks_timeslots[$ts_data['rel_object_id']] = array();
-                    $tasks_timeslots[$ts_data['rel_object_id']][] = $ts_data;
-                }
-            }
-
-            $all_has_due_date = true;
-            $all_completed_has_work = true;
-            $all_has_estimated_time = true;
-            $tasks_without_due_date = array();
-            $completed_tasks_no_timeslots = array();
-            $tasks_without_estimated_time = array();
-            $task_warning_amount = 5;
-            $get_tasks_with_missing_info = count($members) > 0;
-
-            foreach ($tasks as $task) {
-                if ($task['due_date'] == EMPTY_DATETIME && $task['start_date'] == EMPTY_DATETIME) {
-                    $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
-                    $tasks_without_due_date[] = $task;
-                    $all_has_due_date = false;
-                }
-                
-                if ($task['completed_by_id'] > 0) {
-                    $task_ts = array_var($tasks_timeslots, $task['object_id'], array());
-                    if (count($task_ts) == 0){
-                        $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
-                        $completed_tasks_no_timeslots[] = $task;
-                        $all_completed_has_work = false;
-                    }
-                }
-                
-                if ($task['total_time_estimate'] == 0){
-                    $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
-                    $tasks_without_estimated_time[] = $task;
-                    $all_has_estimated_time = false;
-                }
-            }
-
-            if ($all_has_due_date) {
-                $hours = CrpmAPI::sumTasksHoursByExecutionTime($tasks, $tasks_timeslots);
-            } else {
-                $hours = CrpmAPI::sumTasksHoursByType($tasks, $tasks_timeslots);
-            }
-
-            $active_members = array();
-            $context = active_context();
-            if( $context){
-                foreach ($context as $selection) {
-                    if ($selection instanceof Member) $active_members[] = $selection;
-                }
-            }
-            $mnames = array();
-            $allowed_contact_ids = array();
-            foreach ($active_members as $member) {
-                $allowed_contact_ids[] = $member->getAllowedContactIds();
-                $mnames[] = clean($member->getName());
-            }
-
-             // Define variables
-            $estimated = array();
-            $worked = array();
-            $chart_labels = array();
-            $estimated_accumulated = 0;
-            $worked_accumulated = 0;
-            $date_format = convertPHPToMomentFormat(user_config_option('date_format'));
-            $workedTitle = lang('total worked hours');
-            $estimatedTitle = lang('total estimated hours');
-            $decimals = user_config_option('decimal_digits');
-            $decimals_separator = user_config_option('decimals_separator');
-            $thousand_separator = user_config_option('thousand_separator');
-
-            //prepare messages and tasks with missing info
-            $count_tasks_without_dates = count($tasks_without_due_date);
-            $count_tasks_without_estimate = count($tasks_without_estimated_time);
-            $count_completed_tasks_no_timeslots = count($completed_tasks_no_timeslots);
-            $tasks_without_due_date = $count_tasks_without_dates > 5 ? array_slice($tasks_without_due_date, 0, 5) : $tasks_without_due_date;
-            $tasks_without_estimated_time = $count_tasks_without_estimate > 5 ? array_slice($tasks_without_estimated_time, 0, 5) : $tasks_without_estimated_time;
-            $completed_tasks_no_timeslots = $count_completed_tasks_no_timeslots > 5 ? array_slice($completed_tasks_no_timeslots, 0, 5) : $completed_tasks_no_timeslots;
-            $tasks_without_due_date_msg = lang('there are tasks without start date or due date', $count_tasks_without_dates);
-            $tasks_without_estimated_time_msg = lang('there are tasks with no estimated time', $count_tasks_without_estimate);
-            $completed_tasks_no_timeslots_msg = lang('there are completed tasks with no worked time registered', $count_completed_tasks_no_timeslots);
-
-            $res_data = array(
-                'dateFormat' => $date_format,
-                'estimatedTitle' => $estimatedTitle,
-                'workedTitle' => $workedTitle,
-                'decimals' => $decimals,
-                'decimalsSeparator' => $decimals_separator,
-                'thousandSeparator' => $thousand_separator, 
-                'tasks_without_due_date' => $tasks_without_due_date,
-                'tasks_without_due_date_msg' => $tasks_without_due_date_msg,
-                'completed_tasks_no_timeslots' => $completed_tasks_no_timeslots,
-                'completed_tasks_no_timeslots_msg' => $completed_tasks_no_timeslots_msg,
-                'tasks_without_estimated_time' => $tasks_without_estimated_time,
-                'tasks_without_estimated_time_msg' => $tasks_without_estimated_time_msg,
-                'list_tasks_with_missing_info' => $get_tasks_with_missing_info
-            );
-
-            if ($all_has_due_date) {
-                // if all tasks have due date, build showWorkedHoursWidget component with chart
-                foreach ($hours as $ts => $values) {
-                    $estimated_accumulated += ($values['estimated'] > 0 ? round($values['estimated'] / 60, 2) : 0);
-                    $estimated[] = $estimated_accumulated;
-                    
-                    $worked_accumulated += ($values['worked'] > 0 ? round($values['worked'] / 60, 2) : 0);
-                    $worked[] = $worked_accumulated;
-                    
-                    $d = new DateTimeValue($ts);
-                    $chart_labels[] = $d->format('m/d/Y');
-                }
-                
-                if (count($estimated) + count($worked) > 0) {
-                    $chart_data_array = array();
-                    $chart_length = count($estimated);
-
-                    // Populate $chart_data_array with arrays that has date, estimated and worked time info
-                    for($i = 0; $i<$chart_length; $i++){
-                        $data_info = array(
-                            "date" => $chart_labels[$i],
-                            "estimated" => $estimated[$i],
-                            "worked" => $worked[$i]
-                        );
-                        array_push($chart_data_array, $data_info);
-                    }
-                    $chartData = $chart_data_array;
-
-                    // Prepare data to pass to showWorkedHoursWidget()
-                    $res_data['estimated'] = $estimated_accumulated;
-                    $res_data['worked'] = $worked_accumulated;
-                    $res_data['chartData'] = $chartData;
-                }
-            } else {
-                // if some tasks don't have due date, build showWorkedHoursWidget component without chart
-                $estimated = array(round($hours['estimated'] / 60, 2));
-                $worked = array(round($hours['worked'] / 60, 2));
-                if (count($estimated) + count($worked) > 0) {
-                    $res_data['estimated'] = $estimated[0];
-                    $res_data['worked'] = $worked[0];
-                }
-            }
-        }
-
-        ajx_current("empty");
-        $this->setLayout("json");
-		$this->renderText(json_encode($res_data), true);
-
-    }
-
 
 }

@@ -25,45 +25,89 @@ class ProjectEvents extends BaseProjectEvents {
 	const ORDER_BY_NAME = 'name';
 	const ORDER_BY_POSTTIME = 'dateCreated';
 	const ORDER_BY_MODIFYTIME = 'dateUpdated';
-        
-        static function findBySpecialId($special_id, $ext_cal_id) {
-                return ProjectEvents::instance()->findOne(array('conditions' => array('`special_id` = ? AND `ext_cal_id` = ? AND trashed_on =\''.EMPTY_DATETIME.'\' AND trashed_by_id = 0', $special_id, $ext_cal_id)));
-        }
-        
-        static function findByExtCalId($ext_cal_id) {
-                return ProjectEvents::instance()->findAll(array('conditions' => array('`ext_cal_id` = ?', $ext_cal_id)));
-        }
-        function findById($id, $force_reload = false) {
-        	return ProjectEvents::instance()->findOne(array('conditions' => array('`object_id` = ?', $id)));
-        }
-        static function findNoSync($contact_id, $date_from = null, $limit = 0) {
-        	if(is_null($date_from)){
-        		$date_from = '';
-        	}else{
-        		$date_from = " AND `start` > '".$date_from."'";
-        	}        	
-        	
-            return ProjectEvents::instance()->findAll(array(
-            		'limit' => $limit,
-                    'conditions' => array('special_id = "" AND trashed_by_id = 0 AND trashed_on =\''.EMPTY_DATETIME.'\' AND update_sync  =\''.EMPTY_DATETIME.'\' AND created_by_id = '.$contact_id.$date_from)));
-        }
-        static function findNoSyncInvitations($contact_id, $date_from = null, $limit = 0) {
-        	if(is_null($date_from)){
-        		$date_from = '';
-        	}else{
-        		$date_from = " AND `start` > '".$date_from."'";
-        	}
-        	
-        	return ProjectEvents::instance()->findAll(array(
-        			'limit' => $limit,
-        			'conditions' => array(' trashed_by_id = 0 AND created_by_id <> '.$contact_id.' AND trashed_on =\''.EMPTY_DATETIME.'\' AND synced = 0 AND contact_id = '.$contact_id.$date_from),
-        			 'join' => array(
-                            'table' => EventInvitations::instance()->getTableName(),
-                            'jt_field' => 'event_id',
-                            'e_field' => 'object_id',
-        			)));
-        
-        }
+	
+	/**
+	 * Finds a ProjectEvent by its special_id and ext_cal_id
+	 * @param string $special_id
+	 * @param string $ext_cal_id
+	 * @return ProjectEvent
+	 */
+	static function findBySpecialId($special_id, $ext_cal_id) {
+		return ProjectEvents::instance()->findOne(array('conditions' => array('`special_id` = ? AND `ext_cal_id` = ? AND trashed_on =\''.EMPTY_DATETIME.'\' AND trashed_by_id = 0', $special_id, $ext_cal_id)));
+	}
+	
+	/**
+	 * Finds all ProjectEvents by its ext_cal_id
+	 * @param string $ext_cal_id
+	 * @return array of ProjectEvent
+	 */
+	static function findByExtCalId($ext_cal_id) {
+		return ProjectEvents::instance()->findAll(array('conditions' => array('`ext_cal_id` = ?', $ext_cal_id)));
+	}
+	
+	/**
+	 * Finds a ProjectEvent by its object_id
+	 * @param int $id
+	 * @param boolean $force_reload
+	 * @return ProjectEvent
+	 */
+	function findById($id, $force_reload = false) {
+		return ProjectEvents::instance()->findOne(array('conditions' => array('`object_id` = ?', $id)));
+	}
+	
+	/**
+	 * Finds a ProjectEvent by its uid
+	 * @param string $uid
+	 * @return ProjectEvent
+	 */
+	static function findByUid($uid) {
+		return self::instance()->findOne(array('conditions' => array('`uid` = ?', $uid)));
+	}
+	
+	/**
+	 * Finds all ProjectEvents not synchronized from a contact
+	 * @param int $contact_id
+	 * @param string $date_from optional
+	 * @param int $limit optional
+	 * @return array of ProjectEvent
+	 */
+	static function findNoSync($contact_id, $date_from = null, $limit = 0) {
+		if(is_null($date_from)){
+			$date_from = '';
+		}else{
+			$date_from = " AND `start` > '".$date_from."'";
+		}
+		
+		return ProjectEvents::instance()->findAll(array(
+				'limit' => $limit,
+				'conditions' => array('special_id = "" AND trashed_by_id = 0 AND trashed_on =\''.EMPTY_DATETIME.'\' AND update_sync  =\''.EMPTY_DATETIME.'\' AND created_by_id = '.$contact_id.$date_from)));
+	}
+	
+	/**
+	 * Finds all ProjectEvent invitations not synchronized from a contact
+	 * @param int $contact_id
+	 * @param string $date_from optional
+	 * @param int $limit optional
+	 * @return array of ProjectEvent
+	 */
+	static function findNoSyncInvitations($contact_id, $date_from = null, $limit = 0) {
+		if(is_null($date_from)){
+			$date_from = '';
+		}else{
+			$date_from = " AND `start` > '".$date_from."'";
+		}
+		
+		return ProjectEvents::instance()->findAll(array(
+				'limit' => $limit,
+				'conditions' => array(' trashed_by_id = 0 AND created_by_id <> '.$contact_id.' AND trashed_on =\''.EMPTY_DATETIME.'\' AND synced = 0 AND contact_id = '.$contact_id.$date_from),
+					'join' => array(
+						'table' => EventInvitations::instance()->getTableName(),
+						'jt_field' => 'event_id',
+						'e_field' => 'object_id',
+				)));
+	
+	}
+
 	/**
 	 * Returns all events for the given date, tag and considers the active project
 	 *
@@ -222,7 +266,7 @@ class ProjectEvents extends BaseProjectEvents {
 	 *
 	 * @param DateTimeValue $date
 	 * @param String $tags
-	 * @return unknown
+	 * @return array|null
 	 */
 	static function getRangeProjectEvents(DateTimeValue $start_date, DateTimeValue $end_date, $user_filter=null, $inv_state=null){
 

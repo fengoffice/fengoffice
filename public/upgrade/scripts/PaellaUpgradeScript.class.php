@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.8.0');
+		$this->setVersionTo(code_version());
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -1234,8 +1234,211 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
 			}
 		}
-		
-		//ADD NEXT UPDATE SCRIPTS HERE
+
+
+		// Add 'match_subtask_percent_completed' config option to task_workflow category
+		if (version_compare($installed_version, '3.11.10.0') < 0) {
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "match_subtask_percent_completed", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` 
+					(`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES 
+					('task_workflow', 'match_subtask_percent_completed', '0', 'BoolConfigHandler', '0', '0', '', '');
+				";
+			}
+			
+			// Add 'contact_quickadd_inputs' config option to clients and contacts category
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "contact_quickadd_inputs", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+					('clients_and_contacts', 'contact_quickadd_inputs', 'first_name,surname,email,phone,address', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\"}'))
+					ON DUPLICATE KEY UPDATE `name` = `name`;
+				";
+			}
+		}
+    
+    
+		if (version_compare($installed_version, '3.11.10.1') < 0) {
+			// Add 'contact_quickadd_view_info' config option to clients and contacts category
+
+
+
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "contact_quickadd_view_info", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+					('clients_and_contacts', 'contact_quickadd_view_info', 'name,email,phone', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\", \"include_common_cols\": \"true\"}'))
+					ON DUPLICATE KEY UPDATE `name` = `name`;
+				";
+			}
+
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."config_options` 
+				SET `options` = CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\"}')
+				WHERE `name` = 'contact_quickadd_inputs';
+			";
+		}
+
+		if (version_compare($installed_version, '3.11.11.0-beta1') < 0) {
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_inactive_users_on_filters", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+    			VALUES ('general', 'show_inactive_users_on_filters', '0', 'BoolConfigHandler', '0', '0', '', '');
+			";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.11.0-beta2') < 0) {
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "financials_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'financials_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "financials_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'financials_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "financials_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'financials_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "earned_value_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'earned_value_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "earned_value_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'earned_value_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "earned_value_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'earned_value_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "expenses_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'expenses_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "expenses_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'expenses_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "expenses_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'expenses_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "worked_hours_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'worked_hours_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "worked_hours_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'worked_hours_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "worked_hours_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'worked_hours_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.12.0') < 0) {
+
+			// Add uid column to events table
+			if (!$this->checkColumnExists($t_prefix."project_events", "uid", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_events` ADD `uid` varchar(255) DEFAULT '';
+				";
+        	}
+			// Add organizer column to events table
+			if (!$this->checkColumnExists($t_prefix."project_events", "organizer_id", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_events` ADD `organizer_id` INT(10) UNSIGNED NOT NULL DEFAULT '0';
+				";
+				// Add default value to organizer column
+				$upgrade_script .= "
+					UPDATE `".TABLE_PREFIX."project_events` SET `organizer_id` = COALESCE((
+						SELECT `created_by_id` FROM `".TABLE_PREFIX."objects` 
+						WHERE `id` = `".TABLE_PREFIX."project_events`.`object_id`
+						LIMIT 1
+					), 0);
+				";
+        	}
+
+			// Add ical_dtstamp column to events table
+			if (!$this->checkColumnExists($t_prefix."project_events", "ical_dtstamp", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_events` ADD `ical_dtstamp` varchar(255) DEFAULT '';
+				";
+			}
+		}
+
+
+		/**
+		 * Update to 3.11.13.0
+		 * 
+		 * New config options to determine whether the dropdown list for selecting the type should be shown
+		 * for the address, email, phone and website fields
+		 */
+		if (version_compare($installed_version, '3.11.13.0') < 0) {
+			
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_address_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_address_field', '0', 'BoolConfigHandler', '0', '100', '', '');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_email_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_email_field', '0', 'BoolConfigHandler', '0', '101', '', '');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_phone_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_phone_field', '0', 'BoolConfigHandler', '0', '102', '', '');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_website_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_website_field', '0', 'BoolConfigHandler', '0', '103', '', '');
+				";
+			}
+		}
+
+		// ADD NEXT UPDATE SCRIPTS HERE
 
     
 

@@ -71,7 +71,7 @@ if (!isset($id_prefix)) {
 			<div class="input-container">
 				<div id="<?php echo $genid ?>add_contact_notes">
 					<?php echo label_tag(lang('notes'), $genid . 'profileFormNotes') ?>
-					<div style="float:left;width:600px;" class="notes-container">
+					<div class="notes-container">
 						<?php echo textarea_field('contact[comments]', array_var($contact_data, 'comments'), array('id' => $genid . 'profileFormNotes', 'style' => 'width: 100%;', 'rows' => 5)) ?>
 					</div>
 				</div>

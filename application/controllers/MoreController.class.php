@@ -90,7 +90,7 @@ class MoreController extends ApplicationController {
 		// add subquery for user groups column
 		$columns_sql .= ", (SELECT GROUP_CONCAT(' ', pg.name) FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.id IN (
 			SELECT permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups WHERE contact_id=c.object_id
-		) AND pg.type='user_groups') as groups";
+		) AND pg.type='user_groups') as `groups`";
 		
 		$main_sql = "FROM ".TABLE_PREFIX."contacts c
 				INNER JOIN ".TABLE_PREFIX."permission_groups p ON p.id=c.user_type

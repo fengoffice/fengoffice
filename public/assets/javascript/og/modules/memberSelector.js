@@ -363,6 +363,12 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 				
 				var tree = Ext.getCmp(dep_genid + '-member-chooser-panel-' + dim_id + '-tree');
 				
+				// if the tree is not initialized, initialize it
+				if (!tree.initialized) {
+					tree.initialized = true;
+					tree.init();
+				}
+				
 				// build tree filter options
 				var filter_options = {};
 				if (og.reload_selectors_modify_filter_options_functions) {

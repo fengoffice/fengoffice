@@ -1241,6 +1241,7 @@ class MemberController extends ApplicationController {
 					if (!array_var($dimension_obj_data, 'name')) $dimension_obj_data['name'] = $member->getName();
 					
 					eval('$fields = '.$handler_class.'::instance()->getPublicColumns();');
+					if (!isset($fields)) $fields = array();
 					
 					foreach ($fields as $field) {
 						if (array_var($field, 'type') == DATA_TYPE_DATETIME) {
@@ -1275,10 +1276,13 @@ class MemberController extends ApplicationController {
 			$member->setDisplayName($display_name);
 			$member->save();
 
+			// recalculate the display name of the members whose names depend on this member
+			recalculate_related_members_display_name($member);
+
 			// Other dimensions member restrictions
 			$restricted_members = array_var($_POST, 'restricted_members');
 			if (is_array($restricted_members)) {
-				MemberRestrictions::clearRestrictions($member->getId());
+				MemberRestrictions::instance()->clearRestrictions($member->getId());
 				foreach ($restricted_members as $dim_id => $dim_members) {
 					foreach ($dim_members as $mem_id => $member_restrictions) {
 						
@@ -2432,7 +2436,48 @@ class MemberController extends ApplicationController {
 						if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
 			
 							$errorMessage = $obj->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
-							throw new Exception($errorMessage);
+							//throw new Exception($errorMessage);
+
+							// after asking the user if they want to remove the task from the timeslot/expense
+							// if the user answers yes, remove it
+							if (array_var($_REQUEST, 'remove_obj_task')) {
+								// if the object is a timeslot, remove the task from the timeslot
+								if ($obj instanceof Timeslot) {
+									$task = $obj->getRelObject();
+									$obj->setRelObjectId(0);
+									$obj->save();
+								} 
+								// if the object is an expense, remove the task from the expense
+								else if (class_exists('PaymentReceipt') && $obj instanceof PaymentReceipt) {
+									$task = $obj->getTask();
+									$obj->setTaskId(0);
+									$obj->save();
+								}
+								
+								// call the save function of the task to trigger the needed recalculations
+								if ($task instanceof ProjectTask) {
+									$task->save();
+								}
+								
+							} else {
+								// ask the user if they want to remove the task so we can continue with reclassification
+								$ot = ObjectTypes::instance()->findById($obj->getObjectTypeId());
+								evt_add("dragdrop ask to remove task", [
+									"message" => lang('Your are re-classifying obj-type X into another project. This will remove the current task associated to them.', strtolower($ot->getPluralObjectTypeName())),
+									"question" => lang('do you want to proceed'),
+									"ids" => $ids,
+									"member_id" => $mem_id,
+									"reclassify_in_associations" => $reclassify_in_associations,
+									"remove_prev" => array_var($_REQUEST, 'remove_prev'),
+								]);
+								
+								// return an empty response
+								ajx_current("empty");
+								// rollback the database transaction
+								DB::rollback();
+								// exit the function
+								return;
+							}
 						}
 					}
 

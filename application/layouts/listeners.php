@@ -693,12 +693,11 @@ og.eventManager.addListener('member parent changed',
 	    		});
 			}
 
-			// update current parent
+			// update current parent - only set expandable to true, don't reload from server
 			var parent = tree.getNodeById(data.p);
 			if (parent) {
-				var mobj = parent.attributes;
-				mobj.expandable = true;
-				og.updateDimensionTreeNode(data.d, mobj, {});
+				parent.attributes.expandable = true;
+				parent.getUI().updateExpandIcon();
 			}
 		}
 	}
@@ -868,6 +867,146 @@ og.eventManager.addListener('prompt user trash objects',
 	}
 );
 
+/**
+ * Prompt user to remove task
+ * 
+ * This function is called when task is dragged and dropped to a new member.
+ * It shows a dialog with a question asking whether to remove task.
+ * If user clicks yes, it will remove the task and then continue with the reclassification of the objects.
+ * If user clicks no, it will just close the dialog and will not remove the task or continue with the reclassification.
+ * 
+ * The function takes an object with the following parameters:
+ * - message: The message to show in the dialog.
+ * - question: The question to ask the user.
+ * - title: The title of the dialog.
+ * - ids: The ids of the tasks to remove.
+ * - member_id: The id of the member that the task is associated with.
+ * - reclassify_in_associations: Whether to reclassify the task in associations.
+ * - remove_prev: Whether to remove the previous task.
+ * 
+ * @param {Object} data The object with the parameters.
+ */
+og.eventManager.addListener('dragdrop ask to remove task',
+	function (data) {
+		
+		if (data && data.message) {
+			var message = data.message;
+			var question = data.question;
+			var div = document.createElement('div');
+			var genid = Ext.id();
+			div.innerHTML = '<div style="border-radius: 5px; background-color: #fff; padding: 10px; width: 500px; font-size: 14px;">'+ 
+				'<div id="'+genid+'_message" style="margin: 10px 0;">'+ message +'</div>'+
+				'<div id="'+genid+'_question" style="margin: 10px 0;">'+ question +'</div>'+
+				'<div id="'+genid+'_buttons" style="text-align: right; margin: 10px 0px;">'+
+				'<button class="yes submit blue">'+lang('proceed')+'</button><button class="no submit blue">'+lang('cancel')+'</button>'+
+				'</div><div class="clear"></div></div>';
 
+			var modal_params = {
+				'escClose': false,
+				'overlayClose': false,
+				'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+				'onShow': function (dialog) {
+					
+					// no button
+					$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+						// only close this dialog if user clicks no
+						$('.modal-close').click();
+					});
+					// yes button
+					$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+						// close this dialog
+						$('.modal-close').click();
+						// callback function to be called after reclassification
+						let callback_fn = function() {
+							// reload current panel after reclassification
+							og.eventManager.fireEvent('reload current panel');
+						}
+						// call the objects' reclassification function indicating that we want to remove the related task
+						og.call_add_objects_to_member(null, data.ids, data.member_id, null, data.reclassify_in_associations, data.remove_prev, callback_fn, null, true);
+					});
+
+			    }
+			};
+			setTimeout(function() {
+				$.modal(div, modal_params);
+			}, 100);			
+		}
+	}
+);
+
+
+
+/**
+ * Shows a dialog asking whether to reclassify timeslots and assign a task to some objects.
+ * 
+ * This is called when a user tries to assign a task to some timeslots that are not classified to the same client/project. 
+ * The dialog asks whether to reclassify the timeslots and assign the task.
+ * If the user clicks yes, it will reclassify the timeslots and assign the task. If the user clicks no,
+ * it will just close the dialog and will not reclassify the timeslots or assign the task.
+ * 
+ * The function takes an object with the following parameters:
+ * - message: The message to show in the dialog.
+ * - question: The question to ask the user.
+ * - title: The title of the dialog.
+ * - object_ids: The ids of the objects that the task should be assigned to.
+ * - task_id: The id of the task.
+ * - request_channel: The channel to use for the request.
+ * - inline_action: The inline action to use for the request.
+ *
+ * @param {Object} data The object with the parameters.
+ */
+og.eventManager.addListener('ask to reclassify timeslots in task members and assign task',
+	function (data) {
+		
+		if (data && data.message) {
+			var title = data.title;
+			var message = data.message;
+			var question = data.question;
+			var div = document.createElement('div');
+			var genid = Ext.id();
+			div.innerHTML = '<div style="border-radius: 5px; background-color: #fff; padding: 10px; width: 500px; font-size: 14px;">'+ 
+				'<div id="'+genid+'_message" style="margin: 10px 0;">'+ message +'</div>'+
+				'<div id="'+genid+'_question" style="margin: 10px 0;" class="bold">'+ question +'</div>'+
+				'<div id="'+genid+'_buttons" style="text-align: right; margin: 10px 0px;">'+
+				'<button class="yes submit blue">'+lang('proceed')+'</button><button class="no submit blue">'+lang('cancel')+'</button>'+
+				'</div><div class="clear"></div></div>';
+
+			var modal_params = {
+				'escClose': false,
+				'overlayClose': false,
+				'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+				'onShow': function (dialog) {
+					
+					// no button
+					$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+						// only close this dialog if user clicks no
+						$('.modal-close').click();
+					});
+
+					// yes button
+					$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+						// close this dialog
+						$('.modal-close').click();
+
+						// call the assign task to timeslots function, with parameter to reclassify timeslots
+						og.openLink(og.getUrl('time', 'assign_task_to_timeslots'), {
+							post: {
+								object_ids: data.object_ids.join(','),
+								task_id: data.task_id,
+								req_channel: data.request_channel,
+								inline_action: data.inline_action,
+								do_reclassify_timeslots: true
+							}
+						});
+					});
+
+			    }
+			};
+			setTimeout(function() {
+				$.modal(div, modal_params);
+			}, 100);			
+		}
+	}
+);
 
 </script>

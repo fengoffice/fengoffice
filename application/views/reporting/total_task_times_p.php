@@ -91,9 +91,9 @@
 			<td><span class="bold"><?php echo lang("timeslots") ?>:&nbsp;</span></td>
 			<td align='left'><?php 
 				echo select_box('report[timeslot_type]', array(
-					option_tag(lang('task timeslots'), 0, array_var($report_data, "timeslot_type") == '0' ? array('selected' => 'selected') : null),
-					option_tag(lang('time timeslots'), 1, array_var($report_data, "timeslot_type") == '1' ? array('selected' => 'selected') : null),
-					option_tag(lang('all timeslots'), 2, array_var($report_data, "timeslot_type") == '2' ? array('selected' => 'selected') : null)
+					option_tag(lang('all timeslots'), 0, array_var($report_data, "timeslot_type") == '0' ? array('selected' => 'selected') : null),
+					option_tag(lang('task timeslots'), 1, array_var($report_data, "timeslot_type") == '1' ? array('selected' => 'selected') : null),
+					option_tag(lang('time timeslots'), 2, array_var($report_data, "timeslot_type") == '2' ? array('selected' => 'selected') : null)
 				), array('onchange' => 'og.timeslotTypeSelectChange(this, \'' . $genid . '\')'));
 			?>
 				<span id="<?php echo $genid?>task_ts_desc" class="desc" style="display:<?php echo  array_var($report_data, "timeslot_type") == '0' ? '' : 'none'?>"><?php echo lang('task timeslots report desc')?></span>

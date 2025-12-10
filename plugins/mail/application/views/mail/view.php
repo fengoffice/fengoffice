@@ -226,6 +226,9 @@ if (isset($email)){
 		} else {
 			$conversation_block = '';
 		}
+
+		// initialize the content with the contextual enriched block if defined.
+		$content = $contextual_enriched_block;
 		
 		if($email->getBodyHtml() != ''){
 			$html_content = $email->getBodyHtml();
@@ -352,7 +355,7 @@ if (isset($email)){
 			}			
 			$pre = $email->getAccountId() . '_' . logged_user()->getId() . '_' . $email->getId();
 			$user_token = defined('SANDBOX_URL') ? logged_user()->getTwistedToken() : '';
-			$content = "";
+			
 			if ($remove_images) {
 				$content = '<div id="'.$genid.'showImagesLink" style="background-color:#FFFFCC">'.lang('images are blocked').' 
 					<a href="#" onclick="og.showMailImages(\''.$pre.'\', \''.gen_id().'\', \''.$genid.'\', \''.$user_token.'\');" style="text-decoration: underline;">'.lang('show images').'</a>
@@ -392,9 +395,9 @@ if (isset($email)){
 		} else {
 			if ($email->getBodyPlain() != '') {
 				$remove_quoted = MailUtilities::hasQuotedText($email->getBodyPlain()) && $hide_quoted_text_in_emails;
-				$content = "";
+				
 				if ($remove_quoted) {
-					$content = MailUtilities::replaceQuotedText($email->getBodyPlain(), '-----'.lang('hidden quoted text').'-----');
+					$content .= MailUtilities::replaceQuotedText($email->getBodyPlain(), '-----'.lang('hidden quoted text').'-----');
 					$content = '<div id="'.$genid.'noQuoteMail">' . escape_html_whitespace(convert_to_links(clean($content))) . '</div>';
 					$content = str_replace('-----'.lang('hidden quoted text')."-----", '<span style="color: #777;font-style:italic;padding: 5px 20px">&lt;'.lang('hidden quoted text').'&gt;</span>', $content);
 					$content .= '<a class="internalLink" style="padding-left:10px;" id="'.$genid.'quotedLink" href="#" onclick="og.showQuotedText(\''.$genid.'\')">:: '.lang('show quoted text').' ::</a>';

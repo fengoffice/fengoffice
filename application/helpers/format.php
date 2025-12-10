@@ -922,12 +922,23 @@ function get_format_value_to_header($col, $obj_type_id)
 		$thousand_separator = user_config_option('thousand_separator');
 		
 		$sign = "";
+		if ($number == '') {
+			$number = 0;
+		}
 		if ($number < 0) {
 			$sign = "- ";
 		}
 		$formatted = $sign . number_format(abs((float)$number), $decimals, $decimals_separator, $thousand_separator);
 		
 		return trim($formatted);
+	}
+
+	function format_amount_for_excel($number) {
+		// Return clean numeric value for Excel calculations
+		if ($number == '' || $number === null) {
+			return 0;
+		}
+		return (float) $number;
 	}
 	
 	function format_boolean_to_string($value){

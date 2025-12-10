@@ -281,7 +281,7 @@ static function executeInstaller($name) {
 		$path = ROOT . "/plugins/$name/info.php";
 		if (file_exists ( $path )) {
 			DB::beginWork ();
-			$pluginInfo = include_once $path;
+			$pluginInfo = include $path;
 			
 			//0. Check if exists in plg table
 			$sql = "SELECT id FROM " . TABLE_PREFIX . "plugins WHERE name = '$name' ";

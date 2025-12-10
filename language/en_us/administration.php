@@ -29,7 +29,7 @@
     
     // Categories
     'config category name general' => 'General',
-    'config category desc general' => 'General Feng Office settings.',
+    'config category desc general' => 'General '. product_name() .' settings.',
     'config category name mailing' => 'Notifications',
     'config category desc mailing' => 'Use these settings to set up how Feng Office should handle email sending. You can use configuration options provided in your php.ini or set it so it uses any other SMTP server.',
     'config category name modules' => 'Modules',
@@ -736,6 +736,13 @@
     'search engine mysql like' => 'Full',
     'search engine mysql match' => 'Quick',
 
+    'user config option name ask_reclassify_behavior' => 'Reclassification behavior after save',
+    'user config option desc ask_reclassify_behavior' => 'What to do with classified objects when changing association between dimension members? i.e. When changing the Rate Schedule for a project, also change the Rate Schedule for all Time, Expenses, Tasks, and other objects classified under that specific project. If the Client is changed, associated objects will always be reclassified.',
+
+    'config_ask' => 'Ask',
+    'config_always' => 'Always reclassify',
+    'config_never' => 'Never reclassify',
+
     //Dasboard
 
     'user config option name show_two_weeks_calendar' => 'Show two weeks calendar',
@@ -1076,7 +1083,29 @@
 	'config option name ignored_dims_task_related_objs' => 'When re-classifying tasks: time entries and expenses will also be re-classified. If you want this not to happen for specific dimensions, please select them from this list',
 	'config option desc ignored_dims_task_related_objs' => '',
 
+	'config option name contact_quickadd_inputs' => 'Contact quick-add form inputs',
+	'config option desc contact_quickadd_inputs' => 'Select the inputs that will be shown in the contact quick-add form.',
+	'config option name contact_quickadd_view_info' => 'Contact quick-add information to show',
+	'config option desc contact_quickadd_view_info' => 'Select the contact information that will be shown after selecting a contact in another form (e.g.: Projects and Clients forms)',
+
+	'config option name show_type_sel_on_address_field' => 'Show type selector on address field',
+	'config option desc show_type_sel_on_address_field' => 'If selected, the type selector will be shown on the address field.',
+
+	'config option name show_type_sel_on_email_field' => 'Show type selector on email field',
+	'config option desc show_type_sel_on_email_field' => 'If selected, the type selector will be shown on the email field.',
+
+	'config option name show_type_sel_on_phone_field' => 'Show type selector on phone field',
+	'config option desc show_type_sel_on_phone_field' => 'If selected, the type selector will be shown on the phone field.',
+
+	'config option name show_type_sel_on_website_field' => 'Show type selector on website field',
+	'config option desc show_type_sel_on_website_field' => 'If selected, the type selector will be shown on the website field.',
+
   'config option name mandatory_email_on_contacts' => 'Mandatory Email for Contacts and Companies', 
   'config option desc mandatory_email_on_contacts' => 'Select whether the main email for contacts and companies should be mandatory.',
+
+
+  'config option name show_inactive_users_on_filters' => 'Show inactive users on filters',
+  'config option desc show_inactive_users_on_filters' => 'If selected, inactive users will be shown on filters for Task, Time, and Expenses.',
+
   ); // array
 

@@ -2,6 +2,9 @@
   if (!isset($genid)) {
   	$genid = gen_id();
   }
+  if (!isset($extra_params)) {
+  	$extra_params = array();
+  }
 
   if (!isset($save_js_function)) {
   	$save_js_function = "og.saveObjectTypeCustomProperties('$genid');";
@@ -79,31 +82,26 @@
 $(function() {
 
 <?php
-	if (count($custom_properties) == 0) { // add one empty row
+
+	$cps_data = array();
+	foreach ($custom_properties as $cp) {/* @var $cp CustomProperty */
+		$cps_data[] = $cp->getArrayInfo();
+	}
+	
+	Hook::fire("list_custom_properties_for_type_modify_cps", array('ot' => $object_type), $cps_data);
+
+	if (count($cps_data) == 0) { // add one empty row
 
 		?>og.addCustomPropertyRow('<?php echo $genid?>');<?php
 
 	} else {
-		$cps_data = array();
-		foreach ($custom_properties as $cp) {/* @var $cp CustomProperty */
-			$cps_data[] = $cp->getArrayInfo();
-		}
-		
-		Hook::fire("list_custom_properties_for_type_modify_cps", array('ot' => $object_type), $cps_data);
 		
 		foreach ($cps_data as $cp) {
 			$cp_name = escape_character(array_var($cp, 'name'));
 
-			if (array_var($cp, 'is_special') && trim(array_var($cp, 'code', '')) != "") {
-				$label_code = str_replace("_special", "", $cp['code']);
-				if (trim($label_code) != "") {
-					$label_value = Localization::instance()->lang($label_code);
-					if (!is_null($label_value)) $cp_name = $label_value;
-				}
-			}
-
 			$prop = array(
 				'id' => array_var($cp, 'id'),
+				'code' => array_var($cp, 'code'),
 				'name' => $cp_name,
 				'type' => array_var($cp, 'type'),
 				'order' => array_var($cp, 'property_order'),
@@ -116,21 +114,13 @@ $(function() {
 				'show_in_lists' => array_var($cp, 'show_in_lists') ? '1' : '',
 				'is_required' => array_var($cp, 'is_required') ? '1' : '',
 				'is_multiple_values' => array_var($cp, 'is_multiple_values') ? '1' : '',
+				'override_is_required' => array_var($cp, 'override_is_required') ? '1' : '',
+				'override_is_multiple_values' => array_var($cp, 'override_is_multiple_values') ? '1' : '',
 			);
 		    if ($object_type->getName() == 'contact') {
 				$prop['contact_type'] = $cp['contact_type'];
 			}
 
-			if (str_starts_with($prop['id'], 'fixed')) {
-				$pgp = PropertyGroups::getPropertyGroupPropertyByObjectTypeAndPropertyId($object_type->getId(), $prop['id']);
-				if ($pgp instanceof PropertyGroupProperty) {
-					$prop['is_inheritable'] = $pgp->getIsInheritable() == 1 ? 'checked' : '';
-					$prop['is_disabled'] = $pgp->getIsDisabled() == 1 ? 'checked' : '';
-				}
-			}		
-
-			Hook::fire('overrides_special_cp',null, $prop);
-			
 			Hook::fire('additional_custom_property_fields', array('cp' => $cp, 'ot' => $object_type), $prop);
 ?>
 		var prop = Ext.util.JSON.decode('<?php echo (defined('JSON_HEX_APOS') ? json_encode($prop, JSON_HEX_APOS) : json_encode($prop)) ?>');
@@ -147,6 +137,8 @@ $(function() {
 		cursor: "move",
 		cancel: "tr.header"
 	});
+
+	og.eventManager.fireEvent('after list custom properties', {genid: '<?php echo $genid?>'});
 });
 </script>
 

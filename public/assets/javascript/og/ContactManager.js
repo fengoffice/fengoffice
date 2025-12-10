@@ -912,7 +912,7 @@ og.ContactManager = function() {
             emptyMsg: lang("no objects to display")
         }),
 		viewConfig: {
-            forceFit: true
+            forceFit: false
         },
 		sm: sm,
 		tbar: tbar,

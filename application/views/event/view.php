@@ -113,60 +113,35 @@ if (isset($event) && $event instanceof ProjectEvent) {
 	$description = $event->getTypeId() == 2 ? lang('CAL_FULL_DAY') : lang('CAL_TIME').": $time $origianl_timezone_time" ;
   	tpl_assign('description', $description);
 
-	$att_form = '';
-  	if (!$event->isNew() && !$event->isTrashed()) {
-		$event_inv = EventInvitations::instance()->findById(array('event_id' => $event->getId(), 'contact_id' => logged_user()->getId()));
-		if ($event_inv != null) {
-			$event->addInvitation($event_inv);
-			$event_inv_state = $event_inv->getInvitationState();
-			if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_update_other_users_invitations')) {
-				$options = array(
-					option_tag(lang('yes'), 1, ($event_inv_state == 1)?array('selected' => 'selected'):null),
-					option_tag(lang('no'), 2, ($event_inv_state == 2)?array('selected' => 'selected'):null),
-					option_tag(lang('maybe'), 3, ($event_inv_state == 3)?array('selected' => 'selected'):null)
-				);
-				if ($event_inv_state == 0) {
-					$options[] = option_tag(lang('decide later'), 0, ($event_inv_state == 0) ? array('selected' => 'selected'):null);
-				}
-			
-				$att_form = '<form style="height:100%;background-color:white" class="internalForm" action="' . get_url('event', 'change_invitation_state') . '" method="post">';
-				$att_form .= '<table><tr><td style="padding-right:6px;"><b>' . lang('attendance') . '<b></td><td>';
-				$att_form .= select_box('event_attendance', $options, array('id' => 'viewEventFormComboAttendance')) . '</td><td>';
-				$att_form .= input_field('event_id', $event->getId(), array('type' => 'hidden'));
-				$att_form .= input_field('user_id', logged_user()->getId(), array('type' => 'hidden'));
-				$att_form .= submit_button(lang('Save'), null, array('style'=>'margin-top:0px;margin-left:10px')) . '</td></tr></table></form>';
-			}
-		} //if
-	} // if
 
 	$otherInvitationsTable = '';
 	if (!$event->isNew()) {
 		$otherInvitations = EventInvitations::instance()->findAll(array ('conditions' => 'event_id = ' . $event->getId()));
 		if (isset($otherInvitations) && is_array($otherInvitations)) {
-			$otherInvitationsTable .= '<div class="coInputMainBlock adminMainBlock" style="width:70%;">';
-			$otherInvitationsTable .= '<table style="width:100%;"><col width="50%" /><col width="50%" />';
+			$otherInvitationsTable .= '<div class="coInputMainBlock adminMainBlock invitations">';
+			$otherInvitationsTable .= '<table style="width:100%;">';
 			$otherInvitationsTable .= '<tr><th><b>' . lang('name') . '</b></th><th><b>' . lang('participate') . '</b></th></tr>';
 			$isAlt = false;
 			$cant = 0;
 			foreach ($otherInvitations as $inv) {
 				$inv_user = Contacts::instance()->findById($inv->getContactId());
 				if ($inv_user instanceof Contact) {
-					if (can_access($inv_user, $event->getMembers(),ProjectEvents::instance()->getObjectTypeId(), ACCESS_LEVEL_READ)) {
+					//if (can_access($inv_user, $event->getMembers(),ProjectEvents::instance()->getObjectTypeId(), ACCESS_LEVEL_READ)) {
 
-						if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_update_other_users_invitations')) {
+						if ($inv->getContactId() != logged_user()->getId()) {
 							// only show status
 							$state_desc = lang('pending response');
-							if ($inv->getInvitationState() == 1) $state_desc = lang('yes');
-							else if ($inv->getInvitationState() == 2) $state_desc = lang('no');
-							else if ($inv->getInvitationState() == 3) $state_desc = lang('maybe');
+							if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED) $state_desc = lang('yes');
+							else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_DECLINED) $state_desc = lang('no');
+							else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_TENTATIVE) $state_desc = lang('maybe');
 							$otherInvitationsTable .= '<tr'.($isAlt ? ' class="altRow"' : '').'><td>' . clean($inv_user->getObjectName()) . '</td><td>' . $state_desc . '</td></tr>';
 							
 						} else {
 							// draw status selector and let modify
-							$options = array(option_tag(lang('decide later'), 0, $inv->getInvitationState() == 0 ? array('selected' => "selected") : array()), 
-								option_tag(lang('yes'), 1, $inv->getInvitationState() == 1 ? array('selected' => "selected") : array()),
-								option_tag(lang('no'), 2, $inv->getInvitationState() == 2 ? array('selected' => "selected") : array()),
-								option_tag(lang('maybe'), 3, $inv->getInvitationState() == 3 ? array('selected' => "selected") : array()),
+							$options = array(option_tag(lang('decide later'), EventInvitations::EVENT_INVITATION_NEEDS_ACTION, $inv->getInvitationState() == EventInvitations::EVENT_INVITATION_NEEDS_ACTION ? array('selected' => "selected") : array()), 
+								option_tag(lang('yes'), EventInvitations::EVENT_INVITATION_ACCEPTED, $inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED ? array('selected' => "selected") : array()),
+								option_tag(lang('no'), EventInvitations::EVENT_INVITATION_DECLINED, $inv->getInvitationState() == EventInvitations::EVENT_INVITATION_DECLINED ? array('selected' => "selected") : array()),
+								option_tag(lang('maybe'), EventInvitations::EVENT_INVITATION_TENTATIVE, $inv->getInvitationState() == EventInvitations::EVENT_INVITATION_TENTATIVE ? array('selected' => "selected") : array()),
 							);
 
 							$genid = gen_id();
@@ -179,7 +154,7 @@ if (isset($event) && $event instanceof ProjectEvent) {
 						
 						$isAlt = !$isAlt;
 						$cant++;
-					}
+					//}
 				}
 			}
 			if ($cant > 0) $otherInvitationsTable .= '</table></div>';
@@ -200,6 +175,7 @@ if (isset($event) && $event instanceof ProjectEvent) {
 		$variables['other_invitations'] = $otherInvitationsTable;
 	}
 	$variables['duration'] = $duration;
+	$variables['organizer'] = $event->getOrganizer()->getName();
 	$variables['desc'] = $desc;
 	
 	

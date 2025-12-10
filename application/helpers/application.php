@@ -177,7 +177,7 @@ function intersectCSVs($csv1, $csv2){
 	return implode(',', $final);
 }
 
-function allowed_users_to_assign($context = null, $filter_by_permissions = true, $return_company_array = true, $for_task_list_filters=false, $object_type_id = null) {
+function allowed_users_to_assign($context = null, $filter_by_permissions = true, $return_company_array = true, $for_task_list_filters=false, $object_type_id = null, $include_inactive = false) {
 	if ($context == null) {
 		$context = active_context();
 	}
@@ -201,7 +201,7 @@ function allowed_users_to_assign($context = null, $filter_by_permissions = true,
 			}
 			//get users with can_task_assignee permissions
 			if($root_context && $for_task_list_filters){
-				$tmp_contacts = get_users_with_system_permission('can_task_assignee');
+				$tmp_contacts = get_users_with_system_permission('can_task_assignee', $include_inactive);
 			}else{
                 $for_template_task_assigned_to = array_var($_GET, 'for_template_task_assigned_to');
 
@@ -473,15 +473,94 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 			}
 		}
 
-		echo '<div class="custom-properties">';
-		foreach ($properties as $main_property){
-			echo $main_property['html'];
-		}
-		echo '<input type="hidden" id="error_ids" name="error_ids" value="">';
-		echo '</div>';
+		echo_custom_properties_html($properties);
 	}
 	
 } // render_object_custom_properties
+
+
+/**
+ * Echo the html for the custom properties of an object.
+ *
+ * It takes an array of custom properties where each one has the following structure:
+ * array(
+ *     'id' => '', // The id of the custom property
+ *     'html' => '', // The html of the custom property
+ *     'alignment' => '' // The alignment of the custom property, can be 'left' or 'right'
+ * )
+ *
+ * If there are custom properties with 'left' alignment and with 'right' alignment
+ * it will render them in two columns. If there are only custom properties with
+ * 'left' alignment it will render them in one column. If there are only custom
+ * properties with 'right' alignment it will render them in one column.
+ *
+ * @param array $properties The array of custom properties
+ */
+function echo_custom_properties_html($properties, $add_css = '') {
+	if (count($properties) > 0) {
+		$left = false;
+		$right = false;
+		foreach ($properties as $property) {
+
+			if (isset($property['alignment']) && $property['alignment'] == 'left'){
+				$left = true;
+			}
+			if (isset($property['alignment']) && $property['alignment'] == 'right'){
+				$right = true;
+			}
+			if($left && $right) {
+				break;
+			}
+		}
+
+		if($left && $right) {
+			if ($add_css) {
+				echo $add_css;
+			}
+
+			// Container
+			echo '<div class="custom-properties-container two-columns">';
+			// Left column
+			echo '<div class="custom-properties-column custom-properties-left">';
+
+			foreach ($properties as $main_property){
+
+				// some hidden inputs doesn't have alignment, those goes to the left column
+				if (
+					!isset($main_property['alignment']) ||
+					isset($main_property['alignment']) && $main_property['alignment'] == 'left'
+				) {
+					echo $main_property['html'];
+				}
+
+			}
+
+			echo '</div>'; // Close left column
+
+			echo '<div class="custom-properties-column custom-properties-right">'; // Right column
+
+			foreach ($properties as $main_property) {
+				if (isset($main_property['alignment']) && $main_property['alignment'] == 'right') {
+					echo $main_property['html']; // Renderizamos la propiedad en la columna derecha
+				}
+			}
+
+			echo '</div>'; // Close right column
+
+			echo '</div>'; // Close container
+
+		} else {
+
+			echo '<div class="custom-properties">';
+			foreach ($properties as $main_property){
+				echo $main_property['html'];
+			}
+			echo '</div>';
+
+		}
+
+	}
+}
 
 
 /**
@@ -1633,31 +1712,35 @@ function build_member_display_name($member) {
 			} else if (str_starts_with($col, "cp_")) {
 				$cp_id = str_replace("cp_", "", $col);
 				
-				if ($object_id > 0) {
-					// is dimension_object
-					$cp_val_obj = CustomPropertyValues::getCustomPropertyValue($object_id, $cp_id);
-					$cp_val = $cp_val_obj instanceof CustomPropertyValue ? $cp_val_obj->getValue() : '';
-				} else {
-					// is dimension_group
-					if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
-						$cp_val_obj = MemberCustomPropertyValues::getMemberCustomPropertyValue($member_id, $cp_id);
-						$cp_val = $cp_val_obj instanceof MemberCustomPropertyValue ? $cp_val_obj->getValue() : '';
-					}
-				}
-				if ($cp_val) {
-					$prop_values_array[] = $cp_val;
+				$cp_value = $member->getCustomPropertyValue($cp_id);
+				if ($cp_value != '') {
+					$prop_values_array[] = $cp_value;
 				}
 				
 			} else if (str_starts_with($col, "assoc_")) { // use associated dimension members
+
+				$exp = explode('|', $col);
+				$assoc_str = $exp[0];
+				$assoc_prop_str = isset($exp[1]) ? $exp[1] : '';
 				
-				$association_id = str_replace("assoc_", "", $col);
+				$association_id = str_replace("assoc_", "", $assoc_str);
 				$assoc_member_csv = MemberPropertyMembers::getAllPropertyMemberIds($association_id, $member_id);
 				$assoc_member_ids = array_filter(explode(',', $assoc_member_csv));
 				
 				foreach ($assoc_member_ids as $mid) {
 					$assoc_member = Members::getMemberById($mid);
 					if ($assoc_member instanceof Member) {
-						$prop_values_array[] = $assoc_member->getName();
+						if ($assoc_prop_str == '' || $assoc_prop_str == 'name') {
+							// default case: use associated member name
+							$prop_values_array[] = $assoc_member->getName();
+						} else if (str_starts_with($assoc_prop_str, "cp_")) {
+							// use associated member custom property value
+							$cp_id = str_replace("cp_", "", $assoc_prop_str);
+							$cp_value = $assoc_member->getCustomPropertyValue($cp_id);
+							if ($cp_value != '') {
+								$prop_values_array[] = $cp_value;
+							}
+						}
 					}
 				}
 			}
@@ -1679,74 +1762,62 @@ function build_member_display_name($member) {
 
 		return trim($display_name);
 	}
-	
-	
-	function append_other_properties_search_conditions(Dimension $dimension, $query_string, &$search_name_cond) {
 
-		$option_values = DimensionObjectTypeOptions::getOptionValuesForAllObjectTypes($dimension->getId(), 'text_to_show_in_trees');
-	
-		if (is_array($option_values) && count($option_values) > 0) {
 
-			$conditions = array();
-			
-			foreach ($option_values as $option_value) {
-				/* @var $option_value DimensionObjectTypeOption */
-				$raw_val = $option_value->getValue();
 
-				if (trim($raw_val) != "") {
-					$option_decoded = json_decode($raw_val, true);
+	/**
+	 * Refreshes the display name of all the members that have this member as part of their display name.
+	 * 
+	 * This function is called when a member is saved, to make sure that the display name of all the other members that depend on it is updated.
+	 * 
+	 * @param Member $member
+	 */
+	function recalculate_related_members_display_name(Member $member) {
 
-					if (isset($option_decoded['properties']) && count($option_decoded['properties']) > 0) { 
+		// get associations for this member type (only the ones where this type is the associated type)
+		$associations = DimensionMemberAssociations::getReverseAssociatations($member->getDimensionId(), $member->getObjectTypeId());
 
-						foreach ($option_decoded['properties'] as $col) {
-							if (Members::instance()->columnExists($col)) {
-								$conditions[] = "$col LIKE '%".$query_string."%'";
-						
-							} else if (str_starts_with($col, "cp_")) {
-								$cp_id = str_replace("cp_", "", $col);
-								$ot = ObjectTypes::instance()->findById($option_value->getObjectTypeId());
-						
-								if ($ot->getType() == 'dimension_object') {
-									$conditions[] = "EXISTS (
-										SELECT `value` FROM ".TABLE_PREFIX."custom_property_values cpv
-										WHERE cpv.custom_property_id='$cp_id' AND `value` LIKE '%".$query_string."%'
-										AND cpv.object_id=".TABLE_PREFIX."members.object_id
-									)
-									";
-								} else {
-									if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
-										$conditions[] = "EXISTS (
-											SELECT `value` FROM ".TABLE_PREFIX."member_custom_property_values cpv
-											WHERE cpv.custom_property_id='$cp_id' AND `value` LIKE '%".$query_string."%'
-											AND cpv.member_id=".TABLE_PREFIX."members.id
-										)
-										";
-									}
-								}
-							}
-							else if (str_starts_with($col, "assoc_")) {
-
-								$assoc_id = str_replace("assoc_", "", $col);
-								
-								$conditions[] = " EXISTS (
-									SELECT fm.name, fmpm.property_member_id 
-									FROM ".TABLE_PREFIX."members fm 
-									INNER JOIN ".TABLE_PREFIX."member_property_members fmpm ON fmpm.association_id = '$assoc_id'
-									WHERE fm.name LIKE '%".$query_string."%'
-										and ".TABLE_PREFIX."members.id = fmpm.member_id
-              							and fm.id = fmpm.property_member_id
-								) ";
-							}
-						}
-						
-						if (count($conditions) > 0) {
-							$search_name_cond = " AND (" . implode(" OR ", $conditions) . ")";
+		// for each association check if this member type is used in the display name of the related members
+		$associations_that_need_refresh = [];
+		if (!empty($associations)) {
+			foreach ($associations as $association) {
+				// get the text to show in trees config option of the related member type
+				$text_to_show_in_trees = DimensionObjectTypeOptions::getOptionValue($association->getDimensionId(), $association->getObjectTypeId(), 'text_to_show_in_trees');
+				if ($text_to_show_in_trees) {
+					// decode the related member type display name config option
+					$prop_decoded = json_decode($text_to_show_in_trees, true);
+					foreach ($prop_decoded['properties'] as $col) {
+						// check if this member type is used in the display name of a related member type
+						if (str_starts_with($col, "assoc_" . $association->getId())) {
+							$associations_that_need_refresh[] = $association;
+							break;	
 						}
 					}
 				}
 			}
 		}
+
+		// get the related members that need to recalculate display name
+		foreach ($associations_that_need_refresh as $association) {
+			$related_member_ids_csv = MemberPropertyMembers::getAllMemberIds($association->getId(), $member->getId());
+			if ($related_member_ids_csv != '') {
+				$mem_ids = explode(',', $related_member_ids_csv);
+				$related_members = Members::instance()->getMembersById($mem_ids);
+
+				// refresh display name for associated members
+				foreach ($related_members as $related_member) {
+					// calculate new display name
+					$display_name = build_member_display_name($related_member);
+					// update display name
+					DB::execute("UPDATE ".TABLE_PREFIX."members SET display_name = ? WHERE id = ?", array($display_name, $related_member->getId()));
+					// trigger event to refresh the related member name in the interface
+					evt_add("update dimension tree node", array('dim_id' => $related_member->getDimensionId(), 'member_id' => $related_member->getId(), 'select_node' => false));
+				}
+			}
+		}		
 	}
+	
+	
 
 
 	function render_single_dimension_tree($dimension, $genid = null, $selected_members = array(), $options = array()) {
@@ -1813,6 +1884,10 @@ function build_member_display_name($member) {
 				width: <?php echo array_var($options, 'width', '385') ?>,
 				listeners: {'tree rendered': function (t) {if (select_root) t.root.select();}}
 			};
+
+			<?php if( isset ($options['extra_options'])) : ?>
+				config.extra_options = <?php echo json_encode($options['extra_options']) ?>;
+			<?php endif; ?>
 			
 			<?php if( isset ($options['get_childs_params'])) : ?>
 				config.get_childs_params = <?php echo json_encode($options['get_childs_params']) ?>;
@@ -2392,4 +2467,9 @@ function log_time_diff($message, $decimals = 5) {
 	Logger::log("TIMEDIFF $message - $time_diff");
 
 	$_REQUEST['log_time_diff_last_time'] = $now;
+}
+
+
+function safe_count($array, $key) {
+	return isset($array[$key]) && is_array($array[$key]) ? count($array[$key]) : 0;
 }

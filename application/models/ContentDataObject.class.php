@@ -159,6 +159,18 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 
 	/**
+	 * Return value of 'object_subtype_id' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer 
+	 */
+	function getObjectSubtypeId() {
+		return $this->object ? $this->object->getObjectSubtypeId() : 0;
+	}
+	
+
+	/**
 	 * Set value of 'object_type_id' field
 	 *
 	 * @access public   
@@ -288,7 +300,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 * @access public
 	 * @param void
-	 * @return string 
+	 * @return DateTimeValue 
 	 */
 	function getUpdatedOn() {
 		return $this->object->getUpdatedOn ();
@@ -353,7 +365,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 * @access public
 	 * @param void
-	 * @return string 
+	 * @return DateTimeValue|null 
 	 */
 	function getTrashedOn(){
 		return $this->object->getTrashedOn();
@@ -377,7 +389,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 * @access public
 	 * @param void
-	 * @return string 
+	 * @return DateTimeValue|null 
 	 */
 	function getArchivedOn() {
 		return $this->object->getArchivedOn();
@@ -626,11 +638,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					$tmp_name = gen_id();
 					file_put_contents(ROOT."/tmp/$tmp_name", $file_content);
 					
+					if (!isset($type)) $type = 'image/png';
 					$repo_id = FileRepository::addFile(ROOT."/tmp/$tmp_name", array('type' => $type, 'public' => true));
 					$json['repository_id'] = $repo_id;
 					
 					$new_cp_value->setValue(json_encode($json));
-					@unlink(ROOT."/tmp/$genid");
+					@unlink(ROOT."/tmp/$tmp_name");
 				}
 				
 			} else {
@@ -826,6 +839,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	} // countAllComments
 
 	
+	private $comments_count = null;
 	/**
 	 * Return total number of comments
 	 *
@@ -1449,6 +1463,25 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 
 	/**
+	 * Returns the member of type $member_type_id in which this object is classified
+	 * @param int $dimension_id The id of the dimension to get
+	 * @return Member
+	 */
+	function getMemberByDimensionId($dimension_id) {
+		$member = null;
+		$members = $this->getMembers();
+		foreach ($members as $m) {
+			if ($m->getDimensionId() == $dimension_id) {
+				$member = $m;
+				break;
+			}
+		}
+
+		return $member;
+	}
+	
+
+	/**
 	 * Returns all the members of type $member_type_id in which this object is classified
 	 * @param int $member_type_id The id of the member to get
 	 * @return array()
@@ -1601,12 +1634,14 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		$can_assign = true;
 		$error_msg = '';
+		$ask_to_reclassify = false;
 
 		$ot_name = $this->getObjectTypeName();
 		if (!in_array($ot_name, ['timeslot','payment_receipt','expense'])) {
 			return array(
 				'can_assign' => $can_assign,
 				'error_msg' => $error_msg,
+				'ask_to_reclassify' => $ask_to_reclassify,
 			);
 		}
 
@@ -1639,6 +1674,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
 
 				$can_assign = false;
+				$ask_to_reclassify = true;
 				$error_msg = $this->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
 			}
 		}
@@ -1657,6 +1693,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return array(
 			'can_assign' => $can_assign,
 			'error_msg' => $error_msg,
+			'ask_to_reclassify' => $ask_to_reclassify,
 		);
 	}
 
@@ -1972,6 +2009,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $this->timeslots;
 	} // getTimeslots
 
+	private $timeslots_count = null;
 	/**
 	 * This function will return number of timeslots
 	 *

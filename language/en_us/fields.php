@@ -127,6 +127,8 @@ return array(
     'field ProjectEvents repeat_forever'=> 'Repeat forever',
     'field ProjectEvents description' => 'Description',
     'field ProjectEvents private' => 'Private',
+	'field ProjectEvents organizer_id' => 'Organizer',
+	'field ProjectEvents uid' => 'Uid',
     'field ProjectEvents repeat_end' => 'Repeat end',
     'field ProjectEvents repeat_num' => 'Repeat number',
     'field ProjectEvents repeat_d' => 'Repeat day',

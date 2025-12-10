@@ -28,6 +28,7 @@ og.MemberManager = function(config) {
 	// add the customer's related contact custom properties to the grid fields
 	if (this.object_type_name == 'customer') {
 		var contact_cps = og.custom_properties_by_type['contact'];
+		if (typeof contact_cps == 'undefined') contact_cps = [];
 		for (i=0; i<contact_cps.length; i++) {
 			cp_names.push('cp_' + contact_cps[i].id);
 		}

@@ -12,7 +12,7 @@
 	'hi john doe' => 'Hola {0}',
 	'user password reseted' => 'Su contraseña ha sido cambiada. Su nueva contraseña es \'{0}\'.',
 	'password expiration reminder' => 'Recordatorio de expiración de contraseña',
-	'password expires days' => 'Su contraseña expira en {0} días',
+	'password expires days' => 'Su contraseña expira en {0} días. Puede cambiarla en Cuenta &gt; Cambiar contraseña.',
 	'dont reply wraning' => 'ESTE ES UN MENSAJE DE NOTIFICACIÓN. NO RESPONDER A ESTA DIRECCIÓN DE CORREO!',
 	'new message posted' => 'Nueva nota "{0}" ha sido publicado',
 	'new task' => 'Nueva tarea',

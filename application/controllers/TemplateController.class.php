@@ -1053,6 +1053,9 @@ class TemplateController extends ApplicationController {
 			
 			$ret = null;
 			Hook::fire('after_template_object_instantiation_and_commit', array('template' => $template, 'object' => $c), $ret);
+
+			// after hook ends, allow project financials recalculations so the hook after the iteration can do it all at once for all tasks.
+			$c->dont_calculate_project_financials = false;
 		}
 
 		// This hook allows to execute additional general tasks after the template is completely instantiated (like recalculate project's financials)

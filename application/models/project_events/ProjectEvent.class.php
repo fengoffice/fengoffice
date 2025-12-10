@@ -24,6 +24,13 @@ class ProjectEvent extends BaseProjectEvent {
 	private $event_invitations = null;
 
 	/**
+	 * Flag to notify invited people when this event is deleted or not
+	 *
+	 * @var boolean
+	 */
+	private $notify_invited_people_when_deleted = true;
+
+	/**
 	 * Contruct the object
 	 *
 	 * @param void
@@ -194,21 +201,228 @@ class ProjectEvent extends BaseProjectEvent {
 	//  System
 	// ---------------------------------------------------
 
+	/**
+	 * Saves the event. Generates a new uid if it doesn't have one yet.
+	 * And update pending reminders.
+	 * 
+	 * @return boolean
+	 */
 	function save() {
-		return parent::save();
-		
+		// generate uid if not set
+		$this->generateUid(false);
+
+		// set logged user as organizer if not set
+		if ($this->getOrganizerId() == 0) {
+			$this->setOrganizerId(logged_user()->getId());
+		}
+
+		// save the event
+		$saveResult = parent::save();
+
 		// update reminders
 		$id = $this->getId();
-		$sql = "UPDATE `".TABLE_PREFIX."object_reminders` SET
-			`date` = date_sub((SELECT `start` FROM `".TABLE_PREFIX."project_events` WHERE `id` = $id), interval `minutes_before` minute) 
-			WHERE `object_id` = $id;";
+		$sql = "
+			UPDATE `".TABLE_PREFIX."object_reminders` SET
+				`date` = date_sub(
+					(SELECT `start` FROM `".TABLE_PREFIX."project_events` WHERE `id` = $id),
+					interval `minutes_before` minute
+				)
+			WHERE `object_id` = $id;
+		";
 		DB::execute($sql);
+
+		return $saveResult;
 	}
 	
 	function delete() {
 		// delete invitations
 		$this->clearInvitations();
 		parent::delete();
+	}
+	
+
+	
+	
+	/**
+	 * Set whether to notify invited people when the event is deleted.
+	 *
+	 * @param bool $value True to notify, false otherwise.
+	 */
+	function setNotifyInvitedPeopleWhenDeleted($value) {
+		$this->notify_invited_people_when_deleted = $value;
+	}
+	
+	/**
+	 * Return whether to notify invited people when the event is deleted
+	 *
+	 * @return boolean True to notify, false otherwise
+	 */
+	function getNotifyInvitedPeopleWhenDeleted() {
+		return $this->notify_invited_people_when_deleted;
+	}
+	
+
+	/**
+	 * Move this event to trash, and notify all invited people about it
+	 *
+	 * @param int $trashDate unix timestamp when the event was trashed
+	 * @param boolean $fire_hook whether to fire hooks
+	 * @return boolean
+	 */
+	function trash($trashDate = null, $fire_hook = true) {
+		// notify invited people about the deletion of this event
+		if ($this->getNotifyInvitedPeopleWhenDeleted()) {
+			$this->notifyInvitedPeople('deleted');
+		}
+
+		// call parent class trash method
+		return parent::trash($trashDate, $fire_hook);
+	}
+
+
+	/**
+	 * Notify all invited people about this event via email notification.
+	 *
+	 * @param string $action what action to notify about (e.g. 'new', 'modified', 'deleted')
+	 * @return void
+	 */
+	function notifyInvitedPeople($action) {
+		// collect invited people and notify them
+		$invitations = $this->getInvitations();
+		$people = [];
+		foreach ($invitations as $inv) {
+			$people[] = $inv->getContact();
+		}
+		// send notification
+		Notifier::notifyEventWithIcs($this, $people, $action, logged_user());
+	}
+
+
+	/**
+	 * Notify the event organizer about the given invitation state.
+	 *
+	 * @param int $invitation_state one of the constants defined in EventInvitations
+	 * @return void
+	 */
+	function notifyEventOrganizer($invitation_state) {
+		$organizer = $this->getOrganizer();
+		// if the event has no organizer or the current user is the organizer, do nothing
+		if (!$organizer || $organizer->getId() == logged_user()->getId()) return;
+
+		switch ($invitation_state) {
+			case EventInvitations::EVENT_INVITATION_ACCEPTED: $invitation_state_text = 'accepted'; break;
+			case EventInvitations::EVENT_INVITATION_DECLINED: $invitation_state_text = 'declined'; break;
+			case EventInvitations::EVENT_INVITATION_TENTATIVE: $invitation_state_text = 'tentative'; break;
+			default: return;
+		}
+
+		// send notification
+		Notifier::notifyEventWithIcs($this, [$organizer], 'invitation-'.$invitation_state_text, logged_user());
+	}
+
+
+	/**
+	 * Get changes for notification
+	 *
+	 * @param Contact $user User requesting the changes
+	 * @return array An array of changes for notification
+	 */
+	function getChangesForNotification($user) {
+		$changes = [];
+
+		// Check if there is an old content object to compare against
+		if (isset($this->old_content_object)) {
+			// Calculate differences between current and old content objects
+			$differences = ApplicationLogDetails::calculateSavedObjectDifferences($this, $this->old_content_object);
+			foreach ($differences as $property => $diff) {
+				// Handle changes in 'start' and 'duration' properties
+				if ($property == 'start' || $property == 'duration') {
+
+					// Determine old and new start values
+					if (isset($differences['start'])) {
+						$old_start = $differences['start']['old_value'];
+						$new_start = $differences['start']['new_value'];
+					} else {
+						$old_start = $new_start = $this->getStart();
+					}
+
+					// Determine old and new duration values
+					if (isset($differences['duration'])) {
+						$old_duration = $differences['duration']['old_value'];
+						$new_duration = $differences['duration']['new_value'];
+					} else {
+						$old_duration = $new_duration = $this->getDuration();
+					}
+
+					$tz_offset = $user->isUser() ? $user->getTimezone() : logged_user()->getTimezone();
+					$user_id = $user->isUser() ? $user->getId() : logged_user()->getId();
+					$time_format = user_config_option('time_format_use_24', null, $user_id) ? 'G:i' : 'g:i A';
+					
+					// Format old and new values for printing
+					$old_val = format_descriptive_date($old_start, $tz_offset) . ' ' . format_time($old_start, $time_format, $tz_offset) . ' - ' . format_time($old_duration, $time_format, $tz_offset);
+					$new_val = format_descriptive_date($new_start, $tz_offset) . ' ' . format_time($new_start, $time_format, $tz_offset) . ' - ' . format_time($new_duration, $time_format, $tz_offset);
+
+					// Construct change array for 'when'
+					$change = [
+						'label' => lang('When'),
+						'old_value' => $old_val,
+						'new_value' => $new_val
+					];
+					$changes['when'] = $change;
+
+				} else if ($property == 'description' || $property == 'name') {
+					// Handle changes in 'description' and 'name' properties
+					$change = [
+						'label' => lang($property),
+						'old_value' => $diff['old_value'],
+						'new_value' => $diff['new_value']
+					];
+					$changes[$property] = $change;
+				}
+			}
+		}
+
+		return $changes;
+	}
+
+
+	/**
+	 * Returns the organizer of the event
+	 * @return Contact The organizer of the event
+	 */
+	function getOrganizer() {
+		$organizer = null;
+		if ($this->getOrganizerId() > 0) {
+			$organizer = Contacts::instance()->findById($this->getOrganizerId());
+		}
+		if (!$organizer instanceof Contact) {
+			$organizer = $this->getCreatedBy();
+		}
+
+		return $organizer;
+	}
+	
+	/**
+	 * Generate a unique identifier for the event.
+	 * If the uid is not setted, it will be generated and the object will be saved.
+	 * @param boolean $call_save If true, save the object after generate the uid.
+	 * @return string The unique identifier for the event.
+	 */
+	function generateUid($call_save = true) {
+		if ($this->getUid() != '') {
+			return $this->getUid();
+		}
+
+		// Generate a unique id for the event
+		$uid = uniqid('', true) . "@fengoffice.com";
+		$this->setUid($uid);
+
+		// Save the object if required
+		if ($call_save) {
+			$this->save();
+		}
+
+		return $uid;
 	}
 	
 	// ---------------------------------------------------
@@ -245,13 +459,13 @@ class ProjectEvent extends BaseProjectEvent {
 	
 	
 	function getInvitations() {
-		if (is_null($this->event_invitations)) {
-			$this->event_invitations = array();
-			$invs = EventInvitations::instance()->findAll(array('conditions' => 'event_id='.$this->getId()));
-			foreach ($invs as $inv) {
-				$this->event_invitations[$inv->getContactId()] = $inv;
-			}
+		
+		$this->event_invitations = array();
+		$invs = EventInvitations::instance()->findAll(array('conditions' => 'event_id='.$this->getId()));
+		foreach ($invs as $inv) {
+			$this->event_invitations[$inv->getContactId()] = $inv;
 		}
+		
 		return $this->event_invitations;
 	}
 	function setInvitations($invitations) {
@@ -262,6 +476,13 @@ class ProjectEvent extends BaseProjectEvent {
 	function clearInvitations() {
 		$this->event_invitations = array();
 		EventInvitations::instance()->delete(array ('`event_id` = ?', $this->getId()));
+	}
+
+
+	function getInvitation($contact_id) {
+		return EventInvitations::instance()->findOne(array(
+			'conditions' => array('event_id = ? AND contact_id = ?', $this->getId(), $contact_id)
+		));
 	}
 	
 	

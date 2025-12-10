@@ -708,8 +708,8 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
     height: 18.5px !important;
 }
 
-div[id*="user_id_combo_container"] .x-form-arrow-trigger,
-div[id*="line_date_container"] .x-form-date-trigger {
+.invoice-line-td div[id*="user_id_combo_container"] .x-form-arrow-trigger,
+.invoice-line-td div[id*="line_date_container"] .x-form-date-trigger {
 	-webkit-transform: scale(1.4);
     -moz-transform: scale(1.4);
     -ms-transform: scale(1.4);
@@ -717,7 +717,7 @@ div[id*="line_date_container"] .x-form-date-trigger {
     margin-top: 4.3px;
     margin-left: 3.5px;
 }
-div[id*="user_id_combo_container"] .x-form-field-wrap,
-div[id*="line_date_container"] .x-form-field-wrap {
+.invoice-line-td div[id*="user_id_combo_container"] .x-form-field-wrap,
+.invoice-line-td div[id*="line_date_container"] .x-form-field-wrap {
 	padding-right:25px!important;
 }

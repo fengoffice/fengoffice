@@ -46,14 +46,6 @@
 	
 	function getName() {
 		$cp_name = parent::getName();
-		if ($this->getIsSpecial()) {
-			$label_code = str_replace("_special", "", $this->getCode());
-			$label_value = Localization::instance()->lang($label_code);
-			if (is_null($label_value)) {
-				$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
-			}
-			if (!is_null($label_value)) $cp_name = $label_value;
-		}
 	
 		return $cp_name;
 	}

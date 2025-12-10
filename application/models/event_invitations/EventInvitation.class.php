@@ -7,6 +7,10 @@
   * @author Alvaro Torterola <alvaro.torterola@fengoffice.com>
   */
   class EventInvitation extends BaseEventInvitation {
+
+	function getContact() {
+		return Contacts::instance()->findById($this->getContactId());
+	}
   
   } // EventInvitation 
 

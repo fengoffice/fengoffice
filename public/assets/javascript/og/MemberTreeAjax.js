@@ -398,6 +398,11 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 					options.filter_by_ids = this.initialConfig.filter_by_ids;
 				}
 				
+				let extra_filters = og.getMemberTreeExtraFilters(this);
+				if (extra_filters) {
+					options.extra_filters = extra_filters;
+				}
+				
 				og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', options), {
 	    			hideLoading:true, 
 	    			hideErrors:true,
@@ -448,6 +453,11 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 		if (this.initialConfig.filter_by_ids) {
 			options.filter_by_ids = this.initialConfig.filter_by_ids;
 		}
+
+		let extra_filters = og.getMemberTreeExtraFilters(this);
+		if (extra_filters) {
+			options.extra_filters = extra_filters;
+		}
 		
 		// load filtered tree
 		og.initialMemberTreeAjaxLoad(this, 500, 0, options);
@@ -495,7 +505,7 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 	
 	
 	
-	expandedNodes: function () {
+	getExpandedNodes: function () {
 		nodes = [];
 		nodes = nodes.concat( this.root.expandedNodes() );
 		return nodes ;
@@ -539,7 +549,15 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 		
 		var filtering_by_ids = this.initialConfig.filter_by_ids;
 		
-		if(ogMemberCache.areDimRootMembersLoaded(this.dimensionId.toString()) && !filtering_by_ids){
+		let use_cache = ogMemberCache.areDimRootMembersLoaded(this.dimensionId.toString()) && !filtering_by_ids;
+
+		let extra_filters = og.getMemberTreeExtraFilters(this);
+
+		if (extra_filters) {
+			use_cache = false;
+		}
+
+		if(use_cache){
 			var dim = og.dimensions[this.dimensionId];
 			if(typeof dim != "undefined"){
 				for (m in dim) {
@@ -576,6 +594,9 @@ Ext.extend(og.MemberTreeAjax, Ext.tree.TreePanel, {
 			var limit = 500;
 			if (og.config.member_selector_page_size) {
 				limit = og.config.member_selector_page_size;
+			}
+			if (extra_filters) {
+				options.extra_filters = extra_filters;
 			}
 			og.initialMemberTreeAjaxLoad(this, limit, 0, options);
 		}

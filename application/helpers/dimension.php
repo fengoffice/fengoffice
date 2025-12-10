@@ -259,6 +259,7 @@ function render_single_member_selector(Dimension $dimension, $genid = null, $sel
 	$allowed_member_type_ids = array_var($options, 'allowedMemberTypes', null);
 	
 	$hide_label = array_var($options, 'hide_label', false);
+	$description = array_var($options, 'description', '');
 	
 	if (isset($options['label'])) $label = $options['label'];
 
@@ -343,14 +344,15 @@ function render_plain_member_selector_using_cache($config) {
 	$selected_id = array_var($config, 'selected_id');
 	$selector_class = array_var($config, 'selector_class', '');
 	$onchange = array_var($config, 'onchange', '');
+	$value_zero_text = array_var($config, 'value_zero_text', '');
 
 	$cache_key = $dim_id . '_dimension_members_tree';
 	$member_tree_data = $_SESSION[$cache_key] ?? [];
 	$identation = 0;
- 
+
 	// build HTML selector with members as options
 	$selector = '<select id=\'' . $selector_id . '\' onchange=\''.$onchange.'\' name=\'' . $hf_name . '\' class=\''.$selector_class.'\'>';
-	$selector .= '<option value=\'0\'>' . '' . '</option>';
+	$selector .= '<option value=\'0\'>' . $value_zero_text . '</option>';
 	$selector .= render_plain_member_selector_options($member_tree_data, $selected_id, $identation);
 	$selector .= '</select>';
 
@@ -431,8 +433,12 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 		} else {
 			// asociate objects to the new related member, remove from the old one
 			$old_related_mem_id = get_associated_status_member_id($member, $rel_dimension, $rel_ot, $reverse_relation, $a->getCode());
+			$new_related_mem_id = array_var($assoc_mem_ids, 0);
 			
-			associate_member_to_status_member($member, $old_related_mem_id, array_var($assoc_mem_ids, 0), $rel_dimension, $rel_ot, true, $a->getCode());
+			// make the association only if it has changed
+			if ($new_related_mem_id != $old_related_mem_id) {
+				associate_member_to_status_member($member, $old_related_mem_id, $new_related_mem_id, $rel_dimension, $rel_ot, true, $a->getCode());
+			}
 		}
 		
 		if ($a->getAllowsDefaultSelection()) {
@@ -562,7 +568,10 @@ function render_associated_dimensions_selectors($params) {
 			$select_fn = $is_multiple ? "og.onAssociatedMemberTypeSelectMultiple" : "og.onAssociatedMemberTypeSelect";
 			$remove_fn = $is_multiple ? "og.onAssociatedMemberTypeRemoveMultiple" : "og.onAssociatedMemberTypeRemove";
 			
-			$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_name');
+			$custom_assoc_name = null;
+			if (!$reverse_relation) {
+				$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_name');
+			}
 			if ($custom_assoc_name) {
 				$label = $custom_assoc_name;
 			} else {
@@ -582,28 +591,39 @@ function render_associated_dimensions_selectors($params) {
 				
 			}
 
+			// get the defined description text for the dimension member association
+			$association_desription = '';
+			if (!$reverse_relation) {
+				$association_desription = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_description');
+			}
+			
 			$hf_name = 'associated_members['.$dim_association->getId().']';
 			
 			$listeners = array('on_remove_relation' => "$remove_fn('$comp_genid', ".$dimension->getId().", '$hf_name');");
 			
 			Hook::fire("before_render_associated_dimension_selector", array('genid'=>$comp_genid, 'member'=>$member, 'selected_ids'=>$selected_ids, 'dim_association'=>$dim_association), $listeners);
 			
-			render_single_member_selector($dimension, $comp_genid, $selected_ids, array(
-					'is_multiple' => $is_multiple,
-					//'allowedMemberTypes' => array($ot->getId()),
-					'content_object_type_id' => $ot->getId(), 
-					'label' => $label, 
-					'allow_non_manageable' => true, 
-					'hidden_field_name' => $hf_name,
-					'select_function' => $select_fn, 
-					'listeners' => $listeners,
-					// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
-					'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
-					'width' => 400,
-					'related_member_id' => $member->getId(),
-					'member_association_id' => $dim_association->getId(),
-					'readonly' => array_var($params, 'readonly'),
-				), false);
+			$selector_options = array(
+				'is_multiple' => $is_multiple,
+				//'allowedMemberTypes' => array($ot->getId()),
+				'content_object_type_id' => $ot->getId(), 
+				'label' => $label, 
+				'description' => $association_desription,
+				'allow_non_manageable' => true, 
+				'hidden_field_name' => $hf_name,
+				'select_function' => $select_fn, 
+				'listeners' => $listeners,
+				// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
+				'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
+				'width' => 400,
+				'related_member_id' => $member->getId(),
+				'member_association_id' => $dim_association->getId(),
+				'readonly' => array_var($params, 'readonly'),
+			);
+			
+			Hook::fire("associated_dimension_selector_edit_options", array('genid'=>$comp_genid, 'member'=>$member, 'selected_ids'=>$selected_ids, 'dim_association'=>$dim_association, 'reverse_relation'=>$reverse_relation), $selector_options);
+			
+			render_single_member_selector($dimension, $comp_genid, $selected_ids, $selector_options, false);
 			
 			echo '</div><div class="clear"></div>';
 		}

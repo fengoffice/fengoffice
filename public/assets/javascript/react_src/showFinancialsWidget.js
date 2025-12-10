@@ -10,22 +10,224 @@ var { ResponsiveContainer,
       CartesianGrid,
       Tooltip } = require('recharts');
 var { AxisNumberFormatter, FormatNumber } = require('./helpers/widgetChartHelpers');
+var { DateFilterWidgetBase } = require('./helpers/widgetDateFilterHelpers');
 
 
 class FinancialsWidget extends React.Component {
     constructor(props) {
-      super(props);
-      this.state = { currencySymbol: props.data.currencySymbol ? props.data.currencySymbol : '$',
-                     earned: props.data.earned ? props.data.earned : 0,
-                     dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
-                     estimated: props.data.estimated ? props.data.estimated : 0,
-                     earnedTitle: props.data.earnedTitle ? props.data.earnedTitle : 'Total earned value',
-                     estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total budgeted',
-                     chartData: props.data.chartData ? props.data.chartData : '',
-                     decimals: props.data.decimals ? props.data.decimals : 0,
-                     decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
-                     thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ','
-                    };
+        super(props);
+        
+        // Initialize with unique widget ID
+        this.widgetId = 'financials';
+        this.dateFilterHelper = new DateFilterWidgetBase(props, this.widgetId);
+        
+        this.state = { 
+            currencySymbol: props.data.currencySymbol ? props.data.currencySymbol : '$',
+            earned: props.data.earned ? props.data.earned : 0,
+            dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
+            estimated: props.data.estimated ? props.data.estimated : 0,
+            consolidatedMissingAmounts: props.data.consolidatedMissingAmounts ? props.data.consolidatedMissingAmounts : 0,
+            earnedTitle: props.data.earnedTitle ? props.data.earnedTitle : 'Total earned value',
+            estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total budgeted',
+            chartData: props.data.chartData ? props.data.chartData : '',
+            allChartData: props.data.chartData ? [...props.data.chartData] : [],
+            rawDailyData: this.dateFilterHelper.convertCumulativeToDaily(props.data.chartData || []),
+            decimals: props.data.decimals ? props.data.decimals : 0,
+            decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
+            thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ',',
+            ...this.dateFilterHelper.state
+        };
+        
+        // Bind methods from helper
+        this.filterDataByDateRange = this.filterDataByDateRange.bind(this);
+        this.handleDateRangeChange = this.handleDateRangeChange.bind(this);
+        this.performAllTimeFiltering = this.performAllTimeFiltering.bind(this);
+        this.saveUserConfig = this.dateFilterHelper.saveUserConfig.bind(this.dateFilterHelper);
+    }
+
+    // Convert cumulative data back to daily amounts for proper filtering
+    convertCumulativeToDaily(cumulativeData) {
+        if (!cumulativeData || cumulativeData.length === 0) return [];
+        
+        const dailyData = [];
+        let prevBudget = 0;
+        let prevEarned = 0;
+        
+        cumulativeData.forEach(item => {
+            const dailyBudget = item.total_budget - prevBudget;
+            const dailyEarned = item.total_earned - prevEarned;
+            
+            dailyData.push({
+                date: item.date,
+                daily_budget: dailyBudget,
+                daily_earned: dailyEarned
+            });
+            
+            prevBudget = item.total_budget;
+            prevEarned = item.total_earned;
+        });
+        
+        return dailyData;
+    }
+
+    componentDidMount() {
+        // Expose this component instance globally so template can control it
+        window.financialsWidgetInstance = this;
+        
+        // Set initial filter based on saved preference
+        this.filterDataByDateRange(this.state.selectedDateRange);
+        
+        // Set up event handlers using helper - pass this component reference
+        this.dateFilterHelper.setupDateRangeEventHandlers({
+            currentYearStart: this.state.currentYearStart,
+            currentYearEnd: this.state.currentYearEnd,
+            today: this.state.today
+        }, 'financials_widget', this);
+    }
+
+    componentWillUnmount() {
+        // Clean up global reference
+        if (window.financialsWidgetInstance === this) {
+            window.financialsWidgetInstance = null;
+        }
+    }
+
+    handleDateRangeChange(range) {
+        this.dateFilterHelper.handleDateRangeChange(range, 'financials_widget', this);
+    }
+
+    filterDataByDateRange(range) {
+        this.dateFilterHelper.filterDataByDateRange(range, this);
+    }
+
+    // This method is called by the date filter helper
+    performDateFiltering(startDate, endDate) {
+        // Filter raw daily data by date range
+        const allDailyData = this.state.rawDailyData;
+        
+        const filteredDailyData = allDailyData.filter(item => {
+            const itemDate = moment(item.date, 'MM/DD/YYYY');
+            return itemDate.isBetween(startDate, endDate, 'day', '[]');
+        });
+
+        // If no data exists in the requested range, create empty data points
+        if (filteredDailyData.length === 0) {
+            const emptyData = this.createEmptyDataRange(startDate, endDate);
+            this.setState({
+                chartData: emptyData,
+                estimated: this.state.consolidatedMissingAmounts, // Include missing amounts even with no data
+                earned: 0
+            });
+            return;
+        }
+
+        // Get the actual data range from available data
+        const dataStartDate = allDailyData.length > 0 ? moment(allDailyData[0].date, 'MM/DD/YYYY') : startDate;
+        const dataEndDate = allDailyData.length > 0 ? moment(allDailyData[allDailyData.length - 1].date, 'MM/DD/YYYY') : endDate;
+
+        // Extend the daily data to fill the entire requested range
+        const extendedDailyData = this.extendDailyDataToRange(filteredDailyData, startDate, endDate, dataStartDate, dataEndDate);
+
+        // Convert extended daily data back to cumulative format for chart
+        let cumulativeEstimated = 0;
+        let cumulativeEarned = 0;
+        const recalculatedData = extendedDailyData.map(item => {
+            cumulativeEstimated += item.daily_budget;
+            cumulativeEarned += item.daily_earned;
+            return {
+                date: item.date,
+                total_budget: cumulativeEstimated,
+                total_earned: cumulativeEarned
+            };
+        });
+
+        // Use final values from actual filtered data (not extended empty data)
+        const actualDataRecalculated = filteredDailyData.map(item => {
+            return { daily_budget: item.daily_budget, daily_earned: item.daily_earned };
+        });
+        const finalEstimated = actualDataRecalculated.reduce((sum, item) => sum + item.daily_budget, 0) + this.state.consolidatedMissingAmounts;
+        const finalEarned = actualDataRecalculated.reduce((sum, item) => sum + item.daily_earned, 0);
+
+        this.setState({
+            chartData: recalculatedData,
+            estimated: finalEstimated,
+            earned: finalEarned
+        });
+    }
+
+    // Create empty data points for a date range
+    createEmptyDataRange(startDate, endDate) {
+        const emptyData = [];
+        const current = startDate.clone();
+        
+        while (current.isSameOrBefore(endDate)) {
+            emptyData.push({
+                date: current.format('MM/DD/YYYY'),
+                total_budget: 0,
+                total_earned: 0
+            });
+            current.add(1, 'day');
+        }
+        
+        return emptyData;
+    }
+
+    // Extend daily data to fill the entire requested range with zeros where no data exists
+    extendDailyDataToRange(filteredDailyData, requestedStart, requestedEnd, dataStart, dataEnd) {
+        const result = [];
+        const current = requestedStart.clone();
+        
+        while (current.isSameOrBefore(requestedEnd)) {
+            const currentDateStr = current.format('MM/DD/YYYY');
+            
+            // Check if we have actual data for this date
+            const existingData = filteredDailyData.find(item => item.date === currentDateStr);
+            
+            if (existingData) {
+                // Use actual data
+                result.push(existingData);
+            } else {
+                // Create zero data point for dates outside our data range
+                result.push({
+                    date: currentDateStr,
+                    daily_budget: 0,
+                    daily_earned: 0
+                });
+            }
+            
+            current.add(1, 'day');
+        }
+        
+        return result;
+    }
+
+    // Handle 'All Time' filtering - show all available data
+    performAllTimeFiltering() {
+        // Use the original full data set
+        const fullData = this.state.allChartData;
+        
+        // If there's no data available, show empty data for this year
+        if (!fullData || fullData.length === 0) {
+            const currentYearStart = moment(this.state.currentYearStart);
+            const currentYearEnd = moment(this.state.currentYearEnd);
+            const emptyYearData = this.createEmptyDataRange(currentYearStart, currentYearEnd);
+            
+            this.setState({
+                chartData: emptyYearData,
+                estimated: this.state.consolidatedMissingAmounts,
+                earned: 0
+            });
+            return;
+        }
+        
+        const finalEstimated = (fullData.length > 0 ? fullData[fullData.length - 1].total_budget : 0) + this.state.consolidatedMissingAmounts;
+        const finalEarned = fullData.length > 0 ? fullData[fullData.length - 1].total_earned : 0;
+
+        this.setState({
+            chartData: fullData,
+            estimated: finalEstimated,
+            earned: finalEarned
+        });
     }
 
     render() {
@@ -49,6 +251,14 @@ class FinancialsWidget extends React.Component {
         //const tooltipSeparator = ': ' + currencySymbol;
         return (
             <div className="progress-widget-container">
+                {/* Render date selector using helper */}
+                {this.dateFilterHelper.renderDateSelector(
+                    this.state.selectedDateRange,
+                    this.state.savedCustomFrom, 
+                    this.state.savedCustomTo,
+                    this.state.currentYearStart,
+                    this.state.today
+                )}
 
                 <div className="progress-info-container">
                     <div className="progress-total">
@@ -130,8 +340,7 @@ class FinancialsWidget extends React.Component {
 };
   
 function showFinancialsWidget(data, element){
-    ReactDOM.render(<FinancialsWidget data={data} />,
-        element);
+    ReactDOM.render(<FinancialsWidget data={data} />, element);
 };
 
 module.exports = showFinancialsWidget;
