@@ -624,6 +624,13 @@
 	background-image: url(../../images/48x48/event_archived.png);
 }
 
+.event .coInputMainBlock.invitations table {
+	border: 1px solid #F4F8F9;
+}
+.event .coInputMainBlock.invitations td {
+	padding: 2px 4px;
+	line-height: 25px;
+}
 
 /* ----- Calendar ----- */
 

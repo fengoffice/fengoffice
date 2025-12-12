@@ -363,6 +363,8 @@ div.checkbox-config-option {
 }
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.header th {
 	background-color: #4f4f4f;
+	position: sticky;
+    top: 0px;
 }
 
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.bottom-row td {
@@ -396,6 +398,10 @@ div.checkbox-config-option {
 	margin-top: 20px;
 }
 
+.custom-properties-admin .add-new-cp-link-container .cp-add-link-container {
+	margin-right: 20px;
+}
+
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list .ui-sortable-helper {
 	opacity: 0.85;
 	filter: alpha(opacity=85);
@@ -418,6 +424,10 @@ div.checkbox-config-option {
 }
 .custom-properties-admin .cp-admin-container.member-cps-container {
 	
+}
+
+.custom-properties-admin .cp-container .numeric-options-section {
+	margin-top: 5px;
 }
 
 .listing-admin ul li {

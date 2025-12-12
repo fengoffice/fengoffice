@@ -45,6 +45,31 @@
   		
   		return "";
   	}
+
+	/**
+	 * Sets the value of the specified config option for the specified association.
+	 *
+	 * @param int $association_id The ID of the association to update.
+	 * @param string $config_name The name of the config option to update.
+	 * @param mixed $value The new value for the config option.
+	 * @param string $type The type of the config option. Defaults to 'text'.
+	 */
+	static function setConfigValue($association_id, $config_name, $value, $type = 'text') {
+		// Find the config option object by association id and config name.
+		$config = self::instance()->findById(array('association_id' => $association_id, 'config_name' => $config_name));
+		
+		// If the config option does not exist, create a new one.
+		if (!$config instanceof DimensionAssociationsConfig) {
+			$config = new DimensionAssociationsConfig();
+			$config->setAssociationId($association_id);
+			$config->setConfigName($config_name);
+			$config->setType($type);
+		}
+		
+		// Set the new value and save the config option.
+		$config->setValue($value);
+		$config->save();
+	}
   	
   	static function getAssociationsWithConfigValue($config_name, $value) {
   		$assoc_ids = array();

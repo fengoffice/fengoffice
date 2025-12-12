@@ -102,6 +102,87 @@ class ObjectType extends BaseObjectType {
 		return $type_name;
 	}
 	
+
+	/**
+	 * Return an array of object properties, including custom properties, system columns, and common columns.
+	 * 
+	 * @param boolean $include_common_cols If true, include common columns.
+	 * @param boolean $include_cp_prefix If true, prefix custom property ids with 'cp_'.
+	 * @return array Array of object properties
+	 */
+	function getObjectTypeProperties($include_common_cols = true, $include_cp_prefix = true, $include_contact_external_properties = false) {
+		$all_properties = array();
+
+		// Add custom properties
+		$custom_properties = CustomProperties::getAllCustomPropertiesByObjectType($this->getId());
+		foreach($custom_properties as $cp){				
+			if ($cp->getType() != 'table') {
+				$cp_id = $include_cp_prefix ? "cp_" . $cp->getId() : $cp->getId();
+				$all_properties[] = array('id' => $cp_id, 'name' => $cp->getName(), 'type' => $cp->getType(), 'values' => $cp->getValues(), 'multiple' => $cp->getIsMultipleValues());
+			}
+		}
+
+		// Add main object type columns
+		$object_columns = array();
+		if (class_exists($this->getHandlerClass())) {
+			$manager_instance = $this->getHandlerClass()::instance();
+			$system_columns = $manager_instance->getSystemColumns();
+			
+			foreach ($manager_instance->getColumns() as $col_name) {
+				if (!in_array($col_name, $system_columns)) {
+					$object_columns[$col_name] = $manager_instance->getColumnType($col_name);
+				}
+			};
+
+			// Add common columns if necessary
+			if ($include_common_cols) {
+				$common_columns = Objects::instance()->getColumns(false);
+				$common_columns = array_diff_key($common_columns, array_flip($system_columns));
+				$object_columns = array_merge($object_columns, $common_columns);
+			}
+		}
+
+		// Format the main object type columns and common columns
+		foreach($object_columns as $name => $type){
+			if ($this->getName() == 'contact' && $name == 'job_title') continue;
+			
+			if($type == DATA_TYPE_FLOAT || $type == DATA_TYPE_INTEGER){
+				$type = 'numeric';
+			}else if($type == DATA_TYPE_STRING){
+				$type = 'text';
+			}else if($type == DATA_TYPE_BOOLEAN){
+				$type = 'boolean';
+			}else if($type == DATA_TYPE_DATE || $type == DATA_TYPE_DATETIME){
+				$type = 'date';
+			}
+			
+			$field_name = Localization::instance()->lang('field '.$this->getHandlerClass().' '.$name);
+			if (is_null($field_name)) $field_name = lang('field Objects '.$name);
+			
+			$all_properties[] = array('id' => $name, 'name' => $field_name, 'type' => $type);
+		}
+
+		if ($this->getName() == 'contact' && $include_contact_external_properties) {
+			$all_properties[] = array('id' => 'email', 'name' => lang('email'), 'type' => 'email');
+			$all_properties[] = array('id' => 'phone', 'name' => lang('phone'), 'type' => 'phone');
+			$all_properties[] = array('id' => 'address', 'name' => lang('address'), 'type' => 'address');
+			$all_properties[] = array('id' => 'website', 'name' => lang('website'), 'type' => 'website');
+		}
+		if ($this->getName() == 'contact') {
+			$job_title_cp = CustomProperties::getCustomPropertyByCode($this->getId(), 'job_title');
+			if (!$job_title_cp) {
+				$all_properties[] = array('id' => 'job_title', 'name' => lang('job_title'), 'type' => 'text');
+			}
+		}
+
+		// Sort the properties
+		usort($all_properties, function($a, $b) {
+			return strcmp($a['name'], $b['name']);
+		});
+
+		return $all_properties;
+	}
+	
 } // ObjectType
 
 ?>

@@ -56,7 +56,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		
 		$object_differences = null;
 		if ($action == ApplicationLogs::ACTION_ADD || isset($object->old_content_object) && $object->old_content_object instanceof ContentDataObject) {
-			if ($action == ApplicationLogs::ACTION_ADD && !isset($object->old_content_object)) {
+			if ($action == ApplicationLogs::ACTION_ADD) {
 				$class_name = $object->manager()->getItemClass();
 				$object->old_content_object = new $class_name;
 			}
@@ -67,6 +67,9 @@ class ApplicationLogs extends BaseApplicationLogs {
 			// get all the request parameters and store them
 			$full_request = var_export($_REQUEST, true);
 			$request_channel = array_var($_REQUEST, 'req_channel', '');
+			if ($request_channel == '') {
+				$request_channel = debug_backtrace()[1]['function']; // if we dont have a request channel, at least save the calling function name
+			}
 		} else {
 			// we are inside a script execution like cron.php or any data import script => get the full trace of the execution
 			$full_request = get_back_trace();
@@ -381,7 +384,8 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$share_table_join = "";
 		$permissions_condition = 'true';
 		if(!logged_user()->isAdministrator()){
-			$share_table_join = " INNER JOIN ".TABLE_PREFIX."sharing_table sh ON al.rel_object_id = sh.object_id";
+			// force to use the index by object_id to avoid performance issues.
+			$share_table_join = " INNER JOIN ".TABLE_PREFIX."sharing_table sh USE INDEX (object_id) ON al.rel_object_id = sh.object_id";
 			$permissions_condition = "sh.group_id  IN ($logged_user_pgs) ";
 		}
 

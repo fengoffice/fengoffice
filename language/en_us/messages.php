@@ -817,6 +817,9 @@
 	  'success assigning timeslots to task' => 'The time entries have been assigned to the task \'{0}\' successfully.',
 	  'success removing task from object' => 'Task \'{0}\' removed successfully',
 
+	  'cannot delete dimension member association, it has associated records' => 'You cannot delete the association between \'{0}\' and \'{1}\' because there are some {0} that have associated {1}.',
+	  'cannot delete dimension member association' => 'You cannot delete the association between \'{0}\' and \'{1}\'.',
+
   	'x members deleted' => '{1} {0} deleted succesfully.',
   	'x members deleted y members not deleted' => '{1} {0} deleted succesfully, {2} {0} not deleted.',
     'project and client are not associated with each other' => 'Project and client are not associated with each other',
@@ -824,6 +827,20 @@
 	'there are no timeslots to delete' => 'There are no time entries to delete',
 	'task is linked to time expenses are you sure you want to delete' => 'Any time entry and/or expense linked to this task won\'t be deleted but it will remain now unlinked. Do you want to proceed?',
     'The variable contains an invalid JSON format. Please check the JSON format and try again.' => 'The variable contains an invalid JSON format. Please check the JSON format and try again.',
+
+	'selected X and their related tasks must belong to the same client project' => 'Selected {0} and their related tasks must belong to the same client/project.',
+	'remove task from X' => 'Remove task from {0}',
+	'do you want to remove the task of the selected X' => 'Do you want to remove the task of the selected {0} and continue with the reclassification?',
+
+	'selected time entries do not belong to the same client/project of the selected task' => 'Selected time entries do not belong to the same client/project of the selected task.',
+	'reclassify timeslots in task members' => 'Reclassify time entries in task members',
+	'do you want to reclassify selected timeslots in task members and assign task' => 'Do you want to reclassify selected time entries in task\'s client/project and assign the task to them?',
+
+	'Your are re-classifying obj-type X into another project. This will remove the current task associated to them.' => 'Your are re-classifying {0} into another Project. This will remove the current task associated to them.',
+	'You have selected a task from a different member. This will re-classify the object under this new member.' => 'You\'ve selected a task from a different {1}. This will re-classify the {0} under this new {1}.',
+	'do you want to proceed' => 'Do you want to proceed?',
+	'proceed' => 'Proceed',
+
   ); // array
 
 ?>

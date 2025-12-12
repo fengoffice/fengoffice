@@ -341,8 +341,8 @@ final class CompanyWebsite {
 				$user_id = Cookie::getValue('id');
 				$twisted_token = Cookie::getValue('token');
 				if (!empty($user_id) && !empty($twisted_token)) {
-					$user = Contacts::instance()->findById($user_id);
-					if ($user instanceof Contact && $user->isValidToken($twisted_token)) {
+					$tmp_user = Contacts::instance()->findById($user_id);
+					if ($tmp_user instanceof Contact && $tmp_user->isValidToken($twisted_token)) {
 						$cookies_present = true;
 					} 
 	

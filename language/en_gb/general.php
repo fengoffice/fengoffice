@@ -20,7 +20,7 @@ return array(
         'password again' => 'Repeat password',
         'old password' => 'Old password',
   	'new password' => 'New password',
-        'remember me' => 'Remember me for 14 days',
+        'remember me' => 'Remember me',
         'email address' => 'Email address',
         'display name' => 'Display name',
         'overview' => 'Overview',

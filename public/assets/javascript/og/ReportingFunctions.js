@@ -305,7 +305,9 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 			var listValueField = '<label for="conditions[' + id + '][value]">' + lang('value') + '</label><select class="reportConditionDD" id="conditions[' + id + '][value]" name="conditions[' + id + '][value]">';
 			listValueField += '<option value="">-- ' + lang('none') + ' --</option>';
 			for(var i=0; i < valuesList.length; i++){
-				listValueField += '<option ' + (valuesList[i] == value ? "selected" : "") + '>' + valuesList[i] + '</option>';
+				let option_lang = lang(valuesList[i]);
+				if (option_lang.indexOf('Missing lang') > -1) option_lang = valuesList[i];
+				listValueField += '<option ' + (valuesList[i] == value ? "selected" : "") + '>' + option_lang + '</option>';
 			}
 			listValueField += '</select>' + type_and_name; 
 			$("#" + genid + " #tdValue" + id).html(listValueField);

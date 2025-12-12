@@ -25,7 +25,7 @@ return array(
     'user password reseted password' => 'Your New password is {0} (we recomend you to change it as soon as login)',
 
     'password expiration reminder' => 'Password expiration reminder',
-    'password expires days' => 'Your password will expire in {0} days',
+    'password expires days' => 'Your password will expire in {0} days. You can change it by going to Account &gt; Change Password.',
 
     'dont reply wraning' => 'THIS IS A SYSTEM NOTIFICATION. DO NOT REPLY TO THIS EMAIL!',
     'new message posted' => 'New note "{0}" has been posted',
@@ -215,6 +215,14 @@ return array(
     
 	'upload notification file' => 'A new version of the file \'{0}\' has been uploaded',
 	'upload notification file desc' => '{1} has uploaded a new version of the file:',
+
+	'new notification event invitation' => 'New invitation: {0}',
+	'modified notification event invitation' => 'Updated invitation: {0}',
+	'deleted notification event invitation' => 'Event cancelled: {0}',
+	'invitation-accepted notification event invitation' => 'Accepted: {0}',
+	'invitation-declined notification event invitation' => 'Declined: {0}',
+	'invitation-tentative notification event invitation' => 'Tentative: {0}',
+
 	
     'view object and comments' => 'View {0} and all comments on Feng Office',
 

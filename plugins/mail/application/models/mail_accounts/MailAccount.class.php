@@ -23,6 +23,44 @@ class MailAccount extends BaseMailAccount {
 		return $this->owner;
 	}
 	 
+
+	/**
+	 * Get the name of the junk folder in the mail account
+	 *
+	 * The method first tries to get the junk folder from the mail account imap folders.
+	 * If the folder is not found, it tries to connect to the imap server and get the folder
+	 * by searching for a folder with the \\Junk attribute.
+	 *
+	 * @return string|null The name of the junk folder or null if not found
+	 */
+	function getJunkFolderName() {
+		$imap_folder_obj = MailAccountImapFolders::getSpecialUseFolder($this->getId(), "Junk");
+		if ($imap_folder_obj) {
+			return $imap_folder_obj->getFolderName();
+		} else {
+			$junk_name = null;
+			// Try to get the junk folder by searching for it in the imap server
+			$imap = $this->imapConnect();
+			$login_ret = $this->imapLogin($imap);
+			if (!PEAR::isError($login_ret)) {
+				// Get the mailboxes
+				$mailboxes = $imap->getMailboxes('',0,true);
+				if (is_array($mailboxes)) {
+					foreach ($mailboxes as $mbox) {
+						// Check if the folder has the \\Junk attribute
+						$name = array_var($mbox, 'MAILBOX');
+						$attributes = array_var($mbox, 'ATTRIBUTES', array());
+						$lowercase_attributes = array_map('strtolower', $attributes);
+						if (in_array("\\junk", $lowercase_attributes)) {
+							$junk_name = $name;
+						}
+					}
+				}
+			}
+			return $junk_name;
+		}
+	}
+	 
 	/**
 	 * Validate before save
 	 *

@@ -123,7 +123,7 @@ class DateTimeValue {
 	 *
 	 * @access public
 	 * @param void
-	 * @return DateTime
+	 * @return DateTimeValue
 	 */
 	function beginningOfDay() {
 		$this->setHour(0);
@@ -141,7 +141,7 @@ class DateTimeValue {
 	 *
 	 * @access public
 	 * @param void
-	 * @return null
+	 * @return DateTimeValue
 	 */
 	function endOfDay() {
 		$this->setHour(23);

@@ -13,7 +13,7 @@
 	'file storage file system' => 'Archivo de sistema',
 	'file storage mysql' => 'Base de datos (MySQL)',
 	'config category name general' => 'General',
-	'config category desc general' => 'Configuraciones generales Feng Office',
+	'config category desc general' => 'Configuraciones generales '. product_name() .'.',
 	'config category name mailing' => 'Envío de notificaciones',
 	'config category desc mailing' => 'Use estas configuraciones para cambiar la forma en que Feng Office maneja el envío de mails. Pueden usarse configuraciones provistas en su php.ini o establecer cualquier otro servidor SMTP.',
 	'config category name passwords' => 'Contraseñas',
@@ -674,5 +674,35 @@
 	'user' => 'Usuario',
 	'config option name default_type_address' => 'Tipo de dirección predeterminado',
 	'config option desc default_type_address' => 'Selecciona la opción predeterminada dentro del tipo de dirección',
+	'config option name contact_quickadd_inputs' => 'Propiedades del formulario de alta rápida de contactos',
+	'config option desc contact_quickadd_inputs' => 'Seleccione las propiedades que se mostrarán en el formulario de alta rápida de contactos.',
+
+	'config option name show_inactive_users_on_filters' => 'Mostrar usuarios inactivos en filtros',
+	'config option desc show_inactive_users_on_filters' => 'Si se habilita, los usuarios inactivos serán mostrados en los filtros de usuarios.',
+
+	'config option name contact_quickadd_view_info' => 'Información a mostrar al seleccionar contacto',
+	'config option desc contact_quickadd_view_info' => 'Seleccione la información del contacto que se mostrará después de seleccionar un contacto en otro formulario (por ejemplo: formularios de Proyectos y Clientes)',
+
+	'config option name show_type_sel_on_address_field' => 'Mostrar selector de tipo en campo de direcci n',
+	'config option desc show_type_sel_on_address_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de direcci n.',
+
+	'config option name show_type_sel_on_email_field' => 'Mostrar selector de tipo en campo de correo electr nico',
+	'config option desc show_type_sel_on_email_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de correo electr nico.',
+
+	'config option name show_type_sel_on_phone_field' => 'Mostrar selector de tipo en campo de tel fono',
+	'config option desc show_type_sel_on_phone_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de tel fono.',
+
+	'config option name show_type_sel_on_website_field' => 'Mostrar selector de tipo en campo de sitio web',
+	'config option desc show_type_sel_on_website_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de sitio web.',
+
+	'user config option name ask_reclassify_behavior' => 'Preguntar al reclasificar',
+	'user config option desc ask_reclassify_behavior' => '¿Qué hacer con los objetos clasificados al cambiar la asociación entre miembros de dimensiones? Por ejemplo: al cambiar la Lista de Precios de un proyecto, también cambiarla para todos los Tiempos, Gastos, Tareas y otros objetos clasificados bajo ese proyecto. Si se cambia el Cliente, los objetos asociados siempre se reclasificarán.',
+	'config_ask' => 'Preguntar',
+	'config_always' => 'Reclasificar siempre',
+	'config_never' => 'Nunca reclasificar',
+
+	'can_reopen_task' => 'Puede reabrir una tarea',
+	'can_reopen_task description' => 'Si este permiso está marcado el usuario será capaz de reabrir una tarea',
+
 
 ); ?>

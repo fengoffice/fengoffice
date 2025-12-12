@@ -94,6 +94,9 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 					
 					ogTasks.addTaskToGroup(group, task, true);
 				}
+
+				// update group offset with the real number of tasks loaded
+				group.offset += data.groups[i].group_tasks.length;
 			}
 			
 			//update group params

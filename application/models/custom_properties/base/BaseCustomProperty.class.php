@@ -341,6 +341,34 @@
     }
     
     
+    function getIsCalculated() {
+    	return $this->getColumnValue('is_calculated');
+    }
+    
+    function setIsCalculated($value) {
+    	return $this->setColumnValue('is_calculated', $value);
+    }
+    
+    
+    function getIsEditable() {
+    	return $this->getColumnValue('is_editable');
+    }
+    
+    function setIsEditable($value) {
+    	return $this->setColumnValue('is_editable', $value);
+    }
+    
+    
+    function getFormula() {
+    	return $this->getColumnValue('formula');
+    }
+    
+    function setFormula($value) {
+    	return $this->setColumnValue('formula', $value);
+    }
+
+
+	
     /**
     * Return manager instance
     *

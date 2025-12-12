@@ -104,7 +104,12 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_type_phone', '1', 'DefaultTypePhoneConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_email', '1', 'DefaultTypeEmailConfigHandler', '0', '0', ''),
-	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', '');
+	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', ''),
+	('clients_and_contacts', 'show_type_sel_on_address_field', '0', 'BoolConfigHandler', '0', '100', ''),
+	('clients_and_contacts', 'show_type_sel_on_email_field', '0', 'BoolConfigHandler', '0', '101', ''),
+	('clients_and_contacts', 'show_type_sel_on_phone_field', '0', 'BoolConfigHandler', '0', '102', ''),
+	('clients_and_contacts', 'show_type_sel_on_website_field', '0', 'BoolConfigHandler', '0', '103', ''),
+	('task_workflow', 'match_subtask_percent_completed', '0', 'BoolConfigHandler', '0', '0', '');
 		
 INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
 	('zip', 'archive.png', 0, 0, 'compressed archive file zip'),
@@ -385,11 +390,10 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('system', 'widget_dimensions', '', 'AllDimensionsConfigHandler', 1, 0, ''),
  ('reporting', 'report_time_colums_display', 'friendly', 'TimeFormatConfigHandler', 0, 1, '');
 
- INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
-VALUES ("reporting", "pdf_page_layout", "Portrait", "ListConfigHandler", "0", "0", "",'{"option": [{"value": "Portrait","text": "config_pdf_layout_portrait"},{"value": "Landscape","text": "config_pdf_layout_landscape"}]}'),
-('reporting', 'pdf_page_size', 'A4', 'ListConfigHandler', '0', '0','','{"option": [{"value": "A0","text": "config_pdf_size_A0"},{"value": "A1","text": "config_pdf_size_A1"},{"value": "A2","text": "config_pdf_size_A2"},{"value": "A3","text": "config_pdf_size_A3"},{"value": "A4","text": "config_pdf_size_A4"},{"value": "A5","text": "config_pdf_size_A5"},{"value": "Legal","text": "config_pdf_size_legal"},{"value": "Letter","text": "config_pdf_size_letter"}]}');
 
-INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`,
+ `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
 VALUES ("time panel", "automatic_calculation_time", "1", "ListConfigHandler", "0", "0", " ",'{"option": [{"value": "1","text": "config_start_calc"},{"value": "2","text": "config_end_calc"},{"value": "3","text": "always_show_modal"}]}'),
 ('contact panel', 'properties_for_contact_component', '', 'ContactPropertySelectorConfigHandler', '0', '0','','contact');
 
@@ -447,7 +451,7 @@ INSERT INTO `<?php echo $table_prefix ?>email_types` (`name`,`is_system`) VALUES
  ('personal', 1),
  ('work', 1),
  ('other', 1);
- 
+
 INSERT INTO `<?php echo $table_prefix ?>webpage_types` (`name`,`is_system`) VALUES
  ('personal', 1),
  ('work', 1),
@@ -716,6 +720,29 @@ INSERT INTO <?php echo $table_prefix ?>dimension_associations_config (associatio
 	FROM <?php echo $table_prefix ?>dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='feng_persons')
 ON DUPLICATE KEY UPDATE value=value;
 
+INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+ ('clients_and_contacts', 'contact_quickadd_inputs', 'first_name,surname,email,phone,address', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{"ot": "', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name = 'contact'), '"}')),
+ ('clients_and_contacts', 'contact_quickadd_view_info', 'name,email,phone', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{"ot": "', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name = 'contact'), '", "include_common_cols": "true"}'))
+ON DUPLICATE KEY UPDATE `name` = `name`;
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
+VALUES ("reporting", "pdf_page_layout", "Portrait", "ListConfigHandler", "0", "0", "",'{"option": [{"value": "Portrait","text": "config_pdf_layout_portrait"},{"value": "Landscape","text": "config_pdf_layout_landscape"}]}'),
+('reporting', 'pdf_page_size', 'A4', 'ListConfigHandler', '0', '0','','{"option": [{"value": "A0","text": "config_pdf_size_A0"},{"value": "A1","text": "config_pdf_size_A1"},{"value": "A2","text": "config_pdf_size_A2"},{"value": "A3","text": "config_pdf_size_A3"},{"value": "A4","text": "config_pdf_size_A4"},{"value": "A5","text": "config_pdf_size_A5"},{"value": "Legal","text": "config_pdf_size_legal"},{"value": "Letter","text": "config_pdf_size_letter"}]}');
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+VALUES 
+('general', 'financials_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'financials_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'financials_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', '');
 
 INSERT INTO `<?php echo $table_prefix ?>countries` (`code`, `name`) VALUES
 ('AF',	'Afghanistan'),
@@ -1395,6 +1422,18 @@ INSERT INTO `<?php echo $table_prefix ?>timezones` (`id`, `country_code`, `name`
 (420,	'ZM',	'Africa/Lusaka',	0,	7200,	7200,	0),
 (421,	'ZW',	'Africa/Harare',	0,	7200,	7200,	0);
 
--- option Minimum number of characters for dimension search
-INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
-VALUES ('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '');
+INSERT INTO `fo_config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+VALUES 
+('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', ''),
+('general', 'financials_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'financials_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'financials_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', '')

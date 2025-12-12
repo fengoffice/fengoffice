@@ -57,13 +57,21 @@
   	/**
   	 * @param unknown_type $external_conditions
   	 */
-	static function getAvailableObjectTypes($external_conditions = "") {
+	static function getAvailableObjectTypes($external_conditions = "", $types = array(), $check_enabled_panel_cond = true) {
+		if (empty($types)) {
+			$types = array("content_object");
+		}
+		$check_panel_cond = $check_enabled_panel_cond ? " AND `id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0)" : "";
+		
+		$conditions = "`type` IN ('".implode("', '", $types)."') 
+			AND `name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  
+			AND IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) 
+			$check_panel_cond $external_conditions";
+		
 		$object_types = self::instance()->findAll(array(
-			"conditions" => "`type` = 'content_object' AND 
-			`name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  AND 
-			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) AND
-			`id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0) $external_conditions"
+			"conditions" => $conditions
 		));
+
 		return $object_types;
 	}
 	

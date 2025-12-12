@@ -567,13 +567,13 @@ $genid = gen_id();
 															$invitations = $event->getInvitations(); 
 															if ($invitations != null && is_array($invitations) && isset($invitations[$user_filter])) {
 																$inv = $invitations[$user_filter];
-																if ($inv->getInvitationState() == 0) { // Not answered
+																if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_NEEDS_ACTION) { // Not answered
 																	echo '<img src="' . image_url('/16x16/mail_mark_unread.png') . '"/>';
-																} else if ($inv->getInvitationState() == 1) { // Assist = Yes
+																} else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED) { // Assist = Yes
 																	echo '<img src="' . image_url('/16x16/complete.png') . '"/>';
-																} else if ($inv->getInvitationState() == 2) { // Assist = No
+																} else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_DECLINED) { // Assist = No
 																	echo '<img src="' . image_url('/16x16/del.png') . '"/>';
-																} else if ($inv->getInvitationState() == 3) { // Assist = Maybe
+																} else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_TENTATIVE) { // Assist = Maybe
 																	echo '<img src="' . image_url('/16x16/help.png') . '"/>';
 																} else {
 																	//echo "Not Invited";

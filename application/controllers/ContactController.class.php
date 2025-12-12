@@ -297,6 +297,8 @@ class ContactController extends ApplicationController
 		$options = $category->getContactOptions(false);
 		$categories = ContactConfigCategories::getAll(false);
 
+		Hook::fire("validate_available_user_config_options", null, $options);
+
 		tpl_assign('category', $category);
 		tpl_assign('options', $options);
 		tpl_assign('config_categories', $categories);
@@ -1185,6 +1187,10 @@ class ContactController extends ApplicationController
 					set_user_config_option('autodetect_time_zone', $autotimezone, $contact->getId());
 				}
 
+				if (array_var($_REQUEST, 'from_quick_add')) {
+					$_SESSION['dont_check_required_cps'] = true;
+				}
+
 				//link it!
 				$object_controller = new ObjectController();
 
@@ -1207,6 +1213,10 @@ class ContactController extends ApplicationController
 				} else {
 					$cp_data = array_var($contact_data, 'object_custom_properties');
 					$object_controller->add_custom_properties($contact, $cp_data);
+				}
+
+				if (isset($_SESSION['dont_check_required_cps'])) {
+					unset($_SESSION['dont_check_required_cps']);
 				}
 
 				foreach ($im_types as $im_type) {
@@ -1272,7 +1282,6 @@ class ContactController extends ApplicationController
 					if (array_var($contact_data, 'isNewCompany') == 'true' && is_array(array_var($_POST, 'company'))) {
 						ApplicationLogs::createLog($company, ApplicationLogs::ACTION_ADD);
 					}
-					ApplicationLogs::createLog($contact, ApplicationLogs::ACTION_ADD);
 
 					if (isset($contact_data['new_contact_from_mail_div_id'])) {
 						$combo_val = trim($contact->getFirstName() . ' ' . $contact->getSurname() . ' <' . $contact->getEmailAddress('personal') . '>');
@@ -1288,6 +1297,9 @@ class ContactController extends ApplicationController
 				Hook::fire('after_add_contact', $contact, $null);
 
 				DB::commit();
+
+				// create log for new contact added
+				ApplicationLogs::createLog($contact, ApplicationLogs::ACTION_ADD);
 
 				// save user permissions
 				if ($user) {
@@ -1309,6 +1321,11 @@ class ContactController extends ApplicationController
 							"contact_id" => $contact->getId()
 						)
 					);
+
+					if (array_var($_REQUEST, 'from_quick_add')) {
+						ajx_current("empty");
+						return;
+					}
 
 					flash_success(lang('success add contact', $contact->getObjectName()));
 					ajx_current("back");
@@ -2280,7 +2297,19 @@ class ContactController extends ApplicationController
 									$contact_data['import_status'] .= " " . lang("company") . " $comp_name";
 									// Find client member
 									$client_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="customer"'))->getId();
-									$client_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $client_ot_id . ' AND `name`=' . $comp_name));
+									$company_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $client_ot_id . ' AND `name`=' . $comp_name));
+
+									$supplier_plugin_active = Plugins::instance()->isActivePlugin('suppliers');
+									if(!$company_member instanceof Member && $supplier_plugin_active) {
+										$supplier_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="supplier"'))->getId();
+										$company_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $supplier_ot_id . ' AND `name`=' . $comp_name));	
+									}
+									$other_organizations_active = Plugins::instance()->isActivePlugin('other_organizations_dimension');
+									if (!$company_member instanceof Member && $other_organizations_active) {
+										$other_organization_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="organization"'))->getId();
+										$company_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $other_organization_ot_id . ' AND `name`=' . $comp_name));
+
+									}
 								} else {
 									$contact_data['company_id'] = 0;
 								}
@@ -2289,10 +2318,10 @@ class ContactController extends ApplicationController
 								$contact->setFromAttributes($contact_data);
 								$contact->save();
 
-								if ($client_member instanceof Member) {
-									$client_member_id = array($client_member->getId());
-									$object_controller->add_to_members($contact, $client_member_id);
-								}
+								if ($company_member instanceof Member) {
+									$company_member_id = array($company_member->getId());
+									$object_controller->add_to_members($contact, $company_member_id);
+								} 
 
 								//Home form
 								if ($contact_data['h_address'] != "" || $contact_data['h_city'] != "" || $contact_data['h_state'] != "" || $contact_data['h_country'] != "" || $contact_data['h_zipcode'] != "") {
@@ -4077,7 +4106,7 @@ class ContactController extends ApplicationController
 				$filters = ContactConfigOptionValues::getFilterActivityMember($filters_default->getId(), $members);
 				// update cache if available
 				if (GlobalCache::isAvailable()) {
-					GlobalCache::instance()->delete('user_config_option_' . logged_user()->getId() . '_' . $filters_default->getName() . "_" . $members);
+					GlobalCache::delete('user_config_option_' . logged_user()->getId() . '_' . $filters_default->getName() . "_" . $members);
 				}
 
 				if (!$filters) {
@@ -4512,4 +4541,79 @@ class ContactController extends ApplicationController
 		ajx_current("empty");
 		ajx_extra_data(array('addresses' => $addresses));
 	}
+
+
+
+	/**
+	 * Renders the contacts quick add form
+	 *
+	 * This function is called by the contact selector 
+	 * when using "Add new contact" option
+	 *
+	 * @return null
+	 */
+	function quick_add_form() {
+
+		// send to the form the data sent in the post (genid, member_id, etc)
+		$post_vars = [];
+		foreach ($_POST as $key => $value) {
+			$post_vars[$key] = $value;
+		}
+		tpl_assign('post_vars', $post_vars);
+
+	}
+
+
+
+	/**
+	 * Function that renders the contact card when selecting a contact
+	 * using the contact selector.
+	 *
+	 * It sends the data sent in the post (genid, member_id, etc) to the
+	 * template and assigns the properties to show in the contact card
+	 * (configurable in the settings).
+	 */
+	function contact_selector_contact_card() {
+		ajx_current("empty");
+
+		// Send to the form the data sent in the post (genid, member_id, etc)
+		$post_vars = [];
+		foreach ($_POST as $key => $value) {
+			$post_vars[$key] = $value;
+		}
+		tpl_assign('post_vars', $post_vars);
+
+		// Get the properties to show in the contact card
+		// (configurable in the settings)
+		$properties_to_show = config_option('contact_quickadd_view_info');
+		tpl_assign('properties_to_show', $properties_to_show);
+
+		// Get the contact and assign it to the view
+		$contact = Contacts::instance()->findById($post_vars['id']);
+		if (!$contact instanceof Contact) {
+			ajx_current("empty");
+			return;
+		}
+		tpl_assign('contact', $contact);
+
+		// Get the contact object type and its properties
+		$contact_ot = ObjectTypes::findByName('contact');
+		$contact_properties = $contact_ot->getObjectTypeProperties(true, true, true);
+		tpl_assign('contact_properties', $contact_properties);
+
+		// Send the html of the contact card
+		ajx_extra_data([
+			'post_vars' => $post_vars,
+			'html' => tpl_fetch(get_template_path('contact_selector_contact_card', 'contact')),
+		]);
+	}
+
+	function set_reclassify_behavior() {
+		$option_value = array_var($_REQUEST, 'option');
+    	if ($option_value !== null) {
+        	set_user_config_option('ask_reclassify_behavior', $option_value, logged_user()->getId());
+    	}
+		ajx_current("empty");
+
+}
 }

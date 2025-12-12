@@ -246,7 +246,6 @@
 	background: url(../../images/icons-feng-3/16x16/del.png) no-repeat !important;
 	background-size: 15px 15px !important;
 	background-position: 0 3px!important;
-	padding-right: 15px;
 }
 .ico-doc {
 	/*background-image: url(../../images/16x16/doc.png) !important;*/
@@ -1632,6 +1631,16 @@ span.member-path span a:hover {
 	max-height: 200px;
 }
 
+.contact_form_container .notes-container {
+	width: 600px;
+	float: left;
+}
+
+.edit-member .contact_form_container .notes-container {
+	width: 472px;
+	float: left;
+}
+
 /* member permissions */
 .member-permissions .users-container .user-data.hidden {
 	display: none;
@@ -1968,6 +1977,15 @@ a.underline {
 
 .country-combo-container, .tz-combo-container {
 	float: left;
+	
+}
+
+.country-combo-container select {
+	max-width: 250px;
+}
+
+.tz-combo-container select {
+	max-width: 230px;
 }
 .dataBlock .country-combo-container select {
 	max-width:200px;
@@ -2207,6 +2225,31 @@ div[id$="uploadPreviewContainer"] {
     grid-area: 4 / 3 / 5 / 5;
 } 
 
+.phone-input-container .phone-number {
+	width: 140px;
+}
+
+/** remove margin-left if type selector is not present **/
+.address-custom-properties-parent .address-input-container.no-type-selector {
+	grid-template-rows: repeat(3, 0fr);
+}
+.address-custom-properties-parent .address-input-container.no-type-selector .removeUndo.addressRemoveUndo {
+	right: -155px;
+}
+.address-custom-properties-parent .address-input-container.no-type-selector .radioDefaultButtonContainer {
+	top: -25px;
+	left: 0px;
+}
+.phone-input-container.no-type-selector input,
+.emails-input-container .no-type-selector input, 
+.webpages-input-container .no-type-selector input {
+	margin-left: 0px;
+}
+.phone-input-container.no-type-selector .phone-number {
+	margin-left: 0px;
+}
+/** remove margin-left if type selector is not present **/
+
 .address-input-container .radioDefault {
 	position: absolute;
 	right: 50px;
@@ -2444,3 +2487,273 @@ div[id$="uploadPreviewContainer"] {
 	cursor: pointer;
 }
 /** end popover styles for task link in time and expenses list */
+
+
+/** Contact card that appears after selecting a contact in the contact selector */
+.contact-selector-card {
+	min-width: 300px;
+	width: 300px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	box-shadow: 2px 2px 4px 1px #CCCCCC;
+	margin: 0px 0px 5px 0px;
+}
+.contact-selector-card .section {
+	display: inline-block;
+	vertical-align: top;
+	margin: 0 5px;
+}
+.contact-selector-card .section.photo {
+	margin-left: 0px;
+	padding: 2px;
+}
+.contact-selector-card .section.photo img {
+	max-width: 50px;
+	max-height: 50px;
+	vertical-align: middle;
+}
+.contact-selector-card .section.contact-actions {
+	float: right;
+	text-align: right;
+	width: 16px;
+	margin-top: 5px;
+}
+.contact-selector-card .section.contact-info {
+	max-width: 200px;
+}
+.contact-selector-card .section.section.contact-info .info-content {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	margin: 2px 0px;
+}
+.contact-selector-card .section.section.contact-info .info-content.address {
+	white-space: normal;
+}
+
+.contact-selector-card .section.contact-info .main-property.name {
+	color: #264653;
+	font-weight: bold;
+}
+.contact-selector-card .section.contact-info .main-property.email,
+.contact-selector-card .section.contact-info .main-property.phone,
+.contact-selector-card .section.contact-info .main-property.address,
+.contact-selector-card .section.contact-info .other-property {
+	color: #666;
+	font-style: italic;
+	font-size: 0.9em;
+}
+/** end Contact card */
+/** For contact selector that shows only name */
+.contact-selector-name {
+	min-width: 150px;
+}
+.contact-selector-name .section.contact-name {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	margin: 2px 0px;
+	float: left;
+	max-width: calc(100% - 30px);
+	width: calc(100% - 30px);
+}
+.contact-selector-name .section.contact-actions {
+	float: right;
+	text-align: right;
+	width: 16px;
+	margin-top: 2px;
+	margin-left: 5px;
+}
+
+/** end for contact selector that shows only name */
+
+
+/** Specific style for contact selector at event form, invited people tab */
+.event .invited-people-container {
+	margin-bottom: 20px;
+}
+.event .invited-people-container .invited-people-selector {
+	margin-top: 10px;
+}
+.event .invited-people-container .contact-selector-card {
+	margin-top: 10px;
+	margin-right: 10px;
+	display: inline-block;
+}
+.event .invited-people-container .contact-selector-card .section.photo img {
+	max-height: 47px;
+}
+/** end specific style for contact selector at event form, invited people tab */
+
+
+
+.simplemodal-data .modal-form {
+	border-radius: 5px;
+	background-color: #fff;
+	padding: 10px;
+	font-size: 14px;
+}
+
+
+
+/************** START ICS BLOCK CSS **************/
+
+.calendar-container {
+	font-family: 'Open Sans',Arial,sans-serif;
+	margin: 0 auto;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden; 
+	background-color: #f8f9fa;
+	font-size: 14px;
+	margin-bottom: 10px;
+}
+
+.calendar-container .event {
+	padding: 15px;
+}
+
+.calendar-container .event .event-header {
+	margin-bottom: 10px;
+}
+
+.calendar-container .event .event-header h3 {
+	font-family: 'Montserrat',sans-serif;
+	margin: 0 0 15px 0;
+	color: #333;
+	font-size: 16px;
+}
+
+.calendar-container .event .event-header .event-time,
+.calendar-container .event .event-header .event-location,
+.calendar-container .event .event-header .event-organizer,
+.calendar-container .event .event-attendees,
+.calendar-container .event .event-status,
+.calendar-container .event .event-recurrence,
+.calendar-container .event .event-description {
+	color: #666;
+	margin-bottom: 10px;
+}
+
+.calendar-container .event h4 {
+	color: #666;
+}
+
+.calendar-container .event .event-description-toggle {
+	color: #003562;
+	cursor: pointer;
+	text-decoration: underline;
+	margin-top: 20px;
+}
+
+.calendar-container .event .event-attendees ul {
+	margin: 0;
+	padding: 0 0 0 20px;
+}
+
+.calendar-container .event .event-attendees li {
+	margin-bottom: 5px;
+}
+
+.calendar-container .event .confirm-attendance .event-invitation-buttons {
+	margin-top: 5px;
+	width: 300px;
+	display: flex;
+	margin-bottom: 15px;
+}
+
+.calendar-container .event .confirm-attendance .event-invitation-buttons .confirm-att-btn {
+	align-items: center;
+	display: inline-flex;
+	flex-basis: 100%;
+	justify-content: center;
+	margin: 0 5px 0 0;
+	padding: 5px 10px;
+	border-radius: 3px;
+	color: #333;
+	border: 1px solid #ccc;
+	background-color: #fff;
+	cursor: pointer;
+}
+.calendar-container .event .confirm-attendance .event-invitation-buttons .confirm-att-btn:hover {
+	background-color: #eee;
+}
+/************** END ICS BLOCK CSS **************/
+
+/* Estilos para showConfirmationModal */
+.confirmation-modal {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    font-family: 'Open Sans', sans-serif;
+    max-width: 500px;
+    min-width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.confirmation-modal-title {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.confirmation-modal-message {
+    color: #555;
+    margin-bottom: 30px;
+    line-height: 1.5;
+    font-size: 1.1em;
+}
+
+.confirmation-modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.confirmation-modal-btn {
+    background: #f1f1f1;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1em;
+    transition: all 0.3s;
+    min-width: 100px;
+    max-width: 200px;
+    width: 100%;
+    flex: 1;
+}
+
+.confirmation-modal-btn.confirm {
+    background: #2A9D8F;
+    color: white;
+    border: none;
+}
+
+.confirmation-modal-btn.cancel.hover {
+    background: #e1e1e1;
+}
+
+.confirmation-modal-btn.confirm.hover {
+    background: #21867A;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Estilos para showConfirmationModalOLD */
+.confirmation-modal-old {
+    border-radius: 5px;
+    background-color: #fff;
+    padding: 10px;
+    width: 400px;
+}
+
+.confirmation-modal-old-buttons {
+    text-align: right;
+    margin: 10px 0;
+}

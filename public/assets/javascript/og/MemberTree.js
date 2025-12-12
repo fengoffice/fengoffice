@@ -673,6 +673,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 				og.last_search_request_id = og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {
 					dimension_id: dimension_id,
 					tree_id: this.id,
+					ignore_context_filters: true,
 					query: Ext.escapeRe(text.toLowerCase()),
 					time: d.getTime()
 				}), {
@@ -694,7 +695,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    				
 		    				//get the text from the filter
 		    				var search_text = dimension_tree.getTopToolbar().items.get(dimension_tree.id + '-textfilter').el.getValue();
-		    				re_search_text = new RegExp(Ext.escapeRe(search_text.toLowerCase()), 'i');
+		    				var re_search_text = new RegExp(Ext.escapeRe(search_text.toLowerCase()), 'i');
 		    				
 		    				//add the last search criteria to the search history
 		    				if(data.query && data.query.trim() != ''){
@@ -704,10 +705,39 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    					dimension_tree.tbar.history.prevTextFilters.push(data.query);
 							}
 
-		    				//filter the tree
-		    				dimension_tree.filterNode(dimension_tree.getRootNode(), re_search_text);
+							// store the dimension tree and the search text in a global variable so it can be used globally
+							og.dim_tree_to_filter = {
+								tree: dimension_tree,
+								re_search_text: re_search_text
+							}
+							// first try to filter the tree with current loaded data
+							dimension_tree.filterNode(dimension_tree.getRootNode(), re_search_text);
+							
+							// filter the tree: suspend events, expand all and filter, resume events
+							// suspend events
 		    				dimension_tree.suspendEvents();
-		    				dimension_tree.expandAll();
+							// do the filter in the callback called after the whole tree is expanded
+		    				dimension_tree.expandAll(function() {
+								if (!og.dim_tree_to_filter) return;
+								// give some time to the js to finish render and then call the filterNode function
+								setTimeout(function(){
+									if (!og.dim_tree_to_filter) return;
+
+									// get the global variables to use
+									let current_tree = og.dim_tree_to_filter.tree;
+									let reg_exp = og.dim_tree_to_filter.re_search_text;
+									
+									// do the filter
+									if (current_tree && reg_exp) {
+										current_tree.filterNode(current_tree.getRootNode(), reg_exp);
+									}
+									
+									// clear the global variable
+									og.dim_tree_to_filter = null;
+								}, 100);
+							
+							});
+							// resume events
 		    				dimension_tree.resumeEvents();
 	    				}				
 	    			}
@@ -763,7 +793,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 	
 	
 	
-	expandedNodes: function () {
+	getExpandedNodes: function () {
 		nodes = [];
 		nodes = nodes.concat( this.root.expandedNodes() );
 		return nodes ;
@@ -925,7 +955,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 	
 	filterByMember: function(memberIds, nodeClicked, callback) {
 		var tree = this ; //scope
-		var expandedNodes = tree.expandedNodes() ;
+		var expandedNodes = tree.getExpandedNodes() ;
 		
 		// if resetting all trees don't select any node
 		var selectedMembers = og.resettingAllTrees ? [] : og.contextManager.getDimensionMembers(this.dimensionId);
@@ -1016,9 +1046,22 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
                 dimension_tree.resumeEvents();
             }else{
                 if (node_parent){
-                    // dont remove old and insert the new, only update the name and the attributes.
-                    node_exist.attributes = mem;
-                    node_exist.setText(mem.text);
+                    // Check if parent has changed and handle node movement
+                    var current_parent = node_exist.parentNode;
+                    var new_parent_id = (mem.parent == 0) ? 'root' : mem.parent;
+                    var current_parent_id = current_parent.isRoot ? 'root' : current_parent.id;
+                    
+                    dimension_tree.suspendEvents();
+                    if (current_parent_id != new_parent_id) {
+                        // Parent has changed, move the node
+                        current_parent.removeChild(node_exist);
+                        node_parent.appendChild(new_node);
+                    } else {
+                        // Same parent, just update attributes
+                        node_exist.attributes = mem;
+                        node_exist.setText(mem.text);
+                    }
+                    dimension_tree.resumeEvents();
                 }
             }
             if (node_parent) {

@@ -35,6 +35,9 @@ abstract class BaseProjectEvents extends ContentDataObjects {
     	'repeat_mjump' => DATA_TYPE_INTEGER,
         'ext_cal_id' => DATA_TYPE_INTEGER,
         'original_event_id' => DATA_TYPE_INTEGER,
+    	'uid' => DATA_TYPE_STRING,
+		'organizer_id' => DATA_TYPE_INTEGER,
+		'ical_dtstamp' => DATA_TYPE_STRING
     );
 
     /**
@@ -116,7 +119,7 @@ abstract class BaseProjectEvents extends ContentDataObjects {
     * @return array
     */
     function getExternalColumns() {
-      return array_merge(parent::getExternalColumns(), array());
+      return array_merge(parent::getExternalColumns(), array('organizer_id'));
     } // getExternalColumns
 	
 	/**

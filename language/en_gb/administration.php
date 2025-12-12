@@ -29,7 +29,7 @@ return array(
     
     // Categories
     'config category name general' => 'General',
-    'config category desc general' => 'General Feng Office settings.',
+    'config category desc general' => 'General ' .product_name() .' settings.',
     'config category name mailing' => 'Mailing',
     'config category desc mailing' => 'Use these settings to set up how Feng Office should handle email sending. You can use configuration options provided in your php.ini or set it so it uses any other SMTP server.',
     'config category name modules' => 'Modules',

@@ -116,6 +116,41 @@ function installed_version() {
 } // installed_version
 
 /**
+ * Return the version of the current code
+ *
+ * @param void
+ * @return string
+ */
+function code_version() {
+	return @include ROOT . '/version.php';
+}
+
+/**
+ * Return product name. This is a wrapper function that abstracts the product name
+ *
+ * @param void
+ * @return string
+ */
+if (!function_exists('product_name')) {
+	function product_name() {
+		return defined('PRODUCT_NAME') ? PRODUCT_NAME : 'Feng Office';
+	} // product_name
+}
+
+/**
+ * Return product version, wrapper function.
+ *
+ * @param void
+ * @return string
+ */
+if (!function_exists('product_version')) {
+	function product_version() {
+		if (defined('DISPLAY_VERSION')) return DISPLAY_VERSION;
+		return include ROOT . '/version.php';
+	} // product_version
+}
+
+/**
  * Deletes a directory and all of its contents
  * 
  */

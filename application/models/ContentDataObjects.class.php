@@ -439,6 +439,7 @@ abstract class ContentDataObjects extends DataManager {
 		$only_query_totals_row = array_var($args, 'only_query_totals_row');
 		$is_email_widget = array_var($args, 'is_email_widget');
 		$check_sharing_table = array_var($args, 'check_sharing_table', true);
+		$is_fulltext_mail_call = array_var($args, 'is_fulltext_mail_call', false);
 		
 		//text filter param
 		// ORG $text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
@@ -448,13 +449,47 @@ abstract class ContentDataObjects extends DataManager {
 		$text_filter_extra_conditions = ''; 
 		
 		if (trim($text_filter) != '') {
-		    
-		    //$join_with_searchable_objects = true;
+			$join_with_searchable_objects = false;
 			$use_like_in_searchable_objects = true;
 			$select_columns = array('o.*,e.*');
 		    $text_filter = str_replace("'", "\'", trim($text_filter));
-		    
-		    if ($use_like_in_searchable_objects || is_numeric($text_filter)) {
+
+			$select_columns = array('o.*, e.*');
+
+			$clean = DB::cleanStringToFullSearch($text_filter);
+
+
+    		if (!empty(trim($clean))) {
+				if ($is_fulltext_mail_call) {
+        
+				$safe_search = preg_replace('/[+\-<>()~*"@]+/', ' ', $clean);
+				$safe_search = trim($safe_search);
+				
+				if (!empty($safe_search)) {
+					// Dividir en palabras y aplicar wildcard a cada una
+					$words = preg_split('/\s+/', $safe_search);
+					$words = array_filter($words);
+					
+					if (count($words) > 1) {
+						$phrase = implode(' ', $words);
+						$text_filter_extra_conditions .= "
+							AND MATCH (jt.subject, jt.body_plain, jt.body_html)
+							AGAINST ('\"$phrase\"' IN BOOLEAN MODE)
+						";
+					} else {
+						$text_filter_extra_conditions .= "
+							AND MATCH (jt.subject, jt.body_plain, jt.body_html)
+							AGAINST ('+$safe_search*' IN BOOLEAN MODE)
+						";
+					}
+				} else {
+					$text_filter_extra_conditions .= "
+						AND (jt.subject LIKE '%$clean%' 
+						OR jt.body_plain LIKE '%$clean%' 
+						OR jt.body_html LIKE '%$clean%')
+					";
+				}
+			} else if ($use_like_in_searchable_objects || is_numeric($text_filter)) {
 		    	if (is_numeric($text_filter)) {
 
 					//Clean text filter param
@@ -470,9 +505,10 @@ abstract class ContentDataObjects extends DataManager {
 		    	$text_filter_extra_conditions .= "
 					AND EXISTS (SELECT * FROM ".TABLE_PREFIX."searchable_objects so WHERE so.rel_object_id=o.id AND so.content like '$text_filter_str')
 				";
-		    	
-		    } else {
+			}
+		} else {
 
+			//IS NEVER USED
 				//Clean text filter param
 				$text_filter = DB::cleanStringToFullSearch($text_filter);
 
@@ -848,8 +884,8 @@ abstract class ContentDataObjects extends DataManager {
                 ";
             }
 			
-            //For debugging purposes:
-            //Logger::log_r("At ContentDataObject listing() function: listing. SQL is: \n". $sql . "\n");
+            // For debugging purposes:
+            // Logger::log_r("At ContentDataObject listing() function: listing. SQL is: \n". $sql . "\n");
 			
 			if ($only_return_query_string) {
 				return $sql;
@@ -1062,7 +1098,8 @@ abstract class ContentDataObjects extends DataManager {
     
     
     static function prepareTrashAndArchivedConditions($trashed, $archived){
-        $trashed_cond = "`o`.`trashed_on` " .($trashed ? ">" : "="). " 0";
+        // USE trashed_by_id INSTEAD OF trashed_on TO IMPROVE PERFORMANCE OF THE QUERY
+        $trashed_cond = "`o`.`trashed_by_id` " .($trashed ? ">" : "="). " 0";
     	if ($trashed) {
     		$archived_cond = "";
     	} else {
@@ -1483,12 +1520,62 @@ abstract class ContentDataObjects extends DataManager {
 		return array();
 	}
 	
+	/**
+	 * Retrieves associated objects' columns which are fixed, i.e. defined by the
+	 * associated object type's columns.
+	 *
+	 * @return array An array of associated objects' columns with their details.
+	 */
 	function getAssociatedObjectsFixedColumns() {
-		return array();
+		$properties = array();
+
+		// Get associated contact properties if the member type has an associated contact
+		$properties = array_merge($properties, $this->getAssociatedContactProperties());
+
+		return $properties;
 	}
 	
 	function getAssociatedObjectManagers() {
 		return array();
+	}
+
+
+	/**
+	 * Retrieves associated contact properties for the current object type.
+	 *
+	 * @return array An array of associated contact properties with their details.
+	 */
+	function getAssociatedContactProperties() {
+		$columns = array();
+
+		// Get associated contact properties if the it is a member type and has an associated contact
+		if ($this->isMemberTypeWithContact()) {
+			$columns['contact_id'] = array(
+				array('col' => 'email', 'external' => true, 'type' => 'email', 'label' => lang("email")),
+				array('col' => 'phone', 'external' => true, 'type' => 'phone', 'label' => lang("phone")),
+				array('col' => 'address', 'external' => true, 'type' => 'address', 'label' => lang("address")),
+				array('col' => 'webpage', 'external' => true, 'type' => 'webpage', 'label' => lang("webpage")),
+				array('col' => 'picture_file', 'external' => true, 'type' => 'image', 'label' => lang("picture")),
+				array('col' => 'comments', 'type' => DATA_TYPE_STRING, 'label' => lang("notes"), 'large' => true),
+				array('col' => 'company_id', 'type' => 'company', 'label' => lang("company")),
+				array('col' => 'birthday', 'type' => DATA_TYPE_DATE, 'label' => lang("birthday")),
+				array('col' => 'department', 'type' => DATA_TYPE_STRING, 'label' => lang("department")),
+			);
+		}
+		return $columns;
+	}
+
+	/**
+	 * Checks if the current object type is a member type with an associated contact.
+	 *
+	 * This method determines if the object type is of type 'dimension_object' and
+	 * verifies the existence of 'contact_id' and 'contact_object_type_id' columns.
+	 *
+	 * @return bool True if the object is a member type with a contact, false otherwise.
+	 */
+	function isMemberTypeWithContact() {
+		$ot = ObjectTypes::instance()->findById($this->getObjectTypeId());
+		return $ot->getType() == 'dimension_object' && $this->columnExists('contact_id') && $this->columnExists('contact_object_type_id');
 	}
 	
 	

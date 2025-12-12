@@ -779,17 +779,23 @@ a.cke_combo_button, a.cke_button {
 	box-sizing: border-box;
 }
 
-.amount-container-fields select {
+.custom-properties .input-container .amount-container-fields select {
 	/* margin-bottom: 5px; */
 	margin-right: 5px;
-	width: 60px;
-	height: 30px;
+	width: 60px !important;
+	height: 30px !important;
+	display: inline-block !important;
 }
-.amount-container-fields input {
+.custom-properties .input-container .amount-container-fields input {
 	width: 287px;
 	box-sizing: border-box;
 	text-align: right;
 	height: 30px;
+}
+
+.custom-properties .input-container .amount-container-fields input[type="text"]:not(.x-form-text) {
+	width: 287px;
+	display: inline-block;
 }
 
 .cp-url {
@@ -827,4 +833,403 @@ a.cke_combo_button, a.cke_button {
     display: none;
 	/* padding-left: 170px; */
 	padding-top: 5px;
+}
+
+
+
+/* Contact quick add */
+.contact-quick-add .cp-text {
+	width: 342px;
+}
+.contact-quick-add .address-custom-properties-parent .address-input-container {
+	grid-template-rows: repeat(3, 1fr);
+}
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_street_input,
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_city_input,
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_state_input {
+	width: 164px;
+}
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_country_input {
+	width: 172px;
+}
+.contact-quick-add .button-container {
+	float: right;
+	margin-right: 25px;
+	margin-bottom: 10px;
+}
+
+
+.form-container.project {
+	width: 900px;
+}
+
+.form-container.customer {
+	width: 1000px;
+}
+
+
+.form-container.customer .dimension-selector-container {
+    display: block !important;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.form-container.customer .dimension-selector-container > label {
+    display: block !important;
+    margin-bottom: 6px !important;
+    font-size: 100%;
+}
+
+.form-container.customer .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+}
+
+.form-container.customer .input-container label,
+.form-container.customer .dimension-selector-container > label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 0.25rem !important;
+}
+/*
+.form-container.customer .address-custom-properties-parent .address-input-container {
+    margin-top: 5px !important;
+}*/
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 293px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container {
+    max-width: 329px !important;
+    justify-content: space-between;
+    border-radius: 3px;
+    margin-bottom: 0px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    position: relative;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .coViewAction {
+    display: none;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container > span select, 
+.form-container.customer .phone-input-container > span select,
+.form-container.customer .phones-input-container > span select,
+.form-container.customer .emails-input-container span select,
+.form-container.customer .webpages-input-container span select {
+    width: 73px !important;
+    height: 32px !important;
+}
+
+.form-container.customer .phone-input-container input,
+.form-container.customer .emails-input-container input,
+.form-container.customer .webpages-input-container input {
+    height: 24px;
+    margin-left: 7px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container textarea {
+    width: 293px;
+    height: 65px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 293px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_state_input {
+    width: 139px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.customer .address-custom-properties-parent .address-input-container {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.customer .address-custom-properties-parent .address-input-container .address_zipcode_input {
+    height: 25px;
+    width: 139px;
+    margin-top: 5px;
+    margin-right: 28px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_country_input {
+    height: 33px;
+    width: 301px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address_type_input {
+    min-width: 140px !important;
+}
+.form-container.customer .custom-properties-container .custom-properties-column .cp-description label {
+	display: none !important;
+}
+
+
+/** CSS for customer form with no type selector in phone, email, etc */
+.form-container.customer .phone-input-container.no-type-selector input,
+.form-container.customer .emails-input-container .no-type-selector input,
+.form-container.customer .webpages-input-container .no-type-selector input {
+    margin-left: 0px;
+}
+.form-container.customer .webpages-input-container .no-type-selector input {
+	width: 295px;
+}
+.form-container.customer .emails-input-container .no-type-selector {
+	display: inline-block;
+}
+.form-container.customer .emails-input-container .no-type-selector input {
+	width: 300px;
+}
+.form-container.customer .email-input-container.no-type-selector .removeUndo {
+	float: right;
+	top: 10px;
+}
+.form-container.customer .address-custom-properties-parent .address-input-container.no-type-selector textarea {
+	margin-top: 0px;
+	margin-right: 28px;
+}
+/** CSS for customer form with no type selector in phone, email, etc */
+
+
+
+
+/** TWO COLUMNS CUSTOM PROPERTIES FOR GENERAL MEMBER FORM **/
+
+.edit-member .custom-properties-container.two-columns {
+	display: flex !important; 
+	width: 950px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column {
+	min-width: 470px;
+	width: 475px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .feng-dimention-selector {
+	float: none !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container {
+	display: block !important;
+	width: 100%;
+	min-width: 250px;
+	margin-bottom: 0px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector {
+	float: none !important;
+	width: 424px !important;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-panel-body.collapsible-body {
+	width: 420px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .dimension-panel-textfilter,
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected {
+	height: 30px !important;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected .empty-text {
+	line-height: 28px;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-toolbar .selected-members .selected-member-div span.member-path span {
+	line-height: 30px;
+	padding: 7px 3px;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-toolbar .selected-member-div, 
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected .selected-member-div .completePath {
+	height: 30px;
+}
+.edit-member .custom-properties-container .custom-properties-column div.selected-members.with-checkbox div.selected-member-div div.selected-member-actions {
+	margin-right: -22px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > label {
+    display: block !important;
+    margin-bottom: 0.25rem !important;
+    font-size: 100%;
+	margin-top: 1rem;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 0px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container label,
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 0.25rem !important;
+	margin-top: 1rem;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 415px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container {
+    max-width: 450px !important;
+    justify-content: space-between;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    position: relative;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .coViewAction {
+    display: none;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container > span select,
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container > span select,
+.edit-member .custom-properties-container .custom-properties-column .phones-input-container > span select,
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container span select,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container span select {
+    width: 73px !important;
+    height: 32px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container input,
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container input,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container input {
+    height: 24px;
+    margin-left: 7px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .email-input-container > * {
+	flex: none;
+}
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container input,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container input {
+	width: 322px;
+}
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container .phone-number {
+	width: 160px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container textarea {
+    width: 415px;
+    height: 65px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 415px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_state_input {
+    width: 198px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_zipcode_input {
+    height: 25px;
+    width: 198px;
+    margin-top: 5px;
+    margin-right: 28px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_country_input {
+    height: 33px;
+    width: 422px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address_type_input {
+    min-width: 200px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container input[type="text"],
+.edit-member .custom-properties-container .custom-properties-column .input-container textarea {
+	width: 415px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container input[type="text"] {
+    height: 25px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container select {
+	height: 30px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container select.cp-list {
+	width: 427px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container input.x-form-text[type="text"] {
+    height: 30px;
+}
+.edit-member .custom-properties-container .custom-properties-column .cp-text {
+	padding: 2px 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .cp-description label {
+	display: none !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container .x-form-arrow-trigger,
+.edit-member .custom-properties-container .custom-properties-column .input-container .x-form-date-trigger {
+	-webkit-transform: scale(1.45);
+    -moz-transform: scale(1.45);
+    -ms-transform: scale(1.45);
+    transform: scale(1.45);
+    margin-top: 5px;
+    margin-left: 3px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container input.x-form-text.x-form-field[type="text"] {
+	width: 391px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .contact-selector-card {
+	width: 420px;
+}
+
+
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container .no-type-selector input,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container .no-type-selector input {
+	width: 415px;
+	margin-left: 0px;
+}
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container.no-type-selector .phone-number {
+	margin-left: 0px;
+}
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container.no-type-selector .phone-name {
+	width: 240px;
+}
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container.no-type-selector textarea {
+	margin-right: 28px;
+	margin-top: 0px;
+}
+
+.edit-member .coInputMainBlock .custom-properties-container .custom-properties-column .dimension-selector-description {
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+
+/* prevent double margin-bottom */
+.custom-properties-container .custom-properties-column .input-container .field {
+	margin-bottom: 0px;
 }

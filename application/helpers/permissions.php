@@ -1429,16 +1429,24 @@
 		
 	}
 
-	function get_users_with_system_permission($system_permission_name) {
+	function get_users_with_system_permission($system_permission_name, $include_inactive = false) {
 		$permission_group_ids = SystemPermissions::getAllPermissionGroupIdsWithSystemPermission($system_permission_name);
 		$contacts_ids = ContactPermissionGroups::getAllContactsIdsByPermissionGroupIds($permission_group_ids);
-
-		$users_with_permissions = Contacts::instance()->findAll(array("conditions" => "
-						disabled=0 AND object_id IN (".implode(",", $contacts_ids).")
-					"));
-
-		return $users_with_permissions;
+	
+		if (empty($contacts_ids)) {
+			return [];
+		}
+	
+		$conditions = "object_id IN (" . implode(",", $contacts_ids) . ")";
+		if (!$include_inactive) {
+			$conditions = "disabled = 0 AND " . $conditions;
+		}
+	
+		return Contacts::instance()->findAll([
+			"conditions" => $conditions
+		]);
 	}
+	
 
 	function can_save_permissions_in_background() {
 		if (defined('DONT_SAVE_PERMISSIONS_IN_BACKGROUND') && DONT_SAVE_PERMISSIONS_IN_BACKGROUND) {

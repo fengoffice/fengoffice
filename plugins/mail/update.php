@@ -527,3 +527,25 @@
 			ADD COLUMN `exclude_from_synchronizing` tinyint(1) NOT NULL DEFAULT 0;
 		");
 	}
+
+	function mail_update_37_38() {
+
+		$res = DB::execute("
+			SELECT COUNT(1) AS cnt
+			FROM information_schema.STATISTICS
+			WHERE table_schema = DATABASE()
+			AND table_name = '".TABLE_PREFIX."mail_datas'
+			AND index_name = 'idx_fulltext_subject_body_plain_html'
+		");
+
+		$row = $res ? $res->fetchRow() : null;
+		$exists = $row && isset($row['cnt']) ? (int)$row['cnt'] : 0;
+
+		if (!$exists) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_datas`
+				ADD FULLTEXT `idx_fulltext_subject_body_plain_html` (`subject`, `body_plain`, `body_html`);
+			");
+		}
+	}
+

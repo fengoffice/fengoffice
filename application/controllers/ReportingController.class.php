@@ -174,7 +174,7 @@ class ReportingController extends ApplicationController {
 			// if time list filters are sent then initialize the report filters with those values
 
 			$report_data['user'] = array_var($report_params, 'user');
-			$report_data['timeslot_type'] = array_var($report_params, 'timeslot_type');
+			$report_data['timeslot_type'] = array_var($report_params, 'timeslot_type') < 3 ? array_var($report_params, 'timeslot_type') : 0; // 0 = all, 1 = task time, 2 = general time
 			$report_data['date_type'] = array_var($report_params, 'date_type');
 
 			$st = getDateValue(array_var($report_params, 'start_value'));
@@ -1718,7 +1718,7 @@ class ReportingController extends ApplicationController {
 	}
 
 	function get_object_fields(){
-		$fields = $this->get_allowed_columns(array_var($_GET, 'object_type'));
+		$fields = $this->get_allowed_columns(array_var($_GET, 'object_type'), true);
 
 		if (array_var($_GET, 'object_type') == Timeslots::instance()->getObjectTypeId()) {
 			$tmp = array();
@@ -1942,6 +1942,13 @@ class ReportingController extends ApplicationController {
 			foreach ($contacts as $contact) {
 				$values[] = array('id' => $contact->getId(), 'name' => $contact->getObjectName());
 			}
+		} else if ($ot_id == ObjectTypes::findByName('event')->getId()) {
+			if ($field == 'organizer_id') {
+				$contacts = Contacts::instance()->listing(array('extra_conditions' => ' AND is_company=0 '))->objects;
+				foreach ($contacts as $contact) {
+					$values[] = array('id' => $contact->getId(), 'name' => $contact->getObjectName());
+				}
+			}
 		}
 		
 		Hook::fire('custom_reports_get_possible_external_column_values', array('field' => $field, 'ot_id' => $ot_id), $values);
@@ -1949,7 +1956,7 @@ class ReportingController extends ApplicationController {
 		return $values;
 	}
 
-	function get_allowed_columns($object_type) {
+	function get_allowed_columns($object_type, $for_conditions = false) {
 		$fields = array();
 		if(isset($object_type)){
 			$customProperties = CustomProperties::getAllCustomPropertiesByObjectType($object_type);
@@ -2000,6 +2007,8 @@ class ReportingController extends ApplicationController {
 			}
 			$objectFields = array_merge($objectFields, $common_columns);
 
+			Hook::fire('custom_reports_additional_allowed_columns', array('object_type' => $ot), $objectFields);
+
 			foreach($objectFields as $name => $type){
 				if($type == DATA_TYPE_FLOAT || $type == DATA_TYPE_INTEGER){
 					$type = 'numeric';
@@ -2019,6 +2028,10 @@ class ReportingController extends ApplicationController {
 				$task_ot = ObjectTypes::findByName('task');
 				if ($task_ot instanceof ObjectType && $object_type == $task_ot->getId() && $name == 'priority') {
 					$fields_array = array('id' => 'priority', 'name' => lang('priority'), 'type' => 'list', 'values' => '100,200,300,400');
+				}
+				$invoice_ot = ObjectTypes::findByName('invoice');
+				if ($invoice_ot instanceof ObjectType && $object_type == $invoice_ot->getId() && $name == 'status') {
+					$fields_array = array('id' => 'status', 'name' => lang('status'), 'type' => 'list', 'values' => 'pending,part_confirmed,confirmed,canceled');
 				}
 				
 				$fields[] = $fields_array;
@@ -2057,7 +2070,7 @@ class ReportingController extends ApplicationController {
 			if (!array_var($_REQUEST, 'noaddcol')) {
 				Hook::fire('custom_reports_additional_columns', array('object_type' => $ot), $fields);
 			}
-			Hook::fire('custom_reports_fixed_additional_columns', array('object_type' => $ot), $fields);
+			Hook::fire('custom_reports_fixed_additional_columns', array('object_type' => $ot, 'for_conditions' => $for_conditions), $fields);
 		}
 		usort($fields, array(&$this, 'compare_FieldName'));
 		if($ot instanceof ObjectType){

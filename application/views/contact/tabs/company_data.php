@@ -117,7 +117,7 @@ $PhoneTypeActive = config_option('default_type_phone');
 
 		<div class="input-container">
 			<?php echo label_tag(lang('notes'), $genid . 'profileFormNotes') ?>
-			<div style="float:left;width:600px;" class="notes-container">
+			<div class="notes-container">
 				<?php echo textarea_field('company[comments]', array_var($company_data, 'comments'), array('id' => $genid . 'profileFormNotes', 'style' => 'width: 100%;', 'rows' => 5)) ?>
 			</div>
 			<div class="clear"></div>

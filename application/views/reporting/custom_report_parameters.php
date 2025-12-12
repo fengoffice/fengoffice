@@ -130,6 +130,8 @@
 						$model_instance = new $model();
 						$col_type = $model_instance->getColumnType($condition->getFieldName());
 
+						Hook::fire('override_custom_report_parameter_rendering', array('field' => $condition->getFieldName(), 'report' => null, 'ot' => $ot), $col_type);
+
 						if(in_array($condition->getFieldName(), array_keys($external_fields))){
 				?>
 

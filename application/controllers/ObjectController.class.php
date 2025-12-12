@@ -479,7 +479,7 @@ class ObjectController extends ApplicationController {
 	 * @param $object
 	 * 
 	 */
-	function add_custom_properties($object_original, $cp_data=null) {
+	function add_custom_properties($object_original, $cp_data=null, $allow_subtypes = false) {
 
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
@@ -521,6 +521,13 @@ class ObjectController extends ApplicationController {
 		Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $object->getObjectTypeId(), 'object' => $object), $extra_conditions);
 
 		$customProps = CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, 'all', $extra_conditions, true, null, $object);
+
+		// Add subtype custom properties
+		if ($allow_subtypes && $object->getObjectSubtypeId() > 0) {
+			$extra_conditions = " AND object_subtype_id = " . $object->getObjectSubtypeId();
+			$subtype_customProps = array_merge($customProps, CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, 'all', $extra_conditions, true, null, $object));
+			$customProps = array_merge($customProps, $subtype_customProps);
+		}
 
 		//Sets all boolean custom properties to 0. If any boolean properties are returned, they are subsequently set to 1.
 		foreach($customProps as $cp){
@@ -599,14 +606,20 @@ class ObjectController extends ApplicationController {
 				}
 
 				$object = $object_original;
-				// if custom property does not belong to the object, look for an associated object for current cp
-				if (is_null($custom_property)) {
-					$custom_property = CustomProperties::instance()->findById($id);
-					$object = $object_original->getAdditionalCustomPropertyAssociatedObject($custom_property);
 
-					if (!$custom_property instanceof CustomProperty || !$object instanceof ContentDataObject) {
-						$object = $object_original;
+				if (is_null($custom_property)) {
+					if (!($object_original instanceof ContentDataObject)) {
 						continue;
+					}
+				
+					$custom_property = CustomProperties::instance()->findById($id);
+					if (!($custom_property instanceof CustomProperty)) {
+						continue;
+					}
+					
+					$associatedObject = $object_original->getAdditionalCustomPropertyAssociatedObject($custom_property);
+					if ($associatedObject instanceof ContentDataObject) {
+						$object = $associatedObject;
 					}
 				}
 
@@ -716,8 +729,8 @@ class ObjectController extends ApplicationController {
                                     $contact = Contacts::instance()->findById($list_val);
                                     $member = Members::findOneByObjectId($object->getObjectId());
                                     if($member instanceof Member && $contact instanceof Contact) {
-                                        $object_controller = new ObjectController();
-                                        $object_controller->add_to_members($contact, array($member->getId()),null,false);
+										ObjectMembers::instance()->addObjectToMembers($contact->getId(), array($member));
+										Hook::fire('after_add_contact_cp_value_to_member', array('contact' => $contact, 'member' => $member), $contact);
                                     }
                                 }
                             }
@@ -2121,14 +2134,6 @@ class ObjectController extends ApplicationController {
 			foreach ($cp_rows as $row) {
 				if (!isset($grouped[$row['obj_type']])) $grouped[$row['obj_type']] = array();
 				$cp_name = $row['cp_name'];
-				if ($row['cp_special']) {
-					$label_code = str_replace("_special", "", $row['cp_code']);
-					$label_value = Localization::instance()->lang($label_code);
-					if (is_null($label_value)) {
-						$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
-					}
-					if (!is_null($label_value)) $cp_name = $label_value;
-				}
 
 				if ($row['cp_type'] == 'list') {
 					$cp_values = $row['cp_values'];

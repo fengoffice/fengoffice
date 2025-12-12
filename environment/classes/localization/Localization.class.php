@@ -183,7 +183,7 @@ class Localization {
 			}
 			
 			// Plugins - Only PHP langs - include all installed plugins, no matter if they they have not been activated
-			$plugins = Plugins::instance()->getActive();
+			$plugins = Plugins::instance()->getInstalled();
 			foreach ( $plugins as $plugin ) {
 				/* @var $plugin Plugin */
 				$plg_dir = $plugin->getLanguagePath () . "/" . $this->getLocale ();

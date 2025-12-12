@@ -361,12 +361,35 @@ class Contact extends BaseContact {
 	} // getDisplayName
 	
 
+	/**
+	 * Get the initials for this contact.
+	 * 
+	 * This function attempts to retrieve the initials from custom properties. 
+	 * If not found, it generates initials from the display name.
+	 *
+	 * @access public
+	 * @return string
+	 */
 	function getInitials() {
 		$initials = '';
-		$names = explode(' ', $this->getDisplayName());
-		foreach ($names as $name) {
-			$initials .= strtoupper(substr($name, 0, 1));
+		
+		// Attempt to retrieve initials from custom properties
+		$initials_cp = CustomProperties::instance()->getCustomPropertyByCode($this->getObjectTypeId(), 'initials');
+		if ($initials_cp instanceof CustomProperty) {
+			$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getId(), $initials_cp->getId());
+			if ($cp_val instanceof CustomPropertyValue) {
+				$initials = trim($cp_val->getValue());
+			}
 		}
+
+		// If initials are not found in custom properties, generate from display name
+		if ($initials == '') {
+			$names = explode(' ', $this->getDisplayName());
+			foreach ($names as $name) {
+				$initials .= strtoupper(substr($name, 0, 1));
+			}
+		}
+		
 		return $initials; 
 	}
 

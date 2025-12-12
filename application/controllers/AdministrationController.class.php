@@ -295,8 +295,9 @@ class AdministrationController extends ApplicationController {
 		  try {
 			DB::beginWork();
 			
+			$saved_cps = array();
 			foreach ($custom_properties as $order => $data) {
-				
+
 				$new_cp = null;
 				
 				$is_assoc_substr = 'assoc_';
@@ -305,14 +306,29 @@ class AdministrationController extends ApplicationController {
 					if (is_numeric($data['id'])) {
 						$new_cp = CustomProperties::getCustomProperty($data['id']);
 					} else if (str_starts_with($data['id'], $is_assoc_substr)){	
-											
-						$dimension_id = substr($data['id'],6);
-						$dim_association = DimensionMemberAssociations::instance()->findById($dimension_id, false);
-						
-						$dim_association->setIsRequired($data['is_required']);
-						$dim_association->setIsMultiple($data['is_multiple_values']);						
-									
-						$dim_association->save();
+
+						$association_id = str_replace($is_assoc_substr, '', $data['id']);
+						$dim_association = DimensionMemberAssociations::instance()->findById($association_id, false);
+						if (!$dim_association instanceof DimensionMemberAssociation) {
+							continue;
+						}
+
+						$delete_association = array_var($data, 'is_disabled');
+						if ($delete_association) {
+							// checks if the association can be deleted and delete if so
+							// else an exception is thrown
+							$dim_association->delete();
+
+						} else {
+
+							$dim_association->setIsRequired($data['is_required']);
+							$dim_association->setIsMultiple($data['is_multiple_values']);						
+
+							$dim_association->save();
+
+							$ignored = null;
+							Hook::fire('after_dimension_member_association_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'dim_association' => $dim_association), $ignored);
+						}
 
 						continue;
 
@@ -381,10 +397,17 @@ class AdministrationController extends ApplicationController {
 								
 				$ret = null;
 				Hook::fire('after_custom_property_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'order' => $order), $ret);
+
+				$saved_cps[] = $new_cp;
 			}
 
 			$ignored = null;
-			Hook::fire('after_all_custom_properties_save', array('ot_id' => $obj_type_id, 'request' => $_REQUEST), $ignored);
+			Hook::fire('after_all_custom_properties_save', array(
+				'ot_id' => $obj_type_id, 
+				'request' => $_REQUEST,
+				'saved_cps' => $saved_cps,
+				'cps_data' => $custom_properties
+			), $ignored);
 			
 			DB::commit();
 			flash_success(lang('custom properties updated'));

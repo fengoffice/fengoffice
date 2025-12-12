@@ -51,14 +51,6 @@ if(count($cps) > 0){
 			}
 			    
 			$label = clean($customProp->getName());
-			if ($customProp->getIsSpecial()) {
-				$label_code = str_replace("_special", "", $customProp->getCode());
-				$label_value = Localization::instance()->lang($label_code);
-				if (is_null($label_value)) {
-					$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
-				}
-				if (!is_null($label_value)) $label = $label_value;
-			}
 			
 			$add_style = "";
 			echo label_tag($label, $genid . 'cp' . $customProp->getId(), $customProp->getIsRequired(), array('style' => 'display:inline;'.$add_style), $customProp->getType() == 'boolean'?'':':');

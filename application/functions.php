@@ -1,9 +1,13 @@
 <?php
 
+
+
+
 // ---------------------------------------------------
 //  System callback functions, registered automaticly
 //  or in application/application.php
 // ---------------------------------------------------
+
 
 
 /**
@@ -1928,6 +1932,27 @@ function check_column_exists($table_name, $col_name) {
 } // checkColumnExists
 
 /**
+ * Checks if a constraint exists in a table
+ *
+ *  This function returns true if the constraint exists
+ *
+ * @param string $table_name Name of the table
+ * @param string $constraint_name Name of the constraint
+ * @return boolean
+ */
+function check_constraint_exists($table_name, $constraint_name) {
+	$sql = "
+		SELECT *
+		FROM `information_schema`.`KEY_COLUMN_USAGE`
+		WHERE `TABLE_SCHEMA` = '".DB_NAME."' AND `TABLE_NAME` = '".$table_name."' AND CONSTRAINT_NAME='".$constraint_name."';
+	";
+	$res = mysqli_query(DB::connection()->getLink(), $sql);
+	$row = mysqli_fetch_array($res);
+	if ($row) return true;
+	else return false;
+}
+
+/**
  * Checks if a table exists
  *
  *  This function returns true if the table exists
@@ -1983,6 +2008,76 @@ function pdf_convert_and_download($html_filename, $download_filename=null, $orie
 		}
 	}
 }
+
+function chrome_convert($htmlFilePath, $gen_id)
+{
+    try {
+        // Absolute path to the Google Chrome executable
+        if (!defined('CHROME_PATH')) define('CHROME_PATH', getenv('CHROME_PATH') ?: '/usr/bin/chromium');
+        $chromePath = CHROME_PATH;
+
+        // Verify if the Chrome executable exists
+        if (!file_exists($chromePath)) {
+            throw new Exception("Google Chrome executable not found at: $chromePath");
+        }
+
+        Logger::log("Chrome executable found at: $chromePath", Logger::DEBUG, null, 'chrome-php');
+
+        // Output path for the generated PDF
+        $pdfOutputPath = ROOT . "/tmp/{$gen_id}_invoice.pdf";
+
+        // Create an instance of BrowserFactory using the Chrome path
+        Logger::log("Creating BrowserFactory instance with Chrome path", Logger::DEBUG, null, 'chrome-php');
+		
+        if (!class_exists('HeadlessChromium\BrowserFactory')) {
+            Logger::log("Chrome PHP library not found. Make sure 'chrome-php/chrome' is installed.", Logger::ERROR, null, 'chrome-php');
+            return false;
+        }
+		
+        $browserFactory = new \HeadlessChromium\BrowserFactory($chromePath);
+
+        // Launch browser
+        $browser = $browserFactory->createBrowser([
+            'headless' => true,
+            'noSandbox' => true,
+        ]);
+        Logger::log("Browser successfully launched", Logger::DEBUG, null, 'chrome-php');
+
+        // Create a new page
+        $page = $browser->createPage();
+        Logger::log("New page created", Logger::DEBUG, null, 'chrome-php');
+
+        // Navigate to the local HTML file
+        Logger::log("Navigating to HTML file: $htmlFilePath", Logger::DEBUG, null, 'chrome-php');
+        $page->navigate('file://' . $htmlFilePath)->waitForNavigation();
+        Logger::log("Navigation to HTML completed", Logger::DEBUG, null, 'chrome-php');
+
+        // Generate PDF from the page
+        Logger::log("Generating PDF", Logger::DEBUG, null, 'chrome-php');
+        $pdf = $page->pdf(['printBackground' => true]);
+        $pdf->saveToFile($pdfOutputPath);
+        Logger::log("PDF saved to: $pdfOutputPath", Logger::DEBUG, null, 'chrome-php');
+
+        // Close the browser
+        $browser->close();
+        Logger::log("Browser closed", Logger::DEBUG, null, 'chrome-php');
+
+        if (file_exists($pdfOutputPath)) {
+            Logger::log("PDF generation successful", Logger::INFO, null, 'chrome-php');
+            return [
+                'pdf_path' => $pdfOutputPath,
+                'html_path' => $htmlFilePath
+            ];
+        } else {
+            Logger::log("PDF was not generated successfully.", Logger::ERROR, null, 'chrome-php');
+            return false;
+        }
+    } catch (\Exception $e) {
+        Logger::log("Error generating PDF with Chrome PHP: " . $e->getMessage(), Logger::ERROR, null, 'chrome-php');
+        return false;
+    }
+}
+
 
 function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid = null, $page_size="A4", $zoom='', $html_header_footer = array()) {
 	if (!$genid) {
@@ -2286,7 +2381,7 @@ function classify_related_member_object_in_main_member($main_member, $related_me
 		if ($rel_obj instanceof ContentDataObject) {
 			
 			ObjectMembers::addObjectToMembers($rel_obj->getId(), array($main_member));
-			$rel_obj->addToSharingTable();
+			add_object_to_sharing_table($rel_obj, logged_user()); // saves permissions cache in background process
 			
 			$null=null; 
 			Hook::fire("after_auto_classifying_associated_object_of_member", array('obj' => $rel_obj, 'mem' => $main_member), $null);
@@ -3024,7 +3119,7 @@ function build_api_members_data(ContentDataObject $object) {
 		/* @var $m Member */
 		$m_data = array(
 				'id' => $m->getId(),
-				'name' => $m->getName(),
+				'name' => $m->getDisplayName(),
 				'dimension_id' => $m->getDimensionId()
 		);
 		$m_ot = ObjectTypes::instance()->findById($m->getObjectTypeId());
@@ -3049,4 +3144,18 @@ function startsWith($string, $startString)
 {
     $len = strlen($startString);
     return (substr($string, 0, $len) == $startString);
+}
+
+function getDocumentationWikiUrl() {
+
+	$product_name = product_name();
+
+	if (startsWith($product_name, 'Feng Office')) {
+		$company_name = 'fengoffice';
+	} else {
+		$company_name = 'evxsoftware';
+	}
+
+	return 'https://documentation.'.$company_name.'.com/';
+
 }

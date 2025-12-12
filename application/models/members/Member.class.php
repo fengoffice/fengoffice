@@ -687,10 +687,12 @@ class Member extends BaseMember {
 				return parent::setParentMemberId($value);
 			}else{
 				//error
-				Logger::log("Not valid parent member type '$parent_type'," . $this->getObjectTypeId());			
-				$errors = array() ;
-				$errors[] = "Not valid parent member type";
+				Logger::log("Not valid parent member type '$parent_type'," . $this->getObjectTypeId());
+				$errors = array();
+				$object_type_name = ObjectTypes::instance()->findById($this->getObjectTypeId())->getObjectTypeName();	
+				$errors[] = lang("not valid parent member type", $parent->getTypeNameToShow(), $parent->getDisplayName(), $object_type_name);
 				throw new DAOValidationError($this, $errors);
+				
 			}
 		} else {
 			return parent::setParentMemberId(0);
@@ -734,6 +736,47 @@ class Member extends BaseMember {
 				if ($cp_val) $value = $cp_val->getValue();
 			}
 		}
+		return $value;
+	}
+
+	/**
+	 * Get the value of a custom property
+	 *
+	 * @param int $cp_id The ID of the custom property
+	 * @param bool $format_date If true, the value will be formatted as a date
+	 * @return string The value of the custom property
+	 */
+	function getCustomPropertyValue($cp_id, $format_date = true) {
+		$value = '';
+
+		$object_type = ObjectTypes::instance()->findById($this->getObjectTypeId());
+
+		if ($object_type->getType() == 'dimension_group') {
+			if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+				$cp = MemberCustomProperties::getCustomProperty($cp_id);
+				if ($cp) {
+					$cp_val = MemberCustomPropertyValues::getMemberCustomPropertyValue($this->getId(), $cp->getId());
+					if ($cp_val) $value = $cp_val->getValue();
+				}
+			}
+		} else {
+			$cp = CustomProperties::getCustomProperty($cp_id);
+			if ($cp) {
+				$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getObjectId(), $cp->getId());
+				if ($cp_val) $value = $cp_val->getValue();
+			}
+		}
+		
+		// format the date if needed
+		if ($format_date && $cp && $value != '' && in_array($cp->getType(), array('date', 'datetime'))) {
+			$dt = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $value);
+			if ($cp->getType() == 'date') {
+				$value = format_date($dt, null, 0);
+			} else {
+				$value = format_datetime($dt, null, 0);
+			}
+		}
+
 		return $value;
 	}
 	

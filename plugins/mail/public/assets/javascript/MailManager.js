@@ -17,7 +17,7 @@ og.MailManager = function() {
 	this.last_email_date = '0000-00-00 00:00:00';
 	this.last_context_sent = '';
 	
-	if (!og.mail_rules || !og.mail_list_acc_filter_type) og.mail_list_acc_filter_type = 'view';
+	if (!og.advanced_core || !og.mail_list_acc_filter_type) og.mail_list_acc_filter_type = 'view';
 
 	this.fields = [
 		'object_id', 'type', 'ot_id', 'accountId', 'accountName', 'hasAttachment', 'subject', 'text', 'date', 'rawdate',
@@ -1380,7 +1380,8 @@ og.MailManager = function() {
 		if (window && window.navigator) {
 			is_online = window.navigator.onLine;
 		}
-		if (is_online) {
+		// use document.hidden to know if the tab is active, if not don't check if new mails
+		if (is_online /*&& !document.hidden*/) {
 			me.needRefresh = false;
 			me.checkIfNewMails();
 		}
