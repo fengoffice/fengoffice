@@ -1821,6 +1821,10 @@ class ProjectTask extends BaseProjectTask {
 		return $this->getColumnValue('is_billable');
 	}
 	
+	function setIsBillable($value) {
+		$this->setColumnValue('is_billable', $value);
+	}
+	
 	/**
 	 * Begin task templates
 	 */
@@ -2144,7 +2148,7 @@ class ProjectTask extends BaseProjectTask {
 		// Get worked time of the task
 		$select_sql = "GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - subtract/60 as worked_time";
 
-		if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+		if (Plugins::instance()->isActivePlugin('income')) {
 			$select_sql .= ", invoicing_status";
 		}
 
@@ -2163,7 +2167,7 @@ class ProjectTask extends BaseProjectTask {
 
 		foreach($rows as $row) {
 			$worked_minutes += array_var($row, 'worked_time', 0);
-			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+			if (Plugins::instance()->isActivePlugin('income')) {
 				$invoicing_status = array_var($row, 'invoicing_status', 'pending');
 				if ($invoicing_status == 'non_billable') {
 					$non_billable_worked_minutes += array_var($row, 'worked_time', 0);
@@ -2182,7 +2186,7 @@ class ProjectTask extends BaseProjectTask {
 		$non_billable_total_worked_minutes = $non_billable_worked_minutes;
 
 		foreach($subtasks as $subtask){
-			$total_worked_minutes += $subtask->getTotalWorkedTime();
+			$total_worked_minutes += $subtask->getOverallWorkedTime();
 			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
 				$billable_total_worked_minutes += $subtask->getBillableTotalWorkedTime();
 				$non_billable_total_worked_minutes += $subtask->getNonBillableTotalWorkedTime();
@@ -2224,12 +2228,8 @@ class ProjectTask extends BaseProjectTask {
 			// to use when saving the application log
 			$old_content_object = $this->generateOldContentObjectData();
 
-			$old_status = $this->getColumnValue('invoicing_status');
-			
+			// set the new status
 			$this->setColumnValue('invoicing_status', $status);
-			if($status == 'pending') {
-				$this->setColumnValue('invoice_id', 0);
-			}
 			$this->save();
 			
 			// create log

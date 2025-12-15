@@ -17,12 +17,6 @@ class ConfigController extends ApplicationController {
 	function __construct() {
 		parent::__construct();
 		prepare_company_website_controller($this, 'website');
-
-		// Access permissios
-		if(!can_manage_configuration(logged_user())) {
-			flash_error(lang('no access permissions'));
-			ajx_current("empty");
-		} // if
 	} // __construct
 
 	/**
@@ -123,11 +117,23 @@ class ConfigController extends ApplicationController {
 	 *
 	 */
 	function default_user_preferences() {
+		// Access permissios
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+		}
+
 		tpl_assign('config_categories', ContactConfigCategories::getAll());
 	} //list_preferences
 	
 	
 	function configure_widgets_default() {
+		// Access permissios
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+		}
+
 		$widgets = Widgets::instance()->findAll(array(
 			"conditions" => " plugin_id = 0 OR plugin_id IS NULL OR plugin_id IN ( SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0 )",
 			"order" => "default_order",
@@ -145,6 +151,12 @@ class ConfigController extends ApplicationController {
 	}
 	
 	function configure_widgets_default_submit() {
+		// Access permissios
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+		}
+
 		ajx_current("empty");
 		
 		$widgets_data = array_var($_POST, 'widgets');
@@ -182,6 +194,12 @@ class ConfigController extends ApplicationController {
 	 *
 	 */
 	function update_default_user_preferences(){
+		// Access permissios
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+		}
+
 		$category = ContactConfigCategories::instance()->findById(get_id());
 		if(!($category instanceof ContactConfigCategory)) {
 			flash_error(lang('config category dnx'));
@@ -195,6 +213,8 @@ class ConfigController extends ApplicationController {
 
 		$options = $category->getContactOptions(false);
 		$categories = ContactConfigCategories::getAll(false);
+
+		Hook::fire("validate_available_user_config_options", null, $options);
 
 		tpl_assign('category', $category);
 		tpl_assign('options', $options);
@@ -248,6 +268,12 @@ class ConfigController extends ApplicationController {
 	}
 
 	function enable_disable_widget_dimension() {
+		// Access permissios
+		if(!can_manage_configuration(logged_user())) {
+			flash_error(lang('no access permissions'));
+			ajx_current("empty");
+		}
+
 		ajx_current("empty");
 		
 		$dimension = Dimensions::getDimensionById(array_var($_GET, 'dim_id'));

@@ -67,7 +67,7 @@ og.isNumeric = function(sText){
  }
 
 
-og.addCustomPropertyRow = function(genid, property, id_suffix) {
+og.addCustomPropertyRow = function(genid, property, id_suffix, animate) {
 
 	var template = $('<tbody></tbody>');
 	
@@ -80,7 +80,7 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 	}
 	
 	var cp_count = og.admin_cp_count[genid];
-	if (!id_suffix) id_suffix = id_suffix;
+	if (!id_suffix) id_suffix = '';
 
 	var container_id = "cp-container-" + cp_count + id_suffix;
 
@@ -98,6 +98,16 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 	$("#"+genid+"custom-properties-table").append(template);
 	
 	var pre_id = "#" + container_id;
+
+	if (animate) {
+		$(pre_id).css('background-color', '#A9E05D').animate({backgroundColor: ''}, {
+			duration: 'slow',
+			complete: function() {
+				$(this).removeAttr('style');
+			}
+		});
+	}
+	
 	
 	$(pre_id + " #order").html(cp_count + 1);
 	$(pre_id + " #deleted_message").html(lang('custom property deleted'));
@@ -152,17 +162,24 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 		}
 
 		// if it is a fixed property or is the 'located_under'
-		// don't show desription and other inputs that don't apply
+		// don't show inputs that don't apply
 		if (isNaN(property.id)) {
-			$(pre_id + " #description").css('visibility', 'hidden');// use 'visibility=hidden' in this field so we keep the same row height
+			if (!og.advanced_core) {
+				$(pre_id + " #description").css('visibility', 'hidden');// use 'visibility=hidden' in this field so we keep the same row height
+			}
 			$(pre_id + " #default_value").hide();
 			$(pre_id + " #values").hide();
 			$(pre_id + " #show_in_lists").hide();
 			$(pre_id + " #visible_by_default").hide();
-			// for dimension member associations let the user define 'is_multiple' and 'is_required'
+			// for dimension member associations let the user define 'is_multiple' and 'is_required', else hide them
 			if (property.id.indexOf('assoc_') != 0) {
 				$(pre_id + " #is_required").hide();
 				$(pre_id + " #is_multiple_values").hide();
+			} else {
+				// for dimension member associations show the code
+				if (property.code) {
+					$(pre_id + " #values").parent().append('<span class="desc">' + lang('code') + ': ' + property.code + '</span>');
+				}
 			}
 		}
 
@@ -171,7 +188,10 @@ og.addCustomPropertyRow = function(genid, property, id_suffix) {
 			$(pre_id + " #delete_action").hide();
 			$(pre_id + " #undo_delete_action").hide();
 
-			$(pre_id + " #name").attr('disabled', 'disabled');
+			if (!og.advanced_core) {
+				$(pre_id + " #name").attr('disabled', 'disabled');
+			}
+
 			$(pre_id + " #type").attr('disabled', 'disabled');
 			$(pre_id + " #values").attr('disabled', 'disabled').addClass('disabled');
 			$(pre_id + " #values_hint").hide();
@@ -252,6 +272,7 @@ og.saveObjectTypeCustomProperties = function(genid, save_url) {
 				deleted: del,
 				name: name,
 				type: $(pre_id + " #type").val(),
+				cp_number: $(pre_id + " #cp_number").val(),
 				description: $(pre_id + " #description").attr('value'),
 				default_value: $(pre_id + " #default_value").attr('value'),
 				default_value_bool: $(pre_id + " #default_value_bool").val(),
@@ -322,11 +343,13 @@ og.customPropTypeChanged = function(combo) {
 		$("#"+$(container).attr('id')+" #default_value").show();
 	}
 	
-	if ($(combo).val() == 'numeric') {
+	if ($(combo).val() == 'numeric' || $(combo).val() == 'amount') {
 		$("#"+$(container).attr('id')+" #numeric_options").show();
 	} else {
 		$("#"+$(container).attr('id')+" #numeric_options").hide();
 	}
+
+	og.eventManager.fireEvent('on custom property type changed', {combo: combo});
 }
 
 

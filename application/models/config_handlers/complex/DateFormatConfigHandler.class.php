@@ -20,56 +20,110 @@
       $option_attributes = $this->getValue() == 'd/m/Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('dd/mm/yyyy', 'd/m/Y', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'd/m/y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('dd/mm/yy', 'd/m/y', $option_attributes);
+
       $option_attributes = $this->getValue() == 'j/n/Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('d/m/yyyy', 'j/n/Y', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'j/n/y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('d/m/yy', 'j/n/y', $option_attributes);
       
       $option_attributes = $this->getValue() == 'm/d/Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('mm/dd/yyyy', 'm/d/Y', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'm/d/y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('mm/dd/yy', 'm/d/y', $option_attributes);
+
       $option_attributes = $this->getValue() == 'n/j/Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('m/d/yyyy', 'n/j/Y', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'n/j/y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('m/d/yy', 'n/j/y', $option_attributes);
       
       $option_attributes = $this->getValue() == 'Y/m/d' ? array('selected' => 'selected') : null;
       $options[] = option_tag('yyyy/mm/dd', 'Y/m/d', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'y/m/d' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('yy/mm/dd', 'y/m/d', $option_attributes);
+
       $option_attributes = $this->getValue() == 'Y/n/j' ? array('selected' => 'selected') : null;
       $options[] = option_tag('yyyy/m/d', 'Y/n/j', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'y/n/j' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('yy/m/d', 'y/n/j', $option_attributes);
       
       $option_attributes = $this->getValue() == 'd-m-Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('dd-mm-yyyy', 'd-m-Y', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'd-m-y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('dd-mm-yy', 'd-m-y', $option_attributes);
+
       $option_attributes = $this->getValue() == 'j-n-Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('d-m-yyyy', 'j-n-Y', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'j-n-y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('d-m-yy', 'j-n-y', $option_attributes);
       
       $option_attributes = $this->getValue() == 'm-d-Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('mm-dd-yyyy', 'm-d-Y', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'm-d-y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('mm-dd-yy', 'm-d-y', $option_attributes);
+
       $option_attributes = $this->getValue() == 'n-j-Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('m-d-yyyy', 'n-j-Y', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'n-j-y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('m-d-yy', 'n-j-y', $option_attributes);
       
       $option_attributes = $this->getValue() == 'Y-m-d' ? array('selected' => 'selected') : null;
       $options[] = option_tag('yyyy-mm-dd', 'Y-m-d', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'y-m-d' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('yy-mm-dd', 'y-m-d', $option_attributes);
+
       $option_attributes = $this->getValue() == 'Y-n-j' ? array('selected' => 'selected') : null;
       $options[] = option_tag('yyyy-m-d', 'Y-n-j', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'y-n-j' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('yy-m-d', 'y-n-j', $option_attributes);
       
       $option_attributes = $this->getValue() == 'd.m.Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('dd.mm.yyyy', 'd.m.Y', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'd.m.y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('dd.mm.yy', 'd.m.y', $option_attributes);
+
       $option_attributes = $this->getValue() == 'j.n.Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('d.m.yyyy', 'j.n.Y', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'j.n.y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('d.m.yy', 'j.n.y', $option_attributes);
       
       $option_attributes = $this->getValue() == 'm.d.Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('mm.dd.yyyy', 'm.d.Y', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'm.d.y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('mm.dd.yy', 'm.d.y', $option_attributes);
+
       $option_attributes = $this->getValue() == 'n.j.Y' ? array('selected' => 'selected') : null;
       $options[] = option_tag('m.d.yyyy', 'n.j.Y', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'n.j.y' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('m.d.yy', 'n.j.y', $option_attributes);
       
       $option_attributes = $this->getValue() == 'Y.m.d' ? array('selected' => 'selected') : null;
       $options[] = option_tag('yyyy.mm.dd', 'Y.m.d', $option_attributes);
 
+      $option_attributes = $this->getValue() == 'y.m.d' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('yy.mm.dd', 'y.m.d', $option_attributes);
+
       $option_attributes = $this->getValue() == 'Y.n.j' ? array('selected' => 'selected') : null;
       $options[] = option_tag('yyyy.m.d', 'Y.n.j', $option_attributes);
+
+      $option_attributes = $this->getValue() == 'y.n.j' ? array('selected' => 'selected') : null;
+      $options[] = option_tag('yy.m.d', 'y.n.j', $option_attributes);
       
       return select_box($control_name, $options);
     } // render
@@ -103,6 +157,24 @@
       $options[] = option_tag('yyyy/mm/dd', 'Y/m/d', $option_attributes);
 
       $option_attributes = 
+        $selected == 'd/m/y' ?
+          array('selected' => 'selected', 'title' => lang('day/month/year with leading zeros')) : 
+          array('title' => lang('day/month/year with leading zeros'));
+      $options[] = option_tag('dd/mm/yy', 'd/m/y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'm/d/y' ? 
+          array('selected' => 'selected', 'title' => lang('month/day/year with leading zeros')) : 
+          array('title' => lang('month/day/year with leading zeros'));
+      $options[] = option_tag('mm/dd/yy', 'm/d/y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'y/m/d' ? 
+          array('selected' => 'selected', 'title' => lang('year/month/day with leading zeros')) : 
+          array('title' => lang('year/month/day with leading zeros'));
+      $options[] = option_tag('yy/mm/dd', 'y/m/d', $option_attributes);
+
+      $option_attributes = 
         $selected == 'j/n/Y' ? 
           array('selected' => 'selected', 'title' => lang('day/month/year with no leading zeros')) : 
           array('title' => lang('day/month/year with no leading zeros'));
@@ -119,6 +191,26 @@
           array('selected' => 'selected', 'title' => lang('year/month/day with no leading zeros')) : 
           array('title' => lang('year/month/day with no leading zeros'));
       $options[] = option_tag('yyyy/m/d', 'Y/n/j', $option_attributes);
+
+      // j, n, y formats
+      $option_attributes = 
+        $selected == 'j/n/y' ? 
+          array('selected' => 'selected', 'title' => lang('day/month/year with no leading zeros')) : 
+          array('title' => lang('day/month/year with no leading zeros'));
+      $options[] = option_tag('d/m/yy', 'j/n/y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'n/j/y' ? 
+          array('selected' => 'selected', 'title' => lang('month/day/year with no leading zeros')) : 
+          array('title' => lang('month/day/year with no leading zeros'));
+      $options[] = option_tag('m/d/yy', 'n/j/y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'y/n/j' ? 
+          array('selected' => 'selected', 'title' => lang('year/month/day with no leading zeros')) : 
+          array('title' => lang('year/month/day with no leading zeros'));
+      $options[] = option_tag('yy/m/d', 'y/n/j', $option_attributes);
+
 
       $option_attributes = 
         $selected == 'd-m-Y' ? 
@@ -137,6 +229,25 @@
           array('selected' => 'selected', 'title' => lang('year-month-day with leading zeros')) : 
           array('title' => lang('year-month-day with leading zeros'));
       $options[] = option_tag('yyyy-mm-dd', 'Y-m-d', $option_attributes);
+
+      // d, m, y formats
+      $option_attributes = 
+        $selected == 'd-m-y' ? 
+          array('selected' => 'selected', 'title' => lang('day-month-year with leading zeros')) : 
+          array('title' => lang('day-month-year with leading zeros'));
+      $options[] = option_tag('dd-mm-yy', 'd-m-y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'm-d-y' ? 
+          array('selected' => 'selected', 'title' => lang('month-day-year with leading zeros')) : 
+          array('title' => lang('month-day-year with leading zeros'));
+      $options[] = option_tag('mm-dd-yy', 'm-d-y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'y-m-d' ? 
+          array('selected' => 'selected', 'title' => lang('year-month-day with leading zeros')) : 
+          array('title' => lang('year-month-day with leading zeros'));
+      $options[] = option_tag('yy-mm-dd', 'y-m-d', $option_attributes);
       
       $option_attributes = 
         $selected == 'd.m.Y' ? 
@@ -155,6 +266,25 @@
           array('selected' => 'selected', 'title' => lang('year.month.day with leading zeros')) : 
           array('title' => lang('year.month.day with leading zeros'));
       $options[] = option_tag('yyyy.mm.dd', 'Y.m.d', $option_attributes);
+
+      // d, m, y formats
+      $option_attributes = 
+        $selected == 'd.m.y' ? 
+          array('selected' => 'selected', 'title' => lang('day.month.year with leading zeros')) : 
+          array('title' => lang('day.month.year with leading zeros'));
+      $options[] = option_tag('dd.mm.yy', 'd.m.y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'm.d.y' ? 
+          array('selected' => 'selected', 'title' => lang('month.day.year with leading zeros')) : 
+          array('title' => lang('month.day.year with leading zeros'));
+      $options[] = option_tag('mm.dd.yy', 'm.d.y', $option_attributes);
+
+      $option_attributes = 
+        $selected == 'y.m.d' ? 
+          array('selected' => 'selected', 'title' => lang('year.month.day with leading zeros')) : 
+          array('title' => lang('year.month.day with leading zeros'));
+      $options[] = option_tag('yy.mm.dd', 'y.m.d', $option_attributes);
 
       $option_attributes = 
         $selected == 'd F, Y' ? 

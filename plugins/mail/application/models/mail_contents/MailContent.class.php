@@ -867,4 +867,117 @@ class MailContent extends BaseMailContent {
 		
 		DB::execute($sql);		
 	}
+
+	function trash($trashDate = NULL, $fire_hook = true) {
+		parent::trash($trashDate, $fire_hook);
+		if (config_option('move_email_on_server')) {
+
+			Env::useHelper('functions', 'mail');
+
+			// Extract mail
+			$mail = $this;
+			$account = $mail instanceof MailContent ? $mail->getAccount() : null;
+
+			Logger::log("HOOK after_mail_trash invoked", Logger::DEBUG, null, 'imap_move');
+
+			if (!$mail instanceof MailContent) {
+				Logger::log("after_mail_trash: missing or invalid mail param", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			if (!$account instanceof MailAccount) {
+				Logger::log("after_mail_trash: could not resolve account", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			Logger::log("Trash mail: ID ".$mail->getId(), Logger::DEBUG, null, 'imap_move');
+
+			// 1) Destination folder = TRASH
+			$trash_folder = $account->getTrashFolderName();
+			Logger::log("Trash folder detected: ".$trash_folder, Logger::DEBUG, null, 'imap_move');
+
+			// 2) Connect IMAP
+			$imap = $account->imapConnect();
+			$login_ret = $account->imapLogin($imap);
+			if (PEAR::isError($login_ret)) {
+				Logger::log("ERROR IMAP login in after_mail_trash: ".$login_ret->getMessage(), Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			// 3) Folders to ADD
+			$folders_to_add = array($trash_folder);
+
+			// 4) Folders to REMOVE (all current folders)
+			$rows = DB::executeOne("
+				SELECT folder
+				FROM " . TABLE_PREFIX . "mail_content_imap_folders
+				WHERE object_id = " . $mail->getId()
+			);
+
+			$folders_to_remove = array_unique(array_filter(array_flat($rows)));
+
+			Logger::log("Folders to remove on trash: ".json_encode($folders_to_remove), Logger::DEBUG, null, 'imap_move');
+
+			// 5) Move
+			move_mail_to_imap_folders($account, $imap, $mail, $folders_to_add, $folders_to_remove);
+
+			Logger::log("HOOK after_mail_trash finished", Logger::DEBUG, null, 'imap_move');
+		}
+	}
+
+
+	function untrash($fire_hook = true) {
+
+		parent::untrash($fire_hook);
+
+		if (config_option('move_email_on_server')) {
+
+			Env::useHelper('functions', 'mail');
+
+			// Extract mail
+			$mail = $this;
+			$account = $mail instanceof MailContent ? $mail->getAccount() : null;
+
+			Logger::log("HOOK after_mail_untrash invoked", Logger::DEBUG, null, 'imap_move');
+
+			if (!$mail instanceof MailContent) {
+				Logger::log("after_mail_untrash: missing or invalid mail param", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			if (!$account instanceof MailAccount) {
+				Logger::log("after_mail_untrash: could not resolve account", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			Logger::log("Untrash mail: ID ".$mail->getId(), Logger::DEBUG, null, 'imap_move');
+
+			// 1) Get original folder with fallback to INBOX
+			$restore_folder = $account->getRestoreFolderName($mail);
+			Logger::log("Restore folder: ".$restore_folder, Logger::DEBUG, null, 'imap_move');
+
+			// 2) Connect IMAP
+			$imap = $account->imapConnect();
+			$login_ret = $account->imapLogin($imap);
+			if (PEAR::isError($login_ret)) {
+				Logger::log("ERROR IMAP login in after_mail_untrash: ".$login_ret->getMessage(), Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			// 3) Folders to ADD
+			$folders_to_add = array($restore_folder);
+
+			// 4) Folders to REMOVE (Trash only)
+			$trash_folder = $account->getTrashFolderName();
+			$folders_to_remove = array($trash_folder);
+
+			Logger::log("Folders to remove on untrash: ".json_encode($folders_to_remove), Logger::DEBUG, null, 'imap_move');
+
+			// 5) Move
+			move_mail_to_imap_folders($account, $imap, $mail, $folders_to_add, $folders_to_remove);
+
+			Logger::log("HOOK after_mail_untrash finished", Logger::DEBUG, null, 'imap_move');
+		}
+
+	}
 }

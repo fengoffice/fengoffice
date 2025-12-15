@@ -195,6 +195,11 @@ while (!feof($fp))
 				$cal[0]['prodid'] = stripslashes($data);
 				break;
 				
+				// Method (REQUEST, REPLY, etc.)
+				case 'METHOD':
+				$cal[0]['method'] = stripslashes($data);
+				break;
+				
 				/********** END CALENDER INFO ***********/
 				
 				
@@ -236,6 +241,9 @@ while (!feof($fp))
 						{
 						$date[1] = 1971;
 						}
+					if (!$date[4]) $date[4] = 0;
+					if (!$date[5]) $date[5] = 0;
+					if (!$date[6]) $date[6] = 0;
 					
 					$cal[$event]['all_day'] = 0;
 					$cal[$event]['start_date'] = $date[1].$date[2].$date[3];
@@ -259,6 +267,9 @@ while (!feof($fp))
 					{
 					$date[1] = 1971;
 					}
+				if (!$date[4]) $date[4] = 0;
+				if (!$date[5]) $date[5] = 0;
+				if (!$date[6]) $date[6] = 0;
 					
 				$cal[$event]['end_date'] = $date[1].$date[2].$date[3];
 				$cal[$event]['end_time'] = $date[4].$date[5];
@@ -281,6 +292,9 @@ while (!feof($fp))
 					{
 					$date[1] = 1971;
 					}
+				if (!$date[4]) $date[4] = 0;
+				if (!$date[5]) $date[5] = 0;
+				if (!$date[6]) $date[6] = 0;
 					
 				$cal[$event]['stamp_date'] = $date[1].$date[2].$date[3];
 				$cal[$event]['stamp_time'] = $date[4].$date[5];
@@ -320,11 +334,18 @@ while (!feof($fp))
 				
 				// List of attendees
 				case 'ATTENDEE':
-				
+				if (!isset($attendee)) $attendee = 1;
+
 				$att = explode(';', $buffer);
 				foreach ($att as $value) 
 					{
 					$att_content = explode('=', $value);
+
+					// Email
+					if (isset($att_content[1]) && strpos($att_content[1], ':mailto:') !== false) {
+						$exploded = explode(':mailto:', $att_content[1]);
+						$cal[$event]['attendee'][$attendee]['mailto'] = end($exploded);
+					}
 					
 					switch ($att_content[0])
 						{
@@ -340,7 +361,7 @@ while (!feof($fp))
 						
 						// 
 						case 'PARTSTAT':
-						
+						$cal[$event]['attendee'][$attendee]['status'] = $att_content[1];
 						break;
 						
 						// 
@@ -360,7 +381,12 @@ while (!feof($fp))
 						
 						// Common Name
 						case 'CN':
-						$cal[$event]['attendee'][$attendee]['name'] = $att_content[1];
+							if (strpos($att_content[1], ':mailto:') !== false) {
+								$exploded = explode(':mailto:', $att_content[1]);
+								$cal[$event]['attendee'][$attendee]['name'] = $exploded[0];
+							} else {
+								$cal[$event]['attendee'][$attendee]['name'] = $att_content[1];
+							}
 						break;
 						
 						// 
@@ -400,6 +426,19 @@ while (!feof($fp))
 				// Status of event
 				case 'STATUS':
 				$cal[$event]['status'] = $data;
+				break;
+				
+				// Organizer of event
+				case 'ORGANIZER':
+					if (str_starts_with($data, 'mailto:')) {
+						$email = substr($data, 7);
+						$org_exp = explode('=', $field);
+						$name = end($org_exp);
+					} else {
+						$email = $data;
+						$name = $data;
+					}
+				$cal[$event]['organizer'] = array('email' => $email, 'name' => $name);
 				break;
 				
 				

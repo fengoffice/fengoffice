@@ -219,8 +219,8 @@ og.renderContactSelector = function(config) {
                     // focus on text input
                     setTimeout(function(){
                         combo.emptyText = '';
-			combo.clearValue();
-			combo.focus();
+						combo.clearValue();
+						combo.focus();
                     }, 50);
                     var quickConfig = {
                         combo:combo,
@@ -266,10 +266,10 @@ og.renderContactSelector = function(config) {
 		}
 	}else{
 		var array_selected_ids = selected != '' ? selected.split(",") : [];
-		var array_selected_names = selected_name != '' ? selected_name.split(",") : [];
-		if(array_selected_ids.length > 0 && array_selected_names.length > 0){
+		//var array_selected_names = selected_name != '' ? selected_name.split(",") : [];
+		if(array_selected_ids.length > 0){
 			for(var i=0; i < array_selected_ids.length; i++){
-				og.selectContactFromCombo(array_selected_ids[i], array_selected_names[i], contactsCombo, genid+render_to, genid+id, onchange_fn, is_multiple);
+				og.selectContactFromCombo(array_selected_ids[i], null, contactsCombo, genid+render_to, genid+id, onchange_fn, is_multiple);
 			}
 		}
 
@@ -325,67 +325,37 @@ og.selectContactFromCombo = function(contact_id, contact_name, combo, container_
 		document.getElementById(hf_id).value = contact_id;
 	}
 
-
-	// draw contact div and hide combo
-	if (!is_multiple) combo.hide();
-	var style = "";// "min-width:300px; width:300px;";
-	var remove_text = lang('remove');
-	if (combo.config_parameters.remove_text) remove_text = combo.config_parameters.remove_text;
-	var rem_float_dir = 'right';
-
-	if (combo.initialConfig.inline_selector) {
-		style = "display:inline-flex; width:"+ combo.initialConfig.width +"px;";
-		remove_text = "";
-		rem_float_dir = 'left';
-	}
-	if(no_style_in_selected==true){
-        style="";
-    }
-    
-    var onchange_fn_str = '';
+	let onchange_fn_str = "";
 	if (typeof(onchange_fn) == 'function') {
 		onchange_fn(contact_id);
 		onchange_fn_str = onchange_fn.name + "("+contact_id+");";
 	}
-    if (combo.initialConfig.is_bootstrap) {
-        var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="font-size: 1rem;white-space: nowrap;'+style+'">' +
-			'<label>'+ contact_name + '</label>' +
-            '<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');' +
-			'og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" ' +
-			'class="link-ico ico-delete multiple-cp-contact-a-remove" ' +
-			'style="padding-left:18px;font-size: 0.75rem;padding-top: 1px;padding-bottom: 19px;">'+remove_text+'</a>' +
-			'</div>';
-    }else{
-		if (!is_multiple){
-			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="'+style+'"><div style="float:left;margin-right:5px;">'+ contact_name + '</div>' +
-			'<a href="#" onclick="document.getElementById(\''+hf_id+'\').value=0;og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" style="padding-left:18px;" class="link-ico ico-delete">'+remove_text+'</a></div>';
 
-		}else{
-			var html = '<div class="contact-sel-name-cont '+((custom_selected_class!=null)?custom_selected_class:"")+'" style="white-space: nowrap;'+style+'"><div class="multiple-cp-contact-div-name">'+ contact_name + '</div>' +
-			'<a href="#" onclick="og.reCalculateValue('+contact_id+',\''+hf_id+'\');og.showContactCombo(\''+combo.getId()+'\'); Ext.get(this).parent().remove();'+onchange_fn_str+'" class="link-ico ico-delete multiple-cp-contact-a-remove">'+remove_text+'</a></div>';
-			
+	// draw contact div and hide combo
+	if (!is_multiple) combo.hide();
+
+	// after selection show only the contact name or the full card
+	let show_only_name = combo.config_parameters.show_only_name ? '1' : '0';
+
+	og.openLink(og.getUrl('contact', 'contact_selector_contact_card'), {
+		hideLoading: true,
+		preventPanelLoad: true,
+		post: {
+			id: contact_id,
+			combo_id: combo.getId(),
+			hf_id: hf_id,
+			is_multiple: is_multiple ? '1' : '0',
+			container_id: container_id,
+			onchange_fn_str: onchange_fn_str,
+			show_only_name: show_only_name,
+		},
+		callback: function (success, data) {
+			if (success && data && data.html) {
+				$('#' + data.post_vars.container_id).append(data.html);
+			}
+			og.hideLoading();
 		}
-	}
-
-	//fill div with names contact selected and option to remove it.
-	var div_id = hf_id+'_labels';
-
-	if(unclassified){
-        og.elementToAddUnclassified = html;
-        og.ExtModal.show({
-            title:lang('add unclassified contact'),
-            html:og.contentModalAddUnclassified(container_id,div_id)
-        })
-    }else{
-        if (document.getElementById(div_id)){
-            document.getElementById(div_id).insertAdjacentHTML( 'beforeend', html);
-        }else{
-            Ext.get(container_id).insertHtml('beforeEnd', html);
-        }
-    }
-
-
-
+	});
 
 }
 
@@ -428,70 +398,127 @@ og.showContactCombo = function(id) {
 	}
 }
 
-og.renderModalQuickContact = function (member,combo_id,render,gen,multiple){
-    og.ExtModal.show({
-        title:lang('new contact'),
-        html:og.contentModalQuickContact(member,combo_id,render,gen,multiple)
-    });
-    
-    setTimeout(function() {
-    	// focus on the fist input
-    	$("#"+gen+"profileFormFirstName").focus();
-    	
-    	// prevent focus to get out of this modal
-    	$("#"+gen+"profileFormFirstName").focusout(function() {
-    		$("#"+gen+"profileFormSurname").focus();
-    	});
-    	$("#"+gen+"profileFormSurname").focusout(function() {
-    		$("#"+gen+"profileFormEmail").focus();
-    	});
-    	$("#"+gen+"profileFormEmail").focusout(function() {
-    		$("#"+gen+"submit").focus();
-    	});
-    	$("#"+gen+"submit").focusout(function() {
-    		$("#"+gen+"profileFormFirstName").focus();
-    	});
-    	// --
-    }, 100);
+/**
+ * Renders the modal form for adding a quick contact.
+ * 
+ * @param {number} member_id - The ID of the member to associate with the contact.
+ * @param {string} combo_id - The ID of the combo box to update.
+ * @param {string} render_to - The target element for rendering.
+ * @param {string} genid - The generated ID for the form.
+ * @param {boolean} multiple - Indicates if multiple contacts can be selected.
+ */
+og.renderModalQuickContact = function (member_id, combo_id, render_to, genid, multiple) {
+
+	// Open the link to the quick add form page
+	og.openLink(og.getUrl('contact','quick_add_form'),{
+		// Pass the member ID, combo box ID, generated ID, render target,
+		// and multiple flag as parameters
+		post: {
+			member_id: member_id,
+			combo_id: combo_id,
+			genid: genid,
+			render_to: render_to,
+			multiple: multiple
+		},
+		// Hide the loading indicator
+		hideLoading: true,
+		// Don't load the form in a panel
+		preventPanelLoad: true,
+		// Callback to execute when the form is loaded
+		callback: function(success, data) {
+			if (success) {
+				// Extract the HTML from the response and show it in the modal
+				html = og.extractScripts(data.current.data);
+				og.ExtModal.show({
+					html: html
+				});
+			}
+		}
+	});
+	
 }
 
-og.contentModalQuickContact = function (member,combo_id,render,gen,multiple){
+/**
+ * Returns an array of client member IDs that are selected in the form.
+ * It goes through all the associations of the object type 'client' and
+ * checks if the associated member field is set. If it is, it parses the
+ * value as a JSON array and concatenates it with the current member IDs.
+ */
+og.getFormSelectedClientMemberIds = function() {
 
-    var method = "og.addQuickContactFromModal('"+member+"','"+combo_id+"','"+render+"','"+gen+"',"+multiple+")";
-    var button_content = lang("add contact");
-    var placeholder_f_name = lang("first name");
-    var placeholder_l_name = lang("last name");
-    var placeholder_e_mail = lang("email address");
-    return '<div id="modalQuickContact" class="coInputHeader">'
-	+'<div class="coInputName"><form>'
-		+'<input id="'+gen+'profileFormFirstName" tabindex="0" maxlength="50" placeholder="'+placeholder_f_name+' *" class="title short" type="text" name="contact[first_name]" value="">'
-        +'<input id="'+gen+'profileFormSurname" tabindex="0" maxlength="50" placeholder="'+placeholder_l_name+' *" class="title short" type="text" name="contact[surname]" value="">'
-        +'<input id="'+gen+'profileFormEmail" tabindex="0" maxlength="90" placeholder="'+placeholder_e_mail+'" class="title short" type="text" name="contact[email]" value=""></form></div>'
-	+'<div class="coInputButtons" style="float:  none;width: 100%;">'
-	+'<button style="margin-top:0px;margin-left:10px;float: right;" id="'+gen+'submit" class="submit " type="submit" accesskey="s" onclick="'+method+'">'+button_content+'</button></div>'
-        +'<input type="hidden" name="contact[new_contact_from_mail_div_id]" value="">'
-        +'<input type="hidden" name="contact[hf_contacts]" value="">'
-        +'<div class="clear"></div>'
-        +'<div class="clear"></div>'
-        +'</div>'
-};
+	let mem_ids = [];
+	if (og.customers) {
+		// iterate over all dimension member associations
+		for (x in og.dimension_member_associations_by_id) {
+			let assoc = og.dimension_member_associations_by_id[x];
+			if (typeof assoc == 'function') continue;
 
-og.addQuickContactFromModal = function (member,combo_id,render,gen,multiple){
-    var modalQuickContact = $('#modalQuickContact');
-    var name = modalQuickContact.find('#'+gen+'profileFormFirstName').val();
-    var surname = modalQuickContact.find('#'+gen+'profileFormSurname').val();
-    var email = modalQuickContact.find('#'+gen+'profileFormEmail').val();
+			// when the association is with the object type 'client' get the value
+			if (assoc.assoc_object_type_id == og.customers.object_type_id) {
+				let val = $('[name="associated_members\['+ assoc.id +'\]"]').val();
+				if (val) {
+					let cli_mem_ids = JSON.parse(val);
+					if (cli_mem_ids && cli_mem_ids.length > 0) {
+						mem_ids = mem_ids.concat(cli_mem_ids);
+					}
+				}
+			}
+		}
+	}
+	
+	return mem_ids;
+}
 
-    og.openLink(og.getUrl('contact','add',{}),{
-       hideLoading: true,
-       post:{'contact[first_name]':name,'contact[surname]':surname,'contact[email]':email,'members':'['+member+']'},
-       callback: function(success, data) {
-           if (success){
-               var combo = Ext.getCmp(combo_id);
-               og.selectContactFromCombo(data.contact_id,data.contact_name,combo,render,gen,'',multiple);
-               og.ExtModal.hide();
-           }
-       }
+/**
+ * Adds a quick contact from a modal form.
+ * 
+ * @param {number} member_id - The ID of the member to associate with the contact.
+ * @param {string} combo_id - The ID of the combo box to update.
+ * @param {string} render_to - The target element for rendering.
+ * @param {string} genid - The generated ID for the form.
+ * @param {boolean} multiple - Indicates if multiple contacts can be selected.
+ */
+og.addQuickContactFromModal = function (member_id, combo_id, render_to, genid, multiple){
+    
+    // Construct the form ID
+    let form_id = genid + "submit-edit-form";
+
+	// build the classification of the new contact, the current member + the selected client members if any
+	let member_ids = [];
+	member_ids.push(member_id);
+	let client_member_ids = og.getFormSelectedClientMemberIds();
+	if (client_member_ids.length > 0) {
+		member_ids = member_ids.concat(client_member_ids);
+	}
+	let member_ids_str = member_ids.join(',');
+    
+    // Initialize the post object with default values
+    og.quickadd_contact_post_object = {
+        from_quick_add: 1,
+        members: '[' + member_ids_str + ']',
+    };
+    
+    // Collect form input values and populate the post object
+    $('.contact-quick-add #' + form_id + ' input, .contact-quick-add #' + form_id + ' textarea, .contact-quick-add #' + form_id + ' select').each(function(index) {
+        og.quickadd_contact_post_object[$(this).attr('name')] = $(this).val();
+    });
+
+    // Send an AJAX request to add the contact
+    og.openLink(og.getUrl('contact', 'add'), {
+        hideLoading: true,
+        preventPanelLoad: true,
+        post: og.quickadd_contact_post_object,
+        callback: function(success, data) {
+            if (success) {
+                // If successful, update the combo box with the new contact
+                var combo = Ext.getCmp(combo_id);
+                if (combo) {
+                    og.selectContactFromCombo(data.contact_id, data.contact_name, combo, render_to, genid, '', multiple);
+                }
+                // Hide the modal dialog
+                og.ExtModal.hide();
+            }
+        }
     });
 }
 

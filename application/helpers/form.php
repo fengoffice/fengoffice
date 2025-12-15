@@ -797,17 +797,14 @@ function select_timezone_widget($name, $value = null, $attributes = null) {
  * @return string
  */
 function timezone_selector($name, $value = null, $attributes = null) {
-
+    
     $genid = gen_id();
-    if (!isset($attributes['id'])) {
-        $attributes['id'] = $genid . 'timezoneSelector';
-    }
+    $attributes['id'] = $attributes['id'] ?? $genid . 'timezoneSelector';
 
-    $sel_country = null;
+    $value = strtoupper($value ?: ConfigOptions::getOptionValue('default_timezone'));
+
     $selected_zone = Timezones::getTimezoneById($value);
-    if (is_array($selected_zone)) {
-        $sel_country = $selected_zone['country_code'];
-    }
+    $sel_country = is_array($selected_zone) ? $selected_zone['country_code'] : $value;
 
     $country_options = array();
     $countries = Countries::getAll();
@@ -835,6 +832,7 @@ function timezone_selector($name, $value = null, $attributes = null) {
 
     return $html;
 }
+
 
 function timezone_selector_hidden($object, $genid, $attributes = null) {
 
@@ -1361,8 +1359,20 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
     $ignore_pre_id = $ignore_pre_id ? "true" : "false";
 
     if (is_array($values_array) && count($values_array) > 0) {
+		$tmp_values = array();
+		foreach ($values_array as $value) {
+			if (is_array($value)) {
+				$tmp_values = array_merge($tmp_values, $value);
+			} else {
+				$tmp_values[] = $value;
+			}
+		}
+		$values_array = $tmp_values;
+		
         foreach ($values_array as $value) {
-
+			if ($value instanceof CustomPropertyValue) {
+				$value = $value->getValue();
+			}
             if ($value instanceof ContactAddress) {
                 $tmp_str = $value->getAddressTypeId() . "|" . $value->getStreet() . "|" . $value->getCity() . "|" .
                         $value->getState() . "|" . $value->getCountry() . "|" . $value->getZipCode() . "|" . $value->getId();

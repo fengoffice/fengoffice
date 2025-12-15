@@ -1,6 +1,6 @@
 <div style="font-family: Verdana, Arial, sans-serif; font-size: 12px;">
 
-<?php echo lang('hi john doe', $user->getObjectName()) ?><br><br>
+<?php echo lang('hi john doe', $user->getObjectName()) ?>,<br><br>
 
 <?php echo lang('password expires days', $exp_days) ?><br><br>
 

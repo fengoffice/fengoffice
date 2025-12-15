@@ -26,7 +26,8 @@
 				<input type="hidden" id="is_special" name="<?php echo "custom_properties[{number}][is_special]"?>" value="0" />
 				<input type="hidden" id="is_disabled" name="<?php echo "custom_properties[{number}][is_disabled]"?>" value="0" />
 				<input type="hidden" id="deleted" name="<?php echo "custom_properties[{number}][is_disabled]"?>" value="0" />
-				
+				<input type="hidden" id="cp_number" name="<?php echo "custom_properties[{number}][cp_number]"?>" value="{number}" />
+
 				<?php
 					if (isset($extra_params['additional_hidden_fields']) && count($extra_params['additional_hidden_fields']) > 0) {
 						$additional_hidden_fields = $extra_params['additional_hidden_fields'];
@@ -40,7 +41,7 @@
 				<?php 	}
 					} ?>
 				
-				<input type="text" id="name" name="<?php echo "custom_properties[{number}][name]"?>" value="" placeholder="<?php echo lang('name')?>"/>
+				<input type="text" id="name" style="min-width: 200px;" name="<?php echo "custom_properties[{number}][name]"?>" value="" placeholder="<?php echo lang('name')?> "/>
 			</td>
 			
 			<td><?php echo get_custom_property_type_selector_html(array('id' => 'type', 'name' => 'type', 'name_prefix' => "custom_properties[{number}]")) ?>
@@ -56,7 +57,7 @@
 			
 			<td>
 				<input type="text" id="values" name="<?php echo "custom_properties[{number}][values]"?>" value="" style="display:none;" />
-				<span id="values_hint" class="desc" style="margin-left:10px;"><?php echo lang('cp list values hint')?></span>
+				<span id="values_hint" class="desc"><?php echo lang('cp list values hint')?></span>
 			</td>
 			
 			<td class="center" style="max-width:80px;"><?php echo checkbox_field("custom_properties[{number}][is_required]", false, array('id' => 'is_required'));?></td>
@@ -96,7 +97,7 @@
 		<tr class="bottom-row">
 			<td colspan="4">
 				<input id="description" type="text" placeholder="<?php echo lang('description')?>" name="<?php echo "custom_properties[{number}][description]"?>" value="" />
-				<div id="numeric_options" style="display:none;"><?php 
+				<div id="numeric_options" class="numeric-options-section" style="display:none;"><?php 
 					$num_opt_html = "";
 					Hook::fire("custom_prop_numeric_options", null, $num_opt_html);
 					echo $num_opt_html;
@@ -117,5 +118,18 @@
 	} else {
 		$link_text = lang('add new custom property', $type_name);
 	} ?>
-	<a href="#" class="link-ico ico-add" onclick="og.addCustomPropertyRow('<?php echo $genid?>', null, '<?php echo $id_suffix?>');return false;"><?php echo $link_text?></a>
+	<span class="cp-add-link-container">
+		<a href="#" class="link-ico ico-add" onclick="og.addCustomPropertyRow('<?php echo $genid?>', null, '<?php echo $id_suffix?>');return false;"><?php echo $link_text?></a>
+	</span>
+	<?php
+		$more_links = [];
+		Hook::fire('custom_properties_form_add_link', array('object_type' => $object_type, 'genid' => $genid, 'id_suffix' => $id_suffix), $more_links);
+		foreach ($more_links as $link) {
+			?>
+			<span class="cp-add-link-container">
+				<a href="#" class="link-ico <?php echo $link['icon']?>" onclick="<?php echo $link['onclick']?>"><?php echo $link['text']?></a>
+			</span>
+			<?php
+		}
+	?>
 </div>

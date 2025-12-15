@@ -295,6 +295,11 @@ og.check_if_valid_cp_num = function (inp) {
             errorIdsInput.value = currentErrorIds.join(','); // update hidden input
             //toggleSubmitButton(); // Actualizar el estado del botón
         }
+
+		// Check if the input value is greater than Number.MAX_VALUE, don't let the user enter it
+		if (inp.value > Number.MAX_VALUE) {
+			inp.value = Number.MAX_VALUE;
+		}
     }
 };
 
@@ -358,6 +363,11 @@ og.check_if_valid_amount_field = function (input) {
             currentErrorIds = currentErrorIds.filter(id => id !== input.id); // Remove the input ID from the error array
             errorIdsInput.value = currentErrorIds.join(','); // Update the hidden input
         }
+
+		// Check if the input value is greater than Number.MAX_VALUE, don't let the user enter it
+		if (input.value > Number.MAX_VALUE) {
+			input.value = Number.MAX_VALUE;
+		}
     }
 
     //toggleSubmitButton();

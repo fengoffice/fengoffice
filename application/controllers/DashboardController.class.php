@@ -242,6 +242,32 @@ class DashboardController extends ApplicationController {
 		//TODO Avoid exit : find the way to do that with the framework
 	}
 	
+	/**
+	 * API endpoint to save user config option
+	 */
+	function save_user_config_option() {
+		if (!logged_user() instanceof Contact) {
+			ajx_current("empty");
+			return;
+		}
+		
+		$option_name = array_var($_POST, 'option_name');
+		$option_value = array_var($_POST, 'option_value');
+		
+		if (!$option_name) {
+			ajx_current("empty");
+			return;
+		}
+		
+		$result = set_user_config_option($option_name, $option_value, logged_user()->getId());
+		
+		if ($result) {
+			ajx_current("success");
+		} else {
+			ajx_current("error");
+		}
+	}
+
 } 
 
 
@@ -293,5 +319,3 @@ function widget_sort(Widget $a, Widget $b) {
     }
     return ($a->getDefaultOrder() < $b->getDefaultOrder()) ? -1 : 1;
 }
-	
-			

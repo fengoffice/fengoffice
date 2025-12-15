@@ -233,9 +233,9 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 						$newContact = $newContactObj instanceof Contact ? $newContactObj->getDisplayName() : '';
 						$oldContact = $oldContactObj instanceof Contact ? $oldContactObj->getDisplayName() : '';
 						if (isset($oldContact)){
-							$log_text .= 'Assigned to: <span class="log-detail--old-value">' . $oldContact . '</span> <span class="log-detail--new-value">' . $newContact . '</span>';
+							$log_text .= lang('assigned to') . ': <span class="log-detail--old-value">' . $oldContact . '</span> <span class="log-detail--new-value">' . $newContact . '</span>';
 						} else {
-							$log_text .= 'Assigned to: <span class="log-detail--new-value">' . $newContact . '</span>';
+							$log_text .= lang('assigned to') . ': <span class="log-detail--new-value">' . $newContact . '</span>';
 						}
 					} 
 					break;
@@ -248,9 +248,9 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 					if($email_type == '' || in_array($email_type, $config_options)){
 						$newDescription = trim($detail->getNewValue(), '<br />&nbsp;');
 						if ($newDescription != ''){
-							$log_text .= 'Description: <span class="log-detail--description">"' . $newDescription . '"</span>';
+							$log_text .= lang('description') . ': <span class="log-detail--description">"' . $newDescription . '"</span>';
 						} else {
-							$log_text .= 'Description: " "';
+							$log_text .= lang('description') . ': " "';
 						}
 					}
 					break;
@@ -284,7 +284,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 							foreach ($members as $m) {
 								$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
 							}
-							$log_text .= "Added classification: <span class='log-detail--new-value'>" . $member_names . "</span>";
+							$log_text .= lang('added classification') . ": <span class='log-detail--new-value'>" . $member_names . "</span>";
 						}
 						if (count($removed_ids) > 0) {
 							$member_names = '';
@@ -293,7 +293,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 								$member_names .= ($member_names == '' ? '' : ', ') . $m->getName();
 							}
 							if($member_names != ''){
-								$log_text .= ($log_text==''?'':'<br/>') . "Removed classification: <span class='log-detail--new-value'>" . $member_names . "</span>";
+								$log_text .= ($log_text==''?'':'<br/>') . lang('removed classification') . ": <span class='log-detail--new-value'>" . $member_names . "</span>";
 							}
 						}
 					}
@@ -335,7 +335,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 						foreach ($objects as $o) {
 							$object_names .= ($object_names == '' ? '' : ', ') . $o->getName();
 						}
-						$log_text .= "Linked to objects: $object_names";
+						$log_text .= lang('linked to objects') . ": $object_names";
 					}
 					if (count($removed_ids) > 0) {
 						$object_names = '';
@@ -343,7 +343,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 						foreach ($objects as $o) {
 							$object_names .= ($object_names == '' ? '' : ', ') . $o->getName();
 						}
-						$log_text .= ($log_text==''?'':'<br/>') . "Unlinked to objects: $object_names";
+						$log_text .= ($log_text==''?'':'<br/>') . lang('unlinked from objects') . ": $object_names";
 					}
 					
 					break;
@@ -392,7 +392,7 @@ class ApplicationLogDetails extends BaseApplicationLogDetails {
 		}
 		
 		if ($logs_html != '') {
-			$html .= '<div class="logs-group"><div class="log-header">' . format_datetime($log->getCreatedOn()) .' by '. $log_user_name .':</div><ul class="log-details">'. $logs_html .'</ul></div>';
+			$html .= '<div class="logs-group"><div class="log-header">' . format_datetime($log->getCreatedOn()) .' '. lang('by') .' '. $log_user_name .':</div><ul class="log-details">'. $logs_html .'</ul></div>';
 		}
 		
 		return $html;

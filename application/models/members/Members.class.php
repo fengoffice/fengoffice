@@ -79,6 +79,15 @@
 		}
 		return $m;
 	}
+
+	static function getMembersById($ids) {
+		if (!is_array($ids)) $ids = array($ids);
+		$members = array();
+		foreach ($ids as $id) {
+			$members[] = self::getMemberById($id);
+		}
+		return $members;
+	}
 	
 	
 	function canContainObject($object_type_id, $member_type_id, $dimension_id){

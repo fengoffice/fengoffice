@@ -927,7 +927,7 @@ class Reports extends BaseReports {
 
     function getExternalColumnValue($field, $id, $manager = null, $object = null) {
         $value = '';
-        if ($field == 'user_id' || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'assigned_by_id' || $field == 'completed_by_id' || $field == 'approved_by_id') {
+        if ($field == 'user_id' || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'assigned_by_id' || $field == 'completed_by_id' || $field == 'approved_by_id' || $field == 'organizer_id') {
             $contact = Contacts::instance()->findById($id);
             if ($contact instanceof Contact)
                 $value = $contact->getObjectName();

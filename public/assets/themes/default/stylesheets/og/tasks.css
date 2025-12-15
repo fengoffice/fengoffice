@@ -487,6 +487,15 @@ button.add-first-btn.no-tasks-add-task-btn {
     font-size: 12px;
     color: #333;
     font-weight: bold;
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.task-module-financial-amount {
+    white-space: nowrap; 
+    overflow-x: auto; 
+    font-size: 12px; 
+    text-align: right;
 }
 
 

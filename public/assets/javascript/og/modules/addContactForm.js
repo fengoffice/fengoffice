@@ -177,16 +177,20 @@ og.undoMarkAsDeleted = function(undo_el, container_id, input_id) {
 
 og.renderTelephoneTypeSelector = function(id, name, container_id, selected_value) {
 	
-	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
-	for (var i=0; i<og.telephone_types.length; i++) {
-		var type = og.telephone_types[i];
-		var option = $('<option></option>');
-		option.attr('value', type.id);
-		if (selected_value == type.id) option.attr('selected', 'selected');
-		option.text(type.name);
-		select.append(option);
+	if (og.config.show_type_sel_on_phone_field) {
+		var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
+		for (var i=0; i<og.telephone_types.length; i++) {
+			var type = og.telephone_types[i];
+			var option = $('<option></option>');
+			option.attr('value', type.id);
+			if (selected_value == type.id) option.attr('selected', 'selected');
+			option.text(type.name);
+			select.append(option);
+		}
+		$('#'+container_id).empty().append(select);
+	} else {
+		$('#'+container_id).empty().append('<input type="hidden" name="'+name+'" id="'+id+'" value="'+selected_value+'" />');
 	}
-	$('#'+container_id).empty().append(select);
 }
 
 og.renderTelephoneInput = function(id, name, container_id, sel_type, sel_number, sel_name, sel_id) {
@@ -200,10 +204,14 @@ og.renderTelephoneInput = function(id, name, container_id, sel_type, sel_number,
 	$('#'+container_id).append('<span id="'+id+'_type"></span>');
 	og.renderTelephoneTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
 
-	var number_input = $('<input name="'+name+'[number]" id="'+id+'_number" value="'+sel_number+'" placeholder="'+lang('phone number')+'" style="width:140px;" />');
+	if (!og.config.show_type_sel_on_phone_field) {
+		$('#'+container_id).addClass('no-type-selector');
+	}
+
+	var number_input = $('<input name="'+name+'[number]" id="'+id+'_number" value="'+sel_number+'" placeholder="'+lang('phone number')+'" class="phone-number" />');
 	$('#'+container_id).append(number_input);
 
-	var name_input = $('<input name="'+name+'[name]" id="'+id+'_name" value="'+sel_name+'" placeholder="'+lang('name')+'"/>');
+	var name_input = $('<input name="'+name+'[name]" id="'+id+'_name" value="'+sel_name+'" placeholder="'+lang('name')+'" class="phone-name"/>');
 	$('#'+container_id).append(name_input);
 
 	var delete_or_undo = $(`<div class="removeUndo">
@@ -314,16 +322,20 @@ og.addNewAddressInput = function(container_id, pre_id, sel_type, sel_data, ignor
 
 og.renderWebpageTypeSelector = function(id, name, container_id, selected_value) {
 	
-	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
-	for (var i=0; i<og.webpage_types.length; i++) {
-		var type = og.webpage_types[i];
-		var option = $('<option></option>');
-		option.attr('value', type.id);
-		if (selected_value == type.id) option.attr('selected', 'selected');
-		option.text(type.name);
-		select.append(option);
+	if (og.config.show_type_sel_on_website_field) {
+		var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
+		for (var i=0; i<og.webpage_types.length; i++) {
+			var type = og.webpage_types[i];
+			var option = $('<option></option>');
+			option.attr('value', type.id);
+			if (selected_value == type.id) option.attr('selected', 'selected');
+			option.text(type.name);
+			select.append(option);
+		}
+		$('#'+container_id).empty().append(select);
+	} else {
+		$('#'+container_id).empty().append('<input type="hidden" name="'+name+'" id="'+id+'" value="'+selected_value+'" />');
 	}
-	$('#'+container_id).empty().append(select);
 }
 
 og.renderWebpageInput = function(id, name, container_id, sel_type, sel_url, sel_id) {
@@ -335,6 +347,10 @@ og.renderWebpageInput = function(id, name, container_id, sel_type, sel_url, sel_
 	
 	$('#' + container_id).append('<td><span id="' + id +'_type"></span></td>');
 	og.renderWebpageTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
+	
+	if (!og.config.show_type_sel_on_website_field) {
+		$('#'+container_id).addClass('no-type-selector');
+	}
 
 	var webpage_input = $('<td><input name="'+name+'[url]" id="'+id+'_url" value="'+sel_url+'" placeholder="'+lang('webpage')+'"/></td>');
 	$('#'+container_id).append(webpage_input);
@@ -367,16 +383,20 @@ og.addNewWebpageInput = function(container_id, pre_id, sel_type, sel_url, sel_id
 
 og.renderEmailTypeSelector = function(id, name, container_id, selected_value) {
 	
-	var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
-	for (var i=0; i<og.email_types.length; i++) {
-		var type = og.email_types[i];
-		var option = $('<option></option>');
-		option.attr('value', type.id);
-		if (selected_value == type.id) option.attr('selected', 'selected');
-		option.text(type.name);
-		select.append(option);
+	if (og.config.show_type_sel_on_email_field) {
+		var select = $('<select name="'+name+'" id="'+id+'" style="min-width:85px;max-width:100px;"></select>');
+		for (var i=0; i<og.email_types.length; i++) {
+			var type = og.email_types[i];
+			var option = $('<option></option>');
+			option.attr('value', type.id);
+			if (selected_value == type.id) option.attr('selected', 'selected');
+			option.text(type.name);
+			select.append(option);
+		}
+		$('#'+container_id).empty().append(select);
+	} else {
+		$('#'+container_id).empty().append('<input type="hidden" name="'+name+'" id="'+id+'" value="'+selected_value+'" />');
 	}
-	$('#'+container_id).empty().append(select);
 }
 
 og.renderEmailInput = function(id, name, container_id, sel_type, sel_address, sel_id, defaultEmail=0) {
@@ -389,6 +409,10 @@ og.renderEmailInput = function(id, name, container_id, sel_type, sel_address, se
 	
 	$('#' + container_id).append('<span id="' + id +'_type"></span>');
 	og.renderEmailTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
+
+	if (!og.config.show_type_sel_on_email_field) {
+		$('#'+container_id).addClass('no-type-selector');
+	}
 
 	var email_input = $('<input name="' + name + '[email_address]" id="' + id + '_email_address" value="' + sel_address + '" class="moreEmailInputs" placeholder="' + lang('email address') +'"/>');
 	$('#'+container_id).append(email_input);

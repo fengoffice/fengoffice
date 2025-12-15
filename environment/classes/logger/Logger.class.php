@@ -67,24 +67,44 @@
     * @return boolean
     * @throws InvalidParamError If we don't get session by $session_name
     */
-    static function log($message, $severity = Logger::DEBUG, $session_name = null) {
+    static function log($message, $severity = Logger::DEBUG, $session_name = null, $filter = null) {
       if(!self::$enabled) {
         return false;
-      } // if
-      
-      if($message instanceof Exception) {
+      }
+    
+      // If a filter is provided, check if it's allowed by the FILTER_LOGS constant
+      if ($filter !== null) {
+        if (!defined('FILTER_LOGS')) {
+          // If a filter is passed but FILTER_LOGS is not defined, skip logging
+          return false;
+        }
+    
+        // Convert FILTER_LOGS string to an array
+        $allowed_filters = array_map('trim', explode(',', FILTER_LOGS));
+        
+        // If the provided filter is not in the allowed list, skip logging
+        if (!in_array($filter, $allowed_filters)) {
+          return false;
+        }
+      }
+    
+      // Handle the message format
+      if ($message instanceof Exception) {
         $message_to_log = $message->__toString();
       } else {
         $message_to_log = (string) $message;
       } // if
-      
+    
+      // Get the logger session
       $session = self::getSession($session_name);
       if(!($session instanceof Logger_Session)) {
         throw new InvalidParamError('session_name', $session_name, "There is no session matching this name (null for default session): " . var_export($session_name, true));
       } // if
-      
+    
+      // Add the log entry to the session
       return $session->addEntry(new Logger_Entry($message_to_log, $severity));
-    } // log
+    }
+    
     
     /**
     * Log the result of applying the print_r() function to the variable $message (this will create a Logger_Entry in $session_name session - NULL for default session)

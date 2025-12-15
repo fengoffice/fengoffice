@@ -104,8 +104,6 @@ ogTasks.showMoreTasks = function(group_id, show_all){
 	
 	filters.start = group.offset;	
 	
-	group.offset = group.offset + parseInt(og.noOfTasks);
-	
 	if (typeof show_all == "undefined") {
 		show_all = false;		
 	}

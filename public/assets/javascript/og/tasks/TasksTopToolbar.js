@@ -648,7 +648,9 @@ og.TasksTopToolbar = function(config) {
 	
     this.add('-');
     
-    this.add(new Ext.Action({
+    /* HIDE PRINT BUTTON
+	
+	this.add(new Ext.Action({
       id: 'button-print',
       text: lang('print'),
       tooltip: lang('print all groups'),
@@ -696,8 +698,8 @@ og.TasksTopToolbar = function(config) {
     
     Ext.get('button-print').set({
     	id: "tasks_print_btn"
-    });
-
+    }); 
+	*/ // END HIDE PRINT BUTTON
 
     
     

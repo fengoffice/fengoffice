@@ -88,6 +88,10 @@ Ext.extend(og.LoginDialog, Ext.Window, {
 						if (this.params.url) {
 							og.openLink(this.params.url, this.params.options);
 						}
+					} else {
+						if (data && data.go_to_url) {
+							window.location = data.go_to_url;
+						}
 					}
 				},
 				scope: this

@@ -86,6 +86,18 @@
 	padding: 4px;
 	font-size: 12px;
 }
+
+.custom-report tbody tr td {
+	border-right: 1px solid transparent;
+}
+
+.custom-report thead tr th, .custom-report thead tr th:first-child, .custom-report thead tr th:not(:first-child) {
+	padding: 5px;
+} 
+.custom-report tbody tr td, .custom-report tbody tr td:first-child, .custom-report tbody tr td:not(:first-child) {
+    padding: 5px;
+}
+
 .reporting-table td.date {
 	width: 70px;
 }

@@ -1441,6 +1441,7 @@ function build_report_conditions_sql($parameters) {
 				$possible_columns = $model_instance->getColumns();
 				if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
 					$possible_columns = array_merge($possible_columns, Members::instance()->getColumns());
+					Hook::fire('custom_report_conditions_possible_columns', array('object_type' => $ot), $possible_columns);
 				} else {
 					$possible_columns = array_merge($possible_columns, Objects::instance()->getColumns());
 				}
@@ -1494,6 +1495,9 @@ function build_report_conditions_sql($parameters) {
 									if ($col_type == DATA_TYPE_DATETIME || $col_type == DATA_TYPE_DATE) {
 										$equal = 'datediff('.DB::escape($value).', `'.$field_name.'`)=0';
 									} else {
+										if ($col_type == DATA_TYPE_BOOLEAN && $value == '-1') {
+											$value = '0';
+										}
 										$equal = '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
 									}
 									switch($condField->getCondition()){

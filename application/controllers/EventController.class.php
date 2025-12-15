@@ -62,25 +62,37 @@ class EventController extends ApplicationController {
 	function registerInvitations($data, $event, $clear=true) {
 		if ($clear) $event->clearInvitations();
 		// Invitations
-		$invitations = array_var($data, 'users_to_invite', array());
-		foreach ($invitations as $id => $assist) {
+		$invitations = array_var($data, 'invited_contact_ids', array());
+		$invitation_state = array_var($data, 'invitation_state', array());
+
+		foreach ($invitations as $id) {
 			$conditions = array('event_id' => $event->getId(), 'contact_id' => $id);
 			//insert only if not exists 
-			if (EventInvitations::instance()->findById($conditions) == null) {
+			$invitation = EventInvitations::instance()->findById($conditions);
+			if ($invitation == null) {
 				$invitation = new EventInvitation();
 				$invitation->setEventId($event->getId());
 				$invitation->setContactId($id);
 				$invitation->setInvitationState(logged_user() instanceof Contact && logged_user()->getId() == $id ? 1 : 0);
 				$invitation->save();
-				if ((array_var($data, 'subscribe_invited') && is_array(array_var($_POST, 'subscribers')) || (array_var($_POST, 'popup') && user_config_option('event_subscribe_invited')))) {
-					$_POST['subscribers']['user_' . $id] = '1';
-				}
+			}
+			if ($invitation && isset($invitation_state[$id]) && $invitation->getInvitationState() == EventInvitations::EVENT_INVITATION_NEEDS_ACTION) {
+				$invitation->setInvitationState($invitation_state[$id]);
+				$invitation->save();
 			}
 		}
-		// Delete non checked invitations
-		$previuos_invitations = EventInvitations::instance()->findAll(array('conditions' => '`event_id` = ' . $event->getId()));
-		foreach ($previuos_invitations as $pinv) {
-			if (!array_key_exists($pinv->getContactId(), $invitations)) $pinv->delete();
+
+		// Check if we need to remove non present invitations, if it is an invitation reply don't remove anything
+		$remove_non_present_invitations = true;
+		if (isset($data['parsed_ical']['calendar_data']) && array_var($data['parsed_ical']['calendar_data'], 'method') == 'REPLY') {
+			$remove_non_present_invitations = false;
+		}
+		if ($remove_non_present_invitations) {
+			// Delete non checked invitations
+			$previuos_invitations = EventInvitations::instance()->findAll(array('conditions' => '`event_id` = ' . $event->getId()));
+			foreach ($previuos_invitations as $pinv) {
+				if (!in_array($pinv->getContactId(), $invitations)) $pinv->delete();
+			}
 		}
 	}
 	
@@ -95,6 +107,11 @@ class EventController extends ApplicationController {
 		if ($attendance == null) $attendance = array_var($_GET, 'at');
 		if ($event_id == null) $event_id = array_var($_GET, 'e');
 		if ($user_id == null) $user_id = array_var($_GET, 'u');
+
+		if ($event_id == null && isset($_REQUEST['event_uid'])) {
+			$event = ProjectEvents::instance()->findByUid($_REQUEST['event_uid']);
+			if ($event != null) $event_id = $event->getId();
+		}
 		
 		$silent = array_var($_REQUEST, 'silent');
 		
@@ -104,8 +121,7 @@ class EventController extends ApplicationController {
 		} else {
 			$conditions = array('conditions' => "`event_id` = " . DB::escape($event_id) . " AND `contact_id` = ". DB::escape($user_id));
 			$inv = EventInvitations::instance()->findOne($conditions);
-			$conditions_all = array('conditions' => "`event_id` = " . DB::escape($event_id));
-			$invs = EventInvitations::instance()->findAll($conditions_all);			
+			
 			if ($inv != null) {
 				if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_update_other_users_invitations') && $inv->getContactId() != logged_user()->getId()) {
 					flash_error(lang('no access permissions'));					
@@ -127,12 +143,13 @@ class EventController extends ApplicationController {
 			if ($from_post_get) {
 				// Notify creator (only when invitation is accepted or declined)
 				$event = ProjectEvents::instance()->findById(array('id' => $event_id));
-				if ($inv->getInvitationState() == 1 || $inv->getInvitationState() == 2) {
-					$user = Contacts::instance()->findById(array('id' => $user_id));
-					session_commit();
-					Notifier::notifEventAssistance($event, $inv, $user, $invs);
+				if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED || $inv->getInvitationState() == EventInvitations::EVENT_INVITATION_DECLINED) {
+					
+					// Notify the organizaer of the event (created_by)
+					$event->notifyEventOrganizer($inv->getInvitationState());
+					
 					if (!$silent) {
-						if ($inv->getInvitationState() == 1) flash_success(lang('invitation accepted'));
+						if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED) flash_success(lang('invitation accepted'));
 						else flash_success(lang('invitation rejected'));
 					}
 				} else {
@@ -200,12 +217,12 @@ class EventController extends ApplicationController {
 			// verify the options above are valid
 			if(isset($rnum) && $rnum !="") {
 				if(!is_numeric($rnum) || $rnum < 1 || $rnum > 1000) {
-					throw new Exception(CAL_EVENT_COUNT_ERROR);
+					throw new Exception(lang('invalid event repeat times'));
 				}
 			} else $rnum = 0;
 			if($jump != ""){
 				if(!is_numeric($jump) || $jump < 1 || $jump > 1000) {
-					throw new Exception(CAL_REPEAT_EVERY_ERROR);
+					throw new Exception(lang('invalid event repeat jump'));
 				}
 			} else $jump = 1;
 			
@@ -311,25 +328,15 @@ class EventController extends ApplicationController {
 			$data['type_id'] = $typeofevent;
 			$data['duration'] = $durationstamp;
 			
-			$data['users_to_invite'] = array();
-			// options when creating an event through a POP UP
-			if (array_var($_POST, 'popup')){
-				$user_filter = user_config_option('calendar user filter');
-				if ($user_filter == '0' || $user_filter == '-1') {
-					$user_filter = logged_user()->getId();
+			
+			if (isset($event_data['invited_contact_ids'])) {
+				$invited_contact_ids = array_var($event_data, 'invited_contact_ids');
+				if (is_string($invited_contact_ids)) {
+					$invited_contact_ids = explode(',', $invited_contact_ids);
 				}
-				$data['users_to_invite'][$user_filter] = 0;
-				if ($user_filter != logged_user()->getId() && user_config_option('autoassign_events')){
-					$data['users_to_invite'][logged_user()->getId()] = 1;
-				}
+				$data['invited_contact_ids'] = $invited_contact_ids;
 			}
 
-			$compstr = 'invite_user_';
-			foreach ($event_data as $k => $v) {
-				if (str_starts_with($k, $compstr) && ($v == '1')) {
-					$data['users_to_invite'][substr($k, strlen($compstr))] = 0; // Pending Answer
-				}
-			}
 			
 			if (isset($event_data['confirmAttendance'])) {
 				$data['confirmAttendance'] = array_var($event_data, 'confirmAttendance');
@@ -354,7 +361,7 @@ class EventController extends ApplicationController {
 		
 		$notAllowedMember = '';
 		if(!(ProjectEvent::canAdd(logged_user(), active_context(),$notAllowedMember ))){	    	
-			if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
+			if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember)));
 			else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the event'))) : flash_error(lang('no context permissions to add',lang("events"), $notAllowedMember));
 			ajx_current("empty");
 			return;
@@ -408,9 +415,13 @@ class EventController extends ApplicationController {
 		tpl_assign('event', $event);
 		tpl_assign('event_data', $event_data);
 		tpl_assign('event_related', false);
+		tpl_assign('invited_contact_ids', array(logged_user()->getId()));
 	
 		if (is_array(array_var($_POST, 'event'))) {
 			try {
+				// to use when saving the application log
+				$old_content_object = $event->generateOldContentObjectData();
+
 				$data = $this->getData($event_data);
 
 				$event->setFromAttributes($data);
@@ -419,10 +430,6 @@ class EventController extends ApplicationController {
 				$event->save();
 	
 				$this->registerInvitations($data, $event);
-
-				if (isset($data['confirmAttendance'])) {
-					$this->change_invitation_state($data['confirmAttendance'], $event->getId(), $user_filter);
-				}
 				
 				if (array_var($_POST, 'members')) {
 					$member_ids = json_decode(array_var($_POST, 'members'));
@@ -498,13 +505,7 @@ class EventController extends ApplicationController {
 				
 				$is_silent = false;
 				if (isset($data['send_notification']) && $data['send_notification']) {
-					$users_to_inv = array();
-					foreach ($data['users_to_invite'] as $us => $v) {
-						if ($us != logged_user()->getId()) {
-							$users_to_inv[] = Contacts::instance()->findById(array('id' => $us));
-						}
-					}
-					Notifier::notifEvent($event, $users_to_inv, 'new', logged_user());
+					$event->notifyInvitedPeople('new');
 					$is_silent = true;
 				}
 				ApplicationLogs::createLog($event, ApplicationLogs::ACTION_ADD, false, $is_silent);
@@ -951,9 +952,14 @@ class EventController extends ApplicationController {
 			tpl_assign ( 'event_related', false );
 		}
 		
+		tpl_assign('invited_contact_ids', array_keys($event->getInvitations()));
+		
 		tpl_assign ( 'event_data', $event_data );
 		tpl_assign ( 'event', $event );
 		if (is_array ( array_var ( $_POST, 'event' ) )) {
+
+			// to use when saving the application log
+			$old_content_object = $event->generateOldContentObjectData();
 			
 			// MANAGE CONCURRENCE WHILE EDITING
 			/*
@@ -978,21 +984,18 @@ class EventController extends ApplicationController {
 				
 				// run the query to set the event data
 				$event->setFromAttributes ( $data );
-				
-				$this->registerInvitations ( $data, $event, false );
-				if (isset ( $data ['confirmAttendance'] )) {
-					$this->change_invitation_state ( $data ['confirmAttendance'], $event->getId (), $user_filter );
-				}
 
 				// subscribe or not the invited users
-				if (array_var($data, 'subscribe_invited')){
+				/*if (array_var($data, 'subscribe_invited')){
 					foreach ( $data ['users_to_invite'] as $us => $v ) {
 						$_POST['subscribers']['user_' . $us] = '1';
 					}
-				}
+				}*/
 				
 				DB::beginWork ();
 				$event->save ();				
+				
+				$this->registerInvitations($data, $event, false);
 				
 				$member_ids = json_decode ( array_var ( $_POST, 'members' ) );
 				
@@ -1034,15 +1037,7 @@ class EventController extends ApplicationController {
 				
 				$is_silent = false;
 				if (isset ( $data ['send_notification'] ) && $data ['send_notification']) {
-					$users_to_inv = array ();
-					foreach ( $data ['users_to_invite'] as $us => $v ) {
-						if ($us != logged_user ()->getId ()) {
-							$users_to_inv [] = Contacts::instance()->findById( array (
-									'id' => $us 
-							) );
-						}
-					}
-					Notifier::notifEvent ( $event, $users_to_inv, 'modified', logged_user () );
+					$event->notifyInvitedPeople('modified');
 					$is_silent = true;
 				}
 				
@@ -1167,6 +1162,159 @@ class EventController extends ApplicationController {
 		ajx_extra_data($object);
 		ajx_current("empty");
 	}
+
+
+
+	/**
+	 * Parse an iCal file and return an array of events.
+	 *
+	 * @param string $filename
+	 * @return array
+	 */
+	function parse_ical_file($filename, $create_new_contacts = false) {
+		return CalFormatUtilities::decode_ical_file($filename, $create_new_contacts);
+	}
+
+
+	/**
+	 * Process an array of events from an iCal file, and update the events in the DB if needed.
+	 *
+	 * @param array $ical_data the events data as returned by parse_ical_file
+	 * @return array the events that were updated or created
+	 */
+	function process_ical_file($ical_data) {
+		$events = array();
+
+		foreach ($ical_data as $ical_event) {
+			$event = $this->process_ical_file_event($ical_event);
+			if ($event != null) {
+				$events[] = $event;
+			}
+		}
+
+		return $events;
+	}
+
+	/**
+	 * Process one event from an iCal file, and update the event in the DB if needed.
+	 *
+	 * @param array $ical_event the event data as returned by parse_ical_file
+	 * @return ProjectEvent|null the event object if it was updated, null otherwise
+	 */
+	function process_ical_file_event($ical_event) {
+		$event = null;
+
+		$uid = array_var($ical_event, 'uid', '');
+
+		if ($uid != '') {
+			$event = ProjectEvents::instance()->findByUid($uid);
+		}
+		$event_updated = false;
+		if (!$event instanceof ProjectEvent) {
+			$event = new ProjectEvent();
+			$event_updated = true;
+		}
+
+		// Check if it is an invitation reply, if so then don't update the event, only the invitations.
+		$update_event_data = true;
+		if (isset($ical_event['parsed_ical']['calendar_data']) && array_var($ical_event['parsed_ical']['calendar_data'], 'method') == 'REPLY') {
+			$update_event_data = false;
+		}
+
+		if ($event instanceof ProjectEvent && $update_event_data) {
+
+			if ($ical_event['parsed_ical']['status'] == 'CANCELLED') {
+				// if event is cancelled, delete it
+
+				$event->setNotifyInvitedPeopleWhenDeleted(false);
+				$event->trash(null, false);
+				ApplicationLogs::createLog($event, ApplicationLogs::ACTION_TRASH, false, true);
+					
+			} else if ($event->isNew() || isset($ical_event['ical_dtstamp']) && $ical_event['ical_dtstamp'] > $event->getIcalDtstamp()) {
+				// if event is new or updated, save it and update invitations
+
+				$event->generateOldContentObjectData();
+
+				if ($event->isTrashed()) {
+					$event->untrash(false);
+					ApplicationLogs::createLog($event, ApplicationLogs::ACTION_UNTRASH, false, true);
+				}
+
+				$event->setFromAttributes($ical_event);
+				$event->save();
+				$event_updated = true;
+			}
+			
+			if ($event_updated) {
+				$event->addToSearchableObjects();
+				$event->addToSharingTable();
+
+				ApplicationLogs::createLog($event, $event->isNew() ? ApplicationLogs::ACTION_ADD : ApplicationLogs::ACTION_EDIT, false, true);
+			}
+			
+			// register or update invitations
+			if (!$event->isTrashed()) {
+				$this->registerInvitations($ical_event, $event, false);
+			}
+		} else if ($event instanceof ProjectEvent && !$update_event_data) {
+			// only update invitations
+			$this->registerInvitations($ical_event, $event, false);
+		}
+
+		return $event;
+	}
+
+	/**
+	 * Generates and returns the HTML block for iCal events.
+	 *
+	 * This function assigns the provided iCal data to a template variable
+	 * and processes invitation states for each event. It determines if
+	 * the user should be shown a confirmation prompt for attendance and
+	 * fetches the appropriate template to render the events.
+	 *
+	 * @param array $ical_data An array of event data parsed from an iCal file.
+	 * @param array|null $events An optional array of event objects to match with 
+	 *                           the iCal data, allowing for updated invitation states.
+	 * @return string The rendered HTML for the iCal events block.
+	 */
+	function get_ical_html_block($ical_data, $events = null) {
+		// ical_data is an array of events data parsed from an ical file
+		tpl_assign('ical_data', $ical_data);
+
+		// determine if we have to show the assistance confirmation section for each event in the ical
+		$show_confirm_attendance = [];
+		$invitation_state = [];
+		foreach ($ical_data as $i => $ical_event) {
+			if (isset($events) && isset($events[$i])) {
+				$inv = $events[$i]->getInvitation(logged_user()->getId());
+				if ($inv) {
+					//$show_confirm_attendance[$i] = $inv->getInvitationState() == EventInvitations::EVENT_INVITATION_NEEDS_ACTION;
+					$show_confirm_attendance[$i] = true;
+					$invitation_state[$i] = $inv->getInvitationState();
+				} else {
+					$show_confirm_attendance[$i] = false;
+					$invitation_state[$i] = null;
+				}
+
+			} else {
+				$show_confirm_attendance[$i] = in_array(logged_user()->getId(), $ical_event['invited_contact_ids']);
+				$invitation_state[$i] = array_var($ical_event['invitation_state'], logged_user()->getId());				
+			}
+		}
+
+		// if the event is cancelled, don't show the confirmation
+		if ($ical_event['parsed_ical']['status'] == 'CANCELLED') {
+			$show_confirm_attendance = [];
+		}
+
+		// assign the show_confirm_attendance and invitation_state arrays to the template
+		tpl_assign('show_confirm_attendance', $show_confirm_attendance);
+		tpl_assign('invitation_state', $invitation_state);
+
+		// fetch the template and return the rendered HTML
+		return tpl_fetch(get_template_path('ical_html_block', 'event'));
+	}
+
 	
 	function icalendar_import() {
 		@set_time_limit(0);
@@ -1208,7 +1356,7 @@ class EventController extends ApplicationController {
 							}
 
 							//insert only if not exists
-							if (ObjectSubscriptions::findBySubscriptions($event->getId()) == null) {
+							if (ObjectSubscriptions::instance()->findBySubscriptions($event->getId()) == null) {
 								$subscription = new ObjectSubscription();
 								$subscription->setObjectId($event->getId());
 								$subscription->setContactId(logged_user()->getId());
@@ -1289,7 +1437,7 @@ class EventController extends ApplicationController {
 			
 			$events = ProjectEvents::getRangeProjectEvents($from, $to);
 			$tasks = ProjectTasks::getRangeTasksByUser($from, $to, logged_user());			
-			$buffer = CalFormatUtilities::generateICalInfoWithTasks($events + $tasks, $calendar_name);
+			$buffer = CalFormatUtilities::generateICalInfo($events, $calendar_name, null, $tasks);
 			
 			$filename = rand().'.ics';
 			$handle = fopen(ROOT.'/tmp/'.$filename, 'wb');
@@ -1357,6 +1505,9 @@ class EventController extends ApplicationController {
 			ajx_current("empty");
 			return ;
 	    }
+
+		// to use when saving the application log
+		$old_content_object = $event->generateOldContentObjectData();
 	    
 	    $hours = array_var($_GET, 'hours', -99);
 	    $mins = array_var($_GET, 'mins', -99);
@@ -1381,6 +1532,11 @@ class EventController extends ApplicationController {
 	    }
 	    
 	    Hook::fire("after_event_change_duration", array('event' => $event), $event);
+
+		// notify invited people
+		$event->notifyInvitedPeople('modified');
+		// save log
+		ApplicationLogs::createLog($event, ApplicationLogs::ACTION_EDIT, false, true);
 	    
 	    ajx_extra_data($this->get_updated_event_data($event));
 	    if ($event->isRepetitive()) ajx_current("reload");
@@ -1400,6 +1556,9 @@ class EventController extends ApplicationController {
 			return;
 	    }
 	    $is_read = $event->getIsRead(logged_user()->getId());
+
+		// to use when saving the application log
+		$old_content_object = $event->generateOldContentObjectData();
 		
 	    $year = array_var($_GET, 'year', $event->getStart()->getYear());
 	    $month = array_var($_GET, 'month', $event->getStart()->getMonth());
@@ -1485,6 +1644,11 @@ class EventController extends ApplicationController {
 	    }
 	    
 	    Hook::fire("after_event_move", array('event' => $event), $event);
+
+		// notify invited people
+		$event->notifyInvitedPeople('modified');
+		// save log
+		ApplicationLogs::createLog($event, ApplicationLogs::ACTION_EDIT, false, true);
     
 	    ajx_extra_data($this->get_updated_event_data($event));
 	    if ($different_days || $event->isRepetitive()) ajx_current("reload");
@@ -1675,14 +1839,14 @@ class EventController extends ApplicationController {
 
             $this->registerInvitations($data, $event, false);
             if (isset($data['confirmAttendance'])) {
-                $this->change_invitation_state($data['confirmAttendance'], $event->getId(), $user_filter);
+                $this->change_invitation_state($data['confirmAttendance'], $event->getId(), null);
             }
             try {
             	DB::beginWork();
             	$event->save();
             	
             	$object_controller = new ObjectController();
-            	$object_controller->add_to_members($event, array_var($task_data, 'members'));
+            	$object_controller->add_to_members($event, array_var($data, 'members'));
             	$object_controller->add_subscribers($event);
             	
             	$object_controller->link_to_new_object($event);

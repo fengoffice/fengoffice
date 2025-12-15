@@ -3,7 +3,7 @@ og.MemberManager = function(config) {
 	this.doNotRemove = true;
 	this.needRefresh = false;
 	this.fields = [
-		'id', 'name', 'dimension_id', 'object_type_id', 'parent_member_id', 'depth', 'object_id', 'color', 'template_id', 'icon_cls', 'member_id', 'mem_path',
+		'id', 'name', 'dimension_id', 'object_type_id', 'parent_member_id', 'depth', 'object_id', 'template_id', 'icon_cls', 'member_id', 'mem_path',
 		'total_tasks', 'completed_tasks', 'task_completion_p', 'total_estimated_time', 'total_worked_time', 'time_worked_p'
   	];
 	
@@ -14,13 +14,17 @@ og.MemberManager = function(config) {
 	this.object_type_name = config.object_type_name;
 	this.lastGroupField = config.last_group_field;
 	this.groups_info = null;
+
+	if (!og.saveMemberTypeCustomProperties) {
+		this.fields.push('description');
+	}
 	
 	// prepare reader fields for any member type
 	var cp_names = [];
   	for (ot_name in og.custom_properties_by_type) {
 		var cps = og.custom_properties_by_type[ot_name];
 		for (i=0; i<cps.length; i++) {
-	  		if (cps[i].member_cp) {
+	  		if (cps[i].member_cp && cps[i].code != 'color_special') {
 	  			cp_names.push('cp_' + cps[i].id);
 	  		}
 	  	}
@@ -28,6 +32,7 @@ og.MemberManager = function(config) {
 	// add the customer's related contact custom properties to the grid fields
 	if (this.object_type_name == 'customer') {
 		var contact_cps = og.custom_properties_by_type['contact'];
+		if (typeof contact_cps == 'undefined') contact_cps = [];
 		for (i=0; i<contact_cps.length; i++) {
 			cp_names.push('cp_' + contact_cps[i].id);
 		}
@@ -458,12 +463,17 @@ og.MemberManager = function(config) {
 	// custom property columns
 	var cps = og.custom_properties_by_type[this.object_type_name] ? og.custom_properties_by_type[this.object_type_name] : [];
 	for (i=0; i<cps.length; i++) {
-		if (!parseInt(cps[i].disabled)) {
+		if (!parseInt(cps[i].disabled) && cps[i].code != 'color_special') {
+			let data_index = 'cp_' + cps[i].id;
+			if (!og.saveMemberTypeCustomProperties && cps[i].code == 'description_special') {
+				data_index = 'description';
+			}
+			
 			cm_info.push({
 				id: 'cp_' + cps[i].id,
 				hidden: parseInt(cps[i].show_in_lists) == 0,
 				header: cps[i].name,
-				dataIndex: 'cp_' + cps[i].id,
+				dataIndex: data_index,
 				align: cps[i].cp_type=='numeric' ? 'right' : 'left',
 				sortable: true,
 				//renderer: og.clean

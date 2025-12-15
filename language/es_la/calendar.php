@@ -207,6 +207,22 @@
         'list calendar desc' => 'Por favor, seleccione los calendarios de los que desea importar sus eventos', 
         'check your account' => 'Verifique los datos de su cuenta',
         'success import calendar' => 'Sus eventos fueron importados correctamente',
+		'invalid event repeat times' => 'La cantidad de repeticiones del evento es inválida',
+		'invalid event repeat jump' => 'El salto de repeticiones del evento es inválido',
+		'Attendees' => 'Asistentes',
+		'Organizer' => 'Organizador',
+		'Recurrence' => 'Recurrencia',
+		'show description' => 'Mostrar Descripción',
+		'hide description' => 'Ocultar Descripción',
+		'event confirmed' => 'Confirmado',
+		'event accepted' => 'Aceptado',
+		'event declined' => 'Rechazado',
+		'event tentative' => 'Tentativo',
+		'event cancelled' => 'Cancelado',
+		'event delegated' => 'Delegado',
+		'event not responded' => 'No respondido',
+		'event not confirmed' => 'No confirmado',
+		'event not declined' => 'No rechazado',
       
         'all day event' => 'Todo el día',
 	  	'without title' => 'Sin título',
@@ -222,5 +238,15 @@
 		'not in sync' => 'No sincronizado',
 		'deleted from google' => 'Eliminado de Google',
 		'out of sync' => 'Fuera de sincronización',
+
+		'Where' => 'Donde',
+		'When' => 'Cuando',
+		'organizer' => 'Organizador',
+		'invitation from feng_evx calendar' => 'Invitación desde Calendario de {0}.',
+		'this event has been updated' => 'Este evento ha sido modificado.',
+		'this event has been cancelled' => 'Este evento ha sido cancelado.',
+		
+		'select people to invite to this event' => 'Seleccione las personas que desea invitar a este evento',
+		'select people to invite to this event help' => 'Puedes escribir en el campo para filtrar la lista, además puedes crear nuevos contactos utilizando la opción \'Agregar Contacto\' de la lista de contactos.',
   ); // array
 ?>

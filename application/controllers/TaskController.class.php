@@ -288,6 +288,78 @@ class TaskController extends ApplicationController {
         flash_success(lang('success edit task', $task->getObjectName()));
     }
 
+    /**
+     * Updates the percent completed of all subtasks when a parent task 
+     * has manually set percent completed
+     *
+     * @param array $task_data The parent task with manually set percent completed
+     * @return void
+     */
+    private function updateSubtasksPercentCompleted($task, $task_data) {
+        if(!config_option('match_subtask_percent_completed')) {
+            return;
+        }
+
+        if (!$task instanceof ProjectTask) {
+            return;
+        }
+
+        // Check if the task is new or if the percent completed has not changed
+        if(!$task->isNew() && $task->getPercentCompleted() == array_var($task_data, 'percent_completed')) {
+            return;
+        }
+
+        // Check if the task has manually set percent completed
+        if (!array_var($task_data, 'is_manual_percent_completed', false)) {
+            return;     
+        }
+
+        $subtasks = $task->getAllSubTasks(false);
+
+        if (count($subtasks) == 0) {
+            return;
+        }
+
+        $percent_completed = array_var($task_data, 'percent_completed', 0);
+
+        $hook_check['eligible'] = true;
+        $hook_check['message'] = '';
+        Hook::fire('update_subtasks_percent_completed_using_parent', array('subtasks' => $subtasks, 'percent_completed' => $percent_completed), $hook_check);
+
+        if($hook_check['eligible'] != true) {
+            flash_error($hook_check['message']);
+            ajx_current("empty");
+            return true;
+        }
+
+        // reverse the order of subtasks
+        $subtasks = array_reverse($subtasks);
+
+        
+        if (count($subtasks) > 0) {
+            DB::beginWork();
+            try {
+                foreach ($subtasks as $subtask) {
+                    if ($subtask instanceof ProjectTask) {
+                        // skip completed subtasks
+                        if ($subtask->isCompleted()) {
+                            continue;
+                        }
+                        $subtask->setIsManualPercentCompleted(true);
+                        $subtask->setPercentCompleted($percent_completed);
+                        Hook::fire('calculate_estimated_and_executed_financials', array('calculate_parents' => false), $subtask);
+                        $subtask->save();  
+                    }
+                }
+                DB::commit();
+            } catch (Exception $e) {
+                DB::rollback();
+                Logger::log("Error updating subtasks percent completed: " . $e->getMessage());
+            }
+        }
+
+    }
+
     private function do_quick_edit_task($task_data, &$task, $type_related = null) {
         // set task dates
         if (is_array($task_data)) {
@@ -2248,6 +2320,10 @@ class TaskController extends ApplicationController {
         $groupId = array_var($_REQUEST, 'groupId', null);
         $start = array_var($_REQUEST, 'start', 0);
         $limit = array_var($_REQUEST, 'limit', user_config_option('noOfTasks'));
+		// Prevent performance issues
+		if ($limit > 500) {
+			$limit = 500;
+		}
         $show_more_conditions = array("groupId" => $groupId, "start" => $start, "limit" => $limit);
         $only_totals = array_var($_REQUEST, 'only_totals');
         $groups_offset = array_var($_REQUEST, 'groups_offset');
@@ -2343,7 +2419,8 @@ class TaskController extends ApplicationController {
         if (logged_user()->isGuest()) {
             $users = array(logged_user());
         } else {
-            $users = allowed_users_to_assign(null, true, false, true);
+            $include_inactive = config_option('show_inactive_users_on_filters');
+            $users = allowed_users_to_assign(null, true, false, true, null, $include_inactive);
         }
 
         $users_data = array();
@@ -2913,6 +2990,9 @@ class TaskController extends ApplicationController {
                 $task_data['estimated_price'] = $estimated_price;
                 // order
                 $task->setOrder(ProjectTasks::maxOrder(array_var($task_data, "parent_id", 0), array_var($task_data, "milestone_id", 0)));
+
+                // Update subtasks percent completed if parent has manually set percent completed
+                $this->updateSubtasksPercentCompleted($task, $task_data);
 
                 try {
                     $task_data['due_date'] = getDateValue(array_var($_POST, 'task_due_date'));
@@ -3618,6 +3698,16 @@ class TaskController extends ApplicationController {
             foreach ($task_data as $k => &$v) {
                 $v = remove_scripts($v);
             }
+
+            // Update subtasks percent completed if parent has manually set percent completed and is changed
+            $stop_execution = $this->updateSubtasksPercentCompleted($task, $task_data);
+            
+            if($stop_execution === true) {
+                // If updateSubtasksPercentCompleted returns true, stop execution
+                ajx_current("empty");
+                return;
+            }
+
             $send_edit = false;
             if ($task->getAssignedToContactId() == array_var($task_data, 'assigned_to_contact_id')) {
                 $send_edit = true;
@@ -3940,9 +4030,11 @@ class TaskController extends ApplicationController {
                     }
                 }
 
+				$reload_current_panel = false;
+
                 if (isset($_POST['type_related'])) {
                     if ($_POST['type_related'] == "all" || $_POST['type_related'] == "news") {
-                        $task_data['members'] = json_decode(array_var($_POST, 'members'));
+                        $task_data['members'] = $task->getMemberIds();
 
                         $task_data['previous_sd'] = $previous_start_date;
                         $task_data['previous_dd'] = $previous_due_date;
@@ -3959,14 +4051,20 @@ class TaskController extends ApplicationController {
                         $modified_task_ids = $this->repetitive_tasks_related($task, "edit", $_POST['type_related'], $task_data);
 
                         if (count($modified_task_ids) > 0) {
-                            $mtdata = array();
-                            $modified_tasks = ProjectTasks::instance()->findAll(array('conditions' => "id IN (" . implode(',', $modified_task_ids) . ")"));
-                            foreach ($modified_tasks as $mtask) {
-                                $mtdata[] = $mtask->getArrayInfo();
-                            }
-                            if (count($mtdata) > 0) {
-                                evt_add('update tasks in list', array('tasks' => $mtdata));
-                            }
+							// send task data to update in the interface only if they are less than 20, otherwise reload the panel 
+							if (count($modified_task_ids) <= 20) {
+								$mtdata = array();
+								$modified_tasks = ProjectTasks::instance()->findAll(array('conditions' => "id IN (" . implode(',', $modified_task_ids) . ")"));
+								foreach ($modified_tasks as $mtask) {
+									$mtdata[] = $mtask->getArrayInfo();
+								}
+								if (count($mtdata) > 0) {
+									evt_add('update tasks in list', array('tasks' => $mtdata));
+								}
+							} else {
+								// reload the panel if there are too much tasks to update
+								$reload_current_panel = true;
+							}
                         }
                     }
                 }
@@ -4058,7 +4156,7 @@ class TaskController extends ApplicationController {
                 //flash_success(lang('success edit task list', $task->getObjectName()));
                 if (array_var($_REQUEST, 'modal')) {
                     if (array_var($_REQUEST, 'reload')) {
-                        evt_add("reload current panel");
+                        $reload_current_panel = true;
                     } else {
                         ajx_current("empty");
                         $this->setLayout("json");
@@ -4118,6 +4216,10 @@ class TaskController extends ApplicationController {
 
 				// reload all the task parents in the list
 				$this->reload_task_parents_in_list($task);
+
+				if ($reload_current_panel) {
+					evt_add("reload current panel");
+				}
 
             } catch (Exception $e) {
                 DB::rollback();
@@ -5411,8 +5513,6 @@ class TaskController extends ApplicationController {
             return;
         }
 
-        $task->save();
-
         $task->setObjectName(array_var($task_data, 'name'));
         $task->save();
 
@@ -5443,15 +5543,20 @@ class TaskController extends ApplicationController {
         }
 
         // Add assigned user to the subscibers list
-        if ($task->getAssignedToContactId() > 0 && Contacts::instance()->findById($task->getAssignedToContactId())) {
+        if ($task->getAssignedToContactId() > 0) {
             if (!isset($_POST['subscribers']))
                 $_POST['subscribers'] = array();
             $_POST['subscribers']['user_' . $task->getAssignedToContactId()] = '1';
         }
         $notify_subscribers = user_config_option("can notify subscribers");
 
+		// Copy classification (don't call object controller because it is not necesary and triggers calculations that are not needed at this point)
+		$members_to_classify = Members::getMembersById(array_var($task_data, 'members'));
+		ObjectMembers::removeObjectFromMembers($task, logged_user(), null);
+		ObjectMembers::addObjectToMembers($task->getId(), $members_to_classify);
+		
+		// add subscribers, linked objects, reminders and custom properties
         $object_controller = new ObjectController();
-        $object_controller->add_to_members($task, array_var($task_data, 'members'));
         $object_controller->add_subscribers($task, null, true, $notify_subscribers);
         $object_controller->link_to_new_object($task);
         $object_controller->add_custom_properties($task);

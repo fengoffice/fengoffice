@@ -255,6 +255,7 @@
       $offset     = (integer) array_var($arguments, 'offset', 0);
       $limit      = (integer) array_var($arguments, 'limit', 0);
       $columns    = array_var($arguments, 'columns', null);
+      $group_by   = array_var($arguments, 'group_by', null);
       
       // limit = 1 when findOne is invoked
       if ($one) {
@@ -264,6 +265,7 @@
       // Prepare query parts
       $where_string = trim($conditions) == '' ? '' : "WHERE " . preg_replace("/\s+in\s*\(\s*\)/i", " = -1", $conditions);
       $order_by_string = trim($order_by) == '' ? '' : "ORDER BY $order_by";
+      $group_by_string = trim($group_by) == '' ? '' : "GROUP BY $group_by";
       $limit_string = $limit > 0 ? "LIMIT $offset, $limit" : '';
       $distinct = $distinct ? "DISTINCT " : "";
       
@@ -273,7 +275,7 @@
       	$columns_string = ($id ? '`id`' : '*');
       }
       // Prepare SQL
-      $sql = "SELECT $distinct" . $columns_string . " FROM " . $this->getTableName(true) . " $where_string $order_by_string $limit_string";
+      $sql = "SELECT $distinct" . $columns_string . " FROM " . $this->getTableName(true) . " $where_string $order_by_string $group_by_string $limit_string";
 
       Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => ''), $where_string);
        

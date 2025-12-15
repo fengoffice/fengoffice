@@ -182,7 +182,8 @@ if (array_var($options, 'readonly')) {
 		isMultiple: <?php echo $dimension['is_multiple'] ? '1' : '0'?>,
 		allowedMemberTypes: <?php echo json_encode($allowed_member_type_ids)?>,
 		dontSelectAssociatedMembers: <?php echo array_var($options,'dont_select_associated_members') ? '1' : '0'?>,
-		listeners: <?php echo $listeners_str ?>
+		listeners: <?php echo $listeners_str ?>,
+		extra_options: JSON.parse('<?php echo json_encode(array_var($options, 'extra_options', array()))?>'),
 	};
 
 	if (member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'].listeners.after_render) {

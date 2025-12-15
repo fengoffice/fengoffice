@@ -520,14 +520,14 @@ class Notifier {
 								if ($inv_user instanceof Contact) {
 									if (can_access($inv_user, $object->getMembers(),ProjectEvents::instance()->getObjectTypeId(), ACCESS_LEVEL_READ)) {
 										$state_desc = lang('pending response');
-										if ($inv->getInvitationState() == 1) $state_desc = lang('yes');
-										else if ($inv->getInvitationState() == 2) $state_desc = lang('no');
-										else if ($inv->getInvitationState() == 3) $state_desc = lang('maybe');
+										if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED) $state_desc = lang('yes');
+										else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_DECLINED) $state_desc = lang('no');
+										else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_TENTATIVE) $state_desc = lang('maybe');
 										$guests .= '<div style="line-height: 20px; clear:both;">';
 										$guests .= '<div style="width: 35%;line-height: 20px; float: left;">' . clean($inv_user->getObjectName()) . '</div>';
 										$guests .= '<div style="line-height: 20px; float: left;">' . $state_desc . '</div></div>';
 									}
-									if($inv->getInvitationState() == 0){
+									if($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_NEEDS_ACTION){
 										$send_link[] = $inv_user->getId();
 									}
 								}
@@ -902,16 +902,22 @@ class Notifier {
 			self::objectNotification($object, $people, null, "$context reminder", "$context $type reminder desc");
 		}
 	} // taskDue
-	
+
+
+
 	/**
-	 * Send event notification to the list of users ($people)
+	 * Send event notification to the list of users ($people) with an ICS attachment
 	 *
-	 * @param ProjectEvent $event Event
+	 * @param ProjectEvent $object Event
 	 * @param array $people
+	 * @param string $notification
+	 * @param Contact $sender
 	 * @return boolean
 	 * @throws NotifierConnectionError
 	 */
-	static function notifEvent(ProjectEvent $object, $people, $notification, $sender) {
+	static function notifyEventWithIcs(ProjectEvent $object, $people, $notification, $sender) {
+
+		require_once ROOT.'/environment/classes/event/CalFormatUtilities.php';
 		
 		if (in_array($object->getObjectTypeId(), config_option("disable_notifications_for_object_type"))) {
 			return;
@@ -929,163 +935,84 @@ class Notifier {
 
 		tpl_assign('object', $object);
 		tpl_assign('title', $name);
-		tpl_assign('description', escape_html_whitespace(convert_to_links(clean($object->getDescription()))));//descripction
-
-		//context
-		$contexts = array();
-		$members = $object->getMembers();
-				
-		if(count($members)>0){
-			foreach ($members as $member){
-				$dim = $member->getDimension();
-				if($dim->getIsManageable()){
-					if ($dim->getCode() == "customer_project" || $dim->getCode() == "customers"){
-						$obj_type = ObjectTypes::instance()->findById($member->getObjectTypeId());
-						if ($obj_type instanceof ObjectType) {
-							$contexts[$dim->getCode()][$obj_type->getName()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
-						}
-					}else{
-						$contexts[$dim->getCode()][]= '<span style="'.get_workspace_css_properties($member->getMemberColor()).'">'. $member->getName() .'</span>';
-					}
-				}
-			}
-		}
-		tpl_assign('contexts', $contexts);//folders
+		tpl_assign('notification', $notification);
 
 		$attachments = array();
-		try {
-			$content = FileRepository::getBackend()->getFileContent(owner_company()->getPictureFile());
-			if ($content && config_option('show company logo in notifications')) {
-				$file_path = ROOT . "/tmp/logo_empresa.png";
-				$handle = fopen($file_path, 'wb');
-				if ($handle) {
-					fwrite($handle, $content);
-					fclose($handle);
-					$attachments['logo'] = array(
-						'cid' => gen_id() . substr($sender->getEmailAddress(), strpos($sender->getEmailAddress(), '@')),
-						'path' => $file_path,
-						'type' => 'image/png',
-						'disposition' => 'inline',
-						'name' => 'logo_empresa.png',
-					);
-				}
+
+		$ics_calendar_name = 'Calendar-'.$object->getId();
+		$ics_content = CalFormatUtilities::generateICalInfo([$object], $ics_calendar_name, null, null, $notification);
+		if ($ics_content) {
+			$filepath = ROOT.'/tmp/event_'.$object->getId().'.ics';
+			file_put_contents($filepath, CalFormatUtilities::strip_tags_content($ics_content));
+			
+			$method = 'REQUEST';
+			if (str_starts_with($notification, 'invitation-')) {
+				// when replying to invitation set method to reply
+				$method = 'REPLY';
 			}
-		} catch (FileNotInRepositoryError $e) {
-			unset($attachments['logo']);
+
+			$attachments['event_ics'] = array(
+				'path' => $filepath,
+				'type' => 'text/calendar; method='.$method.'; charset=UTF-8',
+				'disposition' => 'attachment',
+				'name' => 'event.ics',
+			);
 		}
+
 		tpl_assign('attachments', $attachments);// attachments
-                //invitations
-                $invitations = EventInvitations::instance()->findAll(array ('conditions' => 'event_id = ' . $object->getId()));
-                if (isset($invitations) && is_array($invitations)) {
-                    $guests = "";
-                    $send_link = array();
-                    foreach ($invitations as $inv) {
-                        $inv_user = Contacts::instance()->findById($inv->getContactId());
-                        if ($inv_user instanceof Contact) {
-                            if (can_access($inv_user, $object->getMembers(),ProjectEvents::instance()->getObjectTypeId(), ACCESS_LEVEL_READ)) {
-                                $state_desc = lang('pending response');
-                                if ($inv->getInvitationState() == 1) $state_desc = lang('yes');
-                                else if ($inv->getInvitationState() == 2) $state_desc = lang('no');
-                                else if ($inv->getInvitationState() == 3) $state_desc = lang('maybe');
-                                $guests .= '<div style="line-height: 20px; clear:both;">';
-								$guests .= '<div style="width: 35%;line-height: 20px; float: left;">' . clean($inv_user->getObjectName()) . '</div>';            
-								$guests .= '<div style="line-height: 20px; float: left;">' . $state_desc . '</div></div>';
-                            }
-                            if($inv->getInvitationState() == 0){
-                                $send_link[] = $inv_user->getId();
-                            }
-                        }
-                    }
-                }
-                tpl_assign('guests', $guests);// invitations
 		
 		$emails = array();
 		foreach($people as $user) {
-			if ($user->getId() != $sender->getId() && !$user->getDisabled()) {
-				// send notification on user's locale and with user info
-				$locale = $user->getLocale();
-				Localization::instance()->loadSettings($locale, ROOT . '/language');
-                                
-                                //ALL SUBSCRIBERS
-                                if($object->getSubscribers()){
-                                    $subscribers = $object->getSubscribers();
-                                    $string_subscriber = '';
-                                    $total_s = count($subscribers);
-                                    $c = 0;
-                                    foreach ($subscribers as $subscriber){
-                                        $c++;
-                                        if($c == $total_s && $total_s > 1){
-                                            $string_subscriber .= " " . lang('and') . " ";
-                                        }else if($c > 1){
-                                            $string_subscriber .= ", ";
-                                        }
+			if (!$user instanceof Contact) continue;
+			// send notification on user's locale and with user info
+			$locale = $user->isUser() ? $user->getLocale() : logged_user()->getLocale();
+			Localization::instance()->loadSettings($locale, ROOT . '/language');
+			
+			$subject_mail = lang("$notification notification event invitation", $name, $typename);
+			
+			$toemail = $user->getEmailAddress();
+			if (!$toemail) continue;
 
-                                        $string_subscriber .= $subscriber->getFirstName();
-                                        if($subscriber->getSurname() != "")
-                                            $string_subscriber .=" " . $subscriber->getSurname();
-
-                                    }
-                                    tpl_assign('subscribers', $string_subscriber);// subscribers
-                                }
-                                
-                                $tz_offset = Timezones::getTimezoneOffsetToApply($object, $user);
-                                $tz = $tz_offset/3600;
-                                
-                                //start
-                                if ($object->getStart() instanceof DateTimeValue) {
-                                    $date = Localization::instance()->formatDescriptiveDate($object->getStart(), $tz);
-                                    $time = Localization::instance()->formatTime($object->getStart(), $tz);
-                                    tpl_assign('start', $date);//start
-                                    if ($object->getTypeId() != 2) {
-                                        tpl_assign('time', $time);//time   
-                                    }
-                                }
-                                
-                                if ($object->getTypeId() != 2) {
-                                    //duration
-                                    if ($object->getDuration() instanceof DateTimeValue) {
-                                        $durtime = $object->getDuration()->getTimestamp() - $object->getStart()->getTimestamp();
-                                        $durhr  = ($durtime / 3600) % 24;   //seconds per hour
-                                        tpl_assign('duration', $durhr." hs");//duration                                  
-                                    }
-                                }else{
-                                    tpl_assign('duration', lang('all day event'));//duration
-                                } 
-                                
-                                $links = array();
-                                if(in_array($user->getId(), $send_link)){
-                                    $links = array(
-                                                array('img' => get_image_url("/16x16/complete.png"),'text' => lang('accept invitation'), 'url' => get_url('event', 'change_invitation_state', array('at' => 1, 'e' => $object->getId(), 'u' => $user->getId()))),
-                                                array('img' => get_image_url("/16x16/del.png"),'text' => lang('reject invitation'), 'url' => get_url('event', 'change_invitation_state', array('at' => 2, 'e' => $object->getId(), 'u' => $user->getId()))),
-                                            );
-                                    $description_title = lang("new notification event invitation", $object->getObjectName(), $sender->getObjectName());
-                                    $subject_mail = lang("new notification event", $name, $sender->getObjectName());
-                                }else{
-                                    $description_title = lang("$notification notification event desc", $object->getObjectName(), $sender->getObjectName());
-                                    $subject_mail = lang("$notification notification $type", $name, $typename);
-                                }
-                                tpl_assign('links', $links);                                
-                                tpl_assign('description_title', $description_title);//description_title
-                                
-				$toemail = $user->getEmailAddress();
-				//PHP7 fix:
-				//Previously: if (!$toemail) continue;
-				if (!$toemail) return;
-				
-				$emails[] = array(
-					"object_id" => $object->getId(),
-					"to" => array(self::prepareEmailAddress($toemail, $user->getObjectName())),
-					"from" => self::prepareEmailAddress($sender->getEmailAddress(), $sender->getObjectName()),
-					"subject" => $subject = $subject_mail,
-					"body" => tpl_fetch(get_template_path('general', 'notifier')),
-                                        "attachments" => $attachments
-				);
+			$notification_msg = '';
+			if ($notification == 'deleted') {
+				$notification_msg = lang('this event has been cancelled');
+			} else if ($notification == 'modified') {
+				$notification_msg = lang('this event has been updated');
 			}
-		}// foreach
+			tpl_assign('notification_msg', $notification_msg);
+
+			$notification_details = '';
+			if ($notification == 'modified') {
+				$changes_to_show = $object->getChangesForNotification($user);
+				foreach ($changes_to_show as $change) {
+					$notification_details .= '<div>' . $change['label'] . ':</div>';
+					$notification_details .= '<div style="padding-left: 20px; text-decoration: line-through; color: #0d5327;">' . $change['old_value'] . '</div>';
+					$notification_details .= '<div style="padding-left: 20px; color: #0d5327;">' . $change['new_value'] . '</div>';
+				}
+			}
+			tpl_assign('notification_details', $notification_details);
+			
+			$emails[] = array(
+				"object_id" => $object->getId(),
+				"to" => array(self::prepareEmailAddress($toemail, $user->getObjectName())),
+				"from" => self::prepareEmailAddress($sender->getEmailAddress(), $sender->getObjectName()),
+				"subject" => $subject_mail,
+				"body" => tpl_fetch(get_template_path('event_with_ics', 'notifier')),
+				"attachments" => $attachments
+			);
+		}
+
 		$locale = logged_user() instanceof Contact ? logged_user()->getLocale() : DEFAULT_LOCALIZATION;
 		Localization::instance()->loadSettings($locale, ROOT . '/language');
+
+		// delete previous pending notifications for this event, so we only send the latest and updated invitation
+		QueuedEmails::instance()->delete('object_id = ' . $object->getId());
+
 		self::queueEmails($emails);
 	} // notifEvent
+
+
+
 	
 	 /** Send event notification to the list of users ($people)
 	 *

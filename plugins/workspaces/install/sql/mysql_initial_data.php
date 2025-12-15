@@ -18,8 +18,12 @@ INSERT INTO <?php echo $table_prefix ?>dimension_object_type_options (`dimension
  ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='tags'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'),'select_after_creation','1')
 ON DUPLICATE KEY UPDATE `value`=`value`;
 
-INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (`dimension_id`, `parent_object_type_id`, `child_object_type_id`) VALUES
- ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace'));
+INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (`dimension_id`, `parent_object_type_id`, `child_object_type_id`)
+SELECT d.id, p.id, c.id
+FROM (SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='workspaces') d,
+     (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace') p,
+     (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='workspace') c
+WHERE d.id IS NOT NULL AND p.id IS NOT NULL AND c.id IS NOT NULL;
 
 INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_contents` (`dimension_id`,`dimension_object_type_id`,`content_object_type_id`, `is_required`, `is_multiple`)
  SELECT 

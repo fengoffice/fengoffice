@@ -19,6 +19,23 @@ class CustomPropertyValues extends BaseCustomPropertyValues {
 		)); // findOne
 	} //  getCustomPropertyValue
 	
+
+	static function setCustomPropertyValue($object_id, $custom_property_id, $value) {
+		$cpv = self::getCustomPropertyValue($object_id, $custom_property_id);
+		if (!$cpv) {
+			$cpv = new CustomPropertyValue();
+			$cpv->setObjectId($object_id);
+			$cpv->setCustomPropertyId($custom_property_id);
+		}
+		if ($value instanceof DateTimeValue) {
+    		$value = $value->toMySQL(); 
+		}
+		$cpv->setValue($value);
+		$cpv->save();
+	}
+
+
+
 	/**
 	 * Return custom property values for the object
 	 *

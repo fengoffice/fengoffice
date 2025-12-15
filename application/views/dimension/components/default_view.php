@@ -33,6 +33,10 @@ if (trim(array_var($options, 'root_lang')) != "") {
 	$opts["root_lang"] = array_var($options, 'root_lang');
 }
 
+if (isset($options['extra_options'])) {
+	$opts['extra_options'] = $options['extra_options'];
+}
+
 $add_selected_classes = "";
 if (isset($default_selection_checkboxes)) {
 	$add_selected_classes = "with-checkbox";
@@ -106,6 +110,11 @@ if (isset($default_selection_checkboxes)) {
 	?>
 </div>
 </div>
+<?php if (isset($description) && $description != "") : ?>
+	<div class="dimension-selector-description">
+		<span class="desc"><?php echo clean(trim($description)) ?></span>
+	</div>
+<?php endif; ?>
 	
 <script>
 $(function() {

@@ -1,29 +1,142 @@
-/* CONTAINERS AND FORM */
+/* CONTAINERS Override AND FORM */
 .custom-properties-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
+    display: flex !important; 
 }
+
+.form-container.project {
+    max-width: 900px;
+}
+
+/* Solo aplica al formulario de proyecto */
+.form-container.project .dimension-selector-container {
+    display: block !important;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.form-container.project .dimension-selector-container > label {
+    display: block !important;
+    margin-bottom: 6px !important;
+    font-size: 100%;
+}
+
+.form-container.project .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+}
+
+.form-container.project .input-container label,
+.form-container.project .dimension-selector-container > label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 0.25rem !important;
+}
+.form-container.project .custom-properties-container .custom-properties-column .input-container .cp-description label {
+	display: none !important;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container {
+    margin-top: 5px !important;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 293px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container {
+	max-width: 329px !important;
+	justify-content: space-between;
+	border-radius: 3px;
+	margin-bottom: 10px;
+	grid-template-columns: repeat(4, 1fr);
+	grid-template-rows: repeat(4, 1fr);
+	position: relative;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container .coViewAction {
+	display: none;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container > span select, 
+.phone-input-container > span select,
+.phones-input-container > span select,
+.emails-input-container span select,
+.webpages-input-container span select{
+	width: 73px !important;
+	height: 32px !important;
+}
+
+.form-container.project .phone-input-container input, .emails-input-container input, .webpages-input-container input{
+	height: 24px;
+	margin-left: 7px;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container textarea{
+	width: 293px;
+	height: 65px;
+    margin-top: 5px;
+}
+.form-container.project .address-custom-properties-parent .address-input-container.no-type-selector textarea {
+	margin-top: 0px;
+	margin-right: 28px;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 293px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container .address_state_input {
+    width: 139px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.form-container.project .address-custom-properties-parent .address-input-container .address_zipcode_input {
+    height: 25px;
+    width: 139px;
+    margin-top: 5px;
+    margin-right: 28px;
+}
+
+
+
+.form-container.project .address-custom-properties-parent .address-input-container .address_country_input {
+    height: 33px;
+    width: 301px;
+    margin-top: 5px;
+} 
+
+/* .form-container.project .form-container select.address_type_input {
+    min-width: 140px !important;
+} */
+
+.form-container.project .address_type_input {
+        min-width: 140px !important;
+}
+
 
 .custom-properties-left,
 .custom-properties-right {
-    flex: 1; /* Both columns equal */
+    flex: 1;
     padding: 10px;
     max-width: 510px;
 }
 
-#simplemodal-container{
-    width: 1100px!important;
-    left: 74px!important;
-}
-
-.simplemodal-data form {
-	width: 1100px;
-}
 
 /* HEADER TITLE */
 .simplemodal-data .coInputHeader .coInputName input.title {
-	width: 750px!important;
+	width: auto;
 }
 
 /* TEXT INPUTS */
@@ -38,9 +151,7 @@
 }
 
 /* DATE TIME PICKER */
-table.date-picker input[type="text"] {
-    width: 100px !important;
-}
+table.date-picker input[type="text"],
 table.time-picker input[type="text"] {
     width: 100px !important;
 }

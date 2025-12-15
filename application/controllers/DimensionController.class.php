@@ -472,8 +472,11 @@ class DimensionController extends ApplicationController {
 		$use_member_cache= true;
 		//Super admins are not using the contact member cache
 		if(logged_user()->isAdministrator() || !$dimension->getDefinesPermissions()){
-			$extra_cond .= "AND `parent_member_id`=0";
 			$use_member_cache= false;
+
+			// first request for dimension component must retrieve only root members, or else we can't paginate and show the view more node correctly
+			// add this condition only when not using cache, because cache is already returning only root members
+			$extra_cond .= " AND parent_member_id=0";
 		}
 		$return_all_members = false;
 	
@@ -500,6 +503,8 @@ class DimensionController extends ApplicationController {
 			'offset' => $offset,
 			'limit' => $limit + 1,
 		);
+
+		Hook::fire('list_dimension_members_tree_extra_conditions', array('request' => $_REQUEST, 'dimension' => $dimension), $extra_cond);
 		
 		$list_dim_members = $this->initial_list_dimension_members($dimension_id, $objectTypeId, $allowedMemberTypes, $return_all_members, $extra_cond, $limit_obj, false, null, $only_names, $selected_members,null,$use_member_cache);
 		$memberList = $list_dim_members['members'];
@@ -558,6 +563,9 @@ class DimensionController extends ApplicationController {
 				$ids_filter_sql = " AND id IN (".implode(',', $filter_ids_arr).") ";
 			}
 		}
+
+		$extra_cond = "";
+		Hook::fire('list_dimension_members_tree_extra_conditions', array('request' => $_REQUEST, 'dimension' => $dimension), $extra_cond);
 		
 		if(strlen($name) > 0 || $random){
 			//get the member list
@@ -571,11 +579,8 @@ class DimensionController extends ApplicationController {
 				$search_name_cond = "";
 				if(!$random){
 					$name = mysqli_real_escape_string(DB::connection()->getLink(), $name);
-					$search_name_cond = " AND name LIKE '%".$name."%'";
+					$search_name_cond = " AND `display_name` LIKE '%".$name."%'";
 				}
-				
-				// if there is a member type configured to show any other properties with the name, then search by them too
-				append_other_properties_search_conditions($dimension, $name, $search_name_cond);
 				
 				$member_type_cond = "";
 				if (count($allowed_member_types) > 0) {
@@ -598,8 +603,7 @@ class DimensionController extends ApplicationController {
 				// add condition to prevent returning malformed data that is in the database, example a client member without the customer object
 				$object_exist_cond = " AND ( object_id = 0 OR EXISTS ( SELECT id FROM ".TABLE_PREFIX."objects o WHERE o.id = object_id AND o.archived_on = '0000-00-00 00:00:00' AND o.trashed_on = '0000-00-00 00:00:00' ))";
 				
-
-				$memberList = Members::instance()->findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
+				$memberList = Members::instance()->findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond $extra_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
 
 				//include all parents
 				//Check hierarchy
@@ -642,15 +646,6 @@ class DimensionController extends ApplicationController {
 				if (count($allowed_member_types) > 0) {
 					$params["extra_condition"] .= "$ids_filter_sql AND m.object_type_id IN (".implode(',', $allowed_member_types).")";
 				}
-				
-				// if there is a member type configured to show any other properties with the name, then search by them too
-				$additional_query_string_conditions = "";
-				append_other_properties_search_conditions($dimension, $name, $additional_query_string_conditions);
-				if (trim($additional_query_string_conditions) != "") {
-					$additional_query_string_conditions = str_replace(TABLE_PREFIX."members.", "m.", $additional_query_string_conditions);
-					unset($params["member_name"]);
-					$params["extra_condition"] .= " $additional_query_string_conditions";
-				}
 
 				$more_conds = "";
 				if (!$ignore_context_filters) {
@@ -665,6 +660,8 @@ class DimensionController extends ApplicationController {
 					$more_conds .= $filter_by_members_sql;
 					$params["extra_condition"] .= " $more_conds";
 				}
+
+				$params["extra_condition"] .= " $extra_cond";
 				
 				$memberList = ContactMemberCaches::getAllMembersWithCachedParentId($params);
 			}

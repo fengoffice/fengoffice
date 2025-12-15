@@ -70,7 +70,7 @@ define('PRODUCT_LOGO_FILENAME', 'feng_logo.png');
 define('DEFAULT_HELP_LINK', 'https://wiki.fengoffice.com/doku.php/Home');
 
 define('MAX_SEARCHABLE_FILE_SIZE', 1048576); // if file type is searchable script will load its content into search index. Using this constant you can set the max filesize of the file that will be imported. Noone wants 500MB in search index for single file
-define('SESSION_LIFETIME', 3600); // one hour
+define('SESSION_LIFETIME', 3600 * 72); // 72 hours
 define('REMEMBER_LOGIN_LIFETIME', 1209600); // two weeks
 
 // Defaults
@@ -111,9 +111,6 @@ foreach ($callbacks as $callback) {
 	spl_autoload_register($callback);
 }
 
-
-@include CACHE_DIR . '/autoloader.php';
-
 // Prepare logger... We might need it early...
 //if(Env::isDebugging()) {
 	Logger::setSession(new Logger_Session('default'));
@@ -125,6 +122,18 @@ foreach ($callbacks as $callback) {
 	Logger::setSession(new Logger_Session('default'));
 	Logger::setBackend(new Logger_Backend_Null());
 } // if*/
+
+$composerAutoload = ROOT . '/vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+} else {
+    //Logger::log("Composer autoload.php not found at: $composerAutoload", Logger::ERROR);
+}
+
+@include CACHE_DIR . '/autoloader.php';
+
+
+
 
 register_shutdown_function('__shutdown');
 

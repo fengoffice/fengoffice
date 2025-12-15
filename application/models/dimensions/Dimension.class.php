@@ -245,4 +245,7 @@ class Dimension extends BaseDimension {
 		$this->options_cache[$name] = $value;
 	}
 
+	function isEnabled() {
+		return in_array($this->getId(), config_option('enabled_dimensions'));
+	}
 }

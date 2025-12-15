@@ -60,8 +60,8 @@ class ContactPasswords extends BaseContactPasswords {
 	 */
 	static function getNewestContactPasswords() {
 		return ContactPasswords::instance()->findAll(array(
-        'order' => 'password_date desc',
-		'group by' => 'contact_id',
+		'columns' => 'contact_id, max(password_date) as max_password_date',
+		'group_by' => 'contact_id',
 		)); // findAll
 	} // getNewestContactPasswords
 
@@ -294,27 +294,43 @@ class ContactPasswords extends BaseContactPasswords {
 
 
 	/**
-	 * Send password expiration reminders to contacts
+	 * Send password expiration reminders to users
 	 *
 	 * @access public
-	 * @return int
+	 * @return int The number of reminders sent
 	 */
 	static function sendPasswordExpirationReminders(){
-		$sent = 0;
-		$password_expiration_days = config_option('password_expiration', 0);
+		// get the number of days before password expiration date to send reminders
 		$password_expiration_notification = config_option('password_expiration_notification', 0);
-		$contact_passwords = ContactPasswords::getNewestContactPasswords();
+		// get the number of days password expiration date is set to
+		$password_expiration_days = config_option('password_expiration', 0);
+		
+		// get the newest contact password
+		$contact_passwords = ContactPasswords::getNewestContactPasswords(); 
+		$sent = 0;
+		
+		// loop through each contact password
 		foreach($contact_passwords as $password){
+			// calculate the number of days the current password has been active
 			$diff_days = self::getContactPasswordDays($password);
-			if($diff_days == ($password_expiration_days - $password_expiration_notification)){
+			
+			// check if the password is about to expire
+			if($diff_days >= ($password_expiration_days - $password_expiration_notification) && $diff_days <= $password_expiration_days){
+				// calculate the number of days left before expiration
+				$days_left = $password_expiration_days - $diff_days;
+				
+				// get the user to send the email
 				$contact = Contacts::instance()->findById($password->getContactId());
 				if($contact instanceof Contact){
-					if(Notifier::passwordExpiration($contact, $password_expiration_notification)){
-						$sent++;
-					}
+					// send the password expiration reminder with the number of days left
+					Notifier::passwordExpiration($contact, $days_left);
+					// count the number of reminders sent
+					$sent++;
 				}
 			}
 		}
+		
+		// return the number of reminders sent
 		return $sent;
 	}
 	

@@ -38,7 +38,7 @@
     *
     * @access public
     * @param void
-    * @return integer 
+    * @return DateTimeValue 
     */
     function getDuration() {
       return $this->getColumnValue('duration');
@@ -48,7 +48,7 @@
     * Set value of 'folder_id' field
     *
     * @access public   
-    * @param integer $value
+    * @param DateTimeValue $value
     * @return boolean
     */
     function setDuration($value) {
@@ -148,7 +148,7 @@
     * Set value of 'repeat_end' field
     *
     * @access public   
-    * @param Integer $value
+    * @param integer $value
     * @return boolean
     */
     function  setRepeatD($value) {
@@ -160,7 +160,7 @@
     *
     * @access public
     * @param void
-    * @return  Integer 
+    * @return integer 
     */
     function getRepeatD() {
       return $this->getColumnValue('repeat_d');
@@ -439,6 +439,74 @@
             return $this->setColumnValue('original_event_id', $value);
     } // setOriginalEventId()
     
+
+	/**
+	 * Return value of 'uid' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return string
+	 */
+	function getUid() {
+		return $this->getColumnValue('uid');
+	} // getUid()
+
+	/**
+	 * Set value of 'uid' field
+	 *
+	 * @access public
+	 * @param string $value
+	 * @return boolean
+	 */
+	function setUid($value) {
+		return $this->setColumnValue('uid', $value);
+	} // setUid()
+
+	
+	/**
+	 * Return value of 'organizer_id' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer
+	 */
+	function getOrganizerId() {
+		return $this->getColumnValue('organizer_id');
+	} // getOrganizerId()
+
+	/**
+	 * Set value of 'organizer_id' field
+	 *
+	 * @access public
+	 * @param integer $value
+	 * @return boolean
+	 */
+	function setOrganizerId($value) {
+		return $this->setColumnValue('organizer_id', $value);
+	} // setOrganizerId()
+
+	
+	/**
+	 * Return value of 'ical_dtstamp' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return DateTimeValue
+	 */
+	function getIcalDtstamp() {
+		return $this->getColumnValue('ical_dtstamp');
+	} // getIcalDtstamp()
+
+	/**
+	 * Set value of 'ical_dtstamp' field
+	 *
+	 * @access public
+	 * @param DateTimeValue $value
+	 * @return boolean
+	 */
+	function setIcalDtstamp($value) {
+		return $this->setColumnValue('ical_dtstamp', $value);
+	} // setIcalDtstamp()
     
     /**
     * Return manager instance
