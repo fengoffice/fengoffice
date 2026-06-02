@@ -69,8 +69,8 @@ It is licensed under the Affero GPL 3 license.
 </h2>
 
 <p style="color: #264653; padding:0 20px;">
-Feng Office requires a running Web Server, PHP (5.0 or greater) and MySQL (InnoDB
- support recommended). The recommended Web Server is Apache.
+Feng Office requires a running Web Server, PHP 8.2 or greater, and MySQL/MariaDB (InnoDB support recommended).
+The recommended Web Server is Apache 2.4 or greater.
 </p>
 
 <!-- ## Languages and tools -->
@@ -133,15 +133,15 @@ Feng Office requires a running Web Server, PHP (5.0 or greater) and MySQL (InnoD
 </h2>
 
 <p style="color: #264653; padding:0 20px;">
-PHP 7.1+
+PHP 8.4+
 </p>
 
 <p style="color: #264653; padding:0 20px;">
-MySQL 5+ with InnoDB support
+MariaDB/MySQL 5+ with InnoDB support
 </p>
 
 <p style="color: #264653; padding:0 20px;">
-Apache 2.0+
+Apache 2.4+
 </p>
 
 <ul style="padding:0 40px;">
