@@ -2876,8 +2876,37 @@ class TaskController extends ApplicationController {
         return $root_nodes_ids;
     }
 
+    /**
+     * Group-by value this install can actually use.
+     *
+     * A saved group-by can name a dimension or member type that is not present here, for example
+     * when the default was seeded from a package with more plugins enabled. The client builds its
+     * group-by list from what this install has, so such a value matches no entry in the selector
+     * and cannot be grouped by either. Report it as no grouping, so the list and the selector agree.
+     *
+     * @param string $groupBy
+     * @return string
+     */
+    private function resolveGroupBy($groupBy) {
+        if (substr($groupBy, 0, 16) !== "dimmembertypeid_") {
+            return $groupBy;
+        }
+
+        $dim_arr = explode("_", substr($groupBy, 16));
+        $dimension = Dimensions::instance()->findById((int) array_var($dim_arr, 0, 0));
+        $member_type = ObjectTypes::instance()->findById((int) array_var($dim_arr, 1, 0));
+
+        if (!($dimension instanceof Dimension) || !($member_type instanceof ObjectType)) {
+            return 'nothing';
+        }
+
+        return $groupBy;
+    }
+
     private function getGroups($groupBy, $conditions, $show_more_conditions, $include_empty_milestones = true, $only_totals = false, &$groups_offset = 0, $groups_count = 0, &$total_groups = 0) {
         $groups = array();
+
+        $groupBy = $this->resolveGroupBy($groupBy);
 
         $group_by_date = array('due_date', 'start_date', 'created_on', 'completed_on');
         $group_by_priority = array('priority');
@@ -2911,8 +2940,8 @@ class TaskController extends ApplicationController {
             $dim_str = substr($groupBy, 16);
             $dim_arr = explode("_", $dim_str);
 
-            $dim_id = (int) $dim_arr[0];
-            $member_type_id = (int) $dim_arr[1];
+            $dim_id = (int) array_var($dim_arr, 0, 0);
+            $member_type_id = (int) array_var($dim_arr, 1, 0);
 
             //If Group by folder check context in order to decide which folder type use
             //Remove this part when the folders are all the same
@@ -3451,7 +3480,7 @@ class TaskController extends ApplicationController {
                 'templatesFirstInNewMenu' => user_config_option('tasksTemplatesFirstInNewMenu'),
                 'showDimensionCols' => $showDimensionCols,
                 'editableDimensionIds' => $editable_dim_ids,
-                'groupBy' => user_config_option('tasksGroupBy'),
+                'groupBy' => $this->resolveGroupBy(user_config_option('tasksGroupBy')),
                 'orderBy' => user_config_option('tasksOrderBy'),
                 'listingOrder' => user_config_option('tasksListingOrder'),
                 'previousPendingTasks' => user_config_option('tasksPreviousPendingTasks', 1),
