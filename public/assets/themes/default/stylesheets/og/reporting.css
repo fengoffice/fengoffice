@@ -1255,3 +1255,54 @@ table.report.custom-report.to-print tr.custom-report-table-heading th {
 .forcetLeft {
 	text-align: left !important;
 }
+
+/*****
+Custom reports action menu (gear button and its popover).
+The markup lives in application/views/reporting/, so these rules belong here rather than in
+a plugin: without them the empty button collapses and clips the icon.
+*****/
+.report-actions-container {
+	margin: 0;
+	flex-shrink: 0;
+}
+.report-actions-btn {
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	background-position: center center !important;
+}
+.report-actions-btn.coViewAction {
+	padding: 0;
+}
+.report-actions-menu {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	min-width: 120px;
+}
+.report-actions-menu li {
+	margin: 0;
+	padding: 4px 0;
+}
+.report-actions-menu li a {
+	display: flex !important;
+	align-items: center;
+	min-height: 18px;
+	padding: 6px 14px 6px 28px;
+	text-decoration: none;
+	white-space: nowrap;
+	font-size: 13px;
+	line-height: 1;
+	background-position: 8px center !important;
+	background-repeat: no-repeat !important;
+	background-size: 16px !important;
+}
+.report-actions-menu li a:hover {
+	background-color: #f5f5f5;
+}
+.report-actions-popover .popover-content {
+	padding: 4px 0;
+}

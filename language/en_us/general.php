@@ -47,6 +47,7 @@ return array(
   	'search results for' => 'Search Result for',
   	'search speed' => 'Search speed',
         'delete' => 'Delete',
+        'copy' => 'Copy',
   	'empty trash can' => 'Empty trash can',
         'save' => 'Save',
   	'add' => 'Add',
