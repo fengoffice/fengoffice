@@ -1,11 +1,12 @@
 <?php 
 	$helpGenid = gen_id(); 
 	set_page_title(lang('help'));
+	$wiki_url = getDocumentationWikiUrl();
 	$help_options = array(
 		array(
 			'title' => lang('help manual'),
 			'desc' => '',
-			'url' => help_link(),
+			'url' => $wiki_url,
 			'target' => '_blank',
 		),
 		array(

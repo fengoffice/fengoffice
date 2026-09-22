@@ -15,8 +15,16 @@ ogTasks.addNewTaskGroup = function(data, group_index, draw){
 	group.root_total = parseInt(group.root_total);	
 		
 	group.offset = parseInt(og.noOfTasks);
-	
-	
+
+	// Restore the group's collapsed state from before the reload (e.g. when returning from a task view).
+	if (ogTasks.savedGroupCollapsedState[group.group_id]) {
+		group.alltasks_collapsed = true;
+	}
+
+	// false = tasks not yet injected into DOM (deferred for collapsed groups).
+	// Set to true by _renderGroupTasks / drawGroupTasks when tasks are actually drawn.
+	group.tasksDrawn = false;
+
 	if (typeof draw != 'undefined' && draw){	
 		var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
 		var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
@@ -94,6 +102,9 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 					
 					ogTasks.addTaskToGroup(group, task, true);
 				}
+
+				// update group offset with the real number of tasks loaded
+				group.offset += data.groups[i].group_tasks.length;
 			}
 			
 			//update group params
@@ -105,7 +116,9 @@ ogTasks.updateTaskGroups = function(data, add_new_tasks){
 			group.rendering = false;
 			
 			//update group totals
-			$("#ogTasksPanelGroup"+group.group_id+"Totals").replaceWith(ogTasks.newTaskGroupTotals(group));
+			var $newTotals = $(ogTasks.newTaskGroupTotals(group));
+			$("#ogTasksPanelGroup"+group.group_id+"Totals").replaceWith($newTotals);
+			ogTasks._syncRowTds($newTotals.find('tr.task-list-group-totals-template'));
 			
 		}
 	}
@@ -151,7 +164,15 @@ ogTasks.addTaskToGroup = function(group, task, draw){
 			$("#no_tasks_info").remove(); 
 			
 			ogTasks.drawTask(task, drawOptions, displayCriteria, group.group_id, 1);
-			
+
+			// Sync column order on the freshly-added row.
+			// drawTask() always renders in default tasks_list_cols order; if the user
+			// has reordered columns the new row must be synced to match the headers.
+			var $newRow = $("#ogTasksPanelTask" + task.id + "G" + group.group_id);
+			if ($newRow.length && typeof ogTasks._syncRowTds === 'function') {
+				ogTasks._syncRowTds($newRow);
+			}
+
 			var btns = $("#ogTasksPanelTask" + task.id + "G"+group.group_id +" .tasksActionsBtn").toArray();
 			og.initPopoverBtns(btns);	
 		}	
@@ -218,3 +239,29 @@ ogTasks.updateTaskGroupsForTask = function(data){
         ogTasks.refreshGroupsTotals(remove_task_groups_ids[j]);
     }
 };
+
+/**
+ * Updates task data across all loaded groups.
+ *
+ * Iterates over every group in ogTasks.Groups and, if the task exists in that
+ * group, replaces or updates it. If task_data is already an ogTasksTask
+ * instance, the reference is replaced directly; otherwise, the existing task
+ * object is updated in-place via setFromTdata().
+ *
+ * @param {ogTasksTask|Object} task_data - The task to update. Can be a full
+ *   ogTasksTask instance or a plain data object with at least an `id` property.
+ */
+ogTasks.updateTaskDataInGroups = function(task_data) {
+	if (!task_data) return;
+	for (var j = 0; j < ogTasks.Groups.length; j++) {
+		var group = ogTasks.Groups[j];
+		if (group.group_tasks[task_data.id]) {
+			if (task_data instanceof ogTasksTask) {
+				group.group_tasks[task_data.id] = task_data;
+			} else {
+				group.group_tasks[task_data.id].setFromTdata(task_data);
+			}
+		}
+	}
+};
+

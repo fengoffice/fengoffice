@@ -143,6 +143,7 @@ return array(
     'footer copy with homepage' => '&copy; {0} by <a class="internalLink" href="{1}">{2}</a>. All rights reserved.',
     'footer copy without homepage' => '&copy; {0} by {1}. All rights reserved',
     'footer powered' => 'Powered by <a target="_blank" href="{0}">{1}</a>',
+    'powered by' => 'Powered by',
 
 // Menu
 	'all documents' => 'All documents',
@@ -526,7 +527,7 @@ return array(
   'last month' => 'Last month',
   'select dates...' => 'Select dates...',
 
-  'task time report description' => 'This report displays the total executed time for a list of tasks, specified by a time period, time entry type and person (optional).',
+  'task time report description' => 'This report displays the total executed time, specified by a time period, time entry type and person (optional).',
   'no data to display' => 'No data to display',
 
   'new company name' => 'New company name',
@@ -598,6 +599,8 @@ return array(
   'pause time cannot be negative' => 'Pause time cannot be negative',
   'pause time cannot exceed timeslot time' => 'Pause time cannot exceed time entry time',
   'timeslots' => 'Time entries',
+  'cannot add worked time to parent tasks' => 'Cannot add worked time to parent tasks',
+  'cannot add time task estimated hours reached' => 'Cannot add time: this task has already reached its estimated hours',
 
   'task timeslots' => 'Task time entries',
   'time timeslots' => 'General time entries',
@@ -661,6 +664,7 @@ return array(
   'new share notification weblink' => 'Link \'{0}\' has been shared',
 
   'billing' => 'Billing',
+  'billings' => 'Billings',
   'category' => 'Category',
   'hourly rates' => 'Hourly rates',
   'origin' => 'Origin',
@@ -789,6 +793,9 @@ return array(
 	'or you can also' => 'Or you can also',
 	'template parameters description' => 'This form contains the parameters that are needed to fill the tasks to be generated.',
 	'template_task' => 'Template task',
+	'template_tasks' => 'Template tasks',
+	'template_milestones' => 'Template milestones',
+	'template_milestone' => 'Template milestone',
 	'repeat options' => 'Repeat options',
 	'other properties' => 'Other properties',
   'time will be rounded to 15 minutes' => 'Time will be rounded to 15 minutes'

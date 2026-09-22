@@ -14,6 +14,7 @@
     * @var array
     * @static
     */
+    
     static private $columns = array(
     	'permission_group_id' => DATA_TYPE_INTEGER,
     	'can_manage_security' => DATA_TYPE_BOOLEAN, 

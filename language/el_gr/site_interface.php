@@ -182,6 +182,7 @@
 	'footer copy with homepage' => '© {0} από <a class="internalLink" href="{1}">{2}</a>. Με την επιφύλαξη κάθε νόμιμου δικαιώματος.',
 	'footer copy without homepage' => '© {0} by {1}. Με την επιφύλαξη κάθε νόμιμου δικαιώματος',
 	'footer powered' => 'Κατασκευάστηκε από <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Κατασκευάστηκε από',
 	'all documents' => 'Όλα τα έγγραφα',
 	'created by me' => 'Δημιουργήθηκε/καν από εμένα',
 	'by project' => 'Ανά περιοχή εργασίας',

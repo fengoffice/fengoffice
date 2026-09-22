@@ -17,9 +17,9 @@
 <script>
 	$(function(){
 		function passwordError(message) {
-			$("<?php echo $jqid ?> .password input,<?php echo $jqid ?> .repeat input").addClass("field-error").val("");
-			$("<?php echo $jqid ?> .password input").addClass("field-error").focus().val('');
-			
+			$("<?php echo $jqid ?> .password input,<?php echo $jqid ?> .repeat input").addClass("field-error");
+			// Do not steal focus here: forcing focus on the password field traps the user
+			// when they try to edit the repeat field after a mismatch / requirements error.
 			$("<?php echo $jqid ?> .field-error-msg").remove();
 			$("<?php echo $jqid ?> .password").append("<div class='field-error-msg'>"+message+"</div>");		
 		}
@@ -71,6 +71,14 @@
 				}
 			}
 		});
+		// Clear mismatch errors as soon as both fields match while typing
+		$("<?php echo $jqid ?> .password input, <?php echo $jqid ?> .repeat input").on("input", function(){
+			var pass = $("<?php echo $jqid ?> .password input").val();
+			var repeat = $("<?php echo $jqid ?> .repeat input").val();
+			if (pass !== '' && pass === repeat) {
+				passwordOk();
+			}
+		});
 
 
 		$("#<?php echo $genid ?>specify-username").click(function(){
@@ -100,25 +108,37 @@
 
 <div id = "<?php echo $genid ?>" class="access-data">
 	<div style="<?php echo (array_var($_REQUEST, 'is_user') == 1 ? "display:none;" : "")?>">
-		<label class="checkbox" for="create-user"><?php echo lang("will this person use feng office?") ?></label><input class="checkbox" type="checkbox" name="contact[user][create-user]" <?php if(!$contact_mail){echo "checked";}?> id="create-user"></input>
+		<label for="create-user"><?php echo lang("will this person use feng office?") ?></label><input class="checkbox" type="checkbox" name="contact[user][create-user]" <?php if(!$contact_mail){echo "checked";}?> id="create-user"></input>
 		<div class="clear"></div>
 	</div>
 		<div style="display:none;" class="user-data-title"><?php echo lang('user data')?></div>
 		<div class="user-data" <?php if($contact_mail){echo "style='display:none'";}?>>
 		
-			<label class="checkbox"><?php echo lang('send email notification') ?></label>
+		<div class="dataBlock">
+			<label><?php echo lang('send email notification') ?></label>
 			<input class="checkbox" type="checkbox" name="notify-user" <?php if($send_notification_to_new_user){echo "checked";}?> id="notify-user"></input>
-	
+		</div>
+
 		<div class="clear"></div>
-		<label class="checkbox" ><?php echo lang("specify password?") ?></label><input class="checkbox" type="checkbox" name="contact[user][create-password]" id="create-password"  <?php if(!$send_notification_to_new_user){echo "disabled";}?>></input>
+		
+		<div class="dataBlock">
+		<label><?php echo lang("specify password?") ?></label><input class="checkbox" type="checkbox" name="contact[user][create-password]" id="create-password"  <?php if(!$send_notification_to_new_user){echo "disabled";}?>></input>
+		</div>
+
 		<div class="clear"></div>
+		
 		<div class="user-data-password" style="display:<?php if($send_notification_to_new_user){echo "none";}?>;">
-			<div class="field password">
-				<label><?php echo lang("password")?>:</label><input name="contact[user][password]" type="password"></input>
+			<div class="dataBlock">
+				<div class="field password">
+					<label><?php echo lang("password")?>:</label><input name="contact[user][password]" type="password"></input>
+				</div>
 			</div>
-			<div class="field repeat">
-				<label><?php echo lang("password again")?>:</label><input type="password" name="contact[user][password_a]"></input>
+			<div class="dataBlock">
+				<div class="field repeat">
+					<label><?php echo lang("password again")?>:</label><input type="password" name="contact[user][password_a]"></input>
+				</div>
 			</div>
+			<?php echo render_password_requirements(); ?>
 		</div>          
 		<div class="clear"></div>
 		<div class="field role" style="<?php echo (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0 ? "display:none;" : "")?>" id="user_role_div">
@@ -126,8 +146,8 @@
 			<div id="<?php echo $genid ?>_user_type_container"></div>
 		</div>
 	<?php if(isset($new_contact) && $new_contact){?>
-		<div class="field role">
-			<label class="checkbox"><?php echo lang("specify username?")?></label>
+		<div class="dataBlock field role">
+			<label><?php echo lang("specify username?")?></label>
 			<input class="checkbox" type="checkbox" name="contact[specify_username]" id="<?php echo $genid ?>specify-username"/>
 			<input id="<?php echo $genid ?>profileFormUsername" type="text" value="<?php echo array_var($contact_data, 'username')?>" 
 				name="contact[user][username]" maxlength="50" style="display: none; margin-left:5px;" placeholder="<?php echo lang('username')?>"/>

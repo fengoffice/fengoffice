@@ -31,266 +31,135 @@
                     <?php //echo text_field('timeslot[name]', $object->getObjectName(), array('id' => $genid . 'timeslotFormTitle', 'class' => 'title', 'placeholder' => lang('type name here'))) ?>
                 </div>
                 <div class="coInputButtons" style="float:right;">
-                    <?php echo submit_button($timeslot->isNew() ? lang('add timeslot') : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+                    <?php echo submit_button($timeslot->isNew() ? lang('save') : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
                 </div>
                 <div class="clear"></div>
             </div>
         </div>
 
-        <div class="coInputMainBlock">
-			<input type="hidden" name="genid" value="<?php echo $genid?>" id="genid"/>
-            <input type="hidden" name="object_id" value="<?php echo $timeslot->getRelObjectId()?>" />
-            <input type="hidden" name="dont_reload" value="<?php echo isset($dont_reload) ? $dont_reload : '0'?>" />
-			<input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'modal form') ?>" />
+        <div class="feng-forms">
+            <div class="coInputMainBlock edit-member">
+                <input type="hidden" name="genid" value="<?php echo $genid?>" id="genid"/>
+                <input type="hidden" name="object_id" value="<?php echo $timeslot->getRelObjectId()?>" />
+                <input type="hidden" name="dont_reload" value="<?php echo isset($dont_reload) ? $dont_reload : '0'?>" />
+                <input type="hidden" name="req_channel" value="<?php echo array_var($_REQUEST, 'req_channel', 'modal form') ?>" />
 
-            <div id="<?php echo $genid?>tabs" class="edit-form-tabs">
-                <ul id="<?php echo $genid?>tab_titles">
-                    <li><a href="#<?php echo $genid?>add_timeslot_details"><?php echo lang('details') ?></a></li>
-                    <li><a href="#<?php echo $genid?>add_timeslot_related_to"><?php echo lang('related to') ?></a></li>
+                <div id="<?php echo $genid?>tabs" class="edit-form-tabs">
+                    <ul id="<?php echo $genid?>tab_titles">
+                        <li><a href="#<?php echo $genid?>add_timeslot_basic_div"><?php echo lang('details') ?></a></li>
 
-                    <?php if (can_manage_billing(logged_user()) && !Plugins::instance()->isActivePlugin('advanced_billing')) { ?>
-                    <li><a href="#<?php echo $genid?>add_timeslot_billing"><?php echo lang('billing') ?></a></li>
-                    <?php } ?>
-                    <?php foreach ($categories as $category) {
-                        if (array_var($category, 'hidden')) continue;
-                    ?>
-                    <li><a href="#<?php echo $genid . array_var($category, 'id', $category['name']) ?>" id="<?php echo array_var($category, 'id', $category['name'])."_li"?>"><?php echo $category['name'] ?></a></li>
-                    <?php } ?>
-                </ul>
-
-                <div id="<?php echo $genid ?>add_timeslot_details" class="editor-container form-tab">
-                    <?php if (can_manage_time(logged_user())) { ?>
-                        <div class="dataBlock">
-                            <?php echo label_tag(lang('user')) ?>
-                            <div id="<?php echo $genid?>timeslot_contact_combo_container" style="float:left;"></div>
-                            <input type="hidden" id="<?php echo $genid?>timeslot_contact_id" name="timeslot[contact_id]" value="<?php echo $object->getContactId() ?>" />
-                            <div class="clear"></div>
-                        </div>
-                    <?php } ?>
-
-                    <div class="dataBlock" id="<?php echo $genid?>worked_time_container">
-                        <div class="pull-left">
-                        <?php echo label_tag(lang('worked time')) ?>
-                        
-                        <?php echo hour_field('timeslot[hours]', floor($timeslot->getMinutes() / 60),array("maxlength" => 4,
-                                    "id" => "worked_time",
-                                    "class" => "inputHours",
-                                    "onkeyup" => "event.target.value = event.target.value.replace(/[^0-9]/g, '')",
-                                    "onchange" => "og.onchangeTimesInputs(this);",
-                                    "placeholder" => "Hs")) ?>
-                        <span style="margin: 0px 5px;">:</span>
-                        <?php echo minute_field('timeslot[minutes]', $timeslot->getMinutes() % 60,array("maxlength" => 2,
-                                    "id" => "worked_minute",
-                                    "class" => "inputMinutes",
-                                    "onkeyup" => "event.target.value = event.target.value.replace(/[^0-9]/g, ''); if (event.target.value > 59) event.target.value = 59;",
-                                    "onchange" => "og.onchangeTimesInputs(this);",
-                                    "placeholder" => "Min")) ?>
-                        
-                        </div>
-                        <a class="specify-link pull-left" style="line-height: 25px;<?php echo $time_preferences['show_paused_time'] && ($timeslot->getSubtract() == 0) ? '':'display:none;' ?>" onclick="og.toggle_specify_paused_time(this, '<?php echo $genid ?>')" href="#"><?php echo lang('specify paused time') ?></a>
-                        <div class="dataBlock dataBlockRight" 
-                             style="<?php if ($timeslot->getSubtract() == 0) echo 'display:none;' ?>"
-                             id="<?php echo $genid?>paused_time_container">
-
-                            <?php echo label_tag(lang('paused time')) ?>
-
-                            <?php echo hour_field('timeslot[subtract_hours]', floor($timeslot->getSubtract() / 3600),array("maxlength" => 4,
-                                        "id" => "paused_time",
-                                        "class" => "inputHours",
-                                        "onkeyup" => "event.target.value = event.target.value.replace(/[^0-9]/g, '')",
-                                        "onchange" => "og.onchangeTimesInputs(this);",
-                                        "placeholder" => "Hs")) ?>
-                            <span style="margin: 0px 5px;">:</span>
-                            <?php echo minute_field('timeslot[subtract_minutes]', ($timeslot->getSubtract() / 60) % 60,array("maxlength" => 2,
-                                        "id" => "paused_minute",
-                                        "class" => "inputMinutes",
-                                        "onkeyup" => "event.target.value = event.target.value.replace(/[^0-9]/g, ''); if (event.target.value > 59) event.target.value = 59;",
-                                        "onchange" => "og.onchangeTimesInputs(this);",
-                                        "placeholder" => "Min")) ?>
-                        </div>
-                        <div class="clearfix"></div>
-                    </div>
-                    <div class="dataBlock">
-                        <div class="pull-left">
-                            <?php 
-                                echo label_tag(lang('start'));
-                                $tz_offset = Timezones::getTimezoneOffsetToApply($timeslot);
-                                if ($timeslot->isNew()) {
-                                	$date = DateTimeValueLib::now();
-                                    $date->add('s', $tz_offset);
-                                } else {
-	                                $date = new DateTimeValue($timeslot->getStartTime()->getTimestamp() + $tz_offset);
-                                }
-                            ?>
-                            <table>
-                                <tr>
-                                    <td>
-                                        <?php 
-                                            $listeners = array('change' => "function(){ og.onchangeStartDate(); }");
-                                        	//$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[date]'); }");
-                                            echo pick_date_widget2('timeslot[date]', $date, $genid, null, false,'date_input', $listeners);
-                                        ?>
-                                    </td>
-                                    <td style="padding-left: 5px">
-                                        <?php 
-                                            $listeners = array('change' => "function(){ og.onchangeStartDate(); }");
-                                        	//$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[start_time]'); }");
-                                            echo pick_time_widget2('timeslot[start_time]', $date, $genid,null,false,'start_time_input', $listeners);
-                                        ?>
-                                    </td>
-                                    <td style="padding-left: 5px">
-                                        <a class="specify-link" onclick="og.toggle_specify_end_time(this, '<?php echo $genid ?>')" href="#"><?php echo lang('specify end date') ?></a>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                        
-                    <div class="dataBlock dataBlockRight" style="display:none;" id="<?php echo $genid?>end_date_container">
-                        <?php 
-                            echo label_tag(lang('end'));
-                            $tz_offset = Timezones::getTimezoneOffsetToApply($timeslot);
-                            $end_date = $timeslot->isNew() || !$timeslot->getEndTime() instanceof DateTimeValue ? null : 
-                                    new DateTimeValue($timeslot->getEndTime()->getTimestamp() + $tz_offset);
+                        <?php if (can_manage_billing(logged_user()) && !Plugins::instance()->isActivePlugin('advanced_billing')) { ?>
+                        <li><a href="#<?php echo $genid?>add_timeslot_billing"><?php echo lang('billing') ?></a></li>
+                        <?php } ?>
+                        <?php foreach ($categories as $category) {
+                            if (array_var($category, 'hidden')) continue;
                         ?>
-                        <table>
-                            <tr>
-                                <td>
-                                    <?php 
-                                        $listeners = array('change' => "function(){ og.onchangeEndDate(); }");
-                                        //$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_date]'); }");
-                                        echo pick_date_widget2('timeslot[end_date]', $end_date, $genid, null, false,'date_end_input', $listeners);
-                                    ?>
-                                </td>
-                                <td style="padding-left: 5px">
-                                    <?php 
-                                    	$listeners = array('change' => "function(){ og.onchangeEndDate(); }");
-                                    	//$listeners = array('change' => "function(){ og.onchangeDatesInputs('timeslot[end_time]'); }");
-                                        echo pick_time_widget2('timeslot[end_time]', $timeslot->isNew() ? null : $end_date, $genid,null,false,'end_time_input', $listeners);
-                                    ?>
-                                </td>
-                            </tr>
-                        </table>		
-                    </div>
-                        <div class="clearfix"></div>
-                    </div>
+                        <li><a href="#<?php echo $genid . array_var($category, 'id', $category['name']) ?>" id="<?php echo array_var($category, 'id', $category['name'])."_li"?>"><?php echo $category['name'] ?></a></li>
+                        <?php } ?>
+                    </ul>
 
-                  
-                    
-                    <div class="dataBlock">
-                        <?php echo label_tag(lang('description')) ?>
-                        <?php echo textarea_field('timeslot[description]', $timeslot->getDescription(), array('class' => 'long'))?>
-                    </div>
-                  
-                    <?php 
-                        echo render_object_custom_properties($timeslot, null, null, 'visible_by_default');
-                    ?>
-
-
-
-                    <div class="dataBlock">
-                        <?php echo label_tag(lang('task')) ?>
-                    
-
-                    <div id="contene" class="linked-objects-container">
+                    <div id="<?php echo $genid ?>add_timeslot_basic_div" class="editor-container form-tab">
                         <?php
-                            $object_id = $timeslot->getRelObjectId();
-                            $showObjectTask = '';
-                            $showLinkObjectTask = '';  // *** LC 2023-10-03
-                            if ($object_id){
-                                $showLinkObjectTask = 'display:none;';
-                                
-                                $object_id = $timeslot->getRelObject()->getObjectId();
-                                $object_name = $timeslot->getRelObject()->getObjectName();
-                            }else{
-                                $showObjectTask = 'display:none;';
-                            }
-                        ?>
-                        
-                        <a id="<?php echo $genid ?>before" class="add-linked-object " href="#" onclick="og.openObjectTaskPicker('<?php echo $genid ?>')" style="<?php echo $showLinkObjectTask ?>"><span class="action-ico ico-task"><?php echo lang('link task') ?></span></a>
+                        $properties_html = null;
+                        Hook::fire('override_render_properties', [
+                            'object' => $timeslot,
+                            'genid' => $genid,
+                            'visible_by_default' => true
+                        ], $properties_html);
 
-                            
-                            <div class="template-object-actions og-add-template-object ico-task" style="<?php echo $showObjectTask ?>">
-                                <input id="object_id" type="hidden" name="object_id" value="<?php echo $object_id ?>" />
-                                <input type="hidden" name="old_object_id" value="<?php echo $object_id ?>" />
-                                <span class="name"><?php echo isset($object_name) ? $object_name : "" ?></span>
-                                <a href="#" onclick="og.removeObjectTask(this.parentNode)" class="internalLink coViewAction ico-delete"><?php echo lang('remove') ?></a>
-                            </div>
-                                    
-                    </div>
+                        if (!is_null($properties_html)) {
+							
+							echo '<div class="main-custom-properties-div">';
+                            echo_custom_properties_html($properties_html);
+							echo '</div>';
 
-                    </div>
-
-					<?php 
-					$main_tab_more_html = "";
-					Hook::fire('timeslot_main_tab_additional_fields', array('timeslot' => $timeslot, 'task_id' => $object_id, 'selected_member_ids' => $pre_selected_member_ids, 'genid' => $genid), $main_tab_more_html);
-					echo $main_tab_more_html; 
-					?>
-                    
-
-
-                </div>
-
-                <div id="<?php echo $genid ?>add_timeslot_related_to" class="editor-container form-tab">
-                    <?php 
-                        $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.set_time_is_billable_using_labor_wrapper("'.$genid.'");');
-						
-						// allow to add more listeners to this component
-						Hook::fire('timeslot_form_member_selector_listeners', array('genid' => $genid, 'object' => $object), $listeners);
-
-                        if ($timeslot->isNew()) {
-                            render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $pre_selected_member_ids, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
                         } else {
-                            render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $timeslot->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
-                        } 
-                    ?>
-                    <div class="clear"></div>
+                        ?>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col">
+                                    <?php
+                                    $available_columns = $object->manager()->getColumnsAvailableInForms();
+
+                                    // Set context variable for fallback rendering
+                                    $is_hook_rendering = false;
+
+                                    foreach ($available_columns as $column) {
+                                        $input_file = ROOT . '/application/views/timeslot/form_inputs/' . $column . '.php';
+                                        if (file_exists($input_file)) {
+                                            echo '<div class="form-group">';
+                                            include $input_file;
+                                            echo '</div>';
+                                        }
+                                    }
+                                    ?>
+                                </div>
+                                <div class="col">
+                                    <?php
+                                        $listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.set_time_is_billable_using_labor_wrapper("'.$genid.'");');
+                                        
+                                        // allow to add more listeners to this component
+                                        Hook::fire('timeslot_form_member_selector_listeners', array('genid' => $genid, 'object' => $object), $listeners);
+
+                                        if ($timeslot->isNew()) {
+                                            render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $pre_selected_member_ids, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
+                                        } else {
+                                            render_member_selectors($timeslot->manager()->getObjectTypeId(), $genid, $timeslot->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
+                                        }
+                                    ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <?php } // endif ?>
+                    </div>
+
+                    <?php 
+                    $can_see_billing_info = true;
+                    Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
+                    if (can_manage_billing(logged_user()) && !Plugins::instance()->isActivePlugin('advanced_billing') && $can_see_billing_info) { ?>
+                        <div id="<?php echo $genid ?>add_timeslot_billing" class="editor-container form-tab">	
+                            <div class="dataBlock">
+                                <?php echo label_tag(lang('type')) ?>
+                                <?php echo radio_field('timeslot[is_fixed_billing]',
+                                                        !$timeslot->getColumnValue('is_fixed_billing'),
+                                                        array('onchange' => 'og.showAndHide("' . $genid. 'hbilling",["' . $genid. 'fbilling"])', 
+                                                        'value' => '0',
+                                                        'style' => 'width:16px')) . lang('hourly billing'); ?>
+
+                                <?php echo radio_field('timeslot[is_fixed_billing]',
+                                                        $timeslot->getColumnValue('is_fixed_billing'),
+                                                        array('onchange' => 'og.showAndHide("' . $genid. 'fbilling",["' . $genid. 'hbilling"])', 
+                                                        'value' => '1',
+                                                        'style' => 'width:16px')) . lang('fixed billing');?>
+                            </div>
+
+                            <div id="<?php echo $genid ?>hbilling" class="dataBlock" style="<?php echo $timeslot->getColumnValue('is_fixed_billing') ? 'display:none':'' ?>">
+                                <?php echo label_tag(lang('hourly rates'), 'addTimeslotHourlyBilling') ?>
+                                <?php echo config_option('currency_code', '$') ?>&nbsp;
+                                <?php echo text_field('timeslot[hourly_billing]', $timeslot->getColumnValue('hourly_billing'), array('id' => 'addTimeslotHourlyBilling', 'readonly' => 'readonly', 'style' => 'border:0;')) ?>
+                            </div>
+
+                            <div id="<?php echo $genid ?>fbilling" class="dataBlock" style="<?php echo $timeslot->getColumnValue('is_fixed_billing') ? '' : 'display:none' ?>">
+                                <?php echo label_tag(lang('billing amount'), 'addTimeslotFixedBilling') ?>
+                                <?php echo config_option('currency_code', '$') ?>&nbsp;
+                                <?php echo text_field('timeslot[fixed_billing]', $timeslot->getColumnValue('fixed_billing'), array('id' => 'addTimeslotFixedBilling', 'type' => 'number')) ?>
+                            </div>
+
+                        </div>
+                    <?php } ?>
+                    <?php foreach ($categories as $category) { ?>
+                        <div id="<?php echo $genid . array_var($category, 'id', $category['name']) ?>" class="form-tab">
+                            <?php echo $category['content'] ?>
+                        </div>
+                    <?php } ?>
                 </div>
 
-                <?php 
-                $can_see_billing_info = true;
-                Hook::fire('get_can_see_billing_information', array('user'=>logged_user()), $can_see_billing_info);
-                if (can_manage_billing(logged_user()) && !Plugins::instance()->isActivePlugin('advanced_billing') && $can_see_billing_info) { ?>
-                    <div id="<?php echo $genid ?>add_timeslot_billing" class="editor-container form-tab">	
-                        <div class="dataBlock">
-                            <?php echo label_tag(lang('type')) ?>
-                            <?php echo radio_field('timeslot[is_fixed_billing]',
-                                                    !$timeslot->getColumnValue('is_fixed_billing'),
-                                                    array('onchange' => 'og.showAndHide("' . $genid. 'hbilling",["' . $genid. 'fbilling"])', 
-                                                    'value' => '0',
-                                                    'style' => 'width:16px')) . lang('hourly billing'); ?>
 
-                            <?php echo radio_field('timeslot[is_fixed_billing]',
-                                                    $timeslot->getColumnValue('is_fixed_billing'),
-                                                    array('onchange' => 'og.showAndHide("' . $genid. 'fbilling",["' . $genid. 'hbilling"])', 
-                                                    'value' => '1',
-                                                    'style' => 'width:16px')) . lang('fixed billing');?>
-                        </div>
-
-                        <div id="<?php echo $genid ?>hbilling" class="dataBlock" style="<?php echo $timeslot->getColumnValue('is_fixed_billing') ? 'display:none':'' ?>">
-                            <?php echo label_tag(lang('hourly rates'), 'addTimeslotHourlyBilling') ?>
-                            <?php echo config_option('currency_code', '$') ?>&nbsp;
-                            <?php echo text_field('timeslot[hourly_billing]', $timeslot->getColumnValue('hourly_billing'), array('id' => 'addTimeslotHourlyBilling', 'readonly' => 'readonly', 'style' => 'border:0;')) ?>
-                        </div>
-
-                        <div id="<?php echo $genid ?>fbilling" class="dataBlock" style="<?php echo $timeslot->getColumnValue('is_fixed_billing') ? '' : 'display:none' ?>">
-                            <?php echo label_tag(lang('billing amount'), 'addTimeslotFixedBilling') ?>
-                            <?php echo config_option('currency_code', '$') ?>&nbsp;
-                            <?php echo text_field('timeslot[fixed_billing]', $timeslot->getColumnValue('fixed_billing'), array('id' => 'addTimeslotFixedBilling', 'type' => 'number')) ?>
-                        </div>
-
-                    </div>
-                <?php } ?>
-                <?php foreach ($categories as $category) { ?>
-                    <div id="<?php echo $genid . array_var($category, 'id', $category['name']) ?>" class="form-tab">
-                        <?php echo $category['content'] ?>
-                    </div>
-                <?php } ?>
+                <?php if (!array_var($_REQUEST, 'modal')) {
+                    echo submit_button($timeslot->isNew() ? lang('save') : lang('save changes'), 's', array('style'=>'margin-top:0px')); 
+                }?>
             </div>
-
-
-            <?php if (!array_var($_REQUEST, 'modal')) {
-                echo submit_button($timeslot->isNew() ? lang('add timeslot') : lang('save changes'), 's', array('style'=>'margin-top:0px')); 
-            }?>
         </div>
     </div>
 </form>
@@ -388,8 +257,16 @@
         $('#' + genid + "paused_time_container").slideToggle(100);
     }
     // Save current selected member ids
-    var json_sel_ids = document.getElementById(gen_id + member_selector[gen_id].hiddenFieldName).value; 
-    var current_selected_member_ids = json_sel_ids == "" ? [] : Ext.util.JSON.decode(json_sel_ids);
+    var json_sel_ids = "";
+    var current_selected_member_ids = [];
+
+    if (typeof member_selector !== 'undefined' && member_selector[gen_id] && member_selector[gen_id].hiddenFieldName) {
+        var hidden_field = document.getElementById(gen_id + member_selector[gen_id].hiddenFieldName);
+        if (hidden_field) {
+            json_sel_ids = hidden_field.value;
+            current_selected_member_ids = json_sel_ids == "" ? [] : Ext.util.JSON.decode(json_sel_ids);
+        }
+    }
     
 	//[Conrado 8/2019] Would this work?
 	//The idea here is to know the initial values, to see if/how we need to edit them 
@@ -468,23 +345,25 @@
         
         //Step 4) Determine whether the start date or the end date should be modified
         //or if it needs to be asked to the user
-        
-        //If the settings are for the system to edit the end time, and the end time wasn't edited after editing the start time
-		if (time_preferences.automatic_calculation_time == 2 && og._end_time_edited_in_session <= og._start_time_edited_in_session) {
-			og.changeEndDate();
-		} else if(time_preferences.automatic_calculation_time == 1) {
-            og.changeStartDate();
-        } else if(time_preferences.automatic_calculation_time == 3){
+        if (time_preferences.automatic_calculation_time == timeslots.PREF_DURATION_ASK_USER) {
             $modal = og.ExtModal.show({
                 title:'<?php echo lang("You changed the length of your time record"); ?>',
                 basecls: 'user-config-timeslots',
                 html: '<div id="user-config" class="user-config-timeslots-container">'+div+'</div>'
                 });
-            $modal.on('close', og.rollbackInputs);		
-		} else {
-	        //In every other case, edit the start-time
-			og.changeStartDate();			
-		}
+            $modal.on('close', og.rollbackInputs);
+        } else {
+            // Use the shared preference-dispatch helper (also used by the weekly view)
+            var startKnown = $('#start_time_input').val() !== 'hh:mm' && $('#date_input').val() !== og.preferences.date_format_tip;
+            var endKnown   = $('#end_time_input').val() !== 'hh:mm' && $('#date_end_input').val() !== og.preferences.date_format_tip;
+            // Honour the session-edit order: if pref==RECALC_END but end was edited after start, fall back to RECALC_START
+            var effectivePref = (time_preferences.automatic_calculation_time == timeslots.PREF_DURATION_RECALC_END && og._end_time_edited_in_session > og._start_time_edited_in_session)
+                ? timeslots.PREF_DURATION_RECALC_START
+                : time_preferences.automatic_calculation_time;
+            var action = timeslots.whatChangesOnDurationChange(startKnown, endKnown, effectivePref);
+            if (action === 'end')   { og.changeEndDate(); }
+            else                    { og.changeStartDate(); }
+        }
         
         /* old version        
         if(edit_mode){
@@ -599,7 +478,7 @@
             end_time.val(timeslots.format_hours_and_minutes(now));
         }
         if(end_date.val() == og.preferences.date_format_tip) {
-            end_date.val(now.dateFormat(og.preferences.date_format)); 
+            end_date.val(timeslots.safe_date_format(now, og.preferences.date_format));
         }
 
         //Step 2) We turn the end_date into a Date object
@@ -614,7 +493,7 @@
         var start_date_and_time = end_date_and_time.getTime() - total_milliseconds;
         var startDate = new Date(start_date_and_time);
         
-        start_date.val(startDate.dateFormat(og.preferences.date_format));
+        start_date.val(timeslots.safe_date_format(startDate, og.preferences.date_format));
         start_time.val(timeslots.format_hours_and_minutes(startDate));
           
     };
@@ -663,7 +542,7 @@
             var endDate = new Date(end_date_and_time);
 
             //Step 6) We input the new values on the fields
-            end_date.val(endDate.dateFormat(og.preferences.date_format));
+            end_date.val(timeslots.safe_date_format(endDate, og.preferences.date_format));
             end_time.val(timeslots.format_hours_and_minutes(endDate));
         } 
 
@@ -722,61 +601,45 @@
     };
 
     og.onchangeStartDate = function () {
-        // console.log(time_preferences.automatic_calculation_start_time);
         div = $('#modal-config-hours').html().replace(/\{genid\}/ig, Ext.id());
-		switch (time_preferences.automatic_calculation_start_time) {
-		case '1': //Change the opposite date
-            og.changeEndDate();
-            break;
-		case '2': //Change the worked time
-            og.changeTimesInputs();
-            break;
-		case '3': //Ask me every time
-        	var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
-    		if (end_date_visible) {
+        if (time_preferences.automatic_calculation_start_time == timeslots.PREF_DATE_ASK_USER) {
+            var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
+            if (end_date_visible) {
                 $modal = og.ExtModal.show({
                     title: '<?php echo lang("You changed a date in your time record"); ?>',
                     basecls: 'user-config-timeslots',
                     html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
                 });
                 $modal.on('close', og.rollbackInputs);
-    		}
-		default:
-            og.changeEndDate();
-        	break;
-		}
+            }
+        } else {
+            var endKnown      = $('#end_time_input').val() !== 'hh:mm' && $('#date_end_input').val() !== og.preferences.date_format_tip;
+            var durationKnown = $('#worked_time').val() !== '' || $('#worked_minute').val() !== '';
+            var action = timeslots.whatChangesOnStartChange(endKnown, durationKnown, time_preferences.automatic_calculation_start_time);
+            if (action === 'duration') { og.changeTimesInputs(); }
+            else                       { og.changeEndDate(); }
+        }
     }
 
     og.onchangeEndDate = function () {
-        var option = time_preferences.automatic_calculation_start_time;
         div = $('#modal-config-hours').html().replace(/\{genid\}/ig, Ext.id());
-		//console.log('option: '+option);
-		switch (option) {
-    		case '1': //Change the opposite date
-    			//console.log('onchangeEndDate -> Change the start date');
-                og.changeStartDate();
-                break;
-    		case '2': //Change the worked time
-    			//console.log('onchangeEndDate -> Change the worked time');
-                og.changeTimesInputs();
-                break;
-    		case '3': //Ask me every time
-    			//console.log('onchangeEndDate -> Ask me every time');
-    			var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
-        		if (end_date_visible) {
-                    $modal = og.ExtModal.show({
-                        title: '<?php echo lang("You changed a date in your time record"); ?>',
-                        basecls: 'user-config-timeslots',
-                        html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
-                    });
-                    $modal.on('close', og.rollbackInputs);
-        		}
-        		break;
-    		default:
-    			//console.log('onchangeEndDate -> Default -> changeStartDate()');
-                og.changeStartDate();
-            	break;
-    		}        
+        if (time_preferences.automatic_calculation_start_time == timeslots.PREF_DATE_ASK_USER) {
+            var end_date_visible = $("#"+gen_id+"end_date_container").is(":visible");
+            if (end_date_visible) {
+                $modal = og.ExtModal.show({
+                    title: '<?php echo lang("You changed a date in your time record"); ?>',
+                    basecls: 'user-config-timeslots',
+                    html: '<div id="user-config" class="user-config-timeslots-container">' + div + '</div>'
+                });
+                $modal.on('close', og.rollbackInputs);
+            }
+        } else {
+            var startKnown    = $('#start_time_input').val() !== 'hh:mm' && $('#date_input').val() !== og.preferences.date_format_tip;
+            var durationKnown = $('#worked_time').val() !== '' || $('#worked_minute').val() !== '';
+            var action = timeslots.whatChangesOnEndChange(startKnown, durationKnown, time_preferences.automatic_calculation_start_time);
+            if (action === 'duration') { og.changeTimesInputs(); }
+            else                       { og.changeStartDate(); }
+        }
     }
 
     //This global variable seems necessary to carry the user selection across functions
@@ -893,7 +756,9 @@
             }
         },'',{
             types: ['task'],
-            selected_type: 'task'
+            selected_type: 'task',
+			ignore_context: false,
+			context: og.getMembersToFilterObjectPicker('<?php echo $genid?>', 'task'),
         });
     };
     
@@ -911,24 +776,52 @@
             og.setTimeslotIsBillableUsingTaskWrapper(object_id);
         }
 
-		// if advanced billing plugin is actuve => if task is not billable then disable is_billable input and set it to no
+		// if advanced billing plugin is active => if task is not billable then disable is_billable input and set it to no
 		if (og.advanced_billing) {
 			// get task details
 			og.openLink(og.getUrl('task','get_task_data',{id: object_id, task_info: true}),{
 				callback: function(success, data) {
 					// process response
 					if (data && data.task) {
-						var task_is_fixed_fee = !data.task.is_calculated_estimated_price && data.task.is_fixed_fee;
+						// Store task data for future use
+						og.related_task_data[data.task.id] = data.task;
+
+
+						var task_is_fixed_fee = og.check_task_or_parent_is_fixed_fee(data.task);
 						var task_non_billable = !data.task.is_billable;
 
-						if (task_is_fixed_fee || task_non_billable) {
-							// if task is fixed fee or non billable then disable is_billable input and set it to no
+						if (task_is_fixed_fee) {
+							// if task or parent is fixed fee, toggle to show is_billable_work field
+							if (og.income && og.income.toggle_billable_fields) {
+								og.income.toggle_billable_fields(true, genid);
+							}
+                             if(og.advanced_billing && og.advanced_billing.disable_form_billing_section) {
+                                og.advanced_billing.disable_form_billing_section();
+                            }
+
+							$("#" + genid + "is_billableNo.yes_no").attr('disabled', 'disabled');
+							$("#" + genid + "is_billableYes.yes_no").attr('disabled', 'disabled');
+
+						} else if (task_non_billable) {
+							// if task is non billable then disable is_billable input and set it to no
+							if (og.income && og.income.toggle_billable_fields) {
+								og.income.toggle_billable_fields(false, genid);
+							}
+                            if(og.advanced_billing && og.advanced_billing.disable_form_billing_section) {
+                                og.advanced_billing.disable_form_billing_section();
+                            }
 							$("#" + genid + "is_billableNo").click();
 							$("#" + genid + "is_billableNo.yes_no").attr('disabled', 'disabled');
 							$("#" + genid + "is_billableYes.yes_no").attr('disabled', 'disabled');
 
 						} else {
 							// if billable then let the user change the billable input
+							if (og.income && og.income.toggle_billable_fields) {
+								og.income.toggle_billable_fields(false, genid);
+							}
+                            if(og.advanced_billing && og.advanced_billing.enable_form_billing_section) {
+                                og.advanced_billing.enable_form_billing_section();
+                            }
 							$("#" + genid + "is_billableNo.yes_no").removeAttr('disabled');
 							$("#" + genid + "is_billableYes.yes_no").removeAttr('disabled');
 						}
@@ -952,37 +845,35 @@
 		$("#" + gen_id + "is_billableYes").removeAttr('disabled');
 	}
 
+	og.check_task_or_parent_is_fixed_fee = function(task) {
+		return task.is_fixed_fee || task.has_fixed_fee_parent;
+	}
+
 	og.related_task_data = {};
 
-	og.enabled_disable_is_billable_from_fixed_fee_task = function(task) {
-		if (!task.is_calculated_estimated_price && task.is_fixed_fee) {
-			
-			var question = lang("You are trying to link a billable time entry to a fixed price task. If you continue, this time entry will be set to non-billable. Continue?");
-			var html = '<div style="padding: 10px;">'+ 
-				'<div id="'+genid+'_question">'+ question +'</div>'+
-				'<div class="clear"></div></div>';
-	
-			og.ExtendedDialog.show({
-				YESNO: true,
-				html: html,
-				height: 200,
-				width: 400,
-				title: lang('confirm set non billable'),
-				okBtnCls: 'submit-btn-blue',
-				cancelBtnCls: 'cancel-btn-g',
-				iconCls: ' ',
-				cls: 'ext-modal-object-list no-border',
-				ok_fn: function() {
-					og.disable_time_form_is_billable_input();
-					og.ExtendedDialog.hide();
-				},
-				cancel_fn: function() {
-					og.removeObjectTask(null);
-					og.ExtendedDialog.hide();
-				},
-			});
+	og.enabled_disable_is_billable_from_fixed_fee_task = function(task) { 
+		var task_is_fixed_fee = og.check_task_or_parent_is_fixed_fee(task);
+		var task_non_billable = !task.is_billable;
+
+		if (task_is_fixed_fee) {
+            og.disable_time_form_is_billable_input();
+            if (og.income && og.income.toggle_billable_fields) {
+                og.income.toggle_billable_fields(true, gen_id);
+            }
+		} else if (task_non_billable) {
+			// A non-billable task is authoritative: force "No" and lock the input. We must not stop
+			// at toggle_billable_fields(false), which derives billable from is_billable_work (defaults
+			// to "Yes" on a new entry) and would silently re-check "Yes". Call it for the field layout,
+			// then override with disable_time_form_is_billable_input() so "No" always wins.
+			if (og.income && og.income.toggle_billable_fields) {
+				og.income.toggle_billable_fields(false, gen_id);
+			}
+			og.disable_time_form_is_billable_input();
 		} else {
 			og.enable_time_form_is_billable_input();
+			if (og.income && og.income.toggle_billable_fields) {
+				og.income.toggle_billable_fields(false, gen_id);
+			}
 		}
 	}
 
@@ -1079,8 +970,17 @@
 		var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
 		var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
         var income_active = <?php echo Plugins::instance()->isActivePlugin('income') ? '1' : '0'; ?>;
-        var json_sel_ids = document.getElementById(genid + member_selector[genid].hiddenFieldName).value; 
+        var json_sel_ids = og.get_selected_members_in_form(genid);
         var selected_member_ids = json_sel_ids == "" ? [] : Ext.util.JSON.decode(json_sel_ids);
+
+        // The linked task's non-billable status is authoritative: a billable labor category must
+        // not flip a non-billable task's time entry back to "billable". Without this guard, linking
+        // a non-billable task while the user has a billable default hour type (auto-added during
+        // reclassification) races the task-level "No" and silently overrides it with "Yes".
+        var linked_task_id = $("#object_id").val();
+        var linked_task = linked_task_id > 0 ? og.related_task_data[linked_task_id] : null;
+        var linked_task_non_billable = !!(linked_task && !linked_task.is_billable);
+
         if(hour_type_active && advanced_billing_active && income_active){
             var is_invoiced = $('#'+genid+'invoicing_status').val() == 'invoiced';
             if(!is_invoiced){
@@ -1091,7 +991,7 @@
                     callback: function(success, data) {
                         if(data.has_value){
                             if(data.is_billable){
-                                if(current_billable != data.is_billable){
+                                if(!linked_task_non_billable && current_billable != data.is_billable){
                                     if(ask_confirmation) {
                                         if(confirm(lang('You are changing from a non-billable labor category to a billable one. This will set the \'Billable\' property for this task to \'Yes\''))){
                                             $('#'+genid+'is_billableNo').removeAttr('checked');
@@ -1127,19 +1027,47 @@
 
         var Link = $('.add-linked-object:first');
         var Object = $('.og-add-template-object:first');
-        
+
         Object.hide();
         Link.show();
-        
+
         Object.find('#object_id').val(0);
         Object.find('.name').text('');
-        
+
 		og.enable_time_form_is_billable_input();
+         
+		// Reset to show regular billable field when task is removed
+		if (og.income && og.income.toggle_billable_fields) {
+			og.income.toggle_billable_fields(false, gen_id);
+		}
     }
+
+    og.getTimeslotFormLaborMemberId = function(form_genid) {
+		var hour_type_dim_id = og.enabled_dimensions_by_code && og.enabled_dimensions_by_code['hour_types']
+			? og.enabled_dimensions_by_code['hour_types'] : 0;
+		if (!hour_type_dim_id) return 0;
+
+		var candidates = [form_genid, form_genid + '-' + hour_type_dim_id];
+		for (var i = 0; i < candidates.length; i++) {
+			var sid = candidates[i];
+			if (!member_selector[sid] || !member_selector[sid].sel_context) continue;
+			var ctx = member_selector[sid].sel_context[hour_type_dim_id]
+				|| member_selector[sid].sel_context[String(hour_type_dim_id)]
+				|| member_selector[sid].sel_context[parseInt(hour_type_dim_id, 10)];
+			if (ctx && ctx.length > 0 && ctx[0]) {
+				return ctx[0];
+			}
+		}
+		return 0;
+	}
 
     og.set_timeslot_members_by_task =  function(task_id, excluded_dim_ids) {
 		if (task_id) {
 			og.disable_time_form_submit_button(); // don't allow to submit form until next request returns
+
+			var hour_type_dim_id = og.enabled_dimensions_by_code && og.enabled_dimensions_by_code['hour_types']
+				? parseInt(og.enabled_dimensions_by_code['hour_types'], 10) : 0;
+			var current_labor_member_id = og.getTimeslotFormLaborMemberId(gen_id);
 
 			og.openLink(og.getUrl('task', 'get_task_data', {id: task_id, task_info: true}), {
 				hideLoading: true,
@@ -1150,16 +1078,35 @@
 					}
 					if (data && data.task) {
 						og.related_task_data[data.task.id] = data.task;
-                        // remove all members from timeslot
-                        member_selector.remove_all_selections(gen_id, excluded_dim_ids, true);
                         // parse the mem path string
                         var mempath = Ext.util.JSON.decode(data.task.memPath);
                         var task_members_json = {};
+						var task_labor_member_id = 0;
                         // iterate the mempath object, key = dimension_id, value = member ids grouped by member type id
 
                         for (var dim_id in mempath) {
+							// Detect task labor category from memPath regardless of selector presence
+							if (hour_type_dim_id && String(dim_id) == String(hour_type_dim_id)) {
+								var labor_ots = mempath[dim_id];
+								for (var labor_ot_id in labor_ots) {
+									if (!isNaN(labor_ot_id) && labor_ots[labor_ot_id] && labor_ots[labor_ot_id].length > 0) {
+										for (var lx in labor_ots[labor_ot_id]) {
+											if (typeof labor_ots[labor_ot_id][lx] != 'function' && labor_ots[labor_ot_id][lx]) {
+												task_labor_member_id = labor_ots[labor_ot_id][lx];
+												break;
+											}
+										}
+									}
+									if (task_labor_member_id) break;
+								}
+							}
+
 							// only process the members that can be edited in the form, the other task members that user can't edit will be managed by the controller
 							let form_has_selctor = $("#"+ gen_id +"-member-chooser-panel-" + dim_id).length > 0;
+							if (!form_has_selctor) {
+								// check if we have a separated selector for this dimension
+								form_has_selctor = $("#"+ gen_id + '-'+ dim_id +"-member-chooser-panel-" + dim_id).length > 0;
+							}
 							if (form_has_selctor) {
 
 								task_members_json[dim_id] = [];
@@ -1180,7 +1127,28 @@
 							}
                         }
 
+						var keep_current_labor = false;
+						if (hour_type_dim_id && current_labor_member_id > 0 && task_labor_member_id > 0
+								&& String(current_labor_member_id) != String(task_labor_member_id)) {
+							keep_current_labor = !confirm(lang('The selected task has a different labor category. Do you want to update it to the task\'s labor category?'));
+						} else if (hour_type_dim_id && current_labor_member_id > 0 && !(task_labor_member_id > 0)) {
+							// Task has no labor category: keep the one already selected in the form
+							keep_current_labor = true;
+						}
+
+						var dims_to_exclude = excluded_dim_ids ? excluded_dim_ids.slice() : [];
+						// remove_all_selections compares with parseInt(dim_id), so exclude list must be numeric
+						if (keep_current_labor && hour_type_dim_id) {
+							dims_to_exclude.push(hour_type_dim_id);
+						}
+
+                        // remove all members from timeslot
+                        member_selector.remove_all_selections(gen_id, dims_to_exclude, true);
+
                         for(var dim_id in task_members_json){
+							if (keep_current_labor && hour_type_dim_id && String(dim_id) == String(hour_type_dim_id)) {
+								continue;
+							}
                             var member_ids = task_members_json[dim_id];
                             for (var i=0; i<member_ids.length; i++) {
                                 if(typeof member_ids[i] != 'function'){
@@ -1190,19 +1158,30 @@
                             }     
                         }
 
+						// Ensure current labor remains selected when we chose to keep it
+						if (keep_current_labor && hour_type_dim_id && current_labor_member_id > 0) {
+							member_selector.add_relation(hour_type_dim_id, gen_id, current_labor_member_id, false, true);
+						}
+
 						og.enable_time_form_submit_button(); // enable submit button
 
-                        if(og.enabled_dimensions_by_code['hour_types']) {
-                            var hour_type_dim_id = og.enabled_dimensions_by_code['hour_types'];
+                        if(hour_type_dim_id && !keep_current_labor) {
                             var contact_id = document.getElementById(gen_id+'timeslot_contact_id').value;
-                            if(member_selector[gen_id].sel_context[hour_type_dim_id].length == 0){
+							var selector_genid = gen_id;
+							if (!member_selector[selector_genid]) {
+								// check if we have a separated selector for this dimension
+								selector_genid = gen_id + '-' + hour_type_dim_id;
+							}
+							
+                            if (member_selector[selector_genid] && member_selector[selector_genid].sel_context[hour_type_dim_id]
+									&& member_selector[selector_genid].sel_context[hour_type_dim_id].length == 0){
 								og.disable_time_form_submit_button(); // don't allow to submit form until next request returns
 
                                 og.openLink(og.getUrl('hour_type', 'get_user_default_hour_type', {user_id: contact_id}), {
                                     hideLoading: true,
                                     callback: function(success, data) {
                                         if (data.member_id) {
-                                            member_selector.add_relation(hour_type_dim_id, gen_id, data.member_id);
+                                            member_selector.add_relation(hour_type_dim_id, selector_genid, data.member_id);
                                         }
 										og.enable_time_form_submit_button(); // enable submit button
                                     }

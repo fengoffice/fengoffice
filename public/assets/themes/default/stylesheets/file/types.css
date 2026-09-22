@@ -1,7 +1,9 @@
 
 .ico-folder, .ico-customer_folder, .ico-project_folder {
 	/*background-image: url(../../extjs/images/default/tree/folder-open.gif) !important;*/
-	background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important;
+	/* background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-open-icon lucide-folder-open"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .x-tree-node-icon.ico-folder, .x-tree-node-icon.ico-customer_folder, .x-tree-node-icon.ico-project_folder, .x-tree-node-icon.ico-project {
 	background-position: 0 0px !important;
@@ -19,11 +21,27 @@
 	background-position: 0 center !important;
 }
 
-.ico-email, .ico-mail{
-	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
+
+.x-tab-with-icon.x-tab-strip-active .ico-mails {
+	background-image: url(../../images/icons-feng-4/new-icons-dark/mail_blue.png) !important;
+	background-size: auto 20px !important;
+	background-position: 0 center !important;
+}
+
+.x-tab-with-icon .ico-mails {
+	background-image: url(../../images/icons-feng-4/new-icons-light/mail.png) !important;
+	background-size: auto 20px !important;
+	background-position: 0 center !important;
+}
+
+.ico-email, .ico-mail, .ico-mail-mark-unread,
+.x-tree-node-icon.ico-mail {
+	/* background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
 	background-size: 16px 16px!important;
 	background-repeat: no-repeat;
-	background-position: 0 center !important;
+	background-position: 0 center !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-emailunclassified {
 	/*background-image: url(../../images/16x16/types/classify.png) !important;*/
@@ -35,10 +53,22 @@
 	background-position: 0 center !important;
 }
 
+.x-tab-with-icon .ico-webpages {
+	background-image: url(../../images/icons-feng-4/new-icons-light/links.png) !important;
+	background-size: auto 20px !important;
+}
+
+.x-tab-with-icon.x-tab-strip-active .ico-webpages {
+	background-image: url(../../images/icons-feng-4/new-icons-dark/links_blue.png) !important;
+	background-size: auto 20px !important;
+}
+
 .ico-weblink, .ico-webpage{
-	background-image: url(../../images/icons-feng-3/16x16/links.png) !important;
+	/* background-image: url(../../images/icons-feng-3/16x16/links.png) !important;
 	background-size: 16px 16px!important;
-	background-repeat: no-repeat;
+	background-repeat: no-repeat; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-icon lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 
 /*.ico-projecttask, .ico-task {
@@ -46,46 +76,80 @@
 }*/
 .ico-projectevent, .ico-event {
 	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 0px !important;*/
-	background: url("../../images/icons-feng-3/16x16/today.png") no-repeat !important;
+	/* background: url("../../images/icons-feng-3/16x16/today.png") no-repeat !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-icon lucide-calendar"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.ico-contact {
+.ico-contact,
+.ico-contact-small,
+.x-tree-node-icon.ico-contact {
 	/*background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -520px !important;*/
-	background-image: url(../../images/icons-feng-3/24x22/contacts.png) !important;
+	/* background-image: url(../../images/icons-feng-3/24x22/contacts.png) !important;
 	background-position: 0 center !important;
 	background-size: 20px 20px !important;
-	background-repeat: no-repeat;
+	background-repeat: no-repeat; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-contact-icon lucide-contact"><path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.x-tree-node-icon.ico-contact {
-	background-image: url(../../images/icons-feng-3/16x16/contacts.png) !important;
-	background-size: 17px 17px !important;
+
+/* Vendors */
+#tabs-panel__suppliers-panel.ico-contact,
+#tabs-panel__suppliers-panel .ico-contact {
+	background-image: url(../../images/icons-feng-4/new-icons-light/vendors.png) !important;
+	background-size: auto 20px !important;
 }
-.x-tree-node-icon.ico-mail {
-	background-image: url(../../images/icons-feng-3/24x22/email.png) !important;
-	background-size: 17px 17px !important;
+
+#tabs-panel__suppliers-panel.x-tab-strip-active .ico-contact {
+	background-image: url(../../images/icons-feng-4/new-icons-dark/vendors_blue.png) !important;
+	background-size: auto 20px !important;
 }
+
+/* Other Organizations */
+#tabs-panel__other_organizations-panel .ico-contact {
+	background-image: url(../../images/icons-feng-4/new-icons-light/other_org.png) !important;
+	background-size: auto 20px !important;
+}
+
+#tabs-panel__other_organizations-panel.x-tab-strip-active .ico-contact {
+	background-image: url(../../images/icons-feng-4/new-icons-dark/other_org_blue.png) !important;
+	background-size: auto 20px !important;
+}
+
 .ico-company {
-	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -537px !important;
+	/* background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -537px !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building2-icon lucide-building-2"><path d="M10 12h4"/><path d="M10 8h4"/><path d="M14 21v-3a2 2 0 0 0-4 0v3"/><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-projectmessage, .ico-message {
 	/*background: transparent url(../../images/16x16/message.png) no-repeat !important;*/
-	background-image: url(../../images/icons-feng-3/16x16/notes.png) !important;
-	background-size: 16px 16px !important;
+	/* background-image: url(../../images/icons-feng-3/16x16/notes.png) !important;
+	background-size: 16px 16px !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-notebook-pen-icon lucide-notebook-pen"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-message-rfc822 {
 	background-image: url(../../images/16x16/types/message.png) !important;
 }
 .ico-projectfile, .ico-file {
 	/*background: url("../../images/16x16/types/file.png") no-repeat scroll 0 0 transparent;*/
-	background: url(../../images/icons-feng-3/16x16/doc.png) no-repeat !important;
+	/* background: url(../../images/icons-feng-3/16x16/doc.png) no-repeat !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-braces-icon lucide-file-braces"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"/><path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-user, .ico-users {
 	/*background-image: url(../../images/16x16/types/user.png) !important;*/
-	background-image: url(../../images/icons-feng-3/16x16/contacts.png) !important;
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.ico-contact-small {
-	/*background-image: url(../../images/16x16/types/user.png) !important;*/
-	background-image: url(../../images/icons-feng-3/16x16/contacts.png) !important;
+#tabs-panel__account .ico-user {
+	background-image: url(../../images/icons-feng-4/new-icons-light/contacts.png) !important;
+	background-size: auto 20px !important;
 }
+#tabs-panel__account.x-tab-strip-active .ico-user {
+	background-image: url(../../images/icons-feng-4/new-icons-dark/contacts_blue.png) !important;
+	background-size: auto 20px !important;
+}
+
 .ico-group, .ico-groups {
 	/*background-image: url(../../images/16x16/types/group.png) !important;*/
 	background-image: url(../../images/icons-feng-3/16x16/group.png) !important;
@@ -95,16 +159,17 @@
 	background-image: url(../../images/16x16/types/application.png) !important;
 }
 .ico-application-pdf {
-	background-image: url(../../images/16x16/types/application-pdf.png) !important;
+	/* background-image: url(../../images/16x16/types/application-pdf.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text-icon lucide-file-text"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.ico-application-vnd_ms-excel, .sprd {
-	background-image: url(../../images/16x16/types/application-vnd.ms-excel.png) !important;
+.ico-application-vnd_ms-excel, .sprd, .ico-text-csv {
+	/* background-image: url(../../images/16x16/types/application-vnd.ms-excel.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-spreadsheet-icon lucide-file-spreadsheet"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-application-vnd_ms-powerpoint, .prsn {
 	background-image: url(../../images/16x16/types/application-vnd.ms-powerpoint.png) !important;
-}
-.ico-application-vnd_ms-word, .ico-application-msword, .txt {
-	background-image: url(../../images/16x16/types/application-vnd.ms-word.png) !important;
 }
 .ico-application-xspf-xml {
 	background-image: url(../../images/16x16/types/application-xspf-xml.png) !important;
@@ -136,75 +201,171 @@
 .ico-application-vnd_oasis_opendocument_spreadsheet-template {
 	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.spreadsheet-template.png) !important;
 }
-.ico-application-vnd_oasis_opendocument_text {
-	background-image: url(../../images/16x16/types/application-vnd.oasis.opendocument.text.png) !important;
-}
 .ico-application-vnd_openxmlformats-officedocument_spreadsheetml_sheet {
 	background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.spreadsheetml.sheet.png) !important;
 }
-.ico-application-vnd_openxmlformats-officedocument_wordprocessingml_document {
-	background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.wordprocessingml.document.png) !important;
-}
-.ico-application-vnd_rn-realmedia {
-	background-image: url(../../images/16x16/types/video.png) !important;
-}
-.ico-application-x-compressed {
-	background-image: url(../../images/16x16/types/application-zip.png) !important;
-}
-.ico-application-x-zip-compressed {
-	background-image: url(../../images/16x16/types/application-zip.png) !important;
-}
+
+.ico-application-x-compressed,
+.ico-application-x-zip-compressed,
 .ico-application-zip {
-	background-image: url(../../images/16x16/types/application-zip.png) !important;
+	/* background-image: url(../../images/16x16/types/application-zip.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-archive-icon lucide-file-archive"><path d="M13.659 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v11.5"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 12v-1"/><path d="M8 18v-2"/><path d="M8 7V6"/><circle cx="8" cy="20" r="2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.ico-audio {
-	background-image: url(../../images/16x16/types/audio.png) !important;
-}
+.ico-audio,
 .ico-audio-mpeg {
-	background-image: url(../../images/16x16/types/audio.png) !important;
+	/* background-image: url(../../images/16x16/types/audio.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-music-icon lucide-file-music"><path d="M11.65 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v10.35"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 20v-7l3 1.474"/><circle cx="6" cy="20" r="2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.ico-image {
-	background-image: url(../../images/16x16/types/image.png) !important;
-}
-.ico-image-jpg {
-	background-image: url(../../images/16x16/types/image.png) !important;
-}
-.ico-image-jpeg {
-	background-image: url(../../images/16x16/types/image.png) !important;
-}
-.ico-image-bmp {
-	background-image: url(../../images/16x16/types/image.png) !important;
-}
+.ico-image,
+.ico-image-png,
+.ico-image-jpg,
+.ico-image-jpeg,
+.ico-image-bmp,
 .ico-image-gif {
-	background-image: url(../../images/16x16/types/image.png) !important;
+	/* background-image: url(../../images/16x16/types/image.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-image-icon lucide-file-image"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><circle cx="10" cy="12" r="2"/><path d="m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
-.ico-text {
-	background-image: url(../../images/16x16/types/text.png) !important;
-}
-.ico-text-plain {
-	background-image: url(../../images/16x16/types/text.png) !important;
-}
-.ico-txt {
-	background-image: url(../../images/16x16/types/text.png) !important;
+
+.ico-text,
+.ico-application-vnd_openxmlformats-officedocument_wordprocessingml_document,
+.ico-application-vnd_oasis_opendocument_text,
+.ico-text-plain,
+.ico-txt,
+.ico-application-vnd_ms-word,
+.ico-application-msword,
+.txt {
+	/* background-image: url(../../images/16x16/types/text.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text-icon lucide-file-text"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-text-html {
 	/*background-image: url(../../images/16x16/types/text-html.png) !important;*/
-	background-image: url(../../images/icons-feng-3/16x16/doc.png) !important;
+	/* background-image: url(../../images/icons-feng-3/16x16/doc.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-braces-icon lucide-file-braces"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"/><path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-text-xml {
 	background-image: url(../../images/16x16/types/text-xml.png) !important;
 }
 /* HOTFIX --> Documents Missing Icons (START) */
-.ico-text-csv { background-image: url(../../images/16x16/types/text-csv.png) !important; }
-.ico-application-vnd_openxmlformats-officedocument_presentationml_presentation { background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.presentationml.presentation.png) !important; }
+/* .ico-text-csv { background-image: url(../../images/16x16/types/text-csv.png) !important; } */
+.ico-application-vnd_openxmlformats-officedocument_presentationml_presentation { 
+	/* background-image: url(../../images/16x16/types/application-vnd.openxmlformats-officedocument.presentationml.presentation.png) !important;  */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-chart-column-icon lucide-file-chart-column"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 18v-1"/><path d="M12 18v-6"/><path d="M16 18v-3"/></svg>') no-repeat !important;
+	background-size: 16px !important;
+}
 .ico-application-vnd_ms-excel_sheet_binary_macroenabled_12 { background-image: url(../../images/16x16/types/application-vnd.ms-excel.sheet.binary.macroenabled.12.png) !important; }
 /* HOTFIX --> Documents Missing Icons (END) */
-.ico-video {
-	background-image: url(../../images/16x16/types/video.png) !important;
+.ico-video,
+.ico-application-vnd_rn-realmedia {
+	/* background-image: url(../../images/16x16/types/video.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-video-camera-icon lucide-file-video-camera"><path d="M4 12V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="m10 17.843 3.033-1.755a.64.64 0 0 1 .967.56v4.704a.65.65 0 0 1-.967.56L10 20.157"/><rect width="7" height="6" x="3" y="16" rx="1"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 .ico-webfile {
-	background-image: url(../../images/16x16/types/webfile.png) !important;
+	/* background-image: url(../../images/16x16/types/webfile.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-icon lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
+
+/* Lucide file-type icon in the documents list icon column */
+.x-grid3-col-icon .file-type-icon {
+	font-size: 16px;
+	color: #6c757d;
+}
+
+/* CSS text badge showing the file type (PDF, DOC, XLS...) in the icon column.
+   The extension text is rendered by FileManager.js; the colour comes from the
+   .file-ext-* class, with .file-type-badge providing a neutral default. */
+.x-grid3-col-icon {
+	padding-left: 1px !important;
+	padding-right: 1px !important;
+}
+
+.x-grid3-col.x-grid3-cell.x-grid3-td-icon {
+	width: 30px !important;
+}
+
+.file-type-badge {
+	display: inline-block;
+	padding: 1px 2px;
+	font-size: 8px;
+	font-weight: 700;
+	line-height: 12px;
+	text-align: center;
+	white-space: nowrap;
+	color: #fff;
+	background: #6c757d;
+	border-radius: 3px;
+	box-sizing: border-box;
+}
+
+/* PDF */
+.file-ext-pdf { background: #d32f2f; }
+/* Word / documents */
+.file-ext-doc,
+.file-ext-docx,
+.file-ext-odt,
+.file-ext-fodt,
+.file-ext-rtf { background: #2563eb; }
+/* Plain text */
+.file-ext-txt { background: #607d8b; }
+/* Spreadsheets */
+.file-ext-xls,
+.file-ext-xlsx,
+.file-ext-xlsb,
+.file-ext-csv { background: #15803d; }
+/* Presentations */
+.file-ext-ppt,
+.file-ext-pptx,
+.file-ext-slim { background: #ea580c; }
+/* Images */
+.file-ext-jpg,
+.file-ext-jpeg,
+.file-ext-png,
+.file-ext-gif,
+.file-ext-svg,
+.file-ext-webp,
+.file-ext-bmp,
+.file-ext-tif,
+.file-ext-tiff,
+.file-ext-psd { background: #7c3aed; }
+/* Archives */
+.file-ext-zip,
+.file-ext-rar,
+.file-ext-7z,
+.file-ext-tar,
+.file-ext-gz,
+.file-ext-bz,
+.file-ext-bz2,
+.file-ext-ace { background: #92400e; }
+/* Audio */
+.file-ext-mp3,
+.file-ext-wma,
+.file-ext-ogg { background: #db2777; }
+/* Video */
+.file-ext-mp4,
+.file-ext-mov,
+.file-ext-avi,
+.file-ext-mkv,
+.file-ext-wmv,
+.file-ext-mpeg,
+.file-ext-mpg,
+.file-ext-vob,
+.file-ext-rm,
+.file-ext-swf,
+.file-ext-qt { background: #0891b2; }
+/* Web / code / markup */
+.file-ext-html,
+.file-ext-htm,
+.file-ext-md { background: #4338ca; }
+/* Weblinks */
+.file-ext-link { background: #0ea5e9; }
+/* Database */
+.file-ext-sql { background: #475569; }
 
 
 .ico-large-unknown {
@@ -345,7 +506,4 @@
 }
 .ico-large-webfile {
 	background-image: url(../../images/48x48/types/webfile.png) !important;
-}
-
-
 }

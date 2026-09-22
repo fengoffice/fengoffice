@@ -35,7 +35,8 @@
 	var M = Math;
 	var ie = navigator.userAgent.indexOf('Trident/4.0')>0;
 	var S;
-	try{S = sessionStorage;}catch(e){}	//Firefox crashes when executed as local file system
+	//try{S = sessionStorage;}catch(e){}	//Firefox crashes when executed as local file system
+	try { S = localStorage; } catch (e) {}
 	
 	//append required CSS rules  
 	h.append("<style type='text/css'>  .JColResizer{table-layout:fixed;} .JColResizer td, .JColResizer th{overflow:hidden;padding-right:0!important;}  .JCLRgrips{ height:0px; position:relative;} .JCLRgrip{position:absolute; z-index:5; } .JCLRgrip .JColResizer{position:absolute;background-color:red;filter:alpha(opacity=1);opacity:0;width:10px;height:100%;cursor: e-resize;top:0px} .JCLRLastGrip{position:absolute; width:1px; } .JCLRgripDrag{ border-left:1px dotted black;	} .JCLRFlex{width:auto!important;}</style>");

@@ -40,7 +40,26 @@ class MailAccounts extends BaseMailAccounts
 				$accounts[] = $account;
 			}
 		}
-		return $accounts;
+		return self::sortAccountsByName($accounts);
+	}
+
+	/**
+	 * Keep only accounts that are not excluded from synchronizing.
+	 *
+	 * @param MailAccount[] $accounts
+	 * @return MailAccount[]
+	 */
+	static function filterSynchronizableAccounts($accounts) {
+		if (!is_array($accounts)) {
+			return array();
+		}
+		$filtered = array();
+		foreach ($accounts as $account) {
+			if ($account instanceof MailAccount && $account->shouldSynchronize()) {
+				$filtered[] = $account;
+			}
+		}
+		return $filtered;
 	}
 
 	static function getMailAccountsEditByUser(Contact $user)
@@ -55,6 +74,30 @@ class MailAccounts extends BaseMailAccounts
 				$accounts[] = $account;
 			}
 		}
+		return self::sortAccountsByName($accounts);
+	}
+
+	/**
+	 * Sort mail accounts alphabetically by display name (fallback: email).
+	 *
+	 * @param MailAccount[] $accounts
+	 * @return MailAccount[]
+	 */
+	static function sortAccountsByName($accounts) {
+		if (!is_array($accounts) || count($accounts) < 2) {
+			return $accounts;
+		}
+		usort($accounts, function ($a, $b) {
+			$name_a = $a instanceof MailAccount ? trim($a->getName()) : '';
+			$name_b = $b instanceof MailAccount ? trim($b->getName()) : '';
+			if ($name_a === '') {
+				$name_a = $a instanceof MailAccount ? $a->getEmail() : '';
+			}
+			if ($name_b === '') {
+				$name_b = $b instanceof MailAccount ? $b->getEmail() : '';
+			}
+			return strcasecmp($name_a, $name_b);
+		});
 		return $accounts;
 	}
 } // MailAccounts 

@@ -16,6 +16,51 @@ ogTasks.TasksList = {};
 
 ogTasks.Groups = [];
 
+// Stores the collapsed state (group_id -> true) of each group before a reload,
+// so that the same groups are restored to their previous collapsed state after re-drawing.
+ogTasks.savedGroupCollapsedState = {};
+
+// Set to true by resetPaginationVariables when there is view state (collapsed groups or
+// scroll position) that needs restoring on the next load.
+ogTasks.restoreStateOnLoad = false;
+
+// Scroll position of #tasksPanelContent saved before a reload, restored after drawing.
+ogTasks.savedScrollTop = 0;
+
+// Map of { taskId: [groupId, ...] } for tasks whose lazily-loaded subtasks were expanded,
+// saved before a reload so they can be re-expanded after drawing.
+ogTasks.savedExpandedSubtasks = {};
+
+// In-flight lazy subtask loads keyed by taskId + 'G' + groupId. Prevents duplicate
+// get_tasks requests when the user double-clicks or when restore races with a click.
+ogTasks._subtasksLoadInFlight = {};
+
+ogTasks._subtasksLoadKey = function (taskId, groupId) {
+    return taskId + 'G' + groupId;
+};
+
+ogTasks._finishSubtasksLoad = function (params) {
+    if (!params || !params._loadKey) return;
+    delete ogTasks._subtasksLoadInFlight[params._loadKey];
+    var task = ogTasksCache.getTask(params.task_id);
+    if (task && task.isExpanded) {
+        task.toggleSubtasksShow = true;
+    }
+};
+
+// Map of { groupId: totalTasksLoaded } saved before a reload so that groups where the user
+// had loaded more tasks than the default page size are restored to the same task count.
+ogTasks.savedGroupTasksLoaded = {};
+
+// Continuously updated by a scroll listener so the position is captured even when the
+// panel becomes hidden (at which point scrollTop would read as 0 from the DOM).
+ogTasks.lastScrollTop = 0;
+
+// Total number of groups available on the server for the current filter set.
+// Returned by the server on every get_tasks_groups_list response and used to
+// show the remaining group count in the "Load all groups" button.
+ogTasks.totalGroupsCount = 0;
+
 ogTasks.redrawGroups = true;
 
 //ogTasks.prevWsValue = -1; //Used to view if ws selector changed its value, to refresh the assingedto combo
@@ -110,6 +155,7 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.priority) this.priority = tdata.priority; else this.priority = 200;
 	if (tdata.milestoneId) this.milestoneId = tdata.milestoneId; else this.milestoneId = null;
 	if (tdata.assignedToContactId) this.assignedToId = tdata.assignedToContactId; else this.assignedToId = null;
+	if (tdata.atName) this.assignedToName = tdata.atName; else this.assignedToName = '';
 	if (tdata.assignedById) this.assignedById = tdata.assignedById; else this.assignedById = null;
 	if (tdata.dueDate) this.dueDate = tdata.dueDate; else this.dueDate = null;
 	if (tdata.startDate) this.startDate = tdata.startDate; else this.startDate = null;
@@ -156,6 +202,8 @@ ogTasksTask.prototype.setFromTdata = function(tdata){
 	if (tdata.prevent_add_time_to_parent_task) this.prevent_add_time_to_parent_task = tdata.prevent_add_time_to_parent_task;
 
 	if (tdata.is_parent) this.is_parent = tdata.is_parent;
+
+	if (tdata.estimated_hours_limit_reached) this.estimated_hours_limit_reached = tdata.estimated_hours_limit_reached;
 }
 
 ogTasksMilestone = function(id, title, dueDate, totalTasks, completedTasks, isInternal, isUrgent){
@@ -463,6 +511,28 @@ ogTasks.executeActionFinal = function(actionName, ids, options,callback){
                 var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
                 topToolbar.updateCheckedStatus();
 
+                ogTasks.refreshGroupsTotals();
+				if (typeof callback == 'function') {
+					callback(success);
+				}
+            } else if (success && (!data || !data.errorCode) &&
+                       (actionName == 'delete' || actionName == 'archive')) {
+                // multi_task_action delegates a normal (non-repetitive) trash to
+                // ObjectController->trash() and returns a bare "reload" with no data.tasks.
+                // Evict the deleted rows here so subtasks don't linger in the cache and get
+                // redrawn from the stale cache when the parent is re-expanded after reload.
+                for (var k = 0; k < ids.length; k++){
+                    var t = ogTasksCache.getTask(ids[k]);
+                    if (!t) continue;
+                    if (actionName == 'delete'){
+                        ogTasks.updateDependantTasks(t.id, false);
+                    }
+                    ogTasksCache.removeTask(t);
+                    ogTasks.removeTaskFromView(t);
+                    ogTasks.drawElbows(t.parentId);
+                }
+                var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
+                if (topToolbar) topToolbar.updateCheckedStatus();
                 ogTasks.refreshGroupsTotals();
 				if (typeof callback == 'function') {
 					callback(success);

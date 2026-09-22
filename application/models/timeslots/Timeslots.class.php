@@ -297,6 +297,38 @@ class Timeslots extends BaseTimeslots {
 	}
 	
 	
+	/**
+	 * Returns an array of object columns that are available to be shown in the custom properties form.
+	 * This extends the function in the parent class.
+	 *
+	 * @access protected
+	 * @return array Array of object columns available to be shown in the custom properties form.
+	 */
+	function getColumnsAvailableInForms() {
+		$columns = [
+			'contact_id',
+			'worked_time',
+			'start_time',
+			'end_time',
+			'description',
+			'rel_object_id',
+		];
+		if (Plugins::instance()->isActivePlugin('income')) {
+			$columns[] = 'is_billable_work';
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Whether the class can use property groups.
+	 *
+	 * @return bool true if the class can use property groups, false otherwise.
+	 */
+	function canUsePropertyGroups() {
+		return true;
+	}
+
 	function getColumnsToAggregateInTotals() {
 		$parent_cols = parent::getColumnsToAggregateInTotals();
 		$cols = array(
@@ -304,7 +336,7 @@ class Timeslots extends BaseTimeslots {
             'subtract' => array('operation' => 'sum', 'format' => 'time'),
             'fixed_billing' => array('operation' => 'sum', 'format' => 'money', 'currency_id_col' => 'rate_currency_id', 'group_by' => 'rate_currency_id'),
         );
-		
+
 		return array_merge($parent_cols, $cols);
 	}
 	

@@ -3,9 +3,9 @@ og.QuickAdd = function(config) {
 	if (!og.AdditionalQuickAddButtons) og.AdditionalQuickAddButtons = [];
 	
 	og.QuickAdd.superclass.constructor.call(this, Ext.applyIf(config || {}, {
-		text: lang('new'),
+		text: '<i class="icon-circle-plus"></i>' + lang('new') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
         tooltip: lang('create an object'),
-        iconCls: 'ico-quick-add',
+        iconCls: 'btn btn-sm btn-secondary',
         listeners: {
 			'render': function(button) {
 				for (i=0; i<og.AdditionalQuickAddButtons.length; i++) {

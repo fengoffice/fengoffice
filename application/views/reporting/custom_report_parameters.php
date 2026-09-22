@@ -1,4 +1,5 @@
 <?php
+	Env::useHelper('custom_properties');
 	$genid = gen_id();
 	$tiCount = 0;
 	$firstId = '';
@@ -64,7 +65,13 @@
 				$name = $cp->getName();
 
 			} else {
-				$name = Localization::instance()->lang('field ' . $model . ' ' . $condition->getFieldName());
+				$name = null;
+				if (class_exists($model)) {
+					$managerInstance = $model::instance();
+					if ($managerInstance instanceof ContentDataObjects) {
+						$name = $managerInstance->getColumnDisplayName($condition->getFieldName());
+					}
+				}
 				if (!$name) {
 					$name = lang('field Objects ' . $condition->getFieldName());
 				}
@@ -94,27 +101,37 @@
 						echo $cond_label;
 					}
 				?>&nbsp;</td>
-			<?php 
+			<?php
 			// Render input for the condition
-			
-			if(isset($cp) && !in_array($cp->getType(), array('contact','user'))){ ?>
+
+			// Allow plugins to resolve the effective type and values for rendering
+			// (e.g. display_member_property is a transitive wrapper around a member CP)
+			$cp_render_info = isset($cp) ? array('type' => $cp->getType(), 'values' => $cp->getValues()) : null;
+			Hook::fire('custom_report_param_cp_type_resolve', array('condition' => $condition, 'cp' => isset($cp) ? $cp : null, 'ot' => $ot), $cp_render_info);
+			$cp_render_type   = $cp_render_info ? $cp_render_info['type']   : (isset($cp) ? $cp->getType()   : null);
+			$cp_render_values = $cp_render_info ? $cp_render_info['values'] : (isset($cp) ? $cp->getValues() : '');
+
+			if(isset($cp) && !in_array($cp_render_type, array('contact','user'))){ ?>
 				<td align='left'>
-					<?php if($cp->getType() == 'text' || $cp->getType() == 'numeric'){ ?>
+					<?php if($cp_render_type == 'text' || $cp_render_type == 'numeric'){ ?>
 						<input type="text" id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId()."_".clean($cp->getName()) ?>]" tabindex=<?php echo $tiCount?>/>
-					<?php }else if($cp->getType() == 'boolean'){  ?>
-						<select id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId()."_".clean($cp->getName()) ?>]" tabindex=<?php echo $tiCount?>>
-							<option value="0" ></option>
-							<option value="1" > <?php echo lang('yes') ?>  </option>
-							<option value="-1" > <?php echo lang('no') ?> </option>
-						</select>
-					<?php }else if($cp->getType() == 'list'){  ?>
+					<?php } else if ($cp_render_type == 'boolean') { ?>
+						<span id="<?php echo $condId; ?>">
+						<?php echo render_boolean_custom_property_field($cp, array(
+							'name' => 'params['.$condition->getId().'_'.clean($cp->getName()).']',
+							'genid' => $genid,
+							'default_value' => '',
+							'tabindex' => $tiCount,
+						)); ?>
+						</span>
+					<?php } else if($cp_render_type == 'list'){  ?>
 						<select id="<?php echo $condId; ?>" name="params[<?php echo $condition->getId()."_".clean($cp->getName()) ?>]" tabindex=<?php echo $tiCount?>>
 							<option value=""> <?php echo lang('none') ?>  </option>
-						<?php foreach(explode(',', $cp->getValues()) as $value){ ?>
+						<?php foreach(explode(',', $cp_render_values) as $value){ ?>
 							<option value="<?php echo $value ?>"> <?php echo $value ?>  </option>
 						<?php }//foreach ?>
 						</select>
-					<?php }else if($cp->getType() == 'date' || $cp->getType() == 'datetime'){  ?>
+					<?php }else if($cp_render_type == 'date' || $cp_render_type == 'datetime'){  ?>
 						<?php echo pick_date_widget2("params[".$condition->getId()."_".clean($cp->getName())."]",$genid,$tiCount)?>
 					<?php }?>
 				</td>
@@ -129,6 +146,8 @@
 						// This is a ContentObject (example: ProjectTask, IncomeInvoice, Timeslot, etc.)
 						$model_instance = new $model();
 						$col_type = $model_instance->getColumnType($condition->getFieldName());
+
+						Hook::fire('override_custom_report_parameter_rendering', array('field' => $condition->getFieldName(), 'report' => null, 'ot' => $ot), $col_type);
 
 						if(in_array($condition->getFieldName(), array_keys($external_fields))){
 				?>

@@ -27,7 +27,8 @@ Ext.onReady(function(){
 	//LOAD PANELS AND ADD TO VIEWPORT
 	
 	og.openLink(og.getUrl('panel', 'list_all'), {
-		
+
+		bootstrap: true,
 		onSuccess: function(data) {
 			var panelData = data['panels'] ;
 			og.panels = {} ; // Array Map PANEL_NAME => PANEL
@@ -63,6 +64,7 @@ Ext.onReady(function(){
 						fn: function(tabp) {
                             setTimeout(function(){
                                 og.checkAndAdjustTabsSize(tabp.lastSize.width,tabp.items.length);
+                                og.hideInactiveTabOverlays();
                             }, 500);
 						}
 					}
@@ -170,9 +172,9 @@ Ext.onReady(function(){
 				        	items:  og.dimensionPanels,
 				        	bbar : [
 				        	    {	
-				        			iconCls: 'op-ico-details',
+				        			// iconCls: 'op-ico-details',
 				        			tooltip: '<b>'+lang('see more')+'</b>',
-				        			text: lang('see more'),
+				        			text: '<i class="icon-menu"></i>' + lang('see more'),
 				        			menu: {
 				        				items: og.contextManager.getDimensionMenu(),
 				        				cls: "context-menu"
@@ -181,9 +183,9 @@ Ext.onReady(function(){
 				        	    },
 				        	    '->',
 				        	    {	
-				        			iconCls: 'ico-trash',
+				        			// iconCls: 'ico-trash',
 				        			tooltip: lang('trash'),
-				        			text: lang('trash'),
+				        			text: '<i class="icon-trash-2"></i>' + lang('trash'),
 				        			handler: function() {
 					        	    	var cp = Ext.getCmp('trash-panel');
 										var tp = Ext.getCmp('tabs-panel');
@@ -206,9 +208,9 @@ Ext.onReady(function(){
 				        			}
 				        	    },
 				        	    {	
-				        			iconCls: 'ico-archive-obj',
+				        			// iconCls: 'ico-archive-obj',
 				        			tooltip: lang('archived objects'),
-				        			text: lang('archived'),
+				        			text: '<i class="icon-archive"></i>' + lang('archived'),
 				        			handler: function() {
 					        	    	var cp = Ext.getCmp('archivedobjs-panel');
 										var tp = Ext.getCmp('tabs-panel');
@@ -240,6 +242,10 @@ Ext.onReady(function(){
 			});
 
 			og.captureLinks();
+
+			// Shell is fully built now: replay any links (e.g. header/Settings)
+			// clicked while the bootstrap request above was still in flight.
+			og.runWhenReady();
 
 			if (og.preferences['email_polling'] > 0) {
 				function updateUnreadCount() {

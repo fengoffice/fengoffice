@@ -1,13 +1,4 @@
 <script>
-og.eventManager.addListener('reload company users', function(data){
-	og.openLink(og.getUrl('contact', 'reload_company_users', {company:data.company_id, context:og.contextManager.plainContext(), current:data.current}), {
-		preventPanelLoad:true,
-		callback: function(success, data) {
-			document.getElementById('companyUsers').innerHTML = data.current.data;
-			og.captureLinks('companyUsers', data.current);
-		}
-	});
-});
 
 og.eventManager.addListener('template object added',function(data){
 	if (data.object) {
@@ -38,6 +29,14 @@ og.eventManager.addListener('current panel back',
 
 og.eventManager.addListener('reload current panel',
 	function () {
+		// A pending operation fired earlier in this same response (e.g. the auto
+		// reclassification that runs after a member association changes) may schedule
+		// its own panel reload with up-to-date data. When that happens, skip this
+		// immediate reload to avoid reloading the panel two (or more) times.
+		if (og.suppressNextCurrentPanelReload) {
+			og.suppressNextCurrentPanelReload = false;
+			return;
+		}
 		var currentPanel = Ext.getCmp('tabs-panel').getActiveTab();
 		if (currentPanel) {
 			currentPanel.reload();
@@ -76,7 +75,8 @@ og.eventManager.addListener('update dimension tree node',
 				var callback_extra_params = {
 					dim_id:data.dim_id,
 					select_node: data.select_node,
-					member_id:data.member_id
+					member_id:data.member_id,
+					expand_parent: data.expand_parent
 				};
 				og.getMemberFromServer(data.member_id, og.updateDimensionTreeNode, callback_extra_params);					
 			}
@@ -98,6 +98,7 @@ og.eventManager.addListener('reload dimension tree',
 								
 				if (tree) {
 					var selection = tree.getSelectionModel().getSelectedNode();
+					var selection_id = selection ? selection.id : null;
 	
 					tree.suspendEvents();
 					var expanded = [];
@@ -107,18 +108,32 @@ og.eventManager.addListener('reload dimension tree',
 					tree.loader.load(tree.getRootNode(), function() {
 						og.reloadingDimensions[data.dim_id] = false;
 						tree.expanded_once = false;
-						og.expandCollapseDimensionTree(tree, expanded, selection ? selection.id : null);
-						if(selection){
+						
+						// If the previously selected node was deleted, it won't exist after reload.
+						// In that case, don't restore expanded state based on stale selection.
+						if (selection_id && !tree.getNodeById(selection_id)) {
+							selection_id = null;
+							expanded = [];
+						}
+						
+						og.expandCollapseDimensionTree(tree, expanded, selection_id);
+						
+						// If a target node is provided (e.g. deleted member's parent), expand/select it using the tree logic.
+						// This will fetch parents from server if needed, ensuring correct expansion.
+						if (data && data.node) {
 							setTimeout(function(){
-								if (data.node) {
-									var treenode = data.node;
-								} else {
-									var treenode = selection.id;
-								}
-
-								og.memberTreeExternalClick(tree.dimensionCode,treenode);								
+								og.memberTreeExternalClick(tree.dimensionCode, data.node);
 							}, 200);
-							og.contextManager.addActiveMember(selection.id, data.dim_id, selection.id);
+						} else if (selection_id) {
+							setTimeout(function(){
+								// selection_id exists in the reloaded tree, safe to re-select
+								og.memberTreeExternalClick(tree.dimensionCode, selection_id);
+							}, 200);
+						} else {
+							// If no valid selection remains (e.g. deleted), fall back to root context
+							try { tree.selectRoot(); } catch (e) {}
+							try { tree.getRootNode().expand(false, false); } catch (e) {}
+							og.contextManager.cleanActiveMembers(data.dim_id);
 						}
 					});
 					tree.resumeEvents();
@@ -208,7 +223,11 @@ og.eventManager.addListener('user preference changed',
 			case 'localization':
 				window.location.reload();
 				break;
-			default: 
+			case 'members_per_page':
+				og.preferences[option.name] = option.value;
+				og.config['members_per_page'] = parseInt(option.value, 10) || og.config['files_per_page'];
+				break;
+			default:
 				og.preferences[option.name] = option.value;
 				break;
 		}
@@ -395,6 +414,11 @@ og.eventManager.addListener('member tree node click',
 
 			$.each(og.contextManager.dimensionMembers,function(dimId,value){
 				if (Array.isArray(value) && value.length > 1){
+					/**
+					 * Commented out because it's not needed, we don't want to hide tabs for members
+					 * because we are now showing the selected one if there are no more members below
+					 * 
+					 *
 					var member = og.getMemberFromOgDimensions(value[1])[0];
 					if (typeof member == 'object' && member.dimension_id != ''){
 						var has_childs_same_type = og.dimension_object_type_descendants[member.dimension_id][member.object_type_id].indexOf(String(member.object_type_id)) !== -1;
@@ -433,7 +457,8 @@ og.eventManager.addListener('member tree node click',
 								}								
 							});
 						}
-					}										
+					}
+					*/
 				}else{
 					$.each(tabs_menu.items.items, function(index,item){
 						if (item.dimensionId == dimId){
@@ -693,12 +718,11 @@ og.eventManager.addListener('member parent changed',
 	    		});
 			}
 
-			// update current parent
+			// update current parent - only set expandable to true, don't reload from server
 			var parent = tree.getNodeById(data.p);
 			if (parent) {
-				var mobj = parent.attributes;
-				mobj.expandable = true;
-				og.updateDimensionTreeNode(data.d, mobj, {});
+				parent.attributes.expandable = true;
+				parent.getUI().updateExpandIcon();
 			}
 		}
 	}
@@ -789,7 +813,11 @@ og.eventManager.addListener('update tasks in list', function(data) {
 	if (data.tasks && data.tasks.length > 0) {
 		for (var i=0; i<data.tasks.length; i++) {
 			var t = data.tasks[i];
-			ogTasks.drawTaskRowAfterEdit({'task': t});
+			let skip_get_groups_for_task = false;
+			if (data.skip_get_groups_for_task) {
+				skip_get_groups_for_task = data.skip_get_groups_for_task;
+			}
+			ogTasks.drawTaskRowAfterEdit({'task': t}, skip_get_groups_for_task);
 		}
 	}
 });
@@ -868,6 +896,146 @@ og.eventManager.addListener('prompt user trash objects',
 	}
 );
 
+/**
+ * Prompt user to remove task
+ * 
+ * This function is called when task is dragged and dropped to a new member.
+ * It shows a dialog with a question asking whether to remove task.
+ * If user clicks yes, it will remove the task and then continue with the reclassification of the objects.
+ * If user clicks no, it will just close the dialog and will not remove the task or continue with the reclassification.
+ * 
+ * The function takes an object with the following parameters:
+ * - message: The message to show in the dialog.
+ * - question: The question to ask the user.
+ * - title: The title of the dialog.
+ * - ids: The ids of the tasks to remove.
+ * - member_id: The id of the member that the task is associated with.
+ * - reclassify_in_associations: Whether to reclassify the task in associations.
+ * - remove_prev: Whether to remove the previous task.
+ * 
+ * @param {Object} data The object with the parameters.
+ */
+og.eventManager.addListener('dragdrop ask to remove task',
+	function (data) {
+		
+		if (data && data.message) {
+			var message = data.message;
+			var question = data.question;
+			var div = document.createElement('div');
+			var genid = Ext.id();
+			div.innerHTML = '<div style="border-radius: 5px; background-color: #fff; padding: 10px; width: 500px; font-size: 14px;">'+ 
+				'<div id="'+genid+'_message" style="margin: 10px 0;">'+ message +'</div>'+
+				'<div id="'+genid+'_question" style="margin: 10px 0;">'+ question +'</div>'+
+				'<div id="'+genid+'_buttons" style="text-align: right; margin: 10px 0px;">'+
+				'<button class="yes submit blue">'+lang('proceed')+'</button><button class="no submit blue">'+lang('cancel')+'</button>'+
+				'</div><div class="clear"></div></div>';
 
+			var modal_params = {
+				'escClose': false,
+				'overlayClose': false,
+				'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+				'onShow': function (dialog) {
+					
+					// no button
+					$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+						// only close this dialog if user clicks no
+						$('.modal-close').click();
+					});
+					// yes button
+					$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+						// close this dialog
+						$('.modal-close').click();
+						// callback function to be called after reclassification
+						let callback_fn = function() {
+							// reload current panel after reclassification
+							og.eventManager.fireEvent('reload current panel');
+						}
+						// call the objects' reclassification function indicating that we want to remove the related task
+						og.call_add_objects_to_member(null, data.ids, data.member_id, null, data.reclassify_in_associations, data.remove_prev, callback_fn, null, true);
+					});
+
+			    }
+			};
+			setTimeout(function() {
+				$.modal(div, modal_params);
+			}, 100);			
+		}
+	}
+);
+
+
+
+/**
+ * Shows a dialog asking whether to reclassify timeslots and assign a task to some objects.
+ * 
+ * This is called when a user tries to assign a task to some timeslots that are not classified to the same client/project. 
+ * The dialog asks whether to reclassify the timeslots and assign the task.
+ * If the user clicks yes, it will reclassify the timeslots and assign the task. If the user clicks no,
+ * it will just close the dialog and will not reclassify the timeslots or assign the task.
+ * 
+ * The function takes an object with the following parameters:
+ * - message: The message to show in the dialog.
+ * - question: The question to ask the user.
+ * - title: The title of the dialog.
+ * - object_ids: The ids of the objects that the task should be assigned to.
+ * - task_id: The id of the task.
+ * - request_channel: The channel to use for the request.
+ * - inline_action: The inline action to use for the request.
+ *
+ * @param {Object} data The object with the parameters.
+ */
+og.eventManager.addListener('ask to reclassify timeslots in task members and assign task',
+	function (data) {
+		
+		if (data && data.message) {
+			var title = data.title;
+			var message = data.message;
+			var question = data.question;
+			var div = document.createElement('div');
+			var genid = Ext.id();
+			div.innerHTML = '<div style="border-radius: 5px; background-color: #fff; padding: 10px; width: 500px; font-size: 14px;">'+ 
+				'<div id="'+genid+'_message" style="margin: 10px 0;">'+ message +'</div>'+
+				'<div id="'+genid+'_question" style="margin: 10px 0;" class="bold">'+ question +'</div>'+
+				'<div id="'+genid+'_buttons" style="text-align: right; margin: 10px 0px;">'+
+				'<button class="yes submit blue">'+lang('proceed')+'</button><button class="no submit blue">'+lang('cancel')+'</button>'+
+				'</div><div class="clear"></div></div>';
+
+			var modal_params = {
+				'escClose': false,
+				'overlayClose': false,
+				'closeHTML': '<a id="'+genid+'_close_link" class="modal-close" title="'+lang('close')+'"></a>',
+				'onShow': function (dialog) {
+					
+					// no button
+					$("#"+genid+"_buttons button.no").css('margin-right', '10px').click(function(){
+						// only close this dialog if user clicks no
+						$('.modal-close').click();
+					});
+
+					// yes button
+					$("#"+genid+"_buttons button.yes").css('margin-right', '10px').click(function(){
+						// close this dialog
+						$('.modal-close').click();
+
+						// call the assign task to timeslots function, with parameter to reclassify timeslots
+						og.openLink(og.getUrl('time', 'assign_task_to_timeslots'), {
+							post: {
+								object_ids: data.object_ids.join(','),
+								task_id: data.task_id,
+								req_channel: data.request_channel,
+								inline_action: data.inline_action,
+								do_reclassify_timeslots: true
+							}
+						});
+					});
+
+			    }
+			};
+			setTimeout(function() {
+				$.modal(div, modal_params);
+			}, 100);			
+		}
+	}
+);
 
 </script>

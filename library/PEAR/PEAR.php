@@ -167,6 +167,11 @@ class PEAR
      * @access public
      * @return void
      */
+    function __construct($error_class = null)
+    {
+        $this->PEAR($error_class);
+    }
+
     function PEAR($error_class = null)
     {
         $classname = strtolower(get_class($this));
@@ -227,7 +232,7 @@ class PEAR
     * @return mixed   A reference to the variable. If not set it will be
     *                 auto initialised to NULL.
     */
-    function &getStaticProperty($class, $var)
+    static function &getStaticProperty($class, $var)
     {
         static $properties;
         if (!isset($properties[$class])) {
@@ -521,7 +526,9 @@ class PEAR
      * @see PEAR::setErrorHandling
      * @since PHP 4.0.5
      */
-    function &raiseError($message = null,
+    // Declared static for PHP 8+: PEAR::raiseError() is called statically throughout
+    // Net_POP3 / Net_Socket. Keep isset($this) so instance calls still work when bound.
+    static function &raiseError($message = null,
                          $code = null,
                          $mode = null,
                          $options = null,
@@ -588,7 +595,7 @@ class PEAR
      * @param string $message
      *
      */
-    function &throwError($message = null,
+    static function &throwError($message = null,
                          $code = null,
                          $userinfo = null)
     {
@@ -858,6 +865,12 @@ class PEAR_Error
      * @access public
      *
      */
+    function __construct($message = 'unknown error', $code = null,
+                        $mode = null, $options = null, $userinfo = null)
+    {
+        $this->PEAR_Error($message, $code, $mode, $options, $userinfo);
+    }
+
     function PEAR_Error($message = 'unknown error', $code = null,
                         $mode = null, $options = null, $userinfo = null)
     {

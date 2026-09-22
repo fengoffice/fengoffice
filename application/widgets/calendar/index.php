@@ -16,7 +16,7 @@
 
 <?php
 $calendar_panel = TabPanels::instance()->findById('calendar-panel');
-if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled()) {
+if ($calendar_panel instanceof TabPanel && $calendar_panel->getEnabled() && module_enabled('calendar')) {
 
 	$genid = gen_id();
 	

@@ -39,7 +39,7 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 	function __construct(Output $output) {
 		parent::__construct($output);
 		$this->setVersionFrom('3.4.4.52');
-		$this->setVersionTo('3.11.8.0');
+		$this->setVersionTo(code_version());
 	} // __construct
 
 	function getCheckIsWritable() {
@@ -111,6 +111,25 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		
 		
 		// Set upgrade queries	
+		// Ensure newer preferences exist even when installed_version() is already high.
+		// Note: $installed_version comes from config/installed_version.php, which may already match code_version().
+		if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksTemplatesFirstInNewMenu", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('task panel', 'tasksTemplatesFirstInNewMenu', '0', 'BoolConfigHandler', 0, 0, 'If enabled, Templates appears first in the Tasks New menu')
+				ON DUPLICATE KEY UPDATE name=name;
+			";
+		}
+		// Controls the "To" (assigned to) column in the tasks list. Defaults to visible,
+		// matching the previous always-on behaviour before the column became removable.
+		if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowAssignedTo", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('task panel', 'tasksShowAssignedTo', '1', 'BoolConfigHandler', 1, 0, '')
+				ON DUPLICATE KEY UPDATE name=name;
+			";
+		}
+		
 		if (version_compare($installed_version, '3.5-alpha') < 0) {
 			
 			$upgrade_script .= "
@@ -156,6 +175,14 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			$upgrade_script .= "
 				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
 				('task panel', 'tasksShowAssignedToName', '0', 'BoolConfigHandler', 0, 0, '')
+				ON DUPLICATE KEY UPDATE name=name;
+			";
+		}
+		
+		if (version_compare($installed_version, '3.5.0.3') < 0) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('task panel', 'tasksTemplatesFirstInNewMenu', '0', 'BoolConfigHandler', 0, 0, 'If enabled, Templates appears first in the Tasks New menu')
 				ON DUPLICATE KEY UPDATE name=name;
 			";
 		}
@@ -1234,10 +1261,437 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				";
 			}
 		}
-		
-		//ADD NEXT UPDATE SCRIPTS HERE
 
+
+		// Add 'match_subtask_percent_completed' config option to task_workflow category
+		if (version_compare($installed_version, '3.11.10.0') < 0) {
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "match_subtask_percent_completed", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` 
+					(`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES 
+					('task_workflow', 'match_subtask_percent_completed', '0', 'BoolConfigHandler', '0', '0', '', '');
+				";
+			}
+			
+			// Add 'contact_quickadd_inputs' config option to clients and contacts category
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "contact_quickadd_inputs", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+					('clients_and_contacts', 'contact_quickadd_inputs', 'first_name,surname,email,phone,address', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\"}'))
+					ON DUPLICATE KEY UPDATE `name` = `name`;
+				";
+			}
+		}
     
+    
+		if (version_compare($installed_version, '3.11.10.1') < 0) {
+			// Add 'contact_quickadd_view_info' config option to clients and contacts category
+
+
+
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "contact_quickadd_view_info", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+					('clients_and_contacts', 'contact_quickadd_view_info', 'name,email,phone', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\", \"include_common_cols\": \"true\"}'))
+					ON DUPLICATE KEY UPDATE `name` = `name`;
+				";
+			}
+
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."config_options` 
+				SET `options` = CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\"}')
+				WHERE `name` = 'contact_quickadd_inputs';
+			";
+		}
+
+		if (version_compare($installed_version, '3.11.11.0-beta1') < 0) {
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_inactive_users_on_filters", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+    			VALUES ('general', 'show_inactive_users_on_filters', '0', 'BoolConfigHandler', '0', '0', '', '');
+			";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.11.0-beta2') < 0) {
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "financials_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'financials_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "financials_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'financials_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "financials_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'financials_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "earned_value_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'earned_value_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "earned_value_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'earned_value_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "earned_value_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'earned_value_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "expenses_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'expenses_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "expenses_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'expenses_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "expenses_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'expenses_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "worked_hours_widget_date_range", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'worked_hours_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "worked_hours_widget_custom_from", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'worked_hours_widget_custom_from', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "worked_hours_widget_custom_to", $this->database_connection)) {
+				$upgrade_script .= "
+    			INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`)
+    			VALUES ('general', 'worked_hours_widget_custom_to', '', 'StringConfigHandler', '1', '0', '');
+			";
+			}
+		}
+
+		if (version_compare($installed_version, '3.11.12.0') < 0) {
+
+			// Add uid column to events table
+			if (!$this->checkColumnExists($t_prefix."project_events", "uid", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_events` ADD `uid` varchar(255) DEFAULT '';
+				";
+        	}
+			// Add organizer column to events table
+			if (!$this->checkColumnExists($t_prefix."project_events", "organizer_id", $this->database_connection)) {
+        		$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_events` ADD `organizer_id` INT(10) UNSIGNED NOT NULL DEFAULT '0';
+				";
+				// Add default value to organizer column
+				$upgrade_script .= "
+					UPDATE `".TABLE_PREFIX."project_events` SET `organizer_id` = COALESCE((
+						SELECT `created_by_id` FROM `".TABLE_PREFIX."objects` 
+						WHERE `id` = `".TABLE_PREFIX."project_events`.`object_id`
+						LIMIT 1
+					), 0);
+				";
+        	}
+
+			// Add ical_dtstamp column to events table
+			if (!$this->checkColumnExists($t_prefix."project_events", "ical_dtstamp", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".TABLE_PREFIX."project_events` ADD `ical_dtstamp` varchar(255) DEFAULT '';
+				";
+			}
+		}
+
+
+		/**
+		 * Update to 3.11.13.0
+		 * 
+		 * New config options to determine whether the dropdown list for selecting the type should be shown
+		 * for the address, email, phone and website fields
+		 */
+		if (version_compare($installed_version, '3.11.13.0') < 0) {
+			
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_address_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_address_field', '0', 'BoolConfigHandler', '0', '100', '', '');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_email_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_email_field', '0', 'BoolConfigHandler', '0', '101', '', '');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_phone_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_phone_field', '0', 'BoolConfigHandler', '0', '102', '', '');
+				";
+			}
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "show_type_sel_on_website_field", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('clients_and_contacts', 'show_type_sel_on_website_field', '0', 'BoolConfigHandler', '0', '103', '', '');
+				";
+			}
+		}
+
+
+		if (version_compare($installed_version, '4.0.0.0-beta3') < 0) {
+				$upgrade_script .= "
+					UPDATE `".$t_prefix."config_options`
+					SET `value` = '264653'
+					WHERE `name` = 'brand_colors_head_font';
+				";
+		}
+
+		if (version_compare($installed_version, '4.0.1.0-beta6') < 0) {
+    		$upgrade_script .= "
+				UPDATE `".$t_prefix."contacts` 
+					SET `company_id` = (
+						SELECT `object_id` FROM (
+							SELECT `object_id`
+							FROM `".$t_prefix."contacts` c2
+							WHERE c2.is_company > 0
+							ORDER BY c2.object_id ASC
+							LIMIT 1
+						) AS tmp_table
+					)
+					WHERE `user_type` > 0
+					AND (`company_id` IS NULL OR `company_id` = 0);
+    		";
+		}
+
+		if (version_compare($installed_version, '4.0.2.0') < 0) {
+
+			if (!$this->checkValueExists($t_prefix . "contact_config_options", "name", "breadcrumb_member_count", $this->database_connection)) {
+				$upgrade_script .= "
+					UPDATE `".$t_prefix."contact_config_options`
+					SET `default_value` = '3'
+					WHERE `name` = 'breadcrumb_member_count';
+				";
+			}
+
+			if (!$this->checkColumnExists($t_prefix."custom_properties", "filter_values_by", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."custom_properties` ADD `filter_values_by` VARCHAR(255) NOT NULL default '';
+				";
+			}
+			if (!$this->checkColumnExists($t_prefix."custom_properties", "linked_to", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."custom_properties` ADD `linked_to` VARCHAR(255) NOT NULL default '';
+				";
+			}
+
+			if (!$this->checkColumnExists($t_prefix."custom_properties", "decimal_digits", $this->database_connection)) {
+				$upgrade_script .= "
+					ALTER TABLE `".$t_prefix."custom_properties` ADD `decimal_digits` INT(10) NOT NULL default '2';
+				";
+			}
+
+			// Fix timeslot object type, set as content_object
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."object_types` SET `type` = 'content_object' WHERE `name` = 'timeslot';
+			";
+
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "move_email_on_server", $this->database_connection)) {
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+					VALUES ('mail module', 'move_email_on_server', '0', 'BoolConfigHandler', '0', '104', 'This will move the email on the server, if is trashed or untrashed on feng', '');
+				";
+			}
+		}
+
+		if (version_compare($installed_version, '4.0.3.0') < 0) {
+			// Prevent duplicate object type names.
+			// Remove duplicate rows keeping the one with the lowest id, then add UNIQUE index.
+			$upgrade_script .= "
+				DELETE FROM `".$t_prefix."object_types`
+				WHERE `id` NOT IN (
+					SELECT min_id FROM (
+						SELECT MIN(`id`) AS min_id FROM `".$t_prefix."object_types` GROUP BY `name`
+					) AS t
+				);
+			";
+			// Add UNIQUE index on name column of object_types table to prevent duplicate object types
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."object_types`
+				ADD UNIQUE `name` (`name`),
+				DROP INDEX `name`;
+			";
+
+			// Add index to member_property_members to improve member list performance
+			$upgrade_script .= "
+				ALTER TABLE ".$t_prefix."member_property_members
+  				ADD INDEX IF NOT EXISTS idx_property_assoc (property_member_id, association_id);
+			";
+
+			// Add covering index for reverse-direction association joins in grouped member listing.
+			// The optimizer needs (association_id, property_member_id, member_id) to avoid full
+			// association scans when STRAIGHT_JOIN drives from fo_members as the outer loop.
+			$upgrade_script .= "
+				ALTER TABLE ".$t_prefix."member_property_members
+				ADD INDEX IF NOT EXISTS idx_assoc_property_member (association_id, property_member_id, member_id);
+			";
+
+
+		}
+
+		if (version_compare($installed_version, '4.1.1.0') < 0) {
+			// Widen contact_widget_options.value to TEXT so large JSON configs (e.g. widget column lists) are not truncated.
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."contact_widget_options` MODIFY `value` TEXT NOT NULL;
+			";
+
+			/**
+			 * For widget options managed in the UI, set is_system=1
+			 * so they don't appear in the dashboard configuration at user preferences.
+			 */
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."contact_widget_options`
+				SET `is_system`='1'
+				WHERE `contact_id`=0 AND
+					`widget_name` IN ('earned_value_on_labor', 'estimated_worked_time', 'financials', 'evx_projects');
+			";
+
+			// Show the 'role' property as a checkbox option only for the contact card view info
+			// setting, not for the quick-add inputs setting (role is a derived, non-editable value).
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."config_options`
+				SET `options` = CONCAT('{\"ot\": \"', (SELECT id FROM ".$t_prefix."object_types WHERE name = 'contact'), '\", \"include_common_cols\": \"true\", \"include_role\": \"true\"}')
+				WHERE `name` = 'contact_quickadd_view_info';
+			";
+		}
+
+		if (version_compare($installed_version, '4.1.2.0') < 0) {
+			// Role-based default list-column configuration (applied to newly created users).
+			// The table is populated with install-resolved defaults by core_dimensions data_changes.
+			$upgrade_script .= "
+				CREATE TABLE IF NOT EXISTS `".$t_prefix."role_default_list_config` (
+				`role_id` int(10) unsigned NOT NULL default '0',
+				`storage` varchar(20) NOT NULL,
+				`name` varchar(100) NOT NULL,
+				`value` MEDIUMTEXT NULL,
+				PRIMARY KEY (`role_id`,`storage`,`name`)
+				) ENGINE=InnoDB $default_charset;
+			";
+		}
+
+		if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksShowClosedSubtasksWithStatusFilter", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('task panel', 'tasksShowClosedSubtasksWithStatusFilter', '1', 'BoolConfigHandler', 0, 0, '');
+			";
+		} else {
+			// Correct is_system for environments that ran an earlier version of this script
+			// (which inserted it as a system option, hiding it from Edit preferences).
+			$upgrade_script .= "
+				UPDATE `".$t_prefix."contact_config_options` SET `is_system`=0 WHERE `name`='tasksShowClosedSubtasksWithStatusFilter';
+			";
+		}
+
+		if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "tasksOrderSubtasksWithFilterCriteria", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('task panel', 'tasksOrderSubtasksWithFilterCriteria', '1', 'BoolConfigHandler', 0, 0, '')
+				ON DUPLICATE KEY UPDATE name=name;
+			";
+		}
+
+		if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "members_per_page", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('system', 'members_per_page', '50', 'IntegerConfigHandler', 1, 0, 'Hidden preference: members/projects listed per page in MemberManager')
+				ON DUPLICATE KEY UPDATE name=name;
+			";
+		}
+
+		if (!$this->checkValueExists($t_prefix."widgets", "name", "tasks", $this->database_connection)) {
+			$upgrade_script .= "
+				DELETE FROM `".$t_prefix."widgets` WHERE `name` = 'evx_tasks';
+				INSERT INTO `".$t_prefix."widgets` (`name`,`title`,`plugin_id`,`path`,`default_options`,`default_section`,`default_order`,`icon_cls`) VALUES
+				('tasks', 'tasks widget title', 0, '', '', 'top', 6, 'ico-task')
+				ON DUPLICATE KEY UPDATE title=VALUES(title);
+
+				DELETE FROM `".$t_prefix."contact_widget_options` WHERE `widget_name` = 'evx_tasks';
+				INSERT INTO `".$t_prefix."contact_widget_options`
+					(`contact_id`, `widget_name`, `member_type_id`, `option`, `value`, `config_handler_class`, `is_system`)
+				VALUES
+					(0, 'tasks', 0, 'limit', '10', '', 1)
+				ON DUPLICATE KEY UPDATE `is_system`=1;
+			";
+		}
+
+		if (!$this->checkValueExists($t_prefix."contact_widget_options", "widget_name", "activity_feed", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_widget_options`
+					(`contact_id`, `widget_name`, `member_type_id`, `option`, `value`, `config_handler_class`, `is_system`)
+				VALUES
+					(0, 'activity_feed', 0, 'limit', '10', '', 1),
+					(0, 'activity_feed', 0, 'show_time_entries', '1', '', 1)
+				ON DUPLICATE KEY UPDATE `is_system`=1;
+			";
+		}
+
+		if (!$this->checkValueExists($t_prefix."contact_config_options", "name", "show_subtasks_in_calendar", $this->database_connection)) {
+			$upgrade_script .= "
+				INSERT INTO `".$t_prefix."contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+				('calendar panel', 'show_subtasks_in_calendar', '0', 'BoolConfigHandler', 0, 0, '')
+				ON DUPLICATE KEY UPDATE name=name;
+			";
+		}
+
+		// Custom properties of dimension object types (workspace/customer/project description, colour,
+		// dates...) live in custom_properties since the member_custom_properties plugin update 16->17.
+		// Installs that never had that plugin skipped it and still keep them in member_custom_properties,
+		// where nothing serves them to the member lists and forms anymore. Move them over here.
+		// Not tied to a version on purpose: it runs whenever such rows still exist and is idempotent.
+		if (!$this->checkPluginInstalled('member_custom_properties', $t_prefix, $this->database_connection)
+				&& $this->hasDimensionObjectMemberCustomProperties($t_prefix)) {
+			$upgrade_script .= $this->getDimensionObjectMemberCustomPropertiesMigrationSql($t_prefix);
+		}
+
+		// ADD NEXT UPDATE SCRIPTS HERE
+
+		if (version_compare($installed_version, '4.1.2.0-beta5') < 0) {
+			if (!$this->checkValueExists($t_prefix . "config_options", "name", "notification_information_fields", $this->database_connection)) {
+				$default_fields = '{"task":"name,assigned_to_contact_id,due_date,status,priority,classifications,description","milestone":"name,due_date,status,classifications,description","event":"name,start,duration,classifications,description","message":"name,classifications,description","weblink":"name,classifications,description","file":"name,classifications,description","contact":"name,classifications","company":"name,classifications","timeslot":"name,classifications,description","mail":"name,classifications"}';
+				$upgrade_script .= "
+					INSERT INTO `".$t_prefix."config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+					('mailing', 'notification_information_fields', '".$default_fields."', 'NotificationFieldsConfigHandler', '0', '0', 'Per object-type fields shown in notification emails', '')
+					ON DUPLICATE KEY UPDATE `name` = `name`;
+				";
+			}
+		}
 
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
@@ -1257,8 +1711,6 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 				SET @@sql_mode := @old_sql_mode ;
 		";
 
-		
-        
 		// Execute all queries
 		if(!$this->executeMultipleQueries($upgrade_script, $total_queries, $executed_queries, $this->database_connection)) {
 			$this->printMessage('Failed to execute DB schema transformations. MySQL said: ' . mysqli_error($this->database_connection), true);
@@ -1336,11 +1788,112 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 		}
 
 		$this->printMessage("Database schema transformations executed (total queries: $total_queries)");
-		
+
 		$this->printMessage('Feng Office has been upgraded. You are now running Feng Office '.$this->getVersionTo().' Enjoy!');
 
 		tpl_assign('additional_steps', $additional_upgrade_steps);
 
 	} // execute
-	
+
+	/**
+	 * Tells whether member_custom_properties still holds properties of dimension object types that the
+	 * migration below can move (only rows with a code are migrated).
+	 *
+	 * @param string $t_prefix Table prefix
+	 * @return boolean
+	 */
+	function hasDimensionObjectMemberCustomProperties($t_prefix) {
+		if (!$this->checkTableExists($t_prefix."member_custom_properties", $this->database_connection)) return false;
+		$res = mysqli_query($this->database_connection, "SELECT mcp.id FROM `".$t_prefix."member_custom_properties` mcp
+			INNER JOIN `".$t_prefix."object_types` ot ON ot.id = mcp.object_type_id
+			WHERE ot.`type` = 'dimension_object' AND mcp.code <> '' LIMIT 1");
+		while ($res && ($row = mysqli_fetch_array($res))) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Builds the queries that move the custom properties of dimension object types, and their values,
+	 * from member_custom_properties to custom_properties. This mirrors member_custom_properties_update_16_17
+	 * for installs that don't have that plugin.
+	 *
+	 * Only properties with a code are migrated (the special ones such as description_special or
+	 * color_special and the ones defined by plugins such as start_date); a property is matched to an
+	 * existing custom property of the same object type by that code alone, never by name, so a custom
+	 * property an admin created by hand is never merged into. Member properties without a code are left
+	 * untouched. References from property groups and reports are remapped to the new ids and the migrated
+	 * member rows are removed, so running it again is harmless.
+	 *
+	 * @param string $t_prefix Table prefix
+	 * @return string SQL statements separated by ';'
+	 */
+	function getDimensionObjectMemberCustomPropertiesMigrationSql($t_prefix) {
+		$dim_obj_types_sql = "SELECT id FROM `".$t_prefix."object_types` WHERE `type` = 'dimension_object'";
+		$cp_match_sql = "cp.object_type_id = mcp.object_type_id AND cp.code = mcp.code AND mcp.code <> ''";
+
+		$show_in_lists_col = "";
+		$show_in_lists_val = "";
+		if ($this->checkColumnExists($t_prefix."custom_properties", "show_in_lists", $this->database_connection)) {
+			$show_in_lists_col = ", show_in_lists";
+			$show_in_lists_val = $this->checkColumnExists($t_prefix."member_custom_properties", "show_in_lists", $this->database_connection) ? ", mcp.show_in_lists" : ", mcp.visible_by_default";
+		}
+
+		$sql = "
+			INSERT INTO `".$t_prefix."custom_properties` (object_type_id, name, `type`, description, `values`, default_value, is_required, is_multiple_values, property_order, visible_by_default, code, is_special, is_disabled$show_in_lists_col)
+			SELECT mcp.object_type_id, mcp.name, mcp.`type`, mcp.description, mcp.`values`, mcp.default_value, mcp.is_required, mcp.is_multiple_values, mcp.property_order, mcp.visible_by_default, mcp.code, mcp.is_special, mcp.is_disabled$show_in_lists_val
+			FROM `".$t_prefix."member_custom_properties` mcp
+			WHERE mcp.object_type_id IN ($dim_obj_types_sql) AND mcp.code <> ''
+			AND NOT EXISTS (SELECT cp.id FROM `".$t_prefix."custom_properties` cp WHERE $cp_match_sql);
+
+			INSERT INTO `".$t_prefix."custom_property_values` (object_id, custom_property_id, `value`)
+			SELECT m.object_id, cp.id, mcpv.`value`
+			FROM `".$t_prefix."member_custom_property_values` mcpv
+			INNER JOIN `".$t_prefix."member_custom_properties` mcp ON mcp.id = mcpv.custom_property_id
+			INNER JOIN `".$t_prefix."members` m ON m.id = mcpv.member_id AND m.object_id > 0
+			INNER JOIN `".$t_prefix."custom_properties` cp ON $cp_match_sql
+			WHERE mcp.object_type_id IN ($dim_obj_types_sql)
+			AND NOT EXISTS (SELECT cpv.id FROM `".$t_prefix."custom_property_values` cpv WHERE cpv.object_id = m.object_id AND cpv.custom_property_id = cp.id);
+		";
+
+		if ($this->checkTableExists($t_prefix."property_group_properties", $this->database_connection)) {
+			$sql .= "
+			UPDATE `".$t_prefix."property_group_properties` pgp
+			INNER JOIN `".$t_prefix."property_groups` pg ON pg.id = pgp.group_id
+			INNER JOIN `".$t_prefix."member_custom_properties` mcp ON mcp.object_type_id = pg.object_type_id AND pgp.property_id REGEXP '^[0-9]+$' AND pgp.property_id = mcp.id
+			INNER JOIN `".$t_prefix."custom_properties` cp ON $cp_match_sql
+			SET pgp.property_id = cp.id
+			WHERE mcp.object_type_id IN ($dim_obj_types_sql);
+			";
+		}
+
+		$sql .= "
+			UPDATE `".$t_prefix."reports` r
+			INNER JOIN `".$t_prefix."member_custom_properties` mcp ON mcp.object_type_id = r.report_object_type_id AND r.order_by REGEXP '^[0-9]+$' AND r.order_by = mcp.id
+			INNER JOIN `".$t_prefix."custom_properties` cp ON $cp_match_sql
+			SET r.order_by = cp.id
+			WHERE mcp.object_type_id IN ($dim_obj_types_sql);
+
+			UPDATE `".$t_prefix."report_columns` rc
+			INNER JOIN `".$t_prefix."reports` r ON r.object_id = rc.report_id
+			INNER JOIN `".$t_prefix."member_custom_properties` mcp ON mcp.object_type_id = r.report_object_type_id AND mcp.id = rc.custom_property_id
+			INNER JOIN `".$t_prefix."custom_properties` cp ON $cp_match_sql
+			SET rc.custom_property_id = cp.id
+			WHERE rc.custom_property_id > 0 AND mcp.object_type_id IN ($dim_obj_types_sql);
+
+			UPDATE `".$t_prefix."report_conditions` rc
+			INNER JOIN `".$t_prefix."reports` r ON r.object_id = rc.report_id
+			INNER JOIN `".$t_prefix."member_custom_properties` mcp ON mcp.object_type_id = r.report_object_type_id AND mcp.id = rc.custom_property_id
+			INNER JOIN `".$t_prefix."custom_properties` cp ON $cp_match_sql
+			SET rc.custom_property_id = cp.id
+			WHERE rc.custom_property_id > 0 AND mcp.object_type_id IN ($dim_obj_types_sql);
+
+			DELETE FROM `".$t_prefix."member_custom_properties` WHERE object_type_id IN ($dim_obj_types_sql) AND code <> '';
+
+			DELETE FROM `".$t_prefix."member_custom_property_values` WHERE custom_property_id NOT IN (SELECT id FROM `".$t_prefix."member_custom_properties`);
+		";
+
+		return $sql;
+	}
+
 } // PaellaUpgradeScript

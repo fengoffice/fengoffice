@@ -159,6 +159,18 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 
 	/**
+	 * Return value of 'object_subtype_id' field
+	 *
+	 * @access public
+	 * @param void
+	 * @return integer 
+	 */
+	function getObjectSubtypeId() {
+		return $this->object ? $this->object->getObjectSubtypeId() : 0;
+	}
+	
+
+	/**
 	 * Set value of 'object_type_id' field
 	 *
 	 * @access public   
@@ -288,7 +300,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 * @access public
 	 * @param void
-	 * @return string 
+	 * @return DateTimeValue 
 	 */
 	function getUpdatedOn() {
 		return $this->object->getUpdatedOn ();
@@ -353,7 +365,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 * @access public
 	 * @param void
-	 * @return string 
+	 * @return DateTimeValue|null 
 	 */
 	function getTrashedOn(){
 		return $this->object->getTrashedOn();
@@ -377,7 +389,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 * @access public
 	 * @param void
-	 * @return string 
+	 * @return DateTimeValue|null 
 	 */
 	function getArchivedOn() {
 		return $this->object->getArchivedOn();
@@ -498,6 +510,22 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	function setFromAttributes($attributes) {
 		parent::setFromAttributes ($attributes);
 		$this->object->setFromAttributes($attributes);
+	}
+
+
+	/**
+	 * Return an array with all attribute values of this object, including the ones from the content object reference
+	 * @return array
+	 */
+	function getAllAttributeValues() {
+		$values = [];
+
+		$all_attributes = $this->getAllAttributes();
+		foreach ($all_attributes as $column => $type) {
+			$values[$column] = $this->getColumnValue($column);
+		}
+
+		return $values;
 	}
 	
 	function getAllAttributes() {
@@ -626,11 +654,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 					$tmp_name = gen_id();
 					file_put_contents(ROOT."/tmp/$tmp_name", $file_content);
 					
+					if (!isset($type)) $type = 'image/png';
 					$repo_id = FileRepository::addFile(ROOT."/tmp/$tmp_name", array('type' => $type, 'public' => true));
 					$json['repository_id'] = $repo_id;
 					
 					$new_cp_value->setValue(json_encode($json));
-					@unlink(ROOT."/tmp/$genid");
+					@unlink(ROOT."/tmp/$tmp_name");
 				}
 				
 			} else {
@@ -826,6 +855,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	} // countAllComments
 
 	
+	private $comments_count = null;
 	/**
 	 * Return total number of comments
 	 *
@@ -1310,6 +1340,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$null = null;
 			Hook::fire("after_content_object_trash", array('object' => $this), $null);
 		}
+
 	}
 	
 	
@@ -1336,12 +1367,12 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			}
 		}
 		
+
 		if ($fire_hook) {
 			$null = null;
 			Hook::fire("after_content_object_untrash", array('object' => $this), $null);
 		}
 	}
-	
 	
 	function isTrashable() {
 		return true;
@@ -1363,6 +1394,10 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	
 	function getViewUrl() {
 		return $this->getObject()->getViewUrl();
+	}
+	
+	function getAddObjectUrl() {
+		return $this->getObject()->getAddObjectUrl();
 	}
 	
 	function getEditUrl() {
@@ -1424,6 +1459,51 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	}
 
 	/**
+	 * Returns an array with the members that this object belongs to, with limit per dimension
+	 * @param int $breadcrumb_member_count Maximum number of members to return per dimension
+	 * @param boolean $useCache If true, the members will be cached in the object
+	 * @return array Array with dimension info including only displayed members and total counts
+	 */
+	function getMembersWithLimit($breadcrumb_member_count = 3, $useCache = false) {
+		$all_members = $this->getMembers($useCache);
+		$dimensions_info = array();
+
+		// Group members by dimension and apply limit
+		foreach ($all_members as $member) {
+			$dimension_name = $member->getDimension()->getName();
+			$dimension_id = $member->getDimension()->getId();
+
+			if (!isset($dimensions_info[$dimension_name])) {
+				$dimensions_info[$dimension_name] = array(
+					'id' => $dimension_id,
+					'total_count' => 0,
+					'displayed_count' => 0,
+					'members' => array()
+				);
+			}
+
+			$member_data = array(
+				'p' => $member->getParentMemberId(),
+				'name' => $member->getName(),
+				'ot' => $member->getObjectTypeId(),
+				'color' => $member->getMemberColor(),
+				'id' => $member->getId(),
+				'dim' => $dimension_id
+			);
+
+			$dimensions_info[$dimension_name]['total_count']++;
+
+			// Add to displayed list only if under limit
+			if ($dimensions_info[$dimension_name]['displayed_count'] < $breadcrumb_member_count) {
+				$dimensions_info[$dimension_name]['members'][$member->getId()] = $member_data;
+				$dimensions_info[$dimension_name]['displayed_count']++;
+			}
+		}
+
+		return $dimensions_info;
+	}
+
+	/**
 	 * Forces this object to see the given members
 	 */
 	function setMembers($members) {
@@ -1447,6 +1527,25 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		return $member;
 	}
+
+	/**
+	 * Returns the member of type $member_type_id in which this object is classified
+	 * @param int $dimension_id The id of the dimension to get
+	 * @return Member
+	 */
+	function getMemberByDimensionId($dimension_id) {
+		$member = null;
+		$members = $this->getMembers();
+		foreach ($members as $m) {
+			if ($m->getDimensionId() == $dimension_id) {
+				$member = $m;
+				break;
+			}
+		}
+
+		return $member;
+	}
+	
 
 	/**
 	 * Returns all the members of type $member_type_id in which this object is classified
@@ -1473,6 +1572,18 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			$member_ids_to_return[] = $m->getId();
 		}
 		return $member_ids_to_return;
+	}
+
+
+	static function getPhaseObjectTypeIds() {
+		$phase_ot_ids = array();
+		foreach (array('job_phase', 'project_phase') as $phase_ot_name) {
+			$phase_ot = ObjectTypes::instance()->findByName($phase_ot_name);
+			if ($phase_ot) {
+				$phase_ot_ids[] = $phase_ot->getId();
+			}
+		}
+		return $phase_ot_ids;
 	}
 
 
@@ -1503,24 +1614,35 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		$otClient = ObjectTypes::instance()->findByName('customer');
 		$otIdClient = $otClient ? $otClient->getId() : null;
 	
-		$jobPhaseOt = ObjectTypes::instance()->findByName('job_phase');
-		$jobPhaseOtId = $jobPhaseOt ? $jobPhaseOt->getId() : null;
+		$phaseOtIds = self::getPhaseObjectTypeIds();
 	
-		// Get related projects, clients, and job_phase members from the task
+		// Get related projects, clients, and phase members from the task
 		$task = ProjectTasks::instance()->findById($taskId);
 		$taskProjectMembersIds = ($task && $projectOtId !== null) ? $task->getMemberIdsOfType($projectOtId) : [];
 		$taskClientMembersIds = ($task && $otIdClient !== null) ? $task->getMemberIdsOfType($otIdClient) : [];
-		$taskJobPhaseMembersIds = ($task && $jobPhaseOtId !== null) ? $task->getMemberIdsOfType($jobPhaseOtId) : [];
+		// Keep each phase object type (job_phase / project_phase) separate. They are
+		// different dimensions, so a value in one must not be cross-compared against a
+		// value in the other. Merging them produced false "different phase" errors when
+		// the task had a value in one phase dimension and the time entry in the other.
+		$taskJobPhaseMembersIdsByOt = array();
+		if ($task) {
+			foreach ($phaseOtIds as $phaseOtId) {
+				$taskJobPhaseMembersIdsByOt[$phaseOtId] = $task->getMemberIdsOfType($phaseOtId);
+			}
+		}
 
 
 		// Initialize arrays for member IDs from the current object
 		$objProjectsMembersIds = [];
 		$objClientsMembersIds = [];
-		$objJobPhaseMembersIds = [];
+		$objJobPhaseMembersIdsByOt = [];
 	
 		// Separate member IDs by object type
 		foreach ($member_ids as $memid) {
 			$m = Members::instance()->findById($memid);
+			if (!$m instanceof Member) {
+				continue;
+			}
 	
 			if ($m->getObjectTypeId() == $projectOtId) {
 				$objProjectsMembersIds[] = $memid;
@@ -1530,8 +1652,8 @@ abstract class ContentDataObject extends ApplicationDataObject {
 				$objClientsMembersIds[] = $memid;
 			}
 	
-			if ($m->getObjectTypeId() == $jobPhaseOtId) {
-				$objJobPhaseMembersIds[] = $memid;
+			if (in_array($m->getObjectTypeId(), $phaseOtIds)) {
+				$objJobPhaseMembersIdsByOt[$m->getObjectTypeId()][] = $memid;
 			}
 		}
 
@@ -1539,10 +1661,20 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		if ($task !== null) {
 			$projectIdsMatch = empty($taskProjectMembersIds) || !empty(array_intersect($taskProjectMembersIds, $objProjectsMembersIds));
 			$clientIdsMatch = empty($taskClientMembersIds) || !empty(array_intersect($taskClientMembersIds, $objClientsMembersIds));
-			if ($objJobPhaseMembersIds != []) {
-			$jobPhaseIdsMatch = empty($taskJobPhaseMembersIds) || !empty(array_intersect($taskJobPhaseMembersIds, $objJobPhaseMembersIds));
-			} else {
-				$jobPhaseIdsMatch = true;
+			// Compare each phase object type independently: a mismatch only counts when
+			// the time entry and the task both have a value in the SAME phase dimension
+			// and those values do not intersect.
+			$jobPhaseIdsMatch = true;
+			foreach ($phaseOtIds as $phaseOtId) {
+				$objPhaseIds = array_var($objJobPhaseMembersIdsByOt, $phaseOtId, array());
+				if (empty($objPhaseIds)) {
+					continue;
+				}
+				$taskPhaseIds = array_var($taskJobPhaseMembersIdsByOt, $phaseOtId, array());
+				if (!empty($taskPhaseIds) && empty(array_intersect($taskPhaseIds, $objPhaseIds))) {
+					$jobPhaseIdsMatch = false;
+					break;
+				}
 			}
 			// Return information about which conditions did not match
 			$result = [
@@ -1574,6 +1706,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		}
 		if (!$result['jobPhaseIdsMatch']) {
 			$job_phase_ot = ObjectTypes::findByName('job_phase');
+			if (!$job_phase_ot) {
+				$job_phase_ot = ObjectTypes::findByName('project_phase');
+			}
 			$errorMessages[] = $job_phase_ot ? $job_phase_ot->getObjectTypeName() : '';
 		}
 
@@ -1601,12 +1736,14 @@ abstract class ContentDataObject extends ApplicationDataObject {
 
 		$can_assign = true;
 		$error_msg = '';
+		$ask_to_reclassify = false;
 
 		$ot_name = $this->getObjectTypeName();
 		if (!in_array($ot_name, ['timeslot','payment_receipt','expense'])) {
 			return array(
 				'can_assign' => $can_assign,
 				'error_msg' => $error_msg,
+				'ask_to_reclassify' => $ask_to_reclassify,
 			);
 		}
 
@@ -1639,6 +1776,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			if (!$result['projectIdsMatch'] || !$result['clientIdsMatch'] || !$result['jobPhaseIdsMatch']) {
 
 				$can_assign = false;
+				$ask_to_reclassify = true;
 				$error_msg = $this->validateObjMembersWithObjectRelatedMembersBuildErrorMessage($result);
 			}
 		}
@@ -1657,6 +1795,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return array(
 			'can_assign' => $can_assign,
 			'error_msg' => $error_msg,
+			'ask_to_reclassify' => $ask_to_reclassify,
 		);
 	}
 
@@ -1875,6 +2014,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 			// to use when saving the application log
 			$old_content_object = $timeslot->generateOldContentObjectData();
 
+			Hook::fire('before_close_timeslot', array('timeslot' => $timeslot), $ret);
 			$timeslot->close($description);
 			Hook::fire('round_minutes_to_fifteen', array('timeslot' => $timeslot), $ret);
 			$timeslot->save();
@@ -1972,6 +2112,7 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		return $this->timeslots;
 	} // getTimeslots
 
+	private $timeslots_count = null;
 	/**
 	 * This function will return number of timeslots
 	 *
@@ -2361,9 +2502,9 @@ abstract class ContentDataObject extends ApplicationDataObject {
 		$ot = ObjectTypes::instance()->findById($this->manager()->getObjectTypeId());
 		if ($ot instanceof ObjectType) {
 			$otname = $ot->getName();
-			$title = $this->isNew() ? lang("add $otname") : lang("save changes");
+			$title = $this->isNew() ? lang("save") : lang("save changes");
 		} else {
-			$title = $this->isNew() ? lang("add object") : lang("save changes");
+			$title = $this->isNew() ? lang("save") : lang("save changes");
 		}
 		
 		Hook::fire('override_submit_button_form_title', array('object' => $this, 'ot' => $ot), $title);

@@ -526,7 +526,12 @@ og.objectPropertyChanged = function(obj_id, count, value){
 			propSel = document.getElementById('objectProperties[' + obj_id + '][' + ++id + ']');
 		}
 		if(prop.className == 'STRING'){
-			propValueTD.innerHTML = ' <textarea id="propValues[' + obj_id + '][' + prop.value + ']" name="propValues[' + obj_id + '][' + prop.value + ']">' + value + '</textarea>&nbsp;' +
+			let text_value = value;
+			if (og.advanced_templates) {
+				// show the text of the string parameter in the textarea
+				text_value = og.advanced_templates.replace_string_param_id_with_text(value);
+			}
+			propValueTD.innerHTML = ' <textarea id="propValues[' + obj_id + '][' + prop.value + ']" name="propValues[' + obj_id + '][' + prop.value + ']">' + text_value + '</textarea>&nbsp;' +
 				'<a href="#" onclick="og.editStringTemplateObjectProperty(' + obj_id + ',\'' + prop.value + '\')">[' + lang('open property editor') + ']</a>';
 		}else if(prop.className == 'DATETIME'){
 			propValueTD.innerHTML = '<select style="display:none;" id="datePropType[' + obj_id + '][' + count + ']" onchange="og.datePropertyTypeSel(' + count + ',\'' + obj_id + '\')">'
@@ -682,6 +687,12 @@ og.datePropertyTypeSel = function(count, obj_id, value_time, sel_param){
 					selectParam += '<option value="'+ item['name'] +'">' + item['name'] + '</option>';
 				}
 			}
+			
+			// Add more task template date properties if advanced_templates plugin defines them
+			if (og.advanced_templates) {
+				selectParam += og.advanced_templates.add_more_task_template_date_properties();
+			}
+
 			selectParam += '<option value="task_creation">' + lang('date of task creation') + '</option>';
 			selectParam += '</select>';
 			var html = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + 
@@ -769,6 +780,12 @@ og.numericPropertyTypeSel = function(count, obj_id, value) {
 			selectParam += '<option value="'+ item['name'] +'" '+ param_selected +'>' + item['name'] + '</option>';
 		}
 	}
+
+	// Add more task template date properties if advanced_templates plugin defines them
+	if (og.advanced_templates) {
+		selectParam += og.advanced_templates.add_more_task_template_numeric_properties(param);
+	}
+	
 	selectParam += '</select>';
 
 	var html = '= &nbsp;<input type="hidden" name="propValues[' + obj_id + '][' + prop + ']">' + selectParam + '&nbsp;';
@@ -926,6 +943,12 @@ og.integerPropertyTypeSel = function(count, obj_id, callback){
 						selectParam += '<option value="'+ item['name'] +'">' + item['name'] + '</option>';
 					}
 				}
+
+				// Add more task template date properties if advanced_templates plugin defines them
+				if (og.advanced_templates) {
+					selectParam += og.advanced_templates.add_more_task_template_user_properties();
+				}
+
 				selectParam += '</select>';
 				integerPropTD.innerHTML = selectParam;
 			}
@@ -958,6 +981,15 @@ og.editStringTemplateObjectProperty = function(obj_id, prop, value_field_id){
 			params.push([item['name']]);
 		}
 	}
+
+	// Add more text/numeric params, if advanced_templates plugin defines them
+	if (og.advanced_templates) {
+		let more_params = og.advanced_templates.add_more_task_template_text_numeric_properties();
+		if (more_params) {
+			params = params.concat(more_params);
+		}
+	}
+
 	if (typeof value_field_id == 'undefined') {
 		var valueField = document.getElementById('propValues[' + obj_id + '][' + prop + ']');
 	} else {
@@ -1026,19 +1058,24 @@ og.promptAddParameter = function(before, edit, pos, config) {
 		var ok_function = config.ok_function;
 		var prev_name = config.prev_name;
 		var prev_type = config.prev_type;
+		var prev_def_val = config.prev_def_val;
 		for_task_templates = config.for_task_templates;
 	}
 
 	var paramName = document.getElementById('parameters[' + pos + '][name]');
 	var paramType = document.getElementById('parameters[' + pos + '][type]');
+	var paramDefVal = document.getElementById('parameters[' + pos + '][default_value]');
 	var loadName = '';
 	var loadType = 'string';
+	var loadDefVal = '';
 	if(paramName != null){
 		loadName = paramName.value;
 		loadType = paramType.value;
+		loadDefVal = paramDefVal.value;
 	} else {
 		if (prev_name) loadName = prev_name;
 		if (prev_type) loadType = prev_type;
+		if (prev_def_val) loadDefVal = prev_def_val;
 	}
 	
 	var variable_types = [['string', lang('text')],['numeric', lang('numeric')],['user', lang('user')],['date', lang('date')]];
@@ -1048,12 +1085,15 @@ og.promptAddParameter = function(before, edit, pos, config) {
 			variable_types.push([t, lang(t)]);
 		}
 	}
+
+	og.available_default_values = og.getAvailableDefaultTaskTemplateParameterValues(variable_types);
 	
 	var dialog_items = [
 	    {
 	    	xtype: 'textfield',
 	    	fieldLabel: lang('name'),
 	    	id: 'paramName',
+	    	width: 245,
 	    	value: loadName
 	    },
 	    {
@@ -1061,7 +1101,7 @@ og.promptAddParameter = function(before, edit, pos, config) {
 	    	fieldLabel: lang('type'),
 	    	id: 'paramType',
 	    	mode: 'local',
-	    	width: 100,
+	    	width: 245,
 	    	editable: false,
 	    	disabled: edit,
 	    	forceSelection: true,
@@ -1072,9 +1112,42 @@ og.promptAddParameter = function(before, edit, pos, config) {
 	    	store: new Ext.data.SimpleStore({
 				fields: ['id', 'name'],
 				data : variable_types
-			})
+			}),
+			listeners: {
+				select: function(combo, record, index) {
+					let def_val_cmp = Ext.getCmp('paramDefVal');
+					if (def_val_cmp) {
+						def_val_cmp.store.loadData(og.available_default_values[record.data.id]);
+						def_val_cmp.setValue('');
+					}
+				}
+			} 
 	    }
 	];
+
+	// only add the default value selector if projects are enabled
+	if (og.projects) {
+		dialog_items.push({
+			xtype: 'combo',
+			fieldLabel: lang('default value'),
+			id: 'paramDefVal',
+			mode: 'local',
+			width: 245,
+			editable: false,
+			disabled: false,
+			forceSelection: true,
+			triggerAction: 'all',
+			displayField: 'name',
+			valueField: 'id',
+			value: loadDefVal,
+			store: new Ext.data.SimpleStore({
+				fields: ['id', 'name'],
+				data : og.available_default_values[loadType]
+			})
+		});
+	}
+	// ----------------------------------------------------------------------
+
 	if (for_task_templates && og.templates && og.templates.more_param_prompt_items) {
 		for (var i=0; i<og.templates.more_param_prompt_items.length; i++) {
 			var item = og.templates.more_param_prompt_items[i];
@@ -1094,8 +1167,8 @@ og.promptAddParameter = function(before, edit, pos, config) {
 		genid: Ext.id(),
 		title: lang('add parameter'),
 		height: 100 + (25 * dialog_items.length),
-		width: 350,
-		labelWidth: 50,
+		width: 400,
+		labelWidth: 100,
 		ok_fn: function() {
 			if (typeof ok_function == 'function') {
 				// used by c_obj_templates
@@ -1103,8 +1176,9 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				var type = Ext.getCmp('paramType').getValue();
 				/*var req_cmp = Ext.getCmp('paramIsRequired');
 				var required = req_cmp ? req_cmp.getValue() : false;*/
-				
-				ok_function.call(null, pos, name, type);
+				var def_val_cmp = Ext.getCmp('paramDefVal');
+				var default_value = def_val_cmp ? def_val_cmp.getValue() : '';
+				ok_function.call(null, pos, name, type, default_value);
 				og.ExtendedDialog.hide();
 				return;
 			}
@@ -1121,15 +1195,21 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				return;
 			}
 			var type = Ext.getCmp('paramType').getValue();
+			var def_val_cmp = Ext.getCmp('paramDefVal');
+			var default_value = '';
+			if (def_val_cmp) {
+				default_value = def_val_cmp.getValue();
+			}
 
 			// Add or edit param
 			if(!edit) {
-				og.addParameterToTemplate(before, name, type);
+				og.addParameterToTemplate(before, name, type, default_value);
 			} else {
 				var oldname = paramName.value;
 				for (var i=0; i < og.templateParameters.length; i++) {
 					if (og.templateParameters[i].name == oldname) {
 						og.templateParameters[i].name = name;
+						og.templateParameters[i].default_value = default_value;
 						
 						// replace all selector options that contain this property with the new property name and value
 						$('#templateConteiner.template option[value="'+oldname+'"]').each(function() {
@@ -1173,6 +1253,7 @@ og.promptAddParameter = function(before, edit, pos, config) {
 				div.innerHTML =
 				'<input type="hidden" name="parameters[' + i + '][name]" id="parameters[' + i + '][name]" value="' + parameter.name + '"/>&nbsp;' +
 				'<input type="hidden" name="parameters[' + i + '][type]" id="parameters[' + i + '][type]" value="' + parameter.type + '"/>&nbsp;' +
+				'<input type="hidden" name="parameters[' + i + '][default_value]" id="parameters[' + i + '][default_value]" value="' + parameter.default_value + '"/>&nbsp;' +
 				'<span class="name" id="paramName_' + i + '"><b>' + parameter.name + '</b>&nbsp;(' + lang(parameter.type) + ') </span>' +
 				'<span id="editRemoveParam' + i + '" style="cursor:pointer;line-height:25px;position:absolute;right:0;top:0;"><a href="#" onclick="og.promptAddParameter(this, 1, ' + i + ')" >'+lang('edit')+'</a>' +
 				'&nbsp;|&nbsp;<a href="#" onclick="og.removeParameterFromTemplate(this.parentNode.parentNode, \'' + parameter.name + '\')" class="removeParamDiv">'+lang('remove')+'</a></span>';
@@ -1195,6 +1276,46 @@ og.promptAddParameter = function(before, edit, pos, config) {
 	og.ExtendedDialog.show(config);
 };
 
+/**
+ * Returns an object with parameter types as keys and an array of possible default values as values.
+ * The default values are the custom properties of the project type, plus the date of task creation if the type is 'date'.
+ * @param {Array} variable_types - An array of arrays where each inner array contains a parameter type and its default value.
+ * @return {Object} - An object with parameter types as keys and an array of possible default values as values.
+ */
+og.getAvailableDefaultTaskTemplateParameterValues = function(variable_types) {
+	var default_param_values = {};
+
+	for (var i=0; i < variable_types.length; i++) {
+		var type = variable_types[i][0];
+		var type_values = [['' ,'--']];
+
+		if (og.projects && og.custom_properties_by_type.project) {
+			let project_ot = og.objectTypes[og.projects.object_type_id];
+			let project_ot_name = project_ot ? project_ot.c_name : lang('project');
+
+			for (var j=0; j < og.custom_properties_by_type.project.length; j++) {
+				let property = og.custom_properties_by_type.project[j];
+				if (property.cp_type == type 
+					|| (type == 'string' && (property.cp_type == 'text' || property.cp_type == 'numeric'))
+					|| (type == 'numeric' && property.cp_type == 'amount')
+					|| (type == 'date' && property.cp_type == 'datetime')
+					|| (type == 'datetime' && property.cp_type == 'date')
+				) {
+					type_values.push(['project|cp_' + property.id, project_ot_name + ' ' + property.name]);
+				}
+			}
+		}
+
+		if (type == 'date') {
+			type_values.push(['task_creation', lang('date of task creation')]);
+		}
+
+		default_param_values[type] = type_values;
+	}
+
+	return default_param_values;
+}
+
 og.parameterNameExistsInTemplate = function(before, name){
 	var parent = before.parentNode;
 	var inputs = parent.getElementsByTagName('input');
@@ -1215,6 +1336,7 @@ og.addParameterToTemplate = function(params, name, type, default_value) {
 	div.innerHTML =
 		'<input type="hidden" name="parameters[' + count + '][name]" id="parameters[' + count + '][name]" value="' + name + '"/>&nbsp;' +
 		'<input type="hidden" name="parameters[' + count + '][type]" id="parameters[' + count + '][type]" value="' + type + '"/>&nbsp;' +
+		'<input type="hidden" name="parameters[' + count + '][default_value]" id="parameters[' + count + '][default_value]" value="' + default_value + '"/>&nbsp;' +
 		'<span class="name" id="paramName_' + count + '"><b>' + name + '</b>&nbsp;(' + lang(type) + ') </span>' +
 		'<span id="editRemoveParam' + count + '" style="cursor:pointer;line-height:25px;position:absolute;right:0;top:0;"><a href="#" onclick="og.promptAddParameter(this, 1, ' + count + ')" >'+lang('edit')+'</a>' +
 		'&nbsp;|&nbsp;<a href="#" onclick="og.removeParameterFromTemplate(this.parentNode.parentNode, \'' + name + '\')" class="removeParamDiv">'+lang('remove')+'</a></span>';
@@ -1321,11 +1443,82 @@ og.deleteParameter = function(paramDiv, name){
 	og.eventManager.fireEvent('after remove tempalte parameter', {param: param});
 };
 
+og.resetTemplateFormSubmitState = function() {
+	if (og._templateFormSubmitTimeout) {
+		clearTimeout(og._templateFormSubmitTimeout);
+		og._templateFormSubmitTimeout = null;
+	}
+	og._templateFormSubmitting = false;
+	var form = document.getElementById('templateForm');
+	if (!form) {
+		return;
+	}
+	var inputs = form.querySelectorAll('input[type=submit], button[type=submit]');
+	for (var i = 0; i < inputs.length; i++) {
+		inputs[i].disabled = false;
+	}
+	var serialized = form.querySelectorAll('[name^="prop"], [name^="objectProperties"], [name^="objects"]');
+	for (var j = 0; j < serialized.length; j++) {
+		serialized[j].disabled = false;
+	}
+};
+
+og.getTemplateObjectInputCount = function(genid) {
+	var div = document.getElementById(genid + 'add_template_objects_div');
+	if (!div) {
+		return 0;
+	}
+	var inputs = div.getElementsByTagName('input');
+	var count = 0;
+	for (var i = 0; i < inputs.length; i++) {
+		if (inputs[i].className == 'objectID') {
+			count++;
+		}
+	}
+	return count;
+};
+
+og.ensureTemplateObjectsInPropInputs = function(all_prop_inputs) {
+	var hasObjects = false;
+	for (var key in all_prop_inputs) {
+		if (key.indexOf('objects[') === 0) {
+			hasObjects = true;
+			break;
+		}
+	}
+	if (!hasObjects && og.templateObjects && og.templateObjects.length > 0) {
+		for (var i = 0; i < og.templateObjects.length; i++) {
+			var obj = og.templateObjects[i];
+			if (obj && obj.object_id) {
+				all_prop_inputs['objects[' + obj.object_id + ']'] = '' + obj.object_id;
+			}
+		}
+	}
+	return all_prop_inputs;
+};
+
 og.templateConfirmSubmit = function(genid) {
-	var div = document.getElementById(genid + "add_template_objects_div");
-	var count = div.getElementsByTagName('input').length;
-	if (count == 0) {
-		return confirm(lang('confirm template with no objects'));
+	var form = document.getElementById('templateForm');
+	var clearInput = form ? form.querySelector('input[name=confirm_clear_template_objects]') : null;
+	if (clearInput) {
+		clearInput.parentNode.removeChild(clearInput);
+	}
+
+	var objectCount = og.getTemplateObjectInputCount(genid);
+	var memoryCount = (og.templateObjects && og.templateObjects.length) ? og.templateObjects.length : 0;
+
+	if (objectCount == 0 && memoryCount == 0) {
+		if (confirm(lang('confirm template with no objects'))) {
+			if (form) {
+				var input = document.createElement('input');
+				input.type = 'hidden';
+				input.name = 'confirm_clear_template_objects';
+				input.value = '1';
+				form.appendChild(input);
+			}
+			return true;
+		}
+		return false;
 	}
 	return true;
 };

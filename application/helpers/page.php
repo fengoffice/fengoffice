@@ -531,7 +531,7 @@ function get_page_title() {
 	// If we dont have title use action
 	if($page->getTitle() == '') {
 		$action = array_var($_GET, 'action');
-		return $action ? ucfirst($action) : PRODUCT_NAME;
+		return $action ? ucfirst($action) : product_name();
 	} else {
 		return $page->getTitle();
 	} // if

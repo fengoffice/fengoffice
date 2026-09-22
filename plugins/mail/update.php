@@ -527,3 +527,202 @@
 			ADD COLUMN `exclude_from_synchronizing` tinyint(1) NOT NULL DEFAULT 0;
 		");
 	}
+
+	function mail_update_37_38() {
+		// This update add the first index on the mail_datas table
+		//is no longer needed, we are adding it on mail_update_39_40
+	}
+
+
+	// html bodies above this size are left without a plain text version: parsing them with
+	// DOMDocument needs many times their size in memory, and a single such row could still
+	// exhaust memory_limit whatever the batch size
+	if (!defined('MAIL_BODY_PLAIN_MAX_HTML_BYTES')) define('MAIL_BODY_PLAIN_MAX_HTML_BYTES', 8 * 1024 * 1024);
+
+	/**
+	 * Fill mail_datas.body_plain from body_html for the rows where body_plain is empty, so the
+	 * FULLTEXT search index always has something to match on.
+	 *
+	 * Rows are read in id-keyed batches: loading every body_html at once exhausted memory_limit on
+	 * large installs and killed the whole plugin update run. The cursor only moves forward, so rows
+	 * whose html is empty too (nothing to extract) are skipped once and cannot make the loop spin.
+	 * Rows whose html exceeds MAIL_BODY_PLAIN_MAX_HTML_BYTES are never loaded; their count is logged.
+	 *
+	 * @param int $batch_size rows fetched per query
+	 * @return int number of rows updated
+	 */
+	function mail_fix_empty_body_plain($batch_size = 20) {
+		Env::useHelper('functions', 'mail');
+		$batch_size = max(1, intval($batch_size));
+		$fixed = 0;
+		$last_id = 0;
+
+		$oversized_row = DB::executeOne("SELECT COUNT(*) AS cnt FROM `".TABLE_PREFIX."mail_datas` WHERE body_plain = '' AND LENGTH(body_html) > " . MAIL_BODY_PLAIN_MAX_HTML_BYTES);
+		if ($oversized_row && $oversized_row['cnt'] > 0) {
+			Logger::log("Mail plugin update - " . $oversized_row['cnt'] . " emails have an html body larger than " . MAIL_BODY_PLAIN_MAX_HTML_BYTES . " bytes and keep an empty body_plain", Logger::WARNING);
+		}
+
+		while (true) {
+			$mail_data_rows = DB::executeAll("
+				SELECT id, body_html
+				FROM `".TABLE_PREFIX."mail_datas`
+				WHERE body_plain = '' AND id > " . intval($last_id) . "
+				AND LENGTH(body_html) <= " . MAIL_BODY_PLAIN_MAX_HTML_BYTES . "
+				ORDER BY id
+				LIMIT " . $batch_size
+			);
+			if (!$mail_data_rows) {
+				break;
+			}
+
+			foreach ($mail_data_rows as $mail_data_row) {
+				$last_id = $mail_data_row['id'];
+				if ($mail_data_row['body_html'] == '') {
+					continue;
+				}
+				$body_plain = extract_plain_text_from_html($mail_data_row['body_html']);
+				$sql = "
+					UPDATE `".TABLE_PREFIX."mail_datas`
+					SET body_plain = " . DB::escape($body_plain) . "
+					WHERE id = " . DB::escape($mail_data_row['id']
+				);
+				try {
+					DB::execute($sql);
+					$fixed++;
+				} catch (Exception $e) {
+					Logger::log("Mail plugin update - cant fix body_plain for email id " . $mail_data_row['id'] . "\n" . $e->getMessage());
+				}
+			}
+			unset($mail_data_rows);
+		}
+		return $fixed;
+	}
+
+	function mail_update_38_39() {
+
+		// create a redundant from_copy column to improve performance in search
+		if (!check_column_exists(TABLE_PREFIX."mail_datas", "from_copy")) {
+			
+			// add from_copy column
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_datas`
+				ADD COLUMN `from_copy` TEXT;
+			");
+
+			// copy from mail_contents.from to mail_datas.from_copy
+			DB::execute("
+				UPDATE `".TABLE_PREFIX."mail_datas` md
+				INNER JOIN `".TABLE_PREFIX."mail_contents` mc 
+					ON mc.object_id = md.id
+				SET md.from_copy = mc.`from`
+				WHERE mc.`from` IS NOT NULL;
+			");
+		}
+
+		// check existance of the old index that didn't include all the columns needed to search
+		$res = DB::execute("
+			SELECT COUNT(1) AS cnt
+			FROM information_schema.STATISTICS
+			WHERE table_schema = DATABASE()
+			AND table_name = '".TABLE_PREFIX."mail_datas'
+			AND index_name = 'idx_fulltext_subject_body_plain_html'
+		");
+
+		$row = $res ? $res->fetchRow() : null;
+		$exists = $row && isset($row['cnt']) ? (int)$row['cnt'] : 0;
+
+		// if old index exists then drop it
+		if ($exists) {
+			// drop old fulltext index
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_datas`
+				DROP INDEX `idx_fulltext_subject_body_plain_html`;
+			");
+		}
+
+
+		// Fix body_plain column when it is empty
+		@set_time_limit(0);
+		mail_fix_empty_body_plain();
+
+
+		// Check if the new fulltext index already exists (if it was added in a separated process)
+		$res = DB::execute("
+			SELECT COUNT(1) AS cnt
+			FROM information_schema.STATISTICS
+			WHERE table_schema = DATABASE()
+			AND table_name = '".TABLE_PREFIX."mail_datas'
+			AND index_name = 'idx_fulltext_mail_datas_all'
+		");
+
+		$row = $res ? $res->fetchRow() : null;
+		$exists = $row && isset($row['cnt']) ? (int)$row['cnt'] : 0;
+
+		// create new fulltext index with all text columns if it doesn't exist
+		if (!$exists) {
+			DB::execute("
+				ALTER TABLE `".TABLE_PREFIX."mail_datas`
+				ADD FULLTEXT `idx_fulltext_mail_datas_all` (
+					`to`,
+					`cc`,
+					`bcc`,
+					`subject`,
+					`body_plain`,
+					`from_copy`
+				);
+			");
+		}
+	}
+
+	/**
+	 * Rebuild mail_datas.from_copy for search: include display name + address (FULLTEXT previously only had the address).
+	 */
+	function mail_update_39_40() {
+		@set_time_limit(0);
+		if (!check_column_exists(TABLE_PREFIX . "mail_datas", "from_copy")) {
+			return;
+		}
+		DB::execute("
+			UPDATE `" . TABLE_PREFIX . "mail_datas` md
+			INNER JOIN `" . TABLE_PREFIX . "mail_contents` mc ON mc.object_id = md.id
+			SET md.from_copy = TRIM(CONCAT_WS(' ',
+				NULLIF(TRIM(mc.from_name), ''),
+				NULLIF(TRIM(mc.`from`), '')
+			))
+		");
+	}
+
+	function mail_update_40_41() {
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."contact_config_options (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`) VALUES
+			('mails panel', 'show_account_on_email_header', '0', 'BoolConfigHandler', '0', '111', NULL)
+			ON DUPLICATE KEY UPDATE name = name;
+		");
+	}
+
+	/**
+	 * Replace the "emails" dashboard widget (previously a simple unread-emails list, owned
+	 * by core with plugin_id=0 despite depending entirely on this plugin's models) with a
+	 * richer feed-widget shell over MailContents, explicitly owned by mail's own plugin_id
+	 * so it stops existing/rendering if mail is ever deactivated. Re-pointing plugin_id here
+	 * (rather than just title) fixes existing rows left over from the old hardcoded insert.
+	 * Fresh installs get this row from install/sql/mysql_initial_data.php instead.
+	 */
+	function mail_update_41_42() {
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."widgets (`name`,`title`,`plugin_id`,`path`,`default_options`,`default_section`,`default_order`,`icon_cls`)
+			SELECT 'emails', 'emails widget title', id, '', '', 'right', 6, 'ico-email'
+			FROM ".TABLE_PREFIX."plugins WHERE name = 'mail'
+			ON DUPLICATE KEY UPDATE title=VALUES(title), plugin_id=VALUES(plugin_id);
+		");
+
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."contact_widget_options
+				(`contact_id`, `widget_name`, `member_type_id`, `option`, `value`, `config_handler_class`, `is_system`)
+			VALUES
+				(0, 'emails', 0, 'limit', '10', '', 1)
+			ON DUPLICATE KEY UPDATE `is_system`=1;
+		");
+	}
+
+

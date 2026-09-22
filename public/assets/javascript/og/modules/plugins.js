@@ -2,6 +2,22 @@ og.pluginManager = {} ;
 
 og.pluginManager.init = function () {
 
+	$(".update-all-button").click(function(){
+
+		og.openLink(og.getUrl('plugin', 'update_all', {ajax:'true'}), {
+			preventPanelReload: true,
+			callback: function(success, data){
+				if (data.errorMessage != "") {
+					$(".error").html(data.errorMessage).fadeIn();
+				} else {
+					$(".error").html("").hide();
+					og.msg(lang('success'), "Plugins updated successfully");
+					og.reloadCurrentPanel();
+				}
+			}
+		});
+	});
+
 	$(".deactivate-button").click(function(){
 		var button = this ;
 		var url = og.getUrl('plugin', 'deactivate', {ajax:'true'});

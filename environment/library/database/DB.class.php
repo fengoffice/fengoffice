@@ -328,9 +328,17 @@ final class DB {
 	 */
 	static function prepareString($sql, $arguments = null) {
 		if(is_array($arguments) && count($arguments)) {
+			// Walk the original SQL string by offset so that '?' chars inside
+			// substituted values are never re-scanned as placeholders.
+			$result = '';
+			$offset = 0;
 			foreach($arguments as $argument) {
-				$sql = str_replace_first('?', DB::escape($argument), $sql);
-			} // foreach
+				$pos = strpos($sql, '?', $offset);
+				if($pos === false) break;
+				$result .= substr($sql, $offset, $pos - $offset) . DB::escape($argument);
+				$offset = $pos + 1;
+			}
+			return $result . substr($sql, $offset);
 		} // if
 		return $sql;
 	} // prepareString
@@ -368,11 +376,18 @@ final class DB {
 	/**
 	 * Add query to SQL log
 	 *
+	 * Only kept while DB debugging is on: nothing reads the log otherwise, and appending every
+	 * statement unconditionally exhausted memory_limit in long-running processes such as plugin
+	 * updates that execute one statement per row.
+	 *
 	 * @access public
 	 * @param string $sql
 	 * @return void
 	 */
 	static function addToSQLLog($sql) {
+		if (!Env::isDebuggingDB()) {
+			return;
+		}
 		self::$sql_log[] = $sql;
 	} // addToSQLLog
 
@@ -396,6 +411,27 @@ final class DB {
 	 */
 	static function cleanStringToFullSearch($string) {
 	    return str_replace( array( '-', '+', '~' , '(', ')','<','>','*','"' ), ' ', $string);
+	}
+
+	/**
+	 * Default InnoDB FULLTEXT stopwords (INFORMATION_SCHEMA.INNODB_FT_DEFAULT_STOPWORD).
+	 * Same list in MariaDB InnoDB. Requiring these with +term* in BOOLEAN MODE yields no matches.
+	 *
+	 * @param string $word
+	 * @return bool
+	 */
+	static function isInnoDbFulltextStopword($word) {
+		static $stopwords = null;
+		if ($stopwords === null) {
+			$stopwords = array_flip(array(
+				'a', 'about', 'an', 'are', 'as', 'at', 'be', 'by', 'com', 'de', 'en',
+				'for', 'from', 'how', 'i', 'in', 'is', 'it', 'la', 'of', 'on', 'or',
+				'that', 'the', 'this', 'to', 'was', 'what', 'when', 'where', 'who',
+				'will', 'with', 'und', 'www',
+			));
+		}
+		$key = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
+		return isset($stopwords[$key]);
 	}
 
 } // DB

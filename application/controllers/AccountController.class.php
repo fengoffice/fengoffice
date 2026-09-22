@@ -213,8 +213,9 @@ class AccountController extends ApplicationController {
 					throw new Exception(lang('passwords dont match'));
 				} // if
 
-				if (!ContactPasswords::validatePassword($new_password)) {
-					throw new Exception(lang('new password does not fulfill password requirements'));
+				$password_errors = ContactPasswords::validatePasswordRequirements($new_password, $user->getId());
+				if (count($password_errors)) {
+					throw new Exception($password_errors[0]);
 				}
 				
 				$user_password = new ContactPassword();
@@ -621,6 +622,10 @@ class AccountController extends ApplicationController {
 		if($option_name != ''){
 			try{
 				DB::beginWork();
+				if ($option_name == 'members_per_page') {
+					self::ensureMembersPerPageConfigOption();
+					$option_value = max(1, min(MEMBERS_PER_PAGE_MAX, (int) $option_value));
+				}
 				set_user_config_option($option_name, $option_value, logged_user()->getId());
 				evt_add('user preference changed', array('name' => $option_name, 'value' => $option_value));
 				DB::commit();
@@ -632,7 +637,50 @@ class AccountController extends ApplicationController {
 		}
 		
 	}
+
+	/**
+	 * Ensure the hidden members_per_page preference exists (e.g. DB switched without upgrade).
+	 * Updates GlobalCache after create so a prior negative lookup (null) cannot block set_user_config_option
+	 * or trigger a duplicate INSERT on the next change.
+	 */
+	static function ensureMembersPerPageConfigOption() {
+		$co = ContactConfigOptions::getByName('members_per_page');
+		if ($co instanceof ContactConfigOption) {
+			return;
+		}
+		$co = new ContactConfigOption();
+		$co->setCategoryName('system');
+		$co->setName('members_per_page');
+		$co->setDefaultValue(config_option('files_per_page', 50));
+		$co->setConfigHandlerClass('IntegerConfigHandler');
+		$co->setIsSystem(1);
+		$co->setDevComment('Hidden preference: members/projects listed per page in MemberManager');
+		$co->save();
+		if (GlobalCache::isAvailable()) {
+			GlobalCache::update('user_copt_obj_members_per_page', $co);
+		}
+	}
 	
+	function update_user_preferences(){
+		ajx_current("empty");
+		$names  = json_decode(array_var($_REQUEST, 'names',  '[]'), true);
+		$values = json_decode(array_var($_REQUEST, 'values', '[]'), true);
+		if (!is_array($names))  $names  = array();
+		if (!is_array($values)) $values = array();
+		try {
+			DB::beginWork();
+			foreach ($names as $i => $name) {
+				if ($name === '') continue;
+				$value = isset($values[$i]) ? $values[$i] : '';
+				set_user_config_option($name, $value, logged_user()->getId());
+			}
+			DB::commit();
+		} catch (Exception $e) {
+			DB::rollback();
+			flash_error($e->getMessage());
+		}
+	}
+
 	function get_user_preference(){
 		ajx_current("empty");
 		$option_name = array_var($_REQUEST,'name');
@@ -667,9 +715,6 @@ class AccountController extends ApplicationController {
 			ApplicationLogs::createLog($user, ApplicationLogs::ACTION_TRASH);
 			
 			ajx_current("reload");
-			if(array_var($_GET,'current')!="administration") {
-				evt_add("reload company users", array('company_id' => $user->getCompanyId()));
-			}
 			
 			flash_success(lang('success disable user', $user->getObjectName()));
 			
@@ -697,7 +742,7 @@ class AccountController extends ApplicationController {
 		
 		try {
 			DB::beginWork();
-			$user->disable();
+			$user->delete();
 			$ret = null ; 
 			Hook::fire("user_disabled", $user, $ret );
 			DB::commit();
@@ -840,6 +885,139 @@ class AccountController extends ApplicationController {
 	    }
 	    
 	}
+
+function role_permissions_edit()
+{
+	if (logged_user()->isGuest()) {
+		flash_error(lang('no access permissions'));
+		ajx_current('empty');
+		return;
+	}
+
+	$permission_group_id = array_var($_REQUEST, 'role_id');
+	$role = PermissionGroups::instance()->findById($permission_group_id);
+
+	if (!$role instanceof PermissionGroup || $role->getType() != 'roles') {
+		flash_error(lang('invalid role'));
+		ajx_current('empty');
+		return;
+	}
+
+	// =============================
+	// SYSTEM PERMISSIONS
+	// =============================
+	$system_permissions = SystemPermissions::instance()->findById($permission_group_id);
+	if (!$system_permissions instanceof SystemPermission) {
+		$system_permissions = new SystemPermission();
+	}
+
+	// =============================
+	// MODULE PERMISSIONS
+	// =============================
+	$module_permissions = TabPanelPermissions::instance()->findAll(array(
+		"conditions" => "`permission_group_id` = $permission_group_id"
+	));
+
+	$module_permissions_info = array();
+	foreach ($module_permissions as $mp) {
+		$module_permissions_info[$mp->getTabPanelId()] = 1;
+	}
+
+	$all_modules = TabPanels::instance()->findAll(array(
+		"conditions" => "`enabled` = 1",
+		"order" => "ordering"
+	));
+
+	$all_modules_info = array();
+	foreach ($all_modules as $module) {
+		$all_modules_info[] = array(
+			'id'   => $module->getId(),
+			'name' => lang($module->getTitle()),
+			'ot'   => $module->getObjectTypeId()
+		);
+	}
+
+	// =============================
+	// ROOT DEFAULT PERMISSIONS (by object type)
+	// =============================
+	$root_permissions = array();
+
+	$res = DB::executeAll("
+		SELECT object_type_id, can_delete, can_write
+		FROM ".TABLE_PREFIX."role_object_type_permissions
+		WHERE role_id = $permission_group_id
+	");
+
+	if ($res) {
+		foreach ($res as $row) {
+			$root_permissions[$row['object_type_id']] = array(
+				'd' => (int)$row['can_delete'],
+				'w' => (int)$row['can_write'],
+				'r' => 1
+			);
+		}
+	}
+
+	$max_permissions = array();
+
+	$res = DB::executeAll("
+		SELECT object_type_id, can_delete, can_write
+		FROM ".TABLE_PREFIX."max_role_object_type_permissions
+		WHERE role_id = $permission_group_id
+	");
+
+	if ($res) {
+		foreach ($res as $row) {
+			$max_permissions[$row['object_type_id']] = array(
+				'd' => (int)$row['can_delete'],
+				'w' => (int)$row['can_write'],
+				'r' => 1
+			);
+		}
+	}
+
+	// Clamp defaults against the fixed max ceilings so the UI never shows forbidden values.
+	$root_permissions = clamp_root_permissions_array($root_permissions, $max_permissions);
+	$system_permissions = clamp_role_system_permission_object($system_permissions, $permission_group_id);
+
+	$max_root_permissions = array();
+	$max_root_permissions[$permission_group_id] = $max_permissions;
+
+	// =============================
+	// DEFAULT and MAX ROLE PERMISSIONS (same structure as users UI expects)
+	// =============================
+	$default_role_permissions = array();
+	$default_role_permissions[$permission_group_id] = $root_permissions;
+
+	// =============================
+	// ASSIGN TO VIEW
+	// =============================
+	tpl_assign('role', $role);
+	tpl_assign('permission_group_id', $permission_group_id);
+	tpl_assign('system_permissions', $system_permissions);
+	tpl_assign('module_permissions_info', $module_permissions_info);
+	tpl_assign('all_modules_info', $all_modules_info);
+	tpl_assign('root_permissions', $root_permissions);
+	tpl_assign('role_type', $permission_group_id);
+	tpl_assign('default_role_permissions', $default_role_permissions);
+	tpl_assign('max_root_permissions', $max_root_permissions);
+
+	$this->setTemplate('edit_role_permissions');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 } // AccountController
 

@@ -25,7 +25,7 @@ return array(
     'user password reseted password' => 'Your New password is {0} (we recomend you to change it as soon as login)',
 
     'password expiration reminder' => 'Password expiration reminder',
-    'password expires days' => 'Your password will expire in {0} days',
+	'password expires days' => 'Your password will expire in {0} days. You can change it by going to Account &gt; Change Password.',
 
     'dont reply wraning' => 'THIS IS A SYSTEM NOTIFICATION. DO NOT REPLY TO THIS EMAIL!',
     'new message posted' => 'New note "{0}" has been posted',

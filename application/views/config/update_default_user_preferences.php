@@ -73,8 +73,14 @@
 				'none' => array(),
 				'change_in_an_object' => array(),
 		);
+		$consolidation_option_names = array('minutes_for_consolidation', 'exclude_consolidation_add_close');
+		$consolidation_options = array();
 		
 		foreach ($options as $opt) {
+			if (in_array($opt->getName(), $consolidation_option_names)) {
+				$consolidation_options[] = $opt;
+				continue;
+			}
 			if (in_array($opt->getName(), array('classification_changed', 'start_or_due_date_modified', 'description_changed', 'timeslot_logged', 'task_started_or_completed'))) {
 				$grouped_options['change_in_an_object'][] = $opt;
 			} else {
@@ -85,7 +91,7 @@
 		?>
 			<div id="configCategoryOptions">
 				<?php $counter = 0; ?>
-			
+
 			<?php foreach ($grouped_options as $group_code => $g_options) { 
 			
 				$style = '';
@@ -99,7 +105,14 @@
 					<?php $counter++; ?>
 					<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
 						<div class="configOptionInfo">
-							<div class="configOptionLabel" <?php echo $style ?>><label><?php echo $option->getDisplayName() ?>:</label></div>
+							<div class="configOptionLabel" <?php echo $style ?>><label><?php 
+								$label = $option->getDisplayName();
+								Hook::fire('override_contact_config_option_label', [
+									'category' => $category,
+									'option' => $option
+								], $label);
+								echo $label;
+							?>:</label></div>
 						<?php if(trim($option_description = $option->getDisplayDescription())) { ?>
 							<div class="configOptionDescription desc"><?php echo $option_description ?></div>
 						<?php } // if ?>
@@ -109,6 +122,24 @@
 					</div>
 				<?php } // foreach ?>
 			<?php } // foreach ?>
+
+			<?php if (count($consolidation_options) > 0) { ?>
+				<div class="bold" style="font-size:120%;margin-top:20px;"><?php echo lang('immediate consolidation settings') ?></div>
+				<?php foreach ($consolidation_options as $option) { ?>
+					<?php $option->useDefaultValue(); ?>
+					<?php $counter++; ?>
+					<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
+						<div class="configOptionInfo">
+							<div class="configOptionLabel"><label><?php echo $option->getDisplayName() ?>:</label></div>
+						<?php if(trim($option_description = $option->getDisplayDescription())) { ?>
+							<div class="configOptionDescription desc"><?php echo clean($option_description) ?></div>
+						<?php } ?>
+						</div>
+						<div class="configOptionControl"><?php echo $option->render('options[' . $option->getName() . ']') ?></div>
+						<div class="clear"></div>
+					</div>
+				<?php } ?>
+			<?php } ?>
 			</div>
 			<?php echo submit_button(lang('save')) ?>&nbsp;<button type="reset" class="submit"><?php echo lang('reset') ?></button>
 	<?php } else { ?>

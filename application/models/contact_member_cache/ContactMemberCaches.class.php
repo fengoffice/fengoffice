@@ -36,7 +36,8 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 	 * @return Ambigous <NULL, multitype:ContactMemberCache >
 	 */
 	static function getAllContactMemberCache($args = array()) {
-		$start = array_var($args,'start');
+		// cast to int: $start is interpolated raw into the LIMIT clause below
+		$start = (int) array_var($args,'start');
 		$limit = array_var($args,'limit');
 		$order = array_var($args,'order', 'id');
 		$order_dir = array_var($args,'order_dir', 'DESC');
@@ -50,6 +51,15 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		$SQL_CONDITION = "";
 		if (!is_null($contact_id)) {
 			$SQL_CONDITION .= " AND cmc.contact_id = $contact_id ";
+			$contact = Contacts::instance()->findById($contact_id);
+			if ($contact instanceof Contact) {
+				$contact_pg_ids = $contact->getPermissionGroupIds();
+				if (is_array($contact_pg_ids) && count($contact_pg_ids) > 0) {
+					$SQL_CONDITION .= ContactMemberPermissions::sqlMemberHasVisibleAccess('cmc.member_id', implode(',', $contact_pg_ids));
+				} else {
+					$SQL_CONDITION .= " AND FALSE ";
+				}
+			}
 		}
 		
 		if (!is_null($parent_member_id)) {
@@ -58,7 +68,7 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 		
 		if (!is_null($member_name)) {
 			$member_name = mysqli_real_escape_string(DB::connection()->getLink(), $member_name);
-			$SQL_CONDITION .= " AND m.name LIKE '%".$member_name."%' ";
+			$SQL_CONDITION .= " AND m.display_name LIKE '%".$member_name."%' ";
 		}
 		
 		if (!is_null($extra_condition)) {
@@ -317,12 +327,24 @@ class ContactMemberCaches extends BaseContactMemberCaches {
 	}
 	
 	static function getAllChildrenIdsFromCache($contact_id, $parent_id) {
+		$visible_access_sql = "";
+		$contact = Contacts::instance()->findById($contact_id);
+		if ($contact instanceof Contact) {
+			$contact_pg_ids = $contact->getPermissionGroupIds();
+			if (is_array($contact_pg_ids) && count($contact_pg_ids) > 0) {
+				$visible_access_sql = ContactMemberPermissions::sqlMemberHasVisibleAccess('cmc.member_id', implode(',', $contact_pg_ids));
+			} else {
+				$visible_access_sql = " AND FALSE ";
+			}
+		}
+		
 		// Prepare SQL
 		$sql = "SELECT cmc.member_id FROM ".TABLE_PREFIX."contact_member_cache cmc
 				INNER JOIN ".TABLE_PREFIX."members m ON m.id=cmc.member_id
 					WHERE cmc.contact_id = ".$contact_id."
 						AND cmc.parent_member_id = ".$parent_id."
 						AND m.archived_on = 0
+						$visible_access_sql
 					ORDER BY cmc.member_id DESC					
 				";
 		

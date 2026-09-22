@@ -34,6 +34,7 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('mailing', 'smtp_port', '25', 'IntegerConfigHandler', 0, 0, NULL),
 	('mailing', 'smtp_address', '', 'StringConfigHandler', 0, 0, ''),
     ('mailing', 'notification_from_name', '', 'StringConfigHandler', 0, 0, ''),
+    ('mailing', 'notification_information_fields', '{"task":"name,assigned_to_contact_id,due_date,status,priority,classifications,description","milestone":"name,due_date,status,classifications,description","event":"name,start,duration,classifications,description","message":"name,classifications,description","weblink":"name,classifications,description","file":"name,classifications,description","contact":"name,classifications","company":"name,classifications","timeslot":"name,classifications,description","mail":"name,classifications"}', 'NotificationFieldsConfigHandler', 0, 0, 'Per object-type fields shown in notification emails'),
 	('mailing', 'smtp_authenticate', '0', 'BoolConfigHandler', 0, 0, 'Use SMTP authentication'),
 	('mailing', 'smtp_username', '', 'StringConfigHandler', 0, 0, NULL),
 	('mailing', 'smtp_password', '', 'PasswordConfigHandler', 0, 0, NULL),
@@ -104,7 +105,12 @@ INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`
 	('clients_and_contacts', 'default_country_address', 'us', 'DefaultCountryAddressConfigHandler', 0, 0, ''),
 	('clients_and_contacts', 'default_type_phone', '1', 'DefaultTypePhoneConfigHandler', '0', '0', ''),
 	('clients_and_contacts', 'default_type_email', '1', 'DefaultTypeEmailConfigHandler', '0', '0', ''),
-	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', '');
+	('clients_and_contacts', 'mandatory_email_on_contacts', '0', 'BoolConfigHandler', '0', '0', ''),
+	('clients_and_contacts', 'show_type_sel_on_address_field', '0', 'BoolConfigHandler', '0', '100', ''),
+	('clients_and_contacts', 'show_type_sel_on_email_field', '0', 'BoolConfigHandler', '0', '101', ''),
+	('clients_and_contacts', 'show_type_sel_on_phone_field', '0', 'BoolConfigHandler', '0', '102', ''),
+	('clients_and_contacts', 'show_type_sel_on_website_field', '0', 'BoolConfigHandler', '0', '103', ''),
+	('task_workflow', 'match_subtask_percent_completed', '0', 'BoolConfigHandler', '0', '0', '');
 		
 INSERT INTO `<?php echo $table_prefix ?>file_types` (`extension`, `icon`, `is_searchable`, `is_image`, `friendly_name`) VALUES
 	('zip', 'archive.png', 0, 0, 'compressed archive file zip'),
@@ -211,9 +217,13 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('task panel', 'tasksShowQuickComment', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickMarkAsStarted', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowStartDates', '0', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksShowAssignedTo', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowAssignedBy', '0', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksTemplatesFirstInNewMenu', '0', 'BoolConfigHandler', 0, 0, 'If enabled, Templates appears first in the Tasks New menu'),
  ('task panel', 'tasksShowClassification', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowSubtasksStructure', '1', 'BoolConfigHandler', 1, 0, ''),
+ ('task panel', 'tasksShowClosedSubtasksWithStatusFilter', '1', 'BoolConfigHandler', 0, 0, ''),
+ ('task panel', 'tasksOrderSubtasksWithFilterCriteria', '1', 'BoolConfigHandler', 0, 0, ''),
  ('task panel', 'tasksShowEndDates', '1', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowQuickAddSubTasks', '0', 'BoolConfigHandler', 1, 0, ''),
  ('task panel', 'tasksShowDescriptionOnTimeForms', '1', 'BoolConfigHandler', 0, 0, ''),
@@ -259,6 +269,7 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('calendar panel', 'show_week_numbers', '', 'BoolConfigHandler', 0, 0, ''),
  ('calendar panel', 'show_birthdays_in_calendar', '1', 'BoolConfigHandler', 0, 0, ''),
  ('calendar panel', 'show_multiple_color_events', '1', 'BoolConfigHandler', 0, 0, ''),
+ ('calendar panel', 'show_subtasks_in_calendar', '0', 'BoolConfigHandler', 0, 0, ''),
  ('calendar panel', 'displayed events amount', '3', 'IntegerConfigHandler', 0, 0, ''),
  ('context help', 'show_tasks_context_help', '1', 'BoolConfigHandler', '1', '0', NULL),
  ('context help', 'show_account_context_help', '1', 'BoolConfigHandler', '1', '0', NULL),
@@ -364,7 +375,8 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('general', 'updateOnLinkedObjects', '1', 'BoolConfigHandler', '0', '0', 'Update objects when linking others'),
  ('dashboard', 'overviewAsList', '0', 'BoolConfigHandler', '1', '0', 'View Overview as list'),
  ('general', 'contacts_per_page', '50', 'IntegerConfigHandler', '0', '1200', NULL),
- ('listing preferences', 'breadcrumb_member_count', '5', 'IntegerConfigHandler', '0', '5', NULL),
+ ('system', 'members_per_page', '50', 'IntegerConfigHandler', '1', '0', 'Hidden preference: members/projects listed per page in MemberManager'),
+ ('listing preferences', 'breadcrumb_member_count', '3', 'IntegerConfigHandler', '0', '5', NULL),
  ('general', 'timeReportDate', '4', 'IntegerConfigHandler', 1, 0, ''),
  ('general', 'timeReportDateStart', '1900-01-01 00:00:00', 'DateTimeConfigHandler', 1, 0, ''),
  ('general', 'timeReportDateEnd', '1900-01-01 00:00:00', 'DateTimeConfigHandler', 1, 0, ''),
@@ -385,11 +397,10 @@ INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`
  ('system', 'widget_dimensions', '', 'AllDimensionsConfigHandler', 1, 0, ''),
  ('reporting', 'report_time_colums_display', 'friendly', 'TimeFormatConfigHandler', 0, 1, '');
 
- INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
-VALUES ("reporting", "pdf_page_layout", "Portrait", "ListConfigHandler", "0", "0", "",'{"option": [{"value": "Portrait","text": "config_pdf_layout_portrait"},{"value": "Landscape","text": "config_pdf_layout_landscape"}]}'),
-('reporting', 'pdf_page_size', 'A4', 'ListConfigHandler', '0', '0','','{"option": [{"value": "A0","text": "config_pdf_size_A0"},{"value": "A1","text": "config_pdf_size_A1"},{"value": "A2","text": "config_pdf_size_A2"},{"value": "A3","text": "config_pdf_size_A3"},{"value": "A4","text": "config_pdf_size_A4"},{"value": "A5","text": "config_pdf_size_A5"},{"value": "Legal","text": "config_pdf_size_legal"},{"value": "Letter","text": "config_pdf_size_letter"}]}');
 
-INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`,
+ `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
 VALUES ("time panel", "automatic_calculation_time", "1", "ListConfigHandler", "0", "0", " ",'{"option": [{"value": "1","text": "config_start_calc"},{"value": "2","text": "config_end_calc"},{"value": "3","text": "always_show_modal"}]}'),
 ('contact panel', 'properties_for_contact_component', '', 'ContactPropertySelectorConfigHandler', '0', '0','','contact');
 
@@ -418,7 +429,7 @@ INSERT INTO `<?php echo $table_prefix ?>object_types` (`name`,`handler_class`,`t
  ('billing', 'Billings', 'billings', '', '', 0),
  ('contact', 'Contacts', 'contacts', 'content_object', 'contact', 0),
  ('file revision', 'ProjectFileRevisions', 'project_file_revisions', 'content_object', 'file', 0),
- ('timeslot', 'Timeslots', 'timeslots', 'located', 'time', 0),
+ ('timeslot', 'Timeslots', 'timeslots', 'content_object', 'time', 0),
  ('template_task', 'TemplateTasks', 'template_tasks', 'content_object', 'task', 0),
  ('template_milestone', 'TemplateMilestones', 'template_milestones', 'content_object', 'milestone', 0);
 
@@ -447,7 +458,7 @@ INSERT INTO `<?php echo $table_prefix ?>email_types` (`name`,`is_system`) VALUES
  ('personal', 1),
  ('work', 1),
  ('other', 1);
- 
+
 INSERT INTO `<?php echo $table_prefix ?>webpage_types` (`name`,`is_system`) VALUES
  ('personal', 1),
  ('work', 1),
@@ -615,7 +626,7 @@ INSERT INTO `<?php echo $table_prefix ?>max_system_permissions` (`permission_gro
 ((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Guest'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	0,	1, 0, 0, 0, 0, 0, 1, 0),
 ((SELECT id FROM <?php echo $table_prefix ?>permission_groups WHERE name = 'Non-Exec Director'),	0,	0,	0,	0,	0,		0,	0,	0,	0,	0,	1,	1, 0, 0, 0, 0, 0, 1, 0);
 
-INSERT INTO `<?php echo $table_prefix ?>widgets` (`name`,`title`,`plugin_id`,`path`,`default_options`,`default_section`,`default_order`,`icon_cls`) VALUES 
+INSERT INTO `<?php echo $table_prefix ?>widgets` (`name`,`title`,`plugin_id`,`path`,`default_options`,`default_section`,`default_order`,`icon_cls`) VALUES
  ('overdue_upcoming','overdue and upcoming',0,'','','left',3,'ico-task'),
  ('people','people',0,'','','right',-1,'ico-contact'),
  ('messages','notes',0,'','','right',1000,'ico-message'),
@@ -624,7 +635,8 @@ INSERT INTO `<?php echo $table_prefix ?>widgets` (`name`,`title`,`plugin_id`,`pa
  ('completed_tasks_list','completed tasks list',0,'','','right',150,'ico-task'),
  ('activity_feed', 'activity_feed', 0, '', '', 'left', 10,'ico-properties'),
  ('active_context_info','active_context_info',0,'','','left',1,'ico-summary'),
- ('comments','comments',0,'','','left',15,'ico-comment');
+ ('comments','comments',0,'','','left',15,'ico-comment'),
+ ('tasks','tasks widget title',0,'','','top',6,'ico-task');
 
 INSERT INTO <?php echo $table_prefix ?>role_object_type_permissions (role_id, object_type_id, can_delete, can_write)
  SELECT p.id, o.id, 1, 1
@@ -691,6 +703,12 @@ INSERT INTO `<?php echo $table_prefix ?>contact_widget_options` (widget_name,con
 ('calendar',0,0,'filter_by_myself',1,'BooleanConfigHandler',0)
 ON DUPLICATE KEY UPDATE widget_name=widget_name;
 
+INSERT INTO `<?php echo $table_prefix ?>contact_widget_options` (`contact_id`,`widget_name`,`member_type_id`,`option`,`value`,`is_system`) VALUES
+(0,'tasks',0,'limit','10',1),
+(0,'activity_feed',0,'limit','10',1),
+(0,'activity_feed',0,'show_time_entries','1',1)
+ON DUPLICATE KEY UPDATE `is_system`=1;
+
 UPDATE `<?php echo $table_prefix ?>config_options` SET `value`=(
 	SELECT GROUP_CONCAT(id) FROM <?php echo $table_prefix ?>permission_groups WHERE `name` IN ('Super Administrator', 'Administrator', 'Manager', 'Executive')
 )
@@ -716,6 +734,29 @@ INSERT INTO <?php echo $table_prefix ?>dimension_associations_config (associatio
 	FROM <?php echo $table_prefix ?>dimension_member_associations WHERE associated_dimension_id NOT IN (SELECT id FROM <?php echo $table_prefix ?>dimensions WHERE code='feng_persons')
 ON DUPLICATE KEY UPDATE value=value;
 
+INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES
+ ('clients_and_contacts', 'contact_quickadd_inputs', 'first_name,surname,email,phone,address', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{"ot": "', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name = 'contact'), '"}')),
+ ('clients_and_contacts', 'contact_quickadd_view_info', 'name,email,phone', 'ObjectTypePropertiesConfigHandler', '0', '0', '', CONCAT('{"ot": "', (SELECT id FROM <?php echo $table_prefix ?>object_types WHERE name = 'contact'), '", "include_common_cols": "true", "include_role": "true"}'))
+ON DUPLICATE KEY UPDATE `name` = `name`;
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`,`options`)
+VALUES ("reporting", "pdf_page_layout", "Portrait", "ListConfigHandler", "0", "0", "",'{"option": [{"value": "Portrait","text": "config_pdf_layout_portrait"},{"value": "Landscape","text": "config_pdf_layout_landscape"}]}'),
+('reporting', 'pdf_page_size', 'A4', 'ListConfigHandler', '0', '0','','{"option": [{"value": "A0","text": "config_pdf_size_A0"},{"value": "A1","text": "config_pdf_size_A1"},{"value": "A2","text": "config_pdf_size_A2"},{"value": "A3","text": "config_pdf_size_A3"},{"value": "A4","text": "config_pdf_size_A4"},{"value": "A5","text": "config_pdf_size_A5"},{"value": "Legal","text": "config_pdf_size_legal"},{"value": "Letter","text": "config_pdf_size_letter"}]}');
+
+INSERT INTO `<?php echo $table_prefix ?>contact_config_options` (`category_name`, `name`, `default_value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+VALUES 
+('general', 'financials_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'financials_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'financials_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'earned_value_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'expenses_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_date_range', 'ytd', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_custom_from', '', 'StringConfigHandler', '1', '0', '', ''),
+('general', 'worked_hours_widget_custom_to', '', 'StringConfigHandler', '1', '0', '', '');
 
 INSERT INTO `<?php echo $table_prefix ?>countries` (`code`, `name`) VALUES
 ('AF',	'Afghanistan'),
@@ -1396,5 +1437,6 @@ INSERT INTO `<?php echo $table_prefix ?>timezones` (`id`, `country_code`, `name`
 (421,	'ZW',	'Africa/Harare',	0,	7200,	7200,	0);
 
 -- option Minimum number of characters for dimension search
-INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
-VALUES ('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '');
+INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`) VALUES 
+('general', 'minimum_characters_dimension_search', '3', 'IntegerConfigHandler', '0', '0', 'Minimum number of characters for dimension search', '')
+ON DUPLICATE KEY UPDATE `name`=`name`;

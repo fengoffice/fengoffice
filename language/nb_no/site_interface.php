@@ -62,6 +62,7 @@
 	'footer copy with homepage' => '© {0} av <a class="internalLink" href="{1}">{2}</a>. Alle rettigheter er reservert.',
 	'footer copy without homepage' => '© {0} av {1}. Alle rettigheter er reservert',
 	'footer powered' => 'Drevet av <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Drevet av',
 	'all documents' => 'Alle dokumenter',
 	'created by me' => 'Opprettet av meg',
 	'by project' => 'Av arbeidsområde',

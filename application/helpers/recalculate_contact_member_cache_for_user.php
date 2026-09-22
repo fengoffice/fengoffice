@@ -20,12 +20,21 @@
 	}
 	CompanyWebsite::instance()->setLoggedUser($user, false, false, false);
 	
-	// get the user
-	$contact_id = array_var($argv, 4);
-	$contact = Contacts::instance()->findById($contact_id);
-	
-	// recalculate the member cache
-	if ($contact instanceof Contact) {
-		ContactMemberCaches::updateContactMemberCacheAllMembers($contact);
+	// get the users - argv[4] is a CSV, so one process now covers every contact queued by the
+	// originating request instead of one process per contact.
+	$contact_ids = array_filter(array_map('trim', explode(',', array_var($argv, 4, ''))));
+
+	foreach ($contact_ids as $contact_id) {
+		$contact = Contacts::instance()->findById($contact_id);
+
+		// recalculate the member cache
+		if ($contact instanceof Contact) {
+			try {
+				ContactMemberCaches::updateContactMemberCacheAllMembers($contact);
+			} catch (Exception $e) {
+				// One failing contact must not cost the remaining ones in the batch.
+				Logger::log("Error recalculating contact member cache for contact $contact_id: ".$e->getMessage()."\n".$e->getTraceAsString());
+			}
+		}
 	}
 	

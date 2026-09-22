@@ -73,6 +73,7 @@
  "footer copy with homepage" => "&copy; {0} by <a class=\"internalLink\" href=\"{1}\">{2}</a>. All rights reserved.",
  "footer copy without homepage" => "&copy; {0} by {1}. All rights reserved",
  "footer powered" => "Powered by <a target=\"_blank\" href=\"{0}\">{1}</a>",
+ "powered by" => "Powered by",
  "all documents" => "所有的文件",
  "created by me" => "由我建立",
  "by project" => "依工作區",

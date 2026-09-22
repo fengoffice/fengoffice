@@ -267,12 +267,38 @@ class MailContents extends BaseMailContents {
 	 * @param Project $project
 	 * @return array
 	 */
-	static function getEmails($account_id = null, $state = null, $read_filter = "", $classif_filter = "", $context = null, $start = null, $limit = null, $order_by = 'received_date', $dir = 'ASC', $join_params = null, $archived = 'unarchived', $conversation_list = null, $only_count_result = false, $extra_cond="", $is_email_widget = false) { 
+	static function getEmails(
+		$account_id = null,
+		$state = null,
+		$read_filter = "",
+		$classif_filter = "",
+		$context = null,
+		$start = null,
+		$limit = null,
+		$order_by = 'received_date',
+		$dir = 'ASC',
+		$join_params = null,
+		$archived = 'unarchived',
+		$conversation_list = null,
+		$only_count_result = false,
+		$extra_cond = "",
+		$is_email_widget = false
+	) {
+		// Listing applies text_filter from $_GET inside ContentDataObjects; ensure mail_datas join for MATCH/LIKE on jt.*
+		$text_filter_get = trim((string) array_var($_GET, 'text_filter', ''));
+		if ($text_filter_get !== '' && empty($join_params)) {
+			$join_params = array(
+				'table' => TABLE_PREFIX . 'mail_datas',
+				'jt_field' => 'id',
+				'e_field' => 'object_id',
+				'join_type' => 'inner',
+			);
+		}
+
 		$mailTablePrefix = "e";
 		if (!$limit) $limit = user_config_option('mails_per_page') ? user_config_option('mails_per_page') : config_option('files_per_page');
+
 		$accountConditions = "";
-		// Check for accounts
-		$accountConditions = '';
 		if ($account_id) {
 			if (is_numeric($account_id)) {
 				$accountConditions = " AND $mailTablePrefix.account_id = " . DB::escape($account_id);
@@ -283,98 +309,103 @@ class MailContents extends BaseMailContents {
 				}
 			}
 		}
-		
-		// Check for unclassified emails
+
+		// Classified filter
 		$classified = '';
 		if ($classif_filter != '' && $classif_filter != 'all') {
 			$persons_dim = Dimensions::findByCode('feng_persons');
 			$persons_dim_id = $persons_dim instanceof Dimension ? $persons_dim->getId() : "0";
-			
+
 			$extra_ignore_classif_cond = '';
-			Hook::fire('mail_list_dim_ids_excluded_from_classified_filder', array('classif_filter'=>$classif_filter), $extra_ignore_classif_cond);
-			
+			Hook::fire('mail_list_dim_ids_excluded_from_classified_filder', ['classif_filter'=>$classif_filter], $extra_ignore_classif_cond);
+
 			$classified = "AND " . ($classif_filter == 'unclassified' ? "NOT " : "");
-			$classified .= "o.id IN (SELECT om.object_id FROM ".TABLE_PREFIX."object_members om where $persons_dim_id<>(select m.dimension_id from ".TABLE_PREFIX."members m where m.id=om.member_id) $extra_ignore_classif_cond)";
-
-		}
-		
-		// if not filtering by account or classification then check that emails are classified or from one of my accounts
-		if ($classified=='' && $accountConditions=='') {
-			$macs = MailAccountContacts::instance()->getByContact(logged_user());
-			$acc_ids = array(0);
-			foreach ($macs as $mac) $acc_ids[] = $mac->getAccountId();
-			
-			$accountConditions = " AND ($mailTablePrefix.account_id IN (".implode(',', $acc_ids).") OR EXISTS (
-				SELECT om1.object_id FROM ".TABLE_PREFIX."object_members om1
-				WHERE om1.object_id=$mailTablePrefix.object_id 
-				AND 1=(select d1.is_manageable from ".TABLE_PREFIX."dimensions d1 where d1.id=(select m1.dimension_id from ".TABLE_PREFIX."members m1 where m1.id=om1.member_id))
-			) ) ";
+			$classified .= "o.id IN (SELECT om.object_id FROM ".TABLE_PREFIX."object_members om WHERE $persons_dim_id<>(SELECT m.dimension_id FROM ".TABLE_PREFIX."members m WHERE m.id=om.member_id) $extra_ignore_classif_cond)";
 		}
 
-		// Check for draft, junk, etc. emails
-		if ($state == "draft") {
-			$stateConditions = " $mailTablePrefix.state = '2'";
-		} else if ($state == "sent") {
-			$stateConditions = " $mailTablePrefix.state IN ('1','3','5')";
-		} else if ($state == "received") {
-			$stateConditions = " $mailTablePrefix.state IN ('0','5')";
-		} else if ($state == "junk") {
-			$stateConditions = " $mailTablePrefix.state = '4'";
-		} else if ($state == "outbox") {
-			$stateConditions = " $mailTablePrefix.state >= 200";
-		} else {
-			$stateConditions = "";
+		// State filter
+		switch ($state) {
+			case "draft": $stateConditions = "$mailTablePrefix.state = '2'"; break;
+			case "sent": $stateConditions = "$mailTablePrefix.state IN ('1','3','5')"; break;
+			case "received": $stateConditions = "$mailTablePrefix.state IN ('0','5')"; break;
+			case "junk": $stateConditions = "$mailTablePrefix.state = '4'"; break;
+			case "outbox": $stateConditions = "$mailTablePrefix.state >= 200"; break;
+			default: $stateConditions = "";
 		}
-		
-		// Check read emails
+
+		// Read filter
+		$read = "";
 		if ($read_filter != "" && $read_filter != "all") {
-			if ($read_filter == "unread") {
-				$read = "AND NOT ";
-				$subread = "AND NOT mc.";
-			} else {
-				$read = "AND ";
-				$subread = "AND mc."; 
-			}
 			$read2 = "o.id IN (SELECT rel_object_id FROM " . TABLE_PREFIX . "read_objects t WHERE contact_id = " . logged_user()->getId() . " AND o.id = t.rel_object_id AND t.is_read = '1')";
-			$read .= $read2;
-			$subread .= $read2;
-		} else {
-			$read = "";
-			$subread = "";
+			if ($read_filter == "unread") {
+				$read = "AND NOT $read2";
+			} else {
+				$read = "AND $read2";
+			}
 		}
 
-		
-		
+		// Conversation filter: only for received (inbox). In other folders the thread "head"
+		// (conversation_last = 1) often lives elsewhere (e.g. inbox vs junk/sent), which would hide valid rows.
 		$conversation_cond = "";
-		$box_cond = "AND $stateConditions";
-		
-		if (isset($conversation_list) && $conversation_list > 0) {
+		if (isset($conversation_list) && $conversation_list > 0 && $state === 'received') {
 			$conversation_cond = "AND e.conversation_last = 1";
 		}
-		
-		$extra_conditions = "$accountConditions $classified $read $conversation_cond $box_cond $extra_cond";
-		
+
+		if (!empty($extra_cond)) {
+			if (stripos($extra_cond, 'match(') !== false) {
+				$extra_cond = preg_replace_callback(
+					"/AGAINST\s*\(\s*'([^']+)'\s*\)/i",
+					function ($matches) {
+						$term = $matches[1];
+						
+						// Limpiar caracteres peligrosos
+						$cleanTerm = preg_replace('/[+\-<>()~*"]+/', ' ', $term);
+						$cleanTerm = trim($cleanTerm);
+						
+						if (empty($cleanTerm)) {
+							// Lone * / whitespace is invalid in BOOLEAN MODE; use a no-match token instead of crashing SQL.
+							return "AGAINST ('+fo_empty_search_token_9a7f2c' IN BOOLEAN MODE)";
+						}
+						
+						$words = preg_split('/\s+/', $cleanTerm);
+						
+						if (count($words) > 1) {
+							// Múltiples palabras: frase exacta
+							return "AGAINST ('\"" . implode(' ', $words) . "\"' IN BOOLEAN MODE)";
+						} else {
+							// Una palabra: wildcard
+							return "AGAINST ('+" . $words[0] . "*' IN BOOLEAN MODE)";
+						}
+					},
+					$extra_cond
+				);
+			}
+			$extra_cond = "AND ($extra_cond)";
+		}
+
+
+		// Combine all conditions
+		$extra_conditions = "$accountConditions $classified $read $conversation_cond AND $stateConditions $extra_cond";
+
 		$original_extra_conditions = $extra_conditions;
 		Hook::fire("listing_extra_conditions", null, $extra_conditions);
-		
-		$join_with_searchable_objects = false;
-		if ($original_extra_conditions != $extra_conditions) {
-			$join_with_searchable_objects = true;
-		}
-		
+
+		$join_with_searchable_objects = $original_extra_conditions != $extra_conditions;
+
+
 		$dim_order = null;
 		if (str_starts_with($order_by, "dim_")) {
-			$dim_order = substr($order, 4);
+			$dim_order = substr($order_by, 4);
 			$order_by = 'dimensionOrder';
 		}
-		
+
 		$cp_order = null;
 		if (str_starts_with($order_by, "cp_")) {
-			$cp_order = substr($order, 3);
+			$cp_order = substr($order_by, 3);
 			$order_by = 'customProp';
 		}
-		
-		return self::instance()->listing(array(
+
+		return self::instance()->listing([
 			'limit' => $limit, 
 			'start' => $start, 
 			'order' => $order_by,
@@ -387,12 +418,12 @@ class MailContents extends BaseMailContents {
 			'only_count_results' => $only_count_result,
 			'join_params' => $join_params,
 			'archived' => $archived,
-			'is_email_widget' => $is_email_widget
-		));
-		
-		
-		
+			'is_email_widget' => $is_email_widget,
+			'use_fulltext' => true,
+			'is_fulltext_mail_call' => true,
+		]);
 	}
+
 	
 	static function getByMessageId($message_id) {
 		return self::instance()->findOne(array('conditions' => array('`message_id` = ?', $message_id)));

@@ -85,13 +85,23 @@ while (!feof($fp))
 		// Remove newlines from new buffer
 		$buffer_temp = preg_replace("/[\r\n]/", '', $buffer_temp);
 		
-		// Check to see if this is a multi-line part,
-		// (they begin with a space)
-		while (substr($buffer_temp, 0, 1) == " ")
+		// Check to see if this is a multi-line part.
+		// - RFC5545 folding: continuation lines begin with a space.
+		// - Quoted-printable soft line breaks: lines may be split with a trailing '=' even if the next line
+		//   does not start with a space (common in Gmail/Outlook iTIP bodies).
+		while (substr($buffer_temp, 0, 1) == " " || (substr($buffer, -1) === '=' && stripos($buffer, 'ENCODING=QUOTED-PRINTABLE') !== false))
 			{
-			// If yes, process it and keep reading until
-			// new buffer line doesn't begin with " ".
-			$buffer = $buffer.substr($buffer_temp, 1);
+			// If yes, process it and keep reading until condition ends.
+			if (substr($buffer_temp, 0, 1) == " ") {
+				// RFC folding: remove the leading space
+				$buffer = $buffer.substr($buffer_temp, 1);
+			} else {
+				// QP soft break: remove trailing '=' and join next line as-is
+				if (substr($buffer, -1) === '=') {
+					$buffer = substr($buffer, 0, -1);
+				}
+				$buffer = $buffer.$buffer_temp;
+			}
 			$buffer_temp = fgets($fp, 1024);	
 			$buffer_temp = preg_replace("/[\r\n]/", '', $buffer_temp);
 			}
@@ -195,6 +205,11 @@ while (!feof($fp))
 				$cal[0]['prodid'] = stripslashes($data);
 				break;
 				
+				// Method (REQUEST, REPLY, etc.)
+				case 'METHOD':
+				$cal[0]['method'] = stripslashes($data);
+				break;
+				
 				/********** END CALENDER INFO ***********/
 				
 				
@@ -236,6 +251,9 @@ while (!feof($fp))
 						{
 						$date[1] = 1971;
 						}
+					if (!$date[4]) $date[4] = 0;
+					if (!$date[5]) $date[5] = 0;
+					if (!$date[6]) $date[6] = 0;
 					
 					$cal[$event]['all_day'] = 0;
 					$cal[$event]['start_date'] = $date[1].$date[2].$date[3];
@@ -259,6 +277,9 @@ while (!feof($fp))
 					{
 					$date[1] = 1971;
 					}
+				if (!$date[4]) $date[4] = 0;
+				if (!$date[5]) $date[5] = 0;
+				if (!$date[6]) $date[6] = 0;
 					
 				$cal[$event]['end_date'] = $date[1].$date[2].$date[3];
 				$cal[$event]['end_time'] = $date[4].$date[5];
@@ -281,6 +302,9 @@ while (!feof($fp))
 					{
 					$date[1] = 1971;
 					}
+				if (!$date[4]) $date[4] = 0;
+				if (!$date[5]) $date[5] = 0;
+				if (!$date[6]) $date[6] = 0;
 					
 				$cal[$event]['stamp_date'] = $date[1].$date[2].$date[3];
 				$cal[$event]['stamp_time'] = $date[4].$date[5];
@@ -290,9 +314,8 @@ while (!feof($fp))
 				
 				// Summary of event
 				case 'SUMMARY':
-				$data = str_replace("\\n", '<br />', $data);
-				$data = str_replace("\\r", '<br />', $data);
-				$data = stripslashes($data);
+				$data = ical_decode_text_value($field, $data);
+				$data = str_replace("\n", '<br />', $data);
 				$data = htmlentities($data);
 				$cal[$event]['summary'] = $data;
 				break;
@@ -300,9 +323,8 @@ while (!feof($fp))
 				
 				// Event description
 				case 'DESCRIPTION':
-				$data = str_replace("\\n", '<br />', $data);
-				$data = str_replace("\\r", '<br />', $data);
-				$data = stripslashes($data);
+				$data = ical_decode_text_value($field, $data);
+				$data = str_replace("\n", '<br />', $data);
 				$data = htmlentities($data);
 				if ($flag_valarm == false) 
 					{
@@ -320,11 +342,18 @@ while (!feof($fp))
 				
 				// List of attendees
 				case 'ATTENDEE':
-				
+				if (!isset($attendee)) $attendee = 1;
+
 				$att = explode(';', $buffer);
 				foreach ($att as $value) 
 					{
 					$att_content = explode('=', $value);
+
+					// Email
+					if (isset($att_content[1]) && strpos($att_content[1], ':mailto:') !== false) {
+						$exploded = explode(':mailto:', $att_content[1]);
+						$cal[$event]['attendee'][$attendee]['mailto'] = end($exploded);
+					}
 					
 					switch ($att_content[0])
 						{
@@ -340,7 +369,7 @@ while (!feof($fp))
 						
 						// 
 						case 'PARTSTAT':
-						
+						$cal[$event]['attendee'][$attendee]['status'] = $att_content[1];
 						break;
 						
 						// 
@@ -360,7 +389,12 @@ while (!feof($fp))
 						
 						// Common Name
 						case 'CN':
-						$cal[$event]['attendee'][$attendee]['name'] = $att_content[1];
+							if (strpos($att_content[1], ':mailto:') !== false) {
+								$exploded = explode(':mailto:', $att_content[1]);
+								$cal[$event]['attendee'][$attendee]['name'] = ical_decode_text_value($field, $exploded[0]);
+							} else {
+								$cal[$event]['attendee'][$attendee]['name'] = ical_decode_text_value($field, $att_content[1]);
+							}
 						break;
 						
 						// 
@@ -394,12 +428,27 @@ while (!feof($fp))
 				
 				// Location of event
 				case 'LOCATION':
-				$cal[$event]['location'] = $data;
+				$cal[$event]['location'] = ical_decode_text_value($field, $data);
 				break;
 				
 				// Status of event
 				case 'STATUS':
 				$cal[$event]['status'] = $data;
+				break;
+				
+				// Organizer of event
+				case 'ORGANIZER':
+					if (str_starts_with($data, 'mailto:')) {
+						$email = substr($data, 7);
+						$org_exp = explode('=', $field);
+						$name = end($org_exp);
+					} else {
+						$email = $data;
+						$name = $data;
+					}
+				$email = ical_decode_text_value($field, $email);
+				$name = ical_decode_text_value($field, $name);
+				$cal[$event]['organizer'] = array('email' => $email, 'name' => $name);
 				break;
 				
 				
@@ -417,12 +466,26 @@ while (!feof($fp))
 				
 				// Alarm attachment
 				case 'ATTACH':
-				$cal[$event]['alarm']['attach'] = $data;
+				if ($flag_valarm) {
+					$cal[$event]['alarm']['attach'] = ical_decode_text_value($field, $data);
 
-				$temp = explode(';', $field);
-				$temp = explode('=', $temp[1]);
-				$cal[$event]['alarm']['attach_value'] = $temp[1];
-				unset($temp);
+					$temp = explode(';', $field);
+					if (isset($temp[1])) {
+						$temp2 = explode('=', $temp[1]);
+						if (isset($temp2[1])) {
+							$cal[$event]['alarm']['attach_value'] = $temp2[1];
+						}
+					}
+					unset($temp);
+				} else {
+					if (!isset($cal[$event]['attach']) || !is_array($cal[$event]['attach'])) {
+						$cal[$event]['attach'] = array();
+					}
+					$cal[$event]['attach'][] = array(
+						'value' => ical_decode_text_value($field, $data),
+						'field' => $field,
+					);
+				}
 				break;
 				
 				// Alarm description handler is joined 
@@ -562,4 +625,56 @@ function compare($a, $b)
 	{
 	return strnatcasecmp($a['start_unix'], $b['start_unix']);
 	}
+
+/**
+ * Decode an iCalendar TEXT value, handling ENCODING/CHARSET parameters and RFC5545 escaping.
+ *
+ * @param string $field The full field name (may include params like ;ENCODING=QUOTED-PRINTABLE;CHARSET=UTF-8)
+ * @param string $value The raw value from the line
+ * @return string Decoded/unescaped text
+ */
+function ical_decode_text_value($field, $value) {
+	$decoded = $value;
+
+	// Decode based on ENCODING parameter (common: QUOTED-PRINTABLE, BASE64)
+	$field_upper = strtoupper($field);
+	if (strpos($field_upper, 'ENCODING=QUOTED-PRINTABLE') !== false) {
+		if (function_exists('quoted_printable_decode')) {
+			$decoded = quoted_printable_decode($decoded);
+		}
+	} else if (strpos($field_upper, 'ENCODING=BASE64') !== false) {
+		$tmp = base64_decode($decoded, true);
+		if ($tmp !== false) {
+			$decoded = $tmp;
+		}
+	}
+
+	// Convert charset to UTF-8 if specified
+	if (preg_match('/CHARSET=([^;:]+)/i', $field, $m)) {
+		$charset = trim($m[1], "\"'");
+		if ($charset && function_exists('mb_convert_encoding')) {
+			$charset_u = strtoupper($charset);
+			if (!in_array($charset_u, array('UTF-8', 'UTF8'))) {
+				$converted = @mb_convert_encoding($decoded, 'UTF-8', $charset);
+				if ($converted !== false) {
+					$decoded = $converted;
+				}
+			}
+		}
+	}
+
+	// RFC5545 escaping for TEXT values
+	// - \\ => \
+	// - \n or \N => newline
+	// - \, => ,
+	// - \; => ;
+	$decoded = str_replace("\\\\", "\\", $decoded);
+	$decoded = str_replace(array('\\n', '\\N'), "\n", $decoded);
+	$decoded = str_replace(array('\\,', '\\;'), array(',', ';'), $decoded);
+
+	// Historical behavior expected by this codebase
+	$decoded = stripslashes($decoded);
+
+	return $decoded;
+}
 ?>

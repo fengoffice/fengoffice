@@ -21,6 +21,28 @@ class Reports extends BaseReports {
     static function getReport($id) {
         return self::instance()->findById($id);
     }
+
+    /**
+     * Check if a report with the given name already exists
+     *
+     * @param string $name
+     * @param int $exclude_id
+     * @return boolean
+     */
+    static function nameExists($name, $exclude_id = 0) {
+        $name = trim($name);
+        if ($name == '') return false;
+
+        $report_ot_id = self::instance()->getObjectTypeId();
+        $sql = "SELECT o.id FROM " . TABLE_PREFIX . "objects o " .
+            "INNER JOIN " . TABLE_PREFIX . "reports r ON r.object_id = o.id " .
+            "WHERE o.name = " . DB::escape($name) . " AND o.object_type_id = " . (int)$report_ot_id;
+        if ($exclude_id > 0) {
+            $sql .= " AND o.id <> " . (int)$exclude_id;
+        }
+        $rows = DB::executeAll($sql);
+        return is_array($rows) && count($rows) > 0;
+    }
     /**
      * Return all reports for an object type
      *
@@ -218,8 +240,13 @@ class Reports extends BaseReports {
             if ($report_result) {
                 return $report_result;
             }
-            eval('$managerInstance = ' . $ot->getHandlerClass() . "::instance();");
-            eval('$item_class = ' . $ot->getHandlerClass() . '::instance()->getItemClass(); $object = new $item_class();');
+
+			// update manager instance instantiation (removed eval) and removed not used $item_class instantiation
+			$handler_class = $ot->getHandlerClass();
+			$managerInstance = null;
+			if ($handler_class && class_exists($handler_class)) {
+				$managerInstance = new $handler_class();
+			}
 
             $order_by = '';
             if (is_object($params)) {
@@ -304,6 +331,13 @@ class Reports extends BaseReports {
             } else {
                 if (in_array($order_by_col, $managerInstance->getColumns())) {
                     $original_order_by_col = "e.$order_by_col";
+
+                    // Allow plugins to override order column for existing columns
+                    $new_order_params = null;
+                    Hook::fire('custom_report_override_order_column', array('report' => $report, 'ot' => $ot, 'order_by_col' => $order_by_col), $new_order_params);
+                    if (!is_null($new_order_params) && isset($new_order_params['order_by_col'])) {
+                        $original_order_by_col = $new_order_params['order_by_col'];
+                    }
                 } else if (in_array($order_by_col, Objects::instance()->getColumns())) {
                     $original_order_by_col = "o.$order_by_col";
                 } else if (is_numeric($order_by_col)) {
@@ -338,7 +372,18 @@ class Reports extends BaseReports {
                             }
 
                             $more_select_columns = ", $cp_concat_string as customProp";
+
+                            
                         }
+						// Allow plugins to override join/select for custom CP types (e.g. display_member_property)
+						$cp_order_group_by_override = null;
+						Hook::fire('custom_report_cp_order_group_by', array('cp' => $cp, 'ot' => $ot), $cp_order_group_by_override);
+						if ($cp_order_group_by_override) {
+							$join_str              = $cp_order_group_by_override['join_str'];
+							$more_select_columns   = $cp_order_group_by_override['more_select_columns'];
+							$order_by_col          = $cp_order_group_by_override['order_by_column'];
+							$original_order_by_col = $cp_order_group_by_override['order_by_column'];
+						}
                     }
                 } else {
 
@@ -397,20 +442,10 @@ class Reports extends BaseReports {
                 $results = array();
                 Hook::fire('additional_totals_column_as_array', array('object_type' => $ot), $select_columns);
                 if ($managerInstance) {
-                    if ($order_by_col == "order") {
-                        $order_by_col = "`$order_by_col`";
-                    };
-
-					// add table alias to the order by to prevent ambiguity
-					if (in_array($order_by_col, $managerInstance->getColumns())) {
-						$order_by_col = "e.$order_by_col";
-					} else if (in_array($order_by_col, Objects::instance()->getColumns())) {
-						$order_by_col = "o.$order_by_col";
-					}
 
                     $listing_parameters = array(
                         "select_columns" => $select_columns,
-                        "order" => "$order_by_col",
+                        "order" => $original_order_by_col,
                         "order_dir" => ($order_by_asc ? "ASC" : "DESC"),
                         "extra_conditions" => $allConditions,
                         "count_results" => true,
@@ -427,6 +462,7 @@ class Reports extends BaseReports {
                     if ($show_archived) {
                         $listing_parameters["archived"] = true;
                     }
+
                     $result = $managerInstance->listing($listing_parameters);
                 } else {
                     // TODO Performance Killer
@@ -470,9 +506,7 @@ class Reports extends BaseReports {
                         $is_calculated_column = $managerInstance && in_array($field, $managerInstance->getCalculatedColumns());
 
                         if ($managerInstance->columnExists($field) || Objects::instance()->columnExists($field) || $is_calculated_column) {
-                            $column_name = Localization::instance()->lang('field ' . $ot->getHandlerClass() . ' ' . $field);
-                            if (is_null($column_name))
-                                $column_name = lang('field Objects ' . $field);
+                            $column_name = $managerInstance->getColumnDisplayName($field);
 
                             $results['columns']['names'][$field] = $column_name;
                             $results['columns']['order'][] = $field;
@@ -487,14 +521,10 @@ class Reports extends BaseReports {
                                     $results['columns']['names'][$field] = lang('field Objects ' . $field);
                                     $results['columns']['order'][] = $field;
 								} else if (in_array($field, Contacts::instance()->getColumns())) {
-									$results['columns']['names'][$field] = lang('field Contacts ' . $field);
+									$results['columns']['names'][$field] = Contacts::instance()->getColumnDisplayName($field);
                                     $results['columns']['order'][] = $field;
                                 } else if (in_array($field, ProjectTasks::instance()->getColumns())) {
-									$col_name = Localization::instance()->lang('field ProjectTasks ' . $field);
-									if (is_null($col_name)) {
-										$col_name = lang('field Objects ' . $field);
-									}
-									$results['columns']['names'][$field] = $col_name;
+									$results['columns']['names'][$field] = ProjectTasks::instance()->getColumnDisplayName($field);
                                     $results['columns']['order'][] = $field;
 								}
                             } else if ($ot->getHandlerClass() == 'MailContents') {
@@ -529,6 +559,61 @@ class Reports extends BaseReports {
             }
             Hook::fire('get_more_columns_to_header_report', array('object_type' => $ot,'report'=>$report),$results);
             $report_rows = array();
+
+            // Pre-fetch dimension member display strings for all objects in bulk.
+            // One recursive CTE query per dim column returns the full path string for each member,
+            // avoiding both N×dims individual queries and PHP-level parent-hierarchy traversal.
+            $object_dim_members = array();
+            if (!empty($dimensions_cache) && !empty($objects)) {
+                $all_object_ids = array();
+                foreach ($objects as $obj) {
+                    $all_object_ids[] = $obj->getId();
+                }
+                $ids_sql = implode(',', $all_object_ids);
+                $mp = TABLE_PREFIX . "members";
+                $op = TABLE_PREFIX . "object_members";
+                foreach (array_keys($dimensions_cache) as $dim_id) {
+                    $prefetch_sql = "
+                        WITH RECURSIVE member_paths AS (
+                            SELECT id, display_name, parent_member_id,
+                                   CAST(display_name AS CHAR(2000)) AS full_path
+                            FROM $mp
+                            WHERE dimension_id = '$dim_id' AND parent_member_id = 0
+                            UNION ALL
+                            SELECT m.id, m.display_name, m.parent_member_id,
+                                   CONCAT(mp.full_path, '/', m.display_name)
+                            FROM $mp m
+                            INNER JOIN member_paths mp ON m.parent_member_id = mp.id
+                        )
+                        SELECT om.object_id AS report_obj_id, p.full_path
+                        FROM $op om
+                        INNER JOIN member_paths p ON om.member_id = p.id
+                        WHERE om.object_id IN ($ids_sql)
+                          AND om.is_optimization = 0
+                        ORDER BY om.object_id, p.full_path
+                    ";
+					$rows = DB::executeAll($prefetch_sql);
+                    if (is_array($rows)) {
+                        foreach ($rows as $row) {
+                            $obj_id = $row['report_obj_id'];
+                            $val    = $row['full_path'];
+                            if (!isset($object_dim_members[$obj_id][$dim_id])) {
+                                $object_dim_members[$obj_id][$dim_id] = $val;
+                            } else {
+                                $object_dim_members[$obj_id][$dim_id] .= " - " . $val;
+                            }
+                        }
+                    }
+                    unset($rows);
+                }
+            }
+
+			// Index $objects by id for O(1) lookup inside the field loop (Contacts reports).
+			$objects_by_id = array();
+			foreach ($objects as $obj) {
+				$objects_by_id[$obj->getId()] = $obj;
+			}
+
             foreach ($objects as &$object) {/* @var $object Object */
                 $obj_name = $object->getObjectName();
                 $icon_class = $object->getIconClass();
@@ -547,28 +632,17 @@ class Reports extends BaseReports {
                         $field = $column->getFieldName();
                         if (str_starts_with($field, 'dim_')) {
                             $dim_id = str_replace("dim_", "", $field);
-                            if (!array_var($dimensions_cache, $dim_id) instanceof Dimension) {
-                                $dimension = Dimensions::getDimensionById($dim_id);
-                                $dimensions_cache[$dim_id] = $dimension;
-                            } else {
-                                $dimension = array_var($dimensions_cache, $dim_id);
-                            }
+							$dimension = Dimensions::getDimensionById($dim_id);// this method already uses an internal cache
 
                             //$om_object_id = $object instanceof Timeslot ? $object->getRelObjectId() : $object->getId();
-                            $om_object_id = $object->getId();
-                            $members = ObjectMembers::getMembersByObjectAndDimension($om_object_id, $dim_id, " AND om.is_optimization=0");
-
-                            $value = "";
-                            foreach ($members as $member) {/* @var $member Member */
-                                $val = $member->getPath();
-                                $val .= ($val == "" ? "" : "/") . $member->getName();
-
-                                if ($value != "")
-                                    $val = " - $val";
-                                $value .= $val;
-                            }
-
-                            $row_values[$field] = $value;
+							if ($object instanceof Contact && $object->isUser()) {
+								$row_values[$field] = '';
+							} else {
+								$om_object_id = $object->getId();
+								$row_values[$field] = isset($object_dim_members[$om_object_id][$dim_id])
+									? $object_dim_members[$om_object_id][$dim_id]
+									: '';
+							}
                         } else {
                             if ($object instanceof Timeslot) {
                                 if ($field == 'id') {
@@ -601,7 +675,7 @@ class Reports extends BaseReports {
                                         }
 
                                         if (!isset($results['columns']['names'][$field])) {
-                                            $results['columns']['names'][$field] = lang('field ProjectTasks ' . $field);
+                                            $results['columns']['names'][$field] = ProjectTasks::instance()->getColumnDisplayName($field);
                                             $results['columns']['order'][] = $field;
                                             $results['columns']['types'][$field] = ProjectTasks::instance()->getColumnType($field);
                                         }
@@ -701,7 +775,7 @@ class Reports extends BaseReports {
                             $row_values[$field] = $value;
                             if ($ot->getHandlerClass() == 'Contacts') {
                                 if ($managerInstance instanceof Contacts) {
-                                    $contact = Contacts::instance()->findOne(array("conditions" => "object_id = " . $object->getId()));
+                                    $contact = array_var($objects_by_id, $object->getId());
                                     if ($field == "email_address") {
                                         $row_values[$field] = $contact->getEmailAddress();
                                     }
@@ -927,7 +1001,7 @@ class Reports extends BaseReports {
 
     function getExternalColumnValue($field, $id, $manager = null, $object = null) {
         $value = '';
-        if ($field == 'user_id' || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'assigned_by_id' || $field == 'completed_by_id' || $field == 'approved_by_id') {
+        if ($field == 'user_id' || $field == 'contact_id' || $field == 'created_by_id' || $field == 'updated_by_id' || $field == 'assigned_to_contact_id' || $field == 'assigned_by_id' || $field == 'completed_by_id' || $field == 'approved_by_id' || $field == 'organizer_id') {
             $contact = Contacts::instance()->findById($id);
             if ($contact instanceof Contact)
                 $value = $contact->getObjectName();

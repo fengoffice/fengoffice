@@ -127,7 +127,7 @@ abstract class BaseApplicationLogs extends DataManager {
 	 *
 	 * @access public
 	 * @param array $arguments
-	 * @return one or ApplicationLogs objects
+	 * @return array|null objects
 	 */
 	function findAll($arguments = null) {
 		if(isset($this) && instance_of($this, 'ApplicationLogs')) {

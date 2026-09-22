@@ -159,13 +159,40 @@ function get_files($dir, $extension = null, $base_name_only = false) {
 function get_file_extension($path, $leading_dot = false) {
 	$filename = basename($path);
 	$dot_offset = (boolean) $leading_dot ? 0 : 1;
-	 
+
 	if( ($pos = strrpos($filename, '.')) !== false ) {
 		return substr($filename, $pos + $dot_offset, strlen($filename));
 	} // if
 
 	return '';
 } // get_file_extension
+
+function get_lucide_icon_for_extension($ext) {
+	static $map = [
+		'zip' => 'file-archive', 'rar' => 'file-archive', 'bz'  => 'file-archive',
+		'bz2' => 'file-archive', 'gz'  => 'file-archive', 'ace' => 'file-archive',
+		'7z'  => 'file-archive', 'tar' => 'file-archive',
+		'mp3' => 'file-music',   'wma' => 'file-music',   'ogg' => 'file-music',
+		'gif' => 'file-image',   'jpg' => 'file-image',   'jpeg' => 'file-image',
+		'png' => 'file-image',   'psd' => 'file-image',   'svg'  => 'file-image',
+		'webp' => 'file-image',  'bmp' => 'file-image',   'tif'  => 'file-image',
+		'tiff' => 'file-image',
+		'mov' => 'file-video-camera', 'qt'  => 'file-video-camera', 'avi'  => 'file-video-camera',
+		'mpeg' => 'file-video-camera', 'mpg' => 'file-video-camera', 'vob'  => 'file-video-camera',
+		'rm'  => 'file-video-camera', 'swf' => 'file-video-camera', 'mp4'  => 'file-video-camera',
+		'mkv' => 'file-video-camera', 'wmv' => 'file-video-camera',
+		'doc'  => 'file-text',   'docx' => 'file-text',   'odt'  => 'file-text',
+		'fodt' => 'file-text',   'txt'  => 'file-text',   'rtf'  => 'file-text',
+		'pdf'  => 'file-text',
+		'xls'  => 'file-spreadsheet', 'xlsx' => 'file-spreadsheet',
+		'xlsb' => 'file-spreadsheet', 'csv'  => 'file-spreadsheet',
+		'ppt'  => 'file-chart-column', 'pptx' => 'file-chart-column',
+		'slim' => 'file-chart-column',
+		'html' => 'file-code',   'htm'  => 'file-code',   'webfile' => 'file-code',
+		'ics'  => 'file-clock',
+	];
+	return $map[strtolower($ext)] ?? 'file';
+} // get_lucide_icon_for_extension
 
 /**
  * Return size of a specific dir in bytes

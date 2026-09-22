@@ -13,7 +13,7 @@
 	'file storage file system' => 'Archivo de sistema',
 	'file storage mysql' => 'Base de datos (MySQL)',
 	'config category name general' => 'General',
-	'config category desc general' => 'Configuraciones generales Feng Office',
+	'config category desc general' => 'Configuraciones generales '. product_name() .'.',
 	'config category name mailing' => 'Envío de notificaciones',
 	'config category desc mailing' => 'Use estas configuraciones para cambiar la forma en que Feng Office maneja el envío de mails. Pueden usarse configuraciones provistas en su php.ini o establecer cualquier otro servidor SMTP.',
 	'config category name passwords' => 'Contraseñas',
@@ -57,6 +57,10 @@
 	'config option name show images in document notifications' => 'Adjuntar imágenes al contenido de notificaciones',
 	'config option name notifications_add_members_in_subject' => 'Agregar la clasificación del objeto en el asunto del correo para las dimensiones',
 	'config option name notification_from_name' => 'Nombre del emisor',
+	'config option desc notification_from_name' => 'Nombre que aparece en el From de todos los emails de notificación. Déjelo vacío para usar el valor por defecto (“Gestor de notificaciones”). Las notificaciones siempre usan este nombre con la dirección SMTP / noreply — nunca la persona que editó el objeto.',
+	'notification from name default' => 'Gestor de notificaciones',
+	'config option name notification_information_fields' => 'Campos de información en notificaciones',
+	'config option desc notification_information_fields' => 'Elija qué propiedades se muestran en el bloque de información de los emails de notificación para cada tipo de objeto.',
 	'config option name show company logo in notifications' => 'Adjuntar el logo de la organización al contenido de notificaciones',
 	'config option desc show company logo in notifications' => 'Se incluirá el logo de la organización en el contenido de la notificación.',
 	'config option name disable_notifications_for_object_type' => 'Desactivar notificaciones por tipo de objecto',
@@ -173,6 +177,8 @@
 	'user config option name tasksShowTime' => 'Mostrar tiempo',
 	'user config option name tasksShowDates' => 'Mostrar fechas',
 	'user config option name tasksShowTags' => 'Mostrar etiquetas',
+	'user config option name tasksTemplatesFirstInNewMenu' => 'Mostrar “Templates” primero en el menú Nuevo',
+	'user config option desc tasksTemplatesFirstInNewMenu' => 'Si está habilitado, la opción “Templates” aparecerá primero en el menú “Nuevo” del panel de tareas.',
 	'user config option name tasksGroupBy' => 'Agrupar por',
 	'user config option name tasksOrderBy' => 'Ordenar por',
 	'user config option name task panel status' => 'Estado',
@@ -216,6 +222,8 @@
 	'user config option name attach_to_notification' => 'Adjuntar documento a las notificaciones',
 	'user config option name show_multiple_color_events' => 'Mostrar eventos en todos sus colores',
 	'user config option desc show_multiple_color_events' => 'Si un evento está clasificado en más de un espacio, cliente, etc. entonces se van a mostrar los colores de cada uno de ellos en la pestaña calendario.',
+	'user config option name show_birthdays_in_calendar' => 'Mostrar cumpleaños en el calendario',
+	'user config option desc show_birthdays_in_calendar' => 'Si está habilitado, los cumpleaños de los contactos se mostrarán en el calendario.',
 	'config option name let_users_create_objects_in_root' => 'Permitir crear objetos sin clasificarlos',
 	'config option name days_on_trash' => 'Días en la papelera',
 	'config option desc days_on_trash' => 'Cuántos días se mantiene un objeto en la papelera antes de ser borrado automáticamente. Si es cero, los objetos no ser borrar automaticamente.',
@@ -343,7 +351,7 @@
 	'parameters' => 'Parámetros',
 	'success instatiate template' => 'Plantilla \'{0}\' instanciada exitosamente',
 	'config option name smtp_address' => 'Dirección SMTP',
-	'config option desc smtp_address' => 'Opcional. Algunos servidores requieren que los correos enviados tengan una dirección de correo del servidor. Dejar en blanco para usar la dirección de correo del usuario que envía el correo.',
+	'config option desc smtp_address' => 'Dirección compartida usada como From en los emails de notificación (normalmente noreply). Así las notificaciones no aparecen como enviadas por usuarios individuales.',
 	'mail accounts' => 'Cuentas de correo',
 	'user config option name tasksShowDescriptionOnTimeForms' => 'Mostrar campo de descripción al agregar un tiempo de trabajo en una tarea desde el listado de tareas',
 	'incoming server' => 'Servidor entrante',
@@ -371,6 +379,8 @@
 	'search engine mysql match' => 'Rápida',
 	'user config option name hide_quoted_text_in_emails' => 'Ocultar texto citado al ver correos',
 	'user config option desc hide_quoted_text_in_emails' => 'Si se habilita, los correos se mostraran sin texto citado. Habrá una opción para podrá mostrar el texto citado en la vista del correo.',
+	'user config option name show_account_on_email_header' => 'Mostrar cuenta en el encabezado al ver un correo',
+	'user config option desc show_account_on_email_header' => 'Si se habilita, se mostrará el nombre de la cuenta de correo en el encabezado al abrir un email.',
 	'user config option name task_display_limit' => 'Número máximo de tareas a desplegar',
 	'user config option desc task_display_limit' => 'Por motivos de agilidad, este número no debe ser muy grande. Use0para no limitar.',
 	'user config option name show activity widget' => 'Mostrar widget de actividad',
@@ -553,6 +563,7 @@
 	'datetime' => 'Fecha y hora',
 	'memo' => 'Texto largo',
 	'image' => 'Imagen',
+	'object_links' => 'Enlace a objeto',
 	'add new custom property' => 'Agregar nueva propiedad personalizada para {0}',
 	'custom property name empty' => 'El nombre de la propiedad no puede ser vacío.',
 	'custom properties reorder help' => 'Las propiedades definidas pueden ser reordenadas arrastrandolas (desde el número de propiedad) hacia el lugar deseado.',
@@ -672,7 +683,52 @@
 	'all' => 'Todos',
 	'contact' => 'Contacto',
 	'user' => 'Usuario',
+
+	'user config option name task_list_group_by_options' => 'Opciones de agrupación de la lista de tareas',
+	'user config option desc task_list_group_by_options' => 'Las opciones seleccionadas aquí se utilizarán en el selector de agrupación de la lista de tareas.',
+	'user config option name task_list_order_by_options' => 'Opciones de orden de la lista de tareas',
+	'user config option desc task_list_order_by_options' => 'Las opciones seleccionadas aquí se utilizarán en el selector de orden de la lista de tareas.',
+	'user config option name task_list_filter_by_options' => 'Opciones de filtro de la lista de tareas',
+	'user config option desc task_list_filter_by_options' => 'Las opciones seleccionadas aqui se utilizarán en el selector de filtro de la lista de tareas.',
+
 	'config option name default_type_address' => 'Tipo de dirección predeterminado',
 	'config option desc default_type_address' => 'Selecciona la opción predeterminada dentro del tipo de dirección',
+	'config option name contact_quickadd_inputs' => 'Propiedades del formulario de alta rápida de contactos',
+	'config option desc contact_quickadd_inputs' => 'Seleccione las propiedades que se mostrarán en el formulario de alta rápida de contactos.',
+
+	'config option name show_inactive_users_on_filters' => 'Mostrar usuarios inactivos en filtros',
+	'config option desc show_inactive_users_on_filters' => 'Si se habilita, los usuarios inactivos serán mostrados en los filtros de usuarios.',
+
+	'config option name contact_quickadd_view_info' => 'Información a mostrar al seleccionar contacto',
+	'config option desc contact_quickadd_view_info' => 'Seleccione la información del contacto que se mostrará después de seleccionar un contacto en otro formulario (por ejemplo: formularios de Proyectos y Clientes)',
+
+	'config option name show_type_sel_on_address_field' => 'Mostrar selector de tipo en campo de direcci n',
+	'config option desc show_type_sel_on_address_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de direcci n.',
+
+	'config option name show_type_sel_on_email_field' => 'Mostrar selector de tipo en campo de correo electronico',
+	'config option desc show_type_sel_on_email_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de correo electronico.',
+
+	'config option name show_type_sel_on_phone_field' => 'Mostrar selector de tipo en campo de tel fono',
+	'config option desc show_type_sel_on_phone_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de tel fono.',
+
+	'config option name show_type_sel_on_website_field' => 'Mostrar selector de tipo en campo de sitio web',
+	'config option desc show_type_sel_on_website_field' => 'Si se selecciona, el selector de tipo se mostrar  en el campo de sitio web.',
+
+	'config option name move_email_on_server' => 'Mover correo electrónico en el servidor',
+	'config option desc move_email_on_server' => 'Si se activa, cuando un correo se envíe a la papelera o se restaure desde ella dentro del sistema, se realizarán las acciones correspondientes también en el servidor de correo.',
+
+	'config_ask' => 'Preguntar',
+	'config_always' => 'Reclasificar siempre',
+	'config_never' => 'Nunca reclasificar',
+
+	'config option name use_task_percent_completed' => 'Permitir que los usuarios establezcan manualmente el porcentaje completado de una tarea',
+	'config option desc use_task_percent_completed' => 'Si se establece en No, el porcentaje completado se calculará como Tiempo trabajado total / Tiempo estimado',
+
+
+	'can_reopen_task' => 'Puede reabrir una tarea',
+	'can_reopen_task description' => 'Si este permiso está marcado el usuario será capaz de reabrir una tarea',
+
+	'weekly_view_display_range' => 'En la o las semanas para el rango de fechas',
+	'weekly_view_display_due_date' => 'Solamente en la semana del vencimiento',
 
 ); ?>

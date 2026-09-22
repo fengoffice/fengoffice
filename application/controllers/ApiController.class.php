@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Console\View\Components\Task;
-
 /**
  * Middle class to API - FengOffice integration
  */
@@ -219,14 +217,12 @@ class ApiController extends ApplicationController {
         $memberController = new MemberController();
         $object = $memberController->listing($params);
         
-        // updates the name of the members using the configuration if exists.
-        build_member_list_text_to_show_in_trees($object["members"]);
         
         foreach ($object["members"] as $m) {
         	$member = Members::getMemberById($m['id']);
         	$memberInfo = array(
         			'id' => $m['id'],
-        			'name' => $m['name'],
+        			'name' => $m['display_name'],
         			'type' => $service,
         			'path' => $member->getPath()
         	//@TODO If name should have custom property concatenated 
@@ -275,8 +271,11 @@ class ApiController extends ApplicationController {
     }
 
     private function list_contacts_assigned_to($request) {
-        $members = (!empty($request['args']['members']) && count(empty($request['args']['members']))) ? $request['args']['members'] : null;
-        $contacts = allowed_users_to_assign_all_mobile($members);
+        $members = (!empty($request['args']['members']) && count($request['args']['members'])) ? $request['args']['members'] : null;
+		$obj_type_name = !empty($request['args']['type']) ? $request['args']['type'] : "task";
+		$obj_type = ObjectTypes::findByName($obj_type_name);
+		$obj_type_id = $obj_type ? $obj_type->getId() : null;
+        $contacts = allowed_users_to_assign_all_mobile($members, $obj_type_id);
         return $this->response('json', $contacts);
     }
 
@@ -360,7 +359,11 @@ class ApiController extends ApplicationController {
         Hook::fire('override_list_custom_property_values', array('cp' => $cp), $cp_values);
 
         $cp_values_arr=[];
-        $cp_values_arr=explode(",",$cp_values);
+		if (is_string($cp_values)) {
+			$cp_values_arr=explode(",",$cp_values);
+		} else {
+			$cp_values_arr=$cp_values;
+		}
         $tmp_array=[];
         $tmp_objects=[];
         $i=0;
@@ -427,6 +430,210 @@ class ApiController extends ApplicationController {
         return $this->response('json', $tmp_objects);
     }
 
+	/**
+	 * Returns the allowed/available dimensions for a given object type form.
+	 *
+	 * This is intended for mobile clients that need to render dimension selectors
+	 * for "time" (timeslot) and "expenses" (payment receipt) forms using the same
+	 * rules as the web UI (Dimensions::getAllowedDimensions + user-allowed dims).
+	 *
+	 * Expected input (any of):
+	 * - args.object_type: 'task' | 'timeslot' | 'task_time' | 'payment_receipt' | 'expense_time' | 'expense'
+	 * - args.content_object_type_id: numeric object type id
+	 */
+	private function list_available_dimensions($request) {
+		try {
+			Env::useHelper('dimension');
+
+			$args = array_var($request, 'args', array());
+			$obj_type = array_var($args, 'object_type', '');
+			$content_object_type_id = (int) array_var($args, 'content_object_type_id', 0);
+
+			if ($content_object_type_id <= 0) {
+				// Backwards/semantic aliases for mobile clients
+				$normalized = strtolower(trim((string) $obj_type));
+				if ($normalized === 'task_time') {
+					$normalized = 'timeslot';
+				} else if ($normalized === 'expense_time' || $normalized === 'expense') {
+					$normalized = 'payment_receipt';
+				}
+
+				if ($normalized !== '') {
+					$ot = ObjectTypes::findByName($normalized);
+					if ($ot instanceof ObjectType) {
+						$content_object_type_id = (int) $ot->getId();
+					}
+				}
+			}
+
+			if ($content_object_type_id <= 0) {
+				return $this->response('json', array());
+			}
+
+			$user_dimensions = get_user_dimensions_ids(); // dimension_id => true
+			$enabled_dimension_ids = config_option('enabled_dimensions');
+
+			$result = array();
+			$allowed = Dimensions::getAllowedDimensions($content_object_type_id);
+			// Match desktop behavior: allow plugins/config to filter allowed dimensions
+			// the same way `render_member_selectors()` does.
+			if (is_array($allowed)) {
+				Hook::fire("allowed_dimensions_in_member_selector", array(
+					'ot' => $content_object_type_id,
+					'options' => array(),
+				), $allowed);
+			}
+			if (is_array($allowed)) {
+				foreach ($allowed as $dim_row) {
+					$dim_id = (int) array_var($dim_row, 'dimension_id', 0);
+					$dim_code = (string) array_var($dim_row, 'dimension_code', '');
+					if ($dim_id <= 0 || $dim_code === '' || $dim_code === 'feng_persons') {
+						continue;
+					}
+					if (!isset($user_dimensions[$dim_id])) {
+						continue;
+					}
+					if (is_array($enabled_dimension_ids) && !in_array($dim_id, $enabled_dimension_ids)) {
+						continue;
+					}
+
+					$dim = Dimensions::instance()->findById($dim_id);
+					if (!($dim instanceof Dimension)) {
+						continue;
+					}
+
+					$custom_name = DimensionOptions::getOptionValue($dim_id, 'custom_dimension_name');
+					$dimension_name = ($custom_name && trim($custom_name) !== "") ? $custom_name : lang($dim_code);
+					Hook::fire('edit_dimension_name', array('dimension' => $dim_id), $dimension_name);
+
+					$default_member = DimensionOptions::instance()->getOptionValue($dim_id, 'default_value');
+					$result[] = array(
+						'id' => $dim_id,
+						'code' => $dim_code,
+						'name' => $dimension_name,
+						'is_manageable' => (bool) $dim->getIsManageable(),
+						'defines_permissions' => (bool) $dim->getDefinesPermissions(),
+						'is_required' => (bool) array_var($dim_row, 'is_required', false),
+						'is_multiple' => (bool) array_var($dim_row, 'is_multiple', false),
+						'default_member_id' => is_numeric($default_member) ? (int) $default_member : 0,
+					);
+				}
+			}
+
+			// Align with desktop forms that use property groups: only expose
+			// classification dimensions configured there (e.g. hide Newspaper
+			// on expenses when it is not in the payment_receipt property groups).
+			$result = filter_dimensions_by_property_groups_for_forms($content_object_type_id, $result);
+
+			return $this->response('json', $result);
+		} catch (Exception $e) {
+			Logger::log_r("ERROR - ApiController::list_available_dimensions: ".$e->getMessage());
+			return $this->response('json', array());
+		}
+	}
+
+	/**
+	 * Returns enabled/visible main modules (tab panels) for the logged user.
+	 *
+	 * Mobile can use this as the source of truth for which top-level modules to show
+	 * (e.g. if "Notes" is disabled in desktop, it should not appear in mobile).
+	 *
+	 * Mirrors the logic in `PanelController::loadPanels()`:
+	 * - tab panel must be enabled
+	 * - plugin must be installed+activated (if panel belongs to a plugin)
+	 * - user must have tab_panel_permissions via its permission groups
+	 */
+	private function list_available_modules($request) {
+		try {
+			$contact_pg_ids = ContactPermissionGroups::getPermissionGroupIdsByContactCSV(logged_user()->getId(), false);
+			if (!$contact_pg_ids) {
+				return $this->response('json', array());
+			}
+
+			$sql = "
+				SELECT * FROM " . TABLE_PREFIX . "tab_panels
+				WHERE
+					enabled = 1 AND
+					(
+						plugin_id IS NULL OR plugin_id=0 OR
+						plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_installed = 1 AND is_activated = 1)
+					)
+					AND id IN (SELECT tab_panel_id FROM ".TABLE_PREFIX."tab_panel_permissions WHERE permission_group_id IN ($contact_pg_ids))
+				ORDER BY ordering ASC
+			";
+
+			$res = DB::execute($sql);
+			$modules = array();
+
+			$can_see_billing_info = true;
+			Hook::fire('get_can_see_billing_information', array('user' => logged_user()), $can_see_billing_info);
+
+			while ($row = $res->fetchRow()) {
+				if (!$can_see_billing_info && $row['id'] == 'income-panel') {
+					continue;
+				}
+
+				$url_params = trim($row['url_params']) == '' ? array() : json_decode($row['url_params'], true);
+
+				if ($row['default_controller'] == 'member' && array_var($url_params, 'dim_id') != '' && array_var($url_params, 'type_id') != '') {
+					$title = TabPanels::getMemberTabTitle($url_params['dim_id'], $url_params['type_id']);
+				} else {
+					$title = lang($row['title']);
+				}
+
+				$modules[] = array(
+					'id' => $row['id'],
+					'title' => $title,
+					'iconCls' => $row['icon_cls'],
+					'type' => $row['type'],
+					'default_controller' => $row['default_controller'],
+					'default_action' => $row['default_action'],
+					'url_params' => $url_params,
+				);
+			}
+
+			return $this->response('json', $modules);
+		} catch (Exception $e) {
+			Logger::log_r("ERROR - ApiController::list_available_modules: ".$e->getMessage());
+			return $this->response('json', array());
+		}
+	}
+
+	/**
+	 * Billing / cost visibility for the logged user (system permissions).
+	 *
+	 * Same semantics as the web UI: hooks default to true when no plugin overrides them;
+	 * with billing_and_cost_permissions active, values come from the user's permission groups.
+	 * Mobile clients can call this once (e.g. after login) to hide billing- or cost-related form sections.
+	 *
+	 * Request: m=get_billing_cost_permissions
+	 */
+	private function get_billing_cost_permissions($request) {
+		try {
+			$can_see_billing_information = true;
+			Hook::fire('get_can_see_billing_information', array('user' => logged_user()), $can_see_billing_information);
+			$can_see_cost_information = true;
+			Hook::fire('get_can_see_cost_information', array('user' => logged_user()), $can_see_cost_information);
+
+			return $this->response('json', array(
+				// Long names (semantic)
+				'can_see_billing_information' => (bool) $can_see_billing_information,
+				'can_see_cost_information' => (bool) $can_see_cost_information,
+				// Short aliases (backwards-compat for existing mobile/web JS expectations)
+				'can_see_billing_info' => (bool) $can_see_billing_information,
+				'can_see_cost_info' => (bool) $can_see_cost_information,
+			));
+		} catch (Exception $e) {
+			Logger::log_r("ERROR - ApiController::get_billing_cost_permissions: " . $e->getMessage());
+			return $this->response('json', array(
+				'can_see_billing_information' => false,
+				'can_see_cost_information' => false,
+				'can_see_billing_info' => false,
+				'can_see_cost_info' => false,
+			));
+		}
+	}
+
     private function list_labor_categories($request) {
 
         $labor_categories_dim = Dimensions::findByCode('hour_types');
@@ -467,11 +674,17 @@ class ApiController extends ApplicationController {
         $use_associated_members = count($members) == 1 && $members[0]->getObjectTypeId() == $project_ot_id;
         if($use_associated_members){
             $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($members[0]->getId(), true);
-            foreach($project_members as $pm_id){
-                $property_member = Members::instance()->findById($pm_id);
-                if($property_member instanceof Member){
-                    $members[] = $property_member;
-                }
+          
+            foreach($project_members as $pm_ids){
+				if (!is_array($pm_ids)) {
+					$pm_ids = array($pm_ids);
+				}
+				foreach ($pm_ids as $pm_id) {
+					$property_member = Members::instance()->findById($pm_id);
+					if($property_member instanceof Member){
+						$members[] = $property_member;
+					}
+				}
             }
         }
 
@@ -526,9 +739,10 @@ class ApiController extends ApplicationController {
             
             $order = (!empty($request['args']['order'])) ? $request['args']['order'] : null;
             $order_dir = (!empty($request['args']['order_dir'])) ? $request['args']['order_dir'] : null;
-            $members = (!empty($request['args']['members']) && count(empty($request['args']['members']))) ? $request['args']['members'] : null;
+            $members = (!empty($request['args']['members']) && count($request['args']['members'])) ? $request['args']['members'] : null;
             $start = (!empty($request['args']['start'])) ? $request['args']['start'] : 0;
             $limit = (!empty($request['args']['limit'])) ? $request['args']['limit'] : null;
+            $group_by_dimension_id = (!empty($request['args']['group_by_dimension_id'])) ? $request['args']['group_by_dimension_id'] : null;
             
             // escape order parameters
             if ($order) {                
@@ -556,6 +770,9 @@ class ApiController extends ApplicationController {
             if (!is_numeric($limit)) {
             	$limit = null;
             }
+            if (!is_numeric($group_by_dimension_id)) {
+            	$group_by_dimension_id = null;
+            }
 
             $query_options = array(
                 //'ignore_context' => true,
@@ -566,6 +783,11 @@ class ApiController extends ApplicationController {
                 'start' => $start,
                 'limit' => $limit
             );
+
+            if ($group_by_dimension_id) {
+            	$query_options['dim_order'] = (int) $group_by_dimension_id;
+            	$query_options['order_dir'] = 'ASC';
+            }
 
             // COMMON FILTERS: For all content Types
             // only numeric for created by id
@@ -668,9 +890,15 @@ class ApiController extends ApplicationController {
 
             foreach ($result->objects as $object) {
                 if ($service == "ProjectTasks") {
-                    array_push($temp_objects, $object->getArrayInfo(1,true));
+					$object_data = $object->getArrayInfo(1,true);
+					$object_data['members_data'] = build_api_members_data($object);
+                    array_push($temp_objects, $object_data);
                 } elseif($service == "Expenses") {
                     $object_data = $object->getArrayInfo();
+
+                    Env::useHelper('functions', 'expenses2');
+                    add_name_plus_dimension_to_expense_data($object_data, $object);
+
                     $extra_conditions = " AND `expense_id` = ".$object->getObjectId();
 
                     if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_expenses_of_others')){
@@ -688,6 +916,7 @@ class ApiController extends ApplicationController {
                         "count_results" => false,
                         "only_count_results" => false,
                         "member_ids" => $members,
+                        "dim_order" => $group_by_dimension_id,
                     ));
                     $payments = array();
                     foreach($result->objects as $payment){
@@ -726,13 +955,14 @@ class ApiController extends ApplicationController {
                 $result = PaymentReceipts::instance()->listing(array(
                     "order" => 'date',
                     "order_dir" => 'ASC',
-                    "start" => 0,
-                    "limit" => 0,
+                    "start" => $start,
+                    "limit" => $limit,
                     "ignore_context" => true,
                     "extra_conditions" => $extra_conditions,
                     "count_results" => false,
                     "only_count_results" => false,
                     "member_ids" => $members,
+                    "dim_order" => $group_by_dimension_id,
                 ));
                 $payments = array();
                 foreach($result->objects as $payment){
@@ -846,24 +1076,49 @@ class ApiController extends ApplicationController {
                             $object->setObjectName($request ['args'] ['description']);
                             $object->setDescription($request ['args'] ['description']);
                         }
-						if (isset($request['args']['date'])) {
-							// if user inputs a date, then update the start date before calculating end date
+						if (!empty($request['args']['start_time']) && !empty($request['args']['end_time']) && isset($request['args']['date'])) {
 							try {
-								$start_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['date']);
-								if ($start_date instanceof DateTimeValue) {
-									$start_date->setHour($object->getStartTime()->getHour());
-									$start_date->setMinute($object->getStartTime()->getMinute());
-									$start_date->setSecond($object->getStartTime()->getSecond());
-									$object->setStartTime($start_date);
+								$tz_offset = Timezones::getTimezoneOffsetToApply($object);
+								$st = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['date']);
+								$s_time = getTimeValue($request['args']['start_time']);
+								$end_date_str = !empty($request['args']['end_date']) ? $request['args']['end_date'] : $request['args']['date'];
+								$et = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $end_date_str);
+								$e_time = getTimeValue($request['args']['end_time']);
+								if ($st instanceof DateTimeValue && $et instanceof DateTimeValue && $s_time && $e_time) {
+									$st->setHour($s_time['hours']);
+									$st->setMinute($s_time['mins']);
+									$st->setSecond(0);
+									$et->setHour($e_time['hours']);
+									$et->setMinute($e_time['mins']);
+									$et->setSecond(0);
+									$st = new DateTimeValue($st->getTimestamp() - $tz_offset);
+									$et = new DateTimeValue($et->getTimestamp() - $tz_offset);
+									$object->setStartTime($st);
+									$object->setEndTime($et);
 								}
 							} catch (Exception $e) {
-								Logger::log_r("ERROR - Timeslots API: Invalid date input: ".$request['args']['date']);
+								Logger::log_r("ERROR - Timeslots API: Invalid start/end time input");
 							}
+						} else {
+							if (isset($request['args']['date'])) {
+								// if user inputs a date, then update the start date before calculating end date
+								try {
+									$start_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['date']);
+									if ($start_date instanceof DateTimeValue) {
+										$start_date->setHour($object->getStartTime()->getHour());
+										$start_date->setMinute($object->getStartTime()->getMinute());
+										$start_date->setSecond($object->getStartTime()->getSecond());
+										$object->setStartTime($start_date);
+									}
+								} catch (Exception $e) {
+									Logger::log_r("ERROR - Timeslots API: Invalid date input: ".$request['args']['date']);
+								}
+							}
+							$worked_minutes = $request['args']['hours']*60 + $request['args']['minutes'];
+							$end_time = new DateTimeValue($object->getStartTime()->getTimestamp());
+							$end_time->add('m', $worked_minutes);
+							$object->setEndTime($end_time);
 						}
-                    	$worked_minutes = $request['args']['hours']*60 + $request['args']['minutes'];
-                    	$end_time = new DateTimeValue($object->getStartTime()->getTimestamp());
-                    	$end_time->add('m', $worked_minutes);
-                    	$object->setEndTime($end_time);
                     }
                     break;
 
@@ -874,6 +1129,11 @@ class ApiController extends ApplicationController {
                         $object = new PaymentReceipt ();
                     }
                     if ($object instanceof PaymentReceipt) {
+                        $can_see_billing_information = true;
+                        Hook::fire('get_can_see_billing_information', array('user' => logged_user()), $can_see_billing_information);
+                        $can_see_cost_information = true;
+                        Hook::fire('get_can_see_cost_information', array('user' => logged_user()), $can_see_cost_information);
+
                         if (!empty($request ['args'] ['name'])) {
                             $object->setObjectName($request ['args'] ['name']);
                         }
@@ -890,25 +1150,38 @@ class ApiController extends ApplicationController {
                         } else {
                             $object->setQuantity(0);
                         }
-                        if (!empty($request ['args'] ['unit_cost'])) {
-                            $object->setUnitCost($request ['args'] ['unit_cost']);
+                        if (empty($request ['args'] ['currency_id'])) {
+                            $c = Currencies::getDefaultCurrencyInfo();
+                            $currency_id = $c ? $c['id'] : 1;
                         } else {
-                            $object->setUnitCost(0);
+                            $currency_id = $request ['args'] ['currency_id'];
                         }
-                        if (!empty($request ['args'] ['amount'])) {
-                            $object->setAmount($request ['args'] ['amount']);
-                        } else {
-                            $object->setAmount(0);
+                        $object->setCurrencyId($currency_id);
+                        if ($can_see_cost_information) {
+                            if (!empty($request ['args'] ['unit_cost'])) {
+                                $object->setUnitCost($request ['args'] ['unit_cost']);
+                            } else {
+                                $object->setUnitCost(0);
+                            }
+                            if (!empty($request ['args'] ['amount'])) {
+                                $object->setAmount($request ['args'] ['amount']);
+                            } else {
+                                $object->setAmount(0);
+                            }
+                            $object->setTotalCostWithoutTaxes($object->getAmount());
                         }
-                        if (!empty($request ['args'] ['unit_price'])) {
-                            $object->setUnitPrice($request ['args'] ['unit_price']);
-                        } else {
-                            $object->setUnitPrice(0);
-                        }
-                        if (!empty($request ['args'] ['total_price'])) {
-                            $object->setTotalPrice($request ['args'] ['total_price']);
-                        } else {
-                            $object->setTotalPrice(0);
+
+                        if ($can_see_billing_information) {
+                            if (!empty($request ['args'] ['unit_price'])) {
+                                $object->setUnitPrice($request ['args'] ['unit_price']);
+                            } else {
+                                $object->setUnitPrice(0);
+                            }
+                            if (!empty($request ['args'] ['total_price'])) {
+                                $object->setTotalPrice($request ['args'] ['total_price']);
+                            } else {
+                                $object->setTotalPrice(0);
+                            }
                         }
                         if (!empty($request ['args'] ['paid_by_id']) || $request ['args'] ['paid_by_id'] == 0) {
                             $object->setPaidById($request ['args'] ['paid_by_id']);
@@ -951,6 +1224,24 @@ class ApiController extends ApplicationController {
                                 }
                             }
                             */
+                        }
+                        // Task for actual expenses: desktop forms set this via JS from the budgeted expense;
+                        // mobile/API clients typically only send expense_id, so inherit task_id when missing.
+                        $api_task_id = array_var($request['args'], 'task_id');
+                        if (is_numeric($api_task_id) && (int) $api_task_id > 0) {
+                            $object->setTaskId((int) $api_task_id);
+                        }
+                        if ((int) $object->getTaskId() === 0) {
+                            $linked_budget_expense_id = array_var($request['args'], 'expense_id');
+                            if (is_numeric($linked_budget_expense_id) && (int) $linked_budget_expense_id > 0) {
+                                $linked_budget = Expenses::instance()->findById((int) $linked_budget_expense_id);
+                                if ($linked_budget instanceof Expense) {
+                                    $bud_task_id = (int) $linked_budget->getColumnValue('task_id');
+                                    if ($bud_task_id > 0) {
+                                        $object->setTaskId($bud_task_id);
+                                    }
+                                }
+                            }
                         }
                         if (!empty($request ['args'] ['billable'])) {
                             $object->setIsBillable(1);
@@ -1007,6 +1298,9 @@ class ApiController extends ApplicationController {
                 try {
                     $context = array();
                     $members = array();
+                    if(!empty($request['args']['members'])){
+                        $members = $request['args']['members'];
+                    }
 
 
                     if($request ['srv']=='expense')//if object is expense
@@ -1017,6 +1311,19 @@ class ApiController extends ApplicationController {
                             if($expenseAux instanceof Expense)
                             {
                                 $members = $expenseAux->getMemberIds();
+                                // Budgeted expenses can be tied to a task via task_id; that link is not always
+                                // present in getMembers()/getMemberIds(), so merge task members for classification.
+                                $bud_task_id = (int) $expenseAux->getColumnValue('task_id');
+                                if ($bud_task_id > 0) {
+                                    $task = ProjectTasks::instance()->findById($bud_task_id);
+                                    if ($task instanceof ProjectTask) {
+                                        foreach ($task->getMemberIds() as $task_member_id) {
+                                            if (!in_array($task_member_id, $members)) {
+                                                $members[] = $task_member_id;
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                         }else if(!empty($request['args']['members'])){
@@ -1050,10 +1357,15 @@ class ApiController extends ApplicationController {
                             if($member->getObjectTypeId() == $project_ot_id){
 								$skipped_association_codes = array('project_billing_client');
                                 $project_members = MemberPropertyMembers::getAllAssociatedMemberIds($member->getId(), true, true, $skipped_association_codes);
-                                foreach($project_members as $pm_id){
-                                    $property_member = Members::instance()->findById($pm_id);
-                                    if($property_member instanceof Member){
-                                        $members[] = $property_member->getId();
+                                foreach($project_members as $pm_ids){
+                                    if (!is_array($pm_ids)) {
+                                        $pm_ids = array($pm_ids);
+                                    }
+                                    foreach ($pm_ids as $pm_id) {
+                                        $property_member = Members::instance()->findById($pm_id);
+                                        if($property_member instanceof Member){
+                                            $members[] = $property_member->getId();
+                                        }
                                     }
                                 }
                             }
@@ -1068,8 +1380,9 @@ class ApiController extends ApplicationController {
                         $object->save();
                         $object_controller = new ObjectController ();
                         if (!$request['args']['id']) {
-
                             $object_controller->add_to_members($object, $members);
+                        } else if ($object->getObjectTypeName() == 'payment_receipt' || $object->getObjectTypeName() == 'timeslot') {
+                            $object_controller->add_to_members($object, $members,null,true,false,true,true);
                         }
                         DB::commit();
                         $response = true;
@@ -1138,6 +1451,23 @@ class ApiController extends ApplicationController {
 			'contact_id' => $request ['args'] ['contact_id'],
 		);
 
+		if (!empty($request['args']['start_time'])) {
+			$parameters['timeslot']['start_time'] = $request['args']['start_time'];
+		}
+		if (!empty($request['args']['end_time'])) {
+			$parameters['timeslot']['specify_end_time'] = 1;
+			$parameters['timeslot']['end_time'] = $request['args']['end_time'];
+			$end_date = $ts_date;
+			if (!empty($request['args']['end_date'])) {
+				try {
+					$end_date = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $request['args']['end_date']);
+				} catch (Exception $e) {
+					Logger::log_r("ERROR - Timeslots API: Invalid end_date input: ".$request['args']['end_date']);
+				}
+			}
+			$parameters['timeslot']['end_date'] = $end_date;
+		}
+
 		// set task id if present
 		if (isset($request ['args'] ['object_id'])) {
 			$parameters['object_id'] = $request ['args'] ['object_id'];
@@ -1146,7 +1476,10 @@ class ApiController extends ApplicationController {
 		$controller = new TimeController();
 		$timeslot = $controller->add_timeslot($parameters);
         if($timeslot instanceof Timeslot){
-		
+
+            $this->api_ensure_timeslot_status_timesheet_member($timeslot);
+            $timeslot = Timeslots::instance()->findById($timeslot->getId());
+
             $modified = false;
             Hook::fire('after_api_add_timeslot', array('timeslot' => $timeslot), $modified);
             
@@ -1158,6 +1491,44 @@ class ApiController extends ApplicationController {
             return $this->response('json', true);
         }else{
             return $this->response('json', false);
+        }
+    }
+
+    /**
+     * Only if status_dimension_timesheet is active and a default value is set for the
+     * status_timesheet dimension (Internal Payment Status), classify the timeslot created via mobile.
+     */
+    private function api_ensure_timeslot_status_timesheet_member(Timeslot $timeslot) {
+        if (!Plugins::instance()->isActivePlugin('status_dimension_timesheet')) {
+            return;
+        }
+        $dim = Dimensions::findByCode('status_timesheet');
+        if (!($dim instanceof Dimension)) {
+            return;
+        }
+        $dim_id = (int) $dim->getId();
+        $member_id = (int) DimensionOptions::instance()->getOptionValue($dim_id, 'default_value');
+        if ($member_id <= 0) {
+            return;
+        }
+        // Don't overwrite an existing classification.
+        foreach ($timeslot->getMembers() as $m) {
+            if ($m instanceof Member && (int) $m->getDimensionId() === $dim_id) {
+                return;
+            }
+        }
+        $member = Members::getMemberById($member_id);
+        if (!($member instanceof Member) || (int) $member->getDimensionId() !== $dim_id) {
+            return;
+        }
+        try {
+            DB::beginWork();
+            ObjectMembers::addObjectToMembers($timeslot->getId(), array($member));
+            $timeslot->addToSharingTable();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollback();
+            Logger::log_r("ERROR - ApiController::api_ensure_timeslot_status_timesheet_member: ".$e->getMessage());
         }
     }
     
@@ -1269,184 +1640,5 @@ class ApiController extends ApplicationController {
         $this->setLayout("json");
 		$this->renderText(json_encode($res_data), true);
     }
-
-    /**
-     * API responds to get data for Project Statistics Widget
-     */
-    public function get_widget_work_progress_info() {
-        // IMPORTANT save and close sessions to allow other processes to run in parallel
-        session_write_close();
-
-        $members = array_var($_REQUEST, 'members', array());
-        $res_data = array();
-        if (Plugins::instance()->isActivePlugin('crpm')) {
-            Env::useHelper('widget_functions', 'crpm');
-            Env::useHelper('chart');
-            Env::useHelper("api", "crpm");
-            ini_set('memory_limit', '1G');
-
-            $tasks = get_tasks_for_work_progress_widget($members);
-            if (!$tasks) $tasks = array();
-            $task_ids = array(0);
-            foreach ($tasks as $task) {
-                $task_ids[] = $task['object_id'];
-            }
-
-            $extra_conditions = " AND e.rel_object_id IN (". implode(',', $task_ids) .")";
-            if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')){
-                $extra_conditions .= " AND e.contact_id = " . logged_user()->getId();
-            }
-
-            $timeslots_objects = get_timeslots_for_work_progress_widget($members, $extra_conditions);
-            $tasks_timeslots = array();
-            if (is_array($timeslots_objects)) {
-                foreach ($timeslots_objects as $ts_data) {
-                    if (!isset($tasks_timeslots[$ts_data['rel_object_id']])) $tasks_timeslots[$ts_data['rel_object_id']] = array();
-                    $tasks_timeslots[$ts_data['rel_object_id']][] = $ts_data;
-                }
-            }
-
-            $all_has_due_date = true;
-            $all_completed_has_work = true;
-            $all_has_estimated_time = true;
-            $tasks_without_due_date = array();
-            $completed_tasks_no_timeslots = array();
-            $tasks_without_estimated_time = array();
-            $task_warning_amount = 5;
-            $get_tasks_with_missing_info = count($members) > 0;
-
-            foreach ($tasks as $task) {
-                if ($task['due_date'] == EMPTY_DATETIME && $task['start_date'] == EMPTY_DATETIME) {
-                    $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
-                    $tasks_without_due_date[] = $task;
-                    $all_has_due_date = false;
-                }
-                
-                if ($task['completed_by_id'] > 0) {
-                    $task_ts = array_var($tasks_timeslots, $task['object_id'], array());
-                    if (count($task_ts) == 0){
-                        $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
-                        $completed_tasks_no_timeslots[] = $task;
-                        $all_completed_has_work = false;
-                    }
-                }
-                
-                if ($task['total_time_estimate'] == 0){
-                    $task['view_url'] = get_url('task','view',array('id'=>$task['object_id']));
-                    $tasks_without_estimated_time[] = $task;
-                    $all_has_estimated_time = false;
-                }
-            }
-
-            if ($all_has_due_date) {
-                $hours = CrpmAPI::sumTasksHoursByExecutionTime($tasks, $tasks_timeslots);
-            } else {
-                $hours = CrpmAPI::sumTasksHoursByType($tasks, $tasks_timeslots);
-            }
-
-            $active_members = array();
-            $context = active_context();
-            if( $context){
-                foreach ($context as $selection) {
-                    if ($selection instanceof Member) $active_members[] = $selection;
-                }
-            }
-            $mnames = array();
-            $allowed_contact_ids = array();
-            foreach ($active_members as $member) {
-                $allowed_contact_ids[] = $member->getAllowedContactIds();
-                $mnames[] = clean($member->getName());
-            }
-
-             // Define variables
-            $estimated = array();
-            $worked = array();
-            $chart_labels = array();
-            $estimated_accumulated = 0;
-            $worked_accumulated = 0;
-            $date_format = convertPHPToMomentFormat(user_config_option('date_format'));
-            $workedTitle = lang('total worked hours');
-            $estimatedTitle = lang('total estimated hours');
-            $decimals = user_config_option('decimal_digits');
-            $decimals_separator = user_config_option('decimals_separator');
-            $thousand_separator = user_config_option('thousand_separator');
-
-            //prepare messages and tasks with missing info
-            $count_tasks_without_dates = count($tasks_without_due_date);
-            $count_tasks_without_estimate = count($tasks_without_estimated_time);
-            $count_completed_tasks_no_timeslots = count($completed_tasks_no_timeslots);
-            $tasks_without_due_date = $count_tasks_without_dates > 5 ? array_slice($tasks_without_due_date, 0, 5) : $tasks_without_due_date;
-            $tasks_without_estimated_time = $count_tasks_without_estimate > 5 ? array_slice($tasks_without_estimated_time, 0, 5) : $tasks_without_estimated_time;
-            $completed_tasks_no_timeslots = $count_completed_tasks_no_timeslots > 5 ? array_slice($completed_tasks_no_timeslots, 0, 5) : $completed_tasks_no_timeslots;
-            $tasks_without_due_date_msg = lang('there are tasks without start date or due date', $count_tasks_without_dates);
-            $tasks_without_estimated_time_msg = lang('there are tasks with no estimated time', $count_tasks_without_estimate);
-            $completed_tasks_no_timeslots_msg = lang('there are completed tasks with no worked time registered', $count_completed_tasks_no_timeslots);
-
-            $res_data = array(
-                'dateFormat' => $date_format,
-                'estimatedTitle' => $estimatedTitle,
-                'workedTitle' => $workedTitle,
-                'decimals' => $decimals,
-                'decimalsSeparator' => $decimals_separator,
-                'thousandSeparator' => $thousand_separator, 
-                'tasks_without_due_date' => $tasks_without_due_date,
-                'tasks_without_due_date_msg' => $tasks_without_due_date_msg,
-                'completed_tasks_no_timeslots' => $completed_tasks_no_timeslots,
-                'completed_tasks_no_timeslots_msg' => $completed_tasks_no_timeslots_msg,
-                'tasks_without_estimated_time' => $tasks_without_estimated_time,
-                'tasks_without_estimated_time_msg' => $tasks_without_estimated_time_msg,
-                'list_tasks_with_missing_info' => $get_tasks_with_missing_info
-            );
-
-            if ($all_has_due_date) {
-                // if all tasks have due date, build showWorkedHoursWidget component with chart
-                foreach ($hours as $ts => $values) {
-                    $estimated_accumulated += ($values['estimated'] > 0 ? round($values['estimated'] / 60, 2) : 0);
-                    $estimated[] = $estimated_accumulated;
-                    
-                    $worked_accumulated += ($values['worked'] > 0 ? round($values['worked'] / 60, 2) : 0);
-                    $worked[] = $worked_accumulated;
-                    
-                    $d = new DateTimeValue($ts);
-                    $chart_labels[] = $d->format('m/d/Y');
-                }
-                
-                if (count($estimated) + count($worked) > 0) {
-                    $chart_data_array = array();
-                    $chart_length = count($estimated);
-
-                    // Populate $chart_data_array with arrays that has date, estimated and worked time info
-                    for($i = 0; $i<$chart_length; $i++){
-                        $data_info = array(
-                            "date" => $chart_labels[$i],
-                            "estimated" => $estimated[$i],
-                            "worked" => $worked[$i]
-                        );
-                        array_push($chart_data_array, $data_info);
-                    }
-                    $chartData = $chart_data_array;
-
-                    // Prepare data to pass to showWorkedHoursWidget()
-                    $res_data['estimated'] = $estimated_accumulated;
-                    $res_data['worked'] = $worked_accumulated;
-                    $res_data['chartData'] = $chartData;
-                }
-            } else {
-                // if some tasks don't have due date, build showWorkedHoursWidget component without chart
-                $estimated = array(round($hours['estimated'] / 60, 2));
-                $worked = array(round($hours['worked'] / 60, 2));
-                if (count($estimated) + count($worked) > 0) {
-                    $res_data['estimated'] = $estimated[0];
-                    $res_data['worked'] = $worked[0];
-                }
-            }
-        }
-
-        ajx_current("empty");
-        $this->setLayout("json");
-		$this->renderText(json_encode($res_data), true);
-
-    }
-
 
 }

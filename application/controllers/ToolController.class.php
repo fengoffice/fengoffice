@@ -59,20 +59,43 @@ class ToolController extends ApplicationController {
 		
 		// process CSS
 		function changeUrls($css, $base) {
-			return preg_replace("/url\s*\(\s*['\"]?([^\)'\"]*)['\"]?\s*\)/i", "url(".$base."/$1)", $css);
+			return preg_replace_callback("/url\s*\(\s*(['\"]?)([^\)'\"]*?)\\1\s*\)/i", function($m) use ($base) {
+				$quote = $m[1];
+				$url = $m[2];
+				if (preg_match('/^(data:|https?:|\/\/|\/)/', $url)) {
+					return $m[0];
+				}
+				return "url(" . $quote . $base . "/" . $url . $quote . ")";
+			}, $css);
 		}
 		
 		function parseCSS($filename, $filebase, $imgbase) {
-			$css = file_get_contents($filebase.$filename);
+			$css = @file_get_contents($filebase.$filename);
+			if ($css === false) return "";
 			$imports = explode("@import", $css);
 			$cssmin = changeUrls($imports[0], $imgbase);
 			for ($i=1; $i < count($imports); $i++) {
-				$split = explode(";", $imports[$i], 2);
-				$import = trim($split[0], " \t\n\r\0\x0B'\"");
+				$segment = $imports[$i];
+				// Extract import path using regex to handle url('...'), "...", '...' and URLs with semicolons inside
+				if (preg_match("/^\s*(?:url\s*\(\s*)?['\"]([^'\"]+)['\"](?:\s*\))?\s*;(.*)/si", $segment, $m) ||
+					preg_match("/^\s*url\s*\(\s*([^'\"\)\s]+)\s*\)\s*;(.*)/si", $segment, $m)) {
+					$import = $m[1];
+					$rest = $m[2];
+				} else {
+					$cssmin .= changeUrls($segment, $imgbase);
+					continue;
+				}
+				// Keep external URL @imports (e.g. Google Fonts). Skipping them drops webfonts
+				// from ogmin.css while rules still reference those families (e.g. Montserrat).
+				if (preg_match('/^(https?:|\/\/)/', $import)) {
+					$cssmin .= "@import url('" . $import . "');";
+					$cssmin .= changeUrls($rest, $imgbase);
+					continue;
+				}
 				$cssmin .= parseCSS($import, $filebase, $imgbase."/".dirname($import));
-				$cssmin .= changeUrls($split[1], $imgbase);
+				$cssmin .= changeUrls($rest, $imgbase);
 			}
-			return $cssmin;	
+			return $cssmin;
 		}
 		
 		echo "Concatenating CSS ... ";

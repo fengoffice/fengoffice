@@ -31,17 +31,18 @@ class TimeController extends ApplicationController
         //Get Users Info
         $users = array();
         $context = active_context();
-        
+        $include_inactive = config_option('show_inactive_users_on_filters');
+
         if(!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots')) {
             $users = array(logged_user());
         } else if (logged_user()->isMemberOfOwnerCompany() || !config_option('filter_users_by_company')) {
-            $users = Contacts::getAllUsers();
+            $users = Contacts::getAllUsers('', $include_inactive);
         } else {
-            $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user());
+            $users = logged_user()->getCompanyId() > 0 ? Contacts::getAllUsers(" AND `company_id` = " . logged_user()->getCompanyId()) : array(logged_user(),$include_inactive);
         }
 
         // filter users by permissions only if any member is selected.
-        $selected_members = active_context_members(false);
+        /*$selected_members = active_context_members(false);
         if (count($selected_members) > 0) {
             $tmp_users = array();
             foreach ($users as $user) {
@@ -50,12 +51,10 @@ class TimeController extends ApplicationController
                 }
             }
             $users = $tmp_users;
-        }
+        }*/
 
-        //This is used for the quickadd
-        $selected_member_ids = active_context_members(false);
-		$selected_members_object = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
-        $users_for_quick_add = Timeslot::getUsersFilteredByMembersAndPermissions($selected_members_object);
+        // Used for quick add - same user list logic as the add/edit time form (no context filter on load)
+        $users_for_quick_add = Timeslot::getUsersFilteredByMembersAndPermissions(null);
         
         /*
         $required_dimensions = DimensionObjectTypeContents::getRequiredDimensions(Timeslots::instance()->getObjectTypeId());
@@ -103,12 +102,7 @@ class TimeController extends ApplicationController
         /*
         $notAllowedMember = '';
         if ($context_member_count > 0 && !Timeslot::canAdd(logged_user(), $context, $notAllowedMember)) {
-        if (str_starts_with($notAllowedMember, '-- req dim --'))
-        $msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
-        else
-        trim($notAllowedMember) == "" ? $msg = lang('you must select where to keep', lang('the task')) : $msg = lang('no context permissions to add', lang("time"), $notAllowedMember);
-
-        flash_error($msg);
+        flash_error(get_can_add_error_message($notAllowedMember, lang('time'), $context));
         ajx_current("empty");
         return;
         }
@@ -142,6 +136,9 @@ class TimeController extends ApplicationController
             if ($rel_obj instanceof ContentDataObject) {
 				$pre_selected_member_ids = array();
                 $task_members = $rel_obj->getMembers();
+
+				Hook::fire('override_content_object_members', array('object' => $timeslot), $task_members);
+
 				// only preload the task's members that we can in the time form, this will prevent wrong members in dimension selectors filtering when initializing
 				foreach ($task_members as $task_member) {
 					$hidden_dim = false;
@@ -152,11 +149,23 @@ class TimeController extends ApplicationController
 						$pre_selected_member_ids[] = $task_member->getId();
 					}
 				}
+
+				if ($rel_obj instanceof ProjectTask) {
+					if ($this->checkPreventAddingWorkedTimeToParent($rel_obj)) {
+						flash_error(lang('cannot add worked time to parent tasks'));
+						ajx_current("empty");
+						return;
+					}
+				}
+
             } else {
                 $pre_selected_member_ids = active_context_members(false);
                 $all_assoc_member_ids = array();
                 foreach ($pre_selected_member_ids as $mid) {
 					$skipped_association_codes = array('project_billing_client');
+					
+					Hook::fire('add_time_more_skipped_association_codes', array('object' => $timeslot, 'member_id' => $mid), $skipped_association_codes);
+
                     $assoc_ids = MemberPropertyMembers::getAllAssociatedMemberIds($mid, true, true, $skipped_association_codes);
                     $assoc_ids = array_flat($assoc_ids);
                     $all_assoc_member_ids = array_unique(array_merge($all_assoc_member_ids, $assoc_ids));
@@ -164,6 +173,10 @@ class TimeController extends ApplicationController
                 $pre_selected_member_ids = array_unique(array_merge($pre_selected_member_ids, $all_assoc_member_ids));
             }
             Hook::fire('preselected_time_form_member_ids', array('object' => $timeslot), $pre_selected_member_ids);
+
+			if (!is_null($pre_selected_member_ids)) {
+				$timeslot->setMemberIds($pre_selected_member_ids);
+			}
 
             tpl_assign('pre_selected_member_ids', $pre_selected_member_ids);
 
@@ -195,6 +208,10 @@ class TimeController extends ApplicationController
             }
         }
     }
+
+	private function checkPreventAddingWorkedTimeToParent(ProjectTask $task) {
+		return Timeslot::isWorkedTimeBlockedForParent($task);
+	}
 
     private function parse_hours_and_minutes_to_save($timeslot_data)
     {
@@ -238,7 +255,7 @@ class TimeController extends ApplicationController
         return array('hours' => $hoursToAdd, 'minutes' => $minutes);
     }
 
-    public function add_timeslot($parameters = null, $use_transaction = true, $validate_task_member_relations = true)
+public function add_timeslot($parameters = null, $use_transaction = true, $validate_task_member_relations = true)
     {
         Env::useHelper('dimension');
 
@@ -269,18 +286,45 @@ class TimeController extends ApplicationController
 
         if ($object_id) {
             $object = Objects::findObject($object_id);
-            if (!($object instanceof ContentDataObject) || !($object->canAddTimeslot(logged_user()))) {
+            if (!Timeslot::canStartNewTimeEntry($object, logged_user())) {
                 Logger::log_r("Error adding timeslot: no access permissions (a)");
-                flash_error(lang('no access permissions'));
+                flash_error(lang(Timeslot::getCannotStartTimeEntryMessage($object, logged_user())));
                 ajx_current("empty");
                 return;
             }
 
-            if (array_var($parameters, 'members')) {
-                $member_ids = json_decode(array_var($parameters, 'members'),true);
-            } else {
+			if ($object instanceof ProjectTask) {
+				if ($this->checkPreventAddingWorkedTimeToParent($object)) {
+					flash_error(lang('cannot add worked time to parent tasks'));
+					ajx_current("empty");
+					return;
+				}
+			}
+
+			// get the member ids from the request
+			$member_ids = get_members_from_request();
+			if (empty($member_ids) && array_var($parameters, 'members')) {
+				$decoded_members = json_decode(array_var($parameters, 'members'), true);
+				if (is_array($decoded_members)) {
+					$member_ids = $decoded_members;
+				}
+			}
+            if (empty($member_ids)) {
+				// if not sent then get the member ids from the task object
                 $member_ids = $object->getMemberIds();
-            }
+			}
+
+			// clean member_ids
+			$tmp_mids = array();
+			foreach ($member_ids as $mid) {
+				if (!is_null($mid) && trim($mid) != "") {
+					$tmp_mids[] = $mid;
+				}
+			}
+			$member_ids = $tmp_mids;
+
+			Hook::fire('override_content_object_member_ids', array('object' => new Timeslot()), $member_ids);
+
             $project_client_compatibility = check_project_client_compatibility($member_ids);
             if(!$project_client_compatibility['result']) {
                 Logger::log_r("Error adding timeslot: " .  $project_client_compatibility['error_message']);
@@ -290,7 +334,13 @@ class TimeController extends ApplicationController
             }
 
         } else {
-            $member_ids = json_decode(array_var($parameters, 'members', array()),true);
+
+            $member_ids = get_members_from_request();
+            if (empty($member_ids) && array_var($parameters, 'members')) {
+                $member_ids = json_decode(array_var($parameters, 'members'),true);
+            }
+
+            
             // clean member_ids
             $tmp_mids = array();
             foreach ($member_ids as $mid) {
@@ -442,6 +492,10 @@ class TimeController extends ApplicationController
 
                         $startTime->setHour($starthoursandminutes->getHour());
                         $startTime->setMinute($starthoursandminutes->getMinute());
+
+						if (is_numeric($hoursToAdd) && $hoursToAdd > 0 && user_config_option('automatic_calculation_time') == 1) {
+							$startTime->add('h', -$hoursToAdd);
+						}
                     }
                 }
             }
@@ -521,7 +575,7 @@ class TimeController extends ApplicationController
             }
 
             if (!isset($member_ids) || !is_array($member_ids) || count($member_ids) == 0) {
-                $member_ids = json_decode(array_var($parameters, 'members'));
+                $member_ids = get_members_from_request();
             }
             $additional_member_ids = array_var($timeslot_data, 'additional_member_ids');
             if (is_array($additional_member_ids)) {
@@ -578,8 +632,8 @@ class TimeController extends ApplicationController
             return;
         }
 
-        if (!$timeslot->canEdit(logged_user())) {
-            flash_error(array_var($_REQUEST, 'timeslot_cant_edit_message', lang('no access permissions')));
+        if (!$timeslot->canEdit(logged_user())) { 
+            flash_error(Timeslot::getCantEditMessage());
             ajx_current("empty");
             return;
         }
@@ -634,7 +688,7 @@ class TimeController extends ApplicationController
 
             // FORM SENT...
             //context permissions or members
-            $member_ids = json_decode(array_var($_POST, 'members', array()),true);
+            $member_ids = get_members_from_request();
             // clean member_ids
             $tmp_mids = array();
             foreach ($member_ids as $mid) {
@@ -647,7 +701,7 @@ class TimeController extends ApplicationController
 
             if (empty($member_ids)) {
                 if (!can_add(logged_user(), active_context(), Timeslots::instance()->getObjectTypeId())) {
-                    flash_error(lang('no access permissions'));
+                    flash_error(lang('no access permissions')); 
                     ajx_current("empty");
                     return;
                 }
@@ -665,7 +719,7 @@ class TimeController extends ApplicationController
                     $enteredMembers = array();
                 }
                 if (!can_add(logged_user(), $enteredMembers, Timeslots::instance()->getObjectTypeId())) {
-                    flash_error(lang('no access permissions'));
+                    flash_error(lang('no access permissions')); 
                     ajx_current("empty");
                     return;
                 }
@@ -812,7 +866,7 @@ class TimeController extends ApplicationController
 
                 $timeslot->save();
 
-                $member_ids = json_decode(array_var($_POST, 'members', ''));
+                $member_ids = get_members_from_request();
                 $object_controller = new ObjectController();
                 $object_controller->add_custom_properties($timeslot);
                 $object_controller->add_to_members($timeslot, $member_ids);
@@ -843,7 +897,7 @@ class TimeController extends ApplicationController
             } // try
         }
 
-    }
+    } 
 
     public function check_time_invoicing_status(){
         ajx_current("empty");
@@ -1115,6 +1169,9 @@ class TimeController extends ApplicationController
 			case 'invoicing_status_html':
 				$order = 'invoicing_status';
 				break;
+            case 'is_billable':
+                $order = 'is_billable';
+                break;
 			case 'hourly_billing':
 				$order ='hourly_billing';
 				break;
@@ -1262,7 +1319,7 @@ class TimeController extends ApplicationController
 
                     Hook::fire("additional_task_timeslot_class", $msg, $add_cls);
                     if ($add_cls) {
-                        $info['add_cls'] .= $add_cls;
+                        $info['add_cls'] = (isset($info['add_cls']) ? $info['add_cls'] : '') . $add_cls;
                     }
 
                     $add_columns = array();
@@ -1438,12 +1495,14 @@ class TimeController extends ApplicationController
 		ajx_current("empty");
 
 		// Get the ids of the selected timeslots
-		$timeslot_ids = array_filter(explode(',', array_var($_REQUEST, "object_ids", "")), 'is_numeric');
+		$timeslot_ids = explode(',', array_var($_REQUEST, "object_ids", ""));
 
 		// Get the id of the task to be assigned
 		$task_id = array_var($_REQUEST, "task_id");
 
 		$inline_action = array_var($_REQUEST, "inline_action");
+		$request_channel = array_var($_REQUEST, "req_channel", '');
+		$reload_current_panel = false;
 
 		// If no timeslots are selected, display an error message and return
 		if (empty($timeslot_ids)) {
@@ -1460,10 +1519,21 @@ class TimeController extends ApplicationController
 			return;
 		}
 
-		// If the user does not have permission to edit the task or the timeslots,
-		// display an error message and return
-		if (!$task->canEdit(logged_user()) || !$task->canAddTimeslot(logged_user())) {
+		// If the user does not have permission to edit the task, display an error message and return
+		if (!$task->canEdit(logged_user())) {
 			flash_error(lang("no edit permissions for object", $task->getName()));
+			return;
+		}
+
+		// If time can't be added to this task (permissions, or a business rule like the
+		// estimated hours limit), display the appropriate error message and return
+		if (!Timeslot::canStartNewTimeEntry($task, logged_user())) {
+			flash_error(lang(Timeslot::getCannotStartTimeEntryMessage($task, logged_user())));
+			return;
+		}
+
+		if ($this->checkPreventAddingWorkedTimeToParent($task)) {
+			flash_error(lang('cannot add worked time to parent tasks'));
 			return;
 		}
 
@@ -1474,12 +1544,35 @@ class TimeController extends ApplicationController
 			// Get the timeslots objects
 			$timeslots = Timeslots::instance()->findAll(array('conditions' => array('id IN (' . implode(',', $timeslot_ids) . ')')));
 
-			// Check if each timeslot can be assigned the task
+			// Check if each timeslot can be assigned the task			
 			foreach ($timeslots as $timeslot) {
 				if ($timeslot instanceof Timeslot) {
+					// Generate old object for logs
+					$old_content_object = $timeslot->generateOldContentObjectData();
+
 					$can_assing_task = $timeslot->canAssignTask($task);
 					if (!$can_assing_task['can_assign']) {
-						throw new Exception($can_assing_task['error_msg']);
+						
+						// After validation check if we have to ask the user to reclassify or if he already confirmed the reclassification.
+						if ($can_assing_task['ask_to_reclassify']) {
+
+							if (array_var($_REQUEST, "do_reclassify_timeslots")) {
+								// If the user has confirmed reclassifying the timeslot in the task members call the reclassify_timeslot_in_task_members function
+								$this->reclassify_timeslot_in_task_members($timeslot, $task);
+								$reload_current_panel = true;
+						
+							} else {
+								// Ask the user to confirm reclassifying the timeslot in the task members
+								$this->ask_to_reclassify_timeslots_in_task_members($task, $timeslot_ids, $inline_action, $request_channel);
+								DB::rollback();
+								ajx_current("empty");
+								return;
+							}
+							
+						} else {
+							// If the timeslot cannot be assigned the task, throw an exception
+							throw new Exception($can_assing_task['error_msg']);
+						}
 					}
 				}
 			}
@@ -1488,12 +1581,10 @@ class TimeController extends ApplicationController
 			foreach ($timeslots as $timeslot) {
 				if ($timeslot instanceof Timeslot) {
 
-					// Generate old object for logs
-					$old_content_object = $timeslot->generateOldContentObjectData();
-
 					// Get former task
 					$old_related_task = $timeslot->getRelObject();
 
+					// Set new task and save time entry
 					$timeslot->setRelObjectId($task->getId());
 					$timeslot->save();
 
@@ -1514,7 +1605,7 @@ class TimeController extends ApplicationController
 			}
 
 			// Return ajax response with success message
-			if ($inline_action) {
+			if ($inline_action && !$reload_current_panel) {
 				ajx_current("empty");
 				ajx_extra_data(["object" => $timeslot->getObjectData()]);
 			} else {
@@ -1531,6 +1622,111 @@ class TimeController extends ApplicationController
 		}
 
 	}
+
+
+	/**
+	 * Triggers the event that shows the dialog to ask the user to confirm reclassifying the timeslot in the task members and assign the task
+	 * @param ProjectTask $task The task to be assigned to the timeslots
+	 * @param array $timeslot_ids The ids of the timeslots to be assigned to the task
+	 * @param string $inline_action The inline action to be called after the user confirms the reclassification
+	 * @param string $request_channel The request channel that originated the action
+	 */
+	function ask_to_reclassify_timeslots_in_task_members($task, $timeslot_ids, $inline_action, $request_channel = '') {
+
+		// Return ajax response immediately
+		ajx_current("empty");
+		$time_ot = ObjectTypes::findByName('timeslot');
+		$project_ot = ObjectTypes::findByName('project');
+		$customer_ot = ObjectTypes::findByName('customer');
+		if (!$time_ot || !$project_ot || !$customer_ot) {
+			return;
+		}
+		$task_project = $task->getMemberOfType($project_ot->getId());
+		$mem_ot = $task_project instanceof Member ? $project_ot : $customer_ot;
+
+		// Trigger the event that shows the dialog
+		evt_add(
+			"ask to reclassify timeslots in task members and assign task",
+			array(
+				"message" => lang('You have selected a task from a different member. This will re-classify the object under this new member.', strtolower($time_ot->getObjectTypeName(count($timeslot_ids) > 1)), $mem_ot->getObjectTypeName()),
+				"question" => lang('do you want to proceed'),
+				"object_ids" => $timeslot_ids,
+				"task_id" => $task->getId(),
+				"inline_action" => $inline_action,
+				"request_channel" => $request_channel
+			)
+		);
+	}
+
+	/**
+     * Reclassifies the timeslot's members to match the given task's members for specific object types.
+     *
+     * @param Timeslot $timeslot The timeslot to be reclassified.
+     * @param ProjectTask $task The task from which to inherit member classifications.
+     */
+    function reclassify_timeslot_in_task_members(Timeslot $timeslot, ProjectTask $task) {
+        
+        // Retrieve object types
+        $project_ot = ObjectTypes::findByName('project');
+        $customer_ot = ObjectTypes::findByName('customer');
+        $job_phase_ot = ObjectTypes::findByName('project_phase');
+
+        $new_project_member = null;
+        $new_customer_member = null;
+        $new_job_phase_member = null;
+
+        $old_project_member = null;
+        $old_customer_member = null;
+        $old_job_phase_member = null;
+
+        // Get new and old members for each object type
+        if ($project_ot instanceof ObjectType) {
+            $new_project_member = $task->getMemberOfType($project_ot->getId());
+            $old_project_member = $timeslot->getMemberOfType($project_ot->getId());
+        }
+        if ($customer_ot instanceof ObjectType) {
+            $new_customer_member = $task->getMemberOfType($customer_ot->getId());
+            $old_customer_member = $timeslot->getMemberOfType($customer_ot->getId());
+        }
+        if ($job_phase_ot instanceof ObjectType) {
+            $new_job_phase_member = $task->getMemberOfType($job_phase_ot->getId());
+            $old_job_phase_member = $timeslot->getMemberOfType($job_phase_ot->getId());
+        }
+
+        // Collect old members to remove
+        $members_to_remove = array();
+        if ($old_project_member instanceof Member) {
+            $members_to_remove[] = $old_project_member->getId();
+        }
+        if ($old_customer_member instanceof Member) {
+            $members_to_remove[] = $old_customer_member->getId();
+        }
+        if ($old_job_phase_member instanceof Member) {
+            $members_to_remove[] = $old_job_phase_member->getId();
+        }
+
+        // Remove old members if any
+        if (count($members_to_remove) > 0) {
+            ObjectMembers::removeObjectFromMembers($timeslot, logged_user(), null, $members_to_remove, false);
+        }
+
+        // Collect new members to add
+        $members_to_add = array();
+        if ($new_project_member instanceof Member) {
+            $members_to_add[] = $new_project_member;
+        }
+        if ($new_customer_member instanceof Member) {
+            $members_to_add[] = $new_customer_member;
+        }
+        if ($new_job_phase_member instanceof Member) {
+            $members_to_add[] = $new_job_phase_member;
+        }
+
+        // Add new members if any
+        if (count($members_to_add) > 0) {
+            ObjectMembers::addObjectToMembers($timeslot->getId(), $members_to_add);
+        }
+    }
 
 }
 

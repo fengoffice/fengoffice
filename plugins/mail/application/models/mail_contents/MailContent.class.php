@@ -21,7 +21,7 @@ class MailContent extends BaseMailContent {
 
 	
 	function getSummaryText () {
-		return $this->getBodyPlain();
+		return $this->getTextBody();
 	}
 	
 	
@@ -103,7 +103,8 @@ class MailContent extends BaseMailContent {
 	}
 	
 	function getBodyHtml() {
-		return $this->getMailData()->getBodyHtml();
+		Env::useHelper('functions', 'mail');
+		return mail_repair_misencoded_utf8($this->getMailData()->getBodyHtml());
 	}
 	
 	function setBodyHtml($html) {
@@ -111,7 +112,8 @@ class MailContent extends BaseMailContent {
 	}
 	
 	function getBodyPlain() {
-		return $this->getMailData()->getBodyPlain();
+		Env::useHelper('functions', 'mail');
+		return mail_repair_misencoded_utf8($this->getMailData()->getBodyPlain());
 	}
 	
 	function setBodyPlain($plain) {
@@ -119,6 +121,14 @@ class MailContent extends BaseMailContent {
 	}
 	function setForwarded($forwarded) {
 		return $this->getMailData()->setForwarded($forwarded);
+	}
+
+	function setFromCopy($from) {
+		return $this->getMailData()->setFromCopy($from);
+	}
+
+	function getFromCopy() {
+		return $this->getMailData()->getFromCopy();
 	}
 	 
 	/**
@@ -139,7 +149,30 @@ class MailContent extends BaseMailContent {
 	
 	function save() {
 		parent::save();
+
+		Env::useHelper('functions', 'mail');
+		$plain = $this->getMailData()->getBodyPlain();
+		$html = $this->getMailData()->getBodyHtml();
+
+		// if the plain text version is empty, try to extract it from the html
+		if (trim($plain) == '' && trim($html) != '') {
+			try {
+				$this->getMailData()->setBodyPlain(extract_plain_text_from_html($html));
+			} catch (Exception $e) {
+				// if an error occurs, at least save the html
+				$this->getMailData()->setBodyPlain($html);
+			}
+		} else if (mail_plain_body_has_leading_mime_headers($plain)) {
+			// Prefer strip over HTML rebuild so plain formatting is kept when possible.
+			// Never persist an empty replacement for a recoverable body.
+			$normalized = mail_normalize_plain_body($plain, $html);
+			if ($normalized !== $plain && trim($normalized) !== '') {
+				$this->getMailData()->setBodyPlain($normalized);
+			}
+		}
+
 		$this->getMailData()->setId($this->getId());
+		$this->getMailData()->setFromCopy(trim(trim($this->getFromName()) . ' ' . trim($this->getFrom())));
 		$this->getMailData()->save();
 	}
 
@@ -152,7 +185,7 @@ class MailContent extends BaseMailContent {
 		return $this->mail_data;
 	}
 	
-	function delete($delete_db_record = true) {
+	function delete($delete_db_record = true, $skip_imap_server_and_folder_rows = false) {
 		$rows = DB::executeAll("SELECT count(`object_id`) as `c` FROM `".TABLE_PREFIX."mail_contents` WHERE `conversation_id` = " . DB::escape($this->getConversationId()));
 		if (is_array($rows) && count($rows) > 0) {
 			if ($rows[0]['c'] < 2) {
@@ -160,14 +193,68 @@ class MailContent extends BaseMailContent {
 				DB::execute("DELETE FROM `".TABLE_PREFIX."mail_conversations` WHERE `id` = " . DB::escape($this->getConversationId()));
 			}
 		}
-		// delete records from mail_contents_imap_folders
-		DB::execute("DELETE FROM `".TABLE_PREFIX."mail_content_imap_folders` WHERE `object_id` = " . DB::escape($this->getId()));
+		if (!$skip_imap_server_and_folder_rows) {
+			// Remove message copies from the IMAP server before dropping folder/uid mappings (otherwise quota never frees).
+			$this->removeFromImapServerBeforeFolderMapDeleted();
+			// delete records from mail_contents_imap_folders
+			DB::execute("DELETE FROM `".TABLE_PREFIX."mail_content_imap_folders` WHERE `object_id` = " . DB::escape($this->getId()));
+		}
 		
 		if ($delete_db_record) {
 			return parent::delete();
 		} else {
 			$this->mark_as_deleted();
 			return $this->getObject()->delete();
+		}
+	}
+
+	/**
+	 * When a mail is permanently removed from Feng, delete matching messages on the IMAP server.
+	 * Previously only local mapping rows were dropped, so messages (often in Trash) stayed on the server and quotas grew.
+	 */
+	private function removeFromImapServerBeforeFolderMapDeleted() {
+		if (!Plugins::instance()->isActivePlugin('mail')) {
+			return;
+		}
+		$account = $this->getAccount();
+		if (!$account instanceof MailAccount || !$account->getIsImap()) {
+			return;
+		}
+		$folder_rows = DB::executeAll(
+			"SELECT DISTINCT folder FROM `" . TABLE_PREFIX . "mail_content_imap_folders` WHERE object_id = " . DB::escape($this->getId())
+		);
+		$folders = array_unique(array_filter(array_flat($folder_rows)));
+		if (count($folders) == 0) {
+			return;
+		}
+		Env::useHelper('functions', 'mail');
+		try {
+			$imap = $account->imapConnect();
+			$login_ret = $account->imapLogin($imap);
+			if (PEAR::isError($login_ret)) {
+				Logger::log(
+					"removeFromImapServerBeforeFolderMapDeleted: IMAP login failed: " . $login_ret->getMessage(),
+					Logger::WARNING,
+					null,
+					'imap_delete'
+				);
+				return;
+			}
+			remove_mail_from_imap_folders(
+				$account,
+				$imap,
+				$this,
+				$folders,
+				array('allow_message_id_fallback' => false)
+			);
+			$imap->disconnect();
+		} catch (Exception $e) {
+			Logger::log(
+				"removeFromImapServerBeforeFolderMapDeleted: " . $e->getMessage(),
+				Logger::WARNING,
+				null,
+				'imap_delete'
+			);
 		}
 	}
 	
@@ -710,11 +797,26 @@ class MailContent extends BaseMailContent {
 	 * @return string
 	 */
 	function getTextBody() {
-		if ($this->getBodyPlain()) {
-			return $this->getBodyPlain();
-		} else {
-			return html_to_text(html_entity_decode($this->getBodyHtml(),null, "UTF-8"));
+		Env::useHelper('functions', 'mail');
+		$plain = $this->getBodyPlain();
+		$html = $this->getBodyHtml();
+
+		if ($plain) {
+			$normalized = mail_normalize_plain_body($plain, $html);
+			if (trim($normalized) !== '') {
+				return $normalized;
+			}
 		}
+
+		if ($html) {
+			try {
+				return extract_plain_text_from_html($html);
+			} catch (Exception $e) {
+				return html_to_text(html_entity_decode($html, null, "UTF-8"));
+			}
+		}
+
+		return '';
 	}
 	
 	
@@ -866,5 +968,118 @@ class MailContent extends BaseMailContent {
 		";
 		
 		DB::execute($sql);		
+	}
+
+	function trash($trashDate = NULL, $fire_hook = true) {
+		parent::trash($trashDate, $fire_hook);
+		if (config_option('move_email_on_server')) {
+
+			Env::useHelper('functions', 'mail');
+
+			// Extract mail
+			$mail = $this;
+			$account = $mail instanceof MailContent ? $mail->getAccount() : null;
+
+			Logger::log("HOOK after_mail_trash invoked", Logger::DEBUG, null, 'imap_move');
+
+			if (!$mail instanceof MailContent) {
+				Logger::log("after_mail_trash: missing or invalid mail param", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			if (!$account instanceof MailAccount) {
+				Logger::log("after_mail_trash: could not resolve account", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			Logger::log("Trash mail: ID ".$mail->getId(), Logger::DEBUG, null, 'imap_move');
+
+			// 1) Destination folder = TRASH
+			$trash_folder = $account->getTrashFolderName();
+			Logger::log("Trash folder detected: ".$trash_folder, Logger::DEBUG, null, 'imap_move');
+
+			// 2) Connect IMAP
+			$imap = $account->imapConnect();
+			$login_ret = $account->imapLogin($imap);
+			if (PEAR::isError($login_ret)) {
+				Logger::log("ERROR IMAP login in after_mail_trash: ".$login_ret->getMessage(), Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			// 3) Folders to ADD
+			$folders_to_add = array($trash_folder);
+
+			// 4) Folders to REMOVE (all current folders)
+			$rows = DB::executeOne("
+				SELECT folder
+				FROM " . TABLE_PREFIX . "mail_content_imap_folders
+				WHERE object_id = " . $mail->getId()
+			);
+
+			$folders_to_remove = array_unique(array_filter(array_flat($rows)));
+
+			Logger::log("Folders to remove on trash: ".json_encode($folders_to_remove), Logger::DEBUG, null, 'imap_move');
+
+			// 5) Move
+			move_mail_to_imap_folders($account, $imap, $mail, $folders_to_add, $folders_to_remove);
+
+			Logger::log("HOOK after_mail_trash finished", Logger::DEBUG, null, 'imap_move');
+		}
+	}
+
+
+	function untrash($fire_hook = true) {
+
+		parent::untrash($fire_hook);
+
+		if (config_option('move_email_on_server')) {
+
+			Env::useHelper('functions', 'mail');
+
+			// Extract mail
+			$mail = $this;
+			$account = $mail instanceof MailContent ? $mail->getAccount() : null;
+
+			Logger::log("HOOK after_mail_untrash invoked", Logger::DEBUG, null, 'imap_move');
+
+			if (!$mail instanceof MailContent) {
+				Logger::log("after_mail_untrash: missing or invalid mail param", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			if (!$account instanceof MailAccount) {
+				Logger::log("after_mail_untrash: could not resolve account", Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			Logger::log("Untrash mail: ID ".$mail->getId(), Logger::DEBUG, null, 'imap_move');
+
+			// 1) Get original folder with fallback to INBOX
+			$restore_folder = $account->getRestoreFolderName($mail);
+			Logger::log("Restore folder: ".$restore_folder, Logger::DEBUG, null, 'imap_move');
+
+			// 2) Connect IMAP
+			$imap = $account->imapConnect();
+			$login_ret = $account->imapLogin($imap);
+			if (PEAR::isError($login_ret)) {
+				Logger::log("ERROR IMAP login in after_mail_untrash: ".$login_ret->getMessage(), Logger::ERROR, null, 'imap_move');
+				return;
+			}
+
+			// 3) Folders to ADD
+			$folders_to_add = array($restore_folder);
+
+			// 4) Folders to REMOVE (Trash only)
+			$trash_folder = $account->getTrashFolderName();
+			$folders_to_remove = array($trash_folder);
+
+			Logger::log("Folders to remove on untrash: ".json_encode($folders_to_remove), Logger::DEBUG, null, 'imap_move');
+
+			// 5) Move
+			move_mail_to_imap_folders($account, $imap, $mail, $folders_to_add, $folders_to_remove);
+
+			Logger::log("HOOK after_mail_untrash finished", Logger::DEBUG, null, 'imap_move');
+		}
+
 	}
 }

@@ -55,6 +55,28 @@
     function setObjectTypeId($value) {
     	return $this->setColumnValue('object_type_id', $value);
     } // setObjectTypeId()
+
+    /**
+     * Return value of 'object_subtype_id' field
+     *
+     * @access public
+     * @param void
+     * @return integer
+     */
+    function getObjectSubTypeId() {
+    	return $this->getColumnValue('object_subtype_id');
+    } // getObjectSubTypeId()
+
+    /**
+     * Set value of 'object_subtype_id' field
+     *
+     * @access public
+     * @param integer $value
+     * @return boolean
+     */
+    function setObjectSubTypeId($value) {
+    	return $this->setColumnValue('object_subtype_id', $value);
+    } // setObjectSubTypeId()
     
     /**
     * Return value of 'value' field

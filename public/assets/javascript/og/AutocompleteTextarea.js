@@ -1,3 +1,15 @@
+og.autocompleteAddressMatches = function(candidate, query) {
+	if (!candidate || !query) return false;
+	var cand = String(candidate).toLowerCase();
+	var tokens = String(query).toLowerCase().replace(/^\s+|\s+$/g, '').split(/\s+/);
+	for (var i = 0; i < tokens.length; i++) {
+		if (tokens[i] && cand.indexOf(tokens[i]) === -1) {
+			return false;
+		}
+	}
+	return tokens.length > 0;
+};
+
 og.render_autocomplete_field = function(config) {
 	if (!config) config = {};
 	
@@ -131,7 +143,7 @@ og.render_autocomplete_field = function(config) {
 					if (!query_server) {
 						while (k < comp.store.length && to_draw.length < limit) {
 							var stv = comp.store[k++];
-							if (stv.toLowerCase().indexOf(value.toLowerCase()) >= 0) to_draw[to_draw.length] = stv;
+							if (og.autocompleteAddressMatches(stv, value)) to_draw[to_draw.length] = stv;
 						}
 						comp.selectedItem = 0;
 						comp.drawDropDown(to_draw);
@@ -151,11 +163,13 @@ og.render_autocomplete_field = function(config) {
 								og.openLink(og.getUrl('contact', 'get_allowed_addresses'), {
 									post: {name_filter: value},
 									callback: function(success, data) {
-										comp.store = data.addresses;
+										comp.store = data.addresses || [];
+										k = 0;
+										to_draw = [];
 		
 										while (k < comp.store.length && to_draw.length < limit) {
 											var stv = comp.store[k++];
-											if (stv.toLowerCase().indexOf(value.toLowerCase()) >= 0) to_draw[to_draw.length] = stv;
+											if (og.autocompleteAddressMatches(stv, value)) to_draw[to_draw.length] = stv;
 										}
 										comp.selectedItem = 0;
 										comp.drawDropDown(to_draw);

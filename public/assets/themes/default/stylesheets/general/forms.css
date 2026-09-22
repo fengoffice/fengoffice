@@ -1,25 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700&display=swap');
+
 label {
  /* margin: 3px 0;
   font-weight: bolder;*/
   display: block;
 }
 
-label.checkbox, label.yes_no {
+label.checkbox {
   display: inline;
-  /*position: static;
-  top: -2px;
-  margin-left: 5px;*/
   position: relative;
-  top: -2px;
+  top: 1px;
   cursor: pointer;
 }
 
-label.checkbox, label.yes_no {
-  top: 1px;
-}
-
 label.yes_no {
+  display: inline;
+  cursor: pointer;
   font-weight: normal;
+  vertical-align: middle;
+  position: static;
 }
 
 span.label_required {
@@ -28,23 +27,15 @@ span.label_required {
 
 input, textarea, select {
   border: 1px solid #ccc;
-  border-radius: 2px;
+  border-radius: 4px;
   padding: 3px;
-  font-size: 13px;
+  font-size: 14px;
   background: white;
   margin: 0;
 }
 
-select {
-  padding: 2px;
-}
-
 input:hover, textarea:hover, select:hover {
-  border: 1px solid deepskyblue;
-}
-
-input:focus, textarea:focus, select:focus {
-  border: 1px solid black;
+  border: 1px solid #1B75BC !important;
 }
 
 fieldset {
@@ -71,7 +62,7 @@ input.title { width: 530px; }
 
 .coInputName input.title {
 	width: 530px;
-	height: 28px;
+	height: 24px;
 	font-size: 130%;
 }
 .coInputName input.title.short, .simplemodal-data .coInputHeader .coInputName input.title.short {
@@ -87,6 +78,28 @@ input.checkbox, input.yes_no {
   border: 0;
   width: auto;
   background: transparent;
+}
+
+input.yes_no {
+  vertical-align: middle;
+}
+
+/* Boolean custom property radios (Sí / No / Sin especificar) */
+.cp-boolean-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+  /* These are option labels, not field labels: opt out of the generic ~320px CP-label width
+     (.form-tab .custom-properties label etc.) so the options sit tight instead of stretching the
+     form to fit three 320px labels. */
+  width: auto !important;
+  min-width: 0 !important;
+  margin-bottom: 0;
+}
+
+.cp-boolean-radios input[type="radio"] {
+  vertical-align: middle;
 }
 
 legend label.checkbox {
@@ -125,20 +138,39 @@ textarea.editor {
 
 button.submit, button[reset].submit {
   margin-top: 10px;
-  padding: 5px 10px;
-  font-size: 18px;
-  height: 36px;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 14px;
+  font-family: "Open Sans", Arial, sans-serif;
+  font-weight: 600;
+  height: 32px;
   cursor: pointer;
   background: none repeat scroll 0 0 #f8f8f8;
   border-color: #c4c4c4;
-  border-radius: 2px;
+  border-radius: 4px;
   border-style: solid; 
   border-width: 1px;
   color: #333;
-  box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
-  -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
-  -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+  box-shadow: 1px 1px 1px 0 rgba(0, 0, 0, 0.12);
+  -webkit-box-shadow: 1px 1px 1px 0px rgba(0, 0, 0, 0.12);
+  -moz-box-shadow:    1px 1px 1px 0px rgba(0, 0, 0, 0.12);
 }
+
+
+.feng-forms button.submit, button[reset].submit {
+    height: 32px;
+    /* border-radius: 4px; */
+    /* opacity: 1; */
+    gap: 2px;
+    /* font-family: Open Sans;
+    font-weight: 600; */
+    /* font-size: 14px; */
+    /* line-height: 18px; */
+    letter-spacing: none;
+    vertical-align: middle;
+	margin-top: 0px !important;
+}
+
 
 .ui-widget button {
 	font-size: 18px !important;
@@ -157,8 +189,9 @@ button.x-btn-text.blue,
 button.submit.blue, 
 button.add-first-btn.blue,
 button.object-view-btn.blue {
-	background-color: #4d82cc;
-	border-color: #5d92dc;
+	background-color: #1B75BC;
+	border-color: #1B75BC;
+	/* border-color: #5d92dc; */
 	color: #fff;
 }
 button.add-new-user-btn {
@@ -172,6 +205,9 @@ button.add-new-user-btn {
     color: #999;
     border: 1px solid #ccc;
 }
+.coInputHeader .coInputButtons button.submit {
+    margin-right: 20px; /* quick fix for the overlap of the X */
+}
 
 .coInputHeader .coInputButtons button.submit:hover,
 .coInputMainBlock button.submit:hover, 
@@ -181,7 +217,7 @@ button.x-btn-text.blue:hover,
 #mails-panel button.x-btn-text.mail.blue:hover,
 button.submit.blue:hover, 
 button.add-first-btn.blue:hover {
-	background-color: #5d92dc;
+	background-color: #155C94;
 }
 
 .x-toolbar.x-small-editor button.add-first-btn {
@@ -191,7 +227,12 @@ button.add-first-btn.blue:hover {
 	background-position-x: 3px !important;
 	min-width: 50px;
 }
-
+.x-toolbar.x-small-editor button.btn {
+    padding: 4px 8px;
+}
+.x-toolbar.x-small-editor .x-btn {
+    margin-right: 2px;
+}
 button.object-view-btn {
 	height: 26px;
 	padding-right: 4px;
@@ -202,14 +243,17 @@ button.object-view-btn {
 	min-width: 50px;
 	cursor: pointer;
 	margin: 0 3px;
-	border-color: #c4c4c4;
-	border-radius: 2px;
-	border-style: solid; 
-	border-width: 1px;
-	color: #333;
-	box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
-	-webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
-	-moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+	border-radius: 4px;
+    font-family: "Open Sans", Arial, sans-serif;
+    line-height: 18px;
+    background: none repeat scroll 0 0 #f8f8f8 !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+    gap: 8px;
+    font-weight: 500;
+	box-shadow: 1px 1px 1px 0 rgba(0, 0, 0, 0.12);
+	-webkit-box-shadow: 1px 1px 1px 0px rgba(0, 0, 0, 0.12);
+	-moz-box-shadow:    1px 1px 1px 0px rgba(0, 0, 0, 0.12);
 }
 button.object-view-btn:hover {
 	opacity: 0.8;
@@ -217,64 +261,208 @@ button.object-view-btn:hover {
 
 
 /*Buttons common*/
+.btn, button {
+    cursor: pointer;
+}
 .btn {
 	width: auto;
 	height: auto;
     vertical-align: middle;
-    font-size: 18px;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 18px; /* Size of icon */
 	float: left;
-	cursor: pointer;	
-	background: none repeat scroll 0 0 #f8f8f8;
-    border-color: #c4c4c4;
-    border-radius: 2px;
-    border-style: solid; 
-    border-width: 1px;
-    color: #333;
+	background: none repeat scroll 0 0 #f8f8f8 !important;
+    /* border-color: #c4c4c4; */
+    /* border-style: solid; 
+    border-width: 1px; */
+    border: 1px solid #ddd !important;
+    color: #333 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 4px;
+    gap: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
     text-shadow: none;
-    box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
-    -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
-    -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
+    box-shadow: 1px 1px 1px 0 rgba(0, 0, 0, 0.12);
+    -webkit-box-shadow: 1px 1px 1px 0px rgba(0, 0, 0, 0.12);
+    -moz-box-shadow:    1px 1px 1px 0px rgba(0, 0, 0, 0.12);
     white-space: nowrap;
 }
+.btn:hover {
+    background: #e9e9e9 !important;
+}
+.btn:focus {
+    background: #e9e9e9 !important;
+    outline: none;
+}
+.btn i {
+    font-size: 18px;
+    line-height: 18px;
+}
 
+.feng-forms .btn {
+	height: 32px;
+	border-radius: 4px;
+	opacity: 1;
+	font-family: "Open Sans", Arial, sans-serif;
+	font-weight: 500;
+	font-size: 14px;
+	line-height: 18px;
+	letter-spacing: normal;
+	vertical-align: middle;
+	margin-top: 0px;
+    color: #3F5056;
+    box-sizing: border-box;
+}
+
+.feng-forms a.link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #155C94;
+}
+.feng-forms a.link:hover {
+    color: #1B75BC;
+}
+.feng-forms a.link i {
+    line-height: 1;
+    display: block;
+}
 
 /*Buttons sizes*/
-.btn-lg{
+.btn-lg {
   padding: 10px 16px;
   font-size: 18px;
   line-height: 22px;
   border-radius: 6px;
+  gap: 8px;
 }
-.btn-sm{
+.btn-md {
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 18px;
+  border-radius: 4px;
+  gap: 8px;
+}
+.btn-sm {
   padding: 5px 10px;
-  padding-left: 4px;
-  font-size: 13px;
-  line-height: 1.26;
-  border-radius: 3px;
+  font-size: 13px !important;
+  line-height: 13px;
+  border-radius: 4px;
+  gap: 4px;
 }
-.btn-xs{
+.btn-sm i {
+    font-size: 14px;
+    line-height: 14px;
+    font-weight: normal;
+}
+.btn-xs {
   padding: 1px 5px;
   font-size: 12px;
   line-height: 1.5;
   border-radius: 2px;
+  gap: 4px;
+}
+#menu-panel .btn i {
+    font-size: 14px;
+    line-height: 14px;
+}
+#menu-panel .btn-xs{
+  padding: 1px 5px !important;
+  padding-left: 3px;
+  font-size: 13.2px !important;
+  line-height: 13.2px !important;
+  font-weight: normal;
+  border-radius: 4px;
+  min-width: 52px;
+  height: 24px;
+  margin-right: 16px;
+  /* margin-top: 3px; */
+  background-color: #2a9d8f !important;
+  /* border: 1px solid; */
+}
+/* #menu-panel .btn-xs:hover {
+    opacity: 0.7;
+} */
+#menu-panel .btn-xs:hover {
+  background-color: #21867a !important; /* Darker shade for depth */
+  /* transform: translateY(-1px); */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 /*Buttons colors*/
 .btn-primary {
-  color: #ffffff;
-  background-color: #337ab7;
-  border-color: #2e6da4;
+  color: #ffffff !important;
+  /* background-color: #337ab7;
+  border-color: #2e6da4; */
+  background-color: #1B75BC !important;
+  border-color: #1B75BC !important;
 }
 .btn-primary:focus,
 .btn-primary.focus {
-  color: #ffffff;
-  background-color: #286090;
-  border-color: #122b40;
+  color: #ffffff !important;
+  background-color: #1B75BC !important;
+  border-color: #1B75BC !important;
 }
 .btn-primary:hover {
-  color: #ffffff;
-  background-color: #286090;
-  border-color: #204d74;
+  color: #ffffff !important;
+  /* background-color: #286090;
+  border-color: #204d74; */
+  background-color: #155C94 !important;
+  border-color: #155C94 !important;
+}
+.btn-primary-50 {
+  color: #1B75BC !important;
+  background-color: #E8F2FA !important;
+  border-color: transparent !important;
+  border: 1px solid transparent;
+}
+
+.btn-primary-50:hover,
+.btn-primary-50:focus,
+.btn-primary-50:active {
+  color: #155C94 !important; 
+  background-color: #D6E8F5 !important;  
+  border-color: transparent !important;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-danger-50 {
+  background-color: #fff5f5 !important;
+  color: #dc3545 !important;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-danger-50:hover {
+  background-color: #ffe0e0 !important;
+  color: #b02a37 !important;
+  border-color: #ffe0e0 !important;
+}
+
+.btn-danger-50:focus {
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+.btn-secondary {
+  color: #ffffff !important;
+  background-color: #2a9d8f !important;
+  border-color: #2a9d8f !important;
+}
+.btn-secondary:hover {
+  color: #ffffff !important;
+  background-color: #21867a !important;
+  border-color: #21867a !important;
+}
+.btn-secondary:focus,
+.btn-secondary.focus {
+  color: #ffffff !important;
+  background-color: #21867a !important;
+  border-color: #21867a !important;
 }
 
 span.required {
@@ -418,6 +606,9 @@ a.button {
 }
 #quick-form.menu ul.quick-menu-list {
 	background: #EEE;
+    max-height: 600px;
+    overflow-y: auto;
+	overflow-x: hidden;
 }
 #quick-form.menu ul.quick-menu-list li.quick-menu-item {
 	padding: 5px 10px;
@@ -431,6 +622,18 @@ a.button {
 	width: 100%;
 }
 
+#quick-form.menu ul.quick-menu-list ul.submenu {
+	width: max-content;
+    border: 1px solid #ccc;
+	display: none;
+}
+
+#quick-form.menu ul.quick-menu-list li.quick-menu-item a.ico-dash-collapsed,
+#quick-form.menu ul.quick-menu-list li.quick-menu-item a.ico-dash-expanded {
+	background-size: 13px;
+	float: none;
+	background-position: 3px center;
+}
 
 #quick-form .close {
     background: url("../../images/12x12/close-icon-1.png") 0 0 ;
@@ -606,10 +809,6 @@ div.add-person-form div.field label.checkbox {
 	padding: 0px;
 }
 
-.edit-form-tabs .ui-tabs-panel.ui-widget-content a {
-	color: #003562;
-	/*height: 14px;*/
-}
 .removeUndo > a{
 	height: 21px !important;
 }
@@ -625,8 +824,17 @@ div.add-person-form div.field label.checkbox {
 .edit-form-tabs .form-tab.ui-tabs-panel {
 	border: 1px solid #bbb;
 	border-top: 0px none;
-	padding: 15px;
+	padding: 16px;
 	min-height: 250px;
+    max-height: calc(95vh - 260px);
+    overflow: auto;
+}
+
+.feng-forms .edit-form-tabs .form-tab.ui-tabs-panel {
+	/* border: 0px; */
+    border: 1px solid #bbb;
+    background-color: #F5F5F5;
+    margin-bottom: 0;
 }
 
 .edit-form-tabs.ui-tabs.ui-widget.ui-widget-content {
@@ -638,6 +846,12 @@ div.add-person-form div.field label.checkbox {
 	border-bottom: 1px solid #bbb;
 	padding-left: 0px;
 }
+
+.feng-forms .edit-form-tabs.ui-tabs.ui-widget.ui-widget-content ul.ui-tabs-nav {
+	border-bottom: 0px none;
+	font-size: 14px;
+}
+
 .edit-form-tabs.ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
 .edit-form-tabs.ui-tabs .ui-tabs-nav li.ui-state-disabled .ui-tabs-anchor,
 .edit-form-tabs.ui-tabs .ui-tabs-nav li.ui-tabs-loading .ui-tabs-anchor {
@@ -652,10 +866,30 @@ div.add-person-form div.field label.checkbox {
 }
 
 .edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-state-default {
-	background: #e6e6e6;
+    background: #e6e6e6;
+
 }
+
+.feng-forms .edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-state-default {
+	background: transparent;
+	border: 0;
+	/* border: 1px solid #B7B7B7; */
+    border-bottom: 0px none !important;
+}
+.feng-forms .edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-state-default:hover {
+	background: #F5F5F5;
+}
+
+.feng-forms .edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-tabs-active {
+    background: #F5F5F5;
+    border-radius: 4px 4px 0px 0px;
+	border: 1px solid #bbb;
+}
+
 .edit-form-tabs.ui-tabs ul.ui-tabs-nav li.ui-tabs-active {
-	background: #fff;
+    background: #fff;
+    border: 1px solid #aaaaaa;
+    /* border-bottom: 0px none; */
 }
 
 .edit-form-tabs .permissions-container.form-tab fieldset {
@@ -676,40 +910,80 @@ div.add-person-form div.field label.checkbox {
 	overflow-x: hidden !important;
 }
 
+.simplemodal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 18px;
+    color: #636364;
+}
+
+.simplemodal-close:hover {
+    color: #003562;
+}
 
 .simplemodal-data form {
 	min-width: 800px;
-	border-radius: 5px;
 }
 .simplemodal-data .coInputHeader {
 	padding-top: 15px;
 	border-radius: 5px 5px 0 0;
 }
 .simplemodal-data .coInputMainBlock {
-	padding-bottom: 10px;
+	padding-bottom: 0px;
 	border-radius: 0 0 5px 5px;
+}
+.simplemodal-data .coInputSubmitBlock {
+    padding: 15px 0;
+}
+.simplemodal-data .coInputSubmitBlock button {
+    margin-top: 0;
 }
 .simplemodal-data .coInputMainBlock .edit-form-tabs {
 	margin: 0px;
 }
+
+/*
+ * Modal forms are measured by simplemodal (setContainerDimensions) the moment they're inserted,
+ * and it freezes .simplemodal-container at that width. In a modal the form's inline scripts run
+ * asynchronously (og.render_modal_form -> og.extractScripts schedules them via
+ * Ext.lib.Event.onAvailable), so jQuery-UI tabs() collapses the panels only AFTER that
+ * measurement. Until then every .form-tab is visible and the widest one (e.g. the permissions
+ * tab) stretches the form to the full viewport, which simplemodal then locks in.
+ * Show only the first panel until tabs() adds .ui-tabs, so the modal is measured at the real
+ * (single-tab) width. Once initialised the :not(.ui-tabs) guard stops matching and jQuery-UI
+ * takes over panel visibility, so tab switching is unaffected.
+ */
+.simplemodal-data .edit-form-tabs:not(.ui-tabs) > .form-tab ~ .form-tab {
+	display: none !important;
+}
+
 .simplemodal-data .coInputHeader .coInputHeaderUpperRow {
 	margin: 7px 10px 10px 0;
+	float: left;
+}
+
+.simplemodal-data .feng-forms .coInputHeader .coInputHeaderUpperRow {
+	margin: 0px;
 	float: left;
 }
 .simplemodal-data .coInputHeader .coInputHeaderUpperRow .coInputTitle {
 	min-width: 100px;
 }
 .simplemodal-data .coInputHeader .coInputName input.title {
-	width: 450px;
+	width: 450px !important;
+	border-radius: 4px;
 }
 .simplemodal-data .edit-form-tabs.ui-tabs .og-add-subscribers {
 	max-height: 450px;
 	overflow-y: auto;
 }
 
-.webpage .coInputMainBlock input.title {
+/* .webpage .coInputMainBlock input.title {
 	width:490px;
-}
+} */
 
 
 .field-with-error {
@@ -745,6 +1019,10 @@ div.add-person-form div.field label.checkbox {
 	margin-top: 5px;
 }
 
+.coInputMainBlock .user-groups-container .user-groups-selector-container .x-form-field-wrap {
+	max-width: 400px;
+}
+
 select.country-selector option[value=""] {
 	color: #777;
 }
@@ -763,32 +1041,42 @@ a.cke_combo_button, a.cke_button {
 	height: auto !important;
 }
 
-.cp-multiple .cp-val { display: flex; align-items: center; margin-bottom: 5px;}
+.cp-multiple .cp-val { display: flex; align-items: center; margin-bottom: 8px;}
 .cp-multiple .cp-val:last-child { display: block; margin-top: 20px; }
 /* .cp-multiple .cp-val:last-child input, .cp-multiple .cp-val:last-child textarea { border: 2px solid #2A9D8F; } */
 .cp-multiple .cp-val a.ico-delete { margin-left: 10px !important; }
 .cp-multiple .cp-val a.ico-add { margin-top: 10px; display: inline-block; }
+.cp-multiple .cp-val input, .cp-multiple .cp-val textarea { 
+    /* max-width: calc(340px - 13px);  */
+    box-sizing: border-box; 
+    width: 100%; 
+}
 /* .cp-multiple .cp-val:first-child { padding: 10px 0; } */
 /* .cp-multiple .cp-val:first-child a.ico-add { margin-left: 10px; } */
-.cp-multiple .cp-val input, .cp-multiple .cp-val textarea { max-width: calc(340px - 13px); box-sizing: border-box; width: 100%; }
 /* .cp-multiple .cp-val textarea { margin-left: 10px; } */
 
-.amount-container-fields {
-	overflow: auto;
-	/* max-width: 350px; */
-	box-sizing: border-box;
+.feng-forms .cp-multiple a.ico-add {
+    background-position-y: 1px !important;
 }
 
-.amount-container-fields select {
-	/* margin-bottom: 5px; */
+
+.custom-properties .input-container .amount-container-fields select {
 	margin-right: 5px;
-	width: 60px;
-	height: 30px;
+	width: 60px !important;
+	height: 30px !important;
+	display: inline-block !important;
 }
-.amount-container-fields input {
+
+.custom-properties .input-container .amount-container-fields input {
 	width: 287px;
 	box-sizing: border-box;
 	text-align: right;
+}
+
+.custom-properties .input-container .amount-container-fields input[type="text"]:not(.x-form-text) {
+	width: 287px;
+	display: inline-block;
+	border-radius: 5px;
 	height: 30px;
 }
 
@@ -827,4 +1115,1874 @@ a.cke_combo_button, a.cke_button {
     display: none;
 	/* padding-left: 170px; */
 	padding-top: 5px;
+}
+
+
+
+/* Contact quick add */
+.contact-quick-add .cp-text {
+	width: 342px;
+}
+.contact-quick-add .address-custom-properties-parent .address-input-container {
+	grid-template-rows: repeat(3, 1fr);
+}
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_street_input,
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_city_input,
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_state_input {
+	width: 164px;
+}
+.contact-quick-add .address-custom-properties-parent .address-input-container .address_country_input {
+	width: 172px;
+}
+.contact-quick-add .button-container {
+	float: right;
+	margin-right: 25px;
+	margin-bottom: 8px;
+}
+
+
+/* .form-container.customer {
+	width: 1000px;
+}
+
+
+.form-container.customer .dimension-selector-container {
+    display: block !important;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.form-container.customer .dimension-selector-container > label {
+    display: block !important;
+    margin-bottom: 6px !important;
+    font-size: 100%;
+}
+
+.form-container.customer .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+}
+
+.form-container.customer .input-container label,
+.form-container.customer .dimension-selector-container > label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 0.25rem !important;
+}
+/*
+.form-container.customer .address-custom-properties-parent .address-input-container {
+    margin-top: 5px !important;
+}*/
+
+/* .form-container.customer .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 293px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container {
+    max-width: 329px !important;
+    justify-content: space-between;
+    border-radius: 3px;
+    margin-bottom: 0px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    position: relative;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .coViewAction {
+    display: none;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container > span select, 
+.form-container.customer .phone-input-container > span select,
+.form-container.customer .phones-input-container > span select,
+.form-container.customer .emails-input-container span select,
+.form-container.customer .webpages-input-container span select {
+    width: 73px !important;
+    height: 32px !important;
+}
+
+.form-container.customer .phone-input-container input,
+.form-container.customer .emails-input-container input,
+.form-container.customer .webpages-input-container input {
+    height: 24px;
+    margin-left: 7px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container textarea {
+    width: 293px;
+    height: 65px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 293px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_state_input {
+    width: 139px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.customer .address-custom-properties-parent .address-input-container {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.customer .address-custom-properties-parent .address-input-container .address_zipcode_input {
+    height: 25px;
+    width: 139px;
+    margin-top: 5px;
+    margin-right: 28px;
+}
+
+.form-container.customer .address-custom-properties-parent .address-input-container .address_country_input {
+    height: 33px;
+    width: 301px;
+    margin-top: 5px;
+}
+
+.form-container.customer .address_type_input {
+    min-width: 140px !important;
+}
+.form-container.customer .custom-properties-container .custom-properties-column .cp-description label {
+	display: none !important;
+} */
+
+
+/** CSS for customer form with no type selector in phone, email, etc */
+/* .form-container.customer .phone-input-container.no-type-selector input,
+.form-container.customer .emails-input-container .no-type-selector input,
+.form-container.customer .webpages-input-container .no-type-selector input {
+    margin-left: 0px;
+}
+.form-container.customer .webpages-input-container .no-type-selector input {
+	width: 295px;
+}
+.form-container.customer .emails-input-container .no-type-selector {
+	display: inline-block;
+}
+.form-container.customer .emails-input-container .no-type-selector input {
+	width: 300px;
+}
+.form-container.customer .email-input-container.no-type-selector .removeUndo {
+	float: right;
+	top: 10px;
+}
+.form-container.customer .address-custom-properties-parent .address-input-container.no-type-selector textarea {
+	margin-top: 0px;
+	margin-right: 28px;
+} */ */
+/** CSS for customer form with no type selector in phone, email, etc */
+
+
+
+
+/** TWO COLUMNS CUSTOM PROPERTIES FOR GENERAL MEMBER FORM **/
+
+.edit-member .custom-properties-container.two-columns {
+	display: flex !important; 
+	width: 950px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column {
+	min-width: 470px;
+	width: 475px;
+}
+
+feng-forms .edit-member .custom-properties-container .custom-properties-column {
+	min-width: 320px !important;
+	width: 320px !important;
+}
+
+.feng-forms .feng-dimention-selector {
+	width: 100%;
+}
+
+.feng-forms .dimension-selector-container .selector {
+	width: 100% !important;
+	float: none !important
+}
+
+.edit-member .custom-properties-container .custom-properties-column .feng-dimention-selector {
+	float: none !important;
+}
+
+.feng-forms.edit-member .custom-properties-container .custom-properties-column .feng-dimention-selector {
+		/* width: 320px; */
+}
+
+/* .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container {
+	display: block !important;
+	width: 100%;
+	min-width: 250px;
+	margin-bottom: 0px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector {
+	width: 320px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector {
+	float: none !important;
+	width: 424px !important;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-panel-body.collapsible-body {
+	width: 420px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .dimension-panel-textfilter,
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected {
+	height: 30px !important;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected .empty-text {
+	line-height: 28px;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-toolbar .selected-members .selected-member-div span.member-path span {
+	line-height: 30px;
+	padding: 7px 3px;
+}
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-toolbar .selected-member-div, 
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected .selected-member-div .completePath {
+	height: 30px;
+}
+.edit-member .custom-properties-container .custom-properties-column div.selected-members.with-checkbox div.selected-member-div div.selected-member-actions {
+	margin-right: -22px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > label {
+    display: block !important;
+    margin-bottom: 0.25rem !important;
+    font-size: 100%;
+	margin-top: 1rem;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 0px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container .cp-multiple {
+	margin-left: 0px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container .cp-multiple .cp-val,
+.edit-member .custom-properties-container .custom-properties-column .input-container .cp-multiple .cp-val a.ico-add  {
+	margin-top: 0px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container label,
+.edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 0.25rem !important;
+	margin-top: 1rem;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 415px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container {
+    max-width: 450px !important;
+    justify-content: space-between;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    position: relative;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .coViewAction {
+    display: none;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container > span select,
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container > span select,
+.edit-member .custom-properties-container .custom-properties-column .phones-input-container > span select,
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container span select,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container span select {
+    width: 73px !important;
+    height: 32px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container input,
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container input,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container input {
+    height: 24px;
+    margin-left: 7px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .email-input-container > * {
+	flex: none;
+}
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container input,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container input {
+	width: 322px;
+}
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container .phone-number {
+	width: 160px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container textarea {
+    width: 415px;
+    height: 65px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_city_input {
+    width: 415px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_state_input {
+    width: 198px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_zipcode_input {
+    height: 25px;
+    width: 198px;
+    margin-top: 5px;
+    margin-right: 28px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container .address_country_input {
+    height: 33px;
+    width: 422px;
+    margin-top: 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .address_type_input {
+    min-width: 200px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container input[type="text"],
+.edit-member .custom-properties-container .custom-properties-column .input-container textarea {
+	width: 415px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .input-container input[type="text"],
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .input-container textarea {
+	width: 320px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container input[type="text"] {
+    height: 25px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container select {
+	height: 30px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container select.cp-list {
+	width: 427px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container input.x-form-text[type="text"] {
+    height: 30px;
+}
+.edit-member .custom-properties-container .custom-properties-column .cp-text {
+	padding: 2px 5px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .cp-description label {
+	display: none !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .input-container .x-form-arrow-trigger,
+.edit-member .custom-properties-container .custom-properties-column .input-container .x-form-date-trigger {
+	-webkit-transform: scale(1.45);
+    -moz-transform: scale(1.45);
+    -ms-transform: scale(1.45);
+    transform: scale(1.45);
+    margin-top: 5px;
+    margin-left: 3px;
+}
+.edit-member .custom-properties-container .custom-properties-column .input-container input.x-form-text.x-form-field[type="text"] {
+	width: 391px !important;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .contact-selector-card {
+	width: 420px;
+}
+
+
+.edit-member .custom-properties-container .custom-properties-column .emails-input-container .no-type-selector input,
+.edit-member .custom-properties-container .custom-properties-column .webpages-input-container .no-type-selector input {
+	width: 415px;
+	margin-left: 0px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .emails-input-container .no-type-selector input,
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .webpages-input-container .no-type-selector input {
+	width: 415px;
+	margin-left: 0px;
+}
+
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container.no-type-selector .phone-number {
+	margin-left: 0px;
+}
+.edit-member .custom-properties-container .custom-properties-column .phone-input-container.no-type-selector .phone-name {
+	width: 240px;
+}
+.edit-member .custom-properties-container .custom-properties-column .address-custom-properties-parent .address-input-container.no-type-selector textarea {
+	margin-right: 28px;
+	margin-top: 0px;
+}
+
+.edit-member .coInputMainBlock .custom-properties-container .custom-properties-column .dimension-selector-description {
+	margin-top: 0px;
+	margin-bottom: 0px;
+} */
+
+
+/* FENG FORMS */
+.feng-forms .form-body {
+	padding: 0 15px;
+}
+.feng-forms .coInputTitle {
+    color: #3F5056 !important;
+}
+.feng-forms .empty-text {
+    color: #ccc !important;
+}
+/* ---- Hide scrollbars by default ---- */
+.feng-forms textarea {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.feng-forms textarea::-webkit-scrollbar {
+    display: none;
+}
+.feng-forms textarea:hover {
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
+}
+.feng-forms textarea:hover::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+}
+.feng-forms textarea:hover::-webkit-scrollbar-track {
+    background: transparent;
+}
+.feng-forms textarea:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+.feng-forms textarea:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container {
+	display: block !important;
+	width: 100%;
+	min-width: 250px;
+	margin-bottom: 0px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector {
+	float: none !important;
+	/* width: 320px !important; */
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-panel-body.collapsible-body {
+	max-width: 475px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .dimension-panel-textfilter,
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected {
+	height: 32px !important;
+}
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected .empty-text {
+	line-height: 30px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .x-toolbar .selected-member-div, 
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector .single_current_selected .selected-member-div .completePath {
+	height: 30px;
+}
+.feng-forms .edit-member .custom-properties-container .custom-properties-column div.selected-members.with-checkbox div.selected-member-div div.selected-member-actions {
+	margin-right: -22px;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > label {
+    display: block !important;
+    margin-bottom: 0.25rem !important;
+    /* font-size: 100%; */
+	margin-top: 1rem;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 0px !important;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .input-container label,
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container > label,
+.feng-forms .edit-member .custom-properties-full-width .input-container label,
+.feng-forms .edit-member .custom-properties-full-width .dimension-selector-container label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 0.25rem !important;
+	margin-top: 1rem;
+}
+
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .input-container label.yes_no,
+.feng-forms .edit-member .cp-full-width .input-container label.yes_no,
+.feng-forms .edit-member .cp-columns-container .input-container label.yes_no {
+	display: inline !important;
+	vertical-align: middle;
+}
+.feng-forms .edit-member .custom-properties-container .custom-properties-column .input-container input.yes_no,
+.feng-forms .edit-member .cp-full-width .input-container input.yes_no,
+.feng-forms .edit-member .cp-columns-container .input-container input.yes_no {
+	vertical-align: middle;
+}
+
+/* .feng-forms .cp-multiple .cp-val input, .cp-multiple .cp-val textarea { 
+	width: 298px;
+	height: 30px;
+	border-radius: 5px; 
+	box-sizing: border-box;
+} */
+ .feng-forms .cp-multiple .cp-val input,
+.feng-forms .cp-multiple .cp-val textarea {
+    padding-right: 35px;
+}
+
+.feng-forms .amount-container-fields {
+  display: flex !important;
+  align-items: center;
+  /* width: 320px !important; */
+  height: 32px !important;
+  overflow: auto;
+  box-sizing: border-box;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.feng-forms .amount-container-fields select {
+  width: auto;
+  min-width: 60px !important;   
+  max-width: 100px !important;  
+  flex-shrink: 0;               
+  height: 32px !important;
+  margin-right: 5px;
+  border-radius: 4px;
+}
+
+.feng-forms .amount-container-fields input {
+  flex: 1 !important;           
+  min-width: 0;                 
+  height: 32px !important;
+  text-align: right;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.custom-properties .input-container .amount-container-fields select {
+	margin-right: 5px;
+	width: 60px !important;
+	height: 30px !important;
+	display: inline-block !important;
+}
+
+.feng-forms .custom-properties .input-container .amount-container-fields select {
+	margin-right: 5px;
+	width: 60px !important;
+	height: 30px !important;
+	display: inline-block !important;
+	border-radius: 4px;
+}
+
+.form-container.feng-forms {
+	width: auto;
+    color: #3F5056 !important;
+    font-family: "Open Sans", Arial, sans-serif !important;
+    border-radius: 4px;
+}
+/* .form-container.project.feng-forms,
+.form-container.customer.feng-forms {
+	width: 1200px;
+} */
+.form-container.feng-forms label {
+    color: #3F5056;
+    font-size: 14px !important;
+}
+
+.feng-forms .cp-multiple {
+    margin-left: 0px;
+}
+
+.feng-forms .cp-multiple .cp-val:last-child {
+	display: block;
+	margin-top: 0px;
+}
+
+.feng-forms .cp-multiple .cp-val {
+    position: relative;
+}
+
+.feng-forms .cp-multiple .cp-val a.ico-delete {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    margin: 0 !important;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background-position: 0 !important;
+}
+
+.feng-forms .x-panel-tbar .x-toolbar {
+	padding: 0px !important;
+}
+
+.feng-forms .property-group {
+    width: auto;
+    border-radius: 4px;
+    border-width: 1px;
+    opacity: 1;
+    gap: 16px;
+    padding: 16px;
+    box-shadow: 0px 4px 4px 4px #D9D9D973;
+    background-color: #FFFFFF;
+	margin-bottom: 16px;
+}
+
+.feng-forms .property-group-body .input-container {
+	margin-bottom: 16px !important;
+}
+
+.feng-forms .property-group-body .input-container .input-container,
+.feng-forms .property-group-body .input-container:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Form footer layout */
+.feng-forms .form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 32px;
+    padding: 15px 0;
+}
+
+/* Action links */
+.feng-forms .footer-left,
+.feng-forms .footer-right {
+    display: flex;
+    gap: 16px;
+    font-weight: 400;
+    vertical-align: middle;
+    color: #6c757d;
+    /* font-family: Open Sans;
+    font-weight: 400;
+    font-size: 16px; */
+}
+
+/* Link style (Archive / Delete) */
+.feng-forms .footer-left .link-ico {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    /* color: inherit; */
+    transition: color 0.2s ease-in-out;
+    /* font-size: 14px; */
+    padding: 0 16px;
+}
+
+.feng-forms .footer-left .link-ico:hover {
+    background-color: #ffe4e4 !important;
+    border-color: #ffe4e4 !important;
+    color: #c30000 !important;
+}
+
+
+
+.form-container.feng-forms .dimension-selector-container .feng-dimention-selector {
+	    display: inline !important;
+}
+
+.form-container.feng-forms .dimension-selector-container > .input-container {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+}
+/* override float: left from custom properties that breaks field width (prevents 100% width) */
+.feng-forms .property-group-body .input-container .field {
+    float: none !important;
+}
+.feng-forms .input-container .field,
+.feng-forms .property-group-body .field {
+    margin-bottom: 0px;
+}
+.form-container.feng-forms .input-container label,
+.form-container.feng-forms .dimension-selector-container > label {
+    display: block !important;
+    float: none !important;
+    margin-bottom: 8px !important;
+    /* font-size: 100%; is needed? */
+}
+
+.form-container.feng-forms .custom-properties-container .custom-properties-column .input-container .cp-description label {
+	display: none !important;
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container input {
+    height: 32px;
+    /* margin-bottom: 8px; */
+}
+.feng-forms .address-custom-properties-parent .address-input-container input {
+    height: 32px;
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container {
+	/* max-width: 320px !important; */
+	/* justify-content: space-between;
+	border-radius: 4px;
+	margin-bottom: 8px;
+	grid-template-columns: repeat(4, 1fr);
+	grid-template-rows: repeat(4, 1fr);
+	position: relative; */
+    /* display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%; */
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container .ico-action {
+	display: none;
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container textarea {
+    width: 100%;
+	/* height: 65px;
+    margin-bottom: 8px; */
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container.no-type-selector textarea {
+	margin-top: 0px;
+	/* border-radius: 4px; */
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container .address_street_input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container .address_city_input {
+    /* width: 100%;
+    grid-column: span 2; */
+    /* height: 24px;
+    margin-top: 5px; */
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container .address_state_input,
+.form-container.feng-forms .address-custom-properties-parent .address-input-container .address_zipcode_input {
+    /* width: 100%;
+    grid-column: span 1; */
+    /* height: 24px;
+    margin-top: 5px;
+    border-radius: 4px; */
+}
+
+.form-container.feng-forms .address-custom-properties-parent .address-input-container .address_country_input {
+    height: 32px;
+    /* width: 320px; */
+    /* margin-top: 5px;
+    border-radius: 4px;
+    color: black; */
+}
+
+.form-container.feng-forms .address_type_input {
+    min-width: 140px !important;
+}
+
+.address-input-container {
+    border-radius: 5px;
+}
+
+/* SEARCH SELECTOR */
+.feng-forms .dimension-selector-container .dimension-panel-textfilter.ico-search-m.search-filter {
+    /* width: 298px !important; */
+    /* width: 320px !important; */
+    height: 32px !important;
+    border-radius: 4px !important;
+    /* font-size: 14px; */
+    /* padding-left: 12px !important; */
+    padding-right: 30px !important;
+    box-sizing: border-box !important;
+    /* Ensure background icon is from .ico-search-m but positioned right */
+    background-position: right 5px center !important;
+    background-repeat: no-repeat !important;
+    background-size: 16px 16px !important;
+}
+.feng-forms .dimension-selector-container .dimension-panel-textfilter::placeholder {
+    padding-left: 6px;
+}
+
+/* INPUTS */
+.feng-forms .cp-url,
+.feng-forms .cp-number,
+.feng-forms .cp-numeric,
+.feng-forms .cp-text {
+	display: block;
+	width: 100%;
+}
+
+.feng-forms .cp-list {
+	display: block;
+  padding: 5px;
+    color: #3F5056;
+    height: 32px;
+}
+.feng-forms select.cp-list option {
+  color: #3F5056;
+}
+.feng-forms select.cp-list:has(option[value="0"]:checked) {
+  color: #ccc;
+}
+
+/* URL/webpage fields fill the property-group card width */
+.feng-forms .field .webpages-input-container {
+	width: 100%;
+}
+.feng-forms .webpage-input-container {
+	display: flex;
+}
+
+.feng-forms .cp-error-message {
+	color: red;
+    display: none;
+	padding-top: 5px;
+}
+
+/* PROPERTY GROUP */
+.feng-forms .property-group-header {
+    /* font-family: Montserrat; */
+    font-weight: 600;
+    font-size: 1.2em;
+    line-height: 100%;
+    margin-bottom: 16px;
+    color: #3F5056;
+    margin-top: 0px;
+}
+
+.feng-forms .property-group .input-container span.desc {
+   /* max-width: 298px; */
+   display: inline-block;
+   /* margin-top: 5px;
+   margin-bottom: 5px; */
+   font-size: 13px;
+}
+
+.feng-forms .dimension-selector-container > label {
+   display: block !important;
+   float: none !important;
+   margin-bottom: 0.25rem !important;
+}
+
+.feng-forms .log-td span.member-path {
+    display: inline;
+}
+
+.feng-forms .custom-properties .input-container textarea {
+	width: 100%;
+	height: 72px !important;
+	border-radius: 4px;
+}
+
+.feng-forms .custom-properties-container {
+    display: flex !important; 
+}
+
+.feng-forms .custom-properties-left,
+.feng-forms .custom-properties-right {
+    flex: 1;
+    padding: 0 16px;
+    /*max-width: 510px;*/
+	min-width: 320px !important;
+}
+
+.feng-forms .og-edit-contact-select-company{
+    width: 300px;
+}
+
+.form-container.feng-forms .custom-properties-container .custom-properties-column .input-container .cp-description label {
+	display: none !important;
+}
+
+.form-container.feng-forms .dimension-selector-container {
+    display: block !important;
+    width: 100%;
+    margin-bottom: 16px;
+    min-width: 0; /* Overrides inherited 570px min-width to prevent overflow */
+}
+
+.form-container.feng-forms .input-container .dimension-selector-container {
+    margin-bottom: 0;
+}
+
+.is_confidential_role {
+    margin-bottom: 16px;
+}
+
+.feng-forms input,
+.feng-forms textarea,
+.feng-forms input::placeholder,
+.feng-forms textarea::placeholder,
+.feng-forms div::placeholder,
+.form-container.feng-forms select,
+.feng-forms span.member-path {
+    font-size: 14px !important;
+    font-family: "Open Sans", Arial, sans-serif;
+    box-sizing: border-box;
+}
+
+.form-container select,
+.feng-forms select {
+	-webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 16px;
+    overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+    padding-right: 25px !important;
+}
+
+/* Hide dropdown arrow for readonly select */
+.feng-forms select.readonly-select {
+  -webkit-appearance: none;
+  background-image: none;
+}
+
+.feng-forms select.readonly-select::-ms-expand {
+  display: none; /* IE/Edge legacy */
+}
+
+/* --------------------------------------------------------------
+   Ext JS combo <select>
+   -------------------------------------------------------------- */
+.feng-forms .multiple-cp-contact-combo-container .x-form-field-wrap {
+    position: relative !important;
+    /* Not !important on purpose: Ext JS hides this wrap with an inline
+       "display: none" (combo.hide() / a combo created with hidden:true).
+       An !important here beat that inline style, so single-value contact
+       selectors kept showing their search box after a contact was picked,
+       letting the user select several people while only the last id was
+       kept in the hidden input. */
+    display: block;
+    width: auto !important;
+    margin-top: 5px !important;
+}
+.feng-forms .multiple-cp-contact-combo-container .x-form-text.assigned-to-combo {
+    width: 100% !important;
+    padding: 0 30px 0 6px !important;
+    background: #fff !important;
+    outline: none !important;
+}
+
+.feng-forms .multiple-cp-contact-combo-container .x-form-arrow-trigger,
+.feng-forms .x-form-arrow-trigger {
+    width: 30px !important;
+    height: 32px !important;
+    border: none !important;
+    background: transparent
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>")
+                no-repeat center center !important;
+    background-size: 16px !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    /*pointer-events: none !important;*/
+}
+.feng-forms .multiple-cp-contact-combo-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ==============================================================
+   Ext JS Date Picker
+   ============================================================== */
+.feng-forms .date-picker .x-form-field-wrap,
+.feng-forms .time-picker .x-form-field-wrap {
+    position: relative !important;
+    display: block !important;
+    min-width: 155px;
+    /* margin-top: 5px !important; */
+    pointer-events: auto !important;
+}
+.feng-forms .date-picker .x-form-text,
+.feng-forms .time-picker .x-form-text {
+    height: 32px !important;
+    width: 100% !important;
+    padding: 0 36px 0 6px !important;
+    line-height: 32px !important;
+    /* font-size: 13.2px !important; */
+    /* border: 1px solid #ccc !important; */
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    outline: none !important;
+    cursor: text !important;
+    pointer-events: auto !important;
+}
+.feng-forms .date-picker .x-form-date-trigger,
+.feng-forms .time-picker .x-form-arrow-trigger,
+.feng-forms .line-date .x-form-date-trigger {
+    width: 30px !important;
+    height: 32px !important;
+    border: none !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+.date-picker .x-form-date-trigger {
+    background: transparent
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-calendar-days-icon lucide-calendar-days'><path d='M8 2v4'/><path d='M16 2v4'/><rect width='18' height='18' x='3' y='4' rx='2'/><path d='M3 10h18'/><path d='M8 14h.01'/><path d='M12 14h.01'/><path d='M16 14h.01'/><path d='M8 18h.01'/><path d='M12 18h.01'/><path d='M16 18h.01'/></svg>")
+                no-repeat center center !important;
+    background-size: 16px !important;
+    border-bottom: 0;
+}
+.time-picker .x-form-arrow-trigger {
+    background: transparent
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-clock-icon lucide-clock'><circle cx='12' cy='12' r='10'/><path d='M12 6v6l4 2'/></svg>")
+                no-repeat center center !important;
+    background-size: 16px !important;
+    border-bottom: 0;
+}
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) .x-form-field-wrap {
+    width: 145px !important;
+}
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) > label,
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) > table.date-picker,
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) > table.date-picker + div {
+    display: inline-block !important;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) > table.date-picker + div {
+    margin-right: 0 !important;
+}
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) > table.date-picker,
+.feng-forms .input-container:has(table.date-picker):has(table.time-picker) > table.date-picker + div {
+    float: none !important;
+}
+.feng-forms .datetime .date-picker {
+    margin-right: 8px;
+}
+
+/* Fix for redesign of Ext JS */
+.feng-forms .x-form-field-wrap {
+    width: auto !important;
+    padding: 0 !important;
+}
+.feng-forms input {
+    padding-left: 6px;
+}
+
+/*
+* Override ExtJS toolbar table layout for search filters
+* This makes the toolbar behave like a simple div wrapper for the input
+*/
+.x-toolbar-no-table-layout .x-form-item {
+    /* This removes the table-based wrapper from the form item */
+    display: contents;
+}
+
+
+/*
+* Override ExtJS toolbar table layout for search filters
+* This makes the toolbar behave like a simple div wrapper for the input
+*/
+.dimension-selector-container .x-toolbar.x-small-editor,
+.dimension-selector-container .x-toolbar.x-small-editor table,
+.dimension-selector-container .x-toolbar.x-small-editor tbody,
+.dimension-selector-container .x-toolbar.x-small-editor tr,
+.dimension-selector-container .x-toolbar.x-small-editor td {
+    display: block;
+    width: 100% !important;
+    padding: 0;
+}
+
+/* Unique additions from override (not in base) */
+.custom-properties-container {
+    display: flex !important; 
+}
+
+.custom-properties-left,
+.custom-properties-right {
+    flex: 1;
+    padding: 18px;
+    max-width: 600px;
+}
+.feng-forms .x-form-text {
+    background: none; /* remove text-bg.gif */
+}
+.feng-forms .x-form-text, .feng-forms .x-form-text.x-form-field {
+    /* width: 294px!important; */
+    width: 100%;
+}
+
+.simplemodal-data .feng-forms .coInputHeader .coInputName input.title {
+	width: 600px !important;
+}
+
+table.date-picker input[type="text"],
+table.time-picker input[type="text"] {
+    width: 100px !important;
+}
+
+table:has(input.value) {
+    width: 298px!important;
+}
+.value{
+    max-width: 298px!important;
+}
+
+.og-edit-contact-select-company{
+    width: 300px;
+}
+
+.address-custom-properties-parent .address-input-container {
+    max-width: none !important;
+}
+.feng-forms .address-input-container.address-custom-properties-parent {
+    display: grid;
+    row-gap: 8px;
+}
+
+.feng-forms .link-ico {
+    padding-left: 20px;
+    padding-bottom: 0;
+}
+
+/* Timezone toggle next to the event start time: a lucide globe icon with a hover tooltip
+   (the data-tooltip text). Replaces the old ico-map PNG background. */
+.event-tz-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+    color: #6c757d;
+    font-size: 18px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+.event-tz-toggle:hover {
+    color: #1B75BC;
+}
+.event-tz-toggle[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+    z-index: 100000;
+    pointer-events: none;
+}
+.event-tz-toggle[data-tooltip]:hover::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #333;
+    z-index: 100000;
+    pointer-events: none;
+}
+.feng-forms input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background-color: #fff;
+    margin: 0 ;
+    border: 1px solid #ccc; 
+    border-radius: 4px;
+    vertical-align: middle;
+    position: relative;
+    cursor: pointer;
+}
+.feng-forms input[type="checkbox"]:checked {
+    background-color: #1B75BB;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.feng-forms input[type="radio"] {
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    margin: 0;
+    vertical-align: middle;
+    cursor: pointer;
+    position: relative;
+}
+
+.feng-forms input[type="radio"]:checked {
+    background-color: #1B75BB;
+    background-image: radial-gradient(circle, #fff 35%, transparent 40%);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.feng-forms input[type="radio"]:disabled {
+    background-color: #f0f0f0;
+    border-color: #d0d0d0;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.feng-forms input[type="radio"]:disabled:checked {
+    background-color: #a0bdd8;
+    background-image: radial-gradient(circle, #fff 35%, transparent 40%);
+    background-position: center;
+    background-repeat: no-repeat;
+    border-color: #a0bdd8;
+}
+
+/* Inputs: Always show focus */
+.feng-forms input:focus,
+.feng-forms input[type="text"]:focus,
+.feng-forms input[type="checkbox"]:focus,
+.feng-forms input[type="radio"]:focus,
+.feng-forms textarea:focus,
+.feng-forms select:focus,
+.feng-forms .x-form-focus {
+  outline: none;
+  border-color: #1B75BB;
+}
+
+/* Buttons and links: Show focus ONLY if navigating via keyboard */
+.feng-forms button:focus-visible,
+.feng-forms a:focus-visible {
+  outline: none;
+  outline: 2px solid #1B75BB;
+  outline-offset: 2px;
+}
+
+
+/* 1. Set consistent font properties for all form elements */
+.feng-forms input,
+.feng-forms textarea,
+.feng-forms select,
+.feng-forms button,
+.feng-forms .x-form-text { /* Targets ExtJS inputs */
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 14px !important;
+    color: #3F5056;
+    box-sizing: border-box; /* consistent height */
+}
+
+/* 2. Set consistent 32px height for single-line inputs */
+.feng-forms input[type="text"],
+.feng-forms input[type="password"],
+.feng-forms input[type="email"],
+.feng-forms input[type="number"],
+.feng-forms input[type="url"],
+.feng-forms input[type="search"],
+.feng-forms input[type="tel"],
+.feng-forms input[type="file"],
+.feng-forms select,
+.feng-forms .x-form-text, /* ExtJS text input */
+.feng-forms .cp-list { /* custom property list */
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    padding: 0 6px;
+    width: 100%;
+    background-color: white;
+}
+.feng-forms input[type="file"] {
+    padding: 4px 6px;
+}
+
+/* 3. Style textareas separately (no fixed height) */
+.feng-forms textarea,
+.feng-forms .cp-multiple .cp-val textarea {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    padding: 6px 6px;
+    line-height: 1.4;
+    background-color: white;
+    resize: vertical;
+}
+
+/* 4. Ensure ExtJS Date/Time pickers also comply */
+.feng-forms .date-picker .x-form-text,
+.feng-forms .time-picker .x-form-text {
+    height: 32px !important;
+    line-height: 30px !important; /* Adjust line-height to vertically center text */
+    font-size: 14px !important;
+    padding-left: 6px !important;
+    width: 100% !important;
+}
+
+.feng-forms .date-picker .x-form-date-trigger,
+.feng-forms .time-picker .x-form-arrow-trigger {
+    height: 32px !important;
+    width: 30px !important;
+}
+
+/* 5. Ensure button consistency */
+.feng-forms button.submit {
+    height: 32px;
+    font-size: 14px;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-weight: 500;
+}
+
+/* Moved from dimension.css */
+/* width: calc(100% - 40px); this is no loger needed */
+/* .feng-forms div.selected-members.with-checkbox .completePath {
+	width: 237px;
+} */
+/* .feng-forms div.selected-members.with-checkbox div.selected-member-div div.selected-member-actions {
+	margin-top: 12.5px;
+	width: 38px;
+	text-align: right;
+} */
+
+.feng-forms .x-toolbar .selected-members .selected-member-div span.member-path span {
+    font-size: 14px;
+    line-height: 24px;
+    font-family: "Open Sans", Arial, sans-serif;
+}
+
+.feng-forms .x-toolbar .selected-member-div,
+.feng-forms .selected-member-div .completePath{
+	min-height: 30px; /* changed from 32px to 30px to prevent overlap the bottom border of the sekector */
+	height: fit-content;
+}
+
+.feng-forms .single_current_selected .empty-text { /* None */
+/* .feng-forms .search-selector .search-input-div input { */
+    font-size: 14px !important;
+    font-family: "Open Sans", Arial, sans-serif;
+    margin: 0 5px;
+    line-height: 31px;
+}
+
+.feng-forms .contact-selector-card {
+	width: auto;
+}
+
+/* Linked Objects */
+.linked-objects-container{
+	max-height:250px;
+	overflow-y: auto;
+	padding: 5px 0;
+}
+
+.linked-objects-container .ico-contact{
+	width: 500px !important;
+}
+
+.linked-objects-container .og-add-template-object{
+	margin-top: 5px;
+}
+
+.linked-objects-container .odd{
+	background-color: #f8f8e8 !important;
+}
+
+.linked-objects-container .btn {
+	float: none;
+}
+/* Linked Objects */
+
+
+
+.task,
+.timeslot,
+.expense,
+.payment,
+.form,
+.message,
+.event {
+	& .feng-forms input[type="text"], 
+	.feng-forms input[type="password"], 
+	.feng-forms input[type="email"], 
+	.feng-forms input[type="number"], 
+	.feng-forms input[type="url"], 
+	.feng-forms input[type="search"], 
+	.feng-forms input[type="tel"], 
+	.feng-forms input[type="file"], 
+	.feng-forms select, 
+	.feng-forms .x-form-text, 
+	.feng-forms .cp-list,
+	.feng-forms .cp-numeric,
+	.feng-forms textarea, 
+	.feng-forms .cp-multiple .cp-val textarea,
+	.feng-forms .feng-dimention-selector,
+	.feng-forms .dimension-selector-container .dimension-panel-textfilter.ico-search-m.search-filter,
+	.feng-forms .edit-member .custom-properties-container .custom-properties-column .dimension-selector-container .selector {
+		width: 100% !important;
+	}
+
+	& .feng-forms .single_current_selected .empty-text {
+		padding: 0;
+	}
+
+	& .feng-forms .multiple-cp-contact-combo-container .x-form-field-wrap {
+		width: auto !important;
+		margin-top: 0px !important;
+	}
+
+	& .feng-forms .time-estimate input[type="text"],
+	.feng-forms .time-estimate select {
+		width: 50px !important;
+	}
+
+	& .feng-forms .og-add-template-object {
+		width: auto;
+		padding-left: 0px;
+	}
+	& .feng-forms .og-add-template-object a.link-ico {
+		padding-left: 0px;
+	}
+}
+
+.tasks .information-widget--left-side {
+	margin-right: 18px;
+}
+
+
+.feng-forms .phone-input-container input, 
+.feng-forms .emails-input-container input, 
+.feng-forms .webpages-input-container input {
+	height: 32px;
+	flex: 1;
+	margin-right: 2px;
+}
+
+.feng-forms .email-input-container {
+    display: grid;
+    grid-template-columns: 1fr 25px;
+    grid-column-gap: 8px;
+    grid-row-gap: 8px;
+    position: relative;
+    align-items: center;
+}
+.feng-forms .email-input-container .moreEmailInputs,
+.feng-forms .phone-input-container .phone-number,
+.feng-forms .phone-input-container .phone-name {
+    width: 100%;
+}
+.feng-forms .phones-input-container,
+.feng-forms .emails-input-container {
+    display: grid;
+    row-gap: 8px;
+}
+.feng-forms .phone-input-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 25px;
+    grid-column-gap: 8px;
+    grid-row-gap: 8px;
+    position: relative;
+    align-items: center;
+}
+
+/* Hide the internal span/hidden inputs so they don't count as grid columns */
+.feng-forms .phone-input-container > span,
+.feng-forms .phone-input-container > input[type="hidden"] {
+    display: none;
+}
+
+/* Selector in 'Related to' tab */
+.feng-forms .dimension-selector-container .selector .member-chooser-container.single-selection {
+	width: inherit;
+}
+
+.feng-forms .input-separator {
+	font-weight: bold;
+	margin: 0 2px;
+}
+
+.feng-forms .linked-objects-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+}
+.feng-forms .linked-objects-container .selected-object-wrapper {
+	padding-left: 0;
+}
+.feng-forms .linked-objects-container .selected-object-wrapper .object-badge,
+.feng-forms .input-container .object-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f0f4f8;
+    border: 1px solid #d1d9e0;
+    border-radius: 4px;
+    padding: 4px 10px;
+    gap: 8px;
+    color: #334155;
+    font-size: 0.9rem;
+    margin-bottom: .5rem;
+}
+
+.feng-forms .linked-objects-container .selected-object-wrapper .object-badge .name,
+.feng-forms .input-container .object-badge .name {
+	font-weight: 500;
+	width: auto;
+	max-width: 320px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.feng-forms .linked-objects-container .selected-object-wrapper .object-badge i,
+.feng-forms .input-container .object-badge i {
+    color: #64748b;
+}
+
+.feng-forms .linked-objects-container .selected-object-wrapper .object-remove-btn i,
+.feng-forms .input-container .object-badge .object-remove-btn i {
+    color: #ef4444;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.feng-forms .linked-objects-container .selected-object-wrapper .object-remove-btn:hover i,
+.feng-forms .input-container .object-badge .object-remove-btn:hover i {
+    color: #b91c1c;
+}
+
+/* Grid layout for feng-forms sections */
+ .container,
+ .container * {
+    box-sizing: border-box; 
+}
+
+ .container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+ .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -15px;
+}
+
+ .col {
+    flex: 1;
+    min-width: 0;
+    padding: 0 15px;
+}
+
+.form-group {
+	margin-bottom: 1rem;
+}
+
+.form-group label {
+	display: block;
+    margin-bottom: .5rem;
+	min-width: 130px;
+}
+.form-group input[type="text"] {
+    display: block;
+    width: 100% !important;
+    line-height: 1.5;
+    color: #495057;
+}
+
+.inner-row {
+    display: flex;
+    gap: 20px;
+}
+
+.inner-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.inner-col .link {
+    margin-top: 6px;
+}
+.sub-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+.time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.coInputMainBlock .container .form-group label {
+    float: none;
+    display: block;
+    width: 100%;
+    min-width: 0; 
+    padding-right: 0;
+}
+.coInputMainBlock .container .form-group .billing-inputs label,
+.coInputMainBlock .container .form-group .billing-inputs input {
+    width: auto !important;
+    display: inline;
+}
+
+.feng-forms .billing-inputs .readonly-select {
+    width: auto !important; /* Adjust width for currency_id  */
+}
+
+/* Subscribers tab */
+.feng-forms .company-users:not(:last-child) {
+  border-bottom: 1px solid #026465;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+.feng-forms .company-name {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 15px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-sizing: border-box;
+}
+
+.feng-forms .company-name:hover {
+    background-color: #2a9d8f20;
+    border-color: #2a9d8f;
+}
+.feng-forms .company-name-text {
+    font-size: 16px;
+    line-height: normal;
+}
+.feng-forms .company-name-text label {
+    float: none;
+    cursor: pointer !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    margin-bottom: 0;
+    /* Redefine width and heigth to replace og.css */
+    width: auto;
+    height: auto; 
+}
+.feng-forms .company-name-text label span {
+    font-weight: 700;
+}
+.feng-forms .company-name-text i {
+    color: #026465;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+}
+
+.feng-forms .company-users-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.feng-forms .company-users-container .user-card {
+    width: auto;
+    height: 58px;
+    float: none;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.feng-forms .user-card:hover {
+    background-color: #2a9d8f20;
+    border-color: #2a9d8f;
+}
+
+.feng-forms .user-card.checked-user {
+    border-color: #2a9d8f;
+    background-color: #2a9d8f20;
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%232a9d8f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-check-icon lucide-user-check"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>') no-repeat scroll !important;
+	background-size: 18px !important;
+    background-position: right 5px top 5px !important;
+	line-height: 18px;
+}
+.feng-forms .contact-picture-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.feng-forms .commentUserAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #e9ecef;
+}
+
+.feng-forms .user-info-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    flex: 1;
+}
+
+.feng-forms .user-name-text {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.feng-forms .user-email-text {
+    font-size: 12px;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-card.checked-user .user-name-text { color: #2a9d8f; }
+.user-card.checked-user .user-email-text { color: #2a9d8f; opacity: 0.8; }
+
+.add-payment{
+	min-width: 1140px!important;
+}
+
+.payment .feng-forms .expense { /* Expense items table */
+    padding: 0 18px;
+}
+
+.feng-forms .reminders-div .reminder select, 
+.feng-forms .reminders-div .reminder input[type="number"],
+.feng-forms .repeat-options-div .repeat select, 
+.feng-forms .repeat-options-div .repeat input[type="number"],
+.feng-forms .repeat-options-div .repeat input[type="text"] {
+    width: auto !important; 
+    display: inline-block !important;
+    margin-bottom: 0 !important;
+}
+
+.feng-forms .reminders-div .reminder span,
+.feng-forms .reminders-div .reminder a {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.feng-forms .repeat-options-div .repeat .date-picker div {
+    margin-top: 0 !important;
+}
+
+.form-container.feng-forms .template .coInputMainBlock .input-container {
+    margin-bottom: 1rem;
+}
+.form-container.feng-forms .template .coInputMainBlock .input-container label {
+    display: block !important;
+}
+
+.feng-forms .task-data .dataBlock input.checkbox {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+     .col {
+        flex: 100%;
+    }
+}
+
+
+/*
+ * Base styling for form containers.
+ *
+ * These rules used to live only in plugins/crpm/public/assets/css/crpm.css, under a
+ * "GENERAL - Common styles" heading, but they target core form markup (.form-container,
+ * rendered by application/views/member/add.php and every other core form). Installs
+ * without the crpm plugin therefore rendered core forms with a transparent background,
+ * which made the modal header look detached from the rest of the form.
+ */
+.form-container {
+	height: 100%;
+	background: white;
+}
+
+.form-container fieldset {
+	padding: 10px;
+}
+
+.form-container .field {
+	margin-bottom: 12px;
+}
+
+.feng-forms .field {
+	margin-bottom: 16px;
+}
+
+.feng-forms .desc {
+	margin-top: 8px;
+}
+
+.form-container select {
+	min-width: 120px;
+	height: 32px;
+	border-radius: 4px;
+	font-size: 14px;
 }

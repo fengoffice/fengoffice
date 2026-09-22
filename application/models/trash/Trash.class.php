@@ -42,8 +42,68 @@ class Trash {
 			
 			$rows = DB::executeAll($sql);
 			if (!is_array($rows)) $rows = array();
-			
+
+
+			$mail_rows = array();
+			$non_mail_rows = array();
 			foreach ($rows as $row) {
+				if (array_var($row, 'ot_name') == 'mail' && Plugins::instance()->isActivePlugin('mail')) {
+					$mail_rows[] = $row;
+				} else {
+					$non_mail_rows[] = $row;
+				}
+			}
+
+			$mail_objects_by_id = array();
+			foreach ($mail_rows as $row) {
+				$mid = array_var($row, 'id');
+				$mail = MailContents::instance()->findById($mid);
+				if ($mail instanceof MailContent) {
+					$mail_objects_by_id[$mid] = $mail;
+				}
+			}
+			$mail_batch_list = array_values($mail_objects_by_id);
+			$use_mail_imap_batch = count($mail_batch_list) >= 2;
+			if ($use_mail_imap_batch) {
+				Env::useHelper('functions', 'mail');
+				remove_mails_from_imap_server_batch($mail_batch_list);
+			}
+
+			foreach ($mail_rows as $row) {
+				try {
+					DB::beginWork();
+
+					$id = $row['id'];
+					$name = $row['name'];
+
+					$mail = array_var($mail_objects_by_id, $id);
+					if (!$mail instanceof MailContent) {
+						DB::rollback();
+						continue;
+					}
+
+					$mail->delete(false, $use_mail_imap_batch);
+
+					$log = new ApplicationLog();
+					if (logged_user() instanceof Contact) {
+						$log->setTakenById(logged_user()->getId());
+					}
+					$log->setRelObjectId($id);
+					$log->setObjectName($name);
+					$log->setAction(ApplicationLogs::ACTION_DELETE);
+					$log->setIsSilent(true);
+					$log->save();
+
+					DB::commit();
+					$object_ids[] = $id;
+					$count++;
+				} catch (Exception $e) {
+					DB::rollback();
+					Logger::log("Error deleting mail in purge_trash: " . $e->getMessage() . "\n", Logger::ERROR);
+				}
+			}
+
+			foreach ($non_mail_rows as $row) {
 				try {
 					DB::beginWork();
 					
@@ -107,7 +167,7 @@ class Trash {
 	
 	
 	
-	private function get_tables_to_clean($object_type_name) {
+	private static function get_tables_to_clean($object_type_name) {
 		$result = array();
 		$result[] = array('table' => TABLE_PREFIX."objects", 'column' => 'id');
 		$result[] = array('table' => TABLE_PREFIX."object_members", 'column' => 'object_id');

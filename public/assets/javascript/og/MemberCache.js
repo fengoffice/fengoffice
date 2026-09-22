@@ -18,8 +18,26 @@ ogMemberCache.areDimRootMembersLoaded = function(dim_id){
 
 ogMemberCache.reset_dimensions_cache = function(){
 	og.dimensions = {};
+	og._memberDimIndex = {};
 	og.dimensions_check_date = new Date();
 	ogMemberCache.dimensions_root_members.length = 0;
+}
+
+/**
+ * Remove specific members from the cache so they will be re-fetched on next access.
+ * Advances the check date so the server knows we are up to date.
+ * @param {Array} member_ids Array of member IDs to invalidate
+ */
+ogMemberCache.invalidateMembersInCache = function(member_ids) {
+	for (var i = 0; i < member_ids.length; i++) {
+		var mem_id = member_ids[i];
+		for (var did in og.dimensions) {
+			if (og.dimensions[did] && og.dimensions[did][mem_id]) {
+				delete og.dimensions[did][mem_id];
+			}
+		}
+	}
+	og.dimensions_check_date = new Date();
 }
 
 /*
@@ -32,46 +50,53 @@ ogMemberCache.reset_dimensions_cache = function(){
  *@return array with the member and it parents if you set include_parents. If the member is not found return an empty array.
  * */
 og.getMemberFromOgDimensions = function(mem_id, include_parents, func_callback, callback_extra_params) {
-    if (isNaN(mem_id)) return false;
+	if (isNaN(mem_id)) return false;
 	var members = [];
-	
-	if (typeof include_parents == "undefined") {
-		include_parents = false;
+	if (typeof include_parents === 'undefined') include_parents = false;
+
+	// Fast path: use inverted index if available.
+	var _fastDid = og._memberDimIndex && og._memberDimIndex[mem_id];
+	if (_fastDid && og.dimensions && og.dimensions[_fastDid]) {
+		var _fastMember = og.dimensions[_fastDid][mem_id];
+		if (typeof _fastMember !== 'undefined') {
+			members.push(_fastMember);
+			if (include_parents) {
+				var _cur = _fastMember;
+				while (_cur && _cur.parent && _cur.parent > 0) {
+					_cur = og.dimensions[_fastDid][_cur.parent];
+					if (_cur) members.push(_cur);
+				}
+			}
+			return members;
+		}
 	}
-	
-	for (did in og.dimensions_info) {
-		if (isNaN(did)) continue;
-		
-		if(og.dimensions && og.dimensions[did]){
-			var member = og.dimensions[did][mem_id];
-			if (typeof member != "undefined") {
-				members.push(member);
-				
-				if(!include_parents){
-					//return only the member
+
+	// Slow fallback: scan all dimensions (handles members added before index existed).
+	for (var _did in og.dimensions_info) {
+		if (isNaN(_did)) continue;
+		if (og.dimensions && og.dimensions[_did]) {
+			var _member = og.dimensions[_did][mem_id];
+			if (typeof _member !== 'undefined') {
+				members.push(_member);
+				if (!include_parents) {
 					return members;
-				}else{
-					//get all parents
-					while(member && member.parent && member.parent > 0) {
-						member = og.dimensions[did][member.parent];
-						if (member){
-							members.push(member);
-						}
+				} else {
+					var _p = _member;
+					while (_p && _p.parent && _p.parent > 0) {
+						_p = og.dimensions[_did][_p.parent];
+						if (_p) members.push(_p);
 					}
-							
+					return members;
 				}
 			}
 		}
-		
-		
 	}
-		
-	//if member is not in og.dimensions search it on the server
-	if(members.length <= 0){
+
+	if (members.length <= 0) {
 		og.getMemberFromServer(mem_id, func_callback, callback_extra_params);
 	}
 	return members;
-}
+};
 
 /*
  *This function get a member from the server and all parents. 
@@ -156,15 +181,13 @@ og.getMemberTextsFromOgDimensions = function(mem_id, include_parents, func_callb
  * param member the member 		
  * */
 og.addMemberToOgDimensions = function(dim_id, member) {
-	if(typeof og.dimensions == 'undefined'){
-		og.dimensions = {};
-	}
-	if(typeof og.dimensions[dim_id] == 'undefined'){
-		og.dimensions[dim_id] = {};
-		
-	}
+	if (typeof og.dimensions === 'undefined') og.dimensions = {};
+	if (typeof og.dimensions[dim_id] === 'undefined') og.dimensions[dim_id] = {};
 	og.dimensions[dim_id][member.id] = member;
-}
+	// Maintain inverted index for O(1) lookups in getMemberFromOgDimensions.
+	if (typeof og._memberDimIndex === 'undefined') og._memberDimIndex = {};
+	og._memberDimIndex[member.id] = dim_id;
+};
 
 /*
  *This function search members on the server. 

@@ -231,6 +231,7 @@ return array(
 	'success delete objects' => '{0} Object(s) deleted successfully',
 	'success tag objects' => '{0} Object(s) tagged successfully',
 	'error delete objects' => 'Failed to delete {0} object(s)',
+	'error empty trash can not all deleted' => '{0} object(s) could not be deleted from the trash. You may not have permission to permanently delete them.',
 	'error tag objects' => 'Failed to tag {0} object(s)',
 	'success move objects' => '{0} Object(s) moved successfully',
 	'error move objects' => 'Failed to move {0} object(s)',

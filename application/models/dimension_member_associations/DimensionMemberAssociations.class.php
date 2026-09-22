@@ -52,7 +52,7 @@
   	 * Returns an array with the dimensions to reload foreach member type that belongs to this dimension
   	 * Use only the reverse associations (associated dim -> main dim), so only secondary dimensions filter main dimensions
   	 */
-	static function getDimensionsToReloadByObjectType($dimension_id) {
+	static function getDimensionsToReloadByObjectType($dimension_id, $include_reverse_assocations = false) {
 		
 		$sql = "SELECT `dimension_id` as dim_id, `associated_object_type_id` as ot_id  
 				FROM `".TABLE_PREFIX."dimension_member_associations` 
@@ -64,26 +64,33 @@
 		if (is_array($rows)) {
 			foreach ($rows as $row) {
 				if (!isset($result[$row['ot_id']])) $result[$row['ot_id']] = array();
-				$result[$row['ot_id']][] = $row['dim_id'];
+				if (!in_array($row['dim_id'], $result[$row['ot_id']])) {
+					$result[$row['ot_id']][] = $row['dim_id'];
+				}
 			}
 		}
 
 		Hook::fire('add_dimensions_to_reload_by_object_type', array('dimension_id' => $dimension_id), $result);
 		
-		/*
-		$sql = "SELECT `associated_dimension_id` as dim_id, `object_type_id` as ot_id
-				FROM `".TABLE_PREFIX."dimension_member_associations`
-				WHERE `dimension_id` = $dimension_id";
-		
-		$rows = DB::executeAll($sql);
-		
-		if (is_array($rows)) {
-			foreach ($rows as $row) {
-				if (!isset($result[$row['ot_id']])) $result[$row['ot_id']] = array();
-				$result[$row['ot_id']][] = $row['dim_id'];
+		/**
+		 * Include reverse associations if specified in parameter
+		 */
+		if ($include_reverse_assocations) {
+			
+			$sql = "SELECT `associated_dimension_id` as dim_id, `object_type_id` as ot_id
+					FROM `".TABLE_PREFIX."dimension_member_associations`
+					WHERE `dimension_id` = $dimension_id";
+			
+			$rows = DB::executeAll($sql);
+			
+			if (is_array($rows)) {
+				foreach ($rows as $row) {
+					if (!isset($result[$row['ot_id']])) $result[$row['ot_id']] = array();
+					$result[$row['ot_id']][] = $row['dim_id'];
+				}
 			}
 		}
-		*/
+		
 		return $result;
 	}
   	
@@ -120,8 +127,15 @@
 		return $associations;
   	}
   	
-  	static function getAssociatations($dimension_id, $object_type_id) {
-  		return self::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ?", $dimension_id, $object_type_id)));
+  	static function getAssociatations($dimension_id, $object_type_id, $subtype_id=0) {
+		$extra_cond = "";
+		Hook::fire('get_dim_associations_extra_cond', array('dimension_id' => $dimension_id, 'object_type_id' => $object_type_id, 'subtype_id' => $subtype_id), $extra_cond);
+
+  		return self::instance()->findAll(array("conditions" => array("`dimension_id` = ? AND `object_type_id` = ? $extra_cond", $dimension_id, $object_type_id)));
+  	}
+
+	static function getReverseAssociatations($dimension_id, $object_type_id) {
+  		return self::instance()->findAll(array("conditions" => array("`associated_dimension_id` = ? AND `associated_object_type_id` = ?", $dimension_id, $object_type_id)));
   	}
   	
   	static function getAllAssociatationsForObjectType($dimension_id, $object_type_id) {
@@ -146,6 +160,30 @@
 		if (is_null($associations)) return false;
 		else return true;						
   	}
+
+
+
+	/**
+	 * Retrieves all dimension associations and returns them in an array.
+	 * 
+	 * The array is indexed by the association ID and each value is an array 
+	 * containing the association info.
+	 * 
+	 * @return array The array with all dimension associations.
+	 */
+	static function getAllAssociationsInfoById() {
+
+		$all_associations = self::instance()->findAll();
+		$result = array();
+		foreach ($all_associations as $association) {
+			// Store the association info in an array indexed by the association ID
+			$info = $association->getArrayInfo();
+			if ($info) {
+				$result[$association->getId()] = $info;
+			}
+		}
+		return $result;
+	}
   	
   	
   	
@@ -195,6 +233,92 @@
   	}
   	
   	
+	/**
+	 * Gets the data for the association in the custom properties list.
+	 *
+	 * @param DimensionMemberAssociation $dim_association The association.
+	 * @param int $dimension_id The id of the dimension.
+	 * @param ObjectType $object_type The object type the association belongs to.
+	 * @return array The data for the association in the custom properties list.
+	 */
+	static function getAssociationDataForCustomPropertiesList($dim_association, $dimension_id, $object_type) {
+		$enabled_dimension_ids = config_option('enabled_dimensions');
+		if (is_numeric($object_type)) {
+			$object_type = ObjectTypes::instance()->findById($object_type);
+		}
+		$assoc_dimension = Dimensions::getDimensionById($dim_association->getAssociatedDimensionMemberAssociationId());
+		if (!$assoc_dimension instanceof Dimension) {
+			return array();
+		}
+		$ot = ObjectTypes::instance()->findById($dim_association->getAssociatedObjectType());
+		
+		// If the dimension is not enabled, don't show the association.
+		if (!in_array($assoc_dimension->getId(), $enabled_dimension_ids)) return;
+		
+		$custom_assoc_name = null;
+		// If the dimension is the same as the association, use the custom name if exists.
+		if ($dimension_id == $dim_association->getDimensionId()) {
+			$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_name');
+		}
+		
+		// If there is a custom name, use it, otherwise use the name of the dimension.
+		if ($custom_assoc_name) {
+			$label = $custom_assoc_name;
+		} else {
+			$custom_name = $assoc_dimension->getOptionValue('custom_dimension_name');
+			// If there is a custom name for the dimension, use it.
+			if ($custom_name && trim($custom_name) != "") {
+				$label = $custom_name;
+			} else {
+				// Otherwise, try to get the translation for the object type.
+				$label = Localization::instance()->lang(str_replace('_',' ', $ot->getName()) . ($dim_association->getIsMultiple() ? 's' : ''));
+				// If there is no translation, use the name of the dimension.
+				if (is_null($label)) {
+					$label = $assoc_dimension->getName();
+				}
+			}
+		}
+		
+		// Get the custom description for the association.
+		$assoc_description = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_description');
+		
+		// Generate the property id for the association.
+		$prop_id = "assoc_".$dim_association->getId();
+		$is_required = $dim_association->getIsRequired();
+		$is_multiple = $dim_association->getIsMultiple();
+		$assoc_code = $dim_association->getCode();
+		
+		// Get the order and inheritability of the property in the group.
+		if (class_exists('PropertyGroups')) {
+			$order = PropertyGroups::getPropertyOrderInGroup($object_type, $prop_id);
+			$is_inheritable = PropertyGroups::getPropertyIsInheritable($object_type, $prop_id);
+		} else {
+			$order = 0;
+			$is_inheritable = 0;
+		}
+		
+		// Create the data array for the association in the custom properties list.
+		$cp_data = array(
+			'id' => $prop_id,
+			'code' => $assoc_code,
+			'name' => $label,
+			'original_name' => $custom_assoc_name ? $custom_assoc_name : $assoc_dimension->getName(),
+			'description' => $assoc_description,
+			'is_special' => true,
+			'no_options' => true,
+			'property_order' => $order,
+			'is_inheritable' => $is_inheritable,
+			'is_required' => $is_required,
+			'is_multiple_values' => $is_multiple,
+			'override_is_required' => true,
+			'override_is_multiple_values' => true,
+			'object_subtype_id' => $dim_association->getColumnValue('object_subtype_id'),
+		);
+		
+		return $cp_data;
+	}
+	
+	
   }
 
 ?>

@@ -123,7 +123,7 @@ class DateTimeValue {
 	 *
 	 * @access public
 	 * @param void
-	 * @return DateTime
+	 * @return DateTimeValue
 	 */
 	function beginningOfDay() {
 		$this->setHour(0);
@@ -141,7 +141,7 @@ class DateTimeValue {
 	 *
 	 * @access public
 	 * @param void
-	 * @return null
+	 * @return DateTimeValue
 	 */
 	function endOfDay() {
 		$this->setHour(23);
@@ -503,7 +503,11 @@ class DateTimeValue {
 			$result .= ($result != ''? ', ':'') . ($out['s'] > 1 ? lang("x seconds", $out['s']) : lang("1 second"));
 			
 		if ($result == '') {
-			$result = '< ' . lang("1 minute");
+			// Return empty string when the time difference rounds to zero given the requested format.
+			// The previous behavior returned '< 1 minute', but that string is misleading in contexts
+			// where the difference is actually 0 (e.g. a task with 0 minutes worked or estimated).
+			// Callers that need a fallback label should handle the empty string themselves.
+			return '';
 		} else if ($sign == -1) {
 			$result = '- ' . $result;
 		}

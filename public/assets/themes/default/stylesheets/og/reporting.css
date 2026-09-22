@@ -1,6 +1,19 @@
 .report.internalForm .coInputMainBlock label {
 	min-width: 150px;
 }
+
+/* Override co_input label floats inside condition rows */
+#reporting-panel .coInputMainBlock .report-conditions label,
+.report.internalForm .report-conditions label,
+.report-condition-col label {
+	float: none !important;
+	display: block !important;
+	width: auto !important;
+	min-width: 0 !important;
+	padding-right: 0 !important;
+	flex-basis: auto !important;
+}
+
 .report_selected_menu {
 	background-image: url(../../images/layout/selected_report_menu.png);
 	background-repeat: no-repeat;
@@ -86,6 +99,18 @@
 	padding: 4px;
 	font-size: 12px;
 }
+
+.custom-report tbody tr td {
+	border-right: 1px solid transparent;
+}
+
+.custom-report thead tr th, .custom-report thead tr th:first-child, .custom-report thead tr th:not(:first-child) {
+	padding: 5px;
+} 
+.custom-report tbody tr td, .custom-report tbody tr td:first-child, .custom-report tbody tr td:not(:first-child) {
+    padding: 5px;
+}
+
 .reporting-table td.date {
 	width: 70px;
 }
@@ -104,8 +129,52 @@
 	width: 133px;
 }
 
+/* dynamic report columns without a dedicated width (e.g. DEA Projects, other dimension/custom
+   property/plugin columns) share the generic .nobr class, which already sets nowrap + ellipsis
+   (general/layout.css) — but ellipsis only kicks in once the box actually has a width to overflow.
+   Without one a long project name just stretched the whole column/table instead of truncating. */
+.reporting-table td.nobr {
+	max-width: 220px;
+}
+
 .reporting-table tr.alt-row {
 	background-color: #f2f2f2;
+}
+
+/* the task time report can have many dynamic columns (one per time module grid column).
+   A browser can't paginate a table horizontally — anything wider than the physical page
+   just gets cut off — so the only way to guarantee every column is still visible when
+   printed is to stop the columns growing to fit their content (no-wrap + ellipsis, which
+   is what makes the table so wide in the first place) and instead let cells wrap within
+   a fixed, evenly-shared table width. Columns get narrower/taller instead of disappearing.
+   (Landscape orientation for this report's print window is set separately, scoped to that
+   popup window only — og/reporting.css is imported site-wide via website.css, so a global
+   @page rule here would force landscape on unrelated prints across the whole app.) */
+@media print {
+	.reporting-table {
+		width: 100%;
+		table-layout: fixed;
+		font-size: 8px;
+	}
+	.reporting-table td,
+	.reporting-table th {
+		padding: 2px 3px;
+		font-size: 8px;
+		white-space: normal;
+		overflow-wrap: break-word;
+		word-break: break-word;
+	}
+	.reporting-table td.date,
+	.reporting-table td.name,
+	.reporting-table td.person,
+	.reporting-table td.time,
+	.reporting-table td.nobr {
+		width: auto;
+		min-width: 0;
+		max-width: none;
+		overflow: visible;
+		text-overflow: clip;
+	}
 }
 
 .reporting-group-footer {
@@ -172,7 +241,50 @@
     font-weight: bold;
     padding: 10px 25px;
     margin: 0px 0;
-    
+}
+.report-list-section .report-name-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+.report-list-section .report-name-info {
+	flex: 1;
+	min-width: 0;
+}
+.report-list-section .report-name-link {
+	display: inline-block;
+}
+.report-list-section .report-name-side {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	flex-shrink: 0;
+	max-width: 55%;
+}
+.report-list-section .report-name-breadcrumb {
+	font-weight: normal;
+	text-align: right;
+	min-width: 0;
+}
+.report-list-section .title-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding-bottom: 4px;
+	padding-right: 25px;
+}
+.report-list-section .title-text {
+	flex: 1;
+	min-width: 0;
+}
+.report-list-section .title-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
 }
 .report-list-section .report-name .desc {
     font-weight: normal;
@@ -711,16 +823,15 @@ tbody.report-data td {
 	padding-left: 25px;
 	margin: 0px;
 	background-repeat: no-repeat;
-	background-position-y: center;
-	background-position-x: 3px;
+	background-position: 3px center !important;
 	cursor: pointer;
-	transition: all 0.3s;
 	border: none;
 	margin-right: 10px;
+	background-color: #ddd !important;
 }
 #reporting-panel .report-header-button-small:hover{
-	border: none;
-	background-color: #ddd;
+	border: none !important;
+	background-color: #ccc !important;
 }
 .report-header-button-small:focus{border: none;}
 
@@ -742,7 +853,224 @@ tbody.report-data td {
 
 
 .group-of-conditions {
-	border: 1px solid #ccc
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	padding: 8px 10px 10px;
+	margin: 4px 0;
+	background: #fafafa;
+}
+
+.report-conditions {
+	padding: 2px 0;
+}
+
+.report-condition-row {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 10px 36px 10px 12px;
+	margin: 6px 0;
+	position: relative;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.report-condition-row:hover {
+	border-color: #2E4551;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.report-condition-add-or {
+	margin-top: 8px;
+	margin-bottom: 2px;
+	padding-left: 2px;
+}
+
+.group-of-conditions > .report-condition-add-or {
+	margin-top: 10px;
+}
+
+.report-condition-row.is-deleted {
+	background: #FFDEAD;
+	border-color: #e0c080;
+}
+
+.report-condition-body {
+	display: block;
+}
+
+.report-condition-col-param {
+	grid-column: 4;
+	grid-row: 1;
+	align-items: flex-start;
+	text-align: left;
+}
+
+.report-condition-col-param label {
+	display: block;
+	font-weight: bold;
+	color: #666;
+	margin-bottom: 4px;
+	font-size: 12px;
+	line-height: 14px;
+}
+
+.report-condition-col-param input.checkbox {
+	display: block;
+	margin: 0;
+	align-self: flex-start;
+}
+
+.report-condition-remove {
+	position: absolute;
+	top: 9px;
+	right: 10px;
+	display: block;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	border: 0;
+	text-indent: -9999px;
+	overflow: hidden;
+	white-space: nowrap;
+	background-position: center center !important;
+	background-size: 16px !important;
+	opacity: 0.75;
+	border-radius: 3px;
+}
+
+.report-condition-remove:hover {
+	opacity: 1;
+	background-color: #fdecea;
+	text-decoration: none;
+}
+
+.report-condition-deleted-msg {
+	margin-top: 6px;
+	padding: 4px 8px;
+	color: #666;
+	font-size: 12px;
+}
+
+.report-condition-fields {
+	display: grid;
+	grid-template-columns: 150px minmax(120px, 220px) minmax(240px, 1fr) 85px;
+	grid-template-rows: auto;
+	column-gap: 12px;
+	row-gap: 8px;
+	flex: 1;
+	align-items: start;
+	min-width: 0;
+}
+
+.report-condition-col {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	min-width: 0;
+}
+
+.report-condition-col-field {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+.report-condition-col-operator {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.report-condition-col-value {
+	grid-column: 3;
+	grid-row: 1;
+	min-width: 0;
+}
+
+.report-condition-col label {
+	display: block;
+	font-weight: bold;
+	color: #666;
+	margin-bottom: 4px;
+	font-size: 12px;
+	line-height: 14px;
+}
+
+.report-condition-col-field,
+.report-condition-col-operator {
+	min-width: 0;
+}
+
+.report-condition-col-operator select {
+	width: 100%;
+	max-width: 220px;
+}
+
+.report-condition-col-operator select.reportConditionDD {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.report-condition-value-input {
+	clear: both;
+	display: block !important;
+	width: 100%;
+	max-width: 320px;
+	margin-top: 0;
+}
+
+.report-condition-value-input input[type="text"],
+.report-condition-col-value input[type="text"] {
+	min-width: 120px;
+	width: 100%;
+	max-width: 320px;
+}
+
+.report-condition-value-input .x-form-field-wrap,
+.report-condition-value-input .x-form-element,
+.report-condition-col-value .x-form-field-wrap {
+	display: block !important;
+	width: 120px !important;
+	max-width: 320px;
+	float: none !important;
+	clear: both !important;
+	position: relative !important;
+	margin-top: 0;
+}
+
+.report-condition-member-selector,
+.report-condition-col-value .single-dimension-selector,
+.report-condition-col-value .member-selectors-container {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.report-condition-col-value .quick-add-row,
+.report-condition-member-selector .quick-add-row {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.report-condition-member-selector .selected-members,
+.report-condition-col-value .selected-members {
+	margin-top: 4px;
+}
+
+.report-conditions-logic {
+	font-size: 11px;
+	font-weight: bold;
+	color: #2E4551;
+	letter-spacing: 0.5px;
+	margin: 10px 0 4px;
+	padding: 2px 8px;
+	display: inline-block;
+	background: #e8eef0;
+	border-radius: 2px;
+}
+
+.report-conditions-logic-or {
+	margin-left: 5px;
 }
 
 table.report.custom-report {

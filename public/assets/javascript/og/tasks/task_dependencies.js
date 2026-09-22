@@ -36,20 +36,41 @@ og.pickPreviousTemplateTask = function(before, genid, task_id, template_id) {
 };
 
 og.addPreviousTask = function(before, obj, genid) {
-	var parent = before.parentNode;
-	var count = parent.getElementsByTagName('input').length;
-	var div = document.createElement('div');
 	var type = obj.type;
 	if (type == 'template_task') type = 'task';	
-	div.className = "og-add-template-object previous-task " + (count % 2 ? " odd" : "");
+
+	var div = document.createElement('div');
+	div.className = "object-badge";
 	div.innerHTML =
 		'<input type="hidden" name="task[previous]['+og.previousTasksIdx+']" value="' + obj.object_id + '" />' +
-		'<div class="previous-task-name action-ico ico-'+ type +'">' + og.clean(obj.name) + '</div>' +
-		'<a href="#" onclick="og.removePreviousTask(this.parentNode, \''+genid+'\', '+og.previousTasksIdx+')" class="removeDiv link-ico ico-delete" style="display: block;">'+lang('remove')+'</a><div class="clear"></div>';
+		'<i class="icon-list-todo"></i>' +
+		'<span class="name">' + og.clean(obj.name) + '</span>' +
+		'<a href="#" onclick="og.removePreviousTask(this.parentNode, \''+genid+'\', '+og.previousTasksIdx+')" class="object-remove-btn" title="'+lang('remove')+'"><i class="icon-circle-x"></i></a>';
+	
 	var label = document.getElementById(genid + 'no_previous_selected');
-	if (label) label.style.display = 'none';
-	parent.insertBefore(div, before);
+	var targetContainer = null;
+	if (label) {
+		label.style.display = 'none';
+		targetContainer = label.parentNode;
+	} else {
+		var badgeNameSpan = document.getElementById(genid + 'task_name');
+		if (badgeNameSpan && badgeNameSpan.parentNode && badgeNameSpan.parentNode.parentNode) {
+			targetContainer = badgeNameSpan.parentNode.parentNode;
+		}
+	}
+	
 	og.previousTasks[og.previousTasksIdx] = obj;
+	
+	if (targetContainer) {
+		targetContainer.appendChild(div);
+		var clearDiv = document.createElement('div');
+		clearDiv.className = 'clear';
+		targetContainer.appendChild(clearDiv);
+	} else {
+		var parent = before.parentNode;
+		parent.insertBefore(div, before);
+	}
+	
 	og.previousTasksIdx++;
 };
 

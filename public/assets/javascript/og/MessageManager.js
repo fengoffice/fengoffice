@@ -132,7 +132,7 @@ og.MessageManager = function () {
 
 
     function renderIcon(value, p, r) {
-        return '<div class="db-ico ico-message"></div>';
+        return '<div class="icon-notebook-text"></div>';
     }
     /* Go to https://docs.sencha.com/extjs/2.3.0/#!/api/Ext.grid.ColumnModel 
 	and search for setRenderer() function to reference renderer functions 
@@ -384,18 +384,18 @@ og.MessageManager = function () {
     actions = {
         newCO: new Ext.Action({
             id: 'new_button_message',
-            text: lang('new'),
+            text: '<i class="icon-circle-plus"></i>' + lang('new'),
             tooltip: lang('add new message'),
-            iconCls: 'ico-new new_button',
+            iconCls: 'btn btn-sm btn-secondary',
             hidden: og.replace_list_new_action && og.replace_list_new_action.message,
             handler: function () {
                 og.render_modal_form('', {c: 'message', a: 'add'});
             }
         }),
         del: new Ext.Action({
-            text: lang('move to trash'),
+            text: '<i class="icon-trash-2"></i>' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
             disabled: true,
             handler: function () {
                 if (confirm(lang('confirm move to trash'))) {
@@ -409,9 +409,9 @@ og.MessageManager = function () {
             scope: this
         }),
         edit: new Ext.Action({
-            text: lang('edit'),
+            text: '<i class="icon-pencil-line"></i>' + lang('edit'),
             tooltip: lang('edit selected object'),
-            iconCls: 'ico-edit',
+            iconCls: 'btn btn-sm',
             disabled: true,
             handler: function () {
                 og.render_modal_form('', {c: 'message', a: 'edit', params: {id: getFirstSelectedId()}});
@@ -419,17 +419,18 @@ og.MessageManager = function () {
             scope: this
         }),
         markAs: new Ext.Action({
-            text: lang('mark as'),
+            text: '<i class="icon-tag"></i>' + lang('mark as') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
             tooltip: lang('mark as desc'),
+            iconCls: 'btn btn-sm',
             menu: [
                 markactions.markAsRead,
                 markactions.markAsUnread
             ]
         }),
         archive: new Ext.Action({
-            text: lang('archive'),
+            text: '<i class="icon-archive"></i>' + lang('archive'),
             tooltip: lang('archive selected object'),
-            iconCls: 'ico-archive-obj',
+            iconCls: 'btn btn-sm',
             disabled: true,
             handler: function () {
                 if (confirm(lang('confirm archive selected objects'))) {
@@ -487,7 +488,7 @@ og.MessageManager = function () {
 
         }),
         viewConfig: {
-            forceFit: true
+            forceFit: false
         },
         sm: sm,
         tbar: tbar,

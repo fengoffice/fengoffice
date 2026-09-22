@@ -59,6 +59,8 @@
 	'unarchived' => 'No archivados',
 	'contacts-panel' => 'Contactos',
 	'load more task groups' => 'Cargar más grupos de tareas...',
+	'show next n groups' => 'Mostrar los siguientes {0} grupos',
+	'show all groups' => 'Mostrar todos los grupos',
 	'fix repetitive tasks' => 'Corregir tareas repetitivas',
 	'warning you have added some repetitive tasks for this template that do not have date variables for their date' => 'Aviso: Usted ha agregado algunas tareas repetitivas las cuales no tienen definida una variable de fecha para asignar en la fecha de repetición.',
 	'yes let me add those variables' => 'Gracias. Permíteme agregar las variables.',
@@ -94,9 +96,15 @@
 	'Second half month+' => 'Segunda quincena del mes',
 	'First half of last month+' => 'Primer quincena mes pasado',
 	'Second half of last month+' => 'Segunda quincena mes pasado',
+	'all time' => 'Todo el tiempo',
 	'year to date' => 'Año hasta la fecha',
 	'nothing' => 'Nada',
 	'do not group' => 'No agrupar',
 
 	'object id' => 'Id de objeto',
+	'please select a project or client filter' => 'Por favor, seleccione un filtro por cliente y/o proyecto',
+
+	'expand collapse all groups' => 'Expandir/Contraer todos los grupos',
+	'expand all groups' => 'Expandir todos los grupos',
+	'collapse all groups' => 'Contraer todos los grupos',
 );

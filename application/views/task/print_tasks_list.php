@@ -7,7 +7,7 @@
 <thead id="ogTasksPanelColNamesThead">
   <tr id="ogTasksPanelColNames" class="task-list-col-names-template texture-n-1">
   	<?php foreach ($tasks_list_cols as $col) {
-    		if (in_array($col['id'], array('task_quick_actions','task_btn_actions'))) {
+    		if (in_array($col['id'], array('task_quick_actions'))) {
 				continue;
 			} 
     ?>
@@ -23,7 +23,7 @@
   <tr>
     <td colspan=<?php echo count($tasks_list_cols)?> class="ogTasksGroupHeader task-list-row-template">
       <div class='task-single-div'>
-        <div class='db-ico <?php echo array_var($group, 'group_icon'); ?>'></div>
+        <div class='db-ico <?php echo array_var($group, 'group_icon'); ?>'><i class="icon-list-todo"></i></div>
       </div>
 
       <div class='ogTasksGroupHeaderName task-single-div'><?php echo array_var($group, 'group_name'); ?></div>
@@ -52,16 +52,18 @@
 		  </td>
 		  <?php } ?>
 		  
+		  <?php if (array_var($draw_options, 'show_assigned_to')) { ?>
 		  <td>
 		    <div class='task-row-avatar'>
-		        <span class="assigned-to-name"><?php 
+		        <span class="assigned-to-name"><?php
 		        if (array_var($task, 'assignedToContactId')) {
 		        	echo array_var($task, 'atName');
 		        }
  				?></span>
 		    </div>
 		  </td>
-		
+		  <?php } ?>
+
 		  <td class="task_name">
 		    
 		        <div class='task-name'>
@@ -162,7 +164,7 @@
 		    <?php if (array_var($task, 'startDate')) {
 		    	$date = new DateTimeValue(array_var($task, 'startDate')); 
 		    ?>
-		    <span class="nobr" style='font-size: 9px;color: #888;'><?php echo format_datetime($date, null, 0)?></span>  
+		    <span class="nobr task-date-muted"><?php echo format_datetime($date, null, 0)?></span>  
 		    <?php } ?> 
 		  </td>
 		  <?php } ?>
@@ -175,9 +177,9 @@
 		    	$due_date_late = $date->getTimestamp() < DateTimeValueLib::now()->getTimestamp();
 		    ?>
 		     <?php if ($due_date_late) { ?>
-		     <span class="nobr" style='font-size: 9px;font-weight:bold;color: #F00;'><?php echo format_datetime($date, null, 0);?></span>  
+		     <span class="nobr task-due-date-overdue"><?php echo format_datetime($date, null, 0);?></span>  
 		     <?php } else { ?>
-		     <span class="nobr" style='font-size: 9px;color: #888;'><?php echo format_datetime($date, null, 0)?></span>
+		     <span class="nobr task-date-muted"><?php echo format_datetime($date, null, 0)?></span>
 		     <?php } ?>
 		    <?php } ?>
 		  </td>
@@ -186,12 +188,12 @@
 		  <?php foreach ($row_total_cols as $row_total_col) { ?>
 		  			
 		  <td class="task-date-container">
-		  	<?php $color = "#888";
+		  	<?php $row_total_class = 'task-date-muted';
 		  	if(array_var($row_total_col, 'row_field') == 'worked_time_string' && array_var($task, 'pending_time') < array_var($task, 'worked_time')) {
-		  		$color = '#f00';
+		  		$row_total_class = 'task-date-overdue';
 		  	}
 		  	?>
-		    <span class="nobr" style='font-size: 9px;color: <?php echo $color?>;'>
+		    <span class="nobr <?php echo $row_total_class; ?>">
 		      <?php
 		      	$task_date_columm = (array_var($row_total_col, 'row_field')=='estimatedTime' ? 'timeEstimateString' : array_var($row_total_col, 'row_field'));
 		      	echo array_var($task, $task_date_columm);

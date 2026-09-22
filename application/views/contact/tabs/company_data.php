@@ -43,7 +43,7 @@ $PhoneTypeActive = config_option('default_type_phone');
 				</div>
 				<div class="clear"></div>
 				<div class="addNewLineButton" style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewEmailInput('<?php echo $genid ?>_emails_container', 'company', '<?= $emailType ?>')" class="coViewAction ico-add" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new email address') ?></a>
+					<a href="#" tabindex="-1" onclick="og.addNewEmailInput('<?php echo $genid ?>_emails_container', 'company', '<?= $emailType ?>')" class="btn btn-primary-50 btn-sm" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new email address') ?></a>
 				</div>
 			</div>
 		</div>
@@ -53,7 +53,7 @@ $PhoneTypeActive = config_option('default_type_phone');
 			<div style="display: flex; flex-direction: column; align-items: flex-start;">
 				<div id="<?php echo $genid ?>_company_phones_container"></div>
 				<div style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_company_phones_container', 'company', '<?= $PhoneTypeActive ?>')" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
+					<a href="#" tabindex="-1" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_company_phones_container', 'company', '<?= $PhoneTypeActive ?>')" class="btn btn-primary-50 btn-sm"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new phone number') ?></a>
 				</div>
 			</div>
 		</div>
@@ -66,7 +66,7 @@ $PhoneTypeActive = config_option('default_type_phone');
 					<div id="<?php echo $genid ?>_addresses_container"></div>
 				</div>
 				<div class="addNewLineButton" style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewAddressInput('<?php echo $genid ?>_addresses_container', 'company')" class="coViewAction ico-add" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new address') ?></a>
+					<a href="#" tabindex="-1" onclick="og.addNewAddressInput('<?php echo $genid ?>_addresses_container', 'company')" class="btn btn-primary-50 btn-sm" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new address') ?></a>
 				</div>
 			</div>
 		</div>
@@ -76,7 +76,7 @@ $PhoneTypeActive = config_option('default_type_phone');
 			<div style="display: flex; flex-direction: column; align-items: flex-start;">
 				<div id="<?php echo $genid ?>_webpages_container"></div>
 				<div style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewWebpageInput('<?php echo $genid ?>_webpages_container', 'company')" class="coViewAction ico-add"><?php echo lang('add new webpage') ?></a>
+					<a href="#" tabindex="-1" onclick="og.addNewWebpageInput('<?php echo $genid ?>_webpages_container', 'company')" class="btn btn-primary-50 btn-sm"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new webpage') ?></a>
 				</div>
 			</div>
 		</div>
@@ -117,7 +117,7 @@ $PhoneTypeActive = config_option('default_type_phone');
 
 		<div class="input-container">
 			<?php echo label_tag(lang('notes'), $genid . 'profileFormNotes') ?>
-			<div style="float:left;width:600px;" class="notes-container">
+			<div class="notes-container">
 				<?php echo textarea_field('company[comments]', array_var($company_data, 'comments'), array('id' => $genid . 'profileFormNotes', 'style' => 'width: 100%;', 'rows' => 5)) ?>
 			</div>
 			<div class="clear"></div>

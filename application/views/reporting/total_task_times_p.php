@@ -90,6 +90,10 @@
 		<tr style='height:30px;'>
 			<td><span class="bold"><?php echo lang("timeslots") ?>:&nbsp;</span></td>
 			<td align='left'><?php 
+				// NOTE: the label for each value must match how Timeslots::getTaskTimeslots() (called
+				// from total_task_times()) actually filters: 0 = task-linked entries only, 1 = entries
+				// with no task, 2 = no filter (both) — this is NOT the same value order the Time module
+				// grid's own "Type" filter uses (0=all/1=task/2=general there), so don't copy it back.
 				echo select_box('report[timeslot_type]', array(
 					option_tag(lang('task timeslots'), 0, array_var($report_data, "timeslot_type") == '0' ? array('selected' => 'selected') : null),
 					option_tag(lang('time timeslots'), 1, array_var($report_data, "timeslot_type") == '1' ? array('selected' => 'selected') : null),
@@ -210,9 +214,19 @@
 			</div></td>
 		</tr>
 		<?php } ?>
-		
+
 	</table>
-	
+
+	<?php
+		// carry the time module grid's columns (captured when "Report & Print" was clicked) through to the final report
+		$report_columns = array_var($report_data, 'columns', array());
+		if (is_array($report_columns)) {
+			foreach ($report_columns as $col_id) {
+				echo '<input type="hidden" name="report[columns][]" value="' . clean($col_id) . '" />';
+			}
+		}
+	?>
+
 <br/>
 <?php echo submit_button(lang('generate report'),'s',array('style'=>'margin-top:0px;')) ?>
 </div>

@@ -53,6 +53,10 @@ class  ContactMemberCacheController extends ApplicationController {
 	 * @param array $permissions with the member and the changed_pgs
 	 */
 	function afterMemberPermissionChanged($permissions) {
+		// CMPs may have just been written for new members; drop the in-request access memo so
+		// updateContactMemberCache() sees the current permission rows.
+		ContactMemberPermissions::clearAccessCaches();
+
 		$member = array_var($permissions, 'member');		
 		//get all users in the set of permissions groups
 		$permissionGroupIds = array();

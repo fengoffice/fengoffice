@@ -47,15 +47,35 @@ class ObjectController extends ApplicationController {
 					}
 				}
 			}
+		} else if ($object instanceof TemplateTask) {
+			// if it's a template task, we need to load the object as a project task to get the custom properties
+			$tmp_task = ProjectTasks::createTmpTaskCopyFromTemplateTask($object);
+			if ($tmp_task instanceof ProjectTask) {
+				$object = $tmp_task;
+			}
+		}
+
+		if ($object instanceof ContentDataObject && $object->isNew()) {
+			if (isset($_REQUEST['object_subtype_id'])) {
+				$object->setColumnValue('object_subtype_id', $_REQUEST['object_subtype_id']);
+			}
+			$parent_id = (int) array_var($_REQUEST, 'parent_id', 0);
+			if ($parent_id > 0 && $object instanceof ProjectTask) {
+				$object->setParentId($parent_id);
+			}
 		}
 
 		$visibility = array_var($_REQUEST, 'visibility', 'all');
+
+		// this html replaces the properties of an already rendered form, so it has to be built with
+		// the genid of that form, otherwise the ids of the inputs stop matching the form javascript
+		$genid = array_var($_REQUEST, 'genid');
 
 		// get custom properties html to render
 		$html = "";
 		if ($object instanceof ContentDataObject) {
 			ob_start();
-			render_object_custom_properties($object, null, null, $visibility);
+			render_object_custom_properties($object, null, null, $visibility, 0, $genid);
 			$html = ob_get_clean();
 		}
 		ajx_extra_data(array('html' => $html));
@@ -254,11 +274,22 @@ class ObjectController extends ApplicationController {
 		$genid = array_var($_GET, 'genid', '');
 		$otype = array_var($_GET, 'otype', '');
 		$assigned_to = array_var($_GET, 'assigned_to', '');
+		$is_new = array_var($_GET, 'is_new', '0') == '1';
 		$subscriberIds = explode(",", $uids);
 
 		// dont allow non numeric parameters for otype and subscriber ids
 		$subscriberIds = array_filter($subscriberIds, 'is_numeric');
 		if (!is_numeric($otype)) $otype = 0;
+
+		if (!function_exists('apply_default_subscriber_ids_for_task_form')) {
+			$helper_file = Env::getHelperPath('task_subscribers');
+			if (is_file($helper_file)) {
+				include_once $helper_file;
+			}
+		}
+		if (function_exists('apply_default_subscriber_ids_for_task_form')) {
+			apply_default_subscriber_ids_for_task_form($subscriberIds, $otype, $assigned_to, $is_new);
+		}
 
 		tpl_assign('object_type_id', $otype);
 		tpl_assign('assigned_to', $assigned_to);
@@ -269,16 +300,65 @@ class ObjectController extends ApplicationController {
 		$this->setTemplate("add_subscribers");
 	}
 
+	/**
+	 * When updating only new members for an existing object, ensure that for any
+	 * dimension where the object already has a member, we keep one of those
+	 * existing members so the object remains classified in that dimension.
+	 *
+	 * @param ContentDataObject $object
+	 * @param array $member_ids
+	 * @param bool $update_only_new_members
+	 * @return array
+	 */
+	protected function merge_existing_members_by_dimension($object, $member_ids, $update_only_new_members) {
+		if (!$update_only_new_members || !$object->getId()) {
+			return $member_ids;
+		}
 
-	function add_to_members($object, $member_ids, $user = null, $check_allowed_members = true, $is_multiple_classification = false, $add_related_mem = true) {
+		$existing_member_ids = $object->getMemberIds();
+		if (!$existing_member_ids) {
+			return $member_ids;
+		}
+
+		$existing_members = Members::instance()->findAll(array(
+			'conditions' => 'id IN (' . implode(',', $existing_member_ids) . ')'
+		));
+
+		$new_members = Members::instance()->findAll(array(
+			'conditions' => 'id IN (' . implode(',', $member_ids) . ')'
+		));
+
+		$new_dimensions = array();
+		foreach ($new_members as $m) {
+			$new_dimensions[$m->getDimensionId()] = true;
+		}
+
+		foreach ($existing_members as $em) {
+			if (!isset($new_dimensions[$em->getDimensionId()])) {
+				$member_ids[] = $em->getId();
+			}
+		}
+
+		return array_unique($member_ids);
+	}
+
+
+	function add_to_members($object, $member_ids, $user = null, $check_allowed_members = true, $is_multiple_classification = false, $add_related_mem = true, $update_only_new_members = false) {
 		if (!$user instanceof Contact) $user = logged_user();
 
 		// clean member_ids
 		$tmp_mids = array();
-		foreach ($member_ids as $mid) {
-			if (!is_null($mid) && trim($mid) != "") $tmp_mids[] = $mid;
+		if ($member_ids && is_array($member_ids)) {
+			foreach ($member_ids as $mid) {
+				if (!is_null($mid) && trim($mid) != "") $tmp_mids[] = $mid;
+			}
 		}
 		$member_ids = $tmp_mids;
+
+		$member_ids = $this->merge_existing_members_by_dimension($object, $member_ids, $update_only_new_members);
+
+		// plugins may check consistency of the entered members and its relations
+		Hook::fire('override_content_object_member_ids', array('object' => $object), $member_ids);
 
 		if ($user->isGuest()) {
 			flash_error(lang('no access permissions'));
@@ -479,7 +559,8 @@ class ObjectController extends ApplicationController {
 	 * @param $object
 	 * 
 	 */
-	function add_custom_properties($object_original, $cp_data=null) {
+	function add_custom_properties($object_original, $cp_data=null, $allow_subtypes = false) {
+		Env::useHelper('custom_properties');
 
 		if (logged_user()->isGuest()) {
 			flash_error(lang('no access permissions'));
@@ -522,18 +603,14 @@ class ObjectController extends ApplicationController {
 
 		$customProps = CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, 'all', $extra_conditions, true, null, $object);
 
-		//Sets all boolean custom properties to 0. If any boolean properties are returned, they are subsequently set to 1.
+		// Add subtype custom properties
+		if ($allow_subtypes && $object->getObjectSubtypeId() > 0) {
+			$extra_conditions = " AND object_subtype_id = " . $object->getObjectSubtypeId();
+			$subtype_customProps = array_merge($customProps, CustomProperties::getAllCustomPropertiesByObjectType($object_type_id, 'all', $extra_conditions, true, null, $object));
+			$customProps = array_merge($customProps, $subtype_customProps);
+		}
+
 		foreach($customProps as $cp){
-			if($cp->getType() == 'boolean'){
-				$custom_property_value = CustomPropertyValues::getCustomPropertyValue($object->getId(), $cp->getId());
-				if(!$custom_property_value instanceof CustomPropertyValue){
-					$custom_property_value = new CustomPropertyValue();
-				}
-				$custom_property_value->setObjectId($object->getId());
-				$custom_property_value->setCustomPropertyId($cp->getId());
-				$custom_property_value->setValue(0);
-				$custom_property_value->save();
-			}
 			if ($cp->getIsRequired()) {
 				$required_custom_props[] = $cp;
 			}
@@ -548,6 +625,8 @@ class ObjectController extends ApplicationController {
 					if (($req_cp->getType() == 'user' || $req_cp->getType() == 'contact')) {
 						// remove anything besides numbers, we are looking for contact ids
 						$obj_custom_properties[$req_cp->getId()] = array_filter(array_var($obj_custom_properties, $req_cp->getId(), array()), "is_numeric");
+					} else if ($req_cp->getType() == 'object_link') {
+						$obj_custom_properties[$req_cp->getId()] = json_decode(array_var($obj_custom_properties, $req_cp->getId()), true);
 					}
 					
 					$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || count(array_filter($obj_custom_properties[$req_cp->getId()])) == 0;
@@ -562,6 +641,10 @@ class ObjectController extends ApplicationController {
 						$amount = clean_formatted_money_amount_for_sql($obj_custom_properties[$req_cp->getId()]['amount']);
 						$not_set = $amount == 0;
 
+					} else if ($req_cp->getType() == 'object_link') {
+
+						$not_set = !isset($obj_custom_properties[$req_cp->getId()]) || $obj_custom_properties[$req_cp->getId()] == "" || $obj_custom_properties[$req_cp->getId()] == "[]";
+						
 					} else {
 						if ($req_cp->getType() == 'date') {
 							
@@ -599,14 +682,20 @@ class ObjectController extends ApplicationController {
 				}
 
 				$object = $object_original;
-				// if custom property does not belong to the object, look for an associated object for current cp
-				if (is_null($custom_property)) {
-					$custom_property = CustomProperties::instance()->findById($id);
-					$object = $object_original->getAdditionalCustomPropertyAssociatedObject($custom_property);
 
-					if (!$custom_property instanceof CustomProperty || !$object instanceof ContentDataObject) {
-						$object = $object_original;
+				if (is_null($custom_property)) {
+					if (!($object_original instanceof ContentDataObject)) {
 						continue;
+					}
+				
+					$custom_property = CustomProperties::instance()->findById($id);
+					if (!($custom_property instanceof CustomProperty)) {
+						continue;
+					}
+					
+					$associatedObject = $object_original->getAdditionalCustomPropertyAssociatedObject($custom_property);
+					if ($associatedObject instanceof ContentDataObject) {
+						$object = $associatedObject;
 					}
 				}
 
@@ -671,25 +760,58 @@ class ObjectController extends ApplicationController {
 									throw new Exception(implode("\n - ", $errors));
 								}
 							}
-							// Address custom property
-							$address_val = array_var($value, 'type') .'|'. array_var($value, 'street') .'|'. array_var($value, 'city') .'|'. array_var($value, 'state') .'|'. array_var($value, 'country') .'|'. array_var($value, 'zip_code');
-							CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
-							$custom_property_value = new CustomPropertyValue();
-							$custom_property_value->setObjectId($object->getId());
-							$custom_property_value->setCustomPropertyId($id);
-							$custom_property_value->setValue($address_val);
-							$custom_property_value->save();
+
+							// Default to saving the value; may be skipped if all key fields are empty and no prior value exists.
+							$save_cp_value = true;
+
+							// If street, city, state and zip_code are all empty, only save if a previous value already exists
+							// for this property (i.e. the user is explicitly clearing it). If no prior value exists,
+							// skip the save to avoid creating a redundant empty-value record.
+							if (array_var($value, 'street') === '' && array_var($value, 'city') === '' && array_var($value, 'state') === '' && array_var($value, 'zip_code') === '') {
+								$current_cp_val = CustomPropertyValues::getCustomPropertyValue($object->getId(), $id);
+								if (!$current_cp_val instanceof CustomPropertyValue) {
+									$save_cp_value = false;
+								}
+							}
+
+							if ($save_cp_value) {
+								// Address custom property
+								$address_val = array_var($value, 'type') .'|'. array_var($value, 'street') .'|'. array_var($value, 'city') .'|'. array_var($value, 'state') .'|'. array_var($value, 'country') .'|'. array_var($value, 'zip_code');
+								CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
+								$custom_property_value = new CustomPropertyValue();
+								$custom_property_value->setObjectId($object->getId());
+								$custom_property_value->setCustomPropertyId($id);
+								$custom_property_value->setValue($address_val);
+								$custom_property_value->save();
+							}
 
 						} else if ($custom_property->getType() == 'amount') {
 
-							CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
-				
-							$custom_property_value = new CustomPropertyValue();
-							$custom_property_value->setObjectId($object->getId());
-							$custom_property_value->setCustomPropertyId($id);
-							$custom_property_value->setValue(clean_formatted_money_amount_for_sql($value['amount']));
-							$custom_property_value->setCurrencyId($value['currency_id']);
-							$custom_property_value->save();
+							// Default to saving the value; may be skipped if amount is zero and no prior value exists.
+							$save_cp_value = true;
+							$float_value = isset($value['amount']) ? (float) $value['amount'] : 0;
+
+							// If the submitted amount is zero, only save if a previous value already exists for this
+							// property (i.e. the user is explicitly clearing/zeroing it). If no prior value exists,
+							// skip the save to avoid creating a redundant zero-value record.
+							if ($float_value == 0) {
+								$current_cp_val = CustomPropertyValues::getCustomPropertyValue($object->getId(), $id);
+								if (!$current_cp_val instanceof CustomPropertyValue) {
+									$save_cp_value = false;
+								}
+							}
+
+							if ($save_cp_value) {
+								// Replace the existing value: delete first, then insert the new one.
+								CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
+
+								$custom_property_value = new CustomPropertyValue();
+								$custom_property_value->setObjectId($object->getId());
+								$custom_property_value->setCustomPropertyId($id);
+								$custom_property_value->setValue(clean_formatted_money_amount_for_sql($value['amount']));
+								$custom_property_value->setCurrencyId($value['currency_id']);
+								$custom_property_value->save();
+							}
 							
 						} else if ($custom_property->getType() == 'list') {
 							CustomPropertyValues::deleteCustomPropertyValues($object->getId(), $id);
@@ -716,8 +838,8 @@ class ObjectController extends ApplicationController {
                                     $contact = Contacts::instance()->findById($list_val);
                                     $member = Members::findOneByObjectId($object->getObjectId());
                                     if($member instanceof Member && $contact instanceof Contact) {
-                                        $object_controller = new ObjectController();
-                                        $object_controller->add_to_members($contact, array($member->getId()),null,false);
+										ObjectMembers::instance()->addObjectToMembers($contact->getId(), array($member));
+										Hook::fire('after_add_contact_cp_value_to_member', array('contact' => $contact, 'member' => $member), $contact);
                                     }
                                 }
                             }
@@ -802,8 +924,12 @@ class ObjectController extends ApplicationController {
 						}
 
 					}else{
-					    if($custom_property->getType() == 'boolean'){
-						    $value = in_array($value, array(0, '')) ? false : $value;
+					    if ($custom_property->getType() == 'boolean') {
+							$value = normalize_cp_boolean_stored_value($value);
+							if (!cp_boolean_allows_not_specified($custom_property) && $value === '0') {
+								$d = normalize_cp_boolean_stored_value($custom_property->getDefaultValue());
+								$value = ($d === '1' || $d === '-1') ? $d : '1';
+							}
 						}
 						
 						$cpv = CustomPropertyValues::getCustomPropertyValue($object->getId(), $id);
@@ -844,6 +970,10 @@ class ObjectController extends ApplicationController {
 				}
 			}
 		}
+
+		Hook::fire('after_save_custom_properties', array(
+			'obj_custom_properties' => $obj_custom_properties,
+		), $object);
 
 		//Save the key - value pair custom properties (object_properties table)
 		$object->clearObjectProperties();
@@ -1345,6 +1475,29 @@ class ObjectController extends ApplicationController {
 	function do_delete_objects($objects, $permanent = false, &$deleted_object_ids, $raw_data=false, $check_permissions=true) { 
 		$err = 0; // count errors
 		$succ = 0; // count files deleted
+
+		$batch_imap_skip_ids = array();
+		if ($permanent && Plugins::instance()->isActivePlugin('mail')) {
+			$mail_batch = array();
+			foreach ($objects as $object) {
+				$obj = Objects::findObject($raw_data ? $object['id'] : $object->getId());
+				if ($obj instanceof Contact && $obj->isUser()) {
+					continue;
+				}
+				$allowed_to_delete = $check_permissions ? $obj->canDelete(logged_user()) : true;
+				if ($obj instanceof MailContent && $allowed_to_delete) {
+					$mail_batch[] = $obj;
+				}
+			}
+			if (count($mail_batch) >= 2) {
+				Env::useHelper('functions', 'mail');
+				remove_mails_from_imap_server_batch($mail_batch);
+				foreach ($mail_batch as $m) {
+					$batch_imap_skip_ids[$m->getId()] = true;
+				}
+			}
+		}
+
 		foreach ($objects as $object) {
 			try {
 				$obj = Objects::findObject($raw_data ? $object['id'] : $object->getId());
@@ -1355,7 +1508,8 @@ class ObjectController extends ApplicationController {
 				if ($obj instanceof ContentDataObject && $allowed_to_delete) {
 					if ($permanent) {
 						if (Plugins::instance()->isActivePlugin('mail') && $obj instanceof MailContent) {
-							$obj->delete(false);
+							$skip_imap = !empty($batch_imap_skip_ids[$obj->getId()]);
+							$obj->delete(false, $skip_imap);
 						} elseif (Plugins::instance()->isActivePlugin('income') && $obj instanceof IncomeInvoice) {
 							$obj->delete(false);
 						} else {
@@ -2026,9 +2180,24 @@ class ObjectController extends ApplicationController {
 		if (isset($_POST['dims_check_date'])) {
 			$dims_check_date = new DateTimeValue($_POST['dims_check_date']);
 			$dims_check_date_sql = $dims_check_date->toMySQL();
-			$members_log_count = ApplicationLogs::instance()->count("member_id>0 AND created_on>'$dims_check_date_sql'");
-			if ($members_log_count > 0) {
-				$extra_data['reload_dims'] = 1;
+			$changed_logs = ApplicationLogs::instance()->findAll(array(
+				'conditions' => "member_id>0 AND created_on>'$dims_check_date_sql'",
+				'distinct' => true,
+				'columns' => array('member_id'),
+				'order' => '',
+				'limit' => 51,
+			));
+			if ($changed_logs && count($changed_logs) > 0) {
+				if (count($changed_logs) <= 50) {
+					$changed_ids = array();
+					foreach ($changed_logs as $log) {
+						$changed_ids[] = (int) $log->getMemberId();
+					}
+					$extra_data['reload_member_ids'] = $changed_ids;
+				} else {
+					// Too many changes: full cache reset is more efficient
+					$extra_data['reload_dims'] = 1;
+				}
 			}
 		}
 
@@ -2121,14 +2290,6 @@ class ObjectController extends ApplicationController {
 			foreach ($cp_rows as $row) {
 				if (!isset($grouped[$row['obj_type']])) $grouped[$row['obj_type']] = array();
 				$cp_name = $row['cp_name'];
-				if ($row['cp_special']) {
-					$label_code = str_replace("_special", "", $row['cp_code']);
-					$label_value = Localization::instance()->lang($label_code);
-					if (is_null($label_value)) {
-						$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
-					}
-					if (!is_null($label_value)) $cp_name = $label_value;
-				}
 
 				if ($row['cp_type'] == 'list') {
 					$cp_values = $row['cp_values'];
@@ -2143,6 +2304,8 @@ class ObjectController extends ApplicationController {
 				if ($ot->getType() == 'dimension_object') {
 					$cp_info['member_cp'] = 1;
 				}
+
+				Hook::fire('override_custom_property_info', array(), $cp_info);
 
 				$grouped[$row['obj_type']][] = $cp_info;
 			}
@@ -2177,26 +2340,7 @@ class ObjectController extends ApplicationController {
 			$_REQUEST['ids'] = implode(',', $ids);
 			$this->trash();
 			return;
-/*
-			$result = ContentDataObjects::listing(array(
-					"extra_conditions" => " AND o.id IN (".implode(",",$ids).") ",
-					"include_deleted" => true
-			));
 
-			$objects = $result->objects;
-			foreach ($objects as $object) {
-				if (method_exists($object, 'setDontMakeCalculations')) $object->setDontMakeCalculations(true);
-			}
-
-			$real_deleted_ids = array();
-			list($succ, $err) = $this->do_delete_objects($objects, false, $real_deleted_ids);
-
-			if ($err > 0) {
-				flash_error(lang('error delete objects', $err));
-			} else {
-				Hook::fire('after_object_delete_permanently', $real_deleted_ids, $ignored);
-				flash_success(lang('success delete objects', $succ));
-			}*/
 		} else if (array_var($_GET, 'action') == 'delete_permanently') {
 			$ids = array();
 			$exploded = explode(',', array_var($_GET, 'objects'));
@@ -2226,22 +2370,69 @@ class ObjectController extends ApplicationController {
 
 		}else if (array_var($_GET, 'action') == 'empty_trash_can') {
 
-			$result = ContentDataObjects::listing(array(
-					"select_columns" => array('o.id'),
-					"raw_data" => true,
-					"trashed" => true,
-			));
-			$objects = $result->objects;
-			foreach ($objects as $object) {
-				if (method_exists($object, 'setDontMakeCalculations')) $object->setDontMakeCalculations(true);
+			// Delete in batches using the same listing filters as the trash grid and the
+			// same permission checks as "delete permanently" (canDelete), not purge_trash
+			// (which requires can_delete on member permissions and often deletes nothing).
+			$batch_limit = 500;
+			$total_succ = 0;
+			$total_err = 0;
+			$real_deleted_ids = array();
+
+			do {
+				$params = $this->get_list_objects_params();
+				$params['only_ids'] = true;
+				$params['trashed'] = true;
+				$params['count_results'] = false;
+				$params['show_all_linked_objects'] = true;
+				$params['start'] = 0;
+				$params['limit'] = $batch_limit;
+
+				$listing = $this->get_objects_list($params);
+				$obj_ids = $listing['objects'];
+
+				if (!is_array($obj_ids) || count($obj_ids) == 0) {
+					break;
+				}
+
+				$objects = Objects::instance()->findAll(array(
+					"conditions" => "id IN (" . implode(",", $obj_ids) . ")"
+				));
+				foreach ($objects as $object) {
+					if (method_exists($object, 'setDontMakeCalculations')) {
+						$object->setDontMakeCalculations(true);
+					}
+				}
+
+				$batch_deleted_ids = array();
+				list($succ, $err) = $this->do_delete_objects($objects, true, $batch_deleted_ids);
+				$total_succ += $succ;
+				$total_err += $err;
+				$real_deleted_ids = array_merge($real_deleted_ids, $batch_deleted_ids);
+
+				// Stop if nothing could be deleted to avoid an infinite loop
+				if ($succ == 0) {
+					break;
+				}
+			} while (count($obj_ids) >= $batch_limit);
+
+			$params = $this->get_list_objects_params();
+			$params['only_ids'] = true;
+			$params['trashed'] = true;
+			$params['count_results'] = true;
+			$params['show_all_linked_objects'] = true;
+			$params['start'] = 0;
+			$params['limit'] = 1;
+			$remaining_listing = $this->get_objects_list($params);
+			$remaining_count = array_var($remaining_listing, 'totalCount', 0);
+
+			if ($remaining_count > 0) {
+				flash_error(lang('error empty trash can not all deleted', $remaining_count));
+			} else if ($total_err > 0) {
+				flash_error(lang('error delete objects', $total_err));
 			}
-
-			if (count($objects) > 0) {
-				$obj_ids_str = implode(',', array_flat($objects));
-				$extra_conds = "AND o.id IN ($obj_ids_str)";
-
-				$count = Trash::purge_trash(0, 1000, $extra_conds);
-				flash_success(lang('success delete objects', $count));
+			if ($total_succ > 0) {
+				Hook::fire('after_object_delete_permanently', $real_deleted_ids, $ignored);
+				flash_success(lang('success delete objects', $total_succ));
 			}
 
 		} else if (array_var($_GET, 'action') == 'archive') {
@@ -2397,6 +2588,8 @@ class ObjectController extends ApplicationController {
 			$params['order'] = "archived_on";
 		}elseif ($params['order'] == "dateDeleted") {
 			$params['order'] = "trashed_on";
+		}elseif ($params['order'] == "templateName") {
+			$params['order'] = "templateName";
 		}elseif ($params['order'] == "name") {
 			$params['order'] = "name";
 		} else {
@@ -2475,6 +2668,9 @@ class ObjectController extends ApplicationController {
             $count_results = $params['count_results'];
 		}
 
+		// initialize joins variable
+		$joins = [];
+
 		/* if there's an action to execute, do so */
 		if (!$show_all_linked_objects){
 			$this->processListActions();
@@ -2506,6 +2702,13 @@ class ObjectController extends ApplicationController {
 			}
 		}
 		
+		// initialize select fields
+        $select_fields = "*";
+        if($only_ids){
+            $select_fields = "o.id";
+        }
+
+		
 		$template_object_names = "";
 		$template_extra_condition = "true";
 
@@ -2524,20 +2727,21 @@ class ObjectController extends ApplicationController {
 			$tmpl_task = TemplateTasks::instance()->findById(intval($id_no_select));
 			if($tmpl_task instanceof TemplateTask){
 				$template_extra_condition = "o.id IN (SELECT object_id from ".TABLE_PREFIX."template_tasks WHERE `template_id`=".$tmpl_task->getTemplateId()." OR `template_id`=0 AND `session_id`=".logged_user()->getId()." )";
-			}else{
+			} else if ($template_id > 0) {
 				$template_extra_condition = "o.id IN (SELECT object_id from ".TABLE_PREFIX."template_tasks WHERE `template_id`=".intval($template_id)." OR `template_id`=0 AND `session_id`=".logged_user()->getId()." )";
+			} else {
+				// no extra template conditions for now
 			}
+
+			if (array_var($_REQUEST, 'task_template_ids', '') != '') {
+				$task_template_ids = array_var($_REQUEST, 'task_template_ids');
+				$template_extra_condition = "o.id IN (SELECT object_id from ".TABLE_PREFIX."template_tasks WHERE `template_id` IN (".($task_template_ids)."))";
+			}
+
+
 		}else{
 			$template_object_names = "AND ot.name <> 'template_task' AND ot.name <> 'template_milestone'" ;
 		}
-		$result = null;
-
-        $select_fields = "*";
-        if($only_ids){
-            $select_fields = "o.id";
-        }
-
-		$context = active_context();
 
 		// select only content objects if asked to, otherwise select all listable types
 		$obj_type_types = array('content_object', 'located');
@@ -2573,6 +2777,24 @@ class ObjectController extends ApplicationController {
 		if (count($obj_type_types) > 0) {
 			// select only the object types in the list
 			$type_condition .= " AND ot.type IN ('". implode("','", $obj_type_types) ."')";
+		}
+
+		if (isset($extra_list_params->is_company)) {
+			if (!$filters['contact_type_filter']) {
+				$filters['contact_type_filter'] = array('company' => true);
+			} else {
+				$filters['contact_type_filter']['company'] = true;
+			}
+		}
+
+		// only_persons: show individual contacts (people, including users) but exclude companies.
+		if (isset($extra_list_params->only_persons) && $extra_list_params->only_persons) {
+			if (!$filters['contact_type_filter']) {
+				$filters['contact_type_filter'] = array('contact' => true, 'user' => true, 'company' => false);
+			} else {
+				$filters['contact_type_filter']['contact'] = true;
+				$filters['contact_type_filter']['company'] = false;
+			}
 		}
 
 		$extra_conditions = array();
@@ -2620,6 +2842,39 @@ class ObjectController extends ApplicationController {
 					AND cmp.object_type_id NOT IN (SELECT oott.id FROM ".TABLE_PREFIX."object_types oott WHERE oott.name IN ('comment','template'))
 					AND cmp.object_type_id IN (SELECT oott2.id FROM ".TABLE_PREFIX."object_types oott2 WHERE oott2.type IN ('content_object'))
 				)";
+			}
+		}
+
+		if ($filters['types'] && in_array("contact", $filters['types']) 
+			&& (isset($extra_list_params->include_companies) || isset($extra_list_params->only_companies)
+				|| isset($extra_list_params->contact_type_mask))) {
+
+			$joins[] = " LEFT JOIN ".TABLE_PREFIX."contacts c2 on c2.object_id=o.id";
+			
+			if (isset($extra_list_params->only_companies) && $extra_list_params->only_companies == 1) {
+				$extra_conditions[] = "c2.is_company = 1";
+			}
+			if (isset($extra_list_params->include_companies) && $extra_list_params->include_companies == 0) {
+				$extra_conditions[] = "c2.is_company = 0";
+			}
+			if (isset($extra_list_params->contact_type_mask)) {
+				// Any combination of companies, individual contacts and users.
+				//
+				// This overlaps with the contact_type_filter block below, which expresses the
+				// same 7 combinations through three booleans. They are kept separate on
+				// purpose: contact_type_filter is the object picker's own UI filter and
+				// arrives as a top level request parameter, while contact_type_mask travels
+				// inside extra_list_params and is shared with
+				// ContactController::get_contacts_for_selector, which has no
+				// contact_type_filter at all. Both selector backends build their condition
+				// with get_contact_type_mask_sql_condition() so they cannot drift, and the
+				// mask additionally excludes disabled users, which contact_type_filter does
+				// not do.
+				Env::useHelper('custom_properties');
+				$mask_condition = get_contact_type_mask_sql_condition((int) $extra_list_params->contact_type_mask, 'c2');
+				if ($mask_condition != '') {
+					$extra_conditions[] = $mask_condition;
+				}
 			}
 		}
 		
@@ -2785,12 +3040,35 @@ class ObjectController extends ApplicationController {
 		$sql_where = "
 			WHERE " . implode(" AND ", $extra_conditions) . $sql_permissions . $sql_members;
 
-		// Order
-		$sql_order = "";
-		if ($order) {
+
+		if ($order === "templateName" && !isset($sql_order)) {
+
 			$sql_order = "
-			ORDER BY $order $orderdir
+				ORDER BY 
+				(
+					SELECT ott.name
+					FROM ".TABLE_PREFIX."template_tasks tt
+					LEFT JOIN ".TABLE_PREFIX."objects ott 
+						ON ott.id = tt.template_id
+					WHERE tt.object_id = o.id
+					LIMIT 1
+				) $orderdir,
+				o.name $orderdir
 			";
+		}
+
+
+		// Order
+		if (!isset($sql_order)) {
+			$sql_order = "";
+			if ($order) {
+				if (in_array($order, Objects::instance()->getColumns())) {
+					$order = "o." . $order;
+				}
+				$sql_order = "
+				ORDER BY $order $orderdir
+				";
+			}
 		}
 
 		// Limit
@@ -2802,6 +3080,9 @@ class ObjectController extends ApplicationController {
 		// Full SQL
 		$sql = "$sql_select $sql_joins $sql_where $sql_order $sql_limit";
 		
+		//For debugging
+		//Logger::log_r($sql);
+
 		// Execute query
 		if (!$only_count_result) {
 			$rows = DB::executeAll($sql);
@@ -2893,6 +3174,9 @@ class ObjectController extends ApplicationController {
 							$info_elem['completedBy'] = $instance->getCompletedById();
 							$info_elem['dateCompleted'] = $instance->getCompletedOn() instanceof DateTimeValue ? format_datetime($instance->getCompletedOn()) : '';
 							$info_elem['assignedTo'] = $instance->getAssignedToName();
+						} else if ($instance instanceof TemplateTask) {
+							$template = COTemplates::instance()->findById($instance->getTemplateId());
+							$info_elem['templateName'] = $template ? $template->getName() : '';
 						}
 					}
 
@@ -3127,4 +3411,204 @@ class ObjectController extends ApplicationController {
 
 	}
 
+
+
+	/**
+	 * This function is used to get tasks in context for a given object.
+	 * It limits the number of tasks returned to 250 if no filter is applied.
+	 * It returns an array of tasks with the fields the task selectors need: id, name and,
+	 * for subtasks, parentId (see og.buildNestedTaskStore).
+	 *
+	 * The rows are read raw and only those columns are selected on purpose: hydrating every task
+	 * and building its full list row with ProjectTask::getArrayInfo() ran hundreds of queries per
+	 * task (one per custom property, permission checks, members path, subtasks...), which took
+	 * several seconds on projects with a few hundred tasks and, because of the PHP session lock,
+	 * delayed every other request of the panel (e.g. the time list) queued behind it.
+	 */
+	function get_tasks_in_context() {
+		ajx_current("empty");
+
+		$tasks_data = array();
+
+		$extra_conditions = "";
+		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
+			$extra_conditions .= " AND assigned_to_contact_id = ".logged_user()->getId();
+		}
+
+		$listing_params = array(
+			"order" => "name",
+			"order_dir" => "ASC",
+			"count_results" => false,
+			"extra_conditions" => $extra_conditions,
+			"raw_data" => true,
+			"select_columns" => array("o.id", "o.name", "e.parent_id"),
+			// the tasks list totals row is not needed to fill a selector
+			"fire_additional_data_hook" => false,
+		);
+		// if no filter applied then limit the size of the query to prevent memory/performance issues
+		if (count(active_context_members(false)) == 0) {
+			$listing_params["limit"] = 250;
+		}
+
+		$rows = ProjectTasks::instance()->listing($listing_params)->objects;
+
+		foreach ($rows as $row) {
+			$task_data = array(
+				'id' => (int) $row['id'],
+				'name' => $row['name'],
+			);
+			if ($row['parent_id'] > 0) {
+				$task_data['parentId'] = (int) $row['parent_id'];
+			}
+			$tasks_data[] = $task_data;
+		}
+
+		ajx_extra_data(array(
+			'tasks' => $tasks_data
+		));
+	}
+
+
+
+	/**
+	 * Testing function for the generic add form that renders all the fields dynamically.
+	 *
+	 * @param string $object_type_id the object type id to use.
+	 */
+	function test_add_form() {
+		$this->setTemplate('add');
+
+		$gneid = gen_id();
+		$object_type = ObjectTypes::instance()->findById(get_id('ot_id'));
+
+		$manager_class = $object_type->getHandlerClass();
+		$manager = new $manager_class();
+
+		/** @var ContentDataObjects $manager */
+		$item_class = $manager->getItemClass();
+		$object = new $item_class();
+		
+		/** @var ContentDataObject $object */
+		$object->setObjectTypeId($object_type->getId());
+
+		tpl_assign("gneid", $gneid);
+		tpl_assign("object_type", $object_type);
+		tpl_assign("object", $object);
+	}
+
+
+	/**
+	 * Returns the members tree for an object in a specific dimension.
+	 * Used by the member_path modal to display hierarchical members on demand via AJAX.
+	 */
+	function get_object_members_tree() {
+		ajx_current("empty");
+		$object_id = array_var($_REQUEST, 'object_id');
+		$dimension_id = array_var($_REQUEST, 'dimension_id');
+
+		if (!$object_id || !$dimension_id) return;
+
+		// Get direct members for this object in this dimension
+		$direct_members = ObjectMembers::getMembersByObjectAndDimension($object_id, $dimension_id);
+		$direct_member_ids = array();
+		$all_members_map = array();
+
+		foreach ($direct_members as $m) {
+			$mid = (int) $m->getId();
+			$direct_member_ids[] = $mid;
+			$all_members_map[$mid] = array(
+				'id'             => $mid,
+				'parent'         => (int) $m->getParentMemberId(),
+				'name'           => (string) $m->getDisplayName(),
+				'object_type_id' => (int) $m->getObjectTypeId(),
+				'color'          => (int) $m->getMemberColor(0),
+				'is_direct'      => true
+			);
+		}
+
+		// Fetch ancestors in batch loops to build the full hierarchy
+		$missing_parent_ids = $this->_collect_missing_parent_ids($all_members_map);
+		while (!empty($missing_parent_ids)) {
+			$parents = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $missing_parent_ids).')'));
+			foreach ($parents as $p) {
+				$pid = (int) $p->getId();
+				if (!isset($all_members_map[$pid])) {
+					$all_members_map[$pid] = array(
+						'id'             => $pid,
+						'parent'         => (int) $p->getParentMemberId(),
+						'name'           => (string) $p->getDisplayName(),
+						'object_type_id' => (int) $p->getObjectTypeId(),
+						'color'          => (int) $p->getMemberColor(0),
+						'is_direct'      => false
+					);
+				}
+			}
+			$missing_parent_ids = $this->_collect_missing_parent_ids($all_members_map);
+		}
+
+		// Build tree without PHP references to avoid json_encode field corruption
+		$tree = $this->_buildMemberTree($all_members_map);
+
+		ajx_extra_data(array(
+			'members_tree' => $tree,
+			'dimension_id' => $dimension_id,
+			'total_count'  => count($direct_member_ids)
+		));
+	}
+
+	/**
+	 * Builds a sorted, nested tree from a flat id-indexed map.
+	 * Two-pass: index children by parent first, then recurse.
+	 * Avoids PHP references so json_encode sees plain scalar values.
+	 */
+	private function _buildMemberTree($nodes_map) {
+		// Index children by parent id
+		$by_parent = array();
+		$root_ids  = array();
+		foreach ($nodes_map as $id => $node) {
+			$pid = $node['parent'];
+			if ($pid > 0 && isset($nodes_map[$pid])) {
+				$by_parent[$pid][] = $id;
+			} else {
+				$root_ids[] = $id;
+			}
+		}
+		return $this->_buildMemberSubTree($nodes_map, $by_parent, $root_ids);
+	}
+
+	private function _buildMemberSubTree($nodes_map, $by_parent, $ids) {
+		$result = array();
+		foreach ($ids as $id) {
+			$node = $nodes_map[$id];
+			$item = array(
+				'id'             => $node['id'],
+				'name'           => $node['name'],
+				'is_direct'      => $node['is_direct'],
+				'object_type_id' => $node['object_type_id'],
+				'color'          => $node['color']
+			);
+			if (!empty($by_parent[$id])) {
+				$item['children'] = $this->_buildMemberSubTree($nodes_map, $by_parent, $by_parent[$id]);
+			}
+			$result[] = $item;
+		}
+		usort($result, function($a, $b) { return strcmp($a['name'], $b['name']); });
+		return $result;
+	}
+
+	/**
+	 * Helper: collects parent_member_ids from the map that are not yet fetched.
+	 */
+	private function _collect_missing_parent_ids($all_members_map) {
+		$missing = array();
+		foreach ($all_members_map as $node) {
+			$pid = $node['parent'];
+			if ($pid > 0 && !isset($all_members_map[$pid]) && !in_array($pid, $missing)) {
+				$missing[] = $pid;
+			}
+		}
+		return $missing;
+	}
+
 }
+

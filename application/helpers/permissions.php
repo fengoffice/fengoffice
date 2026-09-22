@@ -6,6 +6,7 @@
   	define('ACCESS_LEVEL_READ', 1);
   	define('ACCESS_LEVEL_WRITE', 2);
   	define('ACCESS_LEVEL_DELETE', 3);
+
   	  	
   	/**
   	 * Returns whether a user can manage security.
@@ -278,6 +279,33 @@
 		
 		return $can_add;
 	}
+
+
+	function get_can_add_error_message($notAllowedMember, $objectTypeLang, $context = null) {
+		if (str_starts_with($notAllowedMember, '-- req dim --')) {
+			return lang('must choose at least one member of',
+				str_replace_first('-- req dim --', '', $notAllowedMember));
+		}
+		if (trim($notAllowedMember) != '') {
+			return lang('no context permissions to add', $objectTypeLang, $notAllowedMember);
+		}
+		if ($context === null) $context = active_context();
+		$member_count = 0;
+		$mem_names = array();
+		if (is_array($context)) {
+			foreach ($context as $c) {
+				if ($c instanceof Member) {
+					$member_count++;
+					$mem_names[] = $c->getName();
+				}
+			}
+		}
+		if ($member_count > 0) {
+			return lang('you dont have permissions to add this object in members',
+				$objectTypeLang, implode(', ', $mem_names));
+		}
+		return lang('must choose at least one member');
+	}
 	
 	
 	/**
@@ -518,6 +546,23 @@
 	}
 
 
+	function permission_form_parameters_is_guest_context($pg_id) {
+		$pg_id = (int) $pg_id;
+		if ($pg_id <= 0) return false;
+
+		$permission_group = PermissionGroups::instance()->findById($pg_id);
+		if ($permission_group instanceof PermissionGroup && $permission_group->getType() == 'roles') {
+			$guest_roles = PermissionGroups::getGuestPermissionGroups();
+			foreach ($guest_roles as $guest_role) {
+				if ($guest_role->getId() == $pg_id) return true;
+			}
+			return false;
+		}
+
+		$contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.$pg_id));
+		return ($contact instanceof Contact && $contact->isGuest());
+	}
+
 	function permission_form_parameters($pg_id) {
 		set_time_limit(0);
 		ini_set('memory_limit', '512M');
@@ -530,9 +575,10 @@
 		$allowed_object_types_by_member_type[] = array();
 		$root_permissions = array();
 		$enabled_dimensions = config_option("enabled_dimensions");
+		$is_guest_context = permission_form_parameters_is_guest_context($pg_id);
 		
 		foreach($dims as $dim) {
-			if ($dim->getDefinesPermissions() && in_array($dim->getId(), $enabled_dimensions)) {
+			if ($dim->getDefinesPermissions() && in_array($dim->getId(), $enabled_dimensions) && $dim->getIsManageable()) {
 				$dimensions[] = $dim;
 				$root_members = DB::executeAll("SELECT * FROM ".TABLE_PREFIX."members WHERE dimension_id=".$dim->getId()." ORDER BY parent_member_id, name ASC");
 				if (is_array($root_members)) {
@@ -546,7 +592,6 @@
 				
 				$dim_obj_types = $dim->getAllowedObjectTypeContents();
 				foreach ($dim_obj_types as $dim_obj_type) {
-					
 					// To draw a row for each object type of the dimension
 					if (!in_array($dim_obj_type->getContentObjectTypeId(), $allowed_object_types[$dim->getId()])) {
 						$allowed_object_types[$dim->getId()][] = $dim_obj_type->getContentObjectTypeId();
@@ -567,7 +612,7 @@
 					}
 				}
 				
-				if ($dim->hasAllowAllForContact($pg_id)) {
+				if (!$is_guest_context && $dim->hasAllowAllForContact($pg_id)) {
 					if (isset($members[$dim->getId()])) {
 						foreach ($members[$dim->getId()] as $mem) {
 							$member_permissions[$mem['id']] = array();
@@ -631,6 +676,41 @@
 				$root_permissions[$root_cmp->getObjectTypeId()] = array('w' => $root_cmp->getCanWrite(), 'd' => $root_cmp->getCanDelete(), 'r' => 1);
 			}
 		}
+
+		// Role defaults must not exceed fixed role ceilings; user edits load DB values as-is.
+		$is_user_permission_group = false;
+		$role_id = 0;
+		if ((int) $pg_id > 0) {
+			$permission_group = PermissionGroups::instance()->findById((int)$pg_id);
+			if ($permission_group instanceof PermissionGroup && $permission_group->getType() == 'roles') {
+				$role_id = (int) $pg_id;
+			} else {
+				$contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.(int)$pg_id));
+				if ($contact instanceof Contact) {
+					$role_id = (int) $contact->getUserType();
+					$is_user_permission_group = true;
+				}
+			}
+		}
+
+		if ($role_id > 0 && !$is_user_permission_group) {
+			$max_permissions = array();
+			$res = DB::executeAll("
+				SELECT object_type_id, can_delete, can_write
+				FROM ".TABLE_PREFIX."max_role_object_type_permissions
+				WHERE role_id = ".$role_id."
+			");
+			if ($res) {
+				foreach ($res as $row) {
+					$max_permissions[(int)$row['object_type_id']] = array(
+						'd' => (int)$row['can_delete'],
+						'w' => (int)$row['can_write'],
+						'r' => 1
+					);
+				}
+			}
+			$root_permissions = clamp_root_permissions_array($root_permissions, $max_permissions);
+		}
 		
 		$all_object_types = ObjectTypes::instance()->findAll(array("conditions" => "`type` IN ('content_object', 'located') AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND `name` <> 'file revision'"));
 		return array(
@@ -645,8 +725,42 @@
 	}
 	
 	
+	/**
+	 * For new users, apply role module defaults when POST did not include any module permissions.
+	 *
+	 * @param int $pg_id User permission group id
+	 * @param mixed $mod_permissions_data
+	 * @param bool $is_new_user
+	 * @return array|null
+	 */
+	function apply_default_module_permissions_for_new_user($pg_id, $mod_permissions_data, $is_new_user = false) {
+		if (!$is_new_user || (int)$pg_id <= 0) {
+			return $mod_permissions_data;
+		}
+		if (is_array($mod_permissions_data) && count($mod_permissions_data) > 0) {
+			return $mod_permissions_data;
+		}
+
+		$role_id = 0;
+		$tmp_contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.(int)$pg_id));
+		if ($tmp_contact instanceof Contact) {
+			$role_id = (int)$tmp_contact->getUserType();
+		}
+		if ($role_id <= 0) {
+			return $mod_permissions_data;
+		}
+
+		$mod_permissions_data = array();
+		foreach (TabPanelPermissions::getRoleModules($role_id) as $tab_id) {
+			$mod_permissions_data[$tab_id] = 1;
+		}
+		return $mod_permissions_data;
+	}
+
 	function save_permissions($pg_id, $is_guest = false, $permissions_data = null, $save_cmps = true, $update_sharing_table = true, $fire_hook = true, $update_contact_member_cache = true, $users_ids_to_check = array(), $only_member_permissions=false, $is_new_user=false) {
 	    $return_info = array();
+		$rp_genid = null;
+		$rp_permissions_data = array();
 
 		if (is_null($permissions_data)) {
 			
@@ -679,6 +793,8 @@
 			$permissionsString = array_var($permissions_data, 'permissions');
 			
 		}
+
+		$mod_permissions_data = apply_default_module_permissions_for_new_user($pg_id, $mod_permissions_data, $is_new_user);
 		
 		try {
 			DB::beginWork();
@@ -721,13 +837,20 @@
 					
 					// check max permissions for role, in case of modifying user's permissions
 					$role_id = "-1";
+					// Stays empty when the permission group is not a user's, since a user group has no
+					// role. It is read further down to decide whether root permissions may be edited, so
+					// it has to be defined on every path.
+					$user_type_name = '';
 					$tmp_contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.$pg_id));
 					if ($tmp_contact instanceof Contact) {
 						$role_id = $tmp_contact->getUserType();
 					}
 					$max_role_system_permissions = MaxSystemPermissions::instance()->findOne(array('conditions' => 'permission_group_id = '.$role_id));
-					if ($max_role_system_permissions instanceof MaxSystemPermission) {
-						foreach ($sys_permissions_data as $col => &$val) {
+					// $sys_permissions_data is null whenever the request carries no system permissions,
+					// for instance a member only save or a form without the system permissions tab.
+					if ($max_role_system_permissions instanceof MaxSystemPermission && is_array($sys_permissions_data)) {
+						// iterate over the keys: the loop unsets entries of the array it walks
+						foreach (array_keys($sys_permissions_data) as $col) {
 							$max_val = $max_role_system_permissions->getColumnValue($col);
 							if (!$max_val) {
 								unset($sys_permissions_data[$col]);
@@ -736,7 +859,7 @@
 					}
 					// don't allow to write emails for collaborators and guests
 					if ($tmp_contact instanceof Contact) {
-						$user_type_name = $tmp_contact->getUserTypeName();
+						$user_type_name = $tmp_contact->getUserTypeName() ?? '';
 						if (!in_array($user_type_name, array('Super Administrator','Administrator','Manager','Executive'))) {
 							$mail_ot = ObjectTypes::findByName('mail');
 							if ($mail_ot instanceof ObjectType) {
@@ -751,14 +874,25 @@
 					$system_permissions->save();
 					
 					//object type root permissions
-					$can_have_root_permissions = config_option('let_users_create_objects_in_root') && in_array($user_type_name, array('Super Administrator','Administrator','Manager','Executive'));
-					if ($rp_genid && $can_have_root_permissions) {
+					$can_edit_root_permissions = config_option('let_users_create_objects_in_root') && in_array($user_type_name, array('Super Administrator','Administrator','Manager','Executive'));
+					$can_apply_default_root_permissions = config_option('let_users_create_objects_in_root') && $is_new_user && (int)$role_id > 0;
+					$has_root_permissions_data = false;
+					if ($rp_genid && is_array($rp_permissions_data)) {
+						foreach ($rp_permissions_data as $name => $value) {
+							if (str_starts_with($name, $rp_genid . 'rg_root_')) {
+								$has_root_permissions_data = true;
+								break;
+							}
+						}
+					}
+					if ($rp_genid && $can_edit_root_permissions && $has_root_permissions_data) {
 						//ContactMemberPermissions::instance()->delete("permission_group_id = $pg_id AND member_id = 0");
 						foreach ($rp_permissions_data as $name => $value) {
 							if (str_starts_with($name, $rp_genid . 'rg_root_')) {
 								$rp_ot = substr($name, strrpos($name, '_')+1);
 
                                 if (!is_numeric($rp_ot) || $rp_ot <= 0) continue;
+                                $value = clamp_root_permission_level_for_role((int)$value, (int)$role_id, (int)$rp_ot);
 
                                 $root_perm_cmp = ContactMemberPermissions::instance()->findById(array('permission_group_id' => $pg_id, 'member_id' => 0, 'object_type_id' => $rp_ot));
                                 if (!$root_perm_cmp instanceof ContactMemberPermission) {
@@ -788,6 +922,29 @@
                                     }
                                 }
 							}
+						}
+					} elseif ($can_apply_default_root_permissions && !$has_root_permissions_data) {
+						$default_permissions = RoleObjectTypePermissions::instance()->findAll(array('conditions' => 'role_id = '.(int)$role_id));
+						foreach ($default_permissions as $p) {
+							$value = $p->getCanDelete() ? 3 : ($p->getCanWrite() ? 2 : 1);
+							$value = clamp_root_permission_level_for_role($value, (int)$role_id, (int)$p->getObjectTypeId());
+							if ($value < 1) continue;
+
+							$root_perm_cmp = ContactMemberPermissions::instance()->findById(array(
+								'permission_group_id' => $pg_id,
+								'member_id' => 0,
+								'object_type_id' => $p->getObjectTypeId()
+							));
+							if (!$root_perm_cmp instanceof ContactMemberPermission) {
+								$root_perm_cmp = new ContactMemberPermission();
+								$root_perm_cmp->setPermissionGroupId($pg_id);
+								$root_perm_cmp->setMemberId('0');
+								$root_perm_cmp->setObjectTypeId($p->getObjectTypeId());
+								$root_permissions_sharing_table_add[] = $p->getObjectTypeId();
+							}
+							$root_perm_cmp->setCanWrite($value >= 2);
+							$root_perm_cmp->setCanDelete($value >= 3);
+							$root_perm_cmp->save();
 						}
 					}
 				  }
@@ -845,7 +1002,7 @@
 				try {
 					$tmp_contact = Contacts::instance()->findOne(array('conditions' => 'permission_group_id = '.$pg_id));
 					if ($tmp_contact instanceof Contact) {
-						$user_type_name = $tmp_contact->getUserTypeName();
+						$user_type_name = $tmp_contact->getUserTypeName() ?? '';
 						$role_id = $tmp_contact->getUserType();
 						$max_role_ot_perms = MaxRoleObjectTypePermissions::instance()->findAll(array('conditions' => "role_id = '$role_id'"));
 					}
@@ -977,9 +1134,16 @@
 			Logger::log("Error saving permissions for permission group $pg_id: ".$e->getMessage()."\n".$e->getTraceAsString());
 			DB::rollback();
 		}
-		
+
+		// Let plugins mirror object types that cannot be edited in the permissions UI onto their
+		// editable parent object type (e.g. expense_item follows expense). This must run after the
+		// contact_member_permissions rows are committed but BEFORE the sharing table and contact
+		// member cache are rebuilt below, so that member visibility stays consistent with the parent.
+		$member_ot_perms_hook_ret = null;
+		Hook::fire('after_save_member_object_type_permissions', array('pg_id' => $pg_id, 'changed_members' => isset($changed_members) ? $changed_members : array()), $member_ot_perms_hook_ret);
+
 		try {
-			
+
 			if (isset($permissions) && !is_null($permissions) && is_array($permissions)) {
 				if ($update_sharing_table) {
 					try {
@@ -1058,7 +1222,6 @@
 	
 	
 	function permission_member_form_parameters($member = null, $dimension_id = null) {
-		
 		if ( $member ) {
 			$dim = $member->getDimension();
 		}elseif (array_var( $_REQUEST,'dim_id')) {
@@ -1072,12 +1235,6 @@
 			throw new Exception("Invalid dimension");
 		}
 		
-		if (logged_user()->isMemberOfOwnerCompany() || logged_user()->isAdminGroup()) {
-			$companies = Contacts::instance()->findAll(array("conditions" => "is_company = 1 AND object_id IN (SELECT company_id FROM ".TABLE_PREFIX."contacts WHERE user_type>0 AND disabled=0)", 'order' => 'first_name'));
-		} else {
-			$companies = array(owner_company());
-			if (logged_user()->getCompany() instanceof Contact) $companies[] = logged_user()->getCompany();
-		}
 		
 		$allowed_object_types = array();
 		$dim_obj_types = $dim->getAllowedObjectTypeContents();
@@ -1090,15 +1247,8 @@
 		}
 		
 		$permission_groups = array();
-		foreach ($companies as $company) {
-			$users = $company->getUsersByCompany();
-			foreach ($users as $u) $permission_groups[] = $u->getPermissionGroupId();
-		}
-		
-		$no_company_users = Contacts::getAllUsers("AND `company_id` = 0", true);
-		foreach ($no_company_users as $noc_user) {
-			$permission_groups[] = $noc_user->getPermissionGroupId();
-		}
+		$users = Contacts::instance()->getAllUsers();
+		foreach ($users as $u) $permission_groups[] = $u->getPermissionGroupId();
 		
 		$user_group_ids = array();
 		$non_personal_groups = PermissionGroups::getNonRolePermissionGroups();
@@ -1324,8 +1474,16 @@
 				if ($sql_insert_values != "") {
 					DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id, member_id, object_type_id, can_delete, can_write) VALUES $sql_insert_values ON DUPLICATE KEY UPDATE member_id=member_id");
 				}
+
+				// Let plugins mirror object types that cannot be edited in the permissions UI onto
+				// their editable parent (e.g. expense_item follows expense) before the sharing table
+				// and contact member cache are rebuilt below, so member visibility stays consistent.
+				foreach ($changed_pgs as $chg_pg_id) {
+					$member_ot_perms_hook_ret = null;
+					Hook::fire('after_save_member_object_type_permissions', array('pg_id' => $chg_pg_id, 'changed_members' => array($member->getId())), $member_ot_perms_hook_ret);
+				}
 			}
-			
+
 			foreach ($permissions as $p) {
 				if (!$p->m) $p->m = $member->getId();
 			}
@@ -1429,16 +1587,24 @@
 		
 	}
 
-	function get_users_with_system_permission($system_permission_name) {
+	function get_users_with_system_permission($system_permission_name, $include_inactive = false) {
 		$permission_group_ids = SystemPermissions::getAllPermissionGroupIdsWithSystemPermission($system_permission_name);
 		$contacts_ids = ContactPermissionGroups::getAllContactsIdsByPermissionGroupIds($permission_group_ids);
-
-		$users_with_permissions = Contacts::instance()->findAll(array("conditions" => "
-						disabled=0 AND object_id IN (".implode(",", $contacts_ids).")
-					"));
-
-		return $users_with_permissions;
+	
+		if (empty($contacts_ids)) {
+			return [];
+		}
+	
+		$conditions = "object_id IN (" . implode(",", $contacts_ids) . ")";
+		if (!$include_inactive) {
+			$conditions = "disabled = 0 AND " . $conditions;
+		}
+	
+		return Contacts::instance()->findAll([
+			"conditions" => $conditions
+		]);
 	}
+	
 
 	function can_save_permissions_in_background() {
 		if (defined('DONT_SAVE_PERMISSIONS_IN_BACKGROUND') && DONT_SAVE_PERMISSIONS_IN_BACKGROUND) {
@@ -1446,7 +1612,84 @@
 		}
 		return defined('SAVE_PERMISSIONS_IN_BACKGROUND') && SAVE_PERMISSIONS_IN_BACKGROUND && is_exec_available();
 	}
-	
+
+	/**
+	 * Tells whether a database error is a transient lock conflict, i.e. another connection got there
+	 * first rather than the statement itself being wrong, so retrying it makes sense.
+	 *
+	 * 1020 = record has changed since last read, 1205 = lock wait timeout, 1213 = deadlock.
+	 *
+	 * The message check is not a fallback: since PHP 8.1 mysqli reports errors as exceptions by default,
+	 * so these surface as mysqli_sql_exception and never reach the adapter that would wrap them in a
+	 * DBQueryError. The error number branch only applies when that reporting mode is turned off.
+	 *
+	 * @param Exception $e
+	 * @return boolean
+	 */
+	function is_retryable_db_lock_error($e) {
+		if ($e instanceof DBQueryError && method_exists($e, 'getErrorNumber')) {
+			if (in_array((int) $e->getErrorNumber(), array(1020, 1205, 1213))) return true;
+		}
+		$message = $e->getMessage();
+		return strpos($message, 'Lock wait timeout exceeded') !== false
+			|| strpos($message, 'Deadlock found') !== false
+			|| strpos($message, 'Record has changed since last read') !== false;
+	}
+
+	/**
+	 * Writes the submitted member permissions straight into contact_member_permissions, so a permission
+	 * change shows up before the background process has finished the full save.
+	 *
+	 * This is an optimistic write only: save_member_permissions(), run by the background process, redoes
+	 * the same work authoritatively and also rebuilds the sharing table and the contact member cache.
+	 * Callers must treat a failure here as non fatal.
+	 *
+	 * The statements are chunked, like the ones in save_permissions(), because a single INSERT or DELETE
+	 * spanning every permission group holds locks over that whole range for as long as it runs, which is
+	 * what makes concurrent permission saves time out against each other. This function opens no
+	 * transaction of its own, so whether the chunks commit individually depends on the caller: most
+	 * commit their own work before calling, but MemberController::add_default_permissions() does have
+	 * one open. A caller that swallows a failure here while holding a transaction should be aware that
+	 * a deadlock (1213) rolls the whole transaction back, unlike a lock wait timeout (1205), which with
+	 * innodb_rollback_on_timeout off only rolls back the offending statement.
+	 *
+	 * The ids coming from the payload are validated and cast before being interpolated, as
+	 * save_member_permissions() already does with the same values.
+	 *
+	 * @param Member $member
+	 * @param string $permissions JSON array of permission objects ({pg,o,d,w,r})
+	 * @return void
+	 */
+	function apply_member_permissions_optimistically($member, $permissions) {
+		$permissions_decoded = json_decode($permissions);
+		if (!is_array($permissions_decoded)) return;
+
+		$member_id = (int) $member->getId();
+		$to_insert = array();
+		$to_delete = array();
+		foreach ($permissions_decoded as $perm) {
+			if (!isset($perm->pg) || !isset($perm->o) || !is_numeric($perm->pg) || !is_numeric($perm->o)) continue;
+
+			$pg_id = (int) $perm->pg;
+			$object_type_id = (int) $perm->o;
+			if (!empty($perm->r)) {
+				$can_delete = isset($perm->d) ? (int) $perm->d : 0;
+				$can_write = isset($perm->w) ? (int) $perm->w : 0;
+				$to_insert[] = "('$pg_id','$member_id','$object_type_id','$can_delete','$can_write')";
+			} else {
+				$to_delete[] = "(permission_group_id='$pg_id' AND member_id='$member_id' AND object_type_id='$object_type_id')";
+			}
+		}
+
+		foreach (array_chunk($to_insert, 1000) as $values_to_insert) {
+			DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id,member_id,object_type_id,can_delete,can_write)
+				VALUES ".implode(',', $values_to_insert)." ON DUPLICATE KEY UPDATE member_id=member_id");
+		}
+		foreach (array_chunk($to_delete, 100) as $values_to_delete) {
+			DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE ".implode(' OR ', $values_to_delete));
+		}
+	}
+
 	function save_member_permissions_background($user, $member, $permissions, $old_parent_id=-1) {
 		
 		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background()){
@@ -1458,44 +1701,32 @@
 			}
 		} else {
 
-			// populate permission groups
-			$permissions_decoded = json_decode($permissions);
-			
-			$to_insert = array();
-			$to_delete = array();
-			if (is_array($permissions_decoded)) {
-				foreach ($permissions_decoded as $perm) {
-					if ($perm->r) {
-						$to_insert[] = "('".$perm->pg."','".$member->getId()."','".$perm->o."','".$perm->d."','".$perm->w."')";
-					} else {
-						$to_delete[] = "(permission_group_id='".$perm->pg."' AND member_id='".$member->getId()."' AND object_type_id='".$perm->o."')";
-					}
-				}
-				if (count($to_insert) > 0) {
-					$values = implode(',', $to_insert);
-					DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id,member_id,object_type_id,can_delete,can_write)
-					 VALUES $values ON DUPLICATE KEY UPDATE member_id=member_id");
-				}
-				if (count($to_delete) > 0) {
-					$where = implode(' OR ', $to_delete);
-					DB::execute("DELETE FROM ".TABLE_PREFIX."contact_member_permissions WHERE $where;");
-				}
+			// Optimistic write, so the new permissions are visible without waiting for the background
+			// process. That process redoes this work authoritatively (sharing table and contact member
+			// cache included), so a failure here must never abort the request: log it and let the
+			// background save be the source of truth. Without this guard a lock conflict on these
+			// statements aborted the whole action before the process below was ever launched, leaving
+			// the member with no permissions at all.
+			try {
+				apply_member_permissions_optimistically($member, $permissions);
+			} catch (Exception $e) {
+				Logger::log("Could not pre-save the permissions of member ".$member->getId()
+					.", leaving them to the background process: ".$e->getMessage());
 			}
+
 			// save permissions in background
 			$perm_filename = ROOT ."/tmp/perm_".gen_id();
 			file_put_contents($perm_filename, $permissions);
 			
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/save_member_permissions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$member->getId()." $perm_filename $old_parent_id";
-			exec("$command > /dev/null &");			
-				
-			//Test php command
-			exec(PHP_PATH." -r 'echo function_exists(\"foo\") ? \"yes\" : \"no\";' 2>&1", $output, $return_var);
-			if($return_var != 0){
-				Logger::log(print_r("Error executing php command",true));
-				Logger::log(print_r($output,true));
-				Logger::log(print_r("Error code: ".$return_var,true));
-			}
-			//END Test php command
+			// Queue instead of spawning. A request that saves many members produces one process
+			// for all of them; the per-member permission string keeps its own perm_* file, which
+			// the worker reads and deletes.
+			Env::useHelper('background_jobs');
+			queue_background_job('save_member_permissions', array(
+				'member_id'            => $member->getId(),
+				'permissions_filename' => $perm_filename,
+				'old_parent_id'        => $old_parent_id,
+			), $user->getId(), $user->getTwistedToken());
 		}
 	}
 	
@@ -1549,6 +1780,49 @@
 	}
 	
 	/**
+	 * Returns the ids of object types that are not editable in the permissions UI ("shadow" object
+	 * types that must be derived from a parent, e.g. expense_item follows expense). Plugins register
+	 * their ids through the 'non_editable_member_object_type_ids' hook.
+	 *
+	 * @return array of int
+	 */
+	function get_non_editable_member_object_type_ids() {
+		$ot_ids = array();
+		Hook::fire('non_editable_member_object_type_ids', null, $ot_ids);
+		if (!is_array($ot_ids)) return array();
+		return array_values(array_unique(array_filter(array_map('intval', $ot_ids))));
+	}
+
+	/**
+	 * Removes permission entries for non-editable "shadow" object types from a permissions payload.
+	 *
+	 * These object types are hidden from every permissions form, so they can only be derived from
+	 * their parent (done by the 'after_save_member_object_type_permissions' hook). They must never be
+	 * persisted straight from the submitted payload: a cascade ("apply to submembers / all") copies
+	 * the hidden parent value down to every child, and the background save re-inserts the raw payload
+	 * verbatim, which would otherwise re-create the shadow rows after the hook removed them.
+	 *
+	 * @param string $permissionsString JSON array of permission objects ({m,o,d,w,r})
+	 * @return string filtered JSON payload
+	 */
+	function remove_non_editable_object_type_permissions_from_payload($permissionsString) {
+		if (!$permissionsString || $permissionsString == '') return $permissionsString;
+
+		$ot_ids = get_non_editable_member_object_type_ids();
+		if (count($ot_ids) == 0) return $permissionsString;
+
+		$perms = json_decode($permissionsString);
+		if (!is_array($perms)) return $permissionsString;
+
+		$filtered = array();
+		foreach ($perms as $perm) {
+			if (isset($perm->o) && in_array((int) $perm->o, $ot_ids)) continue;
+			$filtered[] = $perm;
+		}
+		return json_encode($filtered);
+	}
+
+	/**
 	 * Generates the permissions for each member when user checks in apply to all members or apply to all submembers
 	 */
 	function generate_perm_objects_from_apply_to_settings() {
@@ -1595,7 +1869,7 @@
 		$set_root_permissions = false;
 		$tmp_contact = Contacts::instance()->findOne(array('conditions' => "permission_group_id=$pg_id"));
 		if ($tmp_contact instanceof Contact && $tmp_contact->getUserType() > 0) {
-			if (in_array($tmp_contact->getUserTypeName(), array('Super Administrator','Administrator','Manager','Executive'))) {
+			if ($is_new_user || in_array($tmp_contact->getUserTypeName(), array('Super Administrator','Administrator','Manager','Executive'))) {
 				$set_root_permissions = true;
 			}
 		}
@@ -1610,9 +1884,18 @@
 		
 		// gets the apply_to_all and apply_to_submembers settings to generate the resulting permission objects for each member
 		generate_perm_objects_from_apply_to_settings();
-		
+
 		// member permissions
 		$permissionsString = array_var($_POST, 'permissions');
+
+		// Drop non-editable "shadow" object types (e.g. expense_item) from the payload so they are
+		// never persisted directly. A cascade copies the hidden parent value onto every child and the
+		// background re-inserts the raw payload; the after_save_member_object_type_permissions hook is
+		// the single source of truth that derives them from their parent object type.
+		$permissionsString = remove_non_editable_object_type_permissions_from_payload($permissionsString);
+		$_POST['permissions'] = $permissionsString;
+
+		$mod_permissions_data = apply_default_module_permissions_for_new_user($pg_id, $mod_permissions_data, $is_new_user);
 		
 		
 		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background()){
@@ -1644,8 +1927,19 @@
 			$is_guest_str = $is_guest ? "1" : "0";
 			$new_user_str = $is_new_user ? "1" : "0";
 			
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/save_user_permissions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." $pg_id $is_guest_str $perm_filename $sys_filename $mod_filename $rp_filename $usrcheck_filename $rp_genid $only_mem_perm_str $new_user_str";
-			exec("$command > /dev/null &");
+			Env::useHelper('background_jobs');
+			queue_background_job('save_user_permissions', array(
+				'pg_id'                       => $pg_id,
+				'is_guest'                    => $is_guest_str,
+				'permissions_filename'        => $perm_filename,
+				'sys_permissions_filename'    => $sys_filename,
+				'mod_permissions_filename'    => $mod_filename,
+				'root_permissions_filename'   => $rp_filename,
+				'users_ids_to_check_filename' => $usrcheck_filename,
+				'root_permissions_genid'      => $rp_genid,
+				'only_member_permissions'     => $only_mem_perm_str,
+				'is_new_user'                 => $new_user_str,
+			), $user->getId(), $user->getTwistedToken());
 			
 		}
 	}
@@ -1658,8 +1952,8 @@
 		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background() || !$user instanceof Contact){
 			$object->addToSharingTable();
 		} else {
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/add_object_to_sharing_table.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$object->getId();
-			exec("$command > /dev/null &");
+			Env::useHelper('background_jobs');
+			queue_background_job('add_object_to_sharing_table', array($object->getId()), $user->getId(), $user->getTwistedToken());
 		}
 	}
 	
@@ -1674,8 +1968,8 @@
 				}
 			}
 		} else {
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/add_object_to_sharing_table.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$ids_str;
-			exec("$command > /dev/null &");
+			Env::useHelper('background_jobs');
+			queue_background_job('add_object_to_sharing_table', explode(',', $ids_str), $user->getId(), $user->getTwistedToken());
 		}
 	}
 	
@@ -1686,8 +1980,8 @@
 		if (substr(php_uname(), 0, 7) == "Windows" || !can_save_permissions_in_background()){
 			ContactMemberCaches::updateContactMemberCacheAllMembers($user);
 		} else {
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/recalculate_contact_member_cache_for_user.php ".ROOT." ".$logged_user->getId()." ".$logged_user->getTwistedToken()." ".$user->getId();
-			exec("$command > /dev/null &");
+			Env::useHelper('background_jobs');
+			queue_background_job('recalculate_contact_member_cache_for_user', array($user->getId()), $logged_user->getId(), $logged_user->getTwistedToken());
 		}
 	}
 	
@@ -1701,17 +1995,12 @@
 			do_member_parent_changed_refresh_object_permisssions($member->getId(), $old_parent_id, $new_parent_id);
 			
 		} else {
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/member_parent_changed_refresh_object_permisssions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$member->getId()." ".$old_parent_id." ".$new_parent_id;
-			exec("$command > /dev/null &");
-			
-			//Test php command
-			exec(PHP_PATH." -r 'echo function_exists(\"foo\") ? \"yes\" : \"no\";' 2>&1", $output, $return_var);
-			if($return_var != 0){
-				Logger::log(print_r("Error executing php command",true));
-				Logger::log(print_r($output,true));
-				Logger::log(print_r("Error code: ".$return_var,true));
-			}
-			//END Test php command
+			Env::useHelper('background_jobs');
+			queue_background_job('member_parent_changed_refresh_object_permisssions', array(
+				'member_id'     => $member->getId(),
+				'old_parent_id' => $old_parent_id,
+				'new_parent_id' => $new_parent_id,
+			), $user->getId(), $user->getTwistedToken());
 		}
 	}
 	
@@ -1833,10 +2122,9 @@
 			
 		} else {
 			$user = logged_user();
-			
-			$command = "nice -n19 ".PHP_PATH." ". ROOT . "/application/helpers/rebuild_sharing_table_for_pg.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$pg_id;
-			exec("$command > /dev/null &");
-			
+
+			Env::useHelper('background_jobs');
+			queue_background_job('rebuild_sharing_table_for_pg', array($pg_id), $user->getId(), $user->getTwistedToken());
 		}
 	}
 	
@@ -1858,6 +2146,127 @@
 		$sharing_table_controller = new SharingTableController();
 		$sharing_table_controller->afterPermissionChanged(array($pg_id), $permissions_array);
 		
+	}
+
+	/**
+	 * Clamp editable system permission defaults against the fixed role ceiling.
+	 * (Used by "default permissions by role" and user permission load UI.)
+	 *
+	 * @param SystemPermission $system_permissions
+	 * @param int $role_id
+	 * @return SystemPermission
+	 */
+	function clamp_role_system_permission_object($system_permissions, $role_id) {
+		if (!$system_permissions instanceof SystemPermission) {
+			return $system_permissions;
+		}
+
+		$max_system_permissions = MaxSystemPermissions::instance()->findById($role_id);
+		if (!($max_system_permissions instanceof MaxSystemPermission)) {
+			return $system_permissions;
+		}
+
+		$columns = SystemPermissions::instance()->getColumns();
+		foreach ($columns as $column) {
+			if ($column === 'permission_group_id') continue;
+			if (!$max_system_permissions->getColumnValue($column)) {
+				$system_permissions->setColumnValue($column, false);
+			}
+		}
+
+		return $system_permissions;
+	}
+
+	/**
+	 * Clamp root object type permission levels (read/write/delete) against fixed max.
+	 *
+	 * Input/output structure matches what the permission views expect:
+	 * ['d' => 0|1, 'w' => 0|1, 'r' => 0|1]
+	 *
+	 * @param array $root_perms
+	 * @param array $max_perms
+	 * @return array
+	 */
+	function clamp_root_permissions_array($root_perms, $max_perms) {
+		if (!is_array($root_perms)) return array();
+		if (!is_array($max_perms) || count($max_perms) === 0) return $root_perms;
+
+		$clamped = $root_perms;
+
+		foreach ($root_perms as $ot_id => $perm) {
+			$max = array_var($max_perms, $ot_id, null);
+			if (is_null($max)) {
+				// Missing max row means this role has no root permission for this object type.
+				unset($clamped[$ot_id]);
+				continue;
+			}
+
+			$cur_d = (int) array_var($perm, 'd', 0);
+			$cur_w = (int) array_var($perm, 'w', 0);
+			$cur_r = (int) array_var($perm, 'r', 0);
+
+			$level = 0;
+			if ($cur_d === 1) $level = 3;
+			elseif ($cur_w === 1) $level = 2;
+			elseif ($cur_r === 1) $level = 1;
+
+			$max_d = (int) (array_key_exists('d', $max) ? $max['d'] : array_var($max, 'can_delete', 0));
+			$max_w = (int) (array_key_exists('w', $max) ? $max['w'] : array_var($max, 'can_write', 0));
+
+			if ($level >= 3 && !$max_d) {
+				$level = $max_w ? 2 : 1;
+			}
+			if ($level >= 2 && !$max_w) {
+				$level = 1;
+			}
+
+			if ($level === 0) {
+				unset($clamped[$ot_id]);
+			} else {
+				$clamped[$ot_id] = array(
+					'd' => ($level >= 3) ? 1 : 0,
+					'w' => ($level >= 2) ? 1 : 0,
+					'r' => ($level >= 1) ? 1 : 0,
+				);
+			}
+		}
+
+		return $clamped;
+	}
+
+	function get_root_permission_max_level_for_role($role_id, $object_type_id) {
+		static $cache = array();
+
+		$role_id = (int)$role_id;
+		$object_type_id = (int)$object_type_id;
+		if ($role_id <= 0 || $object_type_id <= 0) return 0;
+
+		if (!isset($cache[$role_id])) {
+			$cache[$role_id] = array();
+			$max_perms = MaxRoleObjectTypePermissions::instance()->findAll(array('conditions' => "role_id = '$role_id'"));
+			if (is_array($max_perms)) {
+				foreach ($max_perms as $max_perm) {
+					$level = 1;
+					if ($max_perm->getCanDelete()) {
+						$level = 3;
+					} else if ($max_perm->getCanWrite()) {
+						$level = 2;
+					}
+					$cache[$role_id][(int)$max_perm->getObjectTypeId()] = $level;
+				}
+			}
+		}
+
+		return array_var($cache[$role_id], $object_type_id, 0);
+	}
+
+	function clamp_root_permission_level_for_role($level, $role_id, $object_type_id) {
+		$level = (int)$level;
+		$max_level = get_root_permission_max_level_for_role($role_id, $object_type_id);
+
+		if ($level < 0) $level = 0;
+		if ($level > 3) $level = 3;
+		return min($level, $max_level);
 	}
 	
 	

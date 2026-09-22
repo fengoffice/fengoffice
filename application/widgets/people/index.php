@@ -1,5 +1,9 @@
 <?php
 
+if (!module_enabled('contacts')) {
+	return;
+}
+
 	$context = active_context();
 	$limit = 10;
 	$persons_to_show = 5;

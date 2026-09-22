@@ -48,5 +48,16 @@
 	'oauth2' => 'Proveedor OAUTH2',
 	'auth method' => 'Método de autenticación',
 	'use oauth2' => 'Usar OAUTH2',
-	'Error: The email size exceeds the server allowed limit.' => 'El tamaño total de los archivos adjuntos excede el límite permitido por el servidor.',
+	'Error: The email size exceeds the servers allowed limit.' => 'El tamaño total de los archivos adjuntos excede el límite permitido por el servidor. Intente nuevamente con menos archivos adjuntos.',
+	'this email has been already sent' => 'Este correo ya ha sido enviado',
+
+	// emails dashboard widget
+	'emails widget title' => 'Correos',
+	'no emails to display' => 'No hay correos para mostrar',
+	'accounts' => 'Cuentas',
+	'emails compose title' => 'Redactar',
+	'emails save error' => 'No se pudieron guardar los cambios. Intente nuevamente.',
+	'emails display lines' => 'Mostrar',
+	'emails general settings' => 'Configuración general',
+	'emails widget settings' => 'Configuración del widget',
 );

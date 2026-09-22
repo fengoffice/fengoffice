@@ -75,6 +75,7 @@
 	'footer copy with homepage' => '© {0} - <a class="internalLink" href="{1}">{2}</a>',
 	'footer copy without homepage' => '© {0} - {1}.',
 	'footer powered' => 'Powered by <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Powered by',
 	'all documents' => 'Alle Dokumente',
 	'created by me' => 'Von Ihnen erstellt',
 	'by project' => 'Nach Arbeitsbereichen',

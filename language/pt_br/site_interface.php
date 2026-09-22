@@ -77,6 +77,7 @@
 	'footer copy with homepage' => '© {0} por <a href="{1}">{2}</a>. Todos os direitos reservados.',
 	'footer copy without homepage' => '© {0} por {1}. Todos os direitos reservados',
 	'footer powered' => 'Desenvolvido por <a href="{0}">{1}</a>',
+	'powered by' => 'Desenvolvido por',
 	'all documents' => 'Todos os documentos',
 	'created by me' => 'Criado por mim',
 	'by project' => 'Por Projeto',

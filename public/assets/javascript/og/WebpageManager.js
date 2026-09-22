@@ -94,9 +94,7 @@ og.WebpageManager = function() {
 			'<a style="font-size:120%;" class="{3}" title="{2}" href="{1}" onclick="og.openLink(\'{1}\');return false;">{0}</a>',
 			og.clean(value), og.getUrl('webpage', 'view', {id: r.data.object_id}), lang('view weblink'), classes);
 		
-		var actionStyle= ' style="color:#777777;padding-top:3px;padding-left:18px;background-repeat:no-repeat;background-position:0px 1px;" ';
-		
-		var actions = String.format('<a class="list-action ico-open-link" href="{0}" target="_blank" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+		var actions = String.format('<a class="list-action-icon link" href="{0}" target="_blank" title="{1}"><i class="icon-arrow-up-right"></i></a>',
 			r.data.link_url.replace(/\"/g, escape("\"")).replace(/\'/g, escape("'")), lang('open link in new window', og.clean(value)));
 		actions = '<span>' + actions + '</span>';
 			
@@ -110,7 +108,7 @@ og.WebpageManager = function() {
 	}
     
     function renderIcon(value, p, r) {
-		return '<div class="db-ico ico-webpage"></div>';
+		return '<div class="icon-link"></div>';
 	}
     
     function renderIsRead(value, p, r){
@@ -303,18 +301,18 @@ og.WebpageManager = function() {
 	actions = {
 		newWebpage: new Ext.Action({
 			id: 'new_button_weblink',
-			text: lang('new'),
+			text: '<i class="icon-circle-plus"></i>' + lang('new'),
             tooltip: lang('add new webpage'),
-            iconCls: 'ico-new new_button',
+            iconCls: 'btn btn-sm btn-secondary',
             hidden: og.replace_list_new_action && og.replace_list_new_action.weblink,
             handler: function() {
 				og.render_modal_form('', {c:'webpage', a:'add'});
 			}
 		}),
 		delWebpage: new Ext.Action({
-			text: lang('move to trash'),
+			text: '<i class="icon-trash-2"></i>' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
@@ -329,9 +327,9 @@ og.WebpageManager = function() {
 			scope: this
 		}),
 		editWebpage: new Ext.Action({
-			text: lang('edit'),
+			text: '<i class="icon-pencil-line"></i>' + lang('edit'),
             tooltip: lang('edit selected webpage'),
-            iconCls: 'ico-edit',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				og.render_modal_form('', {c:'webpage', a:'edit', params: {id:getFirstSelectedId()}});
@@ -339,9 +337,9 @@ og.WebpageManager = function() {
 			scope: this
 		}),
 		archive: new Ext.Action({
-			text: lang('archive'),
+			text: '<i class="icon-archive"></i>' + lang('archive'),
             tooltip: lang('archive selected object'),
-            iconCls: 'ico-archive-obj',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_archive_config = parseInt(og.preferences['enableArchiveConfirmation']);
@@ -366,7 +364,8 @@ og.WebpageManager = function() {
 			scope: this
 		}),
 		markAs: new Ext.Action({
-			text: lang('mark as'),
+			text: '<i class="icon-tag"></i>' + lang('mark as') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
+            iconCls: 'btn btn-sm',
 			tooltip: lang('mark as desc'),
 			menu: [
 				markactions.markAsRead,
@@ -416,7 +415,7 @@ og.WebpageManager = function() {
             emptyMsg: lang("no webpages to display")
         }),
 		viewConfig: {
-            forceFit: true
+            forceFit: false
         },
 		sm: sm,
 		tbar: tbar,

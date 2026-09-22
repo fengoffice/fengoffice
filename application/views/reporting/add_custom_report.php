@@ -61,11 +61,11 @@ foreach ($object_types as $type) {
 }
 
 $context_menu_style = "font-weight:normal";
-if (!isset($id)){
+if (!isset($id) && !array_key_exists('ignore_context', $report_data)){
     $context_div_display ="display:none;";
     $ignore_context = true;
-}else{    
-    $ignore_context = isset( $report_data['ignore_context']) ? $report_data['ignore_context'] : false;
+}else{
+    $ignore_context = array_var($report_data, 'ignore_context', false);
     $context_div_display = $ignore_context ? "display:none;" : "";
 }
 
@@ -73,9 +73,9 @@ $strDisabled = count($options) > 1 ? '' : 'disabled';
 echo select_box('objectTypeSel', $options, array('id' => 'objectTypeSel' ,'onchange' => 'og.reportObjectTypeChanged("'.$genid.'", "", 1, "")', 'style' => 'width:200px;', $strDisabled => '', 'tabindex' => '10'));
 ?>
 	</div>
-        <?php 
+        <?php
             $categoryHtml = '';
-            Hook::fire('show_category_selector', $object, $categoryHtml);
+            Hook::fire('show_category_selector', array('object' => $object, 'genid' => $genid), $categoryHtml);
             echo $categoryHtml;
         ?>
 	<div class="clear"></div>
@@ -108,10 +108,11 @@ echo select_box('objectTypeSel', $options, array('id' => 'objectTypeSel' ,'oncha
 	  <div> 
 		<?php
 		$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
-		if ($object->isNew()) {
+		if ($object->isNew() && !isset($clone_member_ids)) {
 			render_member_selectors($object->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
 		} else {
-			render_member_selectors($object->manager()->getObjectTypeId(), $genid, $object->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
+			$member_ids = isset($clone_member_ids) ? $clone_member_ids : $object->getMemberIds();
+			render_member_selectors($object->manager()->getObjectTypeId(), $genid, $member_ids, array('listeners' => $listeners, 'object' => $object), null, null, false);
 		}
 		?>
 	  </div>
@@ -146,13 +147,16 @@ echo select_box('objectTypeSel', $options, array('id' => 'objectTypeSel' ,'oncha
 $(function() {
 
 	og.loadReportingFlags();
-	og.reportObjectTypeChanged('<?php echo $genid?>', '<?php echo array_var($report_data, 'order_by') ?>', '<?php echo array_var($report_data, 'order_by_asc') ?>', '<?php echo (isset($columns) ? implode(',', $columns) : '') ?>', false);
+	og.reportObjectTypeChanged(<?php echo json_encode($genid)?>, <?php echo json_encode(array_var($report_data, 'order_by', '')) ?>, <?php echo json_encode(array_var($report_data, 'order_by_asc') ? 'asc' : 'desc') ?>, <?php echo json_encode(isset($columns) ? implode(',', $columns) : '') ?>, false);
 	<?php if(isset($conditions)){ ?>
-		<?php foreach($conditions as $condition){ 
+		<?php foreach($conditions as $condition){
 			$gid = Plugins::instance()->isActivePlugin('advanced_core') ? $condition->getColumnValue('group_id') : "undefined";
+			$cond_value = $condition->getValue();
+			if ($cond_value == "''") $cond_value = '';
+			$gid_js = is_numeric($gid) ? (int)$gid : 'undefined';
 		?>
-		    og.addCondition('<?php echo $genid?>',<?php echo $condition->getId() ?>, <?php echo $condition->getCustomPropertyId() ?> , '<?php echo $condition->getFieldName() ?>', '<?php echo $condition->getCondition() ?>', '<?php echo ($condition->getValue()=="''") ? '' : $condition->getValue() ?>', '<?php echo $condition->getIsParametrizable() ?>', null,null,null, <?php echo $gid ?>);		
-		<?php 
+		    og.addCondition(<?php echo json_encode($genid)?>, <?php echo (int)$condition->getId()?>, <?php echo (int)$condition->getCustomPropertyId()?>, <?php echo json_encode($condition->getFieldName())?>, <?php echo json_encode($condition->getCondition())?>, <?php echo json_encode($cond_value)?>, <?php echo json_encode($condition->getIsParametrizable() ? '1' : '0')?>, null, null, null, <?php echo $gid_js ?>);
+		<?php
 		}//foreach ?>
 	<?php }//if ?>
 	

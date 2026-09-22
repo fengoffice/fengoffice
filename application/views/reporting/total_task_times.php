@@ -1,18 +1,24 @@
 <?php
 	
+	// column resolution (total_task_times_get_report_columns / _build_row_info / _get_column_label /
+	// _get_column_css_class / _get_column_value) lives in application/helpers/total_task_times_report.php,
+	// shared with the CSV export in ReportingController so both outputs always agree on columns.
+	Env::useHelper('total_task_times_report');
+
 	function total_task_times_print_group($group_obj, $grouped_objects, $options, $skip_groups = array(), $level = 0, $prev = "", &$total = 0, &$billing_total = 0, &$cost_total = 0, &$estimated_total = 0) {
-		
+
 		$margin_left = 15 * $level;
 		$cls_suffix = $level > 2 ? "all" : $level;
 		$next_level = $level + 1;
-			
+
 		$group_name = $group_obj['group']['name'];
-		
-		$header_colspan = 6;
+
+		$report_columns = total_task_times_get_report_columns($options);
+		$header_colspan = max(count($report_columns), 1);
 		if (array_var($options, 'show_estimated_time')) $header_colspan++;
 		if (array_var($options, 'show_cost')) $header_colspan++;
-		if (array_var($options, 'show_billing')) $header_colspan++;
-		
+		if (array_var($options, 'show_billing') && !in_array('fixed_billing', $report_columns)) $header_colspan++;
+
 		echo '<tbody><tr><td colspan='.$header_colspan.'>';
 		echo '<div class="report-group-heading-'.$cls_suffix.'">' . $group_name . '</div>';
 		echo '</td></tr></tbody>';
@@ -62,16 +68,15 @@
 		$def_c_symbol = !empty($def_currency) ? $def_currency['symbol'] : config_option('currency_code', '$');
 		
 		
-		$gname_colspan = 4;
-		/*if (!array_var($options, 'show_estimated_time')) $gname_colspan++;
-		if (!array_var($options, 'show_cost')) $gname_colspan++;
-		if (!array_var($options, 'show_billing')) $gname_colspan++;
-		*/
+		// TODO: doesn't account for the extra billing/cost/estimated cells appended after this
+		// row (see below) when those options are checked — same pre-existing simplification the
+		// old hardcoded-colspan footer had; total row can look slightly misaligned in that case
+		$gname_colspan = max(count($report_columns) - 1, 1);
 		echo '<tbody><tr>';
 		
 		echo '<td class="bold" colspan="'.$gname_colspan.'">'.$group_name.'</td>';
-		
-		if (array_var($options, 'show_billing') == 'checked') {
+
+		if (array_var($options, 'show_billing') == 'checked' && !in_array('fixed_billing', $report_columns)) {
 			echo '<td class="bold right">' . $def_c_symbol . " " . number_format($billing_total, 2) . '</td>';
 		}
 		
@@ -108,49 +113,57 @@
 	
 	
 	function total_task_times_print_table($objects, $left, $options, $group_name, &$sub_total = 0, &$sub_total_billing = 0, &$sub_total_cost = 0, &$sub_total_estimated = 0) {
-		//echo '<div style="padding-left:'. $left .'px;">';
-		//echo '<table class="reporting-table"><tr class="reporting-table-heading">';
+		$report_columns = total_task_times_get_report_columns($options);
+		$show_billing_col = array_var($options, 'show_billing') == 'checked' && !in_array('fixed_billing', $report_columns);
+
 		echo '<tbody ><tr class="reporting-table-heading">';
-		echo '<th>' . lang('date') . '</th>';
-		echo '<th>' . lang('title') . '</th>';
-		echo '<th>' . lang('description') . '</th>';
-		echo '<th>' . lang('person') . '</th>';
-		if (array_var($options, 'show_billing') == 'checked') {
+		foreach ($report_columns as $col_id) {
+			$th_class = total_task_times_get_column_css_class($col_id);
+			$th_class = str_starts_with($th_class, 'time') ? 'right' : '';
+			echo '<th' . ($th_class ? ' class="' . $th_class . '"' : '') . '>' . clean(total_task_times_get_column_label($col_id)) . '</th>';
+		}
+		if ($show_billing_col) {
 			echo '<th class="right">' . lang('billing') . '</th>';
 		}
 		if (array_var($options, 'show_cost') == 'checked') {
 			echo '<th class="right">' . lang('cost') . '</th>';
 		}
-		echo '<th class="right">' . lang('time') . '</th>';
 		if ((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && array_var($options, 'show_estimated_time')) {
 			echo '<th class="right">' . lang('estimated') . '</th>';
 		}
 		echo '</tr>';
-		
+
 		$sub_total = 0;
 		$tasks = array();
-		
+
 		$alt_cls = "";
 		foreach ($objects as $ts) { /* @var $ts Timeslot */
+			$info = total_task_times_build_row_info($ts);
+
 			echo "<tr $alt_cls>";
-			echo "<td class='date'>" . format_date($ts->getStartTime()) . "</td>";
-			echo "<td class='name'>" . ($ts->getRelObjectId() == 0 ? clean($ts->getObjectName()) : clean($ts->getRelObject()->getObjectName())) ."</td>";
-			echo "<td class='name'>" . nl2br(clean($ts->getDescription())) ."</td>";
-			echo "<td class='person'>" . clean($ts->getUser() instanceof Contact ? $ts->getUser()->getObjectName() : '') ."</td>";
-			
-			if (array_var($options, 'show_billing') == 'checked') {
+			foreach ($report_columns as $col_id) {
+				$css_class = total_task_times_get_column_css_class($col_id);
+				$value = total_task_times_get_column_value($ts, $col_id, $info);
+				// nobr columns (dimensions, custom properties, plugin-contributed columns) have no
+				// dedicated width and get truncated with an ellipsis when long — a title tooltip
+				// keeps the full value available on hover instead of losing it
+				$title = $css_class == 'nobr' ? ' title="' . clean(trim(strip_tags($value))) . '"' : '';
+				echo "<td class='$css_class'$title>$value</td>";
+			}
+
+			if ($show_billing_col) {
 				$currency = Currencies::instance()->getCurrency($ts->getRateCurrencyId());
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code', '$');
-				
-			
+
+
 				echo "<td class='nobr right'>" . $c_symbol . " " . number_format($ts->getFixedBilling(), 2) . "</td>";
 				$sub_total_billing += $ts->getFixedBilling();
 			}
-			
+
 			if (array_var($options, 'show_cost') == 'checked') {
 				$currency = Currencies::instance()->getCurrency($ts->getColumnValue('cost_currency_id'));
 				$c_symbol = $currency instanceof Currency ? $currency->getSymbol() : config_option('currency_code', '$');
-				
+
 				if($ts->getColumnValue('is_fixed_cost')){
 					echo "<td class='nobr right' style='width:140px;'>" . $c_symbol . " " . number_format($ts->getColumnValue('fixed_cost'), 2) . "</td>";
 					$sub_total_cost += $ts->getColumnValue('fixed_cost');
@@ -160,12 +173,11 @@
 					$sub_total_cost += ($ts->getColumnValue('hourly_cost')/60) * $min;
 				}
 			}
-			
-			echo "<td class='time nobr right'>" . format_time_column_value($ts->getMinutes()) ."</td>";
+
 			if((array_var($options, 'timeslot_type') == 0 || array_var($options, 'timeslot_type') == 2) && $ts->getRelObject() instanceof ProjectTask && array_var($options, 'show_estimated_time')) {
 				echo "<td class='time nobr right'>" . format_time_column_value($ts->getRelObject()->getTimeEstimate()) ."</td>";
 				$task = $ts->getRelObject();
-				
+
 				//check if I have the estimated time of this task
 				if(!in_array($task->getId(), $tasks)){
 					$sub_total_estimated += $task->getTimeEstimate();
@@ -175,12 +187,11 @@
 				echo "<td class='time nobr right'> 0 </td>";
 			}
 			echo "</tr>";
-			
+
 			$sub_total += $ts->getMinutes();
 			$alt_cls = $alt_cls == "" ? 'class="alt-row"' : "";
 		}
-		
-		//echo '</table></div>';
+
 		echo '</tbody>';
 	}
         
@@ -305,11 +316,19 @@
             if(count($groups) >0){
             ?>
             
+            <?php
+            // same effective column list (with fallback) total_task_times_print_group()/_table()
+            // use, so this footer row's colspan/dedupe never drifts from what's actually rendered.
+            // TODO: like the per-group total row above, this doesn't account for the extra
+            // billing/cost/estimated cells appended after it when those options are checked (same
+            // pre-existing simplification the old hardcoded-colspan footer had).
+            $footer_columns = total_task_times_get_report_columns(array_var($_SESSION, 'total_task_times_report_data'));
+            ?>
             <tbody class="bold report-group-footer" style="font-size:150%;">
             <tr>
-            	<td colspan="4"><?php echo lang('total').": "; ?></td>
-            	
-            	<?php if (array_var(array_var($_SESSION, 'total_task_times_report_data'), 'show_billing') == 'checked') { ?>
+            	<td colspan="<?php echo max(count($footer_columns) - 1, 1) ?>"><?php echo lang('total').": "; ?></td>
+
+            	<?php if (array_var(array_var($_SESSION, 'total_task_times_report_data'), 'show_billing') == 'checked' && !in_array('fixed_billing', $footer_columns)) { ?>
             	<td class="right"><?php echo $def_c_symbol . " " . number_format($billing_total, 2) ?></td>
             	<?php }?>
             	

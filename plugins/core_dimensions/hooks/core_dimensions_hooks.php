@@ -612,3 +612,24 @@ function core_dimensions_after_update_config_category($params, &$ret) {
 }
 
 
+
+/**
+ * After a fresh installation completes, seed the role-based default list-column configuration
+ * (resolving the shipped portable defaults to this install's custom property / dimension /
+ * object type ids) and apply it to the first administrator. On upgrades the seeding is handled
+ * by core_dimensions_data_changes_23_24() instead.
+ */
+function core_dimensions_after_complete_installation($administrator, &$ret) {
+	try {
+		Env::useHelper('role_default_list_config');
+		require_once ROOT . '/plugins/core_dimensions/install/role_default_list_config_seed_data.php';
+		if (function_exists('role_default_list_config_seed_data') && function_exists('role_default_list_config_seed')) {
+			role_default_list_config_seed(role_default_list_config_seed_data(), 0);
+			if ($administrator instanceof Contact) {
+				apply_role_default_list_config($administrator);
+			}
+		}
+	} catch (Exception $e) {
+		Logger::log("core_dimensions_after_complete_installation failed: ".$e->getMessage());
+	}
+}

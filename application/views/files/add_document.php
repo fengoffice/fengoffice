@@ -44,11 +44,11 @@
 	add_page_action("name_text_field", "javascript:", "", null, array('id' => $genid . 'filename_input', 'type' => 'textfield'));
 	
 	// save button
-	add_page_action(lang("save"), "javascript:(function(){ var form = document.getElementById('{$genid}form'); document.getElementById('{$genid}new_revision_document').value = 'checked'; form.onsubmit(); })()", "save", null, array('id' => $genid . 'save_as_name'));
+	add_page_action("<i class='icon-save'></i>" . lang("save"), "javascript:(function(){ var form = document.getElementById('{$genid}form'); document.getElementById('{$genid}new_revision_document').value = 'checked'; form.onsubmit(); })()", "btn btn-primary", null, array('id' => $genid . 'save_as_name'));
 	
 	// close button
 	$panel_id = array_var($_REQUEST, 'current');
-	add_page_action(lang("close"), "javascript: Ext.getCmp('$panel_id').back();", "ico-delete", null, array('id' => $genid . 'close'));
+	add_page_action("<i class='icon-circle-x'></i>" . lang("close"), "javascript: Ext.getCmp('$panel_id').back();", "btn", null, array('id' => $genid . 'close'));
 	
 
 ?>
@@ -152,12 +152,17 @@ og.eventManager.addListener("document saved", function(obj) {
 og.resizeresizeCkSpaceAux = function() {
 	var container = document.getElementById('<?php echo $genid ?>form');
 	var parent = document.getElementById('cke_<?php echo $genid ?>ckeditor');
-	if (container && parent) {
-		var iframes = parent.getElementsByTagName('iframe');
-		if (iframes.length > 0) {
-			iframes[0].style.height = (container.offsetHeight - 107) + 'px';
-			parent.style.height = (container.offsetHeight) + 'px';
-		}
+	if (!container || !parent) return;
+	var panelEl = og.getParentContentPanel(Ext.get(container));
+	if (panelEl) {
+		var panel = Ext.getCmp(panelEl.id);
+		if (panel && panel.active === false) return;
+	}
+	if (container.offsetHeight < 120) return;
+	var iframes = parent.getElementsByTagName('iframe');
+	if (iframes.length > 0) {
+		iframes[0].style.height = (container.offsetHeight - 107) + 'px';
+		parent.style.height = (container.offsetHeight) + 'px';
 	}
 }
 og.resizeFileNameInput = function() {
@@ -171,12 +176,17 @@ og.resizeFileNameInput = function() {
 	$("#<?php echo $genid?>filename_input").css('width', (available_w)+'px');
 }
 og.resizeCkSpace = function() {
+	if (!document.getElementById('<?php echo $genid ?>form')) return;
 	if (Ext.isIE) setTimeout('og.resizeresizeCkSpaceAux()', 100);
 	else og.resizeresizeCkSpaceAux();
 
 	og.resizeFileNameInput();
 }
-window.onresize = og.resizeCkSpace;
+if (og._ckSpaceResizeListener) {
+	Ext.EventManager.removeResizeListener(og._ckSpaceResizeListener);
+}
+og._ckSpaceResizeListener = og.resizeCkSpace;
+Ext.EventManager.onWindowResize(og.resizeCkSpace);
 
 $(function() {
 	$("#<?php echo $genid?>filename_input").attr('placeholder', '<?php echo lang('filename')?>');

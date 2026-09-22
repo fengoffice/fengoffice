@@ -152,9 +152,13 @@ class ContactConfigOptions extends BaseContactConfigOptions {
 		return $object;
 	} // getByName
         
-        function getFilterActivity() {
-                return ContactConfigOptions::instance()->findOne(array('conditions' => array('`name` = "filters_dashboard"')));
-        }
+	/**
+	 * Get the config option of the dashboard filter
+	 * @return ContactConfigOption
+	 */
+	static function getFilterActivity() {
+			return ContactConfigOptions::instance()->findOne(array('conditions' => array('`name` = "filters_dashboard"')));
+	}
 
 } // ConfigOptions
 

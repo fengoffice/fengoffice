@@ -2,8 +2,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
 <head>
-	<title><?php echo clean(CompanyWebsite::instance()->getCompany()->getFirstName()) . ' - ' . PRODUCT_NAME ?></title>
-	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
+	<title><?php echo clean(CompanyWebsite::instance()->getCompany()->getFirstName()) . ' - ' . product_name() ?></title>
+	<link href='https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@200;300;400;500;600;700&display=swap' rel='stylesheet' type='text/css'>
 	<?php $favicon_name = 'favicon.ico';
 		Hook::fire('change_favicon', null, $favicon_name); ?>
 	<?php echo link_tag(with_slash(ROOT_URL).$favicon_name, "rel", "shortcut icon") ?>
@@ -68,7 +68,7 @@
 	if (defined('COMPRESSED_JS') && COMPRESSED_JS) {
 		$jss = array("ogmin.js");
 	} else {
-		$jss = include "javascripts.php";
+	$jss = include "javascripts.php";
 	}
 	Hook::fire('autoload_javascripts', null, $jss);
 	if (defined('USE_JS_CACHE') && USE_JS_CACHE) {
@@ -126,13 +126,14 @@
     		line-height: 150%;
 		}
 	</style>
-	<?php echo add_javascript_to_page("react_production/vendors~showEarnedValueWidget~showExpensesProgressWidget~showFinancialsWidget~showWorkedHoursWidget.js")?>
-	<?php echo add_javascript_to_page("react_production/vendors~showEarnedValueWidget~showExpensesProgressWidget~showFinancialsWidget~showProjectStatisticsW~f4ed70e4.js")?>
 	<?php echo add_javascript_to_page("react_production/showFinancialsWidget.js")?>
 	<?php echo add_javascript_to_page("react_production/showEarnedValueWidget.js")?>
 	<?php echo add_javascript_to_page("react_production/showExpensesProgressWidget.js")?>
 	<?php echo add_javascript_to_page("react_production/showProjectStatisticsWidget.js")?>
 	<?php echo add_javascript_to_page("react_production/showWorkedHoursWidget.js")?>
+	<?php echo add_javascript_to_page("react_production/showDimensionTableWidget.js")?>
+	<?php echo add_javascript_to_page("react_production/showFeedWidget.js")?>
+	<?php echo stylesheet_tag("lucide/lucide.css"); ?>
 </head>
 <body id="body" <?php echo render_body_events() ?>>
 
@@ -213,9 +214,9 @@ $show_owner_company_name_header = config_option("show_owner_company_name_header"
 					</div>
 				</li>	
 			  	<li id="userboxWrapper" class="<?php echo config_option('brand_colors_texture',1)?'texture-n-1':''; ?>" onclick="showUserOptionsPanel()">
-					<img src="<?php echo logged_user()->getPictureUrl(); ?>" alt="" />
-					<a id="userLink" style="margin-right: 5px;" href="#" ><?php echo clean(logged_user()->getObjectName()); ?></a>	
-					<div class="account"></div>										
+					<!-- <img src="<?php echo logged_user()->getPictureUrl(); ?>" alt="" /> -->
+					<a id="userLink" style="margin-right: 10px;" href="#" ><?php echo clean(logged_user()->getObjectName()); ?></a>	
+					<div class="icon-user-cog"></div>										
 			  	</li>			  				  
 			</ul>
 			<div class="clear"></div>
@@ -316,6 +317,7 @@ og.hasNewVersions = <?php
 og.config = {
 	'mails_per_page': <?php echo json_encode(user_config_option('mails_per_page',50)) ?>,
 	'contacts_per_page': <?php echo json_encode(user_config_option('contacts_per_page',50)) ?>,
+	'members_per_page': <?php echo (int) user_config_option('members_per_page', config_option('files_per_page', 50)) ?>,
 	'files_per_page': <?php echo json_encode(config_option('files_per_page', 50)) ?>,
 	'days_on_trash': <?php echo json_encode(config_option("days_on_trash", 0)) ?>,
 	'checkout_notification_dialog': <?php echo json_encode(config_option('checkout_notification_dialog', 0)) ?>,
@@ -346,14 +348,23 @@ og.config = {
 	'with_perm_user_types': Ext.util.JSON.decode('<?php echo json_encode(config_option('give_member_permissions_to_new_users'))?>'),
 	'member_selector_page_size': 100,
 	'show_company_info_report_print': <?php echo config_option('show_company_info_report_print') ? '1' : '0' ?>,
-	'currency_code': '<?php config_option('currency_code', '$') ?>',
-	'minimum_characters_dimension_search': <?php echo json_encode(config_option("minimum_characters_dimension_search", 3)) ?>
+	// Currency symbol for UI (from config; default USD-style "$").
+	'currency_code': <?php echo json_encode(config_option('currency_code', '$')) ?>,
+	'minimum_characters_dimension_search': <?php echo json_encode(config_option("minimum_characters_dimension_search", 3)) ?>,
+	'show_type_sel_on_address_field': <?php echo config_option('show_type_sel_on_address_field') ? '1' : '0' ?>,
+	'show_type_sel_on_email_field': <?php echo config_option('show_type_sel_on_email_field') ? '1' : '0' ?>,
+	'show_type_sel_on_phone_field': <?php echo config_option('show_type_sel_on_phone_field') ? '1' : '0' ?>,
+	'show_type_sel_on_website_field': <?php echo config_option('show_type_sel_on_website_field') ? '1' : '0' ?>,
+	'advanced_core_active': <?php echo Plugins::instance()->isActivePlugin('advanced_core') ? 'true' : 'false'; ?>
 };
 var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
 if (advanced_billing_active){
 	og.config['use_is_billable_value_in_tasks'] ='<?php echo config_option('use_is_billable_value_in_tasks')?>';
 	og.config['show_financial_tab_in_task_form'] ='<?php echo config_option('show_financial_tab_in_task_form')?>';
 }
+
+var notifications_manager_active = <?php echo Plugins::instance()->isActivePlugin('notifications_manager') ? '1' : '0'; ?>;
+og.config['notifications_manager_active'] = notifications_manager_active;
 
 var mail_active = <?php echo Plugins::instance()->isActivePlugin('mail') ? '1' : '0'; ?>;
 if (mail_active) {
@@ -382,6 +393,7 @@ og.preferences = {
 	'breadcrumb_member_count': <?php echo user_config_option('breadcrumb_member_count') ?>,
 	'can_modify_navigation_panel': <?php echo user_config_option('can_modify_navigation_panel') ? '1' : '0' ?>,
 	'show_birthdays_in_calendar': <?php echo user_config_option('show_birthdays_in_calendar') ? '1' : '0' ?>,
+	'show_subtasks_in_calendar': <?php echo user_config_option('show_subtasks_in_calendar') ? '1' : '0' ?>,
 	'enableArchiveConfirmation': <?php echo user_config_option('enable_archive_confirmation') ? '1' : '0' ?>,
 	'enableTrashConfirmation': <?php echo user_config_option('enable_trash_confirmation') ? '1' : '0' ?>,
 	'trash_objects_in_member_after_delete': <?php echo user_config_option('trash_objects_in_member_after_delete') ? '1' : '0' ?>,
@@ -451,6 +463,13 @@ echo "og.executive_permission_group_ids = [];";
 foreach ($executive_groups as $eg) {
 	echo "og.executive_permission_group_ids.push(".$eg->getId().");";
 }
+$root_perm_roles = PermissionGroups::instance()->findAll(array(
+	'conditions' => "type='roles' AND name IN ('Executive','Manager','Administrator','Super Administrator')"
+));
+echo "og.root_permissions_role_ids = [];";
+foreach ($root_perm_roles as $rp) {
+	echo "og.root_permissions_role_ids.push(".$rp->getId().");";
+}
 ?>
 
 <?php 
@@ -508,10 +527,12 @@ Ext.Ajax.timeout = <?php echo get_max_execution_time()*1100 // give a 10% margin
 
 <?php 
 	$all_dimension_associations = DimensionMemberAssociations::instance()->getAllAssociationsInfo();
+	$all_dimension_associations_by_id = DimensionMemberAssociations::instance()->getAllAssociationsInfoById();
 	$json_options = null;
 	if (defined('JSON_HEX_APOS')) $json_options = JSON_HEX_APOS;
 ?>
 og.dimension_member_associations = Ext.util.JSON.decode('<?php echo json_encode($all_dimension_associations, $json_options)?>');
+og.dimension_member_associations_by_id = Ext.util.JSON.decode('<?php echo json_encode($all_dimension_associations_by_id, $json_options)?>');
 
 
 <?php if (!defined('DISABLE_JS_POLLING') || !DISABLE_JS_POLLING) { ?>
@@ -548,7 +569,10 @@ setInterval(function() {
 
 				//reload og.dimensions
 				if (data && data.reload_dims) {
-					ogMemberCache.reset_dimensions_cache();										
+					ogMemberCache.reset_dimensions_cache();
+				} else if (data && data.reload_member_ids && data.reload_member_ids.length > 0) {
+					// Invalidate only the changed members instead of wiping the whole cache
+					ogMemberCache.invalidateMembersInCache(data.reload_member_ids);
 				}
 			}
 		});
@@ -627,7 +651,7 @@ og.dimensionPanels = [
 		if (!$first) echo ",";
 		$first = false;
 		
-		$reloadDimensions = get_associated_dimensions_to_reload_json($dimension->getId());
+		$reloadDimensions = get_associated_dimensions_to_reload_json($dimension->getId(), true);
 		
 		?>
 		{	
@@ -854,6 +878,24 @@ $('html').on('click', function(e) {
             <div id="close_ico" class="close" style="float: right;"></div>
             <div class="form-container"></div>
 	</div>
+
+	<script>
+		// Update the position of the extjs dropdown lists when scrolling (member and contact selectors)
+		function updateExtjsDropdownListPosition(event) {
+			$(".single-tree.x-panel, .assigned-to-combo").each(function() {
+				let cmp = Ext.getCmp($(this).attr('id'));
+				if (!cmp) return;
+				let box = cmp.getBox();
+				let list = cmp.body; // for member selectors
+				if (!list) list = cmp.list; // for contact selectors
+				if (list && list.isVisible()) {
+					$("#"+list.id).css({'top': (box.y + box.height)+'px', 'left': (box.x)+'px'});
+				}
+			});
+		}
+		$("#modal-forms-container").on('scroll', updateExtjsDropdownListPosition);
+
+	</script>
 </body>
 </html>
 

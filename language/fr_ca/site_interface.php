@@ -65,6 +65,7 @@
 	'footer copy with homepage' => '© {0} par <a class="internalLink" href="{1}">{2}</a>. Honest Public License.',
 	'footer copy without homepage' => '© {0} par {1}. Tous droits Réservés',
 	'footer powered' => 'Propulsé par <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Propulsé par',
 	'all documents' => 'Tous les Documents',
 	'created by me' => 'Créé par moi-même',
 	'by project' => 'Par Projet',

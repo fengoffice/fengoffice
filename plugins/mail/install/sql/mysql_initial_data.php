@@ -36,6 +36,7 @@ INSERT INTO <?php echo $table_prefix ?>contact_config_options (`category_name`, 
  ('mails panel', 'mails classification filter', 'all', 'StringConfigHandler', '1', '0', NULL),
  ('mails panel', 'mails read filter', 'all', 'StringConfigHandler', '1', '0', NULL),
  ('mails panel', 'hide_quoted_text_in_emails', '0', 'BoolConfigHandler', 0, 110, NULL),
+ ('mails panel', 'show_account_on_email_header', '0', 'BoolConfigHandler', 0, 111, NULL),
  ('mails panel', 'mail_account_err_check_interval', '300', 'IntegerConfigHandler', 0, 120, NULL),
  ('mails panel', 'classify_mail_with_conversation', '1', 'BoolConfigHandler', 0, 130, NULL), 
  ('mails panel', 'folder_received_columns', 'from,subject,account,date,folder,actions', 'StringConfigHandler', 1, 0, NULL),
@@ -90,9 +91,15 @@ INSERT INTO <?php echo $table_prefix ?>dimension_object_type_contents (dimension
  FROM <?php echo $table_prefix ?>dimensions WHERE code IN ('tags')
 ON DUPLICATE KEY UPDATE dimension_id=dimension_id;
 
-insert into <?php echo $table_prefix ?>widgets (name,title,plugin_id,path,default_options,default_section,default_order,icon_cls) values
- ('emails','emails',0,'','','right',10,'ico-email')
-on duplicate key update name=name;
+INSERT INTO `<?php echo $table_prefix ?>widgets` (`name`,`title`,`plugin_id`,`path`,`default_options`,`default_section`,`default_order`,`icon_cls`) VALUES
+ ('emails','emails widget title',(SELECT id from `<?php echo $table_prefix ?>plugins` WHERE name = 'mail'),'','','right',6,'ico-email')
+ON DUPLICATE KEY UPDATE name=name;
+
+INSERT INTO `<?php echo $table_prefix ?>contact_widget_options`
+    (`contact_id`, `widget_name`, `member_type_id`, `option`, `value`, `is_system`)
+VALUES
+    (0, 'emails', 0, 'limit', '10', 1)
+ON DUPLICATE KEY UPDATE `is_system`=1;
 
 INSERT INTO <?php echo $table_prefix ?>role_object_type_permissions (role_id, object_type_id, can_delete, can_write)
  SELECT p.id, o.id, 1, 1

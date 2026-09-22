@@ -153,8 +153,13 @@ class DimensionController extends ApplicationController {
 			}
 		}
 		
+		// Remember whether the caller passed any real filtering condition before we
+		// append the internal archived_by_id clause. This is needed below to decide
+		// if the cached member list must be restricted to root members only.
+		$caller_passed_no_conditions = (trim($extra_conditions) == "");
+
 		$extra_conditions .= " AND archived_by_id=0";
-		
+
 		if ($dimension instanceof Dimension){
 			if (count($allowed_member_types) > 0) {
 				$extra_conditions = " AND object_type_id IN (".implode(",",$allowed_member_types).")" . $extra_conditions;
@@ -183,7 +188,6 @@ class DimensionController extends ApplicationController {
 				}
 			}
 			
-			$parent = 0;
 			if (is_null($order)) $order = "parent_member_id, display_name";
 			if (!$dimension->getDefinesPermissions() || $dimension->hasAllowAllForContact($contact_pg_ids) || $return_all_members){
 				$all_members = $dimension->getAllMembers(false, $order, true, $extra_conditions, $limit);
@@ -194,13 +198,26 @@ class DimensionController extends ApplicationController {
 					$params = array(
 							"dimension" => $dimension,
 							"contact_id" => logged_user()->getId(),
-							"parent_member_id" => 0,
 							"start" => $limit['offset'],
 							"limit" => $limit['limit'],
 							"extra_condition" => $extra_conditions,
 							"order" => '`display_name`',
 							"order_dir" => 'ASC',
 					);
+					// Restrict the cached list to root members only on tree loads, including
+					// loads filtered by an associated dimension ($filter_by_members). The
+					// association filter always merges every ancestor of the matching members
+					// into the id set (see get_association_filter_conditions), so the visible
+					// roots are guaranteed to be in the list and children load on node expand,
+					// same as the admin (non-cache) path. Without this, children whose parent
+					// fell outside the page limit were returned without their parent and
+					// rendered at the tree root. The internal archived_by_id clause is always
+					// present and must be ignored here; name search and filter_by_ids requests
+					// pass their own conditions and keep returning matches at any depth.
+					if ($caller_passed_no_conditions && count($allowed_member_types) == 0) {
+						$params['parent_member_id'] = 0;
+					}
+
 					$all_members = ContactMemberCaches::getAllMembersWithCachedParentId($params);
 					
 				}else{
@@ -348,7 +365,6 @@ class DimensionController extends ApplicationController {
 		$memberId = array_var($_REQUEST, 'id', null );
 		$offset = array_var($_REQUEST, 'offset', 0);
 		$limit = array_var($_REQUEST, 'limit', 100);
-		//Logger::log_r($_REQUEST);
 		$allowedMemberTypes = json_decode(array_var($_REQUEST, 'allowedMemberTypes', null ));	
 		if (!is_array($allowedMemberTypes)) {
 			$allowedMemberTypes = null;
@@ -468,19 +484,22 @@ class DimensionController extends ApplicationController {
 		}
 		
 		$dimension = Dimensions::getDimensionById($dimension_id);
-		
-		$use_member_cache= true;
-		//Super admins are not using the contact member cache
-		if(logged_user()->isAdministrator() || !$dimension->getDefinesPermissions()){
-			$extra_cond .= "AND `parent_member_id`=0";
-			$use_member_cache= false;
-		}
 		$return_all_members = false;
 	
 		$selected_member_ids = json_decode(array_var($_REQUEST, 'selected_ids', "[0]"));
 		$selected_members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',',$selected_member_ids).')'));
 		
 		Hook::fire('list_dimension_members_tree_modify_member_filter', array('dimension' => $dimension), $selected_members);
+		
+		// The current selection of the dimension being reloaded travels in selected_ids too. It is not
+		// used to filter the list (only the members of the other dimensions are), but it has to be
+		// validated against the new filters so the tree can drop a selection that is no longer valid.
+		$own_selected_members = array();
+		foreach ($selected_members as $sel_mem) {
+			if ($sel_mem->getDimensionId() == $dimension_id) {
+				$own_selected_members[] = $sel_mem;
+			}
+		}
 		
 		// check if this dimension has to be filtered by the selected members
 		$real_sel_members = array();
@@ -496,10 +515,42 @@ class DimensionController extends ApplicationController {
 		}
 		$selected_members = $real_sel_members;
 		
+		// Let the plugins tell which of the current selections are not related to the members used to
+		// filter the list. The tree drops them instead of restoring them, otherwise the context would
+		// be an empty intersection and no object would be listed.
+		$filter_members = array();
+		foreach ($selected_members as $sel_mem) {
+			if ($sel_mem->getDimensionId() != $dimension_id) {
+				$filter_members[] = $sel_mem;
+			}
+		}
+		$unassociated_selected_ids = array();
+		Hook::fire('list_dimension_members_tree_unassociated_selection', array(
+			'dimension' => $dimension,
+			'filter_members' => $filter_members,
+			'selected_members' => $own_selected_members,
+		), $unassociated_selected_ids);
+		if (!is_array($unassociated_selected_ids)) $unassociated_selected_ids = array();
+		
 		$limit_obj = array(
 			'offset' => $offset,
 			'limit' => $limit + 1,
 		);
+
+		
+		$use_member_cache= true;
+		//Super admins are not using the contact member cache
+		if(logged_user()->isAdministrator() || !$dimension->getDefinesPermissions()){
+			$use_member_cache= false;
+		}
+
+		Hook::fire('list_dimension_members_tree_extra_conditions', array('request' => $_REQUEST, 'dimension' => $dimension, 'use_member_cache' => $use_member_cache), $extra_cond);
+
+		if (trim($extra_cond) == "" && !$use_member_cache) {
+			// first request for dimension component must retrieve only root members, or else we can't paginate and show the view more node correctly
+			// add this condition only when not using cache, because cache is already returning only root members
+			$extra_cond .= " AND parent_member_id=0";
+		}
 		
 		$list_dim_members = $this->initial_list_dimension_members($dimension_id, $objectTypeId, $allowedMemberTypes, $return_all_members, $extra_cond, $limit_obj, false, null, $only_names, $selected_members,null,$use_member_cache);
 		$memberList = $list_dim_members['members'];
@@ -522,9 +573,11 @@ class DimensionController extends ApplicationController {
 		//$dids = explode ("," ,user_config_option('root_dimensions', null, logged_user()->getId() ));
 		//if(in_array($dimension_id, $dids)){
 		ajx_extra_data(array(
-				'dimension_members' => $tree, 'dimension_id' => $dimension_id, 
+				'dimension_members' => $tree, 'dimension_id' => $dimension_id,
 				'dimensions_root_members' => true, 'more_nodes_left' => $more_nodes_left,
 				'list_was_filtered_by' => $list_was_filtered_by,
+				'unassociated_selected_ids' => $unassociated_selected_ids,
+				'tree_id' => array_var($_REQUEST, 'tree_id', ''),
 				'genid' => array_var($_REQUEST, 'genid', ''),
 		));
 		//}
@@ -537,27 +590,41 @@ class DimensionController extends ApplicationController {
 		$name = trim(array_var($_REQUEST, 'query', ''));
 		$tree_id = trim(array_var($_REQUEST, 'tree_id', ''));
 		$random = trim(array_var($_REQUEST, 'random', 0));
-		$start = array_var($_REQUEST, 'start' , 0);
+		// cast to int: $start is interpolated into a raw LIMIT clause in the
+		// contact_member_cache path (getAllContactMemberCache)
+		$start = (int) array_var($_REQUEST, 'start' , 0);
 		$limit = array_var($_REQUEST, 'limit');
 		$order = array_var($_REQUEST, 'order', 'id');
 		$parents = array_var($_REQUEST, 'parents' , true);
 		$ignore_context_filters = array_var($_REQUEST, 'ignore_context_filters');
 		$filter_ids = array_var($_REQUEST, 'filter_by_ids');
-		
+
+		// Whitelist the sortable column to prevent SQL injection via ORDER BY.
+		// $order is interpolated raw into ORDER BY in both the admin query path
+		// and the contact_member_cache path. Only the values the trees actually
+		// send are allowed; anything else falls back to the default.
+		$allowed_order_by = array('id', 'name');
+		if (!in_array($order, $allowed_order_by, true)) $order = 'id';
+
 		$allowed_member_types_str = array_var($_REQUEST, 'allowed_member_types' , '');
 		if ($allowed_member_types_str != '') {
-			$allowed_member_types = explode(',', $allowed_member_types_str);
+			// cast every id to int: these are interpolated into an IN (...) clause
+			$allowed_member_types = array_filter(array_map('intval', explode(',', $allowed_member_types_str)));
 		} else {
 			$allowed_member_types = array();
 		}
-		
+
 		$ids_filter_sql = "";
 		if ($filter_ids) {
-			$filter_ids_arr = array_filter(explode(',', $filter_ids));
+			// cast every id to int: these are interpolated into an IN (...) clause
+			$filter_ids_arr = array_filter(array_map('intval', explode(',', $filter_ids)));
 			if (is_array($filter_ids_arr) && count($filter_ids_arr) > 0) {
 				$ids_filter_sql = " AND id IN (".implode(',', $filter_ids_arr).") ";
 			}
 		}
+
+		$extra_cond = "";
+		Hook::fire('list_dimension_members_tree_extra_conditions', array('request' => $_REQUEST, 'dimension' => $dimension), $extra_cond);
 		
 		if(strlen($name) > 0 || $random){
 			//get the member list
@@ -571,11 +638,8 @@ class DimensionController extends ApplicationController {
 				$search_name_cond = "";
 				if(!$random){
 					$name = mysqli_real_escape_string(DB::connection()->getLink(), $name);
-					$search_name_cond = " AND name LIKE '%".$name."%'";
+					$search_name_cond = " AND `display_name` LIKE '%".$name."%'";
 				}
-				
-				// if there is a member type configured to show any other properties with the name, then search by them too
-				append_other_properties_search_conditions($dimension, $name, $search_name_cond);
 				
 				$member_type_cond = "";
 				if (count($allowed_member_types) > 0) {
@@ -598,8 +662,7 @@ class DimensionController extends ApplicationController {
 				// add condition to prevent returning malformed data that is in the database, example a client member without the customer object
 				$object_exist_cond = " AND ( object_id = 0 OR EXISTS ( SELECT id FROM ".TABLE_PREFIX."objects o WHERE o.id = object_id AND o.archived_on = '0000-00-00 00:00:00' AND o.trashed_on = '0000-00-00 00:00:00' ))";
 				
-
-				$memberList = Members::instance()->findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
+				$memberList = Members::instance()->findAll(array('conditions' => array("`dimension_id`=? AND archived_by_id=0 $ids_filter_sql $search_name_cond $member_type_cond $more_conds $object_exist_cond $extra_cond", $dimension_id), 'order' => '`'.$order.'` ASC', 'offset' => $start, 'limit' => $limit_t));
 
 				//include all parents
 				//Check hierarchy
@@ -642,15 +705,6 @@ class DimensionController extends ApplicationController {
 				if (count($allowed_member_types) > 0) {
 					$params["extra_condition"] .= "$ids_filter_sql AND m.object_type_id IN (".implode(',', $allowed_member_types).")";
 				}
-				
-				// if there is a member type configured to show any other properties with the name, then search by them too
-				$additional_query_string_conditions = "";
-				append_other_properties_search_conditions($dimension, $name, $additional_query_string_conditions);
-				if (trim($additional_query_string_conditions) != "") {
-					$additional_query_string_conditions = str_replace(TABLE_PREFIX."members.", "m.", $additional_query_string_conditions);
-					unset($params["member_name"]);
-					$params["extra_condition"] .= " $additional_query_string_conditions";
-				}
 
 				$more_conds = "";
 				if (!$ignore_context_filters) {
@@ -665,6 +719,8 @@ class DimensionController extends ApplicationController {
 					$more_conds .= $filter_by_members_sql;
 					$params["extra_condition"] .= " $more_conds";
 				}
+
+				$params["extra_condition"] .= " $extra_cond";
 				
 				$memberList = ContactMemberCaches::getAllMembersWithCachedParentId($params);
 			}
@@ -697,7 +753,21 @@ class DimensionController extends ApplicationController {
 		ajx_extra_data(array('query' => $name));
 		ajx_extra_data(array('dimension_id' => $dimension_id, 'tree_id' => $tree_id));
 		ajx_extra_data(array('time' => array_var($_REQUEST, 'time')));
-		ajx_current("empty");			
+		// Use the same Dimensions::getAllowedDimensions() query the normal edit
+		// form uses — same GROUP BY logic, same result, same caching.
+		$content_object_type_id = (int) array_var($_REQUEST, 'content_object_type_id', 0);
+		$is_multiple_resolved = (bool) $dimension->getAllowsMultipleSelection();
+		if ($content_object_type_id > 0) {
+			$allowed = Dimensions::getAllowedDimensions($content_object_type_id);
+			foreach ($allowed as $dim_row) {
+				if ((int)$dim_row['dimension_id'] === (int)$dimension->getId()) {
+					$is_multiple_resolved = (bool)$dim_row['is_multiple'];
+					break;
+				}
+			}
+		}
+		ajx_extra_data(array('is_multiple' => $is_multiple_resolved));
+		ajx_current("empty");
 	}
 	
 	function reload_dimensions_js () {
@@ -779,7 +849,7 @@ class DimensionController extends ApplicationController {
 			$dim_name = clean($dim->getName());
 			$dim_code = $dim->getCode();
 			
-			$info = array("name" => $dim_name, "code" => $dim_code);
+			$info = array("name" => $dim_name, "code" => $dim_code, "is_manageable" => (bool) $dim->getIsManageable());
 			
 			$default_value = DimensionOptions::instance()->getOptionValue($dim->getId(), 'default_value');
 			if ($default_value) {
@@ -1102,7 +1172,7 @@ class DimensionController extends ApplicationController {
 					// If member has an object linked, take object edit url
 					
 					if ($ot = ObjectTypes::instance()->findById($m->getObjectTypeId())) {
-						if ($handler = $ot->getHandlerClass() ){
+						if (($handler = $ot->getHandlerClass()) && class_exists($handler)){
 							eval ("\$itemClass = $handler::instance()->getItemClass();");
 							if ($itemClass) {
 								$instance = new $itemClass();
@@ -1162,10 +1232,15 @@ class DimensionController extends ApplicationController {
 			$listeners['on_remove_relation'] .= "Ext.getCmp('dimFilter').fireEvent('memberselected', member_selector['$genid'].sel_context);";
 		}
 
-		$options = array('select_current_context' => true, 'listeners' => $listeners, 'width' => 300, 'horizontal' => true);
+		$options = array(
+			'select_current_context' => true, 
+			'dont_exclude_hidden_selectors' => true,
+			'listeners' => $listeners, 
+			'width' => 300, 
+			'horizontal' => true
+		);
 		if (array_var($_REQUEST, 'show_associated_dimension_filters')) {
 			$options['allow_non_manageable'] = true;
-			$options['dont_exclude_hidden_selectors'] = true;
 		}
 		$options['dont_select_associated_members'] = true;
 		if (array_var($_REQUEST, 'skip_default_member_selections')) {
@@ -1197,7 +1272,7 @@ class DimensionController extends ApplicationController {
 		}
 		ajx_set_no_toolbar();
 		
-		$dim_id = array_var($_REQUEST, 'dim', 0);
+		$dim_id = (int) array_var($_REQUEST, 'dim', 0);
 		$dimension = Dimensions::instance()->findById($dim_id);
 		if (!$dimension instanceof Dimension) {
 			flash_error(lang('dimension snx'));
@@ -1210,18 +1285,23 @@ class DimensionController extends ApplicationController {
 		}
 		
 		// parameters
-		$page = array_var($_REQUEST, 'page');
+		$page = (int) array_var($_REQUEST, 'page');
 		$order_by = array_var($_REQUEST, 'order');
 		$order_by_dir = array_var($_REQUEST, 'order_dir');
-		
-		// pagination params
-		$items_x_page = array_var($_REQUEST, 'items_x_page', 20);
-		if (!$page) $page = 1;
+
+		// pagination params (cast to int: these are interpolated into the LIMIT clause)
+		$items_x_page = (int) array_var($_REQUEST, 'items_x_page', 20);
+		if ($items_x_page <= 0) $items_x_page = 20;
+		if ($page <= 0) $page = 1;
 		$offset = $items_x_page * ($page - 1);
-		
+
 		// order defaults
 		if (!$order_by) $order_by = 'name';
-		
+		// Whitelist the sortable column to prevent SQL injection via ORDER BY.
+		// Only the values the view (list_members.php) actually sends are allowed.
+		$allowed_order_by = array('name', 'created_on');
+		if (!in_array($order_by, $allowed_order_by, true)) $order_by = 'name';
+
 		if (!in_array($order_by_dir, array('ASC', 'DESC'))) $order_by_dir = 'ASC';
 		
 		// this function already checks dimension options
@@ -1231,7 +1311,7 @@ class DimensionController extends ApplicationController {
 		$perm_sql = "";
 		if ($dimension->getDefinesPermissions() && !logged_user()->isAdministrator()) {
 			$pg_ids = logged_user()->getPermissionGroupIds();
-			$perm_sql = " AND EXISTS (SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp WHERE cmp.member_id=m.id AND cmp.permission_group_id IN (".implode(',', $pg_ids)."))";
+			$perm_sql = ContactMemberPermissions::sqlMemberHasVisibleAccess('m.id', implode(',', $pg_ids));
 		}
 		$main_sql = "SELECT m.id, l.created_on, l.created_by_id, l.member_id FROM ".TABLE_PREFIX."members m LEFT JOIN ".TABLE_PREFIX."application_logs l ON l.member_id=m.id AND l.action='add' WHERE m.dimension_id='$dim_id' $perm_sql";
 		
@@ -1612,6 +1692,57 @@ class DimensionController extends ApplicationController {
 	
 	
 	
+	function get_member_properties_data() {
+		$member_id = array_var($_GET, 'member_id');
+		if (!is_numeric($member_id)) {
+			ajx_current("empty");
+			ajx_extra_data(array('member' => null));
+			return;
+		}
+		$member = Members::getMemberById($member_id);
+		if (!$member instanceof Member) {
+			ajx_current("empty");
+			ajx_extra_data(array('member' => null));
+			return;
+		}
+
+		// Fire hook with return_as_array to get structured property data
+		$properties_array = null;
+		Hook::fire('override_render_properties_for_view', array(
+			'member'           => $member,
+			'visible_by_default' => true,
+			'return_as_array'  => true
+		), $properties_array);
+
+		// Build group-name lookup from PropertyGroups
+		$ot = ObjectTypes::instance()->findById($member->getObjectTypeId());
+		$grouped = PropertyGroups::getAllPropertiesGroupedByPropertyGroup($ot->getId(), 0, 'all');
+		$group_names = array();
+		foreach ($grouped as $g) {
+			$group_names[$g['id']] = $g['name'];
+		}
+
+		$groups = array();
+		if (is_array($properties_array)) {
+			foreach ($properties_array as $gid => $gdata) {
+				if (empty($gdata['properties'])) continue;
+				$groups[] = array(
+					'name'       => isset($group_names[$gid]) ? $group_names[$gid] : '',
+					'properties' => $gdata['properties']
+				);
+			}
+		}
+
+		ajx_current("empty");
+		ajx_extra_data(array(
+			'member' => array(
+				'id'     => $member->getId(),
+				'name'   => $member->getDisplayName(),
+				'groups' => $groups
+			)
+		));
+	}
+
 	function render_member_selector() {
 		
 		$dim_id = array_var($_REQUEST, 'dim_id');

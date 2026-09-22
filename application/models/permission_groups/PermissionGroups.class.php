@@ -310,7 +310,10 @@
         		$object = Objects::findObject($object_id);
         		if ($object instanceof ContentDataObject) {
         			$user = Contacts::instance()->findOne(array("conditions" => "user_type>0 AND permission_group_id = $permission_group_id"));
-        			if ($object->canView($user)) $oids_with_full_permissions_through_intersection[] = $object_id;
+        			// Orphaned permission groups (e.g. the personal group of a deleted user) have no
+        			// associated user; without a user there is no intersection to grant, and canView()
+        			// requires a Contact, so skip these objects instead of passing null.
+        			if ($user instanceof Contact && $object->canView($user)) $oids_with_full_permissions_through_intersection[] = $object_id;
         		}
         	}
         	

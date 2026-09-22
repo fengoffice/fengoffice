@@ -49,6 +49,8 @@ foreach ($css as $c) {
 	echo lang('reset password form desc', $user->getObjectName());
 ?>
 </h1></div>
+
+<?php echo render_password_requirements(); ?>
 <div id="reset_password_new" class="input">
 	<?php echo label_tag(lang('new password'), 'new_password', true)?>
 	<?php echo password_field('new_password', '', array('id' => 'new_password')) ?>

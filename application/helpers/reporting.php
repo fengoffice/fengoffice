@@ -23,9 +23,108 @@ function render_report_header_button_small($button_data) {
     ));
 }
 
-function report_values_to_arrays($results, $report) {
-	if (!isset($results['group_by_criterias']) || count($results['group_by_criterias']) == 0) {
-		return report_values_to_arrays_plain($results, $report);
+/**
+ * Resolve custom report sort column and direction from the current request.
+ * Supports list panel params (order, order_dir) and report params (order_by, order_by_asc).
+ *
+ * @param Report|null $report
+ * @return array ['order_by' => string, 'order_by_asc' => bool]
+ */
+function resolve_custom_report_order_from_request($report = null) {
+	$order_by = array_var($_REQUEST, 'order_by', '');
+	if ($order_by == '' && array_var($_REQUEST, 'order') != '') {
+		$order_by = array_var($_REQUEST, 'order');
+		if (str_starts_with($order_by, 'mem_type_col_')) {
+			$order_by = str_replace('mem_type_col_', '', $order_by);
+		}
+		if (str_starts_with($order_by, 'cp_')) {
+			$order_by = str_replace('cp_', '', $order_by);
+		}
+	}
+
+	if (array_key_exists('order_by_asc', $_REQUEST)) {
+		$order_by_asc = array_var($_REQUEST, 'order_by_asc') ? true : false;
+	} elseif (array_var($_REQUEST, 'order_dir') != '') {
+		$order_by_asc = strtoupper(array_var($_REQUEST, 'order_dir')) == 'ASC';
+	} elseif ($report instanceof Report) {
+		$order_by_asc = $report->getIsOrderByAsc();
+	} else {
+		$order_by_asc = false;
+	}
+
+	return array('order_by' => $order_by, 'order_by_asc' => $order_by_asc);
+}
+
+/**
+ * Whether a report column should be right-aligned as numeric.
+ * Text columns stay left-aligned even when values look numeric (e.g. PO Number).
+ * Amount/currency fields are right-aligned.
+ */
+function report_column_is_right_aligned($col, $type, $value = null, $external_columns = array()) {
+	if (in_array($col, $external_columns)) {
+		return false;
+	}
+
+	$type_key = is_string($type) ? strtolower($type) : $type;
+
+	// Explicit text types: always left-aligned (do not sniff the cell value)
+	$text_like_types = array(
+		'string', 'text', 'memo', 'list', 'address', 'url', 'image', 'table'
+	);
+	if ($type_key !== null && $type_key !== '' && in_array($type_key, $text_like_types, true)) {
+		return false;
+	}
+
+	$numeric_types = array('integer', 'float', 'numeric', 'amount', 'currency', 'money');
+	if ($type_key !== null && $type_key !== '' && in_array($type_key, $numeric_types, true)) {
+		return true;
+	}
+
+	// Unknown type: keep left. Sniffing is_numeric() would right-align text fields like PO Number.
+	return false;
+}
+
+/**
+ * Mark a formatted report cell for Excel: text stays TYPE_STRING (left),
+ * amount/currency/numeric columns are right-aligned.
+ */
+function prefix_excel_keep_text($formatted_val, $col, $val_type) {
+	if ($formatted_val === '' || $formatted_val === null) {
+		return $formatted_val;
+	}
+	$as_string = (string) $formatted_val;
+	if (strpos($as_string, 'FORMAT:::') !== false || strpos($as_string, 'ALIGN_RIGHT:::') !== false || strpos($as_string, 'KEEP_TEXT:::') === 0) {
+		return $formatted_val;
+	}
+	if (report_column_is_right_aligned($col, $val_type, null, array())) {
+		return 'ALIGN_RIGHT:::' . $as_string;
+	}
+	return 'KEEP_TEXT:::' . $as_string;
+}
+
+/**
+ * Infer report column type for member financial totals by naming convention,
+ * so we do not maintain hardcoded column lists.
+ *  - *_minutes → formatted time (text)
+ *  - percent_*, *_percent, *_consumption, *_vs_* → ratio/percent (numeric, right)
+ *  - everything else in member totals → amount/currency (right)
+ */
+function report_type_for_member_financial_column($field) {
+	$field = strtolower((string) $field);
+	if (str_ends_with($field, '_minutes')) {
+		return DATA_TYPE_STRING;
+	}
+	if (str_starts_with($field, 'percent_') || str_ends_with($field, '_percent')
+		|| str_ends_with($field, '_consumption') || strpos($field, '_vs_') !== false) {
+		return 'numeric';
+	}
+	return 'amount';
+}
+
+function report_values_to_arrays($results, $report, $for_excel = false) {
+	$group_by_criterias = is_array($results) ? array_var($results, 'group_by_criterias') : null;
+	if (!is_array($group_by_criterias) || count($group_by_criterias) == 0) {
+		return report_values_to_arrays_plain($results, $report, true, $for_excel);
 	}
 
 	Hook::fire('modify_custom_report_results', array('report' => $report), $results);
@@ -42,7 +141,7 @@ function report_values_to_arrays($results, $report) {
 	
 	$all_report_rows = array();
 	foreach($groups as $g) {
-		$group_rows = get_report_grouped_values_as_array($g, $results, $report, 0);
+		$group_rows = get_report_grouped_values_as_array($g, $results, $report, 0, $for_excel);
 		$all_report_rows = array_merge($all_report_rows, $group_rows);
 	}
 	
@@ -55,9 +154,19 @@ function report_values_to_arrays($results, $report) {
 	return array('headers' => $headers, 'values' => $all_report_rows);
 }
 
+/**
+ * Prepare a report cell value for CSV/Excel export.
+ * Converts HTML line breaks to newlines before stripping tags so Excel wrapText works for dimension columns.
+ */
+function format_report_value_for_export($formatted_val) {
+	$formatted_val = preg_replace('/<br\s*\/?>/i', "\n", (string) $formatted_val);
+	$formatted_val = html_entity_decode(strip_tags($formatted_val), ENT_QUOTES, 'UTF-8');
+	return $formatted_val;
+}
 
 
-function report_values_to_arrays_plain($results, $report, $with_header = true) {
+
+function report_values_to_arrays_plain($results, $report, $with_header = true, $for_excel = false) {
 	$columns = array_var($results, 'columns');
 	$rows = array_var($results, 'rows');
 	$pagination = array_var($results, 'pagination');
@@ -95,13 +204,15 @@ function report_values_to_arrays_plain($results, $report, $with_header = true) {
 					$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
 				}
 			} else {
-				if (is_numeric($value) && $val_type == DATA_TYPE_STRING) $value .= " ";
 				$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
 			}
 
 			if ($formatted_val == '--' || $formatted_val == ' ') $formatted_val = "";
 				
-			$formatted_val = strip_tags($formatted_val);
+			$formatted_val = format_report_value_for_export($formatted_val);
+			if ($for_excel) {
+				$formatted_val = prefix_excel_keep_text($formatted_val, $col, $val_type);
+			}
 				
 			$values_array[] = $formatted_val;
 		}
@@ -150,9 +261,17 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 	$columns = array_var($results, 'columns');
 	$rows = array_var($results, 'rows');
 	$pagination = array_var($results, 'pagination');
+
+	if (!is_array($columns) || !isset($columns['order']) || !is_array($columns['order'])) {
+		$columns = array('names' => array(), 'order' => array(), 'types' => array());
+	}
+	if (!is_array($rows)) {
+		$rows = array();
+	}
 	
 	$ot = ObjectTypes::instance()->findById($report->getReportObjectTypeId());
 	$external_columns = $report->getReportExternalColumns();
+	if (!$external_columns) $external_columns = array();
 	
 	?>
     <table class="report custom-report<?php echo $to_print ? '':' scroll' ?>">
@@ -160,8 +279,9 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 		<tr class="header-custom-report custom-report-table-heading">
 	<?php
 	
-		$last_order_by = array_var($_REQUEST, 'order_by', $report->getOrderBy());
-		$last_order_by_asc = array_var($_REQUEST, 'order_by_asc', $report->getIsOrderByAsc());
+		$order_params = resolve_custom_report_order_from_request($report);
+		$last_order_by = $order_params['order_by'] != '' ? $order_params['order_by'] : $report->getOrderBy();
+		$last_order_by_asc = $order_params['order_by_asc'];
 		
 		foreach ($columns['order'] as $col) {
 			$sorted = false;
@@ -172,7 +292,7 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				$asc = !$last_order_by_asc;
 			}
 			$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;
-			$numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
+			$numeric_type = report_column_is_right_aligned($col, $type, null, $external_columns);
 		?>
 			<th class="<?php echo $numeric_type ? 'bold right' : 'bold'?>">
 		<?php 
@@ -220,10 +340,14 @@ function report_table_html_plain($results, $report, $parametersUrl="", $to_print
 				$value = array_var($row, $col);
 				$type = isset($columns['types']) ? array_var($columns['types'], $col) : null;  // *** LC 2023-09-04 
 				if(is_numeric($col) && !$type){
-					$cp = CustomProperties::getCustomProperty($col);
-					$type = $cp->getType();
+					if ($ot->getType() == 'dimension_group') {
+						$cp = MemberCustomProperties::getCustomProperty($col);
+					} else {
+						$cp = CustomProperties::getCustomProperty($col);
+					}
+					$type = $cp ? $cp->getType() : null;
 				}
-                $numeric_type = !in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
+                $numeric_type = report_column_is_right_aligned($col, $type, $value, $external_columns);
 		?>
 			<td <?php echo $numeric_type ? 'class="right"' : ''?>>
 		<?php 
@@ -292,11 +416,11 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 	$i = 0;
 	foreach ($group_data as $gd) {
 		if (!$report->getColumnValue("hide_group_details")) {
-			
+
 			$gd_name = $gd['name'];
 			$exp_orig_key = explode(',', $gd['original_gkey']);
 			$original_gkey = end($exp_orig_key);
-			
+
 			if (str_starts_with($original_gkey, "_group_id_dim_")) {
 			    $exp_id = explode('_', $gd['id']);
 				$gd_id = end($exp_id);
@@ -308,11 +432,11 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 						$gd_name = $mem->getName();
 					} else {
 						$mem_path = $mem->getPath(' - ');
-						$gd_name = $mem_path != '' ? $mem_path . ' - ' . $mem->getName() : $mem->getName();		
+						$gd_name = $mem_path != '' ? $mem_path . ' - ' . $mem->getName() : $mem->getName();
 					}
 				}
 			}
-			
+
 			// dont show the last group header if it is shown as columns
 			if (!$report->getColumnValue('show_last_group_as_column') || $level < max(array_keys(array_var($results, 'group_totals', array())))) {
 			    echo '<tr><th colspan="'.count($columns['order']).'" class="report-group-heading-'.$level.' indent-'.$level.'">'.$gd_name.'</th></tr>';
@@ -345,6 +469,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 			if (!$report->getColumnValue("hide_group_details")) {
 				
 				$external_columns = $report->getReportExternalColumns();
+				if (!$external_columns) $external_columns = array();
 				
 				$isAlt = true;
 				foreach($gd['items'] as $item_data) {
@@ -391,7 +516,7 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 						}
 						
 						$type = array_var($columns['types'], $col);
-						$numeric_type = (!in_array($col, $external_columns) && in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric'))) || is_numeric($value);
+						$numeric_type = report_column_is_right_aligned($col, $type, $value, $external_columns);
 						Hook::fire('check_is_numeric_column_type', array('report' => $report, 'column' => $col), $numeric_type);
 				?>
 					<?php
@@ -455,7 +580,8 @@ function echo_report_group_html($group_data, $results, $report, $level=0, $to_pr
 
 function report_table_html($results, $report, $parametersUrl="", $to_print=false) {
     
-    if (!isset($results['group_by_criterias']) || count($results['group_by_criterias']) == 0) {
+    $group_by_criterias = is_array($results) ? array_var($results, 'group_by_criterias') : null;
+    if (!is_array($group_by_criterias) || count($group_by_criterias) == 0) {
 		return report_table_html_plain($results, $report, $parametersUrl, $to_print);
 	}
 	
@@ -482,7 +608,7 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 					$th_class = 'left';
 				} else {
 					$type = array_var($columns['types'], $col);
-					$is_numeric_type = in_array($type, array(DATA_TYPE_INTEGER, DATA_TYPE_FLOAT, 'numeric', 'INTEGER', 'FLOAT'));
+					$is_numeric_type = report_column_is_right_aligned($col, $type, null, array());
 					$th_class =  $is_numeric_type ? "right" : "";
 				}
 				// $th_class = array_var($columns['types'], $col) == 'INTEGER' ? "right" : "";
@@ -518,43 +644,48 @@ function report_table_html($results, $report, $parametersUrl="", $to_print=false
 
 
 
-function get_report_grouped_values_as_array($group_data, $results, $report, $level=0) {
+function get_report_grouped_values_as_array($group_data, $results, $report, $level=0, $for_excel = false) {
 	$all_rows = array();
 
 	$columns = array_var($results, 'columns');
+	if (!is_array($columns) || !isset($columns['order']) || !is_array($columns['order'])) {
+		$columns = array('names' => array(), 'order' => array(), 'types' => array());
+	}
 
 	$i = 0;
 	foreach ($group_data as $gd) {
 		
-		if (!$report->getColumnValue('show_last_group_as_column') || $level < max(array_keys(array_var($results, 'group_totals', array())))) {
+		$group_totals = array_var($results, 'group_totals', array());
+		$max_group_level = is_array($group_totals) && count($group_totals) > 0 ? max(array_keys($group_totals)) : 0;
+		if (!$report->getColumnValue('show_last_group_as_column') || $level < $max_group_level) {
 			$row_vals = array();
 			$first = true;
-			foreach ($columns as $c) {
-				
-				$gd_name = $gd['name'];
-				$gd_original_gkey = $gd['original_gkey'];
-				$exploded = explode(',', $gd_original_gkey);
-				$original_gkey = end($exploded);
-					
-				if (str_starts_with($original_gkey, "_group_id_dim_")) {
-					$tmp_gd_id = $gd['id'];
-					$exploded = explode('_', $tmp_gd_id);
-					$gd_id = end($exploded);
-					$mem = Members::instance()->findById($gd_id);
-					if ($mem instanceof Member) {
-						$mems = array($mem);
-						build_member_list_text_to_show_in_trees($mems);
-						$gd_name = $mems[0]->getName();
-					}
-				}
-				if (!$report->getColumnValue("hide_group_details")) {
-					if (!empty($row_vals)) :
-						$row_vals['type'] = 'group_header_' . $level;
-					endif;
-				}
 
+			$gd_name = array_var($gd, 'name', '');
+			$gd_original_gkey = array_var($gd, 'original_gkey', '');
+			$exploded = explode(',', $gd_original_gkey);
+			$original_gkey = end($exploded);
+				
+			if (str_starts_with($original_gkey, "_group_id_dim_")) {
+				$tmp_gd_id = array_var($gd, 'id', '');
+				$exploded = explode('_', $tmp_gd_id);
+				$gd_id = end($exploded);
+				$mem = Members::instance()->findById($gd_id);
+				if ($mem instanceof Member) {
+					$mems = array($mem);
+					build_member_list_text_to_show_in_trees($mems);
+					$gd_name = $mems[0]->getName();
+				}
+			}
+
+			foreach ($columns['order'] as $col) {
+				if ($col == 'object_type_id' || $col == 'link') continue;
 				$row_vals[] = $first ? $gd_name : "";
 				$first = false;
+			}
+			// Set type after building the row to maintain proper array structure
+			if (!$report->getColumnValue("hide_group_details")) {
+				$row_vals['type'] = 'group_header_' . $level;
 			}
 			$all_rows[] = $row_vals;
 			
@@ -562,7 +693,7 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 		}
 
 		if (isset($gd['groups'])) {
-			$group_rows = get_report_grouped_values_as_array($gd['groups'], $results, $report, $level+1);
+			$group_rows = get_report_grouped_values_as_array($gd['groups'], $results, $report, $level+1, $for_excel);
 			$all_rows = array_merge($all_rows, $group_rows);
 			Hook::fire('get_additional_report_group_rows_csv', array('results' => $results, 'report' => $report, 'group' => $gd, 'level' => $level), $all_rows);		
 		} else if (isset($gd['items'])) {
@@ -626,11 +757,14 @@ function get_report_grouped_values_as_array($group_data, $results, $report, $lev
 								$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
 							}
 						} else {
-							$formatted_val = format_value_to_print($col, $value, $val_type, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
+							$formatted_val = format_value_to_print($col, $value, $val_type ? $val_type : DATA_TYPE_STRING, array_var($row, 'object_type_id'), '', $date_format, $tz_offset);
 						}
 
 						if ($formatted_val == '--' || $formatted_val == ' ') $formatted_val = "";
-						$formatted_val = strip_tags($formatted_val);
+						$formatted_val = format_report_value_for_export($formatted_val);
+						if ($for_excel) {
+							$formatted_val = prefix_excel_keep_text($formatted_val, $col, $val_type ? $val_type : DATA_TYPE_STRING);
+						}
 						$item_values[] = $formatted_val;
 
 						$i++;
@@ -742,10 +876,14 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 				} else if (str_starts_with($gbk['k'], '_group_id_cp_')) {
 					$cp_id = str_replace('_group_id_cp_', '', $gbk['k']);
 					$cp = CustomProperties::instance()->findById($cp_id);
-					if ($cp instanceof CustomProperty && ($cp->getType()=='contact' || $cp->getType()=='user')) {
+					$cp_type = $cp instanceof CustomProperty ? $cp->getType() : '';
+					
+					Hook::fire('modify_custom_report_group_by_cp_type', array('cp' => $cp, 'gbk' => $gbk, 'rows' => $rows), $cp_type);
+					
+					if ($cp instanceof CustomProperty && ($cp_type == 'contact' || $cp_type == 'user')) {
 						$gbk['cp_contact'] = $cp_id;
 					}
-					if ($cp instanceof CustomProperty && ($cp->getType()=='date' || $cp->getType()=='datetime')) {
+					if ($cp instanceof CustomProperty && ($cp_type == 'date' || $cp_type == 'datetime')) {
 						$gbk['is_date'] = true;
 					}
 				}
@@ -779,10 +917,14 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 					}
 					if ($gb_keys[0]['is_date'] && $formatDate) {
 						//$n0 = gmdate('Y-m-d', strtotime($k0));
-						if (preg_match($mysql_date_format_re, $k0)) {
-							$n0 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k0), null, 0);
-						} else {
-							$n0 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k0), null, 0);
+						try {
+							if (preg_match($mysql_date_format_re, $k0)) {
+								$n0 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k0), null, 0);
+							} else {
+								$n0 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k0), null, 0);
+							}
+						} catch (Exception $e) {
+							$n0 = $k0; // if date parsing fails use the original value
 						}
 						$row[$gb_keys[0]['n']] = $n0;
 					} else if (array_var($gb_keys[0], 'cp_contact')) {
@@ -827,9 +969,9 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 								$name_k0 = lang('unclassified');
 							}
 							if ($gb_keys[0]['k'] == "_group_id_fp_is_billable") {
-								if ($k0 == 0) {
+								if ($k0 === 'no' || $k0 === 0 || $k0 === '0') {
 									$name_k0 = lang('non-billable');
-								} else if ($k1 == 1) {
+								} else if ($k0 === 'yes' || $k0 === 1 || $k0 === '1') {
 									$name_k0 = lang('billable');
 								}
 							} else if ($gb_keys[0]['k'] == "_group_id_fp_invoicing_status") {
@@ -864,10 +1006,14 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 
 						if ($gb_keys[1]['is_date']) {
 							//$n1 = gmdate('Y-m-d', strtotime($k1));
-							if (preg_match($mysql_date_format_re, $k1)) {
-								$n1 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k1), null, 0);
-							} else {
-								$n1 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k1), null, 0);
+							try {
+								if (preg_match($mysql_date_format_re, $k1)) {
+									$n1 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k1), null, 0);
+								} else {
+									$n1 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k1), null, 0);
+								}
+							} catch (Exception $e) {
+								$n1 = $k1; // if date parsing fails use the original value
 							}
 							$row[$gb_keys[1]['n']] = $n1;
 						} else if (array_var($gb_keys[1], 'cp_contact')) {
@@ -901,9 +1047,9 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 									$name_k1 = lang('unclassified');
 								}
 								if ($gb_keys[1]['k'] == "_group_id_fp_is_billable") {
-									if ($k1 == 0) {
+									if ($k1 === 'no' || $k1 === 0 || $k1 === '0') {
 										$name_k1 = lang('non-billable');
-									} else if ($k1 == 1) {
+									} else if ($k1 === 'yes' || $k1 === 1 || $k1 === '1') {
 										$name_k1 = lang('billable');
 									}
 								} else if ($gb_keys[1]['k'] == "_group_id_fp_invoicing_status") {
@@ -935,10 +1081,14 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 
 							if ($gb_keys[2]['is_date']) {
 								//$n2 = gmdate('Y-m-d', strtotime($k2));
-								if (preg_match($mysql_date_format_re, $k2)) {
-									$n2 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k2), null, 0);
-								} else {
-									$n2 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2), null, 0);
+								try {
+									if (preg_match($mysql_date_format_re, $k2)) {
+										$n2 = format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $k2), null, 0);
+									} else {
+										$n2 = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $k2), null, 0);
+									}
+								} catch (Exception $ex) {
+									$n2 = $k2; // if date parsing fails use the original value
 								}
 								$row[$gb_keys[2]['n']] = $n2;
 							} else if (array_var($gb_keys[2], 'cp_contact')) {
@@ -977,9 +1127,9 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 										$name_k2 = lang('unclassified');
 									}
 									if ($gb_keys[2]['k'] == "_group_id_fp_is_billable") {
-										if ($k2 == 0) {
+										if ($k2 === 'no' || $k2 === 0 || $k2 === '0') {
 											$name_k2 = lang('non-billable');
-										} else if ($k1 == 1) {
+										} else if ($k2 === 'yes' || $k2 === 1 || $k2 === '1') {
 											$name_k2 = lang('billable');
 										}
 									} else if ($gb_keys[2]['k'] == "_group_id_fp_invoicing_status") {
@@ -1027,22 +1177,30 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 							Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[2]), $v2);
 						    // This is where formatting is applied (in this case, to the date values).
                             // We need to remove this from here and move to the view/rendering class.
-							if (preg_match($mysql_date_format_re, $v2['name'])) {
-								$v2['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v2['name']),null,0);
-							} else {
-								$v2['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v2['name']), null, 0);
+							try {
+								if (preg_match($mysql_date_format_re, $v2['name'])) {
+									$v2['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v2['name']),null,0);
+								} else {
+									$v2['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v2['name']), null, 0);
+								}
+							} catch (Exception $e) {
+								// do nothing, if there is an error parsing the date, we keep the originalvalue (which is not a date)
 							}
 						}
 					}
 				}
 				
 				Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[1]), $v1);
-				if (isset($gb_keys[1]['is_date']) && $gb_keys[1]['is_date'] && $formatDate) {
-					if (preg_match($mysql_date_format_re, $v1['name'])) {
-						$v1['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v1['name']),null,0);
-					} else {
-						$v1['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v1['name']), null, 0);
+				try {
+					if (isset($gb_keys[1]['is_date']) && $gb_keys[1]['is_date'] && $formatDate) {
+						if (preg_match($mysql_date_format_re, $v1['name'])) {
+							$v1['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v1['name']),null,0);
+						} else {
+							$v1['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v1['name']), null, 0);
+						}
 					}
+				} catch (Exception $e) {
+					// do nothing, if there is an error parsing the date, we keep the original value (which is not a date)
 				}
 			}
 			ksort($v0['groups']);
@@ -1050,14 +1208,18 @@ function group_custom_report_results($rows, $group_by_criterias, $ot,$formatDate
 		
 		Hook::fire('override_custom_report_group_name', array('ot'=>$ot,'gb'=>$group_by_criterias[0]), $v0);
 		if (isset($gb_keys[0]['is_date']) && $gb_keys[0]['is_date'] && $formatDate) {
-			if ( isset($v2['name']) && preg_match($mysql_date_format_re, $v2['name'])) {
-				$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
-			} else {
-				try {
-					$v0['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v0['name']), null, 0);
-				} catch (Exception $e) {
+			try {
+				if ( isset($v2['name']) && preg_match($mysql_date_format_re, $v2['name'])) {
 					$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
+				} else {
+					try {
+						$v0['name'] = format_date(DateTimeValueLib::dateFromFormatAndString($date_format, $v0['name']), null, 0);
+					} catch (Exception $e) {
+						$v0['name'] =  format_date(DateTimeValueLib::dateFromFormatAndString("Y-m-d", $v0['name']),null,0);
+					}
 				}
+			} catch (Exception $e) {
+				// if there is an error parsing the date, we keep the original value (which is not a date)
 			}
 		}
 	}
@@ -1140,10 +1302,9 @@ function build_report_conditions_html_main($report, $parameters=array(), $condit
 					$coltype = $cp->getOgType();
 				}
 			}else{
-				$name = Localization::instance()->lang('field ' . $model . ' ' . $condition->getFieldName());
-				if (!$name) {
-					$name = lang('field Objects ' . $condition->getFieldName());
-				}
+				$name = $managerInstance instanceof ContentDataObjects
+					? $managerInstance->getColumnDisplayName($condition->getFieldName())
+					: lang('field Objects ' . $condition->getFieldName());
 					
 				$coltype = array_key_exists($condition->getFieldName(), $types)? $types[$condition->getFieldName()]:'';
 				$paramName = $condition->getFieldName();
@@ -1256,14 +1417,17 @@ function custom_report_info_blocks_pdf($params) {
 	$conditionHtml = build_report_conditions_html($id, $rep_params, null, $disabled_params);
 	$company_name = owner_company()->getObjectName();
 	
-	$company_logo = null;
-	if (FileRepository::isInRepository(owner_company()->getPictureFile())) {
-		$company_logo = FileRepository::getBackend()->getFileContent(owner_company()->getPictureFile());
+	$company_logo = '';
+	$picture_file = owner_company()->getPictureFile();
+	if (!empty($picture_file) && FileRepository::isInRepository($picture_file)) {
+		$logo_content = FileRepository::getBackend()->getFileContent($picture_file);
+		if (is_string($logo_content) && $logo_content !== '') {
+			$company_logo = base64_encode($logo_content);
+		}
 	}
-	$company_logo = base64_encode($company_logo);
 
 	$name_project = "";
-	$now_pdf = format_date(date("m-d-Y"),null, logged_user()->getUserTimezoneHoursOffset());
+	$now_pdf = format_date(DateTimeValueLib::now(), null, logged_user()->getUserTimezoneHoursOffset());
 
 	$context = active_context();
 	foreach ($context as $selection) :
@@ -1275,7 +1439,7 @@ function custom_report_info_blocks_pdf($params) {
 	$html = '
 		<div class="flex-cols">
 			<div class="fcol-1" style="position: relative;">
-				<img class="imageLogoReports" src="data:image/png;base64,'. $company_logo . '">
+				'. ($company_logo !== '' ? '<img class="imageLogoReports" src="data:image/png;base64,'. $company_logo . '">' : '') .'
 			</div>
 			<div class="fcol-2">
 				'. $company_name .'
@@ -1310,6 +1474,10 @@ function parse_custom_report_group_by($group_by, $group_by_options = array()) {
 	if (is_array($group_by)) {
 		$group_by = array_filter($group_by);
 		foreach ($group_by as $gb) {
+			$gb = trim($gb);
+			if ($gb === '') {
+				continue;
+			}
 			$exploded = explode('_', $gb);
 			$type = array_shift($exploded);
 			$id = implode('_', $exploded);
@@ -1441,6 +1609,7 @@ function build_report_conditions_sql($parameters) {
 				$possible_columns = $model_instance->getColumns();
 				if (in_array($ot->getType(), array('dimension_object', 'dimension_group'))) {
 					$possible_columns = array_merge($possible_columns, Members::instance()->getColumns());
+					Hook::fire('custom_report_conditions_possible_columns', array('object_type' => $ot), $possible_columns);
 				} else {
 					$possible_columns = array_merge($possible_columns, Objects::instance()->getColumns());
 				}
@@ -1494,6 +1663,9 @@ function build_report_conditions_sql($parameters) {
 									if ($col_type == DATA_TYPE_DATETIME || $col_type == DATA_TYPE_DATE) {
 										$equal = 'datediff('.DB::escape($value).', `'.$field_name.'`)=0';
 									} else {
+										if ($col_type == DATA_TYPE_BOOLEAN && $value == '-1') {
+											$value = '0';
+										}
 										$equal = '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
 									}
 									switch($condField->getCondition()){
@@ -1505,6 +1677,10 @@ function build_report_conditions_sql($parameters) {
 											$current_condition .= '(`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value).') '; //' OR '.$equal.') '; // The last part caused inconsistency in the query results, commented out for now
 											break;
 									}
+								} else if ($condField->getCondition() == 'empty') {
+
+									$current_condition .= " AND (`".$field_name."` IS NULL OR `".$field_name."` = '' OR `".$field_name."` = '0') ";
+								
 								} else {
 									$current_condition .= '`'.$field_name.'` '.$condField->getCondition().' '.DB::escape($value);
 								}
@@ -1585,8 +1761,20 @@ function build_report_conditions_sql($parameters) {
 				}
 					
 				if ($condCp->getIsParametrizable() && in_array($condCp->getId(), $disabled_params)) $skip_condition = true;
-					
-				if (!$skip_condition) {
+
+				// Allow plugins to generate the condition SQL for custom CP types (e.g. display_member_property)
+				Hook::fire('build_report_cp_condition_sql', array(
+					'cond_field'          => $condCp,
+					'cp'                  => $cp,
+					'value'               => $value,
+					'ot'                  => $ot,
+					'skip_condition'      => $skip_condition,
+					'date_format'         => $dateFormat,
+					'date_format_tip'     => $date_format_tip,
+					'is_parametric_value' => $isset_cp_condition,
+				), $current_condition);
+
+				if ($current_condition === '' && !$skip_condition) {
 					//$current_condition = ' AND ';
 					$close_bracket = false;
 					if (in_array($ot->getType(), array('dimension_group'))) {
@@ -1622,7 +1810,11 @@ function build_report_conditions_sql($parameters) {
 							$value = $dtValue->format('Y-m-d H:i:s');
 						}
 					}
-					if($condCp->getCondition() != '%'){
+					if ($condCp->getCondition() == 'empty') {
+
+						$current_condition .= " AND (COALESCE(cpv.value, '') = '' OR cpv.value = '".EMPTY_DATE."' OR cpv.value = '".EMPTY_DATETIME."') ";
+						
+					} else if($condCp->getCondition() != '%'){
 						if ($cp->getType() == 'numeric' && is_numeric($value)) {
 							$current_condition .= ' AND cpv.value '.$condCp->getCondition().' '.$value;
 						}else if ($cp->getType() == 'boolean') {

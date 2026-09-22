@@ -1,7 +1,7 @@
 <?php
 
   /**
-  * Class that handles color values
+  * Class that handles color values using native HTML5 color picker
   *
   * @version 1.0
   * @author Alvaro Torterola <alvaro.torterola@fengoffice.com>
@@ -19,17 +19,22 @@
     	
     	$color_index = str_replace("]", "", str_replace("options[", "", $control_name));
     	
-    	$out = '<div class="color-picker-container"><input type="text" class="color-picker '.$color_index.'" value="#'.$value.'" name="'.$control_name.'" id="'.$control_name.'" /></div>';
+    	// Ensure value has # prefix for the color picker
+    	$color_value = $value;
+    	if (strpos($color_value, '#') !== 0) {
+    		$color_value = '#' . $color_value;
+    	}
+    	
+    	$out = '<div class="color-picker-container">';
+    	$out .= '<input type="color" class="color-picker-native '.$color_index.'" value="'.$color_value.'" name="'.$control_name.'" id="'.$control_name.'" onchange="og.updateBrandColor(\''.$color_index.'\', \''.$control_name.'\')" />';
+    	$out .= '</div>';
     	$out .= '<script>
-    	$(".color-picker-container .color-picker.'.$color_index.'").modcoder_excolor({
-    		shadow : false,
-    		background_color : "#eeeeee",
-    		backlight : false,
-    		callback_on_ok : function() {
-    			og.config.brand_colors["'.$color_index.'"] = document.getElementById("'.$control_name.'").value.substring(1,7);
-    			og.createBrandColorsSheet(og.config.brand_colors);
-    		}
-    	});
+    	og.updateBrandColor = function(colorIndex, controlName) {
+    		var colorValue = document.getElementById(controlName).value;
+    		// Remove # prefix for storage
+    		og.config.brand_colors[colorIndex] = colorValue.substring(1);
+    		og.createBrandColorsSheet(og.config.brand_colors);
+    	};
     	</script>';
     	
     	return $out;
@@ -47,7 +52,6 @@
 	}
 
   } 
-  
   
   
   

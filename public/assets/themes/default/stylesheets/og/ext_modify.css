@@ -24,19 +24,70 @@
 	border-bottom-width: 0;
     border-left-width: 0;
     border-top-width: 0;	
+	/* margin-right: 16px; */
+	background: #EAF2F5;
 }
 #menu-panel .x-tree .x-panel-body{
-	border-right-width: 0;   
+	border-right-width: 0;  
+	margin-left: 16px;
+	border-radius: 4px;
+	background-color: #EAF2F5;
+	color: white;
+	/* margin-bottom: 10px; */
+	display: flex;
+}
+#menu-panel .x-tree .x-panel-body .x-tree-root-ct {
+	flex: 1;
+	/* Fill the panel when content is short, but don't cap the height when content is
+	   taller than the panel - the parent's align-items:stretch (default, since no
+	   flex-direction is set) forces this element's box to the panel's fixed height
+	   regardless of content, decoupling it from where its own rows actually render.
+	   Since drag-and-drop hit-testing reads this element's own bounding box (not its
+	   overflowing content), rows below the first viewport's worth never register as
+	   valid drop targets once the tree needs to scroll. */
+	align-self: flex-start;
+	min-height: 100%;
 }
 
-#menu-panel .feng-node-actions .ico-edit{
+/* #menu-panel .feng-node-actions .ico-edit{
 	border-color: #DCD9D9;
     border-width: 1px;
     border-style: solid;
-}
+} */
 
 .x-panel-body{
 	background-color: #FFFFFF;	
+}
+#menu-panel .x-tree .x-panel-body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow: auto;
+}
+
+#menu-panel .x-tree .x-panel-body:hover,
+#menu-panel .x-tree .x-panel-body:focus {
+    -ms-overflow-style: auto;
+    scrollbar-width: thin;
+}
+
+#menu-panel .x-tree .x-panel-body::-webkit-scrollbar {
+    display: none;
+}
+
+#menu-panel .x-tree .x-panel-body:hover::-webkit-scrollbar,
+#menu-panel .x-tree .x-panel-body:focus::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+}
+
+#menu-panel .x-tree .x-panel-body::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
+
+#menu-panel .x-tree .x-panel-body:hover::-webkit-scrollbar-thumb,
+#menu-panel .x-tree .x-panel-body:focus::-webkit-scrollbar-thumb {
+    background-color: #555;
 }
 
 /*--- tabs.css ---*/
@@ -48,12 +99,16 @@
 
 .x-tab-strip .x-tab-with-icon {
 	cursor: pointer;
+	background: #264653;
+	color: white;
 }
 
 .x-tab-strip .x-tab-with-icon span.x-tab-strip-text {
 	padding-left: 25px;
 	text-transform: uppercase;
 	font-size: 11px;
+	color: white;
+	background-size: auto 20px;
 }
 
 .x-tab-strip-top .x-tab-right, .x-tab-strip-top .x-tab-left, .x-tab-strip-top .x-tab-strip-inner 
@@ -78,10 +133,30 @@ ul.x-tab-strip
 ul.x-tab-strip-top {
 	border-bottom: 0px none;
 }
+.x-tab-panel.subtab {
+	& .x-tab-strip-wrap ul.x-tab-strip-top {
+		background: #ffffff !important;
+	}
+
+	ul.x-tab-strip li:hover {
+		background-color: #7d9098;
+	}
+	
+	ul.x-tab-strip li:hover span.x-tab-strip-text {
+		color: #fff;
+	}
+}
 
 #tabs-panel ul.x-tab-strip-top {
 	padding-left: 50px;
+	background: #264653;
 }
+
+#tabs-panel__overview-panel.x-tab-with-icon.x-tab-strip-active {
+    background-color: #f9f9f9 !important;
+}
+
+
 
 ul.x-tab-strip li
 {
@@ -114,11 +189,10 @@ ul.x-tab-strip li.x-tab-strip-active
 	background: #FFFFFF !important; 
 }
 
-ul.x-tab-strip li.x-tab-strip-active span.x-tab-strip-text
+ul.x-tab-strip li.x-tab-strip-active span.x-tab-strip-text,
+.x-tab-strip .x-tab-with-icon.x-tab-strip-active
 {
-	/*color: #166029 !important;*/
-	color: #333333 !important;
-	/*padding-bottom: 1px!important;*/
+	color:#264653;
 }
 
 .x-tab-strip span.x-tab-strip-text{
@@ -184,14 +258,14 @@ strong{font-weight:bold;}
 	background-position: right 3px; 
 }
 
-.x-btn-over{
+/* .x-btn-over{
 	background: none repeat scroll 0 0 #f0f0f0!important;
 	background-image: none!important;
 }
 .x-btn-focus{
 	background: none repeat scroll 0 0 #f0f0f0!important;	
 	background-image: none!important;
-}
+} */
 .x-btn-click , .x-btn-left , .x-btn-center, .x-btn-right{
 	background:none!important;	
 	background-image: none!important;	
@@ -247,9 +321,11 @@ input.x-tree-node-cb {
 .ext-safari .x-form-field-wrap .x-form-trigger {
 	right: auto;
 }
-
-.x-form-field-wrap {
+.x-table-layout-cell .x-form-field-wrap {
 	width: auto !important;
+}
+.x-form-field-wrap {
+	/* width: auto !important; */
 	padding-right: 17px;
 }
 .x-form-text, .x-form-text.x-form-field {
@@ -259,14 +335,14 @@ input.x-tree-node-cb {
 }
 
 input[type=text].x-form-text.x-form-field {
-	border-radius: 2px;
+	border-radius: 4px;
 	font-size: 13px;
 }
 .x-panel-tbar.x-panel-tbar-noheader input[type=text].x-form-text.x-form-field.filename {
 	margin-left: 6px;
 	margin-right: 6px;
 	height: 25px !important;
-	font-size: 17px;
+	/* font-size: 17px; */
 }
 
 #documents-panel .cke.cke_reset {
@@ -328,9 +404,14 @@ table.date-picker {
 
 .x-tree-node .x-tree-selected {
     background-color: #DAFAD8;
-    border-color: #AACAA8
+    border-color: #AACAA8;
     border-left: 0 none;
 	border-right: 0 none;
+}
+
+#menu-panel .x-tree-node .x-tree-selected {
+border: 0px;
+background: #EAF2F5;	
 }
 
 div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-panel-tbar .x-toolbar
@@ -347,18 +428,21 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 
 .with-permissions-tree .x-tree-node-icon.root,
 .without-permissions-tree .x-tree-node-icon.root,
-#menu-panel .x-tree-node-icon.root {
+#menu-panel .x-tree-node-icon.root,
+#object-picker .x-tree-node-expanded .x-tree-node-icon {
     /*background-image: url(../../extjs/images/default/tree/folder-open.gif );*/
-    background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important;
+    /* background-image: url(../../images/icons-feng-3/16x16/open_folder.png) !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-open-icon lucide-folder-open"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 
 #menu-panel .x-tool-toggle {
 	background-image: url("../../jquery/smoothness/images/ui-icons_222222_256x240.png");
 	background-position: -65px -16px;
-	opacity: 0.7;
-	margin-top: 1px;
-	margin-left: 3px;
+	/* margin-top: 6px; */
+	margin-left: 16px;
 	margin-right: 5px;
+	filter: invert(1);
 }
 #menu-panel .x-panel-collapsed .x-accordion-hd .x-tool-toggle {
     background-position: -33px -17px;
@@ -367,15 +451,22 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 #menu-panel .x-tool-options-ico {
     background-image: url("../../jquery/smoothness/images/ui-icons_999999_256x240.png");
 	background-position: -16.5px -129.5px;
-	opacity: 0.7;
+	/* opacity: 0.7; */
 	margin-left: 0px;
 	float: left;
+	margin-top: 4px;
+}
+
+#menu-panel .x-tool-options-ico:hover {
+	    background-image: url("../../jquery/smoothness/images/ui-icons_999999_256x240.png");
 }
 
 #menu-panel .x-tool-options {
-	float: right;
-    margin-right: 6px;	
+	float: none;
+    margin-right: 6px;
     padding-left: 2px;
+	order: 3;
+	margin-left: auto;
 }
 
 #menu-panel .x-tool-options.x-tool-options-over {
@@ -394,7 +485,8 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 
 
 #menu-panel .x-panel-header .x-tool-toggle {
-    float:left;
+    float: none;
+	order: 1;
 }
 
 
@@ -402,6 +494,13 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 	background: #fff;
 }
 
+.ext-strict .x-small-editor .x-form-text{
+	height: 20px !important;
+}
+
+.x-small-editor .x-form-field-wrap .x-form-trigger{
+	height: 22px;
+}
 
 #menu-panel .x-tree-node .feng-node-actions {
     position: relative ;
@@ -411,12 +510,31 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 }
 
 #menu-panel .x-panel-header {
-	font-size: 17px;
 	line-height: 19px;
-    padding: 10px 0 0;   
-    padding-bottom: 8px;
-    min-height: 19px;  
-    width: 100%;    
+    padding: 8px 0;
+    min-height: 19px;
+    width: 100%;
+	font-family: Open Sans;
+	font-weight: 700;
+	font-style: Bold;
+	font-size: 16px;
+	color: #FFFFFF;
+	line-height: 28px;
+	letter-spacing: 0%;
+	vertical-align: middle;
+	border-bottom: 0px;
+	margin-left: -1px;
+	background: #264653;
+	display: flex;
+	align-items: center;
+
+}
+
+#menu-panel .x-panel-header-text {
+	display: -webkit-box;
+	order: 2;
+	flex: 1;
+	text-align: center;
 }
 
 
@@ -468,7 +586,8 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 
 .x-btn-text-icon .x-btn-center .x-btn-text {
 	/*height: 18px;*/
-	background-position: left center;	
+	background-position: left center !important;
+	padding-bottom: 3px;
 }
 .x-btn-text-icon .x-btn-center .x-btn-text.ico-reporting{
 	padding-left: 24px;
@@ -535,9 +654,11 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 
 #menu-panel-xsplit .x-layout-mini {
 	top: 0%;
-	background-color: #e7e7e7;
-	background-image: url("../../images/32x32/arrow-left-2.png");
-	background-position: -6px -2px;
+	background: #264653;
+	background-image: url("../../images/icons-feng-4/new-icons-light/chevron-left.png");
+	background-size: auto 32px !important;
+	/* background-image: url("../../images/32x32/arrow-left-2.png"); */
+	background-position: -9px 0px;
 	background-repeat: no-repeat;
 	border-radius: 0 0 100%;
 	width: 30px;
@@ -556,9 +677,11 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 }
 #menu-panel-xcollapsed .x-layout-mini {
 	top: 0%;
-	background-color: #e7e7e7;
-	background-image: url("../../images/32x32/arrow-right-2.png");
-	background-position: -4px -2px;
+	background: #264653;
+	/* background-image: url("../../images/32x32/arrow-right-2.png"); */
+	background-image: url("../../images/icons-feng-4/new-icons-light/chevron-right.png");
+	background-size: auto 32px !important;
+	background-position: -5px 0px;
 	background-repeat: no-repeat;
 	border-radius: 0 0 100%;
     width: 30px; 
@@ -572,7 +695,7 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 	opacity: 0.7;
 }
 .x-form-trigger{
-	
+	/* right: 4px !important; TODO: breaks the filter in reports */
 }
 .x-mask-loading {
 	display: none;
@@ -631,7 +754,9 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
     background: none;
     background-position: center;
     padding: 2px;
-    background: transparent url(../../images/layout/close16.png) no-repeat;
+    /* background: transparent url(../../images/layout/close16.png) no-repeat; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%237c7c7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>') no-repeat !important;
+	background-size: 16px !important;
 }
 #object-picker .x-window-tl .x-window-header{
     background-color: white;
@@ -676,48 +801,150 @@ div#menu-panel .x-panel-tbar-noheader .x-toolbar, div#menu-panel .x-panel-mc .x-
 .x-resizable-over .x-resizable-handle, .x-resizable-pinned .x-resizable-handle{background: none;background-color: white;opacity: 1;}
 
 #object-picker .x-window-bl .x-btn-text{
-    background-color: #4d82cc;
-    border-color: #5d92dc;
+    background-color: #1B75BC;
+    border-color: #1B75BC;
     color: #fff;
     margin-top: 10px;
     padding: 5px 10px;
-    font-size: 18px;
-    height: 36px;
+    font-size: 14px;
+    height: 32px;
+	border-radius: 4px;
+	font-family: "Open Sans", Arial, sans-serif;
+	font-weight: 500;
+	line-height: 18px;
     cursor: pointer;
-    border-radius: 2px;
     border-style: solid;
     border-width: 1px;
     box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
     -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
     -moz-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
 }
-#object-picker .x-window-bl .x-btn-text:hover{background-color: #5d92dc;}
 #object-picker .x-panel-btns-ct .x-panel-btns-right table{background: none !important;}
-#object-picker .x-tree-node-expanded .x-tree-node-icon{background: url(../../images/icons-feng-3/16x16/open_folder.png) !important;}
-#object-picker .x-tool.x-tool-toggle.x-tool-collapse-west{background: url(../../images/icons-feng-3/16x16/upload.png) !important;}
+
+/* Fix dimension selector horizontal layout inside object picker filters */
+#object-picker #dimFilter .feng-dimention-selector {
+	float: none !important;
+	width: 100% !important;
+}
+
+#object-picker #dimFilter .dimension-selector-container-horizontal {
+	width: 100% !important;
+	float: none !important;
+	margin-left: 0 !important;
+	margin-bottom: 10px;
+	clear: both;
+	box-sizing: border-box;
+}
+
+#object-picker #dimFilter .dimension-selector-container-horizontal label {
+	display: block;
+	margin-bottom: 2px;
+}
+
+#object-picker #dimFilter .dimension-selector-container-horizontal .selector {
+	width: 100% !important;
+	float: none !important;
+	display: block !important;
+	box-sizing: border-box;
+}
+
+#object-picker #dimFilter .dimension-selector-container-horizontal .x-column-inner {
+	width: 100% !important;
+}
+
+#txtFilreByObjectName, #comboFilterByTemplate {
+    height: 18px !important;
+    border-radius: 2px !important;
+    margin-left: 5px;
+}
 
 .x-combo-list-inner{max-height: 300px;}
 
-#ogTasksFilterCombo,
+/* #ogTasksFilterCombo,
 #ogTasksStatusCombo,
 #ogTasksGroupByCombo,
 #ogTasksOrderByCombo,
 #ogListingOrderCombo,
 #ogTasksDateFieldStart,
-#ogTasksDateFieldEnd {
+#ogTasksDateFieldEnd,
+#ogTasksFilterNamesCombo,
+#ogTasksFilterNamesCompaniesCombo,
+#ogTasksFilterMilestonesCombo,
+#ogTasksFilterPriorityCombo,
+#ogTasksFilterDateRangeFrom,
+#ogTasksFilterDateRangeTo,
+#ogTasksFilterSubtypesCombo,
+#invoicing_status_combo {
     height: 18.5px !important;
+} */
+
+/** 
+ * Fix bug that cause the date range field inputs 
+ * to be overlapped when showing them for the first time
+ */
+#ogTasksFilterDateRange .x-form-field-wrap {
+	min-width: 105px;
+}
+#ogTasksFilterDateRange #ogTasksFilterDateRangeFrom,
+#ogTasksFilterDateRange #ogTasksFilterDateRangeTo {
+	width: 94px !important;
+}
+/** End of fix for date range field inputs */
+
+/* .invoice-line-td div[id*="user_id_combo_container"] .x-form-field-wrap,
+.invoice-line-td div[id*="line_date_container"] .x-form-field-wrap {
+	padding-right:25px!important;
+} */
+
+.x-tab-strip-close {
+	background-image: none !important;
+	color: inherit !important;
+}
+.x-menu-item-icon[class^="icon-"] {
+    font-size: 14px;
 }
 
-div[id*="user_id_combo_container"] .x-form-arrow-trigger,
-div[id*="line_date_container"] .x-form-date-trigger {
-	-webkit-transform: scale(1.4);
-    -moz-transform: scale(1.4);
-    -ms-transform: scale(1.4);
-    transform: scale(1.4);
-    margin-top: 4.3px;
-    margin-left: 3.5px;
+/* --------------------------------------------------------------
+   Ext JS customizations
+   -------------------------------------------------------------- */
+.x-form-arrow-trigger {
+    border: none !important;
+    background: transparent
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-up-down-icon lucide-chevrons-up-down"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>')
+                no-repeat center center !important;
+    background-size: 16px !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
 }
-div[id*="user_id_combo_container"] .x-form-field-wrap,
-div[id*="line_date_container"] .x-form-field-wrap {
-	padding-right:25px!important;
+.x-form-date-trigger {
+    background: transparent
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-calendar-days-icon lucide-calendar-days'><path d='M8 2v4'/><path d='M16 2v4'/><rect width='18' height='18' x='3' y='4' rx='2'/><path d='M3 10h18'/><path d='M8 14h.01'/><path d='M12 14h.01'/><path d='M16 14h.01'/><path d='M8 18h.01'/><path d='M12 18h.01'/><path d='M16 18h.01'/></svg>")
+                no-repeat center center !important;
+    background-size: 16px !important;
+    border-bottom: 0 !important;
+	height: 100% !important; /* center the icon vertically */
+}
+
+/* Fix for buttons with menu items */
+.x-btn-with-menu .x-btn-center {
+    padding-right: 0 !important;
+}
+
+/* Remove the ExtJS dropdown-arrow reserved space from extjs toolbar menu buttons.
+   Those buttons use custom HTML icons, so the 8px em padding-right is dead space. */
+.x-btn-with-menu .x-btn-center em {
+    padding-right: 0 !important;
+    background-image: none !important;
+}
+
+.dimension-selector-container .x-panel-tbar .x-toolbar {
+	border-radius: 4px;
+}
+.x-toolbar.x-small-editor .x-btn {
+	border-radius: 4px;
+}
+.x-toolbar.x-small-editor .x-btn:has(.x-btn-text.ico-back):hover {
+	background-color: #e6e6e6;
 }

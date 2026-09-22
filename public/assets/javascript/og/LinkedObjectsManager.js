@@ -261,8 +261,8 @@ og.LinkedObjectManager = function(config) {
 		}),
 
 		unlink: new Ext.Action({
-			text: lang('unlink'),
-			iconCls: 'ico-delete',
+			text: '<i class="icon-unlink"></i>' + lang('unlink'),
+			iconCls: 'btn btn-sm',
             tooltip: lang('unlink object'),
         	disabled: true,
         	handler: function() {
@@ -280,9 +280,9 @@ og.LinkedObjectManager = function(config) {
 			scope: this
 		}),
 		link: new Ext.Action({
-			text: lang('link'),
+			text: '<i class="icon-link"></i>' + lang('link'),
             tooltip: lang('link object'),
-            iconCls: 'ico-add',
+            iconCls: 'btn btn-sm',
 			disabled: false,
 			handler: function() {
 				var lo = this.linked_object;
@@ -321,7 +321,7 @@ og.LinkedObjectManager = function(config) {
 			emptyMsg: lang("no objects to display")
 		}),
 		viewConfig: {
-			forceFit: true
+			forceFit: false
 		},
 		sm: sm,
 		tbar:[

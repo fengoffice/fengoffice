@@ -51,12 +51,26 @@ class Cookie {
 		$path = defined('COOKIE_PATH') ? COOKIE_PATH : '/';
 		$domain = defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '';
 		$secure = defined('COOKIE_SECURE') ? COOKIE_SECURE : false;
-		
+		$samesite = defined('COOKIE_SAMESITE') ? COOKIE_SAMESITE : 'Lax';
+
 		if(!is_null($domainF)){
 			$domain = $domainF;
 		}
 		$name = Cookie::getPrefix() . $name;
-		setcookie($name, $value, $expiration_time->getTimestamp(), $path, $domain, $secure);
+		// CVE-2026-36669: mark auth cookies HttpOnly (and SameSite) so a stored
+		// XSS cannot read the session token via document.cookie.
+		if (PHP_VERSION_ID >= 70300) {
+			setcookie($name, $value, array(
+				'expires'  => $expiration_time->getTimestamp(),
+				'path'     => $path,
+				'domain'   => $domain,
+				'secure'   => $secure,
+				'httponly' => true,
+				'samesite' => $samesite,
+			));
+		} else {
+			setcookie($name, $value, $expiration_time->getTimestamp(), $path, $domain, $secure, true);
+		}
 	} // setValue
 
 	/**

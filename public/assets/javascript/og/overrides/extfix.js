@@ -358,7 +358,37 @@ Ext.grid.GridPanel.override({
 			cm.fireEvent('configchange');
 		}
 	},
-	
+
+	// Update custom total rows that ExtJS column model events miss:
+	// - .list-group-total-row: manually built divs placed after .x-grid-group-body,
+	//   so GroupingView.getRows() (which only walks childNodes[1].childNodes) skips them.
+	// - .list-totals-row-container: grand total row detached from its group and
+	//   appended directly to the grid body, also outside GroupingView.getRows() iteration.
+	_updateCustomTotalRows: function(col_index, cell_fn) {
+		if (!this.rendered) return;
+		var view = this.getView();
+		if (!view || !view.getTotalWidth) return;
+		var tw = view.getTotalWidth();
+		var grid_id = this.id;
+
+		$("#" + grid_id + " .list-group-total-row, #" + grid_id + " .list-totals-row-container").each(function() {
+			this.style.width = tw;
+			var table = this.firstChild;
+			if (table && table.rows && table.rows[0]) {
+				table.style.width = tw;
+				var cell = table.rows[0].childNodes[col_index];
+				if (cell) cell_fn(cell);
+			}
+		});
+	},
+
+	afterColumnResize: function(col_model, col_index, new_width) {
+		var view = this.getView();
+		if (!view || !view.getColumnWidth) return;
+		var w = view.getColumnWidth(col_index);
+		this._updateCustomTotalRows(col_index, function(cell) { cell.style.width = w; });
+	},
+
 	afterColumnShowHide: function(col_model, col_index, is_hidden) {
 		var col = col_model.config[col_index];
 		if (col.id && col.id.indexOf('cp_') == 0 && this.hiddenColumnIds) {
@@ -369,14 +399,22 @@ Ext.grid.GridPanel.override({
 				this.hiddenColumnIds.splice(h_index, 1);
 			}
 		}
-    },
+
+		var display = is_hidden ? 'none' : '';
+		this._updateCustomTotalRows(col_index, function(cell) { cell.style.display = display; });
+	},
     
 	addCustomPropertyColumns: function(cps, cm_info, grid_id) {
 		this.hiddenColumnIds = [];
 		
 		var last_state = Ext.state.Manager.getProvider().state;
 		var last_grid_state = last_state ? last_state[grid_id] : null;
-		
+
+		// Role defaults describe the complete column layout of the grid, so a custom property
+		// they do not mention must start hidden no matter what its show_in_lists field says.
+		// Keeps hiddenColumnIds in sync with the columns ColumnManager.js applyState hides.
+		var state_is_role_default = last_grid_state && last_grid_state.ogRoleDefaults === true;
+
 		for (i=0; i<cps.length; i++) {
 			// check last option saved in the gui state
 			var state_col = null;
@@ -390,7 +428,9 @@ Ext.grid.GridPanel.override({
 			}
 			
 			// if no state is present for this column then use the show in lists field of the cp
-			var is_hidden = (state_col == null) ? parseInt(cps[i].show_in_lists) == 0 : state_col.hidden;
+			var is_hidden = (state_col == null)
+				? (state_is_role_default || parseInt(cps[i].show_in_lists) == 0)
+				: state_col.hidden;
 			if (is_hidden) {
 				this.hiddenColumnIds.push('cp_' + cps[i].id);
 			}
@@ -410,8 +450,42 @@ Ext.grid.GridPanel.override({
 Date.getShortMonthName = function(month) {
 	var short_lang = lang("month "+(month+1)+" short");
 	if (short_lang && short_lang.indexOf("Missing lang") == -1) return short_lang;
-    return Date.monthNames[month].substring(0, 3);
+	var name = Date.monthNames && Date.monthNames[month];
+    return name ? name.substring(0, 3) : '';
 }
 
+// ExtJS 2.3 excludes <a> elements from drag handles by default (invalidHandleTypes = {A:"A"}).
+// This prevents row drag-and-drop from initiating when mousedown lands on an anchor inside
+// a grid cell. Remove that exclusion for every grid that has a drag zone.
+(function() {
+    var origAfterRender = Ext.grid.GridView.prototype.afterRender;
+    Ext.grid.GridView.override({
+        afterRender: function() {
+            origAfterRender.call(this);
+            if (this.dragZone) {
+                this.dragZone.removeInvalidHandleType('A');
+            }
+        }
+    });
+}());
+
+// Ext.dd.Registry.getTargetFromEvent does a direct ID lookup, so only the registered
+// x-tree-node-el element itself resolves to a drop target — child elements (indent span,
+// edit icon, anchor text) return null and show a "not allowed" indicator even though the
+// drag is visually over a valid node. Walk up the DOM from the actual event target until
+// a registered element is found.
+Ext.tree.TreeDropZone.override({
+    getTargetFromEvent: function(e) {
+        var t = Ext.lib.Event.getTarget(e);
+        while (t && t !== document.body) {
+            if (t.id) {
+                var r = Ext.dd.Registry.getTarget(t.id);
+                if (r) return r;
+            }
+            t = t.parentNode;
+        }
+        return null;
+    }
+});
 
 /**/

@@ -392,8 +392,7 @@ class MessageController extends ApplicationController {
 		
 		$notAllowedMember = '';
 		if(active_context_is_empty() && !ProjectMessage::canAdd(logged_user(), active_context(), $notAllowedMember )) {
-			if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-			else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the message'))) : flash_error(lang('no context permissions to add',lang("messages"),$notAllowedMember ));
+			flash_error(get_can_add_error_message($notAllowedMember, lang('messages')));
 			ajx_current("empty");
 			return;
 		} // if
@@ -441,7 +440,7 @@ class MessageController extends ApplicationController {
 				
 				$object_controller = new ObjectController();
 				
-				$member_ids = json_decode(array_var($_POST, 'members'));
+				$member_ids = get_members_from_request();
 				
 				if (!is_null($member_ids)) {
 					$object_controller->add_to_members($message, $member_ids);
@@ -567,7 +566,7 @@ class MessageController extends ApplicationController {
 				
 				$object_controller = new ObjectController();
 				
-				$member_ids = json_decode(array_var($_POST, 'members'));
+				$member_ids = get_members_from_request();
 				
 				if (!is_null($member_ids)) {
 					$object_controller->add_to_members($message, $member_ids);

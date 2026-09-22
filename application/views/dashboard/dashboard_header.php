@@ -73,19 +73,19 @@
                         echo '<a href="'.$href.'" '.$target_str.' onclick="'. $action['onclick'] .'" class="dashAction '. $action['class'] .'">'. $action['name'] .'</a>';
                     }
                 ?>
-                <a class="internalLink dashAction link-ico ico-grid" href="#" onclick="og.switchToOverview(); return false;"><?php echo lang('view as list') ?></a>
+                <a class="internalLink dashAction" href="#" onclick="og.switchToOverview(); return false;"><i class="icon-list"></i> <?php echo lang('view as list') ?></a>
                 
             </div>
 
             <div>
-                <button class="btn" style="margin-left:10px;" onclick="event.stopPropagation(); <?php echo $edit_onclick ?>" title="<?php echo lang('edit')?>">
-                    <img alt="" style="height: 15px" src="public/assets/themes/default/images/icons-feng-3/16x16/edit_color.png">
+                <button class="btn btn-primary" style="margin-left:10px;" onclick="event.stopPropagation(); <?php echo $edit_onclick ?>" title="<?php echo lang('edit')?>">
+                    <i class="icon-pencil-line"></i>
                     <?php echo lang('edit')?>
                 </button>
             </div>
             <div>
                 <button class="btn" style="margin-left:10px;" onclick="og.Breadcrumbs.resetSelection();">
-                    <img alt="" style="height: 15px" src="public/assets/themes/default/images/layout/close16.png">
+                    <i class="icon-circle-x"></i>
                     <?php echo lang('close') ?>
                 </button>
             </div>

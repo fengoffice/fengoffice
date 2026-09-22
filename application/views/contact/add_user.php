@@ -15,7 +15,7 @@
   		<div class="adminTitle"><table style="width:535px"><tr><td>
   			<?php echo $user->isNew() ? lang('new user') : lang('edit user') ?>
   		</td><td style="text-align:right">
-  			<?php echo submit_button($user->isNew() ? lang('add user') : lang('save changes'), 's', array('style'=>'margin-top:0px;margin-left:10px', 'tabindex' => '1600')) ?>
+  			<?php echo submit_button($user->isNew() ? lang('save') : lang('save changes'), 's', array('style'=>'margin-top:0px;margin-left:10px', 'tabindex' => '1600')) ?>
   		</td></tr></table></div>
   	</div>
   	
@@ -124,6 +124,7 @@
         <?php echo label_tag(lang('password again'), 'userFormPasswordA', true) ?>
         <?php echo password_field('user[password_a]', null, array('id' => 'userFormPasswordA', 'tabindex' => '1000')) ?>
       </div>
+      <?php echo render_password_requirements(); ?>
     </div>
     <div style="margin-top:10px">
     <label class="checkbox">
@@ -181,7 +182,7 @@
   	</div>
 <?php
   echo input_field('user[contact_id]',array_var($user_data, 'contact_id',''), array('type' => 'hidden'));
-  echo submit_button($user->isNew() ? lang('add user') : lang('save changes'), 's', array('tabindex' => '1500')); 
+  echo submit_button($user->isNew() ? lang('save') : lang('save changes'), 's', array('tabindex' => '1500')); 
 ?>
   </div>
 </div>

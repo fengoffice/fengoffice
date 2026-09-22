@@ -358,7 +358,7 @@ class AccessController extends ApplicationController {
 				$this->render();
 			} // if
 
-			if(trim($new_password == '')) {
+			if(trim($new_password) == '') {
 				tpl_assign('error', new Error(lang('password value missing')));
 				$this->render();
 			} // if
@@ -368,37 +368,9 @@ class AccessController extends ApplicationController {
 				$this->render();
 			} // if
 
-			if(!ContactPasswords::validateMinLength($new_password)){
-				$min_pass_length = config_option('min_password_length', 0);
-				tpl_assign('error', new Error(lang('password invalid min length', $min_pass_length)));
-				$this->render();
-			}
-			
-			if(!ContactPasswords::validateNumbers($new_password)){
-				$pass_numbers = config_option('password_numbers', 0);
-				tpl_assign('error', new Error(lang('password invalid numbers', $pass_numbers)));
-				$this->render();
-			}
-			
-			if(!ContactPasswords::validateUppercaseCharacters($new_password)){
-				$pass_uppercase = config_option('password_uppercase_characters', 0);
-				tpl_assign('error', new Error(lang('password invalid uppercase', $pass_uppercase)));
-				$this->render();
-			}
-			
-			if(!ContactPasswords::validateMetacharacters($new_password)){
-				$pass_metacharacters = config_option('password_metacharacters', 0);
-				tpl_assign('error', new Error(lang('password invalid metacharacters', $pass_metacharacters)));
-				$this->render();
-			}
-			
-			if(!ContactPasswords::validateAgainstPasswordHistory($user->getId(), $new_password)){
-				tpl_assign('error', new Error(lang('password exists history')));
-				$this->render();
-			}
-			
-			if(!ContactPasswords::validateCharDifferences($user->getId(), $new_password)){
-				tpl_assign('error', new Error(lang('password invalid difference')));
+			$password_errors = ContactPasswords::validatePasswordRequirements($new_password, $user->getId());
+			if(count($password_errors)){
+				tpl_assign('error', new Error($password_errors[0]));
 				$this->render();
 			}
 			
@@ -482,7 +454,7 @@ class AccessController extends ApplicationController {
 			return;
 		} // if
 
-		$user = Contacts::getByUsername($username, owner_company());
+		$user = Contacts::getByUsername($username);
 		if (!($user instanceof Contact && $user->isUser()) || $user->getDisabled()) {
 			flash_error(lang('invalid login data'));
 			return;
@@ -492,6 +464,13 @@ class AccessController extends ApplicationController {
 			flash_error(lang('invalid login data'));
 			return;
 		} // if
+
+		if(ContactPasswords::isContactPasswordExpired($user->getId())){
+			//$this->redirectTo('access', 'change_password', array('id' => $user->getId(), 'msg' => 'expired'));
+			ajx_extra_data(array('go_to_url' => get_url('access', 'change_password', array('id' => $user->getId(), 'msg' => 'expired'))));
+			flash_error(lang('password expired'));
+			return;
+		}
 
 		try {
 			CompanyWebsite::instance()->logUserIn($user, $remember);
@@ -717,6 +696,9 @@ class AccessController extends ApplicationController {
 				$null = null;
 				Hook::fire('after_user_add', $administrator, $null);
 				
+				// seed role-based default list-column configuration on fresh installs
+				Hook::fire('after_complete_installation', $administrator, $null);
+				
 				DB::commit();
 
 				$this->redirectTo('access', 'login');
@@ -728,49 +710,62 @@ class AccessController extends ApplicationController {
 	} // complete_installation
 
 	
-	function get_javascript_translation() {
-		$content = "/* start */\n";
-		$fileDir = ROOT . "/language/" . Localization::instance()->getLocale();
-		
-		//Get Feng Office translation files
+	/**
+	 * Collect JS translation files for a locale (core + plugins).
+	 * Plugin lang.js files can contain PHP, so they are included rather than read as text.
+	 *
+	 * @param string $locale
+	 * @param array $plugins
+	 * @return string
+	 */
+	private function collect_javascript_translations($locale, $plugins) {
+		$content = "";
+		$fileDir = ROOT . "/language/" . $locale;
 		$filenames = get_files($fileDir, "js");
-		sort($filenames);
-		foreach ($filenames as $f) {
-			//$content .= "\n/* $f */\n";
-			$content .= "try {";				
-			$content .= file_get_contents($f);
-			$content .= "} catch (e) {}";
-		}
-		
-		$plugins = Plugins::instance ()->getActive ();
-		
-		foreach ( $plugins as $plugin ) {
-
-			$plg_dir = $plugin->getLanguagePath () . "/" . Localization::instance()->getLocale ();
-			if (is_dir ( $plg_dir )) {
-				$files = get_files($plg_dir, 'js');
-				if (is_array ( $files )) {
-					sort ( $files );
-					
-					foreach ( $files as $file ) {
-						$content .= "\n/* $file */\n";
-						$content .= "try {";
-						/**
-						 * The js file can contain PHP code so use include instead of file_get_contents.
-						 * To avoid sending headers, use output buffer.
-						 * This change help to avoid the need of multiple lang files.. javascripts and phps. 
-						 * You can create only one php file containing all traslations, 
-						 * and this will populate client and server side langs datasorces  
-						 */ 
-						ob_start();  
-						include $file ; 
-						$content .= ob_get_contents();
-						ob_end_clean(); //!important: Clean output buffer to save memory
-						$content .= "} catch (e) {}";
-					}
-				}
+		if (is_array($filenames)) {
+			sort($filenames);
+			foreach ($filenames as $f) {
+				$content .= "try {";
+				$content .= file_get_contents($f);
+				$content .= "} catch (e) {}";
 			}
 		}
+
+		foreach ($plugins as $plugin) {
+			$plg_dir = $plugin->getLanguagePath() . "/" . $locale;
+			if (!is_dir($plg_dir)) {
+				continue;
+			}
+			$files = get_files($plg_dir, 'js');
+			if (!is_array($files)) {
+				continue;
+			}
+			sort($files);
+			foreach ($files as $file) {
+				$content .= "\n/* $file */\n";
+				$content .= "try {";
+				/**
+				 * The js file can contain PHP code so use include instead of file_get_contents.
+				 * To avoid sending headers, use output buffer.
+				 * This change help to avoid the need of multiple lang files.. javascripts and phps.
+				 * You can create only one php file containing all traslations,
+				 * and this will populate client and server side langs datasorces
+				 */
+				ob_start();
+				include $file;
+				$content .= ob_get_contents();
+				ob_end_clean(); //!important: Clean output buffer to save memory
+				$content .= "} catch (e) {}";
+			}
+		}
+
+		return $content;
+	}
+
+	function get_javascript_translation() {
+		$locale = Localization::instance()->getLocale();
+		$content = "/* start */\n";
+		$content .= $this->collect_javascript_translations($locale, Plugins::instance()->getActive());
 		$content .= "\n/* end */\n";
 		$this->setLayout("json");
 		$this->renderText($content, true);
@@ -778,59 +773,28 @@ class AccessController extends ApplicationController {
 	
 	function get_javascript_translation_default() {
 		$defaultLang = "en_us";
+		$currentLocale = Localization::instance()->getLocale();
 		
-		if (Localization::instance()->getLocale() == $defaultLang) {
+		if ($currentLocale == $defaultLang) {
 			$this->setLayout("json");
 			$this->renderText("", true);
 			return;
 		}
 		
-		$content = "/* start */\n";		
-		$fileDir = ROOT . "/language/".$defaultLang;
-	
-		//Get Feng Office translation files
-		$filenames = get_files($fileDir, "js");
-			
-		sort($filenames);
-		foreach ($filenames as $f) {
-			//$content .= "\n/* $f */\n";
-			$content .= "try {";
-			$content .= file_get_contents($f);
-			$content .= "} catch (e) {}";
+		$plugins = Plugins::instance()->getAll();
+		$content = "/* start */\n";
+
+		// Compatible language (e.g. es_es -> es_la) goes into _langCompatible, then en_us into _langDefault.
+		$similarLang = findSimilarLang($currentLocale);
+		if ($similarLang && $similarLang !== $defaultLang && $similarLang !== $currentLocale) {
+			$compatible = $this->collect_javascript_translations($similarLang, $plugins);
+			$content .= str_replace("addLangs", "addLangsCompatible", $compatible);
 		}
-	
-		// include all installed plugins, no matter if they they have not been activated
-		$plugins = Plugins::instance ()->getAll();
-	
-		foreach ( $plugins as $plugin ) {
-			$plg_dir = $plugin->getLanguagePath () . "/" . $defaultLang;
-			if (is_dir ( $plg_dir )) {
-				$files = get_files($plg_dir, 'js');
-				if (is_array ( $files )) {
-					sort ( $files );
-						
-					foreach ( $files as $file ) {
-						$content .= "\n/* $file */\n";
-						$content .= "try {";
-						/**
-						 * The js file can contain PHP code so use include instead of file_get_contents.
-						 * To avoid sending headers, use output buffer.
-						 * This change help to avoid the need of multiple lang files.. javascripts and phps.
-						 * You can create only one php file containing all traslations,
-						 * and this will populate client and server side langs datasorces
-						 */
-						ob_start();
-						include $file ;
-						$content .= ob_get_contents();
-						ob_end_clean(); //!important: Clean output buffer to save memory
-						$content .= "} catch (e) {}";
-					}
-				}
-			}
-		}
+
+		$default = $this->collect_javascript_translations($defaultLang, $plugins);
+		$content .= str_replace("addLangs", "addLangsDefault", $default);
 		$content .= "\n/* end */\n";
-		
-		$content = str_replace("addLangs", "addLangsDefault", $content);
+
 		$this->setLayout("json");
 		$this->renderText($content, true);
 	}
@@ -874,32 +838,38 @@ class AccessController extends ApplicationController {
 		tpl_assign('user', $user);
                 tpl_assign('type_notifier', $type_notifier);
                 
-		$new_password = array_var($_POST, 'new_password');
-		if ($new_password) {
+		if (array_var($_SERVER, 'REQUEST_METHOD') == 'POST') {
+			$new_password = array_var($_POST, 'new_password');
 			$repeat_password = array_var($_POST, 'repeat_password');
-			if ($new_password != $repeat_password) {
+			if (trim($new_password) == '') {
+				flash_error(lang('password value missing'));
+			} elseif ($new_password != $repeat_password) {
 				flash_error(lang('passwords dont match'));
-				return;
-			}
-			try{
-				$user_password = new ContactPassword();
-				$user_password->setContactId($user->getId());
-				$user_password->password_temp = $new_password;
-				$user_password->setPasswordDate(DateTimeValueLib::now());
-				$user_password->setPassword(cp_encrypt($new_password, $user_password->getPasswordDate()->getTimestamp()));
-				$user_password->save();
-		
-				$user->setPassword($new_password);
-				$user->setUpdatedOn(DateTimeValueLib::now());
-				$user->save();
-				set_user_config_option('reset_password', '', $user->getId());
-				flash_success(lang('success reset password'));
-				CompanyWebsite::instance()->logUserOut();
-				$this->redirectTo('access', 'login');
-			}catch(Exception $e){
-				flash_error($e->getMessage());
-			}
+			} else {
+				$password_errors = ContactPasswords::validatePasswordRequirements($new_password, $user->getId());
+				if (count($password_errors)) {
+					flash_error($password_errors[0]);
+				} else {
+					try {
+						$user_password = new ContactPassword();
+						$user_password->setContactId($user->getId());
+						$user_password->password_temp = $new_password;
+						$user_password->setPasswordDate(DateTimeValueLib::now());
+						$user_password->setPassword(cp_encrypt($new_password, $user_password->getPasswordDate()->getTimestamp()));
+						$user_password->save();
 
+						$user->setPassword($new_password);
+						$user->setUpdatedOn(DateTimeValueLib::now());
+						$user->save();
+						set_user_config_option('reset_password', '', $user->getId());
+						flash_success(lang('success reset password'));
+						CompanyWebsite::instance()->logUserOut();
+						$this->redirectTo('access', 'login');
+					} catch (Exception $e) {
+						flash_error($e->getMessage());
+					}
+				}
+			}
 		}
 	}
 	

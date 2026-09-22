@@ -90,7 +90,7 @@ class MoreController extends ApplicationController {
 		// add subquery for user groups column
 		$columns_sql .= ", (SELECT GROUP_CONCAT(' ', pg.name) FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.id IN (
 			SELECT permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups WHERE contact_id=c.object_id
-		) AND pg.type='user_groups') as groups";
+		) AND pg.type='user_groups') as `groups`";
 		
 		$main_sql = "FROM ".TABLE_PREFIX."contacts c
 				INNER JOIN ".TABLE_PREFIX."permission_groups p ON p.id=c.user_type
@@ -454,8 +454,9 @@ class MoreController extends ApplicationController {
 				DB::beginWork();
 				$pos = 1;
 				foreach ($module_list as $mod_id) {
-					$mod_id = str_replace("'", "", $mod_id);
-					DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET ordering=$pos WHERE id='$mod_id'");
+					// Parameterized: was a SQL injection via the JSON-supplied module id
+					// (the str_replace("'") band-aid was bypassable).
+					DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET ordering=? WHERE id=?", $pos, $mod_id);
 					$pos++;
 				}
 				DB::commit();
@@ -547,8 +548,8 @@ class MoreController extends ApplicationController {
 				DB::beginWork();
 				$pos = 1;
 				foreach ($dim_list as $dim_id) {
-					$dim_id = str_replace("'", "", $dim_id);
-					DB::execute("UPDATE ".TABLE_PREFIX."dimensions SET default_order=$pos WHERE id='$dim_id'");
+					// Parameterized: was a SQL injection via the JSON-supplied dimension id.
+					DB::execute("UPDATE ".TABLE_PREFIX."dimensions SET default_order=? WHERE id=?", $pos, $dim_id);
 					$pos++;
 				}
 				DB::commit();
@@ -617,5 +618,32 @@ class MoreController extends ApplicationController {
 	function contracted_services() {
 		ajx_set_no_toolbar();
 	}
+
+function users() {
+	if (!can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+	ajx_set_no_toolbar();
+}
+
+function groups() {
+	if (!can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+	ajx_set_no_toolbar();
+}
+
+function roles() {
+	if (!can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+	ajx_set_no_toolbar();
+}
 	
 } 

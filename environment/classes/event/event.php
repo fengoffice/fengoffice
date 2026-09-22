@@ -26,6 +26,18 @@ function evt_list() {
 	return $events;
 }
 
+function evt_remove($name) {
+	$events = flash_get("events");
+	if (!$events) return;
+	$filtered = array();
+	foreach ($events as $event) {
+		if ($event['name'] !== $name) {
+			$filtered[] = $event;
+		}
+	}
+	flash_add("events", $filtered);
+}
+
 function evt_pop() {
 	$events = flash_pop("events");
 	if (!$events) return array();

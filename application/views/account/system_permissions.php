@@ -10,19 +10,37 @@
 			foreach ($columns as $column_name) :
 				if (in_array($column_name, $hidden_cols)) continue;
 		?>
-				<div id="<?php echo $genid ?>div_<?php echo $column_name ?>">
+				<div id="<?php echo $genid ?>div_<?php echo $column_name ?>" class="perm-row">
 				<?php
 					$attributes = array('id' => $genid . 'sys_perm['.$column_name.']');
 					if (isset($disable_sysperm_inputs) && $disable_sysperm_inputs) {
 						$attributes['onclick'] = 'return false;';
 						$attributes['class'] = 'disabled';
 					}
-					echo checkbox_field('sys_perm['.$column_name.']', $system_permissions instanceof SystemPermission ? $system_permissions->getColumnValue($column_name) : false, $attributes) ?> 
-			      <label for="<?php echo $genid . 'sys_perm['.$column_name.']' ?>" class="checkbox"><?php echo lang($column_name) ?></label>
-			      <a class="help-sign" href="javascript:og.toggle('<?php echo $genid . $column_name ?>_help')">?</a>
-			      <div id="<?php echo $genid . $column_name ?>_help" class="permissions-help" style="display:none"><?php echo lang($column_name . ' description') ?></div>
+					echo checkbox_field('sys_perm['.$column_name.']', $system_permissions instanceof SystemPermission ? $system_permissions->getColumnValue($column_name) : false, $attributes);
+				?>
+			      <div class="perm-label">
+				      <label for="<?php echo $genid . 'sys_perm['.$column_name.']' ?>" class="checkbox">
+						  <?php echo lang($column_name) ?>
+					  </label>
+					  <span class="perm-help-toggle"
+					        data-target="<?php echo $genid . $column_name ?>_help"
+					        title="<?php echo lang('help') ?>">
+						  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+						       viewBox="0 0 24 24" fill="none" stroke="currentColor"
+						       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+						       aria-hidden="true">
+							  <circle cx="12" cy="12" r="10"></circle>
+							  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+							  <path d="M12 17h.01"></path>
+						  </svg>
+					  </span>
+				  </div>
+			      <div id="<?php echo $genid . $column_name ?>_help" class="permissions-help" style="display:none">
+					  <?php echo lang($column_name . ' description') ?>
+				  </div>
 			    </div>
-		<?php 
+		<?php
 			endforeach;
 		?>
 	    
@@ -32,17 +50,35 @@
 				Hook::fire('add_user_permissions', $user, $other_permissions);
 			}
 			foreach ($other_permissions as $perm => $perm_val) {?>
-				<div id="<?php echo $genid ?>div_<?php echo $perm ?>">
-			      <?php  
+				<div id="<?php echo $genid ?>div_<?php echo $perm ?>" class="perm-row">
+			      <?php
 			        $attributes = array('id' => $genid . "sys_perm[$perm]");
 					if (isset($disable_sysperm_inputs) && $disable_sysperm_inputs) {
 						$attributes['onclick'] = 'return false;';
 						$attributes['class'] = 'disabled';
 					}
-					echo checkbox_field("sys_perm[$perm]", array_var($more_permissions, $perm), $attributes) ?> 
-			      <label for="<?php echo $genid . "sys_perm[$perm]" ?>" class="checkbox"><?php echo lang($perm) ?></label>
-			      <a class="help-sign" href="javascript:og.toggle('<?php echo $genid ?><?php echo $perm ?>_help')">?</a>
-			      <div id="<?php echo $genid ?><?php echo $perm ?>_help" class="permissions-help" style="display:none"><?php echo lang($perm.' description') ?></div>
+					echo checkbox_field("sys_perm[$perm]", array_var($more_permissions, $perm), $attributes);
+			      ?>
+			      <div class="perm-label">
+				      <label for="<?php echo $genid . "sys_perm[$perm]" ?>" class="checkbox">
+						  <?php echo lang($perm) ?>
+					  </label>
+					  <span class="perm-help-toggle"
+					        data-target="<?php echo $genid ?><?php echo $perm ?>_help"
+					        title="<?php echo lang('help') ?>">
+						  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+						       viewBox="0 0 24 24" fill="none" stroke="currentColor"
+						       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+						       aria-hidden="true">
+							  <circle cx="12" cy="12" r="10"></circle>
+							  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+							  <path d="M12 17h.01"></path>
+						  </svg>
+					  </span>
+				  </div>
+			      <div id="<?php echo $genid ?><?php echo $perm ?>_help" class="permissions-help" style="display:none">
+					  <?php echo lang($perm.' description') ?>
+				  </div>
 				</div>
 			<?php }
 		?>
@@ -61,15 +97,15 @@
 	<div id="<?php echo $genid ?>userModulePermissions" style="display:block" class="user-module-permissions"> 
 	<?php foreach ($all_modules_info as $mod_info) { ?>
 	
-		<div id="<?php echo $genid . array_var($mod_info, 'id')?>">
+		<div id="<?php echo $genid . array_var($mod_info, 'id')?>" class="perm-row">
 	      <?php  
-			$attributes = array('id' => $genid . 'mod_perm['.array_var($mod_info, 'ot').']');
+			$attributes = array('id' => $genid . 'mod_perm_'.array_var($mod_info, 'id'));
 			if (isset($disable_sysperm_inputs) && $disable_sysperm_inputs) {
 				$attributes['onclick'] = 'return false;';
 				$attributes['class'] = 'disabled';
 			}
 			echo checkbox_field('mod_perm['.array_var($mod_info, 'id').']', array_var($module_permissions_info, array_var($mod_info, 'id')), $attributes) ?> 
-	      <label for="<?php echo $genid . 'mod_perm['.array_var($mod_info, 'ot').']' ?>" class="checkbox"><?php echo array_var($mod_info, 'name') ?></label>
+	      <label for="<?php echo $genid . 'mod_perm_'.array_var($mod_info, 'id') ?>" class="checkbox"><?php echo array_var($mod_info, 'name') ?></label>
 		</div>
 	
 	<?php } ?>
@@ -102,6 +138,7 @@
 ?>
 
 <?php if (config_option('let_users_create_objects_in_root') && (isset($user) && $user instanceof Contact && ($user->isAdminGroup() || $user->isExecutive() || $user->isManager())) ){ ?>
+<?php $root_role_id = (int)$user->getUserType(); ?>
 <div id="<?php echo $genid?>_root_permissions" class="root-permissions" style="<?php echo (isset($is_new_user) && $is_new_user ? "display:none;" : "")?>">
 
 <fieldset><legend><span class="og-task-expander toggle_expanded" style="padding-left:20px;" 
@@ -109,45 +146,31 @@
 	<?php echo lang('permissions for unclassified objects');?></span></legend>
 	 
   <div id="<?php echo $genid ?>root_permissions" style="width:600px;">
-  <table style="width:100%;">
+  <table class="permissions-root-table">
   
-	<tr class="permissions-title-row">
-	    <td></td>
-	  	<td align=center style="width:120px;">
-	  		<a href="#" class="internalLink all-radio-sel radio-title-3" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 3);return false;"><?php echo lang('read write and delete') ?></a>
-	  	</td>
-	  	<td align=center style="width:120px;">
-	  		<a href="#" class="internalLink all-radio-sel radio-title-2" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 2);return false;"><?php echo lang('read and write') ?></a>
-	  	</td>
-	  	<td align=center style="width:120px;">
-	  		<a href="#" class="internalLink all-radio-sel radio-title-1" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 1);return false;"><?php echo lang('read only') ?></a>
-	  	</td>
-	  	<td align=center style="width:120px;">
-	  		<a href="#" class="internalLink all-radio-sel radio-title-0" onclick="og.ogRootPermSetLevel('<?php echo $genid ?>', 0);return false;"><?php echo lang('none no bars') ?></a>
-	  	</td>
+	<tr class="permissions-header-row">
+		<th></th>
+		<th><span class="permission-level-title"><?php echo str_replace(' & ', ' &<br>', lang('read write and delete')) ?></span></th>
+		<th><span class="permission-level-title"><?php echo lang('read and write') ?></span></th>
+		<th><span class="permission-level-title"><?php echo lang('read only') ?></span></th>
+		<th><span class="permission-level-title"><?php echo lang('none no bars') ?></span></th>
 	</tr>
-  
   
 	<tr class="permissions-checkall-row">
-		<td style="padding-left:20px;"><?php echo lang('check all').":"?></td>
-		<td align="center">
-			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-3" title="<?php echo lang('set rwd permissions for all object types')?>"
-				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 3);"/>
-		</td>
-		<td align="center">
-			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-2" title="<?php echo lang('set rw permissions for all object types')?>"
-				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 2);"/>
-		</td>
-		<td align="center">
-			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-1" title="<?php echo lang('set r permissions for all object types')?>"
-				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 1);"/>
-		</td>
-		<td align="center">
-			<input type="checkbox" class="all-radio-sel-chk-root" id="chk-0" title="<?php echo lang('set none permissions for all object types')?>"
-				onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 0);"/>
-		</td>
+		<td><?php echo lang('check all') ?></td>
+		<td><input type="checkbox" class="all-radio-sel-chk-root" id="chk-3"
+		           title="<?php echo lang('set rwd permissions for all object types')?>"
+		           onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 3, og.userRootMaxPermissions && og.userRootMaxPermissions[<?php echo $root_role_id ?>] ? og.userRootMaxPermissions[<?php echo $root_role_id ?>] : null, <?php echo $root_role_id ?>);" /></td>
+		<td><input type="checkbox" class="all-radio-sel-chk-root" id="chk-2"
+		           title="<?php echo lang('set rw permissions for all object types')?>"
+		           onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 2, og.userRootMaxPermissions && og.userRootMaxPermissions[<?php echo $root_role_id ?>] ? og.userRootMaxPermissions[<?php echo $root_role_id ?>] : null, <?php echo $root_role_id ?>);" /></td>
+		<td><input type="checkbox" class="all-radio-sel-chk-root" id="chk-1"
+		           title="<?php echo lang('set r permissions for all object types')?>"
+		           onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 1, og.userRootMaxPermissions && og.userRootMaxPermissions[<?php echo $root_role_id ?>] ? og.userRootMaxPermissions[<?php echo $root_role_id ?>] : null, <?php echo $root_role_id ?>);" /></td>
+		<td><input type="checkbox" class="all-radio-sel-chk-root" id="chk-0"
+		           title="<?php echo lang('set none permissions for all object types')?>"
+		           onchange="og.ogRootPermSetLevelCheckbox(this, '<?php echo $genid ?>', 0, og.userRootMaxPermissions && og.userRootMaxPermissions[<?php echo $root_role_id ?>] ? og.userRootMaxPermissions[<?php echo $root_role_id ?>] : null, <?php echo $root_role_id ?>);" /></td>
 	</tr>
-	
 <?php 
 	$all_object_types = ObjectTypes::instance()->findAll(array('conditions' => "type IN ('content_object', 'located') AND type NOT IN ('comment') AND name <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND 
 		(plugin_id IS NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))"));
@@ -157,6 +180,7 @@
 	$root_permissions = $permission_parameters['root_permissions'];
 	foreach ($all_object_types as $ot) {
 		if ($ot->getName() == 'mail' || $ot->getName() == 'template') continue;
+		if ($ot->getName() == 'expense_item') continue;
 		$row_cls = $row_cls == "" ? "altRow" : "";
 		$id_suffix = "root_" . $ot->getId();
 		$root_object_types[] = $ot->getId();
@@ -178,10 +202,10 @@
 
 ?><tr class="<?php echo $row_cls?>">
   	<td style="padding-left:20px;"><span id="<?php echo $genid.'obj_type_label'.$id_suffix?>"><?php echo $ot->getObjectTypeName() ?></span></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_delete, array('value' => '3', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_write, array('value' => '2', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_read, array('value' => '1', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
-  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $none, array('value' => '0', 'onchange' => 'og.ogRootPermValueChanged()')) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_delete, array('value' => '3', 'onchange' => "og.ogRootPermValueChanged('".$genid."')")) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_write, array('value' => '2', 'onchange' => "og.ogRootPermValueChanged('".$genid."')")) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $can_read, array('value' => '1', 'onchange' => "og.ogRootPermValueChanged('".$genid."')")) ?></td>
+  	<td align=center><?php echo radio_field($genid .'rg_'.$id_suffix, $none, array('value' => '0', 'onchange' => "og.ogRootPermValueChanged('".$genid."')")) ?></td>
   </tr>
 <?php } ?>
   </table>
@@ -193,50 +217,60 @@
 var genid = '<?php echo $genid?>';
 
 og.perm_root_object_type_ids = Ext.util.JSON.decode('<?php echo json_encode($root_object_types)?>');
-og.ogRootPermSetLevel = function (genid, level) {
-	for (i=0; i<og.perm_root_object_type_ids.length; i++) {
-		var ot = og.perm_root_object_type_ids[i];
-		og.ogSetCheckedValue(document.getElementsByName(genid + "rg_root_" + ot), level);
-	}
-	$(".all-radio-sel-chk-root").removeAttr('checked');
-	$(".all-radio-sel-chk-root#chk-"+level).attr('checked','checked');
-}
-
-og.ogRootPermSetLevelCheckbox = function(checkbox, genid, radio_id) {
-	var is_checked = $(checkbox).attr('checked') == 'checked';
-	var id = is_checked ? radio_id : 0;
-	og.ogRootPermSetLevel(genid, id);
-}
-
-og.ogRootPermValueChanged = function() {
-	if (!og.perm_root_object_type_ids) return;
-	
-	var assigned_vals = [];
-	for (i=0; i<og.perm_root_object_type_ids.length; i++) {
-		var ot = og.perm_root_object_type_ids[i];
-		
-		// get the checked radio button, exclude the hidden inputs because they are the ones of the template used to build the form
-		var radio_name = genid + "rg_root_" + ot;
-		var v = $('input[name="' + radio_name + '"]:checked:visible').val();
-
-		if (assigned_vals.indexOf(v) == -1) assigned_vals.push(v);
-	}
-	
-	$(".all-radio-sel-chk-root").removeAttr('checked');
-	if (assigned_vals.length == 1) {
-		$(".all-radio-sel-chk-root#chk-"+assigned_vals[0]).attr('checked','checked');
-	}
-}
 </script>
 <?php }?>
 
-<?php $role_id = isset($user) && $user instanceof Contact ? $user->getUserType() : $pg_id;
+<?php $role_id = isset($root_role_id) ? $root_role_id : (isset($user) && $user instanceof Contact ? $user->getUserType() : $pg_id);
 if ($role_id > 0 && !(isset($user_group_abm) && $user_group_abm)) { ?>
+<?php
+$root_max_permissions = array();
+$res = DB::executeAll("
+	SELECT object_type_id, can_delete, can_write
+	FROM ".TABLE_PREFIX."max_role_object_type_permissions
+	WHERE role_id = ".(int)$role_id."
+");
+if ($res) {
+	foreach ($res as $row) {
+		$root_max_permissions[(int)$row['object_type_id']] = array(
+			'd' => (int)$row['can_delete'],
+			'w' => (int)$row['can_write'],
+			'r' => 1
+		);
+	}
+}
+?>
 <script>
 $(function() {
 	var type = '<?php echo $role_id ?>';
+	og.userRootMaxPermissions = og.userRootMaxPermissions || {};
+	og.userRootMaxPermissions[type] = <?php echo json_encode($root_max_permissions); ?>;
+
 	og.userPermissions.enableDisableSystemPermissionsByRole(genid, type);
-	if (typeof(og.ogRootPermValueChanged) == 'function') og.ogRootPermValueChanged();
+	if (og.uncheckDisabledSystemPermissions && typeof og.uncheckDisabledSystemPermissions === 'function') {
+		og.uncheckDisabledSystemPermissions(genid);
+	}
+	if (og.roleHasRootPermissions && og.roleHasRootPermissions(type)) {
+		$("#"+genid+"_root_permissions").show();
+		if (og.applyRootPermissionsMaxUI && typeof og.applyRootPermissionsMaxUI === 'function') {
+			og.applyRootPermissionsMaxUI(genid, type, og.userRootMaxPermissions[type]);
+		}
+	}
+	if (typeof(og.ogRootPermValueChanged) == 'function') og.ogRootPermValueChanged(genid);
+
+	// system permission help toggles
+	$('#<?php echo $genid ?>userSystemPermissions .perm-help-toggle').off('click.sysPermHelp').on('click.sysPermHelp', function (e) {
+		e.preventDefault();
+		var target = $(this).data('target');
+		$('#' + target).slideToggle(150);
+	});
 });
 </script>
 <?php } ?>
+
+<style>
+/* Copiamos el layout de role.php, scopeado a este formulario */
+/* Stripe explícito para esta tabla, igual que en roles */
+#<?php echo $genid ?>root_permissions .permissions-root-table tr.altRow {
+	background-color: #F4F8F9;
+}
+</style>

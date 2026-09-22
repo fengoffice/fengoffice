@@ -77,7 +77,9 @@ CREATE TABLE `<?php echo $table_prefix ?>member_property_members` (
   PRIMARY KEY  (`id`),
   INDEX `member_id_property_member_id` (`member_id`, `property_member_id`),
   INDEX `property_member_id_member_id` (`property_member_id`, `member_id`),
-  INDEX  `is_active` (`is_active`)
+  INDEX `is_active` (`is_active`),
+  INDEX `idx_property_assoc` (property_member_id, association_id),
+  INDEX `idx_assoc_property_member` (association_id, property_member_id, member_id)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>dimension_member_restriction_definitions` (
@@ -167,7 +169,7 @@ CREATE TABLE `<?php echo $table_prefix ?>object_types` (
   `plugin_id` int(10) unsigned not null default 0,
   `uses_order` tinyint(1) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`),
-  KEY `name` (`name`),
+  UNIQUE KEY `name` (`name`),
   KEY `plugin_id` USING HASH (`plugin_id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -621,6 +623,9 @@ CREATE TABLE  `<?php echo $table_prefix ?>project_events` (
   `update_sync` DATETIME DEFAULT NULL,
   `ext_cal_id` INT(10) UNSIGNED NOT NULL,
   `original_event_id` INT( 10 ) UNSIGNED NULL DEFAULT '0',
+  `uid` varchar(255) NOT NULL default '',
+  `organizer_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  `ical_dtstamp` varchar(255) NOT NULL default '',
   PRIMARY KEY  (`object_id`),
   KEY `start` (`start`),
   KEY `repeat_h` (`repeat_h`),
@@ -788,6 +793,15 @@ CREATE TABLE  `<?php echo $table_prefix ?>guistate` (
   PRIMARY KEY  (`contact_id`,`name`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
+-- role-based default list-column configuration applied to newly created users
+CREATE TABLE  `<?php echo $table_prefix ?>role_default_list_config` (
+  `role_id` int(10) unsigned NOT NULL default '0',
+  `storage` varchar(20) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `value` MEDIUMTEXT NULL,
+  PRIMARY KEY  (`role_id`,`storage`,`name`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
 CREATE TABLE  `<?php echo $table_prefix ?>project_charts` (
   `object_id` int(10) unsigned NOT NULL,
   `type_id` int(10) unsigned default NULL,
@@ -848,8 +862,17 @@ CREATE TABLE `<?php echo $table_prefix ?>event_invitations` (
 CREATE TABLE `<?php echo $table_prefix ?>templates` (
   `object_id` int(10) unsigned NOT NULL auto_increment,
   `description` text <?php echo $default_collation ?>,
+  `task_template_category_id` int(10) unsigned NOT NULL default '0',
   `can_instance_from_mail` int(1) NOT NULL default '0',
   PRIMARY KEY  (`object_id`)
+) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
+
+CREATE TABLE `<?php echo $table_prefix ?>task_template_categories` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `name` varchar(255) <?php echo $default_collation ?> NOT NULL DEFAULT '',
+  `sort_order` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `sort_order` (`sort_order`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
 CREATE TABLE `<?php echo $table_prefix ?>template_objects` (
@@ -938,6 +961,9 @@ CREATE TABLE `<?php echo $table_prefix ?>custom_properties` (
   `is_disabled` tinyint(1) NOT NULL DEFAULT 0,
   `show_in_lists` tinyint(1) NOT NULL DEFAULT 0,
   `contact_type` varchar(255) NOT NULL DEFAULT 'all',
+  `filter_values_by` varchar(255) NOT NULL DEFAULT '',
+  `linked_to` varchar(255) NOT NULL DEFAULT '',
+  `decimal_digits` int(10) NOT NULL DEFAULT 2,
   PRIMARY KEY (`id`)
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;
 
@@ -960,7 +986,7 @@ CREATE TABLE `<?php echo $table_prefix ?>queued_emails` (
   `bcc` text <?php echo $default_collation ?>,
   `from` text <?php echo $default_collation ?>,
   `subject` text <?php echo $default_collation ?>,
-  `body` text <?php echo $default_collation ?>,
+  `body` mediumtext <?php echo $default_collation ?>,
   `attachments` text,
   `timestamp` datetime NOT NULL,
   `object_id` int(10) NOT NULL DEFAULT 0,
@@ -1270,7 +1296,7 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_widget_options` (
   `contact_id` int(11) NOT NULL,
   `member_type_id` int(11) NOT NULL DEFAULT 0,
   `option` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `value` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `value` text COLLATE utf8_unicode_ci NOT NULL,
   `config_handler_class` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
   `is_system` tinyint(1) unsigned default 0,
   PRIMARY KEY (`widget_name`,`contact_id`,`member_type_id`,`option`) USING BTREE
@@ -1304,7 +1330,7 @@ CREATE TABLE `<?php echo $table_prefix ?>sent_notifications` (
  `bcc` text <?php echo $default_collation ?>,
  `from` text <?php echo $default_collation ?>,
  `subject` text <?php echo $default_collation ?>,
- `body` text <?php echo $default_collation ?>,
+ `body` mediumtext <?php echo $default_collation ?>,
  `attachments` text <?php echo $default_collation ?>,
  `timestamp` datetime NOT NULL,
  `object_id` int(10) NOT NULL DEFAULT 0,

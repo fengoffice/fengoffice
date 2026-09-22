@@ -4,7 +4,7 @@
 
   <div class="">
     
-    <div  class="link-ico ico-email"><h2><?php echo lang('email address') ?></h2></div>
+    <h2 class="card-section-header"><i class="icon-mail"></i> <?php echo lang('email address') ?></h2>
     <div class="cardBlock">
       <?php 
 		$all_emails = ContactEmails::instance()->findAll(array('conditions' => 'contact_id='.$company->getId(), 'order' => 'is_main DESC'));
@@ -28,7 +28,7 @@
       ?>
     </div>
     
-    <div  class="link-ico ico-phone"><h2><?php echo lang('phone number') ?></h2></div>
+    <h2 class="card-section-header"><i class="icon-phone"></i> <?php echo lang('phone number') ?></h2>
     <div class="cardBlock">
     <?php
 	$phones = $company->getAllPhones();
@@ -45,7 +45,7 @@
 	?>
     </div>
     
-    <div  class="link-ico ico-company"><h2><?php echo lang('address') ?></h2></div>
+    <h2 class="card-section-header"><i class="icon-building-2"></i> <?php echo lang('address') ?></h2>
     <div class="cardBlock">
 <?php
 	$addresses = $company->getAllAddresses();
@@ -62,7 +62,7 @@
 			if($address->getCountry() != '') $out .= ' - ' . $address->getCountryName();
 			
 			echo $type_name . $out;
-			?>&nbsp;<a class="map-link coViewAction ico-map" href="http://maps.google.com/?q=<?php echo $out ?>" target="_blank"><?php echo lang('map')?></a><?php
+			?>&nbsp;<a class="map-link" href="http://maps.google.com/?q=<?php echo $out ?>" target="_blank"><i class="icon-map-pin"></i> <?php echo lang('map')?></a><?php
 	
 			echo '</div>';
 		}
@@ -72,7 +72,7 @@
 ?>  </div>
   
     
-    <div  class="link-ico ico-map"><h2><?php echo lang('homepage') ?></h2></div>
+    <h2 class="card-section-header"><i class="icon-map-pin"></i> <?php echo lang('homepage') ?></h2>
     <div class="cardBlock" style="margin-bottom:0px;">
 <?php
 	$webpages = $company->getAllWebpages();

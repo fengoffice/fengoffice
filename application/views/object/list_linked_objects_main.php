@@ -2,7 +2,7 @@
 $genid = gen_id();
 if (isset($linked_objects) && is_array($linked_objects) && count($linked_objects)) { ?>
 	<div>
-	<div style="border-bottom:1px solid #CCCCCC;"><table style="width:100%"><tr><td>
+	<div class="mb-2"><table style="width:100%"><tr><td>
 	<strong><?php echo lang("linked main title") ?>:</strong>&nbsp;&nbsp;&nbsp;
 	<span id="bt<?php echo $genid?>">
 	<?php 
@@ -29,29 +29,30 @@ if (isset($linked_objects) && is_array($linked_objects) && count($linked_objects
 		
 	<?php
 	}
-	?></span></td><td style="text-align:right;"><?php 
+	?></span></td><td><div class="d-flex flex-end gap-2"><?php 
 		$displayShowAll = count($sorted_objects) > 1;
 		$displayLinkObjects = $linked_objects_object->canLinkObject(logged_user()) && $enableAdding;
 		
-		if ($displayShowAll) {?>
-			<a class="internalLink" href="javascript:og.openLink(
-				og.getUrl(
-					'object',
-					'show_all_linked_objects',
-						{linked_object:'<?php echo $linked_objects_object->getId()?>',
-						linked_manager:'<?php  echo get_class($linked_objects_object->manager()) ?>',
-						linked_object_name:'<?php echo escape_single_quotes(clean($linked_objects_object->getObjectName())) ?>',
-						linked_object_ico:'<?php echo 'ico-' . $linked_objects_object->getObjectTypeName()?>'}),
-					{caller:'linkedobjects'})" >
-				<?php echo lang('show all') . '&hellip;'?>
-			</a>
+		if ($displayShowAll) {?>			
+				<a class="btn btn-primary-50 btn-sm" href="javascript:og.openLink(
+					og.getUrl(
+						'object',
+						'show_all_linked_objects',
+							{linked_object:'<?php echo $linked_objects_object->getId()?>',
+							linked_manager:'<?php  echo get_class($linked_objects_object->manager()) ?>',
+							linked_object_name:'<?php echo escape_single_quotes(clean($linked_objects_object->getObjectName())) ?>',
+							linked_object_ico:'<?php echo 'ico-' . $linked_objects_object->getObjectTypeName()?>'}),
+						{caller:'linkedobjects'})" >
+					<i class="icon-external-link"></i> 
+					<?php echo lang('show all') ?>
+				</a>
 		<?php }//if
 		
-	if ($displayLinkObjects && $displayShowAll) echo ' | ';
+	// if ($displayLinkObjects && $displayShowAll) echo ' | ';
 			
 	if ($displayLinkObjects) { ?>
 		<?php echo render_link_to_object($linked_objects_object,lang('link more objects'), true); ?>
-	<?php } // if ?></td></tr></table></div><div id="hp<?php echo $genid?>"><?php
+	<?php } // if ?></div></td></tr></table></div><div id="hp<?php echo $genid?>"><?php
 	foreach ($sorted_objects as $key => $object_group){ ?>
 		<div id="<?php echo $genid . $key ?>LO" style="<?php echo $key == $maxkey ? '' : 'display:none'?>">
 		<table style="width:100%">
@@ -96,7 +97,7 @@ if (isset($linked_objects) && is_array($linked_objects) && count($linked_objects
 		?>
 		</table>
 		<?php if ($moreLinkedObjects) {?>
-			<a class="internalLink" href="javascript:og.openLink(
+			<a class="btn btn-primary-50 btn-sm" href="javascript:og.openLink(
 				og.getUrl(
 					'object',
 					'show_all_linked_objects',
@@ -104,7 +105,8 @@ if (isset($linked_objects) && is_array($linked_objects) && count($linked_objects
 						linked_object_name:'<?php echo escape_single_quotes(clean($linked_objects_object->getObjectName())) ?>',
 						linked_object_ico:'<?php echo 'ico-' . $linked_objects_object->getObjectTypeName()?>'}),
 					{caller:'linkedobjects'})" >
-				<?php echo lang('show more') . '&hellip;'?>
+				<i class="icon-external-link"></i> 
+				<?php echo lang('show more') ?>
 			</a>
 		<?php }//if?></div><?php
 	} // foreach group
@@ -112,7 +114,7 @@ if (isset($linked_objects) && is_array($linked_objects) && count($linked_objects
 	</div>
 <?php } else {
 	if ((!($linked_objects_object->isNew())) && $linked_objects_object->canLinkObject(logged_user()) && $enableAdding) {
-		echo '<div style="text-align:right;margin:-7px; margin-right:0px">' . render_link_to_object($linked_objects_object,lang('link objects'), true) . '</div>';
+		echo '<div class="d-flex flex-end">' . render_link_to_object($linked_objects_object,lang('link objects'), true) . '</div>';
 	} // if?>
 <?php 
 } // if ?>

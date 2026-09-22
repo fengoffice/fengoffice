@@ -73,19 +73,17 @@
                     }
 
                     ?>
-                    <div class="selected-member-div <?php echo $alt_cls?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
-                        <div class="completePath" style="<?php echo $complete_path_add_style?>"></div>
+                    <div class="selected-member-div og-wsname-color-<?php echo $selected_member->getColor() . ' ' . $alt_cls; ?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
+                        <span class="completePath"></span>
                         <?php if ($is_multiple) : ?>
-                            <div class="selected-member-actions" <?php echo $is_ie ? 'style="display:inline;margin-left:'.$actions_div_width.'px;float:none;"' : 'style="width:'.$actions_div_width.'px;"'?>>
-                                <?php if ($default_selection_checkboxes) { ?>
-                                    <input type="checkbox" class="checkbox" name="member[default_selection][<?php echo $selected_member->getId()?>]" <?php echo $checked_str ?> title="<?php echo lang('select by default')?>"/>
-                                <?php } ?>
-
-                                <?php if ($can_remove_classification) { ?>
-                                    <a href="#" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
-                                <?php } ?>
-                            </div>
-                            <div class="clear"></div>
+                        <span class="selected-member-actions">
+                            <?php if ($default_selection_checkboxes) { ?>
+                                <input type="checkbox" class="checkbox" name="member[default_selection][<?php echo $selected_member->getId()?>]" <?php echo $checked_str ?> title="<?php echo lang('select by default')?>"/>
+                            <?php } ?>
+                            <?php if ($can_remove_classification) { ?>
+                                <a href="#" tabindex="-1" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
+                            <?php } ?>
+                        </span>
                         <?php endif;?>
                     </div>
                     <?php	$alt_cls = $alt_cls == "" ? "alt-row" : "";
@@ -108,7 +106,13 @@
         $("#<?php echo $genid; ?>-member-chooser-panel-<?php echo $dimension_id?>-tree .x-panel-body.collapsible-body").css('width', '<?php echo $container_width - 2?>px');
     });
 
-    $("#<?php echo $genid; ?>selected-members-dim<?php echo $dimension_id?>").appendTo("#<?php echo $genid?>-member-chooser-panel-<?php echo $dimension_id?>-tree-current-selected");
+    <?php
+    // $first_member is provided by the caller's scope and is absent when the selector opens
+    // with no preselected member (e.g. the event registration form). Guard against null so
+    // we don't fatal on getColor(). PHP 8+ turns the previous undefined access into a crash.
+    $first_member_color = (isset($first_member) && $first_member instanceof Member) ? $first_member->getColor() : '';
+    ?>
+    $("#<?php echo $genid; ?>selected-members-dim<?php echo $dimension_id?>").appendTo("#<?php echo $genid?>-member-chooser-panel-<?php echo $dimension_id?>-tree-current-selected og-wsname-color-<?php echo $first_member_color?>");
 
 
     <?php

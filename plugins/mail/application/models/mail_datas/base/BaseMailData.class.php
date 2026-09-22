@@ -103,6 +103,29 @@ abstract class BaseMailData extends DataObject {
 	} // setBcc()
 
 	/**
+	 * Get value of 'from' field
+	 *
+	 * @access public
+	 * @param string $value
+	 * @return boolean
+	 */
+	function getFromCopy() {
+		return $this->getColumnValue('from_copy');
+	} // getFrom()
+
+	/**
+	 * Set value of 'from' field
+	 *
+	 * @access public
+	 * @param string $value
+	 * @return boolean
+	 */
+	function setFromCopy($value) {
+		return $this->setColumnValue('from_copy', $value);
+	} // setFrom()
+
+
+	/**
 	 * Return value of 'subject' field
 	 *
 	 * @access public

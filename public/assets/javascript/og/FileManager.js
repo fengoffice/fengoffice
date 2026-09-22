@@ -14,7 +14,7 @@ og.FileManager = function() {
 		'dateCreated', 'dateCreated_today',
 		'updatedBy', 'updatedById',
 		'dateUpdated', 'dateUpdated_today',
-		'icon', 'wsIds', 'manager', 'checkedOutById',
+		'icon', 'fileExt', 'wsIds', 'manager', 'checkedOutById',
 		'checkedOutByName', 'mimeType', 'isModifiable',
 		'modifyUrl', 'songInfo', 'ftype', 'url', 'ix','isRead', 'isMP3', 'memPath', 'genid'
 	];
@@ -128,24 +128,28 @@ og.FileManager = function() {
 	}	
 
 	function renderIcon(value, p, r) {
-		var classes = "db-ico ico-unknown ico-" + r.data.type;
-		if (r.data.name.indexOf(".") >= 0) {
-			var extension = r.data.name.substring(r.data.name.indexOf(".") + 1);
-			classes += " ico-ext-" + extension;
-		}
-		if (r.data.ftype == 1){
-			classes += ' ico-webfile';
-		}
-		if (r.data.mimeType) {
-			var path = r.data.mimeType.replace(/[\/\+]/g, "-").split("-");
-			var acc = "";
-			for (var i=0; i < path.length; i++) {
-				acc += path[i];
-				classes += " ico-" + acc.replace(/\./g, "_");
-				acc += "-";
+		if (isNaN(r.data.object_id)) return '';
+		// Everything renders as a CSS text badge coloured per file type
+		var ext, label;
+		if (r.data.ftype == 1) {
+			// Weblinks have no extension
+			ext = 'link';
+			label = 'WWW';
+		} else if (!r.data.fileExt) {
+			ext = 'unknown';
+			label = '?';
+		} else {
+			ext = r.data.fileExt.toString().toLowerCase();
+			if (ext == 'slim') {
+				// slim is a slides library, show it as a presentation
+				label = 'PPT';
+			} else {
+				label = ext.toUpperCase();
+				if (label.length > 4) label = label.substring(0, 4);
 			}
 		}
-		return String.format('<div class="{0}" />', classes);
+		return String.format('<span class="file-type-badge file-ext-{0}" title="{1}">{2}</span>',
+			ext, og.clean(r.data.type || ''), label);
 	}
 
 	/* Go to https://docs.sencha.com/extjs/2.3.0/#!/api/Ext.grid.ColumnModel 
@@ -191,17 +195,24 @@ og.FileManager = function() {
 	function renderCheckout(value, p, r) {
 		if(r.data.ftype == 0){
 			if (value =='') {
-				return String.format('<div class="ico-unlocked" style="display:block;height:16px;background-repeat:no-repeat;padding-left:18px;padding-top:3px;">'
-				+ '<a href="#" onclick="og.openLink(\'{1}\')" title="{2}">{0}</a>', lang('lock'), og.getUrl('files', 'checkout_file', {id: r.id}), lang('checkout description'));
+				return String.format(
+					'<div class="list-action-icon"><a href="#" onclick="og.openLink(\'{1}\')" title="{2}"><i class="icon-lock-open"></i> {0}</a>',
+					lang('lock'), 
+					og.getUrl('files', 'checkout_file', {id: r.id}), 
+					lang('checkout description')
+				);
 			} else if (r.data.checkedOutById == og.loggedUser.id || og.loggedUser.type == 1 || og.loggedUser.type == 2) {
 				//og.loggedUser.type 1 = Super Administrator, 2 = Administrator
-				var html = String.format('<div class="ico-locked" style="display:block;height:16px;background-repeat:no-repeat;padding-left:18px;padding-top:3px;"><a href="#" onclick="og.openLink(\'{1}\')">{0}</a>', 
-					lang('unlock'), og.getUrl('files', 'undo_checkout', {id: r.id}));
+				var html = String.format(
+					'<div class="list-action-icon"><a href="#" onclick="og.openLink(\'{1}\')"><i class="icon-lock"></i> {0}</a>', 
+					lang('unlock'), 
+					og.getUrl('files', 'undo_checkout', {id: r.id})
+				);
 				
 				if (r.data.checkedOutById == og.loggedUser.id) {
-					html += String.format(', <a href="#" onclick=og.uploadNewRevision('+ r.id +',"'+ r.data.genid +'")>{0}</a>', lang('checkin'));
+					html += String.format(', <a href="#" onclick=og.uploadNewRevision('+ r.id +',"'+ r.data.genid +'")><i class="icon-upload"></i> {0}</a>', lang('checkin'));
 				} else {
-					html += ', ' + lang('checked out by', String.format('<a href="#" onclick="og.openLink(\'{1}\')">{0}</a>', 
+					html += ', ' + lang('checked out by', String.format('<a href="#" onclick="og.openLink(\'{1}\')"><i class="icon-user"></i> {0}</a>', 
 						r.data.checkedOutByName, og.getUrl('contact', 'card', {id: r.data.checkedOutById})));
 				}
 				
@@ -210,8 +221,8 @@ og.FileManager = function() {
 				return html;
 			
 			} else {
-				return '<div class="ico-locked" style="display:block;height:16px;background-repeat:no-repeat;padding-left:18px">' +
-					lang('checked out by', String.format('<a href="#" onclick="og.openLink(\'{1}\')">{0}</a>', 
+				return '<div class="list-action-icon">' +
+					lang('checked out by', String.format('<a href="#" onclick="og.openLink(\'{1}\')"><i class="icon-lock"></i> {0}</a>', 
 					r.data.checkedOutByName, og.getUrl('contact', 'card', {id: r.data.checkedOutById}))) + '</div>';
 			}
 		} else {
@@ -223,46 +234,45 @@ og.FileManager = function() {
 		if (isNaN(r.data.object_id)) return;
 			
 		var actions = '';
-		var actionStyle= ' style="font-size:105%;padding-bottom:3px;padding-left:16px;background-repeat:no-repeat;" '; 
 		
 		if(r.data.ftype == 0){
 			if(og.config['checkout_notification_dialog'] == 0){
-				actions += String.format('<a class="list-action ico-download" href="{0}" target="_self" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+				actions += String.format('<a class="list-action-icon" href="{0}" target="_self" title="{1}"><i class="icon-download"></i></a>',
 					og.getUrl('files', 'download_file', {id: r.id, mod:Ext.id()}),lang('download'));
 			}else{
-				actions += String.format('<a class="list-action ico-download" href="#" onclick="og.checkDownload(\'{0}\', \'{1}\', \'{2}\', \'{4}\');" title="{3}" ' + actionStyle + '>&nbsp;</a>',
+				actions += String.format('<a class="list-action-icon" href="#" onclick="og.checkDownload(\'{0}\', \'{1}\', \'{2}\', \'{4}\');" title="{3}"><i class="icon-download"></i></a>',
 				og.getUrl('files', 'download_file', {id: r.id, mod:Ext.id()}), r.data.checkedOutById, r.data.checkedOutByName, lang('download'), r.id);
 			}			
 		}else{
-			actions += String.format("<a href='{0}' class='list-action ico-open-link' target='_blank'" + actionStyle + ">&nbsp;</a>&nbsp;", r.data.url, 'public/assets/themes/default/images/16x16/openlink.png');
+			actions += String.format("<a href='{0}' class='list-action-icon' target='_blank'><i class='icon-external-link'></i></a>&nbsp;", r.data.url);
 		}
 		
 		if (r.data.isModifiable) {
 			actions += String.format(
-			'<a class="list-action ico-edit" href="#" onclick="og.openLink(\'{0}\')" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+			'<a class="list-action-icon edit" href="#" onclick="og.openLink(\'{0}\')" title="{1}"><i class="icon-pencil-line"></i></a>',
 			r.data.modifyUrl,lang('edit this document'));
 		}
 		
 		if (r.data.isMP3) {
 			actions += String.format(
-			'<a class="list-action ico-play" href="#" onclick="og.playMP3({0})" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+			'<a class="list-action-icon" href="#" onclick="og.playMP3({0})" title="{1}"><i class="icon-play"></i></a>',
 					r.data.songInfo.replace(/'/g, "\\'").replace(/"/g, "'"), lang('play this file'));
 			actions += String.format(
-			'<a class="list-action ico-queue" href="#" onclick="og.queueMP3({0})" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+			'<a class="list-action-icon" href="#" onclick="og.queueMP3({0})" title="{1}"><i class="icon-list-music"></i></a>',
 					r.data.songInfo.replace(/'/g, "\\'").replace(/"/g, "'"), lang('queue this file'));
 		} else if (r.data.mimeType == 'application/xspf+xml') {
 			actions += String.format(
-			'<a class="list-action ico-play" href="#" onclick="og.playXSPF({0})" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+			'<a class="list-action-icon" href="#" onclick="og.playXSPF({0})" title="{1}"><i class="icon-play"></i></a>',
 					r.id, lang('play this file'));
 		} else if (r.data.mimeType == 'prsn') {
 			actions += String.format(
-			'<a class="list-action ico-slideshow" href="#" onclick="og.slideshow({0})" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+			'<a class="list-action-icon" href="#" onclick="og.slideshow({0})" title="{1}"><i class="icon-presentation"></i></a>',
 					r.id, lang('view slideshow'));
 		}
 		
 		if (og.FileIsZip(r.data.mimeType, r.data.name) && og.zipSupported) {
 			actions += String.format(
-			'<a class="list-action ico-zip-extract" href="#" onclick="og.openLink(og.getUrl(\'files\', \'zip_extract\', {id:{0}}))" title="{1}" ' + actionStyle + '>&nbsp;</a>',
+			'<a class="list-action-icon" href="#" onclick="og.openLink(og.getUrl(\'files\', \'zip_extract\', {id:{0}}))" title="{1}"><i class="icon-package-open"></i></a>',
 			r.data.object_id,lang('extract files'));
 		}
 		
@@ -365,7 +375,7 @@ og.FileManager = function() {
         	id: 'icon',
         	header: '&nbsp;',
         	dataIndex: 'icon',
-        	width: 28,
+        	width: 44,
         	renderer: renderIcon,
         	fixed:true,
         	resizable: false,
@@ -439,8 +449,7 @@ og.FileManager = function() {
 		},{
 			id: 'actions',
 			header: lang("actions"),
-			width: 60,
-			fixed: true,
+			width: 90,
 			renderer: renderActions,
 			sortable: false
 		}
@@ -585,15 +594,15 @@ og.FileManager = function() {
 	
 	actions = {
 		newCO: new Ext.Action({
-			text: lang('new'),
+			text: '<i class="icon-circle-plus"></i>' + lang('new') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
             tooltip: lang('create an object'),
-            iconCls: 'ico-new new_button',
+            iconCls: 'btn btn-sm btn-secondary',
 			menu: {items: addMenuItems}
 		}),
 		properties: new Ext.Action({
-			text: lang('update file'),
+			text: '<i class="icon-file-cog"></i>' + lang('update file'),
 			tooltip: lang('edit selected file properties'),
-			iconCls: 'ico-properties',
+			iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function(e) {
 				var o = sm.getSelected();
@@ -605,9 +614,9 @@ og.FileManager = function() {
 			}
 		}),
 		zip_add: new Ext.Action({
-			text: lang('compress'),
+			text: '<i class="icon-package"></i>' + lang('compress'),
             tooltip: lang('compress selected files'),
-            iconCls: 'ico-zip-add',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			hidden: !og.zipSupported,
 			handler: function() {
@@ -624,9 +633,9 @@ og.FileManager = function() {
 			scope: this
 		}),
 		del: new Ext.Action({
-			text: lang('move to trash'),
+			text: '<i class="icon-trash-2"></i>' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
@@ -642,9 +651,9 @@ og.FileManager = function() {
 			scope: this
 		}),
 		archive: new Ext.Action({
-			text: lang('archive'),
+			text: '<i class="icon-archive"></i>' + lang('archive'),
             tooltip: lang('archive selected object'),
-            iconCls: 'ico-archive-obj',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_archive_config = parseInt(og.preferences['enableArchiveConfirmation']);
@@ -669,7 +678,8 @@ og.FileManager = function() {
 			scope: this
 		}),
 		markAs: new Ext.Action({
-			text: lang('mark as'),
+			text: '<i class="icon-tag"></i>' + lang('mark as') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
+            iconCls: 'btn btn-sm',
 			tooltip: lang('mark as desc'),
 			menu: [
 				markactions.markAsRead,
@@ -716,7 +726,7 @@ og.FileManager = function() {
 			emptyMsg: lang("no objects to display")
 		}),
 		viewConfig: {
-			forceFit: true
+			forceFit: false
 		},
 		sm: sm,
 		tbar: tbar,

@@ -95,7 +95,7 @@ class AdministrationController extends ApplicationController {
 	 * Validate user information in order to give acces to the administration panel
 	 * */
 	function password_autentify() {
-		if(!logged_user()->isCompanyAdmin(owner_company())) {
+		if(!logged_user()->isAdminGroup()) {
 			flash_error(lang('no access permissions'));
 			ajx_current("empty");
 			return;
@@ -224,10 +224,16 @@ class AdministrationController extends ApplicationController {
 		$ordered_object_types = array();
 		// get all object types, exclude object types of disabled plugins
 		$object_types_tmp = ObjectTypes::instance()->findAll(array(
-			"conditions" => "`type` IN ('$ot_types_str') 
-				AND IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true)
-				AND `name` <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'file revision'", 
-			"order" => "name"	
+			"conditions" => "
+				`type` IN ('$ot_types_str')
+				AND IF(
+					plugin_id IS NULL OR plugin_id = 0,
+					true,
+					(SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id = plugin_id) = true
+				)
+				AND `name` NOT IN ('template_task', 'template_milestone', 'file revision', 'person', 'company')
+			",
+			"order" => "name"
 		));
 		foreach ($object_types_tmp as $ot) {
 			$ordered_object_types[$ot->getId()] = $ot->getPluralObjectTypeName();
@@ -293,26 +299,61 @@ class AdministrationController extends ApplicationController {
 		
 		if (is_array($custom_properties)) {
 		  try {
+			Env::useHelper('custom_properties');
 			DB::beginWork();
-			
-			foreach ($custom_properties as $order => $data) {
-				
+
+			$original_custom_properties = CustomProperties::instance()->findAll(array('conditions' => array("`object_type_id` = ?", $object_type->getId())));
+			$original_custom_properties_by_id = array();
+			if (is_array($original_custom_properties)) {
+				foreach ($original_custom_properties as $cp) {
+					$original_custom_properties_by_id[$cp->getId()] = $cp;
+				}
+			}
+
+			$saved_cps = array();
+			foreach ($custom_properties as $order => &$data) {
+
 				$new_cp = null;
-				
+
 				$is_assoc_substr = 'assoc_';
 
-				if($data['id'] != '') {
+				// Use !empty() so that non-numeric ids like "assoc_22", "located_under",
+				// etc. pass through to the str_starts_with / else-continue branches below.
+				// The previous loose `!= 0` caused PHP 7 to coerce non-numeric strings
+				// to 0, making them all fall through and create spurious text CPs.
+				if (!empty($data['id'])) {
 					if (is_numeric($data['id'])) {
 						$new_cp = CustomProperties::getCustomProperty($data['id']);
 					} else if (str_starts_with($data['id'], $is_assoc_substr)){	
-											
-						$dimension_id = substr($data['id'],6);
-						$dim_association = DimensionMemberAssociations::instance()->findById($dimension_id, false);
-						
-						$dim_association->setIsRequired($data['is_required']);
-						$dim_association->setIsMultiple($data['is_multiple_values']);						
-									
-						$dim_association->save();
+
+						$association_id = str_replace($is_assoc_substr, '', $data['id']);
+						$dim_association = DimensionMemberAssociations::instance()->findById($association_id, false);
+						if (!$dim_association instanceof DimensionMemberAssociation) {
+							continue;
+						}
+
+						// check if the object subtype of the association is the same
+						// if not then don't update the association, let the subtype properties handle the changes
+						if (array_var($data, 'object_subtype_id', 0) > 0 && $dim_association->getColumnValue('object_subtype_id') != $data['object_subtype_id']) {
+							continue;
+						}
+
+						$delete_association = array_var($data, 'is_disabled');
+						if ($delete_association) {
+							// checks if the association can be deleted and delete if so
+							// else an exception is thrown
+							$dim_association->delete();
+
+						} else {
+
+							$dim_association->setIsRequired($data['is_required']);
+							$dim_association->setIsMultiple($data['is_multiple_values']);						
+
+							$dim_association->save();
+
+							$ignored = null;
+							Hook::fire('after_dimension_member_association_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'dim_association' => $dim_association), $ignored);
+						}
 
 						continue;
 
@@ -326,15 +367,22 @@ class AdministrationController extends ApplicationController {
 				if ($new_cp instanceof CustomProperty && $new_cp->getObjectTypeId() != $obj_type_id) {
 					$is_cp_from_other_ot = true;
 				}
+
+				$is_new = false;
 				if ($new_cp == null) {
+					$is_new = true;
 					$new_cp = new CustomProperty();
 				}
-			
+
 				if(array_var($data, 'deleted') == "1"){
-					if (!$new_cp->isNew()) {
+					// Only delete the custom property if the subtype is the same we are editing
+					if (!$new_cp->isNew() && $new_cp->getColumnValue('object_subtype_id') == array_var($data, 'object_subtype_id', 0) > 0) {
 						$new_cp->delete();
+						continue;
+					} else {
+						// if form subtype is not the same as the custom property subtype, then disable the custom property
+						$data['is_disabled'] = "1";
 					}
-					continue;
 				}
 				if(array_var($data, 'is_disabled') == "1"){
 					$new_cp->setIsDisabled(1);
@@ -351,6 +399,12 @@ class AdministrationController extends ApplicationController {
 				
 				if (array_var($data, 'type') == 'boolean') {
 					$data['default_value'] = array_var($data, 'default_value_bool');
+					$allow_ns = array_var($data, 'boolean_allow_not_specified');
+					$allow_ns = ($allow_ns === '1' || $allow_ns === 1 || $allow_ns === true);
+					if (!$allow_ns && (string) $data['default_value'] === '0') {
+						$data['default_value'] = '1';
+					}
+					$data['values'] = $allow_ns ? '' : CP_BOOLEAN_DISALLOW_NOT_SPECIFIED_MARKER;
 				}
 
 				if (array_var($data, 'type') == 'numeric') {
@@ -363,6 +417,12 @@ class AdministrationController extends ApplicationController {
 					$new_cp->setFromAttributes($data);
 					$new_cp->setObjectTypeId($obj_type_id);
 					$new_cp->setOrder($order);
+					// Set position if advanced_core plugin is active (column registered via hook)
+					$has_position = method_exists($new_cp, 'setPosition') || in_array('position', $new_cp->manager()->getColumns());
+					if ($has_position) {
+						$position_value = array_var($data, 'position', 'full_width');
+						$new_cp->setColumnValue('position', $position_value);
+					}
 					
 					if (array_var($data, 'type') == 'list' || array_var($data, 'type') == 'table') {
 						$values = array();
@@ -375,16 +435,47 @@ class AdministrationController extends ApplicationController {
 					} else {
 						$new_cp->setValues($data['values']);
 					}
+
+					// don't update base object type custom property attributes if we are saving from a subtype form
+					if (!$is_new && array_var($data, 'object_subtype_id', 0) > 0) {
+						$current_cp = array_var($original_custom_properties_by_id, $data['id']);
+						if ($current_cp instanceof CustomProperty && $current_cp->getColumnValue('object_subtype_id') == 0) {
+							// Preserve position before overwriting with original attributes
+							$saved_position = in_array('position', $new_cp->manager()->getColumns()) ? $new_cp->getColumnValue('position') : null;
+							// Preserve HTML help before overwriting with original attributes (same reasoning as position:
+							// it's editable regardless of subtype context, so a subtype-scoped save shouldn't discard it)
+							$has_html_help_cols = in_array('html_help_enabled', $new_cp->manager()->getColumns());
+							$saved_html_help_enabled = $has_html_help_cols ? $new_cp->getColumnValue('html_help_enabled') : null;
+							$saved_html_help_content = $has_html_help_cols ? $new_cp->getColumnValue('html_help_content') : null;
+							$new_cp->setFromAttributes($current_cp->getArrayInfo());
+							// Restore the position value that was set from form data
+							if ($saved_position !== null) {
+								$new_cp->setColumnValue('position', $saved_position);
+							}
+							if ($has_html_help_cols) {
+								$new_cp->setColumnValue('html_help_enabled', $saved_html_help_enabled);
+								$new_cp->setColumnValue('html_help_content', $saved_html_help_content);
+							}
+						}
+					}
 					
 					$new_cp->save();
 				}
-								
-				$ret = null;
-				Hook::fire('after_custom_property_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'order' => $order), $ret);
+					// set the id in the data array after saving the custom property
+					$data['id'] = $new_cp->getId();
+									
+					$ret = null;
+					Hook::fire('after_custom_property_save', array('ot_id' => $obj_type_id, 'cp' => $new_cp, 'data' => $data, 'order' => $order), $ret);
+					$saved_cps[] = $new_cp;
 			}
 
 			$ignored = null;
-			Hook::fire('after_all_custom_properties_save', array('ot_id' => $obj_type_id, 'request' => $_REQUEST), $ignored);
+			Hook::fire('after_all_custom_properties_save', array(
+				'ot_id' => $obj_type_id, 
+				'request' => $_REQUEST,
+				'saved_cps' => $saved_cps,
+				'cps_data' => $custom_properties
+			), $ignored);
 			
 			DB::commit();
 			flash_success(lang('custom properties updated'));
@@ -392,10 +483,10 @@ class AdministrationController extends ApplicationController {
 			
 			evt_add("reload custom property definition", array('ot' => $object_type->getArrayInfo(array('id','name'))));
 			
-		  } catch (Exception $e) {
+		} catch (Exception $e) {
 			DB::rollback();
 			flash_error($e->getMessage());
-		  }
+		}
 			
 		}
 	}
@@ -437,7 +528,9 @@ class AdministrationController extends ApplicationController {
 			return;
 		} // if
 		$this->addHelper('textile');
-		tpl_assign('config_categories', ConfigCategories::getAll());
+		$config_categories = ConfigCategories::getAll();
+		Hook::fire('filter_general_config_categories', null, $config_categories);
+		tpl_assign('config_categories', $config_categories);
 	} // configuration
 
 	/**
@@ -620,7 +713,10 @@ class AdministrationController extends ApplicationController {
 					flash_error(lang('error test mail settings'));
 				} // if
 				ajx_current("back");
-			} catch(Exception $e) {
+			} catch (FormSubmissionErrors $e) {
+				// Extends PHP Error (not Exception) since PHP 7 — Exception catch never ran.
+				tpl_assign('error', $e);
+			} catch (Throwable $e) {
 				flash_error($e->getMessage());
 				ajx_current("empty");
 			} // try
@@ -775,6 +871,7 @@ class AdministrationController extends ApplicationController {
 		if (Plugins::instance()->isActivePlugin('mail')) {
 			//$my_accounts = MailAccounts::getMailAccountsByUser(logged_user());
 			$all_accounts = MailAccounts::instance()->findAll();
+			$all_accounts = MailAccounts::sortAccountsByName($all_accounts);
 		}
 		//tpl_assign('my_accounts', $my_accounts);
 		tpl_assign('all_accounts', $all_accounts);
@@ -1032,4 +1129,144 @@ class AdministrationController extends ApplicationController {
 		}
 		
 	}
-} 
+
+
+function default_role_permissions_save()
+{
+	if (logged_user()->isGuest() || !can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+
+	$role_id = (int) array_var($_POST, 'role_id');
+	if (!$role_id) {
+		flash_error(lang('invalid role'));
+		ajx_current("back");
+		return;
+	}
+
+	/* =============================
+	   SYSTEM PERMISSIONS
+	   ============================= */
+
+	$sys_perm_data = array_var($_POST, 'sys_perm', array());
+
+	$system_permissions = SystemPermissions::instance()->findById($role_id);
+	if (!$system_permissions instanceof SystemPermission) {
+		$system_permissions = new SystemPermission();
+		$system_permissions->setPermissionGroupId($role_id);
+	}
+
+	$columns = SystemPermissions::instance()->getColumns();
+	$hidden_cols = array(
+		'permission_group_id',
+		'can_view_billing',
+		'can_task_assignee'
+	);
+
+	$max_system_permissions = MaxSystemPermissions::instance()->findById($role_id);
+
+	foreach ($columns as $column) {
+		if (in_array($column, $hidden_cols)) continue;
+
+		$value = array_key_exists($column, $sys_perm_data) ? 1 : 0;
+		if ($max_system_permissions instanceof MaxSystemPermission && !$max_system_permissions->getColumnValue($column)) {
+			$value = 0;
+		}
+
+		$system_permissions->setColumnValue($column, $value);
+	}
+
+	$system_permissions->save();
+
+
+	/* =============================
+	   MODULE PERMISSIONS
+	   ============================= */
+
+	DB::execute("
+		DELETE FROM ".TABLE_PREFIX."tab_panel_permissions
+		WHERE permission_group_id = $role_id
+	");
+
+	foreach ((array) array_var($_POST, 'mod_perm', array()) as $panel_id => $v) {
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."tab_panel_permissions
+				(permission_group_id, tab_panel_id)
+			VALUES
+				($role_id, '".addslashes($panel_id)."')
+		");
+	}
+
+
+	/* =============================
+	   ROOT OBJECT TYPE PERMISSIONS
+	   ============================= */
+
+	// Borramos todo y reinsertamos lo enviado por la vista
+	DB::execute("
+		DELETE FROM ".TABLE_PREFIX."role_object_type_permissions
+		WHERE role_id = $role_id
+	");
+
+	$max_ot_permissions = array();
+	$max_rows = DB::executeAll("
+		SELECT object_type_id, can_delete, can_write
+		FROM ".TABLE_PREFIX."max_role_object_type_permissions
+		WHERE role_id = $role_id
+	");
+	if ($max_rows) {
+		foreach ($max_rows as $row) {
+			$max_ot_permissions[(int) $row['object_type_id']] = $row;
+		}
+	}
+
+	foreach ($_POST as $key => $value) {
+
+		// <genid>root_<object_type_id>
+		if (!preg_match('/root_(\d+)$/', $key, $m)) {
+			continue;
+		}
+
+		$object_type_id = (int) $m[1];
+		$level = (int) $value;
+
+		// NONE → no fila
+		if ($level === 0) {
+			continue;
+		}
+
+		if (function_exists('clamp_root_permission_level_for_role')) {
+			$level = clamp_root_permission_level_for_role($level, $role_id, $object_type_id);
+		} elseif (isset($max_ot_permissions[$object_type_id])) {
+			$max = $max_ot_permissions[$object_type_id];
+			if ($level >= 3 && !$max['can_delete']) {
+				$level = $max['can_write'] ? 2 : 1;
+			}
+			if ($level >= 2 && !$max['can_write']) {
+				$level = 1;
+			}
+		}
+		if ($level < 1) {
+			continue;
+		}
+
+		// READ = 0 / 0  (EXISTE la fila)
+		$can_write  = ($level >= 2) ? 1 : 0;
+		$can_delete = ($level == 3) ? 1 : 0;
+
+		DB::execute("
+			INSERT INTO ".TABLE_PREFIX."role_object_type_permissions
+				(role_id, object_type_id, can_write, can_delete)
+			VALUES
+				($role_id, $object_type_id, $can_write, $can_delete)
+		");
+	}
+
+	flash_success(lang('Default role permissions saved'));
+	ajx_current("back");
+}
+
+
+}

@@ -75,6 +75,7 @@
 	'footer copy with homepage' => '© {0} <a class="internalLink" href="{1}">{2}</a>. Wszystkie prawa zastrzeżone.',
 	'footer copy without homepage' => '© {0} {1}. Wszystkie prawa zastrzeżone.',
 	'footer powered' => 'Działa na oprogramowaniu <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Działa na oprogramowaniu',
 	'all documents' => 'Wszystkie dokumenty',
 	'created by me' => 'Utworzone przeze mnie',
 	'by project' => 'Według projektu',

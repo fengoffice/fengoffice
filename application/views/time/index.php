@@ -92,7 +92,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
 
 			if (r.data.rel_object_id == 0) {
 				let onclick = String.format("og.inline_change_object_task('{0}', '{1}', '{2}', '{3}'); return false;", r.data.object_id, 'time', 'assign_task_to_timeslots', grid_id);
-				return '<div class="assign-task-link"><a href="#" onclick="' + onclick + '" class="link-ico ico-add" title="' + lang('assign task') + '"></a></div>';
+				return '<div class="assign-task-link"><a href="#" onclick="' + onclick + '" class="list-action-icon link" title="' + lang('assign task') + '">' + lang('assign task') + '<i class="icon-arrow-up-right"></i></a></div>';
 			}
 
             var onclick = "og.openLink(og.getUrl('task', 'view', {id: " + r.data.rel_object_id + "})); return false;";
@@ -132,25 +132,20 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             if (r.id == 'quick_add_row' || r.data.id == '__total_row__' || r.data.id <= 0)
                 return value;
 
-            var actionStyle = ' style="font-size:105%;padding-top:2px;padding-bottom:3px;padding-left:16px;background-repeat:no-repeat;" ';
-
             if (r.data.end_time) {
                 if (r.data.can_edit) {
                     actions += String.format(
-                        '<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:' + r.data.id + ', req_channel:\'time list - line edit\'}});" title="{0}" ' +
-                        actionStyle + '>&nbsp;</a>', lang('edit')
+                        '<a class="list-action-icon edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:' + r.data.id + ', req_channel:\'time list - line edit\'}});" title="{0}"><i class="icon-pencil-line"></i></a>', lang('edit')
                     );
                 }
                 if (r.data.can_delete) {
                     actions += String.format(
-                        '<a class="list-action ico-delete" href="#" onclick="og.module_timeslots_grid.delete_timeslot(' + r.data.id + ');" title="{0}" ' +
-                        actionStyle + '>&nbsp;</a>', lang('delete')
+                        '<a class="list-action-icon delete" href="#" onclick="og.module_timeslots_grid.delete_timeslot(' + r.data.id + ');" title="{0}"><i class="icon-circle-x"></i></a>', lang('delete')
                     );
                 }
                 if (r.data.can_view_history) {
                     actions += String.format(
-                        '<a class="list-action ico-properties" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}" ' +
-                        actionStyle + '>&nbsp;</a>', lang('view history')
+                        '<a class="list-action-icon history" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}"><i class="icon-history"></i></a>', lang('view history')
                     );
                 }
 
@@ -384,8 +379,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
     // buttons
     var botonera = {
         newtimeslot: new Ext.Button({
-            iconCls: 'ico-new add-first-btn blue',
-            text: '<?php echo lang('add work') ?>',
+            iconCls: 'btn btn-sm btn-secondary',
+            text: '<i class="icon-circle-plus"></i><?php echo lang('add work') ?>',
             id: 'new_ts_btn',
             handler: function() {
                 og.render_modal_form('', {
@@ -400,8 +395,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         }),
 
         start: new Ext.Button({
-            iconCls: 'ico-time add-first-btn',
-            text: '<?php echo lang('start work') ?>',
+            iconCls: 'btn btn-sm',
+            text: '<i class="icon-timer"></i><?php echo lang('start work') ?>',
             id: 'start_work_btn',
             handler: function() {
                 og.openLink(og.getUrl('timeslot', 'open', {req_channel: 'time list - toolbar start clock'}));
@@ -409,9 +404,9 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         }),
 
         archive: new Ext.Action({
-            text: lang('archive'),
+            text: '<i class="icon-archive"></i>' + lang('archive'),
             tooltip: lang('archive selected object'),
-            iconCls: 'ico-archive-obj',
+            iconCls: 'btn btn-sm',
             disabled: true,
 			selection_dependant: true,
 			is_multiple: true,
@@ -431,9 +426,9 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         }),
 
         edit: new Ext.Action({
-            text: lang('edit'),
+            text: '<i class="icon-pencil-line"></i>' + lang('edit'),
             tooltip: lang('edit selected object'),
-            iconCls: 'ico-edit',
+            iconCls: 'btn btn-sm',
             disabled: true,
 			selection_dependant: true,
 			is_multiple: false,
@@ -452,9 +447,9 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
         }),
         
         trash: new Ext.Action({
-            text: lang('move to trash'),
+            text: '<i class="icon-trash"></i>' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
             disabled: true,
 			selection_dependant: true,
 			is_multiple: true,
@@ -473,19 +468,28 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             }
         }),
         print: new Ext.Button({
-            iconCls: 'ico-print',
-            text: '<?php echo lang('generate report') ?>',
+            iconCls: 'btn btn-sm',
+            text: '<i class="icon-printer"></i><?php echo lang('generate report') ?>',
             id: 'ts_print_btn',
             handler: function() {
                 var tab = Ext.getCmp('reporting-panel');
                 if (tab) Ext.getCmp('tabs-panel').setActiveTab(tab);
-				
+
 				let grid = Ext.getCmp(og.module_timeslots_grid.grid_id);
+
+				// The time module grid's own "Type" filter uses 0=all/1=task/2=general (matching
+				// TimeController's own filtering), but the report's "Time entries" field uses a
+				// different numbering (0=task/1=general/2=all, matching how Timeslots::getTaskTimeslots()
+				// actually filters — see total_task_times_p.php). Translate so the same real meaning
+				// carries over instead of just the raw number.
+				var grid_to_report_timeslot_type = {'0': '2', '1': '0', '2': '1'};
+				var report_timeslot_type = grid_to_report_timeslot_type[grid.filters.type_filter.value];
+				if (typeof report_timeslot_type == 'undefined') report_timeslot_type = grid.filters.type_filter.value;
 
 				// initialize report form with the same filters we have in the time module
 				let post_parameters = {
 					'params[user]': grid.filters.user_filter.value,
-					'params[timeslot_type]': grid.filters.type_filter.value,
+					'params[timeslot_type]': report_timeslot_type,
 					'params[date_type]': grid.filters.period_filter.value,
 					'params[start_value]': grid.filters.from_filter.value,
 					'params[end_value]': grid.filters.to_filter.value,
@@ -494,6 +498,17 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
 					post_parameters['params[invoicing_status]'] = grid.filters.invoicing_status_filter.value;
 				}
 
+				// same columns, in the same order, as currently shown in the time module grid
+				// (mirrors execute_member_report() in the advanced_reports plugin's "Report & Print")
+				var report_columns = [];
+				var colmodeldef = grid.colModel.config;
+				for (var x = 0; x < colmodeldef.length; x++) {
+					var col = colmodeldef[x];
+					if (!col.id || col.hidden || col.id == 'icon' || col.id == 'actions' || col.id == 'checker') continue;
+					report_columns.push(col.id);
+				}
+				post_parameters['params[columns][]'] = report_columns;
+
                 og.openLink(og.getUrl('reporting', 'total_task_times_p'), {
 					post: post_parameters,
                     caller: 'reporting-panel'
@@ -501,8 +516,8 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             }
         }),
 		assign_task: new Ext.Button({
-			iconCls: 'ico-task',
-			text: '<?php echo lang('assign task') ?>',
+			iconCls: 'btn btn-sm',
+			text: '<i class="icon-clipboard-list"></i><?php echo lang('assign task') ?>',
 			id: 'ts_assign_task_btn',
 			handler: function() {
 
@@ -529,6 +544,18 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
     timeslots_tbar_items.push(botonera.print);
 	timeslots_tbar_items.push(botonera.assign_task);
 
+    // Add weekly view button to second toolbar (filters row)
+    <?php if (Plugins::instance()->isActivePlugin('advanced_core')) { ?>
+        timeslots_tbar_items.push(new Ext.Button({
+            iconCls: 'btn btn-sm btn-secondary-outline',
+            text: '<i class="icon-calendar-range"></i><?php echo lang('weekly view') ?>',
+            id: 'weekly_view_btn',
+            handler: function() {
+                og.time_weekly_view.switch_interface('<?php echo $grid_id ?>', 'list');
+            },
+            secondToolbar: true
+        }));
+    <?php } ?>
 
     <?php foreach ($additional_actions as $add_action) {
         if (array_var($add_action, 'type') == 'menu') {
@@ -549,6 +576,7 @@ if (is_array($panel_view_hook_output) && $panel_view_hook_output['hide_list_view
             <?php } ?>
             var menu_action = new Ext.Action({
                 text: '<?php echo array_var($add_action, 'text') ?>',
+                iconCls: '<?php echo array_var($add_action, 'iconCls') ?>',
                 menu: menu_items
             });
             timeslots_tbar_items.push(menu_action);

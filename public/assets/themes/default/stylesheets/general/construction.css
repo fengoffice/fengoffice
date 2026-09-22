@@ -95,6 +95,10 @@
 {
 	float: left;
 	max-height: 55px;
+	display: flex;
+  	justify-content: center; 
+  	align-items: center;   
+  	height: 45px;
 }
 
 #logodiv a
@@ -492,6 +496,19 @@ div.card table tr, div.card table td {
 }
 div.contact div.direct-url {
 	margin: 15px 10px;
+}
+
+div.card h2.card-section-header {
+	display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+
+	i {
+		font-size: 16px;
+		font-weight: normal;
+		vertical-align: middle;
+	}
 }
 
 /** /user card **/

@@ -1,6 +1,6 @@
 <div class="dimension-selector-container <?php  if ($horizontal) echo "dimension-selector-container-horizontal";?>">
 <?php if (!isset($hide_label) || !$hide_label) : /*margin-right: 10px; min-width: 0px;*/?>
-	<label style="font-size: 100%; <?php  if (!$horizontal) echo "float:left;";?>"><?php echo (isset($label) && $label != '' ? $label : $dimension_name) ?>:</label>
+	<label style="font-size: 100%; <?php  if (!$horizontal) echo "float:left;";?>"><?php echo (isset($label) && $label != '' ? $label : $dimension_name) ?>:<?php echo isset($html_help_icon) ? $html_help_icon : ''; ?></label>
 <?php endif;
 
 $container_width = 385;
@@ -31,6 +31,14 @@ if(array_var($options, 'is_multiple', true)){
 $opts["is_multiple"]= $is_multiple;
 if (trim(array_var($options, 'root_lang')) != "") {
 	$opts["root_lang"] = array_var($options, 'root_lang');
+}
+
+if (isset($options['extra_options'])) {
+	$opts['extra_options'] = $options['extra_options'];
+}
+
+if (isset($options['dont_reload_other_trees'])) {
+	$opts['dont_reload_other_trees'] = array_var($options, 'dont_reload_other_trees', false);
 }
 
 $add_selected_classes = "";
@@ -75,26 +83,23 @@ if (isset($default_selection_checkboxes)) {
 						}
 						
 				?>
-						<div class="selected-member-div <?php echo $alt_cls?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
-							<div class="completePath" style="<?php echo $complete_path_add_style?>"></div>
+						<div class="selected-member-div og-wsname-color-<?php echo $selected_member->getColor() . ' ' . $alt_cls; ?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
+							<span class="completePath"></span>
 							<?php if ($is_multiple) : ?>
-							<div class="selected-member-actions" <?php echo $is_ie ? 'style="display:inline;margin-left:'.$actions_div_width.'px;float:none;"' : 'style="width:'.$actions_div_width.'px;"'?>>
+							<span class="selected-member-actions">
 								<?php if ($default_selection_checkboxes) { ?>
 								<input type="checkbox" class="checkbox" name="member[default_selection][<?php echo $selected_member->getId()?>]" <?php echo $checked_str ?> title="<?php echo lang('select by default')?>"/>
 								<?php } ?>
-								
 								<?php if ($can_remove_classification && !$selector_disabled) { ?>
-								<a href="#" class="coViewAction ico-delete action-remove" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
+								<a href="#" tabindex="-1" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
 								<?php } ?>
-							</div>	
-							<div class="clear"></div>
-							<?php endif;?>	
-						</div>	
+							</span>
+							<?php endif;?>
+						</div>
 				<?php	$alt_cls = $alt_cls == "" ? "alt-row" : "";
 						$sel_mem_ids[] = $selected_member->getId();
-					endforeach; 
+					endforeach;
 				?>
-					<div class="separator"></div>
 				
 				<?php endif;?>
 	</div>	
@@ -106,6 +111,11 @@ if (isset($default_selection_checkboxes)) {
 	?>
 </div>
 </div>
+<?php if (isset($description) && $description != "") : ?>
+	<div class="dimension-selector-description">
+		<span class="desc"><?php echo clean(trim($description)) ?></span>
+	</div>
+<?php endif; ?>
 	
 <script>
 $(function() {
@@ -115,6 +125,15 @@ $(function() {
 
 $("#<?php echo $genid; ?>selected-members-dim<?php echo $dimension_id?>").appendTo("#<?php echo $genid?>-member-chooser-panel-<?php echo $dimension_id?>-tree-current-selected");
 
+<?php
+// For single selectors, add color class to container for full-width color
+if (!$is_multiple && count($dimension_selected_members) > 0) {
+	$first_member = $dimension_selected_members[0];
+	?>
+	$("#<?php echo $genid?>-member-chooser-panel-<?php echo $dimension_id?>-tree-current-selected").addClass("og-wsname-color-<?php echo $first_member->getColor()?>");
+	<?php
+}
+?>
 
  <?php 
 			//add bredcrumb foreach selected member

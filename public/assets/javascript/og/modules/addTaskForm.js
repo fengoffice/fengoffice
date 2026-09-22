@@ -70,8 +70,10 @@ App.modules.addTaskForm = {
   }, // hideAllAddTaskForms
   
   checkSubmitAddTask: function(genid, objectType) {
-	var dd = Ext.getCmp(genid + 'due_date').getValue();
-	var sd = Ext.getCmp(genid + 'start_date').getValue();
+	var dd_input = Ext.getCmp(genid + 'due_date');
+	var dd = dd_input ? dd_input.getValue() : null;
+	var sd_input = Ext.getCmp(genid + 'start_date');
+	var sd = sd_input ? sd_input.getValue() : null;
 	if (sd && dd && dd < sd) {
 		alert(lang('warning start date greater than due date'));
 		return false;

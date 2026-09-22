@@ -184,6 +184,7 @@
 	'success delete objects' => '{0} Objeto(s) eliminados satisfactoriamente',
 	'success tag objects' => '{0} Objeto(s) etiquetados satisfactoriamente',
 	'error delete objects' => 'No fue posible eliminar {0} objeto(s)',
+	'error empty trash can not all deleted' => 'No fue posible eliminar {0} objeto(s) de la papelera. Es posible que no tenga permisos para borrarlos permanentemente.',
 	'error tag objects' => 'No fue posible etiquetar {0} objeto(s)',
 	'success move objects' => '{0} Objeto(s) tranferidos satisfactoriamente',
 	'error move objects' => 'No fue posible transferir {0} objeto(s)',
@@ -617,6 +618,7 @@
 	'error mark as spam' => 'Error al mover {0} correos a Basura',
 	'success mark as ham' => '{0} correos quitados de Basura',
 	'error mark as ham' => 'Error al quitar {0} correos de Basura',
+	'success mark as not spam' => 'Correo marcado como no spam',
 	'log comment projectmessages data' => 'Comentario en \'{0}\'',
 	'log comment projectevents data' => 'Comentario en \'{0}\'',
 	'log comment comments data' => 'Comentario en \'{0}\'',
@@ -732,4 +734,5 @@
   	'x members deleted y members not deleted' => '{1} {0} eliminados exitosamente, {2} {0} no eliminados.',
 	  'there are no timeslots to delete' => 'No hay registros de tiempo para eliminar',
 	  'task is linked to time expenses are you sure you want to delete' => 'Los tiempos de trabajo o gastos asociados a la tarea no serán eliminados pero serán desvinculados de la tarea. ¿Desea continuar?',
+	  'member dnx' => 'El miembro no existe',
 ); ?>

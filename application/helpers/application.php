@@ -177,7 +177,7 @@ function intersectCSVs($csv1, $csv2){
 	return implode(',', $final);
 }
 
-function allowed_users_to_assign($context = null, $filter_by_permissions = true, $return_company_array = true, $for_task_list_filters=false, $object_type_id = null) {
+function allowed_users_to_assign($context = null, $filter_by_permissions = true, $return_company_array = true, $for_task_list_filters=false, $object_type_id = null, $include_inactive = false) {
 	if ($context == null) {
 		$context = active_context();
 	}
@@ -201,7 +201,7 @@ function allowed_users_to_assign($context = null, $filter_by_permissions = true,
 			}
 			//get users with can_task_assignee permissions
 			if($root_context && $for_task_list_filters){
-				$tmp_contacts = get_users_with_system_permission('can_task_assignee');
+				$tmp_contacts = get_users_with_system_permission('can_task_assignee', $include_inactive);
 			}else{
                 $for_template_task_assigned_to = array_var($_GET, 'for_template_task_assigned_to');
 
@@ -248,7 +248,7 @@ function allowed_users_to_assign($context = null, $filter_by_permissions = true,
 	return array_values($comp_array);
 }
 
-function allowed_users_to_assign_all_mobile($member_id = null) {
+function allowed_users_to_assign_all_mobile($member_id = null, $object_type_id = null) {
 	$context = null;
 	if ($member_id != null) {
 		$member = Members::instance()->findById($member_id);
@@ -256,7 +256,7 @@ function allowed_users_to_assign_all_mobile($member_id = null) {
 			$context = array($member);
 		}
 	}
-	return allowed_users_to_assign($context);
+	return allowed_users_to_assign($context, true, true, false, $object_type_id);
 }
 
 
@@ -444,20 +444,19 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 	if ($object instanceof ContentDataObject) {
 		
 		$properties = null;
-		/*$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
-		Hook::fire('override_render_properties', $params, $properties);*/
 		$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
-		if ($ot->getType() != 'content_object') {
-			$params =  array('object' => $object, 'visible_by_default' => $visibility != 'other');
-			Hook::fire('override_render_properties', $params, $properties);
-		}
+		
+		// the genid has to travel with the properties: the ids of the inputs they render are built
+		// with it, and the javascript of the form that contains them relies on those ids
+		$params =  array('object' => $object, 'genid' => $genid, 'visible_by_default' => $visibility != 'other');
+		Hook::fire('override_render_properties', $params, $properties);
 
         if (is_null($properties)) {
 			$properties = array();
 			$ot = ObjectTypes::instance()->findById($object->getObjectTypeId());
 			
 			$extra_conditions = "";
-			Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions, true);
+			Hook::fire('object_form_custom_prop_extra_conditions', array('ot_id' => $ot, 'object' => $object), $extra_conditions);
 			if ($ot->getName() == 'contact'){
 				if($object->isUser()){
 					$extra_conditions .= " AND (contact_type LIKE 'user' OR contact_type LIKE 'all') ";
@@ -473,15 +472,119 @@ function render_object_custom_properties($object, $required, $co_type=null, $vis
 			}
 		}
 
-		echo '<div class="custom-properties">';
-		foreach ($properties as $main_property){
-			echo $main_property['html'];
-		}
-		echo '<input type="hidden" id="error_ids" name="error_ids" value="">';
-		echo '</div>';
+		echo_custom_properties_html($properties);
 	}
 	
 } // render_object_custom_properties
+
+
+/**
+ * Echo the html for the custom properties of an object.
+ *
+ * It takes an array of custom properties where each one has the following structure:
+ * array(
+ *     'id' => '', // The id of the custom property
+ *     'html' => '', // The html of the custom property
+ *     'alignment' => '' // The alignment of the custom property, can be 'left', 'right', or 'full_width'
+ * )
+ *
+ * If there are custom properties with 'left' alignment and with 'right' alignment
+ * it will render them in two columns. If there are only custom properties with
+ * 'left' alignment it will render them in one column. If there are only custom
+ * properties with 'right' alignment it will render them in one column.
+ * Properties with 'full_width' alignment will span the entire form width.
+ *
+ * @param array $properties The array of custom properties
+ */
+function echo_custom_properties_html($properties) {
+	if (count($properties) > 0) {
+		$left = false;
+		$right = false;
+		$full_width = false;
+		foreach ($properties as $property) {
+			$alignment = array_var($property, 'alignment');
+
+			if (!isset($property['alignment']) || $alignment === '' || $alignment == 'left'){
+				$left = true;
+			}
+			if (isset($property['alignment']) && $alignment == 'right'){
+				$right = true;
+			}
+			if (isset($property['alignment']) && $alignment == 'full_width'){
+				$full_width = true;
+			}
+			if ($left && $right && $full_width) {
+			    break;
+			}
+		}
+
+		// Render full-width properties first if any exist
+		if ($full_width) {
+			echo '<div class="custom-properties-full-width">';
+			foreach ($properties as $main_property) {
+				if (isset($main_property['alignment']) && $main_property['alignment'] == 'full_width') {
+					echo $main_property['html'];
+				}
+			}
+			echo '</div>';
+		}
+
+		if($left && $right) {
+
+			// Container
+			echo '<div class="custom-properties-container two-columns">';
+			// Left column
+			echo '<div class="custom-properties-column custom-properties-left">';
+
+			foreach ($properties as $main_property){
+				$alignment = array_var($main_property, 'alignment');
+
+				// hidden inputs and Detail group properties go to the left column
+				if (
+					!isset($main_property['alignment']) ||
+					$alignment === '' ||
+					$alignment == 'left'
+				) {
+					echo $main_property['html'];
+				}
+
+			}
+
+			echo '</div>'; // Close left column
+
+			echo '<div class="custom-properties-column custom-properties-right">'; // Right column
+
+			foreach ($properties as $main_property) {
+				if (isset($main_property['alignment']) && $main_property['alignment'] == 'right') {
+					echo $main_property['html']; // Renderizamos la propiedad en la columna derecha
+				}
+			}
+
+			echo '</div>'; // Close right column
+
+			echo '</div>'; // Close container
+
+		} else if ($left || $right) {
+
+			echo '<div class="custom-properties">';
+			foreach ($properties as $main_property){
+				$alignment = array_var($main_property, 'alignment');
+				if (
+					!isset($main_property['alignment']) ||
+					$alignment === '' ||
+					$alignment == 'left' ||
+					$alignment == 'right'
+				) {
+					echo $main_property['html'];
+				}
+			}
+			echo '</div>';
+
+		}
+
+		Hook::fire('after_echo_custom_properties_html', array('properties' => $properties), $ret);
+	}
+}
 
 
 /**
@@ -701,7 +804,10 @@ function render_add_subscribers(ContentDataObject $object, $genid = null, $subsc
 		}
 	} else {
 		if ($object->isNew()) {
-			$subscriberIds[] = logged_user()->getId();
+			$is_task = ($object instanceof ProjectTask || $object instanceof TemplateTask);
+			if (!$is_task || should_default_subscribe('created_by')) {
+				$subscriberIds[] = logged_user()->getId();
+			}
 		} else {
 			foreach ($object->getSubscribers() as $u) {
 				$subscriberIds[] = $u->getId();
@@ -734,10 +840,17 @@ function render_link_to_object($object, $text=null, $reload=false){
 	require_javascript("og/ObjectPicker.js");
 	
 	$id = $object->getId();
-	if ($text == null) $text = lang('link object');
+	if ($text === null) $text = lang('link object');
+	if ($text === '') {
+        $css_classes = 'link-action-icon link';
+    } else {
+        $css_classes = 'btn btn-primary-50 btn-sm';
+    }
+
 	$reload_param = $reload ? '&reload=1' : ''; 
 	$result = '';
-	$result .= '<a href="#" class="action-ico ico-add" onclick="og.ObjectPicker.show(function (data) {' .
+	$tooltip = ($text == '') ? ' title="'.lang('link object').'"' : '';
+	$result .= '<a href="#" class="' . $css_classes . '" ' . $tooltip . ' onclick="og.ObjectPicker.show(function (data) {' .
 			'if (data) {' .
 				'var objects = \'\';' .
 				'for (var i=0; i < data.length; i++) {' .
@@ -748,8 +861,10 @@ function render_link_to_object($object, $text=null, $reload=false){
 						'&object_id=' . $id . $reload_param . '&objects=\' + objects' . 
 						($reload ? ',{callback: function(){og.redrawLinkedObjects('. $object->getId() .')}}' : '') . ');' .
 			'}' .
-		'},\'\',\'\','. $object->getId() .')" id="object_linker">';
-	$result .= $text;
+		'},\'\',{ignore_context: false},'. $object->getId() .')" id="object_linker"><i class="icon-link"></i>';
+	if ($text !== '') {
+        $result .= ' ' . $text;
+    }
 	$result .= '</a>';
 	return $result;
 }
@@ -870,7 +985,7 @@ function autocomplete_member_combo($name, $dimension_id, $options, $emptyText, $
  *
  * @param string $name Control name
  * @param string $value Initial value
- * @param string $options
+ * @param array $options
  * 		An array of arrays with the values that will be shown when autocompleting.
  * 		The first value of each array will be assumed as the value and the second as the display name.
  * @param array $attributes Other control attributes
@@ -921,7 +1036,7 @@ function autocomplete_textfield($name, $value, $options, $emptyText, $attributes
  *
  * @param string $name Control name
  * @param string $value Initial value
- * @param string $options
+ * @param array $options
  * 		An array of arrays with the values that will be shown when autocompleting.
  * 		The first value of each array will be assumed as the value and the second as the display name.
  * @param array $attributes Other control attributes
@@ -973,7 +1088,7 @@ function autocomplete_emailfield($name, $value, $options, $emptyText, $attribute
  *
  * @param string $name Control name
  * @param string $value Initial value
- * @param string $options
+ * @param array $options
  * 		An array of arrays with the values that will be shown when autocompleting.
  * 		The first value of each array will be assumed as the value and the second as the display name.
  * @param array $attributes Other control attributes
@@ -1056,9 +1171,10 @@ function render_add_reminders($object, $context, $defaults = null, $genid = null
 		$typecsv .= '"'.$type->getName().'"';
 	}
 	$output = '
-		<div id="'.$genid.'" class="og-add-reminders">
-			<a id="'.$genid.'-link" class="action-ico ico-add" href="#" onclick="og.addReminder(this.parentNode, \''.$context.'\', \''.array_var($defaults, 'type').'\', \''.array_var($defaults, 'duration').'\', \''.array_var($defaults, 'duration_type').'\', \''.array_var($defaults, 'for_subscribers').'\', this, null,'."'".$type_object."'".');return false;">' . lang("add object reminder") . '</a>
+		<div id="'.$genid.'" class="og-add-reminders" style="margin-bottom:10px;">
+			<a id="'.$genid.'-link" class="btn btn-primary-50 btn-sm" style="margin-top: 10px;" href="#" onclick="og.addReminder(this.parentNode, \''.$context.'\', \''.array_var($defaults, 'type').'\', \''.array_var($defaults, 'duration').'\', \''.array_var($defaults, 'duration_type').'\', \''.array_var($defaults, 'for_subscribers').'\', this, null,'."'".$type_object."'".');return false;"><i class="icon-circle-plus"></i> ' . lang("add object reminder") . '</a>
 		</div>
+		<div style="clear:both"></div>
 		<script>
 		og.reminderTypes = ['.$typecsv.'];
 		</script>
@@ -1269,6 +1385,7 @@ function render_select_mail_account($name, $mail_accounts, $selected = null, $at
  * @return string
  */
 function select_task_priority($name, $selected = null, $attributes = null) {
+	if (is_null($selected)) $selected = ProjectTasks::PRIORITY_NORMAL;
 	$options = array(
 		option_tag(lang('urgent priority'), ProjectTasks::PRIORITY_URGENT, ($selected >= ProjectTasks::PRIORITY_URGENT)?array('selected' => 'selected'):null),
 		option_tag(lang('high priority'), ProjectTasks::PRIORITY_HIGH, ($selected >= ProjectTasks::PRIORITY_HIGH && $selected < ProjectTasks::PRIORITY_URGENT)?array('selected' => 'selected'):null),
@@ -1367,13 +1484,20 @@ function has_context_to_render($content_object_type_id) {
 	return false; 
 }
 
-function get_associated_dimensions_to_reload_json($dimension_id) {
-	if (defined('JSON_NUMERIC_CHECK')) {
-		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id), JSON_NUMERIC_CHECK );
-	} else {
-		$reloadDimensions = json_encode( DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id) );
-	}
-	
+/**
+ * Returns a JSON string containing the dimensions to reload for the given dimension ID.
+ * If $include_reverse_assocations is true, the reverse associations (associated dim -> main dim) will be included.
+ * @param int $dimension_id The ID of the dimension to search for associated dimensions.
+ * @param bool $include_reverse_assocations Whether or not to include the reverse associations (associated dim -> main dim) in the result.
+ * @return string The JSON string containing the dimensions to reload.
+ */
+function get_associated_dimensions_to_reload_json($dimension_id, $include_reverse_assocations = false) {
+
+	$reloadDimensions = json_encode(
+		DimensionMemberAssociations::instance()->getDimensionsToReloadByObjectType($dimension_id, $include_reverse_assocations), 
+		JSON_NUMERIC_CHECK
+	);
+		
 	return $reloadDimensions;
 }
 
@@ -1540,45 +1664,58 @@ function render_dimension_trees($content_object_type_id, $genid = null, $selecte
 
 
 /**
+ * Builds a hierarchical tree from a list of nodes
  * 
- * Builds a tree based on generic node types 
- * @param string $parentField	- Parent Field attribute
- * @param string $childField	- Children list attribute
- * @param string $idField		- Node Identificator
- * @param string $textField 	- The field name to show
+ * @param array $nodeList the list of nodes to build the tree from
+ * @param string $parentField the field in the node that represents the parent id
+ * @param string $childField the field in the node that represents the children
+ * @param string $idField the field in the node that represents the id
+ * @param string $textField the field in the node that represents the text to display
+ * @param string $checkedField the field in the node that represents whether the node is checked
+ * @return array the built tree
  */
 function buildTree ($nodeList , $parentField = "parent", $childField = "children", $idField = "id", $textField = "name", $checkedField = "_checked") {
-	$tree = array() ;
+	$tree = array();
 	$inserted = array();
 	do {
-		$insertedCount = 0 ;		
+		$insertedCount = 0;
 		foreach ($nodeList as $k => &$node) {
-			if ($textField) $node["text"] = $node[$textField];
+			if ($textField) {
+				$node["text"] = $node[$textField];
+			}
 			$node['leaf'] = true;
-			if (array_var($node, 'selectable')) $node[$checkedField] = false;
+			if (array_var($node, 'selectable')) {
+				$node[$checkedField] = false;
+			}
 			$parentId = array_var($node, $parentField, 0);
 			$id = $node[$idField];
-			if ( !isset($inserted[$id])){
+			if (!isset($inserted[$id])) {
+				// if parent is not in the tree, set parent to 0 so this node can be shown
+				if ($parentId > 0 && !isset($inserted[$parentId])) {
+					$node[$parentField] = 0;
+					$parentId = 0;
+				}
 				if ($parentId == 0) {
-					$tree[] = &$node ; 		
-					$inserted[$id] = &$node ;
+					// add to tree as first level node
+					$tree[] = &$node;
+					$inserted[$id] = &$node;
 					$insertedCount++;
-					unset ($nodeList[$k]);
-				}else{					
-					if (isset ($inserted[$parentId] )) {
-						$inserted[$parentId][$childField][] =  &$node ;
-						$inserted[$parentId]["leaf"] = false ;
-						//$inserted[$parentId]["expanded"] = true ;
-						$inserted[$id] = &$node ;
+					unset($nodeList[$k]);
+				} else {
+					// add to tree as child of its parent
+					if (isset($inserted[$parentId])) {
+						$inserted[$parentId][$childField][] = &$node;
+						$inserted[$parentId]["leaf"] = false;
+						// $inserted[$parentId]["expanded"] = true;
+						$inserted[$id] = &$node;
 						$insertedCount++;
-						unset ($nodeList[$k]);
+						unset($nodeList[$k]);
 					}
 				}
 			}
-			 
-		} 
-	}	while ($insertedCount > 0 ) ;
-	return $tree  ;
+		}
+	} while ($insertedCount > 0);
+	return $tree;
 }
 
 function build_member_list_text_to_show_in_trees(&$memberList)
@@ -1600,153 +1737,177 @@ function build_member_list_text_to_show_in_trees(&$memberList)
 }
 
 function build_member_display_name($member) {
-		$display_name = "";
+    $display_name = "";
 
-		if(!$member instanceof Member){
-			return $display_name;
+    if (!$member instanceof Member) {
+        return $display_name;
+    }
+
+    $ot_id     = $member->getObjectTypeId();
+    $dim_id    = $member->getDimensionId();
+    $member_id = $member->getId();
+    $object_id = $member->getObjectId();
+
+    $opt_val = null;
+
+    // 1) check if has a subtype
+    if ($object_id > 0) {
+        $object = Objects::findObject($object_id);
+        if ($object && $object->getColumnValue('object_subtype_id') > 0) {
+            $subtype_id = $object->getColumnValue('object_subtype_id');
+            $opt_val = DimensionObjectTypeOptions::getOptionValue(
+                $dim_id,
+				$ot_id,
+                'text_to_show_in_trees',
+				"ostId_" . $subtype_id,
+            );
+
+            if ($opt_val) {
+            }
+        }
+    }
+
+    // 2) if it doesn't have a subtype, check if has a type
+    if (!$opt_val) {
+        $opt_val = DimensionObjectTypeOptions::getOptionValue(
+            $dim_id,
+            $ot_id,
+            'text_to_show_in_trees'
+        );
+    }
+
+    if (!$opt_val) {
+        return $member->getName();
+    }
+
+    $option_decoded = json_decode($opt_val, true);
+    $tmp_mem = Members::instance()->findById($member_id, true);
+    if (!$tmp_mem) {
+        $tmp_mem = $member;
+    }
+
+    $prop_values_array = array();
+    foreach ($option_decoded['properties'] as $col) {
+        $is_member_column = $member instanceof Member ? Members::instance()->columnExists($col) : array_key_exists($col, $member);
+        if ($is_member_column) {
+            $prop_values_array[] = $tmp_mem->getColumnValue($col);
+
+        } else if (str_starts_with($col, "cp_")) {
+            $cp_id = str_replace("cp_", "", $col);
+            $cp = get_custom_property_for_member($member, $cp_id);
+            $cp_value = $member->getCustomPropertyValue($cp_id);
+            $cp_value = format_custom_property_value_for_display_name($cp, $cp_value);
+            if ($cp_value != '') {
+                $prop_values_array[] = $cp_value;
+            }
+
+		} else if (str_starts_with($col, "assoc_")) {
+    		$exp = explode('|', $col);
+    		$assoc_str = $exp[0];
+    		$assoc_prop_str = isset($exp[1]) ? $exp[1] : '';
+
+    		$association_id = str_replace("assoc_", "", $assoc_str);
+    		$assoc_member_csv = MemberPropertyMembers::getAllPropertyMemberIds($association_id, $member_id);
+    		$assoc_member_ids = array_filter(explode(',', $assoc_member_csv));
+
+    		foreach ($assoc_member_ids as $mid) {
+        		$assoc_member = Members::getMemberById($mid);
+        		if ($assoc_member instanceof Member) {
+
+            		if ($assoc_prop_str == '' || $assoc_prop_str == 'name') {
+                		$prop_values_array[] = $assoc_member->getName();
+
+            		} else if (str_starts_with($assoc_prop_str, "cp_")) {
+               			$cp_id = str_replace("cp_", "", $assoc_prop_str);
+                		$cp = get_custom_property_for_member($assoc_member, $cp_id);
+                		$cp_value = $assoc_member->getCustomPropertyValue($cp_id);
+                		$cp_value = format_custom_property_value_for_display_name($cp, $cp_value);
+                		if ($cp_value != '') {
+                    		$prop_values_array[] = $cp_value;
+                		}
+
+            		} else if ($assoc_prop_str === 'full_name') { 
+                		$prop_values_array[] = $assoc_member->getDisplayName();
+            		}
+        		}
+    		}
 		}
 
-		$ot_id = $member->getObjectTypeId();
-		$dim_id = $member->getDimensionId();
-		$member_id = $member->getId();
-		$object_id = $member->getObjectId();
+    }
 
-		$opt_val = DimensionObjectTypeOptions::getOptionValue($dim_id, $ot_id, 'text_to_show_in_trees');
-		if (!$opt_val) return $member->getName();
+    $prop_values_array = array_filter($prop_values_array);
 
-		$option_decoded = json_decode($opt_val, true);
-			
-		// use this tmp member object (with the raw data from the database) to prevent that the name has been overriden by previous iterations
-		$tmp_mem = Members::instance()->findById($member_id, true);
-		// when member is new, there is no member in the database so we have to use the one received by parameter
-		if (!$tmp_mem) {
-			$tmp_mem = $member;
-		}
-		
-		$prop_values_array = array();
-		foreach ($option_decoded['properties'] as $col) {
-			$is_member_column = $member instanceof Member ? Members::instance()->columnExists($col) : array_key_exists($col, $member);
-			if ($is_member_column) {
-				
-				$prop_values_array[] = $tmp_mem->getColumnValue($col);
-				
-			} else if (str_starts_with($col, "cp_")) {
-				$cp_id = str_replace("cp_", "", $col);
-				
-				if ($object_id > 0) {
-					// is dimension_object
-					$cp_val_obj = CustomPropertyValues::getCustomPropertyValue($object_id, $cp_id);
-					$cp_val = $cp_val_obj instanceof CustomPropertyValue ? $cp_val_obj->getValue() : '';
-				} else {
-					// is dimension_group
-					if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
-						$cp_val_obj = MemberCustomPropertyValues::getMemberCustomPropertyValue($member_id, $cp_id);
-						$cp_val = $cp_val_obj instanceof MemberCustomPropertyValue ? $cp_val_obj->getValue() : '';
-					}
-				}
-				if ($cp_val) {
-					$prop_values_array[] = $cp_val;
-				}
-				
-			} else if (str_starts_with($col, "assoc_")) { // use associated dimension members
-				
-				$association_id = str_replace("assoc_", "", $col);
-				$assoc_member_csv = MemberPropertyMembers::getAllPropertyMemberIds($association_id, $member_id);
-				$assoc_member_ids = array_filter(explode(',', $assoc_member_csv));
-				
-				foreach ($assoc_member_ids as $mid) {
-					$assoc_member = Members::getMemberById($mid);
-					if ($assoc_member instanceof Member) {
-						$prop_values_array[] = $assoc_member->getName();
+    $separator = trim(array_var($option_decoded, 'separator', '-'));
+    if ($separator == "") {
+        $separator = " ";
+    } else {
+        $separator = " $separator ";
+    }
+
+    if (count($prop_values_array) > 0) {
+        $display_name = implode($separator, $prop_values_array);
+    } else {
+        $display_name = $member->getName();
+    }
+
+    return trim($display_name);
+}
+
+
+
+	/**
+	 * Refreshes the display name of all the members that have this member as part of their display name.
+	 * 
+	 * This function is called when a member is saved, to make sure that the display name of all the other members that depend on it is updated.
+	 * 
+	 * @param Member $member
+	 */
+	function recalculate_related_members_display_name(Member $member) {
+
+		// get associations for this member type (only the ones where this type is the associated type)
+		$associations = DimensionMemberAssociations::getReverseAssociatations($member->getDimensionId(), $member->getObjectTypeId());
+
+		// for each association check if this member type is used in the display name of the related members
+		$associations_that_need_refresh = [];
+		if (!empty($associations)) {
+			foreach ($associations as $association) {
+				// get the text to show in trees config option of the related member type
+				$text_to_show_in_trees = DimensionObjectTypeOptions::getOptionValue($association->getDimensionId(), $association->getObjectTypeId(), 'text_to_show_in_trees');
+				if ($text_to_show_in_trees) {
+					// decode the related member type display name config option
+					$prop_decoded = json_decode($text_to_show_in_trees, true);
+					foreach ($prop_decoded['properties'] as $col) {
+						// check if this member type is used in the display name of a related member type
+						if (str_starts_with($col, "assoc_" . $association->getId())) {
+							$associations_that_need_refresh[] = $association;
+							break;	
+						}
 					}
 				}
 			}
 		}
-		$prop_values_array = array_filter($prop_values_array);
-		
-		$separator = trim(array_var($option_decoded, 'separator', '-'));
-		if ($separator == "") {
-			$separator = " ";
-		} else {
-			$separator = " $separator ";
-		}
-		
-		if (count($prop_values_array) > 0) {
-			$display_name = implode($separator, $prop_values_array);
-		} else {
-			$display_name = $member->getName();
-		}
 
-		return trim($display_name);
-	}
-	
-	
-	function append_other_properties_search_conditions(Dimension $dimension, $query_string, &$search_name_cond) {
+		// get the related members that need to recalculate display name
+		foreach ($associations_that_need_refresh as $association) {
+			$related_member_ids_csv = MemberPropertyMembers::getAllMemberIds($association->getId(), $member->getId());
+			if ($related_member_ids_csv != '') {
+				$mem_ids = explode(',', $related_member_ids_csv);
+				$related_members = Members::instance()->getMembersById($mem_ids);
 
-		$option_values = DimensionObjectTypeOptions::getOptionValuesForAllObjectTypes($dimension->getId(), 'text_to_show_in_trees');
-	
-		if (is_array($option_values) && count($option_values) > 0) {
-
-			$conditions = array();
-			
-			foreach ($option_values as $option_value) {
-				/* @var $option_value DimensionObjectTypeOption */
-				$raw_val = $option_value->getValue();
-
-				if (trim($raw_val) != "") {
-					$option_decoded = json_decode($raw_val, true);
-
-					if (isset($option_decoded['properties']) && count($option_decoded['properties']) > 0) { 
-
-						foreach ($option_decoded['properties'] as $col) {
-							if (Members::instance()->columnExists($col)) {
-								$conditions[] = "$col LIKE '%".$query_string."%'";
-						
-							} else if (str_starts_with($col, "cp_")) {
-								$cp_id = str_replace("cp_", "", $col);
-								$ot = ObjectTypes::instance()->findById($option_value->getObjectTypeId());
-						
-								if ($ot->getType() == 'dimension_object') {
-									$conditions[] = "EXISTS (
-										SELECT `value` FROM ".TABLE_PREFIX."custom_property_values cpv
-										WHERE cpv.custom_property_id='$cp_id' AND `value` LIKE '%".$query_string."%'
-										AND cpv.object_id=".TABLE_PREFIX."members.object_id
-									)
-									";
-								} else {
-									if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
-										$conditions[] = "EXISTS (
-											SELECT `value` FROM ".TABLE_PREFIX."member_custom_property_values cpv
-											WHERE cpv.custom_property_id='$cp_id' AND `value` LIKE '%".$query_string."%'
-											AND cpv.member_id=".TABLE_PREFIX."members.id
-										)
-										";
-									}
-								}
-							}
-							else if (str_starts_with($col, "assoc_")) {
-
-								$assoc_id = str_replace("assoc_", "", $col);
-								
-								$conditions[] = " EXISTS (
-									SELECT fm.name, fmpm.property_member_id 
-									FROM ".TABLE_PREFIX."members fm 
-									INNER JOIN ".TABLE_PREFIX."member_property_members fmpm ON fmpm.association_id = '$assoc_id'
-									WHERE fm.name LIKE '%".$query_string."%'
-										and ".TABLE_PREFIX."members.id = fmpm.member_id
-              							and fm.id = fmpm.property_member_id
-								) ";
-							}
-						}
-						
-						if (count($conditions) > 0) {
-							$search_name_cond = " AND (" . implode(" OR ", $conditions) . ")";
-						}
-					}
+				// refresh display name for associated members
+				foreach ($related_members as $related_member) {
+					// calculate new display name
+					$display_name = build_member_display_name($related_member);
+					// update display name
+					DB::execute("UPDATE ".TABLE_PREFIX."members SET display_name = ? WHERE id = ?", array($display_name, $related_member->getId()));
+					// trigger event to refresh the related member name in the interface
+					evt_add("update dimension tree node", array('dim_id' => $related_member->getDimensionId(), 'member_id' => $related_member->getId(), 'select_node' => false));
 				}
 			}
-		}
+		}		
 	}
+	
+	
 
 
 	function render_single_dimension_tree($dimension, $genid = null, $selected_members = array(), $options = array()) {
@@ -1813,6 +1974,10 @@ function build_member_display_name($member) {
 				width: <?php echo array_var($options, 'width', '385') ?>,
 				listeners: {'tree rendered': function (t) {if (select_root) t.root.select();}}
 			};
+
+			<?php if( isset ($options['extra_options'])) : ?>
+				config.extra_options = <?php echo json_encode($options['extra_options']) ?>;
+			<?php endif; ?>
 			
 			<?php if( isset ($options['get_childs_params'])) : ?>
 				config.get_childs_params = <?php echo json_encode($options['get_childs_params']) ?>;
@@ -1859,6 +2024,10 @@ function build_member_display_name($member) {
 
 			<?php if( isset ($options['filter_by_ids'])) : ?>
 				config.filter_by_ids = '<?php implode(',', $options['filter_by_ids']) ?>' ;
+			<?php endif; ?>
+
+			<?php if ( isset ($options['dont_reload_other_trees']) ) : ?>
+				config.dont_reload_other_trees = true;
 			<?php endif; ?>
 
 			<?php if( isset($options['use_ajax_member_tree']) && $options['use_ajax_member_tree'] ) {?>
@@ -2392,4 +2561,42 @@ function log_time_diff($message, $decimals = 5) {
 	Logger::log("TIMEDIFF $message - $time_diff");
 
 	$_REQUEST['log_time_diff_last_time'] = $now;
+}
+
+
+function safe_count($array, $key) {
+	return isset($array[$key]) && is_array($array[$key]) ? count($array[$key]) : 0;
+}
+
+
+/**
+ * Returns an array of member IDs from the current request.
+ * The member IDs can be found in the $_REQUEST['members'] variable,
+ * or in variables starting with 'classification_'.
+ *
+ * @return array
+ */
+function get_members_from_request($request = null) {
+	if (is_null($request)) {
+		$request = $_REQUEST;
+	}
+	if (isset($request['members'])) {
+		// Get the member IDs from the $_REQUEST['members'] variable
+		$member_ids = json_decode(array_var($request, 'members'));
+	} else {
+		// Initialize an empty array
+		$member_ids = array();
+
+		// Loop through the $_REQUEST variables
+		foreach ($request as $key => $value) {
+			// Check if the variable starts with 'classification_'
+			if (str_starts_with($key, 'classification_')) {
+				// Merge the member IDs from the current variable
+				$mem_ids = json_decode($value);
+				$member_ids = array_merge($member_ids, $mem_ids);
+			}
+		}
+	}
+
+	return $member_ids;
 }

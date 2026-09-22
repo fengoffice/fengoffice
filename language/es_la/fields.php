@@ -107,6 +107,8 @@
 	'field ProjectEvents repeat_forever' => 'Repetir para siempre',
 	'field ProjectEvents description' => 'Descripción',
 	'field ProjectEvents private' => 'Privado',
+	'field ProjectEvents organizer_id' => 'Organizador',
+	'field ProjectEvents uid' => 'Uid',
 	'field ProjectEvents repeat_end' => 'Fin de repetición',
 	'field ProjectEvents repeat_num' => 'Número de repetición',
 	'field ProjectEvents repeat_d' => 'Día de repetición',
@@ -137,7 +139,7 @@
 	'field ProjectMilestones id' => 'Id',
 	'field ProjectMilestones name' => 'Nombre',
 	'field ProjectMilestones description' => 'Descripción',
-	'field ProjectMilestones due_date' => 'Fecha de límite',
+	'field ProjectMilestones due_date' => 'Fecha límite',
 	'field ProjectMilestones completed_on' => 'Completado',
 	'field ProjectMilestones is_template' => 'Es plantilla',
 	'field ProjectMilestones created_on' => 'Creado',
@@ -159,7 +161,7 @@
 	'field ProjectTasks text' => 'Descripción',
 	'field ProjectTasks description' => 'Descripción',
 	'field ProjectTasks completed_on' => 'Completada',
-	'field ProjectTasks due_date' => 'Fecha de límite',
+	'field ProjectTasks due_date' => 'Fecha límite',
 	'field ProjectTasks start_date' => 'Fecha de comienzo',
 	'field ProjectTasks created_on' => 'Creada',
 	'field ProjectTasks updated_on' => 'Actualizada',
@@ -175,6 +177,7 @@
 	'field ProjectTasks is_template' => 'Es plantilla',
 	'field ProjectTasks object_subtype' => 'Tipo de objeto',
 	'field ProjectTasks original_task_id' => 'Id de tarea original',
+	'field ProjectTasks previous_task_id' => 'Tarea previa',
 	'field Users username' => 'Nombre de usuario',
 	'field Users email' => 'Correo electrónico',
 	'field Users display_name' => 'Nombre desplegado',
@@ -287,6 +290,7 @@
 	'field Objects cmrr' => 'Cmrr',
 	'field Objects payment_cycle_id' => 'Ciclo de pago',
 	'field Objects status_id' => 'Estado',
+	'field Expenses status_id' => 'Estado',
     'field Objects mark_as_started' => 'Marked as started',
     
 	'is_user' => 'Es usuario',
@@ -331,6 +335,7 @@
 
 
     'field Objects prefix' => 'Prefijo',
+	'field Objects contact_object_type_id' => 'Tipo de contacto',
 
 	'field Users can_manage_mail_templates' => 'Puede gestionar plantillas de correo',
 	'field ProjectTasks overall_worked_time_plus_subtasks' => 'Tiempo total trabajado',

@@ -34,6 +34,9 @@ var actual_status_filter = ' 0 1 3'; // -1=all states
 
 
 function changeView(action, day, month, year, u_filter, s_filter, t_filter) {
+	if (u_filter === undefined || u_filter === null || u_filter === 'undefined' || u_filter === '') {
+		u_filter = 0;
+	}
 	var url = og.getUrl('event', action, {
 		context: og.contextManager.plainContext(),
 		day: day,
@@ -119,18 +122,18 @@ var markactions = {
 var topToolbarItems = { 
 	add: new Ext.Action({
 		id: 'new_button_event',
-		text: lang('add event'),
+		text: '<i class="icon-circle-plus"></i>' +  lang('add event'),
         tooltip: lang('add new event'),
-        iconCls: 'ico-new new_button',
+        iconCls: 'btn btn-sm btn-secondary',
         hidden: og.replace_list_new_action && og.replace_list_new_action.event,
         handler: function() {
 			og.render_modal_form('', {c:'event', a:'add'});
 		}
 	}),
 	view_month: new Ext.Action({
-		text: lang('month'),
+		text: '<i class="icon-calendar"></i>' +  lang('month'),
         tooltip: lang('month view'),
-        iconCls: 'ico-calendar-month',
+        iconCls: 'btn btn-sm',
         handler: function() {
         	cal_actual_view = 'index';
 			var date = og.calToolbarDateMenu.picker.getValue();
@@ -138,9 +141,9 @@ var topToolbarItems = {
 		}
 	}),
 	view_week: new Ext.Action({
-		text: lang('week'),
+		text: '<i class="icon-calendar-range"></i>' +  lang('week'),
         tooltip: lang('week view'),
-        iconCls: 'ico-calendar-week',
+        iconCls: 'btn btn-sm',
         handler: function() {
 			cal_actual_view = 'viewweek';
 			var date = og.calToolbarDateMenu.picker.getValue();
@@ -148,9 +151,9 @@ var topToolbarItems = {
 		}
 	}),
 	view_week5days: new Ext.Action({
-		text: lang('work week'),
+		text: '<i class="icon-calendar-range"></i>' +  lang('work week'),
         tooltip: lang('work week view'),
-        iconCls: 'ico-calendar-week5',
+        iconCls: 'btn btn-sm',
         handler: function() {
 			cal_actual_view = 'viewweek5days';
 			var date = og.calToolbarDateMenu.picker.getValue();
@@ -158,9 +161,9 @@ var topToolbarItems = {
 		}
 	}),
 	view_date: new Ext.Action({
-		text: lang('day'),
+		text: '<i class="icon-calendar-1"></i>' +  lang('day'),
         tooltip: lang('day view'),
-        iconCls: 'ico-today',
+        iconCls: 'btn btn-sm',
         handler: function() {
 			cal_actual_view = 'viewdate';
 			var date = og.calToolbarDateMenu.picker.getValue();
@@ -168,8 +171,9 @@ var topToolbarItems = {
 		}
 	}),
 	prev: new Ext.Action({
+		text: '<i class="icon-arrow-left"></i>',
 		tooltip: lang('prev'),
-        iconCls: 'ico-prevmonth',
+        iconCls: 'btn btn-sm',
         handler: function() {
         	var date = og.calToolbarDateMenu.picker.getValue();
         	if (cal_actual_view == 'index') date = date.add(Date.MONTH, -1);
@@ -182,8 +186,9 @@ var topToolbarItems = {
 		}
 	}),
 	next: new Ext.Action({
+		text: '<i class="icon-arrow-right"></i>',
 		tooltip: lang('next'),
-        iconCls: 'ico-nextmonth',
+        iconCls: 'btn btn-sm',
         handler: function() {
         	var date = og.calToolbarDateMenu.picker.getValue();
         	if (cal_actual_view == 'index') date = date.add(Date.MONTH, 1);
@@ -196,13 +201,15 @@ var topToolbarItems = {
 		}
 	}),
 	goto: new Ext.Action({
-		text: lang('pick a date'),
+		text: '<i class="icon-calendar-days"></i>' + lang('pick a date'),
+        iconCls: 'btn btn-sm',
 		tooltip: lang('pick a date'),
 		menu: og.calToolbarDateMenu
 	}),
 	imp_exp: new Ext.Action({
-		text: lang('import/export'),
-                tooltip: lang('calendar import - export'),
+		text: '<i class="icon-arrow-right-left"></i>' + lang('import/export') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
+		iconCls: 'btn btn-sm',
+        tooltip: lang('calendar import - export'),
 		menu: {items: [
 			{text: lang('import'), iconCls: 'ico-upload', handler: function() {
 				var url = og.getUrl('event', 'icalendar_import', {from_menu:1});
@@ -215,9 +222,9 @@ var topToolbarItems = {
 		]}
 	}),
 	del: new Ext.Action({
-		text: lang('move to trash'),
+		text: '<i class="icon-trash-2"></i>' + lang('move to trash'),
         tooltip: lang('move selected objects to trash'),
-        iconCls: 'ico-trash',
+        iconCls: 'btn btn-sm',
 		disabled: true,
 		handler: function() {
 			var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
@@ -240,9 +247,9 @@ var topToolbarItems = {
 		scope: this
 	}),
 	edit: new Ext.Action({
-		text: lang('edit'),
+		text: '<i class="icon-pencil-line"></i>' + lang('edit'),
         tooltip: lang('edit selected event'),
-        iconCls: 'ico-edit',
+        iconCls: 'btn btn-sm',
 		disabled: true,
 		handler: function() {
 			ev_id = og.getSelectedEventsCsv();
@@ -258,7 +265,8 @@ var topToolbarItems = {
 		}
 	}),
 	markAs: new Ext.Action({
-		text: lang('mark as'),
+		text: '<i class="icon-tag"></i>' + lang('mark as') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
+        iconCls: 'btn btn-sm',
 		tooltip: lang('mark as desc'),
 		menu: [
 			markactions.markAsRead,
@@ -266,9 +274,9 @@ var topToolbarItems = {
 		]
 	}),
 	archive: new Ext.Action({
-		text: lang('archive'),
+		text: '<i class="icon-archive"></i>' + lang('archive'),
 		tooltip: lang('archive selected object'),
-		iconCls: 'ico-archive-obj',
+		iconCls: 'btn btn-sm',
 		disabled: true,
 		handler: function() {
 			this.dialog = new og.EventRelatedPopUp("archive");
@@ -310,9 +318,9 @@ og.CalendarTopToolbar = function(config) {
 	this.add(topToolbarItems.markAs);
 	this.addSeparator();
 	this.add(new Ext.Action({
-		text: lang('print'),
+		text: '<i class="icon-printer"></i>' + lang('print'),
 		tooltip: lang('print calendar'),
-		iconCls: 'ico-print',
+		iconCls: 'btn btn-sm',
 		handler: function() {
 			og.PrintCalendar.printCalendar(og.config['genid']);
 		},
@@ -322,7 +330,8 @@ og.CalendarTopToolbar = function(config) {
 		this.addSeparator();
 		this.add(topToolbarItems.imp_exp);
 		this.add(new Ext.Action({
-			text: lang('sync'),
+			text: '<i class="icon-refresh-ccw"></i>' + lang('sync'),
+			iconCls: 'btn btn-sm',
 			tooltip: lang('sync'),
 			handler: function() {
 				var url = og.getUrl('externalCalendar', 'calendar_sinchronization');
@@ -430,13 +439,29 @@ og.CalendarSecondTopToolbar = function(config) {
         		var splited = record.data.value.split(':');
         		actual_user_filter = splited[1] == 0 ? -1 : splited[1];
         		actual_comp_filter = splited[0];
+        		if (record.data.value != currentUser) {
+        			combo.el.addClass('filter-selected');
+        		} else {
+        			combo.el.removeClass('filter-selected');
+        		}
         		var date = og.calToolbarDateMenu.picker.getValue();
 				changeView(cal_actual_view, date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);
+        	},
+        	'render': function(combo) {
+        		var v = combo.getValue();
+        		if (v && v != currentUser) {
+        			combo.el.addClass('filter-selected');
+        		} else {
+        			combo.el.removeClass('filter-selected');
+        		}
         	}
         }
     });
     actual_user_filter = ogCalendarUserPreferences.user_filter;
-    u_filter = ogCalendarUserPreferences.user_filter_comp + ':' + (ogCalendarUserPreferences.user_filter == -1 ? 0 : ogCalendarUserPreferences.user_filter); 
+    if (actual_user_filter === undefined || actual_user_filter === null || actual_user_filter === 'undefined' || actual_user_filter === '') {
+    	actual_user_filter = '0';
+    }
+    u_filter = ogCalendarUserPreferences.user_filter_comp + ':' + (actual_user_filter == -1 ? 0 : actual_user_filter); 
     filterNamesCompaniesCombo.setValue(u_filter);
     
     cal_actual_view = ogCalendarUserPreferences.view_type || 'viewweek';
@@ -456,7 +481,7 @@ og.CalendarSecondTopToolbar = function(config) {
 	        id: 'ogCalendarfilterTaskCombo',
 	        store: new Ext.data.SimpleStore({
 	        	fields: ['value', 'text'],
-	        	data :  [["no filter", '--' + lang('no filter') + '--'],["pending", lang('pending')],["complete", lang('complete')], ["hide", lang('none')]]
+	        	data :  [["no filter", '--' + lang('no filter') + '--'],["pending", lang('pending')],["complete", lang('complete')], ["hide", lang('do not show tasks')]]
 			}),
 	        displayField:'text',
 	        //typeAhead: true,
@@ -468,8 +493,21 @@ og.CalendarSecondTopToolbar = function(config) {
 	        listeners: {
 	        	'select' : function(combo, record) {
 	        		actual_task_filter = record.data.value;
+	        		if (record.data.value != 'no filter') {
+	        			combo.el.addClass('filter-selected');
+	        		} else {
+	        			combo.el.removeClass('filter-selected');
+	        		}
 	        		var date = og.calToolbarDateMenu.picker.getValue();
 					changeView(cal_actual_view, date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);
+	        	},
+	        	'render': function(combo) {
+	        		var v = combo.getValue();
+	        		if (v && v != 'no filter') {
+	        			combo.el.addClass('filter-selected');
+	        		} else {
+	        			combo.el.removeClass('filter-selected');
+	        		}
 	        	}
 	        }
 	    });
@@ -545,18 +583,32 @@ og.CalendarSecondTopToolbar = function(config) {
 					}
 				});
 			}
+		},
+		subtasks: {
+			id: 'show_subtasks_in_calendar',
+	        text: lang('subtasks'),
+			checked: og.preferences['show_subtasks_in_calendar'] == 1,
+			checkHandler: function() {
+				og.openLink(og.getUrl('account', 'update_user_preference', {name: 'show_subtasks_in_calendar', value:(this.checked?1:0)}), {
+					callback: function(success, data) {
+						var date = og.calToolbarDateMenu.picker.getValue();
+						changeView(cal_actual_view, date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);
+					}
+				});
+			}
 		}
 	};
 
 	var status_menu = new Ext.Action({
-       	iconCls: 'op-ico-details',
-		text: lang('show'),
+       	iconCls: 'btn btn-sm',
+		text: '<i class="icon-list-checks"></i>' + lang('show') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
 		menu: {items: [
 			viewActionsState.pending,
 			viewActionsState.yes,
 			viewActionsState.no,
 			viewActionsState.maybe,
-			viewActionsState.birthdays
+			viewActionsState.birthdays,
+			viewActionsState.subtasks
 		]}
 	});
 	

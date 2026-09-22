@@ -55,7 +55,7 @@ if (!isset($allow_export)) $allow_export = true;
                         if ($allow_export) {
 
                             render_report_header_button_small(array(
-                                'name' => 'exportCSV', 'text' => lang("csv"), 'title' => lang("export csv"), 'onclick' => "og.submit_csv_form('$genid', this);return false;", 'iconcls' => "ico-text"
+                                'name' => 'exportCSV', 'text' => lang("csv"), 'title' => lang("export csv"), 'onclick' => "og.submit_csv_form('$genid', this);return false;", 'iconcls' => "ico-text-csv"
                             ));
 
                             render_report_header_button_small(array(
@@ -72,8 +72,12 @@ if (!isset($allow_export)) $allow_export = true;
 
                       } else { // predefined report
 
+                        // the task time report can have many dynamic columns (one per time module
+                        // grid column selected); print it landscape so they don't get clipped
+                        $print_landscape = ($template_name == 'total_task_times') ? 'true' : 'false';
+
                         render_report_header_button_small(array(
-							'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printNoPaginatedReport('$genid','".escape_character($title)."');return false;", 'iconcls' => "ico-print"
+							'name' => 'print', 'text' => lang("print"), 'title' => lang("print view"), 'onclick' => "og.reports.printNoPaginatedReport('$genid','".escape_character($title)."', undefined, $print_landscape);return false;", 'iconcls' => "ico-print"
                         ));
 
                         render_report_header_button_small(array(
@@ -137,64 +141,7 @@ if (!isset($allow_export)) $allow_export = true;
 
 </div>
 
-<div id="pdfOptions" style="display:none;">
-  <div class="coInputMainBlock" style="background-color:white; padding:10px; border-radius: 5px;">
-	<div class="coInputTitle" style="min-width: 100px;margin-bottom:15px;">
-		<?php echo lang('report pdf options') ?>
-	</div>
-	
-	
-	<?php 
-		// Get config options to set default pdf layout and pdf size
-		$pdf_layout = user_config_option('pdf_page_layout');
-		$pdf_page_size = user_config_option('pdf_page_size');
-		if($pdf_page_size == '') $pdf_page_size = 'A4';
-	?>
-
-	<div class="dataBlock">
-		<label><?php echo lang('report pdf page layout') ?></label>
-		<select name="pdfPageLayout" id="{gen_id}pdfPageLayout">
-			<option value="P" <?php if($pdf_layout == 'Portrait') echo 'selected' ?>><?php echo lang('report pdf vertical') ?></option>
-			<option value="L" <?php if($pdf_layout == 'Landscape') echo 'selected' ?>><?php echo lang('report pdf landscape') ?></option>
-		</select>
-	</div>
-	
-	<div class="dataBlock">
-		<label><?php echo lang('page size') ?></label>
-		<select name="pdfPageSize" id="{gen_id}pdfPageSize">
-			<option value="A0"<?php if($pdf_page_size == 'A0') echo 'selected' ?>>A0</option>
-			<option value="A1"<?php if($pdf_page_size == 'A1') echo 'selected' ?>>A1</option>
-			<option value="A2" <?php if($pdf_page_size == 'A2') echo 'selected' ?>>A2</option>
-			<option value="A3" <?php if($pdf_page_size == 'A3') echo 'selected' ?>>A3</option>
-			<option value="A4" <?php if($pdf_page_size == 'A4') echo 'selected' ?>>A4</option>
-			<option value="A5" <?php if($pdf_page_size == 'A5') echo 'selected' ?>>A5</option>
-			<option value="Legal" <?php if($pdf_page_size == 'Legal') echo 'selected' ?>>Legal</option>
-			<option value="Letter" <?php if($pdf_page_size == 'Letter') echo 'selected' ?>>Letter</option>
-		</select>
-	</div>
-	
-	<div class="dataBlock" style="display:none;">
-		<label><?php echo lang('report font size') ?></label>
-		<select name="pdfFontSize" id="{gen_id}pdfFontSize">
-			<option value="8">8</option>
-			<option value="9">9</option>
-			<option value="10">10</option>
-			<option value="11">11</option>
-			<option value="12" selected>12</option>
-			<option value="13">13</option>
-			<option value="14">14</option>
-			<option value="15">15</option>
-			<option value="16">16</option>
-		</select>
-	</div>
-	
-	<button type="submit" class="submit" name="exportPDF" onclick="og.submit_pdf_form('{gen_id}');">
-		<?php echo lang('export') ?>
-	</button>
-	<div class="clear"></div>
-	
-  </div>
-</div>
+<?php include get_template_path('pdf_options_modal', 'reporting'); ?>
 
 </form>
 
@@ -241,11 +188,14 @@ og.submit_export_excel_form = function(genid, elem) {
 	og.openLink(og.getUrl('excel_export', 'export_custom_report_excel', {id: report_id}), {
 		post: params,
 		callback: function(success, data) {
+			if (!success || !data || !data.filename || data.filename == 'no data') {
+				return;
+			}
 			var $form = $("<form></form>");
 			$form.attr("action", og.getUrl('reporting', 'download_file'));
 			$form.attr("method", "post");
 			$form.append('<input type="text" name="file_name" value="'+data.filename+'" />');
-			$form.append('<input type="text" name="file_type" value="application/vnd.ms-excel" />');
+			$form.append('<input type="text" name="file_type" value="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />');
 			
 			$form.appendTo('body').submit().remove();				
 		}

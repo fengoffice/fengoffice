@@ -411,7 +411,7 @@ function format_time_diff_to_print_in_list($minutes) {
 			case DATA_TYPE_DATE:
 				if ($value instanceof DateTimeValue) {
 					$formatted = $value->format("$dateformat");
-				} else if ($value != 0) { 
+				} else if (!empty($value)) { 
 					if (str_ends_with($value, "00:00:00")) $dateformat .= " H:i:s";
 					try {
                         $date_format = user_config_option('date_format');
@@ -428,7 +428,7 @@ function format_time_diff_to_print_in_list($minutes) {
 				$time_format = user_config_option('time_format_use_24') ? 'G:i' : 'g:i A';
 				if ($value instanceof DateTimeValue) {
 					$formatted = $value->format("$dateformat $time_format");
-				} else if ($value != 0) {
+				} else if (!empty($value)) {
 					try {
 						$dtVal = DateTimeValueLib::dateFromFormatAndString("$dateformat $time_format", $value);
 					} catch (Exception $e) {
@@ -495,11 +495,171 @@ function get_format_value_to_header($col, $obj_type_id)
     return $formatted;
 }
 
+/**
+ * Parse a raw address custom property value (type|street|city|state|country|zip).
+ *
+ * @param string $raw_value
+ * @return array|null Parsed address parts, or null when there is no meaningful location data
+ */
+function parse_address_custom_property_value($raw_value) {
+	if ($raw_value === null || trim($raw_value) === '') {
+		return null;
+	}
+
+	$values = str_replace("\|", "%%_PIPE_%%", $raw_value);
+	$exploded = explode("|", $values);
+	foreach ($exploded as &$v) {
+		$v = str_replace("%%_PIPE_%%", "|", $v);
+		$v = escape_character($v);
+	}
+	unset($v);
+
+	$street = trim(array_var($exploded, 1, ''));
+	$city = trim(array_var($exploded, 2, ''));
+	$state = trim(array_var($exploded, 3, ''));
+	$country = trim(array_var($exploded, 4, ''));
+	$zip_code = trim(array_var($exploded, 5, ''));
+	$country_name = $country !== '' ? CountryCodes::getCountryNameByCode($country) : '';
+
+	if ($street === '' && $city === '' && $state === '' && $zip_code === '') {
+		return null;
+	}
+
+	return array(
+		'address_type' => array_var($exploded, 0, ''),
+		'street' => $street,
+		'city' => $city,
+		'state' => $state,
+		'country' => $country,
+		'country_name' => $country_name,
+		'zip_code' => $zip_code,
+	);
+}
+
+/**
+ * Format a raw address custom property value for display.
+ *
+ * @param string $raw_value
+ * @param string $format one_line|short|long|object_listing|raw_parts
+ * @return string|array
+ */
+function format_address_custom_property_value($raw_value, $format = 'one_line') {
+	$parts = parse_address_custom_property_value($raw_value);
+	if (!$parts) {
+		return $format === 'raw_parts' ? null : '';
+	}
+
+	if ($format === 'raw_parts') {
+		return $parts;
+	}
+
+	$street = $parts['street'];
+	$city = $parts['city'];
+	$state = $parts['state'];
+	$zip_code = $parts['zip_code'];
+	$country_name = $parts['country_name'];
+
+	if ($format === 'short') {
+		$line = $street;
+		if ($street !== '' && $city !== '') {
+			$line .= ', ' . $city;
+		} elseif ($city !== '') {
+			$line = $city;
+		}
+		return $line;
+	}
+
+	if ($format === 'long') {
+		$lines = array();
+		if ($street !== '') {
+			$lines[] = $street;
+		}
+		$line_2 = $city;
+		if ($state !== '') {
+			$line_2 .= ($line_2 !== '' ? ', ' : '') . $state;
+		}
+		if ($zip_code !== '') {
+			$line_2 .= ($line_2 !== '' ? ' ' : '') . $zip_code;
+		}
+		if ($line_2 !== '') {
+			$lines[] = $line_2;
+		}
+		return implode("\n", $lines);
+	}
+
+	if ($format === 'object_listing') {
+		$tmp = array();
+		if ($city !== '') $tmp[] = $city;
+		if ($state !== '') $tmp[] = $state;
+		if ($zip_code !== '') $tmp[] = $zip_code;
+		if ($country_name !== '') $tmp[] = $country_name;
+		return ($street === '' ? '' : nl2br($street . "\n")) . implode(' - ', $tmp);
+	}
+
+	$tmp = array();
+	if ($street !== '') $tmp[] = $street;
+	if ($city !== '') $tmp[] = $city;
+	if ($state !== '') $tmp[] = $state;
+	if ($zip_code !== '') $tmp[] = $zip_code;
+	if ($country_name !== '') $tmp[] = $country_name;
+	return implode(' - ', $tmp);
+}
+
+/**
+ * Resolve a custom property definition for a member.
+ *
+ * @param Member $member
+ * @param int|string $cp_id
+ * @return CustomProperty|MemberCustomProperty|null
+ */
+function get_custom_property_for_member(Member $member, $cp_id) {
+	$object_type = ObjectTypes::instance()->findById($member->getObjectTypeId());
+	if (!$object_type) {
+		return null;
+	}
+	if ($object_type->getType() == 'dimension_group') {
+		if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+			return MemberCustomProperties::getCustomProperty($cp_id);
+		}
+	} else {
+		return CustomProperties::getCustomProperty($cp_id);
+	}
+	return null;
+}
+
+/**
+ * Format a custom property value for use in member display names.
+ *
+ * @param CustomProperty|MemberCustomProperty|null $cp
+ * @param string $value
+ * @return string
+ */
+function format_custom_property_value_for_display_name($cp, $value) {
+	if (!$cp || $value === '') {
+		return $value;
+	}
+	if ($cp->getType() == 'address') {
+		return format_address_custom_property_value($value, 'one_line');
+	}
+	return $value;
+}
+
 	function get_custom_property_value_for_listing($cp, $obj, $cp_vals=null, $raw_data=false, $options=array()) {
 		$object_id = $obj instanceof ContentDataObject ? $obj->getId() : $obj;
 		
 		if (is_null($cp_vals)) {
 			$cp_vals = CustomPropertyValues::getCustomPropertyValues($object_id, $cp->getId());
+			
+			$cpv = null;
+			Hook::fire('override_custom_property_value', array('cp' => $cp, 'object' => $obj), $cpv);
+			if (!is_null($cpv)) {
+				if (isset($cpv->cp_type)) {
+					$cp->original_cp_type = $cp->getType();
+					$cp->setType($cpv->cp_type);
+				}
+				$cp_vals = array($cpv);
+			}
+			
 		}
 		$val_to_show = "";
 		if ($raw_data && $cp->getType() == 'address') {
@@ -548,14 +708,7 @@ function get_format_value_to_header($col, $obj_type_id)
 				}
 				
 				if ($cp->getType() == 'boolean' && $cp_val instanceof CustomPropertyValue) {
-				    if ($cp_val->getValue() == 1){
-				        $formatted = lang('yes');
-				    }else if($cp_val->getValue() == -1){
-				        $formatted = lang('no');
-				    }else{
-				        $formatted = "";
-				    }
-					$cp_val->setValue($formatted);
+					$cp_val->setValue(format_boolean_cp_value_for_display($cp_val->getValue()));
 				}
 				
 				if ($cp->getType() == 'list' && $cp->getIsSpecial() && $cp_val instanceof CustomPropertyValue) {
@@ -600,9 +753,8 @@ function get_format_value_to_header($col, $obj_type_id)
 						} catch (Exception $e) {
 							$tmp_date = null;
 						}
-						if ($cp_val->getValue() == "" || str_starts_with($cp_val->getValue(), EMPTY_DATE)) {
-							$formatted = "";
-						} else {
+						$formatted = "";
+						if (!($cp_val->getValue() == "" || str_starts_with($cp_val->getValue(), EMPTY_DATE))) {
 							if ($tmp_date instanceof DateTimeValue) $formatted = $tmp_date->format($format);
 						}
 						$cp_val->setValue($formatted);
@@ -610,44 +762,20 @@ function get_format_value_to_header($col, $obj_type_id)
 				}
 				
 				if ($cp->getType() == 'address' && $cp_val instanceof CustomPropertyValue) {
-					$values = str_replace("\|", "%%_PIPE_%%", $cp_val->getValue());
-					$exploded = explode("|", $values);
-					foreach ($exploded as &$v) {
-						$v = str_replace("%%_PIPE_%%", "|", $v);
-						$v = escape_character($v);
-					}
-					if (count($exploded) > 0) {
-						$address_type = array_var($exploded, 0, '');
-						$street = array_var($exploded, 1, '');
-						$city = array_var($exploded, 2, '');
-						$state = array_var($exploded, 3, '');
-						$country = array_var($exploded, 4, '');
-						$zip_code = array_var($exploded, 5, '');
-						$country_name = CountryCodes::getCountryNameByCode($country);
-						
-						if ($raw_data) {
-							$formatted = array(
-								'street' => $street,
-								'city' => $city,
-								'state' => $state,
-								'country' => $country_name,
-								'zip_code' => $zip_code,
-							);
-							if (count($cp_vals) > 1) {
-								$val_to_show[] = $formatted;
-							} else {
-								return $formatted;
-							}
-						} else {
-							
-							$tmp = array();
-							//if ($street != '') $tmp[] = nl2br($street);
-							if ($city != '') $tmp[] = $city;
-							if ($state != '') $tmp[] = $state;
-							if ($zip_code != '') $tmp[] = $zip_code;
-							if ($country_name != '') $tmp[] = $country_name;
-							$cp_val->setValue(($street==''?'':nl2br($street."\n")) . implode(' - ', $tmp));
-						}
+					$parts = parse_address_custom_property_value($cp_val->getValue());
+					if ($raw_data) {
+						// Always define $formatted so the address append below is safe even when the
+						// stored value is empty or unparseable ($parts is false). The append happens
+						// once in the address branch further down; do not append here as well.
+						$formatted = $parts ? array(
+							'street' => $parts['street'],
+							'city' => $parts['city'],
+							'state' => $parts['state'],
+							'country' => $parts['country_name'],
+							'zip_code' => $parts['zip_code'],
+						) : array();
+					} else if ($parts) {
+						$cp_val->setValue(format_address_custom_property_value($cp_val->getValue(), 'object_listing'));
 					}
 				}
 
@@ -661,6 +789,14 @@ function get_format_value_to_header($col, $obj_type_id)
 					// if raw_data=true then return the json value as it is in the db, else render the feng component
 					if (!$raw_data) {
 						$formatted = render_image_custom_property_value("", $cp, $cp_val->getValue(), "list");
+						$cp_val->setValue($formatted);
+					}
+				}
+				
+				if ($cp->getType() == 'object_link' && $cp_val instanceof CustomPropertyValue) {
+					// if raw_data=true then return the json value as it is in the db, else render the feng component
+					if (!$raw_data) {
+						$formatted = render_object_link_custom_property_value("", $cp, $cp_val->getValue(), "list");
 						$cp_val->setValue($formatted);
 					}
 				}
@@ -684,11 +820,19 @@ function get_format_value_to_header($col, $obj_type_id)
 					$val_to_show[] = $formatted;
 				} else if ($cp->getType() == 'amount'){
 					$val_to_show = $formatted;
+				} else if ($cp->getType() == 'object_link'){
+					$val_to_show .= $formatted;
 				} else {
 					$val_to_show .= ($val_to_show == "" ? "" : ", ") . ($cp_val instanceof CustomPropertyValue ? $cp_val->getValue() : "");
 				}
 			}
 		}
+		// restore original cp type if it was changed in override_custom_property_value hook
+		if (isset($cp->original_cp_type)) {
+			$cp->setType($cp->original_cp_type);
+			unset($cp->original_cp_type);
+		}
+		
 		return $val_to_show;
 	}
 	
@@ -742,6 +886,18 @@ function get_format_value_to_header($col, $obj_type_id)
 			}
 			$val_to_show .= $formatted;
 				
+		} else if ($cp->getType() == 'object_link') {
+			$formatted = "";
+			foreach ($cp_vals as $cp_val) {
+				if ($cp_val instanceof MemberCustomPropertyValue) {
+					// if raw_data=true then return the json value as it is in the db, else render the feng component
+					if (!$raw_data) {
+						$formatted .= render_object_link_custom_property_value("", $cp, $cp_val->getValue(), "list");
+					}
+				}
+			}
+			$val_to_show .= $formatted;
+				
 		} else {
 			
 			foreach ($cp_vals as $cp_val) {
@@ -752,6 +908,10 @@ function get_format_value_to_header($col, $obj_type_id)
 					} else {
 						$cp_val->setValue("");
 					}
+				}
+
+				if ($cp->getType() == 'boolean' && $cp_val instanceof MemberCustomPropertyValue) {
+					$cp_val->setValue(format_boolean_cp_value_for_display($cp_val->getValue()));
 				}
 				
 				if ($cp->getType() == 'list' && $cp_val instanceof MemberCustomPropertyValue) {
@@ -801,28 +961,15 @@ function get_format_value_to_header($col, $obj_type_id)
 				}
 				
 				if ($cp->getType() == 'address' && $cp_val instanceof MemberCustomPropertyValue) {
-					$values = str_replace("\|", "%%_PIPE_%%", $cp_val->getValue());
-					$exploded = explode("|", $values);
-					foreach ($exploded as &$v) {
-						$v = str_replace("%%_PIPE_%%", "|", $v);
-						$v = str_replace("'", "\'", $v);
-					}
-					if (count($exploded) > 0) {
-						$address_type = array_var($exploded, 0, '');
-						$street = array_var($exploded, 1, '');
-						$city = array_var($exploded, 2, '');
-						$state = array_var($exploded, 3, '');
-						$country = array_var($exploded, 4, '');
-						$zip_code = array_var($exploded, 5, '');
-						$country_name = CountryCodes::getCountryNameByCode($country);
-						
+					$parts = parse_address_custom_property_value($cp_val->getValue());
+					if ($parts) {
 						if ($raw_data) {
 							$formatted = array(
-								'street' => $street,
-								'city' => $city,
-								'state' => $state,
-								'country' => $country_name,
-								'zip_code' => $zip_code,
+								'street' => $parts['street'],
+								'city' => $parts['city'],
+								'state' => $parts['state'],
+								'country' => $parts['country_name'],
+								'zip_code' => $parts['zip_code'],
 							);
 							if (count($cp_vals) > 1) {
 								$val_to_show[] = $formatted;
@@ -830,14 +977,7 @@ function get_format_value_to_header($col, $obj_type_id)
 								return $formatted;
 							}
 						} else {
-							$tmp = array();
-							if ($street != '') $tmp[] = $street;
-							if ($city != '') $tmp[] = $city;
-							if ($state != '') $tmp[] = $state;
-							if ($zip_code != '') $tmp[] = $zip_code;
-							if ($country_name != '') $tmp[] = $country_name;
-							$cp_val->setValue(implode(' - ', $tmp));
-								
+							$cp_val->setValue(format_address_custom_property_value($cp_val->getValue(), 'one_line'));
 						}
 					}
 				}
@@ -910,6 +1050,9 @@ function get_format_value_to_header($col, $obj_type_id)
 		}
 		$formatted = $sign . $symbol . " " . number_format(abs($number), $decimals, $decimals_separator, $thousand_separator);
 
+		// escape double quotes for csv export
+		$formatted = str_replace('"', '""', $formatted);
+		
 		return trim($formatted);
 	}
 
@@ -922,12 +1065,26 @@ function get_format_value_to_header($col, $obj_type_id)
 		$thousand_separator = user_config_option('thousand_separator');
 		
 		$sign = "";
+		if ($number == '') {
+			$number = 0;
+		}
 		if ($number < 0) {
 			$sign = "- ";
 		}
 		$formatted = $sign . number_format(abs((float)$number), $decimals, $decimals_separator, $thousand_separator);
+
+		// escape double quotes for csv export
+		$formatted = str_replace('"', '""', $formatted);
 		
 		return trim($formatted);
+	}
+
+	function format_amount_for_excel($number) {
+		// Return clean numeric value for Excel calculations
+		if ($number == '' || $number === null) {
+			return 0;
+		}
+		return (float) $number;
 	}
 	
 	function format_boolean_to_string($value){
@@ -996,8 +1153,25 @@ function get_format_value_to_header($col, $obj_type_id)
 	* @return string
 	*/
   	function file_types_friendly_name($id) {
-		$testing = FileTypes::instance()->findById($id);
-		return ($id > 0 && !is_null($testing)) ? $testing->getColumnValue('friendly_name') : 'unknown';
+		if ($id <= 0) {
+			return lang('unknown file type');
+		}
+		$file_type = FileTypes::instance()->findById($id);
+		if (is_null($file_type)) {
+			return lang('unknown file type');
+		}
+
+		$extension = strtolower(trim($file_type->getExtension()));
+		$lang_key = 'file type friendly name ' . $extension;
+
+		// Use the translated name if the key exists; otherwise fall back to the
+		// value stored in the table or, as a last resort, the extension itself.
+		if (Localization::instance()->lang_exists($lang_key)) {
+			return lang($lang_key);
+		}
+
+		$stored = $file_type->getColumnValue('friendly_name');
+		return ($stored !== null && $stored !== '') ? $stored : $extension;
 	} // file_types_friendly_name
 
 	function format_percentage_value_for_excel($value, $params = array()) {

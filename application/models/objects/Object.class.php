@@ -102,6 +102,10 @@ class FengObject extends BaseObject {
 	function getEditUrl() {
 		return get_url($this->getObjectTypeName(), 'edit', array("id" => $this->getObjectId()));
 	}
+
+	function getAddObjectUrl() {
+		return get_url($this->getObjectTypeName(), 'add');
+	}
 	
 	
 	function getDeleteUrl() {

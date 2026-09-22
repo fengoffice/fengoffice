@@ -23,7 +23,7 @@
 	'quick system configuration and settings' => 'Schnellkonfiguration und -einstellungen',
 	'quick help' => 'Hilfe und Support',
 	'personal settings' => 'Persönliche Einstellungen',
-	'learn about and manage your Feng Office' => 'Kennenlernen und Verwalten von Feng Office',
+	'learn about and manage your Feng Office' => 'Kennenlernen und Verwalten von '. product_name().'',
 	'companies with users' => 'Firmen mit Benutzern',
 	'add new internal user' => 'Neuen internen Benutzer hinzufügen',
 	'add new collaborator user' => 'Neuen Benutzer \'Mitarbeiter\' hinzufügen',

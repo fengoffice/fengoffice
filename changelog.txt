@@ -2,6 +2,1938 @@
 Changelog
 =========
 
+Since 4.2.0.0-rc1
+-----------------------------------
+fix(mail): match first and last name in To autocomplete (#4250)
+Apply language compatibility fallbacks to JS langs and lang_exists (#4251)
+fix: document editor overlays Home after leaving the editor or resizing tabs (#4254)
+fix(property_groups): hide empty property group boxes in forms (#4255)
+bugfix: center modal forms after their scripts run and keep them in view when switching tabs (#4257)
+fix(income): stretch invoice form columns to fill the wider modal (#4260)
+
+Since 4.2.0.0-beta2
+-----------------------------------
+fix(tasks): return only id/name/parentId from get_tasks_in_context (#4235)
+Fix Timesheets report "Time entries" labels and update description (#4234)
+Fix report data gaps, checkbox filtering, and column truncation (#4224)
+fix(income): restore full-width invoice modal (#4226)
+feat(tasks): inline dimension picker search parity + hover card fix (#4222)
+fix(client overview): align info-widget columns, fix table/breadcrum overflow, clean up folders widget (#4231)
+
+Since 4.2.0.0-beta1
+-----------------------------------
+Fix Time module report grouping, columns, and CSV/PDF export (#4213)
+fix(mail): hide leaked MIME headers in email body previews (#4201)
+fix(calendar): allow mailbox users to RSVP invites on behalf of attendee (#4217)
+Respect custom dimension names in widget titles and columns; keep Tasks widget visible with no personal tasks (#4207)
+feature(link_embeds): inline embeds for shared links (jam.dev pilot) (#4199)
+
+Since 4.2.0.0-beta0
+-----------------------------------
+Add option to stop time entry once a task's estimated hours are reached (#4181)
+feat(calendar): add optional subtasks display across all views (#4186)
+Scope immutable asset caching to cache-busted URLs only (#4187)
+
+Since 4.2.0.0-alpha3
+-----------------------------------
+fix(event_tickets): avoid semi-join flattening in attendees listing (#4160)
+Fix Tasks widget due date format to use system date format setting (#4157)
+Fix Activity/Emails/Tasks widget UX issues (#4174)
+Fix Settings link being silently dropped when clicked before app shell finishes loading (#4156)
+fix(calendar): restore invite email details and RSVP replies to organizers (#4151)
+fix(php8): harden production ERROR/FATAL notices (mail/task/timeslot) (#4172)
+fix(timeslots): freeze invoiced entries on task reclassify (Rayonier) (#4173)
+Auto-compute asset revision to avoid stale JS/CSS after upgrades (#4166)
+Add Escape-to-close support for widget settings modals (#4177)
+
+Since 4.2.0.0-alpha2
+-----------------------------------
+fix: evx_customers widget crashing the dashboard after shell refactor (#4150)
+feat: merge tasks quick-actions into one reorderable, configurable column (#4146)
+feat(event_tickets): attendee-centric list, customer events widget, and fixes (#4143)
+
+Since 4.2.0.0-alpha1
+-----------------------------------
+fix: task description image paste/drop (#4137)
+fix: preserve italic/underline rendering and constrain image/table sizing in HTML help popover (#4115)
+fix: circular check icon for complete task button (#4139)
+feat: Add column-header sort to Invoice payment status widget, all columns (#4127)
+feat(tasks): column manager — hideable "To" column + empty-selection guard (#4114)
+feat: Add Tasks, Activity, and Emails dashboard widgets (#4123)
+feat: add Clients dashboard widget on the dimension-widget shell (#4112)
+fix: Managed events fixes, optional invoicing, and bulk attendee upload (#4118)
+fix: places the dropdown list below the search input, or above it if it does not fit below (#4124)
+fix(forms): modal member forms render full-width (#4120)
+
+Since 4.1.X.X
+-----------------------------------
+feat: add HTML help for custom properties and fixed properties (#4101)
+feat: add new column manager to tasks list (#3955)
+fix: Task description images not rendering in view mode && Drag and drop in tasks (#3949)
+Since 4.1.2.1
+-----------------------------------
+Prevent converting a user into a company when creating/editing a Supplier (#4249)
+fix(core): render forms and resolve classes correctly without plugins (#4253)
+bugfix(tasks): inline editing applies the subtask classification modes and refreshes the subtask rows (#4259)
+
+Since 4.1.2.0
+-----------------------------------
+fix(income): make invoice line quantity fit multi-digit values (hide number spinners, widen field) (#4239)
+
+Since 4.1.2.0-rc3
+-----------------------------------
+fix(mail): opaque white background for transparent notification logos (#4227)
+fix(property_groups): stop unassigned custom properties rendering twice and leaking subtype fields into member forms (#4233)
+
+Since 4.1.2.0-rc2
+-----------------------------------
+fix(quickbooks): verify linked invoices before syncing payments and shield lookups from unknown QBO fields (#4223)
+feat(quickbooks): deactivate the QBO customer on member delete and block unsafe deletions (#4228)
+
+Since 4.1.2.0-rc1
+-----------------------------------
+fix(tasks): maintain order of parent's subtasksIds when adding tasks (#4196)
+fix: filter the mail attachment and task expense object pickers by context (#4204)
+fix(mail): always recompute from_name from the selected account (#4202)
+fix(crpm): keep and inherit subtask classifications when the parent task is saved (#4208)
+fix(reports): honor Project List ASC/DESC when opening print report (#4214)
+bugfix: inline editing subtask classification now respects ignored dimensions for subtasks config (#4200)
+
+Since 4.1.2.0-beta5
+-----------------------------------
+fix(upgrade): close unterminated string in tasksOrderSubtasksWithFilterCriteria block (#4185)
+feat(database): add InnoDB FULLTEXT stopword check and enhance token … (#4191)
+fix(quickbooks): stop creating duplicate invoices when the QBO mapping is lost (#4188)
+refactor(reports): enhance Excel export formatting and alignment (#4190)
+
+Since 4.1.2.0-beta4
+-----------------------------------
+fix(dashboard): hide overview widgets when user lacks module permission (#4169)
+Add user preference for nested subtask order criteria (#4161)
+fix(upgrade): move notification_information_fields insert to correct upgrade slot (#4152)
+fix(tasks): stop copied tasks from being parented to the original (#4153)
+feat(custom-properties): multi select contact type filters for contact properties (#4167)
+fix(reports): Project List print title and column alignment (#4163)
+facturalista: hide cancel on e-invoice and require item detail on save (#4141)
+
+Since 4.1.2.0-beta3
+-----------------------------------
+fix(permissions): stop a lock conflict from discarding member permissions (#4149)
+fix: keep mail compose intact when attaching files (#4147)
+fix: Remove duplicated functions (#4148)
+refactor: improve contact and company import handling (#4144)
+
+Since 4.1.2.0-beta2
+-----------------------------------
+fix: Add missing-amount confirmation string translations (#4140)
+fix: correct subtask price double-counting and hierarchy exclusion (#4116)
+fix(reports): stabilize Project List Excel export naming, sort, and wrap (#4142)
+fix: remove js resize of header user box to avoid visible jump on reload (#4128)
+fix(core_dimensions): apply new user default list columns as the complete layout (#4131)
+feat(notifications): redesign emails and Notification Manager settings (#4121)
+fix(tasks): unify inline dim selector into a single field with explicit selection state (#4119)
+fix: allow editing password confirmation after validation errors (#4138)
+feat(dimensions): add 1000 items-per-page option to project/member lists (#4117)
+
+Since 4.1.2.0-beta1
+-----------------------------------
+fix(tasks): autofocus dimension filter and restyle its search box (#4113)
+fix: Update newsletter icon in navigation bar (#4106)
+fix: blank screen after test outgoing email validation fails (#4103)
+fix: Project list: configurable items per page (flat / ungrouped) (#4105)
+fix(mail): prevent conversation split from folded In-Reply-To headers (#4104)
+
+Since 4.1.2.0-alpha2
+-----------------------------------
+fix: issue in notifications manager update
+feat: Task project price quote show subtask option (#4073)
+feat: Invoice payment status wigdet issues and enhacements (#4046)
+feat: add option to show email account in header when viewing emails (#4064)
+feat: add newsletter sender name config option (#4076)
+feat: init all list columns config by user role (#4044)
+fix: widen alphanumeric prefix input in autonumbering settings table (#4091)
+fix(dashboard): reload project widget once on member classification change (#4061)
+feat: add functionality to mark emails as not spam and improve state management (#4063)
+fix: Fix several issues on calendar module (#4010)
+feat: show compact hover card with avatar and name for assigned to column (#4090)
+fix(mail): spaces in email subjects and unsorted account lists (#4102)
+fix: restore report member filters after closing the report (#4098)
+fix: dimension custom properties detail group (#4060)
+fix: restore user default labor category when task has none (#4096)
+fix(ApiController): enhance date and time handling for timeslot creation (#4069)
+
+Since 4.1.2.0-alpha1
+-----------------------------------
+feature: improve subtask loading and rendering efficiency (#4041)
+feature: implement default subscription options for task actions (#4032)
+feature: add format_boolean_cp_value_for_display function for improved boolean display in custom properties (#4036)
+feature: enhance task and object creation with parent ID handling (#4035)
+refactor: streamline error handling for object addition across controllers (#4037)
+bugfix: update advanced billing plugin to version 50 and enforce unique member totals (#4040)
+bugfix: invoice delete not deleted in qbo (#4012)
+bugfix:Fixes on custom report copy functionality (#4031)
+bugfix: CVE 2026 36669 ck upload xss (#4014)
+
+Since 4.1.1.X
+-----------------------------------
+feature: Possibility to clone a custom report (#4011)
+feature: add event removal functionality and update MailController to utilize it (#4007)
+feature: add Markdown rendering support for .md/.markdown files (#3959)
+feature: allow ordering in projects widget (#4001)
+
+Since 4.1.1.17
+-----------------------------------
+fix(object_subtypes): offer the generic type only when editing a generic instance (#4242)
+fix(upgrade): keep plugin updates within memory on large installs (#4243)
+fix(addu_account_payables): use the current expenses2 payment receipt form and ship the Spanish expense labels (#4247)
+
+Since 4.1.1.16
+-----------------------------------
+fix: several fixes for customer installs after the 4.1.1 upgrade (#4240)
+
+Since 4.1.1.15
+-----------------------------------
+fix(object_subtypes): initialise subtype maps so tasks and member panels render without subtypes (#4229)
+
+Since 4.1.1.14
+-----------------------------------
+fix(templates): restore previous task selector in template task form, unify parent task badge markup and fix undefined variables (#4221)
+fix(member_templates): resolve project property defaults for expense template params (#4225)
+
+Since 4.1.1.13
+-----------------------------------
+Fix Gantt PDF export failing with -Failed to download specified file- (#4215)
+
+Since 4.1.1.12
+-----------------------------------
+fix(custom-properties): stop single-value contact selectors from accepting several contacts (#4206)
+fix(calendar): prevent fatal error in day view when work_day_start_time preference is not a valid time (#4209)
+
+Since 4.1.1.11
+-----------------------------------
+fix(crpm): stop autonumbering from skipping numbers on new objects (#4194)
+
+Since 4.1.1.10
+-----------------------------------
+fix(advanced_core): stop weekly view from pulling next week's timeslots into the current week (#4184)
+fix(quickbooks): sync credit notes as CreditMemo entities (#4192)
+Fix/hidden module permissions member visibility (#4182)
+fix(dimension): drop unrelated project/client selection when the associated tree is filtered (#4189)
+fix(dimensions): keep filtered member tree pagination root-only for non-admins (#4178)
+fix(crpm): preserve descendant classifications when parent task members change (#4183)
+fix(object-subtypes): make the task subtype selectable again and keep the form wired after reloading its properties (#4180)
+
+Since 4.1.1.9
+-----------------------------------
+perf(core): coalesce background jobs into one process per type per request (#4165)
+fix(object-subtypes): stop parent type descriptions leaking into subtype properties (#4175)
+fix(listings): count distinct objects when the listing query uses DISTINCT (#4176)
+fix(quickbooks): support Affirm online payment flag and improve XML parse errors (#4168)
+fix(api): hide unlinked expense dimensions (e.g. Newspaper) on mobile (#4164)
+fix(members): apply access-granting object type filter to grouped member listing (#4170)
+fix(advanced_core): ignore fixed-property labels that match the raw c… (#4171)
+feat(quickbooks): make QuickBooks Id field permissions configurable (#4162)
+
+Since 4.1.1.8
+-----------------------------------
+fix(import): grant default project permissions and refresh member cache (#4159)
+fix(objects-import): CSV import silently dropped associations and reported failures as successes (#4158)
+fix(templates): allow extra members by dimension object-type when instantiating (#4155)
+
+Since 4.1.1.7
+-----------------------------------
+fix(pdf): harden Chrome/wkhtmltopdf export and raise chrome-php timeout (#4145)
+
+Since 4.1.1.6
+-----------------------------------
+fix(members): keep delete confirmation keyword in sync across locales (#4133)
+fix(calendar): add TZID to ICS DTSTART/DTEND to prevent time mismatch in notification emails (#4132)
+fix: Load Montserrat for dimension form titles. (#4135)
+fix(expenses2): swap date and due_date in actual-expenses form (#4122)
+fix: custom report PDF export against conversion and HTML build failures. (#4134)
+fix: Keep calendar usable when MS sync fails or user filter is invalid. (#4136)
+fix: PHP 8 PEAR/Net_POP3 (supersedes #4125 constructor + raiseError) (#4129)
+fix: PHP 8 compatibility in Net_POP3 constructor (#4125)
+
+Since 4.1.1.5
+-----------------------------------
+fix(crpm): self-heal object_prefixes missing object_type_id column (#4111)
+fux(update): Fix plugin data changes during 4.1.1 upgrades (#4110)
+
+Since 4.1.1.4
+-----------------------------------
+fix(advanced_core): only ask to reclassify on single selection associations (#4107)
+fix(tasks): allow status filters to apply to subtasks (#4108)
+
+Since 4.1.1.3
+-----------------------------------
+fix(quickbooks): send full country name in address sync for projects, clients and vendors (#4100)
+fix(pdf): budget report PDF export via chrome-php (encoding + robustness) (#4099)
+
+Since 4.1.1.2
+-----------------------------------
+bugfix: Enhance weekly view functionality and improve popover behavior (#4097)
+bugfix(tasks): guard financials-tab JS calls when tab is not rendered (#4095)
+bugfix: create projects with project_number + description custom properties; look up by project number (#4094)
+bugfix(objects_import): use product type amounts for imported actual expenses (#4093)
+
+Since 4.1.1.1
+-----------------------------------
+fix(weekly): Fixes on weekly view (#4092)
+fix(crpm): stop double-prefixing existing values in autonumbering (#4089)
+fix(time): keep is_billable "No" when linking a non-billable task (#4088)
+fix: fix contact selector mini card edit project (#4087)
+fix: fix chip remove icon, field alignment and spacing in workflow_permissions UI (#4081)
+
+Since 4.1.1.0
+-----------------------------------
+fix(security): patch ORDER BY / IN() SQL injection in search_dimension_members_tree (#4086)
+fix(templates): task template destructive save 4.1.1.x (#4085)
+fix(listing): keep ORDER BY aliases when a text filter is active (#4083)
+fix(weekly): enhance weekly popover functionality and styling (#4082)
+fix(task): translate dim_ order columns to member joins in get_tasks to avoid unknown column SQL error (#4080)
+fix(advanced_billing): keep stored time-entry rate when no billing definition matches (#4079)
+fix(calendar): show completed tasks as strikethrough in calendar view (#4078)
+fix(permissions): expense_item mirrors expense + hide unauthorized projects from listings (#4077)
+fix(property_groups): don't filter dimension_group properties by subtype (#4075)
+fix(mail): reply/reply-all fatal on undefined MAIL_SIGNATURE_DIV_ATTRIBUTES (#4074)
+
+Since 4.1.1.0-rc6
+-----------------------------------
+fix: fix contact selector card and add translations (#4057)
+refactor: unify column name retrieval in reporting components (#4072)
+fix: respect "do not show" for subtype selector and its admin editor (#4066)
+fix(dimension-tree): accept drops on nodes below the first viewport in scrollable trees (#4067)
+fix(property_groups): stop subtype custom property leaks and clobbering (#4068)
+feat: enhance member display name formatting and address handling (#4070)
+bugfix: when the financials tab is not active the estimated price is not calculated (#4071)
+
+Since 4.1.1.0-rc5
+-----------------------------------
+bugfix: avoid size transition on async inline-edit dropdowns (#4047)
+bugfix(autoload): prevent MailUtilities double-declaration fatal on PHP 8.2 (#4053)
+bugfix: missing product type field in actual expenses import (#4052)
+bugfix: enhance weekly time management and debugging capabilities (#4059)
+bugfix(security): patch SQL injection and stored XSS reported on CE 3.11.13.11 (#4048)
+bugfix(quickbooks): map email, company name and notes when syncing projects (#4042)
+bugfix: custom report group by parent task showing ids (#4058)
+bugfix(crpm): store full autonumber value in object_prefixes to avoid duplicate-key crash (#4056)
+bugfix(advanced_billing): preserve time-entry billing rate and block deleting in-use definitions (#4050)
+bugfix: enforce invoicing status for timeslots based on task billability (#4055)
+bugfix(project_reports): stop dropping/duplicating rollup subtasks in actual_vs_forecast_report (#4065)
+bugfix(project_reports): count fixed-fee billable hours as billable in utilization report (#4062)
+bugfix: email module search and filters issues2 (#4051)
+
+Since 4.1.1.0-rc4
+-----------------------------------
+refactor: enhance member selector functionality and improve code readability (#4043)
+bugfix: conditionally manage date visibility in expense forms (#4038)
+bugfix: Add configuration options to show birthdays in calendar (#4033)
+bugfix: some extjs based grids still dont have horizontal scroll (#4030)
+bugfix: autonumbering/prefixes — condition bugs, security hardening & robustness (#4034)
+bugfix: fix composer min php version (#4039)
+
+Since 4.1.1.0-rc3
+-----------------------------------
+bugfix: hide Export Excel button in tasks list when no filter is applied (#4019)
+bugfix: when not grouping the tasks list, enter a task and returning to list, the show all and show more actions dissapear (#4028)
+bugfix: Fix inline editing field behavior, sizing and visibility (#4018)
+bugfix: for cps of type "display member property" the "editable" field not initialized correctly, it was always set to "allow edition" (#4027)
+bugfix: blank form after changing template task subtype (#4026)
+bugfix: coloured CSS file-type badges in documents list (#XXXX) (#4021)
+bugfix: qbo sync issues (#4029)
+bugfix: install split invoice plugin does not add billing client to form (#4022)
+bugfix: empty result in project billing report when including subproject info (#4023)
+bugfix: show correct error when user cannot add project/customer (#4025)
+bugfix: import tool not working if not changing object type (#4024)
+
+Since 4.1.1.0-rc2
+-----------------------------------
+bugfix: document list file type string not shown (#4008)
+bugfix: projects tree not rendered correctly for non-admins (#4015)
+bugfix: document file type icons not shown in documents list (#4009)
+bugfix: cant save task classification (#4013)
+bugfix: ensure default value for info_to_skip in expense_categories_hooks.php to prevent potential errors (#4006)
+bugfix: issues in project billing report and time drag and drop (#4017)
+bugfix: compare phase dimensions independently when linking time entries to tasks). (#4016)
+bugfix: fix extjs grid init, the columns didn't match the data on first load
+bugfix: fix pdf export general margins and project report font size and margins (#4020)
+
+Since 4.1.1.0-rc1
+-----------------------------------
+bugfix: add hook for editing dimension name in API controller (#4002)
+bugfix: Refactor task template category mapping functions to include additional metadata. The task_template_category_name_map function now utilizes task_template_category_info_map, which returns catego…
+bugfix: enhance invoice print template layout and company info presentation (#4004)
+bugfix: enhance task validation in PaymentReceiptController and refactor member ID handling (#4005)
+
+Since 4.1.1.0-beta3
+-----------------------------------
+bugfix: Enhance password validation and error handling in user management (#3991)
+bugfix: import tool not able to import multiple values properties (#4000)
+bugfix: contact cp linked to dim loses contact type filter (#3995)
+bugfix: contacts csv import was overriding companies data if contact email was the same of the company (#3993)
+bugfix: get_expenses_in_context function for quick-add blocks the list loading and has performance issues (#3992)
+bugfix: vendor selection not updating expense payment term / due date (#3994)
+bugfix: made upgrade script to ensure that job title and prefix are removed from customer prop groups if they are disabled (#3997)
+bugfix: cant change hours and expeses widgets dates range (#3996)
+bugfix: sql error in tasks list when group by created by (#3998)
+
+Since 4.1.1.0-beta2
+-----------------------------------
+bugfix: align vertical positioning of cron events table cells (#3979)
+bugfix: Refactor permissions handling by removing hidden permission object type functions and updating related queries. Exclude 'expense_item' from permission checks in various views to streamline permission management. (#3989)
+bugfix: trashed subtask still visible in task list until manual refresh (#3988)
+bugfix: align dimension selector container for company forms and date picker off-screen on last rows in Safari (#3980)
+bugfix: resolve issues with task list date filter visibility and icon alignment (#3985)
+bugfix: backwards incompatibility with php7 caused that some cps were duplicated after save (#3982)
+bugfix: Fixes permissions checkboxes ux UI (#3986)
+bugfix: The frontend stored req_group_by=dimassoc_18 from a previous session and that association no longer exists in the db. Need to be more robust. (#3981)
+bugfix: fatal error out of memory when tasks not grouping show all (#3984)
+bugfix: cant search by email the contacts imported using csv import (#3977)
+refactor: Improve dimension member editing UI in inline editing (#3978)
+refactor: unify project widget config sections (#3983)
+
+Since 4.1.1.0-beta1
+-----------------------------------
+feature: configurable limit for invoices dashboard widget (#3964)
+feature: add sorting functionality for quick-add menu entries (#3972)
+bugfix: new widget options changes requested (#3966)
+bugfix: tasks excel export hangs and times out on large datasets (Services tab) (#3965)
+bugfix: align contact form dimension selector with flex display (#3968)
+bugfix: member selector bottom border overlaped by selected member div (#3974)
+bugfix: project price quote report issues (#3975)
+bugfix: issues in mail drag and drop (#3976)
+bugfix: fix margins and move inline styles to css file in activate templates form (#3973)
+bugfix: Time list inline task edit does not filter by current context (#3971)
+bugfix: Refactor TaskController to streamline user configuration options. Updated 'templatesFirstInNewMenu' to directly use the user configuration value, enhancing clarity and maintainability of the code. (#3970)
+bugfix: cant use csv imported contacts in newsletters (#3967)
+
+Since 4.1.1.0-alpha3
+-----------------------------------
+refactor: optimize getNewestContactPasswords method and add password expiration check (#3944)
+feature: Add dimension selector on mobile forms (#3906)
+bugfix: honor exclude from synchronizing for check-mail and IMAP sync (#3922)
+bugfix: Incorrect email subject, sender, and lack of automatic calendar sync (#3951)
+bugfix: Fix new permisson feature issues (#3958)
+bugfix: Enhance permissions handling by introducing hidden permission object type functionality. Added methods to retrieve hidden object type IDs and check if an object type is hidden. (#3940)
+bugfix: Enhance password validation across user management (#3939)
+bugfix: time weekly total column fixes (#3954)
+bugfix: Update version to 50 and add upgrade function for version transition from 49 to 50 in advanced_core plugin. (#3952)
+bugfix: inline-edit dim filter searches server (was filtering local sample only) (#3956)
+bugfix: Enhance task template handling by introducing a flag to conditionally display uncategorized task templates. (#3961)
+bugfix: issues in project widget (#3960)
+bugfix: "Show Templates first in New menu" user preference (#3962)
+
+Since 4.1.1.0-alpha2
+-----------------------------------
+feature: new option to ignore tasks with no duedate in financials widgets (#3917)
+feature: show subtasks hierarchy in time weekly view (#3932)
+feature: Implement category update functionality in TemplateController and update UI for managing task template categories. Added success message for category updates in English and Spanish language files. (#3935)
+refactor: enhance MemberTreeAjax initialization and filtering logic (#3931)
+refactor: simplify user retrieval for quick add in TimeController (#3918)
+bugfix: inline task edit preserves time and blocks start > due (#3933)
+
+Since 4.1.1.0-alpha1
+-----------------------------------
+refactor: more fixes and improvements to new evx projects widget (#3897)
+feature: Grouping for the evx tasks templates (#3894)
+
+Since 4.1.0.X
+-----------------------------------
+feature: new column manager for extjs grids (#3877)
+feature: evx projects widget rebuild (#3835)
+
+Since 4.1.0.0-rc1
+-----------------------------------
+bugfix: fix issue that generates duplicated text cps (#3990)
+bugfix: make crpm autonumbering prefix-aware so yearly prefix change restarts sequence (keeps historical numbers) (#3987)
+
+Since 4.1.0.0-beta6
+-----------------------------------
+refactor: implement batch deletion for trashed objects in ObjectController (#3947)
+bugfix: align task list date filter info icon and fix visibility toggle (#3866)
+bugfix: Enhance member color handling for new members (#3946)
+bugfix: notification trigger configuration not reflecting custom field names (#3938)
+bugfix: Enhance event notification settings in event form (#3942)
+bugfix: Repair UTF-8 encoding issues in mail content processing (#3945)
+
+Since 4.1.0.0-beta5
+-----------------------------------
+bugfix: Align inline custom property editing with standard form behavior (#3919)
+bugfix: expunge deleted mails per IMAP folder when deleting from server (#3921)
+bugfix: use custom fixed-property names for Start Date/Due Date task list column headers and toggle menu (#3925)
+
+Since 4.1.0.0-beta4
+-----------------------------------
+bugfix: performance issue in org list when not grouping, too much joins with member associations (#3913)
+bugfix: Fixes on email search (#3911)
+bugfix: use UTC date methods in InlineCellEditor to prevent off-by-one day in timezones behind UTC (#3899)
+
+Since 4.1.0.0-beta3
+-----------------------------------
+bugfix: service tab comments standardization (#3900)
+bugfix: api: address code review findings — security, atomicity, idempotency (#3895)
+
+Since 4.1.0.0-beta2
+-----------------------------------
+feature: introduce NestJS Auth/Projects API with Feng bridge + security, permissions & PHP 8 fixes (#3869)
+feature: allow member list to not group by any criteria (#3876)
+bugfix: Implement batch deletion of mail content from IMAP server during object deletion process. Enhance the delete method in MailContent class to optionally skip IMAP server removal. Update related functions to support batch processing of mail deletions, improving efficiency and addressing quota management issues. (#3832) (#3872)
+bugfix: update Spanish translations for mail settings in site interface (#3873)
+bugfix: fix inline editing issues (#3880)
+
+Since 4.1.0.0-beta1
+-----------------------------------
+bugfix: QA regressions in inline editing (#3858)
+
+Since 4.1.0.0-alpha3
+-----------------------------------
+feature: Update income plugin to version 131, introducing new database migration for invoice template color normalization and enhancing invoice print header labels. Adjusted language files to include new label for 'Due Date'. Improved invoice print layout with CSS adjustments for better visual consistency. (#3863)
+feature: add user config option to show Templates first in New menu (#3862)
+bugfix: Enhance member save process by adding checks for relevant related objects before reclassification. This includes querying specific object types (tasks, timeslots, payment receipts) associated with the member to determine if reclassification is necessary. (#3867)
+bugfix: fix notification trigger options fatal error, also added missing langs in the view (#3859)
+
+Since 4.1.0.0-alpha2
+-----------------------------------
+feature: Implement IMAP message deletion on permanent removal of mail content to free up server quota. Added method to remove messages from the IMAP server before deleting local folder mappings, ensuring that messages do not remain on the server after deletion. This addresses quota issues related to lingering messages in Trash. (#3832)
+bugfix: tasks list column order and width is not cross browser (#3833)
+bugfix: Enhance checkbox label styling in cp_table_template.php for better alignment and spacing. Update forms.css to improve label display properties and add new styles for boolean custom property radios, ensuring consistent vertical alignment across form elements. (#3846)
+bugfix: Fix notification settings label texts for renamed columns (#3826)
+
+Since 4.1.0.0-alpha1
+-----------------------------------
+feature: Enhance mail rules functionality by refining account selection logic and adding new helper functions. Updated JavaScript to include account ID in classify actions. Introduced methods to handle email address normalization and suggested rule conditions based on external recipients. (#3820)
+feature: add info icon with tooltip to task list date filters explaining… (#3805)
+feature: project contact cp default value from client (#3804)
+feature: tasks inline editing (#3774)
+bugfix: Refactor email search functionality to utilize FULLTEXT index on mail_datas. Updated query conditions to improve search (#3824)
+
+Since 4.0.X
+-----------------------------------
+feature: Add print accent and title color features for invoice templates (#3756)
+feature:Implement custom property boolean handling improvements (#3771)
+feature: allow to map which project fields transfer to quickbooks (#3765)
+feature: add default permissions by role (#3580)
+feature: tasks list columns reorder drag and drop (#3708)
+
+Since 4.0.3.2
+-----------------------------------
+bugfix: update calendar task filters and invoice form UI (#3969)
+
+Since 4.0.3.1
+-----------------------------------
+bugfix: performance issues in tasks list when checking subtasks in groups (#3963)
+bugfix: dimension selector width broken in single-selection mode (rate schedule) (#3957)
+bugfix: fix invalid <td> markup in webpage row and let it fill the field width (#3948)
+bugfix: object import not saving subtype when importing forms (#3950)
+bugfix: db class builds broken sql when using prepareString and the arguments have any "?" (#3943)
+bugfix: remove qbo error columns from report columns, still add the missing langs to prevent errors in other parts of the system (#3941)
+bugfix: custom report grouped by user and not showing group details has broken group names (#3953)
+
+Since 4.0.3.0
+-----------------------------------
+bugfix: member reports duplicates some associated dim column values because of usage of left join instead of subqueries (#3927)
+bugfix: UI icons and forms (#3934)
+bugfix: Update styles for selected member divs and delete icon (#3936)
+bugfix: non admin users cant create clients and projects (#3929)
+bugfix: when creating a new template task and changing the subtype, the parent task selector does not show only the exisiting template tasks (#3923)
+bugfix: template tasks not filling the correct saved values when editing (#3924)
+bugfix: Fixes to total rows in tasks list for estimated time and total estimated time. Don't show total for total estimated time when it won't be consistent. (#3930)
+bugfix: budget report not including tasks with price zero (#3928)
+bugfix: timeslots import creates too many db connections when calculating financials (#3920)
+
+Since 4.0.3.0-rc15
+-----------------------------------
+bugfix: edit template task does not initialize project cps that are in task form (#3916)
+bugfix: template task change subtype allows to add more than one parent task (#3915)
+bugfix: member reports shows only one associated member per association (#3914)
+bugfix: Enhance conversation filter logic in MailContents class to exclude junk state. (#3912)
+
+Since 4.0.3.0-rc14
+-----------------------------------
+bugfix: Icons fix and alignment (#3896)
+bugfix: Task template issues (#3903)
+bugfix: cant call to abstract class function (#3908)
+bugfix: member custom reports should show always the calculated display name instead of the legacy "name" column value (#3905)
+bugfix: forms plugin update issues in data changes (#3909)
+bugfix: invoice lines layout alignment (#3904)
+bugfix: subtype not initialized correctly in template tasks form (#3901)
+bugfix: limit the date and quantity used by the cron process to sync pending objects (#3902)
+bugfix: parent selector not working in template tasks (#3898)
+
+Since 4.0.3.0-rc13
+-----------------------------------
+bugfix: wrong use of DB::execute caused that task reports don't show correct member names (#3892)
+bugfix: Enhance task subscriber management: ensure the logged-in user is added as a subscriber by default unless explicitly unselected, and automatically add the task assignee as a subscriber. Improve checked-user detection in the message form for better robustness. (#3890)
+bugfix: fix member calculated name border on hover
+bugfix: show correct action and member name in dimension member save success message (#3889)
+
+Since 4.0.3.0-rc12
+-----------------------------------
+bugfix: forms plugin needs update to fix the form (#3887)
+bugfix: remove control of rate schedule change when editing invoice, it doesn't make sense (#3884)
+bugfix: Task template form not identical to task form (#3886)
+bugfix: custom reports showing assoc member name empty for some dimensions
+bugfix: open add buttons in overview widgets in modal form (#3888)
+
+Since 4.0.3.0-rc11
+-----------------------------------
+bugfix: cant add task when filtering by date (#3882)
+bugfix: expense tempaltes not handling default parameter values (#3878)
+bugfix: new member shouldn't ask to reclassify, it prevents template instantiation and it's not needed (#3881)
+bugfix: Enhance MailUtilities header processing to handle array values and improve robustness. Ensure proper formatting of email headers by replacing semicolons with commas and trimming trailing commas. (#3883)
+bugfix: select budgeted expense not filtering by selected project (#3879)
+
+Since 4.0.3.0-rc10
+-----------------------------------
+bugfix: Fix UI issues at users list (#3874)
+bugfix: make autonumering for custom properties more robust (#3870)
+bugfix: fix duplicated classification selectors in forms plugin update (#3875)
+
+Since 4.0.3.0-rc9
+-----------------------------------
+bugfix: refactor invoice form UI and fix submission workflows (#3868)
+bugfix: prevent processing tasks with missing due dates in widget data collection (#3865)
+bugfix: more perf issues member list (#3864)
+
+Since 4.0.3.0-rc8
+-----------------------------------
+bugfix: more client tab performance issues (#3854)
+bugfix: member templates from email not opening modal (#3857)
+bugfix: resize member list columns does not affect total rows cells (#3856)
+bugfix: add expenses from mobile not associating to task (#3861)
+bugfix: Update emaul module icons (#3855)
+bugfix: error updating obj subtypes plugin, ensure adv core is update… (#3860)
+bugfix: error in invoice templates when dim assoc does not exist (#3852)
+
+Since 4.0.3.0-rc7
+-----------------------------------
+bugfix: replace filetype PNG icons with Lucide icons (#3842)
+bugfix: forms UI refactor issues (#3839)
+bugfix: new member not inheriting member color when changing parent (#3828)
+bugfix: add child member sometimes not displaying it in the tree (#3829)
+bugfix: resolve issue where actions popover does not trigger for subtasks (#3831)
+bugfix: click on header home not restoring all trees (#3837)
+bugfix:issues in member list grouped (#3836)
+bugfix: align task template UI with task form standards (#3830)
+bugfix: budget report missing the line without lab cat (#3838)
+bugfix: cant change single member selctor value when it wrongly has more than one member selected. (#3840)
+bugfix: Enhance notification member labeling by introducing memberLabelForNotificationName (#3849)
+bugfix: Enhance date selector widget with combined input fields and native date picker support. Added min/max date constraints based on user membership status. Improved date formatting and localization for better user experience. (#3847)
+bugfix: inifinite loop when reloading member trees (#3845)
+bugfix: tasks list double scroll and big emtpy space at the bottom when gantt is active (#3850)
+bugfix: when cp list value does not match case, a duplicated value is added to the list (#3851)
+
+Since 4.0.3.0-rc6
+-----------------------------------
+bugfix: Add contact resolution method in ObjectsImportController for CSV values (#3834)
+
+Since 4.0.3.0-rc5
+-----------------------------------
+bugfix: Issues at import tool with gis coordinates and projects (#3844)
+
+Since 4.0.3.0-rc4
+-----------------------------------
+feature: Forms add/edit form refactor, use prop groups (#3827)
+bugfix: normalize everyone value in assigned-to filter and add highlight… (#3818)
+bugfix: add new member below a child member does not show the expand/collapse handle (#3823)
+bugfix: more tasks list performance issues (#3809)
+bugfix: Refactor member association handling in advanced_core_after_member_save function (#3803)
+bugfix: Fix weekly footer selector layout (#3806)
+bugfix: member selector search sometimes not fetching the results (#3813)
+bugfix: fix performance of member list, reduce result size to be transfered to the browser (#3801)
+bugfix: Fix 'due' column header and align add buttons to the right in various widgets (#3814)
+bugfix: show/hide projects list columns leaves total columns misaligned. (#3810)
+bugfix: fix date icon overlap and align user selector in invoice lines (#3802)
+bugfix: cron errors with permissions loggeduser (#3815)
+bugfix: Widget days improvemnts (#3819)
+bugfix: Enhance member save functionality by adding validation checks for member and object type. Introduce early returns to prevent processing with invalid data, ensuring only valid associations are considered for updates. This improves data integrity during member updates. (#3811)
+bugfix: budget report grouped by labor category duplicates amounts when having multiple levels of subtasks (#3812)
+bugfix: import tool several issues (#3825)
+
+Since 4.0.3.0-rc3
+-----------------------------------
+bugfix: Enhance task member handling by integrating email source member IDs. Added checks for valid member IDs and improved merging logic to ensure unique member entries from email content. This change supports better task assignment and member visibility in task management. (#3795)
+bugfix: Refactor task list overflow actions button to modern ellipsis menu (#3793)
+bugfix: Refactor/unify quick add UI heights (#3789)
+bugfix: enable reverse dim filtering in left tree panel and fix filtering bugs (#3782)
+bugfix: performance issues requesting multiple member property values in object forms (#3783)
+bugfix: instantiate template from email not modal (#3796)
+bugfix: Fix widgets date formats (#3800)
+bugfix: Enhance property group property queries to include subtype ID as an integer. Updated SQL conditions to handle both specific and default subtype IDs for member and custom properties. (#3790)
+bugfix: Fix invoice line date field not displaying/saving correctly (#3791)
+
+Since 4.0.3.0-rc2
+-----------------------------------
+bugfix: ensure that js task groups cache is updated after every task change (#3779)
+bugfix: resolve UI regressions (#3778)
+bugfix: member list grouped and object breadcrumbs general issues (#3744)
+
+Since 4.0.3.0-rc1
+-----------------------------------
+bugfix: edit task with project property of type user deletes the values (#3777)
+bugfix: Enhance member deletion handling in dimension tree. (#3776)
+bugfix: Fix alignment issues in Full Width property groups (#3775)
+bugfix: Add default description for object subtype property in multiple languages (#3772)
+bugfix: budget report errors in totals of labor section (#3769)
+bugfix: tasks list group by boolean cps not working correctly (#3768)
+bugfix: external member properties not always shown in lists (#3767)
+bugfix: weekly popup not saving correctly when changin start or end date (#3766)
+
+Since 4.0.3.0-beta9
+-----------------------------------
+bugfix: edit object and scroll down resets scroll each time a member selector is rendered (#3763)
+bugfix: Refactor budget calculation logic in budget_by_tasks_report.php (#3762)
+bugfix: restore user cp functionality (#3761)
+bugfix: issues expand collapse all in tasks list (#3760)
+
+Since 4.0.3.0-beta8
+-----------------------------------
+bugfix: custom properties edition form performance is very bad with a big set of properties (#3741)
+bugfix: tasks dropdown in quick add rows are not respecting hierarchy (#3752)
+bugfix: Implement blob URL normalization for inline images in email composition and viewing. Update AddMail.js to convert blob URLs to data URLs for compatibility across sessions. Enhance form submission handling to maintain action state during asynchronous operations. (#3754)
+bugfix: custom properties spacing (#3745)
+bugfix: Improve total calculation logic in list totals helper (#3748)
+bugfix: udpate script must ensure prop gropus have alignment (#3747)
+bugfix: System modules missing langs and text non visible (#3746)
+bugfix: Refactor TaskController and TasksTopToolbar for improved time calculations and naming consistency. Removed unused remaining time calculations in TaskController and updated related JavaScript references to align with new naming conventions. (#3757)
+bugfix: Fix text overflow for long member names in modal (#3740)
+bugfix: error when grouping by date and task has empty value (#3749)
+bugfix: performance issue when grouping tasks list by dimension (#3742)
+
+Since 4.0.3.0-beta7
+-----------------------------------
+feature: Enhance invoice template options by adding deprecated label (#3737)
+bugfix: task list group by bool cp don't show correct group name (#3730)
+bugfix: Prevent negative remaining time values in task list. (#3736)
+bugfix: Refactor DimensionController and enhance JavaScript tree handling to preserve scroll position during node loading. Clean up whitespace in website layout and improve currency code handling in configuration (#3735)
+bugfix: Fix typos in language file for advanced services plugin (#3738)
+bugfix: cant use external member properties in report conditions (#3729)
+bugfix: external cp is_editable attribute overriden by another selector with the same name of the numeric properties (#3739)
+
+Since 4.0.3.0-beta6
+-----------------------------------
+feature: tasks list add expand collapse all groups (#3726)
+feature: project price quote report add task description and expense unit price (#3714)
+feature: add start time and end time to weekly view popup (#3717)
+bugfix: Implement resetSelection method to clear dimension filter inputs (#3710)
+bugfix: Enhance timeslot creation by ensuring status for timesheet members is set when applicable (#3709)
+bugfix: Migrated to native HTML5 color picker (#3716)
+bugfix: issues with time quick add task selector (#3712)
+bugfix: duplicated object type (#3721)
+bugfix: Fix multiple issues in Task Excel Export (#3711)
+bugfix: Update project name retrieval to use display name instead of raw name in project reports (#3707)
+bugfix: open cp form in a new tab does not work due to js not loaded. (#3720)
+bugfix: Fix typos in comments and documentation across multiple files, correcting "memeber" to "member" for clarity and consistency (#3727)
+bugfix: Enhance MailController to correctly set 'from_name' when replying or forwarding emails, ensuring it matches the selected sender if the 'From' address changes. (#3713)
+bugfix: Fix "Related To" component for large datasets (#3722)
+
+Since 4.0.3.0-beta5
+-----------------------------------
+feature: Add logic to update members from mobile (#3691)
+feature: add user filter on expeses in mobile (#3697)
+feature: add project associations to available tasks module columns (#3704)
+feature: property groups full width (#3700)
+feature: add subtype filter to tasks list (#3698)
+bugfix: missing task selector in time quick add row (#3699)
+
+Since 4.0.3.0-beta4
+-----------------------------------
+bugfix: Fix dim_ field handling to properly process 'unclassified' conditions (#3689)
+bugfix: Revert "Remind last value of an external cp" (#3685)
+bugfix: Fixed grouping in export to Excel (#3684)
+bugfix: add name_plus_dimension to budgeted expenses (#3692)
+
+Since 4.0.3.0-beta3
+-----------------------------------
+bugfix: Remind last value of an external cp (#3680)
+
+Since 4.0.2.12
+-----------------------------------
+Added changes made in latest 3.12.0.X version
+
+Since 4.0.2.11
+-----------------------------------
+bugfix: division by zero error when sync invoice and invoice line qty is zero (#3910)
+bugfix: tasks custom report not showing members in 4.0.2 (#3907)
+
+Since 4.0.2.10
+-----------------------------------
+bugfix: syntax error when executing upgrade in php7 (#3885)
+
+Since 4.0.2.9
+-----------------------------------
+bugfix: move income data changes out of update.php (#3875)
+bugfix: apply prop groups fix of 4.0.3 also in 4.0.2 (#3875)
+bugfix: fix duplicated classification selectors in forms plugin update (#3875)
+
+Since 4.0.2.8
+-----------------------------------
+bugfix: fixed fee template must only include completed tasks when "Invoice completed task and discount previous bill" is selected (#3841)
+
+Since 4.0.2.7
+-----------------------------------
+bugfix: template instantiation showing fixed fee childs as unbilled (#3822)
+bugfix: fix differences in total foreacst between financials widget and actual vs forecast report (#3808)
+
+Since 4.0.2.6
+-----------------------------------
+bugfix: cant delete budgeted expenses (wrong status check) (#3797)
+bugfix: Enhance reporting functionality by refining billable status checks and adding missing group ID selects in custom reports. Updated conditions to handle various input types for billable status and improved SQL handling for group totals. (#3794)
+bugfix: remove unnecessary strtolower from member type name in project add view (#3786)
+bugfix: Enhance ProductTypeController to pre-select dimension members based on workspace context, aligning new product type creation with existing expense category and rate schedule patterns. (#3788)
+
+Since 4.0.2.5
+-----------------------------------
+bugfix: quick add user selector not initilizing with the user filter (#3780)
+
+Since 4.0.2.4
+-----------------------------------
+bugfix: change project rate schedule dont recalculate tasks (#3773)
+
+Since 4.0.2.3
+-----------------------------------
+bugfix: fixes to project budget report (#3751)
+bugfix: create task from email does not inherit classification (#3753)
+bugfix: 100% complete invoice templates are excluding partially invoiced tasks (#3750)
+bugfix: option to prevent add time to parent tasks does not cover all cases. (#3759)
+bugfix: subtype properties not initialized in version 4.0 new forms (#3758)
+bugfix: fix error in expenses list totals (#3743)
+
+Since 4.0.2.2
+-----------------------------------
+bugfix: Fix CRPM template default values being cleared during instantiation (#3734)
+bugfix: minify tool fails with some css directives (#3731)
+
+Since 4.0.2.1
+-----------------------------------
+bugfix: update script data changes were not processed in the data_changes.php (#3728)
+
+Since 4.0.2.0
+-----------------------------------
+bugfix: user inputs added by plugin are not inside user data tab (#3723)
+bugfix: in billing categories form the labor cat selector is filtered by rate schedules (#3725)
+
+Since 4.0.2.0-rc6
+-----------------------------------
+bugfix: issues with autonumbering (#3715)
+bugfix: new member menu does not exclude member types of disabled plugins (#3706)
+bugfix: prop groups migration can leave details pg without alignment (#3718)
+
+Since 4.0.2.0-rc5
+-----------------------------------
+bugfix: fix when filtering report by contract stage (#3705)
+bugfix: changing project stage not updating tasks (#3703)
+bugfix: Disable multiple values for Address type and adjust CSS for better layout (#3702)
+bugfix: wrong cp empty values saved for amount and address cps (#3701)
+
+Since 4.0.2.0-rc4
+-----------------------------------
+bugfix: edit user uses does not work beacuse they are classified in all members and the member selector renders all (#3694)
+bugfix: external cp saving empty values in tasks after edition (#3687)
+bugfix: fix glitch that removes client from tasks/times when editing parent client (#3688)
+bugfix: Fix Import Tool formatting (#3686)
+bugfix: Forms UI issues (#3683)
+
+Since 4.0.2.0-rc3
+-----------------------------------
+bugfix: Classify form with feng-forms style (#3681)
+bugfix: fix misaligned labels in Company form (#3678)
+bugfix: only when saving set sum_in_total to 1 (#3677)
+bugfix: fixes on object picker query (#3679)
+
+Since 4.0.2.0-rc2
+-----------------------------------
+Remind last value of an external cp (#3680)
+
+Since 4.0.3.0-beta2
+-----------------------------------
+feature: Add export to Excel button to Tasks module (#3666)
+feature: add empty condition for date fields in custom reports (#3667)
+
+Since 4.0.3.0-beta1
+-----------------------------------
+bugfix: add fixed properties to task filters config option (#3663)
+bugfix: fix required validation for gis custom property (#3656)
+
+Since 4.0.3.0-alpha6
+-----------------------------------
+feature: tasks list new filters by custom properties (#3652)
+
+Since 4.0.3.0-alpha5
+-----------------------------------
+bugfix: Fix SHOW button ID conflict between Task and Time (#3642)
+bugfix: Improve spacing and alignment in forms and templates (#3641)
+bugfix: custom report member columns using name instead of display_name (#3640)
+bugfix: Several issues with task and time classification in clients (#3639)
+bugfix: Copy task not removing members after edit classification (#3639)
+bugfix: Double labor category in time entries when using default labor cat (#3639)
+
+Since 4.0.3.0-alpha4
+-----------------------------------
+feature: tasks list group by and order by improvements (#3638)
+
+Since 4.0.3.0-alpha3
+-----------------------------------
+feature: Add Google Earth web to Open in options (#3628)
+
+Since 4.0.3.0-alpha2
+-----------------------------------
+bugfix: Replaced simplified UTM conversion with proper mathematical formulas (#3618)
+bugfix: updated UTM conversion functions to use WGS84 ellipsoid parameters for more accurate results (#3618)
+
+Since 4.0.3.0-alpha1
+-----------------------------------
+bugfix: Fixed negative longitude sign being lost during DD ↔ DMS conversion (#3609)
+bugfix: plugin data change update does not update version (#3607)
+
+Since 4.0.2.X
+-----------------------------------
+feature: allow to choose which properties can be used in oder/groupby … (#3605)
+feature: Add GIS coordinates custom property plugin (#3594)
+
+Since 4.0.2.0-rc1
+-----------------------------------
+bugfix: Fix invoice template form layout and checkbox styling (#3658)
+bugfix: Add line break after label is_parametrizable (#3657)
+bugfix: member selector click dont work and shift+tab opens dropdown (#3664)
+bugfix: Several issues in expenses forms (#3660)
+bugfix: edit autonumbering and changing target duplicates entry (#3662)
+bugfix: for empty date custom reports shows current date (#3661)
+bugfix: delete user method only disables them (#3659)
+
+Since 4.0.2.0-beta5
+-----------------------------------
+bugfix: Task list within task templates are not being sorted properly (#3654)
+bugfix: Add horizontal scroll to dimension tables (#3646)
+bugfix: Disabled ensureVisible to prevent scroll jump (#3650)
+bugfix: add the same lang in different file (#3651)
+bugfix: add missing langs (#3643)
+bugfix: expenses form select task does not filter by project (#3648)
+bugfix: contact selector shows dropdown on tab, also selects item on tab if expanded (#3647)
+bugfix: issues time reclassfication (#3655)
+bugfix: fix weekly view popover conditions (#3644)
+
+Since 4.0.2.0-beta4
+-----------------------------------
+bugfix: Fix SHOW button ID conflict between Task and Time (#3642)
+bugfix: Improve spacing and alignment in forms and templates (#3641)
+bugfix: custom report member columns using name instead of display_name (#3640)
+bugfix: Several issues with task and time classification in clients (#3639)
+bugfix: Copy task not removing members after edit classification (#3639)
+bugfix: Double labor category in time entries when using default labor cat (#3639)
+
+
+Since 4.0.2.0-beta3
+-----------------------------------
+bugfix: fix product name (#3635)
+bugfix: Task form: no es posible cambiar el parent task (#3637)
+bugfix: fix reports css (#3633)
+bugfix: member list new edit button not working fine (#3634)
+bugfix: Add config option to display tasks or not based only their due date (#3629)
+bugfix: Update combo behavior and adjust selector/input styles (#3636)
+
+Since 4.0.2.0-beta2
+-----------------------------------
+bugfix: assigned to combo selection loss and HTML display issues (#3611)
+bugfix: UI icons buttons fixes (#3619)
+bugfix: (MemberTree): selector dropdown interactions (#3627)
+bugfix: multiple member selector input dissappears after selection (#3621)
+bugfix: php 8 errors and weekly view not saving times without tasks (#3625)
+
+Since 4.0.2.0-beta1
+-----------------------------------
+bugfix: CP list type & Hide label space for CP (#3616)
+bugfix: missing prev task selector in tasks form (#3612)
+bugfix: exclude action icons (delete/archive/cancel) from TAB navigation (#3615)
+bugfix: force 'Show' menu alignment to toolbar button (#3608)
+bugfix: Fix overlap caused by global min-width (#3606)
+bugfix: vendor/client/project sync not searching using name, also add… (#3617)
+bugfix: error in project template with expense template (#3610)
+
+Since 4.0.2.0-alpha12
+-----------------------------------
+feature: add edit icon to all member lists (project, client, vendor, etc) (#3600)
+bugfix: Fix tab order in Forms (#3598)
+bugfix: Move weekly view button and smaller font size for worked time input (#3597)
+bugfix: fix Linked objects overwrite (caused by a collision in input names) (#3595)
+bugfix: Fix Save button visibility and improve form layout consistency (#3604)
+bugfix: Fix width of email and phone inputs. (#3603)
+bugfix: error saving prod type (#3601)
+bugfix: missing langs in expenses (#3599)
+
+Since 4.0.2.0-alpha11
+-----------------------------------
+feature: qbo real time sync of project client vendor (#3592)
+bugfix: fix task parent selector filters (#3591)
+bugfix: error message creating task without assigned to field (#3589)
+bugfix: cant save boolean cp of project in task form (#3588)
+bugfix: template tasks don't include subtype selector
+
+Since 4.0.2.0-alpha10
+-----------------------------------
+feature: New features and styles for Expenses object forms (#3554)
+feature: adjust forms layout (#3575)
+bugfix: cant see "show more" in contact selector dropdown (#3586)
+bugfix: disabled 'ensureVisible' to prevent unwanted horizontal scrolling (#3585)
+bugfix: issues in template tasks form (#3582)
+bugfix: issues with text cp in tasks list (#3581)
+bugfix: custom report project filters don't work (#3577)
+
+Since 4.0.2.0-alpha9
+-----------------------------------
+feature: add subtype selector as cp (#3573)
+bugfix: vendor list shows only one cp value for category column (#3574)
+bugfix: Change width to min-width (#3572)
+bugfix: improve address UI, multi-value list, and minor CSS adjustments (#3570)
+bugfix: cant shrink task list columns with text content (#3566)
+
+Since 4.0.2.0-alpha8
+-----------------------------------
+bugfix: show all entities in organizations tab (#3565)
+bugfix: deleted cp causes error instantiating template (#3564)
+bugfix: add time from task not inheriting classification (#3562)
+bugfix: project properties sometimes not shown in tasks list (#3560)
+bugfix: fix task grouping on invoice templates (#3559)
+bugfix: add manual percent completed checkbox (#3558)
+bugfix: Change order column from 'name' to 'display_name' when grouping by members in tasks list (#3557)
+
+Since 4.0.2.0-alpha7
+-----------------------------------
+feature: display member fields in object forms (#3553)
+feature: Refactor object forms time (#3552)
+bugfix: disable feature to reclassify when member association changed (#3551)
+
+Since 4.0.2.0-alpha6
+-----------------------------------
+bugfix: email search does not retrieve the latest matches (#3549)
+bugfix: dynamic issues member lists (#3550)
+bugfix: cant open edit vendor form (#3548)
+bugfix: Use the Unicode character for a bullet to avoid encoding issues in the member path separator
+
+Since 4.0.2.0-alpha5
+-----------------------------------
+bugfix: time form task selector wrong initial filters (#3546)
+
+Since 4.0.2.0-alpha4
+-----------------------------------
+bugfix: update icons and button styles across various views for consistency (#3530)
+bugfix: Fix/outdated module icons (#3526)
+bugfix: adjust padding and box-sizing for mail input elements (#3540)
+bugfix: UI/update legacy buttons across modules (#3541)
+bugfix: vendor list select vendor goes to overview and hides list tab (#3533)
+bugfix: member list grouped not listing members with subtype (#3534)
+bugfix: detetime template param not taking default value (#3531)
+bugfix: linked objects button overlaps list (#3543)
+bugfix: not all dim member types can be used in custom reports (#3528)
+bugfix: resolve contacts update error by ensuring subquery is properly structured (#3532)
+
+Since 4.0.2.0-alpha3
+-----------------------------------
+bugfix: All fixes/improvements done in 4.0.0.0-rc7
+
+Since 4.0.1.0-beta7
+-----------------------------------
+feature: UI design changes, including buttons and icons (#3523)
+feature: allow to define default values from project in task template params (#3519)
+feature: when selecting project and project list is empty add selected project to the list (#3515)
+feature: allow to define decimal digits for numeric custom properties (#3510)
+bugfix: enhance assigned-to dropdown behavior and prevent form submission on Enter key (#3525)
+bugfix: multiple template instantiation merges all the services for each task (#3522)
+bugfix: dont update autonumbering seed if manually edited (#3521)
+bugfix: make member list new button open a modal form and also allow to create subtypes (#3516)
+bugfix: subtasks not lilsted alphabetically in form and view (#3509)
+
+Since 4.0.2.0-alpha2
+-----------------------------------
+bugfix: several bugs in new task form (#3506)
+bugfix: is_billable field not available (#3506)
+bugfix: fix dim member selector that didn't remove prev classification (#3506)
+bugfix: fix js error in member for with no permissions (#3506)
+bugfix: fixes in input witdth and member tree scroll top (#3506)
+bugfix: fix subscribers render (#3506)
+bugfix: copy task not autoselecting members (#3506)
+bugfix: initial tree filter by associated trees (#3506)
+bugfix: calculated name formula fixes in form (#3506)
+bugfix: when checking if autonumbering result already used also check for formatted values (#3506)
+bugfix: filter member association attributes, dont include from disabled plugins (#3506)
+bugfix: subtask selector icon overlapping Title field (#3503)
+feature: project template workflow execute mupltiple task templates for each service selected (#3506)
+feature: add custom operations to formulas expession builder (#3506)
+
+Since 4.0.2.0-alpha1
+-----------------------------------
+feature: new dimensions agencies and newspapers assiciated to states … (#3495)
+
+Since 4.0.1.X
+-----------------------------------
+feature: allow tasks to use property groups in tasks form. (#3493)
+
+Since 4.0.1.0-beta5
+-----------------------------------
+bugfix: All fixes/improvements done in 4.0.0.0-rc5
+
+Since 4.0.1.0-beta5
+-----------------------------------
+bugfix: add subtype colum on dim member listing columns (#3479)
+bugfix: fix dimension selector input overflow using border-box (#3492)
+bugfix: add owner comp to all users, and remove from listing (#3487)
+
+Since 4.0.1.0-beta4
+-----------------------------------
+bugfix: error in member list when grouping by cp and the cp no longer exists (#3483)
+
+Since 4.0.1.0-beta3
+-----------------------------------
+bugfix: es on subtype selector upgrade and langs and update script (#3480)
+
+Since 4.0.1.0-beta2
+-----------------------------------
+bugfix: Add config to display or not the ot selector on forms (#3466)
+bugfix: hotfix on toolbar selector (#3472)
+
+Since 4.0.1.0-beta1
+-----------------------------------
+bugfix: project var in task templates not applied when other property finishes the loop (#3463)
+
+Since 4.0.1.0-alpha2
+-----------------------------------
+improvement: total of estimated price and located under (#3445)
+refactor: improve member selector color handling and layout (#3439)
+bugfix: dimension options bug re-enables disabled member types after save and causes bugs in other places (#3448)
+bugfix: in child subtype readonly props were allowing to edit (#3440)
+bugfix: when changing member display name the header breadcrumb is not refreshed (#3438)
+
+Since 4.0.1.0-alpha1
+-----------------------------------
+feature: new dimension entities (#3434)
+feature: dim assoc filter by chain dim association (#3427)
+bugfix: fix email cp multiple rendering (#3430)
+bugfix: initialize calculated name input with persisted name (#3424)
+
+Since 4.0.0.X
+-----------------------------------
+feature: new dimension association filter "child of" to filter one association selector with another of the same type. (#3416)
+feature: group project templates by project type (#3408)
+feature: allow project properties as task template params (#3405)
+feature: link budgeted expenses tempaltes to task templates (#3400)
+feature: add new email cp type (#3399)
+feature: add a 'fixed fee work' invoicing status for time (#3398)
+feature: apply custom member name formula in real time in add/edit form (#3397)
+feature: new cps display options for subtypes (#3395)
+
+Since 4.0.0.0-rc7
+-----------------------------------
+bugfix: get all changes made in latest 3.12.0.X version
+
+Since 4.0.0.0-rc6
+-----------------------------------
+bugfix: custom reports condition by located under none not working (#3536)
+
+Since 4.0.0.0-rc5
+-----------------------------------
+bugfix: fix list all filter task condition (#3517)
+bugfix: improve member association attributes styling and layout (#3514)
+
+Since 4.0.0.0-rc4
+-----------------------------------
+bugfix: fix performance issues in budgeted expeses list report and objpicker (#3497)
+bugfix: Rename label executed_overall_price in project financials with tasks report (#3507)
+
+Since 4.0.0.0-rc3
+-----------------------------------
+bugfix: add border-radius to member selector (#3491)
+bugfix: Fix WIP report approval status filtering issues (#3490)
+bugfix: includes the .feng-forms scope to ensure consistency and correct sizing within that custom component set (#3489)
+
+Since 4.0.0.0-rc2
+-----------------------------------
+bugfix: add max width to the select reassign modal (#3485)
+feature: Improve UI consistency for forms and buttons (#3482)
+
+Since 4.0.0.0-rc1
+-----------------------------------
+bugfix: bugfixes on user selector of the re assign modal (#3476)
+bugfix: remove margin bottom from panel-body in nav-panel (#3475)
+bugfix: fix close option allways needs to be visible (#3470)
+bugfix: fix mostrar todos lang (#3431)
+
+Since 4.0.0.0-beta5
+-----------------------------------
+bugfix: member selectors broken after modal css changes (#3474)
+bugfix: disabled cps in subtypes not working for content objects (#3473)
+bugfix: change langs on task form (#3467)
+bugfix: Fix re assigne modal (#3468)
+
+Since 4.0.0.0-beta4
+-----------------------------------
+feature: improve nav-panel UI/UX (#3456)
+bugfix: changes on simplemodal-conteiner class to prevent modal from moving down(#3462)
+bugfix: adv billing update queries in wrong update script function (#3461)
+bugfix: recover table cp (#3459)
+bugfix: prevent sending the form by pressing enter (#3428)
+
+Since 4.0.0.0-beta3
+-----------------------------------
+feature: allow to select assoc full name as part of the dim name selector (#3457)
+feature: add address format option to the budget report (#3436)
+bugfix: excel export didn't get correct options for two financial report (#3454)
+bugfix: dont display description as an expense pt name if empty (#3453)
+bugfix: plugin update errors when columns not present and using objects (#3452)
+bugfix: when selecting project in projects list redirect to eoverview (#3451)
+bugfix: linked objects picker not filtering by current context (#3449)
+bugfix: call to toLowerCase on null after save project (#3444)
+bugfix: improve the calculation algorithm for worked hours widget (#3443)
+bugfix: fix reassign task modal (#3442)
+bugfix: more fixes on forms (#3441)
+bugfix: in notification manager check if notifs are disabled for object type (#3435)
+bugfix: Use invoiced subtotal instead of total in the WIP report (#3417)
+bugfix: dimension options bug re-enables disabled member types after save and causes bugs in other places
+
+Since 4.0.0.0-beta2
+-----------------------------------
+feature: improve Feng 4 Home page (#3420)
+improvement: add budgeted expenses to the project financials - budget control report (#3426)
+bugfix: remove outside scrollbar on forms (#3433)
+bugfix: dont populate expense pt with the exp description (#3432)
+bugfix: General fixes on forms (#3425)
+bugfix: add missing spanish translations and replace hardcoded text (#3423)
+bugfix: in budget report fix estimated time calculations (#3422)
+
+Since 4.0.0.0-beta1
+-----------------------------------
+bugfix: archive and delete links in footer not working for client and projects (#3419)
+bugfix: use config decimals for admin fee in invoice template (#3415)
+bugfix: object picker not showint all dims (#3414)
+bugfix: add escapes for money amounts for CSV exports (#3413)
+
+Since 4.0.0.0-alpha2
+-----------------------------------
+bugfix: allow negative profit values in project financials budget report (#3409)
+bugfix: calculated cp values not rounding decimals (#3412)
+bugfix: fix one colum card effect, and fix footer modal for no modal forms (#3411)
+bugfix: remove deprecated property type that can cause error in clients form. (#3410)
+bugfix: dimension member selectors default value not working for dimension associations (#3407)
+bugfix: remove repeated contract type option "FFP" (#3406)
+bugfix: fix some spanish langs (#3403)
+bugfix: fix is confidential prop and general css (#3402)
+bugfix: Clean garbage collector when running update script (#3401)
+bugfix: fix some issues with new object link cp (#3396)
+bugfix: project type selector not shown if project was created using template (#3394)
+bugfix: close modal after archive (#3393)
+bugfix: issues with contact selector filtered (#3389)
+
+Since 4.0.0.0-alpha1
+-----------------------------------
+feature: css changes on all forms (#3388)
+bugfix: add assoc options to subtype selector (#3386)
+
+Since 3.12.0.11
+-----------------------------------
+bugfix: expenses entered from mobile missing currency and other attr (#3926)
+
+Since 3.12.0.10
+-----------------------------------
+Bugfix/performance issues in contact custom report grouped (#3871)
+
+Since 3.12.0.9
+-----------------------------------
+bugfix: old accounts with deprecated expenses plugin not working in php8 (#3764)
+
+Since 3.12.0.8
+-----------------------------------
+bugfix: cant save member template, need to use default values in array variables to prevent php8 trigger errors with implode (#3584)
+
+Since 3.12.0.7
+-----------------------------------
+Fix missing "Totals" label in Custom Report Excel export (#3755)
+
+Since 3.12.0.6
+-----------------------------------
+bugfix: fix errors in some cron events (#3696)
+bugfix: add or edit vendor with same name as user changes user to com… (#3695)
+bugfix: error when sending summaries and log entry is related to deleted object (#3693)
+bugfix: Preserved HTML formatting for Tasks templates created from Email (#3682)
+
+Since 3.12.0.5
+-----------------------------------
+bugfix: Security, Fix arbitrary file upload vulnerability in CKEditor handler (#3676)
+bugfix: income, initialize email parameter arrays to prevent TypeError (#3673)
+
+Since 3.12.0.4
+-----------------------------------
+bugfix: Added default dimension value logic to Quick Add in Time module (#3645)
+
+Since 3.12.0.3
+-----------------------------------
+bugfix: sql error instantiating budgeted expenses template (#3631)
+bugfix: expenses quick add project selector not filtering prod types (#3632)
+bugfix: error in update of income unknown column
+
+Since 3.12.0.2
+-----------------------------------
+bugfix: sprint 51 langs fixes (#3630)
+bugfix: reminders were sent for template tasks (#3626)
+bugfix: fixedfee subtasks not showing correct status (#3623)
+bugfix: not all date formats work in time form (#3622)
+bugfix: project invoiced subtotal excludes last invoice after invoice creation (#3620)
+
+Since 3.12.0.1
+-----------------------------------
+bugfix: error in overtime reports installer (#3614)
+bugfix: fix discount lang (#3613)
+
+Since 3.12.0.0
+-----------------------------------
+bugfix: facrturalista nota de credito saying contado (#3596)
+bugfix: missing lang in reports (#3602)
+
+Since 3.12.0.0-rc3
+-----------------------------------
+bugfix: remove wrong permission condition in users filter in time module (#3593)
+bugfix: expense form task selector is filtering by proj manager and task does not have it in the form (#3590)
+
+Since 3.12.0.0-rc2
+-----------------------------------
+bugfix: missing archive function to expenses (#3587)
+bugfix: change expense type duplicates expense in qbo (#3583)
+bugfix: fix several langs (#3578)
+bugfix: fix sortable issues on expenses (#3579)
+bugfix: unable to save expenses in mobile (#3576)
+
+Since 3.12.0.0-rc1
+-----------------------------------
+feature: copy billing categories and product types from one rate sche… (#3569)
+bugfix: cant export invoicing history report to excel (#3571)
+bugfix: Fix task action icons overlapping table header on scroll (#3568)
+bugfix: wrong object type when checking permissions of users for mobile expenses form (#3567)
+
+Since 3.12.0.0-beta4
+-----------------------------------
+bugfix: error searching expenses when ordering prod type (#3563)
+bugfix: product types not loaded in mobile when filtering by project (#3561)
+fix account type sync (#3556)
+bugfix: mobile expenses list not paginated (#3555)
+bugfix: email search does not retrieve the latest matches (#3549)
+
+Since 3.12.0.0-beta3
+-----------------------------------
+bugfix: Fixes on mail fulltext index (#3545)
+bugfix: fix delete key word deleting members (#3542)
+
+Since 3.12.0.0-beta2
+-----------------------------------
+bugfix: in ce can't see ws description, also remove the color column (#3539)
+feature: Sync trashed email on server (#3535)
+
+Since 3.12.0.0-beta1
+-----------------------------------
+bugfix: fix email polling query (#3537)
+
+Since 3.11.X
+-----------------------------------
+bugfix: Search mail index and query changes (#3505)
+Fixes done in latest 3.11.13.11 version
+
+Since 3.11.14.X
+-----------------------------------
+feature: new custom property type "object link" (#3381)
+feature: Allow to set cutsom names for object subtypes (#3383)
+feature: allow fixed properties and classfication in content objects cp form (#3374)
+feature: changes on nav panel and header menu (#3373)
+feature: continue improving forms styles (#3371)
+
+Since 3.11.14.0-beta1
+-----------------------------------
+feature: filter "Related To" section by dimension selector settings (#3378)
+feature: enhance member path display and fix count inconsistencies (#3370)
+feature: improve contact filters (#3369)
+feature: add profit details option to project financials V2 report (#3365)
+feature: add filters to contact cps and link to other properties (#3368)
+bugfix: sql error in weekly view query (#3382)
+bugfix: projects tab not using projects dimension custom name (#3380)
+bugfix: in the 'Project estimate report' (#3379)
+bugfix: remove error log when saving user preference from widget
+bugfix: syntax error in subtypes query when saving project (#3363)
+bugfix: dim assoc selector placeholder does not show custom association name (#3366)
+bugfix: template task is skipping sunday but is working day (#3367)
+bugfix: es_la language has error with " inside it (#3372)
+bugfix: several issues with subtype cps edition (#3364)
+
+Since 3.11.14.0-alpha8
+-----------------------------------
+bugfix: autonumbering: remove "only on creation" col, allow to remove rule, remove cp description (#3362)
+bugfix: cant use located unde in st and counties dim, prop groups not… (#3357)
+feature: Latest changes on project form (#3361)
+feature: add conditional column display for project financials detailed report (#3360)
+feature: related to section with limited loading and modal support (#3359)
+
+Since 3.11.14.0-alpha7
+-----------------------------------
+bugfix: project template not using association custom name (#3356)
+bugfix: remove redundant logs when editing tasks and save indirect related logs as private so the view is cleaner (#3355)
+bugfix: rename some save buttons (#3354)
+bugfix: when the scroll is inside the form the extjs dropdowns did not stick to their input (#3353)
+bugfix: add located under colum to custom reports (#3351)
+bugfix: add project type to prop group (#3350)
+feature: multiple autonumbering for each object type (#3352)
+
+Since 3.11.14.0-alpha6
+-----------------------------------
+improvement: css changes on project form (#3337)
+bugfix: set project form scroll inside the contents of the form (#3338)
+bugfix: fix extjs dropdown list position when scrolling the form (#3345)
+bugfix: member dropdown too small if too close to bottom of the page (#3341)
+bugfix: fix member form and task list where member types are not using custom names (#3344)
+bugfix: remove mandatory name on project form (#3347)
+bugfix: Remove redundant company selector for contacts and users, also remove any logic dependence from this relation. (#3340)
+bugfix: rename to save the submit buttons (#3339)
+bugfix: active context widget does not show associated member if it is already rendered in another organization (#3342)
+
+Since 3.11.14.0-alpha5
+-----------------------------------
+feature: separate task financials from subtasks (#3329)
+feature: improvements and fixes to cps in subtypes (#3327)
+
+Since 3.11.14.0-alpha4
+-----------------------------------
+feature: allow to disable multiple billing clients (#3321)
+feature: new dimension for states and counties (#3320)
+
+Since 3.11.14.0-alpha3
+-----------------------------------
+Merge 3.11.13.x updates
+
+Since 3.11.14.0-alpha2
+-----------------------------------
+Merge 3.11.13.x updates
+
+Since 3.11.14.0-alpha1
+-----------------------------------
+bugfix: increase label width (#3293)
+bugfix: on form css (#3295)
+
+Since 3.11.14.x
+-----------------------------------
+improvement: card effect on project form (#3278)
+
+Since 3.11.13.11
+-----------------------------------
+bugfix: make invoicng status colum resizable (#3471)
+bugfix: fix missing langs (#3524)
+bugfix: Add OAuth email sending support to Microsoft integrations plugin (#3547)
+
+Since 3.11.13.10
+-----------------------------------
+bugfix: fix wiki links (#3520)
+bugfix: fix CE installer (#3518)
+bugfix: 1. Added function in format.php that returns clean numeric values for Excel (#3512)
+bugfix: budg. expense picker not filtering by selected project (#3508)
+bugfix: total worked time not calculated correctly when having more t… (#3500)
+
+Since 3.11.13.9
+-----------------------------------
+bugfix: Missing "Payment received" column: Added conditional logic to include the "Payment received" column header only when the invoice_payment_receipts plugin is active (#3501)
+bugfix: add actual expense not always filters projects by selected client (#3498)
+bugfix:Add Title and Date to Project Billing (T&M) report (#3494)
+
+Since 3.11.13.8
+-----------------------------------
+bugfix: Fix Work Progress widget showing incorrect hours when no tasks exist (#3488)
+
+Since 3.11.13.7
+-----------------------------------
+feature: Add overrun hours tracking to project financials budget control (#3486)
+bugfix: Remove () for conditional discount amount (#3484)
+
+Since 3.11.13.6
+-----------------------------------
+bugfix: invoice print not rounding before accumulating subtotals (#3478)
+bugfix: Fix project status changes report inconsistencies and optimize performance (#3477)
+
+Since 3.11.13.5
+-----------------------------------
+bugfix: Check if the parent project has any child projects and subtract all those amounts. Only the total related to the parent project is shown. (#3465)
+
+Since 3.11.13.4
+-----------------------------------
+bugfix: Add total of estimated price, located under, and prevent double-counting of child project prices in reports (#3464)
+
+Since 3.11.13.3
+-----------------------------------
+bugfix: wrong financial totals when no grouping tasks list (#3460)
+bugfix: move mail account filter checkboxes to advanced core plugin (#3455)
+bugfix: fixed fee tasks invoicing status broken after edit invoice (#3447)
+
+Since 3.11.13.2
+-----------------------------------
+feature: improve Project Status Changes report query and add previou… (#3418)
+infra: add .settings file for infra to read and use
+
+Since 3.11.13.1
+-----------------------------------
+feature: Project Status Changes Tracks projects that changed contract stages within a date range (#3404)
+bugfix: add missing language translations (#3392)
+bugfix: check subscriber's notification trigger (#3391)
+bugfix: import tool error importing times (#3390)
+bugfix: remove " from langs to avoid errors in js
+bugfix: fix gesl remote actions update query syntax
+
+Since 3.11.13.0
+-----------------------------------
+bugfix: Migrate gesl_remote_actions to Microsoft Graph SDK v2.48 (#3387)
+feature: add new field nroCompra to factura lista invoice (#3385)
+
+Since 3.11.13.0-rc2
+-----------------------------------
+bugfix: can't load tasks when filtering by project (#3384)
+bugfix: project complete name is not shown (#3384)
+bugfix: internationalize object_templates plugin table headers (#3377)
+bugfix: blank screen in clients list when all client's contact cps are disabled (#3376)
+bugfix: sql error in weekly view query and js broken when time weekly user filter is empty
+
+Since 3.11.13.0-rc1
+-----------------------------------
+bugfix: template task is skipping sunday but is working day (#3367)
+bugfix: es_la language has error with " inside it (#3372)
+
+Since 3.11.13.0-beta6
+-----------------------------------
+bugfix: add more regex controls to formulas (#3311)
+bugfix: don't try to sync non billable time to invoice when sync to qbo (#3330)
+
+Since 3.11.13.0-beta5
+-----------------------------------
+Include changes made in latest 3.11.12.X version
+
+Since 3.11.13.0-beta4
+-----------------------------------
+bugfix: fix conditional discount (#3319)
+bugfix: Add validation to "Mark as" feature in time module (#3322)
+improvement: in expense list show invoice number as link instead of "view invoice" (#3317)
+
+Since 3.11.13.0-beta3
+-----------------------------------
+bugfix: mark as spam is not moving email to "Junk" imap folder in server (#3316)
+bugfix: format new columns in custom report (#3307)
+feature: in custom reports add condition and order by capability for project financials (#3306)
+
+Since 3.11.13.0-beta2
+-----------------------------------
+bugfix: make lab_samples plugin work in latest version (#3280)
+bugfix: stop adding unwanted subclient to client when subclient assigned (#3296)
+improvement: conditional discount fixes (#3288)
+
+Since 3.11.13.0-beta1
+-----------------------------------
+feature: allow to use associated member custom properties in project display name (#3269)
+feature: create new project financials report with other values (#3270)
+bugfix: bugs in company member forms (#3271)
+
+Since 3.11.12.X
+-----------------------------------
+bugfix: organization and vendors properties must be like clients (#3266)
+feature: add unbilled time expenses to project totals (#3264)
+feature: project financials report new columns (#3252)
+feature: Add new payment summary on invoices (#3239)
+feature: develop new notification for 'rejected time' (#3214)
+feature: Create cron job to consolidate "tasks assigned" notification (#3118)
+
+Since 3.11.12.10
+-----------------------------------
+bugfix: aging unbilled report is not including subproject time/expenses/ff_tasks (#3348)
+bugfix: invoice module date filters dont work for some date formats (#3346)
+bugfix: make defensive logic to get the next autonumeric available value and prevent duplicated (check in legacy data for cps) (#3343)
+
+Since 3.11.12.9
+-----------------------------------
+bugfix: Change subtotal line langs in invoice print (#3335)
+bugfix: improve error messages when sharepoint integration fails (#3336)
+bugfix: when creating two events, when queuing the second one's notifications, the first one's are deleted and the cron cant send them (#3328)
+bugfix: task not using cotract type cp correctly when setting if the … (#3331)
+
+Since 3.11.12.8
+-----------------------------------
+bugfix: function called in lang files is not defined when executing upgrade
+
+Since 3.11.12.7
+-----------------------------------
+bugfix: invoice generation - when generating autonumber var not used correctly, it is not an array. (#3325)
+bugfix: Add missing langs (#3326)
+
+Since 3.11.12.6
+-----------------------------------
+bugfix: utilization report when formatting labor cat columns, the variation column is overriden (#3324)
+
+Since 3.11.12.5
+-----------------------------------
+bugfix: too many mysql connections used after instantiating template (#3323)
+bugfix: fix autonumbering issues (#3261)
+
+Since 3.11.12.4
+-----------------------------------
+bugfix: after edit split invoice summary amounts are not correct (#3318)
+
+Since 3.11.12.3
+-----------------------------------
+feature: Add capability to order by "billable" in custom reports for timeslots (#3308)
+bugfix: add several missing langs (#3305)
+bugfix: dimension name comparison (#3313)
+bugfix: invoice summary wrong and edit invoice changes discount type (#3314)
+bugfix: sql name causes conflict (#3310)
+bugfix: comply mail templates to php8 (#3309)
+bugfix: cant search in clients tree if a project is selected (#3315)
+
+Since 3.11.12.2
+-----------------------------------
+bugfix: fixed fee invoice generated with no currency (#3302)
+bugfix: Add missing file (#3301)
+bugfix: Adjust rate lang (#3290)
+bugfix: Fixes to confirmation pop up (#3265)
+
+Since 3.11.12.1
+-----------------------------------
+bugfix: mail reply/forward sends attachments with no extension for some images, depending on the original email headers (#3286)
+bugfix: Improve invoicing status for task algorithm (#3282)
+bugfix: Build reusable title and date component for reports (#3292)
+
+Since 3.11.12.0
+-----------------------------------
+feature: Round invoice lines when calculating invoice totals (#3279)
+bugfix: fix function call (#3277)
+bugfix: In custom reports alignment and pdf export multiple members (#3259)
+bugfix: change es_la langs for invoice print (#3275)
+bugfix: php8 error in notif manager hook when saving event (#3274)
+
+Since 3.11.12.0-rc2
+-----------------------------------
+bugfix: fix ical generation so outlook can parse ics correctly and show invitation buttons when receiving event invitation email. (#3273)
+bugfix: improve management of event invitation replies (#3273)
+
+Since 3.11.12.0-rc1
+-----------------------------------
+bugfix: member tree expandedNodes is a numeric prop and it is used as a function causing js errors (#3267)
+
+Since 3.11.12.0-beta4
+-----------------------------------
+bugfix: dont let user change organizer (#3263)
+bugfix: and don't check for required cp in contact quickadd (#3263)
+
+Since 3.11.12.0-beta3
+-----------------------------------
+bugfix: event not deleted when receiving ical with cancellation (#3262)
+bugfix: remove reminder breaks inputs and causes fatal error when saving task (#3258)
+bugfix: edit mail account switches to exclude from sync (#3257)
+bugfix: error in dim controller query (#3256)
+
+Since 3.11.12.0-beta2
+-----------------------------------
+bugfix: attendee names not parsed correctly sometimes (#3255)
+bugfix: sometimes the view more node is shown and there are no more nodes left (#3244)
+bugfix: load langs of all installed plugins (#3251)
+
+Since 3.11.12.0-beta1
+-----------------------------------
+feature: invite any contact and send ics (#3237)
+bugfix: draft email sent twice (#3235)
+bugfix: don't use exif_imagetype fn if not ready in the environment (#3233)
+feature: Improvements to re classify pop up (#3229)
+
+Since 3.11.11.X
+-----------------------------------
+bugfix: replay or forward emails accumulates attachments with no type (#3228)
+feature: Add project custom report 'created on' and 'updated on' columns and conditions (#3227)
+feature: show special html block for .ics attachments (#3218)
+
+Since 3.11.11.5
+-----------------------------------
+bugfix: fix e-invoice generation for credit/debit notes and its references (#3303)
+bugfix: fix issues in the utilization report (#3300)
+bugfix: In expenses widget exclude non-billable budget expenses (#3299)
+bugfix: check group by value properly (#3298)
+bugfix on template calculations (#3297)
+
+Since 3.11.11.4
+-----------------------------------
+bugfix: on template calculation (#3291)
+bugfix: improve styling of financials in task module (#3287)
+bugfix: Fix fatal error causing bug (#3285)
+bugfix: php8 error (#3294)
+
+Since 3.11.11.3
+-----------------------------------
+bugfix: can't reuse last invoice number after send invoice to trash (#3283)
+bugfix: In widgets add date validations for custom range (#3284)
+
+Since 3.11.11.2
+-----------------------------------
+bugfix: In widgets add totals from tasks without due date (#3281)
+bugfix: pass info to worked hours widget (#3276)
+
+Since 3.11.11.1
+-----------------------------------
+bugfix: Add 'All time' to all widgets, remove time contstraint when member is selected (#3272)
+
+Since 3.11.11.0
+-----------------------------------
+bugfix: don't use disabled cps in formulas (#3268)
+bugfix: fix save formula, use getInput and replace var names with ids, don't use getExpression, it has bugs. (#3268)
+bugfix: onchange of amount cps had an issue when registering the recalculation function (#3268)
+bugfix: prevent numeric/amount inputs to use more than the max numeric value (#3268)
+
+Since 3.11.11.0-rc4
+-----------------------------------
+bugfix: in Utilization report add consistent formatting (#3254)
+bugfix: add confirmation void modal (#3247)
+bugfix: remove count on null (#3250)
+
+Since 3.11.11.0-rc3
+-----------------------------------
+fix forms tabs (#3245)
+
+Since 3.11.11.0-rc2
+-----------------------------------
+bugfix: fix lang (#3243)
+bugfix: Hide "print" button in the task module (#3242)
+bugfix: Make invoice receipts compatible with PHP7 (#3241)
+bugfix: prevent invoice sync error if a linked time entry is marked as invoiced in qbo (#3240)
+bugfix: Fill in missing days from date range in widgets (#3238)
+bugfix: Improve queries to correct the grouping by billable/non-billable (#3236)
+
+Since 3.11.11.0-rc1
+-----------------------------------
+bugfix: sales tax not sent to qbo, sales mapping was including inactive taxes (#3234)
+bugfix: add css word-break porp, label too long overlaps (#3232)
+bugfix: fix client form css when 2 columns (#3231)
+bugfix: fix password reminder query (#3230)
+bugfix: Add contact module horizontal scroll (#3226)
+
+Since 3.11.11.0-beta4
+-----------------------------------
+bugfix: fix query error in overtime reports update (#3225)
+bugfix: limit task list to load max 500 tasks per request (#3222)
+improvement: In 'Utilization' report add time with empty 'labor category' (#3221)
+
+Since 3.11.11.0-beta3
+-----------------------------------
+bugfix: overtime project/client cp ensure belongs to prop group and with default = "no" (#3220)
+bugfix: calculated cps fixes and improvements after feedback (#3219)
+
+Since 3.11.11.0-beta2
+-----------------------------------
+improvement: Add re-clasification confirmation config option (#3217)
+improvement: update qbo sdk to version 6.2.0 (#3205)
+feature: calculated custom properties (#3216)
+feature: Add last project payment on form (#3212)
+feature: allow to select project or client level to sync objects (#3203)
+
+Since 3.11.11.0-beta1
+-----------------------------------
+bugfix: fix discounts and ad better display on amount and info. (#3199)
+feature: Add capability to group by 'Billable' in timeslot reports (#3197)
+feature: overtime calculations for billing (#3196)
+feature: add range selector widgets (#3194)
+feature: Add support to date formats for to use only 2 digits for year (#3190)
+feature: Add automatic invoice number generation using object prefix (#3176)
+
+Since 3.11.10.X
+-----------------------------------
+feature: add filter function to logs (#3169)
+feature: Add new field 'is_paid' to actual expenses (#3164)
+feature: Add inactive user to filters (#3162)
+Since 3.11.10.7
+-----------------------------------
+feature: In import tool add option to calculate timeslots (#3249)
+
+Since 3.11.10.6
+-----------------------------------
+bugfix:Remove hardcoded langs in invoice header (#3215)
+
+Since 3.11.10.5
+-----------------------------------
+improvement: Add dynamic default rate type for time in import tool (#3208)
+bugfix: Fix batch invoicing bug in the invoice template object collection (#3213)
+bugfix: when creating/editing a project that is a template, the template name is not shown in the form, only 'Project' is shown (#3211)
+bugfix: fix project form css (#3210)
+bugfix: fix language issues in settings (#3207)
+
+Since 3.11.10.4
+-----------------------------------
+bugfix: fix customer id and status hardcoded lang on invoices (#3206)
+bugfix: Refactor on display names for the project widget (#3204)
+bugfix: don't send simultaneous qbo sync requests, they can generate duplicate client (#3202)
+Bugfix: Calculate billable worked time for groups in the task list (#3201)
+bugfix: allow generic type option not working (#3200)
+bugfix: Run a script to set the default value "invoice_header_date_format" to default date format (#3195)
+
+Since 3.11.10.3
+-----------------------------------
+bugfix: contact selector full data card is not good to use in every form such as invoice lines, actual expenses, billing cat, etc. (#3192)
+bugfix: Add other organization member when importing contacts (#3193)
+
+Since 3.11.10.2
+-----------------------------------
+improvement: In weekly view add visual alignment impovements (#3189)
+bugfix: stop setting task to non billable (#3191)
+bugfix: unescaped msg id breaks mail query if it has special chars (#3188)
+bugfix: login default session too short (#3187)
+bugfix: big performance issue causes timeout when editing repetitive task with more than 150 repetitions (#3186)
+bugfix: Use default date format when adding new date format for invoice (#3185)
+bugfix: fix fatal error on selecting parent memeber for an object (#3184)
+bugfix: when tree needs to laod nodes from server the text filter does not work (#3183)
+bugfix: remove deprecated search conditions by member properties and use the already built "display_name" column (#3183)
+
+Since 3.11.10.1
+-----------------------------------
+bugfix: other organizations import does not include contact fields. (#3181)
+bugfix: login form not centered after receiving error (#3180)
+bugfix: undefined method in objects for subtypeid (#3179)
+bugfix: income update 114 not checking if dimension assoc or cps exists before using them. (#3178)
+bugfix: add invoice payment always tries to generate next invoice repetition. (#3177)
+bugfix: ensure that Swift mailer is initialized and dependencies are loaded when using it. (#3175)
+bugfix: move langs from deprecated plugin (#3174)
+bugfix: fix budgeted expenses tempaltes add when there are special chars (#3171)
+
+Since 3.11.10.0
+-----------------------------------
+bugfix: wrong dim id in clients panel record causes error msg to show when loading clients tab (#3160)
+bugfix NaN on payment recipit (#3157)
+bugfix: Absolute path to the Google Chrome executable (#3154)
+bugfix: qbo n/a status is showing as not sync in invoices (#3152)
+improvement: change messages of latest developments (#3159)
+improvement: Set "Fixed Fee" as default EVCM during update (#3153)
+feature: project financials report group by job phase (#3155)
+feature: allow to select contact properties to show after select in contact selector (#3151)
+
+Since 3.11.10.0-beta2
+-----------------------------------
+improvement: add 'group by' option to the 'Work in progress summary' report (#3150)
+bugfix: performance issue when saving task with lots of timeslots due to deprecated unperformant feature (#3149)
+bugfix: php8 compatibility issue with new notif. manager development (#3148)
+bugfix: correct formatting in member display name information in Spanish language file (#3147)
+bugfix: reorganize autoloading logic in init.php (#3146)
+
+Since 3.11.10.0-beta1
+-----------------------------------
+bugfix: evx login form not centered, also remove blue box and fix evx website link (#3143)
+bugfix: edit client removes other classifications of related contact (#3142)
+bugfix: edit client always shows popup to reclassify objects (#3142)
+bugfix: don't let quickbooks remove the invoice number after sync (#3140)
+bugfix: Improve logic when sending notifications through Not Manager (#3139)
+bugfix: fix invoicing status when having subtasks (#3129)
+feature: when reclassifyng time to different project, ask the user to remove task (#3141)
+feature: ask to reclassify in task members after assign new task to time if needed (#3141)
+feature: Add new config option "Budgeted expense full name" (#3135)
+feature: allow user to define which fields will appear in the contact quick add form (#3132)
+
+Since 3.11.10.0-alpha2
+-----------------------------------
+feature: Add chrome php library (#3128)
+bugfix: js error loading langs into js variables (#3116)
+
+Since 3.11.10.0-alpha1
+-----------------------------------
+feature: Add new expense columns (#3107)
+feature: set percent complete for subtasks using parent task (#3101)
+
+Since 3.11.9.X
+-----------------------------------
+feature: new plugin that adds a new dimension: Other organizations (#3086)
+feature: improvements to custom properties form (#3049)
+bugfix: Fix header breadcrumbs display (#3081)
+
+Since 3.11.9.1
+-----------------------------------
+bugfix: when editing project and saving associated members, the affected obj permissions cache are not calculated in background, and the association is remade if already existed (#3134)
+bugfix: performance issues when loading expenses tab without filtering (#3136)
+bugfix: In expense module remove buggy focus from inputs in the quick add row (#3137)
+
+Since 3.11.9.0
+-----------------------------------
+bugfix: activity widgtet gear icon not working (#3127)
+bugfix: assign task to time/expenses fails if interface sends ids as strings (#3130)
+
+Since 3.11.9.0-rc1
+-----------------------------------
+bugfix: lump sum line quantity must be always one (#3124)
+bugfix: when changing project stage and reclassifying objects, users are included and memory limit is reached (#3123)
+bugfix: In invoice remove subrpojects from project's complete name (#3122)
+bugfix: add php8 compatibility for external calendar class (#3117)
+
+Since 3.11.9.0-beta2
+-----------------------------------
+bugfix: Use correct class names (#3114)
+bugfix: Ensure php8 compatibility in weekly view codebase (#3111)
+bugfix: add CSS adjustments for PDF generation in InvoiceController (#3109)
+bugfix: update 'remember me' text to remove duration (#3103)
+
+Since 3.11.9.0-beta1
+-----------------------------------
+bugfix: Fix subtotal values when grouping by supbrojects (#3099)
+bugfix: dates in invoice header not using date format defined in template (#3095)
+bugfix: when calculatiung task invoicing_status, dont get subtasks invoiced amounts of the same parent invoice, it duplicates invoiced amount (#3092)
+improve: Rename EVCM "T&M" to "Calculated" (#3087)
+feature: Add config option "Default earned value calculation method" (#3090)
+
+Since 3.11.9.0-alpha3
+-----------------------------------
+bugfix: Refactor print CSS injection and update footer position column additi… (#3082)
+bugfix: Add error handling for timeslot status removal and update language strings (#3079)
+bugfix: weekly view new development issue and improvements (#3078)
+
+Since 3.11.9.0-alpha2
+-----------------------------------
+bugfix: Assign vendor member when importing contacts and link to vendor (#3075)
+bugfix: wrong invoicing status calculation when invoicing partially completed fixed fee tasks (#3073)
+bugfix: Refactor timezone selector function and update CSS for country and ti… (#3072)
+bugfix: Set default timezone when creating and importing new vendor (#3071)
+bugfix: Import tool- Display all CPs for subtype, handle saving CPs for subtype in backend (#3070)
+feature: In the import tool add "Price/Cost rate type" to timelsot objects (#3067)
+feature: Css adjustment to display remit to at the bottom of the invoice (#3059)
+
+Since 3.11.9.0-alpha1
+-----------------------------------
+feature: Recover option for utilization report (#3061)
+feature: add new columns weekly view (#3055)
+feature: increase minimum width of name input field in custom properties (#3053)
+bugfix: improve handling of custom properties and associated objects in ObjectController (#3064)
+bugfix: adjust list style position for expense items in invoice (#3060)
+bugfix: Fix typo in success message for generating invoices in language files (#3058)
+bugfix: update error message for email size limit to improve clarity (#3057)
+bugfix: prevent voiding of confirmed invoices (#3056)
+bugfix: add Spanish translations and modify version return (#3054)
+
+Since 3.11.8.X
+-----------------------------------
+improvement: invoice generation: aggregate subtasks into one line using parent task (#3038)
+feature: Allows to add billing contact name on bill to section (#3039)
+feature: adds bold column on invoice template options (#3035)
+bugfix: batch invoicing does not generate fixed fee invoices (#3033)
+
+Since 3.11.8.3
+----------------------------------
+bugfix: fix quickbooks plugin installer (#3113)
+bugfix: unused constraint gives error when replicating db (#3108)
+bugfix: overview widgets performance issues (#3104)
+bugfix: infobar subscribe link not working (#3112)
+
+Since 3.11.8.2
+----------------------------------
+bugfix: Fix query that broke member custom report (#3100)
+
+Since 3.11.8.1
+----------------------------------
+bugfix: invoice processing with safe_count utility and refactor logic for multiple invoicing (#3098)
+
+Since 3.11.8.0
+-----------------------------------
+bugfix: advanced billing plugin update fails because column invoicing_status does not exist (#3096)
+bugfix: config controller always checks for can_manager_configuration permission and it has some methods that don't require this permission (#3094)
+bugfix: invoice print not using initials custom property (#3093)
+bugfix: Issue exporting PDF for gross margin report (#3091)
+bugfix: don't let QBO manage the invoice numbers, generate it in EVX and send it when sync. (#3089)
+bugfix: relogin popup not checking if password expired. (#3088)
+
 Since 3.11.8.0-rc4
 -----------------------------------
 bugfix: fix link object list elements without filter (#3085)
@@ -185,7 +2117,7 @@ bugfix/js error fn not found when running report by @alvarotm01 in (#2996)
 bugfix/editing calendar events by @ces27 in (#2988)
 bugfix/apply correct invoicing status and billable property to timer by @AlikZi in (#2992)
 bugfix/display totals for subprojects by @AlikZi in (#2995)
-feature/option wording in project financials by @AlikZi in (#2990)
+feature: option wording in project financials by @AlikZi in (#2990)
 
 Since 3.11.6.6
 -----------------------------------
@@ -2453,8 +4385,8 @@ bugfix: address-location-the-invoice-not-aligned-with-the-envelope (#1428
 
 Since 3.9.2.0-rc5
 -------------------
-Feature/template selector within invoices template settings (#1488) 
-Feature/import tool suppot invoice lines (#1484) 
+feature: template selector within invoices template settings (#1488) 
+feature: import tool suppot invoice lines (#1484) 
 bugfix: minor adjustments v2 (#1486) 
 bugfix: fix-invoices-projects-groups (#1485) 
 bugfix: The default invoice template with the original version (#1478)
@@ -2466,10 +4398,10 @@ bugfix: fix organization data edition (#1482)
 
 Sinec 3.9.2.0-rc3
 -------------------
-feature: Feature/invoices whit lump sum (#1463) 
+feature: feature: invoices whit lump sum (#1463) 
 feature: Add config option to hide the financial tab in the task edit view (#1453 
 feature: Append payment_receipt to filtters (#1413)
-feature: Feature/mark invoices as paid bulk action (#1448) 
+feature: feature: mark invoices as paid bulk action (#1448) 
 feature: Add option to calculate 'quantity' for actual expenses in custom reports (#1445)
 feature: Append select to boolean filter (#1433)
 bugfix: When editing the time entry the billing info get deleted (#1480) 
@@ -2602,7 +4534,7 @@ bugfix: project billing report not calculating half cents
 
 Since 3.9.1.6
 --------------------
-feature: Feature/weekly view add time without task
+feature: feature: weekly view add time without task
 feature: Invoice view should same as invoice print
 feature: Improve timer config option
 bugfix: If billable property (radio-button) is set to "No", then billing set to zero
@@ -2848,7 +4780,7 @@ bugfix: don't cut table at invoice print if it has too many lines (#1169)
 Since 3.9.0.0-beta8
 -------------------
 feature: Improve project billing report add contract amount (#1185) 
-feature: Feature/weekly view add time without tasks (#1170) 
+feature: feature: weekly view add time without tasks (#1170) 
 feature: Visual adjustments for the contact form (#1096) 
 bugfix: when rendering contact cp and receiving default value, verify that is a valid id to make the query (#1183)
 bugfix: Weekly view: fix the missing newly added description when pressing ad… 
@@ -3004,7 +4936,7 @@ feature: Qb desktop integration improvements - time export to IIF (#1100)
 
 Since 3.9.0.0-beta2
 -------------------
-feature: Feature/Weekly time entry: add multiple entries per day
+feature: feature: Weekly time entry: add multiple entries per day
 feature: Final changes for TSheets integration MVP
 bugfix: when ordering invoice lines by date, not all properties were copied to the new data array, like product_type_id, so invoice line loses relation with product.
 
@@ -3175,7 +5107,7 @@ bugfix: firstCommit documents icons missing documents icons (#947)
 Since 3.8.6.X
 ---------------
 feature: Modifications to Cost/Revenue forecast report (#946) 
-	* Aply changes of branch feature/revenue-forecast
+	* Aply changes of branch feature: revenue-forecast
 	* update script must change report name in next update
 feature: sort by project within time module (#929) 
 	* allow ordering by project number and remove project number column
@@ -5291,7 +7223,7 @@ Since 3.7.2.6
 -----------------
 bugfix: fix task list filters when filtering by subscribed by user and completed tasks
 bugfix: fix notifications manager config options and user new template for due date reminders
-fearure: make overtime_hours dimension hierarchical
+feature: make overtime_hours dimension hierarchical
 
 Since 3.7.2.5
 -----------------
@@ -6145,7 +8077,7 @@ bugfix: report list not working
 bugfix: automatic calculation of worked time on add time modal
 bugfix: time list add no filter by date option
 bugfix: task list tasks displayed twice
-bugfis: totals on grouped reports
+bugfix: totals on grouped reports
 
 Since 3.6.0-beta.2
 ----------------

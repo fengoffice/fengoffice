@@ -1,6 +1,13 @@
 <div class="page plugin-manager">
 	<div style="display:none" class="error"></div>
 	<h1 class="title">Plugin Manager</h1> 
+	<?php if (count($plugins_that_need_update) > 0): ?>
+		<div class="contextualHelp">
+			There are <?php echo count($plugins_that_need_update) ?> plugins that need to be updated.
+			Click here to update them.
+			<a class="update-all-button" id="update-all-button" title="Update all plugins" href="#">Update all plugins</a>
+		</div>
+	<?php endif ?>
 	<table  class="plugin-list">
 		<thead>
 			<tr>

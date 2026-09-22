@@ -1,5 +1,6 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
+var moment = require('moment');
 var { ResponsiveContainer,
       AreaChart,
       Area,
@@ -13,10 +14,143 @@ var { ResponsiveContainer,
 class WorkedHoursWidget extends React.Component {
     constructor(props) {
       super(props);
-      this.state = { worked: props.data.worked ? props.data.worked : 0,
-                     estimated: props.data.estimated ? props.data.estimated : 0,
-                     chartData: props.data.chartData ? props.data.chartData : ''
-                    };
+      this.state = { 
+        worked: props.data.worked ? props.data.worked : 0,
+        estimated: props.data.estimated ? props.data.estimated : 0,
+        chartData: this.prepareChartData(props.data.chartData || []),
+        allChartData: this.prepareChartData(props.data.chartData || [])
+      };
+      
+      // Bind date filtering methods
+      this.performDateFiltering = this.performDateFiltering.bind(this);
+      this.performAllTimeFiltering = this.performAllTimeFiltering.bind(this);
+    }
+
+    // Prepare chart data by ensuring both formats are available
+    prepareChartData(data) {
+        return data.map(item => ({
+            ...item,
+            // Ensure both naming conventions are available for chart compatibility
+            estimated: item.total_budget,
+            worked: item.total_earned
+        }));
+    }
+
+    performDateFiltering(startDate, endDate) {
+        // Since backend provides cumulative data, filter by date range
+        // But also handle cases where requested range extends beyond available data
+        const allData = this.state.allChartData;
+        
+        // First, filter existing data within the requested range
+        const filteredData = allData.filter(item => {
+            const itemDate = moment(item.date, 'MM/DD/YYYY');
+            return itemDate.isBetween(startDate, endDate, 'day', '[]');
+        });
+
+        // If no data exists in the requested range, create empty data points
+        if (filteredData.length === 0) {
+            // Create empty data points for the requested range
+            const emptyData = this.createEmptyDataRange(startDate, endDate);
+            this.setState({
+                chartData: emptyData,
+                estimated: 0,
+                worked: 0
+            });
+            return;
+        }
+
+        // Get the actual data range from available data
+        const dataStartDate = moment(allData[0].date, 'MM/DD/YYYY');
+        const dataEndDate = moment(allData[allData.length - 1].date, 'MM/DD/YYYY');
+
+        // Extend the filtered data to fill the entire requested range
+        const extendedData = this.extendDataToRange(filteredData, startDate, endDate, dataStartDate, dataEndDate);
+
+        // Use the final values from the filtered data (not extended empty data)
+        const finalEstimated = filteredData.length > 0 ? filteredData[filteredData.length - 1].total_budget : 0;
+        const finalWorked = filteredData.length > 0 ? filteredData[filteredData.length - 1].total_earned : 0;
+
+        this.setState({
+            chartData: extendedData,
+            estimated: finalEstimated,
+            worked: finalWorked
+        });
+    }
+
+    // Create empty data points for a date range
+    createEmptyDataRange(startDate, endDate) {
+        const emptyData = [];
+        const current = startDate.clone();
+        
+        while (current.isSameOrBefore(endDate)) {
+            emptyData.push({
+                date: current.format('MM/DD/YYYY'),
+                total_budget: 0,
+                total_earned: 0,
+                estimated: 0,
+                worked: 0
+            });
+            current.add(1, 'day');
+        }
+        
+        return emptyData;
+    }
+
+    // Extend data to fill the entire requested range with zeros where no data exists
+    extendDataToRange(filteredData, requestedStart, requestedEnd, dataStart, dataEnd) {
+        const result = [];
+        const current = requestedStart.clone();
+        
+        while (current.isSameOrBefore(requestedEnd)) {
+            const currentDateStr = current.format('MM/DD/YYYY');
+            
+            // Check if we have actual data for this date
+            const existingData = filteredData.find(item => item.date === currentDateStr);
+            
+            if (existingData) {
+                // Use actual data
+                result.push(existingData);
+            } else {
+                // Create zero data point
+                // If this date is before our data range, use zeros
+                // If this date is after our data range, maintain the last known values
+                let budget = 0;
+                let earned = 0;
+                
+                if (current.isAfter(dataEnd) && filteredData.length > 0) {
+                    // Date is after our data range - maintain final values
+                    const lastData = filteredData[filteredData.length - 1];
+                    budget = lastData.total_budget;
+                    earned = lastData.total_earned;
+                }
+                
+                result.push({
+                    date: currentDateStr,
+                    total_budget: budget,
+                    total_earned: earned,
+                    estimated: budget,
+                    worked: earned
+                });
+            }
+            
+            current.add(1, 'day');
+        }
+        
+        return result;
+    }
+
+    // Handle 'All Time' filtering - show all available data
+    performAllTimeFiltering() {
+        // Use the original full data set
+        const fullData = this.state.allChartData;
+        const finalEstimated = fullData.length > 0 ? fullData[fullData.length - 1].total_budget : 0;
+        const finalWorked = fullData.length > 0 ? fullData[fullData.length - 1].total_earned : 0;
+
+        this.setState({
+            chartData: fullData,
+            estimated: finalEstimated,
+            worked: finalWorked
+        });
     }
 
       render() {

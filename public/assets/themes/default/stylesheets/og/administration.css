@@ -211,20 +211,24 @@
 	display:none ;
 }
 
-a.help-sign {
+.help-sign {
 	background-color: #8b8b8b;
 	border-radius: 10px;
 	color: #FFFFFF;
 	font-weight: bold;
-	padding: 1px 5px;
+	padding: 1px 7px;
 	vertical-align: text-bottom;
 	margin-left: 5px;
+	cursor: default;
 }
-.edit-form-tabs .ui-tabs-panel.ui-widget-content a.help-sign {
+a.help-sign {
+	cursor: pointer;
+}
+.edit-form-tabs .ui-tabs-panel.ui-widget-content .help-sign {
 	color: #FFFFFF;
 }
 
-a.help-sign:hover {
+.help-sign:hover {
 	opacity: 0.7;
 	filter: alpha(opacity=70);
 }
@@ -254,16 +258,21 @@ form.edit-member .dimension-memberfields div.type-boolean {
 form.edit-member .dimension-memberfields div.type-boolean label,
 form.edit-member .dimension-memberfields div.type-boolean input
 {
-	display:inline ;
-	margin-right: 5px;
+	display:inline-flex;
+	/* margin-right: 5px; */
 }
 
-form.edit-member .dimension-memberfields div.type-boolean input{
+/* form.edit-member .dimension-memberfields div.type-boolean input{
 	margin-top: 3px; 
+} */
+
+form.edit-member .dimension-selector-container {
+	min-width: 570px;
 }
 
 form.edit-member .dimension-selector-container {
 	min-width: 570px;
+	display: inline !important;
 }
 
 
@@ -283,6 +292,27 @@ div.checkbox-config-option {
 	float:left;
 	margin-right: 15px;
 	min-width: 130px;
+}
+
+div.checkbox-config-options {
+	display: flex;
+	flex-wrap: wrap;
+}
+div.checkbox-config-options div.checkbox-config-option {
+	flex-basis: 160px;
+	max-width: 160px;
+}
+.configOptionControl a.show-more.ico-search-m {
+	background-position: left 5px center !important;
+	display: inline-block;
+	margin-top: 10px;
+	margin-left: 0;
+}
+#configCategoryOptions div.checkbox-config-options div.checkbox-config-option label {
+	display: inline;
+	vertical-align: text-bottom;
+	margin-left: 4px;
+	cursor: pointer;
 }
 
 .adminMainBlock h1 {
@@ -309,6 +339,7 @@ div.checkbox-config-option {
 .dimensionOptionsConfiguration .adminMainBlock .section {
 	/*border-top: 1px solid #ddd;*/
 	padding: 10px 0;
+	overflow-x: auto;
 }
 
 .app-log-details.adminMainBlock {
@@ -335,9 +366,14 @@ div.checkbox-config-option {
 }
 
 
+.custom-properties-admin.object-type .adminMainBlock .cp-table-container {
+	overflow-x: auto;
+	overflow-y: auto;
+	max-height: calc(100vh - 200px);
+}
 
 .custom-properties-admin.object-type .custom-property-list {
-	width: 100%;
+	/*width: 100%;*/
 }
 
 .custom-properties-admin.object-type .custom-property-list .cp-container .handle, .ddhandle {
@@ -350,6 +386,30 @@ div.checkbox-config-option {
 	width: calc(100% - 5px);
 }
 
+/* Checkbox "Allow not specified": do not stretch to full cell width (breaks alignment / wrapping). */
+.custom-properties-admin.object-type .custom-property-list .cp-container #boolean_default_config input[type="checkbox"],
+.custom-properties-admin.object-type .custom-property-list .cp-container #boolean_default_config input[type="radio"] {
+	width: auto !important;
+	max-width: none;
+	flex-shrink: 0;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container #boolean_default_config {
+	text-align: left;
+	margin-bottom: 8px;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container #boolean_default_config .cp-boolean-allow-ns-label {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 6px;
+	margin-top: 4px;
+	font-size: 11px;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
 .custom-properties-admin.object-type .custom-property-list .cp-container input[disabled="disabled"] {
 	color: black;
 	border: 0;
@@ -360,9 +420,13 @@ div.checkbox-config-option {
 	line-height: 20px;
 	background-color: #4f4f4f;
 	color: #d1d1d1;
+	position: sticky;
+    z-index: 1;
 }
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.header th {
 	background-color: #4f4f4f;
+	position: sticky;
+    top: 0px;
 }
 
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.bottom-row td {
@@ -370,6 +434,9 @@ div.checkbox-config-option {
 }
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.top-row td {
 	padding-top: 8px;
+}
+.custom-properties-admin.object-type .adminMainBlock .custom-property-list tr.top-row td:not(.handle) {
+	min-width: 80px;
 }
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list .alt {
 	background-color: #efefef;
@@ -383,6 +450,9 @@ div.checkbox-config-option {
 	padding: 0px 2px;
 	line-height: 25px;
 }
+.custom-properties-admin.object-type .custom-property-list td.actions {
+	text-align: center;
+}
 .custom-properties-admin.object-type .custom-property-list tr.top-row td.order {
 	font-size: 25px;
 	padding-top: 20px;
@@ -392,8 +462,17 @@ div.checkbox-config-option {
 	text-decoration: underline;
 }
 
+.custom-properties-admin.object-type .adminMainBlock #values_hint {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
 .custom-properties-admin .add-new-cp-link-container {
 	margin-top: 20px;
+}
+
+.custom-properties-admin .add-new-cp-link-container .cp-add-link-container {
+	margin-right: 20px;
 }
 
 .custom-properties-admin.object-type .adminMainBlock .custom-property-list .ui-sortable-helper {
@@ -418,6 +497,10 @@ div.checkbox-config-option {
 }
 .custom-properties-admin .cp-admin-container.member-cps-container {
 	
+}
+
+.custom-properties-admin .cp-container .numeric-options-section {
+	margin-top: 5px;
 }
 
 .listing-admin ul li {
@@ -556,3 +639,78 @@ table.custom-bordered th:nth-child(5),
 	border-color: red; 
 }
 
+
+/* Contact custom property type filters: multi select of disjoint contact groups. */
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter {
+	position: relative;
+	display: inline-block;
+	min-width: 160px;
+	max-width: 300px;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter-toggle {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	/* metrics copied from the sibling <select> elements of this table so the control
+	   lines up with them: 26px tall, 14px Arial, 3px padding, 1px #ccc border, 4px radius */
+	height: 26px;
+	padding: 3px;
+	padding-right: 20px;
+	/* the inputs and selects of this table all render in Arial, not the body font */
+	font-family: Arial;
+	font-size: 14px;
+	line-height: normal;
+	text-align: left;
+	color: #000;
+	background-color: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	box-sizing: border-box;
+	cursor: pointer;
+	/* chevron in place of the native select caret */
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 2l4.5 4.5L10.5 2' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 7px center;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter-summary {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Positioned against the viewport: .cp-table-container clips its own content. */
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter-panel {
+	position: fixed;
+	z-index: 20000;
+	padding: 4px 0;
+	background-color: #fff;
+	border: 1px solid #b5b8c8;
+	border-radius: 3px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter-option {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 10px;
+	font-family: Arial;
+	font-size: 14px;
+	line-height: 1.2;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter-option:hover {
+	background-color: #eaf3ff;
+}
+
+/* .cp-container input is width:calc(100% - 5px); the checkboxes must not stretch. */
+.custom-properties-admin.object-type .custom-property-list .cp-container .cp-type-filter-check {
+	width: auto !important;
+	max-width: none;
+	flex-shrink: 0;
+	margin: 0;
+}

@@ -14,6 +14,8 @@ class Member extends BaseMember {
 	
 	private $icon_class = null;
 
+	private $object_type = null;
+
 	/**
 	 * Save the member
 	 *
@@ -48,6 +50,13 @@ class Member extends BaseMember {
 		}
 		
 		return $all_children;
+	}
+
+	function getObjectType() {
+		if (is_null($this->object_type)) {
+			$this->object_type = ObjectTypes::instance()->findById($this->getObjectTypeId());
+		}
+		return $this->object_type;
 	}
 	
 	function getAllChildren($recursive = false, $order = null, $extra_conditions="") {
@@ -165,11 +174,17 @@ class Member extends BaseMember {
 	
 	
 	function getDimensionRestrictedObjectTypeIds($restricted_dimension_id, $is_required = true){
-		return DimensionMemberRestrictionDefinitions::getRestrictedObjectTypeIds($this->getDimensionId(), $this->getObjectTypeId(), $restricted_dimension_id, $is_required);
+		return DimensionMemberRestrictionDefinitions::instance()->getRestrictedObjectTypeIds($this->getDimensionId(), $this->getObjectTypeId(), $restricted_dimension_id, $is_required);
 	}
 	
 	function getTypeNameToShow() {
-	    return Members::getTypeNameToShowByObjectType($this->getDimensionId(), $this->getObjectTypeId());	    
+		$overriden_name = null;
+		Hook::fire('member_type_name_override', array('member' => $this), $overriden_name);
+		if (!is_null($overriden_name)) {
+			return $overriden_name;
+		} else {
+			return Members::getTypeNameToShowByObjectType($this->getDimensionId(), $this->getObjectTypeId());	    
+		}
 	}
 	
 	
@@ -423,7 +438,7 @@ class Member extends BaseMember {
 	
 	/**
 	 * 
-	 * Returns the memeber relations grouped by dimension  
+	 * Returns the member relations grouped by dimension  
 	 */
 	function getRelatedMembers() {
 	
@@ -473,8 +488,7 @@ class Member extends BaseMember {
 		$permission_conditions = "";
 		if($check_permission){
 			$logged_user_pgs = logged_user()->getPermissionGroupIds();
-			$permission_conditions = " AND EXISTS (SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
-			WHERE cmp.permission_group_id IN (".implode(",",$logged_user_pgs).") AND cmp.member_id=".TABLE_PREFIX."members.id)";
+			$permission_conditions = ContactMemberPermissions::sqlMemberHasVisibleAccess(TABLE_PREFIX."members.id", implode(",", $logged_user_pgs));
 		}
 		
 		$member = Members::instance()->findOne(array("conditions" => "`parent_member_id` = ". $this->getId() .' '. $permission_conditions));
@@ -687,10 +701,12 @@ class Member extends BaseMember {
 				return parent::setParentMemberId($value);
 			}else{
 				//error
-				Logger::log("Not valid parent member type '$parent_type'," . $this->getObjectTypeId());			
-				$errors = array() ;
-				$errors[] = "Not valid parent member type";
+				Logger::log("Not valid parent member type '$parent_type'," . $this->getObjectTypeId());
+				$errors = array();
+				$object_type_name = ObjectTypes::instance()->findById($this->getObjectTypeId())->getObjectTypeName();	
+				$errors[] = lang("not valid parent member type", $parent->getTypeNameToShow(), $parent->getDisplayName(), $object_type_name);
 				throw new DAOValidationError($this, $errors);
+				
 			}
 		} else {
 			return parent::setParentMemberId(0);
@@ -701,16 +717,74 @@ class Member extends BaseMember {
 	function canHaveParents() {
 		$dim_id = $this->getDimensionId();
 		$otype_id = $this->getObjectTypeId();
+
+		$parent_types_count = DimensionObjectTypeHierarchies::instance()->count("
+			`dimension_id` = '$dim_id' 
+			AND `child_object_type_id` = '$otype_id'
+			AND `parent_object_type_id` IN (
+				SELECT `object_type_id` FROM `".TABLE_PREFIX."dimension_object_types` 
+				WHERE `enabled` = 1 AND `dimension_id` = '$dim_id'
+			)"
+		);
 		
-		$sql = "SELECT count(m.id) as cant from ".TABLE_PREFIX."members m
-				WHERE m.`object_type_id` IN (
-					SELECT `parent_object_type_id` FROM `". DimensionObjectTypeHierarchies::instance()->getTableName() ."`
-					WHERE `dimension_id` = '$dim_id' AND `child_object_type_id` = '$otype_id'
-				)";
-		$rows = DB::executeAll($sql);
-		$cant = $rows[0]['cant'];
-		
-		return $cant > 0;
+		return $parent_types_count > 0;
+	}
+
+	/**
+	 * Checks whether at least one member exists that could be selected as the parent of this member.
+	 *
+	 * canHaveParents() only looks at the object type hierarchy of the dimension, so it returns true
+	 * even when no member of an allowed parent type exists (e.g. customers can only be located under
+	 * folders, but no folder was ever created). Use this method to decide whether a "located under"
+	 * selector is worth rendering.
+	 *
+	 * Only members the logged user can see are counted, and the member itself and its descendants
+	 * are excluded, so the answer matches what the parent selector can actually offer.
+	 *
+	 * @param array $allowed_type_ids Optional object type ids to restrict the parent types to
+	 *   (e.g. the types accepted by the form's parent selector). Only types that are also allowed
+	 *   by the hierarchy and enabled in the dimension are considered.
+	 * @return boolean
+	 */
+	function hasAvailableParentMembers($allowed_type_ids = null) {
+		if (!$this->canHaveParents()) return false;
+
+		$dim_id = $this->getDimensionId();
+		$parent_type_ids = DimensionObjectTypeHierarchies::getAllParentObjectTypeIds($dim_id, $this->getObjectTypeId(), false);
+		if (is_array($allowed_type_ids)) {
+			$parent_type_ids = array_intersect($parent_type_ids, $allowed_type_ids);
+		}
+		$parent_type_ids = array_filter(array_map('intval', $parent_type_ids));
+		if (count($parent_type_ids) == 0) return false;
+
+		$conditions = "`dimension_id` = ? AND `archived_by_id` = 0
+			AND `object_type_id` IN (" . implode(',', $parent_type_ids) . ")
+			AND `object_type_id` IN (
+				SELECT `object_type_id` FROM `".TABLE_PREFIX."dimension_object_types`
+				WHERE `enabled` = 1 AND `dimension_id` = ?
+			)
+			AND (`object_id` = 0 OR EXISTS (
+				SELECT o.id FROM `".TABLE_PREFIX."objects` o WHERE o.id = `object_id` AND o.trashed_by_id = 0
+			))";
+		$params = array($dim_id, $dim_id);
+		if ($this->getId() > 0) {
+			// a member can never be located under itself nor under one of its descendants
+			$excluded_ids = array_merge(array($this->getId()), $this->getAllChildrenIds(true));
+			$excluded_ids = array_filter(array_map('intval', $excluded_ids));
+			$conditions .= " AND `id` NOT IN (" . implode(',', $excluded_ids) . ")";
+		}
+
+		// only members the user can see, the same rule the member lists apply
+		$dimension = Dimensions::getDimensionById($dim_id);
+		if ($dimension instanceof Dimension && $dimension->getDefinesPermissions() && logged_user() instanceof Contact && !logged_user()->isAdministrator()) {
+			$pg_ids = logged_user()->getPermissionGroupIds();
+			if (!is_array($pg_ids) || count($pg_ids) == 0) $pg_ids = array(0);
+			$conditions .= " AND EXISTS (SELECT cmp.member_id FROM `".TABLE_PREFIX."contact_member_permissions` cmp
+				WHERE cmp.member_id = `".TABLE_PREFIX."members`.id AND cmp.permission_group_id IN (" . implode(',', $pg_ids) . ")
+				AND cmp.object_type_id IN (" . ContactMemberPermissions::accessGrantingObjectTypesSubquery() . "))";
+		}
+
+		return Members::instance()->count(array_merge(array($conditions), $params)) > 0;
 	}
 	
 
@@ -735,6 +809,87 @@ class Member extends BaseMember {
 			}
 		}
 		return $value;
+	}
+
+	/**
+	 * Get the value of a custom property
+	 *
+	 * @param int $cp_id The ID of the custom property
+	 * @param bool $format_date If true, the value will be formatted as a date
+	 * @return string The value of the custom property
+	 */
+	function getCustomPropertyValue($cp_id, $format_date = true) {
+		$value = '';
+
+		$object_type = ObjectTypes::instance()->findById($this->getObjectTypeId());
+
+		if ($object_type->getType() == 'dimension_group') {
+			if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+				$cp = MemberCustomProperties::getCustomProperty($cp_id);
+				if ($cp) {
+					$cp_val = MemberCustomPropertyValues::getMemberCustomPropertyValue($this->getId(), $cp->getId());
+					if ($cp_val) $value = $cp_val->getValue();
+				}
+			}
+		} else {
+			$cp = CustomProperties::getCustomProperty($cp_id);
+			if ($cp) {
+				$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getObjectId(), $cp->getId());
+				if ($cp_val) $value = $cp_val->getValue();
+			}
+		}
+		
+		// format the date if needed
+		if ($format_date && $cp && $value != '' && in_array($cp->getType(), array('date', 'datetime'))) {
+			$dt = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $value);
+			if ($cp->getType() == 'date') {
+				$value = format_date($dt, null, 0);
+			} else {
+				$value = format_datetime($dt, null, 0);
+			}
+		}
+
+		return $value;
+	}
+
+
+	/**
+	 * Save a custom property value to the database
+	 * @param int $cp_id The ID of the custom property
+	 * @param string $cp_value The value of the custom property
+	 * @return void
+	 */
+	function saveCustomPropertyValue($cp_id, $cp_value) {
+
+		$object_type = ObjectTypes::instance()->findById($this->getObjectTypeId());
+
+		if ($object_type->getType() == 'dimension_group') {
+			if (Plugins::instance()->isActivePlugin('member_custom_properties')) {
+				$cp = MemberCustomProperties::getCustomProperty($cp_id);
+				if ($cp) {
+					$cp_val = MemberCustomPropertyValues::getMemberCustomPropertyValue($this->getId(), $cp->getId());
+					if (!$cp_val instanceof MemberCustomPropertyValue) {
+						$cp_val = new MemberCustomPropertyValue();
+						$cp_val->setMemberId($this->getId());
+						$cp_val->setCustomPropertyId($cp->getId());
+					}
+					$cp_val->setValue($cp_value);
+					$cp_val->save();
+				}
+			}
+		} else {
+			$cp = CustomProperties::getCustomProperty($cp_id);
+			if ($cp) {
+				$cp_val = CustomPropertyValues::getCustomPropertyValue($this->getObjectId(), $cp->getId());
+				if (!$cp_val instanceof CustomPropertyValue) {
+					$cp_val = new CustomPropertyValue();
+					$cp_val->setObjectId($this->getObjectId());
+					$cp_val->setCustomPropertyId($cp->getId());
+				}
+				$cp_val->setValue($cp_value);
+				$cp_val->save();
+			}
+		}
 	}
 	
 	
@@ -853,6 +1008,26 @@ class Member extends BaseMember {
 		Hook::fire('additional_member_column_values', array('definition' => $definition, 'member' => $this), $info);
 		return $info;
 	}
-	
-	
+
+		function get_object_sub_type_id($member) {
+			$object = Objects::findObject($member->getObjectId());
+			if ($object instanceof ContentDataObject) {		
+				$sub_ot_id = $object->getColumnValue('object_subtype_id');
+				return $sub_ot_id;
+			}
+			return null;
+		}
+
+		function get_is_object_sub_type() {
+			$object = Objects::findObject($this->getObjectId());
+			if ($object instanceof ContentDataObject) {		
+				$sub_ot_id = $object->getColumnValue('object_subtype_id');
+				if ($sub_ot_id > 0) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+
 }

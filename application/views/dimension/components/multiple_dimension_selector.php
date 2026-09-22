@@ -26,9 +26,9 @@ if (array_var($options, 'readonly')) {
 			$custom_name = DimensionOptions::getOptionValue($dim_mem_path_dim_id, 'custom_dimension_name');
 			$dimension_name = $custom_name && trim($custom_name) != "" ? $custom_name : $dimension_name;
 	?>
-		<label style="font-size: 100%; <?php  if (!$horizontal) echo "float:left; height: 21px; padding-top: 3px;";?>"><?php 
+		<label style="<?php  if (!$horizontal) echo "float:left; height: 21px; padding-top: 3px;";?>"><?php
 			echo (isset($label) && $label != '' ? $label : $dimension_name);
-		?>:</label>
+		?>:<?php echo isset($html_help_icon) ? $html_help_icon : ''; ?></label>
 	<?php 
 		}
 	?>
@@ -113,14 +113,25 @@ if (array_var($options, 'readonly')) {
 
 		$expgenid = gen_id();
 		
-		$member_type_names = array();
-		$member_type_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dimension_id);
-		foreach ($member_type_ids as $member_type_id) {
-			$mem_type = ObjectTypes::instance()->findById($member_type_id);
-			if (in_array($mem_type->getName(), array('folder','project_folder','customer_folder'))) continue;
-			$member_type_names[] = $mem_type->getObjectTypeName();
+		$dimension_member_type_names = '';
+		$member_association_id = array_var($options, 'member_association_id', 0);
+		$member_association = DimensionMemberAssociations::instance()->findById($member_association_id);
+		if ($member_association instanceof DimensionMemberAssociation) {
+			$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($member_association->getId(), 'custom_association_name');
+			if ($custom_assoc_name) {
+				$dimension_member_type_names = $custom_assoc_name;
+			}
 		}
-		$dimension_member_type_names = implode(' '.lang('or').' ', $member_type_names);
+		if ($dimension_member_type_names == '') {
+			$member_type_names = array();
+			$member_type_ids = DimensionObjectTypes::getObjectTypeIdsByDimension($dimension_id);
+			foreach ($member_type_ids as $member_type_id) {
+				$mem_type = ObjectTypes::instance()->findById($member_type_id);
+				if (in_array($mem_type->getName(), array('folder','project_folder','customer_folder'))) continue;
+				$member_type_names[] = $mem_type->getObjectTypeName();
+			}
+			$dimension_member_type_names = implode(' '.lang('or').' ', $member_type_names);
+		}
 
 		// Render view by obj type
 		$container_id = $genid."member-seleector-dim".$dimension_id;
@@ -182,7 +193,8 @@ if (array_var($options, 'readonly')) {
 		isMultiple: <?php echo $dimension['is_multiple'] ? '1' : '0'?>,
 		allowedMemberTypes: <?php echo json_encode($allowed_member_type_ids)?>,
 		dontSelectAssociatedMembers: <?php echo array_var($options,'dont_select_associated_members') ? '1' : '0'?>,
-		listeners: <?php echo $listeners_str ?>
+		listeners: <?php echo $listeners_str ?>,
+		extra_options: JSON.parse('<?php echo json_encode(array_var($options, 'extra_options', array()))?>'),
 	};
 
 	if (member_selector['<?php echo $genid; ?>'].properties['<?php echo $dimension_id ?>'].listeners.after_render) {

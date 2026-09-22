@@ -84,6 +84,7 @@
 	'footer copy with homepage' => '© {0} od <a class="internalLink" href="{1}">{2}</a>. Všechna práva vyhrazena.',
 	'footer copy without homepage' => '© {0} od {1}. Všechna práva vyhrazena',
 	'footer powered' => 'Powered Založeno na <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Založeno na',
 	'all documents' => 'Všechny dokumenty',
 	'created by me' => 'Mnou vytvořeno',
 	'by project' => 'Podle pracovního prostoru',

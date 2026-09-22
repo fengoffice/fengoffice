@@ -170,6 +170,9 @@ class Timeslot extends BaseTimeslot {
 	 * After saving a time entry from any interface or api, inherit the task's members
 	 */
 	function classifyInTaskMembers() {
+		if ($this->isInvoiced()) {
+			return;
+		}
 
 		if ($this->getId() > 0) {
 			$task = $this->getRelObject();
@@ -378,7 +381,44 @@ class Timeslot extends BaseTimeslot {
 	 * @param Contact $user
 	 * @return boolean
 	 */
+	/**
+	 * Last reason canEdit() failed (set by Timeslot or plugins). Not stored in $_REQUEST.
+	 *
+	 * @var string|null
+	 */
+	private static $cant_edit_message = null;
+
+	function isInvoiced() {
+		return Plugins::instance()->isActivePlugin('income') &&
+			$this->getColumnValue('invoicing_status') == 'invoiced';
+	}
+
+	static function setCantEditMessage($message) {
+		self::$cant_edit_message = $message;
+	}
+
+	/**
+	 * Message explaining why the last canEdit() returned false.
+	 * Falls back to $default (or generic no-access lang) when unset.
+	 *
+	 * @param string|null $default
+	 * @return string
+	 */
+	static function getCantEditMessage($default = null) {
+		if (self::$cant_edit_message !== null && self::$cant_edit_message !== '') {
+			return self::$cant_edit_message;
+		}
+		return $default !== null ? $default : lang('no access permissions');
+	}
+
 	function canEdit(Contact $user) {
+		self::$cant_edit_message = null;
+
+		if ($this->isInvoiced()) {
+			self::$cant_edit_message = lang('you cannot edit invoiced time entry');
+			return false;
+		}
+
 		$can_edit = can_write($user, $this->getMembers(), $this->getObjectTypeId());
 
 		// additional validations that can be done by plugins to see if time can be edited
@@ -397,9 +437,8 @@ class Timeslot extends BaseTimeslot {
 	 */
 	function canDelete(Contact $user) {
 		// additional validations that can be done by plugins to see if time can be deleted
-		if (Plugins::instance()->isActivePlugin('income') && 
-			$this->getColumnValue('invoicing_status') == 'invoiced') {
-				// don't allow to delete if expense is invoiced
+		if ($this->isInvoiced()) {
+				// don't allow to delete if time entry is invoiced
 				return false;
 		}
 		return can_delete($user, $this->getMembers(), $this->getObjectTypeId());
@@ -457,13 +496,208 @@ class Timeslot extends BaseTimeslot {
 	 * Save the timeslot
 	 *
 	 * @return boolean
+	 * @throws Exception if trying to add worked time to a parent task when it's not allowed
 	 */
+	static function isWorkedTimeBlockedForParent(ProjectTask $task) {
+		$prevent = false;
+		Hook::fire('get_prevent_adding_time_to_parent', array('time_type' => 'worked', 'is_parent' => $task->isParent()), $prevent);
+		return $prevent;
+	}
+
+	/**
+	 * Diagnostic log when an invoiced time entry is about to change.
+	 * Lets us see who/what mutated billed amounts after invoicing.
+	 */
+	function logInvoicedMutation($reason, $extra = array()) {
+		if (!$this->isInvoiced()) {
+			return;
+		}
+
+		$user = function_exists('logged_user') ? logged_user() : null;
+		$callers = array();
+		foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 12) as $frame) {
+			$fn = isset($frame['function']) ? $frame['function'] : '';
+			if ($fn == 'logInvoicedMutation' || $fn == 'debug_backtrace') {
+				continue;
+			}
+			$callers[] = (isset($frame['class']) ? $frame['class'].'::' : '') . $fn
+				. (isset($frame['file']) ? ' ('.basename($frame['file']).':'.array_var($frame, 'line', '').')' : '');
+		}
+
+		$changed = array();
+		foreach (array('hourly_billing', 'fixed_billing', 'is_fixed_billing', 'adv_billing_id', 'invoicing_status', 'contact_id', 'rel_object_id', 'start_time', 'end_time') as $col) {
+			if ($this->isColumnModified($col)) {
+				$changed[] = $col;
+			}
+		}
+		if (!isset($extra['modified_columns'])) {
+			$extra['modified_columns'] = $changed;
+		}
+
+		Logger::log(
+			"[INVOICED_TIMESLOT_MUTATION] reason=$reason"
+			." timeslot_id=".$this->getId()
+			." task_id=".$this->getRelObjectId()
+			." invoice_id=".$this->getColumnValue('invoice_id')
+			." hourly_billing=".$this->getColumnValue('hourly_billing')
+			." fixed_billing=".$this->getColumnValue('fixed_billing')
+			." user_id=".($user instanceof Contact ? $user->getId() : 0)
+			." user=".($user instanceof Contact ? $user->getObjectName() : '-')
+			." c=".array_var($_REQUEST, 'c')." a=".array_var($_REQUEST, 'a')
+			." extra=".json_encode($extra)
+			." callers=".implode(' <- ', $callers),
+			Logger::DEBUG,
+			null,
+			'INVOICED_TIMESLOT_MUTATION'
+		);
+	}
+
+	/**
+	 * Whether the task has already reached (or exceeded) its estimated hours,
+	 * as of its last persisted state (before this timeslot is applied).
+	 *
+	 * @param ProjectTask $task
+	 * @return boolean
+	 */
+	static function isEstimatedHoursLimitReached(ProjectTask $task) {
+		$prevent = false;
+		if ($task->getTimeEstimate() > 0 && $task->getRemainingTime() <= 0) {
+			Hook::fire('get_prevent_adding_time_over_estimated_hours', array('task' => $task), $prevent);
+		}
+		return $prevent;
+	}
+
+	/**
+	 * Whether NEW time can be started/added to $object right now: base permissions first,
+	 * and only then (for tasks) whether the estimated-hours limit has been reached.
+	 *
+	 * Deliberately narrower than ContentDataObject::canAddTimeslot() — this is only for
+	 * actions that add new time (opening a timer, quick-add, manual add, reassigning a
+	 * timeslot to this task). Never use it to gate stopping/pausing/resuming/cancelling
+	 * an already-running timer, or editing an entry without increasing its hours: those
+	 * must keep working even once the task is at/over its limit, or a running timer would
+	 * become impossible to stop. Use $object->canAddTimeslot($user) (permissions only) there.
+	 *
+	 * @param ContentDataObject $object
+	 * @param User $user
+	 * @return boolean
+	 */
+	static function canStartNewTimeEntry($object, $user) {
+		if (!($object instanceof ContentDataObject) || !$object->canAddTimeslot($user)) {
+			return false;
+		}
+		if ($object instanceof ProjectTask && self::isEstimatedHoursLimitReached($object)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Returns the lang key to show when Timeslot::canStartNewTimeEntry() is false, picking
+	 * a more specific message than the generic permissions one when the reason is the
+	 * estimated-hours limit rather than an actual permission issue. Permissions are checked
+	 * first so a user who lacks access to a task that also happens to be at its limit sees
+	 * the permissions message, not the hours one.
+	 *
+	 * @param ContentDataObject $object
+	 * @param User $user
+	 * @return string
+	 */
+	static function getCannotStartTimeEntryMessage($object, $user) {
+		if (!($object instanceof ContentDataObject) || !$object->canAddTimeslot($user)) {
+			return 'no access permissions';
+		}
+		if ($object instanceof ProjectTask && self::isEstimatedHoursLimitReached($object)) {
+			return 'cannot add time task estimated hours reached';
+		}
+		return 'no access permissions';
+	}
+
+	/**
+	 * Worked minutes this timeslot would have once saved, computed the same way the
+	 * post-save UPDATE in save() derives `worked_time` (from start/end/subtract), so it
+	 * can be compared against the currently persisted value before the row is written.
+	 *
+	 * @return float
+	 */
+	function calculateWorkedMinutesFromDates() {
+		$start = $this->getStartTime();
+		$end = $this->getEndTime();
+		if (!($start instanceof DateTimeValue) || !($end instanceof DateTimeValue)) {
+			return 0;
+		}
+		$diff_seconds = $end->getTimestamp() - $start->getTimestamp();
+		if ($diff_seconds < 0) $diff_seconds = 0;
+		return ($diff_seconds - (float) $this->getSubtract()) / 60;
+	}
+
+	/**
+	 * Whether saving this timeslot would increase the amount of worked time attributed
+	 * to its task, compared to what's currently persisted for this same row. New
+	 * timeslots with positive worked time always count as an increase; edits that only
+	 * touch unrelated fields, or that reduce the worked time, do not — so users can
+	 * always fix a typo or add a description on an entry without tripping the
+	 * estimated-hours limit, even if the task is already at/over its estimate.
+	 *
+	 * @return boolean
+	 */
+	function isIncreasingWorkedTime() {
+		// Rounded to whole minutes to match the granularity `worked_time` is stored at,
+		// so re-deriving an unchanged time range from the edit form never reads as a
+		// spurious increase/decrease due to sub-minute float noise.
+		$new_worked_time = round($this->calculateWorkedMinutesFromDates());
+		if ($this->isNew()) {
+			return $new_worked_time > 0;
+		}
+		$row = DB::executeOne("SELECT worked_time FROM ".TABLE_PREFIX."timeslots WHERE object_id=".$this->getId());
+		$old_worked_time = $row ? (float) array_var($row, 'worked_time', 0) : 0;
+		return $new_worked_time > $old_worked_time;
+	}
+
+	/**
+	 * Whether this timeslot was still open (no end_time set yet, e.g. a running timer)
+	 * before this save. Used so finalizing an already-running timer — stopping the clock —
+	 * is never treated as "adding new time" for the estimated-hours check: the time already
+	 * elapsed while it ran, and a user must always be able to stop a timer, even if the task
+	 * has since hit its limit. Only a deliberately chosen new duration (a new entry, or
+	 * increasing an already-closed entry) is subject to that check.
+	 *
+	 * @return boolean
+	 */
+	function wasOpenBeforeSave() {
+		if ($this->isNew()) {
+			return false;
+		}
+		$row = DB::executeOne("SELECT end_time FROM ".TABLE_PREFIX."timeslots WHERE object_id=".$this->getId());
+		if (!$row) {
+			return false;
+		}
+		$old_end_time = array_var($row, 'end_time');
+		return empty($old_end_time) || $old_end_time == EMPTY_DATETIME;
+	}
+
 	function save() {
-	    $is_new = $this->isNew();
+
+		$object = $this->getRelObject();
+		if ($object instanceof ProjectTask) {
+			if (self::isWorkedTimeBlockedForParent($object)) {
+				throw new Exception(lang('cannot add worked time to parent tasks'));
+			}
+			if (!$this->wasOpenBeforeSave() && $this->isIncreasingWorkedTime() && self::isEstimatedHoursLimitReached($object)) {
+				throw new Exception(lang('cannot add time task estimated hours reached'));
+			}
+		}
+
+		$is_new = $this->isNew();
+		if (!$is_new) {
+			$this->logInvoicedMutation('timeslot.save');
+		}
+
+		Hook::fire('before_timeslot_save', $this, $null);
+
 	    $saved = parent::save();
 	    $skip_task_calculation = array_var($_SESSION, 'dont_calculate_anything', false);
-	    if($saved && $this->recalculate_task_values && !$skip_task_calculation) {	      
-	        $object = $this->getRelObject();
+	    if($saved && $this->recalculate_task_values && !$skip_task_calculation) {
 	        if($object instanceof ContentDataObject) {
 	            if($is_new) {
 	                $object->onAddTimeslot($this);
@@ -585,6 +819,8 @@ class Timeslot extends BaseTimeslot {
 		
 		$general_info = $this->getObject()->getArrayInfo();
 		
+		$rel_object = $this->getRelObject();
+		
 		$result = array(
 			'id' => $this->getId(),
 			'date' => $this->getStartTime()->getTimestamp(),
@@ -597,7 +833,7 @@ class Timeslot extends BaseTimeslot {
 			'otid' => Timeslots::instance()->getObjectTypeId(),
 			'description' => $this->getDescription(),
 			'rel_object_id' => $this->getRelObjectId(),
-			'rel_object_name' => '',
+			'rel_object_name' => $rel_object instanceof ContentDataObject ? $rel_object->getObjectName() : '',
 			'worked_time' => $this->getColumnValue('worked_time'),
 			'worked_hours' => round($this->getColumnValue('worked_time') / 60, 2),
 		);

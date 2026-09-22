@@ -156,6 +156,7 @@ foreach ( $dimensions as $dimension ) {
 	$row_cls = "";
 	foreach ( $all_object_types as $ot ) {
 		if (! in_array ( $ot->getId (), $allowed_object_types [$dimension->getId ()] )) continue;
+		if ($ot->getName() == 'expense_item') continue;
 		$row_cls = $row_cls == "" ? "altRow" : "";
 		$id_suffix = $dimension->getId () . "_" . $ot->getId ();
 		$change_parameters = '\'' . $genid . '\', ' . $dimension->getId () . ', ' . $ot->getId ();

@@ -1,34 +1,20 @@
 button.mail {
-  margin-top: 0px;
-  padding: 2px 10px;
-  font-size: 18px;
-  cursor: pointer;
-  background: none repeat scroll 0 0 #f8f8f8;
-  border-color: #c4c4c4;
-  border-radius: 2px;
-  border-style: solid; 
-  border-width: 1px;
-  color: #333;
-  box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
-  -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
-  -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);
-}
-
-button.mail:HOVER {
-  background: none repeat scroll 0 0 #f0f0f0; 
+	margin: 0;
+	font-family: 'Open Sans', sans-serif;
+	height: 32px;
+	padding: 8px 16px !important; /* Fix padding for toolbar buttons */
 }
 
 button.mail.send {
-	margin-left: 10px;
+	margin-left: 14px;
 }
 
-.mail-classify-selector{
-	display: inline-block;
-	font-size: 15px;
-}
-
-.mail-classify-selector label{
-	min-width: 140px;
+.simplemodal-data form.form-classify {
+	height:100%;
+	background-color:white;
+	min-width: 550px;
+	min-height: 220px;
+	border-radius: 4px;
 }
 
 .mail-classify-selector .x-column-inner{
@@ -59,4 +45,36 @@ blockquote {
 .mail-event-data-table {
 	border-bottom: 1px solid #999;
 	border-right: 1px solid #999;
+}
+.mail input[type="text"], .mail textarea, .mail select {
+	border-radius: 4px !important;
+	font-size: 14px !important;
+	font-family: 'Open Sans', sans-serif;
+}
+.mail input[type="text"], .mail textarea {
+	width: 100% !important;
+	padding: 4px 8px !important;
+	box-sizing: border-box;
+}
+.mail input[type="text"], .mail select, .mail textarea {
+	height: 32px !important;
+}
+.mail select {
+	border:1px solid #B5B8C8;
+}
+.mail label {
+	font-weight: bold;
+}
+.mail .cke_reset {
+    box-sizing: border-box;
+	-moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+#add_mail_attachments .og-add-template-object {
+	padding-left: 0px;
+}
+
+#add_mail_attachments .og-add-template-object .name {
+	margin-left: 4px;
 }

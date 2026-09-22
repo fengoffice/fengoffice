@@ -139,7 +139,8 @@ Hook::fire('object_edit_categories', $object, $categories);
 </div>
 
 
-<div class="coInputMainBlock">
+<div class="feng-forms">
+	<div class="coInputMainBlock edit-member">
 	<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
 	
 		<ul id="<?php echo $genid?>tab_titles">
@@ -307,7 +308,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 
 		<div class="dataBlock">
 			<?php echo label_tag(lang('description')) ?>
-			<?php echo textarea_field('file[description]', array_var($file_data, 'description'), array('rows' => '5', 'style' => 'width: 500px;' , 'id' => $genid.'fileFormDescription')) ?>
+			<?php echo textarea_field('file[description]', array_var($file_data, 'description'), array('rows' => '5', 'id' => $genid.'fileFormDescription')) ?>
 		</div>
 		<div class="clear"></div>
 		
@@ -417,6 +418,7 @@ Hook::fire('object_edit_categories', $object, $categories);
 	</div>
 <?php } ?>
 </div>
+</div>
 </form>
 
 <script>
@@ -490,7 +492,7 @@ Hook::fire('object_edit_categories', $object, $categories);
         	<?php if ($file->isNew()) { ?>
             var w = $(".simplemodal-data .coInputHeader .coInputName input.title").width();
         	$(".simplemodal-data .coInputHeader .coInputName input.title").css('width', (2*w)+'px');
-        	$(".simplemodal-data .coInputHeader .coInputName").css('width', (2*w + 10)+'px');
+        	// $(".simplemodal-data .coInputHeader .coInputName").css('width', (2*w + 10)+'px');
         	
         	<?php } ?>
 

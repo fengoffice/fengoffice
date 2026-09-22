@@ -252,7 +252,7 @@ og.cp_list_selected = function(combo, genid, name, cp_id, is_multiple) {
 	
 	var html = '';
 	if (is_multiple) {
-		html = '<div>'+ og.clean(val) + '&nbsp;<a href=\"#\" onclick=\"og.cp_list_remove(this, \''+genid+'\', '+cp_id+');\" class=\"db-ico coViewAction ico-delete\">&nbsp;</a>';
+		html = '<div>'+ og.clean(val) + '&nbsp;<a href=\"#\" tabindex=\"-1\" onclick=\"og.cp_list_remove(this, \''+genid+'\', '+cp_id+');\" class=\"db-ico coViewAction ico-delete\">&nbsp;</a>';
 	}
 	html += '<input type=\"hidden\" name=\"'+name+'['+i+']\" value=\"'+val+'\" />';
 	if (is_multiple) {
@@ -279,22 +279,27 @@ og.cp_list_selected = function(combo, genid, name, cp_id, is_multiple) {
 og.check_if_valid_cp_num = function (inp) {
     let errorMessage = document.getElementById(inp.id + '_error');
     let errorIdsInput = document.getElementById('error_ids');
-    let currentErrorIds = errorIdsInput.value.split(','); 
+    let currentErrorIds = errorIdsInput ? errorIdsInput.value.split(',') : []; 
 
     if (isNaN(inp.value)) {
         errorMessage.style.display = 'block';  // show error message
-        if (!currentErrorIds.includes(inp.id)) {
+        if (!currentErrorIds.includes(inp.id) && errorIdsInput) {
             currentErrorIds.push(inp.id);
             errorIdsInput.value = currentErrorIds.join(','); // update hidden input
             //toggleSubmitButton(); // Actualizar el estado del botón
         }
     } else {
         errorMessage.style.display = 'none'; 
-        if (currentErrorIds.includes(inp.id)) {
+        if (currentErrorIds.includes(inp.id) && errorIdsInput) {
             currentErrorIds = currentErrorIds.filter(id => id !== inp.id);
             errorIdsInput.value = currentErrorIds.join(','); // update hidden input
             //toggleSubmitButton(); // Actualizar el estado del botón
         }
+
+		// Check if the input value is greater than Number.MAX_VALUE, don't let the user enter it
+		if (inp.value > Number.MAX_VALUE) {
+			inp.value = Number.MAX_VALUE;
+		}
     }
 };
 
@@ -339,6 +344,46 @@ og.check_if_valid_url = function (input) {
     //toggleSubmitButton();
 };
 
+og.check_if_valid_email = function (input) {
+	
+    // Expresión regular sencilla y efectiva para correos electrónicos
+    const expression = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+    const regex = new RegExp(expression);
+
+    let errorMessage = document.getElementById(input.id + '_error');
+    let errorIdsInput = document.getElementById('error_ids');
+    let currentErrorIds = errorIdsInput.value.split(',');
+
+    // Permitir campo vacío como válido
+    if (input.value.trim() === '') {
+        errorMessage.style.display = 'none';
+        if (currentErrorIds.includes(input.id)) {
+            currentErrorIds = currentErrorIds.filter(id => id !== input.id);
+            errorIdsInput.value = currentErrorIds.join(',');
+        }
+        return;
+    }
+
+    // Validar formato del correo electrónico
+    if (!regex.test(input.value.trim())) {
+        errorMessage.style.display = 'block';
+        if (!currentErrorIds.includes(input.id)) {
+            currentErrorIds.push(input.id);
+            errorIdsInput.value = currentErrorIds.join(',');
+        }
+    } else {
+        errorMessage.style.display = 'none';
+        if (currentErrorIds.includes(input.id)) {
+            currentErrorIds = currentErrorIds.filter(id => id !== input.id);
+            errorIdsInput.value = currentErrorIds.join(',');
+        }
+    }
+
+    //toggleSubmitButton(); 
+
+};
+
+
 
 og.check_if_valid_amount_field = function (input) {
     let errorMessage = document.getElementById(input.id + '_error');
@@ -358,6 +403,11 @@ og.check_if_valid_amount_field = function (input) {
             currentErrorIds = currentErrorIds.filter(id => id !== input.id); // Remove the input ID from the error array
             errorIdsInput.value = currentErrorIds.join(','); // Update the hidden input
         }
+
+		// Check if the input value is greater than Number.MAX_VALUE, don't let the user enter it
+		if (input.value > Number.MAX_VALUE) {
+			input.value = Number.MAX_VALUE;
+		}
     }
 
     //toggleSubmitButton();

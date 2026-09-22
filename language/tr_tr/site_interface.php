@@ -90,6 +90,7 @@
 	'footer copy with homepage' => '© {0} <a class="internalLink" href="{1}">{2}</a>. Tüm hakları saklıdır',
 	'footer copy without homepage' => '© {0} {1}. Tüm hakları saklıdır.',
 	'footer powered' => '<a target="_blank" href="{0}">{1}</a> sürümü ile çalışıyorsunuz',
+	'powered by' => 'Powered by',
 	'all documents' => 'Tüm belgeler',
 	'created by me' => 'Oluşturduklarım',
 	'by project' => 'Çalışma alanına göre',

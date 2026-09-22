@@ -39,6 +39,75 @@ og.eventManager.addListener('new email in conversation',
 	}
 );
 
+/**
+ * Blob URLs (blob:...) are only valid in the browser tab that created them.
+ * Convert inline images to data URLs before post so recipients and other sessions can render them.
+ */
+og.replaceBlobUrlsInHtml = function(html, callback) {
+	var re = /src\s*=\s*(["'])(blob:[^"']+)\1/gi;
+	var urls = [];
+	var seen = {};
+	var m;
+	while ((m = re.exec(html)) !== null) {
+		var u = m[2];
+		if (!seen[u]) {
+			seen[u] = true;
+			urls.push(u);
+		}
+	}
+	if (urls.length === 0) {
+		callback(html);
+		return;
+	}
+	var transparent = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+	var map = {};
+	var left = urls.length;
+
+	// Converts a blob: URL using <img> + canvas (more reliable in Safari than fetch()).
+	var doneOne = function() {
+		left--;
+		if (left > 0) return;
+		var out = html;
+		for (var i = 0; i < urls.length; i++) {
+			var from = urls[i];
+			var to = map[from] || transparent;
+			out = out.split(from).join(to);
+		}
+		callback(out);
+	};
+
+	for (var j = 0; j < urls.length; j++) {
+		(function(blobUrl) {
+			try {
+				var img = new Image();
+				img.onload = function() {
+					try {
+						var w = img.naturalWidth || img.width || 1;
+						var h = img.naturalHeight || img.height || 1;
+						var canvas = document.createElement('canvas');
+						canvas.width = w;
+						canvas.height = h;
+						var ctx = canvas.getContext('2d');
+						ctx.drawImage(img, 0, 0, w, h);
+						map[blobUrl] = canvas.toDataURL('image/png');
+					} catch (e) {
+						map[blobUrl] = null;
+					}
+					doneOne();
+				};
+				img.onerror = function() {
+					map[blobUrl] = null;
+					doneOne();
+				};
+				img.src = blobUrl;
+			} catch (e) {
+				map[blobUrl] = null;
+				doneOne();
+			}
+		})(urls[j]);
+	}
+};
+
 og.mailSetBody = function(genid) {
 	var form = Ext.getDom(genid + 'form');
 	if (form.preventDoubleSubmit) return false;
@@ -51,7 +120,26 @@ og.mailSetBody = function(genid) {
 	}, 2000);
 	if (Ext.getDom(genid + 'format_html').checked){
 		var editor = og.getCkEditorInstance(genid + 'ckeditor');
-		form['mail[body]'].value = editor.getData();
+		var html = editor.getData();
+		if (/src\s*=\s*["']blob:/i.test(html)) {
+			form.ogMailBodyAsyncPending = true;
+			og.replaceBlobUrlsInHtml(html, function(converted) {
+				form['mail[body]'].value = converted;
+				try {
+					editor.setData(converted);
+				} catch (e) {}
+				var restore = form.ogDeferredRestoreAction;
+				form.ogMailBodyAsyncPending = false;
+				form.ogDeferredRestoreAction = null;
+				og.ajaxSubmit(form);
+				if (restore != null) {
+					form.setAttribute('action', restore);
+					form.action = restore;
+				}
+			});
+			return false;
+		}
+		form['mail[body]'].value = html;
 	} else {
 		form['mail[body]'].value = Ext.getDom(genid + 'mailBody').value;
 	}
@@ -187,6 +275,31 @@ og.changeSignature = function(genid, acc_id) {
 
 
 // <attachments>
+og.extIconMap = {
+	'zip':'file-archive','rar':'file-archive','bz':'file-archive','bz2':'file-archive',
+	'gz':'file-archive','ace':'file-archive','7z':'file-archive','tar':'file-archive',
+	'mp3':'file-music','wma':'file-music','ogg':'file-music',
+	'gif':'file-image','jpg':'file-image','jpeg':'file-image','png':'file-image',
+	'psd':'file-image','svg':'file-image','webp':'file-image','bmp':'file-image',
+	'tif':'file-image','tiff':'file-image',
+	'mov':'file-video-camera','qt':'file-video-camera','avi':'file-video-camera',
+	'mpeg':'file-video-camera','mpg':'file-video-camera','vob':'file-video-camera',
+	'rm':'file-video-camera','swf':'file-video-camera','mp4':'file-video-camera',
+	'mkv':'file-video-camera','wmv':'file-video-camera',
+	'doc':'file-text','docx':'file-text','odt':'file-text','fodt':'file-text',
+	'txt':'file-text','rtf':'file-text','pdf':'file-text',
+	'xls':'file-spreadsheet','xlsx':'file-spreadsheet','xlsb':'file-spreadsheet','csv':'file-spreadsheet',
+	'ppt':'file-chart-column','pptx':'file-chart-column','slim':'file-chart-column',
+	'html':'file-code','htm':'file-code','webfile':'file-code',
+	'ics':'file-clock'
+};
+
+og.getLucideIconForFilename = function(name) {
+	if (!name) return 'file';
+	var ext = name.split('.').pop().toLowerCase();
+	return og.extIconMap[ext] || 'file';
+};
+
 og.addMailAttachment = function(container, obj) {
  	var objid = obj.manager + ":" + obj.object_id;
  	var count = container.getElementsByTagName('span').length; // there is one <span> per attachment
@@ -211,15 +324,17 @@ og.addMailAttachment = function(container, obj) {
  	 	name += "<label style=\"display: inline; margin-right: 50px;float:right;\">" + lang("attach contents") + "</label>" +
  	 		"<input type=\"checkbox\" checked=\"checked\" style=\"float:right; margin-right: 5px; position: relative; top: 3px; width: 16px;\" disabled=\"disabled\" />";
  	}
-	var html = 
+	var lucideIcon = obj.lucideIcon || og.getLucideIconForFilename(obj.name);
+	var iconHtml = '<i class="icon-' + lucideIcon + '"></i>';
+	var html =
 		"<input type=\"hidden\" value=\"" + objid + "\" name=\"linked_objects[" + count + "]\"/>" +
+		iconHtml +
 		"<span class=\"name\">" +
 		name +
 		"</span>" +
 		"<a class=\"removeDiv\" onclick=\"og.removeMailAttachment(this.parentNode)\" href=\"#\">" + lang('remove') + "</a>";
 	var div = document.createElement('div');
-	var icocls = obj.icocls ? obj.icocls : 'ico-file ' + (obj.mimeType ? "ico-" + obj.mimeType.replace(/\//g, "-").replace(/\./g, "_") : '');
-	div.className = 'og-add-template-object ' + icocls;
+	div.className = 'og-add-template-object';
 	div.innerHTML = html;
 	container.appendChild(div);
 	container.style.borderBottom = '1px solid #ccc';
@@ -268,10 +383,14 @@ og.attachFromFileSystem = function(genid, account_member_id) {
     						
     						var input = document.getElementById(quickId + 'no_msg');
 							input.setAttribute("value", "1");
+    						// preventPanelLoad: avoid overview-panel reload (e.g. CRPM after_object_save)
+    						// wiping the compose form and removing attachments from the DOM
     						og.ajaxSubmit(form, {
+    							preventPanelLoad: true,
     							callback: function(success, data) {
     								if (success) {
     									var container = document.getElementById(genid + "attachments");
+    									if (!container) return;
     									//if multiple suport
     									if (typeof data.files_data != "undefined") {
     										data.files_data.forEach(function(entry) {
@@ -297,15 +416,6 @@ og.attachFromFileSystem = function(genid, account_member_id) {
 
 og.attachFromWorkspace = function(genid) {
 	
-	var member_ids = [];
-	var context_ids = og.contextManager.dimensionMembers;
-	for (dim_id in context_ids) {
-		var mids = context_ids[dim_id];
-		for (i=0; i<mids.length; i++) {
-			if (mids[i] > 0) member_ids.push(mids[i]);
-		}
-	}
-	
 	og.ObjectPicker.show(function (objs) {
 		if (objs) {
 			var container = document.getElementById(genid + 'attachments');
@@ -316,8 +426,7 @@ og.attachFromWorkspace = function(genid) {
 			}
 		}
 	}, this, {
-		ignore_context: true, // ignore the current context
-		extra_member_ids: Ext.util.JSON.encode(member_ids), // initialize with current context member ids
+		ignore_context: false, // don't ignore the current context
 		selected_type:'file',
 		types: ['file']
 	});
@@ -361,10 +470,16 @@ og.autoSaveDraft = function(genid) {
 		var form = document.getElementById(genid + 'form');
 		
 		var prev_action = form.action;
+		form.ogDeferredRestoreAction = prev_action;
 		form.action = og.getUrl('mail', 'autosave_draft', {ajax:'true'});
 		
 		if (form) form.onsubmit();
-		form.action = prev_action;
+		if (!form.ogMailBodyAsyncPending) {
+			if (form.ogDeferredRestoreAction != null) {
+				form.action = form.ogDeferredRestoreAction;
+				form.ogDeferredRestoreAction = null;
+			}
+		}
 	}
 	og.setHfValue(genid, 'autosave', false);
 	og.stopAutosave(genid);

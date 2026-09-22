@@ -28,73 +28,35 @@ class DashboardController extends ApplicationController {
 		ajx_set_no_back(true);
 		require_javascript("og/modules/dashboardComments.js");
 		require_javascript("jquery/jquery.scrollTo-min.js");
-		
-		$filesPerPage = config_option('files_per_page');
-		$start = array_var($_GET,'start') ? (integer)array_var($_GET,'start') : 0;
-		$limit = array_var($_GET,'limit') ? array_var($_GET,'limit') : $filesPerPage;
 
-		$order = array_var($_GET,'sort');
-		$orderdir = array_var($_GET,'dir');
-		$page = (integer) ($start / $limit) + 1;
-		
-		$extra_conditions = " AND jt.type IN ('content_object', 'comment')";
-		
-		$trashed = array_var($_GET, 'trashed', false);
-		$archived = array_var($_GET, 'archived', false);
+		// Restrict the listing to content_objects and comments, matching the old
+		// extra_conditions filter: jt.type IN ('content_object', 'comment').
+		$_GET['only_content_objects'] = 1;
+		$_GET['include_comments'] = 1;
 
-		$pagination = ContentDataObjects::listing(array(
-			"start" => $start,
-			"limit" => $limit,
-			"order" => $order,
-			"order_dir" => $orderdir,
-			"trashed" => $trashed,
-			"archived" => $archived,
-			"count_results" => false,
-			"extra_conditions" => $extra_conditions,
-			"join_params" => array(
-				"jt_field" => "id",
-				"e_field" => "object_type_id",
-				"table" => TABLE_PREFIX."object_types",
-			)
-		));
-		$result = $pagination->objects; 
-		$total_items = $pagination->total ;
-		 
-		if(!$result) $result = array();
+		$obj_controller = new ObjectController();
+		$params = $obj_controller->get_list_objects_params();
+		$params['count_results'] = false;
+		$params['show_all_linked_objects'] = true;
 
-		$info = array();
-		foreach ($result as $obj) {
-			
-			$info_elem =  $obj->getArrayInfo($trashed, $archived);
-			
-			$instance = Objects::instance()->findObject($info_elem['object_id']);
-			$info_elem['url'] = $instance->getViewUrl();
-		
-			if( method_exists($instance, "getText")) {
+		$listing = $obj_controller->get_objects_list($params);
+
+		unset($_GET['only_content_objects'], $_GET['include_comments']);
+
+		// Add activity-feed-specific fields not included by get_objects_list.
+		foreach ($listing['objects'] as &$info_elem) {
+			$instance = Objects::findObject($info_elem['object_id']);
+			if (!$instance instanceof ContentDataObject) continue;
+
+			if (method_exists($instance, 'getText')) {
 				$info_elem['content'] = $instance->getText();
 			}
 			$info_elem['picture'] = $instance->getCreatedBy() ? $instance->getCreatedBy()->getPictureUrl() : '';
 			$info_elem['friendly_date'] = friendly_date($instance->getCreatedOn());
-			$info_elem['comment'] = $instance->getComments();		
-			
-			if ($instance instanceof  Contact) {
-				if( $instance->isCompany() ) {
-					$info_elem['icon'] = 'ico-company';
-					$info_elem['type'] = 'company';
-				}
-			}
-			$info_elem['isRead'] = $instance->getIsRead(logged_user()->getId()) ;
-			$info_elem['manager'] = get_class($instance->manager()) ;
-			
-			$info[] = $info_elem;
+			$info_elem['comment'] = $instance->getComments();
 		}
-		
-		$listing = array(
-			"totalCount" => $total_items,
-			"start" => $start,
-			"objects" => $info
-		);
-		
+		unset($info_elem);
+
 		tpl_assign("feeds", $listing);
 	}
 	
@@ -236,13 +198,164 @@ class DashboardController extends ApplicationController {
 		$this->setTemplate('empty');
 		$name = $_GET['name'];
 		if ($w = Widgets::instance()->findById($name) ){ /* @var $w Widget */
-			echo $w->execute();
+			$output = $w->execute();
+			echo $output;
 		}
 		exit;
 		//TODO Avoid exit : find the way to do that with the framework
 	}
 	
-} 
+	/**
+	 * API endpoint to save user config option
+	 */
+	function save_user_config_option() {
+		if (!logged_user() instanceof Contact) {
+			ajx_current("empty");
+			return;
+		}
+		
+		$option_name = array_var($_POST, 'option_name');
+		$option_value = array_var($_POST, 'option_value');
+		
+		if (!$option_name) {
+			ajx_current("empty");
+			return;
+		}
+		
+		$result = set_user_config_option($option_name, $option_value, logged_user()->getId());
+		
+		if (is_ajax_request()) {
+			if ($result) {
+				ajx_current("success");
+			} else {
+				ajx_current("error");
+			}
+		} else {
+			// prevent framework to try loading a template that doesn't exist
+			die();
+		}
+	}
+
+	/**
+	 * API endpoint to save multiple widget options atomically in a single transaction.
+	 * POST params: widget_name, options (JSON array of {name, value} objects).
+	 */
+	function save_widget_options() {
+		if (!logged_user() instanceof Contact) {
+			ajx_current("empty");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		$widget_name = array_var($_POST, 'widget_name');
+		$options_raw = array_var($_POST, 'options');
+		if (!$widget_name || !$options_raw) {
+			ajx_current("empty");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		$options = json_decode($options_raw, true);
+		if (!is_array($options) || empty($options)) {
+			ajx_current("error");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		// Normalize and validate each entry. Values arrive as native JSON types
+		// (integer for numeric options, array for JSON options) so we re-encode
+		// arrays to their string representation before persisting.
+		$normalized = array();
+		foreach ($options as $entry) {
+			$name      = isset($entry['name'])  ? $entry['name']  : '';
+			$value_raw = isset($entry['value']) ? $entry['value'] : '';
+			if (!$name) {
+				ajx_current("error");
+				if (!is_ajax_request()) die();
+				return;
+			}
+			$value = is_array($value_raw) ? json_encode($value_raw) : strval($value_raw);
+			if (strlen($value) > 65535) {
+				ajx_current("error");
+				if (!is_ajax_request()) die();
+				return;
+			}
+			$normalized[] = array('name' => $name, 'value' => $value);
+		}
+		try {
+			DB::beginWork();
+			foreach ($normalized as $entry) {
+				$name  = $entry['name'];
+				$value = $entry['value'];
+				$opt = ContactWidgetOptions::instance()->findOne(array('conditions' =>
+					array('contact_id=? AND widget_name=? AND `option`=?',
+						logged_user()->getId(), $widget_name, $name)
+				));
+				if (!$opt instanceof ContactWidgetOption) {
+					$opt = new ContactWidgetOption();
+					$opt->setContactId(logged_user()->getId());
+					$opt->setWidgetName($widget_name);
+					$opt->setMemberTypeId(0);
+					$opt->setOption($name);
+				}
+				$opt->setValue($value);
+				$opt->save();
+			}
+			DB::commit();
+			ajx_current("success");
+		} catch (Exception $e) {
+			DB::rollback();
+			ajx_current("error");
+		}
+		if (!is_ajax_request()) die();
+	}
+
+	/**
+	 * API endpoint to save a single option to contact_widget_options for the logged user.
+	 */
+	function save_widget_option() {
+		if (!logged_user() instanceof Contact) {
+			ajx_current("empty");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		$widget_name  = array_var($_POST, 'widget_name');
+		$option_name  = array_var($_POST, 'option_name');
+		$option_value = array_var($_POST, 'option_value');
+		if (strlen($option_value) > 65535) {
+			ajx_current("error");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		if ($option_name === 'columns' && $option_value !== '' && json_decode($option_value) === null) {
+			ajx_current("error");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		if (!$widget_name || !$option_name) {
+			ajx_current("empty");
+			if (!is_ajax_request()) die();
+			return;
+		}
+		try {
+			$opt = ContactWidgetOptions::instance()->findOne(array('conditions' =>
+				array('contact_id=? AND widget_name=? AND `option`=?',
+					logged_user()->getId(), $widget_name, $option_name)
+			));
+			if (!$opt instanceof ContactWidgetOption) {
+				$opt = new ContactWidgetOption();
+				$opt->setContactId(logged_user()->getId());
+				$opt->setWidgetName($widget_name);
+				$opt->setMemberTypeId(0);
+				$opt->setOption($option_name);
+			}
+			$opt->setValue($option_value);
+			$opt->save();
+			ajx_current("success");
+		} catch (Exception $e) {
+			ajx_current("error");
+		}
+		if (!is_ajax_request()) die();
+	}
+
+}
 
 
 
@@ -293,5 +406,3 @@ function widget_sort(Widget $a, Widget $b) {
     }
     return ($a->getDefaultOrder() < $b->getDefaultOrder()) ? -1 : 1;
 }
-	
-			

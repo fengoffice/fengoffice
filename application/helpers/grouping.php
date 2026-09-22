@@ -65,7 +65,7 @@
 				foreach ($all_parents as $p_member) {
 					$all_p_keys .= ($all_p_keys == "" ? "" : "_") . $p_member->getId();
 					
-					$new_group = array('group' => array('id' => $p_member->getId(), 'name' => $p_member->getName(), 'pid' => $p_member->getParentMemberId(), 
+					$new_group = array('group' => array('id' => $p_member->getId(), 'name' => $p_member->getDisplayName(), 'pid' => $p_member->getParentMemberId(),
 						'type' => $p_member->getObjectTypeId(), 'obj' => $p_member->getObjectId(), 'group_type' => 'dimension'), 'subgroups' => array());
 					
 					$level = $p_member->getDepth();

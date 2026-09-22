@@ -1,8 +1,7 @@
 .coViewAction {
 	background-position:0pt 2px;
 	background-repeat:no-repeat;
-	padding:3px 0pt 2px 20px;
-	
+	padding: 2px 0pt 2px 20px;	
 }
 
 .coViewClose{
@@ -124,22 +123,24 @@
 	border-collapse:collapse;
 }
 .view-actions .coViewAction {
-	height: 16px;
-	margin-bottom: 4px;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	overflow: hidden;
+	display: flex !important;
+    align-items: center;
+    min-height: 18px;
+    padding-left: 24px;
+    margin-bottom: 4px;
+    background-position: left center !important; /* Locks icon to left and centers it vertically */
+    background-repeat: no-repeat !important;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
-.view-actions .internalLink.coViewAction {
-	background-position: 0 3px;
-}
-.view-actions .internalLink.coViewAction.ico-history {
+/* .view-actions .internalLink.coViewAction.ico-history {
 	background-position: 0 4px;
 }
 .view-actions .coViewAction.ico-print {
 	background-position: 0 3px;
-}
+} */
 /*.view-actions .internalLink.coViewAction.ico-archive-obj {
 	background: url("../../images/16x16/archive_obj.png") no-repeat scroll 0 3px transparent !important;
 }*/
@@ -149,26 +150,29 @@
 /*.view-actions .internalLink.coViewAction.ico-edit {
 	background: url("../../images/16x16/all_16_16_vertical.png") no-repeat scroll 0 -377px transparent !important;
 }*/
-.view-actions .internalLink.coViewAction.ico-complete, .view-actions .internalLink.coViewAction.ico-reopen, 
+/* .view-actions .internalLink.coViewAction.ico-complete, .view-actions .internalLink.coViewAction.ico-reopen, 
 .view-actions .internalLink.coViewAction.ico-mark-as-unread, .view-actions .internalLink.coViewAction.ico-properties, .view-actions .internalLink.coViewAction.ico-checkout {
 	background-position: 0 4px;
 }
 .view-actions .internalLink.coViewAction.ico-classify, .view-actions .coViewAction.ico-download, 
 .view-actions .internalLink.coViewAction.ico-undo {
 	background-position: 0 5px;
-}
+} */
 /*.view-actions .coViewAction.ico-upload {
 	background: url("../../images/16x16/all_16_16_vertical.png") no-repeat scroll 0 -117px transparent !important;
 }*/
 .view-actions .internalLink.coViewAction.ico-delete {
-	background: url("../../images/16x16/all_16_16_vertical.png") no-repeat scroll 0 -496px transparent !important;
+	/* background: url("../../images/16x16/all_16_16_vertical.png") no-repeat scroll 0 -496px transparent !important; */
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23dc3545" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>') no-repeat left center !important;
+	background-size: 16px !important;
 }
-.view-actions .ico-projecttask, .view-actions .ico-task {
-	/*background: url("../../images/16x16/tasks.png") no-repeat scroll 0 3px transparent !important;*/
-	background: url("../../images/icons-feng-3/24x22/tasks.png") no-repeat scroll -4px 0 transparent !important;
-}
+/* .view-actions .ico-projecttask, .view-actions .ico-task {
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo-icon lucide-list-todo"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><rect x="3" y="4" width="6" height="6" rx="1"/></svg>') no-repeat center !important;
+	background-size: 16px !important;
+} */
 .view-actions .ico-spam {
-	background: url("../../images/layout/close16.png") no-repeat scroll 0 4px transparent !important;
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23dc3545" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>') no-repeat left center !important;
+	background-size: 16px !important;
 }
 /* ------------------------------------- Specific Content Objects -----------------------------*/
 
@@ -624,6 +628,13 @@
 	background-image: url(../../images/48x48/event_archived.png);
 }
 
+.event .coInputMainBlock.invitations table {
+	border: 1px solid #F4F8F9;
+}
+.event .coInputMainBlock.invitations td {
+	padding: 2px 4px;
+	line-height: 25px;
+}
 
 /* ----- Calendar ----- */
 
@@ -774,6 +785,10 @@
 .og-custom-properties .table-cp td {
 	padding: 2px 4px;
 }
+.og-custom-properties .table-cp th.align-right,
+.og-custom-properties .table-cp td.align-right {
+	text-align: right;
+}
 .og-add-custom-properties th {
 	padding-left: 4px;
 	font-weight: bold;
@@ -839,6 +854,10 @@
 	line-height: normal;
 	word-wrap: break-word;
 	overflow-x: auto;
+}
+.wysiwyg-description img {
+	max-width: 100%;
+	height: auto;
 }
 .wysiwyg-description ul{
 	padding-left: 25px;

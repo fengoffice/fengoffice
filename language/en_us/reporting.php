@@ -90,6 +90,15 @@
   	'excel' => 'Excel',
   	'page size' => 'Page size',
   	'first level task only' => 'First level task only',
+	'show subtasks budget_report' => 'Show subtasks',
+	'show tasks up to level budget_report' => 'Show tasks up to level',
+	'first level budget_report' => 'First level',
+	'second level budget_report' => 'Second level',
+	'third level budget_report' => 'Third level',
+	'fourth level budget_report' => 'Fourth level',
+	'display values at budget_report' => 'Display values at',
+	'parent task only budget_report' => 'Parent task only',
+	'subtasks only budget_report' => 'Subtasks only',
   );
-  
+
 ?>

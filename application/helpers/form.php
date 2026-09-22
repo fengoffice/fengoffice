@@ -69,6 +69,23 @@ function text_field($name, $value = null, $attributes = null) {
     return input_field($name, $value, $attributes);
 }
 
+function cp_email_field($name, $value = null, $attributes = null) {
+
+    if (array_var($attributes, 'type', false) === false) {
+        if (is_array($attributes)) {
+            if (array_var($attributes, 'type') != 'hidden') {
+                $attributes['type'] = 'text';
+            }
+        } else {
+            $attributes = array('type' => 'text');
+        }
+    }
+
+    // Y retornamos el input (igual que url_field)
+    return input_field($name, $value, $attributes);
+}
+
+
 // text_field
 
 
@@ -797,17 +814,14 @@ function select_timezone_widget($name, $value = null, $attributes = null) {
  * @return string
  */
 function timezone_selector($name, $value = null, $attributes = null) {
-
+    
     $genid = gen_id();
-    if (!isset($attributes['id'])) {
-        $attributes['id'] = $genid . 'timezoneSelector';
-    }
+    $attributes['id'] = $attributes['id'] ?? $genid . 'timezoneSelector';
 
-    $sel_country = null;
+    $value = strtoupper($value ?: ConfigOptions::getOptionValue('default_timezone'));
+
     $selected_zone = Timezones::getTimezoneById($value);
-    if (is_array($selected_zone)) {
-        $sel_country = $selected_zone['country_code'];
-    }
+    $sel_country = is_array($selected_zone) ? $selected_zone['country_code'] : $value;
 
     $country_options = array();
     $countries = Countries::getAll();
@@ -836,6 +850,7 @@ function timezone_selector($name, $value = null, $attributes = null) {
     return $html;
 }
 
+
 function timezone_selector_hidden($object, $genid, $attributes = null) {
 
     $formatted = Timezones::getFormattedDescription($object->getTimezoneId(), true);
@@ -850,7 +865,7 @@ function timezone_selector_hidden($object, $genid, $attributes = null) {
     $html .= "<input id='" . $genid . "tz_edited' value='0' name='timezone_edited' type='hidden'/>";
 
     $html .= "<div id='" . $genid . "tz_selector' style='display:none;'>" . timezone_selector('timezone_id', $object->getTimezoneId()) . "</div>";
-    $html .= '&nbsp;<a href="#" onclick="og.showHiddenTimezoneSelector(\'' . $genid . '\')" id="' . $genid . 'tz_edit_link" class="db-ico link-ico ico-edit"></a>';
+    $html .= '&nbsp;<a href="#" tabindex="-1" onclick="og.showHiddenTimezoneSelector(\'' . $genid . '\')" id="' . $genid . 'tz_edit_link" class="db-ico link-ico ico-edit"></a>';
 
     return $html;
 }
@@ -1095,7 +1110,7 @@ function build_percent_completed_bar_html($task) {
     return $html;
 }
 
-function get_custom_property_type_selector_html($attributes) {
+function get_custom_property_type_selector_html($attributes, ObjectType $object_type) {
 
     $sel_type = array_var($attributes, 'sel_type', 'text');
     $name_prefix = array_var($attributes, 'name_prefix');
@@ -1103,12 +1118,19 @@ function get_custom_property_type_selector_html($attributes) {
     if (!isset($attributes['onchange']))
         $attributes['onchange'] = "og.customPropTypeChanged(this);";
 
-    $cp_types = array('text', 'numeric', 'amount', 'boolean', 'contact', 'user', 'date', 'datetime', 'list', 'memo', 'address', 'table', 'image', 'color', 'url');
+    $cp_types = array('text', 'numeric', 'amount', 'boolean', 'contact', 'user', 'date', 'datetime', 'list', 'memo', 'address', 'image', 'color', 'url', 'object_link', 'email', 'table');
+
+	// Allow to add more cp types
+	Hook::fire('edit_cp_type_options', array('attributes' => $attributes, 'object_type' => $object_type), $cp_types);
 
     $options = array();
     foreach ($cp_types as $t) {
         $attr = $t == $sel_type ? array('selected' => 'selected') : null;
-        $options[] = option_tag(lang($t), $t, $attr);
+		$cp_type_name = lang($t);
+		if ($t == 'contact') {
+			$cp_type_name = lang('contacts / companies');
+		}
+        $options[] = option_tag($cp_type_name, $t, $attr);
     }
 
     $cp_types_html = select_box($name_prefix . '[' . $name . ']', $options, $attributes);
@@ -1140,6 +1162,30 @@ function render_image_custom_property_field($cp, $config) {
     return tpl_fetch(get_template_path('image_cp_selector', 'custom_properties'));
 }
 
+function render_object_link_custom_property_value($genid, $cp, $cp_value, $add_class = "") {
+	if (is_null($cp_value))
+		return "";
+
+	tpl_assign('genid', $genid);
+	tpl_assign('cp', $cp);
+	tpl_assign('cp_value', $cp_value);
+	tpl_assign('add_class', $add_class);
+
+	return tpl_fetch(get_template_path('object_link_cp_view', 'custom_properties'));
+}
+
+function render_object_link_custom_property_field($cp, $config) {
+
+	tpl_assign('genid', $config['genid']);
+    tpl_assign('cp', $cp);
+    tpl_assign('cp_value', $config['default_value']);
+    tpl_assign('label', $config['label']);
+    tpl_assign('input_name', $config['name']);
+    tpl_assign('disabled', array_var($config, 'property_perm') == 'view');
+
+    return tpl_fetch(get_template_path('object_link_cp_selector', 'custom_properties'));
+}
+
 function webpage_field($name, $values_array = null, $genid, $attributes = null) {
     if (is_null($values_array)) {
         $values_array = array();
@@ -1154,7 +1200,7 @@ function webpage_field($name, $values_array = null, $genid, $attributes = null) 
         <div id="' . $container_id . '" class="webpages-input-container"></div>
     </div>';
     if (array_var($attributes, 'multiple')) {
-        $html .= '<a href="#" onclick="og.addNewWebpageInput(\'' . $container_id . '\', \'' . $input_base_id . '\', 2)" class="coViewAction ico-add">' . lang('add new webpage') . '</a>';
+        $html .= '<a href="#" tabindex="-1" onclick="og.addNewWebpageInput(\'' . $container_id . '\', \'' . $input_base_id . '\', 2)" class="link"><i class="icon-circle-plus"></i> ' . lang('add new webpage') . '</a>';
     }
 
     $html .= "<script>$(function() {";
@@ -1219,7 +1265,7 @@ function email_field($name, $values_array = null, $genid, $attributes = null) {
         <div id="' . $container_id . '" class="emails-input-container"></div>
     </div>';
     if (array_var($attributes, 'multiple')) {
-        $html .= '<a href="#" onclick="og.addNewEmailInput(\'' . $container_id . '\', \'' . $input_base_id . '\', \'' . $EmailTypeActive . '\')" class="coViewAction ico-add">' . lang('add new email address') . '</a>';
+        $html .= '<a href="#" tabindex="-1" onclick="og.addNewEmailInput(\'' . $container_id . '\', \'' . $input_base_id . '\', \'' . $EmailTypeActive . '\')" class="link"><i class="icon-circle-plus"></i> ' . lang('add new email address') . '</a>';
     }
 
     $html .= "<script>$(function() {";
@@ -1285,7 +1331,7 @@ function phone_field($name, $values_array = null, $genid, $attributes = null) {
         <div id="' . $container_id . '" class="phones-input-container"></div>
     </div>';
     if (array_var($attributes, 'multiple')) {
-        $html .= '<a href="#" onclick="og.addNewTelephoneInput(\'' . $container_id . '\', \'' . $input_base_id . '\', \'' . $PhoneTypeActive . '\')" class="coViewAction ico-add">' . lang('add new phone number') . '</a>';
+        $html .= '<a href="#" tabindex="-1" onclick="og.addNewTelephoneInput(\'' . $container_id . '\', \'' . $input_base_id . '\', \'' . $PhoneTypeActive . '\')" class="link"><i class="icon-circle-plus"></i> ' . lang('add new phone number') . '</a>';
     }
 
     $html .= "<script>$(function() {";
@@ -1350,7 +1396,7 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
 
     $html = '<div id="' . $container_id . '" class="address-input-container address-custom-properties-parent"></div>';
     if (array_var($attributes, 'multiple')) {
-        $html .= '<a href="#" onclick="og.addNewAddressInput(\'' . $container_id . '\', \'' . $input_base_id . '\')" class="coViewAction ico-add">' . lang('add new address') . '</a>';
+        $html .= '<a href="#" tabindex="-1" onclick="og.addNewAddressInput(\'' . $container_id . '\', \'' . $input_base_id . '\')" class="link"><i class="icon-circle-plus"></i> ' . lang('add new address') . '</a>';
     }
     $html .= "<div style='display:none;'>" . select_country_widget('template_country', '', array('id' => 'template_select_country')) . "</div>";
     $html .= "<script>$(function() {";
@@ -1361,8 +1407,20 @@ function address_field($name, $values_array = null, $genid, $attributes = null, 
     $ignore_pre_id = $ignore_pre_id ? "true" : "false";
 
     if (is_array($values_array) && count($values_array) > 0) {
+		$tmp_values = array();
+		foreach ($values_array as $value) {
+			if (is_array($value)) {
+				$tmp_values = array_merge($tmp_values, $value);
+			} else {
+				$tmp_values[] = $value;
+			}
+		}
+		$values_array = $tmp_values;
+		
         foreach ($values_array as $value) {
-
+			if ($value instanceof CustomPropertyValue) {
+				$value = $value->getValue();
+			}
             if ($value instanceof ContactAddress) {
                 $tmp_str = $value->getAddressTypeId() . "|" . $value->getStreet() . "|" . $value->getCity() . "|" .
                         $value->getState() . "|" . $value->getCountry() . "|" . $value->getZipCode() . "|" . $value->getId();

@@ -5,12 +5,12 @@
 <thead id="ogTasksPanelColNamesThead">
   <tr id="ogTasksPanelColNames" class="task-list-col-names-template texture-n-1">
     {{#each  tasks_list_cols}}
-      <th class="{{this.id}} {{this.css_class}}" {{this.data}}>{{#if this.title}}{{{this.title}}}{{/if}}</th>
+      <th class="{{this.id}} {{this.css_class}}" {{this.data}}>{{#if @first}}<div id="ogTasksGroupsExpandCollapseHeader"><div id="ogTasksCollapseAllGroupsBtn" onclick="ogTasks.collapseAllGroups()" title="{{lang 'collapse all groups'}}"></div><div id="ogTasksExpandAllGroupsBtn" onclick="ogTasks.expandAllGroups()" title="{{lang 'expand all groups'}}"></div></div>{{/if}}{{#if this.title}}{{{this.title}}}{{/if}}</th>
     {{/each }}
   </tr>
 </thead>
 
-<tbody id="ogTasksPanelAddNewTaskThead">
+<!-- <tbody id="ogTasksPanelAddNewTaskThead">
 <tr id="new_task{{genid}}" class="task-list-row-template">
     {{#each  tasks_list_cols}}
     <td>
@@ -24,7 +24,7 @@
     </td>
     {{/each }}
 </tr>
-</tbody>
+</tbody> -->
 </script>
 
 <script id="task-list-group-template" type="text/x-handlebars-template">
@@ -38,7 +38,7 @@
       </div>
 
       <div class='task-single-div'>
-        <div class='db-ico {{group.group_icon}}'></div>
+        <div class='{{group.group_icon}}'></div>
       </div>
 
       <div class='ogTasksGroupHeaderName task-single-div'>{{{group.group_name}}}</div>
@@ -72,7 +72,7 @@
             {{lang 'show more'}}../
            </a>
            <a class="internalLink nobr" style="font-size: 12px;" href="#" onclick="ogTasks.showAllTasks('{{draw_options.groupId}}');return false;" id="show_all_group_{{draw_options.groupId}}">
-            {{lang 'show all'}}..
+            {{lang 'show all tasks'}}..
            </a>
     </div>
   </td>
@@ -110,53 +110,55 @@
         {{#if assigned_by}}
           <img src="{{{assigned_by.img_url}}}" alt="" title='{{assigned_by.name}}'/>
         {{else}}
-          <div class='empty-img ico-warning32' title='{{lang 'unassigned'}}'></div>
+          <div class='icon-user-search' title='{{lang 'unassigned'}}'></div>
         {{/if}}
     </div>
   </td>
   {{/if}}
 
-  <td>
+  {{#if draw_options.show_assigned_to}}
+  <td data-editable="assigned_to">
     {{#if assigned_to_show_name}}
         <div class='task-row-avatar big'>
             {{#if assigned_to}}
                 {{#if assigned_to_show_name}}
-                    <div class="name">{{assigned_to.name}}</div>
+                    <div class="name assignee-hover-target" data-assignee-id="{{assigned_to.id}}">{{assigned_to.name}}</div>
                 {{else}}
-                    <img src="{{{assigned_to.img_url}}}" alt="" title='{{assigned_to.name}}'/>
+                    <img class="assignee-hover-target" data-assignee-id="{{assigned_to.id}}" src="{{{assigned_to.img_url}}}" alt="" title='{{assigned_to.name}}'/>
                 {{/if}}
             {{else}}
-                <div class='empty-img ico-warning32' title='{{lang 'unassigned'}}'></div>
+                <div class='icon-user-search' title='{{lang 'unassigned'}}'></div>
             {{/if}}
         </div>
     {{else}}
         <div class='task-row-avatar'>
             {{#if assigned_to}}
-                <img src="{{{assigned_to.img_url}}}" alt="" title='{{assigned_to.name}}'/>
+                <img class="assignee-hover-target" data-assignee-id="{{assigned_to.id}}" src="{{{assigned_to.img_url}}}" alt="" title='{{assigned_to.name}}'/>
             {{else}}
-                <div class='empty-img ico-warning32' title='{{lang 'unassigned'}}'></div>
+                <div class='icon-user-search' title='{{lang 'unassigned'}}'></div>
             {{/if}}
         </div>
     {{/if}}
-    
+
   </td>
-    <td class="task_name">
-        <a class="internalLink" href="{{view_url}}" onclick="og.openLink('{{view_url}}');return false;">
-            <div class='task-name' data-elbow-line-container="true">
-<!--                Between the principal elbow and the div task name we will render the elbow line to continue the list-->
-<!--                HERE WE GONNA BE MORE ELBOWS-->
-                <span data-elbow-type="true" ></span> <!-- This is the principal elbow always is shoed-->
-                {{#if task.status}}
-                <span data-task-span-name="true" style='text-decoration:line-through; margin-left: {{level}}px;' title='{{tool_tip}}'>{{escape task_name}}</span>
-                {{else}}
-                <span data-task-span-name="true" style='margin-left: {{level}}px;' title='{{escape task_name}}'>{{escape task_name}}</span>
-                {{/if}}
-                {{#if task.repetitive}}
-                <span data-task-span-name="true" style='margin-left: {{level}}px;' class="ico-recurrent" title="{{lang 'repetitive task'}}"></span>
-                {{/if}}
-            </div>
-        </a>
-    </td>
+  {{/if}}
+  <td class="task_name" data-editable="task_name">
+    <div class='task-name' data-elbow-line-container="true">
+      <span data-elbow-type="true" ></span>
+      {{#if task.status}}
+      <a class="internalLink" href="{{view_url}}" data-task-span-name="true"
+         style='text-decoration:line-through; margin-left: {{level}}px;' title='{{tool_tip}}'
+         onclick="ogTasks.onTaskLinkClick({{task_id}});og.openLink('{{view_url}}');return false;">{{escape task_name}}</a>
+      {{else}}
+      <a class="internalLink" href="{{view_url}}" data-task-span-name="true"
+         style='margin-left: {{level}}px;' title='{{escape task_name}}'
+         onclick="ogTasks.onTaskLinkClick({{task_id}});og.openLink('{{view_url}}');return false;">{{escape task_name}}</a>
+      {{/if}}
+      {{#if task.repetitive}}
+      <span class="ico-recurrent" style='margin-left: {{level}}px;' title="{{lang 'repetitive task'}}"></span>
+      {{/if}}
+    </div>
+  </td>
 
   {{#if draw_options.show_classification}}
   <td>
@@ -167,7 +169,7 @@
   {{/if}}
 
   {{#each dim_classification}}
-  <td class='task_name'>
+  <td class='task_name' data-editable="dim_classification" data-dim-id="{{dim_id}}">
     <div class='task-breadcrumb-container'>
         {{{this.dim_mem_path}}}
     </div>
@@ -176,33 +178,30 @@
 
   {{#if draw_options.show_percent_completed_bar}}
   <td class="task-percent-completed-bar-container">
+  <!-- <td class="task-percent-completed-bar-container" data-editable="percent_completed"> -->
     {{{percent_completed_bar}}}
   </td>
   {{/if}}
 
   {{#if draw_options.show_start_dates}}
-  <td class="task-date-container">
+  <td class="task-date-container" data-editable="start_date">
     {{#if task.startDate}}
-        <span class="nobr" style='font-size: 9px;color:{{color_start_date}}'>{{{start_date}}}</span>
+        <span class="nobr {{#if start_date_overdue}}task-date-overdue{{else}}task-date-muted{{/if}}">{{{start_date}}}</span>
     {{/if}}
   </td>
   {{/if}}
 
   {{#if draw_options.show_end_dates}}
-  <td class="task-date-container">
+  <td class="task-date-container" data-editable="due_date">
     {{#if task.dueDate}}
-     {{#if due_date_late}}
-     <span class="nobr" style='font-size: 9px;font-weight:bold;color: #F00;'>{{{due_date}}}</span>
-     {{else}}
-     <span class="nobr" style='font-size: 9px;color: #888;'>{{{due_date}}}</span>
-     {{/if}}
+     <span class="nobr {{#if due_date_late}}task-due-date-overdue{{else}}task-date-muted{{/if}}">{{{due_date}}}</span>
     {{/if}}
   </td>
   {{/if}}
 
   {{#each row_total_cols}}
   <td class="task-date-container">
-    <span class="nobr" style='font-size: 9px;color: {{color}};'>
+    <span class="nobr" style='color: {{color}};'>
       {{{text}}}
     </span>
   </td>
@@ -226,8 +225,8 @@
   {{#each task.custom_properties}}
 
 	{{#if (isTasksColumnCPVisible id)}}
-		<td class="task-cp-container">
-			<span class="nobr">
+		<td class="task-cp-container" data-editable="cp_{{id}}" data-cp-id="{{id}}">
+			<span class="break-word task-cp-content">
 				{{{value}}}
 			</span>
 		</td>
@@ -240,31 +239,30 @@
     {{#if show_quick_actions_container}}
     {{#each task_actions}}
       {{#unless act_collapsed}}
+      {{#unless act_hide_from_row}}
         <div class='task-single-action'>
-          <a href='#' onclick='{{act_onclick}}({{#each act_onclick_param}}{{param_val}}{{/each}})'>
-            <div id='{{act_id}}' class='{{act_class}} task-action-icon' title='{{act_text}}' style='cursor:pointer;height:16px;padding-top:0px;'>
+          {{#if act_disabled}}
+          <a href='#' onclick='return false;'>
+            <div id='{{act_id}}' class='{{act_class}} task-action-icon disabled' title='{{act_text}}'>
+              <div class="icon-{{act_icon}}"></div>
             </div>
           </a>
+          {{else}}
+          <a href='#' onclick='{{act_onclick}}({{#each act_onclick_param}}{{param_val}}{{/each}})'>
+            <div id='{{act_id}}' class='{{act_class}} task-action-icon' title='{{act_text}}'>
+              <div class="icon-{{act_icon}}"></div>
+            </div>
+          </a>
+          {{/if}}
         </div>
+      {{/unless}}
       {{/unless}}
     {{/each}}
     {{/if}}
 
-    {{#if draw_options.show_time_quick}}
-      {{#unless_or task.is_parent task.prevent_add_time_to_parent_task}}
-        <div class="task-single-div">
-          <a class="internalLink task-single-div big-ico" href="#" onclick="ogTasks.AddWorkTime([{{task.id}}])">
-            <div title="{{lang 'add work'}}" class="ogTasksTimeClock ico-time-quick task-action-icon"></div>
-          </a>
-        </div>
-      {{/unless_or}}
-    {{/if}}
-
-
-
     {{#if draw_options.show_time}}
       {{#unless_or task.is_parent task.prevent_add_time_to_parent_task}}
-      <div class="task-single-div big-ico">
+      <div class="task-single-div">
       {{#if user_is_working}}
         <div class="og-timeslot-work-{{user_state}} task-single-div">
           <input type="hidden" value="{{user_start_time}}" id="{{genid}}{{tgId}}user_start_time" name="user_start_time">
@@ -272,27 +270,45 @@
         </div>
 
         <a href='#' class="task-single-div" onclick='ogTasks.closeTimeslot([{{task.id}}])' data-id="{{task.id}}">
-          <div class='ogTasksTimeClock ico-time-stop task-action-icon' title='{{lang 'close_work'}}'></div>
+          <div class='ogTasksTimeClock stop task-action-icon' title='{{lang 'close_work'}}'>
+            <div class="icon-circle-stop"></div>
+          </div>
         </a>
 
         {{#if user_paused}}
         <a href='#' class="task-single-div" onclick='ogTasks.executeAction("resume_work",[{{task.id}}])'>
-          <div class='ogTasksTimeClock ico-time-play task-action-icon' title='{{lang 'pause_work'}}'></div>
+          <div class='ogTasksTimeClock play task-action-icon' title='{{lang 'pause_work'}}'>
+            <div class="icon-circle-play"></div>
+          </div>
         </a>
         {{else}}
         <a href='#' class="task-single-div" onclick='ogTasks.executeAction("pause_work",[{{task.id}}])'>
-          <div class='ogTasksTimeClock ico-time-pause task-action-icon' title='{{lang 'pause_work'}}'></div>
+          <div class='ogTasksTimeClock pause task-action-icon' title='{{lang 'pause_work'}}'>
+            <div class="icon-circle-pause"></div>
+          </div>
         </a>
         {{/if}}
 
         <a href='#' class="task-single-div" onclick='ogTasks.executeAction("cancel_work",[{{task.id}}])'>
-          <div class='ogTasksTimeClock ico-delete task-action-icon' title='{{lang 'discard_work'}}'></div>
+          <div class='ogTasksTimeClock cancel task-action-icon' title='{{lang 'discard_work'}}'>
+            <div class="icon-circle-x"></div>
+          </div>
         </a>
       {{else}}
         {{#if can_add_timeslots}}
-        <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}],'','#tasksPanelContainer')">
-          <div title="{{lang 'start_work'}}" class="ogTasksTimeClock ico-time task-action-icon"></div>
-        </a>
+          {{#if task.estimated_hours_limit_reached}}
+          <a class="internalLink task-single-div" href="#" onclick="return false;">
+            <div title="{{lang 'cannot add time task estimated hours reached'}}" class="ogTasksTimeClock play task-action-icon disabled">
+              <div class="icon-timer"></div>
+            </div>
+          </a>
+          {{else}}
+          <a class="internalLink task-single-div" href="#" onclick="ogTasks.executeAction('start_work',[{{task.id}}],'','#tasksPanelContainer')">
+            <div title="{{lang 'start_work'}}" class="ogTasksTimeClock play task-action-icon">
+              <div class="icon-timer"></div>
+            </div>
+          </a>
+          {{/if}}
         {{/if}}
       {{/if}}
 
@@ -304,64 +320,60 @@
       </div>
       {{/unless_or}}
     {{/if}}
-  </td>
 
-  <td>
     {{#if show_actions_popover_button}}
     <div class="task-single-action">
-      <button id="tasksActionsBtn{{tgId}}" type="button" class="tasksActionsBtn tasksBtn" data-templateid="tasksActionsTemplate{{tgId}}" data-container="body" data-toggle="popover" data-placement="left" data-trigger="{{action_trigger}}" >
-        {{lang 'actions'}}<span class="caret"></span>
+      <button type="button" id="tasksActionsBtn{{tgId}}" class="tasksActionsBtn" data-templateid="tasksActionsTemplate{{tgId}}" data-container="body" data-toggle="popover" data-placement="left" data-trigger="{{action_trigger}}" aria-label="{{lang 'actions'}}">
+        <div class="task-action-icon task-overflow-menu-icon">
+          <div class="icon-ellipsis"></div>
+        </div>
       </button>
     </div>
     {{/if}}
 
-    {{!-- actions popover template--}}
+    {{!-- actions popover content (read live at show-time by og.initPopoverBtns via
+         data-templateid — see og.js — so no outer .popover/.arrow chrome is needed
+         here; Bootstrap's own default popover template supplies that and injects
+         this div's innerHTML into its .popover-content) --}}
     <div id='tasksActionsTemplate{{tgId}}' style="display: none;">
-      <div class='popover'>
-        <div class='arrow'></div>
-        <div class='popover-inner'>
-          <div class="menu-task-actions">
-            <ul>
-            {{#each task_actions}}
-              {{#if act_collapsed}}
-                <li>
-                  <a href='#' onclick='{{act_onclick}}({{#each act_onclick_param}}{{param_val}}{{/each}})'>
-                    <div id='{{act_id}}' class='{{act_class}}' title='{{act_text}}' style='cursor:pointer;height:16px;padding-top:0px;'>
-                     {{act_text}}
-                    </div>
-                  </a>
-                </li>
-                {{#unless act_last}}
-                <li class="divi"></li>
-                {{/unless}}
+      <div class="menu-task-actions">
+        <ul>
+        {{#each task_actions}}
+          {{#if act_collapsed}}
+            <li>
+              {{#if act_disabled}}
+              <a href='#' class='menu-task-action-item {{act_class}} disabled' onclick='return false;'>
+                <span class='menu-task-action-icon icon-{{act_icon}}'></span>
+                <span class='menu-task-action-label'>{{act_text}}</span>
+              </a>
+              {{else}}
+              <a href='#' class='menu-task-action-item {{act_class}}' onclick='{{act_onclick}}({{#each act_onclick_param}}{{param_val}}{{/each}})'>
+                <span class='menu-task-action-icon icon-{{act_icon}}'></span>
+                <span class='menu-task-action-label'>{{act_text}}</span>
+              </a>
               {{/if}}
-            {{/each}}
-            </ul>
-          </div>
-        </div>
+            </li>
+          {{/if}}
+        {{/each}}
+        </ul>
       </div>
     </div>
 
-    {{!-- working users popover template--}}
+    {{!-- working users popover content (same live-read mechanism as above) --}}
     <div id='workingOnUsers{{tgId}}' style="display: none;">
-      <div class='popover'>
-        <div class='arrow'></div>
-        <div class='popover-inner'>
-          <div class="workin-on-users-list">
-            <ul>
-              <li class="workin-on-users-list-title">
-                {{lang 'work in progress'}}:
-              </li>
-              {{#each working_on_users}}
-                <li class="divi"></li>
-                <li style="vertical-align:middle;">
-                  <img src="{{{img_url}}}" alt=""/>
-                  {{name}}
-                </li>
-              {{/each}}
-            </ul>
-          </div>
-        </div>
+      <div class="workin-on-users-list">
+        <ul>
+          <li class="workin-on-users-list-title">
+            {{lang 'work in progress'}}:
+          </li>
+          {{#each working_on_users}}
+            <li class="divi"></li>
+            <li style="vertical-align:middle;">
+              <img src="{{{img_url}}}" alt=""/>
+              {{name}}
+            </li>
+          {{/each}}
+        </ul>
       </div>
     </div>
   </td>

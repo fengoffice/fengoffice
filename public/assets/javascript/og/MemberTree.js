@@ -47,8 +47,9 @@ og.MemberTree = function(config) {
 								//the text is on the history?
 								if(e.target.value.indexOf(prevTextFilter) == 0){
 									from_server = false;
+									break;
 								}
-							}							
+							}
 						}
 
 
@@ -128,7 +129,7 @@ og.MemberTree = function(config) {
     	], 
     	toolTemplate: new Ext.XTemplate(
         '<tpl if="id==\'options\'">',
-			'<buton type="" class="btn btn-xs btn-primary x-tool x-tool-{id}"><div class="x-tool x-tool-{id}-ico">&#160;</div>'+lang("new")+'</buton>',
+			'<button type="" class="btn btn-xs btn-secondary x-tool x-tool-{id}"><i class="icon-circle-plus"></i>'+lang("new")+'</button>',
         '</tpl>',
         '<tpl if="id!=\'options\'">',
             '<div class="x-tool x-tool-{id}">&#160;</div>',
@@ -334,7 +335,7 @@ og.MemberTree = function(config) {
 			}
 			//get childs from server
 	        if(node.childNodes.length < node.attributes.realTotalChilds && node.attributes.expandable && !node.attributes.gettingChildsFromServer){
-	        	node.ownerTree.innerCt.mask();
+	        	//node.ownerTree.innerCt.mask();
 	        	node.attributes.gettingChildsFromServer = true;
 	        	
 	        	if (!node.last_childs_offset) {
@@ -392,21 +393,21 @@ og.MemberTree = function(config) {
 	        }
 			
 		},
-		click: function(node, e){
+		click: function(node){
 			if (this.disable_default_events) return;
-			
+
 			if (node && isNaN(node.id) && node.id.indexOf('view_more_') >= 0) {
 				return;
 			}
-			
+
 			og.contextManager.currentDimension = self.dimensionId ;
 			og.eventManager.fireEvent("member tree node click", node);
 			var treeConf = node.attributes.loader.ownerTree.initialConfig ;
 			if  (node.getDepth() == 0 ){
-				
+
 				// clean context for this dimension
 				og.contextManager.cleanActiveMembers(this.dimensionId);
-				
+
 				// Manage dashboard
 				if ( treeConf.dimensionOptions.defaultAjax ){
 					var controller =  treeConf.dimensionOptions.defaultAjax.controller ;
@@ -415,36 +416,15 @@ og.MemberTree = function(config) {
 						og.customDashboard(controller, action, {}, true);
 					}
 				}
-				
-				// Fire 'all' selection for related trees
-				var trees = this.ownerCt.items;
-				if (trees){
-					trees.each(function (item, index, length){
-						var must_reload = false;
-						if (self.reloadDimensions) {
-							for (ot_id in self.reloadDimensions) {
-								if (self.reloadDimensions[ot_id] && typeof(self.reloadDimensions[ot_id].indexOf) == 'function'
-									&& self.reloadDimensions[ot_id].indexOf(item.dimensionId) != -1) {
-										must_reload = true;
-								}
-							}
-						}
-						
-						if ( self.id != item.id  && (!item.hidden ||item.reloadHidden) && must_reload ) {
-							
-							item.getRootNode().suspendEvents();
-							item.getRootNode().select();
-							item.getRootNode().resumeEvents();
-							
-						}
-					});
-				}
+
+				// selectionchange fires before click in ExtJS (auto-selection on root click).
+				// The cascade was already started there, so nothing else to do here for root clicks.
 			}
 			
 			if (node.getDepth() > 0) {
 				//set focus on the selected node
 				node.ownerTree.suspendEvents();		        
-				node.ensureVisible();
+				// node.ensureVisible(); // Disabled to prevent unwanted horizontal scrolling
 				
 				node.select();
 				node.expand();
@@ -452,7 +432,7 @@ og.MemberTree = function(config) {
 								
 				//get childs from server
 		        if(node.childNodes.length < node.attributes.realTotalChilds && node.attributes.expandable && !node.attributes.gettingChildsFromServer){
-		        	node.ownerTree.innerCt.mask();
+		        	//node.ownerTree.innerCt.mask();
 		        	node.attributes.gettingChildsFromServer = true;
 		        	og.openLink(og.getUrl('dimension', 'get_member_childs', {member:node.id, ignore_context_filters: !this.filterOnChange, tree_id:this.id}), {
 		    			hideLoading:true, 
@@ -503,16 +483,27 @@ og.MemberTree = function(config) {
 		
 		selectionchange : function(sm, selection) {
 			if (this.disable_default_events) return;
-			
+
+			// Detect cascade restore: filterByMember records which member ids it queued via
+			// 'try to select member'. If the newly selected id is in that list, this
+			// selectionchange was triggered by the deferred cascade click — not by the user —
+			// so we continue the current cascade round instead of starting a new one.
+			var pendingIds = self._pendingSelectMemberIds || [];
+			var pendingIdx = pendingIds.indexOf(selection ? selection.id : null);
+			var isCascadeRestore = pendingIdx >= 0;
+			if (isCascadeRestore) {
+				pendingIds.splice(pendingIdx, 1);
+			}
+
 			if (selection && isNaN(selection.id) && selection.id.indexOf('view_more_') >= 0) {
 				return;
 			}
 			if (selection && !this.pauseEvents) {
 				var selection_changed = og.contextManager.getDimensionMembers(this.dimensionId).indexOf(selection.id) == -1;
-				og.contextManager.cleanActiveMembers(this.dimensionId) ;
+				og.contextManager.cleanActiveMembers(this.dimensionId);
 				if ( ! this.isMultiple() ){
 					// Single Selection
-					var node = selection ; 
+					var node = selection;
 					if (node.getDepth()) {
 						var member = node.attributes.id ;
 						if(node.attributes.allow_childs) {
@@ -522,9 +513,9 @@ og.MemberTree = function(config) {
 						}
 					}else{
 						$('#'+this.id + " .member-quick-form-link").show();
-						var member = 0 ; 
+						var member = 0;
 					}
-					
+
 					if (!this.hidden) {
 						og.contextManager.addActiveMember(member, this.dimensionId, node );
 					}
@@ -534,16 +525,28 @@ og.MemberTree = function(config) {
 							this.suspendEvents();
 							this.totalFilterTrees = 0 ;
 							this.filteredTrees = 0;
-							
+
+							// Each user-initiated selection starts a new cascade round identified by an
+							// incrementing counter on the container. Cascade restores continue the same
+							// round, so trees already processed in this round are not re-filtered.
+							// Using a counter avoids the need to reset a boolean on every tree.
+							if (!isCascadeRestore) {
+								if (!this.ownerCt._cascadeRound) this.ownerCt._cascadeRound = 0;
+								this.ownerCt._cascadeRound++;
+							}
+							var currentRound = this.ownerCt._cascadeRound || 1;
+							// Mark self as processed in the current round.
+							self._lastFilteredRound = currentRound;
+
 							var selected_members = [];
 							if (!og.resettingAllTrees) {
-								trees.each(function (item, index, length){
+								trees.each(function (item){
 									var sel = item.getSelectionModel().getSelectedNode();
 									if (sel && !isNaN(sel.attributes.id)) selected_members.push(sel.attributes.id);
 								});
 							}
-							
-							trees.each(function (item, index, length){
+
+							trees.each(function (item){
 								var must_reload = false;
 								if (self.reloadDimensions && self.reloadDimensions[node.object_type_id]) {
 									for (var k=0; k<self.reloadDimensions[node.object_type_id].length; k++) {
@@ -554,61 +557,62 @@ og.MemberTree = function(config) {
 										}
 									}
 								}
-								
+
 								if ( self.id != item.id  && (!item.hidden ||item.reloadHidden) && (must_reload || item.is_filtered_by)) {
-									// Filter other Member Trees
-									self.totalFilterTrees++;
-									
-									if (item.disableReloadOtherDimensions) {
-										item.disableReloadOtherDimensions = false;
+									if (item._lastFilteredRound === currentRound) {
+										// Already processed in this cascade round — skip to prevent
+										// double-filtering and infinite loops. Do not touch is_filtered_by.
 									} else {
+										item._lastFilteredRound = currentRound;
+										self.totalFilterTrees++;
+
 										var n = og.resettingAllTrees ? item.getRootNode() : node;
-										
+
 										item.prevSelection = og.contextManager.getDimensionMembers(item.dimensionId);
 										og.contextManager.cleanActiveMembers(item.dimensionId);
-										
+
 										item.filterByMember(selected_members, n, function(){
 											self.filteredTrees++;
 											if (self.filteredTrees == self.totalFilterTrees) {
 												self.resumeEvents();
 												og.eventManager.fireEvent('member trees updated', n);
-												
-												// trigger the member changed event after all trees are loaded to avoid repeated requests
+
+												// Trigger member changed after all trees loaded to avoid repeated requests.
 												if (selection_changed && !item.resettingAllTrees) {
-													// if no node is selected then trigger the member changed, if not then the other tree will do it
+													// if no node is selected then trigger member changed; otherwise the
+													// other tree will do it when its cascade restore fires.
 													if (item.sel_mem_count == 0) {
 														og.eventManager.fireEvent('member changed', n);
 													}
 												}
 											}
 										});
-										
-									}
 
-									// register that this tree has been filtered, so if any other node is selected this has to be reloaded despite of having no associations with selected member.  
-									item.is_filtered_by = must_reload;
+										// Track whether this tree was filtered via a direct association so that
+										// future selections without a direct link still reload it.
+										item.is_filtered_by = must_reload;
+									}
 								}
 							});
-							
+
 							if (this.totalFilterTrees == 0 ) {
 								this.resumeEvents();
 								og.eventManager.fireEvent('member trees updated',node);
-								
+
 								if (selection_changed && !og.resettingAllTrees) {
 									og.eventManager.fireEvent('member changed', node);
 								}
 							}
 						}
 					}
-					
+
 					var type =  node.attributes.object_type_id;
 					og.contextManager.lastSelectedNode = node ;
 					og.contextManager.lastSelectedDimension = this.dimensionId ;
-					og.contextManager.lastSelectedMemberType = type; 
+					og.contextManager.lastSelectedMemberType = type;
 
-					
-				}else { 
-					// Multiple Selection: (UNDER DEVELOPENT) 
+				}else {
+					// Multiple Selection: (UNDER DEVELOPENT)
 					// Add to context
 					for (var i = 0 ; i < selection.length ; i++) {
 						var node = selection[i] ;
@@ -659,7 +663,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 
 			if(from_server){
 				//search on server
-				this.innerCt.mask();
+				//this.innerCt.mask();
 				// if there is an active search request it must be cancelled
 				/*if (og.last_search_request_id && Ext.Ajax.isLoading(og.last_search_request_id)) {
 					Ext.Ajax.abort(og.last_search_request_id);
@@ -673,6 +677,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 				og.last_search_request_id = og.openLink(og.getUrl('dimension', 'search_dimension_members_tree', {
 					dimension_id: dimension_id,
 					tree_id: this.id,
+					ignore_context_filters: true,
 					query: Ext.escapeRe(text.toLowerCase()),
 					time: d.getTime()
 				}), {
@@ -694,7 +699,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    				
 		    				//get the text from the filter
 		    				var search_text = dimension_tree.getTopToolbar().items.get(dimension_tree.id + '-textfilter').el.getValue();
-		    				re_search_text = new RegExp(Ext.escapeRe(search_text.toLowerCase()), 'i');
+		    				var re_search_text = new RegExp(Ext.escapeRe(search_text.toLowerCase()), 'i');
 		    				
 		    				//add the last search criteria to the search history
 		    				if(data.query && data.query.trim() != ''){
@@ -704,10 +709,39 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 		    					dimension_tree.tbar.history.prevTextFilters.push(data.query);
 							}
 
-		    				//filter the tree
-		    				dimension_tree.filterNode(dimension_tree.getRootNode(), re_search_text);
+							// store the dimension tree and the search text in a global variable so it can be used globally
+							og.dim_tree_to_filter = {
+								tree: dimension_tree,
+								re_search_text: re_search_text
+							}
+							// first try to filter the tree with current loaded data
+							dimension_tree.filterNode(dimension_tree.getRootNode(), re_search_text);
+							
+							// filter the tree: suspend events, expand all and filter, resume events
+							// suspend events
 		    				dimension_tree.suspendEvents();
-		    				dimension_tree.expandAll();
+							// do the filter in the callback called after the whole tree is expanded
+		    				dimension_tree.expandAll(function() {
+								if (!og.dim_tree_to_filter) return;
+								// give some time to the js to finish render and then call the filterNode function
+								setTimeout(function(){
+									if (!og.dim_tree_to_filter) return;
+
+									// get the global variables to use
+									let current_tree = og.dim_tree_to_filter.tree;
+									let reg_exp = og.dim_tree_to_filter.re_search_text;
+									
+									// do the filter
+									if (current_tree && reg_exp) {
+										current_tree.filterNode(current_tree.getRootNode(), reg_exp);
+									}
+									
+									// clear the global variable
+									og.dim_tree_to_filter = null;
+								}, 100);
+							
+							});
+							// resume events
 		    				dimension_tree.resumeEvents();
 	    				}				
 	    			}
@@ -752,7 +786,6 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 			c = c.nextSibling;
 		}
 		n.getUI().show();
-		this.collapseAll();
 		if (n.previousState == "e") {
 			n.expand(false, false);
 		} else if (n.previousState == "c") {
@@ -763,7 +796,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 	
 	
 	
-	expandedNodes: function () {
+	getExpandedNodes: function () {
 		nodes = [];
 		nodes = nodes.concat( this.root.expandedNodes() );
 		return nodes ;
@@ -866,25 +899,6 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 				}
 				
 				if (node_loaded && nids[i] > 0) {
-					var dimensions_to_reload = this.reloadDimensions;
-				
-					var trees = this.ownerCt.items;
-					if (trees) {
-						trees.each(function (item, index, length){
-							for (ot in dimensions_to_reload) {
-								var dims_array = dimensions_to_reload[ot];
-								
-								for (var k=0; k<dims_array.length; k++) {
-									var reload_dim_id = parseInt(dims_array[k]);
-									if (reload_dim_id == parseInt(item.dimensionId)) {
-										item.disableReloadOtherDimensions = true;
-										break;
-									}
-								}
-							}
-						});
-					}
-					
 					mem_count++;
 				}
 			}
@@ -925,7 +939,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 	
 	filterByMember: function(memberIds, nodeClicked, callback) {
 		var tree = this ; //scope
-		var expandedNodes = tree.expandedNodes() ;
+		var expandedNodes = tree.getExpandedNodes() ;
 		
 		// if resetting all trees don't select any node
 		var selectedMembers = og.resettingAllTrees ? [] : og.contextManager.getDimensionMembers(this.dimensionId);
@@ -969,8 +983,74 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 						tree.expandNodes(expandedNodes);
 					}
 
+					// Record which member ids are being restored via 'try to select member'
+					// (a setInterval that fires a node click ~1 s from now). When those clicks
+					// arrive as selectionchange events, the id will be found in this list and
+					// the event will be identified as a cascade restore — not a new user action —
+					// so the current cascade round continues rather than being restarted.
+					if (!tree._pendingSelectMemberIds) tree._pendingSelectMemberIds = [];
+
+					// filter invalid member ids
+					selectedMembers = selectedMembers.filter(function(id) { return id > 0; });
+
+					// Drop the members that the server reported as not related to the members used to
+					// filter this list. Restoring them would leave the context as an empty
+					// intersection: the objects are classified in another member, so no task, time
+					// entry, etc. would be listed.
+					var unassociated_ids = (response_object && response_object.unassociated_selected_ids) ? response_object.unassociated_selected_ids : [];
+					var dropped_unassociated = false;
+					if (unassociated_ids.length > 0) {
+						selectedMembers = selectedMembers.filter(function(id) {
+							for (var ui = 0; ui < unassociated_ids.length; ui++) {
+								// loose comparison: ids come from the server as numbers and from the
+								// context manager as strings
+								if (unassociated_ids[ui] == id) return false;
+							}
+							return true;
+						});
+						if (selectedMembers.length == 0) {
+							// nothing valid left, don't let a later cascade round restore it either
+							dropped_unassociated = true;
+							tree.prevSelection = [0];
+						}
+					}
+
+					// Pre-populate pending IDs before selectNodes fires 'try to select member'
+					// so that selectionchange events are detected as cascade restores even if
+					// they arrive synchronously or before the push below could execute.
+					for (var _i = 0; _i < selectedMembers.length; _i++) {
+						if (tree._pendingSelectMemberIds.indexOf(selectedMembers[_i]) < 0) {
+							tree._pendingSelectMemberIds.push(selectedMembers[_i]);
+						}
+					}
+
+					// try to select members, returns the number of selected members
+					// if the tree does not have the member, it will call onMemberExternalClick
 					tree.sel_mem_count = tree.selectNodes(selectedMembers);
-					
+
+					// The reload replaced every node. If nothing was re-selected, the selection model still
+					// points at a node that is no longer in the tree (e.g. after the header Home reset), and
+					// anything reading the selection (quick add parent, cascades) would keep using it.
+					if (tree.sel_mem_count == 0) {
+						var stale_node = tree.getSelectionModel().getSelectedNode();
+						if (stale_node && tree.getNodeById(stale_node.id) !== stale_node) {
+							tree.getSelectionModel().clearSelections(true);
+						}
+					}
+
+					// If the tree could not select the member because it was not in the tree yet,
+					// call onMemberExternalClick with the selected member
+					// to request it to be loaded and then select it
+					if (tree.sel_mem_count < selectedMembers.length) {
+						tree.onMemberExternalClick(selectedMembers[0]);
+					}
+
+					// Leave the tree on its root node ("view all") so this dimension stops filtering
+					// and the panels reload showing the objects of the newly selected member only.
+					if (dropped_unassociated) {
+						tree.selectRoot();
+					}
+
 			        if( typeof callback == "function"){
 						callback();
 			        }
@@ -1012,13 +1092,33 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
             var node_exist = dimension_tree.getNodeById(mem.id);
             if(!node_exist){
                 dimension_tree.suspendEvents();
-                if (node_parent) node_parent.appendChild(new_node);
+                if (node_parent) {
+                    if (node_parent.isLeaf()) {
+						// If parent was a leaf (no children loaded), clear the leaf flag so ExtJS
+						// shows the expand chevron when updateExpandIcon() is called by appendChild.
+                        node_parent.leaf = false;
+                    }
+                    node_parent.appendChild(new_node);
+                }
                 dimension_tree.resumeEvents();
             }else{
                 if (node_parent){
-                    // dont remove old and insert the new, only update the name and the attributes.
-                    node_exist.attributes = mem;
-                    node_exist.setText(mem.text);
+                    // Check if parent has changed and handle node movement
+                    var current_parent = node_exist.parentNode;
+                    var new_parent_id = (mem.parent == 0) ? 'root' : mem.parent;
+                    var current_parent_id = current_parent.isRoot ? 'root' : current_parent.id;
+                    
+                    dimension_tree.suspendEvents();
+                    if (current_parent_id != new_parent_id) {
+                        // Parent has changed, move the node
+                        current_parent.removeChild(node_exist);
+                        node_parent.appendChild(new_node);
+                    } else {
+                        // Same parent, just update attributes
+                        node_exist.attributes = mem;
+                        node_exist.setText(mem.text);
+                    }
+                    dimension_tree.resumeEvents();
                 }
             }
             if (node_parent) {
@@ -1046,7 +1146,7 @@ Ext.extend(og.MemberTree, Ext.tree.TreePanel, {
 			if (n.getOwnerTree()) n.select();
 			og.eventManager.fireEvent('member tree node click', n);
 		}else {
-			this.innerCt.mask();
+			//this.innerCt.mask();
 			og.openLink(og.getUrl('dimension', 'get_member_parents', {member:member_id}), {
 				hideLoading:true, 
 				hideErrors:true,
@@ -1127,10 +1227,31 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 	var new_node = dimension_tree.loader.createNode(member);
 		    												
 	var node_exist = dimension_tree.getNodeById(member.id);			
+	var was_selected = false;
+	var expand_parent = false;
+	
+	// Save the scroll position to prevent scroll jump
+	var scrollEl = dimension_tree.body ? dimension_tree.body.dom : (dimension_tree.innerCt ? dimension_tree.innerCt.dom : null);
+	var scrollTop = scrollEl ? scrollEl.scrollTop : 0;
 
-	if(!node_exist){		
-		if (node_parent) node_parent.appendChild(new_node);
-	}else{	
+	if(!node_exist){
+		expand_parent = extra_params.expand_parent || false;
+		if (expand_parent && !node_parent) {
+			node_parent = og.ensureAncestorsInDimensionTree(dimension_tree, dimension_id, member.parent);
+		}
+		if (node_parent) {
+			// If parent was a leaf (no children loaded), clear the leaf flag so ExtJS
+			// shows the expand chevron when updateExpandIcon() is called by appendChild.
+			if (node_parent.isLeaf()) {
+				node_parent.leaf = false;
+			}
+			node_parent.appendChild(new_node);
+		}
+	}else{
+		if(node_exist.isSelected && node_exist.isSelected()){
+			was_selected = true;
+		}
+		
 		//check if the parent have changed
 		if(node_exist.parentNode.attributes.id == member.parent || (node_exist.parentNode.isRoot && member.parent == 0)){
 			node_parent.removeChild(node_exist);
@@ -1139,17 +1260,20 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 		}
 		node_parent.appendChild(new_node);
 		
-		if(!node_parent.isExpanded()){
-			dimension_tree.suspendEvents();
-			node_parent.expand();
-			dimension_tree.resumeEvents();
-		}
+		expand_parent = true;
+	}
 		
-			
+	if(expand_parent && node_parent && !node_parent.isExpanded()){
+		dimension_tree.suspendEvents();
+		node_parent.expand();
+		dimension_tree.resumeEvents();
 	}
 	
-	new_node.ensureVisible();
-	if (extra_params.select_node) {
+	// ensure that first level nodes are ordered after the insertion
+	dimension_tree.root.sort(og.sortNodesFn);
+
+	// new_node.ensureVisible(); // Disabled - causes scroll jump on edit
+	if (extra_params.select_node || was_selected) {
 		dimension_tree.suspendEvents();
 		//dimension_tree.selectNodes([new_node.id]);
 		new_node.select();
@@ -1157,9 +1281,70 @@ og.updateDimensionTreeNode = function(dimension_id, member, extra_params) {
 		og.eventManager.fireEvent('member tree node click', new_node);
 	}
 	if (new_node.attributes.expandable)	new_node.expand();
+
+	// Restore the scroll position
+	if (scrollEl) {
+		// Needs a tiny timeout because ExtJS focus/selection logic might execute deferred DOM layout updates
+		scrollEl.scrollTop = scrollTop;
+		setTimeout(function() {
+			scrollEl.scrollTop = scrollTop;
+		}, 10);
+	}
 	
-	// ensure that first level nodes are ordered after the insertion
-	dimension_tree.root.sort(og.sortNodesFn);
+	// refresh header breadcrumbs to load changes in display name
+	og.Breadcrumbs.refresh();
+}
+
+/**
+ * Ensures all ancestors of a given member are present in the dimension tree,
+ * inserting any missing ones from root down and expanding each.
+ * @param {Ext.tree.TreePanel} dimension_tree
+ * @param {number} dimension_id
+ * @param {number} member_parent_id - the parent id of the member being inserted
+ * @returns {Ext.tree.TreeNode|null} the direct parent node for the member, or null if not resolvable
+ */
+og.ensureAncestorsInDimensionTree = function(dimension_tree, dimension_id, member_parent_id) {
+	var dim_members = og.dimensions && og.dimensions[dimension_id] ? og.dimensions[dimension_id] : {};
+
+	// Build the ancestor chain from member_parent_id up to the root
+	var ancestor_chain = [];
+	var current_ancestor_id = member_parent_id;
+	while (current_ancestor_id && current_ancestor_id != 0) {
+		var ancestor_data = dim_members[current_ancestor_id];
+		if (!ancestor_data) break;
+		ancestor_chain.unshift(ancestor_data); // prepend so topmost ancestor comes first
+		current_ancestor_id = ancestor_data.parent;
+	}
+
+	// Ensure each ancestor is present in the tree, from top (root) to bottom
+	dimension_tree.suspendEvents();
+	for (var ai = 0; ai < ancestor_chain.length; ai++) {
+		var anc = ancestor_chain[ai];
+		if (!dimension_tree.getNodeById(anc.id)) {
+			var anc_parent_node = (!anc.parent || anc.parent == 0)
+				? dimension_tree.root
+				: dimension_tree.getNodeById(anc.parent);
+			if (anc_parent_node) {
+				var anc_attrs = Ext.apply({}, anc);
+				anc_attrs.leaf = !anc_attrs.expandable;
+				anc_attrs.text = anc_attrs.name;
+				var anc_node = dimension_tree.loader.createNode(anc_attrs);
+				if (anc_parent_node.isLeaf()) {
+					anc_parent_node.leaf = false;
+				}
+				anc_parent_node.appendChild(anc_node);
+			}
+		}
+		// Expand this ancestor so its children are accessible
+		var anc_tree_node = dimension_tree.getNodeById(anc.id);
+		if (anc_tree_node && !anc_tree_node.isExpanded()) {
+			anc_tree_node.expand();
+		}
+	}
+	dimension_tree.resumeEvents();
+
+	// Return the direct parent node now that all ancestors are in the tree
+	return dimension_tree.getNodeById(member_parent_id);
 }
 
 og.sortNodesFn = function(node1, node2) {
@@ -1173,3 +1358,5 @@ og.sortNodesFn = function(node1, node2) {
 		}
 	}
 }
+
+

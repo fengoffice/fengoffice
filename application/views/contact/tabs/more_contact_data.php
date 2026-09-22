@@ -38,7 +38,7 @@ if (!isset($id_prefix)) {
 				<div style="display: flex; flex-direction: column; align-items: flex-start;">
 					<div id="<?php echo $genid . $id_prefix ?>_webpages_container"></div>
 					<div style="margin: 10px 0 0;">
-						<a href="#" onclick="og.addNewWebpageInput('<?php echo $genid . $id_prefix ?>_webpages_container')" class="coViewAction ico-add"><?php echo lang('add new webpage') ?></a>
+						<a href="#" onclick="og.addNewWebpageInput('<?php echo $genid . $id_prefix ?>_webpages_container')" class="btn btn-primary-50 btn-sm"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new webpage') ?></a>
 					</div>
 				</div>
 				<div class="clear"></div>
@@ -71,7 +71,7 @@ if (!isset($id_prefix)) {
 			<div class="input-container">
 				<div id="<?php echo $genid ?>add_contact_notes">
 					<?php echo label_tag(lang('notes'), $genid . 'profileFormNotes') ?>
-					<div style="float:left;width:600px;" class="notes-container">
+					<div class="notes-container">
 						<?php echo textarea_field('contact[comments]', array_var($contact_data, 'comments'), array('id' => $genid . 'profileFormNotes', 'style' => 'width: 100%;', 'rows' => 5)) ?>
 					</div>
 				</div>

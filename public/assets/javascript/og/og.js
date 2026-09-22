@@ -19,6 +19,22 @@ og.maxFileSize = 1024 * 1024;
 
 og.showMailsTab = 0;
 og.hiddenTabs = [];
+
+// Set to true once the initial shell (tabs-panel, viewport, etc.) has been
+// built in layout.js. Until then, og.openLink calls triggered by early
+// clicks (e.g. header links rendered server-side before the shell exists)
+// are queued instead of being silently dropped by og.newTab/processResponse.
+og.appReady = false;
+og.pendingLinks = [];
+
+og.runWhenReady = function() {
+	og.appReady = true;
+	var pending = og.pendingLinks;
+	og.pendingLinks = [];
+	for (var i = 0; i < pending.length; i++) {
+		og.openLink(pending[i].url, pending[i].options);
+	}
+};
 // functions
 og.msg =  function(title, text, timeout, classname, sound) {
 	if (typeof timeout == 'undefined') timeout = 4;
@@ -560,6 +576,17 @@ og.openLink = function(url, options) {
 	//if (url.indexOf("c=dashborad&a=activity_feed") != -1) return ;
 
 	if (!options) options = {};
+
+	// The shell (tabs-panel, content panels) is only built once the initial
+	// bootstrap call (panel/list_all in layout.js) finishes. Links clicked
+	// before that (e.g. the server-rendered header) have nowhere to render,
+	// so queue them and replay once the shell is ready instead of dropping
+	// them silently.
+	if (!og.appReady && !options.bootstrap) {
+		og.pendingLinks.push({url: url, options: options});
+		return;
+	}
+
 	if (typeof options.caller == "object") {
 		options.caller = options.caller.id;
 	}
@@ -757,11 +784,13 @@ og.processResponse = function(data, options, url) {
 			//Load data
 			if (!options || !options.preventPanelLoad && (!options.options || !options.options.silent)){
 				//Load data into more than one panel
+				var loadedContentPanels = {};
 				if (data.contents) {
 					for (var k in data.contents) {
 						var p = Ext.getCmp(k);
 						if (p) {
 							p.load(data.contents[k]);
+							loadedContentPanels[k] = true;
 						}
 					}
 				}
@@ -774,7 +803,14 @@ og.processResponse = function(data, options, url) {
 						var p = Ext.getCmp(panelName);
 						if (p) {
 							var tp = p.ownerCt;
-							p.load(data.current);
+							// Avoid reloading the same panel twice in a single response: if this
+							// panel was already reloaded via data.contents above and data.current is
+							// just another reload of it, skip the redundant reload. Any other
+							// data.current action (back, url, html...) is still applied normally.
+							var redundantReload = loadedContentPanels[panelName] && data.current.type == 'reload';
+							if (!redundantReload) {
+								p.load(data.current);
+							}
 							if (tp && tp.setActiveTab && Ext.getCmp(panelName) && (options.options.show || data.current.panel)) {
 								tp.setActiveTab(p);
 							}
@@ -942,7 +978,22 @@ og.showHelp = function() {
 	Ext.getCmp('help-panel').toggleCollapse();
 };
 
-og.extractScripts = function(html) {
+og.extractScripts = function(html, onScriptsExecuted) {
+	// Only <script> blocks that actually contain JavaScript should be executed and removed from
+	// the markup. Non-JS <script> blocks - e.g. type="text/x-handlebars-template" used as inline
+	// templates - must be left in the DOM untouched: evaluating their content as JavaScript throws
+	// ("Unexpected token '<'" on the HTML, "Private field '#each'..." on Handlebars {{#each}}), and
+	// stripping them removes the templates the page needs to read afterwards.
+	var isJavascriptType = function(attrs) {
+		if (!attrs) return true; // no attributes -> default is javascript
+		// Require a boundary before "type" so we don't pick up data-type / content-type / etc.
+		var m = attrs.match(/(?:^|\s)type\s*=\s*(['"]?)([^'"\s>]*)\1/i);
+		if (!m) return true; // no type attribute -> default is javascript
+		var type = m[2].toLowerCase();
+		return type === '' || type === 'text/javascript' || type === 'application/javascript'
+			|| type === 'text/ecmascript' || type === 'application/ecmascript' || type === 'module';
+	};
+
 	var id = Ext.id();
 	html += '<span id="' + id + '"></span>';
 	Ext.lib.Event.onAvailable(id, function() {
@@ -951,7 +1002,7 @@ og.extractScripts = function(html) {
 			var re = /(?:<script([^>]*)?>)((\n|\r|.)*?)(?:<\/script>)/ig;
 			var match;
 			while (match = re.exec(html)) {
-				if (match[2] && match[2].length > 0) {
+				if (match[2] && match[2].length > 0 && isJavascriptType(match[1])) {
 					try {
 						if (window.execScript) {
 							window.execScript(match[2]);
@@ -968,9 +1019,20 @@ og.extractScripts = function(html) {
 			var el = document.getElementById(id);
 			if (el) { Ext.removeNode(el); }
 		} catch (e) { alert(e);}
+		// the scripts only run once the html is in the DOM, so this is the earliest point where
+		// the caller can measure the rendered content (e.g. after jQuery-UI tabs() collapsed the panels)
+		if (typeof onScriptsExecuted == 'function') {
+			try {
+				onScriptsExecuted();
+			} catch (e) {
+				og.err(e.message);
+			}
+		}
 	});
 
-	return html.replace(/(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig, "");
+	return html.replace(/(?:<script([^>]*)?>)((\n|\r|.)*?)(?:<\/script>)/ig, function(full, attrs) {
+		return isJavascriptType(attrs) ? "" : full;
+	});
 };
 
 og.clone = function(o) {
@@ -1069,6 +1131,23 @@ og.addLinkedObjectRow = function (tblId,obj_type,obj_id,obj_name, obj_manager, c
 
 og.PagingToolbar	=	function (config) {
 	og.PagingToolbar.superclass.constructor.call (this, config);
+};
+
+/**
+ * Upper bound for the member/project list page-size preference.
+ */
+og.MEMBERS_PER_PAGE_MAX = 1000;
+
+/**
+ * Page size for member/project lists (per-user preference, falls back to files_per_page).
+ */
+og.getMembersPerPage = function() {
+	var n = parseInt(og.config['members_per_page'], 10);
+	if (!n || n < 1) {
+		n = parseInt(og.config['files_per_page'], 10) || 50;
+	}
+	if (n > og.MEMBERS_PER_PAGE_MAX) n = og.MEMBERS_PER_PAGE_MAX;
+	return n;
 };
 
 Ext.extend (og.PagingToolbar, Ext.PagingToolbar, {
@@ -1795,6 +1874,585 @@ og.getCkEditorInstance = function(name) {
 	return editor;
 };
 
+og.getDomEl = function(el) {
+	if (!el) return null;
+	if (el.nodeType) return el;
+	if (el.dom) return el.dom;
+	if (el.el) return og.getDomEl(el.el);
+	return null;
+};
+
+og.collectCkEditorsInElement = function(el) {
+	var names = [];
+	var ids = [];
+	var root = og.getDomEl(el);
+	if (!root || typeof CKEDITOR == 'undefined' || !CKEDITOR.instances) {
+		return { names: names, ids: ids };
+	}
+	for (var name in CKEDITOR.instances) {
+		if (!Object.prototype.hasOwnProperty.call(CKEDITOR.instances, name)) continue;
+		var editor = CKEDITOR.instances[name];
+		try {
+			var container = (editor.container && editor.container.$) || (editor.element && editor.element.$);
+			if (container && (root === container || (root.contains && root.contains(container)))) {
+				names.push(editor.name || name);
+				if (editor.id) ids.push(editor.id);
+			}
+		} catch (e) {}
+	}
+	return { names: names, ids: ids };
+};
+
+og.destroyCkEditorsInElement = function(el) {
+	var collected = og.collectCkEditorsInElement(el);
+	if (typeof CKEDITOR == 'undefined' || !CKEDITOR.instances) return;
+	for (var i = 0; i < collected.names.length; i++) {
+		var editor = CKEDITOR.instances[collected.names[i]];
+		if (!editor) continue;
+		try {
+			editor.destroy(true);
+		} catch (e) {
+			try { CKEDITOR.remove(editor); } catch (e2) {}
+		}
+	}
+};
+
+og.ckEditorDetachedUiBelongsTo = function(node, names, ids) {
+	if (!node) return false;
+	names = names || [];
+	ids = ids || [];
+	var classMap = {};
+	var classes = (node.className || '').split(/\s+/);
+	for (var c = 0; c < classes.length; c++) {
+		if (classes[c]) classMap[classes[c]] = true;
+	}
+	var nodeId = node.id || '';
+	for (var n = 0; n < names.length; n++) {
+		var name = names[n];
+		if (!name) continue;
+		var safeName = String(name).replace(/\./g, '\\.');
+		if (classMap['cke_editor_' + name] || classMap['cke_editor_' + safeName]) return true;
+		if (classMap['cke_editor_' + name + '_dialog'] || classMap['cke_editor_' + safeName + '_dialog']) return true;
+		if (nodeId === 'cke_' + name || nodeId.indexOf('cke_' + name + '_') === 0) return true;
+	}
+	for (var i = 0; i < ids.length; i++) {
+		var editorId = ids[i];
+		if (!editorId) continue;
+		if (classMap[editorId]) return true;
+		if (nodeId === editorId || nodeId.indexOf(editorId + '_') === 0) return true;
+	}
+	return false;
+};
+
+// CKEditor 4 appends dialogs/panels/floats to document.body, so they are never
+// inside .og-content-panel. Only hide chrome that belongs to the given editors.
+og.hideDetachedCkEditorUi = function(names, ids) {
+	if ((!names || !names.length) && (!ids || !ids.length)) return;
+	names = names || [];
+	ids = ids || [];
+	$('.cke_float, .cke_panel, .cke_dialog').each(function() {
+		if (og.ckEditorDetachedUiBelongsTo(this, names, ids)) {
+			$(this).hide();
+		}
+	});
+	if (typeof CKEDITOR != 'undefined' && CKEDITOR.dialog && CKEDITOR.dialog._ && CKEDITOR.dialog._.currentTop) {
+		var dlg = CKEDITOR.dialog._.currentTop;
+		var editor = null;
+		try {
+			editor = dlg._.editor || (dlg.getParentEditor && dlg.getParentEditor());
+		} catch (e) {}
+		if (editor) {
+			var belongs = false;
+			for (var n = 0; n < names.length; n++) {
+				if (names[n] === editor.name) belongs = true;
+			}
+			for (var i = 0; !belongs && i < ids.length; i++) {
+				if (ids[i] === editor.id) belongs = true;
+			}
+			if (belongs) {
+				try { dlg.hide(); } catch (e2) {}
+				$('.cke_dialog_background_cover').hide();
+			}
+		}
+	}
+};
+
+og.hideInactiveTabOverlays = function() {
+	var tp = Ext.getCmp('tabs-panel');
+	if (!tp || !tp.getActiveTab) return;
+	var active = tp.getActiveTab();
+	var names = [];
+	var ids = [];
+	tp.items.each(function(item) {
+		if (item === active) return;
+		if (item.el) {
+			var editors = og.collectCkEditorsInElement(item.el);
+			names = names.concat(editors.names);
+			ids = ids.concat(editors.ids);
+		}
+		if (!item.hidden) {
+			item.hide();
+		} else if (item.el && item.el.dom && item.el.isVisible()) {
+			// CardLayout already set hidden=true, but a tab-strip resize can
+			// leave the DOM visible. Re-apply the hide class without firing
+			// hide() again (that would re-dispatch hide events).
+			item.onHide();
+		}
+	});
+	og.hideDetachedCkEditorUi(names, ids);
+};
+
+/**
+ * Shared helpers for WYSIWYG image paste/drop (kept on `og` so they can be unit-tested).
+ */
+og.wysiwygIsImageFile = function(file) {
+	if (!file) {
+		return false;
+	}
+	var type = (file.type || '').toLowerCase();
+	if (type.indexOf('image/') === 0) {
+		return true;
+	}
+	// Finder/Desktop drops on macOS/Chrome often arrive with an empty MIME type.
+	var name = file.name || '';
+	return /\.(jpe?g|png|gif|webp|bmp|svg|heic|heif|tiff?)$/i.test(name);
+};
+
+og.wysiwygIsFileDrag = function(dataTransfer) {
+	if (!dataTransfer) {
+		return false;
+	}
+	if (!dataTransfer.types) {
+		// Some desktop drags expose types only at drop time.
+		return true;
+	}
+	var types = dataTransfer.types;
+	if (typeof types.contains === 'function') {
+		if (types.contains('Files') || types.contains('application/x-moz-file') || types.contains('public.file-url')) {
+			return true;
+		}
+	}
+	for (var i = 0; i < types.length; i++) {
+		var t = types[i];
+		if (
+			t === 'Files'
+			|| t === 'application/x-moz-file'
+			|| t === 'public.file-url'
+			|| t === 'text/uri-list'
+			|| t === 'application/x-finder-node'
+		) {
+			return true;
+		}
+	}
+	return types.length === 0;
+};
+
+og.wysiwygImageFilesFromClipboard = function(clipboardData) {
+	var files = [];
+	if (!clipboardData) {
+		return files;
+	}
+	if (clipboardData.items && clipboardData.items.length) {
+		for (var i = 0; i < clipboardData.items.length; i++) {
+			var item = clipboardData.items[i];
+			if (item && item.type && item.type.indexOf('image/') === 0 && typeof item.getAsFile === 'function') {
+				var fromItem = item.getAsFile();
+				if (fromItem) {
+					files.push(fromItem);
+				}
+			}
+		}
+	}
+	if (!files.length && clipboardData.files && clipboardData.files.length) {
+		for (var j = 0; j < clipboardData.files.length; j++) {
+			if (og.wysiwygIsImageFile(clipboardData.files[j])) {
+				files.push(clipboardData.files[j]);
+			}
+		}
+	}
+	return files;
+};
+
+og.wysiwygImageFilesFromDataTransfer = function(dataTransfer) {
+	var files = [];
+	var seen = {};
+	if (!dataTransfer) {
+		return files;
+	}
+	var fileKey = function(file) {
+		if (!file) {
+			return '';
+		}
+		return [
+			file.name || '',
+			file.type || '',
+			typeof file.size === 'number' ? file.size : '',
+			typeof file.lastModified === 'number' ? file.lastModified : ''
+		].join('|');
+	};
+	var pushUnique = function(file) {
+		if (!file || !og.wysiwygIsImageFile(file)) {
+			return;
+		}
+		var key = fileKey(file);
+		if (key && seen[key]) {
+			return;
+		}
+		if (key) {
+			seen[key] = true;
+		}
+		files.push(file);
+	};
+	if (dataTransfer.items && dataTransfer.items.length) {
+		for (var i = 0; i < dataTransfer.items.length; i++) {
+			var item = dataTransfer.items[i];
+			if (item && item.kind === 'file' && typeof item.getAsFile === 'function') {
+				pushUnique(item.getAsFile());
+			}
+		}
+	}
+	if (dataTransfer.files && dataTransfer.files.length) {
+		for (var j = 0; j < dataTransfer.files.length; j++) {
+			pushUnique(dataTransfer.files[j]);
+		}
+	}
+	return files;
+};
+
+og.wysiwygDataTransferHasFiles = function(dataTransfer) {
+	if (!dataTransfer) {
+		return false;
+	}
+	if (dataTransfer.files && dataTransfer.files.length) {
+		return true;
+	}
+	if (dataTransfer.items && dataTransfer.items.length) {
+		for (var i = 0; i < dataTransfer.items.length; i++) {
+			if (dataTransfer.items[i] && dataTransfer.items[i].kind === 'file') {
+				return true;
+			}
+		}
+	}
+	return og.wysiwygIsFileDrag(dataTransfer);
+};
+
+og.wysiwygGuessImageFileName = function(file) {
+	if (file && file.name && /\.(jpe?g|png|gif|webp|bmp)$/i.test(file.name)) {
+		return file.name;
+	}
+	var type = ((file && file.type) || '').toLowerCase();
+	var ext = 'png';
+	if (type.indexOf('jpeg') >= 0 || type.indexOf('jpg') >= 0) {
+		ext = 'jpg';
+	} else if (type.indexOf('gif') >= 0) {
+		ext = 'gif';
+	} else if (type.indexOf('webp') >= 0) {
+		ext = 'webp';
+	} else if (type.indexOf('bmp') >= 0) {
+		ext = 'bmp';
+	}
+	return 'image.' + ext;
+};
+
+/**
+ * Uploads an image file for WYSIWYG insertion. Prefers a short /tmp URL over a huge data URI
+ * so saving the task does not blow up POST size / PCRE persistence.
+ */
+og.wysiwygUploadImageFile = function(file, callback) {
+	if (typeof callback !== 'function') {
+		return;
+	}
+	if (!file || typeof FormData === 'undefined' || typeof XMLHttpRequest === 'undefined') {
+		callback(null);
+		return;
+	}
+	try {
+		var fd = new FormData();
+		fd.append('upload', file, og.wysiwygGuessImageFileName(file));
+		var uploadUrl = (og.hostName || '').replace(/\/+$/, '') + '/ck_upload_handler.php?response=json';
+		var xhr = new XMLHttpRequest();
+		xhr.open('POST', uploadUrl, true);
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState !== 4) {
+				return;
+			}
+			if (xhr.status < 200 || xhr.status >= 300) {
+				callback(null);
+				return;
+			}
+			try {
+				var data = JSON.parse(xhr.responseText);
+				if (data && data.url && !data.error) {
+					callback(data.url);
+					return;
+				}
+			} catch (e) {}
+			callback(null);
+		};
+		xhr.send(fd);
+	} catch (e) {
+		callback(null);
+	}
+};
+
+/**
+ * Enables paste (screenshot/cutout) and drag/drop of image files into a CKEditor instance.
+ * Images are uploaded to /tmp when possible; otherwise inserted as data URIs.
+ * The server persists them via process_wysiwyg_html_content().
+ *
+ * CKEditor 4.4.x uses a pastebin and does not expose clipboardData on editor paste events, so image
+ * clipboard data is handled on the native paste event inside the editable iframe.
+ */
+og.bindCkEditorImagePasteAndDrop = function(editor) {
+	if (!editor || typeof editor.on !== 'function' || editor._ogImagePasteDropBound) {
+		return;
+	}
+	editor._ogImagePasteDropBound = true;
+
+	var getDropPoint = function(evt) {
+		if (!evt || typeof evt.clientX === 'undefined' || typeof evt.clientY === 'undefined') {
+			return null;
+		}
+		var point = { clientX: evt.clientX, clientY: evt.clientY, fromParent: false };
+		try {
+			var editorWin = editor.window && editor.window.$ ? editor.window.$ : null;
+			if (editorWin && evt.view && evt.view !== editorWin) {
+				point.fromParent = true;
+				var frameElement = editorWin.frameElement;
+				if (frameElement && frameElement.getBoundingClientRect) {
+					var rect = frameElement.getBoundingClientRect();
+					point.clientX = evt.clientX - rect.left;
+					point.clientY = evt.clientY - rect.top;
+				}
+			}
+		} catch (e) {}
+		return point;
+	};
+
+	var placeCaretAtPoint = function(point) {
+		if (!point || !editor.document || !editor.document.$ || typeof CKEDITOR === 'undefined') {
+			return false;
+		}
+		var doc = editor.document.$;
+		var nativeRange = null;
+		try {
+			if (doc.caretRangeFromPoint) {
+				nativeRange = doc.caretRangeFromPoint(point.clientX, point.clientY);
+			} else if (doc.caretPositionFromPoint) {
+				var position = doc.caretPositionFromPoint(point.clientX, point.clientY);
+				if (position) {
+					nativeRange = doc.createRange();
+					nativeRange.setStart(position.offsetNode, position.offset);
+					nativeRange.collapse(true);
+				}
+			}
+			if (!nativeRange) {
+				return false;
+			}
+			editor.focus();
+			var range = new CKEDITOR.dom.range(editor.document);
+			range.setStart(new CKEDITOR.dom.node(nativeRange.startContainer), nativeRange.startOffset);
+			range.collapse(true);
+			editor.getSelection().selectRanges([range]);
+			return true;
+		} catch (e) {
+			return false;
+		}
+	};
+
+	var insertImageHtml = function(src, point) {
+		if (!src || typeof editor.insertHtml !== 'function') {
+			return;
+		}
+		try {
+			editor.focus();
+			if (point) {
+				placeCaretAtPoint(point);
+			}
+			editor.fire('saveSnapshot');
+			editor.insertHtml('<img src="' + src + '" alt="" style="max-width:100%;" />');
+			editor.fire('saveSnapshot');
+		} catch (err) {}
+	};
+
+	var resolveImageSrc = function(file, callback) {
+		if (!og.wysiwygIsImageFile(file) || typeof callback !== 'function') {
+			if (typeof callback === 'function') {
+				callback(null);
+			}
+			return;
+		}
+		og.wysiwygUploadImageFile(file, function(uploadedUrl) {
+			if (uploadedUrl) {
+				callback(uploadedUrl);
+				return;
+			}
+			if (typeof FileReader === 'undefined') {
+				callback(null);
+				return;
+			}
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				callback(e.target && e.target.result ? e.target.result : null);
+			};
+			reader.onerror = function() {
+				callback(null);
+			};
+			reader.readAsDataURL(file);
+		});
+	};
+
+	/**
+	 * Resolve all files (uploads can finish in any order), then insert in the
+	 * original file order. First image uses the drop caret; the rest append after it.
+	 */
+	var insertImagesInOrder = function(files, point) {
+		if (!files || !files.length) {
+			return;
+		}
+		var results = new Array(files.length);
+		var pending = files.length;
+		var finishOne = function() {
+			pending--;
+			if (pending > 0) {
+				return;
+			}
+			var placed = false;
+			for (var j = 0; j < results.length; j++) {
+				if (!results[j]) {
+					continue;
+				}
+				insertImageHtml(results[j], placed ? null : point);
+				placed = true;
+			}
+		};
+		for (var i = 0; i < files.length; i++) {
+			(function(index, file) {
+				resolveImageSrc(file, function(src) {
+					results[index] = src;
+					finishOne();
+				});
+			})(i, files[i]);
+		}
+	};
+
+	var onPaste = function(evt) {
+		var files = og.wysiwygImageFilesFromClipboard(evt.clipboardData);
+		if (!files.length) {
+			return;
+		}
+		evt.preventDefault();
+		evt.stopPropagation();
+		insertImagesInOrder(files, null);
+	};
+
+	var onDragOver = function(evt) {
+		if (!og.wysiwygIsFileDrag(evt.dataTransfer)) {
+			return;
+		}
+		evt.preventDefault();
+		try {
+			evt.dataTransfer.dropEffect = 'copy';
+		} catch (e) {}
+	};
+
+	var onDrop = function(evt) {
+		var dataTransfer = evt.dataTransfer;
+		if (!dataTransfer) {
+			return;
+		}
+		var hasFiles = og.wysiwygDataTransferHasFiles(dataTransfer);
+		var files = og.wysiwygImageFilesFromDataTransfer(dataTransfer);
+		if (!hasFiles && !files.length) {
+			return;
+		}
+		// Prevent the browser from navigating to file://... (common with Desktop/Finder drops).
+		evt.preventDefault();
+		evt.stopPropagation();
+		if (!files.length) {
+			return;
+		}
+		insertImagesInOrder(files, getDropPoint(evt));
+	};
+
+	var isOverEditor = function(evt) {
+		try {
+			var container = editor.container && editor.container.$ ? editor.container.$ : null;
+			if (!container || !container.getBoundingClientRect) {
+				return false;
+			}
+			var rect = container.getBoundingClientRect();
+			return evt.clientX >= rect.left && evt.clientX <= rect.right
+				&& evt.clientY >= rect.top && evt.clientY <= rect.bottom;
+		} catch (e) {
+			return false;
+		}
+	};
+
+	var bindEditable = function() {
+		var targets = [];
+		try {
+			if (typeof editor.editable === 'function') {
+				var editable = editor.editable();
+				if (editable && editable.$) {
+					targets.push(editable.$);
+				}
+			}
+			if (editor.document && editor.document.$) {
+				if (editor.document.$.documentElement) {
+					targets.push(editor.document.$.documentElement);
+				}
+				if (editor.document.$.body) {
+					targets.push(editor.document.$.body);
+				}
+			}
+			if (editor.window && editor.window.$ && editor.window.$.frameElement) {
+				targets.push(editor.window.$.frameElement);
+			}
+		} catch (e) {}
+
+		for (var i = 0; i < targets.length; i++) {
+			var el = targets[i];
+			if (!el || !el.addEventListener || el._ogImagePasteDropEl) {
+				continue;
+			}
+			el._ogImagePasteDropEl = true;
+			el.addEventListener('paste', onPaste, true);
+			// Capture phase so Finder/Desktop drops are accepted before CKEditor default handling.
+			el.addEventListener('dragenter', onDragOver, true);
+			el.addEventListener('dragover', onDragOver, true);
+			el.addEventListener('drop', onDrop, true);
+		}
+	};
+
+	// Parent-document safety net for drops that hit around/on the iframe chrome.
+	if (!editor._ogImagePageDropBound) {
+		editor._ogImagePageDropBound = true;
+		document.addEventListener('dragenter', function(evt) {
+			if (isOverEditor(evt) && og.wysiwygIsFileDrag(evt.dataTransfer)) {
+				evt.preventDefault();
+			}
+		}, false);
+		document.addEventListener('dragover', function(evt) {
+			if (isOverEditor(evt) && og.wysiwygIsFileDrag(evt.dataTransfer)) {
+				evt.preventDefault();
+				try {
+					evt.dataTransfer.dropEffect = 'copy';
+				} catch (e) {}
+			}
+		}, false);
+		document.addEventListener('drop', function(evt) {
+			if (!isOverEditor(evt)) {
+				return;
+			}
+			onDrop(evt);
+		}, false);
+	}
+
+	editor.on('contentDom', bindEditable);
+	bindEditable();
+};
+
 og.adjustCkEditorArea = function(genid, id, keep_bottom) {
 	if(id == undefined) id = '';
 	var el = document.getElementById('cke_' + genid + 'ckeditor' + id);
@@ -2205,8 +2863,34 @@ og.quickForm = function (config) {
 									$("#quick-form").addClass("menu");
 									for (var k=0; k<data.urls.length; k++) {
 										var url_obj = data.urls[k];
-										html += '<li class="quick-menu-item">';//hola
-										html += '<a class="link-ico '+url_obj.iconcls+'" href="#" onclick="og.render_modal_form(\'\', {url:\''+ url_obj.url +'\'}); $(\'#quick-form\').hide(); return false;">'+ url_obj.link_text +'</a></li>';
+										
+										if (url_obj.group_name) {
+											
+											const li = document.createElement("li");
+											li.classList.add("quick-menu-item");
+											li.classList.add("has-submenu");
+											li.innerHTML = '<a class="link-ico ico-dash-collapsed" href="#" >'+ url_obj.group_name +'</a>';
+
+											const subUl = document.createElement("ul");
+											subUl.classList.add("submenu");
+											subUl.classList.add("quick-menu-list");
+
+											const urls = Array.isArray(url_obj.urls) ? url_obj.urls : [url_obj.urls];
+											urls.forEach(u => {
+												const subLi = document.createElement("li");
+												subLi.classList.add("quick-menu-item");
+												subLi.classList.add("leaf-menu-item");
+												subLi.innerHTML = '<a class="link-ico '+u.iconcls+'" href="#" onclick="og.render_modal_form(\'\', {url:\''+ u.url +'\'}); $(\'#quick-form\').hide(); return false;">'+ u.link_text +'</a>';
+												subUl.appendChild(subLi);
+											});
+											li.appendChild(subUl);
+
+											html += li.outerHTML;
+
+										} else {
+											html += '<li class="quick-menu-item">';
+											html += '<a class="link-ico '+url_obj.iconcls+'" href="#" onclick="og.render_modal_form(\'\', {url:\''+ url_obj.url +'\'}); $(\'#quick-form\').hide(); return false;">'+ url_obj.link_text +'</a></li>';
+										}
 									}
 									html += "</ul>";
 
@@ -2215,6 +2899,20 @@ og.quickForm = function (config) {
 									$("#quick-form .form-container").parent().css({top: offset.top + 15, left: offset.left + 15}).slideDown('normal', function(){
 										var bottom = $("#quick-form .form-container").css('bottom').replace('px', '');
 										if (bottom < 0) $("#quick-form .form-container").animate({"top" : "+="+bottom+"px"});
+									});
+
+									// hover events for submenus
+									$("#quick-form .form-container li.has-submenu").hover(function() {
+										$("#quick-form .form-container li.has-submenu a").addClass("ico-dash-collapsed").removeClass("ico-dash-expanded");
+										$("#quick-form .form-container ul.submenu").hide();
+
+										$(this).find("a").addClass("ico-dash-expanded").removeClass("ico-dash-collapsed");
+										$(this).find("ul.submenu").css("position", "absolute").css('left', '100%').css('top', $(this).position().top).show();
+									});
+									// hide all submenus if hovering in a menu item
+									$("#quick-form .form-container li:not(.has-submenu):not(.leaf-menu-item)").hover(function() {
+										$("#quick-form .form-container li.has-submenu a").addClass("ico-dash-collapsed").removeClass("ico-dash-expanded");
+										$("#quick-form .form-container ul.submenu").hide();
 									});
 
 								} else {
@@ -2378,6 +3076,10 @@ og.checkEmailAddress = function(element, id_contact, genid, contact_type) {
 	if (!id_contact || id_contact == '' || id_contact == 0) {
 		id_contact = $('#'+genid+'existing_contact_id').val();
 		if (typeof id_contact == 'undefined') id_contact = '';
+	}
+	if (!contact_type || isNaN(contact_type)) {
+		contact_type = $('#'+genid+'existing_contact_type').val();
+		if (typeof contact_type == 'undefined') contact_type = '';
 	}
 
 	var elementCheck = document.querySelector(element);
@@ -2615,7 +3317,7 @@ og.do_reload_subscribers = function(genid, object_type_id, user_ids) {
 	if (subs) subs.mask();
 
 	og.openLink(og.getUrl('object', 'render_add_subscribers', {
-		context: Ext.util.JSON.encode(member_selector[genid].sel_context),
+		context: member_selector.get_selected_context(genid),
 		users: uids,
 		genid: genid,
 		assigned_to: assigned_to,
@@ -2655,50 +3357,6 @@ function dump(arr,level) {
 	return dumped_text;
 }
 
-og.load_company_combo = function(combo_id, selected_id) {
-	if (!og.json_companies) {
-		$("#"+combo_id).css('display', 'none');
-		$("#"+combo_id+"-loading").css('display', '');
-		$.ajax({
-			type: "GET",
-			url: og.getUrl('contact', 'get_companies_json'),
-			dataType: "json",
-			async: true,
-			success: function(data, textStatus) {
-				var html = "";
-				for (var i=0; i<data.length; i++) {
-					sel = selected_id && selected_id == data[i].id ? " selected=selected " : "";
-					var optionStyle = (data[i].id == og.ownerCompany.id) ? 'style="font-weight: bold;"' : '';
-					html += "<option value=\"" + data[i].id + "\"" + sel + optionStyle + ">" + data[i].name + "</option>";
-				}
-				$("#"+combo_id).empty().append(html);
-
-				// cache if there are many companies
-				if (data.length > 1000) {
-					og.json_companies = data;
-				}
-
-				$("#"+combo_id+"-loading").css('display', 'none');
-				$("#"+combo_id).css('display', '');
-			}
-		});
-	} else {
-		$("#"+combo_id).css('display', 'none');
-		$("#"+combo_id+"-loading").css('display', '');
-
-		data = og.json_companies;
-		var html = "";
-		for (var i=0; i<data.length; i++) {
-			sel = selected_id && selected_id == data[i].id ? " selected=selected " : "";
-			var optionStyle = (data[i].id == og.ownerCompany.id) ? 'style="font-weight: bold;"' : '';
-			html += "<option value=\"" + data[i].id + "\"" + sel + optionStyle + ">" + data[i].name + "</option>";
-		}
-		$("#"+combo_id).empty().append(html);
-
-		$("#"+combo_id+"-loading").css('display', 'none');
-		$("#"+combo_id).css('display', '');
-	}
-}
 
 /**
  * Clears all dimension tree selections
@@ -2932,30 +3590,7 @@ og.dimensionTreeDoLayout = function(genid, dim_id) {
 og.onParentMemberRemove = function (genid){
 	$("#" + genid + "memberParent").val(0);
 }
-/*
-og.onParentMemberSelect = function (genid, container_id, dimension_id, item){
-	if (!item) {
-		// remove member
-		document.getElementById(genid + "memberParent").value = 0;
-		return;
-	}
-	var member_id = item.value;
-	if(member_id != "more"){
-		document.getElementById(genid + "memberParent").value = member_id;
-		if (og.prev_parent) {
-			member_selector.remove_relation(dimension_id, genid, og.prev_parent, true);
-		}
-		member_selector.add_relation(dimension_id, genid, member_id);
-		og.prev_parent = member_id;
 
-	}else if (member_id == "more"){
-		$("#"+container_id+"-input").val(item.label);
-		//increase the limit
-		ogSearchSelector.resetLimit(container_id, item.limit);
-		//fire the search
-		$("#"+container_id+"-input").keydown();
-	}
-}*/
 
 og.onParentMemberSelect = function (genid, dimension_id, member_id){
 	member_selector.remove_all_selections(genid);
@@ -2971,8 +3606,45 @@ og.onParentMemberSelect = function (genid, dimension_id, member_id){
 	og.prev_parent = member_id;
 
 	og.userPermissions.reload_member_permissions(genid, dimension_id, member_id);
+
+	// inherit color from parent member (only if new member)
+	og.populateMemberColorInput(genid, member_id);
 }
 
+/**
+ * Populate the member color input field with the parent member's color
+ * @param {string} genid - the id of the generator
+ * @param {number} parent_member_id - the id of the parent member
+ */
+og.populateMemberColorInput = function(genid, parent_member_id) {
+	let is_new_member = $("#" + genid + "member_id").val() == 0;
+	if (!is_new_member || parent_member_id === undefined || parent_member_id <= 0) {
+		return;
+	}
+
+	var applyParentColor = function(member) {
+		if (!member) return;
+		var color = member.color !== undefined ? member.color : member.c;
+		if (color === undefined || color === null || isNaN(color) || color <= 0) {
+			return;
+		}
+		var colorSelector = "#" + genid + "tabs .color-cell.ico-color" + color
+			+ ", #" + genid + "member_color_input .color-cell.ico-color" + color;
+		var $colorCell = $(colorSelector);
+		if ($colorCell.length > 0) {
+			$colorCell.first().click();
+		}
+	};
+
+	var members = og.getMemberFromOgDimensions(parent_member_id);
+	if (members && members.length > 0) {
+		applyParentColor(members[0]);
+	} else {
+		og.getMemberFromServer(parent_member_id, function(dimension_id, member) {
+			applyParentColor(member);
+		});
+	}
+}
 
 
 /**
@@ -3052,14 +3724,39 @@ og.render_modal_form = function(genid, options) {
 
 			div.className = options.cls || '';
 			div.id = id;
-			div.innerHTML = data.current.data;
+			var modalHtml = data.current && data.current.data ? data.current.data : '';
+			// simplemodal measures and positions the form the moment it is inserted, before its inline
+			// scripts run (they are deferred until the html is in the DOM). Only then does tabs() collapse
+			// the panels and apply their max-height, so a tall first tab (many custom properties /
+			// property groups) gets measured at full height and the modal is pinned to the top. Refit and
+			// re-center once the scripts have run so the position reflects the rendered content.
+			div.innerHTML = og.extractScripts(modalHtml, function() {
+				og.refit_modal_form(true);
+				// tabs have different heights: make sure the form still fits after switching
+				$(div).on('tabsactivate', function() {
+					og.refit_modal_form();
+				});
+			});
+			if (data.inlineScripts && data.inlineScripts.length) {
+				for (var is = 0; is < data.inlineScripts.length; is++) {
+					try {
+						if (window.execScript) {
+							window.execScript(data.inlineScripts[is]);
+						} else {
+							window.eval(data.inlineScripts[is]);
+						}
+					} catch (e) {
+						og.err(e.message);
+					}
+				}
+			}
 
 			var modal_params = {
 				'appendTo': '#modal-forms-container',
 				'focus': typeof(options.focusFirst) != 'undefined' ? options.focusFirst : true,
 				'escClose': typeof(options.escClose) != 'undefined' ? options.escClose : true,
 				'overlayClose': typeof(options.overlayClose) != 'undefined' ? options.overlayClose : false,
-				'closeHTML': '<a id="'+genid+'_close_link" class="'+close_cls+' modal-close modal-close-img" title="'+lang('close')+'"></a>',
+				'closeHTML': '<a id="'+genid+'_close_link" class="'+close_cls+' modal-close" title="'+lang('close')+'"><i class="icon-circle-x"></i></a>',
 				'onClose': function (dialog) {
 					$("#modal-forms-container").hide();
 					$.modal.close();
@@ -3093,13 +3790,16 @@ og.render_modal_form = function(genid, options) {
 					}*/
 
 					// adjust container height
-					$(".simplemodal-container .simplemodal-wrap").css('min-height', ($("#simplemodal-data").outerHeight()+20)+'px');
+					$(".simplemodal-container .simplemodal-wrap").css('min-height', ($("#simplemodal-data").outerHeight()+15)+'px');
 					$(".simplemodal-container .simplemodal-wrap").css('height', 'auto');
 					$(".simplemodal-container .simplemodal-wrap").css('overflow', '');
-                    $(".simplemodal-container").css('margin-top', '20px');
+                    // $(".simplemodal-container").css('margin-top', '20px');
 
 					// set main input width
 					og.update_modal_main_input_width();
+
+					// Update the position of the extjs dropdown lists when scrolling (member and contact selectors)
+					$(".edit-form-tabs .form-tab").on('scroll', updateExtjsDropdownListPosition);
 			    }
 			};
 			if (options.position) {
@@ -3149,16 +3849,54 @@ og.center_modal_form = function() {
 	});
 }
 
+/**
+ * Re-fits the modal container to the current height of its content.
+ * simplemodal freezes the container height (capped at the window height) and og.render_modal_form's
+ * onShow freezes the wrap min-height when the form is first shown; call this whenever the content
+ * height changed afterwards (tabs initialised, tab switched, custom properties loaded by ajax, etc).
+ *
+ * @param center true to re-center the modal (used once, when the form has just been rendered).
+ *   Otherwise the modal keeps its position and is only moved up when the content no longer fits
+ *   in the window, so switching between tabs of different heights does not make it jump around.
+ */
+og.refit_modal_form = function(center) {
+	var container = $(".simplemodal-container");
+	if (!container.length) return;
+
+	container.css('height', 'auto');
+	container.find('.simplemodal-wrap').css('min-height', '');
+	if ($.modal && $.modal.impl && $.modal.impl.d) {
+		$.modal.impl.d.origHeight = null;
+	}
+
+	if (center) {
+		og.center_modal_form();
+		return;
+	}
+
+	var modalh = $(".simplemodal-data").height();
+	var winh = $(".simplemodal-overlay").height();
+	var top = parseInt(container.css('top'), 10) || 0;
+	if (top + modalh > winh) {
+		container.css({
+			top: Math.max(0, winh - modalh) + 'px'
+		});
+	}
+}
+
 og.update_modal_main_input_width = function() {
-	var title_w = $(".simplemodal-data .coInputHeader .coInputHeaderUpperRow .coInputTitle").width();
-	var buttons_w = $(".simplemodal-data .coInputHeader .coInputButtons").width();
-	var prefix_w = $(".simplemodal-data .coInputHeader .coInputName .object-prefix").width();
-	var total_w = $(".simplemodal-data .coInputHeader").width();
-
-	var input_count = $(".simplemodal-data .coInputHeader .coInputName input.title").length;
-	if (input_count < 1) input_count = 1;
-
-	$(".simplemodal-data .coInputHeader .coInputName input.title").css('width', (((total_w - title_w - buttons_w - prefix_w) / input_count) - 35) + 'px');
+	// use a small timout to let the form process the css first
+	setTimeout(function() {
+		var title_w = $(".simplemodal-data .coInputHeader .coInputHeaderUpperRow .coInputTitle").width();
+		var buttons_w = $(".simplemodal-data .coInputHeader .coInputButtons").width();
+		var prefix_w = $(".simplemodal-data .coInputHeader .coInputName .object-prefix").width();
+		var total_w = $(".simplemodal-data .coInputHeader").width();
+	
+		var input_count = $(".simplemodal-data .coInputHeader .coInputName input.title").length;
+		if (input_count < 1) input_count = 1;
+	
+		$(".simplemodal-data .coInputHeader .coInputName input.title").css('width', (((total_w - title_w - buttons_w - prefix_w) / input_count) - 35) + 'px');
+	}, 100);
 }
 
 /**
@@ -3397,13 +4135,24 @@ og.initPopoverBtns = function(btns){
 		var btn = $("#"+btns[i].id);
 
 		// popover config
+		// `content` is a function (not a string captured once here) so the
+		// referenced template div's HTML is read live at show time, not at
+		// init time. Reading it once up front is fragile: if this button's
+		// row is initialised before its sibling template div is reliably
+		// queryable (e.g. rows rendered/synced across multiple async batches),
+		// the lookup can return undefined and Bootstrap silently falls back
+		// to its bare default popover (showing only the title). Reading at
+		// show time guarantees the button (and its template) are already in
+		// the live DOM, since the user is actively interacting with it.
 		var popover_options = {
-			content: "example",
+			html: true,
+			content: function () {
+				return $("#" + $(this).data("templateid")).html();
+			},
 			delay: {
 				show: "100",
 				hide: "200"
-			},
-			template : $("#"+btn.data("templateid")).html()
+			}
 		}
 
 		// hack for firefox
@@ -3569,19 +4318,54 @@ og.expandAllChildNodes = function(node) {
 }
 
 
+/**
+ * Keyword the user must type to confirm the deletion of a member.
+ *
+ * The confirmation modal renders this very value in its instructions, so the word shown to the
+ * user and the word validated on confirm can never drift apart from one translation to another.
+ *
+ * @return {String} the localized confirmation keyword
+ */
+og.getDeleteConfirmationKeyword = function() {
+	return lang('delete');
+}
+
+/**
+ * Check whether the text typed in the delete confirmation modal confirms the deletion.
+ *
+ * Matching is case insensitive. Besides the localized keyword, the untranslated "DELETE" is
+ * always accepted, because installs with customized language files may still be instructing
+ * the user to type it.
+ *
+ * @param {String} typed text entered by the user
+ * @return {Boolean} true if the deletion is confirmed
+ */
+og.isDeleteConfirmationKeyword = function(typed) {
+	if (!typed) return false;
+	typed = typed.replace(/^\s+|\s+$/g, '').toUpperCase();
+	return typed == og.getDeleteConfirmationKeyword().toUpperCase() || typed == 'DELETE';
+}
+
 og.doDeleteMember = function(gen, delete_url) {
 	var delMessage = $("#"+gen+"_keyword").val();
 	var trashObjects = $("#"+gen+"_trash_objects_in_member").val();
+
+	if (!og.isDeleteConfirmationKeyword(delMessage)) {
+		// Keep the modal open and report the mismatch: silently closing it made the
+		// confirm button look like it did nothing at all.
+		$("#"+gen+"_keyword_error").show();
+		$("#"+gen+"_keyword").focus();
+		return;
+	}
+
 	if (trashObjects && parseInt(trashObjects) > 0) {
 		delete_url += "&trash_objects_in_member=1";
 		og.preferences.trash_objects_in_member_after_delete = 1;
 	} else {
 		og.preferences.trash_objects_in_member_after_delete = 0;
 	}
-	if (delMessage && (delMessage.toUpperCase() == "DELETE")) {
-		og.openLink(delete_url);
-		$('#_close_link').click();
-	}
+	og.openLink(delete_url);
+	$('#_close_link').click();
 	og.ExtModal.hide();
 }
 
@@ -3592,8 +4376,9 @@ og.deleteMember = function(delete_url, ot_name){
 					'<div class="desc" style="margin-top:5px;">'+ lang('confirm delete permanently this member', ot_name) +'</div>'+
 				'</div>'+
 				'<div style="margin: 10px 10px 0 0;">'+
-					'<label>'+ lang('confirm delete with keyword') +'</label>'+
-					'<input type="text" name="keyword" id="'+ gen +'_keyword" style="width:100%;">'+
+					'<label>'+ lang('confirm delete with keyword', og.getDeleteConfirmationKeyword()) +'</label>'+
+					'<input type="text" name="keyword" id="'+ gen +'_keyword" style="width:100%;" onkeyup="$(\'#'+ gen +'_keyword_error\').hide();">'+
+					'<div class="errorMessage" id="'+ gen +'_keyword_error" style="display:none;">'+ lang('delete confirmation keyword mismatch', og.getDeleteConfirmationKeyword()) +'</div>'+
 				'</div><div class="clear"></div>'+
 
 				'<div style="margin: 10px 10px 0 0;">'+
@@ -3656,16 +4441,20 @@ og.renderContactDataFields = function(genid, value) {
 /* for address custom properties and contact form inputs */
 og.renderAddressTypeSelector = function(id, name, container_id, selected_value) {
 
-	var select = $('<select name="'+name+'" id="'+id+'" class="address_type_input"></select>');
-	for (var i=0; i<og.address_types.length; i++) {
-		var type = og.address_types[i];
-		var option = $('<option></option>');
-		option.attr('value', type.id);
-		if (selected_value == type.id) option.attr('selected', 'selected');
-		option.text(type.name);
-		select.append(option);
+	if (og.config.show_type_sel_on_address_field) {
+		var select = $('<select name="'+name+'" id="'+id+'" class="address_type_input"></select>');
+		for (var i=0; i<og.address_types.length; i++) {
+			var type = og.address_types[i];
+			var option = $('<option></option>');
+			option.attr('value', type.id);
+			if (selected_value == type.id) option.attr('selected', 'selected');
+			option.text(type.name);
+			select.append(option);
+		}
+		$('#'+container_id).empty().append(select);
+	} else {
+		$('#'+container_id).empty().append('<input type="hidden" name="'+name+'" id="'+id+'" value="'+selected_value+'" />');
 	}
-	$('#'+container_id).empty().append(select);
 	
 }
 
@@ -3684,6 +4473,10 @@ og.renderAddressInput = function(id, name, container_id, sel_type, sel_data) {
 
 	$('#'+container_id).append('<span id="'+id+'_type" style="vertical-align:top;"></span>');
 	og.renderAddressTypeSelector(id+'_type', name+'[type]', id+'_type', sel_type);
+
+	if (!og.config.show_type_sel_on_address_field) {
+		$('#'+container_id).addClass('no-type-selector');
+	}
 
 	var address_placeholder_str = navigator.appVersion.indexOf("MSIE") != -1 ? '' : ('placeholder="' + lang('street address') + '"');
 
@@ -3705,16 +4498,18 @@ og.renderAddressInput = function(id, name, container_id, sel_type, sel_data) {
 	$('#template_select_country option').clone().appendTo('#'+id+'_country');
 	if (sel_data.country != '') { 
 		var selc = document.getElementById(id+'_country');
-		for (var i=0; i<selc.options.length; i++) {
-			if (selc.options[i].value == sel_data.country) {
-				selc.options[i].setAttribute('selected','selected');
+		if (selc && selc.options.length) {
+			for (var i=0; i<selc.options.length; i++) {
+				if (selc.options[i].value == sel_data.country) {
+					selc.options[i].setAttribute('selected','selected');
+				}
 			}
 		}
 	}
 
 	var delete_or_undo = $(`<div class="removeUndo addressRemoveUndo">
-		<a href="#" onclick="og.markAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-delete delete-link" title="${lang('delete')}"></a>
-		<a href="#" onclick="og.undoMarkAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="${lang('undo')}"></a>
+		<a href="#" tabindex="-1" onclick="og.markAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-delete delete-link" title="${lang('delete')}"></a>
+		<a href="#" tabindex="-1" onclick="og.undoMarkAsDeleted(this, \'${container_id}\', \'${id}\');" class="coViewAction ico-undo undo-delete" style="display:none;" title="${lang('undo')}"></a>
 	</div>`);
 	$('#' + container_id).append(delete_or_undo);
 
@@ -3735,7 +4530,7 @@ og.onAssociatedMemberTypeRemove = function (genid, dimension_id, hf_id){
 	if (el) el.value = [];
 }
 
-og.onAssociatedMemberTypeSelect = function (genid, dimension_id, member_id, hf_id){
+og.onAssociatedMemberTypeSelect = function (genid, dimension_id, member_id, hf_id, dont_reload_other_trees){
 	member_selector.remove_all_selections(genid);
 	if (!member_id) {
 		// remove member
@@ -3744,7 +4539,7 @@ og.onAssociatedMemberTypeSelect = function (genid, dimension_id, member_id, hf_i
 		return;
 	}
 
-	member_selector.add_relation(dimension_id, genid, member_id, false);
+	member_selector.add_relation(dimension_id, genid, member_id, false, dont_reload_other_trees);
 	document.getElementById(genid + hf_id).value = "["+member_id+"]";
 	
 	// dont select associated members of an associated member
@@ -3754,9 +4549,9 @@ og.onAssociatedMemberTypeSelect = function (genid, dimension_id, member_id, hf_i
 }
 
 
-og.onAssociatedMemberTypeSelectMultiple = function (genid, dimension_id, member_id, hf_id){
+og.onAssociatedMemberTypeSelectMultiple = function (genid, dimension_id, member_id, hf_id, dont_reload_other_trees){
 
-	member_selector.add_relation(dimension_id, genid, member_id, true);
+	member_selector.add_relation(dimension_id, genid, member_id, true, dont_reload_other_trees);
 	document.getElementById(genid + hf_id).value = Ext.util.JSON.encode(member_selector[genid].sel_context[dimension_id]);
 
 	// dont select associated members of an associated member
@@ -3852,6 +4647,12 @@ og.uploadNewRevision = function(file_id, quickId) {
 	});
 };
 
+/**
+ * Dimension member tree: preserve scroll position when loading more nodes ("view more").
+ * ExtJS may reset scroll or use a different scroll container after TreeLoader runs; we capture
+ * scroll state before the request and restore it after render (sync + rAF + delayed correction
+ * only when scroll drifts).
+ */
 og.addViewMoreNode = function(pnode, tree_id, callback) {
 
 	var tree = Ext.getCmp(tree_id);
@@ -3870,7 +4671,10 @@ og.addViewMoreNode = function(pnode, tree_id, callback) {
 		leaf: true
 	});
 	if (view_more_node) {
-		view_more_node.on('click', function(){
+		view_more_node.on('click', function(node, e){
+			if (e && typeof e.stopEvent == 'function') {
+				e.stopEvent();
+			}
 
 			this.remove();
 
@@ -3878,6 +4682,7 @@ og.addViewMoreNode = function(pnode, tree_id, callback) {
 				callback.call(null, tree, pnode);
 			}
 
+			return false;
 		});
 
 		var old_view_more = tree.getNodeById('view_more_' + pnode.id);
@@ -3939,21 +4744,169 @@ og.ajaxMemberTreeViewMoreCallback = function(tree, pnode) {
 	}, 100);
 }
 
+og.getTreeScrollCandidates = function(tree) {
+	var out = [];
+	var seen = {};
+	function push(el) {
+		if (!el || !el.nodeType) return;
+		var key = el.tagName + ":" + (el.id || "") + ":" + (el.className || "");
+		if (seen[key]) return;
+		seen[key] = true;
+		out.push(el);
+	}
+
+	if (!tree) return out;
+	if (tree.body && tree.body.dom) push(tree.body.dom);
+	if (tree.innerCt && tree.innerCt.dom) push(tree.innerCt.dom);
+	if (tree.el && tree.el.dom) push(tree.el.dom);
+	if (typeof tree.getTreeEl == 'function') {
+		var treeEl = tree.getTreeEl();
+		if (treeEl && treeEl.dom) push(treeEl.dom);
+	}
+
+	// Add nearby ancestors because actual scroll container can vary by Ext layout.
+	for (var i = 0; i < out.length; i++) {
+		var p = out[i] ? out[i].parentNode : null;
+		var depth = 0;
+		while (p && depth < 6) {
+			push(p);
+			p = p.parentNode;
+			depth++;
+		}
+	}
+
+	return out;
+}
+
+/**
+ * Scroll container that actually moved (max scrollTop among candidates).
+ * Restoring only this element avoids jitter from fighting multiple parents.
+ */
+og.captureTreeScrollState = function(tree) {
+	if (!tree) return null;
+	var els = og.getTreeScrollCandidates(tree);
+	var bestEl = null;
+	var bestTop = -1;
+	for (var i = 0; i < els.length; i++) {
+		var el = els[i];
+		if (typeof el.scrollTop != 'number') continue;
+		if (el.scrollTop > bestTop) {
+			bestTop = el.scrollTop;
+			bestEl = el;
+		}
+	}
+	if (bestEl) {
+		return { el: bestEl, top: bestTop, elId: bestEl.id || null };
+	}
+	if (tree.body && tree.body.dom) {
+		var bd = tree.body.dom;
+		return { el: bd, top: bd.scrollTop, elId: bd.id || null };
+	}
+	return null;
+};
+
+og.captureTreeScrollTop = function(tree) {
+	var s = og.captureTreeScrollState(tree);
+	return s ? s.top : null;
+};
+
+/**
+ * After TreeLoader injects nodes, the DOM node that scrolls can be a sibling of the
+ * previously captured element — restoring only one ref often leaves scroll_top at 0.
+ * We set primary first, then every scrollable candidate; early frames avoid visible jump
+ * to top while loading.
+ */
+og.restoreTreeScrollState = function(state, tree) {
+	if (!state || typeof state.top != 'number') return;
+	var targetTop = state.top;
+	function resolveEl() {
+		if (state.el && state.el.parentNode) return state.el;
+		if (state.elId && document.getElementById(state.elId)) return document.getElementById(state.elId);
+		if (tree && tree.body && tree.body.dom) return tree.body.dom;
+		return null;
+	}
+	function applyScrollableCandidates() {
+		if (!tree) return;
+		var els = og.getTreeScrollCandidates(tree);
+		for (var i = 0; i < els.length; i++) {
+			var el = els[i];
+			if (typeof el.scrollTop != 'number') continue;
+			if (el.scrollHeight > el.clientHeight) {
+				el.scrollTop = targetTop;
+			}
+		}
+	}
+	/** Full restore right after load (DOM may still be settling). */
+	function applyFull() {
+		var el = resolveEl();
+		if (el) el.scrollTop = targetTop;
+		applyScrollableCandidates();
+	}
+	/** Lighter touch for late corrections — less parent/child fighting. */
+	function applyLight() {
+		var el = resolveEl();
+		if (el) el.scrollTop = targetTop;
+		if (tree && tree.body && tree.body.dom) {
+			var b = tree.body.dom;
+			if (b.scrollHeight > b.clientHeight) b.scrollTop = targetTop;
+		}
+		if (tree && tree.innerCt && tree.innerCt.dom) {
+			var ic = tree.innerCt.dom;
+			if (ic.scrollHeight > ic.clientHeight) ic.scrollTop = targetTop;
+		}
+	}
+	var driftPx = 8;
+	function needsCorrection() {
+		var cur = og.captureTreeScrollTop(tree);
+		if (cur === null || cur === undefined) return true;
+		return Math.abs(cur - targetTop) > driftPx;
+	}
+	applyFull();
+	if (window.requestAnimationFrame) {
+		requestAnimationFrame(function() {
+			applyFull();
+			requestAnimationFrame(applyFull);
+		});
+	}
+	setTimeout(applyFull, 0);
+	setTimeout(applyFull, 16);
+	// Late timers: only if layout reset scroll (~0.5–1s). Re-applying when already
+	// correct caused the visible "nudge upward" twitch.
+	var marks = [50, 100, 200, 600, 950, 1100];
+	for (var i = 0; i < marks.length; i++) {
+		(function(delay) {
+			setTimeout(function() {
+				if (needsCorrection()) {
+					applyLight();
+				}
+			}, delay);
+		})(marks[i]);
+	}
+};
+
 og.treeLoaderViewMoreCallback = function(tree, pnode) {
 	var offset = !isNaN(tree.loader.baseParams.offset) ? tree.loader.baseParams.offset : 0;
 	offset += og.config.member_selector_page_size;
+	var prevState = og.captureTreeScrollState(tree);
 
 	tree.loader.clearOnLoad = false;
 	tree.loader.baseParams['offset'] = offset;
 	tree.loader.baseParams['limit'] = og.config.member_selector_page_size;
+	tree.loader.baseParams['tree_id'] = tree.id;
 
-	tree.loader.load(pnode);
+	tree.loader.load(pnode, function() {
+		og.restoreTreeScrollState(prevState, tree);
+	});
 }
 
 og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 	var tree_id = tree.id;
+	var requested_offset = (!isNaN(offset) ? parseInt(offset, 10) : 0);
+	var is_paginated_load = requested_offset > 0;
+	
 	var parameters = {
-		dimension_id: tree.dimensionId
+		dimension_id: tree.dimensionId,
+		tree_id: tree_id
 	};
 	if (add_params) {
 		for (key in add_params) {
@@ -3977,7 +4930,7 @@ og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 			
 			if (!data) return;
 
-			var dimension_tree = Ext.getCmp(tree_id);
+			var dimension_tree = Ext.getCmp(data.tree_id);
 
 			//add nodes to tree
 			dimension_tree.addMembersToTree(data.dimension_members,data.dimension_id);
@@ -3985,9 +4938,11 @@ og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 			dimension_tree.innerCt.unmask();
 
 			//filter the tree
-			dimension_tree.suspendEvents();
-			dimension_tree.expandAll();
-			dimension_tree.resumeEvents();
+			if (!is_paginated_load) {
+				dimension_tree.suspendEvents();
+				dimension_tree.expandAll();
+				dimension_tree.resumeEvents();
+			}
 			dimension_tree.render();
 
 			var is_filtered = data.list_was_filtered_by && data.list_was_filtered_by.length > 0;
@@ -4003,7 +4958,12 @@ og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 				if (old_view_more_node) old_view_more_node.remove();
 			}
 
-			dimension_tree.initialized = true;
+			if (!is_paginated_load) {
+				dimension_tree.initialized = true;
+				if (typeof dimension_tree.onInitialLoadComplete === 'function') {
+					dimension_tree.onInitialLoadComplete();
+				}
+			}
 
 			if (og.after_member_tree_initial_load_functions) {
 				fn_params = {add_params:add_params, data:data};
@@ -4021,6 +4981,9 @@ og.initialMemberTreeAjaxLoad = function(tree, limit, offset, add_params) {
 
 og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 	var tree_id = tree.id;
+	var requested_offset = (!isNaN(offset) ? parseInt(offset, 10) : 0);
+	var is_paginated_load = requested_offset > 0;
+	var prevState = og.captureTreeScrollState(tree);
 	var parameters = {
 		dimension_id: tree.dimensionId,
 		ignore_context_filters: true,
@@ -4042,8 +5005,7 @@ og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 			parameters[key] = add_params[key];
 		}
 	}
-	
-	
+
 	if (pnode.ownerTree.initialConfig.get_childs_params) {
 		for (p_name in pnode.ownerTree.initialConfig.get_childs_params) {
 			if (typeof(pnode.ownerTree.initialConfig.get_childs_params[p_name]) == 'function') continue;
@@ -4064,10 +5026,13 @@ og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 			dimension_tree.innerCt.unmask();
 
 			//filter the tree
-			dimension_tree.suspendEvents();
-			dimension_tree.expandAll();
-			dimension_tree.resumeEvents();
+			if (!is_paginated_load) {
+				dimension_tree.suspendEvents();
+				dimension_tree.expandAll();
+				dimension_tree.resumeEvents();
+			}
 			dimension_tree.render();
+			og.restoreTreeScrollState(prevState, dimension_tree);
 
 			if(typeof(data.dimensions_root_members) != "undefined" && !data.more_nodes_left){
 				ogMemberCache.addDimToDimRootMembers(data.dimension_id);
@@ -4083,6 +5048,41 @@ og.memberTreeAjaxLoad = function(tree, pnode, limit, offset, add_params) {
 			dimension_tree.initialized = true;
 		}
 	});
+}
+
+/**
+ * Return the extra filters for the tree as a JSON string
+ * @param tree {og.MemberTreeAjax} The tree to get the filters from
+ * @return {String} The extra filters as a JSON string
+ */
+og.getMemberTreeExtraFilters = function(tree) {
+	if (tree.initialConfig.extra_options && tree.initialConfig.extra_options.filters && tree.initialConfig.extra_options.filters.length > 0) {
+		// Get the filters
+		let filters = tree.initialConfig.extra_options.filters;
+		// Find more information to add to the filters
+		for (var i = 0; i < filters.length; i++) {
+			if (filters[i].property_id == 'child_of' || filters[i].property_id == 'chained_association') {
+				let assoc_id = filters[i].value;
+
+				let sel_mem_ids = $('#'+ tree.id).closest('form').find('input[name="associated_members\\['+ assoc_id +'\\]"]').val();
+				if (sel_mem_ids) {
+					sel_mem_ids = JSON.parse(sel_mem_ids);
+					if (sel_mem_ids.length > 0) {
+						filters[i].selected_value = sel_mem_ids;
+					} else {
+						delete filters[i].selected_value;
+					}
+				} else {
+					delete filters[i].selected_value;
+				}
+			}
+		}
+
+		// Return the filters as a JSON string
+		return JSON.stringify(filters);
+	} else {
+		return null;
+	}
 }
 
 og.reloadCurrentPanel = function() {
@@ -4166,6 +5166,7 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 					} else {
 						
 						var form_id = hf.dom.form.id;
+						if (!form_id) return;
 						
 						var dep_genid = "";
 						var selector_inputs = $("#" + form_id + ' .dimension-panel-textfilter');
@@ -4173,19 +5174,25 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 							var sel_id = selector_inputs[x].id;
 							var key = "-member-chooser-panel-"+ data.dimension_id +"-tree-textfilter";
 							if (sel_id.indexOf(key) >= 0) {
-								dep_genid = selector_inputs[x].id.substring(0, selector_inputs[x].id.indexOf("-"));
+								dep_genid = member_selector.get_genid_from_tree_textfilter_id(sel_id, data.dimension_id);
 								break;
 							}
 						}
 						if (dep_genid == '') dep_genid = data.genid;
 					}
+
+					var assoc_selector = member_selector[dep_genid];
+					if (!assoc_selector) {
+						dep_genid = dep_genid + '-' + data.dimension_id;
+						assoc_selector = member_selector[dep_genid];
+					}
 		
-					if (member_selector[dep_genid] && member_selector[dep_genid].properties[data.dimension_id]) {
+					if (assoc_selector && assoc_selector.properties[data.dimension_id]) {
 						// add the relations
 						for (var z=0; z<data.member_ids.length; z++) {
 
 							// if already selected then do nothing
-							var hf_input = document.getElementById(dep_genid + member_selector[dep_genid].hiddenFieldName);
+							var hf_input = document.getElementById(dep_genid + assoc_selector.hiddenFieldName);
 							var json_sel_ids = Ext.util.JSON.decode(hf_input.value);
 							if (json_sel_ids.indexOf(parseInt(data.member_ids[z])) != -1) {
 								continue;
@@ -4196,7 +5203,7 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 							
 							if (og.dimensions && og.dimensions[data.dimension_id] && og.dimensions[data.dimension_id][data.member_ids[z]]) {
 								// if member data already in cache -> use it and select the member
-								member_selector.add_relation(data.dimension_id, dep_genid, data.member_ids[z], false, true);
+								member_selector.add_relation(data.dimension_id, dep_genid, data.member_ids[z], true, true);
 							} else {
 								// go to server and get the member data and then select the member
 								var tmp_data = {member_id: data.member_ids[z], dimension_id: data.dimension_id, genid:dep_genid};
@@ -4205,7 +5212,7 @@ og.selectDefaultAssociatedMembers = function(genid, dimension_id, member_id, cur
 						}
 						// hide emtpy text
 						if (data.member_ids.length > 0) {
-							if (!member_selector[dep_genid].properties[data.dimension_id].isMultiple) {
+							if (!assoc_selector.properties[data.dimension_id].isMultiple) {
 								$("#"+dep_genid+"-member-chooser-panel-"+data.dimension_id+"-tree-current-selected .empty-text").hide();
 							}
 						}
@@ -4681,7 +5688,10 @@ og.get_report_parameters_of_form = function(genid) {
 		if(x == 'params'){
 			params["report_params"] = Ext.util.JSON.encode(post[x]);
 		}else if (x != 'c' && x != 'a' && x != 'ajax') {
-			params[x] = post[x];
+			// array-valued fields (e.g. the task time report's selected 'columns') need the
+			// '[]' suffix so the server receives them back as an array instead of collapsing
+			// the repeated field down to just its last value
+			params[Ext.isArray(post[x]) ? x + '[]' : x] = post[x];
 
 			var i = document.createElement("input");
 			i.type= "hidden";
@@ -4689,6 +5699,22 @@ og.get_report_parameters_of_form = function(genid) {
 			i.name = x;
 			form.appendChild(i);
 		}
+	}
+
+	// Prefer the current sort state from the form (matches what the user sees on screen)
+	if (form && form.order_by) {
+		params['order_by'] = form.order_by.value;
+	}
+	if (form && form.order_by_asc) {
+		params['order_by_asc'] = form.order_by_asc.value;
+	}
+
+	// Always pin the report id from the visible form; never reuse a stale id from cached post
+	var report_id_el = document.getElementById('report_id_' + genid);
+	if (report_id_el && report_id_el.value) {
+		delete params.id;
+		delete params.report_id;
+		params.id = report_id_el.value;
 	}
 
 	og.reports.fillDisabledParams(genid, params);
@@ -4828,10 +5854,10 @@ og.quick_add_row_time_input = function(config) {
 }
 
 og.quick_add_row_worked_time_input = function(config) {
-	var html = '<table><tr><td>';
+	var html = '<table class="qa-worked-time-table"><tr><td class="qa-hours-cell">';
 	var onkeydown = config.onkeydown ? 'onkeydown="'+config.onkeydown+'"' : '';
 	html += '<input type="number" name="timeslot[hours]" tabindex="'+config.tabindex+'" id="'+config.id+'" '+onkeydown+' style="width:40px;" value="0"/> hs.';
-	html += '</td><td>';
+	html += '</td><td class="qa-minutes-cell">';
 	html += '<select name="timeslot[minutes]" tabindex="'+(config.tabindex + 1)+'"/>';
 	for (var i=0; i<60; i++) {
 		html += '<option value="'+ i +'">'+ i +'</option>';
@@ -4930,13 +5956,29 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 			params[$(this).attr('name')] = $(this).val();
 		}
 	});
-	
+
+	// Track which dimensions have selected members
+	var dimensions_with_selection = {};
+
 	for (did in og.simple_member_selectors[grid.genid]) {
 		var mem_selector = og.simple_member_selectors[grid.genid][did];
 		if (mem_selector) {
 			var mem_id = mem_selector.getValue();
 			if (mem_id > 0) {
 				member_ids.push(mem_id);
+				dimensions_with_selection[did] = true;
+			}
+		}
+	}
+
+	// Apply default dimension values for dimensions that don't have any selected members
+	if (og.dimensions_info) {
+		for (did in og.dimensions_info) {
+			if (!isNaN(did) && !dimensions_with_selection[did]) {
+				var dimension_info = og.dimensions_info[did];
+				if (dimension_info && dimension_info.default_member && dimension_info.default_member > 0) {
+					member_ids.push(dimension_info.default_member);
+				}
 			}
 		}
 	}
@@ -4946,6 +5988,9 @@ og.add_timeslot_module_quick_add_params = function(grid) {
 
 	var user_id = Ext.getCmp(grid.genid + 'add_ts_contact_id').getValue();
 	params['timeslot[contact_id]'] = user_id;
+
+	var task_id = Ext.getCmp(grid.genid + 'rel_object_id').getValue();
+	params['object_id'] = task_id;
 
 	params['req_channel'] = 'time list - quick add';
 
@@ -5029,6 +6074,23 @@ og.add_timeslot_module_quick_add_enter = function(event, genid) {
 	}
 }
 
+/**
+ * Returns the user ID to pre-select in a quick-add row's user combo.
+ * Uses the value from the given user-filter component when it belongs to the
+ * same grid, falling back to the logged user otherwise.
+ *
+ * @param {Object} grid         - The ExtJS grid instance.
+ * @param {string} filterCmpId  - The component ID of the user filter (e.g. "user_filter").
+ * @returns {number} User ID to use as the initial value.
+ */
+og.get_quick_add_initial_user_id = function(grid, filterCmpId) {
+	var user_filter_cmp = Ext.getCmp(filterCmpId);
+	if (user_filter_cmp && user_filter_cmp.grid_id === grid.id && user_filter_cmp.getValue() > 0) {
+		return user_filter_cmp.getValue();
+	}
+	return og.loggedUser.id;
+};
+
 og.add_timeslot_module_quick_add_row = function(grid, config) {
 
 	var onclick = 'og.on_quick_add_row_input_click(this, event);';
@@ -5057,7 +6119,7 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 	record_config.description = '<input type="text" id="'+config.genid+'add_ts_description" name="timeslot[description]" value="" style="width:95%;" onmousedown="event.stopPropagation();"';
 	record_config.description += 'onclick="'+onclick+'" tabindex="'+og.quick_add_row_column_tabindex(grid, 'description')+'" onkeydown="og.add_timeslot_module_quick_add_enter(event, \''+config.genid+'\')"/>';
 	record_config.name = '<span id="'+config.genid+'usercombo"></span>';
-	record_config.start_time = '<table><tr><td><span id="'+config.genid+'start_date"></td><td><span id="'+config.genid+'start_time"></td></tr></table>';
+	record_config.start_time = '<table class="qa-start-time-table"><tr><td class="qa-date-cell"><span id="'+config.genid+'start_date"></td><td class="qa-time-cell"><span id="'+config.genid+'start_time"></td></tr></table>';
 
 	record_config.worked_time = og.quick_add_row_worked_time_input({
 		id: config.genid + 'add_ts_worked_time',
@@ -5070,12 +6132,15 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		record_config.is_billable += '<input type="hidden" id="'+ config.genid + 'add_ts_invoicing_status" name="timeslot[invoicing_status]" />';
 	}
 
+	// placeholder for the tasks selector
+	record_config.rel_object_name = '<span id="'+config.genid+'rel_object_name"></span>';
+
 	// submit button
 	var quick_add_submit_fn = 'og.add_timeslot_module_quick_add_submit(\''+grid.id+'\', \''+first_input_column+'\'); return false;';
-	var quick_add_btn_class = 'x-btn-text ico-new add-first-btn blue';
+	var quick_add_btn_class = 'x-btn-text btn btn-sm btn-secondary';
 	var ac_tindex = og.quick_add_row_column_tabindex(grid, 'actions');
 	var quick_add_btn_blur = 'document.getElementById(\''+config.genid+'add_ts_'+first_input_column+'\').focus();';
-	record_config.actions = '<button id="'+config.genid+'ts_quick_add_btn" class="'+quick_add_btn_class+'" onblur="'+quick_add_btn_blur+'" onclick="'+quick_add_submit_fn+'" tabindex="'+ac_tindex+'">'+lang('add')+'</button>';
+	record_config.actions = '<button id="'+config.genid+'ts_quick_add_btn" class="'+quick_add_btn_class+'" onblur="'+quick_add_btn_blur+'" onclick="'+quick_add_submit_fn+'" tabindex="'+ac_tindex+'"><i class="icon-circle-plus"></i>'+lang('add')+'</button>';
 
 	// dimension selector containers
 	for (var i=0; i<grid.colModel.config.length; i++) {
@@ -5096,22 +6161,31 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 	$(add_row).addClass('quick-add-row');
 
 	// render member selectors
+	og.quick_add_row_dim_selectors = {};
 	for (var i=0; i<grid.colModel.config.length; i++) {
 		var col_conf = grid.colModel.config[i];
 		if (col_conf.id.indexOf('dim_') == 0) {
 			var dim_id = col_conf.id.substring(4);
 
+			// after changing project or customer selector we must filter the tasks selector
+			let is_client_or_project_dim = false;
+			if ((og.projects && dim_id == og.projects.dimension_id) || (og.customers && dim_id == og.customers.dimension_id)) {
+				is_client_or_project_dim = true;
+			}
+
 			// after changing exepnse category selector we must filter the product types selector
 			var onselect = null;
 			if (og.hour_types && dim_id == labor_cat_dim_id) {
 				onselect = og.hour_types.after_quick_add_labor_cat_select;
+			} else if (is_client_or_project_dim) {
+				onselect = og.load_time_quick_add_row_tasks;
 			}
 		
-			dim_sel = new og.SimpleMemberSelector({
+			og.quick_add_row_dim_selectors[dim_id] = new og.SimpleMemberSelector({
 				dimensionId: dim_id,
 				genid: config.genid,
 				renderTo: config.genid + 'members_' + dim_id,
-				width: grid.colModel.getColumnWidth(i) - 14,
+				width: grid.colModel.getColumnWidth(i) - 10,
 				select_current_context: true,
 				tabIndex: og.quick_add_row_column_tabindex(grid, col_conf.id),
 				onselect_fn: onselect
@@ -5126,6 +6200,8 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 			user_combo_listeners[x] = og.time_quick_add_user_combo_listeners[x];
 		}
 	}
+
+	var quick_add_selected_user_id = og.get_quick_add_initial_user_id(grid, "user_filter");
 	
 	// user selector of the quick add
 	var user_combo = og.quick_add_row_combo_input({
@@ -5133,8 +6209,9 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 		genid: config.genid,
 		name: "timeslot[contact_id]",
 		options: config.quick_add_row_user_options,
-		initial_val: og.loggedUser.id,
+		initial_val: quick_add_selected_user_id,
 		renderTo: config.genid + "usercombo",
+		width: grid.colModel.getColumnById('name').width - 10,
 		tabIndex: og.quick_add_row_column_tabindex(grid, 'name'),
 		listeners: user_combo_listeners
 	});
@@ -5177,11 +6254,23 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 			options: [['yes', lang('yes')], ['no', lang('no')]],
 			initial_val: 'pending',
 			renderTo: config.genid + "is_billable",
-			width: 60,
+			width: grid.colModel.getColumnById('is_billable').width - 10,
 			tabIndex: og.quick_add_row_column_tabindex(grid, 'is_billable'),
 			listeners: billable_combo_listeners
 		});
 	}
+
+	// Create the Task selector and render in its placeholder
+	og.quick_add_row_task_combo = og.quick_add_row_combo_input({
+		id: config.genid + 'rel_object_id',
+		genid: config.genid,
+		name: "timeslot_rel_object_id",
+		options: [],
+		width: grid.colModel.getColumnById('rel_object_name').width - 10,
+		renderTo: config.genid + 'rel_object_name',
+	});
+	// Load the tasks
+	og.load_time_quick_add_row_tasks();
 
 	$("#"+ config.genid +"add_ts_start_time_min").keydown(function(event){
 		var gid = $(this).attr('id').replace("add_ts_start_time_min", "");
@@ -5209,6 +6298,90 @@ og.add_timeslot_module_quick_add_row = function(grid, config) {
 	});
 
 }
+
+/**
+ * If no project or client selected, then don't load the tasks
+ * Otherwise, load all tasks in the context and populate the task selector
+ * @return {undefined}
+ */
+og.load_time_quick_add_row_tasks = function () {
+
+	if (!og.quick_add_row_task_combo) return;
+
+	// id of the task selector
+	let combo_id = og.quick_add_row_task_combo.id;
+
+	// clone the context into another object
+	let selected_context = structuredClone(og.contextManager.dimensionMembers);
+
+	let sel_project = null;
+	if (og.projects && og.quick_add_row_dim_selectors[og.projects.dimension_id]) {
+		sel_project = og.quick_add_row_dim_selectors[og.projects.dimension_id].getValue();
+	}
+	let sel_client = null;
+	if (og.customers && og.quick_add_row_dim_selectors[og.customers.dimension_id]) {
+		sel_client = og.quick_add_row_dim_selectors[og.customers.dimension_id].getValue();
+	}
+	if (!sel_project && !sel_client) {
+		og.quick_add_row_task_combo.store.loadData([[0, lang('please select a project or client filter')]]);
+		og.quick_add_row_task_combo.setValue(0);
+		$("#"+combo_id).addClass("desc");
+		return;
+	} else {
+		if (sel_project) {
+			selected_context[og.projects.dimension_id] = [0, sel_project];
+		}
+		if (sel_client) {
+			selected_context[og.customers.dimension_id] = [0, sel_client];
+		}
+		$("#"+combo_id).removeClass("desc");
+	}
+	// ---
+	
+	og.openLink(og.getUrl('object', 'get_tasks_in_context', {context: JSON.stringify(selected_context)}), {
+		callback: function(success, data) {
+			
+			if (!data || !data.tasks) return;
+
+			og.quick_add_row_task_combo.store.loadData(og.buildNestedTaskStore(data.tasks));
+			og.quick_add_row_task_combo.setValue(0);
+		}
+	});
+}
+
+/**
+ * Builds a nested [value, text] store array from a flat tasks list, ordered by
+ * parent-child relationships and indented by nesting depth.
+ * Tasks whose parentId is absent from the list are treated as root tasks.
+ * @param {Array} tasks - Array of task objects with `id`, `name`, and optional `parentId`
+ * @return {Array} Store data array starting with a blank [[0, '--']] entry
+ */
+og.buildNestedTaskStore = function(tasks) {
+	var task_store = [[0, '--']];
+	var taskMap = {};
+	var childrenMap = {0: []};
+	for (var i = 0; i < tasks.length; i++) {
+		taskMap[tasks[i].id] = tasks[i];
+	}
+	for (var i = 0; i < tasks.length; i++) {
+		var t = tasks[i];
+		var pid = (t.parentId && taskMap[t.parentId]) ? t.parentId : 0;
+		if (!childrenMap[pid]) childrenMap[pid] = [];
+		childrenMap[pid].push(t);
+	}
+	(function addTasksToStore(parentId, depth) {
+		var children = childrenMap[parentId];
+		if (!children) return;
+		var indent = '';
+		for (var d = 0; d < depth; d++) indent += '\u00a0\u00a0\u00a0';
+		for (var j = 0; j < children.length; j++) {
+			var child = children[j];
+			task_store.push([child.id, indent + child.name]);
+			addTasksToStore(child.id, depth + 1);
+		}
+	})(0, 0);
+	return task_store;
+};
 
 og.quick_add_row_time_on_is_billable_select = function(combo, record, index) {
 	let inv_status = combo.getValue() == 'yes' ? 'pending' : 'non_billable';
@@ -5267,8 +6440,6 @@ og.render_default_grid_actions = function(value, p, r) {
 	var actions = '';
 	if (r.id == 'quick_add_row' || r.data.id == '__total_row__') return value;
 
-	var actionStyle= ' style="font-size:105%;padding-top:2px;padding-bottom:3px;padding-left:16px;background-repeat:no-repeat;" ';
-
 	if (r.store && r.store.baseParams && r.store.baseParams.url_controller) {
 		var controller = r.store.baseParams.url_controller;
 		var action_edit = 'edit';
@@ -5276,13 +6447,13 @@ og.render_default_grid_actions = function(value, p, r) {
 		var obj_id = r.data.object_id ? r.data.object_id : r.data.id;
 
 		actions += String.format(
-			'<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\''+controller+'\', a:\''+action_edit+'\', params:{id:'+obj_id+'}});" title="{0}" '+
-			actionStyle + '>&nbsp;</a>', lang('edit')
+			'<a class="list-action-icon edit" href="#" onclick="og.render_modal_form(\'\', {c:\''+controller+'\', a:\''+action_edit+'\', params:{id:'+obj_id+'}});" title="{0}"><i class="icon-pencil-line"></i></a>',
+			lang('edit')
 		);
 
 		actions += String.format(
-			'<a class="list-action ico-delete" href="#" onclick="og.prompt_delete_object('+obj_id+', 1);" title="{0}" '+
-			actionStyle + '>&nbsp;</a>', lang('delete')
+			'<a class="list-action-icon delete" href="#" onclick="og.prompt_delete_object('+obj_id+', 1);" title="{0}"><i class="icon-circle-x"></i></a>',
+			lang('delete')
 		);
 	}
 
@@ -5504,7 +6675,7 @@ og.upload_tmp_file_content = function(genid, file_input_id, file_input_name, hf_
 
 // drag & drop classification call
 
-og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations, remove_prev, callback, dimension_id) {
+og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassify_in_associations, remove_prev, callback, dimension_id, remove_obj_task) {
 	
 	if (og.still_adding_objects_to_member) return;
 	og.still_adding_objects_to_member = true;
@@ -5525,6 +6696,7 @@ og.call_add_objects_to_member = function(e, ids, member_id, attachment, reclassi
 	if (attachment) params.attachment = attachment;
 	if (reclassify_in_associations) params.reclassify_in_associations = reclassify_in_associations;
 	if (remove_prev) params.remove_prev = remove_prev;
+	if (remove_obj_task) params.remove_obj_task = remove_obj_task;
 	
 	params.req_channel = 'drag and drop';
 	
@@ -5599,6 +6771,10 @@ og.format_money_amount = function(amount, decimals) {
 
 	// get the number
 	amount = parseFloat(amount);
+
+	if (isNaN(amount)) {
+		amount = 0;
+	}
 	
 	if (!decimals) {
 		decimals = og.preferences.decimal_digits == '' ? 2 : og.preferences.decimal_digits;
@@ -5671,54 +6847,81 @@ og.getDateArray = function (date, time) {
     var result = [];
     switch (format) {
         case 'd-m-Y':
+		case 'd-m-y':
+		case 'j-n-Y':
+		case 'j-n-y':
             var aux = date.split('-');
             result.push(aux[2]);
             result.push((aux[1] - 1));
             result.push(aux[0]);
             break;
         case 'd/m/Y':
+		case 'd/m/y':
+		case 'j/n/Y':
+		case 'j/n/y':
             var aux = date.split('/');
             result.push(aux[2]);
             result.push((aux[1] - 1));
             result.push(aux[0]);
             break;
         case 'd.m.Y':
+		case 'd.m.y':
+		case 'j.n.Y':
+		case 'j.n.y':
             var aux = date.split('.');
             result.push(aux[2]);
             result.push((aux[1] - 1));
             result.push(aux[0]);
             break;
         case 'm-d-Y':
+		case 'm-d-y':
+		case 'n-j-Y':
+		case 'n-j-y':
             var aux = date.split('-');
             result.push(aux[2]);
             result.push((aux[0] - 1));
             result.push(aux[1]);
             break;
         case 'm/d/Y':
+		case 'm/d/y':
+		case 'n/j/Y':
+		case 'n/j/y':
             var aux = date.split('/');
             result.push(aux[2]);
             result.push((aux[0] - 1));
             result.push(aux[1]);
             break;
         case 'm.d.Y':
+		case 'm.d.y':
+		case 'n.j.Y':
+		case 'n.j.y':
             var aux = date.split('.');
             result.push(aux[2]);
             result.push((aux[0] - 1));
             result.push(aux[1]);
             break;
         case 'Y-m-d':
+		case 'y-m-d':
+		case 'Y-n-j':
+		case 'y-n-j':
             var aux = date.split('-');
             result.push(aux[0]);
             result.push((aux[1] - 1));
             result.push(aux[2]);
             break;
         case 'Y/m/d':
+		case 'y/m/d':
+		case 'Y/n/j':
+		case 'y/n/j':
             var aux = date.split('/');
             result.push(aux[0]);
             result.push((aux[1] - 1));
             result.push(aux[2]);
             break;
         case 'Y.m.d':
+		case 'y.m.d':
+		case 'Y.n.j':
+		case 'y.n.j':
             var aux = date.split('.');
             result.push(aux[0]);
             result.push((aux[1] - 1));
@@ -6015,7 +7218,8 @@ og.select_task_and_make_reassign_request = function(object_ids, controller, acti
 		}
 	}, null, {
 		types: ['task'],
-		selected_type: 'task'
+		selected_type: 'task',
+		ignore_context: false,
 	});
 }
 
@@ -6154,6 +7358,210 @@ og.get_custom_property_by_id_and_type = function(cp_id, object_type_name) {
 	return cp;
 }
 
+
+
+/**
+ * Returns an array of member IDs that are linked to the custom property with the given id
+ * and object type name.
+ * The linked members can be either associated members or classification members of a classification.
+ * @param {string} genid - The GENID of the form.
+ * @param {number} cp_id - The id of the custom property.
+ * @param {string} linked_to - The name of the object type the custom property is linked to.
+ * @return {array} An array of member IDs that are linked to the custom property.
+ */
+og.get_object_link_custom_property_linked_member_ids = function(genid, cp_id, linked_to) {
+	let sel_mem_ids = [];
+	if (linked_to.indexOf('assoc_') == 0) {
+		let assoc_id = linked_to.replace('assoc_', '');
+		sel_mem_ids = og.get_object_link_custom_property_linked_assoc_member_ids(genid, cp_id, assoc_id);		
+	} else if (linked_to.indexOf('classification_') == 0) {
+		let dim_id = linked_to.replace('classification_', '');
+		sel_mem_ids = og.get_object_link_custom_property_linked_classification_member_ids(genid, cp_id, dim_id);	
+	}
+
+	return sel_mem_ids;
+}
+
+
+/**
+ * Returns an array of member IDs that are linked to the custom property with the given id
+ * and association id.
+ * The linked members are associated members of the given association.
+ * @param {string} genid - The GENID of the form.
+ * @param {number} cp_id - The id of the custom property.
+ * @param {number} assoc_id - The id of the association.
+ * @return {array} An array of member IDs that are linked to the custom property.
+ */
+og.get_object_link_custom_property_linked_assoc_member_ids = function(genid, cp_id, assoc_id) {
+	let sel_mem_ids = $('#'+ genid +'cp'+cp_id).closest('form').find('input[name="associated_members\\['+ assoc_id +'\\]"]').val();
+	sel_mem_ids = JSON.parse(sel_mem_ids);
+
+	return sel_mem_ids;	
+};
+
+
+/**
+ * Returns an array of member IDs that are linked to the custom property with the given id
+ * and dimension id.
+ * The linked members are members of the given dimension.
+ * @param {string} genid - The GENID of the form.
+ * @param {number} cp_id - The id of the custom property.
+ * @param {number} dim_id - The id of the dimension.
+ * @return {array} An array of member IDs that are linked to the custom property.
+ */
+og.get_object_link_custom_property_linked_classification_member_ids = function(genid, cp_id, dim_id) {
+	let sel_mem_ids = [];
+	if ($('#'+ genid +'cp'+cp_id).closest('form').find('input[name="classfication\\['+ dim_id +'\\]"]').length == 0) {
+		// when using old classfication selector (all members in the same input)
+		sel_mem_ids = [];
+		let form_genid = $('#'+ genid +'cp'+cp_id).closest('form').find('input[name="genid"]').val();
+		if (member_selector[form_genid] && member_selector[form_genid].sel_context) {
+			sel_mem_ids = member_selector[form_genid].sel_context[dim_id];
+		}
+
+	} else {
+		// Get the selected values of the linked selector
+		sel_mem_ids = $('#'+ genid +'cp'+cp_id).closest('form').find('input[name="classfication\\['+ dim_id +'\\]"]').val();
+		sel_mem_ids = JSON.parse(sel_mem_ids);
+	}
+	return sel_mem_ids;
+}
+
+/**
+ * Shows an object picker for selecting objects to link to a custom property, and calls
+ * og.add_object_link_custom_property_value with the selected objects.
+ * @param {string} genid - The ID of the generator.
+ * @param {number} cp_id - The ID of the custom property.
+ * @param {boolean} is_multiple - Whether the custom property is allowed to have multiple values.
+ * @param {string} object_type - The name of the object type to filter by.
+ * @param {string} linked_to - The name of the object type or classification type that the custom property is linked to.
+ */
+og.select_object_link_custom_property_value = function(genid, cp_id, is_multiple, object_type, linked_to) {
+	// show object pickar and call og.add_object_link_custom_property_value
+
+	let filter_types = [];
+	if (object_type != '') {
+		filter_types.push(object_type);
+	}
+
+	let member_ids = og.get_object_link_custom_property_linked_member_ids(genid, cp_id, linked_to);
+
+	let object_picker_config = {
+		genid: genid,
+		cp_id: cp_id,
+		is_multiple: is_multiple,
+		ignore_context: true,
+		hideFilters: true,
+		sort: 'dateUpdated',
+		dir: 'DESC',
+		types: filter_types
+	}
+	if (object_type) {
+		object_picker_config.selected_type = [object_type];
+	}
+	if (member_ids && member_ids.length > 0) {
+		object_picker_config.extra_member_ids = JSON.stringify(member_ids);
+	}
+
+	og.ObjectPicker.show(function (objs) {
+		if (objs && objs.length > 0) {
+			for (var i=0; i < objs.length; i++) {
+				var obj = objs[i].data;
+				if (obj) {
+					og.add_object_link_custom_property_value(this.genid, this.cp_id, this.is_multiple, obj);
+				}
+				if (!this.is_multiple) break;
+			}
+		}
+	}, null, object_picker_config);
+}
+
+/**
+ * Add the object id to the selected values array and update the hidden field value.
+ * If not is multiple hide the select object link.
+ * Append the selected object html.
+ * 
+ * @param {string} genid - the general id.
+ * @param {string} cp_id - the custom property id.
+ * @param {boolean} is_multiple - whether the custom property allows multiple values.
+ * @param {object} object - the object to add.
+ */
+og.add_object_link_custom_property_value = function(genid, cp_id, is_multiple, object) {
+	if (!object) return;
+
+	let hf_id = genid+'cp'+cp_id;
+	let selected_values_id = genid+'selected-values'+cp_id;
+
+	let object_id = object.object_id;
+	let object_name = object.name;
+	let object_url = og.getUrl('object', 'view', {id:object_id});
+
+	// add the object id to the selected values array
+	let current_selected_object_ids = $("#"+hf_id).val();
+	let current_selected_object_ids_array = JSON.parse(current_selected_object_ids);
+	
+	if (is_multiple && typeof current_selected_object_ids_array == 'object') {
+		if (!current_selected_object_ids_array.includes(object_id)) {
+			current_selected_object_ids_array.push(object_id);
+		}
+	} else {
+		current_selected_object_ids_array = [object_id];
+	}
+	
+	// update hidden field value
+	$("#"+hf_id).val(JSON.stringify(current_selected_object_ids_array));
+
+	// if not is multiple hide the select object link
+	if (!is_multiple) {
+		$("#"+genid+"cp-object-link-action"+cp_id).hide();
+	}
+
+	// append the selected object html
+	let selected_value_id = genid+'selected-value'+cp_id+'-'+object_id;
+	$("#"+selected_values_id).append(
+		'<div id="'+selected_value_id+'" class="cp-object-link-selected-value">' +
+			'<div class="name">' + 
+				'<a href="' + object_url + '" target="_blank" class="link-ico '+ object.icon +'">' + object_name + '</a>' +
+			'</div>' +
+			'<div class="actions">' + 
+				'<a href="#" class="link-ico ico-remove" onclick="og.remove_object_link_custom_property_value(\''+genid+'\', '+cp_id+', \''+hf_id+'\', '+object_id+')" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a>' +
+			'</div>' +
+		'</div>'
+	);
+}
+
+/**
+ * Remove the object id from the selected values array and update the hidden field value.
+ * Also remove the selected value div and show the add link.
+ * 
+ * @param {string} genid - the general id.
+ * @param {string} cp_id - the custom property id.
+ * @param {string} hf_id - the hidden field id.
+ * @param {string} object_id - the object id to remove.
+ */
+og.remove_object_link_custom_property_value = function (genid, cp_id, hf_id, object_id) {
+
+	// remove the object id from the selected values array
+	let current_selected_object_ids = $("#"+hf_id).val();
+	let current_selected_object_ids_array = JSON.parse(current_selected_object_ids);
+	let index = current_selected_object_ids_array.indexOf(object_id);
+	if (index > -1) {
+		current_selected_object_ids_array.splice(index, 1);
+	}
+	
+	// update hidden field value
+	$("#"+hf_id).val(JSON.stringify(current_selected_object_ids_array));
+
+	
+	// remove the selected value div
+	$('#'+genid+'selected-value'+cp_id+'-'+object_id).remove();
+
+	// show the add link
+	$("#"+genid+"cp-object-link-action"+cp_id).show();
+}
+
+
+
 og.showModal = function (content) {
 var html = '<div class="modal-container" style="background-color: white;padding: 10px;">'+content+'</div>';
 setTimeout(function() {
@@ -6183,6 +7591,274 @@ og.showMailRuleModal = function (content) {
 		});
 	}, 100);
 	}
+
+og.showConfirmationModal = function(options) {
+    const config = {
+        title: 'Confirm Action',
+        message: 'Are you sure?',
+        yesText: 'Yes',
+        noText: 'No',
+        onConfirm: function(){},
+        onCancel: function(){},
+        ...options
+    };
+
+    const modalId = 'confirmation-modal-' + Math.random().toString(36).substr(2, 9);
+
+    const html = `
+        <div id="${modalId}" class="confirmation-modal">
+            <div class="confirmation-modal-title">${config.title}</div>
+            <p class="confirmation-modal-message">${config.message}</p>
+            <div class="confirmation-modal-buttons">
+                <button id="${modalId}-cancel" class="confirmation-modal-btn cancel">${config.noText}</button>
+                <button id="${modalId}-confirm" class="confirmation-modal-btn confirm">${config.yesText}</button>
+            </div>
+        </div>
+    `;
+
+    const $modal = $(html).appendTo('body').modal({
+        closeExisting: false,
+        escapeClose: true,
+        clickClose: false,
+        fadeDuration: 200
+    });
+
+    $(`#${modalId}-confirm`).click(function() {
+        $.modal.close();
+        config.onConfirm();
+    });
+
+    $(`#${modalId}-cancel`).click(function() {
+        $.modal.close();
+        config.onCancel();
+    });
+
+    // Hover effects
+    $(`#${modalId}-cancel`).hover(
+        function() { $(this).addClass('hover'); },
+        function() { $(this).removeClass('hover'); }
+    );
+
+    $(`#${modalId}-confirm`).hover(
+        function() { $(this).addClass('hover'); },
+        function() { $(this).removeClass('hover'); }
+    );
+};
+
+og.showConfirmationModalOLD = function(options) {
+    const config = {
+        title: 'Confirm',
+        message: 'Are you sure?',
+        yesText: 'Yes',
+        noText: 'No',
+        onConfirm: function () {},
+        onCancel: function () {},
+        ...options
+    };
+
+    const modalId = 'confirmation-modal-' + Math.random().toString(36).substr(2, 9);
+
+    const html = `
+        <div class="confirmation-modal-old">
+            <div><label class="coInputTitle">${config.title}</label></div><br />
+            <div id="${modalId}_question">${config.message}</div>
+            <div id="${modalId}_buttons" class="confirmation-modal-old-buttons">
+                <button class="yes submit blue">${config.yesText}</button>
+                <button class="no submit blue">${config.noText}</button>
+            </div>
+            <div class="clear"></div>
+        </div>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    const modal_params = {
+        escClose: true,
+        overlayClose: true,
+        closeHTML: `<a id="${modalId}_close_link" class="modal-close" title="close"></a>`,
+        onShow: function (dialog) {
+            $(`#${modalId}_close_link`).addClass("modal-close-img");
+
+            $(`#${modalId}_buttons .yes`).click(function () {
+                $.modal.close();
+                config.onConfirm();
+            });
+
+            $(`#${modalId}_buttons .no`).click(function () {
+                $.modal.close();
+                config.onCancel();
+            });
+        }
+    };
+
+    setTimeout(function () {
+        $.modal(div, modal_params);
+    }, 100);
+};
+
+
+/**
+ * Returns an array of member IDs that are selected in the object form.
+ * If the HTML element with id <genid>members exists, it will be used to get the member IDs.
+ * If the element does not exist, it will look for the classification dimension member IDs in the form.
+ * @param {string} genid - The unique identifier of the object form.
+ * @return {array} - An array of member IDs that are selected in the object form.
+ */
+og.getObjectFormSelectedMembers = function(genid) {
+	let member_ids = [];
+	if ($("#"+genid+"members").length > 0) {
+		member_ids = Ext.util.JSON.decode($("#"+genid+"members").val());
+	} else {
+		$("#"+genid+"submit-edit-form input[name^='classification_']").each(function() {
+			if ($(this).val()) {
+				let dim_mem_ids = Ext.util.JSON.decode($(this).val());
+				member_ids = member_ids.concat(dim_mem_ids);
+			}
+		});
+	}
+
+	return member_ids;
+};
+
+/**
+ * Returns an array of member IDs that are selected in the object form.
+ * If the HTML element with id <genid>members exists, it will be used to get the member IDs.
+ * If the element does not exist, it will look for the dimension member IDs in the form.
+ * @param {string} genid - The unique identifier of the object form.
+ * @param {string} type_name - The name of the object type.
+ * @return {array} - An array of member IDs that are selected in the object form.
+ */
+og.getMembersToFilterObjectPicker = function(genid, type_name) {
+	if (!type_name) type_name = "task";
+
+	let task_dimensions = og.dimensionsByObjectTypeInMemberSelector[type_name];
+	if (!task_dimensions) task_dimensions = [];
+
+	// get the dimension id of project managers and job phases
+	let project_manager_dim_id = 0;
+	let job_phase_dim_id = 0;
+	for (did in og.dimensions_info) {
+		if (!isNaN(did) && og.dimensions_info[did].code == "project_managers" && task_dimensions.includes(did)) {
+			project_manager_dim_id = did;
+		} else if (!isNaN(did) && og.dimensions_info[did].code == "job_phases" && task_dimensions.includes(did)) {
+			job_phase_dim_id = did;
+		}
+	}
+
+	// the dimensions to filter
+	let context = {};
+	let dimensions_to_filter = [og.projects.dimension_id];
+	if (project_manager_dim_id > 0) dimensions_to_filter.push(project_manager_dim_id);
+	if (job_phase_dim_id > 0) dimensions_to_filter.push(job_phase_dim_id);
+
+	// get the selected members for the dimensions to filter
+	let member_ids = og.getObjectFormSelectedMembers(genid);
+
+	// build the context variable to use in the object picker
+	for (let i=0; i<dimensions_to_filter.length; i++) {
+		let dim_id = dimensions_to_filter[i];
+		let dim_mem_ids = Object.keys(og.dimensions[dim_id]);
+		let intersection = dim_mem_ids.filter(function(n) {
+			return member_ids.indexOf(parseInt(n)) !== -1;
+		});
+		
+		if (intersection && intersection.length > 0) {
+			context[dim_id] = intersection;
+		}
+	}
+
+	// encode the context
+	return Ext.util.JSON.encode(context);
+};
+
+
+/**
+ * Returns a custom property object based on the given id and object type id.
+ * The custom property object contains the id, name, type, description, default value, and other
+ * properties of the custom property.
+ * @param {number|string} cp_id The id of the custom property.
+ * @param {number|string} object_type_id The id of the object type the custom property belongs to.
+ * @return {object|null} The custom property object or null if no custom property is found.
+ */
+og.get_custom_property_by_id_and_type_id = function(cp_id, object_type_id) {
+	// Get the object type object based on the given object type id
+	let ot = og.objectTypes[object_type_id];
+	
+	// If the custom property id starts with 'cp_', remove the 'cp_' prefix
+	if (cp_id.indexOf('cp_') == 0) {
+		cp_id = cp_id.replace('cp_', ''); // Remove the 'cp_' prefix from the custom property id
+	}
+	
+	// If the object type is found, get the custom property based on the custom property id and the object type name
+	if (ot) {
+		return og.get_custom_property_by_id_and_type_name(cp_id, ot.name);
+	}
+}
+
+/**
+ * Returns a custom property object based on the given id and object type name.
+ * The custom property object contains the id, name, type, description, default value, and other
+ * properties of the custom property.
+ * @param {number|string} cp_id The id of the custom property.
+ * @param {string} object_type_name The name of the object type the custom property belongs to.
+ * @return {object|null} The custom property object or null if no custom property is found.
+ */
+og.get_custom_property_by_id_and_type_name = function(cp_id, object_type_name) {
+	if (og.custom_properties_by_type && og.custom_properties_by_type[object_type_name]) {
+		// Iterate through the custom properties of the given object type and find the one with the
+		// given id.
+		for (let i = 0; i < og.custom_properties_by_type[object_type_name].length; i++) {
+			if (og.custom_properties_by_type[object_type_name][i].id == cp_id) {
+				return og.custom_properties_by_type[object_type_name][i];
+			}
+		}
+	}
+}
+
+og.show_cp_generic_warning = function(element) {
+	$("#" + element.id).closest('.input-container').find('.cp-warning-message').show();
+}
+og.hide_cp_generic_warning = function(element) {
+	$("#" + element.id).closest('.input-container').find('.cp-warning-message').hide();
+}
+
+/**
+ * Highlights a extjs based component based on the given value.
+ * If the value is null, empty string, or undefined, the select field is highlighted in a dark gray color.
+ * Otherwise, the select field is highlighted in a red color.
+ * 
+ * Used to highlight selected filters in lists
+ * 
+ * @param {string} cmp_id The ID of the custom property select field to highlight.
+ * @param {string} value The value to check for highlighting the select field.
+ */
+og.highlight_selected_extjs_filter = function(cmp_id, value) {
+	let color = (value === null || value === '' || value == undefined) ? '#333' : '#dd4b39';
+	let cmp = Ext.getCmp(cmp_id);
+	if (cmp) cmp.el.dom.style.color = color;
+}
+
+/** 
+ * Returns the selected member IDs as a stringified JSON array
+ * @param {string} genid - the id of the form
+ * @returns {string} - the selected member IDs as a stringified JSON array
+ */
+og.get_selected_members_in_form = function(genid) {
+	let member_ids_val = '';
+
+	if ($("#"+genid+"members").length > 0) {
+		member_ids_val = $("#"+genid+"members").val();
+	} else {
+		let member_ids_array = [];
+		$("#"+genid+"submit-edit-form input[name^='classification_']").each(function(index, obj) {
+			member_ids_array = member_ids_array.concat(JSON.parse($(obj).val()));
+		});
+		member_ids_val = JSON.stringify(member_ids_array);
+	}
+
+	return member_ids_val;
+}
 
 
 	og.initCustomNameSelects = function(count) {

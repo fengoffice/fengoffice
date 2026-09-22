@@ -65,7 +65,7 @@
      * Enter description here...
      *
      * @param Array $context: array of the selected dimensions and/or members
-     * @deprecated use ContentDataObjects::listing() instead 
+     * @deprecated 
      */
     static function getObjectsFromContext($context, $order=null, $order_dir=null, $trashed = false, $archived = false, $filters = null, $start = 0 , $limit=null, $obj_type_types=null) {
     	

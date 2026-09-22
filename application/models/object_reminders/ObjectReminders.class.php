@@ -52,10 +52,22 @@ class ObjectReminders extends BaseObjectReminders {
 		}
 		$yesterday = DateTimeValueLib::now();
 		$yesterday = $yesterday->add('d', -1);
-		/*$template_cond = " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=object_id) NOT IN (
-				SELECT ot.id FROM ".TABLE_PREFIX."object_types ot WHERE ot.name IN ('template_task','template_milestone')
-		)";*/
+
+		$template_task_ot_id = ObjectTypes::instance()->findByName('template_task')->getId();
+		$template_milestone_ot_id = ObjectTypes::instance()->findByName('template_milestone')->getId();
+
+		// exclude notifications for disabled object types
+		$disabled_ot_ids = config_option('disable_notifications_for_object_type');
+		// force exclusion of template task and milestone
+		$disabled_ot_ids[] = $template_task_ot_id;
+		$disabled_ot_ids[] = $template_milestone_ot_id;
 		
+		// create condition for disabled object types
+		$disabled_ot_ids_csv = implode(',', $disabled_ot_ids);
+		$disabled_ot_ids_cond = " AND (SELECT o.object_type_id FROM ".TABLE_PREFIX."objects o WHERE o.id=object_id) NOT IN ($disabled_ot_ids_csv)";
+		$extra .= $disabled_ot_ids_cond;
+		
+		// get reminders for today
 		return ObjectReminders::instance()->findAll(array(
 			'conditions' => array(
 				"`date` > ? AND `date` < ?" . $extra, $yesterday, DateTimeValueLib::now(),

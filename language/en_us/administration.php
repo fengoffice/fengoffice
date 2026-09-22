@@ -7,7 +7,7 @@
     // ---------------------------------------------------
     
     'administration tool name test_mail_settings' => 'Test outgoing mail settings',
-    'administration tool desc test_mail_settings' => 'Use this simple tool to send test emails to check if Feng Office mailer is well configured',
+    'administration tool desc test_mail_settings' => 'Use this simple tool to send test emails to check if '. product_name() .' mailer is well configured',
     'administration tool name mass_mailer' => 'Mass mailer',
     'administration tool desc mass_mailer' => 'Simple tool that let you send plain text messages to any group of users registered to the system',
   
@@ -29,11 +29,11 @@
     
     // Categories
     'config category name general' => 'General',
-    'config category desc general' => 'General Feng Office settings.',
+    'config category desc general' => 'General '. product_name() .' settings.',
     'config category name mailing' => 'Notifications',
-    'config category desc mailing' => 'Use these settings to set up how Feng Office should handle email sending. You can use configuration options provided in your php.ini or set it so it uses any other SMTP server.',
+    'config category desc mailing' => 'Use these settings to set up how '. product_name() .' should handle email sending. You can use configuration options provided in your php.ini or set it so it uses any other SMTP server.',
     'config category name modules' => 'Modules',
-    'config category desc modules' => 'Use these settings to enable or disable Feng Office modules. Disabling a module only hides it from the graphical interface. It doesn\'t remove permissions from users to create or edit content objects.',
+    'config category desc modules' => 'Use these settings to enable or disable '. product_name() .' modules. Disabling a module only hides it from the graphical interface. It doesn\'t remove permissions from users to create or edit content objects.',
     'config category name passwords' => 'Passwords',
     'config category desc passwords' => 'Use these settings to manage password options.',
 	'config category name documents' => 'Files',
@@ -62,7 +62,7 @@
     'config option name default_project_folders' => 'Default folders',
     'config option desc default_project_folders' => 'Folders that will be created when workspace is created. Every folder name should be in a new line. Duplicate or empty lines will be ignored',
     'config option name theme' => 'Theme',
-    'config option desc theme' => 'Using themes you can change the default look and feel of Feng Office. Need to refresh for it to take effect.',
+    'config option desc theme' => 'Using themes you can change the default look and feel of '. product_name() .'. Need to refresh for it to take effect.',
     'config option name days_on_trash' => 'Days on trash',
     'config option desc days_on_trash' => 'How many days a content object is kept in the trash before being automatically deleted. If 0, objects won\'t be deleted from trash.',
     'config option name checkout_notification_dialog' => 'Checkout notification dialog for documents',
@@ -90,7 +90,7 @@
     'config option name enable_reporting_module' => 'Enable Reporting Module',
   
     'config option name upgrade_check_enabled' => 'Enable upgrade check',
-    'config option desc upgrade_check_enabled' => 'If Yes system will once a day check if there are new versions of Feng Office available for download',
+    'config option desc upgrade_check_enabled' => 'If Yes system will once a day check if there are new versions of '. product_name() .' available for download',
     'config option name work_day_start_time' => 'Work day start time',
     'config option desc work_day_start_time' => 'Specifies the time when work day starts',
 
@@ -137,7 +137,7 @@
     'config option desc mail_transport' => 'You can use default PHP settings for sending emails or specify SMTP server',
     'config option name smtp_server' => 'SMTP server',
     'config option name smtp_address' => 'SMTP address',
-    'config option desc smtp_address' => 'Optional. Some servers require that you use an email address from that server to send email. Leave blank to use the user\'s email address.',
+    'config option desc smtp_address' => 'Shared address used as From for notification emails (typically a noreply address). Required so notifications never appear to come from individual users.',
     'config option name smtp_port' => 'SMTP port',
     'config option name smtp_authenticate' => 'Use SMTP authentication',
     'config option name smtp_username' => 'SMTP username',
@@ -151,6 +151,10 @@
   	'config option desc check_spam_in_subject' => 'Filter all the emails that contain the word "Spam" in the subject',
     'config option name show images in document notifications' => 'Attach images in document notifications',
 	'config option name notification_from_name' => 'From name',
+	'config option desc notification_from_name' => 'Display name used in the From header of all notification emails. Leave blank to use the default (“Notification Manager” / translated). Notifications always use this name with the SMTP / noreply address — never the person who edited the object.',
+	'notification from name default' => 'Notification Manager',
+	'config option name notification_information_fields' => 'Notification information fields',
+	'config option desc notification_information_fields' => 'Choose which properties are shown in the information block of notification emails for each object type. Leave defaults to keep the current layout.',
     'config option desc show images in document notifications' => 'If the document is an image, it is attached in the content of the notification.',
     'config option name show company logo in notifications' => 'Attach company logo in notifications',
     'config option desc show company logo in notifications' => 'The company logo is attached in the content of the notification.',
@@ -372,6 +376,8 @@
   	
   	'user config option name show_multiple_color_events' => 'Show multiple color events in calendar tab',
   	'user config option desc show_multiple_color_events' => 'If enabled the events will be shown using the color of every member in which the event is related.',
+  	'user config option name show_birthdays_in_calendar' => 'Show birthdays in calendar',
+  	'user config option desc show_birthdays_in_calendar' => 'If enabled, contact birthdays will be shown in the calendar.',
   	
   	'show context help always' => 'Always',
     'show context help never' => 'Never',
@@ -384,6 +390,8 @@
     'user config option name tasksShowTime' => 'Show time',
     'user config option name tasksShowDates' => 'Show dates',
     'user config option name tasksShowTags' => 'Show tags',
+    'user config option name tasksTemplatesFirstInNewMenu' => 'Show Templates first in New menu',
+    'user config option desc tasksTemplatesFirstInNewMenu' => 'If enabled, the Templates option will appear first in the Tasks “New” menu.',
     'user config option name tasksGroupBy' => 'Group by',
     'user config option name tasksOrderBy' => 'Order by',
     'user config option name task panel status' => 'Status',
@@ -404,6 +412,8 @@
 	'edit template' => 'Edit template',
 	'template dnx' => 'The template does not exist',
 	'success edit template' => 'Template modified successfully',
+	'template edit stale form' => 'The template could not be saved because it was modified since you opened this form. Please reload the page and try again.',
+	'template edit missing objects list' => 'The template could not be saved because the form did not include the task list. Please reload the page and try again.',
 	'log add cotemplates' => '{0} added',
 	'log edit cotemplates' => '{0} modified',
 	'success delete template' => 'Template deleted successfully',
@@ -424,7 +434,7 @@
   
   	'cron events' => 'Cron events',
   	'about cron events' => 'Learn about cron events...',
-  	'cron events info' => 'Cron events let you execute tasks in Feng Office periodically, without having to login to the system. To enable cron events you need to configure a cron job to periodically execute the "cron.php" file, located at the root of Feng Office. The periodicity at which you run the cron job will determine the granularity at which you can run these cron events. For example, if you configure a cron job to run every five minutes, and you configure the cron event to check for upgrades every one minute, it will only be able to check for upgrades every five minutes. To learn about how to configure a cron job ask your system administrator or hosting provider.',
+  	'cron events info' => 'Cron events let you execute tasks in '. product_name() .' periodically, without having to login to the system. To enable cron events you need to configure a cron job to periodically execute the "cron.php" file, located at the root of '. product_name() .'. The periodicity at which you run the cron job will determine the granularity at which you can run these cron events. For example, if you configure a cron job to run every five minutes, and you configure the cron event to check for upgrades every one minute, it will only be able to check for upgrades every five minutes. To learn about how to configure a cron job ask your system administrator or hosting provider.',
   	'cron event name check_mail' => 'Check mail',
   	'cron event desc check_mail' => 'This cron event will check for new email in all email accounts in the system.',
   	'cron event name purge_trash' => 'Purge trash',
@@ -432,21 +442,21 @@
   	'cron event name send_reminders' => 'Send reminders',
   	'cron event desc send_reminders' => 'This cron event will send email reminders.',
   	'cron event name check_upgrade' => 'Check upgrade',
-  	'cron event desc check_upgrade' => 'This cron event will check for new versions of Feng Office.',
+  	'cron event desc check_upgrade' => 'This cron event will check for new versions of '. product_name() .'.',
   	'cron event name send_notifications_through_cron' => 'Send notifications through cron',
-  	'cron event desc send_notifications_through_cron' => 'If this event is enabled email notifications will be sent through cron and not when generated by Feng Office.',
+  	'cron event desc send_notifications_through_cron' => 'If this event is enabled email notifications will be sent through cron and not when generated by '. product_name() .'.',
   	'next execution' => 'Next execution',
     'cron event name import_google_calendar' => 'Import Google Calendar',
   	'cron event desc import_google_calendar' => 'This cron event will look for events to import from Google Calendar.',
-    'cron event name export_google_calendar' => 'Export Feng Office',
-  	'cron event desc export_google_calendar' => 'This cron event will look for events in Feng Office to export to Google Calendar.',
+    'cron event name export_google_calendar' => 'Export '. product_name() .'',
+  	'cron event desc export_google_calendar' => 'This cron event will look for events in '. product_name() .' to export to Google Calendar.',
   	'delay between executions' => 'Delay between executions',
   	'enabled' => 'Enabled',
   	'no cron events to display' => 'There are no cron events to display',
   	'success update cron events' => 'Cron events updated successfully',
   
   	'manual upgrade' => 'Manual upgrade',
-  	'manual upgrade desc' => 'To manually upgrade Feng Office you have to download the new version of Feng Office, extract it to the root of your installation and then go to <a href="public/upgrade">\'public/upgrade\'</a> in your browser to run the upgrade process.',
+  	'manual upgrade desc' => 'To manually upgrade '. product_name() .' you have to download the new version of '. product_name() .', extract it to the root of your installation and then go to <a href="public/upgrade">\'public/upgrade\'</a> in your browser to run the upgrade process.',
   	'automatic upgrade' => 'Automatic upgrade',
   	'automatic upgrade desc' => 'The automatic upgrade will automatically download and extract the new version, and will run the upgrade process for you. The webserver needs write access to all folders.',
   	'start automatic upgrade' => 'Start automatic upgrade',
@@ -467,6 +477,8 @@
   
 	'user config option name hide_quoted_text_in_emails' => 'Hide quoted text when viewing emails',
 	'user config option desc hide_quoted_text_in_emails' => 'If enabled email messages will be displayed without the quoted text. There will be an option to view it while reading.',
+	'user config option name show_account_on_email_header' => 'Show account on email header when viewing an email',
+	'user config option desc show_account_on_email_header' => 'If enabled, the email account name will be shown in the header when viewing an email.',
   
 	'edit default user preferences' => 'Edit default user preferences',
   	'default user preferences' => 'Default user preferences',
@@ -507,7 +519,7 @@
   	'user config option name detect_mime_type_from_extension' => 'Detect mime type from extension',
   	'user config option desc detect_mime_type_from_extension' => 'Enable this to detect file\'s mime type by its extension.',
   	'user config option name root_dimensions' => 'Dimension widgets to display',
-  	'user config option desc root_dimensions' => 'Check each box to have the tree-widget for each dimension displayed when you access Feng Office.',
+  	'user config option desc root_dimensions' => 'Check each box to have the tree-widget for each dimension displayed when you access '. product_name() .'.',
   	'user config option name show_context_help' => 'Show contextual help',
   	'user config option desc show_context_help' => 'Select if you want to always view help, never view it, or view it until each box is closed.',
   	'user config option name drag_drop_prompt' => 'Action to take on drag and drop to workspace',
@@ -598,6 +610,8 @@
   	'user config option desc mail_drag_drop_prompt' => 'Choose what should be done with email attachments when classifying an email using drag & drop or classification form.',
   	'user config option name hide_quoted_text_in_emails' => 'Hide quoted text when viewing emails',
   	'user config option desc hide_quoted_text_in_emails' => 'If enabled email messages will be displayed without the quoted text. There will be an option to view it while reading.',
+  	'user config option name show_account_on_email_header' => 'Show account on email header when viewing an email',
+  	'user config option desc show_account_on_email_header' => 'If enabled, the email account name will be shown in the header when viewing an email.',
   	'user config option name mail_account_err_check_interval' => 'Email accounts error checking interval',
   	'user config option desc mail_account_err_check_interval' => 'Time between each verification at email accounts (0 to disable)',
   	'user config option name classify_mail_with_conversation' => 'Classify mails with its conversation',
@@ -612,7 +626,7 @@
   	'sync' => 'Sync',
   	'mails on imap acc already sync' => 'There are no emails left to be synchronized in this account',
   	'cant sync account' => 'This account cannot be synchronized. Check IMAP settings',
-  	'config option name sent_mails_sync' => 'Enable IMAP synchronization when sending emails from Feng Office',
+  	'config option name sent_mails_sync' => 'Enable IMAP synchronization when sending emails from '. product_name() .'',
   
   	'succes save object subtypes' => 'Object subtypes saved sucessfully',
   
@@ -628,7 +642,7 @@
 
     'cron events' => 'Cron events',
     'about cron events' => 'Learn about cron events...',
-    'cron events info' => 'Cron events let you execute tasks in Feng Office periodically, without having to login to the system. To enable cron events you need to configure a cron job to periodically execute the "cron.php" file, located at the root of Feng Office. The periodicity at which you run the cron job will determine the granularity at which you can run these cron events. For example, if you configure a cron job to run every five minutes, and you configure the cron event to check for upgrades every one minute, it will only be able to check for upgrades every five minutes. To learn about how to configure a cron job ask your system administrator or hosting provider.',
+    'cron events info' => 'Cron events let you execute tasks in '. product_name() .' periodically, without having to login to the system. To enable cron events you need to configure a cron job to periodically execute the "cron.php" file, located at the root of '. product_name() .'. The periodicity at which you run the cron job will determine the granularity at which you can run these cron events. For example, if you configure a cron job to run every five minutes, and you configure the cron event to check for upgrades every one minute, it will only be able to check for upgrades every five minutes. To learn about how to configure a cron job ask your system administrator or hosting provider.',
     'cron event name check_mail' => 'Check mail',
     'cron event desc check_mail' => 'This cron event will check for new email in all email accounts in the system.',
     'cron event name purge_trash' => 'Purge trash',
@@ -636,21 +650,21 @@
     'cron event name send_reminders' => 'Send reminders',
     'cron event desc send_reminders' => 'This cron event will send email reminders.',
     'cron event name check_upgrade' => 'Check upgrade',
-    'cron event desc check_upgrade' => 'This cron event will check for new versions of Feng Office.',
+    'cron event desc check_upgrade' => 'This cron event will check for new versions of '. product_name() .'.',
     'cron event name send_notifications_through_cron' => 'Send notifications through cron',
-    'cron event desc send_notifications_through_cron' => 'If this event is enabled email notifications will be sent through cron and not when generated by Feng Office.',
+    'cron event desc send_notifications_through_cron' => 'If this event is enabled email notifications will be sent through cron and not when generated by '. product_name() .'.',
     'next execution' => 'Next execution',
     'cron event name import_google_calendar' => 'Import Google Calendar events',
-    'cron event desc import_google_calendar' => 'If this option is enabled, events from Google Calendar will be imported into Feng Office as long as you have correctly set it up.',
-    'cron event name export_google_calendar' => 'Export Feng Office events',
-    'cron event desc export_google_calendar' => 'If this option is enabled, events from Feng Office will be exported to external calendars such as Google Calendar.',
+    'cron event desc import_google_calendar' => 'If this option is enabled, events from Google Calendar will be imported into '. product_name() .' as long as you have correctly set it up.',
+    'cron event name export_google_calendar' => 'Export '. product_name() .' events',
+    'cron event desc export_google_calendar' => 'If this option is enabled, events from '. product_name() .' will be exported to external calendars such as Google Calendar.',
     'delay between executions' => 'Delay between executions',
     'enabled' => 'Enabled',
     'no cron events to display' => 'There are no cron events to display',
     'success update cron events' => 'Cron events updated successfully',
 
     'manual upgrade' => 'Manual upgrade',
-    'manual upgrade desc' => 'To manually upgrade Feng Office you have to download the new version of Feng Office, extract it to the root of your installation and then go to <a href="public/upgrade">\'public/upgrade\'</a> in your browser to run the upgrade process.',
+    'manual upgrade desc' => 'To manually upgrade '. product_name() .' you have to download the new version of '. product_name() .', extract it to the root of your installation and then go to <a href="public/upgrade">\'public/upgrade\'</a> in your browser to run the upgrade process.',
     'automatic upgrade' => 'Automatic upgrade',
     'automatic upgrade desc' => 'The automatic upgrade will automatically download and extract the new version, and will run the upgrade process for you. The webserver needs write access to all folders.',
     'start automatic upgrade' => 'Start automatic upgrade',
@@ -671,6 +685,8 @@
 
     'user config option name hide_quoted_text_in_emails' => 'Hide quoted text when viewing emails',
     'user config option desc hide_quoted_text_in_emails' => 'If enabled email messages will be displayed without the quoted text. There will be an option to view it while reading.',
+    'user config option name show_account_on_email_header' => 'Show account on email header when viewing an email',
+  	'user config option desc show_account_on_email_header' => 'If enabled, the email account name will be shown in the header when viewing an email.',
 
     'edit default user preferences' => 'Edit default user preferences',
     'default user preferences' => 'Default user preferences',
@@ -712,7 +728,7 @@
     'user config option name detect_mime_type_from_extension' => 'Detect mime type from extension',
     'user config option desc detect_mime_type_from_extension' => 'Enable this to detect file\'s mime type by its extension.',
     'user config option name root_dimensions' => 'Dimension widgets to display',
-    'user config option desc root_dimensions' => 'Check each box to have the tree-widget for each dimension displayed when you access Feng Office.',
+    'user config option desc root_dimensions' => 'Check each box to have the tree-widget for each dimension displayed when you access '. product_name() .'.',
     'user config option name show_context_help' => 'Show contextual help',
     'user config option desc show_context_help' => 'Select if you want to always view help, never view it, or view it until each box is closed.',
     'user config option name drag_drop_prompt' => 'Action to take on drag and drop to workspace',
@@ -735,6 +751,13 @@
     'user config option desc descriptive_date_format' => 'Template format to be applied to descriptive date values. Code explanations: d = Day number (2 digits with leading zeros), D = Day name (three letters), j = Day number, l = Complete day name, m = Month number (with leading zeros), M = Month name (three letters), n = Month number, F = Complete month name, Y = Year (4 digits), y = Year (2 digits). Refresh required.' ,
     'search engine mysql like' => 'Full',
     'search engine mysql match' => 'Quick',
+
+    'user config option name ask_reclassify_behavior' => 'Reclassification behavior after save',
+    'user config option desc ask_reclassify_behavior' => 'What to do with classified objects when changing association between dimension members? i.e. When changing the Rate Schedule for a project, also change the Rate Schedule for all Time, Expenses, Tasks, and other objects classified under that specific project. If the Client is changed, associated objects will always be reclassified.',
+
+    'config_ask' => 'Ask',
+    'config_always' => 'Always reclassify',
+    'config_never' => 'Never reclassify',
 
     //Dasboard
 
@@ -790,6 +813,8 @@
     'user config option desc create_contacts_from_email_recipients' => 'When this option is set to "Yes" a person will be automatically created for every email address you send an email to. You need the "Can manage all people" permission.',
     'user config option name hide_quoted_text_in_emails' => 'Hide quoted text when viewing emails',
     'user config option desc hide_quoted_text_in_emails' => 'If enabled email messages will be displayed without the quoted text. There will be an option to view it while reading.',
+    'user config option name show_account_on_email_header' => 'Show account on email header when viewing an email',
+  	'user config option desc show_account_on_email_header' => 'If enabled, the email account name will be shown in the header when viewing an email.',
     'user config option name mail_account_err_check_interval' => 'Email accounts error checking interval',
     'user config option desc mail_account_err_check_interval' => 'Time between each verification at email accounts (0 to disable)',
     'user config option name classify_mail_with_conversation' => 'Classify mails with its conversation',
@@ -807,7 +832,7 @@
     'sync' => 'Sync',
     'mails on imap acc already sync' => 'There are no emails left to be synchronized in this account',
     'cant sync account' => 'This account cannot be synchronized. Check IMAP settings',
-    'config option name sent_mails_sync' => 'Enable IMAP synchronization when sending emails from Feng Office',
+    'config option name sent_mails_sync' => 'Enable IMAP synchronization when sending emails from '. product_name() .'',
 
     'succes save object subtypes' => 'Object subtypes saved sucessfully',
 
@@ -896,6 +921,10 @@
   		
   	'user config option name tasksShowAssignedToName' => 'Show the name of the assigned',
   	'user config option desc tasksShowAssignedToName' => 'If enabled then the assigned to name will be shown instead of the picture in tasks list.',
+	'user config option name tasksShowClosedSubtasksWithStatusFilter' => 'Show subtasks outside status filter',
+	'user config option desc tasksShowClosedSubtasksWithStatusFilter' => 'When a status filter is active, show subtasks that do not match it (for example, closed subtasks under open tasks when filtering by Open/Pending).',
+	'user config option name tasksOrderSubtasksWithFilterCriteria' => 'Order subtasks with the filter criteria selected on the task list order by',
+	'user config option desc tasksOrderSubtasksWithFilterCriteria' => 'If yes, nested subtasks are ordered with the same Order by criteria selected on the task list. If no, they are ordered by Name.',
   		
   	'user config option name report_time_colums_display' => 'Time column format',
   	'user config option desc report_time_colums_display' => 'If friendly format is selected then the time columns will be shown in a descriptive mode (e.g.: 2 hours, 15 minutes). If not then they will show the amount of minutes or seconds',
@@ -922,6 +951,8 @@
 	'object custom properties' => 'Object custom properties',
 	'custom properties for' => 'Custom properties for {0}',
 	'default value' => 'Default value',
+	'cp boolean not specified' => 'Not specified',
+	'cp boolean allow not specified' => 'Allow "Not specified"',
 	'list values comma separated' => 'List values (comma separated)',
 	'cp list values hint' => 'Only for list properties.',
 	'is required' => 'Is required',
@@ -934,6 +965,7 @@
 	'datetime' => 'Date and time',
 	'memo' => 'Large text',
 	'image' => 'Image',
+	'object_link' => 'Object link',
 	'add new custom property' => 'Add new custom property for {0}',
 	'custom property name empty'=> 'Custom property names cannot be empty',
 	'custom properties reorder help' => 'The defined properties can be reordered by dragging (click and hold property number) and dropping it in the desired order.',
@@ -1060,6 +1092,13 @@
     'contact' => 'Contact',
     'user' => 'User',
 
+	'user config option name task_list_group_by_options' => 'Task list group by options',
+	'user config option desc task_list_group_by_options' => 'The options selected here will be used to populate the task list group by selector.',
+	'user config option name task_list_order_by_options' => 'Task list order by options',
+	'user config option desc task_list_order_by_options' => 'The options selected here will be used to populate the task list order by selector.',
+	'user config option name task_list_filter_by_options' => 'Task list filter by options',
+	'user config option desc task_list_filter_by_options' => 'The options selected here will be used to populate the task list filter by selector.',
+
     
     'config option name default_type_address' => 'Default Type Address',
 	  'config option desc default_type_address' => 'Select the default option within the address type',
@@ -1076,7 +1115,35 @@
 	'config option name ignored_dims_task_related_objs' => 'When re-classifying tasks: time entries and expenses will also be re-classified. If you want this not to happen for specific dimensions, please select them from this list',
 	'config option desc ignored_dims_task_related_objs' => '',
 
+	'config option name contact_quickadd_inputs' => 'Contact quick-add form inputs',
+	'config option desc contact_quickadd_inputs' => 'Select the inputs that will be shown in the contact quick-add form.',
+	'config option name contact_quickadd_view_info' => 'Contact quick-add information to show',
+	'config option desc contact_quickadd_view_info' => 'Select the contact information that will be shown after selecting a contact in another form (e.g.: Projects and Clients forms)',
+
+	'config option name show_type_sel_on_address_field' => 'Show type selector on address field',
+	'config option desc show_type_sel_on_address_field' => 'If selected, the type selector will be shown on the address field.',
+
+	'config option name show_type_sel_on_email_field' => 'Show type selector on email field',
+	'config option desc show_type_sel_on_email_field' => 'If selected, the type selector will be shown on the email field.',
+
+	'config option name show_type_sel_on_phone_field' => 'Show type selector on phone field',
+	'config option desc show_type_sel_on_phone_field' => 'If selected, the type selector will be shown on the phone field.',
+
+	'config option name show_type_sel_on_website_field' => 'Show type selector on website field',
+	'config option desc show_type_sel_on_website_field' => 'If selected, the type selector will be shown on the website field.',
+
   'config option name mandatory_email_on_contacts' => 'Mandatory Email for Contacts and Companies', 
   'config option desc mandatory_email_on_contacts' => 'Select whether the main email for contacts and companies should be mandatory.',
+
+
+  'config option name show_inactive_users_on_filters' => 'Show inactive users on filters',
+  'config option desc show_inactive_users_on_filters' => 'If selected, inactive users will be shown on filters for Task, Time, and Expenses.',
+
+  'config option name move_email_on_server' => 'Move email on server',
+  'config option desc move_email_on_server' => 'If enabled, when an email is moved to the trash or restored within the system, the corresponding actions will also be performed on the mail server.',
+
+  'weekly_view_display_range' => 'In all weeks between Start and Due date',
+	'weekly_view_display_due_date' => 'Only in the week for the task due date',
+
   ); // array
 

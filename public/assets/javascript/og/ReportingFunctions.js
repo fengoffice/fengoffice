@@ -9,17 +9,6 @@ og.loadReportingFlags = function(){
 	og.last_report_group_id = 0;
 };
 
-og.enterCondition = function(id) {
-  	var deleted = document.getElementById('conditions[' + id + '][deleted]');
-  	if(deleted && deleted.value == "0"){
-  		$("#delete"+id).css('opacity', '1.0');
- 	}
-};
-
-og.leaveCondition = function(id) {
-	$("#delete"+id).css('opacity', '0.6');
-};
-
 og.reportObjectTypeChanged = function(genid, order_by, order_by_asc, cols, execute_callbacks){
 	var objectTypeSel = document.getElementById('objectTypeSel');
 	if(modified){
@@ -118,54 +107,54 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 	var count = $("#"+genid+" .condition-div").length;
 	var classname = "condition-div";
 	
-	var style = 'style="width:130px;padding-right:10px;"';
-	var table = '<table onmouseover="og.enterCondition(' + count + ')" onmouseout="og.leaveCondition(' + count + ')"><tr>' +
-	'<td><input id="conditions[' + count + '][id]" name="conditions[' + count + '][id]" type="hidden" value="{0}"/>' +
+	var table = '<div class="report-condition-body">' +
+	'<input id="conditions[' + count + '][id]" name="conditions[' + count + '][id]" type="hidden" value="{0}"/>' +
 	(use_condition_groups ? '<input type="hidden" name="conditions[' + count + '][group_id]" value="' + group_id + '" />' : '') +
-	'</td>' +
-	'<td><input id="conditions[' + count + '][deleted]" name="conditions[' + count + '][deleted]" type="hidden" value="0"/></td>' +
-	'<td ' + style + ' id="tdFields' + count + '"></td>' +
-	'<td ' + style + ' id="tdConditions' + count + '"></td>' +
-	'<td ' + style + ' id="tdValue' + count + '"><b>' + lang('value') + '</b>:<br/>' +
-	'<input type="text" style="width:100px;" id="conditions[' + count + '][value]" name="conditions[' + count + '][value]" name="conditions[' + count + '][value]" value="{1}" ></td>';	
+	'<input id="conditions[' + count + '][deleted]" name="conditions[' + count + '][deleted]" type="hidden" value="0"/>' +
+	'<div class="report-condition-fields">' +
+	'<div class="report-condition-col report-condition-col-field" id="tdFields' + count + '"></div>' +
+	'<div class="report-condition-col report-condition-col-operator" id="tdConditions' + count + '"></div>' +
+	'<div class="report-condition-col report-condition-col-value" id="tdValue' + count + '"></div>';	
 	
 	if (!time_report && !hide_param_field) {
-		table = table + '<td ' + style + '><label for="conditions[' + count + '][is_parametrizable]">' + lang('parametrizable') + '</label>' + 
-		'<input type="checkbox" class="checkbox" onclick="og.changeParametrizable(' + count + ')" id="conditions[' + count + '][is_parametrizable]" name="conditions[' + count + '][is_parametrizable]" {2}></td>';	
-	}
-	
-	table = table +'<td style="padding-left:20px;"><div style="opacity:0.6;" id="delete' + count + '" class="clico ico-delete" onclick="og.deleteCondition(' + count + ',\'' + genid + '\')"></div></td>' +
-	'<td id="tdDelete' + count + '" style="display:none;"><b>' + lang('condition deleted') +
-	'</b><a class="internalLink" href="javascript:og.undoDeleteCondition(' + count + ',\'' + genid + '\')">&nbsp;(' + lang('undo') + ')</a></td>' +
-  	'</tr></table>';
-	
-	// add "OR" condition link
-	if (use_condition_groups) {
-		$('#'+genid+'_glink_'+group_id).remove();
-		var or_link_onclick = "og.addCondition('"+genid+"', 0, 0, '', '', '', false, null, null, null, '"+group_id+"');this.remove();";
-		table += '<div style="margin-top:5px">'+
-			'<a href="#" id="'+genid+'_glink_'+group_id+'" class="link-ico ico-add" onclick="'+or_link_onclick+'">'+ lang('add or condition') +'</a></div>';
+		table += '<div class="report-condition-col report-condition-col-param" id="tdIsParametrizable' + count + '">' +
+		'<label for="conditions[' + count + '][is_parametrizable]">' + lang('parametrizable') + '</label>' +
+		'<input type="checkbox" class="checkbox" onclick="og.changeParametrizable(' + count + ')" id="conditions[' + count + '][is_parametrizable]" name="conditions[' + count + '][is_parametrizable]" {1}">' +
+		'</div>';
 	}
 
-	table = String.format(table, id, value, (is_parametrizable == 1 ? "checked" : ""));
+	table += '</div>' +
+	'<a href="#" id="delete' + count + '" class="report-condition-remove ico-delete" title="' + lang('remove') + '" onclick="og.deleteCondition(' + count + ', \'' + genid + '\'); return false;"></a>' +
+	'</div>' +
+	'<div id="tdDelete' + count + '" class="report-condition-deleted-msg" style="display:none;">' +
+	'<span class="report-condition-deleted-text">' + lang('condition deleted') + '</span> ' +
+	'<a class="internalLink" href="javascript:og.undoDeleteCondition(' + count + ',\'' + genid + '\')">(' + lang('undo') + ')</a>' +
+	'</div>';
+	
+	table = String.format(table, id, (is_parametrizable == 1 ? "checked" : ""));
 	
 	if (use_condition_groups && addGroupWrapper) {
-		var condGroup = document.createElement('div');
+		condGroup = document.createElement('div');
 		condGroup.id = genid + '_group_' + group_id;
 		condGroup.innerHTML = '';
 		condGroup.className = 'group-of-conditions';
-		if (condDiv.innerHTML != '') $(condDiv).append('<div class="bold">'+lang('and').toUpperCase()+'</div>');
+		if (condDiv.innerHTML != '') $(condDiv).append('<div class="report-conditions-logic report-conditions-logic-and">'+lang('and').toUpperCase()+'</div>');
 		condDiv.appendChild(condGroup);
 	}
 
 	var newCondition = document.createElement('div');
 	newCondition.id = "Condition" + count;
-	newCondition.style.padding = "5px";
-	newCondition.className = classname;
+	newCondition.className = classname + ' report-condition-row';
 	newCondition.innerHTML = table;
 	if (use_condition_groups && condGroup) {
-		if (condGroup.innerHTML != '') $(condGroup).append('<div class="bold" style="padding-left: 5px;">'+lang('or').toUpperCase()+'</div>');
+		if (condGroup.innerHTML != '') $(condGroup).append('<div class="report-conditions-logic report-conditions-logic-or">'+lang('or').toUpperCase()+'</div>');
 		condGroup.appendChild(newCondition);
+		$('#'+genid+'_glink_'+group_id).remove();
+		var or_link_onclick = "og.addCondition('"+genid+"', 0, 0, '', '', '', false, null, null, null, '"+group_id+"');this.remove();";
+		var orLinkDiv = document.createElement('div');
+		orLinkDiv.className = 'report-condition-add-or';
+		orLinkDiv.innerHTML = '<a href="#" id="'+genid+'_glink_'+group_id+'" class="link-ico ico-add" onclick="'+or_link_onclick+'">'+ lang('add or condition') +'</a>';
+		condGroup.appendChild(orLinkDiv);
 	} else {
 		condDiv.appendChild(newCondition);
 	}
@@ -186,11 +175,7 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 						if(!fieldValues[count]){
 							fieldValues[count] = {};
 						}
-						if(id == 0){
-							fieldValues[count][i] = field.values;
-						}else{
-							fieldValues[count][0] = field.values;
-						}
+						fieldValues[count][field.id] = field.values;
 					}						
 				}
 				fields += '</select>';	
@@ -199,6 +184,18 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 				}
 				
 				$("#" + genid + " #tdFields" + count).html(fields);
+				var selectEl = $("#" + genid + " [name='conditions[" + count + "][custom_property_id]']")[0];
+				if (selectEl) {
+					var targetFieldId = cpId > 0 ? String(cpId) : (fieldName ? String(fieldName) : '');
+					if (targetFieldId) {
+						for (var j = 0; j < selectEl.options.length; j++) {
+							if (String(selectEl.options[j].value) == targetFieldId) {
+								selectEl.selectedIndex = j;
+								break;
+							}
+						}
+					}
+				}
 				og.fieldChanged(count, (condition != "" ? condition : ""), (value != "" ? value : ""), genid, type);
 			}
 		},
@@ -210,15 +207,16 @@ og.addCondition = function(genid, id, cpId, fieldName, condition, value, is_para
 };
 
 og.deleteCondition = function(id, genid){
-	$("#" + genid + " #Condition" + id).css('background', '#FFDEAD');
-	$("#" + genid + " #tdDelete" + id).css('display', '');
+	$("#" + genid + " #Condition" + id).addClass('is-deleted');
+	$("#" + genid + " #tdDelete" + id).show();
 	$("#" + genid + " [name='conditions[" + id + "][deleted]']").val(1);
 	$("#" + genid + " #delete" + id).hide();
 	modified = true;
 };
 
 og.undoDeleteCondition = function(id, genid){
-	$("#" + genid + " #tdDelete" + id).css('display', 'none');
+	$("#" + genid + " #Condition" + id).removeClass('is-deleted');
+	$("#" + genid + " #tdDelete" + id).hide();
 	$("#" + genid + " [name='conditions[" + id + "][deleted]']").val(0);
 	$("#" + genid + " #delete" + id).show();
 	/*var conditionDiv = Ext.getDom(genid);
@@ -236,6 +234,17 @@ og.undoDeleteCondition = function(id, genid){
 	}*/
 };
 
+og.onReportCondOperatorChange = function(select, id, genid){
+	let value = $(select).val();
+	if (value == 'empty') {
+		$("#" + genid + " #tdValue" + id).hide();
+		$("#" + genid + " #tdIsParametrizable" + id).hide();
+	} else {
+		$("#" + genid + " #tdValue" + id).show();
+		$("#" + genid + " #tdIsParametrizable" + id).show();
+	}
+}
+
 og.fieldChanged = function(id, condition, value, genid, object_type_id){
 	var ot = og.objectTypes[object_type_id];
 	var fields = $("#" + genid + " [name='conditions[" + id + "][custom_property_id]']");
@@ -243,11 +252,15 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 	var selField = fields.selectedIndex;
 	if(selField != -1){
 		var fieldType = fields[selField].className;
+		var onOperatorChange = 'og.onReportCondOperatorChange(this, ' + id + ', \''+genid+'\');';
 		var type_and_name = '<input type="hidden" name="conditions[' + id + '][field_name]" value="' + fields[selField].value + '"/>' +
 			'<input type="hidden" name="conditions[' + id + '][field_type]" value="' + fieldType + '"/>'; 
-		var conditions = '<label for="conditions[' + id + '][condition]">' + lang('condition') + '</label><select class="reportConditionDD" id="conditions[' + id + '][condition]" name="conditions[' + id + '][condition]">';
-		var textValueField = '<label for="conditions[' + id + '][value]">' + lang('value') + '</label><input type="text" style="width:100px;" id="conditions[' + id + '][value]" name="conditions[' + id + '][value]" value="' + value + '"/>' + type_and_name;
-		var dateValueField = '<label for="containerConditions[' + id + '][value]">' + lang('value') + '</label>' + '<span id="'+genid+'containerConditions[' + id + '][value]"></span>' + type_and_name; 
+		var conditions = '<label for="conditions[' + id + '][condition]">' + lang('condition') + '</label><select class="reportConditionDD" id="conditions[' + id + '][condition]" name="conditions[' + id + '][condition]" onchange="' + onOperatorChange + '">';
+		var dateContainerId = genid + 'condition_value_' + id;
+		var textValueField = '<label for="conditions[' + id + '][value]">' + lang('value') + '</label>' +
+			'<div class="report-condition-value-input"><input type="text" id="conditions[' + id + '][value]" name="conditions[' + id + '][value]" value="' + value + '"/></div>' + type_and_name;
+		var dateValueField = '<label for="' + dateContainerId + '">' + lang('value') + '</label>' +
+			'<div class="report-condition-value-input"><div id="' + dateContainerId + '"></div></div>' + type_and_name; 
 		
 		if(fieldType == "text" || fieldType == "memo"){
 			$("#" + genid + " #tdValue" + id).html(textValueField);
@@ -290,24 +303,28 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 			conditions += '<option value="<=">&le;</option>';
 			conditions += '<option value="=">=</option>';
 			conditions += '<option value="<>"><></option>';
+			conditions += '<option value="empty">'+lang('empty')+'</option>';
 			conditions += '</select>';
 			$("#" + genid + " #tdConditions" + id).html(conditions);
 			
 			var dateCond = new og.DateField({
-				renderTo: genid + 'containerConditions[' + id + '][value]',
+				renderTo: dateContainerId,
 				name: 'conditions[' + id + '][value]',
 				id: 'conditions[' + id + '][value]',
 				value: Ext.util.Format.date(value, og.preferences['date_format'])
 			});
 			
 		}else if(fieldType == "list"){
-			var valuesList = fieldValues[id][selField].split(',');
-			var listValueField = '<label for="conditions[' + id + '][value]">' + lang('value') + '</label><select class="reportConditionDD" id="conditions[' + id + '][value]" name="conditions[' + id + '][value]">';
+			var valuesList = fieldValues[id][fields[selField].value].split(',');
+			var listValueField = '<label for="conditions[' + id + '][value]">' + lang('value') + '</label>' +
+				'<div class="report-condition-value-input"><select class="reportConditionDD" id="conditions[' + id + '][value]" name="conditions[' + id + '][value]">';
 			listValueField += '<option value="">-- ' + lang('none') + ' --</option>';
 			for(var i=0; i < valuesList.length; i++){
-				listValueField += '<option ' + (valuesList[i] == value ? "selected" : "") + '>' + valuesList[i] + '</option>';
+				let option_lang = lang(valuesList[i]);
+				if (option_lang.indexOf('Missing lang') > -1) option_lang = valuesList[i];
+				listValueField += '<option ' + (valuesList[i] == value ? "selected" : "") + '>' + option_lang + '</option>';
 			}
-			listValueField += '</select>' + type_and_name; 
+			listValueField += '</select></div>' + type_and_name;
 			$("#" + genid + " #tdValue" + id).html(listValueField);
 			conditions += '<option value="=">=</option>';
 			conditions += '<option value="<>"><></option>';
@@ -334,7 +351,7 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 	    		        	data: external_fields_values
 	    				});	 
 					    
-					    $('#tdValue'+id).html('<label for="containerConditions[' + id + '][value]">' + lang('value') + '</label>' + '<span id="'+genid+'containerConditions[' + id + '][value]"></span>' + type_and_name);
+					    $('#tdValue'+id).html('<label for="containerConditions[' + id + '][value]">' + lang('value') + '</label><br/>' + '<span id="'+genid+'containerConditions[' + id + '][value]"></span>' + type_and_name);
 						
 					    var tsContactCombo = new Ext.form.ComboBox({
 				    		renderTo:'tdValue'+id,					    		
@@ -346,8 +363,6 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 				            cls: 'assigned-to-combo',
 				            triggerAction: 'all',
 				            selectOnFocus:true,
-				            width: 100,
-				            listWidth: 100,
 				            listClass: 'assigned-to-combo-list',
 				            displayField    : 'name',
 				            valueField        : 'id',
@@ -403,7 +418,11 @@ og.fieldChanged = function(id, condition, value, genid, object_type_id){
 		}
 		
 		$("#" + genid + " [name='conditions[" + id + "][condition]']").val(condition);
-                var selector = "#" + genid + " [name='conditions[" + id + "][condition]']";
+		setTimeout(function(){
+			$("#" + genid + " [name='conditions[" + id + "][condition]']").change();
+		}, 100);
+		
+		var selector = "#" + genid + " [name='conditions[" + id + "][condition]']";
 		og.advanced_reports.hiddenInputType(selector);
 		if(condition == "") {
 			$("#" + genid + " [name='conditions[" + id + "][is_parametrizable]']").removeAttr('checked');
@@ -550,4 +569,58 @@ og.tttReportGbSelected = function(select, genid){
 
 og.showPDFOptions = function(){
 	document.getElementById('pdfOptions').style.display = '';
+};
+
+og.openReportAction = function(url, reportId) {
+	$('.report-actions-btn').popover('hide');
+	if (reportId) {
+		og.deleteReport(reportId);
+	} else if (url) {
+		og.openLink(url);
+	}
+};
+
+og.initReportActionMenus = function() {
+	$('.report-actions-btn').each(function() {
+		var btn = $(this);
+		if (btn.data('popover-initialized')) return;
+		btn.data('popover-initialized', true);
+		var popover_options = {
+			content: "example",
+			delay: {show: "100", hide: "200"},
+			template: $("#" + btn.data("templateid")).html()
+		};
+		if ($.browser.mozilla) {
+			popover_options.trigger = 'focus';
+			btn.on('click', function() { $(this).focus(); });
+		}
+		btn.popover(popover_options);
+
+		btn.on('click', function() {
+			$('.report-actions-btn').not(this).popover('hide');
+		});
+	});
+
+	if (!og.reportActionMenusDocumentBound) {
+		og.reportActionMenusDocumentBound = true;
+
+		$(document).on('click.reportActions', '.report-action-link', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var reportId = $(this).attr('data-report-id');
+			var url = $(this).attr('data-report-url');
+			if (reportId) {
+				og.openReportAction(null, parseInt(reportId, 10));
+			} else if (url) {
+				og.openReportAction(url);
+			}
+			return false;
+		});
+
+		$(document).on('click.reportActionsClose', function(e) {
+			if (!$(e.target).closest('.report-actions-btn, .popover, .report-actions-menu').length) {
+				$('.report-actions-btn').popover('hide');
+			}
+		});
+	}
 };

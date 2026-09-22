@@ -22,26 +22,26 @@ $events = CronEvents::getDueEvents();
 foreach ($events as $event) {
 	if ($event->getEnabled()) {
 		$function = $event->getName();
-		if ( $type=="fast" && array_var($fast_functions, $function) || 
+		if ( $type=="fast" && array_var($fast_functions, $function) ||
 			 $type=="slow" && !array_var($fast_functions, $function) ||
 			 !$type ) {
-			 	
+
 			/* @var $event CronEvent */
 			$event = CronEvents::instance()->findById($event->getId());
 			if (!$event instanceof CronEvent || $event->getDate() instanceof DateTimeValue && $event->getDate()->getTimestamp() > DateTimeValueLib::now()->getTimestamp()) {
 				continue;
 			}
-		
+
 			$errordate = DateTimeValueLib::now()->add("m", 30);
 			/* setting this date allows to rerun the event in 30 minutes if a fatal error occurs
 			   during its execution, which would prevent the event from being rescheduled */
-			
+
 			$event->setDate($errordate);
 			$event->save();
 			$function = $event->getName();
 			try {
 				if (function_exists($function)) {
-					$function();
+					SystemContext::run($function);
 				} else {
 					echo "Could not execute $function - function does not exists\n";
 				}
@@ -49,7 +49,7 @@ foreach ($events as $event) {
 				echo $e->getMessage() . "\n";
 				echo $e->getTraceAsString();
 			}
-			
+
 			if ($event->getRecursive()) {
 				try {
 					DB::beginWork();

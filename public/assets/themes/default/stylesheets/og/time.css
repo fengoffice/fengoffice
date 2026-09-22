@@ -148,10 +148,9 @@
     white-space: pre-wrap;
 }
 
-.add-timeslot{}
-.add-timeslot a{text-decoration: underline;}
-.add-timeslot .coInputMainBlock label{min-width: 130px;}
-.add-timeslot .coInputMainBlock .input-container label{width: 130px;}
+/* .add-timeslot a{text-decoration: underline;} */
+.add-timeslot .coInputMainBlock label{min-width: 150px;}
+.add-timeslot .coInputMainBlock .input-container label{width: 150px;}
 .add-timeslot .coInputMainBlock .dataBlock .inputHours{width: 40px;text-indent: 3px;}
 .add-timeslot .coInputMainBlock .dataBlock .inputMinutes{width: 28px;text-indent: 1px;}
 .add-timeslot .coInputMainBlock .dataBlock .specify-link{margin-left: 15px;}

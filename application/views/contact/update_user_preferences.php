@@ -22,7 +22,14 @@
 				<?php $counter++; ?>
 				<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
 					<div class="configOptionInfo">
-						<div class="configOptionLabel"><label><?php echo $option->getDisplayName() ?>:</label></div>
+						<div class="configOptionLabel"><label><?php 
+							$label = $option->getDisplayName();
+							Hook::fire('override_contact_config_option_label', [
+								'category' => $category,
+								'option' => $option
+							], $label);
+							echo $label;
+						?>:</label></div>
 					<?php if(trim($option_description = $option->getDisplayDescription())) { ?>
 						<div class="configOptionDescription desc"><?php echo $option_description ?></div>
 					<?php } // if ?>

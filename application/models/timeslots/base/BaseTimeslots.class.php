@@ -112,7 +112,7 @@
 	 */
 	function getSystemColumns() {
 		return array_merge(parent::getSystemColumns(), array(
-      		'paused_on', 'is_fixed_billing', 'billing_id', 
+      		'paused_on', 'is_fixed_billing', 'billing_id', 'is_fixed_fee', 'is_billable_work'
 		));
 	} // getSystemColumns
     

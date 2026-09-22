@@ -981,14 +981,23 @@ class mime_parser_class
 						}
 						if($encoded > $position)
 						{
-							if(count($decoded_header))
-								$decoded_header[count($decoded_header)-1]['Value'].=substr($value, $position, $encoded - $position);
-							else
+							$between = substr($value, $position, $encoded - $position);
+							// RFC 2047 §6.2: linear-white-space between adjacent encoded-words is ignored.
+							// Without this, folded subjects become e.g. "D ominion" instead of "Dominion".
+							$previous_was_encoded = count($decoded_header)
+								&& strcmp($decoded_header[count($decoded_header)-1]['Encoding'], 'ASCII');
+							$between_is_lws = preg_match('/^[ \t\r\n]*$/', $between);
+							if(!($previous_was_encoded && $between_is_lws))
 							{
-								$decoded_header[]=array(
-									'Value'=>substr($value, $position, $encoded - $position),
-									'Encoding'=>'ASCII'
-								);
+								if(count($decoded_header))
+									$decoded_header[count($decoded_header)-1]['Value'].=$between;
+								else
+								{
+									$decoded_header[]=array(
+										'Value'=>$between,
+										'Encoding'=>'ASCII'
+									);
+								}
 							}
 						}
 						switch(strtolower(substr($value, $method, $data - $method)))

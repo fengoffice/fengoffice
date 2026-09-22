@@ -14,29 +14,97 @@ og.TasksTopToolbar = function(config) {
 
 	var allTemplates = [];
 	var allTemplatesArray = Ext.util.JSON.decode(document.getElementById(config.allTemplatesHfId).value);
+	var uncategorizedEl = document.getElementById('hfTaskTemplatesUncategorizedLabel');
+	var uncategorizedLabel = (uncategorizedEl && uncategorizedEl.value) ? uncategorizedEl.value : '';
+	var hasUncategorizedLabel = (uncategorizedLabel && String(uncategorizedLabel).length) ? true : false;
+	var templateMenuHandler = function() {
+		var tid = this.id;
+		og.openLink(og.getUrl('template', 'template_parameters', {id: this.id}), {
+			callback: function(success, data) {
+				if (success) {
+					if(data.parameters.length == 0){
+						var url = og.getUrl('template', 'instantiate', {id: tid, req_channel: 'task list - toolbar instantiate template'});
+						og.openLink(url);
+					}else{
+						og.render_modal_form('', {c:'template', a:'instantiate_parameters', params: {id: tid, req_channel: 'task list - toolbar instantiate template'}, 
+							overlayClose:false, escClose:false, hideCloseIcon:false
+						});
+					}
+				}
+			}
+		});
+	};
 	if (allTemplatesArray && allTemplatesArray.length > 0){
+		var buckets = {};
+		var bucketMeta = {};
+		var order = [];
+		var ungroupedRows = [];
 		for (var i = 0; i < allTemplatesArray.length; i++){
-			allTemplates[allTemplates.length] = {text: allTemplatesArray[i].t,
-				iconCls: 'ico-template',
-				handler: function() {
-					var tid = this.id;
-					og.openLink(og.getUrl('template', 'template_parameters', {id: this.id}), {
-						callback: function(success, data) {
-							if (success) {
-								if(data.parameters.length == 0){
-									var url = og.getUrl('template', 'instantiate', {id: tid, req_channel: 'task list - toolbar instantiate template'});
-									og.openLink(url);
-								}else{
-									og.render_modal_form('', {c:'template', a:'instantiate_parameters', params: {id: tid, req_channel: 'task list - toolbar instantiate template'}, 
-										overlayClose:false, escClose:false, hideCloseIcon:false
-									});
-								}
-							}
-						}
-					});
-				},
-				scope: allTemplatesArray[i]
-			};
+			var row = allTemplatesArray[i];
+			var gname = (row.g && String(row.g).length) ? row.g : '';
+			if (!gname) {
+				if (hasUncategorizedLabel) {
+					gname = uncategorizedLabel;
+				} else {
+					ungroupedRows.push(row);
+					continue;
+				}
+			}
+			if (!buckets[gname]) {
+				buckets[gname] = [];
+				bucketMeta[gname] = {
+					sortOrder: isNaN(parseInt(row.go, 10)) ? Number.MAX_VALUE : parseInt(row.go, 10),
+					position: isNaN(parseInt(row.gp, 10)) ? Number.MAX_VALUE : parseInt(row.gp, 10)
+				};
+				order.push(gname);
+			}
+			buckets[gname].push(row);
+		}
+		order.sort(function(a, b) {
+			var am = bucketMeta[a] || {};
+			var bm = bucketMeta[b] || {};
+			if (am.sortOrder !== bm.sortOrder) {
+				return am.sortOrder - bm.sortOrder;
+			}
+			if (am.position !== bm.position) {
+				return am.position - bm.position;
+			}
+			return String(a).localeCompare(String(b));
+		});
+
+		// If the uncategorized label wasn't provided, fall back to showing those templates at the top-level.
+		if (ungroupedRows.length > 0) {
+			ungroupedRows.sort(function(a,b){ return (a.t||'').localeCompare(b.t||''); });
+			for (var ug = 0; ug < ungroupedRows.length; ug++) {
+				allTemplates.push({
+					text: ungroupedRows[ug].t,
+					iconCls: 'ico-template',
+					handler: templateMenuHandler,
+					scope: ungroupedRows[ug]
+				});
+			}
+			if (order.length > 0) {
+				allTemplates.push('-');
+			}
+		}
+		for (var gi = 0; gi < order.length; gi++){
+			var gn = order[gi];
+			var rows = buckets[gn];
+			rows.sort(function(a,b){ return (a.t||'').localeCompare(b.t||''); });
+			var submenuItems = [];
+			for (var j = 0; j < rows.length; j++){
+				submenuItems.push({
+					text: rows[j].t,
+					iconCls: 'ico-template',
+					handler: templateMenuHandler,
+					scope: rows[j]
+				});
+			}
+			allTemplates.push({
+				text: gn,
+				iconCls: 'ico-folder',
+				menu: { items: submenuItems }
+			});
 		}
 	}
 
@@ -47,13 +115,7 @@ og.TasksTopToolbar = function(config) {
 		cls: 'tasks-panel-add-button',
 		handler: function() {
 			var additionalParams = {};
-			var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-			if (toolbar.filterNamesCompaniesCombo.isVisible()){
-				var value = toolbar.filterNamesCompaniesCombo.getValue();
-				if (value) {
-					additionalParams.assigned_to_contact_id = value;
-				}
-			}
+			ogTasks.applyAssignedToFilter(additionalParams);
 
 			additionalParams.req_channel = 'task list - toolbar new task';
 			
@@ -118,21 +180,28 @@ og.TasksTopToolbar = function(config) {
 	
 
 	if(og.loggedUser.can_instantiate_templates){
-		menuItems = menuItems.concat([{
+		var templatesMenuItem = {
 			text: lang('templates'),
 			iconCls: 'ico-template',
 			cls: 'scrollable-menu',
 			menu: {
 				items: allTemplates
-			}}]);
+			}
+		};
+		
+		if (ogTasks.userPreferences && parseInt(ogTasks.userPreferences.templatesFirstInNewMenu, 10) === 1) {
+			menuItems = [templatesMenuItem].concat(menuItems);
+		} else {
+			menuItems = menuItems.concat([templatesMenuItem]);
+		}
 	}
 
 
 	
 	
 	var butt = new Ext.Button({
-		iconCls: 'ico-new',
-		text: lang('new'),
+		iconCls: 'btn btn-sm btn-secondary',
+		text: '<i class="icon-circle-plus"></i>' + lang('new') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
 		id: 'new_menu_task',
 		menu: {
 			cls:'scrollable-menu',
@@ -188,9 +257,9 @@ og.TasksTopToolbar = function(config) {
 	
 	var actions = {
 		del: new Ext.Action({
-			text: lang('move to trash'),
+			text: '<i class="icon-trash"></i>' + lang('move to trash'),
 			tooltip: lang('move selected objects to trash'),
-			iconCls: 'ico-trash',
+			iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
                             var ids = ogTasks.getSelectedIds()+'';
@@ -216,9 +285,9 @@ og.TasksTopToolbar = function(config) {
 			scope: this
 		}),
 		complete: new Ext.Action({
-			text: lang('do complete'),
-                        tooltip: lang('complete selected tasks'),
-                        iconCls: 'ico-complete',
+			text: '<i class="icon-check"></i>' + lang('do complete'),
+			tooltip: lang('complete selected tasks'),
+			iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
                                 var ids = ogTasks.getSelectedIds();
@@ -246,14 +315,15 @@ og.TasksTopToolbar = function(config) {
 			scope: this
 		}),
 		markAs: new Ext.Action({
-			text: lang('mark as'),
+			text: '<i class="icon-tag"></i>' + lang('mark as') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
 			tooltip: lang('mark as desc'),
+			iconCls: 'btn btn-sm',
 			menu: this.markactions_menuitems
 		}),
 		archive: new Ext.Action({
-			text: lang('archive'),
-                        tooltip: lang('archive selected object'),
-                        iconCls: 'ico-archive-obj',
+			text: '<i class="icon-archive"></i>' + lang('archive'),
+			tooltip: lang('archive selected object'),
+			iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var ids = ogTasks.getSelectedIds() + '';
@@ -297,6 +367,30 @@ og.TasksTopToolbar = function(config) {
 	this.addSeparator();
         
 	this.displayOptions = {
+			assigned_to: {
+				id: 'show_assigned_to',
+				text: lang('to'),
+				checked: (ogTasks.userPreferences.showAssignedTo != 0), // preference-controlled, visible by default
+				hideOnClick: false,
+				checkHandler: function() {
+					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowAssignedTo', value:(this.checked?1:0)});
+					ogTasksMakeRequestAndReloadWithTimeout(url);
+				}
+			},
+			task_name_col: {
+				id: 'show_task_name',
+				text: lang('task'),
+				checked: true,       // always visible — column manager shows it for reordering only
+				hideOnClick: false,
+				checkHandler: function() {}
+			},
+			actions_col: {
+				id: 'show_actions_col',
+				text: lang('actions'),
+				checked: true,       // always visible — column manager shows it for reordering only
+				hideOnClick: false,
+				checkHandler: function() {}
+			},
 			by: {
 				id: 'show_by',
 		        text: lang('assigned by'),
@@ -309,7 +403,7 @@ og.TasksTopToolbar = function(config) {
 			},
 			time: {
 				id: 'show_time',
-				text: lang('time'),
+				text: lang('quick start clock'),
 				hidden: (typeof(ogTasks.userPreferences.showTime) == "undefined"),
 				checked: (ogTasks.userPreferences.showTime == 1),
 				hideOnClick: false,
@@ -321,7 +415,7 @@ og.TasksTopToolbar = function(config) {
             time_quick: {
 				id: 'show_time_quick',
 				hidden: (typeof(ogTasks.userPreferences.showTimeQuick) == "undefined"),
-				text: lang('quick time'),
+				text: lang('quick add time'),
 				checked: (ogTasks.userPreferences.showTimeQuick == 1),
 				hideOnClick: false,
 				checkHandler: function() {
@@ -331,7 +425,7 @@ og.TasksTopToolbar = function(config) {
 			},
 			dates_start: {
 				id: 'show_start_dates',
-		        text: lang('start date'),
+		        text: (ogTasks.task_gb_options_names && ogTasks.task_gb_options_names['start_date']) ? ogTasks.task_gb_options_names['start_date'] : lang('start date'),
 				checked: (ogTasks.userPreferences.showStartDates == 1),
 				hideOnClick: false,
 				checkHandler: function() {
@@ -341,7 +435,7 @@ og.TasksTopToolbar = function(config) {
 			},
 			dates_end: {
 				id: 'show_end_dates',
-		        text: lang('due date'),
+		        text: (ogTasks.task_gb_options_names && ogTasks.task_gb_options_names['due_date']) ? ogTasks.task_gb_options_names['due_date'] : lang('due date'),
 				checked: (ogTasks.userPreferences.showEndDates == 1),
 				hideOnClick: false,
 				checkHandler: function() {
@@ -384,9 +478,9 @@ og.TasksTopToolbar = function(config) {
 				hideOnClick: false,
 				checkHandler: function() {
 					if(this.checked){
-						ogTasks.TotalCols.estimatedTime = {title: 'total estimated', group_total_field: 'TotalTimeEstimate', row_field: 'totalTimeEstimateString'};
+						ogTasks.TotalCols.totalEstimatedTime = {title: 'total estimated', group_total_field: 'TotalTimeEstimate', row_field: 'totalTimeEstimateString'};
 					}else{
-						delete ogTasks.TotalCols.estimatedTime;				
+						delete ogTasks.TotalCols.totalEstimatedTime;
 					}					
 					
 					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTotalTimeEstimates', value:(this.checked?1:0)});
@@ -449,7 +543,7 @@ og.TasksTopToolbar = function(config) {
 				hideOnClick: false,	
 				checkHandler: function() {
 					if(this.checked){
-						ogTasks.TotalCols.totalWorkedTime = {title: 'remaining time', group_total_field: 'remaining_time', row_field: 'remaining_time_string'};
+						ogTasks.TotalCols.remainingTime = {title: 'remaining time', group_total_field: 'remaining_time', row_field: 'remaining_time_string'};
 					}else{
 						delete ogTasks.TotalCols.remainingTime;				
 					}
@@ -465,9 +559,9 @@ og.TasksTopToolbar = function(config) {
 				hideOnClick: false,
 				checkHandler: function() {
 					if(this.checked){
-						ogTasks.TotalCols.remainingTime = {title: 'total remaining time', group_total_field: 'total_remaining_time', row_field: 'total_remaining_time_string'};
+						ogTasks.TotalCols.totalRemainingTime = {title: 'total remaining time', group_total_field: 'total_remaining_time', row_field: 'total_remaining_time_string'};
 					}else{
-						delete ogTasks.TotalCols.remainingTime;                
+						delete ogTasks.TotalCols.totalRemainingTime;                
 					}
 					
 					var url = og.getUrl('account', 'update_user_preference', {name: 'tasksShowTotalRemainingTime', value:(this.checked?1:0)});
@@ -568,6 +662,9 @@ og.TasksTopToolbar = function(config) {
 			}
 		};
 	var menu_items =  [
+			    this.displayOptions.assigned_to,
+			    this.displayOptions.task_name_col,
+			    this.displayOptions.actions_col,
 			    this.displayOptions.by,
 				this.displayOptions.time,
 				this.displayOptions.time_quick,
@@ -611,10 +708,14 @@ og.TasksTopToolbar = function(config) {
 	// dimension columns
 	for (did in og.dimensions_info) {
 		if (isNaN(did)) continue;
-		
+
 		tmp_menu_items = ogTasks.createDimensionColumnMenuItems(did);
-		
+
 		if (tmp_menu_items && tmp_menu_items.length > 0) {
+			for (var dmi = 0; dmi < tmp_menu_items.length; dmi++) {
+				// Add id so dimension cols can be found in the column manager
+				tmp_menu_items[dmi].id = 'show_dim_' + tmp_menu_items[dmi].value;
+			}
 			menu_items = menu_items.concat(tmp_menu_items);
 		}
 	}
@@ -623,6 +724,7 @@ og.TasksTopToolbar = function(config) {
 		for (var i=0; i<ogTasks.additional_task_list_columns.length; i++) {
 			var col = ogTasks.additional_task_list_columns[i];
 			menu_items.push({
+				id: col.id,
 				configId: col.id,
 		        text: col.name,
 				checked: (ogTasks.userPreferences[col.id] == 1),
@@ -637,18 +739,46 @@ og.TasksTopToolbar = function(config) {
 
 	menu_items.sort(function(a,b){return (a.text > b.text) ? 1 : ((b.text > a.text) ? -1 : 0);});
 
+	// IDs that stay visible in the Show dropdown (behavioral / quick-action items).
+	// All other items become column-manager columns (hidden from the dropdown).
+	var NON_COL_IDS = {
+		'show_empty_milestones':      1,
+		'show_previous_pending_tasks':1,
+		'show_subtasks_structure':    1,
+		'show_quick_edit':            1,
+		'show_quick_mark_as_started': 1,
+		'show_quick_complete':        1,
+		'show_quick_add_sub_tasks':   1,
+		'show_time':                  1,
+		'show_time_quick':            1
+	};
+	for (var mi_idx = 0; mi_idx < menu_items.length; mi_idx++) {
+		var mi_item = menu_items[mi_idx];
+		if (!NON_COL_IDS[mi_item.id]) {
+			mi_item.cmgrColumn     = true;
+			mi_item.featureEnabled = !mi_item.hidden; // preserve original feature-enabled state
+			mi_item.hidden         = true;            // hide from dropdown; column manager is the UI
+		}
+	}
+
 	this.show_menu = new Ext.Action({
 		id: 'table-show-columns-task',
-       	iconCls: 'op-ico-details',
-		text: lang('show'),
-		menu: {items: menu_items}
+       	iconCls: 'btn btn-sm',
+		text: '<i class="icon-list-checks"></i>' + lang('show') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
+		menuAlign: 'tl-bl?',
+		menu: {
+			items: menu_items
+		}
 	});
-		
+
 	this.add(this.show_menu);
-	
+	og.TasksColManagerButton(this);
+
     this.add('-');
     
-    this.add(new Ext.Action({
+    /* HIDE PRINT BUTTON
+	
+	this.add(new Ext.Action({
       id: 'button-print',
       text: lang('print'),
       tooltip: lang('print all groups'),
@@ -696,9 +826,70 @@ og.TasksTopToolbar = function(config) {
     
     Ext.get('button-print').set({
     	id: "tasks_print_btn"
-    });
+    }); 
+	*/ // END HIDE PRINT BUTTON
 
-
+	if (og.config.advanced_core_active) {
+		this.add(new Ext.Action({
+			id: 'button-export-excel',
+			// only makes sense to export when a filter is applied; otherwise the
+			// whole dataset would be exported, so the button starts hidden when no
+			// filter is active (the toolbar is rebuilt on every filter change).
+			hidden: !this.isAnyTaskFilterActive(),
+			text: '<i class="icon-download"></i>' + lang('export_excel'),
+			tooltip: lang('export_excel'),
+			iconCls: 'btn btn-sm',
+			handler: function() {
+				var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+				if (!bottomToolbar) return;
+				var filters = bottomToolbar.getFilters();
+				
+				if(bottomToolbar.groupcombo){
+					filters.tasksGroupBy = bottomToolbar.groupcombo.value;
+				}	
+				if(bottomToolbar.ordercombo){
+					filters.tasksOrderBy = bottomToolbar.ordercombo.value;
+				}
+				
+				filters.draw_options = Ext.util.JSON.encode(this.getDrawOptions());
+				if (!ogTasks.TasksList || !ogTasks.TasksList.tasks_list_cols) {
+					og.err(lang('error exporting to excel'));
+					return;
+				}
+				filters.tasks_list_cols = Ext.util.JSON.encode(ogTasks.TasksList.tasks_list_cols);
+				
+				var row_total_cols = [];
+				for (var key in ogTasks.TotalCols){
+					row_total_cols.push({row_field: ogTasks.TotalCols[key].row_field});
+				}
+				filters.row_total_cols = Ext.util.JSON.encode(row_total_cols);
+				
+				og.msg(lang('information'), lang('exporting to excel') + '...', 3, 'msg');
+				og.openLink(og.getUrl('task', 'export_tasks_excel'), {
+					preventPanelLoad: true,
+					hideLoading: false,
+					scope: this,
+					post: filters,
+					timeout: 0,
+					callback: function(success, data) {
+						if (success && data && data.filename) {
+							og.msg(lang('information'), lang('downloading file') + '...', 3, 'msg');
+							var $form = $("<form></form>");
+							$form.attr("action", og.getUrl('reporting', 'download_file'));
+							$form.attr("method", "post");
+							$form.append('<input type="hidden" name="file_name" value="'+data.filename+'" />');
+							$form.append('<input type="hidden" name="file_type" value="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />');
+			
+							$form.appendTo('body').submit().remove();
+						} else {
+							og.err(lang('error exporting to excel'));
+						}
+					}
+				});
+			},
+			scope: this
+		}));
+	}
     
     
     if (ogTasks.extraTopToolbarItems) {
@@ -759,6 +950,58 @@ function ogTasksWaitTimeOutAndDraw (){
 
 Ext.extend(og.TasksTopToolbar, Ext.Toolbar, {
 	/**
+	 * Returns true if at least one task list filter is currently applied.
+	 * Reads the server-persisted filter state from ogTasks.userPreferences,
+	 * which is refreshed on every list reload (and therefore on every filter
+	 * change, since the toolbar is rebuilt each time).
+	 *
+	 * @return {Boolean} True if any filter is active, false otherwise.
+	 */
+	isAnyTaskFilterActive : function() {
+		var prefs = ogTasks.userPreferences;
+		if (!prefs) return false;
+
+		// "filter" dropdown ('no_filter' means none selected)
+		if (prefs.filter && prefs.filter != 'no_filter') {
+			return true;
+		}
+
+		// "status" dropdown (value 2 means "no filter")
+		if (typeof prefs.status != 'undefined' && prefs.status !== '' && prefs.status !== null && parseInt(prefs.status, 10) != 2) {
+			return true;
+		}
+
+		// from/to date filters (empty when not set; the "empty datetime" sentinel
+		// can also leak through as a bogus non-positive-year date, so validate)
+		if (this.isRealFilterDate(prefs.dateStart)) {
+			return true;
+		}
+		if (this.isRealFilterDate(prefs.dateEnd)) {
+			return true;
+		}
+
+		return false;
+	},
+	/**
+	 * Returns true if the given value is a real, user-selected date and not the
+	 * "empty datetime" sentinel (0000-00-00). Depending on the server's date
+	 * format that sentinel renders with a non-positive year (e.g. "11/30/-0001"
+	 * or a "0000" year), which must not be treated as an active filter.
+	 *
+	 * @param {String} value The formatted date string from user preferences.
+	 * @return {Boolean} True if it represents a real date.
+	 */
+	isRealFilterDate : function(value) {
+		if (!value) return false;
+		var s = String(value);
+		// A minus that is a sign (start of string or after a non-digit) marks a
+		// negative year; date separators always sit between digits, so they are
+		// ignored. A "0000" component marks the zero year.
+		if (/(^|\D)-\d/.test(s)) return false;
+		if (/(^|\D)0000(\D|$)/.test(s)) return false;
+		return true;
+	},
+	/**
 	 * Returns true if the menu item with the given id is checked, false otherwise.
 	 *
 	 * @param {String} item_id The id of the menu item to check.
@@ -783,6 +1026,7 @@ Ext.extend(og.TasksTopToolbar, Ext.Toolbar, {
 	 */
 	getDrawOptions : function(){
 		var draw_options = {
+			show_assigned_to : this.isShowMenuItemChecked('show_assigned_to'),
 			show_by : this.isShowMenuItemChecked('show_by'),
 			show_time : this.isShowMenuItemChecked('show_time'),
 			show_time_quick : this.isShowMenuItemChecked('show_time_quick'),

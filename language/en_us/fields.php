@@ -16,7 +16,6 @@ return array(
 	'field Companies email' => 'Email address',
 	'field Companies homepage' => 'Homepage',
 	'field Companies notes' => 'Notes',
-	'field Companies homepage' => 'Homepage',
 	'field Companies created_on' => 'Created on',
 	'field Companies updated_on' => 'Updated on',
 	'field Companies created_by_id' => 'Created by',
@@ -127,6 +126,8 @@ return array(
     'field ProjectEvents repeat_forever'=> 'Repeat forever',
     'field ProjectEvents description' => 'Description',
     'field ProjectEvents private' => 'Private',
+	'field ProjectEvents organizer_id' => 'Organizer',
+	'field ProjectEvents uid' => 'Uid',
     'field ProjectEvents repeat_end' => 'Repeat end',
     'field ProjectEvents repeat_num' => 'Repeat number',
     'field ProjectEvents repeat_d' => 'Repeat day',
@@ -142,6 +143,7 @@ return array(
 	'field ProjectEvents repeat_dow' => 'Repeat day of week',
 	'field ProjectEvents repeat_mjump' => 'Repeat month jump',
 	'field ProjectEvents repeat_wnum' => 'Repeat week number',
+	'field ProjectEvents type_id' => 'All day',
 
 	// File fields
 	'field ProjectFiles id' => 'Id',
@@ -230,6 +232,8 @@ return array(
 	'field ProjectTasks percent_completed' => 'Percent completed',
 	'field ProjectTasks original_task_id' => 'Original task id',
 	'field ProjectTasks parent_id' => 'Parent task',
+	'field ProjectTasks previous_task_id' => 'Previous task',
+	'field Expenses status_id' => 'Status',
 
 	// User fields
     'field Users username' => 'Username', 
@@ -298,6 +302,11 @@ return array(
     // Time fields 
     'field Objects total_worked_time' => 'Worked time', 
     'field Objects status' => 'Status',
+    'field Objects contact_id' => 'User',
+    'field Objects description' => 'Description',
+    'field Timeslots contact_id' => 'User',
+    'field Timeslots description' => 'Description',
+    'field Timeslots is_billable_work' => 'Is billable',
     
     
     'home_phone' => 'Home phone',
@@ -326,8 +335,11 @@ return array(
 	'field Contacts postal_address' => 'Postal address',
 		
 	'field Timeslots rel_object_id' => 'Task',
+	'field Timeslots end_time' => 'End time',
 
     'field Objects prefix' => 'Prefix',
+	'field Objects archived_by_id' => 'Archived by',
+	'field Objects contact_object_type_id' => 'Contact type',
 
 );
 

@@ -1,3 +1,23 @@
+/* Column drag-and-drop reordering */
+#ogTasksPanelColNames th:not(.task_actions) {
+    cursor: grab;
+}
+#ogTasksPanelColNames th.ui-sortable-helper {
+    cursor: grabbing;
+    opacity: 0.9;
+    background: #6e6e6e;
+    border: 1px solid #c0c0c0 !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    transform: rotate(1.5deg) scale(1.03);
+    z-index: 100;
+}
+.tasks-col-drag-placeholder {
+    background-color: #3a3a3a;
+    border: 2px dashed #a6a6a6;
+    display: table-cell;
+    box-shadow: inset 0 0 0 3px #5a5a5a;
+}
+
 .tasksPanelContextHelp .contextualHelp {
     margin: 15px;
 }
@@ -26,6 +46,10 @@
     text-decoration:line-through;
 }
 
+.og-task-completed {
+    text-decoration:line-through;
+}
+
 .ogTasksGroupHeader .milestone-delayed{
     font-weight:bold;
     color:#F00;
@@ -40,6 +64,49 @@
     width: 16px;
     height: 18px;
     cursor: pointer;
+}
+
+/* Remove left padding on the first header cell so the button can be truly centered */
+#ogTasksPanelColNames th.task_actions {
+    padding-left: 0;
+}
+
+/* Expand / collapse all groups buttons in the column header */
+#ogTasksGroupsExpandCollapseHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+#ogTasksExpandAllGroupsBtn,
+#ogTasksCollapseAllGroupsBtn {
+    background-image: none;
+    font-family: 'lucide' !important;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    font-size: 12px;
+    display: block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 3px;
+    cursor: pointer;
+}
+#ogTasksExpandAllGroupsBtn:hover,
+#ogTasksCollapseAllGroupsBtn:hover {
+    background: rgba(255,255,255,0.15);
+}
+#ogTasksExpandAllGroupsBtn::before {
+    content: "\e21a"; /* expand */
+    color: #d1d1d1;
+}
+#ogTasksCollapseAllGroupsBtn::before {
+    content: "\e220"; /* shrink */
+    color: #d1d1d1;
 }
 
 .ogTasksTaskTable {
@@ -216,7 +283,7 @@
 .form-tab .subtasks-container .subtask-inputs-container .inputs-container .subtask-name {
     width: 550px;
 }
-.form-tab .subtasks-container .subtask-inputs-container .assigned-container {
+/* .form-tab .subtasks-container .subtask-inputs-container .assigned-container {
     float: left;
     margin-left: 10px;
 }
@@ -231,7 +298,7 @@
     margin-left: 10px;
     padding-top: 2px;
     float: left;
-}
+} */
 .form-tab .subtasks-container .subtask-inputs-container .remove-link-container a.link-ico {
     padding-left: 18px;
 }
@@ -296,6 +363,7 @@ div.new-task div.field.assigned select {
     font-size: 14px;
     float: left;
 }
+/* TODO: potencial remove */
 button.add-first-btn {
     height: 36px;
     min-width: 100px;
@@ -371,6 +439,44 @@ button.add-first-btn.no-tasks-add-task-btn {
 
 }
 
+/* Container for the entire progress widget */
+.task-progress-container {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 15px;
+    margin-top: 6px;
+}
+
+.task-progress-track {
+    width: 50px;
+    height: 7px;
+    background-color: #DDD;
+}
+
+.task-progress-fill {
+    height: 100%;
+    animation: loadProgress 0.8s ease-out forwards;
+}
+
+/* The Keyframe Animation */
+@keyframes loadProgress {
+    from { 
+        width: 0%; 
+    }
+    to { 
+        /* This variable will be set in the inline HTML */
+        width: var(--target-width); 
+    }
+}
+
+.task-progress-container .percent_num {
+    padding-left: 3px;
+    font-size: 8px;
+    color: #777;
+    line-height: 12px;
+    white-space: nowrap;
+}
+
 .task-percent-completed-bar-container .percent_num{
     display: none;
 }
@@ -401,6 +507,29 @@ button.add-first-btn.no-tasks-add-task-btn {
     /*	max-width: 100px; */
 }
 
+.task-list-row-template td.task-cp-container {
+	line-height: 20px;
+}
+.task-list-row-template td.task-cp-container .task-cp-content {
+	max-height: 100px;
+    display: block;
+    overflow: auto;
+	width: 100%; /* cell content must use all space */
+	overflow-wrap: anywhere; /* wrap long words */
+}
+
+/* fake scrollbar for task list cells with big content */
+.task-list-row-template td.task-cp-container .task-cp-content::-webkit-scrollbar {
+    width: 8px;
+}
+.task-list-row-template td.task-cp-container .task-cp-content::-webkit-scrollbar-track {
+	background: #f1f1f1;
+}
+.task-list-row-template td.task-cp-container .task-cp-content::-webkit-scrollbar-thumb {
+    background: #888;
+	border-radius: 4px;
+}
+
 .task-list-col-names-template .task_assigned_by_id,
 .task-list-col-names-template .task_assigned_to_id{
     min-width: 24px;
@@ -409,7 +538,7 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 .task-list-row-template .task_name,
 .task-list-col-names-template .task_name{
-    min-width: 250px;
+    min-width: 100px;
 }
 
 .task-list-row-template td.task_name{
@@ -424,7 +553,6 @@ button.add-first-btn.no-tasks-add-task-btn {
     max-width: 100px;
 }
 
-.task-list-col-names-template .task_quick_actions,
 .task-list-col-names-template .task_start_date,
 .task-list-col-names-template .task_due_date,
 .task-list-col-names-template .task_estimated,
@@ -437,8 +565,7 @@ button.add-first-btn.no-tasks-add-task-btn {
 .task-list-col-names-template .tasksShowBillableWorkedTime,
 .task-list-col-names-template .tasksShowNonBillableWorkedTime,
 .task-list-col-names-template .tasksShowBillableTotalWorkedTime,
-.task-list-col-names-template .tasksShowNonBillableTotalWorkedTime,
-.task-list-col-names-template .task_quick_actions{
+.task-list-col-names-template .tasksShowNonBillableTotalWorkedTime{
     min-width: 70px;
     max-width: 70px;
     width: 70px;
@@ -455,11 +582,9 @@ button.add-first-btn.no-tasks-add-task-btn {
     max-width: 55px;
 }
 
-.task-list-col-names-template .task_btn_actions{
-    min-width: 100px;
-    max-width: 100px;
-    width: 100px;
-}
+/* Merged quick-actions + overflow-menu column (icons + "..." popover): width is
+   computed dynamically in drawing.js (initTasksList) based on how many quick-action
+   icons are currently enabled, applied inline via col_width — no fixed rule here. */
 
 .task-list-row-template .task-date-container,
 .task-list-group-totals-template .task_estimated,
@@ -476,7 +601,18 @@ button.add-first-btn.no-tasks-add-task-btn {
 {
     width: 70px;
     line-height: 12px;
-    font-size: 9px;
+    /* font-size: 9px; */
+}
+
+.task-date-muted {
+    color: #888;
+}
+.task-date-overdue {
+    color: #F00;
+}
+.task-due-date-overdue {
+    color: #F00;
+    font-weight: bold;
 }
 
 .task-list-group-totals-template .tasksShowExecutedCost,
@@ -487,6 +623,15 @@ button.add-first-btn.no-tasks-add-task-btn {
     font-size: 12px;
     color: #333;
     font-weight: bold;
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.task-module-financial-amount {
+    white-space: nowrap; 
+    overflow-x: auto; 
+    font-size: 12px; 
+    text-align: right;
 }
 
 
@@ -640,7 +785,10 @@ button.add-first-btn.no-tasks-add-task-btn {
     margin-right: 10px; 
     line-height: 28px;
 }
-
+.task-list-row-template .task-row-avatar [class^="icon-"] {
+    font-size: 20px;
+    color: #6c757d;
+}
 .task-list-row-template .task-row-avatar img{
     vertical-align: middle;
     height: 20px; 
@@ -702,12 +850,121 @@ button.add-first-btn.no-tasks-add-task-btn {
     filter: alpha(opacity=100);
 }
 
+/* Disabled task action icon (e.g. "add work" once a task's estimated hours are
+   reached): stays visible so users understand the action exists but can't be used,
+   instead of the icon disappearing from the row. */
+.task-action-icon.disabled,
+.ogTasksTimeClock.disabled {
+    cursor: not-allowed !important;
+    color: #adb5bd !important;
+    opacity: 0.4 !important;
+    filter: alpha(opacity=40) !important;
+}
+.task-action-icon.disabled:hover,
+.ogTasksTimeClock.disabled:hover {
+    opacity: 0.4 !important;
+    filter: alpha(opacity=40) !important;
+}
+.popover .menu-task-actions .menu-task-action-item.disabled {
+    cursor: not-allowed;
+    color: #adb5bd;
+}
+.popover .menu-task-actions .menu-task-action-item.disabled .menu-task-action-icon {
+    color: #adb5bd !important;
+}
+
 .task-list-row-template .task-single-action{
     display: table-cell;
     vertical-align: middle;
     min-width: 25px;  
 }
+.task-list-row-template .task-single-action .task-action-icon,
+.task-list-row-template .task-single-div .task-action-icon {
+    cursor: pointer;
+    height: 18px;
+    width: 18px;
+    text-align: center;
+    line-height: 18px;
+    padding: 0 4px;
+}
+.task-list-row-template .task-single-action .edit.task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.edit .menu-task-action-icon {
+    color: #f09e00;
+}
+.task-list-row-template .task-single-action .start.task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.start .menu-task-action-icon {
+    color: #155C94;
+}
+.task-list-row-template .task-single-action .complete.task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.complete .menu-task-action-icon {
+    color: #198754;
+}
+/* Check icon for complete task */
+.task-list-row-template .task-single-action a:has(.complete.task-action-icon) {
+    display: inline-flex;
+    align-items: center;
+}
 
+.task-list-row-template .task-single-action .complete.task-action-icon,
+.task-list-row-template .task-single-div .complete.task-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin: 6px 4px 0;
+    line-height: 1;
+    border-radius: 50%;
+    background-color: #198754;
+    transition: background-color 0.15s ease;
+}
+
+.task-action-icon.complete .icon-check {
+    color: #fff;
+    font-size: 12px !important;
+    line-height: 1;
+}
+.task-list-row-template .task-single-action .undo.task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.undo .menu-task-action-icon {
+    color: #6c757d;
+}
+.task-list-row-template .task-single-action .reopen.task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.reopen .menu-task-action-icon {
+    color: #6f42c1;
+}
+.task-list-row-template .task-single-div .time.task-action-icon,
+.task-list-row-template .task-single-action .time.task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.time .menu-task-action-icon {
+    color: #17a2b8;
+}
+.task-list-row-template .task-single-div .play.task-action-icon,
+.task-list-row-template .task-single-div .icon-list-todo.priority-low,
+.popover .menu-task-actions .menu-task-action-item.add-subtask-link .menu-task-action-icon,
+.popover .menu-task-actions .menu-task-action-item.play .menu-task-action-icon {
+    color: #0d6efd;
+}
+.task-list-row-template .task-single-div .pause.task-action-icon,
+.task-list-row-template .task-single-div .icon-list-todo.priority-mid,
+.popover .menu-task-actions .menu-task-action-item.pause .menu-task-action-icon {
+    color: #fd7e14;
+}
+.task-list-row-template .task-single-div .stop.task-action-icon,
+.task-list-row-template .task-single-div .icon-list-todo,
+.popover .menu-task-actions .menu-task-action-item.stop .menu-task-action-icon {
+    color: #343a40;
+}
+.task-list-row-template .task-single-div .cancel.task-action-icon,
+.task-list-row-template .task-single-div .icon-list-todo.priority-high,
+.popover .menu-task-actions .menu-task-action-item.cancel .menu-task-action-icon {
+    color: #dc3545;
+}
+.task-list-row-template .task-single-action .task-action-icon [class^="icon-"],
+.task-list-row-template .task-single-div .task-action-icon [class^="icon-"] {
+    font-size: 18px;
+}
 .task-list-row-template .task-single-div{
     display: table-cell;
     vertical-align: middle;
@@ -716,12 +973,16 @@ button.add-first-btn.no-tasks-add-task-btn {
 .ogTasksGroupHeader.task-list-row-template .task-single-div{
     padding-right: 5px;
 }
-
+.ogTasksGroupHeader.task-list-row-template .task-single-div [class^="icon-"] {
+    font-size: 18px;
+}
 .task-list-row-template .task-actions-container{
     display: table;
     float: right;
     height: 100%;
     padding-right: 10px;
+    position: relative;
+    z-index: 1;
 }
 
 .task-list-row-template .task-actions {
@@ -729,33 +990,28 @@ button.add-first-btn.no-tasks-add-task-btn {
     padding-top: 2px; 
 }
 
-.task-list-row-template .tasksBtn{
+.task-list-row-template .tasksActionsBtn {
+    display: block;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
     cursor: pointer;
-    font-size: 13px;
-    height: 26px;
-    width:72px;
-    padding: 0px;
-    margin-left:5px;
-    margin-right: 5px;
-    background-image: none;   
-    background: none repeat scroll 0 0 #f8f8f8;
-    border-color: #c4c4c4;
-    border-radius: 2px;
-    border-style: solid; 
-    border-width: 1px;
-    box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.22);
-    -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.22);
-    -moz-box-shadow:    1px 1px 2px 0px rgba(0, 0, 0, 0.22);    
+    outline: none;
 }
 
-.task-list-row-template .tasksBtn:HOVER{
-    background: none repeat scroll 0 0 #f0f0f0;
+.task-list-row-template .task-overflow-menu-icon {
+    color: #6c757d;
+    pointer-events: none;
 }
 
+.task-list-row-template .task-overflow-menu-icon * {
+    pointer-events: none;
+}
 
-.task-list-row-template .tasksActionsBtn .caret {
-    margin-left: 3px;
-    margin-top: 6px;
+.task-list-row-template .tasksActionsBtn:hover .task-overflow-menu-icon {
+    color: #343a40;
+    opacity: 1;
 }
 
 .task-no-expander-subtask-filler {
@@ -798,31 +1054,35 @@ button.add-first-btn.no-tasks-add-task-btn {
     min-width: 100px;
 }
 .popover .menu-task-actions ul{
-    list-style:none;
-    margin:0px; 
-    padding:0px; 
+    list-style: none;
+    margin: 4px 0;
+    padding: 0;
 }
 .popover .menu-task-actions ul li {
-    height: 25px;
-    line-height: 25px;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding: 0;
 }
-
-.popover .menu-task-actions ul li .ico-time-s{
-    background-position: 0 2px !important;
+.popover .menu-task-actions .menu-task-action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    color: #333;
+    text-decoration: none;
+    white-space: nowrap;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
 }
-
-.popover .menu-task-actions ul .divi{ 
-    background: none repeat scroll 0 0 #d3d7dc;
-    font-size: 0;
-    height: 1px;
-    line-height: 0;
-    margin: 6px 7px;
+.popover .menu-task-actions .menu-task-action-item:hover {
+    background-color: #f5f5f5;
+    text-decoration: none;
+    color: #111;
 }
-
-.popover .menu-task-actions ul li:hover{
-    background-color: rgb(250,250,250);
+.popover .menu-task-actions .menu-task-action-icon {
+    font-size: 15px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 
@@ -916,6 +1176,7 @@ button.add-first-btn.no-tasks-add-task-btn {
     display: table;
     width: 100%;
     table-layout: fixed;
+	min-width: 100px;
 }
 #tasks-panel .task-row-avatar.big .name {
     display: table-cell;
@@ -925,18 +1186,27 @@ button.add-first-btn.no-tasks-add-task-btn {
 }
 
 .tasks-group-pagination-link-container {
-	margin: 20px 20px 10px;
-	position: absolute;
+	padding: 12px 10px;
+	overflow: auto;
 }
-.tasks-group-pagination-link-container a {
-	background-position: 0px 6px;
-	font-size: 150%;
-	text-decoration: underline;
+.tasks-group-pagination-link-container button {
+	margin-right: 8px;
 }
+
 
 .ogContentPanel #ogTasksPanelColNamesThead {
 	position: sticky;
 	top: -1px;
+	z-index: 1; /* Prevent header be over the resize handler */
+	background-color: #4f4f4f;
+}
+
+.tasksPanel.ogContentPanel {
+	background-color:white;
+	background-color:#F0F0F0;
+	height:100%;
+	width:100%;
+	overflow: hidden;
 }
 
 a.add-first-btn.btn-add-work {
@@ -946,4 +1216,710 @@ a.add-first-btn.btn-add-work {
     box-shadow: none;
     color: #003562;
     height: 14px;
+}
+
+/* 
+Start defining the behavior and colors of icons here to be consistent with other parts of the app. As we do a few lines above with task-action-icon
+TODO: move this to a common css file
+*/
+.ico-action {
+	margin-left: 5px; /* By default. In some cases it has to be bigger */
+	opacity: 0.7;
+	filter: alpha(opacity=70);
+}
+.ico-action:hover{
+    opacity: 1;
+    filter: alpha(opacity=100);
+}
+.ico-action i {
+    line-height: 1;
+}
+.ico-action.edit {
+	color: #f09e00;
+}
+.ico-action.trash,
+.ico-action.delete {
+    color: #dc3545;
+}
+.ico-action.history {
+    color: #6f42c1;
+}
+.ico-action.complete {
+    color: #198754;
+}
+
+/* ── Task Name Link Icon ────────────────────────────────── */
+
+.task-name-link-icon {
+    font-size: 11px;
+    margin-left: 4px;
+    opacity: 0;
+    color: #999;
+    vertical-align: bottom;
+    transition: opacity 0.15s ease;
+}
+.task-list-row:hover .task-name-link-icon {
+    opacity: 0.6;
+}
+.task-list-row:hover .task-name-link-icon:hover {
+    opacity: 1;
+    color: #4A90D9;
+}
+
+/* ── Inline Cell Editing (ICE) ────────────────────────────────── */
+
+/* Editable cells — contain the floating action bar */
+td[data-editable] {
+    position: relative;
+}
+td[data-editable]:hover {
+    background-color: rgba(74, 144, 217, 0.05);
+}
+
+/* ── Floating action bar ──────────────────────────────────────── */
+.ice-action-bar {
+    position: absolute;
+    top: 50%;
+    right: 3px;
+    transform: translateY(-50%);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    padding: 1px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.14);
+    pointer-events: auto;
+}
+
+.ice-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    color: #555;
+    font-size: 12px;
+    line-height: 1;
+}
+.ice-action-btn:hover {
+    background: #f0f0f0;
+    color: #1a1a1a;
+}
+
+/* ── Breadcrumb dialog ────────────────────────────────────────── */
+.ice-breadcrumb-dialog {
+    position: fixed;
+    z-index: 10001;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    width: 300px;
+}
+.ice-breadcrumb-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px 6px;
+    border-bottom: 1px solid #eee;
+    font-size: 11px;
+    font-weight: 600;
+    color: #444;
+}
+.ice-breadcrumb-close {
+    background: none;
+    border: none;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    color: #999;
+    padding: 0 2px;
+}
+.ice-breadcrumb-close:hover { color: #222; }
+.ice-breadcrumb-dialog-body {
+    padding: 0;
+    font-size: 12px;
+    max-height: 320px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.ice-dim-loading, .ice-dim-empty {
+    padding: 10px 12px;
+    color: #888;
+    font-size: 12px;
+}
+
+/* ── Dimension selector component inside the breadcrumb dialog ── */
+.ice-dim-selector {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* required for flex children to shrink */
+    flex: 1;
+}
+
+/* Selected-member chips live INSIDE the search field: display:contents makes
+   each chip a direct flex item of .ice-dim-search, wrapping with the input. */
+.ice-dim-chips {
+    display: contents;
+}
+.ice-dim-chip {
+    display: inline-flex;
+    align-items: center;
+    max-width: 180px;
+    min-width: 0;
+    padding: 2px 4px 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    line-height: 1.5;
+    gap: 3px;
+    overflow: hidden;
+}
+.ice-dim-chip > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.ice-dim-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border: none;
+    background: rgba(0,0,0,0.12);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    color: inherit;
+    flex-shrink: 0;
+}
+.ice-dim-chip-remove:hover {
+    background: rgba(0,0,0,0.28);
+}
+/* Search box (magnifier icon + chips + input + clear button).
+   Wraps so chips flow onto new lines; grows up to ~3 chip lines,
+   then scrolls internally instead of growing the dialog. */
+.ice-dim-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin: 10px 12px 8px;
+    padding: 3px 10px;
+    background: #f7f9fb;
+    border: 1px solid #dbe2ea;
+    border-radius: 4px;
+    flex-shrink: 0;
+    max-height: 76px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    cursor: text;
+}
+.ice-dim-search:focus-within {
+    background: #fff;
+    border-color: #1B75BC;
+}
+.ice-dim-search > .icon-search {
+    color: #8a94a6;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.ice-dim-filter {
+    /* Takes the space left after the last chip (grow:1); the small basis lets
+       it stay on the chips' line, wrapping only when almost nothing is left. */
+    flex: 1 1 30px;
+    min-width: 30px;
+    box-sizing: border-box;
+    padding: 5px 0;
+    border: none !important;
+    font-size: 12px;
+    outline: none;
+    background: transparent;
+    border-radius: 0;
+}
+/* With chips in the field the placeholder is just noise — show it only when
+   the field is empty of chips. (:empty works because JS never leaves
+   whitespace inside .ice-dim-chips.) */
+.ice-dim-chips:not(:empty) ~ .ice-dim-filter::placeholder {
+    color: transparent;
+}
+/* The clear (×) only makes sense while there is search text to clear. */
+.ice-dim-filter:placeholder-shown ~ .ice-dim-search-clear {
+    display: none;
+}
+.ice-dim-filter:hover, .ice-dim-filter:focus {
+    border: none !important;
+}
+.ice-dim-search-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 2px;
+    color: #8a94a6;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.ice-dim-search-clear:hover {
+    color: #444;
+}
+
+/* Collapse / expand toggle */
+.ice-dim-toggle,
+.ice-dim-toggle-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    min-width: 14px;
+    flex-shrink: 0;
+}
+.ice-dim-toggle {
+    height: 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    color: #999;
+    font-size: 18px;
+    line-height: 1;
+}
+.ice-dim-toggle:hover {
+    color: #444;
+}
+.ice-dim-toggle::before {
+    content: '\25B8'; /* ▸ right-pointing triangle — collapsed */
+}
+.ice-dim-toggle.is-open::before {
+    content: '\25BE'; /* ▾ down-pointing triangle — expanded */
+}
+
+/* Scrollable list of all available members */
+.ice-dim-list {
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+.ice-dim-list-item {
+    display: flex;
+    align-items: center;
+    padding: 3px 10px;
+    gap: 8px;
+    transition: background 0.1s;
+    cursor: pointer;
+}
+/* Row states: hover is a neutral gray, selected keeps the blue tint (+ check
+   icon); a hovered selected row darkens the tint so both read at once. */
+.ice-dim-list-item:hover {
+    background: #ececec;
+}
+.ice-dim-list-item.is-selected {
+    background: #f0f6ff;
+}
+.ice-dim-list-item.is-selected:hover {
+    background: #e1edfc;
+}
+.ice-dim-list-item.ice-dim-empty {
+    cursor: default;
+    color: #aaa;
+    font-style: italic;
+}
+.ice-dim-list-item span.member-color-dot {
+    margin: 0;
+}
+
+/* Selection check: width reserved on every row (visibility, not display)
+   so the row text never shifts when toggling selection. */
+.ice-dim-check {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: #1B75BC;
+    visibility: hidden;
+}
+.ice-dim-list-item.is-selected .ice-dim-check {
+    visibility: visible;
+}
+
+/* Selection bar under the search field: "N selected" counter on the left,
+   clear-all link on the right (multi-select only; JS toggles it). */
+.ice-dim-selection-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0; /* same squash-protection as .ice-dim-search */
+    margin: 0 12px 2px;
+    padding: 0 2px 6px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+}
+.ice-dim-selection-count {
+    color: #555;
+}
+.ice-dim-clear-all {
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1B75BC;
+}
+.ice-dim-clear-all:hover {
+    text-decoration: underline;
+}
+
+/* Saving/disabled state */
+.ice-dim-saving {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+
+/* Active edit state */
+td[data-editable].ice-active {
+    padding: 1px 3px;
+    background-color: #fff;
+    position: relative;   /* anchors the floating confirm/cancel bar */
+    overflow: visible;    /* lets the bar escape the cell boundary    */
+}
+td[data-editable].ice-active .ice-input {
+    width: 100%;
+    border: 1px solid #4A90D9;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: inherit;
+    font-family: inherit;
+    line-height: 1.4;
+    outline: none;
+    box-sizing: border-box;
+    background: #fff;
+    color: inherit;
+}
+td[data-editable].ice-active .ice-input:focus {
+    border-color: #2672c0;
+    box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.18);
+}
+td[data-editable].ice-active select.ice-input {
+    padding: 2px 4px;
+    height: auto;
+    /* Overlay, don't resize. Width is set inline by _autoSizeSelect(); */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    max-width: none;
+    z-index: 6;
+}
+td[data-editable].ice-active input[type="number"].ice-input {
+    width: 70px;
+}
+
+/* Loading state — dimmed select while fetching data */
+td[data-editable].ice-active select.ice-loading {
+    opacity: 0.7;
+    background-color: #f5f5f5;
+    cursor: wait;
+}
+
+/* Async select reveal-once spinner — shown in place of the hidden <select>
+   while its options load, so the control only appears at its final size. */
+.ice-async-loading {
+    display: inline-flex;
+    align-items: center;
+    color: #999;
+    cursor: wait;
+}
+.ice-async-loading i {
+    display: inline-block;
+    font-size: 14px;
+    line-height: 1;
+    animation: ice-spin 0.7s linear infinite;
+}
+@keyframes ice-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Saving state — dim + spinner */
+td[data-editable].ice-saving {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+td[data-editable].ice-saving::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    width: 11px;
+    height: 11px;
+    margin-top: -5px;
+    border: 2px solid #4A90D9;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: ice-spin 0.6s linear infinite;
+}
+@keyframes ice-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Inline-edit ok / cancel action bar ─── */
+.ice-edit-actions {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    white-space: nowrap;
+}
+.ice-edit-ok,
+.ice-edit-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 3px;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+}
+.ice-edit-ok:hover {
+    background: #e6f4ea;
+    color: #2e7d32;
+}
+.ice-edit-cancel:hover {
+    background: #fce8e6;
+    color: #c62828;
+}
+
+/* ── Date field: wrapper, embedded calendar icon, hidden native picker ── */
+/* Wrapper gives the icon a position:relative context and sizes to full width. */
+.ice-date-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    min-width: 92px;
+}
+/* The text input fills the wrapper; right padding makes room for the icon. */
+.ice-date-wrapper .ice-input.ice-date-text {
+    width: 100%;
+    padding-right: 22px;
+    box-sizing: border-box;
+}
+/* Calendar icon floats inside the right edge of the text input — no button. */
+.ice-date-trigger {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: #999;
+    cursor: pointer;
+    pointer-events: auto;
+    line-height: 1;
+    user-select: none;
+    background: #fff;
+}
+.ice-date-trigger:hover {
+    color: #444;
+}
+/* Hidden <input type="date"> — used only to drive showPicker().
+   Kept in the DOM but invisible and non-interactive.
+   It must cover the full field box (NOT 0x0): Safari anchors its native date
+   picker to this input's bounding rect, and a degenerate 0x0 anchor makes the
+   popup open off-screen on the last rows (Safari doesn't constrain it to the
+   viewport the way Chrome does). A real, field-sized anchor lets Safari place
+   the picker correctly. opacity:0 + pointer-events:none keep it invisible and
+   let clicks fall through to the text input / calendar icon. */
+.ice-date-hidden {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    border: none;
+}
+
+/* Propagation warning for 'display_member_property' CPs: same yellow card the normal
+   task form shows, but anchored next to the cell so it doesn't push table rows around. */
+.ice-cp-mfio-warning {
+    position: absolute;
+    top: calc(100% + 30px);
+    left: 0;
+    z-index: 9998;
+    min-width: 220px;
+    max-width: 360px;
+    padding: 6px 8px;
+    background-color: #FFF2BF;
+    border: 2px solid #EFCB3B;
+    border-radius: 2px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #333;
+    white-space: normal;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    pointer-events: none;
+}
+
+/* Member hover card */
+.member-hover-card {
+    position: fixed;
+    z-index: 10500;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    min-width: 240px;
+    max-width: 340px;
+    max-height: 420px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    font-family: inherit;
+}
+.member-hover-card .mhc-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 20px;
+    padding: 7px 8px 6px 10px;
+    font-size: 11px;
+    color: #444;
+    background: #f8fafc;
+    border-bottom: 1px solid #eee;
+    border-radius: 10px 10px 0 0;
+}
+.member-hover-card .mhc-header-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.member-hover-card .mhc-footer {
+    padding: 4px 8px 5px;
+    text-align: center;
+    background: #E6F7F4;
+    border-top: 1px solid #eee;
+    border-radius: 0 0 4px 4px;
+}
+.member-hover-card .mhc-edit-link {
+    display: inline-block;
+    font-size: 11px;
+    color: #2FB7A4;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.member-hover-card .mhc-edit-link:hover {
+    color: #0A675D;
+    text-decoration: underline;
+}
+.member-hover-card .mhc-body {
+    padding: 7px 0 6px;
+    overflow-y: auto;
+    flex: 1;
+}
+.member-hover-card .mhc-group-name {
+    padding: 6px 10px 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #2a9d8f;
+}
+.member-hover-card .mhc-group-name:not(:first-child) {
+    margin-top: 6px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+}
+.member-hover-card .mhc-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 10px;
+    line-height: 1.6;
+}
+.member-hover-card .mhc-row:hover {
+    background: #f8fafc;
+}
+.member-hover-card .mhc-label {
+    flex: 0 0 auto;
+    min-width: 100px;
+    max-width: 140px;
+    color: #64748b;
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.member-hover-card .mhc-value {
+    flex: 1;
+    color: #1e293b;
+    font-size: 11.5px;
+    word-break: break-word;
+}
+
+.member-hover-card.mhc-compact {
+    min-width: 0;
+    max-width: 220px;
+}
+.member-hover-card .mhc-compact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+}
+.member-hover-card .mhc-compact-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: 0 0 auto;
+}
+.member-hover-card .mhc-compact-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

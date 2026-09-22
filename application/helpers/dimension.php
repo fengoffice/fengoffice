@@ -72,9 +72,13 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 					$custom_name = DimensionOptions::getOptionValue($dimension['dimension_id'], 'custom_dimension_name');
 					$dimension['dimension_name'] = $custom_name && trim($custom_name) != "" ? $custom_name : lang($dimension['dimension_code']);
  					
-					//Added for debugging
-					//Logger::log_r("Dimension: ".$dimension['dimension_name']."\n");
-					$dimensions[] = $dimension;
+					if (isset($options['only_dimension_id'])) {
+						if ($options['only_dimension_id'] == $dimension['dimension_id']) {
+							$dimensions[] = $dimension;
+						}
+					} else {
+						$dimensions[] = $dimension;
+					}
 				}
 			}
 		}
@@ -113,37 +117,7 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 					}
 				}
 				
-				if (!array_var($options, 'dont_select_associated_members')) {
-					// foreach autoclassified related member do the same
-					$assoc_members = array();
-					if (count($assoc_member_ids) > 0) {
-						$assoc_members = Members::instance()->findAll(array('conditions' => "id IN (".implode(',', $assoc_member_ids).")"));
-					}
-					foreach ($assoc_members as $assoc_member) {
-						if ($assoc_member instanceof Member) {
-							$associations = DimensionMemberAssociations::getAllAssociatationsForObjectType($assoc_member->getDimensionId(), $assoc_member->getObjectTypeId());
-							foreach ($associations as $a) {
-								$autoclassify_in_related = (bool)DimensionAssociationsConfigs::getConfigValue($a->getId(), 'autoclassify_in_property_member');
-								// use only default associations
-								$tmp_ot = ObjectTypes::instance()->findById($a->getObjectTypeId());
-								$tmp_assoc_ot = ObjectTypes::instance()->findById($a->getAssociatedObjectType());
-								if (!$tmp_ot || !$tmp_assoc_ot) continue;
-								if ($a->getCode() != $tmp_ot->getName()."_".$tmp_assoc_ot->getName()) {
-									continue;
-								}
-								if ($autoclassify_in_related) {
-									$tmp = MemberPropertyMembers::getAllPropertyMemberIds($a->getId(), $assoc_member->getId());
-									$tmp = array_filter(explode(',', $tmp));
-									if (is_array($tmp) && count($tmp) > 0) {
-										$assoc_member_ids = array_merge($assoc_member_ids, $tmp);
-									}
-								}
-							}
-						}
-					}
-					// merge the resulting autoclassified related members with the original selected members
-					$selected_member_ids = array_merge($selected_member_ids, $assoc_member_ids);
-				}
+				$selected_member_ids = array_unique(array_merge($selected_member_ids, $assoc_member_ids));
 				
 			}
 			
@@ -156,6 +130,17 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 				$selected_member_ids = array_unique(array_filter(array_merge($selected_member_ids, $additional_selected_member_ids)));
 			}
 			
+			// clean selected member ids, keep only the ones that belong to the dimensions we are rendering
+			$tmp_selected_member_ids = array();
+			$dimension_ids = array_map(function($d) { return $d['dimension_id']; }, $dimensions);
+
+			foreach ($selected_member_ids as $selected_member_id) {
+				$sel_mem = Members::getMemberById($selected_member_id);
+				if ($sel_mem instanceof Member && in_array($sel_mem->getDimensionId(), $dimension_ids)) {
+					$tmp_selected_member_ids[] = $selected_member_id;
+				}
+			}
+			$selected_member_ids = $tmp_selected_member_ids;
 			
 			// additional filters, by member id
 			$additional_filters = member_selector_additional_ids_filter(array_var($options,'object'), $dimensions);
@@ -197,7 +182,9 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 			$listeners = array_var($options, 'listeners', array());
 			$allowed_member_type_ids = array_var($options, 'allowedMemberTypes', null);
 			
-			
+			if (isset($options['label'])) $label = $options['label'];
+			$html_help_icon = array_var($options, 'html_help_icon', '');
+
 			$initial_selected_members = $selected_members;
 			if (count($initial_selected_members) == 0) {
 				$selected_context_member_ids = active_context_members(false);
@@ -219,6 +206,34 @@ function render_member_selectors($content_object_type_id, $genid = null, $select
 	}
 }
 
+
+/**
+ * Member IDs for report parameter forms.
+ * Prefer the left-sidebar context when that dimension is selected; otherwise restore
+ * the last selection stored in $report_data (session) so filters survive closing the report.
+ *
+ * @param Dimension $dimension
+ * @param array|null $report_data
+ * @param string $field_name Session/POST field that holds a JSON array of member ids
+ * @return array
+ */
+function get_report_form_selected_member_ids(Dimension $dimension, $report_data, $field_name) {
+	$use_active_context = false;
+	foreach (active_context() as $selection) {
+		if ($selection instanceof Member && $selection->getDimensionId() == $dimension->getId()) {
+			$use_active_context = true;
+			break;
+		}
+	}
+	if ($use_active_context) {
+		return active_context_members(false);
+	}
+	$selected_ids = json_decode(array_var($report_data, $field_name, '[]'));
+	if (!is_array($selected_ids)) {
+		$selected_ids = array();
+	}
+	return $selected_ids;
+}
 
 function render_single_member_selector(Dimension $dimension, $genid = null, $selected_member_ids = null, $options = array(), $default_view = true) {
 	if (is_null($genid)) $genid = gen_id();
@@ -259,8 +274,10 @@ function render_single_member_selector(Dimension $dimension, $genid = null, $sel
 	$allowed_member_type_ids = array_var($options, 'allowedMemberTypes', null);
 	
 	$hide_label = array_var($options, 'hide_label', false);
+	$description = array_var($options, 'description', '');
 	
 	if (isset($options['label'])) $label = $options['label'];
+	$html_help_icon = array_var($options, 'html_help_icon', '');
 
 	// option to disable tree reloading when selectin in a related dimension (e.g. in parent selector)
 	$dont_filter_this_selector = array_var($options, 'dont_filter_this_selector', false);
@@ -343,14 +360,15 @@ function render_plain_member_selector_using_cache($config) {
 	$selected_id = array_var($config, 'selected_id');
 	$selector_class = array_var($config, 'selector_class', '');
 	$onchange = array_var($config, 'onchange', '');
+	$value_zero_text = array_var($config, 'value_zero_text', '');
 
 	$cache_key = $dim_id . '_dimension_members_tree';
 	$member_tree_data = $_SESSION[$cache_key] ?? [];
 	$identation = 0;
- 
+
 	// build HTML selector with members as options
 	$selector = '<select id=\'' . $selector_id . '\' onchange=\''.$onchange.'\' name=\'' . $hf_name . '\' class=\''.$selector_class.'\'>';
-	$selector .= '<option value=\'0\'>' . '' . '</option>';
+	$selector .= '<option value=\'0\'>' . $value_zero_text . '</option>';
 	$selector .= render_plain_member_selector_options($member_tree_data, $selected_id, $identation);
 	$selector .= '</select>';
 
@@ -365,7 +383,7 @@ function render_plain_member_selector_options($member_tree_data, $selected_id, $
 		for ($i = 0; $i < $identation; $i++) {
 			$ident .= '&nbsp;&nbsp;&nbsp;&nbsp;';
 		}
-		$options .= '<option value=\'' . $member['id'] . '\' ' . $selected . '>' . $member['name'] . '</option>';
+		$options .= '<option value=\'' . clean($member['id']) . '\' ' . $selected . '>' . clean($member['name']) . '</option>';
 		if (isset($member['children'])) {
 			$options .= render_plain_member_selector_options($member['children'], $selected_id, $identation + 1);
 		}
@@ -406,6 +424,11 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 		$assoc_mem_ids = json_decode($assoc_mem_ids_str, true);
 		
 		$a = DimensionMemberAssociations::instance()->findById($assoc_id);
+		if (!$a instanceof DimensionMemberAssociation) {
+			// The request carried a key that is not an association id. Skip it instead of failing the whole
+			// save: any association that is actually required is still reported by the check below.
+			continue;
+		}
 
 		if ($member->getDimensionId() == $a->getDimensionId()) {
 			$reverse_relation = false;
@@ -431,8 +454,12 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 		} else {
 			// asociate objects to the new related member, remove from the old one
 			$old_related_mem_id = get_associated_status_member_id($member, $rel_dimension, $rel_ot, $reverse_relation, $a->getCode());
+			$new_related_mem_id = array_var($assoc_mem_ids, 0);
 			
-			associate_member_to_status_member($member, $old_related_mem_id, array_var($assoc_mem_ids, 0), $rel_dimension, $rel_ot, true, $a->getCode());
+			// make the association only if it has changed
+			if ($new_related_mem_id != $old_related_mem_id) {
+				associate_member_to_status_member($member, $old_related_mem_id, $new_related_mem_id, $rel_dimension, $rel_ot, true, $a->getCode());
+			}
 		}
 		
 		if ($a->getAllowsDefaultSelection()) {
@@ -464,6 +491,16 @@ function save_associated_dimension_members($params,$is_api = false,$data_api = n
 				} else {
 					$assoc_ot = ObjectTypes::instance()->findById($assoc->getColumnValue('associated_object_type_id'));
 					$property_name = $assoc_ot instanceof ObjectType ? $assoc_ot->getObjectTypeName() : 'property';
+				}
+				
+				$reverse_relation = $assoc->getDimensionId() != $member->getDimensionId();
+
+				// if association has custom defined name then apply it in the message
+				if (!$reverse_relation) {
+					$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($assoc->getId(), 'custom_association_name');
+					if ($custom_assoc_name) {
+						$property_name = $custom_assoc_name;
+					}
 				}
 				throw new Exception(lang('custom property value required', $property_name));
 			}
@@ -530,6 +567,11 @@ function render_associated_dimensions_selectors($params) {
 			$dimension = Dimensions::getDimensionById($dim_association->getDimensionId());
 			$ot = ObjectTypes::instance()->findById($dim_association->getObjectTypeId());
 		}
+
+		$default_value = DimensionOptions::instance()->getOptionValue($dimension->getId(), 'default_value');
+		if (is_numeric($default_value) && $default_value > 0 && !isset($initial_values[$dimension->getId()])) {
+			$initial_values[$dimension->getId()] = $default_value;
+		}
 		
 		$comp_genid = $genid . "_$suffix";
 		if (in_array($dimension->getId(), $enabled_dimensions)) {
@@ -537,7 +579,7 @@ function render_associated_dimensions_selectors($params) {
 			
 			$selected_ids = array();
 
-			$params = array(
+			$hook_params = array(
 				'member' => $member,
 				'dimension' => $dimension,
 				'ot' => $ot,
@@ -546,7 +588,7 @@ function render_associated_dimensions_selectors($params) {
 				'parent_member_id' => array_var($_REQUEST, 'parent')
 			);
 
-			Hook::fire('get_parent_associated_member_ids', $params, $selected_ids);
+			Hook::fire('get_parent_associated_member_ids', $hook_params, $selected_ids);
 
 			if (empty($selected_ids)){
 				if ($is_new) {
@@ -562,7 +604,10 @@ function render_associated_dimensions_selectors($params) {
 			$select_fn = $is_multiple ? "og.onAssociatedMemberTypeSelectMultiple" : "og.onAssociatedMemberTypeSelect";
 			$remove_fn = $is_multiple ? "og.onAssociatedMemberTypeRemoveMultiple" : "og.onAssociatedMemberTypeRemove";
 			
-			$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_name');
+			$custom_assoc_name = null;
+			if (!$reverse_relation) {
+				$custom_assoc_name = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_name');
+			}
 			if ($custom_assoc_name) {
 				$label = $custom_assoc_name;
 			} else {
@@ -576,34 +621,55 @@ function render_associated_dimensions_selectors($params) {
 					}
 				}
 			}
+			if (isset($params['label']) && isset($params['label'][$dim_association->getId()]) && trim($params['label'][$dim_association->getId()]) != '') {
+				$label = $params['label'][$dim_association->getId()];
+			}
 			
 			if ($dim_association->getIsRequired() && !$reverse_relation) {
 				$label .= ' <span class="label_required">*</span>';
-				
+
 			}
 
+			$html_help_icon = '';
+			if (isset($params['html_help_icon']) && isset($params['html_help_icon'][$dim_association->getId()])) {
+				$html_help_icon = $params['html_help_icon'][$dim_association->getId()];
+			}
+
+			// get the defined description text for the dimension member association
+			$association_desription = '';
+			if (!$reverse_relation) {
+				$association_desription = DimensionAssociationsConfigs::getConfigValue($dim_association->getId(), 'custom_association_description');
+			}
+			
 			$hf_name = 'associated_members['.$dim_association->getId().']';
 			
 			$listeners = array('on_remove_relation' => "$remove_fn('$comp_genid', ".$dimension->getId().", '$hf_name');");
 			
 			Hook::fire("before_render_associated_dimension_selector", array('genid'=>$comp_genid, 'member'=>$member, 'selected_ids'=>$selected_ids, 'dim_association'=>$dim_association), $listeners);
 			
-			render_single_member_selector($dimension, $comp_genid, $selected_ids, array(
-					'is_multiple' => $is_multiple,
-					//'allowedMemberTypes' => array($ot->getId()),
-					'content_object_type_id' => $ot->getId(), 
-					'label' => $label, 
-					'allow_non_manageable' => true, 
-					'hidden_field_name' => $hf_name,
-					'select_function' => $select_fn, 
-					'listeners' => $listeners,
-					// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
-					'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
-					'width' => 400,
-					'related_member_id' => $member->getId(),
-					'member_association_id' => $dim_association->getId(),
-					'readonly' => array_var($params, 'readonly'),
-				), false);
+			$selector_options = array(
+				'is_multiple' => $is_multiple,
+				//'allowedMemberTypes' => array($ot->getId()),
+				'content_object_type_id' => $ot->getId(),
+				'label' => $label,
+				'html_help_icon' => $html_help_icon,
+				'description' => $association_desription,
+				'allow_non_manageable' => true, 
+				'hidden_field_name' => $hf_name,
+				'select_function' => $select_fn, 
+				'listeners' => $listeners,
+				// hardcode to false the default_selection_checkboxes value because we don't want those checkboxes there
+				'default_selection_checkboxes' => false,// $dim_association->getAllowsDefaultSelection(),
+				'width' => 400,
+				'related_member_id' => $member->getId(),
+				'member_association_id' => $dim_association->getId(),
+				'readonly' => array_var($params, 'readonly'),
+				'dont_reload_other_trees' => array_var($params, 'dont_reload_other_trees'),
+			);
+			
+			Hook::fire("associated_dimension_selector_edit_options", array('genid'=>$comp_genid, 'member'=>$member, 'selected_ids'=>$selected_ids, 'dim_association'=>$dim_association, 'reverse_relation'=>$reverse_relation), $selector_options);
+			
+			render_single_member_selector($dimension, $comp_genid, $selected_ids, $selector_options, false);
 			
 			echo '</div><div class="clear"></div>';
 		}
@@ -896,4 +962,199 @@ function check_project_client_compatibility(&$member_ids) {
 		$result['error_message'] = lang('project and client are not associated with each other');
 		return $result;
 	}
+}
+
+/**
+ * When property groups drive the web form, only classification dimensions
+ * configured in those groups should appear in member selectors (mobile included).
+ * Matches web: if the OT uses property groups, dimensions not listed as
+ * classification_* there are omitted (including when none are configured).
+ *
+ * @param int $content_object_type_id
+ * @param array $dimensions rows with at least an `id` key
+ * @return array
+ */
+function filter_dimensions_by_property_groups_for_forms($content_object_type_id, $dimensions) {
+	if (!is_array($dimensions) || count($dimensions) === 0) {
+		return $dimensions;
+	}
+	if (!Plugins::instance()->isActivePlugin('advanced_core')) {
+		return $dimensions;
+	}
+
+	$object_type = ObjectTypes::instance()->findById($content_object_type_id);
+	if (!($object_type instanceof ObjectType)) {
+		return $dimensions;
+	}
+
+	$handler_class = $object_type->getHandlerClass();
+	if (!$handler_class || !class_exists($handler_class)) {
+		return $dimensions;
+	}
+
+	$manager = new $handler_class();
+	if (!($manager instanceof ContentDataObjects) || !$manager->canUsePropertyGroups()) {
+		return $dimensions;
+	}
+
+	// Include classifications from both main and separate property-group tabs.
+	$grouped_properties = PropertyGroups::getAllPropertiesGroupedByPropertyGroup($content_object_type_id, 0, 'all');
+	$allowed_dimension_ids = array();
+
+	foreach ($grouped_properties as $group) {
+		$pg_perm = null;
+		Hook::fire('check_property_group_permissions', array(
+			'user' => logged_user(),
+			'property_group' => $group,
+		), $pg_perm);
+		if ($pg_perm === 'none') {
+			continue;
+		}
+
+		foreach (array_var($group, 'properties', array()) as $property) {
+			if (!empty($property['is_disabled'])) {
+				continue;
+			}
+			$property_id = array_var($property, 'property_id', '');
+			if (is_string($property_id) && str_starts_with($property_id, 'classification_')) {
+				$allowed_dimension_ids[] = (int) str_replace('classification_', '', $property_id);
+			}
+		}
+	}
+
+	$allowed_dimension_ids = array_filter(array_unique($allowed_dimension_ids));
+
+	// Fail-closed: same as web — only show classifications from property groups.
+	$filtered = array();
+	foreach ($dimensions as $dimension) {
+		$dimension_id = is_array($dimension) ? (int) array_var($dimension, 'id', 0) : 0;
+		if ($dimension_id > 0 && in_array($dimension_id, $allowed_dimension_ids)) {
+			$filtered[] = $dimension;
+		}
+	}
+
+	return $filtered;
+}
+
+
+/**
+ * What to do with the subtasks of a task when its classification in a dimension changes,
+ * as configured in the 'apply_classification_to_subtasks' config option.
+ *
+ * The option stores a JSON object keyed by dimension id, so a dimension with nothing stored
+ * (a new dimension, or an installation that never saved the option) falls back to the default.
+ *
+ * @return array Mode by dimension id
+ */
+function subtask_classification_modes() {
+	static $modes = null;
+	if (is_array($modes)) return $modes;
+
+	$modes = array();
+	// config_option() returns null on installs where the option row is missing, and the array
+	// the handler decodes when the option is there; the raw JSON is handled too so that the
+	// helper does not depend on which handler class the option row happens to have
+	$stored = config_option('apply_classification_to_subtasks');
+	$decoded = is_array($stored) ? $stored : null;
+	if (is_null($decoded) && is_string($stored) && trim($stored) != '') {
+		$decoded = json_decode($stored, true);
+	}
+	if (is_array($decoded)) {
+		$valid = array(
+			SUBTASK_CLASSIFICATION_NEVER,
+			SUBTASK_CLASSIFICATION_IF_EMPTY,
+			SUBTASK_CLASSIFICATION_ALWAYS,
+		);
+		foreach ($decoded as $dimension_id => $mode) {
+			if (in_array($mode, $valid)) $modes[(int) $dimension_id] = $mode;
+		}
+	}
+
+	return $modes;
+}
+
+
+/**
+ * Mode configured for one dimension, or the default when it has none.
+ *
+ * @param integer $dimension_id
+ * @return string One of the SUBTASK_CLASSIFICATION_* constants
+ */
+function subtask_classification_mode($dimension_id) {
+	$modes = subtask_classification_modes();
+	return array_var($modes, (int) $dimension_id, SUBTASK_CLASSIFICATION_DEFAULT);
+}
+
+
+/**
+ * Dimension ids whose classification must never be applied to the subtasks.
+ *
+ * @param array $dimension_ids Dimensions to check, all the configured ones when omitted
+ * @return array
+ */
+function dimensions_not_applied_to_subtasks($dimension_ids = null) {
+	if (!is_array($dimension_ids)) $dimension_ids = array_keys(subtask_classification_modes());
+
+	$ignored = array();
+	foreach ($dimension_ids as $dimension_id) {
+		if (subtask_classification_mode($dimension_id) == SUBTASK_CLASSIFICATION_NEVER) {
+			$ignored[] = (int) $dimension_id;
+		}
+	}
+	return $ignored;
+}
+
+
+/**
+ * Dimension ids whose set of members is not the same in two classifications of an object.
+ *
+ * Used to apply to the subtasks only the dimensions a save actually changed, instead of the
+ * whole classification of the task.
+ *
+ * @param array $previous_member_ids
+ * @param array $new_member_ids
+ * @return array Dimension ids
+ */
+function changed_classification_dimension_ids($previous_member_ids, $new_member_ids) {
+	$previous_member_ids = is_array($previous_member_ids) ? $previous_member_ids : array();
+	$new_member_ids = is_array($new_member_ids) ? $new_member_ids : array();
+
+	$all_member_ids = array();
+	foreach (array_merge($previous_member_ids, $new_member_ids) as $member_id) {
+		if ((int) $member_id > 0) $all_member_ids[] = (int) $member_id;
+	}
+	$all_member_ids = array_unique($all_member_ids);
+	if (count($all_member_ids) == 0) return array();
+
+	// all the ids are cast to integer above, so they can be listed in the query
+	$rows = DB::executeAll("SELECT id, dimension_id FROM " . TABLE_PREFIX . "members
+		WHERE id IN (" . implode(',', $all_member_ids) . ")");
+
+	$dimension_by_member = array();
+	if (is_array($rows)) {
+		foreach ($rows as $row) $dimension_by_member[(int) $row['id']] = (int) $row['dimension_id'];
+	}
+
+	$group_by_dimension = function($member_ids) use ($dimension_by_member) {
+		$grouped = array();
+		foreach ($member_ids as $member_id) {
+			$member_id = (int) $member_id;
+			if (!isset($dimension_by_member[$member_id])) continue;
+			$grouped[$dimension_by_member[$member_id]][] = $member_id;
+		}
+		foreach ($grouped as &$ids) { $ids = array_unique($ids); sort($ids); }
+		return $grouped;
+	};
+
+	$previous_by_dimension = $group_by_dimension($previous_member_ids);
+	$new_by_dimension = $group_by_dimension($new_member_ids);
+
+	$changed_dimension_ids = array();
+	foreach (array_unique(array_merge(array_keys($previous_by_dimension), array_keys($new_by_dimension))) as $dimension_id) {
+		$previous = array_var($previous_by_dimension, $dimension_id, array());
+		$new = array_var($new_by_dimension, $dimension_id, array());
+		if ($previous != $new) $changed_dimension_ids[] = (int) $dimension_id;
+	}
+
+	return $changed_dimension_ids;
 }

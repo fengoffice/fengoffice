@@ -23,6 +23,152 @@ class MailAccount extends BaseMailAccount {
 		return $this->owner;
 	}
 	 
+
+	/**
+	 * Get the name of the junk folder in the mail account
+	 *
+	 * The method first tries to get the junk folder from the mail account imap folders.
+	 * If the folder is not found, it tries to connect to the imap server and get the folder
+	 * by searching for a folder with the \\Junk attribute.
+	 *
+	 * @return string|null The name of the junk folder or null if not found
+	 */
+	function getJunkFolderName() {
+		$imap_folder_obj = MailAccountImapFolders::getSpecialUseFolder($this->getId(), "Junk");
+		if ($imap_folder_obj) {
+			return $imap_folder_obj->getFolderName();
+		} else {
+			$junk_name = null;
+			// Try to get the junk folder by searching for it in the imap server
+			$imap = $this->imapConnect();
+			$login_ret = $this->imapLogin($imap);
+			if (!PEAR::isError($login_ret)) {
+				// Get the mailboxes
+				$mailboxes = $imap->getMailboxes('',0,true);
+				if (is_array($mailboxes)) {
+					foreach ($mailboxes as $mbox) {
+						// Check if the folder has the \\Junk attribute
+						$name = array_var($mbox, 'MAILBOX');
+						$attributes = array_var($mbox, 'ATTRIBUTES', array());
+						$lowercase_attributes = array_map('strtolower', $attributes);
+						if (in_array("\\junk", $lowercase_attributes)) {
+							$junk_name = $name;
+						}
+					}
+				}
+			}
+			return $junk_name;
+		}
+	}
+
+/**
+ * Returns the actual Trash folder name for this IMAP account.
+ * It first tries special_use = \Trash, then alternative stored names,
+ * and finally queries the IMAP server for any mailbox marked with the \Trash flag.
+ */
+function getTrashFolderName() {
+
+    // 1) Try special_use = \Trash
+    $imap_folder_obj = MailAccountImapFolders::instance()->findOne(array(
+        'conditions' => array('account_id = ? AND special_use = ?', $this->getId(), '\\Trash')
+    ));
+    if ($imap_folder_obj instanceof MailAccountImapFolder) {
+        return $imap_folder_obj->getFolderName();
+    }
+
+    // 2) Look for alternative local folder names
+    $imap_folder_obj = MailAccountImapFolders::instance()->findOne(array(
+        'conditions' => array(
+            'account_id = ? AND (folder_name = ? OR folder_name LIKE ? OR folder_name = ? OR folder_name LIKE ?)',
+            $this->getId(),
+            'Trash',
+            '%Trash%',
+            'Papelera',
+            '%Deleted%'
+        )
+    ));
+    if ($imap_folder_obj instanceof MailAccountImapFolder) {
+        return $imap_folder_obj->getFolderName();
+    }
+
+    // 3) Fallback: query IMAP server for a folder marked with \Trash
+    try {
+        $imap = $this->imapConnect();
+        $login_ret = $this->imapLogin($imap);
+
+        if (!PEAR::isError($login_ret)) {
+            $mailboxes = $imap->getMailboxes('', 0, true);
+
+            if (is_array($mailboxes)) {
+                foreach ($mailboxes as $mbox) {
+                    $name = array_var($mbox, 'MAILBOX');
+                    $attributes = array_var($mbox, 'ATTRIBUTES', array());
+                    $lowercase_attributes = array_map('strtolower', $attributes);
+
+                    if (in_array("\\trash", $lowercase_attributes)) {
+                        return $name;
+                    }
+                }
+            }
+        }
+    } catch (Exception $e) {
+        Logger::log("getTrashFolderName: IMAP error -> " . $e->getMessage());
+    }
+
+    // Final safe fallback
+    return "Trash";
+}
+
+
+/**
+ * Returns the folder where the mail should be restored (UNTRASH).
+ * First tries to restore to the last folder where the mail was stored.
+ * If that folder no longer exists, falls back to INBOX.
+ *
+ * @param MailAccount $account
+ * @param MailContent $mail
+ * @return string Folder name
+ */
+function getRestoreFolderName(MailContent $mail) {
+
+    // $account_id = $this->getId();
+
+    // This can be used in the future to restore de email to the original folder 
+
+	// 1) last folder where the mail was stored
+    // $row = DB::executeOne("
+    //     SELECT folder
+    //     FROM " . TABLE_PREFIX . "mail_content_imap_folders
+    //     WHERE object_id = " . (int)$mail->getId() . "
+    //     AND account_id = " . (int)$account_id . "
+    //     LIMIT 1
+    // ");
+
+    // $original_folder = $row['folder'] ?? null;
+
+    // if ($original_folder) {
+
+    //     $folder_obj = MailAccountImapFolders::getByFolderName(
+    //         $account_id,
+    //         $original_folder
+    //     );
+
+    //     if ($folder_obj instanceof MailAccountImapFolder) {
+    //         return $folder_obj->getFolderName();
+    //     }
+    // }
+
+    // $inbox = MailAccountImapFolders::getByFolderName($account_id, "INBOX");
+
+    // if ($inbox instanceof MailAccountImapFolder) {
+    //     return "INBOX";
+    // }
+
+    return "INBOX";
+}
+
+
+	 
 	/**
 	 * Validate before save
 	 *
@@ -416,6 +562,20 @@ class MailAccount extends BaseMailAccount {
 							$imap_login_config['select_mail_box']);
 		
 		return $ret;
+	}
+
+	/**
+	 * Whether this account is excluded from automatic/manual mail download and IMAP sync.
+	 */
+	function isExcludedFromSynchronizing() {
+		return (bool) $this->getExcludeFromSynchronizing();
+	}
+
+	/**
+	 * Whether check-mail and IMAP sync should run for this account.
+	 */
+	function shouldSynchronize() {
+		return !$this->isExcludedFromSynchronizing();
 	}
 	
 }

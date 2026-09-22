@@ -65,9 +65,12 @@ $add_button_text = count($data_ws) > 0 ? lang('add new workspace',$c_name) : lan
 			<div class="separator"></div>
 		<?php endif; ?>		
 		<?php if ($no_objects_text != '') : ?><div class="no-obj-widget-msg"><?php echo $no_objects_text ?></div><?php endif; ?>
-		<button title="<?php echo $add_button_text ?>" class="ws-more-details add-first-btn" style="float:<?php echo $section?>; margin-top: 10px;">
-			<img src="public/assets/themes/default/images/16x16/add.png"/>&nbsp;<?php echo $add_button_text ?>
-		</button>
+		<div class="d-flex flex-end">
+			<button title="<?php echo $add_button_text ?>" class="ws-more-details btn btn-primary" style="float:<?php echo $section?>; margin-top: 10px;">
+				<i class="icon-circle-plus"></i>
+				<?php echo $add_button_text ?>
+			</button>
+		</div>
 		<div class="clear"></div>
 	<?php endif; ?>
 
@@ -79,14 +82,12 @@ $add_button_text = count($data_ws) > 0 ? lang('add new workspace',$c_name) : lan
 	$(function(){
 		var parent_id = '<?php echo $parent instanceof Member ? $parent->getId() : 0?>';
 		$(".ws-more-details").click(function(){
-			og.openLink(og.getUrl('member','add'),{
-				get: {
-					'name': '',
-					'type': <?php echo $cot->getId(); ?>,
-					'dim_id': '<?php echo $ws_dim->getId()?>',
-					'parent': parent_id
-				}
-			});
+			og.render_modal_form('', {c: 'member', a: 'add', params: {
+				name: '',
+				type: <?php echo $cot->getId(); ?>,
+				dim_id: '<?php echo $ws_dim->getId()?>',
+				parent: parent_id
+			}});
 		});
 
 		// og.eventManager.fireEvent('replace all empty breadcrumb', null);

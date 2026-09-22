@@ -176,15 +176,3 @@ function workspaces_after_user_add($object, $ignored) {
 }
 
 
-function workspaces_custom_reports_object_types($parameters, &$object_types) {
-	$ws_dim = Dimensions::findByCode('workspaces');
-	if (in_array($ws_dim->getId(), config_option('enabled_dimensions'))) {
-		$object_types[] = ObjectTypes::findByName('workspace');
-	}
-	/*
-	$tags_dim = Dimensions::findByCode('tags');
-	if (in_array($tags_dim->getId(), config_option('enabled_dimensions'))) {
-		$object_types[] = ObjectTypes::findByName('tag');
-	}*/
-}
-

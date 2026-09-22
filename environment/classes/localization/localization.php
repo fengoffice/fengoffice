@@ -16,49 +16,86 @@ function lang($name) {
 
 } // lang
 
-function findSimilarLang(string $languageCode): ?string { 
-    $response = null;
-	switch ($languageCode) { 
-        case 'es_es': 
-            $response = 'es_la';
-            break;
-        case 'es_la': 
-            $response = 'es_es'; 
-            break;
-        case 'en_gb': 
-            $response = 'en_us'; 
-            break;
-        // Add more lenguage here 
-    } 
-	return $response; 
+/**
+ * Hardcoded language compatibility.
+ * Maintain full translations for en_us and es_la, and only write deltas for the rest:
+ *   en_ca -> en_us
+ *   en_gb -> en_us
+ *   es_la -> es_es -> en_us
+ *   es_es -> es_la -> en_us
+ */
+function findSimilarLang(string $languageCode): ?string {
+	$compatibility = array(
+		'en_ca' => 'en_us',
+		'en_gb' => 'en_us',
+		'es_es' => 'es_la',
+		'es_la' => 'es_es',
+		// Add more languages here
+	);
+	return isset($compatibility[$languageCode]) ? $compatibility[$languageCode] : null;
+}
+
+/**
+ * Fallback locales for a language, closest first, without the current locale.
+ * Example: es_es => array('es_la', 'en_us')
+ */
+function getLanguageFallbackLocales(string $languageCode, $include_default = true) {
+	$default = 'en_us';
+	$fallbacks = array();
+
+	$similar = findSimilarLang($languageCode);
+	if ($similar && $similar !== $languageCode) {
+		$fallbacks[] = $similar;
+	}
+
+	if ($include_default && $languageCode !== $default && !in_array($default, $fallbacks, true)) {
+		$fallbacks[] = $default;
+	}
+
+	return $fallbacks;
+}
+
+function getCompatibleLocalization($reset = false) {
+	static $languageCompatibleBase = null;
+
+	if ($reset) {
+		$languageCompatibleBase = null;
+		return false;
+	}
+
+	if ($languageCompatibleBase === null) {
+		$current_locale = Localization::instance()->getLocale();
+		$similarLang = findSimilarLang($current_locale);
+		// Skip when similar is en_us; the default localization already covers that case.
+		if ($similarLang && $similarLang !== $current_locale && $similarLang !== 'en_us') {
+			$languageCompatibleBase = new Localization();
+			$languageCompatibleBase->loadSettings($similarLang, ROOT . "/language");
+		} else {
+			$languageCompatibleBase = false;
+		}
+	}
+
+	return $languageCompatibleBase;
+}
+
+function getFallbackDefaultLocalization() {
+	static $base = null;
+
+	if (!$base instanceof Localization) {
+		$base = new Localization();
+		$base->loadSettings("en_us", ROOT . "/language");
+	}
+
+	return $base;
 }
 
 function langA($name, $args) {
-	static $languageCompatibleBase = null;
-	static $base = null;
-
-    if($languageCompatibleBase === null) {
-        if ($similarLang = findSimilarLang(Localization::instance()->getLocale())) {
-            $languageCompatibleBase = new Localization();
-            $languageCompatibleBase->loadSettings($similarLang, ROOT . "/language");
-        } else {
-        	$languageCompatibleBase = false;
-        }
-    }
-
-	$value = Localization::instance ()->lang($name);
-
-	if (is_null ( $value ) && $languageCompatibleBase !== false) {
-        $value = $languageCompatibleBase->lang($name);
-	}
+	$value = Localization::instance()->lang($name);
 
 	if (is_null ( $value )) {
 		if (! Env::isDebugging ()) {
 
-			if (! $base instanceof Localization) {
-				$base = new Localization ();
-				$base->loadSettings ( "en_us", ROOT . "/language" );
-			}
+			$base = getFallbackDefaultLocalization();
 			$value = $base->lang ( $name );
             if (is_null ( $value )) {
 				$value = $base->lang(str_replace(" ", "_", $name ));

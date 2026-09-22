@@ -8,30 +8,30 @@ og.TasksBottomToolbar = function(config) {
 		{
 			id:"tasksPanelBottomToolbarObject",
 			renderTo: "tasksPanelBottomToolbar",
-			style:"border:0px none; padding-top:0; padding-left:5px;"
+			style:"border:0px none; padding-left:5px;"
 		});
 		
 	og.TasksBottomToolbar.superclass.constructor.call(this, config);
-	
+
+	var self = this;
+
 	var groupcombo_store_data = [
 		['nothing', '--' + lang('nothing (groups)') + '--']
-		,['milestone', lang('milestone')]
-		,['priority',lang('priority')]
-		,['assigned_to', lang('assigned to')]
-		,['due_date', lang('due date')]
-		,['start_date', lang('start date')]
-		,['created_on', lang('created on')]
-		,['created_by', lang('created by')]
-		,['completed_on', lang('completed on')]
-		,['completed_by', lang('completed by')]
-		,['status', lang('status')]
 	];
+	for (prop_id in ogTasks.task_gb_options_names) {
+		if (typeof ogTasks.task_gb_options_names[prop_id] == 'function') continue;
+
+		if (ogTasks.group_by_allowed_options.indexOf(prop_id) != -1) {
+			groupcombo_store_data.push([prop_id, ogTasks.task_gb_options_names[prop_id]]);
+		}
+	}
 	
 	if (!og.config.use_milestones) {
 		// remove milestone option from group by select options
 		for (var x=0; x<groupcombo_store_data.length; x++) {
 			if (groupcombo_store_data[x][0] == 'milestone') {
 				groupcombo_store_data.splice(x, 1);
+				break;
 			}
 		}
 	}
@@ -39,6 +39,12 @@ og.TasksBottomToolbar = function(config) {
 	if (ogTasks.additional_groupby_dimensions_member_types) {
 		for (i=0; i<ogTasks.additional_groupby_dimensions_member_types.length; i++) {
 			var gb = ogTasks.additional_groupby_dimensions_member_types[i];
+
+			let key = 'dim_' + gb.dim_id + '_' + gb.mem_type_id;
+			if (ogTasks.group_by_allowed_options.indexOf(key) == -1) {
+				continue;
+			}
+
 			var found = false;
 			for (k=0; k<groupcombo_store_data.length; k++) {
 				gsd = groupcombo_store_data[k];
@@ -47,6 +53,16 @@ og.TasksBottomToolbar = function(config) {
 			}
 
 			if (!found) groupcombo_store_data.push(['dimmembertypeid_' + gb.dim_id + '_' + gb.mem_type_id, gb.mem_type_name]);
+		}
+	}
+
+	// ADD ALL ENABLED CPS LISTED IN ogTasks.group_by_allowed_options
+	if (og.custom_properties_by_type['task']) {
+		for (var i=0; i<og.custom_properties_by_type['task'].length; i++) {
+			var cp = og.custom_properties_by_type['task'][i];
+			if (ogTasks.group_by_allowed_options.indexOf('cp_'+cp.id) != -1) {
+				groupcombo_store_data.push(['cp_'+cp.id, cp.name]);
+			}
 		}
 	}
 
@@ -70,6 +86,12 @@ og.TasksBottomToolbar = function(config) {
         		ogTasks.setAllCheckedValue(false);
         		ogTasks.setAllExpandedValue(false);
         		ogTasks.expandedGroups = [];
+        		ogTasks.savedGroupCollapsedState = {};
+        		ogTasks.savedExpandedSubtasks = {};
+        		ogTasks.savedGroupTasksLoaded = {};
+        		ogTasks.savedScrollTop = 0;
+        		ogTasks.lastScrollTop = 0;
+        		ogTasks.restoreStateOnLoad = false;
 				
         		var url = og.getUrl('account', 'update_user_preference', {name: 'tasksGroupBy', value:record.data.value});
 				og.openLink(url, {
@@ -86,16 +108,14 @@ og.TasksBottomToolbar = function(config) {
     });
     this.groupcombo.setValue(ogTasks.userPreferences.groupBy);
 	
-    var ordercombo_data = [
-    			['priority',lang('priority')]
-	        	,['name', lang('task name')]
-	        	,['due_date', lang('due date')]
-	        	,['created_on', lang('created on')]
-	        	,['completed_on', lang('completed on')]
-	        	,['assigned_to', lang('assigned to')]
-	        	,['start_date', lang('start date')]
-	        	,['percent_completed', lang('progress')]
-	];
+    var ordercombo_data = [];
+	for (prop_id in ogTasks.task_order_options_names) {
+		if (typeof ogTasks.task_order_options_names[prop_id] == 'function') continue;
+
+		if (ogTasks.order_by_allowed_options.indexOf(prop_id) != -1) {
+			ordercombo_data.push([prop_id, ogTasks.task_order_options_names[prop_id]]);
+		}
+	}
 	
 	if (og.additional_tasks_list_order_by_fn) {
 		for (var i=0; i<og.additional_tasks_list_order_by_fn.length; i++) {
@@ -105,6 +125,21 @@ og.TasksBottomToolbar = function(config) {
 			}
 		}
 	}
+
+	// Add dimension member types to the order by options
+	if (ogTasks.additional_groupby_dimensions_member_types) {
+		for (i=0; i<ogTasks.additional_groupby_dimensions_member_types.length; i++) {
+			var ob = ogTasks.additional_groupby_dimensions_member_types[i];
+
+			let key = 'dim_' + ob.dim_id + '_' + ob.mem_type_id;
+			if (ogTasks.order_by_allowed_options.indexOf(key) == -1) {
+				continue;
+			}
+
+			ordercombo_data.push([key, ob.mem_type_name]);
+		}
+	}
+
 	ordercombo_data.sort(function(a,b) { return a[1].localeCompare(b[1]); });
 
 	this.ordercombo = new Ext.form.ComboBox({
@@ -187,6 +222,9 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
 			}
 		}
 	}
+
+	// trigger event to load more types of filters to this toolbar
+	og.eventManager.fireEvent('tasks_list_add_more_filtercombo_types', {toolbar: this, filtercombo_store_data: filtercombo_store_data});
     
     if (ogTasks.additional_filtercombo_types) {
 		for (i=0; i<ogTasks.additional_filtercombo_types.length; i++) {
@@ -214,17 +252,40 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
         mode: 'local',
         triggerAction: 'all',
         selectOnFocus:true,
-        width:100,
         valueField: 'value',
         listeners: {
+			'render': function(combo) {
+				// adjust the combo width depending on the content
+				var maxWidth = 0;
+				combo.store.each(function(rec) {
+					var text = rec.get(combo.displayField);
+					var width = Ext.util.TextMetrics.measure(combo.el, text).width;
+					maxWidth = Math.max(maxWidth, width);
+				});
+
+				// margen extra para padding + trigger
+				maxWidth += 35;
+				// limit the width to 150
+				if (maxWidth > 150) maxWidth = 150;
+				// set the combo width
+				combo.setWidth(maxWidth);
+			},
         	'select' : function(combo, record) {
+				// hide all other possible filter components
+				var inv_combo = Ext.getCmp('invoicing_status_combo');
+				var date_range_filter = Ext.getCmp('ogTasksFilterDateRange');
+				var subtype_combo = Ext.getCmp('ogTasksFilterSubtypesCombo');
+				if (inv_combo) inv_combo.hide();
+				if (date_range_filter) date_range_filter.hide();
+				if (subtype_combo) subtype_combo.hide();
+				// --
+
         		switch(record.data.value){
         			case 'no_filter':
         				Ext.getCmp('ogTasksFilterNamesCombo').hide();
         				Ext.getCmp('ogTasksFilterNamesCompaniesCombo').hide();
         				Ext.getCmp('ogTasksFilterMilestonesCombo').hide();
         				Ext.getCmp('ogTasksFilterPriorityCombo').hide();
-        				Ext.getCmp('ogTasksFilterSubtypeCombo').hide();
 						var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
         				toolbar.load();
         				break;
@@ -234,7 +295,6 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
         				Ext.getCmp('ogTasksFilterMilestonesCombo').show();
         				Ext.getCmp('ogTasksFilterMilestonesCombo').setValue('');
         				Ext.getCmp('ogTasksFilterPriorityCombo').hide();
-        				Ext.getCmp('ogTasksFilterSubtypeCombo').hide();
         				break;
         			case 'priority':
         				Ext.getCmp('ogTasksFilterNamesCombo').hide();
@@ -242,7 +302,6 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
         				Ext.getCmp('ogTasksFilterMilestonesCombo').hide();
         				Ext.getCmp('ogTasksFilterPriorityCombo').show();
         				Ext.getCmp('ogTasksFilterPriorityCombo').setValue('');
-        				Ext.getCmp('ogTasksFilterSubtypeCombo').hide();
         				break;
         			case 'assigned_to':
         				Ext.getCmp('ogTasksFilterNamesCombo').hide();
@@ -250,7 +309,6 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
         				Ext.getCmp('ogTasksFilterNamesCompaniesCombo').setValue('');
         				Ext.getCmp('ogTasksFilterMilestonesCombo').hide();
         				Ext.getCmp('ogTasksFilterPriorityCombo').hide();
-        				Ext.getCmp('ogTasksFilterSubtypeCombo').hide();
         				break;
         			case 'subtype':
         				Ext.getCmp('ogTasksFilterNamesCombo').hide();
@@ -258,7 +316,6 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
         				Ext.getCmp('ogTasksFilterNamesCompaniesCombo').setValue('');
         				Ext.getCmp('ogTasksFilterMilestonesCombo').hide();
         				Ext.getCmp('ogTasksFilterPriorityCombo').hide();
-        				Ext.getCmp('ogTasksFilterSubtypeCombo').show();
         				break;
         			default:
         				Ext.getCmp('ogTasksFilterNamesCombo').show();
@@ -266,7 +323,6 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
         				Ext.getCmp('ogTasksFilterNamesCompaniesCombo').hide();
         				Ext.getCmp('ogTasksFilterMilestonesCombo').hide();
         				Ext.getCmp('ogTasksFilterPriorityCombo').hide();
-        				Ext.getCmp('ogTasksFilterSubtypeCombo').hide();
         				
         				if (ogTasks.additional_filtercombo_types) {
         					for (var x=0; x<ogTasks.additional_filtercombo_types.length; x++) {
@@ -283,6 +339,81 @@ this.listingOrderCombo.setValue(ogTasks.userPreferences.listingOrder);
     });
     this.filtercombo.setValue(ogTasks.userPreferences.filter);
 
+	// put a date range filter that can be used in plugins
+	this.dateRangeFilter = new og.DateRangeField({
+		id: 'ogTasksFilterDateRange',
+		onselect: function () {
+			var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+			toolbar.load();
+		},
+		hidden: true,
+		highlight_selected: true
+	});
+
+	this.dateRangeFilterInfo = new Ext.BoxComponent({
+		id: 'ogTasksFilterDateRangeInfo',
+		hideMode: 'offsets',
+		autoEl: {
+			tag: 'span',
+			cls: 'og-filter-info-icon',
+			style: 'display:inline-block;line-height:22px;vertical-align:middle;font-size:16px;font-weight:bold;color:#666;margin:0 5px;cursor:help;position:relative;top:1px;',
+			'ext:qtip': lang('tasks date range filter info'),
+			html: '&#9432;'
+		},
+		hidden: true
+	});
+	this.dateRangeFilter.on('show', function() { this.dateRangeFilterInfo.show(); }, this);
+	this.dateRangeFilter.on('hide', function() { this.dateRangeFilterInfo.hide(); }, this);
+
+	if (ogTasks.userPreferences.filter == 'start_date' || ogTasks.userPreferences.filter == 'due_date') {
+		this.dateRangeFilter.show();
+		this.dateRangeFilterInfo.show();
+	}
+
+	// add the filter for object subtypes
+	let task_ot = og.get_object_type_by_name('task');
+	if (task_ot && og.object_subtypes && og.object_subtypes_by_otid && og.object_subtypes_by_otid[task_ot.id] && og.object_subtypes_by_otid[task_ot.id].length > 0) {
+		let subtypes_store = [[0, '--' + lang('no filter') + '--']];
+		for (let subtype of og.object_subtypes_by_otid[task_ot.id]) {
+			subtypes_store.push([subtype.id, subtype.name]);
+		}
+
+		this.objectSubtypeFilter = new Ext.form.ComboBox({
+			id: 'ogTasksFilterSubtypesCombo',
+			store: new Ext.data.SimpleStore({
+				fields: ['value', 'text'],
+				data : subtypes_store
+			}),
+			hidden: true,
+			displayField: 'text',
+			mode: 'local',
+			triggerAction: 'all',
+			selectOnFocus: true,
+			valueField: 'value',
+			value: 0,
+			listeners: {
+				select: function(combo, record) {
+					var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+					toolbar.load();
+					var selectedValue = combo.getValue();
+					if (selectedValue == '0') {
+						selectedValue = '';
+					}
+					og.highlight_selected_extjs_filter(combo.id, selectedValue);
+				},
+				render: function (combo) {
+					var selectedValue = combo.getValue();
+					if (selectedValue == '0') {
+						selectedValue = '';
+					}
+					og.highlight_selected_extjs_filter(combo.id, selectedValue);
+				}
+			}
+		});
+		if (ogTasks.userPreferences.filter == 'object_subtype') {
+			this.objectSubtypeFilter.show();
+		}
+	}
     
 setTimeout(function() {
     og.openLink(og.getUrl('task', 'users_for_tasks_list_filter'), {
@@ -421,14 +552,18 @@ setTimeout(function() {
         				ogTasks.UserCompanySelected(this.initialConfig.controlName, record.data.value, this.initialConfig.taskId);
         			}
         		}
+				var selectedValue = combo.getValue();
+				if (selectedValue == '0') {
+					selectedValue = '';
+				}
+				og.highlight_selected_extjs_filter(combo.id, selectedValue);
         	},
 			'render': function (combo) {
-				var selectedValue = combo.getValue();  
-				if(selectedValue == '0') {
-					combo.el.dom.style.color = 'black'; 
-				} else {
-					combo.el.dom.style.color = 'red'; 
+				var selectedValue = combo.getValue();
+				if (selectedValue == '0') {
+					selectedValue = '';
 				}
+				og.highlight_selected_extjs_filter(combo.id, selectedValue);
 			}
         }
     });
@@ -458,14 +593,11 @@ setTimeout(function() {
         	'select' : function(combo, record) {
 				var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
         		toolbar.load();
+				og.highlight_selected_extjs_filter(combo.id, combo.getValue());
         	},
 			'render': function (combo) {
-				var selectedValue = combo.getValue();  
-				if(selectedValue == '0') {
-					combo.el.dom.style.color = 'black'; 
-				} else {
-					combo.el.dom.style.color = 'red'; 
-				}
+				var selectedValue = combo.getValue();
+				og.highlight_selected_extjs_filter(combo.id, selectedValue);
 			}
 		}
 	});
@@ -493,42 +625,14 @@ setTimeout(function() {
 				var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
         		if (toolbar.filterPriorityCombo == this)
         			toolbar.load();
-        	}
+				og.highlight_selected_extjs_filter(combo.id, combo.getValue());
+        	},
+			'render': function (combo) {
+				og.highlight_selected_extjs_filter(combo.id, combo.getValue());
+			}
         }
     });
     this.filterPriorityCombo.setValue(ogTasks.userPreferences.filterValue);
-    
-    var subtypesArray = Ext.util.JSON.decode(document.getElementById(config.subtypesHfId).value);
-    var subtypes_data = [[0, lang('all')]];
-    for (i=0; i<subtypesArray.length; i++) {
-    	var ost = subtypesArray[i];
-    	subtypes_data[subtypes_data.length] = [ost.id, ost.name];
-    }
-    this.filterSubtypeCombo = new Ext.form.ComboBox({
-    	id: 'ogTasksFilterSubtypeCombo',
-        store: new Ext.data.SimpleStore({
-			fields: ['value', 'text'],
-			data : subtypes_data
-	    }),
-	    hidden: ogTasks.userPreferences.filter != 'subtype',
-        displayField:'text',
-        //typeAhead: true,
-        mode: 'local',
-        triggerAction: 'all',
-        selectOnFocus:true,
-        width:140,
-        valueField: 'value',
-        emptyText: '...',
-        valueNotFoundText: '',
-        listeners: {
-        	'select' : function(combo, record) {
-				var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-        		if (toolbar.filterSubtypeCombo == this)
-        			toolbar.load();
-        	}
-        }
-    });
-    this.filterSubtypeCombo.setValue(ogTasks.userPreferences.filterValue);
     
     
     var milestones = Ext.util.JSON.decode(document.getElementById(config.internalMilestonesHfId).value);
@@ -560,7 +664,19 @@ setTimeout(function() {
 				var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
         		if (toolbar.filterMilestonesCombo == this)
         			toolbar.load();
-        	}
+				var selectedValue = combo.getValue();
+				if (selectedValue == 0) {
+					selectedValue = '';
+				}
+				og.highlight_selected_extjs_filter(combo.id, selectedValue);
+        	},
+			'render': function (combo) {
+				var selectedValue = combo.getValue();
+				if (selectedValue == 0) {
+					selectedValue = '';
+				}
+				og.highlight_selected_extjs_filter(combo.id, selectedValue);
+			}
         }
     });
     this.filterMilestonesCombo.setValue(ogTasks.userPreferences.filterValue);
@@ -592,11 +708,11 @@ setTimeout(function() {
 				
 				if (record) {
 					var selectedText = record.get(combo.displayField);
+					var selectedValue = selectedText;
 					if(selectedText == '--' + lang('no filter') + '--') {
-						combo.el.dom.style.color = 'black'; 
-					} else {
-						combo.el.dom.style.color = 'red'; 
+						selectedValue = '';
 					}
+					og.highlight_selected_extjs_filter(combo.id, selectedValue);
 				}
 			}
         }
@@ -639,11 +755,7 @@ setTimeout(function() {
 			},
 			'render': function(dateField) {
 				var value = dateField.value;
-				if (value === null || value === '' || value == undefined) {
-					dateField.el.dom.style.color = 'black';
-				} else {
-					dateField.el.dom.style.color = 'red';
-				}
+				og.highlight_selected_extjs_filter(dateField.id, value);
 			}
 		},
 		menuListeners : {
@@ -701,11 +813,7 @@ setTimeout(function() {
 			},
 			'render': function(dateField) {
 				var value = dateField.value;
-				if (value === null || value === '' || value == undefined) {
-					dateField.el.dom.style.color = 'black';
-				} else {
-					dateField.el.dom.style.color = 'red';
-				}
+				og.highlight_selected_extjs_filter(dateField.id, value);
 			}
 		},
 		menuListeners : {
@@ -733,8 +841,6 @@ setTimeout(function() {
 
 		}
 	});
-    this.dateFieldEnd.setValue(ogTasks.userPreferences.dateEnd); 	
-    this.dateFieldStart.setValue(ogTasks.userPreferences.dateStart);
   }
     this.statusCombo.setValue(ogTasks.userPreferences.status);
     this.add(lang('filter') + ':');
@@ -742,24 +848,25 @@ setTimeout(function() {
     this.add(this.filterNamesCombo);
     this.add(this.filterNamesCompaniesCombo);
     this.add(this.filterPriorityCombo);
-    this.add(this.filterSubtypeCombo);
     this.add(this.filterMilestonesCombo);
     
     if (ogTasks.additional_filtercombo_types) {
 		for (var x=0; x<ogTasks.additional_filtercombo_types.length; x++) {
 			var fc_type = ogTasks.additional_filtercombo_types[x];
-			
+
 			try {
 				if (fc_type && fc_type.component_id) {
 					var comp = Ext.getCmp(fc_type.component_id);
 					if (comp) this.add(comp);
 				}
 			} catch (e) {
-				
+
 			}
 		}
 	}
-    
+
+	this.add(this.dateRangeFilterInfo);
+
     this.add('&nbsp;&nbsp;&nbsp;' + lang('status') + ':');
     this.add(this.statusCombo);
     
@@ -770,16 +877,51 @@ setTimeout(function() {
 	this.add(this.listingOrderCombo);
     
     if (og.config.tasks_use_date_filters) {
+	    this.dateFieldEnd.setValue(ogTasks.userPreferences.dateEnd);
+	    this.dateFieldStart.setValue(ogTasks.userPreferences.dateStart);
 	    this.add('&nbsp;&nbsp;&nbsp;' + lang('from date') + ':');
 	    this.add(this.dateFieldStart);
 	    this.add('&nbsp;&nbsp;&nbsp;' + lang('to date') + ':');
 	    this.add(this.dateFieldEnd);
+	    this.dateFieldsStaticInfo = new Ext.BoxComponent({
+	        id: 'ogTasksFilterStaticInfo',
+	        hideMode: 'offsets',
+	        autoEl: {
+	            tag: 'span',
+	            cls: 'og-filter-info-icon',
+	            style: 'display:inline-block;line-height:22px;vertical-align:middle;font-size:16px;font-weight:bold;color:#666;cursor:help;position:relative;top:1px;',
+	            'ext:qtip': lang('tasks date filter info'),
+	            html: '&#9432;'
+	        },
+	        hidden: true
+	    });
+	    this.add('&nbsp;');
+	    this.add(this.dateFieldsStaticInfo);
+	    var update_static_info_visibility = function() {
+	        var static_info = Ext.getCmp('ogTasksFilterStaticInfo');
+	        if (!static_info) return;
+	        if (!self.dateFieldStart || !self.dateFieldEnd) return;
+	        var from_val = self.dateFieldStart.getValue();
+	        var until_val = self.dateFieldEnd.getValue();
+	        var from_valid = (from_val instanceof Date) && !isNaN(from_val.getTime());
+	        var until_valid = (until_val instanceof Date) && !isNaN(until_val.getTime());
+	        if (from_valid || until_valid) static_info.show();
+	        else static_info.hide();
+	    };
+	    this.dateFieldStart.on('change', update_static_info_visibility);
+	    this.dateFieldStart.on('select', update_static_info_visibility);
+	    this.dateFieldEnd.on('change', update_static_info_visibility);
+	    this.dateFieldEnd.on('select', update_static_info_visibility);
+	    update_static_info_visibility();
+	    this.on('afterlayout', update_static_info_visibility, this);
     }
     if (ogTasks.extraBottomToolbarItems) {
     	for (i=0; i<ogTasks.extraBottomToolbarItems.length; i++) {
     		this.add(ogTasks.extraBottomToolbarItems[i]);
     	}
     }
+
+	og.eventManager.fireEvent('after_bottom_toolbar_load', this);
 };
 
 Ext.extend(og.TasksBottomToolbar, Ext.Toolbar, {
@@ -803,9 +945,6 @@ Ext.extend(og.TasksBottomToolbar, Ext.Toolbar, {
 			case 'priority':
 				filterValue = this.filterPriorityCombo.getValue();
 				break;
-			case 'subtype':
-				filterValue = this.filterSubtypeCombo.getValue();
-				break;
 			case 'assigned_to':
 				filterValue = this.filterNamesCompaniesCombo.getValue();
 				break;
@@ -819,6 +958,10 @@ Ext.extend(og.TasksBottomToolbar, Ext.Toolbar, {
 							var comp = Ext.getCmp(fc_type.component_id);
 							if (comp) filterValue = comp.getValue();
 							else filterValue = "";
+
+							if (typeof filterValue == 'object') {
+								filterValue = JSON.stringify(filterValue);
+							}
 						}
 					}
 				}

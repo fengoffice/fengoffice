@@ -57,13 +57,64 @@
   	/**
   	 * @param unknown_type $external_conditions
   	 */
-	static function getAvailableObjectTypes($external_conditions = "") {
+	static function getAvailableObjectTypes($external_conditions = "", $types = array(), $check_enabled_panel_cond = true) {
+		if (empty($types)) {
+			$types = array("content_object");
+		}
+		$check_panel_cond = $check_enabled_panel_cond ? " AND `id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0)" : "";
+		
+		$conditions = "`type` IN ('".implode("', '", $types)."') 
+			AND `name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  
+			AND IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) 
+			$check_panel_cond $external_conditions";
+		
 		$object_types = self::instance()->findAll(array(
-			"conditions" => "`type` = 'content_object' AND 
-			`name` <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone'  AND 
-			IF(plugin_id IS NULL OR plugin_id=0, true, (SELECT p.is_activated FROM ".TABLE_PREFIX."plugins p WHERE p.id=plugin_id) = true) AND
-			`id` NOT IN (SELECT `object_type_id` FROM ".TabPanels::instance()->getTableName(true)." WHERE `enabled` = 0) $external_conditions"
+			"conditions" => $conditions
 		));
+
+		return $object_types;
+	}
+
+	/**
+	 * Return all active member types
+	 * 
+	 * @param string $external_conditions External conditions to apply to the query
+	 * @return array An array of active member types
+	 */
+	static function getActiveMemberTypes($external_conditions = "") {
+		$result = [];
+		
+		$member_types = self::instance()->getAvailableObjectTypes($external_conditions, array('dimension_group', 'dimension_object'));
+		
+		foreach ($member_types as $key => $member_type) {
+			$dim_ids = DimensionObjectTypes::getDimensionIdsByObjectTypeId($member_type->getId());
+			
+			$dim_enabled = false;
+			foreach ($dim_ids as $dim_id) {
+				if (in_array($dim_id, config_option('enabled_dimensions'))) {
+					$dim_enabled = true;
+				}
+			}
+			if ($dim_enabled) {
+				$result[] = $member_type;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Returns an array of object types that can be used for custom reports.
+	 * 
+	 * @return array An array of object types
+	 */
+	static function getObjectTypesForCustomReports() {
+		$object_types = ObjectTypes::getAvailableObjectTypes();
+		
+		$object_types[] = ObjectTypes::findByName('timeslot');
+
+		$member_types = ObjectTypes::getActiveMemberTypes("AND name NOT LIKE '%folder%'");
+		$object_types = array_merge($object_types, $member_types);
+
 		return $object_types;
 	}
 	

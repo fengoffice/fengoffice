@@ -12,6 +12,8 @@ abstract class ContentDataObjects extends DataManager {
 	private $object_type_id = null;
 	
 	private $foundRows = null ;
+
+	private $get_hidden_columns_for_custom_properties_form = [];
 	
 	function getFoundRows() {
 		return $this->foundRows ;
@@ -29,6 +31,10 @@ abstract class ContentDataObjects extends DataManager {
 		}
 		
 		return $this->object_type_id;
+	}
+
+	function getObjectTypeName() {
+		return $this->object_type_name;
 	}
 	
 	
@@ -92,6 +98,104 @@ abstract class ContentDataObjects extends DataManager {
 		} else {
 			return Objects::instance()->getColumnType($column_name);
 		}
+	}
+
+
+	/**
+	 * Returns an array of object columns, excluding system columns, that are to be shown in the custom properties form.
+	 * Each subclass must add/remove columns as needed.
+	 * 
+	 * @access public
+	 * @return array Array of object columns to be shown in the custom properties form.
+	 */
+	public function getColumnsForCustomPropertiesForm() {
+
+		/**
+		 * @TODO: Don't calculate the properties in this way, it is not scalable, 
+		 * if we add internal columns to the object we need to add it to the "hidden columns" too, that's not usable 
+		 * 
+		 * -> Define this function in each subclass (like ProjectTasks) and define the columns there
+		 */
+		
+		$columns = array();
+		$available_columns = $this->getColumnsAvailableInForms();
+		foreach ($available_columns as $column) {
+			if ($this->columnExists($column) || in_array($column, $this->getExternalColumnsForCustomPropertiesForm())) {
+				$columns[] = $column;
+			}
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Returns an array of object columns that are available to be shown in the custom properties form,
+	 * excluding internal columns. Subclasses should override this function to define the columns that are available in the add/edit form.
+	 * 
+	 * @access public
+	 * @return array Array of object columns available to be shown in the custom properties form.
+	 */
+	public function getExternalColumnsForCustomPropertiesForm() {
+		return [];
+	}
+
+
+	/**
+	 * Returns an array of object columns that are available to be shown in the custom properties form.
+	 * Each subclass must override this function to define the columns that are available in the add/edit form.
+	 * 
+	 * @access public
+	 * @return array Array of object columns available to be shown in the custom properties form.
+	 */
+	public function getColumnsAvailableInForms() {
+		return array();
+	}
+
+	/**
+	 * Returns whether the object supports property groups
+	 * 
+	 * @return bool true if the class can use property groups, false otherwise.
+	 */
+	public function canUsePropertyGroups() {
+		return false;
+	}
+
+	/**
+	 * Return the original name of a column based on language keys.
+	 * Checks first for the key "field {CLASS_NAME} {COLUMN_NAME}" and then for "field Objects {COLUMN_NAME}".
+	 *
+	 * @param string $column The name of the column.
+	 * @return string The original name of the column.
+	 */
+	function getColumnLang($column) {
+		$lang_possible_keys = ['field ' . get_class($this). ' ' . $column, 'field Objects ' . $column];
+		$original_name = $column;
+		foreach ($lang_possible_keys as $lang_key) {
+			if (Localization::instance()->lang_exists($lang_key)) {
+				$original_name = lang($lang_key);
+				break;
+			}
+		}
+		return $original_name;
+	}
+
+	/**
+	 * Return the display name of a column, using the custom label if the field was renamed.
+	 *
+	 * @param string $column The name of the column.
+	 * @return string The display name of the column.
+	 */
+	function getColumnDisplayName($column) {
+		$label = $this->getColumnLang($column);
+
+		if (Plugins::instance()->isActivePlugin('advanced_core') && class_exists('PropertyGroups')) {
+			$pgp = PropertyGroups::getPropertyGroupPropertyByObjectTypeAndPropertyId($this->getObjectTypeId(), 'fixedprop_' . $column);
+			if ($pgp instanceof PropertyGroupProperty && trim($pgp->getLabel()) != '') {
+				$label = $pgp->getLabel();
+			}
+		}
+
+		return $label;
 	}
 	
 	/**
@@ -406,6 +510,7 @@ abstract class ContentDataObjects extends DataManager {
 		$SQL_FOUND_ROWS = '';
         $SQL_BEFORE_COLUMNS = '';
         $SQL_GROUP_BY = '';
+		$SQL_ADDITIONAL_FROM = '';
 
         if (isset($args['sql_before_columns'])) {
             $SQL_BEFORE_COLUMNS = $args['sql_before_columns'];
@@ -439,54 +544,191 @@ abstract class ContentDataObjects extends DataManager {
 		$only_query_totals_row = array_var($args, 'only_query_totals_row');
 		$is_email_widget = array_var($args, 'is_email_widget');
 		$check_sharing_table = array_var($args, 'check_sharing_table', true);
+		$is_fulltext_mail_call = array_var($args, 'is_fulltext_mail_call', false);
 		
 		//text filter param
 		// ORG $text_filter = DB::cleanStringToFullSearch(array_var($_GET, 'text_filter'));
 		$text_filter = array_var($_GET, 'text_filter');
+		$text_filter_raw = trim((string) $text_filter);
 		
 		$controller = array_var($_GET, 'c');
 		$text_filter_extra_conditions = ''; 
 		
-		if (trim($text_filter) != '') {
-		    
-		    //$join_with_searchable_objects = true;
+		if ($text_filter_raw !== '') {
+			$join_with_searchable_objects = false;
 			$use_like_in_searchable_objects = true;
-			$select_columns = array('o.*,e.*');
-		    $text_filter = str_replace("'", "\'", trim($text_filter));
-		    
-		    if ($use_like_in_searchable_objects || is_numeric($text_filter)) {
-		    	if (is_numeric($text_filter)) {
+			$override_select_columns = true;
+			if (is_array($select_columns) && count($select_columns) == 1) {
+				$exploded = explode(',', $select_columns[0]);
+				foreach ($exploded as &$exp) $exp = trim($exp);
+				if (in_array('o.*', $exploded) && in_array('e.*', $exploded)) {
+					$override_select_columns = false;
+				}
+			}
+			if ($override_select_columns) {
+				$select_columns = array('o.*,e.*');
+			}
+			// Never use backslash-escaped quotes here: they break MATCH/LIKE when we double ' for SQL (e.g. i'd -> invalid '+i\''d*').
+			$text_filter = $text_filter_raw;
 
-					//Clean text filter param
-					$text_filter = DB::cleanStringToFullSearch($text_filter);
+			// Do not unconditionally force o.*, e.* here: it drops caller-supplied ORDER BY aliases
+			// (e.g. "jt.`name` as `prod_type_name`"), which makes MySQL raise
+			// "Unknown column '...' in 'ORDER BY'" when searching while sorting by a derived column.
+			// The $override_select_columns logic above already narrows the columns to o.*, e.* only
+			// when the caller did not provide its own o.*/e.* column list.
 
-					$text_filter_str = "%$text_filter%";
-		    	} else {
-		    		$text_filter_str = "%$text_filter%";
-		    	}
-		    	/*$text_filter_extra_conditions .= "
-					AND so.content like '$text_filter_str'
-				";*/
-		    	$text_filter_extra_conditions .= "
-					AND EXISTS (SELECT * FROM ".TABLE_PREFIX."searchable_objects so WHERE so.rel_object_id=o.id AND so.content like '$text_filter_str')
-				";
-		    	
-		    } else {
+			$clean = DB::cleanStringToFullSearch($text_filter_raw);
+			$clean_sql = str_replace("'", "''", $clean);
 
-				//Clean text filter param
-				$text_filter = DB::cleanStringToFullSearch($text_filter);
 
-		    	$join_with_searchable_objects = true;
-		    	
-			    if(str_word_count($text_filter, 0) > 1){
-			        $text_filter_extra_conditions .= "
-									AND MATCH (so.content) AGAINST ('\"$text_filter\"' IN BOOLEAN MODE)
+    		if (!empty(trim($clean))) {
+				if ($is_fulltext_mail_call) {
+
+					$safe_search = preg_replace('/[+\-<>()~*"@]+/', ' ', $clean);
+					$safe_search = trim($safe_search);
+
+					if (!empty($safe_search)) {
+
+						// Dividir en palabras
+						$words = preg_split('/\s+/', $safe_search);
+						$words = array_values(array_filter(array_map('trim', $words)));
+
+						// Same columns as FULLTEXT index idx_fulltext_mail_datas_all (to, cc, bcc, subject, body_plain, from_copy).
+						// Subquery + cap: fewer rows joined up front (performance); see sql_total for same FROM so totals match.
+						$match_columns = "
+							md.`to`,
+							md.`cc`,
+							md.`bcc`,
+							md.`subject`,
+							md.`body_plain`,
+							md.`from_copy`
+						";
+
+						$bool_terms = array();
+						foreach ($words as $w) {
+							if ($w === '') {
+								continue;
+							}
+							$len = function_exists('mb_strlen') ? mb_strlen($w, 'UTF-8') : strlen($w);
+							// Skip tokens below innodb_ft_min_token_size (default 3) and InnoDB stopwords:
+							// they are not in the FULLTEXT index, so +term* would match nothing.
+							if ($len < 3 || DB::isInnoDbFulltextStopword($w)) {
+								continue;
+							}
+							$ew = str_replace("'", "''", $w);
+							
+							$bool_terms[] = '+' . $ew . '*';
+						}
+
+						if (count($bool_terms) > 0) {
+
+							$match_columns_sql = "MATCH ($match_columns)";
+							
+							// BOOLEAN MODE with +term* per word: every indexed term must be present, with prefix matching.
+							// Short words and InnoDB stopwords are skipped above; if none remain, LIKE fallback below.
+							$phrase = implode(' ', $bool_terms);
+							$match_against = "$match_columns_sql AGAINST ('$phrase' IN BOOLEAN MODE)";
+
+							$SQL_ADDITIONAL_FROM = "(
+								SELECT md.id FROM ".TABLE_PREFIX."mail_datas md
+								WHERE $match_against
+								ORDER BY md.id DESC
+								LIMIT 20000
+							) limited_search_result,
+							";
+
+							$text_filter_extra_conditions .= "
+								AND limited_search_result.id = o.id
+							";
+
+						} else {
+
+							$text_filter_extra_conditions .= "
+								AND (
+									jt.`to` LIKE '%$clean_sql%'
+									OR jt.`cc` LIKE '%$clean_sql%'
+									OR jt.`bcc` LIKE '%$clean_sql%'
+									OR jt.`from_copy` LIKE '%$clean_sql%'
+									OR jt.subject LIKE '%$clean_sql%'
+									OR jt.body_plain LIKE '%$clean_sql%'
+									OR jt.body_html LIKE '%$clean_sql%'
+								)
+							";
+						}
+
+					} else {
+						$text_filter_extra_conditions .= "
+							AND (
+								jt.`to` LIKE '%$clean_sql%'
+								OR jt.`cc` LIKE '%$clean_sql%'
+								OR jt.`bcc` LIKE '%$clean_sql%'
+								OR jt.`from_copy` LIKE '%$clean_sql%'
+								OR jt.subject LIKE '%$clean_sql%' 
+								OR jt.body_plain LIKE '%$clean_sql%' 
+								OR jt.body_html LIKE '%$clean_sql%'
+							)
+						";
+					}
+				} else if ($use_like_in_searchable_objects || is_numeric($text_filter_raw)) {
+					if (is_numeric($text_filter_raw)) {
+
+						//Clean text filter param
+						$text_filter = DB::cleanStringToFullSearch($text_filter_raw);
+						$tf_like = str_replace("'", "''", $text_filter);
+
+						$text_filter_str = "%$tf_like%";
+					} else {
+						$tf_like = str_replace("'", "''", $text_filter_raw);
+						$text_filter_str = "%$tf_like%";
+					}
+					/*$text_filter_extra_conditions .= "
+						AND so.content like '$text_filter_str'
+					";*/
+					$text_filter_extra_conditions .= "
+						AND EXISTS (SELECT * FROM ".TABLE_PREFIX."searchable_objects so WHERE so.rel_object_id=o.id AND so.content like '$text_filter_str')
+					";
+				}
+			} else {
+				// Only FTS punctuation / spaces after cleanStringToFullSearch (e.g. "***") — MATCH ... AGAINST ('   *') is invalid SQL.
+				$text_filter_fts_clean = trim(DB::cleanStringToFullSearch($text_filter_raw));
+
+				if ($is_fulltext_mail_call) {
+					if ($text_filter_raw !== '') {
+						$like_lit = str_replace("'", "''", $text_filter_raw);
+						$text_filter_extra_conditions .= "
+							AND (
+								jt.`to` LIKE '%$like_lit%'
+								OR jt.`cc` LIKE '%$like_lit%'
+								OR jt.`bcc` LIKE '%$like_lit%'
+								OR jt.`from_copy` LIKE '%$like_lit%'
+								OR jt.subject LIKE '%$like_lit%'
+								OR jt.body_plain LIKE '%$like_lit%'
+								OR jt.body_html LIKE '%$like_lit%'
+							)
+						";
+					}
+				} elseif ($text_filter_fts_clean !== '') {
+					$text_filter = $text_filter_fts_clean;
+					$join_with_searchable_objects = true;
+					$tf_so_sql = str_replace("'", "''", $text_filter_fts_clean);
+
+					if (str_word_count($text_filter, 0) > 1) {
+						$text_filter_extra_conditions .= "
+									AND MATCH (so.content) AGAINST ('\"$tf_so_sql\"' IN BOOLEAN MODE)
 							    ";
-			    }else{
-			        $text_filter_extra_conditions  .= "
-									AND MATCH (so.content) AGAINST ('$text_filter*' IN BOOLEAN MODE)
+					} else {
+						$text_filter_extra_conditions .= "
+									AND MATCH (so.content) AGAINST ('$tf_so_sql*' IN BOOLEAN MODE)
 							    ";
-			    }
+					}
+				} else {
+					if ($text_filter_raw !== '') {
+						$like_lit = str_replace("'", "''", $text_filter_raw);
+						$text_filter_extra_conditions .= "
+						AND EXISTS (SELECT * FROM ".TABLE_PREFIX."searchable_objects so WHERE so.rel_object_id=o.id AND so.content like '%$like_lit%')
+					";
+					}
+				}
 		    }
 		}
 		
@@ -596,7 +838,7 @@ abstract class ContentDataObjects extends DataManager {
 			}
 		}
 		// Order statement
-    	$SQL_ORDER = self::prepareOrderConditions(array_var($args,'order'), array_var($args,'order_dir'));
+    	$SQL_ORDER = self::prepareOrderConditions(array_var($args,'order'), array_var($args,'order_dir'), $this);
 		
 		// Prepare Limit SQL 
 		if (is_numeric(array_var($args,'limit')) && array_var($args,'limit')>0){
@@ -700,115 +942,118 @@ abstract class ContentDataObjects extends DataManager {
 		}
 		$report_ot_id = ObjectTypes::findByName('report')->getId();
 		
-		if (logged_user() instanceof Contact) {
-			$uid = logged_user()->getId();
-			// Build Main SQL
-			$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
-			
+		if (logged_user() instanceof Contact || SystemContext::isActive()) {
+			// Default: full access. Overridden below when a real user is present.
 			$permissions_condition = " true ";
-			if ($check_sharing_table && (!logged_user()->isAdministrator() || $type_id == $mail_ot_id)) {
-				if ($type_id == $mail_ot_id) {
-					if($is_email_widget){
-						$permissions_condition = "
-							e.account_id IN (
-								SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
-								WHERE macc.contact_id=$uid
-							)
-						";
-					} else {
-						$permissions_condition = "(
-							$check_permissions_col IN (
-								SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-								WHERE ".$check_permissions_col." = sh.object_id
-									AND sh.group_id  IN ($logged_user_pgs)
+			if (logged_user() instanceof Contact) {
+				$uid = logged_user()->getId();
+				// Build Main SQL
+				$logged_user_pgs = implode(',', logged_user()->getPermissionGroupIds());
+
+				if ($check_sharing_table && (!logged_user()->isAdministrator() || $type_id == $mail_ot_id)) {
+					if ($type_id == $mail_ot_id) {
+						if($is_email_widget){
+							$permissions_condition = "
+								e.account_id IN (
+									SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
+									WHERE macc.contact_id=$uid
 								)
-							OR
-							e.account_id IN (
-								SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
-								WHERE macc.contact_id=$uid
-							)
+							";
+						} else {
+							$permissions_condition = "(
+								$check_permissions_col IN (
+									SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+									WHERE ".$check_permissions_col." = sh.object_id
+										AND sh.group_id  IN ($logged_user_pgs)
+									)
+								OR
+								e.account_id IN (
+									SELECT macc.account_id FROM ".TABLE_PREFIX."mail_account_contacts macc
+									WHERE macc.contact_id=$uid
+								)
+							) ";
+						}
+					} else if ($type_id == $report_ot_id) {
+						$permissions_condition = "(e.ignore_context=1 OR ".$check_permissions_col." IN (
+							SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+							WHERE ".$check_permissions_col." = sh.object_id
+							AND sh.group_id  IN ($logged_user_pgs))
+						) ";
+					} else {
+						$permissions_condition = $check_permissions_col." IN (
+							SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+							WHERE ".$check_permissions_col." = sh.object_id
+							AND sh.group_id  IN ($logged_user_pgs)
 						) ";
 					}
-				} else if ($type_id == $report_ot_id) {
-					$permissions_condition = "(e.ignore_context=1 OR ".$check_permissions_col." IN (
-						SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-						WHERE ".$check_permissions_col." = sh.object_id
-						AND sh.group_id  IN ($logged_user_pgs))
-					) ";
-				} else {
-					$permissions_condition = $check_permissions_col." IN (
-						SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-						WHERE ".$check_permissions_col." = sh.object_id
-						AND sh.group_id  IN ($logged_user_pgs)
-					) ";
 				}
-			}
-			
 
-			Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => 'e.'), $permissions_condition);
-			
-			/*
-			 * Check that the objects to list does not belong only to a non-manageable dimension that defines permissions
-			 * Object can be shown if:
-			 * 		1 - It belongs to at least a member in a dimension that defines permissions and is manageable
-			 * 		2 - Or it belongs to at least a member in a dimension that does not defines permissions
-			 * 		3 - Or user has permissions to read objects without classification 
-			 */
-		  if (!$type instanceof ObjectType || $type->getName() != 'mail') {
-			$without_perm_dim_ids = Dimensions::instance()->findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
-			$no_perm_dims_cond = "";
-			$no_perm_reports_cond = "";
-			if ($type instanceof ObjectType && $type->getName() == 'report') {
-				$no_perm_reports_cond = " OR e.ignore_context=1";
-			}
-			
-			if (count($without_perm_dim_ids) > 0) {
-				$no_perm_dims_cond = " OR EXISTS (
-					select * from ".TABLE_PREFIX."object_members omems
-					  inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
-					  WHERE omems.object_id=o.id AND mems.dimension_id IN (".implode(',', $without_perm_dim_ids).")
-				)";
-			}
-			
-			$permissions_condition .= " AND IF (o.object_type_id=".$mail_ot_id.", true, (
-				EXISTS (
-					SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp 
-					WHERE cmp.member_id=0 AND cmp.permission_group_id=".logged_user()->getPermissionGroupId()." AND cmp.object_type_id = o.object_type_id
-				)
-				OR
-				EXISTS (
-					select * from ".TABLE_PREFIX."object_members omems
-						inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
-						inner join ".TABLE_PREFIX."dimensions dims on dims.id = mems.dimension_id
-					WHERE omems.object_id=o.id and dims.defines_permissions=1 and dims.is_manageable=1
-				) $no_perm_dims_cond $no_perm_reports_cond
-			))";
-		  }
-			/********************************************************************************************************/
-		  
-		    $contact_ot_id = ObjectTypes::findByName('contact')->getId();
-			if ($type_id != $mail_ot_id && logged_user()->isAdministrator() || 
-					($type_id == $contact_ot_id && can_manage_contacts(logged_user()))) {
-				$permissions_condition = "true";
-			}
-			/*
-			if ($this instanceof ProjectFiles && !logged_user()->isAdministrator() && Plugins::instance()->isActivePlugin('mail')) {
-				$permissions_condition .= ($permissions_condition=="" ? "" : " AND ") . "IF(e.mail_id > 0,
-					  o.id IN (
-										SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
-										WHERE o.id = sh.object_id
-										AND sh.group_id  IN ($logged_user_pgs)
-					  ),
-					  true
-					)";
-			}*/
-			
+				Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => 'e.'), $permissions_condition);
+
+				/*
+				 * Check that the objects to list does not belong only to a non-manageable dimension that defines permissions
+				 * Object can be shown if:
+				 * 		1 - It belongs to at least a member in a dimension that defines permissions and is manageable
+				 * 		2 - Or it belongs to at least a member in a dimension that does not defines permissions
+				 * 		3 - Or user has permissions to read objects without classification
+				 */
+				if (!$type instanceof ObjectType || $type->getName() != 'mail') {
+					$without_perm_dim_ids = Dimensions::instance()->findAll(array('id' => true, 'conditions' => "defines_permissions=0"));
+					$no_perm_dims_cond = "";
+					$no_perm_reports_cond = "";
+					if ($type instanceof ObjectType && $type->getName() == 'report') {
+						$no_perm_reports_cond = " OR e.ignore_context=1";
+					}
+
+					if (count($without_perm_dim_ids) > 0) {
+						$no_perm_dims_cond = " OR EXISTS (
+							select * from ".TABLE_PREFIX."object_members omems
+							  inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
+							  WHERE omems.object_id=o.id AND mems.dimension_id IN (".implode(',', $without_perm_dim_ids).")
+						)";
+					}
+
+					$permissions_condition .= " AND IF (o.object_type_id=".$mail_ot_id.", true, (
+						EXISTS (
+							SELECT cmp.permission_group_id FROM ".TABLE_PREFIX."contact_member_permissions cmp
+							WHERE cmp.member_id=0 AND cmp.permission_group_id=".logged_user()->getPermissionGroupId()." AND cmp.object_type_id = o.object_type_id
+						)
+						OR
+						EXISTS (
+							select * from ".TABLE_PREFIX."object_members omems
+								inner join ".TABLE_PREFIX."members mems on mems.id = omems.member_id
+								inner join ".TABLE_PREFIX."dimensions dims on dims.id = mems.dimension_id
+							WHERE omems.object_id=o.id and dims.defines_permissions=1 and dims.is_manageable=1
+						) $no_perm_dims_cond $no_perm_reports_cond
+					))";
+				}
+				/********************************************************************************************************/
+
+				$contact_ot_id = ObjectTypes::findByName('contact')->getId();
+				if ($type_id != $mail_ot_id && logged_user()->isAdministrator() ||
+						($type_id == $contact_ot_id && can_manage_contacts(logged_user()))) {
+					$permissions_condition = "true";
+				}
+				/*
+				if ($this instanceof ProjectFiles && !logged_user()->isAdministrator() && Plugins::instance()->isActivePlugin('mail')) {
+					$permissions_condition .= ($permissions_condition=="" ? "" : " AND ") . "IF(e.mail_id > 0,
+						  o.id IN (
+									SELECT sh.object_id FROM ".TABLE_PREFIX."sharing_table sh
+									WHERE o.id = sh.object_id
+									AND sh.group_id  IN ($logged_user_pgs)
+						  ),
+						  true
+						)";
+				}*/
+			} // end if (logged_user() instanceof Contact)
+
 			if($template_objects){
 				$permissions_condition = "true";
 				$SQL_BASE_JOIN .= " INNER JOIN  ".TABLE_PREFIX."template_tasks temob ON temob.object_id = o.id ";
 			}
 			$sql = "
-				SELECT $SQL_FOUND_ROWS $SQL_BEFORE_COLUMNS $SQL_COLUMNS FROM ".TABLE_PREFIX."objects o
+				SELECT $SQL_FOUND_ROWS $SQL_BEFORE_COLUMNS $SQL_COLUMNS 
+				FROM $SQL_ADDITIONAL_FROM ".TABLE_PREFIX."objects o
 				$SQL_BASE_JOIN
 				$SQL_SEARCHABLE_OBJ_JOIN
 				$SQL_EXTRA_JOINS
@@ -827,8 +1072,15 @@ abstract class ContentDataObjects extends DataManager {
 				$sql = $query_wraper_start.$sql.$query_wraper_end;
 			}
 			
+			// When the main query selects DISTINCT rows the total must count distinct objects too.
+			// Callers that add row-multiplying joins (e.g. ordering the tasks list by a dimension
+			// joins object_members without restricting it to that dimension) rely on DISTINCT to
+			// collapse the duplicated rows; count(o.id) would count them all and inflate the total.
+			$SQL_TOTAL_COUNT = (stripos($SQL_BEFORE_COLUMNS, 'DISTINCT') !== false || stripos($SQL_COLUMNS, 'DISTINCT') !== false)
+				? "count(DISTINCT o.id)" : "count(o.id)";
+
 			$sql_total = "
-				SELECT count(o.id) as total FROM ".TABLE_PREFIX."objects o
+				SELECT $SQL_TOTAL_COUNT as total FROM $SQL_ADDITIONAL_FROM ".TABLE_PREFIX."objects o
 				$SQL_BASE_JOIN
 				$SQL_SEARCHABLE_OBJ_JOIN
 				$SQL_EXTRA_JOINS
@@ -969,7 +1221,14 @@ abstract class ContentDataObjects extends DataManager {
     	$archived_cond = $conditions[1];
     	
     	//Order conditions
-    	$order_conditions = self::prepareOrderConditions($order, $order_dir);
+    	$manager = null;
+    	if ($object_type instanceof ObjectType) {
+    		$handler_class = $object_type->getHandlerClass();
+    		if ($handler_class && class_exists($handler_class)) {
+    			eval('$manager = ' . $handler_class . '::instance();');
+    		}
+    	}
+    	$order_conditions = self::prepareOrderConditions($order, $order_dir, $manager);
     	
     	//Extra conditions
 		if (!$extra_conditions) $extra_conditions = "";
@@ -1052,7 +1311,10 @@ abstract class ContentDataObjects extends DataManager {
 	      		}
 	      	} else if (array_var($join_params, 'j_sub_q')) {
 	      		$on_cond = "`$jt_table_alias`.`".$join_params['jt_field']."` = (" . array_var($join_params, 'j_sub_q') . ")";
-			  }
+				if (array_var($join_params, 'on_extra')) {
+	      			$on_cond .= $join_params['on_extra'];
+	      		}
+			}
 
 			$join_conditions = $join_type." JOIN `".$join_params['table']."` `$jt_table_alias` ON " . $on_cond;
 			
@@ -1062,7 +1324,8 @@ abstract class ContentDataObjects extends DataManager {
     
     
     static function prepareTrashAndArchivedConditions($trashed, $archived){
-        $trashed_cond = "`o`.`trashed_on` " .($trashed ? ">" : "="). " 0";
+        // USE trashed_by_id INSTEAD OF trashed_on TO IMPROVE PERFORMANCE OF THE QUERY
+        $trashed_cond = "`o`.`trashed_by_id` " .($trashed ? ">" : "="). " 0";
     	if ($trashed) {
     		$archived_cond = "";
     	} else {
@@ -1093,11 +1356,13 @@ abstract class ContentDataObjects extends DataManager {
     }
     
     
-    static function prepareOrderConditions($order, $order_dir){
+    static function prepareOrderConditions($order, $order_dir, $manager = null){
     	$order_conditions = "";
     	if (is_null($order_dir)) $order_dir = "DESC";
     	if ($order && $order_dir){
     		if (!is_array($order)){
+    			$original_order = $order;
+    			Hook::fire('override_listing_order_column', array('order' => $order, 'manager' => $manager), $order);
                 $order_conditions = "ORDER BY $order $order_dir";
             } else {
     			$i = 0;
@@ -1440,7 +1705,7 @@ abstract class ContentDataObjects extends DataManager {
 	    		foreach ($list_values as $list_value) {
 	    			$lang_value = Localization::instance()->lang($list_value);
 	    			if (is_null($lang_value)) {
-	    				$exp = explode('@', $cp_list_value);
+	    				$exp = explode('@', $list_value);
 	    				if (count($exp) == 2) {
 	    					$lang_value = Localization::instance()->lang($exp[1]);
 	    					if (is_null($lang_value)) {
@@ -1483,12 +1748,62 @@ abstract class ContentDataObjects extends DataManager {
 		return array();
 	}
 	
+	/**
+	 * Retrieves associated objects' columns which are fixed, i.e. defined by the
+	 * associated object type's columns.
+	 *
+	 * @return array An array of associated objects' columns with their details.
+	 */
 	function getAssociatedObjectsFixedColumns() {
-		return array();
+		$properties = array();
+
+		// Get associated contact properties if the member type has an associated contact
+		$properties = array_merge($properties, $this->getAssociatedContactProperties());
+
+		return $properties;
 	}
 	
 	function getAssociatedObjectManagers() {
 		return array();
+	}
+
+
+	/**
+	 * Retrieves associated contact properties for the current object type.
+	 *
+	 * @return array An array of associated contact properties with their details.
+	 */
+	function getAssociatedContactProperties() {
+		$columns = array();
+
+		// Get associated contact properties if the it is a member type and has an associated contact
+		if ($this->isMemberTypeWithContact()) {
+			$columns['contact_id'] = array(
+				array('col' => 'email', 'external' => true, 'type' => 'email', 'label' => lang("email")),
+				array('col' => 'phone', 'external' => true, 'type' => 'phone', 'label' => lang("phone")),
+				array('col' => 'address', 'external' => true, 'type' => 'address', 'label' => lang("address")),
+				array('col' => 'webpage', 'external' => true, 'type' => 'webpage', 'label' => lang("webpage")),
+				array('col' => 'picture_file', 'external' => true, 'type' => 'image', 'label' => lang("picture")),
+				array('col' => 'comments', 'type' => DATA_TYPE_STRING, 'label' => lang("notes"), 'large' => true),
+			//	array('col' => 'company_id', 'type' => 'company', 'label' => lang("company")),
+				array('col' => 'birthday', 'type' => DATA_TYPE_DATE, 'label' => lang("birthday")),
+				array('col' => 'department', 'type' => DATA_TYPE_STRING, 'label' => lang("department")),
+			);
+		}
+		return $columns;
+	}
+
+	/**
+	 * Checks if the current object type is a member type with an associated contact.
+	 *
+	 * This method determines if the object type is of type 'dimension_object' and
+	 * verifies the existence of 'contact_id' and 'contact_object_type_id' columns.
+	 *
+	 * @return bool True if the object is a member type with a contact, false otherwise.
+	 */
+	function isMemberTypeWithContact() {
+		$ot = ObjectTypes::instance()->findById($this->getObjectTypeId());
+		return $ot->getType() == 'dimension_object' && $this->columnExists('contact_id') && $this->columnExists('contact_object_type_id');
 	}
 	
 	
@@ -1512,6 +1827,7 @@ abstract class ContentDataObjects extends DataManager {
 		$cp_values = array();
 		foreach ($cps as $cp) {
 			$cpval = CustomPropertyValues::instance()->getCustomPropertyValue($object->getId(), $cp->getId());
+			Hook::fire('override_custom_property_value', array('cp' => $cp, 'object' => $object), $cpval);
 			$cp_values[$cp->getId()] = $cpval instanceof CustomPropertyValue ? $cpval->getValue() : '';
 		}
 		$old_content_object->custom_properties = $cp_values;

@@ -51,7 +51,13 @@
     'invalid upload dimensions' => 'Invalid image dimensions. Max size is {0}x{1} pixels',
     'invalid upload size' => 'Invalid image size. Max size is {0}',
     'invalid upload failed to move' => 'Failed to move uplaoded file',
-    
+
+    // CKEditor upload handler
+    'ck upload not authorized' => 'You must be logged in to upload files.',
+    'ck upload no file' => 'No file was uploaded.',
+    'ck upload invalid type' => 'Invalid file type. Allowed: images, PDF, Office documents, archives and text files.',
+    'ck upload failed to move' => 'Failed to store the uploaded file.',
+
     // Registration form
     'terms of services not accepted' => 'In order to create an account you need to read and accept our terms of services',
     
@@ -171,9 +177,11 @@
   	'custom property value required' => '{0} is required',
   	'value must be numeric' => 'Value(s) must be numeric for {0}',
   	'values cannot be empty' => 'Value(s) cannot be empty for {0}',
+  	'value cannot be empty' => 'Value for {0} cannot be empty',
   
   	//Reports
   	'report name required' => 'Report name is required',
+  	'report name already exists' => 'A report with this name already exists',
   	'report object type required' => 'Report object type is required',
 
   	'error assign task user dnx' => 'Trying to assign to an inexistent user',
@@ -229,7 +237,8 @@
     'token external type value required' => 'Type is required',
   	'you dont have permissions to add this object in members' => 'You don\'t have permissions to add this {0} in {1}',
     'please provide input for repeat times' => 'Please provide a number for Repeat Times input',
-    'please provide date for repeat until' => 'Please provide a date for Repeat Until input'
+    'please provide date for repeat until' => 'Please provide a date for Repeat Until input',
+    'error edit task' => 'An error occurred while saving your changes. Please try again.',
   ); // array
 
 ?>

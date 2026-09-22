@@ -25,11 +25,25 @@
   width: 300px;
 }
 
-.configOptionControl .color-picker-container .modcoder_excolor_clrbox {
-	height: 15px !important;
+/* Native HTML5 Color Picker Styling */
+.configOptionControl .color-picker-container input[type="color"] {
+	width: 60px;
+	height: 30px;
+	padding: 2px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	cursor: pointer;
+	background-color: #fff;
 }
-.configOptionControl .color-picker-container input {
-	max-width:70px;
+.configOptionControl .color-picker-container input[type="color"]:hover {
+	border-color: #999;
+}
+.configOptionControl .color-picker-container input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+.configOptionControl .color-picker-container input[type="color"]::-webkit-color-swatch {
+	border: none;
+	border-radius: 2px;
 }
 
 
@@ -114,6 +128,16 @@
   width: 150px;
 }
 
+.optionsSectionTitle {
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.optionsSectionTitle h1 {
+    margin-top: 15px;      /* margen superior */
+    margin-bottom: 5px;    /* margen inferior */
+}
+
 /* ------------------------------- TAB ADMINISTRATION ------------------------------*/
 
 .tab-manager table {
@@ -140,3 +164,241 @@
 	vertical-align: middle;
 	padding: 3px 5px;
 }
+
+/* General */
+.manage-panel-back-btn {
+	float: left;
+	margin: -10px 15px 10px 0;
+}
+
+.user-groups-section h1 {
+	margin: 0;
+}
+
+.role-name {
+	font-weight: normal;
+}
+
+.permissions-main-table {
+	width: 100%;
+}
+
+.permissions-main-table {
+	width: 100%;
+}
+
+.permissions-col-left {
+	padding-right: 10px;
+	width: 50%;
+	vertical-align: top;
+}
+
+.permissions-col-right {
+	padding-left: 10px;
+	width: 50%;
+	vertical-align: top;
+}
+
+.perm-row {
+	margin-bottom: 4px;
+}
+
+/* Root permissions block */
+.root-permissions {
+	margin-top: 25px;
+	width: 50%;
+}
+
+/* TABLE ROOT PERMISSIONS */
+.permissions-root-table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+.permissions-root-table th,
+.permissions-root-table td {
+	padding: 4px 6px;
+	border-bottom: 1px solid #ddd;
+}
+
+.permissions-root-table th:first-child,
+.permissions-root-table td:first-child {
+	width: 34%;
+}
+
+.permissions-root-table th:not(:first-child),
+.permissions-root-table td:not(:first-child) {
+	width: 16.5%;
+}
+
+/* Center headers */
+.permissions-header-row th,
+.permissions-title-row th {
+	text-align: center;
+	font-weight: bold;
+}
+
+.permissions-title-row th {
+	font-weight: normal;
+	font-size: 12px;
+	line-height: 1.2;
+	padding: 6px 4px;
+	vertical-align: bottom;
+	white-space: normal;
+}
+
+.permissions-title-row .permission-level-title {
+	display: inline-block;
+	min-height: 30px;
+}
+
+.role-permissions-block .ogTasksGroupAction {
+	margin-right: 12px;
+}
+
+/* Center check all row */
+.permissions-checkall-row td {
+	text-align: center;
+	font-weight: bold;
+}
+
+/* Center radio & checkbox columns (except first column) */
+.permissions-root-table td:not(:first-child),
+.permissions-root-table th:not(:first-child) {
+	text-align: center;
+}
+
+/* Make radios and checkboxes perfectly centered */
+.permissions-root-table input[type="radio"],
+.permissions-root-table input[type="checkbox"] {
+	display: block;
+	margin: 0 auto;
+}
+
+/* ================= SYSTEM & MODULE PERMISSIONS ROW LINES ================= */
+
+/* quitar línea a la última fila */
+.user-system-permissions .perm-row:last-child,
+.user-module-permissions .perm-row:last-child {
+	border-bottom: none;
+}
+
+/* ================= ALIGN CHECKBOXES LEFT ================= */
+
+.user-system-permissions input[type="checkbox"],
+.user-module-permissions input[type="checkbox"] {
+	margin-right: 6px;
+	margin-left: 0;
+	vertical-align: middle;
+}
+
+/* Fix alignment system & module permissions rows */
+.user-system-permissions .perm-row,
+.user-module-permissions .perm-row {
+	display: flex;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	padding: 4px 6px;
+}
+
+/* checkbox aligned left */
+.user-system-permissions .perm-row input[type="checkbox"],
+.user-module-permissions .perm-row input[type="checkbox"] {
+	margin: 0 8px 0 0;
+	flex: 0 0 auto;
+	align-self: center;
+}
+
+/* label aligned */
+.user-system-permissions .perm-row label,
+.user-module-permissions .perm-row label {
+	margin: 0;
+	flex: 1 1 auto;
+	min-width: 0;
+	align-self: center;
+}
+
+.perm-row {
+	position: relative;
+}
+
+/* contenedor del texto */
+.perm-label {
+	display: inline-flex;
+	align-items: center;
+	flex: 1 1 auto;
+	min-width: 0;
+	gap: 6px;
+	position: relative;
+}
+
+/* help icon beside label */
+.perm-help-toggle {
+	position: static;
+	transform: none;
+	right: auto;
+	top: auto;
+	cursor: pointer;
+	font-weight: bold;
+	color: #555;
+	user-select: none;
+	flex: 0 0 auto;
+}
+
+/* help below the checkbox row */
+.permissions-help {
+	display: none;
+	flex: 0 0 100%;
+	width: 100%;
+	margin-left: 22px;
+	margin-top: 4px;
+	padding: 6px 8px;
+	font-size: 12px;
+	color: #555;
+	background: #f7f7f7;
+	border-left: 3px solid #c0c0c0;
+	box-sizing: border-box;
+}
+
+/* Keep checkbox and label on the same line on narrow screens */
+@media (max-width: 900px) {
+	.user-system-permissions .perm-row > .perm-label,
+	.user-module-permissions .perm-row > label.checkbox {
+		flex: 1 1 auto;
+		min-width: 0;
+		word-break: break-word;
+	}
+}
+
+/* Dimension tree filter overflow in group/user permissions (#11) */
+.user-dimension-permissions .with-permissions-tree,
+.user-dimension-permissions .without-permissions-tree {
+	overflow: hidden;
+	box-sizing: border-box;
+}
+
+.user-dimension-permissions .with-permissions-tree .x-panel-tbar,
+.user-dimension-permissions .without-permissions-tree .x-panel-tbar {
+	overflow: hidden;
+	max-width: 100%;
+}
+
+.user-dimension-permissions .with-permissions-tree .x-panel-tbar .x-toolbar,
+.user-dimension-permissions .without-permissions-tree .x-panel-tbar .x-toolbar {
+	width: 100% !important;
+	max-width: 100%;
+	box-sizing: border-box;
+	padding-left: 2px;
+	padding-right: 2px;
+	overflow: hidden;
+}
+
+.user-dimension-permissions .with-permissions-tree .dimension-panel-textfilter,
+.user-dimension-permissions .without-permissions-tree .dimension-panel-textfilter {
+	width: 100% !important;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+

@@ -67,6 +67,7 @@
 	'recent activities feed' => 'Senaste aktiviteterna',
 	'recent project activities feed' => 'Senaste aktiviteterna i arbetsytan \'{0}\'',
 	'footer powered' => 'Portalen körs med <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Drivs av',
 	'by project' => 'Efter arbetsyta',
 	'enable javascript' => 'Var vänlig och aktivera JavaScript i din webbläsare för att använda denna funktion',
 	'contact title' => 'Titel',

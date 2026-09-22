@@ -6,7 +6,7 @@ $genid = gen_id();
 	
 	<div class="title">
 		<div class="titletext"><?php echo lang('modules and dimensions')?></div>
-		<button title="<?php echo lang('done apply changes')?>" style="float:left; margin: -10px 0 0 10px;" class="add-first-btn blue" onclick="og.save_system_modules_changes(this)">
+		<button title="<?php echo lang('done apply changes')?>" style="float:left; margin: -10px 0 0 10px;" class="btn btn-primary" onclick="og.save_system_modules_changes(this)">
 			<?php echo lang('done apply changes')?>
 		</button>
 		<div class="clear"></div>
@@ -316,9 +316,19 @@ $genid = gen_id();
 
 		$(".system-modules-container").parent().css('backgroundColor', 'white');
 
+		og.system_modules_popover_placement = function(tip, element) {
+			// Flip to the left when there is not enough space on the right.
+			// (Bootstrap 3.3.0 doesn't always behave as expected on very small widths.)
+			var rect = element.getBoundingClientRect();
+			var spaceRight = window.innerWidth - rect.right;
+			// 320px is an approximate popover width; if it doesn't fit, go left.
+			return spaceRight < 320 ? 'left' : 'right';
+		};
+
 		<?php foreach ($modules as $module) { ?>
 			$(".system-modules-section #<?php echo $module['id']?>").popover({
 				content: og.module_hints['<?php echo $module['id']?>'],
+				placement: og.system_modules_popover_placement,
 				delay: { show: "100", hide: "200" },
 				trigger: 'hover'
 			});
@@ -326,6 +336,7 @@ $genid = gen_id();
 		<?php foreach ($disabled_modules as $module) { ?>
 			$(".system-modules-section #<?php echo $module['id']?>").popover({
 				content: og.module_hints['<?php echo $module['id']?>'],
+				placement: og.system_modules_popover_placement,
 				delay: { show: "100", hide: "200" },
 				trigger: 'hover'
 			});
@@ -335,6 +346,7 @@ $genid = gen_id();
 		?>
 			$(".system-modules-section #<?php echo $module['id']?>").popover({
 				content: og.module_hints['<?php echo $module['id']?>'],
+				placement: og.system_modules_popover_placement,
 				delay: { show: "100", hide: "200" },
 				trigger: 'hover'
 			});
@@ -345,6 +357,7 @@ $genid = gen_id();
 		?>
 			$(".system-modules-section #dimensions-container #<?php echo $dim['id']?>").popover({
 				content: og.dimension_hints['<?php echo $dim['id']?>'],
+				placement: og.system_modules_popover_placement,
 				delay: { show: "100", hide: "200" },
 				trigger: 'hover'
 			});
@@ -354,6 +367,7 @@ $genid = gen_id();
 		?>
 			$(".system-modules-section #dimensions-container #<?php echo $dim['id']?>").popover({
 				content: og.dimension_hints['<?php echo $dim['id']?>'],
+				placement: og.system_modules_popover_placement,
 				delay: { show: "100", hide: "200" },
 				trigger: 'hover'
 			});

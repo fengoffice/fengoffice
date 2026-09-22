@@ -229,6 +229,7 @@
 
   	'report as spam' => 'Mark as spam',
 	'not spam' => 'Mark as not spam',
+	'trust sender' => 'Trust sender',
   
   	'mark as unread' => 'Mark as unread',
   	'activate' => 'Activate',
@@ -252,7 +253,7 @@
       'edit external tokens' => 'Manage external tokens',
       'token edit' => 'Save',
   		
-  	'type to select' => 'Type to select a {0}',
+  	'type to select' => 'Type to select {0}',
       
   ); // array
 

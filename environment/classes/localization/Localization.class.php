@@ -92,18 +92,52 @@ class Localization {
 	 * @return string
 	 */
 	function lang($name, $default = null) {
-		return $this->langs->get($name, $default);
+		if ($this->langs->has($name)) {
+			return $this->langs->get($name);
+		}
+
+		// Compatibility fallbacks only on the primary instance, to avoid recursive loads
+		if ($this === self::instance()) {
+			$compatible = getCompatibleLocalization();
+			if ($compatible !== false) {
+				$value = $compatible->lang($name, null);
+				if (!is_null($value)) {
+					return $value;
+				}
+			}
+		}
+
+		return $default;
 	} // lang
 	
 	/**
-	 * Returns true if key exists in langs array
+	 * Returns true if key exists in langs array, including compatible and default fallbacks
 	 *
 	 * @param string $name
 	 * @return boolean
 	 */
 	function lang_exists($name) {
 		if (is_null($name)) return false;
-		else return $this->langs->has($name);
+		if ($this->langs->has($name)) return true;
+
+		// Compatibility fallbacks only on the primary instance, to avoid recursive loads
+		if ($this !== self::instance()) {
+			return false;
+		}
+
+		$compatible = getCompatibleLocalization();
+		if ($compatible !== false && $compatible->lang_exists($name)) {
+			return true;
+		}
+
+		if (!Env::isDebugging()) {
+			$base = getFallbackDefaultLocalization();
+			if ($base->lang_exists($name)) return true;
+			if ($base->lang_exists(str_replace(" ", "_", $name))) return true;
+			if ($base->lang_exists(str_replace("_", " ", $name))) return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -119,6 +153,9 @@ class Localization {
 	 *   does not exists in lanuage dir
 	 */
 	function loadSettings($locale, $languages_dir) {
+		if ($this === self::instance() && $this->locale && $this->locale !== $locale) {
+			getCompatibleLocalization(true);
+		}
 
 		$this->setLocale($locale);
 		$this->setLanguageDirPath($languages_dir);
@@ -183,7 +220,7 @@ class Localization {
 			}
 			
 			// Plugins - Only PHP langs - include all installed plugins, no matter if they they have not been activated
-			$plugins = Plugins::instance()->getActive();
+			$plugins = Plugins::instance()->getInstalled();
 			foreach ( $plugins as $plugin ) {
 				/* @var $plugin Plugin */
 				$plg_dir = $plugin->getLanguagePath () . "/" . $this->getLocale ();

@@ -186,6 +186,7 @@
 	'success delete objects' => '{0} Objeto(s) eliminados satisfactoriamente',
 	'success tag objects' => '{0} Objeto(s) etiquetados satisfactoriamente',
 	'error delete objects' => 'No fue posible eliminar {0} objeto(s)',
+	'error empty trash can not all deleted' => 'No fue posible eliminar {0} objeto(s) de la papelera. Es posible que no tenga permisos para borrarlos permanentemente.',
 	'error tag objects' => 'No fue posible etiquetar {0} objeto(s)',
 	'success move objects' => '{0} Objeto(s) tranferidos satisfactoriamente',
 	'error move objects' => 'No fue posible transferir {0} objeto(s)',
@@ -733,6 +734,9 @@
 	'success assigning timeslots to task' => 'Los tiempos de trabajos fueron asignados a la tarea \'{0}\' exitosamente.',
 	'success removing task from object' => 'La tarea \'{0}\' se ha removido exitosamente.',
 
+	'cannot delete dimension member association, it has associated records' => 'No puede eliminar la asociación entre \'{0}\' y \'{1}\' porque hay {0} asociados a {1}.',
+	'cannot delete dimension member association' => 'No puede eliminar la asociación entre \'{0}\' y \'{1}\'.',
+
     'Remember my selection' => 'Recuerda mi selección',
     'accept'=>'Aceptar',
     'not classified here'=>'No clasificado aquí',
@@ -744,4 +748,19 @@
 	'confirm discard work timeslot' => '¿Seguro que deseas descartar la entrada de tiempo actual?',
 	'project and client are not associated with each other' => 'El proyecto y el cliente no están asociados entre sí',
 	'client is not assigned' => 'Cliente no asignado',
+
+	
+	'selected X and their related tasks must belong to the same client project' => 'Los {0} seleccionados y su tarea relacionada deben pertenecer al mismo cliente/proyecto.',
+	'remove task from X' => 'Remover tarea de {0}',
+	'do you want to remove the task of the selected X' => '¿Desea remover la tarea de los {0} seleccionados y continuar con la reclasificación?',
+
+	'selected time entries do not belong to the same client/project of the selected task' => 'Las entradas de tiempo seleccionadas no pertenecen al mismo cliente/proyecto de la tarea seleccionada.',
+	'reclassify timeslots in task members' => 'Reclasificar entradas de tiempo en el cliente/proyecto de la tarea',
+	'do you want to reclassify selected timeslots in task members and assign task' => '¿Desea reclasificar las entradas de tiempo seleccionadas en el cliente/proyecto de la tarea y asignar la tarea a ellos?',
+
+	'Your are re-classifying obj-type X into another project. This will remove the current task associated to them.' => 'Está re clasificando {0} en otro Proyecto. Esto eliminará la tarea actual asociada a ellos.',
+	'You have selected a task from a different member. This will re-classify the object under this new member.' => 'Usted ha seleccionado una tarea de un {1} diferente. Esto reclasificará el {0} bajo este nuevo {1}.',
+	'do you want to proceed' => '¿Desea continuar?',
+	'proceed' => 'Continuar',
+	'member dnx' => 'El miembro no existe',
 ); ?>

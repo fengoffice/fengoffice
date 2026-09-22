@@ -1,1 +1,7 @@
 php_flag engine off
+
+# CVE-2026-36669: stop the browser from MIME-sniffing stored files into a
+# different (renderable) type than the one we send them with.
+<IfModule mod_headers.c>
+	Header set X-Content-Type-Options "nosniff"
+</IfModule>

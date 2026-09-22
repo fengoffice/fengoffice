@@ -616,9 +616,7 @@ class TemplateTask extends BaseTemplateTask {
 		copy_additional_object_data($this, $new_task);
 
 		// Ensure that assigned user is subscribed
-		if ($new_task->getAssignedTo() instanceof Contact) {
-			$new_task->subscribeUser($new_task->getAssignedTo());
-		}
+		apply_default_task_subscribers_on_create($new_task);
 		
 		return $new_task;
 	}
@@ -678,9 +676,7 @@ class TemplateTask extends BaseTemplateTask {
 		copy_additional_object_data($project_task, $new_task, $options);
 		
 		// Ensure that assigned user is subscribed
-		if ($new_task->getAssignedTo() instanceof Contact) {
-			$new_task->subscribeUser($new_task->getAssignedTo());
-		}
+		apply_default_task_subscribers_on_create($new_task);
 		
 		return $new_task;
 	}
@@ -1079,7 +1075,7 @@ class TemplateTask extends BaseTemplateTask {
 		if(is_null($this->open_tasks)) {
 			$this->open_tasks = TemplateTasks::instance()->findAll(array(
           'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` = ' . DB::escape(EMPTY_DATETIME) . ' AND `trashed_on` = ' . DB::escape(EMPTY_DATETIME),
-          'order' => '`order`, `created_on`'
+          'order' => '`name`, `created_on`'
           )); // findAll
 		} // if
 
@@ -1097,7 +1093,7 @@ class TemplateTask extends BaseTemplateTask {
 		if(is_null($this->completed_tasks)) {
 			$this->completed_tasks = TemplateTasks::instance()->findAll(array(
           'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` > ' . DB::escape(EMPTY_DATETIME),
-          'order' => '`completed_on` DESC'
+          'order' => '`name`, `completed_on` DESC'
           )); // findAll
 		} // if
 

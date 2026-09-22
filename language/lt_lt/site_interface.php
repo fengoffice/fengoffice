@@ -34,6 +34,7 @@
 	'recent activities feed' => 'Naujausi įvykiai',
 	'recent project activities feed' => 'Naujausi įvykiai projekte "{0}"',
 	'footer powered' => 'Varikliukas: <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Varikliukas:',
 	'all documents' => 'Visi dokumentai',
 	'created by me' => 'Mano sukurti',
 	'by project' => 'Pagal projektus',

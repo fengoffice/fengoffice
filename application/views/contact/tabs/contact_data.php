@@ -39,18 +39,20 @@ if (!isset($id_prefix)) {
 			<div class="clear"></div>
 			<div id="<?php echo $genid ?>_contact_data_role" class="dataBlock" style="display:none;"></div>
 			<div>
-				<div id="<?php echo $genid ?>existing_company" class="dataBlock">
-					<?php echo label_tag(lang('company'), $genid . 'profileFormCompany') ?>
-					<div style="display: flex; flex-direction: column; align-items: flex-start;">
-						<?php echo select_box('contact[company_id]', array(), array('id' => $genid . 'profileFormCompany', "class" => "og-edit-contact-select-company", 'onchange' => 'og.companySelectedIndexChanged(\'' . $genid . '\')')) ?>
-						<span class="widget-body loading" id="<?php echo $genid ?>profileFormCompany-loading" style="heigth:20px;background-color:transparent;border:0px none;display:none;"></span>
-						<?php if ($renderAddCompany) { ?>
-							<div style="margin: 10px 0 0;">
-								<a href="#" class="coViewAction ico-add" title="<?php echo lang('add a new company') ?>" onclick="og.addNewCompany('<?php echo $genid ?>')"><?php echo lang('add company') . '...' ?></a>
-							</div>
-						<?php } ?>
+				
+			<?php if (use_companies_in_contacts()) { ?>
+
+				<div class="dataBlock">
+					<div><?php echo label_tag(lang('company')) ?></div>
+					<div style="float:left;">
+						<span id="<?php echo $genid ?>_company_name"><?php echo $contact->getCompany() ? $contact->getCompany()->getName() : lang('none') ?></span>
+						<input type="hidden" id="<?php echo $genid ?>_company_id" name="contact[company_id]" value="<?php echo $contact->getCompanyId() ?>" />
+						<a style="margin-left: 10px;" class="link-ico ico-edit" href="#" onclick="og.selectContactCompany(this)"><?php echo lang('edit') ?></a>
 					</div>
+					<div class="clear"></div>
 				</div>
+			
+			<?php } ?>
 
 					<div class="dataBlock">
 						<div><?php echo label_tag(lang('email address')) ?></div>
@@ -77,54 +79,12 @@ if (!isset($id_prefix)) {
 							<!-- <div style="float:left;" id="<?php echo $genid . $id_prefix ?>_emails_container"></div> -->
 							<div class="clear"></div>
 							<div class="addNewLineButton" style="margin: 10px 0 0;">
-								<a href="#" onclick="og.addNewEmailInput('<?php echo $genid . $id_prefix ?>_emails_container', undefined, '<?= $emailType ?>')" class="coViewAction ico-add" data-defaultBilling="<?php echo Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new email address') ?></a>
+								<a href="#" tabindex="-1" onclick="og.addNewEmailInput('<?php echo $genid . $id_prefix ?>_emails_container', undefined, '<?= $emailType ?>')" class="btn btn-primary-50 btn-sm" data-defaultBilling="<?php echo Plugins::instance()->isActivePlugin('income'); ?>"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new email address') ?></a>
 							</div>
 						</div>
 					</div>
 				
 
-		<div id="<?php echo $genid ?>new_company" style="display:none; padding:6px; margin-top:6px;margin-bottom:6px; background-color:#EEE">
-			<div style="float:right;"><a href="#" title="<?php echo lang('cancel') ?>" onclick="og.addNewCompany('<?php echo $genid ?>')"><?php echo lang('cancel') ?></a></div>
-
-			<div class="dataBlock">
-				<div><?php echo label_tag(lang('new company name')) ?></div>
-				<div style="float:left;"><?php echo text_field('company[first_name]', '', array('id' => $genid . 'profileFormNewCompanyName', 'onchange' => 'og.checkNewCompanyName("' . $genid . '")')) ?></div>
-				<div class="clear"></div>
-			</div>
-
-			<div class="dataBlock">
-				<div><?php echo label_tag(lang('email address'), $genid . 'clientFormEmail') ?></div>
-				<div style="float:left;"><?php echo text_field('company[email]', '', array('id' => $genid . 'clientFormAssistantNumber')) ?></div>
-				<div class="clear"></div>
-			</div>
-
-			<div class="dataBlock">
-				<div><?php echo label_tag(lang('phone')) ?></div>
-				<div style="float:left;" id="<?php echo $genid ?>_comp_phones_container"></div>
-				<div class="clear"></div>
-				<div style="margin:5px 0 10px 200px;">
-					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_comp_phones_container', 'company', '<?= $PhoneTypeActive ?>')" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
-				</div>
-			</div>
-
-			<div class="dataBlock">
-				<div><?php echo label_tag(lang('address')) ?></div>
-				<div style="float:left;" id="<?php echo $genid ?>_comp_addresses_container"></div>
-				<div class="clear"></div>
-				<div style="margin:5px 0 10px 200px;">
-					<a href="#" onclick="og.addNewAddressInput('<?php echo $genid ?>_comp_addresses_container', 'company')" class="coViewAction ico-add"><?php echo lang('add new address') ?></a>
-				</div>
-			</div>
-
-			<div class="dataBlock">
-				<div><?php echo label_tag(lang('webpage')) ?></div>
-				<div style="float:left;" id="<?php echo $genid ?>_comp_webpages_container"></div>
-				<div class="clear"></div>
-				<div style="margin:5px 0 10px 200px;">
-					<a href="#" onclick="og.addNewWebpageInput('<?php echo $genid ?>_comp_webpages_container', 'company')" class="coViewAction ico-add"><?php echo lang('add new webpage') ?></a>
-				</div>
-			</div>
-		</div>
 
 
 		</div>
@@ -151,7 +111,7 @@ if (!isset($id_prefix)) {
 						<div id="<?php echo $genid . $id_prefix ?>_addresses_container"></div>
 					</div>
 					<div class="addNewLineButton" style="margin: 10px 0 0;">
-						<a href="#" onclick="og.addNewAddressInput('<?php echo $genid . $id_prefix ?>_addresses_container')" class="coViewAction ico-add" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><?php echo lang('add new address') ?></a>
+						<a href="#" onclick="og.addNewAddressInput('<?php echo $genid . $id_prefix ?>_addresses_container')" class="btn btn-primary-50 btn-sm" data-defaultBilling="<?= Plugins::instance()->isActivePlugin('income'); ?>"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new address') ?></a>
 					</div>
 				</div>
 				<!-- <div style="float:left;width:530px;" id="<?php echo $genid . $id_prefix ?>_addresses_container"></div> -->
@@ -165,7 +125,7 @@ if (!isset($id_prefix)) {
 				<div id="<?php echo $genid ?>_phones_container"></div>
 				<!-- <div style="float:left;" id="<?php echo $genid ?>_phones_container"></div> -->
 				<div style="margin: 10px 0 0;">
-					<a href="#" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_phones_container', undefined, '<?= $PhoneTypeActive ?>')" class="coViewAction ico-add"><?php echo lang('add new phone number') ?></a>
+					<a href="#" tabindex="-1" onclick="og.addNewTelephoneInput('<?php echo $genid ?>_phones_container', undefined, '<?= $PhoneTypeActive ?>')" class="btn btn-primary-50 btn-sm"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add new phone number') ?></a>
 				</div>
 			</div>
 			<div class="clear"></div>
@@ -236,8 +196,6 @@ if (!isset($id_prefix)) {
 			og.income.onAppendDefaultBilling('contactEmail', 'contact[isMainBilling]', 'mainEmailWrapperContact', 'email', '<?php echo array_var($contact_data, 'default_billing_email', 0); ?>', true);
 		<?php endif; ?>
 
-		og.load_company_combo("<?php echo $genid ?>profileFormCompany", '<?php echo (isset($_POST['widget_company']) ? $_POST['widget_company'] : array_var($contact_data, 'company_id', '0')) ?>');
-
 		og.telephone_types = Ext.util.JSON.decode('<?php echo json_encode($all_telephone_types) ?>');
 
 		var phoneType = '<?= $PhoneTypeActive ?>';
@@ -261,5 +219,21 @@ if (!isset($id_prefix)) {
 		<?php if ($object->isNew()) : ?>
 			if (og.income) og.income.activeDefaultRadioButton('<?php echo $genid ?>contact_data');
 		<?php endif; ?>
+
+		og.selectContactCompany = function(before) {
+			og.ObjectPicker.show(function(objs) {
+				if (objs && objs.length > 0) {
+					var obj = objs[0].data;
+					if (obj) {
+						$("#<?php echo $genid ?>_company_id").val(obj.object_id);
+						$("#<?php echo $genid ?>_company_name").html(obj.name);
+					}
+				}
+			}, before, {
+				types: ['contact'],
+				selected_type: 'contact',
+				extra_list_params: {is_company: 1}
+			});
+		};
 	});
 </script>

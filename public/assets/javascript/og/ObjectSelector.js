@@ -604,21 +604,26 @@ Ext.extend(og.ObjectSelector, Ext.Window, {
 		this.grid_selected.load();
 	},
 	
-	doSaveSingleSelection: function() {
+	doSaveSingleSelection: function(onSaved) {
 		var selector = this;
-		
+
 		var params = {};
     	params.genid = genid;
     	params.ids_to_add = Ext.util.JSON.encode(selector.ids_to_add);
     	params.ids_to_remove = Ext.util.JSON.encode(selector.ids_to_remove);
-    	
+
     	selector.ids_to_add = {};
     	selector.ids_to_remove = {};
-    	
-		og.openLink(og.getUrl('object', 'save_selected_objects', params), {
-			hideLoading: true,
-			preventPanelLoad: true
-		});
+
+    	var linkOptions = {
+    		hideLoading: true,
+    		preventPanelLoad: true
+    	};
+    	if (typeof onSaved === 'function') {
+    		linkOptions.onSuccess = onSaved;
+    	}
+
+		og.openLink(og.getUrl('object', 'save_selected_objects', params), linkOptions);
 	},
 	saveSingleSelection: function() {
 		var selector = this;
@@ -705,9 +710,7 @@ og.ObjectSelector.show = function(callback, scope, config, object_id, object_id_
 		
 		// after save remove temp vars that contains the original selection
 		this.dialog.on('save_and_close', function(){
-			
-			this.doSaveSingleSelection();
-			
+			this.doSaveSingleSelection(config.afterSave || null);
 			og.openLink(og.getUrl('object', 'clean_temp_object_selector_vars', {genid: genid}));
 		});
 	}

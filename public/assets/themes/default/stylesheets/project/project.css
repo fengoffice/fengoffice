@@ -8,6 +8,11 @@
 .objectComments .commentHead {
   color: #333;
   font-size: 10px;
+  padding-bottom: 10px;
+}
+
+.objectComments .commentHead td {
+  vertical-align: middle;
 }
 
 .objectComments .commentHead a {
@@ -29,20 +34,32 @@
 }
 
 .postComment .commentUserAvatar {
-	float: left;
-	margin: 1px 10px 1px 7px;
+  float: none;
+  margin: 1px 0 0 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #e9ecef;
+  flex: 0 0 auto;
 }
 .postComment .formAddCommentText {
-	float:left;
+  float: none;
+  flex: 1 1 320px;
+  min-width: 0;
 }
 .postComment .formAddCommentText textarea {
 	height: 50px;
 	width: 100%;
 	overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .postComment .button-container {
 	margin-left: 15px;
-	float:left;
+	float: none;
+  flex: 0 0 auto;
+  margin-left: 0;
 }
 .postComment .button-container button {
 	margin-top: 0;

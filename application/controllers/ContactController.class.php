@@ -297,6 +297,8 @@ class ContactController extends ApplicationController
 		$options = $category->getContactOptions(false);
 		$categories = ContactConfigCategories::getAll(false);
 
+		Hook::fire("validate_available_user_config_options", null, $options);
+
 		tpl_assign('category', $category);
 		tpl_assign('options', $options);
 		tpl_assign('config_categories', $categories);
@@ -494,21 +496,32 @@ class ContactController extends ApplicationController
 
 		$extra_conditions = "";
 
-		if (!user_config_option("viewCompaniesChecked")) {
-			$extra_conditions = ' AND `is_company` = 0 ';
+		$viewContacts = user_config_option("viewContactsChecked");
+		$viewUsers = user_config_option("viewUsersChecked");
+		$viewCompanies = user_config_option("viewCompaniesChecked");
+
+		// If all are unchecked, show all
+		if (!$viewContacts && !$viewUsers && !$viewCompanies) {
+			$viewContacts = $viewUsers = $viewCompanies = true;
 		}
-		if (!user_config_option("viewContactsChecked")) {
-			if (user_config_option("viewCompaniesChecked")) {
-				$extra_conditions = ' AND `is_company` = 1 ';
-				if (user_config_option("viewUsersChecked")) {
-					$extra_conditions = ' AND (`is_company` = 1  OR `user_type` != 0) ';
-				}
-			} else {
-				$extra_conditions .= ' AND `user_type` != 0  ';
+
+		// Build conditions based on what should be shown
+		if (!($viewContacts && $viewUsers && $viewCompanies)) {
+			$type_conditions = array();
+
+			if ($viewContacts) {
+				$type_conditions[] = '(`is_company` = 0 AND `user_type` = 0)';
 			}
-		}
-		if (!user_config_option("viewUsersChecked")) {
-			$extra_conditions .= ' AND `user_type` < 1 ';
+			if ($viewUsers) {
+				$type_conditions[] = '(`user_type` > 0)';
+			}
+			if ($viewCompanies) {
+				$type_conditions[] = '(`is_company` = 1)';
+			}
+
+			if (!empty($type_conditions)) {
+				$extra_conditions = ' AND (' . implode(' OR ', $type_conditions) . ') ';
+			}
 		}
 		if (!user_config_option("show_inactive_users_in_list")) {
 			$extra_conditions .= " AND disabled = 0 ";
@@ -793,8 +806,7 @@ class ContactController extends ApplicationController
 						"mobilePhone" => '',
 						"postalAddress" => $p_address ? $c->getFullAddress($p_address) : '',
 						"memPath" => json_encode($c->getMembersIdsToDisplayPath()),
-						"contacts" => $c->getContactsByCompany(),
-						"users" => $c->getUsersByCompany(),
+						"userType" => $c->getUserType(),
 						"birthday" => '',
 						"comments" => clean($c->getCommentsField()),
 					);
@@ -973,8 +985,7 @@ class ContactController extends ApplicationController
 		} else {
 			$notAllowedMember = '';
 			if (!Contact::canAdd(logged_user(), active_context(), $notAllowedMember)) {
-				if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-				else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the contact'))) : flash_error(lang('no context permissions to add', lang("contacts"), $notAllowedMember));
+				flash_error(get_can_add_error_message($notAllowedMember, lang('contacts')));
 				ajx_current("empty");
 				return;
 			}
@@ -1006,6 +1017,13 @@ class ContactController extends ApplicationController
 
 		if (!array_var($contact_data, 'company_id')) {
 			$contact_data['company_id'] = get_id('company_id');
+		}
+
+		if ($user_get || $create_user) {
+    		$owner = Contacts::getOwnerCompany();
+    		if ($owner instanceof Contact) {
+        		$contact_data['company_id'] = $owner->getId();
+    		}
 		}
 
 		$tz_id = 0;
@@ -1100,6 +1118,23 @@ class ContactController extends ApplicationController
 
 				Contacts::validateMail($contact_data);
 
+				$user_post_data = array_var($contact_data, 'user');
+				if (is_array($user_post_data) && array_var($user_post_data, 'create-user')
+					&& (array_var($user_post_data, 'create-password') || !array_var($_POST, 'notify-user'))) {
+					$password = array_var($user_post_data, 'password');
+					$password_a = array_var($user_post_data, 'password_a');
+					if (trim($password) == '') {
+						throw new Exception(lang('password value required'));
+					}
+					if ($password != $password_a) {
+						throw new Exception(lang('passwords dont match'));
+					}
+					$password_errors = ContactPasswords::validatePasswordRequirements($password, null, false);
+					if (count($password_errors)) {
+						throw new Exception($password_errors[0]);
+					}
+				}
+
 				//when creating user from contact remove classification from contact first
 				if (array_var($_REQUEST, 'user_from_contact_id') > 0) {
 					$members_to_remove = array_flat(DB::executeAll("SELECT m.id FROM " . TABLE_PREFIX . "members m INNER JOIN " . TABLE_PREFIX . "dimensions d ON d.id=m.dimension_id WHERE d.defines_permissions=1"));
@@ -1185,6 +1220,10 @@ class ContactController extends ApplicationController
 					set_user_config_option('autodetect_time_zone', $autotimezone, $contact->getId());
 				}
 
+				if (array_var($_REQUEST, 'from_quick_add')) {
+					$_SESSION['dont_check_required_cps'] = true;
+				}
+
 				//link it!
 				$object_controller = new ObjectController();
 
@@ -1207,6 +1246,10 @@ class ContactController extends ApplicationController
 				} else {
 					$cp_data = array_var($contact_data, 'object_custom_properties');
 					$object_controller->add_custom_properties($contact, $cp_data);
+				}
+
+				if (isset($_SESSION['dont_check_required_cps'])) {
+					unset($_SESSION['dont_check_required_cps']);
 				}
 
 				foreach ($im_types as $im_type) {
@@ -1272,7 +1315,6 @@ class ContactController extends ApplicationController
 					if (array_var($contact_data, 'isNewCompany') == 'true' && is_array(array_var($_POST, 'company'))) {
 						ApplicationLogs::createLog($company, ApplicationLogs::ACTION_ADD);
 					}
-					ApplicationLogs::createLog($contact, ApplicationLogs::ACTION_ADD);
 
 					if (isset($contact_data['new_contact_from_mail_div_id'])) {
 						$combo_val = trim($contact->getFirstName() . ' ' . $contact->getSurname() . ' <' . $contact->getEmailAddress('personal') . '>');
@@ -1288,6 +1330,9 @@ class ContactController extends ApplicationController
 				Hook::fire('after_add_contact', $contact, $null);
 
 				DB::commit();
+
+				// create log for new contact added
+				ApplicationLogs::createLog($contact, ApplicationLogs::ACTION_ADD);
 
 				// save user permissions
 				if ($user) {
@@ -1309,6 +1354,11 @@ class ContactController extends ApplicationController
 							"contact_id" => $contact->getId()
 						)
 					);
+
+					if (array_var($_REQUEST, 'from_quick_add')) {
+						ajx_current("empty");
+						return;
+					}
 
 					flash_success(lang('success add contact', $contact->getObjectName()));
 					ajx_current("back");
@@ -1763,17 +1813,33 @@ class ContactController extends ApplicationController
 
 	private function cut_max_user_permissions(Contact $user)
 	{
-		$admin_pg = PermissionGroups::instance()->findOne(array('conditions' => "`name`='Super Administrator'"));
-
-		$all_roles_max_permissions = RoleObjectTypePermissions::getAllRoleObjectTypePermissionsInfo();
-
-		$admin_perms = $all_roles_max_permissions[$admin_pg->getId()];
 		$all_object_types = array();
-		foreach ($admin_perms as &$aperm) {
-			$all_object_types[] = $aperm['object_type_id'];
+		$object_type_rows = DB::executeAll("
+			SELECT id
+			FROM ".TABLE_PREFIX."object_types
+			WHERE type IN ('content_object', 'located')
+				AND name <> 'template_task'
+				AND name <> 'template_milestone'
+				AND name <> 'template'
+				AND name <> 'comment'
+				AND name <> 'file revision'
+		");
+		if (is_array($object_type_rows)) {
+			foreach ($object_type_rows as $row) {
+				$all_object_types[] = (int)$row['id'];
+			}
 		}
 
-		$max_permissions = array_var($all_roles_max_permissions, $user->getUserType());
+		$max_permissions = array();
+		$max_role_permissions = MaxRoleObjectTypePermissions::instance()->findAll(array('conditions' => "role_id = '".$user->getUserType()."'"));
+		if (is_array($max_role_permissions)) {
+			foreach ($max_role_permissions as $max_perm) {
+				$max_permissions[(int)$max_perm->getObjectTypeId()] = array(
+					'can_delete' => $max_perm->getCanDelete() ? 1 : 0,
+					'can_write' => $max_perm->getCanWrite() ? 1 : 0,
+				);
+			}
+		}
 		$pg_id = $user->getPermissionGroupId();
 
 		foreach ($all_object_types as $ot) {
@@ -1781,7 +1847,6 @@ class ContactController extends ApplicationController
 			$max = array_var($max_permissions, $ot);
 
 			if (!$max) {
-				// cannot read -> delete in contact_member_permissions
 				$sql = "DELETE FROM " . TABLE_PREFIX . "contact_member_permissions WHERE permission_group_id=$pg_id AND object_type_id=$ot";
 				DB::execute($sql);
 			} else {
@@ -2250,8 +2315,13 @@ class ContactController extends ApplicationController
 							$fname = DB::escape(array_var($contact_data, "first_name"));
 							$lname = DB::escape(array_var($contact_data, "surname"));
 							$email_cond = array_var($contact_data, "email") != '' ? " OR email_address = " . DB::escape(array_var($contact_data, "email")) : "";
+							// Parenthesize the name/email OR and restrict to non-company contacts.
+							// Without this, SQL precedence makes the condition
+							// "(first_name=X AND surname=Y) OR email_address=Z", so an email collision
+							// could match an unrelated record (including a company such as the owner company)
+							// and the import would overwrite its name. See ContactController import bug.
 							$contact = Contacts::instance()->findOne(array(
-								"conditions" => "first_name = " . $fname . " AND surname = " . $lname . " $email_cond",
+								"conditions" => "(first_name = " . $fname . " AND surname = " . $lname . " $email_cond) AND is_company = 0",
 								'join' => array(
 									'table' => ContactEmails::instance()->getTableName(),
 									'jt_field' => 'contact_id',
@@ -2268,6 +2338,7 @@ class ContactController extends ApplicationController
 								$can_import = $contact->canEdit(logged_user());
 							}
 							if ($can_import) {
+								$company_member = null;
 								$comp_name = DB::escape(array_var($contact_data, "company_id"));
 								if (trim(strtoupper($comp_name)) == 'NULL') {
 									$comp_name = '';
@@ -2280,7 +2351,19 @@ class ContactController extends ApplicationController
 									$contact_data['import_status'] .= " " . lang("company") . " $comp_name";
 									// Find client member
 									$client_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="customer"'))->getId();
-									$client_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $client_ot_id . ' AND `name`=' . $comp_name));
+									$company_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $client_ot_id . ' AND `name`=' . $comp_name));
+
+									$supplier_plugin_active = Plugins::instance()->isActivePlugin('suppliers');
+									if(!$company_member instanceof Member && $supplier_plugin_active) {
+										$supplier_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="supplier"'))->getId();
+										$company_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $supplier_ot_id . ' AND `name`=' . $comp_name));	
+									}
+									$other_organizations_active = Plugins::instance()->isActivePlugin('other_organizations_dimension');
+									if (!$company_member instanceof Member && $other_organizations_active) {
+										$other_organization_ot_id = ObjectTypes::instance()->findOne(array('conditions' => '`name`="organization"'))->getId();
+										$company_member = Members::instance()->findOne(array('conditions' => '`object_type_id`=' . $other_organization_ot_id . ' AND `name`=' . $comp_name));
+
+									}
 								} else {
 									$contact_data['company_id'] = 0;
 								}
@@ -2288,11 +2371,6 @@ class ContactController extends ApplicationController
 								$contact_data['name'] = $contact_data['first_name'] . " " . $contact_data['surname'];
 								$contact->setFromAttributes($contact_data);
 								$contact->save();
-
-								if ($client_member instanceof Member) {
-									$client_member_id = array($client_member->getId());
-									$object_controller->add_to_members($contact, $client_member_id);
-								}
 
 								//Home form
 								if ($contact_data['h_address'] != "" || $contact_data['h_city'] != "" || $contact_data['h_state'] != "" || $contact_data['h_country'] != "" || $contact_data['h_zipcode'] != "") {
@@ -2407,19 +2485,31 @@ class ContactController extends ApplicationController
 									}
 								}
 
-								if (count(active_context_members(false)) > 0) {
-									$object_controller->add_to_members($contact, active_context_members(false));
+								// Re-save to update searchable_objects with emails and phones (same as add())
+								$contact->save();
+
+								// Same as a normal create: classify when possible, otherwise still fill sharing
+								// so users with root/unclassified permissions can see imported contacts.
+								$member_ids_to_add = active_context_members(false);
+								if ($company_member instanceof Member) {
+									$member_ids_to_add[] = $company_member->getId();
+								}
+								$member_ids_to_add = array_values(array_unique(array_filter($member_ids_to_add)));
+								if (count($member_ids_to_add) > 0) {
+									$object_controller->add_to_members($contact, $member_ids_to_add);
+								} else {
+									$contact->addToSharingTable();
 								}
 
 
 								// custom properties
 								$custom_properties_info = array_var($_POST, 'select_custom_properties');
 								$custom_properties_checked = array_var($_POST, 'check_custom_properties');
-								if (count($custom_properties_info) > 0) {
+								if (!empty($custom_properties_info) && is_array($custom_properties_info)) {
 									$_POST['object_custom_properties'] = array();
 									foreach ($custom_properties_info as $cp_id => $col_index) {
 
-										if (array_var($custom_properties_checked, $cp_id) == 'checked') {
+										if (!empty($custom_properties_checked) && array_var($custom_properties_checked, $cp_id) == 'checked') {
 											$_POST['object_custom_properties'][$cp_id] = str_replace("'", "\'", array_var($registers[$i], $col_index));
 										}
 									}
@@ -2477,8 +2567,13 @@ class ContactController extends ApplicationController
 									}
 								}
 
-								if (count(active_context_members(false)) > 0) {
-									$object_controller->add_to_members($company, active_context_members(false));
+								// Same as a normal create: classify when possible, otherwise still fill sharing
+								// so users with root/unclassified permissions can see imported companies.
+								$member_ids_to_add = active_context_members(false);
+								if (count($member_ids_to_add) > 0) {
+									$object_controller->add_to_members($company, $member_ids_to_add);
+								} else {
+									$company->addToSharingTable();
 								}
 
 								// custom properties
@@ -2873,6 +2968,7 @@ class ContactController extends ApplicationController
 				$result = $this->read_vcard_file($filename);
 				unlink($filename);
 				$import_result = array('import_ok' => array(), 'import_fail' => array());
+				$object_controller = new ObjectController();
 
 				foreach ($result as $contact_data) {
 					try {
@@ -2967,8 +3063,13 @@ class ContactController extends ApplicationController
 							if ($contact_data['email2'] != "") $contact->addEmail($contact_data['email2'], 'personal');
 							if ($contact_data['email3'] != "") $contact->addEmail($contact_data['email3'], 'personal');
 
-							if (count(active_context_members(false)) > 0) {
-								$object_controller->add_to_members($contact, active_context_members(false));
+							// Same as a normal create: classify when possible, otherwise still fill sharing
+							// so users with root/unclassified permissions can see imported contacts.
+							$member_ids_to_add = active_context_members(false);
+							if (count($member_ids_to_add) > 0) {
+								$object_controller->add_to_members($contact, $member_ids_to_add);
+							} else {
+								$contact->addToSharingTable();
 							}
 
 							ApplicationLogs::createLog($contact, null, $log_action);
@@ -3543,6 +3644,17 @@ class ContactController extends ApplicationController
 			return;
 		} // if
 
+		// Never convert a person/user into a company via this form
+		if ($company->isUser() || !$company->isCompany()) {
+			if (is_array(array_var($_POST, 'company'))) {
+				flash_error(lang('invalid request'));
+				ajx_current("empty");
+				return;
+			}
+			$this->redirectTo('contact', 'edit', array('id' => $company->getId()));
+			return;
+		}
+
 		$company_data = array_var($_POST, 'company');
 
 		if (!is_array($company_data)) {
@@ -3606,6 +3718,11 @@ class ContactController extends ApplicationController
 			}
 			try {
 				$company_data['contact_type'] = 'company';
+				// A company has no surname; the edit form never submits one, so clear any
+				// stale value (e.g. left over from a contact CSV import that overwrote this
+				// company) so the object name is rebuilt from first_name only.
+				$company_data['surname'] = '';
+				$company_data['is_company'] = 1;
 				Contacts::validateMail($company_data, $_REQUEST['id']);
 				DB::beginWork();
 
@@ -3699,8 +3816,7 @@ class ContactController extends ApplicationController
 		}
 		$notAllowedMember = '';
 		if (!Contact::canAdd(logged_user(), active_context(), $notAllowedMember)) {
-			if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-			else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the contact'))) : flash_error(lang('no context permissions to add', lang("contacts"), $notAllowedMember));
+			flash_error(get_can_add_error_message($notAllowedMember, lang('contacts')));
 			ajx_current("empty");
 			return;
 		} // if
@@ -4077,7 +4193,7 @@ class ContactController extends ApplicationController
 				$filters = ContactConfigOptionValues::getFilterActivityMember($filters_default->getId(), $members);
 				// update cache if available
 				if (GlobalCache::isAvailable()) {
-					GlobalCache::instance()->delete('user_config_option_' . logged_user()->getId() . '_' . $filters_default->getName() . "_" . $members);
+					GlobalCache::delete('user_config_option_' . logged_user()->getId() . '_' . $filters_default->getName() . "_" . $members);
 				}
 
 				if (!$filters) {
@@ -4095,52 +4211,6 @@ class ContactController extends ApplicationController
 			}
 			ajx_current("reload");
 		}
-	}
-
-
-	function get_companies_json()
-	{
-		$data = array();
-
-		$check_permissions = array_var($_REQUEST, 'check_p');
-		$allow_none = array_var($_REQUEST, 'allow_none', true);
-
-		if (!$check_permissions) {
-			$comp_rows = DB::executeAll("SELECT c.object_id, c.first_name FROM " . TABLE_PREFIX . "contacts c INNER JOIN " . TABLE_PREFIX . "objects o ON o.id=c.object_id
-			WHERE c.is_company = 1 AND o.trashed_by_id = 0 AND o.archived_by_id = 0 ORDER BY c.first_name ASC");
-		} else {
-			$companies = Contacts::getVisibleCompanies(logged_user(), "`id` <> " . owner_company()->getId());
-			if (logged_user()->isMemberOfOwnerCompany() || owner_company()->canAddUser(logged_user())) {
-				// add the owner company
-				$companies = array_merge(array(owner_company()), $companies);
-			}
-		}
-		if ($allow_none) {
-			$data[] = array('id' => 0, 'name' => lang('none'));
-		}
-		if (isset($comp_rows)) {
-			foreach ($comp_rows as $row) {
-				$data[] = array('id' => $row['object_id'], 'name' => $row['first_name']);
-			}
-		} else if (isset($companies)) {
-			foreach ($companies as $company) {
-				$data[] = array('id' => $company->getId(), 'name' => $company->getObjectName());
-			}
-		}
-
-		$this->setAutoRender(false);
-		echo json_encode($data);
-		ajx_current("empty");
-	}
-
-
-	function reload_company_users()
-	{
-
-		$company = Contacts::instance()->findById(array_var($_REQUEST, 'company'));
-		tpl_assign('users', $company->getUsersByCompany());
-
-		$this->setTemplate(get_template_path('list_users', 'administration'));
 	}
 
 
@@ -4254,6 +4324,10 @@ class ContactController extends ApplicationController
 			}
 			$name_condition .= ") ";
 		}
+
+		// needed for get_contact_type_mask_sql_condition(), used by the contact_type_mask filter
+		Env::useHelper('custom_properties');
+
 		$permissions_checked = false;
 
 		// by default list only contacts
@@ -4263,6 +4337,12 @@ class ContactController extends ApplicationController
 		$unclassified_extra_conditions = "";
 		if ($filters = array_var($_REQUEST, 'filters')) {
 			$filters = json_decode($filters, true);
+			
+			if (isset($filters['only_companies']) && $filters['only_companies'] == 1) {
+				// remove uncompatible filters
+				if (isset($filters['include_companies'])) unset($filters['include_companies']);
+			}
+			
 			foreach ($filters as $col => $val) {
 				if (Contacts::instance()->columnExists($col)) {
 					$extra_conditions .= " AND " . DB::escapeField($col) . " = " . DB::escape($val);
@@ -4287,6 +4367,14 @@ class ContactController extends ApplicationController
 						}
 					} else if ($col == 'include_companies') {
 						if ($val == 1) {
+							$type_condition = "";
+						}
+					} else if ($col == 'contact_type_mask') {
+						// any combination of companies, individual contacts and users
+						$mask_condition = get_contact_type_mask_sql_condition((int) $val);
+						if ($mask_condition != '') {
+							$type_condition = " AND " . $mask_condition;
+						} else {
 							$type_condition = "";
 						}
 					} else if ($col == 'member_ids') {
@@ -4382,6 +4470,7 @@ class ContactController extends ApplicationController
 
 
 			$is_user = array_var($filters, 'is_user');
+			$count_unclassifil = 0;
 			if (!$is_user) {
 				$count_unclassifil = Contacts::instance()->count($conditions_unclassified);
 				$limit = 30;
@@ -4389,7 +4478,18 @@ class ContactController extends ApplicationController
 				$query_params_unclassified['limit'] = $limit;
 				$contacts_unclassified = Contacts::instance()->findAll($query_params_unclassified);
 				if ($count_unclassifil > 0) {
-					$info[] = array('id' => -1, 'name' => "<div class='task-group-name'>" . lang('not classified here') . "</div>");
+					if (isset($mem_ids) && count($mem_ids) > 0) {
+						$mems = Members::instance()->findAll(array('conditions' => 'id IN (' . implode(',', $mem_ids) . ')'));
+						$mem_names = array();
+						foreach ($mems as $m) {
+							$mem_names[] = $m->getName();
+						}
+						$item_group_name = lang('not classified in x', implode(', ', $mem_names));
+					} else {
+						$item_group_name = lang('not classified here');
+					}
+
+					$info[] = array('id' => -4, 'name' => "<div class='task-group-name'>" . $item_group_name . "</div>");
 				}
 				foreach ($contacts_unclassified as $c) {
 					$row = array(
@@ -4424,7 +4524,7 @@ class ContactController extends ApplicationController
 				}
 			}
 
-			if ($name_filter == "" && $count >= $limit) {
+			if ($name_filter == "" && ($count >= $limit || $count_unclassifil >= $limit)) {
 				//$info[] = array('id' => -1, 'name' => lang('write the first letters of the name or surname of the person to select'));
 				$info[] = array('id' => -2, 'name' => '<a href="#" class="db-ico ico-expand" style="color:blue;text-decoration:underline;padding-left:20px;">' . lang('show more') . '</a>');
 			}
@@ -4471,11 +4571,39 @@ class ContactController extends ApplicationController
 			)";
 		}*/
 
+		$filter = preg_replace('/\s+/', ' ', trim($filter));
+		if ($filter === '') {
+			return $addresses;
+		}
+
+		$match_parts = array(
+			"ce.email_address LIKE '%$filter%'",
+			"c.first_name LIKE '$filter%'",
+			"c.surname LIKE '$filter%'",
+			"c.display_name LIKE '%$filter%'",
+			"CONCAT(TRIM(c.first_name), ' ', TRIM(c.surname)) LIKE '%$filter%'",
+			"CONCAT(TRIM(c.surname), ' ', TRIM(c.first_name)) LIKE '%$filter%'",
+		);
+
+		$tokens = explode(' ', $filter);
+		if (count($tokens) > 1) {
+			$token_ands = array();
+			foreach ($tokens as $token) {
+				if ($token === '') continue;
+				$token_ands[] = "(ce.email_address LIKE '%$token%' OR c.first_name LIKE '%$token%' OR c.surname LIKE '%$token%' OR c.display_name LIKE '%$token%')";
+			}
+			if (!empty($token_ands)) {
+				$match_parts[] = '(' . implode(' AND ', $token_ands) . ')';
+			}
+		}
+
+		$where = implode(' OR ', $match_parts);
+
 		$contacts_addresses = DB::executeAll("
 			SELECT c.object_id, c.first_name , c.surname , ce.email_address
 			FROM `" . TABLE_PREFIX . "contacts` c
 			INNER JOIN `" . TABLE_PREFIX . "contact_emails` ce ON c.object_id = ce.contact_id
-				WHERE  ((ce.email_address like '%$filter%') OR (c.first_name like '$filter%')  OR (c.surname like '$filter%'))
+				WHERE ($where)
 				$conditions
 				GROUP BY object_id,email_address
 				");
@@ -4486,7 +4614,7 @@ class ContactController extends ApplicationController
 		 * (and some modern too) will throw notice
 		 * level errors looping over nulls.
 		 */
-		if(!$contacts_addresses) return null;
+		if(!$contacts_addresses) return $addresses;
 
 		foreach ($contacts_addresses as $contact) { //first_name	surname	email_address
 			/* @var $contact Contact */
@@ -4512,4 +4640,170 @@ class ContactController extends ApplicationController
 		ajx_current("empty");
 		ajx_extra_data(array('addresses' => $addresses));
 	}
+
+
+
+	/**
+	 * Renders the contacts quick add form
+	 *
+	 * This function is called by the contact selector 
+	 * when using "Add new contact" option
+	 *
+	 * @return null
+	 */
+	function quick_add_form() {
+
+		// send to the form the data sent in the post (genid, member_id, etc)
+		$post_vars = [];
+		foreach ($_POST as $key => $value) {
+			$post_vars[$key] = $value;
+		}
+		tpl_assign('post_vars', $post_vars);
+
+	}
+
+
+
+	/**
+	 * Function that renders the contact card when selecting a contact
+	 * using the contact selector.
+	 *
+	 * It sends the data sent in the post (genid, member_id, etc) to the
+	 * template and assigns the properties to show in the contact card
+	 * (configurable in the settings).
+	 */
+	function contact_selector_contact_card() {
+		ajx_current("empty");
+
+		// Send to the form the data sent in the post (genid, member_id, etc)
+		$post_vars = [];
+		foreach ($_POST as $key => $value) {
+			$post_vars[$key] = $value;
+		}
+		tpl_assign('post_vars', $post_vars);
+
+		// Get the properties to show in the contact card
+		// (configurable in the settings)
+		$properties_to_show = config_option('contact_quickadd_view_info');
+		tpl_assign('properties_to_show', $properties_to_show);
+
+		// Get the contact and assign it to the view
+		$contact = Contacts::instance()->findById($post_vars['id']);
+		if (!$contact instanceof Contact) {
+			ajx_current("empty");
+			return;
+		}
+		tpl_assign('contact', $contact);
+
+		// Get the contact object type and its properties
+		$contact_ot = ObjectTypes::findByName('contact');
+		$contact_properties = $contact_ot->getObjectTypeProperties(true, true, true, true);
+		tpl_assign('contact_properties', $contact_properties);
+
+		// Send the html of the contact card
+		ajx_extra_data([
+			'post_vars' => $post_vars,
+			'html' => tpl_fetch(get_template_path('contact_selector_contact_card', 'contact')),
+		]);
+	}
+
+	function set_reclassify_behavior() {
+		$option_value = array_var($_REQUEST, 'option');
+    	if ($option_value !== null) {
+        	set_user_config_option('ask_reclassify_behavior', $option_value, logged_user()->getId());
+    	}
+		ajx_current("empty");
+	}
+
+
+	/**
+	 * Checks if the contact is classified in the given members and
+	 * returns the directive to ask the user to classify it if not.
+	 *
+	 * @return void
+	 */
+	function ask_to_classify_contact_in_members() {
+		ajx_current("empty");
+
+		$contact_id = array_var($_REQUEST, 'contact_id');
+		$member_ids_csv = array_var($_REQUEST, 'member_ids');
+		$member_ids = explode(',', $member_ids_csv);
+
+		// Prepare the data to send
+		$result_data = [
+			'contact_id' => $contact_id,
+			'member_ids' => $member_ids_csv,
+			'ask_to_classify' => false,
+		];
+
+		// Find the contact
+		$contact = Contacts::instance()->findById($contact_id);
+		if ($contact instanceof Contact && count($member_ids) > 0) {
+			// Get the contact name to display
+			$result_data['contact_name'] = $contact->getObjectName();
+
+			$contact_members = ObjectMembers::instance()->findAll(array('conditions' => '`object_id` = ' . $contact_id));
+			$contact_member_ids = array();
+			foreach ($contact_members as $contact_member) {
+				$contact_member_ids[] = $contact_member->getMemberId();
+			}
+			
+			if (count(array_intersect($member_ids, $contact_member_ids)) == 0) {
+				// The contact is not classfied in any of the members => ask the user to classify
+				$result_data['ask_to_classify'] = true;
+				
+				// Get the member names to display
+				$members = Members::instance()->findAll(array('conditions' => '`id` IN (' . implode(',', $member_ids) . ')'));
+				$member_names = array();
+				foreach ($members as $member) {
+					$member_names[] = $member->getName();
+				}
+				$result_data['member_names'] = implode(', ', $member_names);
+			}
+		}
+		
+		// Send the data to the frontend
+		ajx_extra_data($result_data);
+	}
+
+	function do_classify_contact_in_members() {
+		ajx_current("empty");
+
+		$contact_id = array_var($_REQUEST, 'contact_id');
+		$member_ids_csv = array_var($_REQUEST, 'member_ids');
+		$member_ids = explode(',', $member_ids_csv);
+
+		$contact = Contacts::instance()->findById($contact_id);
+
+		if ($contact instanceof Contact && count($member_ids) > 0) {
+			$members = Members::instance()->findAll(array('conditions' => '`id` IN (' . implode(',', $member_ids) . ')'));
+			if (empty($members)) {
+				return;
+			}
+
+			try {
+				DB::beginWork();
+				
+				$contact->addToMembers($members);
+
+				$log_data = "to:".$member_ids_csv;
+				ApplicationLogs::createLog($contact, ApplicationLogs::ACTION_COPY, false, true, true, $log_data);
+				
+				DB::commit();
+
+				$member_names = array();
+				foreach ($members as $member) {
+					$member_names[] = $member->getName();
+				}
+				flash_success(lang('object moved to member success', implode(', ', $member_names)));
+				
+			} catch (Exception $e) {
+				DB::rollback();
+				flash_error($e->getMessage());
+			}
+			
+		}
+	}
+
+	
 }

@@ -1,9 +1,13 @@
 <?php
 
+
+
+
 // ---------------------------------------------------
 //  System callback functions, registered automaticly
 //  or in application/application.php
 // ---------------------------------------------------
+
 
 
 /**
@@ -13,13 +17,34 @@
  */
 function feng__autoload($load_class_name) {
 	static  $loader ;
+	static $index_checked = false;
 	//$loader = null;
 	$class_name = strtoupper($load_class_name);
+
+	// The class index lists the classes of the plugins that were installed when it was
+	// built, so an index built for another database resolves classes to plugins that are
+	// not installed here (e.g. a core model shadowed by a plugin override, which then
+	// queries columns that do not exist). Drop it and let it be rebuilt when that happens.
+	if(!$index_checked) {
+		$index_checked = true;
+		if(defined('DB_NAME') && isset($GLOBALS[AutoLoader::GLOBAL_VAR])) {
+			$signature = isset($GLOBALS[AutoLoader::SIGNATURE_VAR]) ? $GLOBALS[AutoLoader::SIGNATURE_VAR] : '';
+			if($signature !== DB_NAME) {
+				unset($GLOBALS[AutoLoader::GLOBAL_VAR], $GLOBALS[AutoLoader::SIGNATURE_VAR]);
+				// the index file is re-read by AutoLoader::loadClass() when it is readable,
+				// so it has to be removed, not just dropped from $GLOBALS
+				@unlink(CACHE_DIR . '/autoloader.php');
+			} // if
+		} // if
+	} // if
 
 	// Try to get this data from index...
 	if(isset($GLOBALS[AutoLoader::GLOBAL_VAR])) {
 		if(isset($GLOBALS[AutoLoader::GLOBAL_VAR][$class_name])) {
-			return include $GLOBALS[AutoLoader::GLOBAL_VAR][$class_name];
+			// include_once: the autoloader must load each class file exactly once.
+			// Plain include allowed a second inclusion (e.g. re-entrant autoload or
+			// opcache/realpath edge cases) to redeclare the class and fatal out.
+			return include_once $GLOBALS[AutoLoader::GLOBAL_VAR][$class_name];
 		} // if
 	} // if
 	//pre_print_r($loader) ;exit;
@@ -45,6 +70,7 @@ function feng__autoload($load_class_name) {
 		
 		
 		$loader->setIndexFilename(CACHE_DIR . '/autoloader.php');
+		$loader->setSignature(DB_NAME);
 		
 	} // if
 
@@ -83,6 +109,10 @@ function __shutdown() {
  * @return null
  */
 function __production_error_handler($code, $message, $file, $line) {
+	// Respect @-silenced errors (error_reporting() is temporarily 0 for that expression).
+	if (!(error_reporting() & $code)) {
+		return false;
+	}
 	// Skip non-static method called staticly type of error...
 	if (($code == 8192 || $code == 2048) && version_compare(phpversion(), '5.6') >= 0) {
 		return;
@@ -231,12 +261,69 @@ function product_version() {
  */
 function product_version_revision() {
 	try{
+		$revision = assets_revision();
+		if ($revision != "") return $revision;
+	}
+	catch(Exception $e){}
+
+	try{
 		$revision = @include ROOT . '/revision.php';
 		return $revision;
 	}
 	catch(Exception $e){}
-	
+
 	return "";
+}
+
+/**
+ * Compute a cache-busting revision from the actual mtime of the served JS/CSS
+ * trees, so it updates automatically on deploy instead of depending on a
+ * manually bumped version.php/revision.php. Falls back to product_version_revision's
+ * old behavior (revision.php) if the scan can't run for any reason.
+ *
+ * @return string
+ */
+function assets_revision() {
+	static $revision = null;
+	if ($revision !== null) return $revision;
+
+	try {
+		$cache_file = ROOT . '/cache/assets_revision.php';
+
+		// Reuse a recently computed value instead of rescanning on every request
+		if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 60) {
+			$cached = include $cache_file;
+			if ($cached) {
+				$revision = $cached;
+				return $revision;
+			}
+		}
+
+		$max_mtime = 0;
+		foreach (array(ROOT . '/public/assets/javascript', ROOT . '/public/assets/themes') as $dir) {
+			if (!is_dir($dir)) continue;
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+			);
+			foreach ($iterator as $file) {
+				$mtime = $file->getMTime();
+				if ($mtime > $max_mtime) $max_mtime = $mtime;
+			}
+		}
+
+		if ($max_mtime === 0) throw new Exception('No asset files found to compute a revision from');
+
+		$version = trim(@include ROOT . '/version.php');
+		$revision = trim($version . '-' . $max_mtime, '-');
+
+		@file_put_contents($cache_file, '<?php return ' . var_export($revision, true) . ';');
+
+		return $revision;
+	}
+	catch(Exception $e) {
+		$revision = "";
+		return $revision;
+	}
 }
 
 function get_product_logo_filename() {
@@ -968,6 +1055,21 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 		$contact->setTimezone(array_var($user_data, 'timezone'));
 		$user_from_contact = false;
 	}
+
+	if (array_var($user_data, 'password_generator') == 'specify') {
+		$password = array_var($user_data, 'password');
+		if (trim($password) == '') {
+			throw new Error(lang('password value required'));
+		}
+		if ($password <> array_var($user_data, 'password_a')) {
+			throw new Error(lang('passwords dont match'));
+		}
+		$password_errors = ContactPasswords::validatePasswordRequirements($password, null, false);
+		if (count($password_errors)) {
+			throw new Error($password_errors[0]);
+		}
+	}
+
 	$contact->save();
 	if (is_valid_email(array_var($user_data, 'email'))) {
 		$user = Contacts::getByEmail(array_var($user_data, 'email'), null, true);
@@ -1085,10 +1187,29 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 			}
 		}
 		
-		if (config_option('let_users_create_objects_in_root') && ($contact->isAdminGroup() || $contact->isExecutive() || $contact->isManager())) {
-			if ($permissions_sent) {
+		if (config_option('let_users_create_objects_in_root') && (int)$contact->getUserType() > 0) {
+			$has_root_permissions_data = false;
+			if ($permissions_sent && is_array($rp_permissions_data)) {
+				foreach ($rp_permissions_data as $name => $value) {
+					if (strrpos($name, 'rg_root_') !== false) {
+						$has_root_permissions_data = true;
+						break;
+					}
+				}
+			}
+			if ($permissions_sent && $has_root_permissions_data) {
 				foreach ($rp_permissions_data as $name => $value) {
 					$ot_id = substr($name, strrpos($name, '_')+1);
+					if (!is_numeric($ot_id) || $ot_id <= 0) continue;
+					if (function_exists('clamp_root_permission_level_for_role')) {
+						$value = clamp_root_permission_level_for_role((int)$value, (int)$contact->getUserType(), (int)$ot_id);
+					} else {
+						$max_perm = MaxRoleObjectTypePermissions::instance()->findOne(array('conditions' => "role_id = '".$contact->getUserType()."' AND object_type_id = '".(int)$ot_id."'"));
+						$max_level = $max_perm instanceof MaxRoleObjectTypePermission ? ($max_perm->getCanDelete() ? 3 : ($max_perm->getCanWrite() ? 2 : 1)) : 3;
+						$value = min((int)$value, $max_level);
+					}
+					if ($value < 1) continue;
+
 					$cmp = new ContactMemberPermission();
 					$cmp->setPermissionGroupId($permission_group->getId());
 					$cmp->setMemberId(0);
@@ -1100,12 +1221,22 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 			} else {
 				$default_permissions = RoleObjectTypePermissions::instance()->findAll(array('conditions' => 'role_id = '.$contact->getUserType()));
 				foreach ($default_permissions as $p) {
+					$value = $p->getCanDelete() ? 3 : ($p->getCanWrite() ? 2 : 1);
+					if (function_exists('clamp_root_permission_level_for_role')) {
+						$value = clamp_root_permission_level_for_role($value, (int)$contact->getUserType(), (int)$p->getObjectTypeId());
+					} else {
+						$max_perm = MaxRoleObjectTypePermissions::instance()->findOne(array('conditions' => "role_id = '".$contact->getUserType()."' AND object_type_id = '".$p->getObjectTypeId()."'"));
+						$max_level = $max_perm instanceof MaxRoleObjectTypePermission ? ($max_perm->getCanDelete() ? 3 : ($max_perm->getCanWrite() ? 2 : 1)) : 3;
+						$value = min($value, $max_level);
+					}
+					if ($value < 1) continue;
+
 					$cmp = new ContactMemberPermission();
 					$cmp->setPermissionGroupId($permission_group->getId());
 					$cmp->setMemberId(0);
 					$cmp->setObjectTypeId($p->getObjectTypeId());
-					$cmp->setCanDelete($p->getCanDelete());
-					$cmp->setCanWrite($p->getCanWrite());
+					$cmp->setCanDelete($value >= 3);
+					$cmp->setCanWrite($value >= 2);
 					$cmp->save();
 				}
 			}
@@ -1121,25 +1252,19 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 		}
 		
 	}
-	if(!isset($_POST['mod_perm']) && !$user_from_contact){
-		$tabs_permissions=TabPanelPermissions::getRoleModules(array_var($user_data, 'type'));
-		$_POST['mod_perm']=array();
-		foreach($tabs_permissions as $pr){
-			$_POST['mod_perm'][$pr]=1;
+	$mod_perm_from_post = array_var($_POST, 'mod_perm');
+	if ((!is_array($mod_perm_from_post) || count($mod_perm_from_post) == 0) && !$user_from_contact) {
+		$tabs_permissions = TabPanelPermissions::getRoleModules(array_var($user_data, 'type'));
+		$_POST['mod_perm'] = array();
+		foreach ($tabs_permissions as $pr) {
+			$_POST['mod_perm'][$pr] = 1;
 		}
 	}
         
     $password = '';
 	if (array_var($user_data, 'password_generator') == 'specify') {
 		$perform_password_validation = true;
-		// Validate input
 		$password = array_var($user_data, 'password');
-		if (trim($password) == '') {
-			throw new Error(lang('password value required'));
-		} // if
-		if ($password <> array_var($user_data, 'password_a')) {
-			throw new Error(lang('passwords dont match'));
-		} // if
 	} else {
 		$user_data['password_generator'] = 'link';
 		$perform_password_validation = false;
@@ -1201,6 +1326,14 @@ function create_user($user_data, $permissionsString, $rp_permissions_data = arra
 		save_user_permissions_background(logged_user(), $contact->getPermissionGroupId(), $contact->isGuest(), array(), false, true);
 	}
 	Hook::fire('after_user_add', $contact, $null);
+	
+	// seed default list-column configuration for the newly created user (role-based defaults)
+	try {
+		Env::useHelper('role_default_list_config');
+		apply_role_default_list_config($contact);
+	} catch (Exception $e) {
+		Logger::log("apply_role_default_list_config failed: ".$e->getMessage());
+	}
 	
 	// add user content object to associated members
 	if (count($sel_members) > 0) {
@@ -1311,7 +1444,13 @@ function get_enum_values($table, $column) {
 
 
 function get_user_dimensions_ids(){
-		
+		static $dimensions_to_show_by_user = array();
+
+		$uid = logged_user() instanceof Contact ? logged_user()->getId() : 0;
+		if (isset($dimensions_to_show_by_user[$uid])) {
+			return $dimensions_to_show_by_user[$uid];
+		}
+
 	//All dimensions
 		$all_dimensions = Dimensions::instance()->findAll();
 		$dimensions_to_show = array();
@@ -1328,6 +1467,7 @@ function get_user_dimensions_ids(){
 				}
 			}
 		}
+		$dimensions_to_show_by_user[$uid] = $dimensions_to_show;
 		return $dimensions_to_show;
 }
 
@@ -1928,6 +2068,27 @@ function check_column_exists($table_name, $col_name) {
 } // checkColumnExists
 
 /**
+ * Checks if a constraint exists in a table
+ *
+ *  This function returns true if the constraint exists
+ *
+ * @param string $table_name Name of the table
+ * @param string $constraint_name Name of the constraint
+ * @return boolean
+ */
+function check_constraint_exists($table_name, $constraint_name) {
+	$sql = "
+		SELECT *
+		FROM `information_schema`.`KEY_COLUMN_USAGE`
+		WHERE `TABLE_SCHEMA` = '".DB_NAME."' AND `TABLE_NAME` = '".$table_name."' AND CONSTRAINT_NAME='".$constraint_name."';
+	";
+	$res = mysqli_query(DB::connection()->getLink(), $sql);
+	$row = mysqli_fetch_array($res);
+	if ($row) return true;
+	else return false;
+}
+
+/**
  * Checks if a table exists
  *
  *  This function returns true if the table exists
@@ -1984,93 +2145,358 @@ function pdf_convert_and_download($html_filename, $download_filename=null, $orie
 	}
 }
 
-function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid = null, $page_size="A4", $zoom='', $html_header_footer = array()) {
+/**
+ * Renders HTML to a PDF using headless Chrome (chrome-php).
+ *
+ * Drop-in alternative to convert_to_pdf(): it takes the same arguments, writes the result to the
+ * same location ("{$genid}_pdf.pdf" under /tmp) and returns the same contract
+ * (array('name' => ..., 'size' => ...) on success). It returns false when Chrome is not available
+ * or rendering fails, so convert_to_pdf() can fall back to the legacy wkhtmltopdf pipeline.
+ *
+ * @param string $html_to_convert     HTML markup to render.
+ * @param string $orientation         'Portrait' or 'Landscape'.
+ * @param string $genid               Base name for the generated file (required).
+ * @param string $page_size           One of A0..A5, Letter, Legal. Unknown values fall back to A4.
+ * @param string $zoom                 Legacy wkhtmltopdf zoom flag (e.g. '--zoom 0.7'); its numeric
+ *                                     value is reused as the Chrome 'scale'.
+ * @param array  $html_header_footer  Optional 'header'/'footer' HTML used as Chrome header/footer templates.
+ * @return array|false
+ */
+function chrome_convert($html_to_convert, $orientation = 'Portrait', $genid = null, $page_size = 'A4', $zoom = '', $html_header_footer = array(), $custom_size_px = null)
+{
+    if (!$genid) {
+        throw new Exception('genid is required');
+    }
+
+    // Normalize orientation the same way convert_to_pdf does (also handles a null/empty value)
+    if (!in_array($orientation, array('Portrait', 'Landscape'))) {
+        $orientation = 'Portrait';
+    }
+
+    // Resolve the Chrome executable and check availability up front. If Chrome or the chrome-php
+    // library is missing we return false (at DEBUG level, no error noise) so the caller can fall back.
+    if (!defined('CHROME_PATH')) define('CHROME_PATH', getenv('CHROME_PATH') ?: '/usr/bin/chromium');
+    $chromePath = CHROME_PATH;
+
+    if (!file_exists($chromePath)) {
+        Logger::log("Chrome executable not found at: $chromePath", Logger::DEBUG, null, 'chrome-php');
+        return false;
+    }
+    if (!class_exists('HeadlessChromium\BrowserFactory')) {
+        Logger::log("Chrome PHP library not found. Make sure 'chrome-php/chrome' is installed.", Logger::DEBUG, null, 'chrome-php');
+        return false;
+    }
+
+    $browser = null;
+    $tmp_html_path = ROOT . "/tmp/tmp_html_" . gen_id() . ".html";
+
+    try {
+        // Write the HTML to a temporary file so Chrome can load it as a local document.
+        // Chrome opens it via file:// with no Content-Type and no encoding flag; for a fragment
+        // without a <meta charset> it guesses the encoding and picks Latin-1, turning UTF-8 "£"
+        // (bytes C2 A3) into "Â£". Prepend a UTF-8 BOM to force Chrome to decode the file as UTF-8.
+        file_put_contents($tmp_html_path, "\xEF\xBB\xBF" . $html_to_convert);
+
+        $pdf_filename  = $genid . "_pdf.pdf";
+        $pdfOutputPath = ROOT . "/tmp/" . $pdf_filename;
+
+        $browserFactory = new \HeadlessChromium\BrowserFactory($chromePath);
+        // CHROME_TIMEOUT_MS defaults to 60000 in environment/constants.php; config.php can override.
+        $chrome_timeout_ms = (defined('CHROME_TIMEOUT_MS') && (int) CHROME_TIMEOUT_MS > 0)
+            ? (int) CHROME_TIMEOUT_MS
+            : 60000;
+        $browser = $browserFactory->createBrowser([
+            'headless'  => true,
+            'noSandbox' => true,
+            'sendSyncDefaultTimeout' => $chrome_timeout_ms,
+        ]);
+
+        $page = $browser->createPage();
+        $page->navigate('file://' . $tmp_html_path)->waitForNavigation(\HeadlessChromium\Page::LOAD, $chrome_timeout_ms);
+
+        // Build PDF options mirroring convert_to_pdf (orientation, paper size, zoom, header/footer)
+        $pdf_options = array('printBackground' => true);
+
+        // A custom pixel size (e.g. to match a pre-measured screenshot 1:1, so wide content like a
+        // gantt chart isn't clipped by a fixed page format) takes priority over the named $page_size
+        // and is used as-is, with no rotation and no default margins eating into it.
+        $custom_width_px  = (int) array_var($custom_size_px, 'width');
+        $custom_height_px = (int) array_var($custom_size_px, 'height');
+
+        if ($custom_width_px > 0 && $custom_height_px > 0) {
+            $pdf_options['landscape']    = false;
+            $pdf_options['paperWidth']   = $custom_width_px / 96;
+            $pdf_options['paperHeight']  = $custom_height_px / 96;
+            $pdf_options['marginTop']    = 0;
+            $pdf_options['marginBottom'] = 0;
+            $pdf_options['marginLeft']   = 0;
+            $pdf_options['marginRight']  = 0;
+        } else {
+            $pdf_options['landscape'] = (strtolower($orientation) === 'landscape');
+
+            // Paper dimensions in inches (portrait); Chrome rotates the content when 'landscape' is set.
+            $paper_sizes_in_inches = array(
+                'A0'     => array(33.11, 46.81),
+                'A1'     => array(23.39, 33.11),
+                'A2'     => array(16.54, 23.39),
+                'A3'     => array(11.69, 16.54),
+                'A4'     => array(8.27, 11.69),
+                'A5'     => array(5.83, 8.27),
+                'Letter' => array(8.5, 11.0),
+                'Legal'  => array(8.5, 14.0),
+            );
+            // match convert_to_pdf: empty or unknown sizes fall back to A4
+            if (!isset($paper_sizes_in_inches[$page_size])) {
+                $page_size = 'A4';
+            }
+            $pdf_options['paperWidth']  = $paper_sizes_in_inches[$page_size][0];
+            $pdf_options['paperHeight'] = $paper_sizes_in_inches[$page_size][1];
+        }
+
+        // Zoom: the legacy flag looks like '--zoom 0.7'; reuse the numeric value as the Chrome scale
+        if ($zoom !== '' && preg_match('/([0-9]*\.?[0-9]+)/', $zoom, $zm)) {
+            $pdf_options['scale'] = (float) $zm[1];
+        }
+
+        // Header/footer. Page numbers are shown unless 'hide_page_numbers' is set, mirroring
+        // wkhtmltopdf: with a custom footer they go bottom-left (like "--footer-left [page]/[topage]"
+        // alongside "--footer-html"); without one they go bottom-right (like "--footer-right").
+        $header_html = array_var($html_header_footer, 'header');
+        $footer_html = array_var($html_header_footer, 'footer');
+        $hide_page_numbers = array_var($html_header_footer, 'hide_page_numbers', false);
+
+        $page_numbers_html = '<span class="pageNumber"></span>/<span class="totalPages"></span>';
+
+        if ($footer_html) {
+            if ($hide_page_numbers) {
+                $footer_template = $footer_html;
+            } else {
+                // page numbers bottom-left, custom footer keeps its own (right-aligned) layout
+                $footer_template = '<div style="width:100%; font-size:9px; position:relative;">'
+                    . '<span style="position:absolute; left:1cm; top:0;">'.$page_numbers_html.'</span>'
+                    . $footer_html
+                    . '</div>';
+            }
+        } else if (!$hide_page_numbers) {
+            $footer_template = '<div style="width:100%; font-size:9px; padding-right:1cm; text-align:right;">'.$page_numbers_html.'</div>';
+        } else {
+            $footer_template = '';
+        }
+
+        // Only enable the header/footer band when there is something to show; otherwise keep Chrome's
+        // default margins so the rendered area matches the plain (no header/footer) output.
+        if ($header_html || $footer_template !== '') {
+            $pdf_options['displayHeaderFooter'] = true;
+            $pdf_options['headerTemplate'] = $header_html ? $header_html : '<span></span>';
+            $pdf_options['footerTemplate'] = $footer_template ? $footer_template : '<span></span>';
+
+            // A custom pixel size was already measured to fit content exactly with zero margins
+            // (see above); don't let the named-size header/footer margins below shrink that
+            // exact area. A caller combining both would need to budget the extra space itself.
+            if (!($custom_width_px > 0 && $custom_height_px > 0)) {
+                // Left/right margins (inches) keep the content off the page edge so tables don't
+                // touch the borders. The header/footer band still uses 1cm insets for page numbers.
+                $pdf_options['marginLeft']   = 0.15;
+                $pdf_options['marginRight']  = 0.15;
+                $pdf_options['marginTop']    = $header_html ? 0.8 : 0.15;
+                $pdf_options['marginBottom'] = 0.5;
+            }
+        }
+
+        // Remove any pre-existing output file. The filename is derived from a fixed $genid, so a
+        // stale file left by another user (e.g. a CLI run) would be unwritable and make saveToFile
+        // throw. tmp/ is world-writable, so we can always delete-and-recreate regardless of owner.
+        if (is_file($pdfOutputPath)) {
+            @unlink($pdfOutputPath);
+        }
+
+        $pdf = $page->pdf($pdf_options);
+        $pdf->saveToFile($pdfOutputPath, $chrome_timeout_ms);
+
+        $browser->close();
+        $browser = null;
+
+        @unlink($tmp_html_path);
+
+        if (!file_exists($pdfOutputPath)) {
+            Logger::log("PDF was not generated successfully.", Logger::ERROR, null, 'chrome-php');
+            return false;
+        }
+
+        clearstatcache(true, $pdfOutputPath);
+        Logger::log("PDF generation successful: $pdfOutputPath", Logger::INFO, null, 'chrome-php');
+        return array('name' => $pdf_filename, 'size' => filesize($pdfOutputPath));
+
+    } catch (\Throwable $e) {
+        Logger::log("Error generating PDF with Chrome PHP: " . $e->getMessage(), Logger::ERROR, null, 'chrome-php');
+        if ($browser) {
+            try { $browser->close(); } catch (\Throwable $e2) {}
+        }
+        @unlink($tmp_html_path);
+        return false;
+    }
+}
+
+
+function convert_to_pdf($html_to_convert, $orientation='Portrait', $genid = null, $page_size="A4", $zoom='', $html_header_footer = array(), $custom_size_px = null) {
 	if (!$genid) {
 		throw new Exception('genid is required');
 	}
-	
+
+	// Prefer headless Chrome when available; chrome_convert() returns false if Chrome is not
+	// installed or rendering fails, in which case we fall back to the legacy wkhtmltopdf pipeline.
+	$chrome_data = chrome_convert($html_to_convert, $orientation, $genid, $page_size, $zoom, $html_header_footer, $custom_size_px);
+	if ($chrome_data !== false) {
+		return $chrome_data;
+	}
+	Logger::log("Chrome PHP not available or failed. Falling back to wkhtmltopdf.", Logger::DEBUG);
+
 	$pdf_filename = null;
 	
 	if(is_exec_available()){
 		//controlar q sea linux
 		$pdf_filename = $genid . "_pdf.pdf";
 		$pdf_path = ROOT."/tmp/".$pdf_filename;
-		
-		file_put_contents($pdf_path, "");
-		
+
+		// Drop any stale file first: the fixed $genid filename may be owned by another user and
+		// thus unwritable. tmp/ is world-writable so delete-and-recreate always succeeds.
+		// Only unlink when present — unlink() on a missing path is an E_WARNING in PHP 8+.
+		if (is_file($pdf_path)) {
+			@unlink($pdf_path);
+		}
+
 		$temp_genid = gen_id();
-		
+
 		$tmp_html_path = ROOT."/tmp/tmp_html_".$temp_genid.".html";
 		file_put_contents($tmp_html_path, $html_to_convert);
 
-		if($html_header_footer['header']){
+		$header_html = array_var($html_header_footer, 'header');
+		$footer_html = array_var($html_header_footer, 'footer');
+
+		// wkhtmltopdf --header-html/--footer-html expects full HTML documents; fragments often
+		// produce exit code 1 (or blank bands) even when the body PDF is fine.
+		$wkhtml_hf_prefix = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;">';
+		$wkhtml_hf_suffix = '</body></html>';
+
+		if($header_html){
 			$tmp_html_header_path = ROOT."/tmp/tmp_html_header_".$temp_genid.".html";
-			file_put_contents($tmp_html_header_path, $html_header_footer['header']);
+			file_put_contents($tmp_html_header_path, $wkhtml_hf_prefix . $header_html . $wkhtml_hf_suffix);
 			$flag_header = " --header-html  \"".$tmp_html_header_path."\" ";
 		}else{
 			$flag_header = "";
 		}
 
-		if($html_header_footer['footer']){
+		if($footer_html){
 			$tmp_html_footer_path = ROOT."/tmp/tmp_html_footer_".$temp_genid.".html";
-			file_put_contents($tmp_html_footer_path, $html_header_footer['footer']);
+			file_put_contents($tmp_html_footer_path, $wkhtml_hf_prefix . $footer_html . $wkhtml_hf_suffix);
 			$flag_footer = " --footer-left [page]/[topage] --footer-html  \"".$tmp_html_footer_path."\" ";
+		}else if (array_var($html_header_footer, 'hide_page_numbers')) {
+			$flag_footer = "";
 		}else{
 			$flag_footer = "--footer-right [page]/[topage]";
 		}
 
 		if (!in_array($orientation, array('Portrait', 'Landscape'))) $orientation = 'Portrait';
-		
+
 		$temp_pdf_name = ROOT."/tmp/".$temp_genid.".pdf";
-		
-		if (!in_array($page_size, array("A0","A1","A2","A3","A4","A5","Letter","Legal"))) {
-			$page_size = "A4";
+
+		// A custom pixel size (see chrome_convert()) takes priority over the named $page_size, is
+		// used with no margins so it isn't shrunk from the exact size it was measured at, and isn't
+		// rotated -- it's already the literal page size, so ignore $orientation for it.
+		$custom_width_px  = (int) array_var($custom_size_px, 'width');
+		$custom_height_px = (int) array_var($custom_size_px, 'height');
+		$has_custom_size = ($custom_width_px > 0 && $custom_height_px > 0);
+
+		if ($has_custom_size) {
+			$size_flag = "--page-width {$custom_width_px}px --page-height {$custom_height_px}px";
+			$margin_flags = "-L 0 -R 0 -T 0 -B 0";
+			$orientation = 'Portrait';
+		} else {
+			if (!in_array($page_size, array("A0","A1","A2","A3","A4","A5","Letter","Legal"))) {
+				$page_size = "A4";
+			}
+			$size_flag = "-s $page_size";
+			$margin_flags = "-L 1 -R 1";
 		}
-		
+
 		//convert to pdf in background
 		if (substr(php_uname(), 0, 7) == "Windows") {
 			if (!defined('WKHTMLTOPDF_PATH')) define('WKHTMLTOPDF_PATH', "C:\\Program Files\\wkhtmltopdf\\bin\\");
 			$command_location = with_slash(WKHTMLTOPDF_PATH) . "wkhtmltopdf";
-			$command = "\"$command_location\" -s $page_size --encoding utf8 $zoom -L 1 -R 1 ". $flag_header ." ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+			$command = "\"$command_location\" $size_flag --encoding utf8 $zoom $margin_flags ". $flag_header ." ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		} else {
 		    $command_location = (defined('WKHTMLTOPDF_PATH') ? with_slash(WKHTMLTOPDF_PATH) : "");
-		    $command = $command_location."wkhtmltopdf -s $page_size --encoding utf8 $zoom  -L 1 -R 1 ". $flag_header ."  ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
+		    $command = $command_location."wkhtmltopdf $size_flag --encoding utf8 $zoom  $margin_flags ". $flag_header ."  ". $flag_footer ." -O $orientation \"".$tmp_html_path."\" \"".$temp_pdf_name."\"";
 		}
         Logger::log("command: $command", Logger::DEBUG);
 
 		exec($command, $result, $return_var);
-		
-		if ($return_var > 0){
-			Logger::log("command not found convert: $command",Logger::WARNING);
+
+		// wkhtmltopdf often exits 1 when it still wrote a usable PDF (missing assets, CSS warnings,
+		// header/footer quirks). Prefer the output file over the exit code.
+		clearstatcache(true, $temp_pdf_name);
+		$temp_pdf_ok = is_file($temp_pdf_name) && filesize($temp_pdf_name) > 0;
+		if (!$temp_pdf_ok) {
+			Logger::log("wkhtmltopdf failed (exit $return_var): $command", Logger::WARNING);
+			@unlink($tmp_html_path);
+			if ($header_html) {
+				@unlink($tmp_html_header_path);
+			}
+			if ($footer_html) {
+				@unlink($tmp_html_footer_path);
+			}
 			return false;
 		}
-		
-		rename($temp_pdf_name, $pdf_path);
-		
-		//delete the png file
-		unlink($tmp_html_path);
-		if($html_header_footer['header']){
-			unlink($tmp_html_header_path);
+		if ($return_var > 0) {
+			Logger::log("wkhtmltopdf exited $return_var but produced a PDF; continuing. cmd: $command", Logger::DEBUG);
 		}
-		if($html_header_footer['footer']){
-			unlink($tmp_html_footer_path);
+
+		if (is_file($pdf_path)) {
+			@unlink($pdf_path);
 		}
-			
+		if (!@rename($temp_pdf_name, $pdf_path)) {
+			// Cross-filesystem or permission edge case: copy then remove.
+			if (!@copy($temp_pdf_name, $pdf_path)) {
+				Logger::log("Failed to move PDF to $pdf_path", Logger::ERROR);
+				@unlink($tmp_html_path);
+				if ($header_html) {
+					@unlink($tmp_html_header_path);
+				}
+				if ($footer_html) {
+					@unlink($tmp_html_footer_path);
+				}
+				return false;
+			}
+			@unlink($temp_pdf_name);
+		}
+
+		@unlink($tmp_html_path);
+		if($header_html){
+			@unlink($tmp_html_header_path);
+		}
+		if($footer_html){
+			@unlink($tmp_html_footer_path);
+		}
+
 		$file_path = ROOT."/tmp/".$pdf_filename;
-		
+
 		//check if pdf exist
 		if (!file_exists($file_path)) {
 			return false;
 		}
-		
+
 		clearstatcache(true, $file_path);
 		$filesize = filesize($file_path);
-		
+		if ($filesize <= 0) {
+			return false;
+		}
+
 		$data = array('name' => $pdf_filename, 'size' => $filesize);
-		
+
 		return $data;
 	}
-	
+
+	return false;
 }
 
 
@@ -2169,7 +2595,12 @@ function print_modal_json_response($data, $dont_process_response = true, $use_aj
 
 function associate_member_to_status_member($project_member, $old_project_status, $status_member_id, $status_dimension, $status_ot=null, $remove_prev_associations=true, $assoc_code=null) {
 
-	if ($status_dimension instanceof Dimension && in_array($status_dimension->getId(), config_option('enabled_dimensions'))) {
+	$enabled_dimensions = config_option('enabled_dimensions');
+	if (!is_array($enabled_dimensions)) {
+		$enabled_dimensions = array();
+	}
+
+	if ($status_dimension instanceof Dimension && in_array($status_dimension->getId(), $enabled_dimensions)) {
 		
 		// asociate project objects to the new project_status member, only for non manageable dimensions
 		if (!$status_dimension->getIsManageable() && $old_project_status != $status_member_id) {
@@ -2196,7 +2627,8 @@ function associate_member_to_status_member($project_member, $old_project_status,
 								SELECT om.member_id FROM ".TABLE_PREFIX."object_members om
 		  						INNER JOIN ".TABLE_PREFIX."members m ON m.id=om.member_id
 		  						WHERE om.object_id = " . $obj->getId() . " AND m.dimension_id=".$status_dimension->getId()
-							));
+							) ?: array());
+							$mems_to_remove = array_filter($mems_to_remove);
 						}
 						
 						if (count($mems_to_remove) > 0) {
@@ -2220,7 +2652,10 @@ function associate_member_to_status_member($project_member, $old_project_status,
 
 		$assoc_code_cond = $assoc_code ? " AND code='$assoc_code'" : '';
 
-		$member_dimension = $project_member->getDimension();
+		$member_dimension = $project_member instanceof Member ? $project_member->getDimension() : null;
+		if (!$member_dimension instanceof Dimension) {
+			return;
+		}
 
 		$a = DimensionMemberAssociations::instance()->findOne(array('conditions' => array('dimension_id=? AND object_type_id=? AND associated_dimension_id=?'.
 				($status_ot instanceof ObjectType ? ' AND associated_object_type_id='.$status_ot->getId() : '') . $assoc_code_cond,
@@ -2286,7 +2721,7 @@ function classify_related_member_object_in_main_member($main_member, $related_me
 		if ($rel_obj instanceof ContentDataObject) {
 			
 			ObjectMembers::addObjectToMembers($rel_obj->getId(), array($main_member));
-			$rel_obj->addToSharingTable();
+			add_object_to_sharing_table($rel_obj, logged_user()); // saves permissions cache in background process
 			
 			$null=null; 
 			Hook::fire("after_auto_classifying_associated_object_of_member", array('obj' => $rel_obj, 'mem' => $main_member), $null);
@@ -2707,6 +3142,29 @@ function convert_time_amount_to_minutes($unit, $number) {
 }
 
 
+/**
+ * Decide which members to add to the instantiated object:
+ * all from the original template task, plus given members whose
+ * dimension/object-type is not already present on the template.
+ */
+function calculate_template_task_copy_members_to_add($template_object_members, $object_members) {
+	$result = array();
+	$template_ots_by_dim = array();
+	foreach ($template_object_members as $member) {
+		$result[] = $member->getId();
+		$template_ots_by_dim[$member->getDimensionId()][$member->getObjectTypeId()] = true;
+	}
+	foreach ($object_members as $member_id) {
+		$member = Members::instance()->findById($member_id);
+		if (!$member instanceof Member) continue;
+		if (!isset($template_ots_by_dim[$member->getDimensionId()][$member->getObjectTypeId()])) {
+			$result[] = $member->getId();
+		}
+	}
+	return $result;
+}
+
+
 function instantiate_template_task_parameters(TemplateTask $object, ProjectTask $copy, $parameterValues = array()) {  
 	
 	$objProp = TemplateObjectProperties::getPropertiesByTemplateObject($object->getTemplateId(), $object->getId());
@@ -2715,10 +3173,13 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 	$template_object_properties = $manager->getTemplateObjectProperties();
 	$save_copy = false;
 	
+	Hook::fire('modify_template_task_parameter_values', array('object' => $object, 'copy' => $copy, 'objProp' => $objProp), $parameterValues);
+
 	foreach($objProp as $property) {
 		$propName = $property->getProperty();
 		$value = $property->getValue();
 
+		$is_time_prop = false;
 		$is_user_id = false;
 		foreach ($template_object_properties as $top) {
 			if ($top['id'] == $propName) {
@@ -2773,8 +3234,8 @@ function instantiate_template_task_parameters(TemplateTask $object, ProjectTask 
 	}
 	
 	// Ensure that assigned user is subscribed
-	if ($copy instanceof ProjectTask && $copy->getAssignedTo() instanceof Contact) {
-		$copy->subscribeUser($copy->getAssignedTo());
+	if ($copy instanceof ProjectTask) {
+		apply_default_task_subscribers_on_create($copy);
 	}
 	
 	$ret = null;
@@ -3024,7 +3485,7 @@ function build_api_members_data(ContentDataObject $object) {
 		/* @var $m Member */
 		$m_data = array(
 				'id' => $m->getId(),
-				'name' => $m->getName(),
+				'name' => $m->getDisplayName(),
 				'dimension_id' => $m->getDimensionId()
 		);
 		$m_ot = ObjectTypes::instance()->findById($m->getObjectTypeId());
@@ -3039,6 +3500,16 @@ function build_api_members_data(ContentDataObject $object) {
 
 
 /**
+ * Returns true if the companies object type should be used in the contacts module.
+ * This is used only for CE edition.
+ * @return bool
+ */
+function use_companies_in_contacts() {
+	return (!Plugins::instance()->isActivePlugin('crpm') && !Plugins::instance()->isActivePlugin('other_organizations_dimension'));
+}
+
+
+/**
  * Function to check if $string starts with $startString
  * 
  * @param string $string is the complete string
@@ -3049,4 +3520,18 @@ function startsWith($string, $startString)
 {
     $len = strlen($startString);
     return (substr($string, 0, $len) == $startString);
+}
+
+function getDocumentationWikiUrl() {
+
+	$product_name = product_name();
+
+	if (startsWith($product_name, 'Feng Office')) {
+		$company_name = 'fengoffice';
+	} else {
+		$company_name = 'evxsoftware';
+	}
+
+	return 'https://documentation.'.$company_name.'.com/';
+
 }

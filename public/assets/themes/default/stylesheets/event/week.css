@@ -210,3 +210,18 @@ div.inset {
 .noleft {
 	padding-left:3px;
 }
+
+/* Subtasks shown via the calendar "Show" > "Subtasks" toggle */
+.cal-subtask-block .chipbody,
+.cal-subtask-chip {
+	opacity:0.88;
+}
+.cal-subtask-expander {
+	cursor:pointer;
+	display:inline-block;
+	min-width:14px;
+	font-size:14px;
+	line-height:1;
+	font-weight:bold;
+	vertical-align:middle;
+}

@@ -343,14 +343,72 @@ a.iCalSubscribe {
 
 #menu-panel .x-panel-tbar .x-small-editor {
 	border-width: 0;
-	padding-right: 10px ;	
+  padding: 0px
+	/* padding-right: 10px ;	 */
+
 }
+
+#menu-panel .x-panel-tbar {
+    background: #EAF2F5;
+    padding-bottom: 8px;
+    padding-left: 16px;
+    padding-right: 24px;
+    padding-top: 8px;
+}
+
+#menu-panel .x-tree-icon,.x-tree-ec-icon,.x-tree-elbow-line,.x-tree-elbow,.x-tree-elbow-end,.x-tree-elbow-plus,.x-tree-elbow-minus,.x-tree-elbow-end-plus,.x-tree-elbow-end-minus {
+  border:0 none;
+  height:18px;
+  /* margin-left:16px !important; */
+  padding:0;
+  vertical-align:top;
+  width:16px;
+  background-repeat:no-repeat;
+}
+
+#menu-panel .x-panel-tbar .x-toolbar{
+  overflow: visible;
+}
+
+#menu-panel .x-tree-node-indent {
+  /* background:#e7e7e7 ; */
+}
+
+#menu-panel .x-tree-node-el{
+  background: #EAF2F5;
+  line-height:18px;
+  cursor:pointer;
+  border-radius: 4px 0 0 4px;
+  padding-right: 16px;
+  display: flex;
+  align-items: center;
+  height: 22px;
+}
+
+#menu-panel .x-tree-node .x-tree-node:hover > .x-tree-node-el,
+#menu-panel .x-tree-node .x-tree-node-el.root:hover{
+  background: #D6E4EC;
+}
+
+#menu-panel .x-tree-node .x-tree-node > .x-tree-selected {
+  background: #fff !important;
+}
+
+#menu-panel .x-tree-node .x-tree-node-el.root.x-tree-selected {
+  background: #dde7ed;
+}
+  
+#menu-panel .x-panel-bwrap{background:#EAF2F5;overflow:hidden;zoom:1;left:0;top:0;}
+
 
 .dimension-selector-container .dimension-panel-textfilter {
 	width: 100% ;	
 	/*border-width: 0;*/	
 	padding-left: 0!important;
-    padding-right: 0!important;
+  padding-right: 0!important;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
 }
 
 .dimension-selector-container .x-toolbar.x-small-editor {
@@ -398,13 +456,16 @@ a.iCalSubscribe {
 .og-content-panel .x-grid3-row td, 
 .og-content-panel .x-grid3-summary-row td,
 #menu-panel .x-panel-header, 
-textarea {
+textarea,
+.x-panel-tbar .x-toolbar .x-btn button span.filter-text {
 	font-family: "Open Sans",Arial,sans-serif;
 }
 .x-panel-tbar .x-toolbar .x-btn button,
 .x-panel-tbar .x-toolbar .ytb-text, 
-.x-menu-list .x-menu-list-item {
+.x-menu-list .x-menu-list-item,
+.x-panel-tbar .x-toolbar .x-btn button span.filter-text {
 	font-size: 13px;
+  line-height: 13px;
 }
 .og-content-panel .x-grid3-hd-row td,
 .og-content-panel .x-grid3-row td, 

@@ -1,13 +1,19 @@
 og.reports = {};
-og.reports.createPrintWindow = function(title, hide_report_header) {
+og.reports.createPrintWindow = function(title, hide_report_header, landscape) {
 	var disp_setting = "toolbar=yes,location=no,directories=yes,menubar=yes,scrollbars=yes,";
 	var printWindow = window.open("","",disp_setting);
-	
-	printWindow.document.open(); 
+
+	printWindow.document.open();
 	printWindow.document.write('<html><head><title>' + title + '</title>');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/website.css" rel="stylesheet" type="text/css">');
 	printWindow.document.write('<link href="' + og.hostName + '/public/assets/themes/default/stylesheets/general/rewrites.css" rel="stylesheet" type="text/css">');
-	
+
+	if (landscape) {
+		// scoped to this print window only: reports with many columns (e.g. the time module's
+		// task time report) need landscape to avoid columns getting clipped off the page
+		printWindow.document.write('<style>@page { size: landscape; }</style>');
+	}
+
 	if (og.reports.additional_print_window_css) {
 		for (var i=0; i<og.reports.additional_print_window_css.length; i++) {
 			printWindow.document.write('<link href="' + og.hostName + og.reports.additional_print_window_css[i] + '" rel="stylesheet" type="text/css">');
@@ -94,11 +100,11 @@ og.reports.printReport = function(genid, title, report_id) {
 	});
 }
 
-og.reports.printNoPaginatedReport = function(genid, title, hide_report_header) {
+og.reports.printNoPaginatedReport = function(genid, title, hide_report_header, landscape) {
 	if (typeof(hide_report_header) == 'undefined') {
 		hide_report_header = !og.config.show_company_info_report_print;
 	}
-	var printWindow = og.reports.createPrintWindow(title, hide_report_header); 
+	var printWindow = og.reports.createPrintWindow(title, hide_report_header, landscape);
 
 	var has_scroll = $('#' + genid + 'report_container .report.custom-report').hasClass('scroll');
 	if (has_scroll) {

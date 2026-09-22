@@ -18,7 +18,7 @@ $showCompletedSubtasksDiv = is_array($task_list->getCompletedSubTasks()) && coun
 if($showOpenSubtasksDiv) { ?>
 <table style="border:1px solid #717FA1;width:100%; padding-left:10px;">
 <tr><th style="padding-left:10px;padding-top:4px;padding-bottom:4px;background-color:#E8EDF7;font-size:120%;font-weight:bolder;color:#717FA1;width:100%;"><?php echo lang("open subtasks") ?></th></tr>
-<tr><td style="padding-left:10px;">
+<tr><td style="padding:10px;">
   <div class="openTasks">
     <table class="blank">
 <?php foreach($task_list->getOpenSubTasks() as $task) { ?>
@@ -32,19 +32,21 @@ if($showOpenSubtasksDiv) { ?>
 
 <!-- Task text and options -->
         <td class="taskText">
-<?php if($task->getAssignedTo()) { ?>
-          <span class="assignedTo"><?php echo clean($task->getAssignedTo()->getObjectName()) ?>:</span> 
-<?php } // if{ ?>
-          <a class="internalLink" href="<?php echo $task->getObjectUrl() ?>"><?php echo ($task->getObjectName() && $task->getObjectName()!='' )?clean($task->getObjectName()):clean($task->getText()) ?></a> 
-          &nbsp;
-		  <?php if($task->canEdit(logged_user()) && !$task->isTrashed()) { ?>
-          	<a class="internalLink coViewAction ico-edit" href="javascript:og.render_modal_form('', {c:'task', a:'edit_task', params: {id:<?php echo $task->getId()?>,reload:1, req_channel:'task view - edit subtask'}});" title="<?php echo lang('edit task') ?>">
+                <?php if($task->getAssignedTo()) { ?>
+                <span class="assignedTo"><?php echo clean($task->getAssignedTo()->getObjectName()) ?>:</span> 
+                <?php } // if ?>
+                <a class="internalLink" href="<?php echo $task->getObjectUrl() ?>"><?php echo ($task->getObjectName() && $task->getObjectName()!='' )?clean($task->getObjectName()):clean($task->getText()) ?></a> 
+                &nbsp;
+		<?php if($task->canEdit(logged_user()) && !$task->isTrashed()) { ?>
+          	<a class="internalLink ico-action edit" href="javascript:og.render_modal_form('', {c:'task', a:'edit_task', params: {id:<?php echo $task->getId()?>,reload:1, req_channel:'task view - edit subtask'}});" title="<?php echo lang('edit task') ?>">
+                        <i class="icon-pencil-line"></i>
           	</a>
-          <?php } // if ?>
-          <?php if($task->canDelete(logged_user()) && !$task->isTrashed()) { ?>
-          	<a class="internalLink coViewAction ico-trash" href="<?php echo $task->getDeleteUrl('task view - delete subtask') ?>&taskview=true" onclick="return confirm('<?php echo escape_single_quotes(lang('confirm delete task')) ?>')" title="<?php echo lang('delete task') ?>">
+                <?php } // if ?>
+                <?php if($task->canDelete(logged_user()) && !$task->isTrashed()) { ?>
+          	<a class="internalLink ico-action trash" href="<?php echo $task->getDeleteUrl('task view - delete subtask') ?>&taskview=true" onclick="return confirm('<?php echo escape_single_quotes(lang('confirm delete task')) ?>')" title="<?php echo lang('delete task') ?>">
+                        <i class="icon-trash-2"></i>
           	</a>
-          <?php } // if ?>
+                <?php } // if ?>
         </td>
       </tr>
       <!-- start timeslot subtask-->
@@ -119,12 +121,12 @@ if($showOpenSubtasksDiv) { ?>
 <?php } // if?>
   
   <div class="addTask">
-<?php if($task_list->canAddSubTask(logged_user()) && !$task_list->isTrashed()) { ?>
-    <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink" style="margin-bottom:3px;">
-		<button class="ico-new object-view-btn blue" id="<?php echo $genid ?>_add_subtask_link"><?php echo lang('add sub task') ?></button>
-	</div>
-  
-<?php } // if ?>
+        <?php if($task_list->canAddSubTask(logged_user()) && !$task_list->isTrashed()) { ?>
+        <div id="addTaskForm<?php echo $task_list->getId() ?>ShowLink" style="margin-bottom:3px;">
+	        <button class="btn btn-primary btn-sm" id="<?php echo $genid ?>_add_subtask_link"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add sub task') ?></button>
+        </div>
+        <div class="clear"></div>
+        <?php } // if ?>
   </div>
   <?php if(is_array($task_list->getOpenSubTasks()) && count($task_list->getOpenSubTasks()) > 0) { ?>
 </div></td></tr></table>

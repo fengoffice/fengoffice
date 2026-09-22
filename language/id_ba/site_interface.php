@@ -86,6 +86,7 @@
 	'footer copy with homepage' => '© {0} by <a class="internalLink" href="{1}">{2}</a>. Telah dipesan.',
 	'footer copy without homepage' => '© {0} by {1}. Telah dipesan',
 	'footer powered' => 'Dikembangkan oleh <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Dikembangkan oleh',
 	'all documents' => 'Semua dokumen',
 	'created by me' => 'Dibuat oleh saya',
 	'by project' => 'Melalui bidang kerja',
