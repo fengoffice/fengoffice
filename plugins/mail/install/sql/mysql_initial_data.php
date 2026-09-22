@@ -96,9 +96,9 @@ INSERT INTO `<?php echo $table_prefix ?>widgets` (`name`,`title`,`plugin_id`,`pa
 ON DUPLICATE KEY UPDATE name=name;
 
 INSERT INTO `<?php echo $table_prefix ?>contact_widget_options`
-    (`contact_id`, `widget_name`, `member_type_id`, `option`, `value`, `is_system`)
+    (`contact_id`, `widget_name`, `member_type_id`, `option`, `value`, `config_handler_class`, `is_system`)
 VALUES
-    (0, 'emails', 0, 'limit', '10', 1)
+    (0, 'emails', 0, 'limit', '10', '', 1)
 ON DUPLICATE KEY UPDATE `is_system`=1;
 
 INSERT INTO <?php echo $table_prefix ?>role_object_type_permissions (role_id, object_type_id, can_delete, can_write)

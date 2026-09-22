@@ -1693,6 +1693,16 @@ class PaellaUpgradeScript extends ScriptUpgraderScript {
 			}
 		}
 
+		if (version_compare($installed_version, '4.2.0.0') < 0) {
+			// contact_widget_options.config_handler_class is NOT NULL but had no default, unlike the
+			// matching columns in config_options and contact_config_options. Inserts that leave it out
+			// fail outright under STRICT_TRANS_TABLES. Set only the default so the column keeps its
+			// existing type and collation.
+			$upgrade_script .= "
+				ALTER TABLE `".$t_prefix."contact_widget_options` ALTER COLUMN `config_handler_class` SET DEFAULT '';
+			";
+		}
+
 		$upgrade_script .= "
 			UPDATE `".$t_prefix."objects` SET `trashed_on` = '0000-00-00 00:00:00' WHERE `trashed_on` IS NULL;
 			UPDATE `".$t_prefix."objects` SET `archived_on` = '0000-00-00 00:00:00' WHERE `archived_on` IS NULL;

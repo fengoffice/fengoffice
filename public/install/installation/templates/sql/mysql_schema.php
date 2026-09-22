@@ -1297,7 +1297,7 @@ CREATE TABLE `<?php echo $table_prefix ?>contact_widget_options` (
   `member_type_id` int(11) NOT NULL DEFAULT 0,
   `option` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `value` text COLLATE utf8_unicode_ci NOT NULL,
-  `config_handler_class` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
+  `config_handler_class` varchar(50) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `is_system` tinyint(1) unsigned default 0,
   PRIMARY KEY (`widget_name`,`contact_id`,`member_type_id`,`option`) USING BTREE
 ) ENGINE=<?php echo $engine ?> <?php echo $default_charset ?>;

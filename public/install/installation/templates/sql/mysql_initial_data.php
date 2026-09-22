@@ -703,10 +703,10 @@ INSERT INTO `<?php echo $table_prefix ?>contact_widget_options` (widget_name,con
 ('calendar',0,0,'filter_by_myself',1,'BooleanConfigHandler',0)
 ON DUPLICATE KEY UPDATE widget_name=widget_name;
 
-INSERT INTO `<?php echo $table_prefix ?>contact_widget_options` (`contact_id`,`widget_name`,`member_type_id`,`option`,`value`,`is_system`) VALUES
-(0,'tasks',0,'limit','10',1),
-(0,'activity_feed',0,'limit','10',1),
-(0,'activity_feed',0,'show_time_entries','1',1)
+INSERT INTO `<?php echo $table_prefix ?>contact_widget_options` (`contact_id`,`widget_name`,`member_type_id`,`option`,`value`,`config_handler_class`,`is_system`) VALUES
+(0,'tasks',0,'limit','10','',1),
+(0,'activity_feed',0,'limit','10','',1),
+(0,'activity_feed',0,'show_time_entries','1','',1)
 ON DUPLICATE KEY UPDATE `is_system`=1;
 
 UPDATE `<?php echo $table_prefix ?>config_options` SET `value`=(
