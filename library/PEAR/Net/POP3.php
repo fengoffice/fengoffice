@@ -146,7 +146,8 @@ class Net_POP3 {
     */
 
 
-    function Net_POP3()
+    // PHP 8+: PHP4-style Net_POP3() is no longer invoked as constructor.
+    function __construct()
     {
         $this->_timestamp =  ''; // Used for APOP
         $this->_maildrop  =  array();

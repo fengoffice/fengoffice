@@ -7,6 +7,20 @@
 .ico-workspaces {
 /*	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -617px !important;*/
 }
+
+
+.x-tab-with-icon.x-tab-strip-active .ico-workspaces {
+	background-image: url(../../images/icons-feng-4/new-icons-dark/departments_blue.png) !important;
+	background-size: auto 20px !important;
+
+}
+
+.x-tab-with-icon .ico-workspaces {
+	background-image: url(../../images/icons-feng-4/new-icons-light/departments.png) !important;
+	background-size: auto 20px !important;
+}
+
+
 .ico-workspace-add {
 	background: transparent url(../../images/16x16/all_16_16_vertical.png) no-repeat scroll 0 -600px !important;
 }
@@ -120,6 +134,6 @@
 }
 .x-tree-node .x-tree-selected a span{
 	background:transparent;
-	color:#15428b;
+	color:#264653;
 	font-weight:bold;
 }

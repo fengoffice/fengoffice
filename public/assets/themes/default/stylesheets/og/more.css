@@ -100,6 +100,20 @@
 	background-color: white;
 	padding: 10px;
 }
+
+/* Match Bootstrap 3 popover max-width (276px); on very narrow windows shrink to the viewport. */
+.system-modules-container .popover {
+	max-width: 276px;
+}
+@media screen and (max-width: 316px) {
+	.system-modules-container .popover {
+		max-width: calc(100vw - 40px);
+	}
+}
+.system-modules-container .popover .popover-content {
+	overflow-wrap: break-word;
+	word-wrap: break-word;
+}
 .system-modules-container .title {
 	font-weight: normal;
 	font-size: 200%;

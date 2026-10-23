@@ -55,6 +55,8 @@ class Mime_Types
     */
     var $mime_types = array(
         'txt'   => 'text/plain',
+        'md'    => 'text/markdown',
+        'markdown' => 'text/markdown',
         'gif'   => 'image/gif',
         'jpg'   => 'image/jpeg',
         'bmp'   => 'image/bmp',

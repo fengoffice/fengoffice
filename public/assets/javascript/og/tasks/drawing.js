@@ -6,6 +6,15 @@
  * @author Carlos Palma <chonwil@gmail.com>
  */
 
+// true while a manual "load next" or "load all" is in progress; suppresses scroll auto-loading
+ogTasks.manualGroupLoading = false;
+
+// Default relative order of the 6 quick actions in the merged actions column
+// (icon row left-to-right, and "..." overflow popover top-to-bottom). Overridden by
+// og.config.tasks_columns_config.actionsOrder once the user reorders them via the
+// Columns modal's nested sub-list.
+ogTasks.DEFAULT_ACTIONS_ORDER = ['add_sub_task', 'edit', 'mark_as_started', 'complete', 'quick_time', 'time'];
+
 //************************************
 //*		Main function
 //************************************
@@ -17,9 +26,31 @@ ogTasks.draw = function () {
 
     //first load the groups from server
     if (!ogTasks.Groups.loaded) {
-    	ogTasks.resetPaginationVariables();
-        ogTasks.getGroups();
-        return;
+		const GROUPS_CACHE_TTL_MS = 5 * 60 * 1000;
+		const contextChanged = ogTasks.previousContext !== undefined && ogTasks.previousContext !== og.contextManager.plainContext();
+		const cacheExpired = ogTasks.Groups.loadedAt && (Date.now() - ogTasks.Groups.loadedAt) > GROUPS_CACHE_TTL_MS;
+		const useCachedGroups = !contextChanged && !cacheExpired && ogTasks.Groups.length > 0;
+
+		if (!useCachedGroups) {
+			ogTasks.viewingTaskId = null;
+			ogTasks.previousContext = undefined;
+			ogTasks.resetPaginationVariables();
+			if (ogTasks.Groups) ogTasks.Groups.loadedAt = undefined;
+		}
+    	// If returning from a task view and groups are still in memory, skip the server fetch:
+    	// re-render from cached data and refresh only the viewed task asynchronously.
+    	if (useCachedGroups && ogTasks.viewingTaskId && ogTasks.Groups.length > 0) {
+    		var taskId = ogTasks.viewingTaskId;
+    		ogTasks.viewingTaskId = null;
+    		ogTasks.Groups.loaded = true; // allow rendering to fall through
+    		setTimeout(function() { ogTasks.UpdateTask(taskId, true); }, 0);
+    		// fall through to re-render all groups from in-memory data
+    		// (savedScrollTop and savedExpandedSubtasks were captured in onTaskLinkClick)
+    	} else {
+    		ogTasks.resetPaginationVariables();
+    		ogTasks.getGroups();
+    		return;
+    	}
     }
     ogTasks.Groups.loaded = false;
     ogTasks.LevelMultiplier = 20;
@@ -47,6 +78,7 @@ ogTasks.draw = function () {
     if ($("#ogTasksPanelColNamesThead").length == 0) {
 	    sb.append(header_html);
     }
+
     //Draw all groups
     var first_group_to_draw_index = -1;
     for (var i = 0; i < this.Groups.length; i++) {
@@ -79,42 +111,712 @@ ogTasks.draw = function () {
     			'</a></div>');
     }*/
 
+    // Track scroll position via listener so it's captured before the panel hides.
+    var taskContentScrollEl = document.getElementById('tasksPanelContent');
+    if (taskContentScrollEl && !taskContentScrollEl._ogScrollSaveAttached) {
+        taskContentScrollEl._ogScrollSaveAttached = true;
+        taskContentScrollEl.addEventListener('scroll', function () {
+            ogTasks.lastScrollTop = this.scrollTop;
+        }, { passive: true });
+    }
+
     var container = document.getElementById('tasksPanelContainer');
     if (container) {
     	if (ogTasks.groupsPaginationOffset == 0) {
     		container.innerHTML = '';
     	}
-        container.innerHTML += sb.toString();
+        // container.innerHTML += sb.toString();
+        // Use insertAdjacentHTML so existing DOM nodes (and their jQuery data / ogColSynced
+        // markers) are preserved.  innerHTML += serialises + re-parses ALL existing nodes,
+        // wiping jQuery's data store and losing the ogColSynced flag on every already-synced
+        // row.  That causes _syncTdsOnly to double-permute those rows on the next
+        // finalizeColHeaderFeatures() call, producing misaligned columns after scroll loads.
+        container.insertAdjacentHTML('beforeend', sb.toString());
     }
-    ogTasks.initColResize();
-    if (this.Groups.length != 0) {
+    ogTasks.initColHeaderFeatures();
+    if (this.Groups.length != 0 && first_group_to_draw_index !== -1) {
         ogTasks.drawAllGroupsTasks(first_group_to_draw_index);
     }
 
+    ogTasks.updateGroupPaginationButtons();
     ogTasks.initDragDrop();
+
+    // Initialize inline cell editing (delegated, safe to call multiple times)
+    if (ogTasks.InlineCellEditor) {
+        ogTasks.InlineCellEditor.init();
+    }
+
+    // Initialize member hover cards (delegated, safe to call multiple times)
+    if (ogTasks.MemberHoverCard) {
+        ogTasks.MemberHoverCard.init();
+    }
+
+    // Initialize assignee hover cards (delegated, safe to call multiple times)
+    if (ogTasks.AssigneeHoverCard) {
+        ogTasks.AssigneeHoverCard.init();
+    }
 }
 
+/**
+ * Rebuilds the positional colResizable width string (localStorage["tasksPanelContainer"])
+ * from the ID-keyed width map (localStorage["tasksPanelContainer_colIds"]) for the current
+ * visible <th> order.  Must be called after a column reorder and before initColResize() so
+ * that colResizable restores the correct width for each column in its new position.
+ * Without this, colResizable's count-based reconciliation never fires (count hasn't changed),
+ * and it would apply widths by slot index — giving every column its neighbour's old width.
+ */
+ogTasks._rebuildPositionalWidths = function () {
+    // Expected tasksPanelContainer format (written by colResizable + this function):
+    //   col1Width;col2Width;...;colNWidth;total;tableWidth
+    // The last token is the overall table width managed by colResizable; we preserve it
+    // verbatim so that the table container does not resize on a column reorder.
+    try {
+        var idData = localStorage && localStorage["tasksPanelContainer_colIds"];
+        if (!idData) return;
+        var idMap = JSON.parse(idData);
+        var storedData = localStorage && localStorage["tasksPanelContainer"];
+        var tableWidth = "0";
+        if (storedData) {
+            var storedParts = storedData.split(";");
+            // Minimum valid string has at least the total and tableWidth tokens (length >= 2).
+            if (storedParts.length >= 2) {
+                tableWidth = storedParts[storedParts.length - 1];
+            } else {
+                console.warn('_rebuildPositionalWidths: unexpected tasksPanelContainer format, tableWidth reset to 0. Value was: ' + storedData);
+            }
+        }
+        var newParts = [];
+        var total = 0;
+        $("#tasksPanelContainer thead tr th:visible").each(function () {
+            var colId = ($(this).attr('class') || '').split(' ')[0];
+            var w = (colId && idMap[colId] !== undefined) ? Math.round(idMap[colId]) : Math.round($(this).width());
+            w = Math.max(w || 50, 30);
+            newParts.push(w);
+            total += w;
+        });
+        localStorage["tasksPanelContainer"] = newParts.join(";") + ";" + total + ";" + tableWidth;
+    } catch (e) {
+        console.error('_rebuildPositionalWidths: failed to rebuild column widths', e);
+    }
+};
+
+/**
+ * Reads the saved column order from localStorage.
+ * @returns {Array|null} Array of column IDs in saved order, or null if not set.
+ */
+ogTasks.loadColOrder = function () {
+    try {
+        var raw = localStorage["tasksPanelContainer_colOrder"];
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+};
+
+/**
+ * Persists the current column order to localStorage keyed by "tasksPanelContainer_colOrder".
+ * @param {Array} [colIds] Optional array of column IDs; if omitted, reads from current DOM order.
+ */
+ogTasks.saveColOrder = function (colIds) {
+    try {
+        if (!colIds) {
+            colIds = [];
+            $("#ogTasksPanelColNames th").each(function () {
+                colIds.push(($(this).attr('class') || '').split(' ')[0]);
+            });
+        }
+        localStorage["tasksPanelContainer_colOrder"] = JSON.stringify(colIds);
+    } catch (e) {}
+};
+
+/**
+ * Applies the saved column order to the DOM after a full redraw (col + th + td elements).
+ * task_actions (the leftmost checkbox/expander column) is always pinned first.
+ * task_quick_actions (the merged quick-actions + "..." overflow column) is always
+ * visible but freely repositionable, both via header drag (see initColDragDrop)
+ * and via the Columns modal — its slot in the saved order is honored like any
+ * other column.
+ * New columns not yet in the saved order are appended before the locked-last columns.
+ * Columns removed since the order was saved are silently skipped.
+ */
+ogTasks.applyColOrder = function () {
+    var LOCKED_FIRST = ['task_actions'];
+    var LOCKED_LAST  = [];
+
+    var savedOrder = ogTasks.loadColOrder();
+    if (!savedOrder || !savedOrder.length) return;
+
+    // Defensive: drop the now-removed task_btn_actions id from any pre-merge saved
+    // order so it never lingers in bookkeeping (task_quick_actions absorbed it).
+    savedOrder = savedOrder.filter(function (id) { return id !== 'task_btn_actions'; });
+
+    var $ths = $("#ogTasksPanelColNames th");
+    if ($ths.length === 0) return;
+
+    var currentColIds = [];
+    $ths.each(function () {
+        currentColIds.push(($(this).attr('class') || '').split(' ')[0]);
+    });
+
+    // Object.create(null) prevents prototype pollution: if any id were "__proto__" or
+    // "constructor", assigning to a plain {} would modify inherited prototype properties.
+    var currentSet = Object.create(null), savedSet = Object.create(null);
+    currentColIds.forEach(function (id) { currentSet[id] = true; });
+    savedOrder.forEach(function (id) { savedSet[id] = true; });
+
+    // Reorderable columns from saved order (excluding locked and removed)
+    var middle = [];
+    savedOrder.forEach(function (id) {
+        if (currentSet[id] && LOCKED_FIRST.indexOf(id) === -1 && LOCKED_LAST.indexOf(id) === -1) {
+            middle.push(id);
+        }
+    });
+    // New columns (present now but not in saved order) go after the saved ones, before locked-last
+    currentColIds.forEach(function (id) {
+        if (!savedSet[id] && LOCKED_FIRST.indexOf(id) === -1 && LOCKED_LAST.indexOf(id) === -1) {
+            middle.push(id);
+        }
+    });
+
+    var targetOrder = [];
+    LOCKED_FIRST.forEach(function (id) { if (currentSet[id]) targetOrder.push(id); });
+    middle.forEach(function (id) { targetOrder.push(id); });
+    LOCKED_LAST.forEach(function (id) { if (currentSet[id]) targetOrder.push(id); });
+
+    var changed = targetOrder.some(function (id, i) { return id !== currentColIds[i]; });
+    if (!changed) return;
+
+    ogTasks._reorderAllColumns(targetOrder, currentColIds);
+};
+
+/**
+ * Reorders col, th, and td elements in the DOM to match targetOrder.
+ * @param {Array} targetOrder Array of column IDs in the desired order.
+ * @param {Array} oldOrder    Array of column IDs reflecting the current DOM order.
+ */
+ogTasks._reorderAllColumns = function (targetOrder, oldOrder) {
+    // Persist the positional mapping so applyColOrderToRow can replay it on
+    // individual rows redrawn later (e.g. after inline edit via reDrawTask).
+    try {
+        localStorage['tasksPanelContainer_colMapping'] = JSON.stringify(
+            {target: targetOrder, source: oldOrder}
+        );
+    } catch (e) {}
+
+    var srcIndices = targetOrder.map(function (id) { return oldOrder.indexOf(id); });
+    var numCols = targetOrder.length;
+
+    // Reorder <col> elements (direct children of table, no colgroup wrapper)
+    var $cols = $("#tasksPanelContainer > col");
+    if ($cols.length) {
+        var cols = $cols.toArray();
+        var $thead = $("#tasksPanelContainer > thead").first();
+        $cols.detach();
+        srcIndices.forEach(function (i) {
+            if (i >= 0 && cols[i]) $(cols[i]).insertBefore($thead);
+        });
+    }
+
+    // Reorder <th> elements
+    var $theadTr = $("#ogTasksPanelColNames");
+    var ths = $theadTr.children('th').toArray();
+    $theadTr.empty();
+    srcIndices.forEach(function (i) { if (i >= 0 && ths[i]) $theadTr.append(ths[i]); });
+
+    // Reorder <td> elements in each tbody row; skip group-header rows (single td with colspan)
+    var tOrderKey = targetOrder.join(',');
+    $("#tasksPanelContainer tbody tr").each(function () {
+        var $tds = $(this).children('td');
+        if ($tds.length !== numCols) return;
+        var tds = $tds.toArray();
+        var $tr = $(this);
+        $tr.empty();
+        srcIndices.forEach(function (i) { if (i >= 0 && tds[i]) $tr.append(tds[i]); });
+        // Use a DOM attribute instead of jQuery data so the marker survives any
+        // future innerHTML operations that would wipe jQuery's data store.
+        this.setAttribute('data-og-col-synced', tOrderKey);
+    });
+};
+
+/**
+ * Reorders the <td> elements of a single <tr> using the stored positional mapping
+ * saved by _reorderAllColumns / _syncDataColumnsToOrder.
+ *
+ * WHY positional (not class-based):
+ *   Most <td> elements in the task row template have NO identifying CSS class
+ *   (e.g. task_actions, assigned_to render as bare <td>).  A class-based map
+ *   collapses all unclassed cells under the key '' and produces a corrupted map,
+ *   causing columns to be dropped or shifted left.
+ *
+ *   _reorderAllColumns already uses position indices successfully for the full
+ *   redraw.  We reuse the same {target, source} mapping it saves to localStorage
+ *   and apply only the td reorder to the single newly redrawn row.
+ *
+ * @param {jQuery} $tr  The task <tr> to fix (group-header rows are skipped automatically).
+ */
+ogTasks.applyColOrderToRow = function ($tr) {
+    if (!$tr || !$tr.length) return;
+
+    var mapData;
+    try {
+        mapData = JSON.parse(localStorage['tasksPanelContainer_colMapping'] || 'null');
+    } catch (e) { mapData = null; }
+
+    // No column reorder has been applied yet — nothing to do.
+    if (!mapData || !mapData.target || !mapData.source) return;
+
+    var srcIndices = mapData.target.map(function (id) {
+        return mapData.source.indexOf(id);
+    });
+    var numCols = mapData.target.length;
+
+    var $tds = $tr.children('td');
+    // Skip group-header rows (single <td> with colspan) and mismatched rows.
+    if ($tds.length !== numCols) return;
+
+    var tds = $tds.toArray();
+    $tr.empty();
+    srcIndices.forEach(function (i) {
+        if (i >= 0 && tds[i]) $tr.append(tds[i]);
+    });
+};
+
+/**
+ * Reorders only col and td elements (not th) to match newOrder.
+ * Used after a jQuery UI sortable drag completes, when th elements are already in the new order.
+ * @param {Array} newOrder Array of column IDs in the desired order.
+ * @param {Array} oldOrder Array of column IDs reflecting the pre-drag DOM order.
+ */
+ogTasks._syncDataColumnsToOrder = function (newOrder, oldOrder) {
+    // Keep the stored mapping in sync so applyColOrderToRow stays correct.
+    try {
+        localStorage['tasksPanelContainer_colMapping'] = JSON.stringify(
+            {target: newOrder, source: oldOrder}
+        );
+    } catch (e) {}
+
+    var srcIndices = newOrder.map(function (id) { return oldOrder.indexOf(id); });
+    var numCols = newOrder.length;
+
+    // Reorder <col> elements
+    var $cols = $("#tasksPanelContainer > col");
+    if ($cols.length) {
+        var cols = $cols.toArray();
+        var $thead = $("#tasksPanelContainer > thead").first();
+        $cols.detach();
+        srcIndices.forEach(function (i) {
+            if (i >= 0 && cols[i]) $(cols[i]).insertBefore($thead);
+        });
+    }
+
+    // Reorder <td> elements; skip group-header rows (single td with colspan)
+    var tOrderKey = newOrder.join(',');
+    $("#tasksPanelContainer tbody tr").each(function () {
+        var $tds = $(this).children('td');
+        if ($tds.length !== numCols) return;
+        var tds = $tds.toArray();
+        var $tr = $(this);
+        $tr.empty();
+        srcIndices.forEach(function (i) { if (i >= 0 && tds[i]) $tr.append(tds[i]); });
+        this.setAttribute('data-og-col-synced', tOrderKey);
+    });
+};
+
+/**
+ * Initialises jQuery UI Sortable on the task-list column header row so that users can
+ * drag column headers to reorder them.  The first and last utility columns are locked.
+ * After a successful drag the new order is persisted to localStorage and colResizable
+ * is re-initialised so widths continue to work correctly.
+ */
+ogTasks.initColDragDrop = function () {
+    var $theadTr = $("#ogTasksPanelColNames");
+    if ($theadTr.length === 0) return;
+    try { $theadTr.sortable("destroy"); } catch (e) {}
+
+    var preDragColIds = null;
+
+    $theadTr.sortable({
+        items: "th:not(.task_actions)",
+        axis: "x",
+        cursor: "grabbing",
+        opacity: 0.7,
+        tolerance: "pointer",
+        placeholder: "tasks-col-drag-placeholder",
+        forcePlaceholderSize: true,
+        /**
+         * Capture the pre-drag column order for use in the update callback.
+         * We deliberately avoid reading the live DOM here: by the time "start" fires
+         * jQuery UI has already replaced the dragged <th> with a placeholder
+         * <th class="tasks-col-drag-placeholder"> and moved the original element,
+         * so iterating the DOM would produce a corrupted list.
+         * Instead we use the saved localStorage order (which always reflects the
+         * actual <col> element order), falling back to the default tasks_list_cols
+         * order when no drag has been done yet.
+         */
+        start: function (_event, ui) {
+            preDragColIds = ogTasks.loadColOrder();
+            if (!preDragColIds && ogTasks.TasksList && ogTasks.TasksList.tasks_list_cols) {
+                preDragColIds = ogTasks.TasksList.tasks_list_cols.map(function (col) { return col.id; });
+            }
+            ui.placeholder.width(ui.item.outerWidth());
+        },
+        /**
+         * After jQuery UI has moved the dragged th to its new position, sync the
+         * corresponding col and td elements, persist the new order, then reinitialise
+         * column resizing.
+         */
+        update: function () {
+            if (!preDragColIds) return;
+            // Read final th order; exclude any stray placeholder that may not yet be removed.
+            var newColIds = [];
+            $("#ogTasksPanelColNames th").each(function () {
+                var colId = ($(this).attr('class') || '').split(' ')[0];
+                if (colId !== 'tasks-col-drag-placeholder') {
+                    newColIds.push(colId);
+                }
+            });
+            ogTasks._syncDataColumnsToOrder(newColIds, preDragColIds);
+            ogTasks._rebindActionPopovers();
+            // Do NOT call saveColWidthsById() here: the DOM is in a transitional state
+            // after jQuery UI's sortable move, and reading $(th).width() at this moment
+            // may return the adjacent <col>'s width rather than the th's own stored width,
+            // corrupting the id map.  The id map saved by the last initColResize() is still
+            // accurate for every column ID, so _rebuildPositionalWidths() can use it directly.
+            // initColResize() will call saveColWidthsById() again once widths are settled.
+            ogTasks.saveColOrder(newColIds);
+            ogTasks._rebuildPositionalWidths();
+            ogTasks.initColResize();
+            preDragColIds = null;
+        }
+    });
+};
+
+/**
+ * Reorders only the td elements in each task row to match targetOrder.
+ * Used after async row rendering, when col and th are already in the correct order
+ * but the freshly-rendered td elements are still in the default template order.
+ * @param {Array} targetOrder  Desired column ID order (matches current th order).
+ * @param {Array} tdOldOrder   Column ID order the td elements were rendered in (default).
+ */
+ogTasks._syncTdsOnly = function (targetOrder, tdOldOrder) {
+    var srcIndices = targetOrder.map(function (id) { return tdOldOrder.indexOf(id); });
+    var numCols = targetOrder.length;
+    // Key representing the target order; used to skip rows already synced to this order
+    // so that a second call (e.g. on scroll-triggered lazy load of more groups) does not
+    // re-apply the transformation to rows that are already in the correct order.
+    // NOTE: We use a DOM attribute (data-og-col-synced) rather than jQuery data() so the
+    // marker survives any innerHTML operations that would wipe jQuery's data store.
+    var targetOrderKey = targetOrder.join(',');
+
+    $("#tasksPanelContainer tbody tr").each(function () {
+        var $tds = $(this).children('td');
+        if ($tds.length !== numCols) return; // skip group-header rows (single td with colspan)
+        // Skip rows that have already been reordered to this exact column order.
+        if (this.getAttribute('data-og-col-synced') === targetOrderKey) return;
+        var tds = $tds.toArray();
+        var $tr = $(this);
+        $tr.empty();
+        srcIndices.forEach(function (i) { if (i >= 0 && tds[i]) $tr.append(tds[i]); });
+        this.setAttribute('data-og-col-synced', targetOrderKey);
+    });
+};
+
+/**
+ * Re-binds the "..." overflow-actions and "working on" popovers for every row.
+ *
+ * MUST be called after any operation that empties and re-appends <td> elements to
+ * reorder columns (_syncTdsOnly, _syncDataColumnsToOrder, _reorderAllColumns).
+ * jQuery's .empty() strips all bound data — including the Bootstrap popover
+ * plugin's own internal state (`.data('bs.popover')`) — from every descendant it
+ * removes, even though the raw <button> DOM node itself is preserved and
+ * re-inserted afterward. Without this, "..." silently becomes a dead button (and
+ * the working-on-users hover popover stops working) the moment a column is
+ * reordered, since og.initPopoverBtns() was only ever called once, right after
+ * the initial render.
+ */
+ogTasks._rebindActionPopovers = function () {
+    if (typeof og === 'undefined' || typeof og.initPopoverBtns !== 'function') return;
+    var btns = $("#tasksPanelContainer .tasksActionsBtn").toArray();
+    if (btns.length) og.initPopoverBtns(btns);
+};
+
+/**
+ * Reorders td elements in a given set of <tr> rows to match the current column header order.
+ * Rows freshly inserted from the Handlebars template always have td in the default
+ * tasks_list_cols order; call this after inserting them if columns have been reordered.
+ * @param {jQuery} $rows  jQuery set of <tr> elements to fix up.
+ */
+ogTasks._syncRowTds = function ($rows) {
+    if (!ogTasks.TasksList || !ogTasks.TasksList.tasks_list_cols) return;
+    var defaultColIds = ogTasks.TasksList.tasks_list_cols.map(function (col) { return col.id; });
+    var currentThColIds = [];
+    $("#ogTasksPanelColNames th").each(function () {
+        currentThColIds.push(($(this).attr('class') || '').split(' ')[0]);
+    });
+    // Both arrays must agree on column count before we can safely build srcIndices.
+    // A length mismatch means a column was toggled between renders; srcIndices would
+    // contain -1 entries that silently drop td slots, corrupting the row.
+    if (currentThColIds.length !== defaultColIds.length) {
+        console.warn('_syncRowTds: column count mismatch (header=' + currentThColIds.length +
+            ', default=' + defaultColIds.length + '); skipping td reorder');
+        return;
+    }
+    var differs = currentThColIds.some(function (id, i) { return id !== defaultColIds[i]; });
+    if (!differs) return;
+    var srcIndices = currentThColIds.map(function (id) { return defaultColIds.indexOf(id); });
+    // Rows are rendered in defaultColIds order, so compare against that length.
+    var numCols = defaultColIds.length;
+    var targetOrderKey = currentThColIds.join(',');
+    $rows.each(function () {
+        var $tds = $(this).children('td');
+        if ($tds.length !== numCols) return;
+        var tds = $tds.toArray();
+        var $tr = $(this);
+        $tr.empty();
+        srcIndices.forEach(function (i) { if (i >= 0 && tds[i]) $tr.append(tds[i]); });
+        this.setAttribute('data-og-col-synced', targetOrderKey);
+    });
+};
+
+/**
+ * Applies saved column order, then initialises column resizing and column drag-and-drop.
+ * Called at draw() time (line 89), before async row rendering begins.
+ * Reorders col and th to the saved order; no td elements exist yet.
+ *
+ * The server config must be seeded into localStorage BEFORE applyColOrder() reads it.  On a
+ * user's first render localStorage is still empty, so seeding it later (initColResize() does
+ * it too) left the list in template order and, worse, the debounced save that follows wrote
+ * that template order back to the server — overwriting the role defaults for good.
+ */
+ogTasks.initColHeaderFeatures = function () {
+    ogTasks._applyServerColumnsConfig();
+    ogTasks.applyColOrder();
+    ogTasks.initColResize();
+    ogTasks.initColDragDrop();
+};
+
+/**
+ * Called after all async task rows have been rendered (line 566 / drawGroupNextTask finish).
+ * At this point col and th are already in the saved order from initColHeaderFeatures(), but
+ * the freshly-rendered td elements are still in the default template order.
+ * Syncs only the td elements to match the current th order, then re-inits resize and drag-drop.
+ */
+ogTasks.finalizeColHeaderFeatures = function () {
+    if (ogTasks.TasksList && ogTasks.TasksList.tasks_list_cols) {
+        // Default template order: the order tasks_list_cols was built in this render cycle.
+        var defaultColIds = ogTasks.TasksList.tasks_list_cols.map(function (col) { return col.id; });
+        var currentThColIds = [];
+        $("#ogTasksPanelColNames th").each(function () {
+            currentThColIds.push(($(this).attr('class') || '').split(' ')[0]);
+        });
+        // Only sync if the header order differs from the template render order.
+        var differs = currentThColIds.some(function (id, i) { return id !== defaultColIds[i]; });
+        if (differs) {
+            ogTasks._syncTdsOnly(currentThColIds, defaultColIds);
+            ogTasks._rebindActionPopovers();
+        }
+    }
+    ogTasks.initColResize();
+    ogTasks.initColDragDrop();
+};
+
+/**
+ * Seeds localStorage from the server-saved column config so the existing resize logic
+ * picks it up naturally. Server is authoritative for cross-device sync.
+ *
+ * The flag is set to false by new_list_tasks.php on each list reload so that a fresh
+ * server config (e.g. saved from another browser) is picked up, while still guarding
+ * against the multiple initColResize() calls that happen within a single render.
+ * Without the flag, the drag-drop handler's initColResize() call would overwrite the
+ * newly-saved colOrder with the old server value before the debounced save fires.
+ */
+ogTasks._serverColumnsConfigApplied = false;
+ogTasks._applyServerColumnsConfig = function () {
+    if (ogTasks._serverColumnsConfigApplied) return;
+    try {
+        var cfg = og.config && og.config.tasks_columns_config;
+        // If cfg is null (no saved config yet for this user), leave the flag false so
+        // the next initColResize() call can retry once the config is available.
+        if (!cfg) return;
+        if (typeof cfg === 'string') cfg = JSON.parse(cfg);
+        if (cfg.colIds) localStorage["tasksPanelContainer_colIds"] = JSON.stringify(cfg.colIds);
+        if (cfg.colPos) localStorage["tasksPanelContainer"] = cfg.colPos;
+        if (cfg.colOrder) localStorage["tasksPanelContainer_colOrder"] = JSON.stringify(cfg.colOrder);
+        ogTasks._serverColumnsConfigApplied = true;
+    } catch (e) {}
+};
+
+/**
+ * Schedules a debounced save of column config to the server.
+ * Coalesces rapid resize events into a single request fired 1.5 s after the last change.
+ */
+ogTasks._saveColumnsConfigTimer = null;
+ogTasks._skipNextScheduledSave = false;
+ogTasks._scheduleSaveColumnsConfig = function () {
+    clearTimeout(ogTasks._saveColumnsConfigTimer);
+    ogTasks._saveColumnsConfigTimer = setTimeout(function () {
+        if (ogTasks._skipNextScheduledSave) {
+			ogTasks._skipNextScheduledSave = false; return;
+		}
+        try {
+            var colIds = JSON.parse(localStorage["tasksPanelContainer_colIds"] || '{}');
+            // Capture ALL th elements (visible and hidden) in DOM order — same as saveColOrder().
+            // Using only Object.keys(colIds) would give visible-only columns, which corrupts
+            // the drag-drop handler: preDragColIds would be missing hidden column IDs, making
+            // srcIndices contain -1 entries that silently drop those td cells from every row.
+            var colOrder = [];
+            $("#tasksPanelContainer thead tr th").each(function () {
+                var colId = ($(this).attr('class') || '').split(' ')[0];
+                if (colId) colOrder.push(colId);
+            });
+            // Include the current quick-actions order so a resize/drag-triggered save
+            // (this function) never overwrites the actionsOrder saved by the Columns
+            // modal — both write to the same server-side config blob, so any payload
+            // missing a key here would erase it. Read the in-memory value the modal
+            // keeps in sync (og.config.tasks_columns_config), not just the one set at
+            // Apply time, so this stays correct even long after the modal has closed.
+            var actionsOrder = (og.config.tasks_columns_config && og.config.tasks_columns_config.actionsOrder)
+                || (ogTasks.userPreferences && ogTasks.userPreferences.actionsOrder)
+                || ogTasks.DEFAULT_ACTIONS_ORDER;
+            var config = {
+                colIds: colIds,
+                colPos: localStorage["tasksPanelContainer"] || '',
+                colOrder: colOrder.length ? colOrder : null,
+                actionsOrder: actionsOrder
+            };
+            og.openLink(og.getUrl('task', 'save_tasks_columns_config'), {
+                hideLoading: true,
+                post: { config: JSON.stringify(config) }
+            });
+        } catch (e) {}
+    }, 1500);
+};
+
+/**
+ * Persists current column widths to localStorage keyed by column ID (first CSS class on each th).
+ * This ID-based map is used to reassign widths correctly when columns are added or removed,
+ * avoiding the positional shift that would occur with colResizable's plain indexed storage.
+ */
+ogTasks.saveColWidthsById = function () {
+    try {
+        var widths = {};
+        $("#tasksPanelContainer thead tr th:visible").each(function () {
+            var colId = ($(this).attr('class') || '').split(' ')[0];
+            if (colId) {
+                widths[colId] = $(this).width();
+            }
+        });
+        localStorage["tasksPanelContainer_colIds"] = JSON.stringify(widths);
+        ogTasks._scheduleSaveColumnsConfig();
+    } catch (e) {}
+};
+
 ogTasks.initColResize = function () {
+    // Seed localStorage from server config on first call (server is authoritative for cross-device sync).
+    ogTasks._applyServerColumnsConfig();
+
+    // If the table has no visible headers yet (e.g. draw() wiped innerHTML before re-appending
+    // the thead on a redraw), bail out immediately.  Reconciliation or saveColWidthsById running
+    // against an empty th set would corrupt the stored data with ";0;<tableWidth>".
+    if ($("#tasksPanelContainer thead tr th:visible").length === 0) return;
+
     $("#tasksPanelContainer").colResizable({disable: true});//remove previous colResize
+
+    // colResizable stores widths positionally: "w1;w2;...;wN;total;tableWidth" (N+2 entries).
+    // When a column is added or removed the count changes, making the positional mapping wrong.
+    // If we have an ID-keyed backup, rebuild the positional string so each column gets its own
+    // stored width (new columns fall back to their natural DOM width).
+    try {
+        var storedData = localStorage && localStorage["tasksPanelContainer"];
+        var idData = localStorage && localStorage["tasksPanelContainer_colIds"];
+        if (storedData && idData) {
+            var storedParts = storedData.split(";");
+            var currentCols = $("#tasksPanelContainer thead tr th:visible");
+            var storedColCount = storedParts.length - 2; // non-fixed format: N+2 entries
+            if (storedColCount !== currentCols.length) {
+                var idMap = JSON.parse(idData);
+                var newParts = [];
+                var total = 0;
+                currentCols.each(function () {
+                    var colId = ($(this).attr('class') || '').split(' ')[0];
+                    var w = (colId && idMap[colId] !== undefined) ? Math.round(idMap[colId]) : Math.round($(this).width());
+                    w = Math.max(w || 50, 30); // Ensure minimum width and handle NaN
+                    newParts.push(w);
+                    total += w;
+                });
+                var tableWidth = storedParts[storedParts.length - 1];
+                localStorage["tasksPanelContainer"] = newParts.join(";") + ";" + total + ";" + tableWidth;
+            }
+        } else if (storedData) {
+            // No ID map yet (first load after this feature was deployed, or storage was
+            // partially cleared).  Bootstrap a best-effort ID map by pairing the stored
+            // positional widths with the current visible columns in order, then use the
+            // normal reconciliation path so the positional string is never wiped.
+            var storedParts = storedData.split(";");
+            var currentCols = $("#tasksPanelContainer thead tr th:visible");
+            var storedN = storedParts.length - 2; // N+2 non-fixed format
+            var bootstrapMap = {};
+            currentCols.each(function (i) {
+                var colId = ($(this).attr('class') || '').split(' ')[0];
+                if (!colId) return;
+                bootstrapMap[colId] = (i < storedN)
+                    ? (parseInt(storedParts[i]) || 50)
+                    : Math.max($(this).width() || 50, 30);
+            });
+            localStorage["tasksPanelContainer_colIds"] = JSON.stringify(bootstrapMap);
+            if (storedN !== currentCols.length) {
+                var newParts = [];
+                var total = 0;
+                currentCols.each(function () {
+                    var colId = ($(this).attr('class') || '').split(' ')[0];
+                    var w = (colId && bootstrapMap[colId] !== undefined) ? Math.round(bootstrapMap[colId]) : Math.round($(this).width());
+                    w = Math.max(w || 50, 30);
+                    newParts.push(w);
+                    total += w;
+                });
+                var tableWidth = storedParts[storedParts.length - 1];
+                localStorage["tasksPanelContainer"] = newParts.join(";") + ";" + total + ";" + tableWidth;
+            }
+        }
+    } catch (e) {}
+
     $("#tasksPanelContainer").colResizable({
         fixed: false,
         minWidth: 50,
         postbackSafe: true,
-        disable: false
+        disable: false,
+		liveDrag: true,
+		resizeMode: "fit",
+        onResize: function () {
+            ogTasks.saveColWidthsById();
+        }
     });
+
+    // Save ID-based widths after colResizable has applied postbackSafe restore to the DOM
+    ogTasks.saveColWidthsById();
+
+	// Fix jcolResizable bug that doesn't allow the user to select text inside the cells
+	document.addEventListener('selectstart', function (e) {
+		if ($(e.target).closest('#tasksPanelContainer td, #tasksPanelContainer th')) {
+			e.stopPropagation();
+			return true;
+		}
+	}, true);
 }
 //ogTasks.toggleSubtasksShow = false;
 ogTasks.toggleSubtasks = function (taskId, groupId, not_expand) {
     
     var expander = document.getElementById('ogTasksPanelFixedExpanderT' + taskId + 'G' + groupId);
     var task = this.getTask(taskId);
-    if ($("[data-level!='1'][data-parent-id='" + taskId + "']").length) {
+    // Scope to this group and include level-1 rows: a subtask can appear at root when its
+    // parent is in another group or filtered out. The old data-level!='1' check missed those
+    // rows and caused drawSubtasks to append a duplicate on every expand.
+    var $children = $('#ogTasksPanelGroup' + groupId + ' [data-parent-id="' + taskId + '"]');
+    if ($children.length) {
         
         task.isExpanded = !task.isExpanded;
         if (task.isExpanded && not_expand != true) {
-            $("[data-parent-id='" + taskId + "']").show();
+            $children.show();
         } else {
-            $("[data-parent-id='" + taskId + "']").hide();
+            $children.hide();
             if (task.subtasksIds && task.subtasksIds.length > 0) {
                 task.subtasksIds.forEach(function (value) {
                     ogTasks.toggleSubtasks(value, groupId, true);
@@ -122,10 +824,20 @@ ogTasks.toggleSubtasks = function (taskId, groupId, not_expand) {
             }
         }
     } else {
-        if (task.subtasksIds.length > 0 && not_expand != true && !task.toggleSubtasksShow) {
-            task.isExpanded = !task.isExpanded;
+        var loadKey = ogTasks._subtasksLoadKey(taskId, groupId);
+        if (ogTasks._subtasksLoadInFlight[loadKey]) {
+            if (expander) {
+                expander.className = "og-task-expander toggle_expanded";
+            }
+            return;
+        }
+        // No subtask rows in this group. toggleSubtasksShow and isExpanded may be stale
+        // (e.g. after a DOM rebuild on filter change or return from task view) — reset them
+        // so the fetch fires and the expander ends up in the correct expanded state.
+        task.toggleSubtasksShow = false;
+        if (task.subtasksIds.length > 0 && not_expand != true) {
+            task.isExpanded = true;
             og.getSubTasksAndDraw(task, groupId);
-            task.toggleSubtasksShow = true;
         }
     }
     if (expander) {
@@ -243,13 +955,14 @@ ogTasks.newTaskGroupTotals = function (group) {
     var total_cols = [];
 
     for (var i = 0; i < ogTasks.TasksList.tasks_list_cols.length; i++) {
-        if (ogTasks.TasksList.tasks_list_cols[i].id == "task_name") {
+        var col = ogTasks.TasksList.tasks_list_cols[i];
+        if (col.id == "task_name") {
             var total = lang('total') + ':';
         } else {
-            var total = group[ogTasks.TasksList.tasks_list_cols[i].group_total_field];
+            var total = group[col.group_total_field];
         }
 
-        total_cols.push({id: ogTasks.TasksList.tasks_list_cols[i].id, text: total});
+        total_cols.push({id: col.id, text: total});
     }
 
     var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
@@ -407,13 +1120,160 @@ ogTasks.expandCollapseAllTasksGroup = function (group_id) {
         if (group.alltasks_collapsed) {
             group.alltasks_collapsed = false;
             if (expander) expander.className = 'og-task-expander toggle_expanded';
+            if (group.tasksDrawn === false) {
+                // Tasks were deferred - inject them now. They arrive visible, so use
+                // slideDown instead of slideToggle (slideToggle would collapse them).
+                ogTasks._renderGroupTasks(group);
+                group.tasksDrawn = true;
+                og.eventManager.fireEvent('replace all empty breadcrumb', null);
+                $("#ogTasksPanelGroup" + group.group_id + " .task-list-row").slideDown();
+            } else {
+                $("#ogTasksPanelGroup" + group.group_id + " .task-list-row").slideToggle();
+            }
         } else {
             group.alltasks_collapsed = true;
             if (expander) expander.className = 'og-task-expander toggle_collapsed';
+            $("#ogTasksPanelGroup" + group.group_id + " .task-list-row").slideToggle();
         }
-
-        $("#ogTasksPanelGroup" + group.group_id + " .task-list-row").slideToggle();
     }
+}
+
+
+ogTasks.expandAllGroups = function () {
+    var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+    var topToolbar    = Ext.getCmp('tasksPanelTopToolbarObject');
+    var displayCriteria = bottomToolbar ? bottomToolbar.getDisplayCriteria() : null;
+    var drawOptions     = topToolbar    ? topToolbar.getDrawOptions()        : null;
+
+    for (var i = 0; i < ogTasks.Groups.length; i++) {
+        var group = ogTasks.Groups[i];
+        if (!group.alltasks_collapsed) continue;
+        var expander = document.getElementById('ogTasksPanelGroupExpanderG' + group.group_id);
+        group.alltasks_collapsed = false;
+        if (expander) expander.className = 'og-task-expander toggle_expanded';
+        if (group.tasksDrawn === false) {
+            ogTasks._renderGroupTasks(group, drawOptions, displayCriteria);
+            group.tasksDrawn = true;
+        }
+        $("#ogTasksPanelGroup" + group.group_id + " .task-list-row").slideDown();
+    }
+    og.eventManager.fireEvent('replace all empty breadcrumb', null);
+};
+
+ogTasks.collapseAllGroups = function () {
+    for (var i = 0; i < ogTasks.Groups.length; i++) {
+        var group = ogTasks.Groups[i];
+        if (group.alltasks_collapsed) continue;
+        var expander = document.getElementById('ogTasksPanelGroupExpanderG' + group.group_id);
+        group.alltasks_collapsed = true;
+        if (expander) expander.className = 'og-task-expander toggle_collapsed';
+        $("#ogTasksPanelGroup" + group.group_id + " .task-list-row").slideUp();
+    }
+    $("#tasksPanelContent").scrollTop(0);
+};
+
+// Kept for backwards compatibility: expands all if all collapsed, collapses all otherwise.
+ogTasks.expandCollapseAllGroups = function () {
+    if (ogTasks.areAllGroupsCollapsed()) {
+        ogTasks.expandAllGroups();
+    } else {
+        ogTasks.collapseAllGroups();
+    }
+}
+
+
+
+ogTasks.areAllGroupsCollapsed = function () {
+    if (ogTasks.Groups.length === 0) return false;
+    for (var i = 0; i < ogTasks.Groups.length; i++) {
+        if (!ogTasks.Groups[i].alltasks_collapsed) return false;
+    }
+    return true;
+}
+
+ogTasks.collapseAllLoadedGroups = function () {
+    for (var i = 0; i < ogTasks.Groups.length; i++) {
+        ogTasks.Groups[i].alltasks_collapsed = true;
+        var expander = document.getElementById('ogTasksPanelGroupExpanderG' + ogTasks.Groups[i].group_id);
+        if (expander) expander.className = 'og-task-expander toggle_collapsed';
+    }
+}
+
+ogTasks.loadNextGroups = function () {
+    if (ogTasks.allGroupsLoaded || ogTasks.isLoadingGroups) return;
+    // Always use the user preference count so this button is not affected by any
+    // inflated groupsPaginationCount set during state restoration.
+    ogTasks.groupsPaginationCount = ogTasks.userPreferences.groupsPaginationCount;
+    ogTasks.manualGroupLoading = true;
+    var listenerId = og.eventManager.addListener('after ogTasks.Groups list completely loaded', function () {
+        og.eventManager.removeListener(listenerId);
+        ogTasks.manualGroupLoading = false;
+        ogTasks.updateGroupPaginationButtons();
+    });
+    ogTasks.loadMoreGroups();
+}
+
+// remainingDepth tracks how many more batch loads are allowed in this "load all" run.
+// It starts at 500 (enough for any realistic dataset) and decrements by 1 on each
+// recursive call. This serves two purposes:
+//   1. Prevents an infinite loop if allGroupsLoaded never becomes true due to a bug.
+//   2. Ensures manualGroupLoading is always reset and the pagination buttons are
+//      restored even if the server repeatedly returns incomplete responses.
+// Each call loads one page of groups (groupsPaginationCount items), so 500 iterations
+// would cover 500 * groupsPaginationCount tasks before the guard kicks in.
+ogTasks.loadAllGroups = function (remainingDepth) {
+    if (typeof remainingDepth === 'undefined') remainingDepth = 500;
+    if (ogTasks.allGroupsLoaded || ogTasks.isLoadingGroups) return;
+    if (remainingDepth <= 0) {
+        // Safety net: stop the chain, re-enable scroll auto-loading and show the buttons.
+        ogTasks.manualGroupLoading = false;
+        ogTasks.updateGroupPaginationButtons();
+        return;
+    }
+    ogTasks.manualGroupLoading = true;
+    var listenerId = og.eventManager.addListener('after ogTasks.Groups list completely loaded', function () {
+        og.eventManager.removeListener(listenerId);
+        if (!ogTasks.allGroupsLoaded) {
+            // isLoadingGroups is still true here; wait for task drawing to finish before retrying
+            var breadcrumbListenerId = og.eventManager.addListener('replace all empty breadcrumb', function () {
+                og.eventManager.removeListener(breadcrumbListenerId);
+                setTimeout(function () {
+                    ogTasks.loadAllGroups(remainingDepth - 1);
+                }, 0);
+            });
+        } else {
+            ogTasks.manualGroupLoading = false;
+            ogTasks.updateGroupPaginationButtons();
+        }
+    });
+    ogTasks.loadMoreGroups();
+}
+
+ogTasks.updateGroupPaginationButtons = function () {
+    var existing = document.getElementById('tasksPanelGroupsPagination');
+    if (existing) existing.parentNode.removeChild(existing);
+    if (ogTasks.allGroupsLoaded) return;
+    if (ogTasks.isLoadingGroups) return;
+    var tbody = document.createElement('tbody');
+    tbody.id = 'tasksPanelGroupsPagination';
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    var thCount = document.querySelectorAll('#ogTasksPanelColNamesThead th').length;
+    td.colSpan = thCount || (ogTasks.TasksList ? ogTasks.TasksList.tasks_list_cols.length : 1);
+    td.className = 'tasks-group-pagination-link-container';
+    var remaining = (ogTasks.totalGroupsCount > 0) ? ogTasks.totalGroupsCount - ogTasks.Groups.length : 0;
+	if (remaining <= 0) return;
+    var loadAllLabel = lang('show all groups') + (remaining > 0 ? ' (' + remaining + ')' : '');
+    var buttons_html =
+        (remaining > ogTasks.userPreferences.groupsPaginationCount
+            ? '<button class="btn btn-sm btn-secondary-outline" onclick="ogTasks.loadNextGroups()">' + lang('show next n groups', ogTasks.userPreferences.groupsPaginationCount) + '</button>'
+            : '') +
+        '<button class="btn btn-sm btn-secondary-outline" onclick="ogTasks.loadAllGroups()">' + loadAllLabel + '</button>';
+    td.innerHTML = buttons_html;
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    var container = document.getElementById('tasksPanelContainer');
+    if (container) container.appendChild(tbody);
 }
 
 
@@ -428,55 +1288,8 @@ ogTasks.drawAddTask = function (id_subtask, group_id, level) {
 
 
 //************************************
-//*		Draw task
+//*		Main functions
 //************************************
-ogTasks.drawGroupNextTask = function (group, drawOptions, displayCriteria) {
-    var task_id = group.group_tasks_order[group.task_interval_iteration];
-    ogTasks.drawTask(group.group_tasks[task_id], drawOptions, displayCriteria, group.group_id, 1);
-
-    //start all clocks on the list
-    var clocks = $(".og-timeslot-work-started span");
-
-    for (i = 0; i < clocks.length; i++) {
-        var clockId = clocks[i].id;
-        clockId = clockId.replace("timespan", "");
-        var user_start_time = parseInt($("#" + clockId + "user_start_time").val());
-
-        og.startClock(clockId, user_start_time);
-    }
-
-
-    $("#tasksPanel"+og.genid).parent().css('overflow', 'hidden');
-
-    var btns = $(".tasksActionsBtn").toArray();
-    og.initPopoverBtns(btns);
-
-
-    ++group.task_interval_iteration;
-    if (group.task_interval_iteration == group.group_tasks_order.length) {
-        clearInterval(group.task_interval);
-
-        ++ogTasks.Groups.group_interval_iteration;
-        var group = ogTasks.Groups[ogTasks.Groups.group_interval_iteration];
-
-        //check if is the last group
-        if (typeof group != 'undefined') {
-            ogTasks.drawGroupTasks(group);
-        } else {
-            //if is the last task of the last group
-            if (ogTasks.Groups.group_interval_iteration == ogTasks.Groups.length) {
-                ogTasks.initColResize();
-                og.eventManager.fireEvent('replace all empty breadcrumb', null);
-				ogTasks.isLoadingGroups = false;
-				// if there is no scrollbar and there are more task groups to load -> load them
-				var task_content_div = $("#tasksPanelContent").get(0);
-				if (!ogTasks.allGroupsLoaded && task_content_div && task_content_div.scrollHeight <= task_content_div.clientHeight) {
-					ogTasks.loadMoreGroups();
-				}
-            }
-        }
-    }
-}
 
 ogTasks.drawGroupTasks = function (group) {
     var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
@@ -486,10 +1299,117 @@ ogTasks.drawGroupTasks = function (group) {
     var drawOptions = topToolbar.getDrawOptions();
     group.isExpanded = ogTasks.expandedGroups.indexOf(group.group_id) > -1;
 
-    group.task_interval_iteration = 0;
-    group.task_interval = setInterval(function () {
-        ogTasks.drawGroupNextTask(group, drawOptions, displayCriteria)
-    }, 50);
+    if (group.alltasks_collapsed) {
+        // Defer rendering for collapsed groups: tasks are injected on first expand,
+        // avoiding DOM work for content the user cannot see.
+        group.tasksDrawn = false;
+        // The template always renders the expander as toggle_expanded; correct it now.
+        var expander = document.getElementById('ogTasksPanelGroupExpanderG' + group.group_id);
+        if (expander) expander.className = 'og-task-expander toggle_collapsed';
+        ogTasks._completeGroupDraw();
+        return;
+    }
+
+    // Visible group: build the full group HTML as a string and inject in one DOM
+    // operation, then yield to the browser before drawing the next group.
+    ogTasks._renderGroupTasks(group, drawOptions, displayCriteria);
+    group.tasksDrawn = true;
+    setTimeout(function () { ogTasks._completeGroupDraw(); }, 0);
+};
+
+// Builds all task rows for a group as a single HTML string and injects them in
+// one DOM operation.  Clocks and popover buttons are initialised once per group
+// instead of once per task row, which is significantly faster for large groups.
+// drawOptions and displayCriteria are optional; fetched from toolbars when omitted.
+ogTasks._renderGroupTasks = function (group, drawOptions, displayCriteria) {
+    
+    if (!drawOptions || !displayCriteria) {
+        var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+        var topToolbar    = Ext.getCmp('tasksPanelTopToolbarObject');
+        if (!bottomToolbar || !topToolbar) return;
+        displayCriteria = bottomToolbar.getDisplayCriteria();
+        drawOptions     = topToolbar.getDrawOptions();
+    }
+
+    var sb = new StringBuffer();
+    for (var i = 0; i < group.group_tasks_order.length; i++) {
+        var task_id = group.group_tasks_order[i];
+        var html = ogTasks.drawTask(group.group_tasks[task_id], drawOptions, displayCriteria, group.group_id, 1, undefined, true);
+        if (html) sb.append(html);
+    }
+    var groupEl = document.getElementById('ogTasksPanelGroup' + group.group_id);
+    if (groupEl) groupEl.insertAdjacentHTML('beforeend', sb.toString());
+
+    // Sync new task rows to the current column order immediately after insertion,
+    // before the next browser repaint (which happens after the setTimeout(0) in
+    // drawGroupTasks). Without this, rows are visible in the default template order
+    // while <col>/<th> are already in the saved reordered layout — causing columns
+    // (especially additional ones like tasksShowInvoicingStatus) to appear to
+    // jump/shift when finalizeColHeaderFeatures() eventually reorders all TDs.
+    if (typeof ogTasks._syncRowTds === 'function') {
+        var $newRows = $();
+        for (var i = 0; i < group.group_tasks_order.length; i++) {
+            var $row = $('#ogTasksPanelTask' + group.group_tasks_order[i] + 'G' + group.group_id);
+            if ($row.length) $newRows = $newRows.add($row);
+        }
+        if ($newRows.length) ogTasks._syncRowTds($newRows);
+    }
+
+    // Init clocks and popover buttons scoped to this group only.
+    var groupJq = $('#ogTasksPanelGroup' + group.group_id);
+    groupJq.find('.og-timeslot-work-started span').each(function () {
+        var clockId = this.id.replace('timespan', '');
+        og.startClock(clockId, parseInt($('#' + clockId + 'user_start_time').val()));
+    });
+    og.initPopoverBtns(groupJq.find('.tasksActionsBtn').toArray());
+};
+
+// Advances to the next group in the draw queue, or fires the completion events
+// when all groups are done.  Called by drawGroupTasks after each group finishes
+// (immediately for collapsed/deferred groups, via setTimeout for visible ones).
+ogTasks._completeGroupDraw = function () {
+    ++ogTasks.Groups.group_interval_iteration;
+    var group = ogTasks.Groups[ogTasks.Groups.group_interval_iteration];
+
+    if (typeof group !== 'undefined') {
+        ogTasks.drawGroupTasks(group);
+    } else if (ogTasks.Groups.group_interval_iteration === ogTasks.Groups.length) {
+        ogTasks.finalizeColHeaderFeatures();
+        og.eventManager.fireEvent('replace all empty breadcrumb', null);
+        ogTasks.isLoadingGroups = false;
+        ogTasks.updateGroupPaginationButtons();
+        if (ogTasks.savedScrollTop > 0) {
+            (function (target) {
+                setTimeout(function () {
+                    var taskContentEl = document.getElementById('tasksPanelContent');
+                    if (taskContentEl) taskContentEl.scrollTop = target;
+                }, 0);
+            })(ogTasks.savedScrollTop);
+            ogTasks.savedScrollTop = 0;
+        }
+        // Re-expand tasks whose lazily-loaded subtasks were open before the reload.
+        var toExpand = ogTasks.savedExpandedSubtasks;
+        ogTasks.savedExpandedSubtasks = {};
+        for (var tid in toExpand) {
+            var task = ogTasks.getTask(parseInt(tid, 10));
+            if (!task) continue;
+            // Reset so toggleSubtasks triggers the AJAX re-load instead of silently skipping
+            // (task objects reused from cache still have toggleSubtasksShow=true from the previous expand).
+            // Also reset isExpanded to false so the toggle inside toggleSubtasks flips it to true,
+            // leaving isExpanded=true after the restore — required for onTaskLinkClick to capture
+            // these tasks correctly on the next navigation.
+            task.toggleSubtasksShow = false;
+            task.isExpanded = false;
+            var gids = toExpand[tid];
+            for (var gi = 0; gi < gids.length; gi++) {
+                ogTasks.toggleSubtasks(parseInt(tid, 10), gids[gi]);
+            }
+        }
+        var task_content_div = $('#tasksPanelContent').get(0);
+        if (!ogTasks.allGroupsLoaded && task_content_div && task_content_div.scrollHeight <= task_content_div.clientHeight) {
+            ogTasks.loadMoreGroups();
+        }
+    }
 };
 
 ogTasks.drawAllGroupsTasks = function (first_group_to_draw_index) {
@@ -633,10 +1553,35 @@ ogTasks.reDrawTask = function (task) {
     }
 
     og.eventManager.fireEvent('replace all empty breadcrumb', null);
-    
+
     // draw parent task's elbows
     if (task.parentId > 0) {
     	ogTasks.drawElbows(task.parentId);
+    }
+
+    // Re-apply column order to every row that was just redrawn.
+    // reDrawTask() renders rows via the Handlebars template (default tasks_list_cols order).
+    // If the user has reordered columns we must sync the fresh rows to match the header order.
+    // This must live here (not only in drawTaskRowAfterEdit) because getGroupsForTask() can
+    // trigger a second async reDrawTask() call via addTaskToGroup(), which would overwrite
+    // the sync applied by drawTaskRowAfterEdit before this fix was added.
+    if (typeof ogTasks._syncRowTds === 'function') {
+        ogTasks._syncRowTds($("[id^='ogTasksPanelTask" + task.id + "']"));
+        if (drawOptions.show_subtasks_structure && task.parentId > 0) {
+            var parentForSync = ogTasksCache.getTask(task.parentId);
+            if (parentForSync) {
+                ogTasks._syncRowTds($("[id^='ogTasksPanelTask" + parentForSync.id + "']"));
+            }
+        }
+    }
+
+    // Restore the inline-edit action bar if it was sitting on a cell in the
+    // row that was just replaced.  Without this, the user would need to wiggle
+    // the mouse to re-trigger mouseenter on the fresh cell — especially
+    // noticeable on the second reDrawTask() fired by the getGroupsForTask()
+    // async callback (addTaskToGroup path).
+    if (ogTasks.InlineCellEditor && typeof ogTasks.InlineCellEditor.onRowRedrawn === 'function') {
+        ogTasks.InlineCellEditor.onRowRedrawn(task.id);
     }
 }
 
@@ -745,7 +1690,8 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
         if (og.preferences['listing_preferences'][key]) {
             dim_classification.push(
                 {
-                    id: 'task_clasification_dim_' + drawOptions.show_dimension_cols[x],
+                    id:          'task_clasification_dim_' + drawOptions.show_dimension_cols[x],
+                    dim_id:      did,   // numeric dimension ID, used by ICE breadcrumb dialog
                     dim_mem_path: dim_mem_path
                 }
             );
@@ -753,15 +1699,15 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
     }
 
     //Dates
+    var now = new Date();
     var start_date = '';
+    var start_date_overdue = false;
     task.already_started = false;
     if (task.startDate) {
         var date = new Date(task.startDate * 1000);
         date = new Date(Date.parse(date.toUTCString().slice(0, -4)));
         var hm_format = task.useStartTime ? (og.preferences['time_format_use_24'] == 1 ? ' <br> G:i' : ' <br> g:i A') : '';
-        var now = new Date();
-        var dateFormatted = date.getYear() != now.getYear() ? date.dateFormat('M j, Y' + hm_format) : date.dateFormat('M j' + hm_format);
-        start_date = dateFormatted;
+        start_date = date.dateFormat(og.preferences['date_format'] + hm_format);
         if (date < now) task.already_started = true;
     }
     var due_date = '';
@@ -770,16 +1716,17 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
         var date = new Date((task.dueDate) * 1000);
         date = new Date(Date.parse(date.toUTCString().slice(0, -4)));
         var hm_format = task.useDueTime ? (og.preferences['time_format_use_24'] == 1 ? ' <br> G:i' : ' <br> g:i A') : '';
-        var now = new Date();
-        var dateFormatted = date.getYear() != now.getYear() ? date.dateFormat('M j, Y' + hm_format) : date.dateFormat('M j' + hm_format);
-        due_date = dateFormatted;
-
+        due_date = date.dateFormat(og.preferences['date_format'] + hm_format);
         if (task.status == 0 && date < now) {
             due_date_late = true;
         }
     }
 
     //Draw time tracking
+    // Computed unconditionally (not gated on drawOptions.show_time) because the
+    // resulting state now also decides which "time" entries feed the taskActions
+    // array below — needed for a correct "..." overflow menu even when the live
+    // clock column itself is hidden from the visible row.
     var userIsWorking = false;
     var userPaused = false;
     var userStartTime = 0;
@@ -787,97 +1734,190 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
     var userPausedTime = '';
     var workingOnUsers = new Array();
     var showWorkingOnUsers = false;
-    if (drawOptions.show_time) {
-        //is working
-        if (task.workingOnIds) {
-            var ids = (task.workingOnIds + ' ').split(',');
-            for (var i = 0; i < ids.length; i++) {
-                if (this.currentUser && ids[i] == this.currentUser.id) {
-                    userIsWorking = true;
-                    userStartTime = task.workingOnTimes[i];
-                    var pauses = (task.workingOnPauses + ' ').split(',');
-                    userPaused = pauses[i] == 1;
-                    if (userPaused) {
-                        userState = 'paused';
-                        userPausedTime = og.calculateTimeForClock(new Date(), userStartTime);
-                    }
-                } else {
-                    var usrId = parseInt(ids[i]);
-                    workingOnUsers.push(og.allUsers[usrId]);
-                    showWorkingOnUsers = true;
+    //is working
+    if (task.workingOnIds) {
+        var ids = (task.workingOnIds + ' ').split(',');
+        for (var i = 0; i < ids.length; i++) {
+            if (this.currentUser && ids[i] == this.currentUser.id) {
+                userIsWorking = true;
+                userStartTime = task.workingOnTimes[i];
+                var pauses = (task.workingOnPauses + ' ').split(',');
+                userPaused = pauses[i] == 1;
+                if (userPaused) {
+                    userState = 'paused';
+                    userPausedTime = og.calculateTimeForClock(new Date(), userStartTime);
                 }
+            } else {
+                var usrId = parseInt(ids[i]);
+                workingOnUsers.push(og.allUsers[usrId]);
+                showWorkingOnUsers = true;
             }
         }
     }
-    if (drawOptions.show_time_quick) {
-        
-    }
-
     //task actions
     var taskActions = new Array();
-    
+
+    // Mirrors the old Handlebars {{#unless_or task.is_parent task.prevent_add_time_to_parent_task}}
+    // guard: unless_or(a,b) renders its body unless BOTH a and b are true, so time-tracking
+    // actions are hidden only when the task is a parent AND explicitly flagged to prevent it.
+    // Once the task's worked time has reached/exceeded its estimated hours
+    // (task.estimated_hours_limit_reached, set in advanced_core_task_info_additional_data),
+    // actions that would ADD new time are shown disabled (not hidden) instead — see act_disabled
+    // below. Stopping/pausing/cancelling an already-running timer is never blocked by this.
+    var canAddTimeToTask = !(task.is_parent && task.prevent_add_time_to_parent_task);
+    var estimatedHoursLimitReached = !!task.estimated_hours_limit_reached;
+
     taskActions.push({
+        act_order_key: 'add_sub_task',
         act_collapsed: !drawOptions.show_quick_add_sub_tasks,
         act_onclick: "ogTasks.drawAddNewTaskForm",
         act_onclick_param: [{param_val: "'" + group_id + "',"}, {param_val: task.id + ","}, {param_val: level+ ","}, {param_val: "'',"}, {param_val: "0,"}, {param_val: "'task list - line add subtask'"}],
         act_text: lang('add subtask'),
         act_id: "ogTasksPanelExpander" + tgId,
-        act_class: "add-subtask-link ico-add coViewAction"
+        act_class: "add-subtask-link",
+        act_icon: "list-plus"
     });
     taskActions.push({
+        act_order_key: 'edit',
         act_collapsed: !drawOptions.show_quick_edit,
         act_onclick: "ogTasks.drawEditTaskForm",
         act_onclick_param: [{param_val: task.id + ","}, {param_val: "'" + group_id + "'"}],
         act_text: lang('edit'),
-        act_class: "ico-edit coViewAction"
+        act_class: "edit",
+        act_icon: "pencil-line"
     });
 
     if (task.mark_as_started) {
         taskActions.push({
+            act_order_key: 'mark_as_started',
             act_collapsed: !drawOptions.show_quick_mark_as_started,
             act_onclick: "ogTasks.ToggleChangeMarkAsStarted",
             act_onclick_param: [{param_val: task.id}],
             act_text: lang('unmark as started this task'),
-            act_class: "ico-undo coViewAction"
+            act_class: "undo",
+            act_icon: "undo-2"
         });
     } else {
         taskActions.push({
+            act_order_key: 'mark_as_started',
             act_collapsed: !drawOptions.show_quick_mark_as_started,
             act_onclick: "ogTasks.ToggleChangeMarkAsStarted",
             act_onclick_param: [{param_val: task.id}],
             act_text: lang('mark as started this task'),
-            act_class: "ico-start coViewAction"
+            act_class: "start",
+            act_icon: "play"
         });
     }
 
     if (task.status) {
         taskActions.push({
+            act_order_key: 'complete',
             act_collapsed: !drawOptions.show_quick_complete,
             act_onclick: "ogTasks.ToggleCompleteStatus",
             act_onclick_param: [{param_val: task.id + ","}, {param_val: task.status}],
             act_text: lang('reopen this task'),
-            act_class: "ico-reopen coViewAction"
+            act_class: "reopen",
+            act_icon: "refresh-cw"
         });
     } else {
         taskActions.push({
+            act_order_key: 'complete',
             act_collapsed: !drawOptions.show_quick_complete,
             act_onclick: "ogTasks.ToggleCompleteStatus",
             act_onclick_param: [{param_val: task.id + ","}, {param_val: task.status}],
             act_text: lang('complete this task'),
-            act_class: "ico-complete coViewAction"
+            act_class: "complete",
+            act_icon: "check"
         });
     }
-    /*
-    if (drawOptions.show_time_quick && task.canAddTimeslots) {
-        taskActions.push({
-            act_collapsed: true,
-            act_onclick: "ogTasks.AddWorkTime",
-            act_onclick_param: [{param_val: task.id}],
-            act_text: lang('add work'),
-            act_class: "ico-time-s coViewAction"
-        });
-    }*/
 
+    if (canAddTimeToTask) {
+        taskActions.push({
+            act_order_key: 'quick_time',
+            act_collapsed: !drawOptions.show_time_quick,
+            act_disabled: estimatedHoursLimitReached,
+            act_onclick: estimatedHoursLimitReached ? "ogTasks.doNothing" : "ogTasks.AddWorkTime",
+            act_onclick_param: estimatedHoursLimitReached ? [] : [{param_val: "[" + task.id + "]"}],
+            act_text: estimatedHoursLimitReached ? lang('cannot add time task estimated hours reached') : lang('add work'),
+            act_class: "time",
+            act_icon: "clock-plus"
+        });
+    }
+
+    if (canAddTimeToTask) {
+        if (userIsWorking) {
+            taskActions.push({
+                act_order_key: 'time',
+                act_collapsed: !drawOptions.show_time,
+                act_hide_from_row: true,
+                act_onclick: "ogTasks.closeTimeslot",
+                act_onclick_param: [{param_val: "[" + task.id + "]"}],
+                act_text: lang('close_work'),
+                act_class: "stop",
+                act_icon: "circle-stop"
+            });
+            if (userPaused) {
+                taskActions.push({
+                    act_order_key: 'time',
+                    act_collapsed: !drawOptions.show_time,
+                    act_hide_from_row: true,
+                    act_onclick: "ogTasks.executeAction",
+                    act_onclick_param: [{param_val: "\"resume_work\",[" + task.id + "]"}],
+                    act_text: lang('pause_work'),
+                    act_class: "play",
+                    act_icon: "circle-play"
+                });
+            } else {
+                taskActions.push({
+                    act_order_key: 'time',
+                    act_collapsed: !drawOptions.show_time,
+                    act_hide_from_row: true,
+                    act_onclick: "ogTasks.executeAction",
+                    act_onclick_param: [{param_val: "\"pause_work\",[" + task.id + "]"}],
+                    act_text: lang('pause_work'),
+                    act_class: "pause",
+                    act_icon: "circle-pause"
+                });
+            }
+            taskActions.push({
+                act_order_key: 'time',
+                act_collapsed: !drawOptions.show_time,
+                act_hide_from_row: true,
+                act_onclick: "ogTasks.executeAction",
+                act_onclick_param: [{param_val: "\"cancel_work\",[" + task.id + "]"}],
+                act_text: lang('discard_work'),
+                act_class: "cancel",
+                act_icon: "circle-x"
+            });
+        } else if (task.canAddTimeslots) {
+            taskActions.push({
+                act_order_key: 'time',
+                act_collapsed: !drawOptions.show_time,
+                act_hide_from_row: true,
+                act_disabled: estimatedHoursLimitReached,
+                act_onclick: estimatedHoursLimitReached ? "ogTasks.doNothing" : "ogTasks.executeAction",
+                act_onclick_param: estimatedHoursLimitReached ? [] : [{param_val: "'start_work',[" + task.id + "],'','#tasksPanelContainer'"}],
+                act_text: estimatedHoursLimitReached ? lang('cannot add time task estimated hours reached') : lang('start_work'),
+                act_class: "play",
+                act_icon: "timer"
+            });
+        }
+    }
+
+    // Sort by the user's configured quick-action order (persisted alongside column
+    // config); this single sort drives both the visible icon order and the "..."
+    // popover order. An explicit push-index tiebreaker keeps the relative order of
+    // the multiple 'time' entries stable regardless of JS engine sort stability.
+    var actionsOrder = (og.config && og.config.tasks_columns_config && og.config.tasks_columns_config.actionsOrder)
+        || ogTasks.DEFAULT_ACTIONS_ORDER;
+    var actionsOrderIndex = {};
+    for (var aoi = 0; aoi < actionsOrder.length; aoi++) { actionsOrderIndex[actionsOrder[aoi]] = aoi; }
+    for (var tai = 0; tai < taskActions.length; tai++) { taskActions[tai]._pushIdx = tai; }
+    taskActions.sort(function (a, b) {
+        var ai = actionsOrderIndex.hasOwnProperty(a.act_order_key) ? actionsOrderIndex[a.act_order_key] : 999;
+        var bi = actionsOrderIndex.hasOwnProperty(b.act_order_key) ? actionsOrderIndex[b.act_order_key] : 999;
+        return ai !== bi ? ai - bi : a._pushIdx - b._pushIdx;
+    });
 
     //mark the last collapsed action with a bool
     for (var i = taskActions.length; i > 0; i--) {
@@ -938,10 +1978,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
         action_trigger = "click";
     }
 
-    color_start_date = "#888";
-    if (task.already_started && !task.mark_as_started) {
-        color_start_date = "#F00";
-    }
+    start_date_overdue = task.already_started && !task.mark_as_started;
     //template data
     var data = {
         task: task,
@@ -963,6 +2000,7 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
         assigned_to_show_name: og.config.tasks_show_assigned_to_name,
         assigned_to: assignedTo,
         assigned_by: assignedBy,
+        task_id: task.id,
         view_url: og.getUrl('task', 'view', {id: task.id}),
         task_name: taskName,
         tool_tip: tooltip,
@@ -978,19 +2016,44 @@ ogTasks.drawTaskRow = function (task, drawOptions, displayCriteria, group_id, le
         working_on_users: workingOnUsers,
         show_working_on_users: showWorkingOnUsers,
         row_total_cols: row_total_cols,
-        color_start_date: color_start_date
+        start_date_overdue: start_date_overdue
     }
 
     if (ogTasks.additional_task_list_columns) {
         data.additional_task_list_columns = [];
         for (var i = 0; i < ogTasks.additional_task_list_columns.length; i++) {
             var col = ogTasks.additional_task_list_columns[i];
+            if (!drawOptions[col.id]) continue; // skip columns not enabled in current view
             data.additional_task_list_columns.push({
                 id: col.id,
                 cls: col.cls ? col.cls : '',
-                html: task.additional_data[col.id] ? task.additional_data[col.id].html : ''
+                html: task.additional_data[col.id] ? task.additional_data[col.id].html : '<td class="' + col.id + '"></td>'
             });
         }
+    }
+
+    // Ensure task.custom_properties contains an entry for EVERY enabled CP —
+    // even those with no value on this task — so the template loop
+    // {{#each task.custom_properties}} + {{#if (isTasksColumnCPVisible id)}}
+    // renders exactly as many <td> elements as tasks_list_cols has TH entries.
+    // Without this, tasks missing a CP value produce fewer TDs than headers,
+    // breaking the _syncRowTds count check and leaving the row in default order.
+    if (ogTasks.custom_properties) {
+        var taskCpMap = {};
+        if (task.custom_properties) {
+            for (var _k = 0; _k < task.custom_properties.length; _k++) {
+                taskCpMap[task.custom_properties[_k].id] = task.custom_properties[_k];
+            }
+        }
+        var paddedCps = [];
+        for (var _cpIdx in ogTasks.custom_properties) {
+            var _cpDef = ogTasks.custom_properties[_cpIdx];
+            if (typeof _cpDef !== 'object') continue;
+            if (ogTasks.userPreferences['tasksShowCP_' + _cpDef.id] != 1) continue;
+            paddedCps.push(taskCpMap[_cpDef.id] || {id: _cpDef.id, value: ''});
+        }
+        // Use a shallow task copy so we don't mutate the cached task object.
+        data.task = $.extend({}, task, {custom_properties: paddedCps});
     }
 
     //instantiate the template
@@ -1047,32 +2110,55 @@ ogTasks.closeTimeslot = function (tId,callback) {
 }
 
 ogTasks.drawSubtasks = function (params) {
-    var task = ogTasksCache.getTask(params.task_id);
-    var group_id = params.group_id;
+    try {
+        var task = ogTasksCache.getTask(params.task_id);
+        var group_id = params.group_id;
 
-    var $task_view = $('#ogTasksPanelTask' + task.id + 'G' + group_id);
-    var subtasks_container_id = 'SubtasksT' + task.id + 'G' + group_id;
-    var level = parseInt($task_view.attr("data-level")) + ogTasks.LevelMultiplier;
+        var $task_view = $('#ogTasksPanelTask' + task.id + 'G' + group_id);
+        if ($task_view.length === 0) {
+            // Parent task is not in the DOM (e.g. filtered out). Subtasks are already
+            // rendered at root level by the main draw loop — nothing to expand here.
+            return;
+        }
+        var subtasks_container_id = 'SubtasksT' + task.id + 'G' + group_id;
+        var level = parseInt($task_view.attr("data-level")) + ogTasks.LevelMultiplier;
 
-    var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-    var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
-    var displayCriteria = bottomToolbar.getDisplayCriteria();
-    var drawOptions = topToolbar.getDrawOptions();
+        var bottomToolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
+        var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
+        var displayCriteria = bottomToolbar.getDisplayCriteria();
+        var drawOptions = topToolbar.getDrawOptions();
 
-    // reverse the array because rows are inserted in reverse order (using function "after" of the task parent)
-    task.subtasksIds = task.subtasksIds.reverse();
+        var $newRows = $();
+        var $group = $('#ogTasksPanelGroup' + group_id);
+        for (var i = 0; i < task.subtasksIds.length; i++) {
+            var subtask = ogTasks.getTask(task.subtasksIds[i]);
+            if (!subtask) continue;
+            // Subtask may already be in the list at root level (parent in another group / filter edge case).
+            if ($('#ogTasksPanelTask' + subtask.id + 'G' + group_id).length > 0) {
+                continue;
+            }
+            var subtask_row = ogTasks.drawTask(subtask, drawOptions, displayCriteria, group_id, level, null, 1);
+            subtask_row = $(subtask_row).attr("class", $task_view.attr("class"));
 
-    for (var i = 0; i < task.subtasksIds.length; i++) {
-        var subtask = ogTasks.getTask(task.subtasksIds[i]);
-        var subtask_row = ogTasks.drawTask(subtask, drawOptions, displayCriteria, group_id, level, null, 1);
-        subtask_row = $(subtask_row).attr("class", $task_view.attr("class"));
-        $task_view.after(subtask_row);
+            $last_child = $group.find('[data-parent-id="' + task.id + '"]').last();
+            if ($last_child.length > 0) {
+                $last_child.after(subtask_row);
+            } else {
+                $task_view.after(subtask_row);
+            }
+
+            $newRows = $newRows.add(subtask_row);
+        }
+        // Rows are rendered in the default column order; fix td order if columns were reordered.
+        ogTasks._syncRowTds($newRows);
+        var btns = $group.find('[data-parent-id="' + task.id + '"] .tasksActionsBtn').toArray();
+        og.initPopoverBtns(btns);
+
+        og.eventManager.fireEvent('replace all empty breadcrumb', null);
+        ogTasks.drawElbows(params.task_id);
+    } finally {
+        ogTasks._finishSubtasksLoad(params);
     }
-    var btns = $("." + subtasks_container_id + " .tasksActionsBtn").toArray();
-    og.initPopoverBtns(btns);
-
-    og.eventManager.fireEvent('replace all empty breadcrumb', null);
-    ogTasks.drawElbows(params.task_id);
 }
 
 /**
@@ -1278,6 +2364,12 @@ ogTasks.loadTimeslotUsers = function (genid, task_id) {
 
 }
 
+// No-op used as the click handler for disabled task actions (e.g. "add work" once
+// the task's estimated hours have been reached) so the icon stays visible but inert.
+ogTasks.doNothing = function () {
+    return false;
+}
+
 ogTasks.AddWorkTime = function (task_id) {
     og.render_modal_form('', {
         c: 'time',
@@ -1329,6 +2421,9 @@ ogTasks.UpdateTask = function (task_id, from_server) {
                 if (!success || data.errorCode) {
 
                 } else {
+					// update groups cache
+					ogTasks.updateTaskDataInGroups(data.task);
+
                     //Set task data
                     ogTasks.drawTaskRowAfterEdit(data);
                 }
@@ -1337,32 +2432,38 @@ ogTasks.UpdateTask = function (task_id, from_server) {
         });
     } else {
         var task = ogTasksCache.getTask(task_id);
+		ogTasks.updateTaskDataInGroups(task);
         ogTasks.reDrawTask(task);
         ogTasks.refresElbows(task_id);
     }
 }
 
 ogTasks.buildTaskPercentCompletedBar = function (task) {
-    var color_cls = 'task-percent-completed-';
+    let color_cls = 'task-percent-completed-';
+    const pct = task.percentCompleted;
 
-    if (task.percentCompleted < 25) color_cls += '0';
-    else if (task.percentCompleted < 50) color_cls += '25';
-    else if (task.percentCompleted < 75) color_cls += '50';
-    else if (task.percentCompleted < 100) color_cls += '75';
-    else if (task.percentCompleted == 100) color_cls += '100';
+    if (pct < 25) color_cls += '0';
+    else if (pct < 50) color_cls += '25';
+    else if (pct < 75) color_cls += '50';
+    else if (pct < 100) color_cls += '75';
+    else if (pct === 100) color_cls += '100';
     else color_cls += 'more-estimate';
 
-    var percent_complete = 100;
-    if (task.percentCompleted <= 100) {
-        percent_complete = task.percentCompleted;
-    }
+    const percent_complete = Math.min(pct, 100);
 
-    var html = "<span><span class='nobr'><table style='display:inline;'><tr><td style='padding-left:15px;padding-top:6px'>" +
-        "<table style='height:7px;width:50px'><tr><td style='height:7px;width:" + percent_complete + "%;' class='" + color_cls + "'></td><td style='width:" + (100 - percent_complete) + "%;background-color:#DDD'></td></tr></table>" +
-        "</td><td style='padding-left:3px;line-height:12px'><span class='percent_num' style='font-size:8px;color:#777'>" + percent_complete + "%</span></td></tr></table></span></span>";
+    const html = `
+        <div class="task-progress-container">
+            <div class="task-progress-track">
+                <div class="task-progress-fill ${color_cls}" style="--target-width: ${percent_complete}%;"></div>
+            </div>
+            <span class="percent_num">
+                ${percent_complete}%
+            </span>
+        </div>
+    `;
 
     return html;
-}
+};
 
 
 ogTasks.UpdateDependants = function (task, complete, prev_status) {
@@ -1420,16 +2521,18 @@ ogTasks.initTasksList = function () {
     }
 
     //assigned to
-    tasks_list_cols.push(
-        {
-            id: 'task_assigned_to_id',
-            title: lang('to'),
-            group_total_field: '',
-            data: 'data-resizable=1',
-            row_field: 'assignedToId',
-            col_width: '30px'
-        }
-    );
+    if (drawOptions.show_assigned_to) {
+        tasks_list_cols.push(
+            {
+                id: 'task_assigned_to_id',
+                title: lang('to'),
+                group_total_field: '',
+                data: 'data-resizable=1',
+                row_field: 'assignedToId',
+                col_width: '30px'
+            }
+        );
+    }
 
     //task name
     tasks_list_cols.push(
@@ -1469,6 +2572,7 @@ ogTasks.initTasksList = function () {
             if (!isNaN(ot_id)) ot_id = exp[1];
         }
         if (did == 0 || !og.dimensions_info[did]) continue;
+        if (og.config.enabled_dimensions.indexOf(did + "") == -1) continue;
 
         var key = 'lp_dim_' + did + '_show_as_column';
         if (og.preferences['listing_preferences'][key]) {
@@ -1504,26 +2608,30 @@ ogTasks.initTasksList = function () {
 
     //start date
     if (drawOptions.show_start_dates) {
+        var start_date_title = (ogTasks.task_gb_options_names && ogTasks.task_gb_options_names['start_date'] && ogTasks.task_gb_options_names['start_date'] != lang('start date')) ? ogTasks.task_gb_options_names['start_date'] : lang('start m');
         tasks_list_cols.push(
             {
                 id: 'task_start_date',
-                title: lang('start m'),
+                title: start_date_title,
                 group_total_field: '',
                 row_field: 'startDate',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
 
     //due date
     if (drawOptions.show_end_dates) {
+        var due_date_title = (ogTasks.task_gb_options_names && ogTasks.task_gb_options_names['due_date'] && ogTasks.task_gb_options_names['due_date'] != lang('due date')) ? ogTasks.task_gb_options_names['due_date'] : lang('due m');
         tasks_list_cols.push(
             {
                 id: 'task_due_date',
-                title: lang('due m'),
+                title: due_date_title,
                 group_total_field: '',
                 row_field: 'dueDate',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1536,7 +2644,8 @@ ogTasks.initTasksList = function () {
                 title: lang('estimated'),
                 group_total_field: 'estimatedTime',
                 row_field: 'estimatedTime',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1549,7 +2658,8 @@ ogTasks.initTasksList = function () {
                 title: lang('total estimated'),
                 group_total_field: 'totalEstimatedTime',
                 row_field: 'totalTimeEstimateString',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1560,9 +2670,10 @@ ogTasks.initTasksList = function () {
             {
                 id: 'task_pending',
                 title: lang('pending'),
-                group_total_field: 'pending_time_string', 
+                group_total_field: 'pending_time_string',
                 row_field: 'pending_time_string',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1574,8 +2685,9 @@ ogTasks.initTasksList = function () {
                 id: 'task_worked',
                 title: lang('worked'),
                 group_total_field: 'worked_time_string',
-                row_field: 'worked_time_string', 
-                col_width: '100px'
+                row_field: 'worked_time_string',
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1588,7 +2700,8 @@ ogTasks.initTasksList = function () {
                 title: lang('total worked'),
                 group_total_field: 'overall_worked_time_string',
                 row_field: 'overall_worked_time_string',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1601,7 +2714,8 @@ ogTasks.initTasksList = function () {
                 title: lang('remaining time'),
                 group_total_field: 'remaining_time_string',
                 row_field: 'remaining_time_string',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1614,7 +2728,8 @@ ogTasks.initTasksList = function () {
                 title: lang('total remaining time'),
                 group_total_field: 'total_remaining_time_string',
                 row_field: 'total_remaining_time_string',
-                col_width: '100px'
+                col_width: '100px',
+                data: 'data-resizable=1'
             }
         );
     }
@@ -1669,19 +2784,28 @@ ogTasks.initTasksList = function () {
         }
     }
 
-    //quick actions
+    //quick actions + overflow menu (merged single column)
+    // Auto-size the column to how many icons can actually appear per the current
+    // "Show" settings, instead of a fixed guess: ~26px per icon slot (18px icon +
+    // 4px horizontal padding each side, per .task-action-icon in tasks.css). "time"
+    // reserves up to 3 slots since an actively-worked task shows stop/pause-resume/
+    // cancel simultaneously; the "..." overflow button is reserved unconditionally
+    // since it's common for at least one quick action to be hidden.
+    var actionIconSlots =
+        (drawOptions.show_quick_add_sub_tasks ? 1 : 0) +
+        (drawOptions.show_quick_edit ? 1 : 0) +
+        (drawOptions.show_quick_mark_as_started ? 1 : 0) +
+        (drawOptions.show_quick_complete ? 1 : 0) +
+        (drawOptions.show_time_quick ? 1 : 0) +
+        (drawOptions.show_time ? 3 : 0) +
+        1; // "..." overflow button
+    var actionsColWidth = Math.max(70, actionIconSlots * 26 + 10) + 'px';
+
     tasks_list_cols.push(
         {
             id: 'task_quick_actions',
-            col_width: '100px'
-        }
-    );
-
-    //actions btn
-    tasks_list_cols.push(
-        {
-            id: 'task_btn_actions',
-            col_width: '100px'
+            title: lang('actions'),
+            col_width: actionsColWidth
         }
     );
 
@@ -1984,7 +3108,6 @@ ogTasks.classifyTasks = function (task_ids, member_id, dimension_id, from_group_
 		og.dimension_object_type_contents[dimension_id][member_type_id][tasks_type.id] &&
 		og.dimension_object_type_contents[dimension_id][member_type_id][tasks_type.id].multiple;
 
-	
     // if there are tasks classified in dimension_id => check if remove previous members of dimension_id
     if (is_classified_in_dim && allows_multiple_classification && !isNaN(member_id) && member_id > 0) {
 
@@ -2110,3 +3233,315 @@ ogTasks.createDimensionColumnMenuItem = function (did, label, menu_key, option_n
 
     return menu_config;
 }
+
+// ── Member hover card ──────────────────────────────────────────────────────
+// Shows a floating card with member custom-property data when the user hovers
+// a .real-breadcrumb span inside the tasks panel.
+ogTasks.MemberHoverCard = (function ($) {
+
+    var _$card    = null;   // the floating card DOM element
+    var _cache    = {};     // member_id → html string (or '' when no data)
+    var _pending  = {};     // member_id → true while an AJAX request is in flight
+    var _showTimer  = null; // debounce timer before showing
+    var _hideTimer  = null; // debounce timer before hiding
+    var _$titleSpan = null; // span whose native title was suppressed while card is visible
+    var SHOW_DELAY  = 300;  // ms to wait before showing after hover
+    var HIDE_DELAY  = 150;  // ms to wait before hiding after leave
+
+    // Suppress the span's native tooltip while the card is visible — the card
+    // already shows the member path, so the browser tooltip would just duplicate it.
+    function _suppressTitle($span) {
+        _restoreTitle();
+        var t = $span.attr('title');
+        if (t == null) return;
+        $span.data('mhc-original-title', t).removeAttr('title');
+        _$titleSpan = $span;
+    }
+
+    function _restoreTitle() {
+        if (!_$titleSpan) return;
+        var t = _$titleSpan.data('mhc-original-title');
+        if (t != null) _$titleSpan.attr('title', t).removeData('mhc-original-title');
+        _$titleSpan = null;
+    }
+
+    function _getOrCreate$card() {
+        if (!_$card || !_$card.parent().length) {
+            _$card = $('<div class="member-hover-card"></div>').hide().appendTo('body');
+            _$card.on('mouseenter', function () {
+                clearTimeout(_hideTimer);
+            });
+            _$card.on('mouseleave', function () {
+                _scheduleHide();
+            });
+        }
+        return _$card;
+    }
+
+    function _extractMemberId($span) {
+        var cls = $span.attr('class') || '';
+        var m = cls.match(/\bbread-crumb-(\d+)\b/);
+        return m ? m[1] : null;
+    }
+
+    function _positionCard($anchor) {
+        var $c    = _getOrCreate$card();
+        var rect  = $anchor[0].getBoundingClientRect();
+        var winW  = window.innerWidth;
+        var winH  = window.innerHeight;
+        var cardW = $c.outerWidth() || 280;
+        var cardH = $c.outerHeight() || 200;
+        var top   = rect.bottom + 6;
+        var left  = rect.left;
+        // flip above if not enough space below
+        if (top + cardH > winH - 10) top = rect.top - cardH - 6;
+        // keep within right edge
+        if (left + cardW > winW - 10) left = winW - cardW - 10;
+        if (left < 6) left = 6;
+        $c.css({ top: top, left: left });
+    }
+
+    function _renderCard(member) {
+        if (!member || !member.groups || !member.groups.length) return '';
+        var body = '';
+        for (var gi = 0; gi < member.groups.length; gi++) {
+            var g = member.groups[gi];
+            if (!g.properties || !g.properties.length) continue;
+            var groupRows = '';
+            for (var pi = 0; pi < g.properties.length; pi++) {
+                var p = g.properties[pi];
+                if (!p.value && p.value !== 0) continue;
+                groupRows += '<div class="mhc-row">' +
+                    '<span class="mhc-label">' + og.clean(p.label) + '</span>' +
+                    '<span class="mhc-value">' + og.clean(p.value) + '</span>' +
+                '</div>';
+            }
+            if (!groupRows) continue; // skip group entirely if all values are empty
+            if (g.name) {
+                body += '<div class="mhc-group-name">' + og.clean(g.name) + '</div>';
+            }
+            body += groupRows;
+        }
+        if (!body) return '';
+        var editUrl = og.getUrl('member', 'edit', {id: member.id});
+
+        var editLink = '<a href="#" class="mhc-edit-link" ' +
+            'onclick="og.disableEventPropagation(event); ogTasks.MemberHoverCard.hide(); og.render_modal_form(\'\', {url:\'' + editUrl + '\'});">' +
+            og.clean(lang('edit name', member.name)) + '</a>';
+        return '<div class="mhc-header">' +
+                   '<span class="mhc-header-name">' + og.clean(member.name) + '</span>' +
+               '</div>' +
+               '<div class="mhc-body">' + body + '</div>' +
+               '<div class="mhc-footer">' + editLink + '</div>';
+    }
+
+    function _showCard($span, memberId) {
+        var $c = _getOrCreate$card();
+        if (_cache[memberId] === undefined) {
+            // Not yet cached — fetch and then show
+            if (_pending[memberId]) return; // already fetching
+            _pending[memberId] = true;
+            $c.data('current-member', memberId);
+            og.openLink(og.getUrl('dimension', 'get_member_properties_data', {member_id: memberId}), {
+                hideLoading: true,
+                callback: function (success, data) {
+                    var member = (success && data && data.member) ? data.member : null;
+                    _cache[memberId] = member;
+                    delete _pending[memberId];
+                    // Only show if the cursor is still on this span
+                    if (_$card && _$card.data('current-member') == memberId) {
+                        var html = _renderCard(member);
+                        if (html) {
+                            $c.html(html).show();
+                            _positionCard($span);
+                            _suppressTitle($span);
+                        }
+                    }
+                }
+            });
+            return;
+        }
+
+        var html = _renderCard(_cache[memberId]);
+        if (!html) return; // no properties to show
+        $c.data('current-member', memberId).html(html);
+        _positionCard($span);
+        $c.show();
+        _suppressTitle($span);
+    }
+
+    function _scheduleHide() {
+        clearTimeout(_hideTimer);
+        _hideTimer = setTimeout(function () {
+            var $c = _getOrCreate$card();
+            $c.hide().data('current-member', null);
+            _restoreTitle();
+        }, HIDE_DELAY);
+    }
+
+    function init() {
+        if ($(document).data('mhc-bound')) return;
+        $(document).data('mhc-bound', true);
+
+        $(document).on('mouseenter', '#tasksPanelContainer .real-breadcrumb', function () {
+            var $span    = $(this);
+            var memberId = _extractMemberId($span);
+            if (!memberId) return;
+            clearTimeout(_hideTimer);
+            clearTimeout(_showTimer);
+            _showTimer = setTimeout(function () {
+                _showCard($span, memberId);
+            }, SHOW_DELAY);
+        });
+
+        $(document).on('mouseleave', '#tasksPanelContainer .real-breadcrumb', function () {
+            clearTimeout(_showTimer);
+            _scheduleHide();
+        });
+
+        // Clicking a breadcrumb applies that member's filter and redraws the
+        // list, so the hovered span is gone before mouseleave can fire and the
+        // card would stay open. Any click outside the card closes it — the
+        // card's own links (edit member) keep working.
+        // hide() also clears the pending show timer and the card's
+        // current-member marker, so a fetch still in flight won't pop the card
+        // open after the redraw.
+        $(document).on('mousedown', function (e) {
+            if ($(e.target).closest('.member-hover-card').length) return;
+            hide();
+        });
+    }
+
+    function hide() {
+        clearTimeout(_showTimer);
+        clearTimeout(_hideTimer);
+        if (_$card) _$card.hide().data('current-member', null);
+        _restoreTitle();
+    }
+
+    return { init: init, hide: hide };
+
+}(jQuery));
+// ── END Member hover card ──────────────────────────────────────────────────
+
+// ── Assignee hover card ──────────────────────────────────────────────────
+ogTasks.AssigneeHoverCard = (function ($) {
+
+    var _$card    = null;
+    var _showTimer = null;
+    var _hideTimer = null;
+    var _$titleEl  = null;
+    var SHOW_DELAY = 80;
+    var HIDE_DELAY = 150;
+
+    function _suppressTitle($el) {
+        _restoreTitle();
+        var t = $el.attr('title');
+        if (t == null) return;
+        $el.data('ahc-original-title', t).removeAttr('title');
+        _$titleEl = $el;
+    }
+
+    function _restoreTitle() {
+        if (!_$titleEl) return;
+        var t = _$titleEl.data('ahc-original-title');
+        if (t != null) _$titleEl.attr('title', t).removeData('ahc-original-title');
+        _$titleEl = null;
+    }
+
+    function _getOrCreate$card() {
+        if (!_$card || !_$card.parent().length) {
+            _$card = $('<div class="member-hover-card mhc-compact"></div>').hide().appendTo('body');
+            _$card.on('mouseenter', function () {
+                clearTimeout(_hideTimer);
+            });
+            _$card.on('mouseleave', function () {
+                _scheduleHide();
+            });
+        }
+        return _$card;
+    }
+
+    function _positionCard($anchor) {
+        var $c    = _getOrCreate$card();
+        var rect  = $anchor[0].getBoundingClientRect();
+        var winW  = window.innerWidth;
+        var winH  = window.innerHeight;
+        var cardW = $c.outerWidth() || 160;
+        var cardH = $c.outerHeight() || 40;
+        var top   = rect.bottom + 6;
+        var left  = rect.left;
+        // flip above if not enough space below
+        if (top + cardH > winH - 10) top = rect.top - cardH - 6;
+        // keep within right edge
+        if (left + cardW > winW - 10) left = winW - cardW - 10;
+        if (left < 6) left = 6;
+        $c.css({ top: top, left: left });
+    }
+
+    function _renderCard(user) {
+        if (!user || !user.name) return '';
+        return '<div class="mhc-compact-row">' +
+                   '<img class="mhc-compact-avatar" src="' + user.img_url + '" alt="" />' +
+                   '<span class="mhc-compact-name">' + og.clean(user.name) + '</span>' +
+               '</div>';
+    }
+
+    function _showCard($el, userId) {
+        var user = og.allUsers ? og.allUsers[userId] : null;
+        var html = _renderCard(user);
+        if (!html) return; // no data to show, leave native title alone
+
+        var $c = _getOrCreate$card();
+        $c.html(html).show();
+        _positionCard($el);
+        _suppressTitle($el);
+    }
+
+    function _scheduleHide() {
+        clearTimeout(_hideTimer);
+        _hideTimer = setTimeout(function () {
+            _getOrCreate$card().hide();
+            _restoreTitle();
+        }, HIDE_DELAY);
+    }
+
+    function init() {
+        if ($(document).data('ahc-bound')) return;
+        $(document).data('ahc-bound', true);
+
+        $(document).on('mouseenter', '#tasksPanelContainer .assignee-hover-target', function () {
+            var $el    = $(this);
+            var userId = $el.attr('data-assignee-id');
+            if (!userId) return;
+            clearTimeout(_hideTimer);
+            clearTimeout(_showTimer);
+            _showTimer = setTimeout(function () {
+                _showCard($el, userId);
+            }, SHOW_DELAY);
+        });
+
+        $(document).on('mouseleave', '#tasksPanelContainer .assignee-hover-target', function () {
+            clearTimeout(_showTimer);
+            _scheduleHide();
+        });
+
+        // Same as the member card: a click can redraw the row under the cursor,
+        // and mouseleave never fires on the removed element.
+        $(document).on('mousedown', function (e) {
+            if ($(e.target).closest('.member-hover-card').length) return;
+            hide();
+        });
+    }
+
+    function hide() {
+        clearTimeout(_showTimer);
+        clearTimeout(_hideTimer);
+        if (_$card) _$card.hide();
+        _restoreTitle();
+    }
+
+    return { init: init, hide: hide };
+
+}(jQuery));
+// ── END Assignee hover card ──────────────────────────────────────────────

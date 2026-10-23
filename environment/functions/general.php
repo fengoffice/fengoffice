@@ -654,18 +654,335 @@ function gen_id() {
 	return $id;
 }
 
-function purify_html($html) {
-	include(LIBRARY_PATH . '/htmlpurifier/library/HTMLPurifier.auto.php');
+/**
+ * Returns true when the image src already points to a persisted public FileRepository file.
+ */
+function is_wysiwyg_persisted_image_url($url) {
+	return is_string($url) && strpos($url, 'get_public_file') !== false;
+}
 
-	/*$config = null;
-	if (defined('CUSTOM_HTMLPURIFIER_CACHEDIR') && is_dir(CUSTOM_HTMLPURIFIER_CACHEDIR)) {
-		$config = HTMLPurifier_Config::createDefault();
-		$config->set('Cache.SerializerPath', CACHE_DIR);
-	}*/
+/**
+ * Maps a file extension to an image MIME type.
+ */
+function wysiwyg_inline_image_mime_type($extension) {
+	$map = array(
+		'png' => 'image/png',
+		'jpg' => 'image/jpeg',
+		'jpeg' => 'image/jpeg',
+		'gif' => 'image/gif',
+		'webp' => 'image/webp',
+		'bmp' => 'image/bmp',
+		'svg' => 'image/svg+xml',
+		'svg+xml' => 'image/svg+xml',
+	);
+	$extension = strtolower($extension);
+	$extension = $extension === 'svg+xml' ? $extension : preg_replace('/[^a-z0-9]/', '', $extension);
+	return array_var($map, $extension, 'image/png');
+}
+
+/**
+ * Stores an image file in FileRepository (public) and returns its serving URL.
+ */
+function add_wysiwyg_inline_image_to_repository($file_path, $mime_type = null) {
+	if (!is_string($file_path) || !file_exists($file_path) || !is_readable($file_path)) {
+		return null;
+	}
+	$file_name = basename($file_path);
+	if (empty($mime_type)) {
+		$mime_type = function_exists('mime_content_type') ? @mime_content_type($file_path) : null;
+	}
+	if (empty($mime_type)) {
+		$extension = pathinfo($file_path, PATHINFO_EXTENSION);
+		$mime_type = wysiwyg_inline_image_mime_type($extension);
+	}
+	try {
+		$repo_id = FileRepository::addFile($file_path, array(
+			'name' => $file_name,
+			'type' => $mime_type,
+			'size' => filesize($file_path),
+			'public' => true,
+		));
+		if ($repo_id && FileRepository::isInRepository($repo_id)) {
+			return get_url('files', 'get_public_file', array('id' => $repo_id));
+		}
+	} catch (Exception $e) {
+		if (class_exists('Logger', false)) {
+			Logger::log('add_wysiwyg_inline_image_to_repository: ' . $e->getMessage());
+		}
+	}
+	return null;
+}
+
+/**
+ * Resolves a /tmp/ image URL (absolute or site-relative) to a local filesystem path.
+ */
+function wysiwyg_tmp_image_url_to_path($url) {
+	if (!is_string($url) || $url === '') {
+		return null;
+	}
+	$tmp_url_prefix = with_slash(ROOT_URL) . 'tmp/';
+	if (str_starts_with($url, $tmp_url_prefix)) {
+		return str_replace(ROOT_URL, ROOT, $url);
+	}
+	if (str_starts_with($url, '/tmp/')) {
+		return ROOT . $url;
+	}
+	$tmp_path = defined('TEMP_PATH') ? TEMP_PATH : ROOT . '/tmp';
+	$file_name = basename(parse_url($url, PHP_URL_PATH));
+	if ($file_name && file_exists(rtrim($tmp_path, '/') . '/' . $file_name)) {
+		return rtrim($tmp_path, '/') . '/' . $file_name;
+	}
+	return null;
+}
+
+/**
+ * Replaces an img tag src with a persisted FileRepository URL.
+ * Uses plain string replacement — preg_quote() on multi-MB data URIs breaks PCRE and
+ * can return null, which empties the matched fragment and leaves orphan attributes
+ * like: style="max-width:100%;" />
+ */
+function wysiwyg_replace_img_src($img_tag, $old_src, $new_src) {
+	if (!is_string($img_tag) || !is_string($old_src) || !is_string($new_src) || $old_src === '') {
+		return $img_tag;
+	}
+	$pos = strpos($img_tag, $old_src);
+	if ($pos === false) {
+		return $img_tag;
+	}
+	return substr_replace($img_tag, $new_src, $pos, strlen($old_src));
+}
+
+/**
+ * Extracts a quoted attribute value that starts at $start (position of opening quote).
+ * Returns array(value, end_pos_after_closing_quote) or null.
+ */
+function wysiwyg_extract_quoted_attr_value($html, $start) {
+	if (!is_string($html) || $start < 0 || $start >= strlen($html)) {
+		return null;
+	}
+	$quote = $html[$start];
+	if ($quote !== '"' && $quote !== "'") {
+		return null;
+	}
+	$end = strpos($html, $quote, $start + 1);
+	if ($end === false) {
+		return null;
+	}
+	return array(substr($html, $start + 1, $end - $start - 1), $end + 1);
+}
+
+/**
+ * Locates the real src="..." attribute on a short <img> tag (not data-src/srcset).
+ * Uses a small regex on the tag only — never on the attribute value.
+ * Lookbehind excludes hyphenated names like data-src (plain \b would still match them).
+ * Returns the quoted attribute value or null.
+ */
+function wysiwyg_get_img_src_value($img_tag) {
+	if (!is_string($img_tag) || $img_tag === '') {
+		return null;
+	}
+	// Require a non-name character (or start) before "src", so data-src/srcset are skipped.
+	if (!preg_match('/(?<![\w:-])src\s*=/i', $img_tag, $m, PREG_OFFSET_CAPTURE)) {
+		return null;
+	}
+	$eq_pos = strpos($img_tag, '=', $m[0][1]);
+	if ($eq_pos === false) {
+		return null;
+	}
+	$q_pos = $eq_pos + 1;
+	$tag_len = strlen($img_tag);
+	while ($q_pos < $tag_len && ctype_space($img_tag[$q_pos])) {
+		$q_pos++;
+	}
+	$extracted = wysiwyg_extract_quoted_attr_value($img_tag, $q_pos);
+	return $extracted ? $extracted[0] : null;
+}
+
+/**
+ * Persists a single data:image base64 payload into FileRepository.
+ * Returns the public URL or null on failure.
+ */
+function wysiwyg_persist_data_uri_image($url, $tmp_path) {
+	if (!is_string($url) || stripos($url, 'data:image/') !== 0) {
+		return null;
+	}
+	$comma = strpos($url, ',');
+	if ($comma === false) {
+		return null;
+	}
+	$meta = substr($url, 5, $comma - 5); // after "data:"
+	if (stripos($meta, 'base64') === false) {
+		return null;
+	}
+	$mime = strtolower(trim(strtok($meta, ';')));
+	if (strpos($mime, 'image/') !== 0) {
+		return null;
+	}
+	$image_type = substr($mime, 6);
+	$extension_by_type = array(
+		'png' => 'png',
+		'jpeg' => 'jpg',
+		'jpg' => 'jpg',
+		'gif' => 'gif',
+		'webp' => 'webp',
+		'bmp' => 'bmp',
+		'svg+xml' => 'svg',
+	);
+	$extension = array_var($extension_by_type, $image_type);
+	if (!$extension) {
+		return null;
+	}
+	$data = base64_decode(substr($url, $comma + 1), true);
+	if ($data === false || strlen($data) === 0) {
+		return null;
+	}
+	$path = rtrim($tmp_path, '/') . '/' . gen_id() . '.' . $extension;
+	if (file_put_contents($path, $data) === false) {
+		return null;
+	}
+	$file_url = add_wysiwyg_inline_image_to_repository($path, wysiwyg_inline_image_mime_type($image_type));
+	@unlink($path);
+	return !empty($file_url) ? $file_url : null;
+}
+
+/**
+ * Persists inline images from data: URIs or tmp/ into FileRepository.
+ * Already-persisted get_public_file URLs and external HTTP(S) URLs are left unchanged.
+ *
+ * Intentionally avoids running PCRE over multi-megabyte data URIs (PCRE backtrack/jit
+ * limits corrupt the HTML and leave fragments such as style="max-width:100%;" />).
+ */
+function persist_wysiwyg_inline_images($html) {
+	if ($html === null || $html === '') {
+		return $html;
+	}
+
+	$needs_work = stripos($html, 'data:image/') !== false
+		|| stripos($html, '/tmp/') !== false;
+	if (!$needs_work) {
+		return $html;
+	}
+
+	$tmp_path = defined('TEMP_PATH') ? TEMP_PATH : ROOT . '/tmp';
+	if (!is_dir($tmp_path)) {
+		@mkdir($tmp_path, 0755, true);
+	}
+
+	// data: URI images — walk the string and replace src values without regex on the payload.
+	if (stripos($html, 'data:image/') !== false) {
+		$offset = 0;
+		$out = '';
+		$length = strlen($html);
+		while ($offset < $length) {
+			$img_pos = stripos($html, '<img', $offset);
+			if ($img_pos === false) {
+				$out .= substr($html, $offset);
+				break;
+			}
+			$out .= substr($html, $offset, $img_pos - $offset);
+
+			$tag_end = strpos($html, '>', $img_pos);
+			if ($tag_end === false) {
+				$out .= substr($html, $img_pos);
+				break;
+			}
+			$img_tag = substr($html, $img_pos, $tag_end - $img_pos + 1);
+
+			$url = wysiwyg_get_img_src_value($img_tag);
+			if ($url && stripos($url, 'data:image/') === 0 && !is_wysiwyg_persisted_image_url($url)) {
+				$file_url = wysiwyg_persist_data_uri_image($url, $tmp_path);
+				if (!empty($file_url)) {
+					$img_tag = wysiwyg_replace_img_src($img_tag, $url, $file_url);
+				}
+			}
+
+			$out .= $img_tag;
+			$offset = $tag_end + 1;
+		}
+		$html = $out;
+	}
+
+	// tmp/ images (legacy or transient uploads before save)
+	if (stripos($html, '/tmp/') !== false) {
+		$offset = 0;
+		$out = '';
+		$length = strlen($html);
+		while ($offset < $length) {
+			$img_pos = stripos($html, '<img', $offset);
+			if ($img_pos === false) {
+				$out .= substr($html, $offset);
+				break;
+			}
+			$out .= substr($html, $offset, $img_pos - $offset);
+
+			$tag_end = strpos($html, '>', $img_pos);
+			if ($tag_end === false) {
+				$out .= substr($html, $img_pos);
+				break;
+			}
+			$img_tag = substr($html, $img_pos, $tag_end - $img_pos + 1);
+
+			$url = wysiwyg_get_img_src_value($img_tag);
+			if ($url
+				&& !is_wysiwyg_persisted_image_url($url)
+				&& stripos($url, 'data:') !== 0
+				&& stripos($url, '/tmp/') !== false
+			) {
+				$file_path = wysiwyg_tmp_image_url_to_path($url);
+				if (!empty($file_path) && file_exists($file_path)) {
+					$file_url = add_wysiwyg_inline_image_to_repository($file_path);
+					if (!empty($file_url)) {
+						@unlink($file_path);
+						$img_tag = wysiwyg_replace_img_src($img_tag, $url, $file_url);
+					}
+				}
+			}
+
+			$out .= $img_tag;
+			$offset = $tag_end + 1;
+		}
+		$html = $out;
+	}
+
+	return $html;
+}
+
+/**
+ * @deprecated Use persist_wysiwyg_inline_images()
+ */
+function convert_data_uri_images_to_files($html) {
+	return persist_wysiwyg_inline_images($html);
+}
+
+/**
+ * Normalizes WYSIWYG HTML before save (strip newlines, persist inline images in FileRepository).
+ */
+function process_wysiwyg_html_content($html) {
+	if ($html === null || $html === '') {
+		return $html;
+	}
+	$html = str_replace(array("\r", "\n", "\r\n"), array('', '', ''), $html);
+	return persist_wysiwyg_inline_images($html);
+}
+
+function purify_html($html) {
+	if ($html === null || $html === '') {
+		return $html;
+	}
+
+	include(LIBRARY_PATH . '/htmlpurifier/library/HTMLPurifier.auto.php');
 
 	// set cache dir as the usual cache dir, to ensure a writtable dir is used
 	$config = HTMLPurifier_Config::createDefault();
 	$config->set('Cache.SerializerPath', CACHE_DIR);
+	$config->set('URI.AllowedSchemes', array(
+		'http' => true,
+		'https' => true,
+		'mailto' => true,
+		'ftp' => true,
+		'nntp' => true,
+		'news' => true,
+	));
 	
 	$p = new HTMLPurifier($config);
 	return $p->purify($html);

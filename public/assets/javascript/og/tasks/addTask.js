@@ -9,15 +9,21 @@
 //*		Draw add new task form
 //************************************
 
-ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload, req_channel){
-	var additionalParams = {};
+ogTasks.applyAssignedToFilter = function(params) {
 	var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-	if (toolbar && toolbar.filterNamesCompaniesCombo.isVisible()){
-		var value = toolbar.filterNamesCompaniesCombo.getValue();
-		if (value) {
-			additionalParams.assigned_to_contact_id = value;
+	if (toolbar && toolbar.filtercombo && toolbar.filtercombo.getValue() == 'assigned_to') {
+		if (toolbar.filterNamesCompaniesCombo) {
+			var value = toolbar.filterNamesCompaniesCombo.getValue();
+			if (value) {
+				params.assigned_to_contact_id = value;
+			}
 		}
 	}
+};
+
+ogTasks.drawAddNewTaskForm = function(group_id, parent_id, level, position, reload, req_channel){
+	var additionalParams = {};
+	ogTasks.applyAssignedToFilter(additionalParams);
 	if (parent_id > 0)
 		additionalParams.parent_id = parent_id;
 	
@@ -71,14 +77,8 @@ ogTasks.drawAddNewTaskFromData = function(container_id, req_channel){
 		input.val("");
 	});
 
-    var toolbar = Ext.getCmp('tasksPanelBottomToolbarObject');
-    if (toolbar && toolbar.filterNamesCompaniesCombo.isVisible()){
-        var value = toolbar.filterNamesCompaniesCombo.getValue();
-        if (value) {
-            task['assigned_to_contact_id'] = value;
-        }
-    }
-	
+    ogTasks.applyAssignedToFilter(task);
+
 	og.render_modal_form('', {c:'task', a:'add_task', params: task});
 }
 
@@ -758,24 +758,47 @@ ogTasks.SubmitNewTask = function(task_id,view_popup){
 }
 
 //this function is called after edit or add
-ogTasks.drawTaskRowAfterEdit = function(data) {
+ogTasks.drawTaskRowAfterEdit = function(data, skip_get_groups_for_task = false) {
 	if (!data || !data.task) return;
-	
+
 	var task = ogTasksCache.addTasks(data.task);
-	
+
 	//get the groups that this task belongs to and draw
-	ogTasks.getGroupsForTask(task.id);	
+	if (!skip_get_groups_for_task) {
+		ogTasks.getGroupsForTask(task.id);	
+	}
 	
 	
 	var topToolbar = Ext.getCmp('tasksPanelTopToolbarObject');
 	if (!topToolbar) return;
-	var drawOptions = topToolbar.getDrawOptions();
-	
-	if(drawOptions.show_subtasks_structure && task.parentId > 0){
-		//redraw all parent views
+
+	// Always redraw the edited task row so the cell content reflects the saved value.
+	ogTasks.reDrawTask(task);
+
+	// If the subtask hierarchy is visible, also redraw the parent so roll-up
+	// values (e.g. estimated time) update immediately without a full reload.
+	if (topToolbar.getDrawOptions().show_subtasks_structure && task.parentId > 0) {
 		var parent = ogTasksCache.getTask(task.parentId);
-		ogTasks.reDrawTask(task);
+		if (parent) ogTasks.reDrawTask(parent);
 	}
+
+	// Subtasks the server modified along with the task (e.g. classification applied to
+	// them) come back in data.subtasks: redraw the ones already rendered so the list needs
+	// no reload. The rest only get their cache refreshed, because reDrawTask() falls back to
+	// redrawing the whole list from the server when the task has no row.
+	if (data.subtasks && data.subtasks.length) {
+		for (var j = 0; j < data.subtasks.length; j++) {
+			var sub = data.subtasks[j];
+			if ($("[id^='ogTasksPanelTask" + sub.id + "G']").length > 0) {
+				ogTasks.drawTaskRowAfterEdit({'task': sub}, skip_get_groups_for_task);
+			} else {
+				ogTasksCache.addTasks(sub);
+			}
+		}
+	}
+
+	// Column order sync is now handled inside reDrawTask() itself, so it fires for
+	// every caller — including the async addTaskToGroup() path from getGroupsForTask().
 }
 
 ogTasks.drawTasksRowsAfterAddEdit = function(data) {
@@ -983,7 +1006,7 @@ ogTasks.drawAddSubTaskInputs = function(genid, data) {
 	
 	var i = ogTasks.subtask_count[genid];
 	
-	var html = '<div class="subtask-inputs-container '+genid+'">';
+	var html = '<div class="subtask-inputs-container '+genid+' d-flex flex-wrap align-items-center gap-2">';
 	html += '<div class="inputs-container">';
 	html += '<input type="hidden" name="task[subtasks]['+i+'][id]" value="'+ data.id +'">';
 	html += '<input type="text" name="task[subtasks]['+i+'][name]" value="'+ data.name +'" placeholder="'+ lang('task') +'" class="subtask-name">';
@@ -992,7 +1015,7 @@ ogTasks.drawAddSubTaskInputs = function(genid, data) {
 	html += '</div>';
 	html += '<div id="'+ genid +'_'+ i +'assigned_to_container" class="assigned-container"></div>';
 	html += '<div class="remove-link-container">';
-	html += '<a href="#" class="link-ico ico-delete remove-subtask-link" onclick="this.parentNode.parentNode.style.display=\'none\'; document.getElementById(\''+genid +'_'+ i +'_deleted\').value=1; document.getElementById(\''+ genid +'undo_remove\').style.display=\'\'">'+ lang('remove') +'</a>';
+	html += '<a href="#" class="list-action-icon delete d-flex flex-wrap align-items-center gap-1 remove-subtask-link" onclick="this.parentNode.parentNode.style.display=\'none\'; document.getElementById(\''+genid +'_'+ i +'_deleted\').value=1; document.getElementById(\''+ genid +'undo_remove\').style.display=\'\'"><i class="icon-circle-x"></i> '+ lang('remove') +'</a>';
 	html += '</div><div class="clear"></div></div>';
 	
 	$('#'+ genid +'subtasks').append(html);
@@ -1032,7 +1055,24 @@ ogTasks.drawAddSubTaskAssignedToInput = function(usersStore, data, genid, i) {
         triggerAction: 'all',
         selectOnFocus: true,
         valueField: 'value',
-        emptyText: (lang('select user or group') + '...')
+        emptyText: (lang('select user or group') + '...'),
+		listeners: {
+			'render': function(c) {
+				c.el.on('click', function(){
+					if(!c.isExpanded()){
+						c.expand();
+					}
+				});
+				
+				c.el.on('keydown', function(e){
+					if (e.getKey() == 32 || e.getKey() == 40) {
+						if (!c.isExpanded()) {
+							c.expand();
+						}
+					}
+				});
+			}
+		}
 	});
 	stAssignCombo.on('select', function(combo, record, index) {
 		var hf = document.getElementById(genid + '_' + combo.subtask_index + '_assigned_to');
@@ -1073,8 +1113,10 @@ ogTasks.undoRemoveSubtasks = function(genid) {
 og.init_rep_by_selectbox = function(genid) {
 	$("#" + genid + "_rep_by_no_sd").hide();
 	$("#" + genid + "_rep_by_no_dd").hide();
-	var sd = Ext.getCmp(genid + "start_date").getValue();
-	var dd = Ext.getCmp(genid + "due_date").getValue();
+	var sd_input = Ext.getCmp(genid + "start_date");
+	var sd = sd_input ? sd_input.getValue() : null;
+	var dd_input = Ext.getCmp(genid + "due_date");
+	var dd = dd_input ? dd_input.getValue() : null;
 	if (!dd || !sd) {
 		if (!dd && !sd) {
 			$("#" + genid + "_rep_by_warning").show();
@@ -1093,8 +1135,10 @@ og.change_repeat_by = function(genid) {
 	$("#" + genid + "_rep_by_warning").hide();
 	$("#" + genid + "_rep_by_no_sd").hide();
 	$("#" + genid + "_rep_by_no_dd").hide();
-	var start_date = Ext.getCmp(genid + "start_date").getValue();
-	var due_date = Ext.getCmp(genid + "due_date").getValue();
+	var sd_input = Ext.getCmp(genid + "start_date");
+	var start_date = sd_input ? sd_input.getValue() : null;
+	var dd_input = Ext.getCmp(genid + "due_date");
+	var due_date = dd_input ? dd_input.getValue() : null;
 
 	// Repeat by value
 	var selectedValue = document.getElementById(genid + "_rep_by").value;

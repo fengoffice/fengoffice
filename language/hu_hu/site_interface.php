@@ -139,6 +139,7 @@ return array(
 	'footer copy with homepage' => '© {0} - <a class="internalLink" href="{1}">{2}</a>.  Minden jog fenntartva!',
 	'footer copy without homepage' => '© {0} - {1}. Minden jog fenntartva!',
 	'footer powered' => 'Támogatta az <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Powered by',
 	
 	
 	'all documents' => 'Összes dokumentum',

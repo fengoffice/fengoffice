@@ -21,6 +21,7 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		'createdBy', 'createdById', 'dateCreated', 'assignedTo',
 		'updatedBy', 'updatedById', 'dateUpdated', 'startDate', 'dueDate',
 		'memPath', // this field contains all the classification information
+		'templateName' // column only when displaying template tasks
 	];
 
 	// let plugins add more fields to use in this component
@@ -117,6 +118,13 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 				dataIndex: 'name',
 				renderer: og.clean,
 				width: 350
+			},{
+				id: 'templateName',
+				header: lang("template"),
+				dataIndex: 'templateName',
+				renderer: og.clean,
+				hidden: true,
+				width: 150
 			},{
 				id: 'type',
 				header: lang('type'),
@@ -243,6 +251,15 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			var nameIndex = this.getColumnModel().findColumnIndex('name');
 			var lastUpdateIndex = this.getColumnModel().findColumnIndex('dateUpdated');
 			var assignedToIndex = this.getColumnModel().findColumnIndex('assignedTo');
+			var templateNameIndex = this.getColumnModel().findColumnIndex('templateName');
+
+
+			if (!filter && this.types && this.types.length == 1) {
+				filter = {
+					filter: 'type',
+					type: this.types[0]
+				};
+			}
 
 			/**
 			 * If the User clicks on Task dimension (in Link Objects modal), the startDate and dueDate
@@ -262,7 +279,18 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 					this.getColumnModel().setHidden(dueDateIndex, true);
 					this.getColumnModel().setHidden(assignedToIndex, true);
 				}
+				if(filtersMenu.indexOf("template_task") > -1) {
+					this.getColumnModel().setHidden(templateNameIndex, false);
+					if (templateNameIndex != 2) {
+						// ensure that template name column is next to task name
+						this.getColumnModel().moveColumn(templateNameIndex, 2);
+						templateNameIndex = 2;
+					}
+				} else {
+					this.getColumnModel().setHidden(templateNameIndex, true);
+				}
 				this.getColumnModel().setColumnWidth(nameIndex, 400);//name
+				this.getColumnModel().setColumnWidth(templateNameIndex, 150);//template name
 				this.getColumnModel().setColumnWidth(lastUpdateIndex, 130);//last update
 				this.getColumnModel().setColumnWidth(startDateIndex, 130);//start date
 				this.getColumnModel().setColumnWidth(dueDateIndex, 130);//due date
@@ -305,7 +333,17 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 			// always igonre context, use the filters that the user has chosen 
 			this.store.baseParams.ignore_context = 1;
 			
-			this.store.baseParams.extra_member_ids = Ext.util.JSON.encode(member_ids);
+			if (member_ids && member_ids.length > 0) {
+				this.store.baseParams.extra_member_ids = Ext.util.JSON.encode(member_ids);
+			} else {
+				delete this.store.baseParams.extra_member_ids;
+			}
+
+			// init the task template filter with only the ones in the filter
+			let obj_picker = this.ownerCt ? this.ownerCt.ownerCt : null;
+			if (obj_picker && obj_picker.add_task_template_filter && obj_picker.all_template_ids && obj_picker.all_template_ids.length > 0) {
+				this.store.baseParams.task_template_ids = obj_picker.all_template_ids.join(',');
+			}
 			
 			this.load();
 		},
@@ -483,6 +521,58 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 						scope: this
 					}
     ];
+
+	/**
+	 * Add task template filter using og.task_template_objects if defined
+	 */
+	if (config.add_task_template_filter && og.task_template_objects) {
+		let store_data = [];
+		this.all_template_ids = [];
+		for (let tid in og.task_template_objects) {
+			if (!isNaN(tid)) {
+				store_data.push([tid, og.task_template_objects[tid]]);
+				this.all_template_ids.push(tid);
+			}
+		}
+		store_data.sort(function(a, b) {
+			return a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0;
+		});
+		store_data.unshift(['0', '-- ' + lang('all templates') + ' --']);
+
+		if (store_data.length > 1) {
+			tbarItems.push({
+				id: 'comboFilterByTemplate',
+				emptyText: lang('select template'),
+				xtype: 'combo',
+				mode: 'local',
+				displayField: 'text',
+				valueField: 'value',
+				triggerAction: 'all',
+				typeAhead: false,
+				editable: false,
+				disableKeyFilter: true,
+				store: new Ext.data.SimpleStore({
+					fields: ['value', 'text'],
+					data : store_data
+				}),
+				listeners: {
+					'select' : function(combo, record) {
+						let sel_template_id = record.data.value;
+						let obj_picker = this.scope;
+
+						if (sel_template_id == 0 && obj_picker.all_template_ids && obj_picker.all_template_ids.length > 0) {
+							obj_picker.grid.store.baseParams.task_template_ids = obj_picker.all_template_ids.join(',');
+						} else {
+							obj_picker.grid.store.baseParams.task_template_ids = sel_template_id;
+						}
+						
+						obj_picker.grid.store.reload();
+					},
+				},
+				scope: this
+			});
+		}
+	}
 	
 	if (config.more_tbar_items) {
 		for (var i=0; i<config.more_tbar_items.length; i++) {
@@ -513,12 +603,14 @@ og.ObjectPicker = function(config, object_id, object_id_no_select, ignore_contex
 		iconCls: 'op-ico',
 		title: lang('select an object'),
 		buttons: [{
-			text: lang('ok'),
-			handler: this.accept,
+			text: lang('cancel'),
+			iconCls: 'btn btn-md',
+			handler: this.cancel,
 			scope: this
 		},{
-			text: lang('cancel'),
-			handler: this.cancel,
+			text: lang('ok'),
+			iconCls: 'btn btn-md btn-primary',
+			handler: this.accept,
 			scope: this
 		}],
 		items: [
@@ -637,17 +729,21 @@ og.ObjectPicker.show = function(callback, scope, config, object_id, object_id_no
 	var has_extra_member_ids = typeof(config.extra_member_ids) != 'undefined';
 	if (!has_extra_member_ids) config.extra_member_ids = [];
 	
-	config.ignore_context = 1;
+	if (typeof(config.ignore_context) == 'undefined') {
+		config.ignore_context = 1;
+	}
 	this.dialog.grid.member_filter = {};
 	
 	// initialize the member filters with the current context
-	for (x in con) {
-		this.dialog.grid.member_filter[x] = [];
-		for (i=0; i<con[x].length; i++) {
-			if (parseInt(con[x][i]) > 0) {
-				this.dialog.grid.member_filter[x].push(con[x][i]);
-				if (!has_extra_member_ids) {
-					config.extra_member_ids.push(con[x][i]);
+	if (!config.ignore_context) {
+		for (x in con) {
+			this.dialog.grid.member_filter[x] = [];
+			for (i=0; i<con[x].length; i++) {
+				if (parseInt(con[x][i]) > 0) {
+					this.dialog.grid.member_filter[x].push(con[x][i]);
+					if (!has_extra_member_ids) {
+						config.extra_member_ids.push(con[x][i]);
+					}
 				}
 			}
 		}

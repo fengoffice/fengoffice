@@ -143,6 +143,7 @@ return array(
     'footer copy with homepage' => '&copy; {0} by <a class="internalLink" href="{1}">{2}</a>. All rights reserved.',
     'footer copy without homepage' => '&copy; {0} by {1}. All rights reserved',
     'footer powered' => 'Powered by <a target="_blank" href="{0}">{1}</a>',
+    'powered by' => 'Powered by',
 
 // Menu
 	'all documents' => 'All documents',
@@ -518,7 +519,9 @@ return array(
   'last month' => 'Last month',
   'select dates...' => 'Select dates...',
 
-  'task time report description' => 'This report displays the total executed time for a list of tasks, specified by a time period, time entry type and person (optional).',
+  'task time report description' => 'This report displays the total executed time, specified by a time period, time entry type and person (optional).',
+  'report select dates' => 'Please select a start date and an end date to generate this report.',
+  'report too many results' => 'This report would return too many time entries to generate at once (more than {0}). Please narrow the date range, or filter by person, task or project, and try again.',
   'no data to display' => 'No data to display',
 
   'new company name' => 'New company name',

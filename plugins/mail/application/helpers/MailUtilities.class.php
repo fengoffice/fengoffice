@@ -13,6 +13,16 @@ if (!defined('MAIL_SIGNATURE_DIV_ATTRIBUTES')) {
 	define('MAIL_SIGNATURE_DIV_ATTRIBUTES', 'class="fengoffice_signature"');
 }
 
+// Defense-in-depth guard: if this file is included a second time within the
+// same request, bail out before redeclaring the class. Prevents the fatal
+// "Cannot declare class MailUtilities, because the name is already in use"
+// observed under PHP 8.2 when cron.php runs. Placed after the requires/defines
+// above (which are already idempotent) so a second inclusion still leaves
+// those constants defined instead of silently skipping them.
+if (class_exists('MailUtilities', false)) {
+	return;
+}
+
 class MailUtilities {
 
 	static $special_imap_folder_codes = array("\\All", "\\Archive", "\\Drafts", "\\Flagged", "\\Junk", "\\Sent", "\\Trash", "\\Important");
@@ -29,6 +39,8 @@ class MailUtilities {
 		Env::useHelper('format');
 		if (is_null($accounts)) {
 			$accounts = MailAccounts::instance()->findAllSyncAccounts();
+		} else {
+			$accounts = MailAccounts::filterSynchronizableAccounts($accounts);
 		}
 		if (config_option('user_email_fetch_count') && $maxPerAccount == 0) {
 			$maxPerAccount = config_option('user_email_fetch_count');
@@ -217,6 +229,31 @@ class MailUtilities {
 		return $address;
 	}
 
+	/**
+	 * Returns only the outer MIME header block (bytes before the first blank line).
+	 * Prevents matching In-Reply-To / References / Message-ID from attached
+	 * message/rfc822 parts or quoted body text.
+	 *
+	 * @param string $content
+	 * @return string
+	 */
+	private static function getMimeHeaderBlock($content) {
+		$pos = strpos($content, "\r\n\r\n");
+		if ($pos === false) {
+			$pos = strpos($content, "\n\n");
+		}
+		if ($pos === false) {
+			return $content;
+		}
+		return substr($content, 0, $pos);
+	}
+
+	/**
+	 * Reads a header value from raw MIME content, including RFC 5322 folded
+	 * continuation lines (value split after the colon onto following lines
+	 * starting with space/tab). Outlook/Exchange often send In-Reply-To and
+	 * References this way.
+	 */
 	private static function getHeaderValueFromContent($content, $headerName) {
 		if (stripos($content, $headerName) !== FALSE && stripos($content, $headerName) == 0) {
 			$ini = 0;
@@ -228,35 +265,274 @@ class MailUtilities {
 		$ini = stripos($content, ":", $ini);
 		if ($ini === FALSE) return "";
 		$ini++;
-		$end = stripos($content, "\n", $ini);
-		$res = trim(substr($content, $ini, $end - $ini));
 
-		return $res;
+		$content_len = strlen($content);
+		$end = $content_len;
+		$pos = $ini;
+		while ($pos < $content_len) {
+			$nl = strpos($content, "\n", $pos);
+			if ($nl === FALSE) {
+				break;
+			}
+			// Folded continuation: CRLF/LF followed by WSP
+			$next = $nl + 1;
+			if ($next < $content_len && ($content[$next] === ' ' || $content[$next] === "\t")) {
+				$pos = $next;
+				continue;
+			}
+			$end = $nl;
+			break;
+		}
+
+		$res = substr($content, $ini, $end - $ini);
+		$res = preg_replace('/\r?\n[ \t]+/', ' ', $res);
+		return trim($res);
+	}
+
+	/**
+	 * Extracts angle-bracket Message-IDs from a header value (In-Reply-To / References).
+	 * @return array
+	 */
+	private static function extractMessageIdsFromHeaderValue($header_value) {
+		$ids = array();
+		if ($header_value === '' || $header_value === null) {
+			return $ids;
+		}
+		if (preg_match_all('/<[^>]+>/', $header_value, $matches)) {
+			$ids = $matches[0];
+		}
+		return $ids;
+	}
+
+	/**
+	 * Public helper used by SaveMail and on-demand repair scripts to recover
+	 * threading headers from raw MIME (including Outlook/Exchange folded
+	 * In-Reply-To / References). Only the outer header block is scanned.
+	 *
+	 * @param string $content
+	 * @return array{in_reply_to_id:string,in_reply_to_ids:array,reference_ids:array}
+	 */
+	public static function extractThreadingIdsFromRawContent($content) {
+		$headers = self::getMimeHeaderBlock($content);
+		$in_reply_to_ids = self::extractMessageIdsFromHeaderValue(self::getHeaderValueFromContent($headers, "In-Reply-To"));
+		$reference_ids = self::extractMessageIdsFromHeaderValue(self::getHeaderValueFromContent($headers, "References"));
+		return array(
+			'in_reply_to_id' => count($in_reply_to_ids) ? $in_reply_to_ids[0] : '',
+			'in_reply_to_ids' => $in_reply_to_ids,
+			'reference_ids' => $reference_ids,
+		);
 	}
 
 	private static function getMessageIdHeaderValueFromContent($content) {
+		$headers = self::getMimeHeaderBlock($content);
 		$headerName = "Message-ID";
-		if (stripos($content, $headerName) !== FALSE && stripos($content, $headerName) == 0) {
+		if (stripos($headers, $headerName) !== FALSE && stripos($headers, $headerName) == 0) {
 			$ini = 0;
 		} else {
-			$ini = stripos($content, "\n$headerName");
+			$ini = stripos($headers, "\n$headerName");
 			if ($ini === FALSE) return "";
 		}
 
-		$ini = stripos($content, "<", $ini);
+		$ini = stripos($headers, "<", $ini);
 		if ($ini === FALSE){
 			debug_log("Message-ID not found: $content", "checkmail_log.php");
 			return "";
 		}
 
-		$end = stripos($content, ">", $ini);
-		$res = trim(substr($content, $ini, $end + 1 - $ini));
+		$end = stripos($headers, ">", $ini);
+		$res = trim(substr($headers, $ini, $end + 1 - $ini));
 		return $res;
+	}
+
+	static function isCalendarAttachment($attach) {
+		$type = array_var($attach, 'Type');
+		$subtype = array_var($attach, 'SubType');
+		$filename = array_var($attach, 'FileName');
+		return stripos($type, 'text/calendar') !== false
+			|| stripos($type, 'application/ics') !== false
+			|| ($type == 'text' && $subtype == 'calendar')
+			|| strtolower(get_file_extension($filename)) == 'ics';
+	}
+
+	/**
+	 * Collect MIME parts from a parsed email that may contain iCalendar data.
+	 *
+	 * @param array $parsedMail
+	 * @return array
+	 */
+	static function collectCalendarPartsFromParsedMail($parsedMail) {
+		$parsed_attachments = array();
+		if (!is_array($parsedMail)) {
+			return $parsed_attachments;
+		}
+
+		$parsed_attachments = array_var($parsedMail, 'Attachments', array());
+		$parsed_attachments = array_merge($parsed_attachments, array_var($parsedMail, 'Related', array()));
+		$parsed_attachments = array_merge($parsed_attachments, array_var($parsedMail, 'Alternative', array()));
+
+		if (array_var($parsedMail, 'Type') == 'text' && array_var($parsedMail, 'SubType') == 'calendar') {
+			$parsed_attachments[] = array(
+				'Data' => array_var($parsedMail, 'Data'),
+				'Type' => 'text/calendar',
+				'FileName' => 'event.ics',
+			);
+		}
+		if (self::isCalendarAttachment($parsedMail) && trim(array_var($parsedMail, 'Data', '')) != '') {
+			$parsed_attachments[] = array(
+				'Data' => array_var($parsedMail, 'Data'),
+				'Type' => array_var($parsedMail, 'Type'),
+				'SubType' => array_var($parsedMail, 'SubType'),
+				'FileName' => array_var($parsedMail, 'FileName', 'event.ics'),
+			);
+		}
+
+		return $parsed_attachments;
+	}
+
+	static function parsedMailHasCalendarContent($parsedMail, $parsed_attachments = null) {
+		if ($parsed_attachments === null) {
+			$parsed_attachments = self::collectCalendarPartsFromParsedMail($parsedMail);
+		}
+		foreach ($parsed_attachments as $attach) {
+			if (self::isCalendarAttachment($attach) && trim(array_var($attach, 'Data', '')) != '') {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Process calendar invitations from a parsed email message.
+	 *
+	 * @param array $parsedMail parsed email structure from parseMail()
+	 * @param MailAccount $account mail account that received the message
+	 * @param bool $return_html_block when true, returns array('events' => ..., 'html' => ...)
+	 * @param bool|null $calendar_processed set to true when at least one calendar part was parsed and processed
+	 * @return array list of processed events, or array with events and html block
+	 */
+	static function processCalendarInvitationsFromParsedMail($parsedMail, MailAccount $account, $return_html_block = false, &$calendar_processed = null) {
+		$events = array();
+		$html_block = '';
+		$calendar_processed = false;
+
+		if (!is_array($parsedMail)) {
+			return $return_html_block ? array('events' => $events, 'html' => $html_block) : $events;
+		}
+
+		$parsed_attachments = self::collectCalendarPartsFromParsedMail($parsedMail);
+		if (!self::parsedMailHasCalendarContent($parsedMail, $parsed_attachments)) {
+			return $return_html_block ? array('events' => $events, 'html' => $html_block) : $events;
+		}
+
+		$account_owner = Contacts::instance()->findById($account->getContactId());
+		if (!($account_owner instanceof Contact)) {
+			return $return_html_block ? array('events' => $events, 'html' => $html_block) : $events;
+		}
+
+		$previous_user = logged_user();
+		CompanyWebsite::instance()->setLoggedUser($account_owner, false, false, false);
+
+		try {
+			$event_controller = new EventController();
+			$last_ical_data = null;
+
+			foreach ($parsed_attachments as $attach) {
+				if (!self::isCalendarAttachment($attach)) {
+					continue;
+				}
+
+				$ics_data = array_var($attach, 'Data', '');
+				if (trim($ics_data) == '') {
+					continue;
+				}
+
+				$tmp_filename = ROOT . '/tmp/cal_invite_' . $account->getId() . '_' . uniqid() . '.ics';
+				file_put_contents($tmp_filename, $ics_data);
+				$ical_data = $event_controller->parse_ical_file($tmp_filename, true);
+				@unlink($tmp_filename);
+
+				if (!$ical_data) {
+					continue;
+				}
+
+				$last_ical_data = $ical_data;
+				$processed = $event_controller->process_ical_file($ical_data);
+				if (is_array($processed)) {
+					$events = array_merge($events, $processed);
+					$calendar_processed = true;
+				}
+			}
+
+			if ($return_html_block && $last_ical_data) {
+				// Attendance buttons are for the real viewer with mailbox access,
+				// acting on behalf of the contact that owns the account email.
+				$viewer = ($previous_user instanceof Contact) ? $previous_user : $account_owner;
+				$html_block = $event_controller->get_ical_html_block($last_ical_data, $events, array(
+					'mail_account' => $account,
+					'viewer' => $viewer,
+				));
+			}
+		} finally {
+			if ($previous_user instanceof Contact) {
+				CompanyWebsite::instance()->setLoggedUser($previous_user, false, false, false);
+			}
+		}
+
+		return $return_html_block ? array('events' => $events, 'html' => $html_block) : $events;
+	}
+
+	static function processCalendarInvitationsFromMailContent(MailContent $mail, $return_html_block = false, &$calendar_processed = null) {
+		$account = $mail->getAccount();
+		if (!($account instanceof MailAccount)) {
+			return $return_html_block ? array('events' => array(), 'html' => '') : array();
+		}
+		$content = $mail->getContent();
+		if (trim($content) == '') {
+			return $return_html_block ? array('events' => array(), 'html' => '') : array();
+		}
+		self::parseMail($content, $decoded, $parsedMail, $warnings);
+		return self::processCalendarInvitationsFromParsedMail($parsedMail, $account, $return_html_block, $calendar_processed);
+	}
+
+	static function processPendingCalendarInvitations($limit = 100) {
+		$processed = 0;
+		$rows = DB::executeAll("
+			SELECT mc.object_id
+			FROM ".TABLE_PREFIX."mail_contents mc
+			INNER JOIN ".TABLE_PREFIX."objects o ON o.id = mc.object_id
+			WHERE mc.state < 200
+				AND mc.is_deleted = 0
+			ORDER BY mc.object_id DESC
+			LIMIT ".(int)$limit
+		);
+		if (!is_array($rows)) {
+			return 0;
+		}
+		foreach ($rows as $row) {
+			$mail = MailContents::instance()->findById(array_var($row, 'object_id'));
+			if ($mail instanceof MailContent) {
+				if ($mail->getProperty('calendar_invitation_processed') == '1') {
+					continue;
+				}
+				try {
+					$events = self::processCalendarInvitationsFromMailContent($mail, false);
+					$mail->setProperty('calendar_invitation_processed', '1');
+					if (is_array($events) && count($events) > 0) {
+						$processed += count($events);
+					}
+				} catch (Exception $e) {
+					debug_log("Calendar invitation processing error for mail ".$mail->getId().": ".$e->__toString(), "checkmail_log.php");
+				}
+			}
+		}
+		return $processed;
 	}
 
 	static function SaveMail(&$content, MailAccount $account, $uidl, $state = 0, $imap_folder_name = '', $read = null, &$received_count) {
 
+		$repository_id = null;
 		try {
+			Env::useHelper('functions', 'mail');
 
 			if (strpos($content, '+OK ') > 0) $content = substr($content, strpos($content, '+OK '));
 			self::parseMail($content, $decoded, $parsedMail, $warnings);
@@ -266,7 +542,11 @@ class MailUtilities {
 			$from = self::getAddresses(array_var($parsedMail, "From"));
 
 			$message_id = self::getMessageIdHeaderValueFromContent($content);
-			$in_reply_to_id = self::getHeaderValueFromContent($content, "In-Reply-To");
+			$threading = self::extractThreadingIdsFromRawContent($content);
+			$in_reply_to_ids = $threading['in_reply_to_ids'];
+			$reference_ids = $threading['reference_ids'];
+			// Store the immediate parent Message-ID (first In-Reply-To token)
+			$in_reply_to_id = $threading['in_reply_to_id'];
 
 			$uid = trim($uidl);
 			if (str_starts_with($uid, '<') && str_ends_with($uid, '>')) {
@@ -414,6 +694,7 @@ class MailUtilities {
 			$mail->setState($state);
 			$mail->setImapFolderName($imap_folder_name);
 			$mail->setFrom($from);
+
 			$cc = trim(self::getAddresses(array_var($parsedMail, "Cc")));
 			if ($cc == '' && array_var($decoded, 0) && array_var($decoded[0], 'Headers')) {
 				$cc = array_var($decoded[0]['Headers'], 'cc:', '');
@@ -428,11 +709,7 @@ class MailUtilities {
 				$from_name = $from;
 			} else if (strtoupper($encoding) =='KOI8-R' || strtoupper($encoding) =='CP866' || $from_encoding != 'UTF-8' || !$enc_conv->isUtf8RegExp($from_name)){ //KOI8-R and CP866 are Russian encodings which PHP does not detect
 
-				$utf8_from = $enc_conv->convert($encoding, 'UTF-8', $from_name);
-
-				if ($enc_conv->hasError()) {
-					$utf8_from = utf8_encode($from_name);
-				}
+				$utf8_from = mail_convert_to_utf8($from_name, $encoding);
 				$utf8_from = utf8_safe($utf8_from);
 				$mail->setFromName($utf8_from);
 
@@ -440,17 +717,16 @@ class MailUtilities {
 				$mail->setFromName($from_name);
 			}
 
+			// from_copy is FULLTEXT-searched: must include display name, not only the address (see mail_update_39_40).
+			$mail->setFromCopy(trim($mail->getFromName() . ' ' . $mail->getFrom()));
+
 			$subject_aux = $parsedMail['Subject'];
 			$subject_encoding = detect_encoding($subject_aux);
 
 			$subject_multipart_encoding = array_var($parsedMail,'SubjectEncoding', strtoupper($encoding));
 
 			if ($subject_multipart_encoding != 'UTF-8' && ($subject_multipart_encoding =='KOI8-R' || $subject_multipart_encoding =='CP866' || $subject_encoding != 'UTF-8' || !$enc_conv->isUtf8RegExp($subject_aux))){ //KOI8-R and CP866 are Russian encodings which PHP does not detect
-				$utf8_subject = $enc_conv->convert($subject_multipart_encoding, 'UTF-8', $subject_aux);
-
-				if ($enc_conv->hasError()) {
-					$utf8_subject = utf8_encode($subject_aux);
-				}
+				$utf8_subject = mail_convert_to_utf8($subject_aux, $subject_multipart_encoding);
 				$utf8_subject = utf8_safe($utf8_subject);
 				$mail->setSubject($utf8_subject);
 			} else {
@@ -521,7 +797,7 @@ class MailUtilities {
 
 			switch($type) {
 				case 'html':
-					$utf8_body = $enc_conv->convert($encoding, 'UTF-8', array_var($parsedMail, 'Data', ''));
+					$utf8_body = mail_convert_to_utf8(array_var($parsedMail, 'Data', ''), $encoding);
 					//Solve bad syntax styles outlook if it exists
 					if(substr_count($utf8_body, "<style>") != substr_count($utf8_body, "</style>") && substr_count($utf8_body, "/* Font Definitions */") >= 1) {
 						$p1 = strpos($utf8_body, "/* Font Definitions */", 0);
@@ -531,13 +807,11 @@ class MailUtilities {
 
 						$utf8_body = str_replace_first("/* Font Definitions */","<style>", $utf8_body);
 					}
-					if ($enc_conv->hasError()) $utf8_body = utf8_encode(array_var($parsedMail, 'Data', ''));
 					$utf8_body = utf8_safe($utf8_body);
 					$mail->setBodyHtml($utf8_body);
 					break;
 				case 'text':
-					$utf8_body = $enc_conv->convert($encoding, 'UTF-8', array_var($parsedMail, 'Data', ''));
-					if ($enc_conv->hasError()) $utf8_body = utf8_encode(array_var($parsedMail, 'Data', ''));
+					$utf8_body = mail_convert_to_utf8(array_var($parsedMail, 'Data', ''), $encoding);
 					$utf8_body = utf8_safe($utf8_body);
 					$mail->setBodyPlain($utf8_body);
 
@@ -547,8 +821,7 @@ class MailUtilities {
 					}
 					break;
 				case 'delivery-status':
-					$utf8_body = $enc_conv->convert($encoding, 'UTF-8', array_var($parsedMail, 'Response', ''));
-					if ($enc_conv->hasError()) $utf8_body = utf8_encode(array_var($parsedMail, 'Response', ''));
+					$utf8_body = mail_convert_to_utf8(array_var($parsedMail, 'Response', ''), $encoding);
 					$utf8_body = utf8_safe($utf8_body);
 					$mail->setBodyPlain($utf8_body);
 					break;
@@ -558,10 +831,10 @@ class MailUtilities {
 						$attached_body = "";
 						foreach ($attachs as $k => $attach) {
 							if (array_var($attach, 'Type') == 'html' || array_var($attach, 'Type') == 'text') {
-								$attached_body .= $enc_conv->convert(array_var($attach, 'Encoding'), 'UTF-8', array_var($attach, 'Data'));
+								$attached_body .= mail_convert_to_utf8(array_var($attach, 'Data'), array_var($attach, 'Encoding', 'UTF-8'));
 							}
 						}
-						$mail->setBodyHtml($attached_body);
+						$mail->setBodyHtml(utf8_safe($attached_body));
 					}
 
 					if (isset($parsedMail['FileName'])) {
@@ -574,8 +847,7 @@ class MailUtilities {
 			if (isset($parsedMail['Alternative'])) {
 				foreach ($parsedMail['Alternative'] as $alt) {
 					if ($alt['Type'] == 'html' || $alt['Type'] == 'text') {
-						$body = $enc_conv->convert(array_var($alt,'Encoding','UTF-8'),'UTF-8', array_var($alt, 'Data', ''));
-						if ($enc_conv->hasError()) $body = utf8_encode(array_var($alt, 'Data', ''));
+						$body = mail_convert_to_utf8(array_var($alt, 'Data', ''), array_var($alt, 'Encoding', 'UTF-8'));
 
 						// remove large white spaces
 						//$exploded = preg_split("/[\s]+/", $body, -1, PREG_SPLIT_NO_EMPTY);
@@ -588,11 +860,23 @@ class MailUtilities {
 					if ($alt['Type'] == 'html') {
 						$mail->setBodyHtml($body);
 					} else if ($alt['Type'] == 'text') {
-						$plain = html_to_text(html_entity_decode($body, null, "UTF-8"));
+						// Prefer the raw text part; only fall back to html_to_text for HTML-ish content.
+						$plain = (strpos($body, '<') !== false && strpos($body, '>') !== false)
+							? html_to_text(html_entity_decode($body, null, "UTF-8"))
+							: $body;
 						$mail->setBodyPlain($plain);
 					}
 					// other alternative parts (like images) are not saved in database.
 				}
+			}
+
+			// Sanitize leaked MIME headers only when needed; use raw mail_data to avoid
+			// rewriting every message through mail_repair_misencoded_utf8().
+			$raw_plain = $mail->getMailData()->getBodyPlain();
+			$raw_html = $mail->getMailData()->getBodyHtml();
+			$normalized_plain = mail_normalize_plain_body($raw_plain, $raw_html);
+			if ($normalized_plain !== $raw_plain && trim($normalized_plain) !== '') {
+				$mail->setBodyPlain($normalized_plain);
 			}
 
 			$repository_id = self::SaveContentToFilesystem($mail->getUid(), $content);
@@ -601,30 +885,78 @@ class MailUtilities {
 			// START TRANSACTION
 			DB::beginWork();
 			$transaction_started = true;
-			// Conversation
-			//check if exists a conversation for this mail
-			$conv_mail = "";
-			if ($in_reply_to_id != "" && $message_id != "") {
-				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
+			// Conversation: join by In-Reply-To, then References (newest first), then reverse link
+			$conv_mail = null;
+			$parent_ids = array();
+			foreach ($in_reply_to_ids as $parent_id) {
+				if ($parent_id !== '' && !in_array($parent_id, $parent_ids)) {
+					$parent_ids[] = $parent_id;
+				}
+			}
+			// References: oldest → newest; try newest first (closest parent)
+			foreach (array_reverse($reference_ids) as $parent_id) {
+				if ($parent_id !== '' && !in_array($parent_id, $parent_ids)) {
+					$parent_ids[] = $parent_id;
+				}
+			}
 
-				//check if this mail is in two diferent conversations and fixit
-				if($conv_mail){
-					$other_conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND `conversation_id` != ".$conv_mail->getConversationId()." AND (`message_id` = '$in_reply_to_id' OR `in_reply_to_id` = '$message_id')"));
-					if($other_conv_mail){
-						$other_conv = MailContents::instance()->findAll(array("conditions" => "`account_id`=".$account->getId()." AND `conversation_id` = ".$other_conv_mail->getConversationId()));
-						if($other_conv){
-							foreach ($other_conv as $mail_con) {
-								$mail_con->setConversationId($conv_mail->getConversationId());
-								$mail_con->save();
-							}
+			if (count($parent_ids) > 0) {
+				$escaped_ids = array();
+				foreach ($parent_ids as $parent_id) {
+					$escaped_ids[] = DB::escape($parent_id);
+				}
+				$candidates = MailContents::instance()->findAll(array(
+					"conditions" => "`account_id`=".$account->getId()
+						." AND `message_id` IN (".implode(',', $escaped_ids).")"
+				));
+				$by_message_id = array();
+				if (is_array($candidates)) {
+					foreach ($candidates as $candidate) {
+						$by_message_id[$candidate->getMessageId()] = $candidate;
+					}
+				}
+				// Preserve priority: In-Reply-To first, then References newest→oldest
+				foreach ($parent_ids as $parent_id) {
+					if (isset($by_message_id[$parent_id])) {
+						$conv_mail = $by_message_id[$parent_id];
+						break;
+					}
+				}
+			}
+
+			if (!$conv_mail instanceof MailContent && $message_id != "") {
+				$conv_mail = MailContents::instance()->findOne(array(
+					"conditions" => "`account_id`=".$account->getId()." AND `in_reply_to_id` = ".DB::escape($message_id)
+				));
+			}
+
+			// Merge only via immediate In-Reply-To and the reverse link (someone already
+			// replied to this Message-ID). References are intentionally excluded here to
+			// avoid aggressive merges across distant ancestors; they remain a join fallback only.
+			if ($conv_mail instanceof MailContent && ($in_reply_to_id != "" || $message_id != "")) {
+				$merge_conditions = "`account_id`=".$account->getId()
+					." AND `conversation_id` != ".$conv_mail->getConversationId()
+					." AND (";
+				$or_parts = array();
+				if ($in_reply_to_id != "") {
+					$or_parts[] = "`message_id` = ".DB::escape($in_reply_to_id);
+				}
+				if ($message_id != "") {
+					$or_parts[] = "`in_reply_to_id` = ".DB::escape($message_id);
+				}
+				$merge_conditions .= implode(' OR ', $or_parts).")";
+				$other_conv_mail = MailContents::instance()->findOne(array("conditions" => $merge_conditions));
+				if ($other_conv_mail instanceof MailContent) {
+					$other_conv = MailContents::instance()->findAll(array(
+						"conditions" => "`account_id`=".$account->getId()." AND `conversation_id` = ".$other_conv_mail->getConversationId()
+					));
+					if ($other_conv) {
+						foreach ($other_conv as $mail_con) {
+							$mail_con->setConversationId($conv_mail->getConversationId());
+							$mail_con->save();
 						}
 					}
 				}
-
-			} elseif ($in_reply_to_id != ""){
-				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND `message_id` = ".DB::escape($in_reply_to_id)));
-			} elseif ($message_id != ""){
-				$conv_mail = MailContents::instance()->findOne(array("conditions" => "`account_id`=".$account->getId()." AND `in_reply_to_id` = ".DB::escape($message_id)));
 			}
 
 			if ($conv_mail instanceof MailContent) {
@@ -709,6 +1041,16 @@ class MailUtilities {
 
 			DB::commit();
 
+			// process calendar invitations in background when mail is fetched (inbox only)
+			if ($state < 200) {
+				try {
+					self::processCalendarInvitationsFromParsedMail($parsedMail, $account, false);
+					$mail->setProperty('calendar_invitation_processed', '1');
+				} catch (Exception $e) {
+					debug_log("Calendar invitation processing error for mail ".$mail->getId().": ".$e->__toString(), "checkmail_log.php");
+				}
+			}
+
 			$mail_saved_ok = true;
 
 		} catch(Exception $e) {
@@ -720,7 +1062,7 @@ class MailUtilities {
 			if (isset($transaction_started) && $transaction_started) {
 				DB::rollback();
 			}
-			if (FileRepository::isInRepository($repository_id)) {
+			if (!empty($repository_id) && FileRepository::isInRepository($repository_id)) {
 				FileRepository::deleteFile($repository_id);
 			}
 			if (strpos($e->getMessage(), "Query failed with message 'Got a packet bigger than 'max_allowed_packet' bytes'") === false) {
@@ -760,10 +1102,22 @@ class MailUtilities {
 					$headers = $decoded[$msg]['Headers'];
 					$address_hdr = array('to:', 'cc:', 'bcc:');
 					foreach ($address_hdr as $hdr) {
-						if (isset($headers[$hdr]) && strpos($headers[$hdr], ';') !== false) {
-							$headers[$hdr] = str_replace(';', ',', $headers[$hdr]);
-							$headers[$hdr] = str_replace('"', '', $headers[$hdr]);
-							if (str_ends_with($headers[$hdr], ',')) $headers[$hdr] = substr($headers[$hdr], 0, -1);
+						if (!isset($headers[$hdr])) {
+							continue;
+						}
+
+						$hdr_value = $headers[$hdr];
+						if (is_array($hdr_value)) {
+							$hdr_value = implode(',', array_filter(array_map('strval', $hdr_value), static function($v) { return $v !== ''; }));
+						} else {
+							$hdr_value = (string) $hdr_value;
+						}
+
+						if ($hdr_value !== '' && strpos($hdr_value, ';') !== false) {
+							$hdr_value = str_replace(';', ',', $hdr_value);
+							$hdr_value = str_replace('"', '', $hdr_value);
+							if (str_ends_with($hdr_value, ',')) $hdr_value = substr($hdr_value, 0, -1);
+							$headers[$hdr] = $hdr_value;
 							$decoded[$msg]['Headers'] = $headers;
 						}
 					}
@@ -871,10 +1225,13 @@ class MailUtilities {
 	 * @return array
 	 */
 	private static function getNewPOP3Mails(MailAccount $account, $max = 0) {
+		$received = 0;
+		if ($account->isExcludedFromSynchronizing()) {
+			debug_log("getNewPOP3Mails: skipped account ".$account->getId()." (excluded from synchronizing)", "checkmail_log.php");
+			return $received;
+		}
 		$pop3 = new Net_POP3();
 		debug_log("  START getNewPOP3Mails ".$account->getId(), "checkmail_log.php");
-
-		$received = 0;
 		// Connect to mail server
 		if ($account->getIncomingSsl()) {
 			$pop3->connect("ssl://" . $account->getServer(), $account->getIncomingSslPort());
@@ -1156,6 +1513,23 @@ class MailUtilities {
 	 		$message->setBody($body);
 
 			$complete_mail = self::retrieve_original_mail_code($message);
+
+			// Hook to send mail via API (Microsoft Graph)
+			$sent_via_api = false;
+			Logger::log("MailUtilities: Attempting to send via API hook for account: " . ($mail_account ? $mail_account->getEmailAddress() : 'null'));
+			Hook::fire('send_mail_via_api', array(
+				'account' => $mail_account,
+				'message' => $message,
+				'complete_mail' => $complete_mail
+			), $sent_via_api);
+
+			if ($sent_via_api === true) {
+				Logger::log("MailUtilities: Email sent successfully via API, skipping SMTP");
+				return true;
+			}
+
+			Logger::log("MailUtilities: API sending failed or not applicable, continuing with SMTP");
+
 			//Send the message
 			$failed_recipients = array();
 			$result = $mailer->send($message, $failed_recipients);
@@ -1289,16 +1663,20 @@ class MailUtilities {
 		if(!empty ($ret)){
 			$msg_id = array();
 			foreach ($ret as $msg){
-				$msg_id[] = $msg['msg_id'];
+				if (is_array($msg) && isset($msg['msg_id'])) {
+					$msg_id[] = $msg['msg_id'];
+				}
 			}
 
-			//mark as read or unread by msg id
-			if($read){
-				//mark as read
-				$imap->addSeen($msg_id);
-			}else{
-				//mark as unread
-				$imap->removeSeen($msg_id);
+			if (count($msg_id) > 0) {
+				//mark as read or unread by msg id
+				if($read){
+					//mark as read
+					$imap->addSeen($msg_id);
+				}else{
+					//mark as unread
+					$imap->removeSeen($msg_id);
+				}
 			}
 
 
@@ -1310,6 +1688,10 @@ class MailUtilities {
 
 	static function getNewImapMails(MailAccount $account, $max = 0, $imap_folders_to_check = null) {
 		$received = 0;
+		if ($account->isExcludedFromSynchronizing()) {
+			debug_log("getNewImapMails: skipped account ".$account->getId()." (excluded from synchronizing)", "checkmail_imap_log.php");
+			return $received;
+		}
 		debug_log("getNewImapMails: start ".$account->getId(), "checkmail_imap_log.php");
 
 		// verify if there are any folders to check, if not add the INBOX
@@ -1341,21 +1723,27 @@ class MailUtilities {
 
 					debug_log("getNewImapMails: getting imap folder ".$account->getId()." - ".$box->getFolderName(), "checkmail_imap_log.php");
 					//if the account is configured to mark as read emails on server call selectMailBox else call examineMailBox.
-					if ($account->getMarkReadOnServer() > 0 ? $imap->selectMailbox(utf8_decode($box->getFolderName())) : $imap->examineMailbox(utf8_decode($box->getFolderName()))) {
+					$mailbox_ok = $account->getMarkReadOnServer() > 0 ? $imap->selectMailbox(utf8_decode($box->getFolderName())) : $imap->examineMailbox(utf8_decode($box->getFolderName()));
+					if (PEAR::isError($mailbox_ok)) {
+						debug_log("getNewImapMails: PEAR ERROR selecting folder ".$box->getFolderName().": ".$mailbox_ok->getMessage(), "checkmail_imap_log.php");
+						continue;
+					}
+					if ($mailbox_ok) {
 						$oldUids = $account->getUids($box->getFolderName(), 1);
 						$numMessages = $imap->getNumberOfMessages(utf8_decode($box->getFolderName()));
-						if (!is_array($oldUids) || count($oldUids) == 0 || PEAR::isError($numMessages) || $numMessages == 0) {
-							if (PEAR::isError($numMessages)) {
-								
-								// if server error response tells that the folder doesn't exist then remove it from synchronization
-								if (str_ends_with($numMessages->getMessage(), '"'.$box->getFolderName().'" doesn\'t exist.')) {
-									$box->setCheckFolder(false);
-									$box->save();
-								}
-								
-								debug_log("getNewImapMails: PEAR ERROR numMessages has error: ".$numMessages->getMessage(), "checkmail_imap_log.php");
-								continue;
+						if (PEAR::isError($numMessages)) {
+							// if server error response tells that the folder doesn't exist then remove it from synchronization
+							if (str_ends_with($numMessages->getMessage(), '"'.$box->getFolderName().'" doesn\'t exist.')) {
+								$box->setCheckFolder(false);
+								$box->save();
 							}
+
+							debug_log("getNewImapMails: PEAR ERROR numMessages has error: ".$numMessages->getMessage(), "checkmail_imap_log.php");
+							continue;
+						}
+						$numMessages = (int) $numMessages;
+						if (!is_array($oldUids) || count($oldUids) == 0 || $numMessages == 0) {
+							if ($numMessages == 0) continue;
 						}
 						if ($numMessages == 0) continue;
 						debug_log("getNewImapMails: numMessages=$numMessages", "checkmail_imap_log.php");
@@ -1671,8 +2059,17 @@ class MailUtilities {
 					if (is_array($mailboxes)) {
 						foreach ($mailboxes as $box) {
 							if ($box->getCheckFolder()) {
-								$numMessages = $imap->getNumberOfMessages(utf8_decode($box->getFolderName()));
+								$folder_name = $box->getFolderName();
+								$folder_name_imap = utf8_decode($folder_name);
+								$sel = $imap->selectMailbox($folder_name_imap);
+								if (PEAR::isError($sel)) {
+									debug_log("Account ".$account->getId()." : Could not select mailbox ".$folder_name." (".$sel->getMessage().")", "delete_mails_from_server.log");
+									continue;
+								}
+
+								$numMessages = $imap->getNumberOfMessages();
 								$box_count = 0;
+								$uids_to_delete = array();
 								for ($i = 1; $i <= $numMessages; $i++) {
 									$summary = $imap->getSummary($i);
 									if (is_array($summary)) {
@@ -1687,24 +2084,40 @@ class MailUtilities {
 												$mail_exists_feng = !is_null($row);
 
 											} else {
-												$mail_exists_feng = MailContents::mailRecordExists($account, $summary[0]['UID'], $box->getFolderName(), null, $summary[0]['MESSAGE_ID']);
+												$mail_exists_feng = MailContents::mailRecordExists($account, $summary[0]['UID'], $folder_name, null, $summary[0]['MESSAGE_ID']);
 											}
 
 											if ($mail_exists_feng) {
-												$imap->deleteMessages($i);
+												$uid = array_var($summary[0], 'UID');
+												if ($uid) {
+													$uids_to_delete[] = $uid;
+												}
 												$count++;
 												$box_count++;
 											}
+										} else {
+											// mails are ordered by internal date (usually), once we find a not-old mail stop scanning
+											// (avoid iterating the whole mailbox)
+											break;
 										}
 									}
+								}
+								
+								if (count($uids_to_delete) > 0) {
+									$uids_to_delete = array_unique(array_filter($uids_to_delete));
+									$imap->deleteMessages(implode(',', $uids_to_delete), true);
+									$imap->expunge();
+								}
+
+								if ($box_count > 0) {
+									debug_log("Account ".$account->getId()." : ".$box_count." mails marked deleted in ".$folder_name, "delete_mails_from_server.log");
 								}
 
 							}
 						}
 					}
 
-					$imap->expunge();
-
+					$imap->disconnect();
 				}
 
 			} else {

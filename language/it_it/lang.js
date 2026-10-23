@@ -1,5 +1,6 @@
 locale = 'it_it';
 addLangs({
+	'add a new custom member in': 'Aggiungi un nuovo {0}',
 	'check in': '<b>Rilascia</b>',
 	'cannot check in': 'Impossibile rilasciare l\'oggetto',
 	'add as new revision to': 'Aggiungi come nuova revisione a',
@@ -890,7 +891,8 @@ addLangs({
 	'error delete people parametric' : 'Non puoi spostare Utenti \n{0}Puoi farlo dal Pannello di Amministrazione\n',
 	'error delete company parametric' : 'Non puoi spostare Aziende \n{0}che contengono Utenti o Contatti\n',
 	'confirm delete permanently this member' : 'Sei sicuro di voler eliminare questo {0} definitivamente?',
-	'confirm delete with keyword' : 'Digita "ELIMINA" per confermare',
+	'confirm delete with keyword' : 'Digita "{0}" per confermare',
+	'delete confirmation keyword mismatch' : 'Digita esattamente "{0}" per confermare l\'eliminazione.',
 	'start with' : 'Inizia con',
 	'date of task creation' : 'Data di creazione del compito',
 	'no user parameters in template' : 'Non ci sono parametri utente definiti per questo modello',

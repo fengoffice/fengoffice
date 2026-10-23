@@ -32,22 +32,22 @@ class PanelController extends ApplicationController {
 				if(!$can_see_billing_info && $row['id'] == 'income-panel'){
 					continue;
 				}
-				 $url_params = trim($row['url_params']) == '' ? array() : json_decode($row['url_params'], true);
-				 
-				 if ( $row['default_controller'] == 'member' && $url_params['dim_id'] != '' && $url_params['type_id'] != '') {				     
-				     $name_tab = Members::getTypeNameToShowByObjectType($url_params['dim_id'], $url_params['type_id'], null, true);
-				 }else{
-				     $name_tab = lang($row ['title']);
-				 }
+				$url_params = trim($row['url_params']) == '' ? array() : json_decode($row['url_params'], true);
+				
+				if ( $row['default_controller'] == 'member' && array_var($url_params, 'dim_id') != '' && array_var($url_params, 'type_id') != '') {
+					$name_tab = TabPanels::getMemberTabTitle($url_params['dim_id'], $url_params['type_id']);
+				} else {
+					$name_tab = lang($row ['title']);
+				}
 
-				 $dim_id = '';
-				 $ot_id = '';
-				 foreach ($url_params as $k => $v) {
-				 	if ($k == 'dim_id') $dim_id = $v;
-				 	if ($k == 'type_id') $ot_id = $v;
-				 }
-				 
-				 $object = array (
+				$dim_id = '';
+				$ot_id = '';
+				foreach ($url_params as $k => $v) {
+					if ($k == 'dim_id') $dim_id = $v;
+					if ($k == 'type_id') $ot_id = $v;
+				}
+				
+				$object = array (
 					"title" => $name_tab, 
 					"id" => $row ['id'], 
 				 	"quickAddTitle" => lang ($row['default_controller']), 

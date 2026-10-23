@@ -79,6 +79,15 @@
 		}
 		return $m;
 	}
+
+	static function getMembersById($ids) {
+		if (!is_array($ids)) $ids = array($ids);
+		$members = array();
+		foreach ($ids as $id) {
+			$members[] = self::getMemberById($id);
+		}
+		return $members;
+	}
 	
 	
 	function canContainObject($object_type_id, $member_type_id, $dimension_id){
@@ -230,5 +239,49 @@
 	    
 	    return $result;
 	}
+
+static function memberHasRelatedObjects(Member $member, $extra_conditions = "") {
+
+    $sql = "
+        SELECT DISTINCT(om.object_id) AS object_id
+        FROM " . TABLE_PREFIX . "object_members om
+        INNER JOIN " . TABLE_PREFIX . "objects o ON om.object_id = o.id
+        INNER JOIN " . TABLE_PREFIX . "object_types ot ON o.object_type_id = ot.id
+        WHERE om.member_id = " . $member->getId() . "
+          AND om.is_optimization = 0
+          AND ot.type != 'dimension_object'
+          AND NOT (
+                ot.type = 'located'
+            AND (ot.name = 'report' OR ot.name = 'template')
+          )
+    ";
+
+    // add extra conditions if any
+    if (!empty($extra_conditions)) {
+        $sql .= " " . $extra_conditions . " ";
+    }
+
+    $rows = DB::executeAll($sql);
+
+
+    if (empty($rows)) {
+        return false;
+    }
+
+    $member_object_id = $member->getObjectId();
+
+    foreach ($rows as $row) {
+        $object_id = $row['object_id'];
+
+        if ($object_id != $member_object_id) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
 
   }

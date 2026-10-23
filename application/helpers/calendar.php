@@ -299,6 +299,63 @@ function replicateRepetitiveTaskForCalendar(ProjectTask $task, $from_date, $to_d
 }
 
 
+/**
+ * Fetch subtasks of the given (already visible) parent tasks for calendar rendering, and
+ * split them into two buckets:
+ * - 'dated': subtasks that have their own start/due date, ready to flow through the same
+ *   date-matching pipeline used for any other calendar task (e.g. replicateRepetitiveTaskForCalendar).
+ * - 'undated_by_parent': subtasks with no date of their own, keyed by parent task id, so the
+ *   caller can anchor them to whichever day the parent occurrence lands on.
+ *
+ * Also returns a subtask_id => parent_id map so views can flag rendered blocks/chips as subtasks
+ * (indentation, icon, data-parent-task-id) without touching the positioning/collision logic.
+ *
+ * @param array $parent_tasks array of ProjectTask
+ * @param string $task_filter 'pending', 'complete' or null
+ * @param bool $archived
+ * @return array{dated: array, undated_by_parent: array, parent_map: array}
+ */
+function getCalendarSubtasksData($parent_tasks, $task_filter = null, $archived = false) {
+	$parent_ids = array();
+	$visible_ids = array();
+	foreach ($parent_tasks as $task) {
+		$parent_ids[] = $task->getId();
+		$visible_ids[$task->getId()] = true;
+	}
+
+	$dated = array();
+	$undated_by_parent = array();
+	$parent_map = array();
+	$parents_with_subtasks = array();
+
+	$subtasks = ProjectTasks::getSubtasksForCalendar($parent_ids, $task_filter, $archived);
+	foreach ($subtasks as $subtask) {
+		$parent_map[$subtask->getId()] = $subtask->getParentId();
+		$parents_with_subtasks[$subtask->getParentId()] = true;
+
+		// A subtask can also have its own due/start date within the visible range, which means
+		// getRangeTasksByUser() (no parent_id filter) already fetched it as a "top-level" calendar
+		// item in $parent_tasks. It will be placed by the normal per-day pipeline already (still
+		// flagged as a subtask via parent_map above) — merging/anchoring it again here would
+		// render it twice.
+		if (isset($visible_ids[$subtask->getId()])) continue;
+
+		if ($subtask->getDueDate() instanceof DateTimeValue || $subtask->getStartDate() instanceof DateTimeValue) {
+			$dated[] = $subtask;
+		} else {
+			$undated_by_parent[$subtask->getParentId()][] = $subtask;
+		}
+	}
+
+	return array(
+		'dated' => $dated,
+		'undated_by_parent' => $undated_by_parent,
+		'parent_map' => $parent_map,
+		'parents_with_subtasks' => $parents_with_subtasks,
+	);
+}
+
+
 function replicateRepetitiveTaskForCalendarRawTask($task, $from_date, $to_date) {
 	
 	$new_task_array = array();

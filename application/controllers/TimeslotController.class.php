@@ -33,8 +33,8 @@ class TimeslotController extends ApplicationController {
 		$object_id = get_id('object_id');
 
 		$object = Objects::findObject($object_id);
-		if($object instanceof ContentDataObject && !($object->canAddTimeslot(logged_user()))) {
-			flash_error(lang('no access permissions'));
+		if($object instanceof ContentDataObject && !Timeslot::canStartNewTimeEntry($object, logged_user())) {
+			flash_error(lang(Timeslot::getCannotStartTimeEntryMessage($object, logged_user())));
 			ajx_current("empty");
 			return;
 		}
@@ -90,8 +90,8 @@ class TimeslotController extends ApplicationController {
 		$object_id = array_var($_REQUEST, "object_id");
 		
 		$object = Objects::findObject($object_id);
-		if(!($object instanceof ContentDataObject) || !($object->canAddTimeslot(logged_user()))) {
-			flash_error(lang('no access permissions'));
+		if(!($object instanceof ContentDataObject) || !Timeslot::canStartNewTimeEntry($object, logged_user())) {
+			flash_error(lang(Timeslot::getCannotStartTimeEntryMessage($object, logged_user())));
 			ajx_current("empty");
 			return;
 		}
@@ -211,11 +211,13 @@ class TimeslotController extends ApplicationController {
 				$timeslot->setIsFixedBilling(false);
 			}
 		}
-		
+
+		Hook::fire('before_close_timeslot', array('timeslot' => $timeslot), $ret);
+
 		try{
 			// to use when saving the application log
 			$old_content_object = $timeslot->generateOldContentObjectData();
-			
+
 			DB::beginWork();
 			if (array_var($_GET, 'cancel') && array_var($_GET, 'cancel') == 'true'){
 				$timeslot->delete();
@@ -358,12 +360,12 @@ class TimeslotController extends ApplicationController {
 			flash_error(lang('no access permissions'));
 			return;
 		}
-		
+
 		if(!($timeslot->canEdit(logged_user()))) {
 			flash_error(lang('no access permissions'));
 			return;
 		}
-		
+
 		try{
 			// to use when saving the application log
 			$old_content_object = $timeslot->generateOldContentObjectData();
@@ -398,13 +400,13 @@ class TimeslotController extends ApplicationController {
 			flash_error(lang('no access permissions'));
 			return;
 		}
-		
+
 		if(!($timeslot->canEdit(logged_user()))) {
 			flash_error(lang('no access permissions'));
 			return;
 		}
 
-		
+
 		try{
 			// to use when saving the application log
 			$old_content_object = $timeslot->generateOldContentObjectData();
@@ -454,9 +456,9 @@ class TimeslotController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
-		
+
 		if(!($timeslot->canEdit(logged_user()))) {
-			flash_error(lang('no access permissions'));
+			flash_error(Timeslot::getCantEditMessage());
 			ajx_current("empty");
 			return;
 		}

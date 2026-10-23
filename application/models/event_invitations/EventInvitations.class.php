@@ -7,6 +7,12 @@
   * @author Alvaro Torterola <alvaro.torterola@fengoffice.com>
   */
   class EventInvitations extends BaseEventInvitations {    
+
+	const EVENT_INVITATION_NEEDS_ACTION = 0;
+	const EVENT_INVITATION_ACCEPTED = 1;
+	const EVENT_INVITATION_DECLINED = 2;
+	const EVENT_INVITATION_TENTATIVE = 3;
+
   	function clearByUser($user) {
   		self::instance()->delete(array(
   			'`contact_id` = ?',

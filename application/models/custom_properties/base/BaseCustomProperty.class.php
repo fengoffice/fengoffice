@@ -341,6 +341,66 @@
     }
     
     
+    function getIsCalculated() {
+    	return $this->getColumnValue('is_calculated');
+    }
+    
+    function setIsCalculated($value) {
+    	return $this->setColumnValue('is_calculated', $value);
+    }
+    
+    
+    function getIsEditable() {
+    	return $this->getColumnValue('is_editable');
+    }
+    
+    function setIsEditable($value) {
+    	return $this->setColumnValue('is_editable', $value);
+    }
+    
+    
+    function getFormula() {
+    	return $this->getColumnValue('formula');
+    }
+    
+    function setFormula($value) {
+    	return $this->setColumnValue('formula', $value);
+    }
+
+    function getFilterValuesBy() {
+     return $this->getColumnValue('filter_values_by');
+    }
+    
+    function setFilterValuesBy($value) {
+     return $this->setColumnValue('filter_values_by', $value);
+    }
+    
+    
+    function getLinkedTo() {
+     return $this->getColumnValue('linked_to');
+    }
+    
+    function setLinkedTo($value) {
+     return $this->setColumnValue('linked_to', $value);
+    }
+
+	
+    function getDecimalDigits() {
+    	return $this->getColumnValue('decimal_digits');
+    }
+    
+    function setDecimalDigits($value) {
+     return $this->setColumnValue('decimal_digits', $value);
+    }
+
+    function getExternalPropertyId() {
+       return $this->getColumnValue('external_property_id');
+    }
+
+    function setExternalPropertyId($value) {
+       return $this->setColumnValue('external_property_id', $value);
+    }
+
     /**
     * Return manager instance
     *

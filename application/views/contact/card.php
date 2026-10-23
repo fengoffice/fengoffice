@@ -47,10 +47,11 @@
 	tpl_assign("image",$image);
 
 	$description = "";
-	$company = $contact->getCompany();
-	if ($company instanceof Contact)
-		$description = '<a class="internalLink coViewAction ico-company" style="padding-top:0px;" href="' . $company->getCardUrl() . '">' . clean($company->getObjectName()) . '</a>';
-	
+	if (use_companies_in_contacts()) {
+		$company = $contact->getCompany();
+		if ($company instanceof Contact)
+			$description = '<a class="internalLink coViewAction ico-company" style="padding-top:0px;" href="' . $company->getCardUrl() . '">' . clean($company->getObjectName()) . '</a>';
+	}
 	if ($contact->getJobTitle() != ''){
 		if($description != '')
 			$description .= ' | ';
@@ -66,6 +67,7 @@
 		}
 		$description .= clean($contact->getDepartment());
 	}
+	if ($description == '') $description = "&nbsp;";
     
 	tpl_assign("description", $description);
 	tpl_assign("content_template", array('card_content', 'contact'));

@@ -19,6 +19,7 @@ abstract class BaseMailDatas extends DataManager {
 	    'to' => DATA_TYPE_STRING,
 	    'cc' => DATA_TYPE_STRING,
 		'bcc' => DATA_TYPE_STRING,
+		'from_copy' => DATA_TYPE_STRING,
 	    'subject' => DATA_TYPE_STRING,
 	    'content' => DATA_TYPE_STRING,
 	    'body_plain' => DATA_TYPE_STRING,

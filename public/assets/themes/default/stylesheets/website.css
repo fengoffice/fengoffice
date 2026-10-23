@@ -1,4 +1,5 @@
 @CHARSET "UTF-8";
+@import 'og/colors_and_type.css';
 @import 'bootstrap.css';
 @import 'bootstrap/bootstrap_tooltips_popovers.css';
 @import 'general/rewrites.css';
@@ -29,6 +30,7 @@
 @import 'og/member_chooser.css';
 @import 'og/search_selector.css';
 @import 'og/more.css';
+@import 'og/getting_started.css';
 @import 'og/dimension.css';
 @import 'og/templates.css';
 @import 'project/project.css';
@@ -48,3 +50,5 @@
 @import 'og/progressChartWidget.css';
 @import 'og/earnedValueWidget.css';
 @import 'og/activityWidget.css';
+@import 'og/widgetModal.css';
+@import 'og/dimensionWidget.css';

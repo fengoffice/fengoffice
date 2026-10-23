@@ -8,6 +8,13 @@
 	
 	$categories = array();
 	Hook::fire('object_edit_categories', $object, $categories);
+
+	if (!isset($template_data) || !is_array($template_data)) {
+		$template_data = array();
+	}
+	if (!isset($task_template_category_select_options) || !is_array($task_template_category_select_options)) {
+		$task_template_category_select_options = array(option_tag(lang('task templates uncategorized'), 0, array('selected' => 'selected')));
+	}
 ?>
 <form id="templateForm" style='height:100%;background-color:white' class="internalForm" action="<?php echo $cotemplate->isNew() ? get_url('template', 'add') : $cotemplate->getEditUrl() ?>" method="post" enctype="multipart/form-data" 
 onsubmit="return og.submitTemplateForm();">
@@ -24,16 +31,22 @@ onsubmit="return og.submitTemplateForm();">
 	<?php echo text_field('template[name]', array_var($template_data, 'name'), 
 		array('id' => $genid . 'templateFormName', 'class' => 'name long', 'tabindex' => '1')) ?>
 	</div>
+	<div class="dataBlock" style="margin-top:8px;">
+		<?php echo label_tag(lang('task template category'), $genid . 'task_template_category_id') ?>
+		<?php echo select_box('template[task_template_category_id]', $task_template_category_select_options, array('id' => $genid . 'task_template_category_id', 'tabindex' => '2')) ?>
+		<span style="margin-left:12px;"><a class="internalLink" href="<?php echo get_url('template', 'manage_task_template_categories') ?>"><?php echo lang('manage task template categories') ?></a></span>
+	</div>
 </div>
 <div class="coInputSeparator"></div>
 <div class="coInputMainBlock">	
+	
 
 	<div>
 		<fieldset>
 		<legend><?php echo label_tag(lang('description'), 'templateFormDescription', false) ?></legend>
 		
 		<?php echo editor_widget('template[description]', array_var($template_data, 'description'), 
-			array('id' => $genid . 'templateFormDescription', 'class' => 'long', 'tabindex' => '2')) ?>
+			array('id' => $genid . 'templateFormDescription', 'class' => 'long', 'tabindex' => '3')) ?>
 		</fieldset>
 	</div>
 	
@@ -78,7 +91,12 @@ onsubmit="return og.submitTemplateForm();">
 		if (isset($add_to) && $add_to) {
 			echo input_field("add_to", "true", array("type"=>"hidden"));
 		}
+		if (!$cotemplate->isNew()) {
+			$template_updated_on = $cotemplate->getUpdatedOn();
 	?>
+	<input type="hidden" id="<?php echo $genid ?>template-loaded-updated-on" name="template_loaded_updated_on" value="<?php echo $template_updated_on instanceof DateTimeValue ? $template_updated_on->getTimestamp() : '' ?>" />
+	<input type="hidden" name="template_loaded_object_count" value="<?php echo count($cotemplate->getObjects()) ?>" />
+	<?php } ?>
 	
 	<?php foreach ($categories as $category) { ?>
 	<div <?php if (!$category['visible']) echo 'style="display:none"' ?> id="<?php echo $genid . $category['id'] ?>">
@@ -90,12 +108,13 @@ onsubmit="return og.submitTemplateForm();">
 	<?php } ?>
 	
 	<?php echo submit_button($cotemplate->isNew() ? lang('add template') : lang('save changes'),'s',
-		array('style'=>'margin-top:0px', 'tabindex' => '3')) ?>
+		array('style'=>'margin-top:0px', 'tabindex' => '4')) ?>
 </div>
 </div>
 </form>
 
 <script>
+		og.resetTemplateFormSubmitState();
 		og.actual_template_id = <?php echo $cotemplate->getId()? $cotemplate->getId():'0' ?>;
 		og.loadTemplateVars();
 		Ext.get('<?php echo $genid ?>templateFormName').focus();
@@ -180,30 +199,37 @@ onsubmit="return og.submitTemplateForm();">
 			}
 		}
 		
-		// Retrieve all templateObjects
-		const templateObjects = document.querySelectorAll('.template-add-template-object');
+// Ordenar tareas root
+const rootContainer = document.getElementById('<?php echo $genid ?>template_tasks_div');
+if (rootContainer) {
+	const rootItems = Array.from(rootContainer.children)
+		.filter(child => child.classList.contains('template-object-div'));
 
-		const mainTasks = Array.from(templateObjects).filter(div => {
-			return !div.closest('.template-subtasks-div');
-		});
+	rootItems.sort((a, b) => {
+		const linkA = a.querySelector('a.internalLink');
+		const linkB = b.querySelector('a.internalLink');
+		if (!linkA || !linkB) return 0;
+		return linkA.textContent.trim().localeCompare(linkB.textContent.trim(), 'es', { sensitivity: 'base' });
+	});
 
-		// Retrieve anchors inside those divs
-		const taskAnchors = mainTasks.map(div => div.querySelector('a.internalLink'));
-		
-		// Order anchors by name
-		taskAnchors.sort((a, b) => {
-			const textA = a.textContent.trim().toUpperCase();
-			const textB = b.textContent.trim().toUpperCase();
-			return textA.localeCompare(textB);
-		});
+	rootItems.forEach(item => rootContainer.appendChild(item));
+}
 
-		// Retrieve container and insert divs in the correct order
-		const container = document.querySelector("div[id$='template_tasks_div']");
+// Ordenar cada bloque de subtasks
+document.querySelectorAll('.template-subtasks-div').forEach(container => {
 
-		taskAnchors.forEach(anchor => {
-			const div = anchor.closest('div.template-object-div');
-			container.appendChild(div);
-		});
+	const items = Array.from(container.children)
+		.filter(child => child.classList.contains('template-object-div'));
+
+	items.sort((a, b) => {
+		const linkA = a.querySelector('a.internalLink');
+		const linkB = b.querySelector('a.internalLink');
+		if (!linkA || !linkB) return 0;
+		return linkA.textContent.trim().localeCompare(linkB.textContent.trim(), 'es', { sensitivity: 'base' });
+	});
+
+	items.forEach(item => container.appendChild(item));
+});
 
 	}
 
@@ -318,40 +344,80 @@ onsubmit="return og.submitTemplateForm();">
 		}
 	}
 
-	// removes all property inputs from the form and builds an unique input with all the values in a json string
+	// Serializes property/object inputs into a single JSON field for POST.
+	// Inputs are kept in the DOM so a second save on the same tab cannot lose objects[].
 	og.submitTemplateForm = function() {
+		if (og._templateFormSubmitting) {
+			return false;
+		}
+
 		if ($("#<?php echo $genid; ?>templateFormName").val() == '') {
 			og.err(lang('template name required'));
 			return false;
 		}
-		
-		if (og.templateConfirmSubmit('<?php echo $genid ?>') && og.handleMemberChooserSubmit('<?php echo $genid; ?>', <?php echo $cotemplate->manager()->getObjectTypeId() ?>)) {
 
-			var all_prop_inputs = {};
-			
-			$('[name^="prop"]').each(function(){
-				all_prop_inputs[$(this).attr('name')] = $(this).val();
-			});
-			$('[name^="prop"]').remove();
-			
-			$('[name^="objectProperties"]').each(function(){
-				all_prop_inputs[$(this).attr('name')] = $(this).val();
-			});
-			$('[name^="objectProperties"]').remove();
-			
-			$('[name^="objects"]').each(function(){
-				all_prop_inputs[$(this).attr('name')] = $(this).val();
-			});
-			$('[name^="objects"]').remove();
-			
-			$('<input>').attr({
-			    type: 'hidden',
-			    id: 'all_prop_inputs',
-			    name: 'all_prop_inputs',
-			    value: encodeURIComponent(JSON.stringify(all_prop_inputs)),
-			}).appendTo('form');
-			
-			return true;
+		if (!og.templateConfirmSubmit('<?php echo $genid ?>') || !og.handleMemberChooserSubmit('<?php echo $genid; ?>', <?php echo $cotemplate->manager()->getObjectTypeId() ?>)) {
+			return false;
 		}
+
+		og._templateFormSubmitting = true;
+		var $form = $('#templateForm');
+		$form.find('input[type=submit], button[type=submit]').prop('disabled', true);
+
+		var all_prop_inputs = {};
+		var $serializedInputs = $form.find('[name^="prop"], [name^="objectProperties"], [name^="objects"]');
+		
+		$serializedInputs.each(function(){
+			all_prop_inputs[$(this).attr('name')] = $(this).val();
+		});
+
+		og.ensureTemplateObjectsInPropInputs(all_prop_inputs);
+
+		// Disable (don't remove) individual inputs so they stay in the DOM for a second save
+		// but are excluded from the POST — same intent as the old .remove(), without breaking the form.
+		$serializedInputs.prop('disabled', true);
+
+		// Ensure that the properties added by advanced_templates plugin are sent with the id not the text
+		if (og.advanced_templates) {
+			for (var key in all_prop_inputs) {
+				let value = all_prop_inputs[key];
+				let text_value = og.advanced_templates.replace_string_param_text_with_id(value);
+				
+				if (text_value != value) {
+					all_prop_inputs[key] = text_value;
+				}
+			}
+		}
+		
+		$form.find('#all_prop_inputs').remove();
+		$('<input>').attr({
+		    type: 'hidden',
+		    id: 'all_prop_inputs',
+		    name: 'all_prop_inputs',
+		    value: encodeURIComponent(JSON.stringify(all_prop_inputs)),
+		}).appendTo($form);
+
+		if (og._templateFormSubmitTimeout) {
+			clearTimeout(og._templateFormSubmitTimeout);
+		}
+		og._templateFormSubmitTimeout = setTimeout(function() {
+			og.resetTemplateFormSubmitState();
+		}, 60000);
+		
+		return true;
+	}
+
+	if (!og._templateFormSubmitBound) {
+		og._templateFormSubmitBound = true;
+		$(document).ajaxComplete(function(event, xhr, settings) {
+			var url = (settings && settings.url) ? settings.url : '';
+			if (url.indexOf('c=template') === -1) {
+				return;
+			}
+			if (url.indexOf('a=edit') === -1 && url.indexOf('a=add') === -1) {
+				return;
+			}
+			og.resetTemplateFormSubmitState();
+		});
 	}
 </script>

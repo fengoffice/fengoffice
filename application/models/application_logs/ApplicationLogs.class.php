@@ -52,11 +52,11 @@ class ApplicationLogs extends BaseApplicationLogs {
 	 * @param boolean $save Save log object before you save it
 	 * @return ApplicationLog
 	 */
-	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '', $exclude_contacts_ids = null, $isMailRule = false) {
+	static function createLog($object, $action = null, $is_private = false, $is_silent = null, $save = true, $log_data = '', $exclude_contacts_ids = null, $isMailRule = false, $private_related_logs = false) {
 		
 		$object_differences = null;
 		if ($action == ApplicationLogs::ACTION_ADD || isset($object->old_content_object) && $object->old_content_object instanceof ContentDataObject) {
-			if ($action == ApplicationLogs::ACTION_ADD && !isset($object->old_content_object)) {
+			if ($action == ApplicationLogs::ACTION_ADD) {
 				$class_name = $object->manager()->getItemClass();
 				$object->old_content_object = new $class_name;
 			}
@@ -67,6 +67,9 @@ class ApplicationLogs extends BaseApplicationLogs {
 			// get all the request parameters and store them
 			$full_request = var_export($_REQUEST, true);
 			$request_channel = array_var($_REQUEST, 'req_channel', '');
+			if ($request_channel == '') {
+				$request_channel = debug_backtrace()[1]['function']; // if we dont have a request channel, at least save the calling function name
+			}
 		} else {
 			// we are inside a script execution like cron.php or any data import script => get the full trace of the execution
 			$full_request = get_back_trace();
@@ -113,7 +116,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 		if ($object instanceof Member) {
 			$log->setMemberId($object->getId());
 			$log->setRelObjectId($object->getObjectId());
-			$log->setObjectName($object->getName());
+			$log->setObjectName($object->getDisplayName());
 		}
 		if($isMailRule) {
 			$log->setIsMailRule(true);
@@ -131,7 +134,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 			$log->save();
 			
 			if ($object_differences && count($object_differences) > 0) {
-				ApplicationLogDetails::saveObjectDifferences($log, $object_differences);
+				ApplicationLogDetails::saveObjectDifferences($log, $object_differences, $private_related_logs);
 			}
 		} // if
 
@@ -307,7 +310,11 @@ class ApplicationLogs extends BaseApplicationLogs {
 		return $logs;
 	} // getObjectLogs
 
-	static function getLastActivities() {
+	static function getLastActivities($limit = 100) {
+		$limit = (int) $limit;
+		if ($limit <= 0 || $limit > 100) {
+			$limit = 100;
+		}
 		$task_ot = ObjectTypes::findByName('task');
 		$temp_task_ot = ObjectTypes::findByName('template_task');
 		$timeslot_ot = ObjectTypes::findByName('timeslot');
@@ -381,7 +388,8 @@ class ApplicationLogs extends BaseApplicationLogs {
 		$share_table_join = "";
 		$permissions_condition = 'true';
 		if(!logged_user()->isAdministrator()){
-			$share_table_join = " INNER JOIN ".TABLE_PREFIX."sharing_table sh ON al.rel_object_id = sh.object_id";
+			// force to use the index by object_id to avoid performance issues.
+			$share_table_join = " INNER JOIN ".TABLE_PREFIX."sharing_table sh USE INDEX (object_id) ON al.rel_object_id = sh.object_id";
 			$permissions_condition = "sh.group_id  IN ($logged_user_pgs) ";
 		}
 
@@ -393,7 +401,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 					$permissions_condition 
 					$extra_conditions
 					$group_by_sql
-				ORDER BY al.id DESC LIMIT 100
+				ORDER BY al.id DESC LIMIT $limit
 		";
 		$rows = DB::executeAll($sql);
 		$id_rows = array();
@@ -415,7 +423,7 @@ class ApplicationLogs extends BaseApplicationLogs {
 							WHERE al.member_id>0 and al.is_silent=0
 							$user_condition
 							$is_member_child
-							ORDER BY al.id DESC LIMIT 100";
+							ORDER BY al.id DESC LIMIT $limit";
 		
 		$m_id_rows = array_flat(DB::executeAll($member_logs_sql));
 		

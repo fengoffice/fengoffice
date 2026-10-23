@@ -2,9 +2,19 @@
 $genid = gen_id();
 $gs_step = config_option('getting_started_step');
 $all_set = array_var($_REQUEST, 'more_settings_expanded');
+
+if ($gs_step < 99 && !$all_set) {
+	// the initial setup is not finished: the tab shows the getting started checklist
+	tpl_assign('genid', $genid);
+	$this->includeTemplate(get_template_path('getting_started', 'more'));
+	return;
+}
 ?>
 
 <div class="more-panel-container">
+<?php if ($gs_step < 99) { // the settings were opened while the initial setup is still active ?>
+	<a class="internalLink gs-back-to-checklist" href="<?php echo get_url('more', 'index') ?>"><i class="icon-arrow-left"></i><?php echo clean(lang('getting started back to checklist')) ?></a>
+<?php } ?>
 	<div class="title"><?php echo lang('learn about and manage your Feng Office')?></div>
 
 <?php if (can_manage_configuration(logged_user()) || can_manage_security(logged_user()) || can_manage_templates(logged_user()) || can_manage_billing(logged_user())) {?>
@@ -42,22 +52,11 @@ $all_set = array_var($_REQUEST, 'more_settings_expanded');
 
 </div>
 <script>
-og.animate_highlighted_count = 0;
-og.animate_highlighted = function(selector) {
-	if (og.animate_highlighted_count > 10 && og.animate_highlighted_interval) {
-		clearInterval(og.animate_highlighted_interval);
-	}
-
-	if (!selector) selector = ".link.highlighted.on";
-	
-	$(selector).effect( "shake", {direction:'up', distance: 5, times: 3});
-	og.animate_highlighted_count = og.animate_highlighted_count + 1;
-}
-
 $(function(){
 	$(".more-panel-container").parent().css('backgroundColor', 'white');
-	
-	og.animate_highlighted_interval = setInterval('og.animate_highlighted();', 3000);
-	
+<?php if ($gs_step >= 99) { ?>
+	// the setup can be finished from another session while this page still has the old tab label
+	if (og.GettingStarted) og.GettingStarted.showSettingsTab();
+<?php } ?>
 });
 </script>

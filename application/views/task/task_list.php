@@ -39,7 +39,7 @@ $tz_offset = $tz_offset/3600;
 		if($task_list->getTypeContent() == "text"){
 			echo escape_html_whitespace(convert_to_links(clean($task_list->getText())));
 		}else{
-			echo convert_to_links(purify_html(nl2br($task_list->getText())));
+			echo convert_to_links(purify_html($task_list->getText()));
 		}
 	?></div>
   
@@ -63,10 +63,19 @@ if($task_list->getAssignedTo()){
 } 
  ?>
 <div>
-	<?php if ($description != "" || $priority != "") { ?>
+	<?php if ($description != "" || $priority != "" || isset($milestone) || isset($parentInf)) { ?>
 	<div style="width:50%; float: left;">
 		<div class="member-path-dim-block" style="font-weight:bold;"><?php echo $description;?></div>
 		<div class="member-path-dim-block" style="font-weight:bold;"><?php if (isset($priority)){echo $priority;} ?></div>
+
+		<?php 
+		if (isset($milestone)) {
+			?><div class="member-path-dim-block" style="font-weight:bold;"><?php echo $milestone;?></div><?php
+		}
+		if (isset($parentInf)) {
+			?><div class="member-path-dim-block" style="font-weight:bold;"><?php echo $parentInf;?></div><?php
+		}
+		?>
 	</div>
 	<?php } ?>
 	

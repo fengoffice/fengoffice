@@ -17,7 +17,7 @@ if (array_var($_REQUEST, 'modal')) {
 }
 
 if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0) {
-	$on_submit = "og.ogPermPrepareSendData('$genid');" . $on_submit;
+	$on_submit = "og.ogPermPrepareSendData('$genid');og.enableRootPermissionRadiosForSubmit(this);" . $on_submit;
 }
 
 $main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
@@ -30,7 +30,7 @@ $add_contact_lang = $object->getSubmitButtonFormTitle();
 $new_contact_lang = $object->getAddEditFormTitle();
 $edit_contact_lang = $object->getAddEditFormTitle();
 if (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0) {
-	$add_contact_lang = lang('add user');
+	$add_contact_lang = lang('save');
 	$new_contact_lang = lang('new user');
 	$edit_contact_lang = lang('edit user');
 }
@@ -145,16 +145,8 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 							$user->setUserType($user_type);
 							tpl_assign('user', $user);
 
-							// root permissions for new user
+							// root permissions for new user (defaults from role, max permissions still apply as a "ceiling" elsewhere)
 							$root_permissions = array();
-							if (config_option('let_users_create_objects_in_root') && ($user->isAdminGroup() || $user->isExecutive() || $user->isManager())) {
-								$all_object_types = ObjectTypes::instance()->findAll(array('conditions' => "type IN ('content_object', 'located') AND type NOT IN ('comment') AND name <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND
-					(plugin_id IS NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM " . TABLE_PREFIX . "plugins WHERE is_activated > 0 AND is_installed > 0))"));
-
-								foreach ($all_object_types as $ot) {
-									$root_permissions[$ot->getId()] = array('w' => 1, 'd' => 1, 'r' => 1);
-								}
-							}
 
 							// Set role permissions for active members
 							$sel_members = array();
@@ -162,6 +154,24 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 
 							$allowed_user_type_ids = config_option('give_member_permissions_to_new_users');
 							$role_ot_permissions = RoleObjectTypePermissions::instance()->findAll(array('conditions' => "role_id = '$user_type' AND object_type_id NOT IN (SELECT id FROM " . TABLE_PREFIX . "object_types WHERE name IN ('template','comment'))"));
+							if (config_option('let_users_create_objects_in_root')) {
+								$root_perms_by_ot = array();
+								foreach ($role_ot_permissions as $p) {
+									$root_perms_by_ot[$p->getObjectTypeId()] = array(
+										'w' => $p->getCanWrite(),
+										'd' => $p->getCanDelete(),
+										'r' => 1
+									);
+								}
+
+								$all_root_object_types = ObjectTypes::instance()->findAll(array(
+									'conditions' => "type IN ('content_object', 'located') AND type NOT IN ('comment') AND name <> 'file revision' AND name <> 'template_task' AND name <> 'template_milestone' AND `name` <> 'template' AND
+						(plugin_id IS NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM " . TABLE_PREFIX . "plugins WHERE is_activated > 0 AND is_installed > 0))"
+								));
+								foreach ($all_root_object_types as $ot) {
+									$root_permissions[$ot->getId()] = array_var($root_perms_by_ot, $ot->getId(), array('w' => 0, 'd' => 0, 'r' => 0));
+								}
+							}
 							$members_with_permissions = array();
 
 							if (in_array($user_type, $allowed_user_type_ids)) {
@@ -301,11 +311,11 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 					?>
 				</div>
 
-				<div class="contact_form_container form-tab" id="<?php echo $genid ?>user_data">
+				<div class="contact_form_container form-tab user-data-tab" id="<?php echo $genid ?>user_data">
 					<?php if (!$contact->isNew() && array_var($_REQUEST, 'is_user') == 1 && $contact->isUser()) { ?>
 						<div id="<?php echo $genid ?>_user_data" class="user-data">
 							<div class="information-block no-border-bottom">
-								<div class="input-container">
+								<div class="dataBlock">
 									<div id="<?php echo $genid ?>update_profile_timezone">
 										<label><?php echo lang('auto detect user timezone') ?></label>
 										<div id="<?php echo $genid ?>detectTimeZone" style="vertical-align:middle;">
@@ -346,12 +356,12 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 									</div>
 								</div>
 
-								<div class="input-container">
+								<div class="dataBlock">
 									<?php echo label_tag(lang('username'), $genid . 'profileFormUsername') ?>
 									<?php echo text_field('user[username]', array_var($contact_data, 'username'), array('id' => $genid . 'profileFormUsername')) ?>
 								</div>
 
-								<div class="field role" style="<?php echo (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0 && $can_change_permissions ? "display:none;" : "") ?>" id="user_role_div">
+								<div class="dataBlock field role" style="<?php echo (array_var($_REQUEST, 'is_user') == 1 && isset($user_type) && $user_type > 0 && $can_change_permissions ? "display:none;" : "") ?>" id="user_role_div">
 									<?php echo label_tag(lang('user type'), '', true) ?>
 									<div id="<?php echo $genid ?>_user_type_container"></div>
 								</div>
@@ -376,9 +386,12 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 						</div>
 					<?php } ?>
 
-
 					<?php $null = null;
-					Hook::fire('render_additional_user_data_fields', $contact, $null); ?>
+					
+						// Hook to allow plugins to put other user properties in the user data tab
+						Hook::fire('more_user_data_properties', array('object' => $contact, 'genid' => $genid), $null);
+	
+					 ?>
 				</div>
 
 
@@ -390,6 +403,7 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 				<?php } ?>
 
 				<div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
+					
 					<?php $subscriber_ids = array();
 					if (!$object->isNew()) {
 						$subscriber_ids = $object->getSubscriberIds();
@@ -458,6 +472,9 @@ $all_user_groups = PermissionGroups::instance()->getUserGroupsInfo();
 							og.ogPermPrepareSendData('<?php echo $genid ?>');
 						});
 						og.userPermissions.enableDisableSystemPermissionsByRole('<?php echo $genid ?>', <?php echo $user_type ?>);
+						<?php if ($contact->isNew()) { ?>
+							og.applyModulePermissionsByRole('<?php echo $genid ?>', <?php echo $user_type ?>);
+						<?php } ?>
 
 						$("#<?php echo $genid ?>permissions_tab").click(function() {
 

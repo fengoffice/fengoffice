@@ -1,5 +1,6 @@
 locale = 'es_es';
 addLangs({
+	'add a new custom member in': 'Agregar un nuevo {0}',
   'check in': '<b>Devolver</b>',
   'total': 'Total',
   'cannot check in': 'No es posible devolver',
@@ -128,7 +129,8 @@ addLangs({
   'confirm delete project': '¿Está seguro de que desea eliminar esta área de trabajo y todos los datos relacionados con él (notas, tareas, hitos, archivos...)?',
   'confirm delete parameter': 'Este parámetro es usado por al menos una variable en este template. Si lo elimina, todas las variables que usan este parametro serán eliminadas. ¿Desea continuar?',
   'confirm delete permanently this member': 'Está seguro que desea eliminar este {0}?',
-  'confirm delete with keyword': 'Escriba \"DELETE\" para confirmar',
+  'confirm delete with keyword': 'Escriba \"{0}\" para confirmar',
+  'delete confirmation keyword mismatch': 'Escriba exactamente \"{0}\" para confirmar la eliminación.',
 
   'confirm cancel work timeslot': 'Está seguro que desea cancelar el tiempo de trabajo?',
   'more': 'Más',
@@ -226,6 +228,7 @@ addLangs({
   'icons': 'Iconos',
   'displaying objects of': 'Mostrando objeto {0} al {1} de {2}',
   'no objects to display': 'No hay objetos para mostrar',
+  'items x page': 'Elementos por página',
   'ok': 'Aceptar',
   'cancel': 'Cancelar',
   'select all': 'Seleccionar todos',
@@ -924,6 +927,7 @@ addLangs({
 
   'confirm restore user': 'El usuario será activado ¿Continuar?',
   'subtasks structure': 'Estructura de subtareas',
+  'show closed subtasks with status filter': 'Mostrar subtareas fuera del filtro de estado',
   'select contact': 'Seleccione un contacto',
   'address': 'Dirección',
   'street address': 'Calle',
@@ -965,4 +969,20 @@ addLangs({
   'There is a contact on the trash bin with this email address. User on trash bin': 'Este email esta asociado a un contacto en la papelera: {0}',
   'There is a contact archived with this email address. User on archive': 'Este email esta asociado a un contacto archivado: {0}',
   'edit weblink': 'Editar link',
+  'columns'                : 'Columnas',
+  'manage columns'         : 'Administrar columnas',
+  'manage columns tooltip' : 'Mostrar, ocultar y reordenar columnas',
+  'available columns'  : 'Disponibles',
+  'visible columns'    : 'Visibles',
+  'no visible columns' : 'Sin columnas visibles',
+  'drag to reorder'    : 'Arrastra para reordenar',
+  'select columns hint': 'Selecciona columnas de la izquierda para agregarlas',
+  'select at least one column': 'Debes seleccionar al menos una columna',
+  'column always visible': 'Esta columna siempre está visible',
+  'apply'              : 'Aplicar',
+  'hide'               : 'Ocultar',
+  'remove all'         : 'Eliminar todos',
+  'do not show tasks' : 'No mostrar tareas',
+  'field Objects is_confidential': 'Es confidencial',
+  'field Objects is_resource': 'Es un recurso'
 });

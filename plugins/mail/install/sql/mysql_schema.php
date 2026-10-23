@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo $table_prefix ?>mail_datas` (
   `to` text <?php echo $default_collation ?> NOT NULL,
   `cc` text <?php echo $default_collation ?> NOT NULL,
   `bcc` text <?php echo $default_collation ?> NOT NULL,
+  `from_copy` text <?php echo $default_collation ?> NOT NULL default '',
   `subject` text <?php echo $default_collation ?>,
   `content` text <?php echo $default_collation ?>,
   `body_plain` longtext <?php echo $default_collation ?>,

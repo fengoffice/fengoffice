@@ -99,9 +99,31 @@ Ext.extend(og.ContentPanel, Ext.Panel, {
 	
 	deactivate: function() {
 		this.active = false;
+		if (this.el && typeof og.hideDetachedCkEditorUi == 'function') {
+			var editors = og.collectCkEditorsInElement(this.el);
+			og.hideDetachedCkEditorUi(editors.names, editors.ids);
+		}
 		/*if (this.z(0).deactivate) {
 			this.getComponent(0).deactivate();
 		}*/ 
+	},
+
+	hideTransientContent: function() {
+		var i = 0;
+		while (this.getComponent(i)) {
+			var comp = this.getComponent(i);
+			if (comp.doNotRemove) {
+				i++;
+			} else {
+				if (typeof og.destroyCkEditorsInElement == 'function' && comp.el) {
+					og.destroyCkEditorsInElement(comp.el);
+				}
+				if (!comp.hidden) {
+					comp.hide();
+				}
+				i++;
+			}
+		}
 	},
 	
 	setHelp: function(help){
@@ -214,10 +236,15 @@ Ext.extend(og.ContentPanel, Ext.Panel, {
 					this.getComponent(i).hide();
 					i++;
 				} else {
+					if (typeof og.destroyCkEditorsInElement == 'function' && this.getComponent(i).el) {
+						og.destroyCkEditorsInElement(this.getComponent(i).el);
+					}
 					this.remove(this.getComponent(i));
 				}
 			}
 			this.doLayout();
+		} else {
+			this.hideTransientContent();
 		}
 		this.setPreventClose(content.preventClose);		
 		if (content.type == 'html') {

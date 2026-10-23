@@ -158,7 +158,7 @@ og.contextManager  = new function() {
     
     /**
      * Adds a new member to the context 
-     * @param member - integer: memeber id to add
+     * @param member - integer: member id to add
      * @param dimension - integer: dimension id 
      *  
      */

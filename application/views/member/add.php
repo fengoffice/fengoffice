@@ -2,6 +2,7 @@
 	require_javascript("og/DateField.js");
 	require_javascript("og/modules/addMemberForm.js");
 	set_page_title(lang('members'));
+	/** @var Member $member */
 	$genid = gen_id();
 	if (!isset($parent_sel)) $parent_sel = 0;
 	if (!isset($obj_type_sel)) $obj_type_sel = 0;
@@ -12,7 +13,7 @@
 		$member_color = $member->getColor();
 	} else if ($parent_sel > 0) {
 		$p = Members::getMemberById($parent_sel);
-		if ($p instanceof Member) $member_color = $p->getColor();
+		if ($p instanceof Member) $member_color = $p->getMemberColor();
 	}
 	
 	if ($member instanceof Member && $member->isNew()) {
@@ -62,7 +63,8 @@
 		add_page_action(lang('delete'), "javascript:og.deleteMember('".$delete_url."','".$ot_name."');", 'ico-delete');
 	}
 	$form_title = $object_type_name ? ($member->isNew() ? lang('new') : lang('edit')) . strtolower(" $object_type_name") : lang('new member');
-	$new_member_text = $object_type_name ? ($member->isNew() ? lang('add') : lang('edit')) . strtolower(" $object_type_name") : lang('new member');
+	$new_member_text = $member->isNew() ? lang('save') : ($object_type_name ? lang('edit') . strtolower(" $object_type_name") : lang('new member'));
+
 
     $main_properties = array();
     Hook::fire('render_member_properties', array('member' => $member, 'visible_by_default' => true, 'genid' => $genid), $main_properties);
@@ -94,11 +96,11 @@
 </style>
 <form 
 	id="<?php echo $genid ?>submit-edit-form" 
-	class="edit-member" 
+	class="form-container edit-member feng-forms" 
 	method="post" enctype="multipart/form-data"  
 	action="<?php echo $form_action ?>"
 	onsubmit="<?php echo $on_submit ?>"
->
+	onkeydown="if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') { event.preventDefault(); }">
 	<input type="hidden" name="member[dimension_id]" value="<?php echo $current_dimension->getId()?>"/>
 	<input type="hidden" name="genid" value="<?php echo $genid?>" id="genid" />
 	<input type="hidden" name="temp_member_id" id="<?php echo $genid?>member_id" value="<?php echo ($member instanceof Member && !$member->isNew() ? $member->getId() : 0)?>"/>
@@ -116,20 +118,6 @@
 				$arch_icon = "ico-unarchive-obj";
 			}
 		?>
-		<div class="headerToolbar">
-			<div class="headerToolbarItem">
-				<a onclick="<?php echo $arch_action ?>" 
-					href="#" class="link-ico <?php echo $arch_icon ?>"><?php 
-						echo lang("archive");
-				?></a>
-			</div>
-			<div class="headerToolbarItem">
-				<a onclick="og.deleteMember('<?php echo $delete_url ?>','<?php echo $object_type_name ?>');" 
-					href="#" class="link-ico ico-delete"><?php 
-						echo lang("delete");
-				?></a>
-			</div>
-		</div>
 		<div class="clear"></div>
 	<?php } ?>
 	
@@ -145,10 +133,6 @@
 			?>
 			<?php echo text_field('member[name]', $member_name, array('id' => $genid . '-name', 'class' => 'title', 'placeholder' => lang('type name here'))) ?>
 		</div>
-			
-		<div class="coInputButtons">
-			<?php echo submit_button($member == null || $member->isNew() ? $new_member_text : lang('save changes'),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
-		</div>
 		<div class="clear"></div>
 	  </div>
 	</div>
@@ -162,12 +146,12 @@
 		
 			<li><a href="#<?php echo $genid?>member_data"><?php echo lang('details') ?></a></li>
 			
-			<?php if ($current_dimension->getDefinesPermissions() && can_manage_security(logged_user())) {?>
-			<li><a href="#<?php echo $genid?>member_permissions_div" id="<?php echo $genid?>permissions_tab"><?php echo lang('permissions') ?></a></li>
+			<?php if (count($more_properties) > 0) { ?>
+			<li id="<?php echo $genid?>add_custom_properties_li" class="add-custom-properties-li"><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('more properties') ?></a></li>
 			<?php } ?>
 			
-			<?php if (count($more_properties) > 0) { ?>
-			<li id="<?php echo $genid?>add_custom_properties_li"><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('more properties') ?></a></li>
+			<?php if ($current_dimension->getDefinesPermissions() && can_manage_security(logged_user())) {?>
+			<li><a href="#<?php echo $genid?>member_permissions_div" id="<?php echo $genid?>permissions_tab"><?php echo lang('permissions') ?></a></li>
 			<?php } ?>
 			
 			<?php foreach ($categories as $category) { ?>
@@ -219,19 +203,6 @@
 		<?php } ?>
 		
 		<?php 
-			$additional_member_data_fields = array();
-			Hook::fire('additional_member_data_fields', array('member' => $member, 'genid' => $genid), $additional_member_data_fields);
-			foreach ($additional_member_data_fields as $field) { ?>
-				<div id="<?php echo array_var($field, 'container_id')?>" class="dataBlock">
-					<label><?php echo array_var($field, 'label')?></label>
-					<?php echo array_var($field, 'input_html')?>
-				</div>
-				<div class="x-clear"></div>
-		<?php 
-			}
-		?>
-		
-		<?php 
 			$render = true;
 			Hook::fire('member_form_render_associated_dimension_selectors', array('member' => $member, 'is_new' => $member->isNew()), $render);
 			if ($render) {
@@ -256,66 +227,27 @@
 			?>
 			<div class="main-custom-properties-div">
             <?php
-            if (count($main_properties) > 0) {
-				$left = false;
-				$right = false;
-				foreach ($main_properties as $property) {
 
-					if (isset($property['alignment']) && $property['alignment'] == 'left'){
-						$left = true;
-					}
-					if (isset($property['alignment']) && $property['alignment'] == 'right'){
-						$right = true;
-					}
-					if($left && $right) {
-						break;
-					}
-				}
-
-				if($left && $right) {
-					echo stylesheet_tag(get_stylesheet_url('general/forms_override.css'));
-
-					// Container
-					echo '<div class="custom-properties-container">';
-					// Left column
-					echo '<div class="custom-properties-left">';
-
-					foreach ($main_properties as $main_property){
-
-						// some hidden inputs doesn't have alignment, those goes to the left column
-						if (
-							!isset($main_property['alignment']) ||
-							isset($main_property['alignment']) && $main_property['alignment'] == 'left'
-						) {
-							echo $main_property['html'];
-						}
-
-					}
-
-					echo '</div>'; // Close left column
-
-					echo '<div class="custom-properties-right">'; // Right column
-
-					foreach ($main_properties as $main_property) {
-						if (isset($main_property['alignment']) && $main_property['alignment'] == 'right') {
-							echo $main_property['html']; // Renderizamos la propiedad en la columna derecha
-						}
-					}
-		
-					echo '</div>'; // Close right column
-		
-					echo '</div>'; // Close container
-
-				} else {
-					foreach ($main_properties as $main_property){
-						echo $main_property['html'];
-					}
-				}
-            }
+			// Render the custom properties using groups if available
+			echo_custom_properties_html($main_properties);
+            
             ?>
             </div>
 		
 		<div class="x-clear"></div>
+
+		<?php 
+			$additional_member_data_fields = array();
+			Hook::fire('additional_member_data_fields', array('member' => $member, 'genid' => $genid), $additional_member_data_fields);
+			foreach ($additional_member_data_fields as $field) { ?>
+				<div id="<?php echo array_var($field, 'container_id')?>" class="dataBlock">
+					<label><?php echo array_var($field, 'label')?></label>
+					<?php echo array_var($field, 'input_html')?>
+				</div>
+				<div class="x-clear"></div>
+		<?php 
+			}
+		?>
 		
 		<?php if (!Plugins::instance()->isActivePlugin('member_custom_properties')) { ?>
 		
@@ -400,13 +332,16 @@
 		<div class="x-clear"></div>
 		
 		<?php if (count($more_properties) > 0) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab"><?php
+		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab">
+			<div class="other-custom-properties-div">
+			<?php
             if ($member instanceof Member) {
                 foreach ($more_properties as $more_property){
                     echo $more_property['html'];
                 }
             }
-		?></div>
+		?>	</div>
+		</div>
 		<div class="x-clear"></div>
 		<?php } ?>
 		
@@ -417,11 +352,11 @@
 		<?php } ?>
 		
 	</div>
-	<?php 
-	if (!array_var($_REQUEST, 'modal')) {
-		echo submit_button($member == null || $member->isNew() ? $new_member_text : lang('save changes'),'s',array('style'=>'margin-top:0px;'));
-	}
-	?>
+
+	    <?php
+    $object = $member;
+    include_once APPLICATION_PATH . '/views/form/form_footer.php';
+    ?>
 </form>
 
 <script>
@@ -429,12 +364,89 @@
 	
 	og.prev_parent = null;
 	var genid = '<?php echo $genid?>';
+
+	og.member_form_data = {
+		genid: genid,
+		dimension_id: '<?php echo $member->getDimensionId()?>',
+		object_type_id: '<?php echo $member->getObjectTypeId()?>',
+		initial_display_name: '<?php echo escape_character($member->getDisplayName()) ?>',
+		member_prop_cache: {}
+	};
 	
 	og.dimRestrictions.ot_with_restrictions = Ext.util.JSON.decode('<?php echo json_encode($ot_with_restrictions)?>');
 	og.dimProperties.ot_with_properties = Ext.util.JSON.decode('<?php echo json_encode($ot_with_associations)?>');
 
 	$(function() {
-		$("#<?php echo $genid?>tabs").tabs();
+		// simplemodal measures and freezes the modal container width when the form is first shown,
+		// on the narrow first tab (see general/forms.css). Capture that frozen width as the baseline
+		// so tab switching can grow FROM it only as much as a genuinely wider tab needs, and shrink
+		// back to it for tabs that fit.
+		var $modalContainer = $('.simplemodal-container');
+		var $modalData = $('.simplemodal-data');
+		var modalBaselineWidth = $modalContainer.length ? $modalContainer.width() : null;
+
+		$("#<?php echo $genid?>tabs").tabs({
+			activate: function(event, ui) {
+				var panel = ui.newPanel && ui.newPanel.length ? ui.newPanel[0] : null;
+
+				// ExtJS trigger fields (e.g. the ticket-types date pickers) that were rendered
+				// while their tab was display:none get measured with offsetWidth 0, which leaves
+				// their wrap the same width as the input so the trigger icon overlaps the field.
+				// Now that the tab is visible, force each one to recompute its input+trigger layout.
+				if (panel && Ext && Ext.ComponentMgr && Ext.ComponentMgr.all) {
+					Ext.ComponentMgr.all.each(function(c) {
+						if (c && c.rendered && c.wrap && c.trigger && c.el && c.el.dom
+								&& panel.contains(c.el.dom) && typeof c.onResize == 'function') {
+							c.onResize(c.width || 120, c.getHeight ? c.getHeight() : undefined);
+						}
+						return true;
+					});
+				}
+
+				// A tab whose content is intrinsically wider than the frozen container (e.g. the
+				// ticket-types table) overflows it, pushing the form past the close icon which is
+				// pinned to the container's right edge. Grow the container by exactly that overflow
+				// so the close icon lines up again. Reset to the baseline first so fluid tabs (e.g.
+				// permissions, which wraps and grows vertically) shrink back instead of staying wide
+				// - using width:auto here would size to max-content and wrongly widen fluid tabs.
+				if ($modalContainer.length && panel && modalBaselineWidth != null) {
+					// simplemodal pins an inline width on .simplemodal-data; once a wide tab has set it
+					// it stays, so the content box keeps sticking out past the (now narrower) container
+					// on later tabs. Clear it so the data box always follows the container width again.
+					$modalData.css('width', '');
+
+					// Reset to the frozen baseline, then check whether the active tab's content
+					// actually overflows it (reading scrollWidth forces the reflow). Only a tab with
+					// content that can't fit - a rigid element like the ticket-types table - overflows;
+					// fluid tabs (permissions) wrap and report no overflow.
+					$modalContainer.width(modalBaselineWidth);
+					var overflows = panel.scrollWidth - panel.clientWidth > 1;
+					if (overflows) {
+						// Size exactly to the content. width:auto (shrink-to-fit) lands on the rigid
+						// element's real width; it is only applied to tabs that genuinely overflow, so
+						// fluid tabs are never widened past the baseline.
+						$modalContainer.css('width', 'auto');
+					}
+
+					// simplemodal froze the container HEIGHT at the first (short) tab, so switching to
+					// a taller tab left the container shorter than its content: setPosition then centred
+					// using the stale height and pushed the footer (Save/Cancel) below the viewport,
+					// leaving a scrollbar on the modal the user can easily miss. Let the container fit
+					// its actual content height instead. The per-tab panel max-height (general/forms.css:
+					// .form-tab.ui-tabs-panel) keeps the total within the viewport and scrolls the tab
+					// body internally, so the header and footer stay on screen after re-centring.
+					$modalContainer.css('height', 'auto');
+
+					if ($.modal && $.modal.impl && $.modal.impl.d) {
+						$.modal.impl.d.origWidth = null;
+						$.modal.impl.d.origHeight = null;
+					}
+					if ($.modal && typeof $.modal.setPosition == 'function') {
+						$.modal.setPosition();
+					}
+				}
+			}
+		});
 
 		Ext.get('<?php echo $genid ?>-name').focus();
 		
@@ -452,6 +464,10 @@
 
 		<?php if (!Plugins::instance()->isActivePlugin('member_custom_properties')) { ?>
 		document.getElementById(genid + 'member_color_input').innerHTML = og.getColorInputHtml(genid, 'member', <?php echo "$member_color"?>, 'color', '<?php echo lang('color')?>');
+		<?php } ?>
+
+		<?php if ($parent_sel > 0 && $member->isNew()) { ?>
+		og.populateMemberColorInput(genid, <?php echo (int)$parent_sel ?>);
 		<?php } ?>
 		
 		<?php if (isset($obj_type_sel) && $obj_type_sel) {?>

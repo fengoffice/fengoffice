@@ -15,6 +15,10 @@ define('FILE_STORAGE_MYSQL', 'mysql');
 Flash::instance();
 Hook::init();
 include_once APPLICATION_PATH . '/functions.php';
+$task_subscribers_helper = APPLICATION_PATH . '/helpers/task_subscribers.php';
+if (is_file($task_subscribers_helper)) {
+	include_once $task_subscribers_helper;
+}
 try {
 	CompanyWebsite::instance()->init();
 	if (defined('FORCE_UPGRADE_CHECK') && FORCE_UPGRADE_CHECK) {

@@ -87,7 +87,28 @@ member_selector.autocomplete_select = function(dimension_id, genid, combo, recor
 	}
 }
 
+member_selector.has_relation = function(dimension_id, genid) {
+	if (!member_selector[genid]) {
+		// when having separated selectors for each dimension, they start with the genid followed by the dim id
+		if (member_selector[genid + '-' + dimension_id]) {
+			genid = genid + '-' + dimension_id;
+		} else {
+			return false;
+		}
+	}
+	return member_selector[genid].sel_context[dimension_id] && member_selector[genid].sel_context[dimension_id].length > 0;
+}
+
 member_selector.add_relation = function(dimension_id, genid, member_id, show_actions, dont_reload_dep_selectors, dont_select_assoc_members) {
+	if (!member_selector[genid]) {
+		// when having separated selectors for each dimension, they start with the genid followed by the dim id
+		if (member_selector[genid + '-' + dimension_id]) {
+			genid = genid + '-' + dimension_id;
+		} else {
+			return;
+		}
+	}
+
 	if (typeof member_id == "undefined") {
 		var combo = Ext.getCmp(genid + 'add-member-input-dim' + dimension_id);
 		var member = combo.selected_member;
@@ -113,16 +134,20 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	if (hf_input.value == "") hf_input = "[]";
 	var json_sel_ids = Ext.util.JSON.decode(hf_input.value);
 	var selected_member_ids = json_sel_ids ? json_sel_ids : [];
+
+	if (!member_selector[genid].sel_context[dimension_id]) member_selector[genid].sel_context[dimension_id] = [];
+	var is_multiple_selector = member_selector[genid].properties[dimension_id].isMultiple;
 	
 	//check if is selected
 	var ind = selected_member_ids.indexOf(member_id);
-	if(ind >= 0) return;
+
+	// if selected don't make any action only if the selector is multiple, if not multiple override the selection.
+	if(is_multiple_selector && ind >= 0) return;
 	
 	var i = 0;
 	while (selected_member_ids[i] != member.id && i < selected_member_ids.length) i++;
 	
-	if (!member_selector[genid].sel_context[dimension_id]) member_selector[genid].sel_context[dimension_id] = [];
-	if (member_selector[genid].properties[dimension_id].isMultiple) {
+	if (is_multiple_selector) {
 		member_selector[genid].sel_context[dimension_id].push(member.id);
 	} else {
 		member_selector[genid].sel_context[dimension_id] = [member.id];
@@ -152,7 +177,7 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 			html += '<input type="checkbox" class="checkbox" name="member[default_selection]['+member_id+']" title="'+lang('select by default')+'"/>&nbsp;';
 		}
 		if (member_selector[genid].properties[dimension_id].isMultiple) {
-			html += '<a class="coViewAction ico-delete" onclick="member_selector.remove_relation('+dimension_id+',\''+genid+'\', '+member.id+')" href="#"></a>';
+			html += '<a class="coViewAction ico-delete" onclick="member_selector.remove_relation('+dimension_id+',\''+genid+'\', '+member.id+')" href="#" tabindex="-1"></a>';
 		}
 		html += '</div>';
 	}
@@ -172,7 +197,7 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 	if (og.fn_sel_member_additional_html && og.fn_sel_member_additional_html.length > 0) {
 		for (var x=0; x<og.fn_sel_member_additional_html.length; x++) {
 			var fn = og.fn_sel_member_additional_html[x];
-			if (typeof(fn) == 'function') fn.call(null, genid, member);
+			if (typeof(fn) == 'function') fn.call(null, genid, member, member_selector[genid].otid);
 		}
 	}
 	
@@ -197,10 +222,30 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 		
 		mem_path = og.getEmptyCrumbHtml(tmp_dim,".completePath",null,false);
 		$("#"+genid+"selected-member"+member.id+" .completePath").append(mem_path);
+
+		// For multiple selector, add color class to the parent 'selected-member-div'
+		var color_class = 'og-wsname-color-' + (minfo.color || '0');
+		if (member_selector[genid].properties[dimension_id].isMultiple) {
+			$("#"+genid+"selected-member"+member.id).addClass(color_class);
+		}
+
 		og.eventManager.fireEvent('replace all empty breadcrumb', null);
 	}
 	
 	if (!member_selector[genid].properties[dimension_id].isMultiple) {
+		// For single selectors, add color class only to the container for full-width color
+		if (minfo) {
+			var color_class = 'og-wsname-color-' + (minfo.color || '0');
+			var element = $("#"+genid+"-member-chooser-panel-"+dimension_id+"-tree-current-selected");
+			
+			// Remove any previous color class before adding the new one
+			element.removeClass(function(index, className) {
+				return (className.match(/(^|\s)og-wsname-color-\S+/g) || []).join(' ');
+			});
+			
+			element.addClass(color_class);
+		}
+
 		var form = Ext.get(genid + 'add-member-form-dim' + dimension_id);
 		if (form) {
 			f = Ext.fly(form);
@@ -243,6 +288,14 @@ member_selector.add_relation = function(dimension_id, genid, member_id, show_act
 }
 
 member_selector.remove_relation = function(dimension_id, genid, member_id, dont_reload) {
+	if (!member_selector[genid]) {
+		// when having separated selectors for each dimension, they start with the genid followed by the dim id
+		if (member_selector[genid + '-' + dimension_id]) {
+			genid = genid + '-' + dimension_id;
+		} else {
+			return;
+		}
+	}
 	
 	var div = Ext.get(genid+'selected-member'+member_id);
 	if (div) {
@@ -284,13 +337,21 @@ member_selector.remove_relation = function(dimension_id, genid, member_id, dont_
 		}
 	}
 
-	if (member_selector[genid].properties[dimension_id] && member_selector[genid].properties[dimension_id].isMultiple 
+	if (member_selector[genid].properties[dimension_id] && member_selector[genid].properties[dimension_id].isMultiple
 			|| !member_selector[genid].sel_context[dimension_id] || member_selector[genid].sel_context[dimension_id].length == 0) {
 		var form = Ext.get(genid + 'add-member-form-dim' + dimension_id);
 		if (form) {
 			f = Ext.fly(form);
 			f.enableDisplayMode();
 			f.show();
+		}
+
+		// For single selectors, remove color class when no members are selected (None)
+		if (member_selector[genid].properties[dimension_id] && !member_selector[genid].properties[dimension_id].isMultiple) {
+			var element = $("#"+genid+"-member-chooser-panel-"+dimension_id+"-tree-current-selected");
+			element.removeClass(function(_idx, className) {
+				return (className.match(/(^|\s)og-wsname-color-\S+/g) || []).join(' ');
+			});
 		}
 	}
 
@@ -309,7 +370,28 @@ member_selector.remove_relation = function(dimension_id, genid, member_id, dont_
 	}
 }
 
+/**
+ * Extracts the member selector genid from a dimension tree textfilter input id.
+ * Supports unified selectors (genid-member-chooser-panel-...) and per-dimension
+ * selectors used by property groups (genid-dimId-member-chooser-panel-...).
+ */
+member_selector.get_genid_from_tree_textfilter_id = function(sel_id, dim_id) {
+	var suffix = '-member-chooser-panel-' + dim_id + '-tree-textfilter';
+	if (sel_id.indexOf(suffix) >= 0) {
+		return sel_id.substring(0, sel_id.length - suffix.length);
+	}
+	return '';
+};
+
 member_selector.reload_dependant_selectors = function(dimension_id, genid) {
+	if (!member_selector[genid]) {
+		// when having separated selectors for each dimension, they start with the genid followed by the dim id
+		if (member_selector[genid + '-' + dimension_id]) {
+			genid = genid + '-' + dimension_id;
+		} else {
+			return;
+		}
+	}
 		
 	if (typeof member_selector[genid].properties[dimension_id] == 'undefined') return;
 	var dimensions_to_reload_object = member_selector[genid].properties[dimension_id].reloadDimensions;
@@ -334,6 +416,8 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 	var main_tree = Ext.getCmp(genid + '-member-chooser-panel-' + dimension_id + '-tree');
 
 	if (main_tree && main_tree.filterOnChange) {
+	  this.trees_to_filter = [];
+	  
 	  for (i=0; i<dimensions_to_reload.length; i++) {
 		var dim_id = dimensions_to_reload[i];
 
@@ -343,15 +427,19 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 			var sel_id = selector_inputs[x].id;
 			var key = "-member-chooser-panel-"+ dim_id +"-tree-textfilter";
 			if (sel_id.indexOf(key) >= 0) {
-				dep_genid = selector_inputs[x].id.substring(0, selector_inputs[x].id.indexOf("-"));
+				dep_genid = member_selector.get_genid_from_tree_textfilter_id(sel_id, dim_id);
 				break;
 			}
 		}
 		
 		var selector_object = member_selector[dep_genid];
+		if (!selector_object) {
+			dep_genid = dep_genid + '-' + dim_id;
+			selector_object = member_selector[dep_genid];
+		}
 		
 		if (selector_object && selector_object.properties[dim_id] && !selector_object.dontFilterThisSelector) {
-			
+
 			if (selected_members) {
 				// get the selected node
 				var selected_node = null;
@@ -362,6 +450,12 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 				}
 				
 				var tree = Ext.getCmp(dep_genid + '-member-chooser-panel-' + dim_id + '-tree');
+				
+				// if the tree is not initialized, initialize it
+				if (!tree.initialized) {
+					tree.initialized = true;
+					tree.init();
+				}
 				
 				// build tree filter options
 				var filter_options = {};
@@ -375,15 +469,24 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 						}
 					}
 				}
+
+				// collect all trees to filter
+				this.trees_to_filter.push({tree:tree, selected_node:selected_node, filter_options:filter_options});
 				
-				// filter the dependant tree
-				tree.filterByMember(selected_members, selected_node, function(){
-					self.filteredTrees++;
-					if (self.filteredTrees == self.totalFilterTrees) {
-						self.resumeEvents();
-						og.eventManager.fireEvent('member trees updated', selected_node);
+				// wait a bit to avoid the tree filter to override the others
+				setTimeout(function(){
+					// filter the trees
+					for (var x=0; x<member_selector.trees_to_filter.length; x++) {
+						var tree_to_filter = member_selector.trees_to_filter[x];
+						tree_to_filter.tree.filterByMember(selected_members, tree_to_filter.selected_node, function(){
+							member_selector.filteredTrees++;
+							if (member_selector.filteredTrees == member_selector.totalFilterTrees) {
+								member_selector.resumeEvents();
+								og.eventManager.fireEvent('member trees updated', tree_to_filter.selected_node);
+							}
+						}, tree_to_filter.filter_options);
 					}
-				}, filter_options);
+				},200);
 			}
 
 		}
@@ -393,7 +496,14 @@ member_selector.reload_dependant_selectors = function(dimension_id, genid) {
 
 member_selector.remove_all_dimension_selections = function(genid, dim_id, dont_relaod_dependant_selectors) {
 	
-	if (!member_selector[genid]) return;
+	if (!member_selector[genid]) {
+		// when having separated selectors for each dimension, they start with the genid followed by the dim id
+		if (member_selector[genid + '-' + dim_id]) {
+			genid = genid + '-' + dim_id;
+		} else {
+			return;
+		}
+	}
 		
 	if (member_selector[genid].sel_context[dim_id]) {
 		var length = member_selector[genid].sel_context[dim_id].length;
@@ -410,6 +520,11 @@ member_selector.remove_all_dimension_selections = function(genid, dim_id, dont_r
 member_selector.remove_all_selections = function(genid, excluded_dim_ids, dont_relaod_dependant_selectors) {
 	if (typeof(excluded_dim_ids) == 'undefined') excluded_dim_ids = [];
 
+	if (!member_selector[genid]) {
+		// when having separated selectors for each dimension, they start with the genid followed by the dim id
+		return member_selector.remove_all_selections_separated(genid, excluded_dim_ids, dont_relaod_dependant_selectors);
+	}
+
 	for (dim_id in member_selector[genid].properties) {
 
 		if (excluded_dim_ids.indexOf(parseInt(dim_id)) == -1) {
@@ -418,6 +533,15 @@ member_selector.remove_all_selections = function(genid, excluded_dim_ids, dont_r
 			if (!member_selector[genid].properties[dim_id].isMultiple) {
 				$("#"+genid+"-member-chooser-panel-"+dim_id+"-tree-current-selected .empty-text").show();
 			}
+		}
+	}
+}
+
+member_selector.remove_all_selections_separated = function(genid, excluded_dim_ids, dont_relaod_dependant_selectors) {
+	for (key in member_selector) {
+		// remove all selections for all the entries starting with genid, that will do it for all dimensions in the form
+		if (key.indexOf(genid) == 0) {
+			member_selector.remove_all_selections(key, excluded_dim_ids, dont_relaod_dependant_selectors);
 		}
 	}
 }
@@ -458,6 +582,24 @@ member_selector.set_selected = function(genid, sel_member_ids, preload) {
 			}			
 		}				
 	}	
+}
+
+member_selector.get_selected_context = function(genid) {
+	var context = {};
+	if (member_selector[genid]) {
+		for (dim_id in member_selector[genid].sel_context) {
+			context[dim_id] = member_selector[genid].sel_context[dim_id];
+		}
+	} else {
+		for (key in member_selector) {
+			if (key.indexOf(genid) == 0) {
+				for (dim_id in member_selector[key].sel_context) {
+					context[dim_id] = member_selector[key].sel_context[dim_id];
+				}
+			}
+		}
+	}
+	return context;
 }
 
 member_selector.preload_members = function(genid, d) {

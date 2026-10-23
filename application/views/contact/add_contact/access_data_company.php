@@ -43,7 +43,5 @@
 </div>
 
 <script>
-$( "#add-person-form-show" ).one( "click", function() {
-	og.load_company_combo("<?php echo $genid?>company-combo", '<?php echo owner_company()->getId();?>');
-	});
+
 </script>

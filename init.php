@@ -1,5 +1,21 @@
 <?php
 if(session_id() == "") {
+	// Harden the session cookie (CVE-2026-36669): keep it away from JavaScript,
+	// mark it Secure over HTTPS, and constrain cross-site sending.
+	$cookie_secure = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off')
+		|| (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+	if (PHP_VERSION_ID >= 70300) {
+		session_set_cookie_params(array(
+			'lifetime' => 0,
+			'path'     => '/',
+			'secure'   => $cookie_secure,
+			'httponly' => true,
+			'samesite' => 'Lax',
+		));
+	} else {
+		ini_set('session.cookie_httponly', 1);
+		if ($cookie_secure) ini_set('session.cookie_secure', 1);
+	}
 	@session_start();
 }
 // ---------------------------------------------------
@@ -70,7 +86,7 @@ define('PRODUCT_LOGO_FILENAME', 'feng_logo.png');
 define('DEFAULT_HELP_LINK', 'https://wiki.fengoffice.com/doku.php/Home');
 
 define('MAX_SEARCHABLE_FILE_SIZE', 1048576); // if file type is searchable script will load its content into search index. Using this constant you can set the max filesize of the file that will be imported. Noone wants 500MB in search index for single file
-define('SESSION_LIFETIME', 3600); // one hour
+define('SESSION_LIFETIME', 3600 * 72); // 72 hours
 define('REMEMBER_LOGIN_LIFETIME', 1209600); // two weeks
 
 // Defaults
@@ -111,9 +127,6 @@ foreach ($callbacks as $callback) {
 	spl_autoload_register($callback);
 }
 
-
-@include CACHE_DIR . '/autoloader.php';
-
 // Prepare logger... We might need it early...
 //if(Env::isDebugging()) {
 	Logger::setSession(new Logger_Session('default'));
@@ -125,6 +138,18 @@ foreach ($callbacks as $callback) {
 	Logger::setSession(new Logger_Session('default'));
 	Logger::setBackend(new Logger_Backend_Null());
 } // if*/
+
+$composerAutoload = ROOT . '/vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+} else {
+    //Logger::log("Composer autoload.php not found at: $composerAutoload", Logger::ERROR);
+}
+
+@include CACHE_DIR . '/autoloader.php';
+
+
+
 
 register_shutdown_function('__shutdown');
 

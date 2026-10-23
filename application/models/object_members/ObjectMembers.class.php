@@ -6,8 +6,77 @@
   * @author Diego Castiglioni <diego.castiglioni@fengoffice.com>
   */
   class ObjectMembers extends BaseObjectMembers {
-    
-    	
+
+		/**
+		 * Per-request cache for getMembersIdsByObjectAndExtraCond results.
+		 * Structure: $_members_extra_cache[$variant][$object_id] = array of rows
+		 * $variant encodes extra_conditions + limit + use_contact_member_cache + user_id.
+		 */
+		private static $_members_extra_cache = array();
+
+		/**
+		 * Batch pre-warms the getMembersIdsByObjectAndExtraCond cache for multiple objects
+		 * at once, replacing N individual queries with a single IN(...) query.
+		 * Callers that process a batch of objects should invoke this before the loop.
+		 * Objects not present in this pre-warm fall back to the normal per-object query.
+		 *
+		 * @param array  $object_ids
+		 * @param string $extra_conditions   Raw SQL appended to the WHERE clause (same as in getMembersIdsByObjectAndExtraCond)
+		 * @param string $limit              Numeric LIMIT or "" for no limit
+		 * @param bool   $use_contact_member_cache
+		 */
+		static function prefetchMembersForObjects(array $object_ids, $extra_conditions = "", $limit = "", $use_contact_member_cache = true) {
+			if (empty($object_ids)) return;
+
+			$contact_id = $use_contact_member_cache ? logged_user()->getId() : '0';
+			$variant    = md5($extra_conditions . '|' . $limit . '|' . ($use_contact_member_cache ? '1' : '0') . '|' . $contact_id);
+
+			if (!isset(self::$_members_extra_cache[$variant])) {
+				self::$_members_extra_cache[$variant] = array();
+			}
+
+			$to_fetch = array();
+			foreach ($object_ids as $id) {
+				$id = (int) $id;
+				if (!array_key_exists($id, self::$_members_extra_cache[$variant])) {
+					$to_fetch[]                                    = $id;
+					self::$_members_extra_cache[$variant][$id] = array(); // placeholder so missing objects return []
+				}
+			}
+			if (empty($to_fetch)) return;
+
+			$cache_sql = '';
+			if ($use_contact_member_cache) {
+				$cache_sql = "INNER JOIN " . TABLE_PREFIX . "contact_member_cache cmc ON m.id = cmc.member_id AND cmc.contact_id = '$contact_id'";
+			}
+
+			$ids_list = implode(',', $to_fetch);
+			// NOTE: SQL LIMIT cannot be applied per-object in a batch query.
+			// When $limit is set, the getter applies it in PHP after reading from cache.
+			$sql = "
+				SELECT om.object_id, om.member_id, m.object_type_id, om.is_optimization
+				FROM " . TABLE_PREFIX . "object_members om
+				INNER JOIN " . TABLE_PREFIX . "members m ON om.member_id = m.id
+				$cache_sql
+				WHERE om.object_id IN ($ids_list)
+					$extra_conditions
+				ORDER BY om.object_id, om.member_id
+			";
+
+			$rows = DB::executeAll($sql);
+			if ($rows) {
+				foreach ($rows as $row) {
+					$oid = (int) $row['object_id'];
+					self::$_members_extra_cache[$variant][$oid][] = array(
+						'member_id'      => $row['member_id'],
+						'object_type_id' => $row['object_type_id'],
+						'is_optimization'=> $row['is_optimization'],
+					);
+				}
+			}
+		}
+
+
   		static function addObjectToMembers($object_id, $members_array){
   			
   			foreach ($members_array as $member){
@@ -148,11 +217,30 @@
   					}
   				}
   			}
-  			return array_var($this->cached_object_members, $object_id, array());
-  		}
-  		
-  		
-  		
+			return array_var($this->cached_object_members, $object_id, array());
+		}
+		
+		function clearCachedObjectMembers($object_id) {
+			unset($this->cached_object_members[$object_id]);
+		}
+
+		/**
+		 * Evict all per-dimension cache entries for $object_id from the static
+		 * $_members_extra_cache so that getMembersIdsByObjectAndExtraCond()
+		 * re-queries the DB for fresh data after a member save.
+		 * Call this alongside clearCachedObjectMembers() after add_to_members /
+		 * remove_from_members operations.
+		 */
+		static function clearMembersExtraCacheForObject($object_id) {
+			$object_id = (int) $object_id;
+			foreach (self::$_members_extra_cache as &$entries) {
+				unset($entries[$object_id]);
+			}
+			unset($entries); // break the reference
+		}
+
+
+
     	static function getMembersByObject($object_id){
   			$ids = self::getMemberIdsByObject($object_id);
   			$members = Members::instance()->findAll(array("conditions" => "`id` IN (".implode(",", $ids).")"));
@@ -192,18 +280,31 @@
   		
   		static function getMembersIdsByObjectAndExtraCond($object_id, $extra_conditions = "", $limit = "", $use_contact_member_cache = true){
   			if ($object_id) {
+  				// Check pre-warm cache before hitting the database
+  				$contact_id = $use_contact_member_cache ? logged_user()->getId() : '0';
+  				$variant    = md5($extra_conditions . '|' . $limit . '|' . ($use_contact_member_cache ? '1' : '0') . '|' . $contact_id);
+  				if (isset(self::$_members_extra_cache[$variant]) && array_key_exists((int) $object_id, self::$_members_extra_cache[$variant])) {
+  					$cached = self::$_members_extra_cache[$variant][(int) $object_id];
+  					// The batch prewarm skips SQL LIMIT, so apply it here if needed
+  					if (is_numeric($limit) && $limit > 0) {
+  						return array_slice($cached, 0, (int) $limit);
+  					}
+  					return $cached;
+  				}
+
+  				// Cache miss — fall back to individual DB query (original behavior)
   				// Prepare Limit SQL
   				$SQL_LIMIT = '' ;
   				if (is_numeric($limit) && $limit>0){
   					$SQL_LIMIT = "LIMIT 0, ".$limit;
   				}
-  				
-  				$cache_sql = '';
+
   				if($use_contact_member_cache){
-  					$contact_id = logged_user()->getId();
-  					$cache_sql = "INNER JOIN ".TABLE_PREFIX."contact_member_cache cmc ON m.id = cmc.member_id AND cmc.contact_id = '$contact_id'";  						
+  					$cache_sql = "INNER JOIN ".TABLE_PREFIX."contact_member_cache cmc ON m.id = cmc.member_id AND cmc.contact_id = '$contact_id'";
+  				} else {
+  					$cache_sql = '';
   				}
-  				
+
   				$sql = "
   					SELECT om.member_id, m.object_type_id, om.is_optimization
   					FROM ".TABLE_PREFIX."object_members om
@@ -215,7 +316,15 @@
   					ORDER BY om.member_id
   					$SQL_LIMIT
   				";
-  				return DB::executeAll($sql);
+  				$result = DB::executeAll($sql);
+
+  				// Populate cache for subsequent calls within the same request
+  				if (!isset(self::$_members_extra_cache[$variant])) {
+  					self::$_members_extra_cache[$variant] = array();
+  				}
+  				self::$_members_extra_cache[$variant][(int) $object_id] = $result ? $result : array();
+
+  				return $result;
   			} else {
   				return array();
   			}

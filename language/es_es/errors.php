@@ -39,7 +39,7 @@
 	'message text required' => 'Nota no introducida, inténtelo de nuevo',
 	'comment text required' => 'Texto no introducido, inténtelo de nuevo',
 	'milestone name required' => 'Nombre del hito no introducido, inténtelo de nuevo',
-	'milestone due date required' => 'Fecha de límite del hito es obligatoria',
+	'milestone due date required' => 'Fecha límite del hito es obligatoria',
 	'task list name required' => 'Nombre de tarea no introducido, inténtelo de nuevo',
 	'task list name unique' => 'El nombre de tarea seleccionado ya existe, intente nuevamente ingresando uno distinto',
 	'task title required' => 'Título de tarea no ingresado, intente nuevamente',

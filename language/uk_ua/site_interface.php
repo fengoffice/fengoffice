@@ -141,6 +141,7 @@ Last update:  see readme_ua.txt
 	'footer copy with homepage' => '© {0}  <a class="internalLink" href="{1}">{2}</a>. Усі права захищені',
 	'footer copy without homepage' => '© {0}  {1}. Усі права захищені',
 	'footer powered' => 'Під управлінням <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Під управлінням',
 
   // Menu
 	'all documents' => 'Усі документи',

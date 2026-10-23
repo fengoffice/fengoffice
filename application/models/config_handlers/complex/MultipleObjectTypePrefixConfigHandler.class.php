@@ -10,8 +10,15 @@
     
     function render($control_name) {
     	$genid = gen_id();
+
+		// get the object types that we want to show in the configuration
+		// we allow plugins to add more object types to the list
+		$object_names_array = array('task', 'sample', 'payment', 'quota');
+		Hook::fire('multiple_object_type_prefix_config_handler_render', array(), $object_names_array);
+		$object_names = "'" . implode("', '", $object_names_array) . "'";	
+		
 		// for now we show only a few content_objects and all dimension_objects (without person and company that are deprecated)
-    	$object_types = ObjectTypes::getAvailableObjectTypesWithDimensionObjects(" AND IF (`type` = 'content_object', `name` IN ('task', 'sample', 'payment', 'quota'), `name` NOT IN ('person','company'))");
+    	$object_types = ObjectTypes::getAvailableObjectTypesWithDimensionObjects(" AND IF (`type` = 'content_object', `name` IN (".$object_names."), `name` NOT IN ('person','company'))");
     	
     	$value =  $this->getValue();
     	$out = '';

@@ -64,14 +64,20 @@ $genid = gen_id();
 	} else {
 		$birthdays = array();
 	}
-	
+
+	$show_subtasks = user_config_option('show_subtasks_in_calendar');
+	$cal_subtasks = array('dated' => array(), 'undated_by_parent' => array(), 'parent_map' => array());
+	if ($show_subtasks && isset($tasks) && is_array($tasks) && count($tasks) > 0) {
+		$cal_subtasks = getCalendarSubtasksData($tasks, $task_filter, false);
+	}
+
 	foreach ($result as $key => $event){
 		if ($event->getTypeId() > 1){
 			$alldayevents[] = $event;
 			unset($result[$key]);
 		}
 	}
-	
+
 	if($milestones) {
 		$alldayevents = array_merge($alldayevents,$milestones);
 	}
@@ -80,6 +86,30 @@ $genid = gen_id();
 		$dtv_end = new DateTimeValue($dtv->getTimestamp() + 60*60*24);
 		foreach ($tasks as $task) {
 			$tmp_tasks = array_merge($tmp_tasks, replicateRepetitiveTaskForCalendar($task, $dtv, $dtv_end));
+		}
+		foreach ($cal_subtasks['dated'] as $subtask) {
+			$tmp_tasks = array_merge($tmp_tasks, replicateRepetitiveTaskForCalendar($subtask, $dtv, $dtv_end));
+		}
+		if ($show_subtasks && !empty($cal_subtasks['undated_by_parent'])) {
+			foreach ($tasks as $task) {
+				$parent_id = $task->getId();
+				if (empty($cal_subtasks['undated_by_parent'][$parent_id])) continue;
+
+				$instances = replicateRepetitiveTaskForCalendar($task, $dtv, $dtv_end);
+				foreach ($instances as $instance) {
+					$tz_value = Timezones::getTimezoneOffsetToApply($instance, logged_user());
+					$anchor_date = null;
+					if ($instance->getDueDate() instanceof DateTimeValue) {
+						$anchor_date = new DateTimeValue($instance->getDueDate()->getTimestamp() + ($instance->getUseDueTime() ? $tz_value : 0));
+					} else if ($instance->getStartDate() instanceof DateTimeValue) {
+						$anchor_date = new DateTimeValue($instance->getStartDate()->getTimestamp() + ($instance->getUseStartTime() ? $tz_value : 0));
+					}
+					if (!$anchor_date instanceof DateTimeValue) continue;
+					if ($dtv->getTimestamp() != mktime(0, 0, 0, $anchor_date->getMonth(), $anchor_date->getDay(), $anchor_date->getYear())) continue;
+
+					$alldayevents = array_merge($alldayevents, $cal_subtasks['undated_by_parent'][$parent_id]);
+				}
+			}
 		}
 		foreach ($tmp_tasks as $task) {
 			$added = false;
@@ -185,7 +215,9 @@ $genid = gen_id();
 								$divtype = '';
 								$div_prefix = '';
 								$draw_div = true;
-								
+								$is_subtask = false;
+								$subtask_parent_id = 0;
+
 								if ($event instanceof ProjectMilestone ){
 									$div_prefix = 'd_ms_div_';
 									$subject = clean($event->getObjectName());
@@ -228,7 +260,9 @@ $genid = gen_id();
 									}
 									$tip_pre .= gen_id()."_";
 									$div_prefix = 'd_ta_div_' . $tip_pre;
-									$subject = $event->getObjectName();									
+									$subject = $event->getObjectName();
+									$is_subtask = isset($cal_subtasks['parent_map'][$event->getId()]);
+									$subtask_parent_id = $is_subtask ? $cal_subtasks['parent_map'][$event->getId()] : 0;
 									$divtype = '<span class="italic">' . $tip_title . '</span> - ';
 									$tipBody = lang('assigned to') .': '. clean($event->getAssignedToName()) . (trim(clean($event->getText())) != '' ? '<br><br>' . html_to_text($event->getText()) : '');
 									
@@ -255,19 +289,19 @@ $genid = gen_id();
 
 								cal_get_ws_color($ws_color, $ws_style, $ws_class, $txt_color, $border_color);	
 						?>
-						<div id="<?php echo $div_prefix . $event->getId() ?>" class="adc" style="left: 3px; top: <?php echo $top ?>px; z-index: 5;width: 99%;margin:1px;">
+						<div id="<?php echo $div_prefix . $event->getId() ?>" class="adc<?php echo $is_subtask ? ' cal-subtask-chip' : '' ?>" data-task-id="<?php echo $event->getId() ?>" <?php if ($is_subtask) { ?>data-parent-task-id="<?php echo $subtask_parent_id ?>" <?php } ?>style="left: <?php echo $is_subtask ? '15px' : '3px' ?>; top: <?php echo $top ?>px; z-index: 5;width: <?php echo $is_subtask ? '96' : '99' ?>%;margin:1px;" onclick="og.disableEventPropagation(event)" onmouseup="og.disableEventPropagation(event)">
 							<div class="t3 <?php echo  $ws_class?>" style="<?php echo  $ws_style?>;margin:0px 1px 0px 1px;height:0px; border-bottom:1px solid; border-color:<?php echo $border_color ?>"></div>
-							<div class="noleft <?php echo  $ws_class?>" style="<?php echo  $ws_style?>; border-left:1px solid; border-right:1px solid; border-color:<?php echo $border_color ?>">							
+							<div class="noleft <?php echo  $ws_class?>" style="<?php echo  $ws_style?>; border-left:1px solid; border-right:1px solid; border-color:<?php echo $border_color ?>">
 								<div class="" style="overflow: hidden; padding-bottom: 1px;">
 									<table style="width:100%"><tr><td>
-									<?php 
+									<?php
 										$view_url = $event->getViewUrl();
-										Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url); 
+										Hook::fire('override_calendar_views_view_action', array('object' => $event, 'raw_url' => $view_url), $view_url);
 									?>
-									<span class="nobr" style="display: block; text-decoration: none;"><a href="<?php echo $view_url ?>" class='internalLink' onclick="og.disableEventPropagation(event);"><img src="<?php echo $img_url?>" style="vertical-align:middle;" border='0'> <span style="font-weight:<?php echo $bold?>; color:<?php echo $txt_color ?>!important"><?php echo $subject ?></span></a></span>
+									<span class="nobr" style="display: block; text-decoration: none;"><a href="<?php echo $view_url ?>" class='internalLink' onclick="og.disableEventPropagation(event);"><img src="<?php echo $img_url?>" style="vertical-align:middle;" border='0'> <?php if ($show_subtasks && !$is_subtask && !empty($cal_subtasks['parents_with_subtasks'][$event->getId()])) { ?><span class="cal-subtask-expander" onclick="event.preventDefault();event.stopPropagation();og.disableEventPropagation(event);og.toggleCalendarSubtasks(<?php echo $event->getId() ?>, this);return false;">&#9662;</span><?php } ?><span style="font-weight:<?php echo $bold?>; color:<?php echo $txt_color ?>!important"><?php echo ($is_subtask ? '&#8618; ' : '') . $subject ?></span></a></span>
 									<?php if ($event instanceof ProjectEvent) { ?>
 									</td><td align="right">
-									<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin:2px 2px 0 0;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onclick="og.eventSelected(this.checked);og.disableEventPropagation(event);"></input>
+									<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin:2px 2px 0 0;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onmousedown="og.disableEventPropagation(event)" onclick="og.eventSelected(this.checked);og.disableEventPropagation(event);"></input>
 									<?php } ?>
 									</td></tr></table>
 								</div>
@@ -376,6 +410,8 @@ $genid = gen_id();
 
 												$event_id = $event->getId();
 												$subject = clean($event->getObjectName());
+												$is_subtask = isset($cal_subtasks['parent_map'][$event_id]);
+												$subtask_parent_id = $is_subtask ? $cal_subtasks['parent_map'][$event_id] : 0;
 
 												$ws_colors = $event->getObjectColors($event instanceof ProjectEvent ? 1 : 12);
 												$all_event_colors = array();
@@ -529,14 +565,14 @@ $genid = gen_id();
 						style="position: absolute; top: <?php echo $top?>px; left: <?php echo $color_left?>%; width: <?php echo $color_width?>%;height:<?php echo $height ?>px;z-index:100;"></div>
 <?php 			} ?>
 												
-												<div id="d_ev_div_<?php echo $event->getId()?>" class="chip" style="position: absolute; top: <?php echo $top?>px; left: <?php echo $left?>%; width: <?php echo $width?>%;z-index:120;height: <?php echo $height ?>px;"  onclick="og.disableEventPropagation(event)">
+												<div id="d_ev_div_<?php echo $event->getId()?>" class="chip<?php echo $is_subtask ? ' cal-subtask-block' : '' ?>" data-task-id="<?php echo $event->getId() ?>" <?php if ($is_subtask) { ?>data-parent-task-id="<?php echo $subtask_parent_id ?>" <?php } ?>style="position: absolute; top: <?php echo $top?>px; left: <?php echo $left?>%; width: <?php echo $width?>%;z-index:120;height: <?php echo $height ?>px;" onclick="og.disableEventPropagation(event)" onmousedown="og.disableEventPropagation(event)" onmouseup="og.disableEventPropagation(event)">
 													<div class="t1 <?php echo $ws_class ?>" style="<?php echo $ws_style ?>;margin:0px 2px 0px 2px;height:0px; border-bottom:1px solid;border-color:<?php echo $border_color ?>"></div>
 													<div class="t2 <?php echo $ws_class ?>" style="<?php echo $ws_style ?>;margin:0px 1px 0px 1px;height:1px; border-left:1px solid;border-right:1px solid;border-color:<?php echo $border_color ?>;"></div>
 													<div id="inner_d_ev_div_<?php echo $event->getId()?>" class="chipbody edit" style="height: <?php echo $height ?>px;">
 													<div style="overflow:hidden;height:100%;border-left: 1px solid;border-right: 1px solid;border-color:<?php echo $border_color ?>;">
 														<table style="width:100%;"><tr><td>
 														<?php if ($event instanceof ProjectEvent) { ?>
-															<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin-top:2px 0 0 2px;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onclick="og.eventSelected(this.checked);"></input>
+															<input type="checkbox" style="width:13px;height:13px;vertical-align:top;margin-top:2px 0 0 2px;border-color: <?php echo $border_color ?>;" id="sel_<?php echo $event->getId()?>" name="obj_selector" onmousedown="og.disableEventPropagation(event)" onclick="og.eventSelected(this.checked);"></input>
 														<?php } ?>
 														<?php 
 															$view_url = $event->getViewUrl()."&amp;view=day&amp;user_id=".$user_filter;
@@ -558,7 +594,7 @@ $genid = gen_id();
 														?>
 															<a href="<?php echo $view_url ?>"
 																onclick="og.disableEventPropagation(event);"
-																class='internalLink'><span style="color:<?php echo $txt_color?>!important; font-weight: <?php  if (isset($bold))echo $bold; ?>;"><?php echo $subject_toshow;?></span></a>
+																class='internalLink'><?php if ($show_subtasks && !$is_subtask && !empty($cal_subtasks['parents_with_subtasks'][$event->getId()])) { ?><span class="cal-subtask-expander" onclick="event.preventDefault();event.stopPropagation();og.disableEventPropagation(event);og.toggleCalendarSubtasks(<?php echo $event->getId() ?>, this);return false;">&#9662;</span><?php } ?><span class="<?php if ($event instanceof ProjectTask && $event->isCompleted()): ?>og-task-completed<?php endif; ?>" style="color:<?php echo $txt_color?>!important; font-weight: <?php  if (isset($bold))echo $bold; ?>;"><?php echo ($is_subtask ? '&#8618; ' : '') . $subject_toshow;?></span></a>
 															
 														</td><td align="right">
 														<div align="right" style="padding-right:4px;<?php echo ($ev_duration['hours'] == 0 ? 'height:'.$height.'px;' : '') ?>">
@@ -567,13 +603,13 @@ $genid = gen_id();
 															$invitations = $event->getInvitations(); 
 															if ($invitations != null && is_array($invitations) && isset($invitations[$user_filter])) {
 																$inv = $invitations[$user_filter];
-																if ($inv->getInvitationState() == 0) { // Not answered
+																if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_NEEDS_ACTION) { // Not answered
 																	echo '<img src="' . image_url('/16x16/mail_mark_unread.png') . '"/>';
-																} else if ($inv->getInvitationState() == 1) { // Assist = Yes
+																} else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_ACCEPTED) { // Assist = Yes
 																	echo '<img src="' . image_url('/16x16/complete.png') . '"/>';
-																} else if ($inv->getInvitationState() == 2) { // Assist = No
+																} else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_DECLINED) { // Assist = No
 																	echo '<img src="' . image_url('/16x16/del.png') . '"/>';
-																} else if ($inv->getInvitationState() == 3) { // Assist = Maybe
+																} else if ($inv->getInvitationState() == EventInvitations::EVENT_INVITATION_TENTATIVE) { // Assist = Maybe
 																	echo '<img src="' . image_url('/16x16/help.png') . '"/>';
 																} else {
 																	//echo "Not Invited";
@@ -634,7 +670,7 @@ $genid = gen_id();
 		$h_m[0] = ($h_m[0] + 12) % 24;
 		$h_m[1] = substr($h_m[1], 0 , strpos(' ', $h_m[1]));
 	}
-	$defaultScrollTo = PX_HEIGHT * ($h_m[0] + ($h_m[1] / 60));
+	$defaultScrollTo = PX_HEIGHT * ((float)$h_m[0] + ((float)$h_m[1] / 60));
 	
  ?>
  

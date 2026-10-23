@@ -49,146 +49,311 @@
 		var topToolbar = Ext.getCmp('calendarPanelTopToolbarObject');
 		if (topToolbar) topToolbar.updateCheckedStatus(og.events_selected);
 	}
+
+	// Client-side, non-persisted expand/collapse of a parent task's subtasks (blocks/chips
+	// rendered with data-parent-task-id="<parentId>" and their own data-task-id="<id>").
+	// Cascades through the whole subtree (subtasks of subtasks, etc.), since only the
+	// top-most task in a chain gets an expander icon. Resets to expanded on every view reload.
+	og.toggleCalendarSubtasks = function(parentId, iconEl) {
+		var collapsed = iconEl.getAttribute('data-collapsed') == '1';
+		var display = collapsed ? '' : 'none';
+
+		var frontier = [String(parentId)];
+		var visited = {};
+		while (frontier.length) {
+			var id = frontier.shift();
+			if (visited[id]) continue;
+			visited[id] = true;
+			var nodes = document.querySelectorAll('[data-parent-task-id="' + id + '"]');
+			for (var i = 0; i < nodes.length; i++) {
+				nodes[i].style.display = display;
+				var ownId = nodes[i].getAttribute('data-task-id');
+				if (ownId) frontier.push(ownId);
+			}
+		}
+
+		iconEl.setAttribute('data-collapsed', collapsed ? '0' : '1');
+		iconEl.innerHTML = collapsed ? '&#9662;' : '&#9656;';
+	}
 	
 	/*******************************************
 		DRAGGING & RESIZING
 	*******************************************/
 
-	// month view
-	og.monthViewEventDD = Ext.extend(Ext.dd.DDProxy, {
-	    startDrag: function(x, y) {
-	        var dragEl = Ext.get(this.getDragEl());
-	        var el = Ext.get(this.getEl());
+	og.CALENDAR_DRAG_PIXEL_THRESH = 12;
+	og.CALENDAR_DRAG_MIN_HOLD_MS = 0;
+	og._calendarActiveDrag = null;
+	og._calendarDragMoveListener = null;
+	og._calendarDragUpListener = null;
+	og._calendarEventPress = null;
 
-	        dragEl.applyStyles({border:'','z-index':2000});
-	        dragEl.update(el.dom.innerHTML);
-	        if (el.getStyle('background-color') == 'transparent') {
-	        	dragEl.setStyle('background-color', '#99CC66');
-	        }
-	        dragEl.applyStyles('opacity: 0.5; filter: alpha(opacity = 50);');
-	    },
-		onDragOver: function(e, targetId) {
-			var target = Ext.get(targetId);
-			if (target) this.lastTarget = target;
-		},
-		onDragOut: function(e, targetId) {
-			var target = Ext.get(targetId);
-			if (target) this.lastTarget = target;
-	    },
-		endDrag: function() {
-			var ok = true;
-			if (this.config.dragData.is_repe) {
-				ok = confirm(lang('confirm repeating event edition'));
+	og.isCalendarInteractiveTarget = function(target) {
+		var el = target;
+		while (el && el !== document.body) {
+			var tag = el.tagName ? el.tagName.toUpperCase() : '';
+			if (tag === 'A' || tag === 'INPUT' || tag === 'BUTTON' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'IMG') {
+				return true;
 			}
-			if (!ok) return;
-			date = null;
-			for (i=0; i<og.ev_cell_dates.length; i++) {
-				if (og.ev_cell_dates[i].key == this.lastTarget.id) {
-					date = og.ev_cell_dates[i];
-					break;
-				}
-			}
-			if (date != null) {
-				var el = Ext.get(this.getEl());
-				var parent = Ext.get(date.key);
-				parent.appendChild(el);
-			
-				this.config.dragData.day = date.day;
-				this.config.dragData.month = date.month;
-				this.config.dragData.year = date.year;
-				this.config.fn.apply(this.config.scope || window, [this, this.config.dragData]);
-			} else {
-				og.err('Invalid grid cell');
+			el = el.parentNode;
+		}
+		return false;
+	};
+
+	og.clearCalendarEventPress = function() {
+		og._calendarEventPress = null;
+	};
+
+	og.markCalendarEventPress = function() {
+		og._calendarEventPress = {active: true, dragged: false};
+	};
+
+	og.shouldSuppressCalendarGridAction = function() {
+		return og._calendarEventPress && og._calendarEventPress.active && !og._calendarEventPress.dragged;
+	};
+
+	og.getMonthCellDateByKey = function(key) {
+		if (!og.ev_cell_dates) {
+			return null;
+		}
+		for (var i = 0; i < og.ev_cell_dates.length; i++) {
+			if (og.ev_cell_dates[i].key == key) {
+				return og.ev_cell_dates[i];
 			}
 		}
-	});
+		return null;
+	};
 
-	// week and day views
-	og.eventDD = Ext.extend(Ext.dd.DDProxy, {
-	    startDrag: function(x, y) {
-	        var dragEl = Ext.get(this.getDragEl());
-	        var el = Ext.get(this.getEl());
+	og.findCalendarDropTargetFromPoint = function(x, y, dragMode) {
+		var target = document.elementFromPoint(x, y);
+		while (target) {
+			if (target.id) {
+				if (dragMode === 'month' && og.getMonthCellDateByKey(target.id)) {
+					return target;
+				}
+				if (dragMode === 'week' && /^h\d+_\d+$/.test(target.id)) {
+					return target;
+				}
+				if (dragMode === 'week_allday' && (target.id.indexOf('alldayeventowner_') >= 0 || target.id.indexOf('alldaycelltitle_') >= 0)) {
+					return target;
+				}
+			}
+			target = target.parentNode;
+		}
+		return null;
+	};
 
-	        dragEl.applyStyles({border:'','z-index':2000});
-	        dragEl.update(el.dom.innerHTML);
-	        dragEl.applyStyles('opacity: 0.5; filter: alpha(opacity = 50);');
-	    },
-		onDragOver: function(e, targetId) {
-			var target = Ext.get(targetId);
-			if (target) {
-				this.lastTarget = target;
+	og.cancelCalendarEventDrag = function() {
+		var state = og._calendarActiveDrag;
+		if (state) {
+			if (state.ghost && state.ghost.parentNode) {
+				state.ghost.parentNode.removeChild(state.ghost);
 			}
-		},
-		onDragOut: function(e, targetId) {
-			var target = Ext.get(targetId);
-			if (target) {
-				this.lastTarget = target;
-			}
-	    },
-		endDrag: function() {
-			var el = Ext.get(this.getEl());
-			if(this.lastTarget) {
-				var str_temp = this.lastTarget.id.split	('_');
-				isAllDay = (this.lastTarget.id.indexOf('alldayeventowner_') >= 0) || (this.lastTarget.id.indexOf('alldaycelltitle_') >= 0);
-				var ok = true;
-				if (this.config.dragData.is_repe) {
-					ok = confirm(lang('confirm repeating event edition'));
-				}
-				if (!ok) return;
-				
-				if (isAllDay) {
-					var parent = Ext.get('alldayeventowner_'+str_temp[1]);
-					parent.appendChild(el);
-					og.reorganizeAllDayGrid();
-				} else {
-					var grid = Ext.get('grid');
-					var parent = Ext.get('eventowner');
-					
-					var lt = Ext.get(this.lastTarget);
-					var top = lt.getTop() - parent.getTop();
-					var left = 100 * (lt.getLeft() - parent.getLeft() + 3) / grid.getWidth();
-					
-					el.applyStyles('top:'+top+'px;left:'+left+'%;');				
-					parent.appendChild(el);
-					
-					/*var cont = Ext.get('gridcontainer');
-					if (cont.getTop() + cont.getHeight() < el.getTop() + el.getHeight()) {
-						style = 'height:'+ (cont.getTop() + cont.getHeight() - el.getTop() - 1) +'px';
-						el.applyStyles(style);
-						Ext.get(this.getDragEl()).update(el.dom.innerHTML);
-					}*/
-				}	
-				if(this.config.fn && 'function' === typeof this.config.fn) {
-					if (isAllDay) {
-						date = og.ev_cell_dates[str_temp[1]];
-					} else {
-						date = og.ev_cell_dates[str_temp[0].substr(1)];
-					}
-					if (date) {
-						this.config.dragData.day = date.day;
-						this.config.dragData.month = date.month;
-						this.config.dragData.year = date.year;
-						if (!isAllDay) {
-							this.config.dragData.hour = Math.floor(str_temp[1] / 2);
-							this.config.dragData.min = (str_temp[1] % 2 == 0 ? 0 : 30);
-						}
-						this.config.fn.apply(this.config.scope || window, [this, this.config.dragData]);
-					} else {
-						og.err('Invalid grid cell');
-					}
-				}
+			if (state.el) {
+				state.el.setOpacity(1);
 			}
 		}
-		
-	});
-	
+		if (og._calendarDragMoveListener) {
+			document.removeEventListener('mousemove', og._calendarDragMoveListener);
+			og._calendarDragMoveListener = null;
+		}
+		if (og._calendarDragUpListener) {
+			document.removeEventListener('mouseup', og._calendarDragUpListener, true);
+			og._calendarDragUpListener = null;
+		}
+		og._calendarActiveDrag = null;
+		og.clearCalendarEventPress();
+	};
+
+	og.onCalendarEventDragMove = function(e) {
+		var state = og._calendarActiveDrag;
+		if (!state) {
+			return;
+		}
+
+		var buttons = e.browserEvent ? e.browserEvent.buttons : null;
+		if (buttons != null && (buttons & 1) === 0) {
+			og.cancelCalendarEventDrag();
+			return;
+		}
+
+		if (Date.now() < state.dragEligibleAfter) {
+			return;
+		}
+
+		var x = e.getPageX();
+		var y = e.getPageY();
+		var dx = Math.abs(x - state.startX);
+		var dy = Math.abs(y - state.startY);
+		var thresh = og.CALENDAR_DRAG_PIXEL_THRESH;
+
+		if (!state.dragging) {
+			if (dx <= thresh && dy <= thresh) {
+				return;
+			}
+			state.dragging = true;
+			if (og._calendarEventPress) {
+				og._calendarEventPress.dragged = true;
+			}
+			state.ghost = state.el.dom.cloneNode(true);
+			state.ghost.id = state.divId + '_drag_ghost';
+			state.ghost.style.position = 'absolute';
+			state.ghost.style.zIndex = 10000;
+			state.ghost.style.opacity = '0.55';
+			state.ghost.style.pointerEvents = 'none';
+			state.ghost.style.width = state.el.getWidth() + 'px';
+			state.ghost.style.height = state.el.getHeight() + 'px';
+			state.ghost.style.margin = '0';
+			document.body.appendChild(state.ghost);
+			state.el.setOpacity(0.35);
+		}
+
+		state.ghost.style.left = (x - state.el.getWidth() / 2) + 'px';
+		state.ghost.style.top = (y - 10) + 'px';
+	};
+
+	og.finishCalendarEventDrag = function(state, dropTarget) {
+		var config = state.config;
+		var ddata = Ext.apply({}, config.dragData);
+		var ok = true;
+
+		if (ddata.is_repe) {
+			ok = confirm(lang('confirm repeating event edition'));
+		}
+		if (!ok) {
+			og.cancelCalendarEventDrag();
+			return;
+		}
+
+		if (config.dragMode === 'month') {
+			var date = og.getMonthCellDateByKey(dropTarget.id);
+			if (!date || (state.originCellId && dropTarget.id === state.originCellId)) {
+				og.cancelCalendarEventDrag();
+				return;
+			}
+			var parent = Ext.get(date.key);
+			parent.appendChild(state.el);
+			ddata.day = date.day;
+			ddata.month = date.month;
+			ddata.year = date.year;
+		} else if (config.dragMode === 'week_allday') {
+			var str_temp = dropTarget.id.split('_');
+			var parent = Ext.get('alldayeventowner_' + str_temp[1]);
+			parent.appendChild(state.el);
+			og.reorganizeAllDayGrid();
+			date = og.ev_cell_dates[str_temp[1]];
+			if (!date) {
+				og.cancelCalendarEventDrag();
+				return;
+			}
+			ddata.day = date.day;
+			ddata.month = date.month;
+			ddata.year = date.year;
+			ddata.hour = -1;
+			ddata.min = -1;
+		} else {
+			var str_temp = dropTarget.id.split('_');
+			var grid = Ext.get('grid');
+			var parent = Ext.get('eventowner');
+			var lt = Ext.get(dropTarget);
+			var top = lt.getTop() - parent.getTop();
+			var left = 100 * (lt.getLeft() - parent.getLeft() + 3) / grid.getWidth();
+			state.el.applyStyles('top:' + top + 'px;left:' + left + '%;');
+			parent.appendChild(state.el);
+			date = og.ev_cell_dates[str_temp[0].substr(1)];
+			if (!date) {
+				og.cancelCalendarEventDrag();
+				return;
+			}
+			ddata.day = date.day;
+			ddata.month = date.month;
+			ddata.year = date.year;
+			ddata.hour = Math.floor(str_temp[1] / 2);
+			ddata.min = (str_temp[1] % 2 == 0 ? 0 : 30);
+		}
+
+		if (config.fn && typeof config.fn === 'function') {
+			config.fn({}, ddata);
+		}
+		og.cancelCalendarEventDrag();
+	};
+
+	og.onCalendarEventDragEnd = function(e) {
+		var state = og._calendarActiveDrag;
+		if (!state) {
+			return;
+		}
+
+		if (!state.dragging) {
+			if (e && e.stopEvent) {
+				e.stopEvent();
+			}
+			og.cancelCalendarEventDrag();
+			return;
+		}
+
+		var dropTarget = og.findCalendarDropTargetFromPoint(e.getPageX(), e.getPageY(), state.config.dragMode);
+		if (!dropTarget) {
+			og.cancelCalendarEventDrag();
+			return;
+		}
+
+		og.finishCalendarEventDrag(state, dropTarget);
+	};
+
+	og.wrapCalendarDragEvent = function(ev) {
+		if (ev && ev.getPageX) {
+			return ev;
+		}
+		return new Ext.EventObjectImpl(ev);
+	};
+
+	og.attachCalendarEventDrag = function(div_id, config) {
+		var el = Ext.get(div_id);
+		if (!el) {
+			return;
+		}
+
+		el.on('mousedown', function(e) {
+			if (e.button !== 0) {
+				return;
+			}
+			if (og.isCalendarInteractiveTarget(e.target)) {
+				return;
+			}
+
+			og.cancelCalendarEventDrag();
+			og.markCalendarEventPress();
+			var parentEl = el.dom.parentNode;
+			og._calendarActiveDrag = {
+				divId: div_id,
+				el: el,
+				config: config,
+				startX: e.getPageX(),
+				startY: e.getPageY(),
+				dragging: false,
+				ghost: null,
+				originCellId: parentEl && parentEl.id ? parentEl.id : null,
+				dragEligibleAfter: Date.now() + og.CALENDAR_DRAG_MIN_HOLD_MS
+			};
+
+			og._calendarDragMoveListener = function(ev) {
+				og.onCalendarEventDragMove(og.wrapCalendarDragEvent(ev));
+			};
+			og._calendarDragUpListener = function(ev) {
+				og.onCalendarEventDragEnd(og.wrapCalendarDragEvent(ev));
+			};
+
+			document.addEventListener('mousemove', og._calendarDragMoveListener);
+			document.addEventListener('mouseup', og._calendarDragUpListener, true);
+
+			e.stopPropagation();
+		});
+	};
+
 	og.createEventDrag = function(div_id, obj_id, is_repetitive, origdate, type, isAllday, dropzone) {
-		var obj_div = Ext.get(div_id);
-		
-		obj_div.dd = new og.eventDD(div_id, dropzone, {
+		og.attachCalendarEventDrag(div_id, {
+			dragMode: isAllday ? 'week_allday' : 'week',
 			dragData: {id: obj_id, is_repe: is_repetitive, orig_date: origdate},
-			scope: this,
-			isTarget:false,
 			fn: function(dd, ddata) {
 				switch (type) {
 					case 'event':
@@ -242,14 +407,12 @@
 				}
 			}
 		});
-	}
+	};
 	
 	og.createMonthlyViewDrag = function(div_id, obj_id, is_repetitive, type, origdate) {
-		var obj_div = Ext.get(div_id);
-		obj_div.dd = new og.monthViewEventDD(div_id, 'ev_dropzone', {
+		og.attachCalendarEventDrag(div_id, {
+			dragMode: 'month',
 			dragData: {id: obj_id, is_repe: is_repetitive, orig_date: origdate},
-			scope: this,
-			isTarget:false,
 			fn: function(dd, ddata) {
 				switch (type) {
 					case 'event':
@@ -266,7 +429,7 @@
 				}
 			}
 		});
-	}
+	};
 	
 	
 	og.adjustAllDayEventsHeight = function(genid) {
@@ -446,6 +609,9 @@
 	var ev_end_day, ev_end_month, ev_end_year, ev_end_hour, ev_end_minute;
 	
 	og.selectStartDateTime = function(day, month, year, hour, minute) {
+		if (og.shouldSuppressCalendarGridAction()) {
+			return;
+		}
 		og.selectingCells = true;
 		og.selectDateTime(true, day, month, year, hour, minute);
 	}
@@ -506,6 +672,11 @@
 	}
 	
 	og.showEventPopup = function(day, month, year, hour, minute, use_24hr, st_val, genid, type_id, viewMonth) {
+		if (og.shouldSuppressCalendarGridAction()) {
+			og.clearPaintedCells();
+			og.clearCalendarEventPress();
+			return;
+		}
 		var add_params;
 		if (!viewMonth){
 			var typeid = 1, hrs = 1, mins = 0;

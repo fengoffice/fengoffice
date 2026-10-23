@@ -9,7 +9,12 @@ class MoreController extends ApplicationController {
 	
 	
 	function index() {
-		ajx_set_panel("more-panel");
+		// Naming the panel in the answer also brings its tab to the front. When the request comes from the
+		// tab itself (its content is being loaded or refreshed) the answer goes back to it anyway, and
+		// activating it pulled the user back after they had already moved to another tab.
+		if (array_var($_REQUEST, 'current') != 'more-panel') {
+			ajx_set_panel("more-panel");
+		}
 		ajx_set_no_toolbar();
 	} // index
 	
@@ -90,7 +95,7 @@ class MoreController extends ApplicationController {
 		// add subquery for user groups column
 		$columns_sql .= ", (SELECT GROUP_CONCAT(' ', pg.name) FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.id IN (
 			SELECT permission_group_id FROM ".TABLE_PREFIX."contact_permission_groups WHERE contact_id=c.object_id
-		) AND pg.type='user_groups') as groups";
+		) AND pg.type='user_groups') as `groups`";
 		
 		$main_sql = "FROM ".TABLE_PREFIX."contacts c
 				INNER JOIN ".TABLE_PREFIX."permission_groups p ON p.id=c.user_type
@@ -454,8 +459,9 @@ class MoreController extends ApplicationController {
 				DB::beginWork();
 				$pos = 1;
 				foreach ($module_list as $mod_id) {
-					$mod_id = str_replace("'", "", $mod_id);
-					DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET ordering=$pos WHERE id='$mod_id'");
+					// Parameterized: was a SQL injection via the JSON-supplied module id
+					// (the str_replace("'") band-aid was bypassable).
+					DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET ordering=? WHERE id=?", $pos, $mod_id);
 					$pos++;
 				}
 				DB::commit();
@@ -547,8 +553,8 @@ class MoreController extends ApplicationController {
 				DB::beginWork();
 				$pos = 1;
 				foreach ($dim_list as $dim_id) {
-					$dim_id = str_replace("'", "", $dim_id);
-					DB::execute("UPDATE ".TABLE_PREFIX."dimensions SET default_order=$pos WHERE id='$dim_id'");
+					// Parameterized: was a SQL injection via the JSON-supplied dimension id.
+					DB::execute("UPDATE ".TABLE_PREFIX."dimensions SET default_order=? WHERE id=?", $pos, $dim_id);
 					$pos++;
 				}
 				DB::commit();
@@ -561,6 +567,28 @@ class MoreController extends ApplicationController {
 		}
 	}
 	
+	/**
+	 * Marks one step of the getting started checklist as skipped. Only for the admin group, like
+	 * finishing the setup, and only while the setup is not finished.
+	 *
+	 * @return void
+	 */
+	function skip_getting_started_step() {
+		ajx_current("empty");
+		if (!logged_user()->isAdminGroup()) {
+			return;
+		}
+		if (config_option('getting_started_step') >= 99) {
+			return;
+		}
+		
+		Env::useHelper('getting_started');
+		// the helper only accepts the steps that can be skipped
+		if (!getting_started_skip_step(array_var($_REQUEST, 'step_id'))) {
+			flash_error(lang('error'));
+		}
+	}
+	
 	function set_getting_started_step() {
 		ajx_current("empty");
 		if (!logged_user()->isAdminGroup()) {
@@ -568,16 +596,26 @@ class MoreController extends ApplicationController {
 			return;
 		}
 		
+		// only whole steps from 1 to 99: anything else would be stored as it came and read back as 0
 		$step = array_var($_REQUEST, 'step');
+		if (!is_numeric($step) || (int) $step != $step || $step < 1 || $step > 99) {
+			return;
+		}
+		$step = (int) $step;
 		
-		$current_step = config_option('getting_started_step');
-		if ($current_step < $step) {
-			set_config_option('getting_started_step', $step);
-			
-			// change tab title and icon
-			if ($step >= 99) {
-				DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET title='settings', icon_cls='ico-administration' WHERE id='more-panel';");
-			}
+		// A single statement compares and writes, so the step can only go up. Read, compare and write as
+		// separate steps let a lower value land on top of a higher one when two administrators stored at the
+		// same moment (one finishing the setup, the other confirming the modules).
+		DB::execute("UPDATE ".TABLE_PREFIX."config_options SET value = ? WHERE name = 'getting_started_step' AND CAST(value AS SIGNED) < ?", $step, $step);
+		$stored = DB::executeOne("SELECT value FROM ".TABLE_PREFIX."config_options WHERE name = 'getting_started_step'");
+		$stored_step = (int) array_var($stored, 'value');
+		if (GlobalCache::isAvailable()) {
+			GlobalCache::update('config_option_getting_started_step', $stored_step);
+		}
+		
+		// change tab title and icon: they follow the stored step, whoever stored it
+		if ($stored_step >= 99) {
+			DB::execute("UPDATE ".TABLE_PREFIX."tab_panels SET title='settings', icon_cls='ico-administration' WHERE id='more-panel';");
 		}
 		
 		$update_cm_cache = array_var($_REQUEST, 'update_cm_cache');
@@ -617,5 +655,32 @@ class MoreController extends ApplicationController {
 	function contracted_services() {
 		ajx_set_no_toolbar();
 	}
+
+function users() {
+	if (!can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+	ajx_set_no_toolbar();
+}
+
+function groups() {
+	if (!can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+	ajx_set_no_toolbar();
+}
+
+function roles() {
+	if (!can_manage_security(logged_user())) {
+		flash_error(lang('no access permissions'));
+		ajx_current("empty");
+		return;
+	}
+	ajx_set_no_toolbar();
+}
 	
 } 

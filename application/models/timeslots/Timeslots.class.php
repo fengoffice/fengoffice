@@ -117,7 +117,39 @@ class Timeslots extends BaseTimeslots {
 	 * @return array
 	 */
 	static function getTaskTimeslots($context, $members = null, $user = null, $start_date = null, $end_date = null, $object_id = 0, $group_by = null, $order_by = null, $limit = 0, $offset = 0, $timeslot_type = 0, $extra_conditions=''){
-		
+		$conditions = self::buildTaskTimeslotsConditions($user, $start_date, $end_date, $object_id, $timeslot_type, $extra_conditions);
+
+		$order_by[] = 'start_time';
+		$result = self::instance()->listing(array(
+			'order' => $order_by,
+			'extra_conditions' => $conditions,
+		));
+
+		return $result->objects;
+	}
+
+	/**
+	 * Same filters as getTaskTimeslots(), but a cheap COUNT(*) (listing()'s only_count_results
+	 * path never hydrates a single Timeslot) instead of loading every matching row. Lets a caller
+	 * check how many rows a report would have to process before actually running it.
+	 */
+	static function countTaskTimeslots($user = null, $start_date = null, $end_date = null, $object_id = 0, $timeslot_type = 0, $extra_conditions=''){
+		$conditions = self::buildTaskTimeslotsConditions($user, $start_date, $end_date, $object_id, $timeslot_type, $extra_conditions);
+
+		$result = self::instance()->listing(array(
+			'extra_conditions' => $conditions,
+			'only_count_results' => true,
+		));
+
+		return (int) $result->total;
+	}
+
+	/**
+	 * Shared WHERE-condition building for getTaskTimeslots()/countTaskTimeslots(), so the two can
+	 * never drift apart (a count that doesn't match what the real query would return is worse
+	 * than no count check at all).
+	 */
+	private static function buildTaskTimeslotsConditions($user, $start_date, $end_date, $object_id, $timeslot_type, $extra_conditions) {
 		$commonConditions = "";
 		if ($start_date) {
 			$commonConditions .= DB::prepareString(' AND `e`.`start_time` >= ? ', array($start_date));
@@ -127,10 +159,10 @@ class Timeslots extends BaseTimeslots {
 		}
 		//User condition
 		$commonConditions .= $user ? ' AND `e`.`contact_id` = '. $user->getId() : '';
-		
+
 		//Object condition
 		$commonConditions .= $object_id > 0 ? ' AND `e`.`rel_object_id` = ' . $object_id : '';
-		
+
 		switch($timeslot_type){
 			case 0: //Task timeslots
 				$conditions = " AND EXISTS (SELECT `obj`.`id` FROM `" . TABLE_PREFIX . "objects` `obj` WHERE `obj`.`id` = `e`.`rel_object_id` AND `obj`.`trashed_on` = 0 AND `obj`.`archived_on` = 0)";
@@ -147,16 +179,10 @@ class Timeslots extends BaseTimeslots {
 		if ((!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) || (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_others_timeslots'))) {
 			$conditions .= " AND `e`.`contact_id` = " . logged_user()->getId();
 		}
-		
+
 		$conditions .= $commonConditions . $extra_conditions;
-		
-		$order_by[] = 'start_time';
-		$result = self::instance()->listing(array(
-			'order' => $order_by,
-			'extra_conditions' => $conditions,
-		));
-		
-		return $result->objects;
+
+		return $conditions;
 	}
 	
 	static function updateBillingValues() {
@@ -297,6 +323,38 @@ class Timeslots extends BaseTimeslots {
 	}
 	
 	
+	/**
+	 * Returns an array of object columns that are available to be shown in the custom properties form.
+	 * This extends the function in the parent class.
+	 *
+	 * @access protected
+	 * @return array Array of object columns available to be shown in the custom properties form.
+	 */
+	function getColumnsAvailableInForms() {
+		$columns = [
+			'contact_id',
+			'worked_time',
+			'start_time',
+			'end_time',
+			'description',
+			'rel_object_id',
+		];
+		if (Plugins::instance()->isActivePlugin('income')) {
+			$columns[] = 'is_billable_work';
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Whether the class can use property groups.
+	 *
+	 * @return bool true if the class can use property groups, false otherwise.
+	 */
+	function canUsePropertyGroups() {
+		return true;
+	}
+
 	function getColumnsToAggregateInTotals() {
 		$parent_cols = parent::getColumnsToAggregateInTotals();
 		$cols = array(
@@ -304,7 +362,7 @@ class Timeslots extends BaseTimeslots {
             'subtract' => array('operation' => 'sum', 'format' => 'time'),
             'fixed_billing' => array('operation' => 'sum', 'format' => 'money', 'currency_id_col' => 'rate_currency_id', 'group_by' => 'rate_currency_id'),
         );
-		
+
 		return array_merge($parent_cols, $cols);
 	}
 	

@@ -296,9 +296,9 @@ og.ArchivedObjects = function() {
 
 	actions = {
 		unarchive: new Ext.Action({
-			text: lang('unarchive'),
+			text: '<i class="icon-archive-restore"></i>' + lang('unarchive'),
             tooltip: lang('unarchive selected objects'),
-            iconCls: 'ico-unarchive-obj',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				if (confirm(lang("confirm unarchive selected objects"))) {
@@ -313,9 +313,9 @@ og.ArchivedObjects = function() {
 			scope: this
 		}),
 		del: new Ext.Action({
-			text: lang('move to trash'),
+			text: '<i class="icon-trash-2"></i>' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
@@ -383,7 +383,7 @@ og.ArchivedObjects = function() {
 			emptyMsg: lang("no objects to display")
 		}),
 		viewConfig: {
-			forceFit: true
+			forceFit: false
 		},
 		sm: sm,
 		tbar: tbar,

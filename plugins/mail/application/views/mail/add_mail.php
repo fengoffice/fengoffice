@@ -1,15 +1,18 @@
 <?php
 	require_javascript('og/modules/linkToObjectForm.js');
 	require_javascript('og/ObjectPicker.js');
-	//require_javascript('AddMail.js', $this->plugin_name);
+	// Needed for og.mailSetBody() blob: URL normalization (Safari paste).
+	// NOTE: this file is included by Template::includeTemplate(), so $this is
+	// the Template instance here, not the controller — plugin name must be literal.
+	require_javascript('AddMail.js', 'mail');
 
 	set_page_title( lang('write mail'));
 
 	$genid = gen_id();
 
-	add_page_action(lang('send mail'), "javascript:document.getElementById('sendMail').click();", "mail send blue",null,null,true);
-	add_page_action(lang('save')." ".lang('draft'), "javascript:document.getElementById('saveMail').click();", "mail",null,null,true);
-	add_page_action(lang('discard'), "javascript:document.getElementById('discardMail').click();","mail",null,null,true);
+	add_page_action(lang('send mail'), "javascript:document.getElementById('sendMail').click();", "mail send blue submit",null,null,true);
+	add_page_action(lang('save')." ".lang('draft'), "javascript:document.getElementById('saveMail').click();", "mail btn",null,null,true);
+	add_page_action(lang('discard'), "javascript:document.getElementById('discardMail').click();","mail btn",null,null,true);
 
 	if (isset($_SESSION['add_mail_override_mail_data'])) {
 		$mail_data = $_SESSION['add_mail_override_mail_data'];
@@ -124,7 +127,7 @@ sig.actualHtmlSignature = '';
   	</div>
 
 	<div>
-		<table style="width:100%"><tr><td style="width: 60px;">
+		<table style="width:100%"><tr><td style="width: 60px; vertical-align: top; padding-top: 6px; line-height: 1.5;">
     	<label for='mailTo' style="margin:0;"><?php echo lang('mail to')?> <span class="label_required">*</span></label>
     	</td><td>
     	<?php echo autocomplete_textarea_field('mail[to]', $mail_to, array(), 30,
@@ -135,7 +138,7 @@ sig.actualHtmlSignature = '';
 	</div>
 
  	<div id="add_mail_CC" style="padding-top:2px;display:<?php echo (substr_count(array_var($mail_data, 'cc'), '@') > 0 ? 'block' : 'none')?>;">
-		<table style="width:100%"><tr><td style="width: 60px;">
+		<table style="width:100%"><tr><td style="width: 60px; padding-top: 6px;">
 		<label for="mailCC" style="margin:0;"><?php echo lang('mail CC')?> </label>
 		</td><td>
 		<?php echo autocomplete_textarea_field('mail[cc]', array_var($mail_data, 'cc'), array(), 30,
@@ -146,7 +149,7 @@ sig.actualHtmlSignature = '';
 	</div>
 
  	<div id="add_mail_BCC" style="padding-top:2px;display:<?php echo (substr_count(array_var($mail_data, 'bcc'), '@') > 0 ? 'block' : 'none')?>;">
- 		<table style="width:100%"><tr><td style="width: 60px;">
+ 		<table style="width:100%"><tr><td style="width: 60px; padding-top: 6px;">
 	    <label for="mailBCC" style="margin:0;"><?php echo lang('mail BCC')?></label>
 	    </td><td>
 	    <?php echo autocomplete_textarea_field('mail[bcc]', array_var($mail_data, 'bcc'), array(), 30,
@@ -158,10 +161,10 @@ sig.actualHtmlSignature = '';
 
 	<div style="padding-top:2px;">
 		<table style="width:100%"><tr><td style="width: 60px; padding-top:6px;">
-    	<label for='mailSubject'><?php echo lang('mail subject')?></label>
+    	<label for="mailSubject" style="font-weight: bold;"><?php echo lang('mail subject')?></label>
     	</td><td>
     	<?php echo text_field('mail[subject]', array_var($mail_data, 'subject'),
-    		array('class' => 'title x-form-text', 'tabindex'=>'0', 'id' => $genid . 'mailSubject', 'style' => 'width:100%;height:32px;border-radius: 4px;padding-right: 0px;', 'autocomplete' => 'off')) ?>
+    		array('class' => 'title x-form-text', 'tabindex'=>'0', 'id' => $genid . 'mailSubject', 'style' => 'width:100% !important;height:32px;border-radius: 4px;box-sizing: border-box;', 'autocomplete' => 'off')) ?>
     	</td></tr></table>
 	</div>
 
@@ -169,11 +172,11 @@ sig.actualHtmlSignature = '';
 	<input id="<?php echo $genid?>def_acc_id" type="hidden" name="def_acc_id" value="<?php echo $def_acc_id; ?>"/>
 
 	<div id="add_mail_account" style="<?php echo ($def_acc_id != array_var($mail_data, 'account_id') ? "" : "display:none;")?> padding:5px 0;">
-	  <table><tr><td style="width:60px">
-	    <label for="mailAccount"><?php echo lang('mail from')?></label>
+	  <table><tr><td style="width:60px; padding-top:6px;">
+	    <label for="mailAccount" style="font-weight: bold;"><?php echo lang('mail from')?></label>
 	  </td><td>
 	    <?php echo render_select_mail_account('mail[account_id]',  $mail_accounts, isset($mail_data['account_id']) ? $mail_data['account_id'] : (isset($default_account) ? $default_account->getId() : (count($mail_accounts) > 0 ? $mail_accounts[0]->getId() : 0)),
-	    array('id' => $genid . 'mailAccount', 'tabindex'=>'44', 'onchange' => "og.changeSignature('$genid', this.value);", "style" => "border:1px solid #B5B8C8;")) ?>
+	    array('id' => $genid . 'mailAccount', 'tabindex'=>'44', 'onchange' => "og.changeSignature('$genid', this.value);")) ?>
 	    <span class="desc" style="margin-left:10px;"><?php echo lang('mail account desc') ?></span>
 	  </td></tr></table>
 	</div>
@@ -225,13 +228,13 @@ sig.actualHtmlSignature = '';
 		if (is_array($attachs)) {
 			foreach ($attachs as $att) {
 				$split = explode(':', $att);
-				$icon_class = 'ico-file ico-' . str_replace(".", "_", str_replace("/", "-", $split[2]));
+				$lucide_icon = get_lucide_icon_for_extension(get_file_extension($split[1]));
 	?>
 	og.addMailAttachment(container, {
 		object_id: '<?php echo $split[1] . ":" . $split[2] . ":" . $split[3] ?>',
 		manager: '<?php echo $split[0] ?>',
 		name: '<?php echo $split[1] ?>',
-		icocls: '<?php echo $icon_class ?>'
+		lucideIcon: '<?php echo $lucide_icon ?>'
 	});
 
 	$('#add_mail_attachments').show();
@@ -242,9 +245,11 @@ sig.actualHtmlSignature = '';
 			$existing_attachments = $_SESSION['existing_attachments'];
 			unset($_SESSION['existing_attachments']);
 
-			foreach ($existing_attachments as $att) {?>
+			foreach ($existing_attachments as $att) {
+				$lucide_icon_existing = get_lucide_icon_for_extension(get_file_extension($att['name']));
+			?>
 				var obj = {object_id: <?php echo $att['object_id']?>, manager: '<?php echo $att['manager']?>',
-					name: '<?php echo $att['name']?>', icocls: '<?php echo $att['ico']?>', mimeType: '<?php echo $att['type']?>'};
+					name: '<?php echo $att['name']?>', lucideIcon: '<?php echo $lucide_icon_existing ?>'};
 				og.addMailAttachment(container, obj);
 				//show attachment section
 				
@@ -287,7 +292,7 @@ sig.actualHtmlSignature = '';
 
 </div>
 
-<div id="<?php echo $genid ?>mail_body_container" style="height: 100%;">
+<div id="<?php echo $genid ?>mail_body_container" style="height: 100%; box-sizing: border-box;">
     <?php
     $display = ($type == 'html') ? 'none' : 'block';
     $display_fck = ($type == 'html') ? 'block' : 'none';
@@ -478,8 +483,14 @@ og.saveDraftEmail = function(genid){
 	if (form) {
 		var prev_action = form.action;
 		form.action = og.getUrl('mail', 'save_draft', {ajax:'true'});
+		form.ogDeferredRestoreAction = prev_action;
 		form.onsubmit();
-		form.action = prev_action;
+		if (!form.ogMailBodyAsyncPending) {
+			if (form.ogDeferredRestoreAction != null) {
+				form.action = form.ogDeferredRestoreAction;
+				form.ogDeferredRestoreAction = null;
+			}
+		}
 	}
 };
 

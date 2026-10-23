@@ -104,6 +104,7 @@
 	'error document checked out by another user' => 'Ce document a été verrouillé par un autre utilisateur.',
 	'value must be numeric' => 'La valeur doit être numérique pour {0}',
 	'values cannot be empty' => 'La valeur ne peut être vide pour {0}',
+	'value cannot be empty' => 'La valeur de {0} ne peut pas être vide',
 	'error assign task permissions user' => 'Vous n\'avez pas les droits d\'affecter une tâche à cet utilisateur',
 	'error assign task permissions company' => 'Vous n\'avez pas les droits pour affecter une tâche à cette société',
 	'error assign task company dnx' => 'Tentative d\'affectation à une société inexistante',
@@ -148,4 +149,5 @@
 	'token external name value required' => 'Le nom est requis',
 	'token external type value required' => 'Le type est requis',
 	'you dont have permissions to add this object in members' => 'Vous n\'avez pas le droit d\'ajouter ce {0} dans {1}.',
+	'error edit task' => 'Erreur lors de la modification de la tâche',
 ); ?>

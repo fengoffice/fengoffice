@@ -206,6 +206,16 @@ class JSMin {
                 break;
               }
 
+              // Keep the space in "a + ++b" and "a - --b" (also "a + +b", "a++ + b"):
+              // without it the operators merge into "a+++b" / "a---b", which either
+              // does not parse or means something else.
+              if (($this->a === '+' || $this->a === '-') && $this->peek() === $this->a) {
+                $this->output .= $this->a . ' ';
+                $this->action(3);
+                $this->action(2);
+                break;
+              }
+
               $this->action(3);
               break;
 

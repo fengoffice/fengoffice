@@ -643,6 +643,8 @@ class FilesController extends ApplicationController {
 			if (array_var($file_data, 'composing_mail') && $upload_option == -1) {
 				$file->getObject()->setColumnValue('archived_by_id', logged_user()->getId());
 				$file->getObject()->setColumnValue('archived_on', DateTimeValueLib::now());
+				// skip CRPM status calc / overview reload — that would wipe the compose form
+				$file->setDontMakeCalculations(true);
 			}
 		
 			DB::beginWork();
@@ -742,10 +744,7 @@ class FilesController extends ApplicationController {
 				$notAllowedMember = '';
 				$members = Members::instance()->findAll(array('conditions' => 'id IN ('.implode(',', $member_ids).')'));
 				if(!$file->canAdd(logged_user(), $members, $notAllowedMember )) {
-					if (str_starts_with($notAllowedMember, '-- req dim --')) $err_msg = lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in));
-					else trim($notAllowedMember) == "" ? $err_msg = lang('you must select where to keep', lang('the file')) : $err_msg = lang('no context permissions to add',lang("files"),$notAllowedMember );
-					
-					throw new Exception($err_msg);
+					throw new Exception(get_can_add_error_message($notAllowedMember, lang('files'), $members));
 				}
 				
 				//files ids to return
@@ -867,6 +866,11 @@ class FilesController extends ApplicationController {
 					$file->setFromAttributes($file_data);
 					
 					$file->setIsVisible(true);
+
+					// mail attachments: skip CRPM overview reload that would wipe the compose form
+					if (array_var($file_data, 'composing_mail')) {
+						$file->setDontMakeCalculations(true);
+					}
 					
 					$file->save();
 				} else {
@@ -1237,8 +1241,7 @@ class FilesController extends ApplicationController {
 			// new document
 			$notAllowedMember = '';
 			if (!ProjectFile::canAdd(logged_user(), active_context(),$notAllowedMember)) {
-				if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-				else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the file'))) : flash_error(lang('no context permissions to add',lang("documents"),$notAllowedMember));
+				flash_error(get_can_add_error_message($notAllowedMember, lang('documents')));
 				ajx_current("empty");
 				return ;
 			} // if
@@ -1394,8 +1397,7 @@ class FilesController extends ApplicationController {
 			// new presentation
 			$notAllowedMember = '';
 			if (!ProjectFile::canAdd(logged_user(), active_context(), $notAllowedMember)) {
-				if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-				else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the file'))) : flash_error(lang('no context permissions to add',lang("presentations"),$notAllowedMember));
+				flash_error(get_can_add_error_message($notAllowedMember, lang('presentations')));
 				$this->redirectToReferer(get_url('files'));
 				return ;
 			} // if
@@ -1675,8 +1677,7 @@ class FilesController extends ApplicationController {
 		} else {
 			//new document
 			if (!ProjectFile::canAdd(logged_user(), active_context(), $notAllowedMember )) {
-				if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-				else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the file'))) : flash_error(lang('no context permissions to add', lang("documents"),$notAllowedMember));
+				flash_error(get_can_add_error_message($notAllowedMember, lang('documents')));
 				ajx_current("empty");
 				return;
 			} // if
@@ -1773,8 +1774,7 @@ class FilesController extends ApplicationController {
 			//new presentation
 			$notAllowedMember = '' ;
 			if (!ProjectFile::canAdd(logged_user(), active_context(), $notAllowedMember)) {
-				if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-				else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the file'))) : flash_error(lang('no context permissions to add',lang("presentations"), $notAllowedMember));
+				flash_error(get_can_add_error_message($notAllowedMember, lang('presentations')));
 				ajx_current("empty");
 				return;
 			} // if
@@ -2032,7 +2032,12 @@ class FilesController extends ApplicationController {
 					"ix" => $index++,
 					"mimeType" => $o->getTypeString(),
 					"type" => file_types_friendly_name($o->getFileTypeId()),
-					"icon" => $o->getTypeIconUrl(),
+					"icon" => ($o->getType() == ProjectFiles::TYPE_WEBLINK)
+						? 'icon-link'
+						: 'icon-' . get_lucide_icon_for_extension(get_file_extension($o->getFilename())),
+					"fileExt" => ($o->getType() == ProjectFiles::TYPE_WEBLINK)
+						? ''
+						: strtolower(get_file_extension($o->getFilename())),
 					"size" => format_filesize($o->getFileSize()),
 					"manager" => get_class($o->manager()),
 					"checkedOutByName" => $coName,
@@ -2742,8 +2747,7 @@ class FilesController extends ApplicationController {
 		$members = $file->getAllowedMembersToAdd(logged_user(), $original_members);
 		
 		if (!$file->canAdd(logged_user(), $members, $notAllowedMember) ){
-			if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
-			else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the file'))) : flash_error(lang('no context permissions to add',lang("files"), $notAllowedMember));
+			flash_error(get_can_add_error_message($notAllowedMember, lang('files'), $members));
 			ajx_current("empty");
 			return;
 		}
@@ -3035,6 +3039,7 @@ class FilesController extends ApplicationController {
 	
 	
 	function display_content() {
+		require_once ROOT . '/application/helpers/markdown.php';
 		
 		$file = ProjectFiles::instance()->findById(get_id());
 		if (!$file instanceof ProjectFile) {
@@ -3043,6 +3048,8 @@ class FilesController extends ApplicationController {
 		if (!$file->canView(logged_user())) {
 			die(lang("no access permissions"));
 		}
+		
+		$is_markdown = is_markdown_file($file->getFilename());
 		
 		if (defined('SANDBOX_URL')) {
 			$html_content = $file->getFileContentWithRealUrls();
@@ -3061,11 +3068,22 @@ class FilesController extends ApplicationController {
 			$css .= file_get_contents(ROOT.'/public/assets/javascript/ckeditor/contents.css');
 			$css .= '</style>';
 			$html_content = $css.$html_content;
+		} else if ($is_markdown) {
+			// Render markdown files as safe HTML
+			$html_content = do_markdown($file->getFileContentWithRealUrls());
+			$charset = ";charset=UTF-8";
+			// Include markdown viewer styles
+			$css = '<style type="text/css">';
+			$css .= file_get_contents(ROOT.'/public/assets/themes/default/stylesheets/markdown-viewer.css');
+			$css .= '</style>';
+			$html_content = '<!DOCTYPE html><html><head><meta charset="UTF-8">' . $css . '</head><body>' . $html_content . '</body></html>';
 		}
+		
+		$content_type = $is_markdown ? 'text/html' : $file->getTypeString();
 		
 		header("Expires: " . gmdate("D, d M Y H:i:s", mktime(date("H") + 2, date("i"), date("s"), date("m"), date("d"), date("Y"))) . " GMT");
 		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Content-Type: " . $file->getTypeString() . $charset);
+		header("Content-Type: " . $content_type . $charset);
 		header("Content-Length: " . (string) strlen($html_content));
 
 		print($html_content);

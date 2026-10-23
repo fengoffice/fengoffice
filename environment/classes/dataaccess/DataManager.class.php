@@ -23,7 +23,15 @@
     * @var array
     */
     private $cache = array();
-    
+
+    /**
+    * Weak references to every manager constructed so far, so clearAllCaches() can reach each
+    * item cache without keeping the managers alive itself
+    *
+    * @var WeakReference[]
+    */
+    private static $instances = array();
+
     /**
     * Class of items that this manager is handling
     *
@@ -51,6 +59,7 @@
       $this->setItemClass($item_class);
       $this->setTableName($table_name);
       $this->setCaching($caching);
+      self::$instances[] = WeakReference::create($this);
     } // end func __construct
     
     // ---------------------------------------------------
@@ -255,6 +264,7 @@
       $offset     = (integer) array_var($arguments, 'offset', 0);
       $limit      = (integer) array_var($arguments, 'limit', 0);
       $columns    = array_var($arguments, 'columns', null);
+      $group_by   = array_var($arguments, 'group_by', null);
       
       // limit = 1 when findOne is invoked
       if ($one) {
@@ -264,6 +274,7 @@
       // Prepare query parts
       $where_string = trim($conditions) == '' ? '' : "WHERE " . preg_replace("/\s+in\s*\(\s*\)/i", " = -1", $conditions);
       $order_by_string = trim($order_by) == '' ? '' : "ORDER BY $order_by";
+      $group_by_string = trim($group_by) == '' ? '' : "GROUP BY $group_by";
       $limit_string = $limit > 0 ? "LIMIT $offset, $limit" : '';
       $distinct = $distinct ? "DISTINCT " : "";
       
@@ -273,7 +284,7 @@
       	$columns_string = ($id ? '`id`' : '*');
       }
       // Prepare SQL
-      $sql = "SELECT $distinct" . $columns_string . " FROM " . $this->getTableName(true) . " $where_string $order_by_string $limit_string";
+      $sql = "SELECT $distinct" . $columns_string . " FROM " . $this->getTableName(true) . " $where_string $order_by_string $group_by_string $limit_string";
 
       Hook::fire("listing_permissions_condition", array('content_data_object' => $this, 'table_alias' => ''), $where_string);
        
@@ -547,7 +558,7 @@
   	  	if(is_array($where) && count($where)) {
   	  	  return count($where) > 1 ? implode(' AND ', $where) : $where[0];
   	  	} else {
-  	  	  return '';
+  	  	  return '1=1';
   	  	} // if
   	  	
   	  } else {
@@ -663,6 +674,28 @@
     function clearCache() {
       $this->cache = array();
     } // end func clearCache
+
+    /**
+    * Clear the item cache of every manager constructed so far
+    *
+    * Loops that walk a whole table one object at a time (data migrations, cron jobs) must call
+    * this periodically: each loaded object stays in its manager's cache, so unsetting local
+    * variables frees nothing and memory_limit is eventually exhausted.
+    *
+    * @access public
+    * @param void
+    * @return void
+    */
+    static function clearAllCaches() {
+      foreach (self::$instances as $index => $reference) {
+        $manager = $reference->get();
+        if ($manager instanceof DataManager) {
+          $manager->clearCache();
+        } else {
+          unset(self::$instances[$index]); // the manager was garbage collected
+        }
+      }
+    } // end func clearAllCaches
     
     // ---------------------------------------------------
     //  Getters and setters

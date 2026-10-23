@@ -15,7 +15,7 @@
 	'personal settings' => 'Personliga inställningar',
 	'more settings' => 'Mer inställningar',
 	'quick help' => 'Hjälp och support',
-	'learn about and manage your Feng Office' => 'Hjälp om, och administrera Feng Office',
+	'learn about and manage your Feng Office' => 'Hjälp om, och administrera ' .product_name().'',
 	'quick system configuration and settings' => 'Övergripande systeminställningar',
 	'add new group' => 'Lägg till ny grupp',
 	'full access users' => '\'Full access\' användare',

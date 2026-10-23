@@ -30,9 +30,12 @@
     	'is_disabled' => DATA_TYPE_BOOLEAN,
       'show_in_lists' => DATA_TYPE_BOOLEAN,
       'contact_type' => DATA_TYPE_STRING,
+	  'filter_values_by' => DATA_TYPE_STRING,
+	  'linked_to' => DATA_TYPE_STRING,
+	  'decimal_digits' => DATA_TYPE_INTEGER
     );
     
-    static private $non_orderable_column_types = array('image','table');
+    static private $non_orderable_column_types = array('image','table','amount','address','object_link');
     
     static private $non_searchable_column_types = array('contact','user','image','boolean','date','datetime');
     
@@ -136,7 +139,7 @@
     *  - offset - limit offset, valid only if limit is present
     *  - limit
     * 
-    * @return one or  CustomProperties objects
+    * @return array|null of CustomProperty objects
     * @throws DBQueryError
     */
     function find($arguments = null) {
@@ -153,7 +156,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or  CustomProperties objects
+    * @return array|null of CustomProperty objects
     */
     function findAll($arguments = null) {
       Hook::fire('add_custom_property_arguments', array('user'=>logged_user()), $arguments);
@@ -169,7 +172,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return  CustomProperties 
+    * @return  CustomProperty 
     */
     function findOne($arguments = null) {
       Hook::fire('add_custom_property_arguments', array('user'=>logged_user()), $arguments);
@@ -186,7 +189,7 @@
     * @access public
     * @param mixed $id
     * @param boolean $force_reload If true cache will be skipped and data will be loaded from database
-    * @return  CustomProperties 
+    * @return  CustomProperty 
     */
     function findById($id, $force_reload = false) {
       if(isset($this) && instance_of($this, 'CustomProperties')) {

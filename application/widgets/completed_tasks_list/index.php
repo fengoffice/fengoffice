@@ -1,4 +1,7 @@
 <?php
+if (!module_enabled('tasks')) {
+	return;
+}
 $genid = gen_id();
 $limit = 20;
 $total = $limit;

@@ -75,6 +75,7 @@
 	'footer copy with homepage' => '© {0} van <a class="internalLink" href="{1}">{2}</a>. Alle rechten voorbehouden.',
 	'footer copy without homepage' => '© {0} van {1}. Alle rechten voorbehouden',
 	'footer powered' => 'Powered by <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Powered by',
 	'all documents' => 'Alle documenten',
 	'created by me' => 'Aangemaakt door mij',
 	'by project' => 'Op werkomgeving',

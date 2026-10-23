@@ -424,6 +424,13 @@
 	font-size: 13px;
 	line-height: 2;
 }
+.widget-header [class^="icon-"] {
+	font-weight: normal;
+	color: #6c757d;
+}
+.widget-header [class^="icon-"]:hover {
+	opacity: 0.7;
+}
 
 .widget-body {
 	background: #FFFFFF ;
@@ -586,7 +593,11 @@
 }
 
 .widget-body .view-all-container {
-	margin: 10px 0;
+	margin: 12px 0 12px 12px;
+	text-align: right;
+}
+.widget-header .view-all-container {
+	margin-left: 12px;
 	text-align: right;
 }
 
@@ -712,6 +723,10 @@
 	margin: 0 0 10px 0;
 }
 
+.widget-documents [class^="icon-"] {
+	color: #6c757d;
+}
+
 .widget-body li {
 	white-space: nowrap;
 	overflow: hidden;
@@ -754,4 +769,294 @@
 	padding-left: 10px;
 }
 
+
+
+
+/* ColumnManagerModal — reusable two-panel column picker */
+
+.col-manager-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.col-manager-modal {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    width: 760px;
+    max-width: 94vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.col-manager-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.widget h3.col-manager-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.col-manager-close {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #888;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.col-manager-close:hover { color: #333; }
+
+.col-manager-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+    padding: 0 16px;
+}
+
+.col-manager-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    padding: 0 12px 14px;
+}
+
+.col-manager-panel-available {
+    border-right: 1px solid #eee;
+	padding-left: 0px;
+}
+
+.col-manager-panel-visible {
+    padding-right: 0px;
+}
+
+
+.col-manager-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: #f0f0f0;
+    padding: 8px 24px;
+    margin: 0 -12px 10px;
+}
+
+.col-manager-panel-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.col-manager-count {
+    font-weight: 400;
+    color: #888;
+}
+
+.col-manager-panel-actions {
+    font-size: 12px;
+    color: #555;
+}
+
+.col-manager-action {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+.col-manager-action:hover { text-decoration: underline; }
+
+.col-manager-drag-hint {
+    font-size: 12px;
+    color: #888;
+    text-align: right;
+}
+
+.col-manager-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.col-manager-search:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+}
+
+.col-manager-available-list,
+.col-manager-visible-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.col-manager-available-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    user-select: none;
+}
+
+.col-manager-available-item:hover {
+    background: #f5f5f5;
+}
+
+.col-manager-available-item.selected {
+    color: #1a73e8;
+}
+
+.col-manager-checkbox {
+    width: 15px;
+    height: 15px;
+    border: 2px solid #bbb;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #fff;
+}
+
+.col-manager-checkbox.checked {
+    background: #1a73e8;
+    border-color: #1a73e8;
+}
+
+.col-manager-checkbox.checked::after {
+    content: '';
+    width: 8px;
+    height: 5px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+}
+
+.col-manager-item-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.col-manager-no-match {
+    padding: 12px 8px;
+    color: #888;
+    font-size: 13px;
+}
+
+.col-manager-visible-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #333;
+    cursor: grab;
+    user-select: none;
+}
+
+.col-manager-visible-item:hover { background: #f5f5f5; }
+
+.col-manager-visible-item.dragging {
+    opacity: 0.4;
+}
+
+.col-manager-visible-item.drag-over {
+    background: #e8f0fe;
+    border-top: 2px solid #1a73e8;
+}
+
+.col-manager-visible-handle {
+    color: #bbb;
+    font-size: 14px;
+    cursor: grab;
+    flex-shrink: 0;
+}
+
+.col-manager-visible-num {
+    color: #aaa;
+    font-size: 12px;
+    min-width: 18px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.col-manager-visible-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.col-manager-visible-remove {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: #bbb;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.col-manager-visible-remove:hover { color: #e53935; }
+
+.col-manager-visible-empty {
+    padding: 12px 8px;
+    color: #aaa;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.col-manager-visible-hint {
+    flex-shrink: 0;
+    margin-top: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+.col-manager-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid #eee;
+}
+/** End ColumnManagerModal */
 

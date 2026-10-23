@@ -3,7 +3,7 @@
 	'quick help' => 'Yardım ve Destek',
 	'personal settings' => 'Kişisel Ayarlar',
 	'back' => 'Geri',
-	'learn about and manage your Feng Office' => 'Feng Office Yönetim ve Yardım',
+	'learn about and manage your Feng Office' => '' .product_name().' Yönetim ve Yardım',
 	'system modules' => 'Sistem Modülleri',
 	'users groups and permissions' => 'Kullanıcılar, Gruplar ve İzinler',
 	'companies with users' => 'Kurumlar ve Kullanıcıları',

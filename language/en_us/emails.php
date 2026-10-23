@@ -25,7 +25,7 @@ return array(
     'user password reseted password' => 'Your New password is {0} (we recomend you to change it as soon as login)',
 
     'password expiration reminder' => 'Password expiration reminder',
-    'password expires days' => 'Your password will expire in {0} days',
+    'password expires days' => 'Your password will expire in {0} days. You can change it by going to Account &gt; Change Password.',
 
     'dont reply wraning' => 'THIS IS A SYSTEM NOTIFICATION. DO NOT REPLY TO THIS EMAIL!',
     'new message posted' => 'New note "{0}" has been posted',
@@ -102,6 +102,20 @@ return array(
     'due_date reminder notification task' => 'Due task reminder: {0}',
 	'due_date task reminder' => 'Due task reminder: {0}',
     'due_date task reminder desc' => 'The following task due date is {1} and is still pending: {0}',
+	'due tomorrow' => 'due tomorrow',
+	'due yesterday' => 'due yesterday',
+	'due in n days' => 'due in {0} days',
+	'overdue by n days' => 'overdue by {0} days',
+	'notification due today' => 'due today',
+	'due date reminder title' => 'Due date reminder',
+	'start date reminder title' => 'Start date reminder',
+	'reminder banner body' => 'This is a reminder for {0} because it is {1}.',
+	'notification object title' => '{0} "{1}"',
+	'notification object title with project' => '{0} "{1}" from "{2}" project',
+	'notification object from project' => 'from "{0}" project',
+	'due reminder subject prefix' => 'Reminder',
+	'start reminder subject prefix' => 'Start reminder',
+	'object information' => '{0} information',
     'due_date reminder notification milestone' => 'Due milestone reminder: {0}',
     'due_date milestone reminder desc' => 'The following milestone due date is {4} and is still pending:',
     'start_date task reminder' => 'Start task reminder: {0}',
@@ -147,7 +161,6 @@ return array(
     'new notification task desc' => '{1} has created the task:',
     'new notification event' => 'New event: {0}',
     'new notification event desc' => '{1} has created the event:',
-    'new notification event invitation' => '{1} has invited to the event:',
     'new notification company' => 'New Company: {0}',
     'new notification company desc' => '{1} has created the company:',
     'new notification contact' => 'New contact: {0}',
@@ -215,6 +228,14 @@ return array(
     
 	'upload notification file' => 'A new version of the file \'{0}\' has been uploaded',
 	'upload notification file desc' => '{1} has uploaded a new version of the file:',
+
+	'new notification event invitation' => 'New invitation: {0}',
+	'modified notification event invitation' => 'Updated invitation: {0}',
+	'deleted notification event invitation' => 'Event cancelled: {0}',
+	'invitation-accepted notification event invitation' => 'Accepted: {0}',
+	'invitation-declined notification event invitation' => 'Declined: {0}',
+	'invitation-tentative notification event invitation' => 'Tentative: {0}',
+
 	
     'view object and comments' => 'View {0} and all comments on Feng Office',
 
@@ -273,6 +294,10 @@ return array(
     'subscribed notification milestone desc' => '{1} has subscribed you to the milestone:',
     'subscribed notification email' => 'Subscribed to Email: {0}',
     'subscribed notification email desc' => '{1} has subscribed you to the email:',
+
+	'notification log edited the following' => '{0} edited at {1} the following:',
+	'description updated' => 'Description updated',
+	'notification summary empty message' => 'There is nothing to do. No activity to report.',
 	); // array
 
     ?>

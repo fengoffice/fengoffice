@@ -113,6 +113,17 @@ class ProjectTask extends BaseProjectTask {
 	 */
 	function getParent() {
 		if ($this->getParentId()==0) return null;
+		if ($this->getParentId() == $this->getId()) {
+			// corrupt data: a task that is its own parent has no parent, otherwise every roll-up
+			// that climbs through getParent() recurses until memory runs out. Logged once per task
+			// and process, since lists and cron call getParent() on every row.
+			static $logged_ids = array();
+			if (!isset($logged_ids[$this->getId()])) {
+				$logged_ids[$this->getId()] = true;
+				Logger::log("ProjectTask::getParent - task " . $this->getId() . " is its own parent", Logger::WARNING);
+			}
+			return null;
+		}
 		$parent = ProjectTasks::instance()->findById($this->getParentId());
 		return $parent instanceof ProjectTask  ? $parent : null;
 	} // getParent
@@ -120,14 +131,25 @@ class ProjectTask extends BaseProjectTask {
 	/**
 	 * Return all parent tasks that this task belongs to
 	 *
+	 * The walk stops at the first task it has already visited (a task that is its own parent, or
+	 * tasks pointing at each other): corrupt parent_id data must not make it loop until memory
+	 * runs out, which is what killed the plugin update run that recalculates every task.
+	 *
 	 * @param void
 	 * @return array of ProjectTasks objects or empty array
 	 */
 	function getAllParents() {
 		$parents = array();
+		$visited_ids = array($this->getId() => true);
 		$current_task = $this;
 		while($current_task->getParentId()!=0) {
-			$parent = ProjectTasks::instance()->findById($current_task->getParentId());
+			$parent_id = $current_task->getParentId();
+			if (isset($visited_ids[$parent_id])) {
+				Logger::log("ProjectTask::getAllParents - parent cycle detected walking up from task " . $this->getId() . ": task $parent_id is already in the chain", Logger::WARNING);
+				break;
+			}
+			$visited_ids[$parent_id] = true;
+			$parent = ProjectTasks::instance()->findById($parent_id);
 			if($parent instanceof ProjectTask) {
 				$parents[] = $parent;
 				$current_task = $parent;
@@ -182,7 +204,7 @@ class ProjectTask extends BaseProjectTask {
 		if ($user instanceof Contact) {
 			return $user->getObjectName();
 		} else {
-			return lang("anyone");
+			return lang("unassigned");
 		} // if
 	} // getAssignedTo
 	
@@ -750,9 +772,7 @@ class ProjectTask extends BaseProjectTask {
 		copy_additional_object_data($this, $new_task);
 
 		// Ensure that assigned user is subscribed
-		if ($new_task->getAssignedTo() instanceof Contact) {
-			$new_task->subscribeUser($new_task->getAssignedTo());
-		}
+		apply_default_task_subscribers_on_create($new_task);
 		
 		$sub_tasks = $this->getAllSubTasks();
 		foreach ($sub_tasks as $st) {
@@ -952,8 +972,10 @@ class ProjectTask extends BaseProjectTask {
 			$include .= "`assigned_to_contact_id` = ".logged_user()->getId() . " AND ";
 		}
 		if(is_null($this->all_tasks) || $dont_get_from_cache) {
+			// `object_id` <> own id: a task that is its own parent must not be its own subtask, or
+			// every roll-up that descends through getSubTasks() recurses until memory runs out
 			$this->all_tasks = ProjectTasks::instance()->findAll(array(
-          'conditions' => $include.'`parent_id` = ' . DB::escape($this->getId()),
+          'conditions' => $include.'`parent_id` = ' . DB::escape($this->getId()) . ' AND `object_id` <> ' . DB::escape($this->getId()),
           )); // findAll
           if (is_null($this->all_tasks)) $this->all_tasks = array();
 		} // if
@@ -969,28 +991,43 @@ class ProjectTask extends BaseProjectTask {
 	 * @return array
 	 */
 	function getSubTasksIds($extra_conditions = "") {
+		if ($extra_conditions === '') {
+			$cached = ProjectTasks::getCachedSubtaskIds($this->getId());
+			if ($cached !== null) return $cached;
+		}
 		$subtasks_ids = array();
-		$condition = $extra_conditions . ' AND `parent_id` = ' . DB::escape($this->getId());
+		// Explicitly exclude trashed subtasks. listing() already defaults to
+		// `trashed_by_id` = 0, but stating it here keeps this in sync with getSubTasks()
+		// and survives future refactors of the listing() defaults.
+		// trashed_by_id lives on the objects table (alias `o`), not the entity table.
+		// e.`object_id` <> own id: a task that is its own parent must not list itself as a subtask
+		// (see getSubTasks()).
+		$condition = $extra_conditions . ' AND `parent_id` = ' . DB::escape($this->getId()) . ' AND e.`object_id` <> ' . DB::escape($this->getId()) . ' AND o.`trashed_by_id` = 0';
 
 		if (!SystemPermissions::userHasSystemPermission(logged_user(), 'can_see_assigned_to_other_tasks')) {
 			$condition .= " AND assigned_to_contact_id = ".logged_user()->getId();
 		}
 
-				
+
+		$order_args = ProjectTasks::getSubtasksListingOrderArgs();
 		$subtasks_rows = ProjectTasks::instance()->listing(array(
-				"select_columns" => array("e.`object_id`"),
+				// DISTINCT avoids duplicate IDs when ordering by dim_* (object_members join can multiply rows).
+				"select_columns" => array("DISTINCT e.`object_id`"),
 				"extra_conditions" => $condition,
 				"count_results" => false,
 				"fire_additional_data_hook" => false,
 				"raw_data" => true,
+				"order" => $order_args['order'],
+				"order_dir" => $order_args['order_dir'],
+				"join_params" => $order_args['join_params'],
 		))->objects;
-		
+
 		if (is_array($subtasks_rows)) {
 			for ($i = 0; $i < count($subtasks_rows); $i++){
 				$subtasks_ids[] = (int)$subtasks_rows[$i]['object_id'];
 			}
 		}
-		
+
 		return $subtasks_ids;
 	} // getTasks
 
@@ -1001,25 +1038,39 @@ class ProjectTask extends BaseProjectTask {
 	 * @param void
 	 * @return array
 	 */
-	function getAllSubTasks($include_trashed = true) {
+	function getAllSubTasks($include_trashed = true, &$visited_ids = null) {
+		// $visited_ids carries the ids already expanded down this branch: a task that is its own
+		// parent, or tasks pointing at each other, are returned by the parent_id query below and
+		// would otherwise recurse until memory runs out (see test/project_task_hierarchy_cycle_test.php)
+		if (!is_array($visited_ids)) $visited_ids = array();
+		$visited_ids[$this->getId()] = true;
+
 		if(is_null($this->all_tasks)) {
+			// same `object_id` <> own id predicate as getSubTasks(): both fill $this->all_tasks
 			$this->all_tasks = ProjectTasks::instance()->findAll(array(
-          'conditions' => '`parent_id` = ' . DB::escape($this->getId()),
+          'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `object_id` <> ' . DB::escape($this->getId()),
           'order' => '`order`, `created_on`',
 			'include_trashed' => $include_trashed
           )); // findAll
           if (is_null($this->all_tasks)) $this->all_tasks = array();
 		} // if
-		
-		$tasks = $this->all_tasks;
+
+		$tasks = array();
+		foreach ($this->all_tasks as $subtask) {
+			if (isset($visited_ids[$subtask->getId()])) {
+				Logger::log("ProjectTask::getAllSubTasks - parent cycle detected walking down from task " . $this->getId() . ": task " . $subtask->getId() . " is already in the branch", Logger::WARNING);
+				continue;
+			}
+			$tasks[] = $subtask;
+		}
 		$result = $tasks;
-		
+
 		for ($i = 0; $i < count($tasks); $i++){
-			$tsubtasks = $tasks[$i]->getAllSubTasks($include_trashed);
+			$tsubtasks = $tasks[$i]->getAllSubTasks($include_trashed, $visited_ids);
 			for ($j = 0; $j < count($tsubtasks); $j++)
 				$result[] = $tsubtasks[$j];
 		}
-		
+
 		return $result;
 	} // getTasks
 
@@ -1046,18 +1097,28 @@ class ProjectTask extends BaseProjectTask {
 	 * Gets all subtasks ids recursively
 	 */
 	function getAllSubtaskIdsInHierarchy() {
-		$subtasks_ids = array();
+		// seeded with this task's own id so a parent chain that loops back here stops; removed
+		// again before returning because the task is not its own descendant
+		$subtasks_ids = array($this->getId() => $this->getId());
 		$this->getAllSubtaskIdsInHierarchyRecursive($subtasks_ids);
-		
+		unset($subtasks_ids[$this->getId()]);
+
 		return $subtasks_ids;
 	}
-	
+
 	/**
 	 * Private function to get the subtasks ids recursively
+	 *
+	 * Ids already collected are not expanded again: with corrupt parent_id data (tasks pointing at
+	 * each other) the recursion would otherwise never end.
 	 */
 	private function getAllSubtaskIdsInHierarchyRecursive(&$all_subtasks_ids) {
 		$subtasks_ids = $this->getSubTasksIds();
 		foreach ($subtasks_ids as $sub_id) {
+			if (isset($all_subtasks_ids[$sub_id])) {
+				Logger::log("ProjectTask::getAllSubtaskIdsInHierarchy - parent cycle detected walking down from task " . $this->getId() . ": task $sub_id was already collected", Logger::WARNING);
+				continue;
+			}
 			$all_subtasks_ids[$sub_id] = $sub_id;
 			$sub = ProjectTasks::instance()->findById($sub_id);
 			if ($sub instanceof ProjectTask) {
@@ -1084,7 +1145,7 @@ class ProjectTask extends BaseProjectTask {
 		foreach ($subtasks_ids as $sub_id) {
 			$sub = ProjectTasks::instance()->findById($sub_id);
 			if ($sub instanceof ProjectTask) {
-				$subtasks[$sub_id] = $sub->getArrayInfo();
+				$subtasks[$sub_id] = $sub->getArrayInfo(true, true);
 				$subtasks[$sub_id]['depth'] = $depth;
 				$sub->getAllSubtaskInfoInHierarchyRecursive($subtasks, $depth+1, $conditions);
 			}
@@ -1102,7 +1163,7 @@ class ProjectTask extends BaseProjectTask {
 		if(is_null($this->open_tasks)) {
 			$subtasks = ProjectTasks::instance()->findAll(array(
 	          'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` = ' . DB::escape(EMPTY_DATETIME) . ' AND `trashed_on` = ' . DB::escape(EMPTY_DATETIME),
-	          'order' => '`order`, `created_on`'
+	          'order' => '`name`, `created_on`'
 	        )); // findAll
         	$this->open_tasks = is_null($subtasks) ? array() : $subtasks;
 		} // if
@@ -1121,7 +1182,7 @@ class ProjectTask extends BaseProjectTask {
 		if(is_null($this->completed_tasks)) {
 			$subtasks = ProjectTasks::instance()->findAll(array(
 	          'conditions' => '`parent_id` = ' . DB::escape($this->getId()) . ' AND `completed_on` > ' . DB::escape(EMPTY_DATETIME),
-	          'order' => '`completed_on` DESC'
+	          'order' => '`name`, `completed_on` DESC'
 	        )); // findAll
 	        $this->completed_tasks = is_null($subtasks) ? array() : $subtasks;
 		} // if
@@ -1141,7 +1202,7 @@ class ProjectTask extends BaseProjectTask {
 			if(is_array($this->all_tasks)) {
 				$this->count_all_tasks = count($this->all_tasks);
 			} else {
-				$this->count_all_tasks = ProjectTasks::instance()->count('`parent_id` = ' . DB::escape($this->getId()));
+				$this->count_all_tasks = ProjectTasks::instance()->count('`parent_id` = ' . DB::escape($this->getId()) . ' AND `object_id` <> ' . DB::escape($this->getId()));
 			} // if
 		} // if
 		return $this->count_all_tasks;
@@ -1592,12 +1653,20 @@ class ProjectTask extends BaseProjectTask {
 		if($new_parent_id > 0){
 			//set Parents Path
 			$parents_ids = array();
+			// ids already on the path (this task included): a parent chain that loops back would
+			// otherwise be walked until memory runs out
+			$visited_ids = array($this->getId() => true);
 			$parent = $this->getParent();
 			if(!$parent instanceof ProjectTask){
 				return;
 			}
 			$stop = false;
 			while (!$stop) {
+				if (isset($visited_ids[$parent->getId()])) {
+					Logger::log("ProjectTask::updateDepthAndParentsPath - parent cycle detected walking up from task " . $this->getId() . ": task " . $parent->getId() . " is already on the path", Logger::WARNING);
+					break;
+				}
+				$visited_ids[$parent->getId()] = true;
 				$parents_ids[] = $parent->getId();
 				if($parent->getParentId() > 0){
 					$parent = $parent->getParent();
@@ -1619,7 +1688,22 @@ class ProjectTask extends BaseProjectTask {
 		}	
 	}
 
-	function calculateTotalTimeEstimate() {
+	/**
+	 * Store this task's total time estimate (own estimate plus its subtasks' totals) and propagate
+	 * the change up to every ancestor.
+	 *
+	 * @param array $visited_ids ids already recalculated on this way up; stops the climb when the
+	 *                           parent chain loops (a task that is its own parent, or tasks pointing
+	 *                           at each other) instead of recursing until memory runs out
+	 */
+	function calculateTotalTimeEstimate(&$visited_ids = null) {
+		if (!is_array($visited_ids)) $visited_ids = array();
+		if (isset($visited_ids[$this->getId()])) {
+			Logger::log("ProjectTask::calculateTotalTimeEstimate - parent cycle detected: task " . $this->getId() . " was already recalculated on this climb", Logger::WARNING);
+			return;
+		}
+		$visited_ids[$this->getId()] = true;
+
 		$task_id = $this->getId();
 		$total_time_estimate = $this->getTimeEstimate();
 
@@ -1640,7 +1724,7 @@ class ProjectTask extends BaseProjectTask {
 		// Recalculate total time estimate for parent task
 		$parent = $this->getParent();
 		if($parent instanceof ProjectTask) {
-			$parent->calculateTotalTimeEstimate();
+			$parent->calculateTotalTimeEstimate($visited_ids);
 		}
 	}
 
@@ -1809,6 +1893,21 @@ class ProjectTask extends BaseProjectTask {
 		return end($parents);
 	}
 
+	/**
+	 * Returns true if the task has any parent task which is fixed fee and billable
+	 * 
+	 * @return boolean
+	 */
+	function hasAnyFixedFeeParent() {
+		$parents = $this->getAllParents();
+		foreach ($parents as $parent) {
+			if ($parent->getIsFixedFee() && $parent->getIsBillable()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	function getIsFixedFee() {
 		return $this->getColumnValue('is_fixed_fee');
 	}
@@ -1819,6 +1918,10 @@ class ProjectTask extends BaseProjectTask {
 
 	function getIsBillable() {
 		return $this->getColumnValue('is_billable');
+	}
+	
+	function setIsBillable($value) {
+		$this->setColumnValue('is_billable', $value);
 	}
 	
 	/**
@@ -1882,60 +1985,91 @@ class ProjectTask extends BaseProjectTask {
 	
 	
 	
-	function apply_members_to_subtasks($members, $recursive = false) {
+	/**
+	 * Applies the classification of this task to its subtasks, following the mode configured
+	 * for each dimension in the 'apply_classification_to_subtasks' config option:
+	 *
+	 *  - never: the dimension is left as it is in the subtasks;
+	 *  - if_empty: the members of this task are added only to the subtasks that have no member
+	 *    at all in that dimension;
+	 *  - always: the members of the subtasks in that dimension are replaced by the ones of
+	 *    this task, so a dimension accepting several members ends up with the same set.
+	 *
+	 * @param array $members Members of this task to apply
+	 * @param boolean $recursive Apply to the whole hierarchy instead of the direct subtasks
+	 * @param array $changed_dimension_ids Dimensions whose classification changed in this save.
+	 *        Only these are applied; null means every dimension present in $members changed,
+	 *        which is what a caller classifying the task in a single member wants.
+	 */
+	function apply_members_to_subtasks($members, $recursive = false, $changed_dimension_ids = null) {
 		if (!is_array($members) || count($members)==0) return;
 
-		$ignored_dimension_ids = config_option('ignored_dimensions_for_subtasks');
-		
+		// keep only the members of the dimensions this save has to apply
+		$members_to_propagate = array();
+		foreach ($members as $m) {/* @var $m Member */
+			$dimension_id = $m->getDimensionId();
+			if (is_array($changed_dimension_ids) && !in_array($dimension_id, $changed_dimension_ids)) continue;
+			if (subtask_classification_mode($dimension_id) == SUBTASK_CLASSIFICATION_NEVER) continue;
+
+			$members_to_propagate[] = $m;
+		}
+		if (count($members_to_propagate) == 0) return;
+
+		// dimensions to empty in the subtasks before applying the members of this task
+		$replaced_dimension_ids = array();
+		foreach ($members_to_propagate as $m) {
+			if (subtask_classification_mode($m->getDimensionId()) == SUBTASK_CLASSIFICATION_ALWAYS) {
+				$replaced_dimension_ids[] = $m->getDimensionId();
+			}
+		}
+		$replaced_dimension_ids = array_unique($replaced_dimension_ids);
+
 		foreach ($this->getSubTasks() as $subtask) {/* @var $subtask ProjectTask */
 
-			// Check ignored dimensions to keep the ignored data when applying changes on subtask
-			$keep_members = array();
-			foreach($subtask->getMembers() as $st_member){
-				if (in_array($st_member->getDimensionId(), $ignored_dimension_ids)) {
-					$keep_members[] = $st_member;
-				}
-			}
-			
-			// Add ignored dimentions to initialization of subtask members
 			$members_to_apply = array();
-			foreach($keep_members as $km){
-				$members_to_apply[] = $km;
+			$members_to_remove = array();
+
+			foreach ($subtask->getMembers() as $st_member) {
+				// the subtask keeps its own member unless this task replaces the dimension with
+				// a different one
+				if (!in_array($st_member->getDimensionId(), $replaced_dimension_ids)) continue;
+
+				$is_kept = false;
+				foreach ($members_to_propagate as $m) {
+					if ($m->getId() == $st_member->getId()) { $is_kept = true; break; }
+				}
+				if (!$is_kept) $members_to_remove[] = $st_member;
 			}
 
-			// dont apply members of dimensions with single selection and subtask has already one of them
-			foreach ($members as $m) {/* @var $m Member */
-				$dim = $m->getDimension();
-				// don't process members included in the ignored dimensions
-				if (!in_array($dim->getId(), $ignored_dimension_ids)) {
-					$dotc = DimensionObjectTypeContents::instance()->findOne(array("conditions" => array(
-						"dimension_id=? AND dimension_object_type_id=? AND content_object_type_id=?",
-						$dim->getId(), $m->getObjectTypeId(), ProjectTasks::instance()->getObjectTypeId()
-					)));
-					if ($dotc->getIsMultiple()) {
-						$members_to_apply[] = $m;
-					} else {
-						// check if subtask as one in this dimension
-						$subtask_members = $subtask->getMembers();
-						$has_one = false;
-						foreach ($subtask_members as $sm) {
-							if ($sm->getDimensionId() == $dim->getId()) {
-								$has_one = true;
-								break;
-							}
-						}
-						if (!$has_one) {
-							$members_to_apply[] = $m;
-						}
-					}
+			foreach ($members_to_propagate as $m) {/* @var $m Member */
+				if (in_array($m->getDimensionId(), $replaced_dimension_ids)) {
+					$members_to_apply[] = $m;
+					continue;
 				}
+
+				// apply only if empty: the subtask must have no member at all in the dimension,
+				// whether it accepts one member or several
+				$has_one = false;
+				foreach ($subtask->getMembers() as $sm) {
+					if ($sm->getDimensionId() == $m->getDimensionId()) { $has_one = true; break; }
+				}
+				if (!$has_one) $members_to_apply[] = $m;
 			}
 
 			// classify subtask
-			$subtask->addToMembers($members_to_apply); 
-			Hook::fire ('after_add_to_members', $subtask, $members);
+			if (count($members_to_remove) > 0) {
+				// console runs (cron, imports) have no logged user: the task's creator acts in
+				// its place, and nothing is removed when there is no user at all
+				$user = logged_user() instanceof Contact ? logged_user() : $this->getCreatedBy();
+				if ($user instanceof Contact) $subtask->removeFromMembers($user, $members_to_remove);
+			}
+			if (count($members_to_apply) > 0) {
+				$subtask->addToMembers($members_to_apply);
+				Hook::fire ('after_add_to_members', $subtask, $members_to_apply);
+			}
+
 			if ($recursive) {
-				$subtask->apply_members_to_subtasks($members, $recursive);
+				$subtask->apply_members_to_subtasks($members, $recursive, $changed_dimension_ids);
 			}
 		}
 	}
@@ -1976,6 +2110,15 @@ class ProjectTask extends BaseProjectTask {
 		// get the related time entries
 		$timeslots = $this->getTimeslots();
 		foreach ($timeslots as $timeslot) {
+			if ($timeslot->isInvoiced()) {
+				$timeslot->logInvoicedMutation('task.override_related_objects_classification.skipped', array(
+					'skipped' => true,
+					'task_id' => $this->getId(),
+					'task_name' => $this->getObjectName(),
+				));
+				continue;
+			}
+
 			$old_content_object = $timeslot->generateOldContentObjectData();
 
 			// override each time entry classification
@@ -1988,7 +2131,7 @@ class ProjectTask extends BaseProjectTask {
 				calculate_timeslot_rate_and_cost($timeslot);
 			}
 			// save log
-			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true);
+			ApplicationLogs::createLog($timeslot, ApplicationLogs::ACTION_EDIT, false, true, true, '', null, false, true);
 		}
 
 
@@ -1996,24 +2139,54 @@ class ProjectTask extends BaseProjectTask {
 
 			$b_expenses = Expenses::getBudgetedExpensesByTask($this->getId());
 			foreach ($b_expenses as $expense) {
+				if (in_array('invoicing_status', $expense->manager()->getColumns()) && $expense->getColumnValue('invoicing_status') == 'invoiced') {
+					$expense_cols = $expense->manager()->getColumns();
+					Logger::log(
+						"[INVOICED_TIMESLOT_MUTATION] reason=task.override_related_objects_classification.expense.skipped"
+						." expense_id=".$expense->getId()
+						." expense_type=".get_class($expense)
+						." task_id=".$this->getId()
+						." task_name=".$this->getObjectName()
+						." invoice_id=".(in_array('invoice_id', $expense_cols) ? $expense->getColumnValue('invoice_id') : 0),
+						Logger::DEBUG,
+						null,
+						'INVOICED_TIMESLOT_MUTATION'
+					);
+					continue;
+				}
 				$old_content_object = $expense->generateOldContentObjectData();
 
 				// override each time entry classification
 				$this->override_related_object_classification($expense, $members_to_override);
 	
 				// save log
-				ApplicationLogs::createLog($expense, ApplicationLogs::ACTION_EDIT, false, true);
+				ApplicationLogs::createLog($expense, ApplicationLogs::ACTION_EDIT, false, true, true, '', null, false, true);
 			}
 
 			$a_expenses = PaymentReceipts::getActualExpensesByTask($this->getId());
 			foreach ($a_expenses as $expense) {
+				if (in_array('invoicing_status', $expense->manager()->getColumns()) && $expense->getColumnValue('invoicing_status') == 'invoiced') {
+					$expense_cols = $expense->manager()->getColumns();
+					Logger::log(
+						"[INVOICED_TIMESLOT_MUTATION] reason=task.override_related_objects_classification.expense.skipped"
+						." expense_id=".$expense->getId()
+						." expense_type=".get_class($expense)
+						." task_id=".$this->getId()
+						." task_name=".$this->getObjectName()
+						." invoice_id=".(in_array('invoice_id', $expense_cols) ? $expense->getColumnValue('invoice_id') : 0),
+						Logger::DEBUG,
+						null,
+						'INVOICED_TIMESLOT_MUTATION'
+					);
+					continue;
+				}
 				$old_content_object = $expense->generateOldContentObjectData();
 
 				// override each time entry classification
 				$this->override_related_object_classification($expense, $members_to_override);
 	
 				// save log
-				ApplicationLogs::createLog($expense, ApplicationLogs::ACTION_EDIT, false, true);
+				ApplicationLogs::createLog($expense, ApplicationLogs::ACTION_EDIT, false, true, true, '', null, false, true);
 			}
 		}
 
@@ -2047,7 +2220,22 @@ class ProjectTask extends BaseProjectTask {
 	}
 
 
-	function calculatePercentComplete($prevent_parent_update = false) {
+	/**
+	 * Recalculate this task's percent completed from its time and subtasks, then its ancestors'.
+	 *
+	 * @param boolean $prevent_parent_update
+	 * @param array $visited_ids ids already recalculated on this climb; stops it when the parent
+	 *                           chain loops (tasks pointing at each other) instead of recursing
+	 *                           until memory runs out
+	 */
+	function calculatePercentComplete($prevent_parent_update = false, &$visited_ids = null) {
+		if (!is_array($visited_ids)) $visited_ids = array();
+		if (isset($visited_ids[$this->getId()])) {
+			Logger::log("ProjectTask::calculatePercentComplete - parent cycle detected: task " . $this->getId() . " was already recalculated on this climb", Logger::WARNING);
+			return;
+		}
+		$visited_ids[$this->getId()] = true;
+
 		if (!$this->isCompleted() && !$this->getIsManualPercentCompleted()) {
 			$task_id = $this->getId();
 			$numerator = 0;
@@ -2063,8 +2251,9 @@ class ProjectTask extends BaseProjectTask {
 			} 
 
 			$subtasks = $this->getSubTasks(false, false);
+			$branch_visited = array($this->getId() => true); // the descent keeps its own set, separate from the climb
 			foreach($subtasks as $subtask){
-				$subtask_percent_completed_calculations = $subtask->calculateRecursiveSubtaskPercentCompleted();
+				$subtask_percent_completed_calculations = $subtask->calculateRecursiveSubtaskPercentCompleted($branch_visited);
 				$numerator += $subtask_percent_completed_calculations['numerator'];
 				$denominator += $subtask_percent_completed_calculations['denominator'];
 			}
@@ -2084,12 +2273,27 @@ class ProjectTask extends BaseProjectTask {
 		if (!$prevent_parent_update) {
 			$parent = $this->getParent();
 			if($parent instanceof ProjectTask) {
-				$parent->calculatePercentComplete();
+				$parent->calculatePercentComplete(false, $visited_ids);
 			}
 		}	
 	}
 
-	function calculateRecursiveSubtaskPercentCompleted() {
+	/**
+	 * Numerator and denominator of this subtree's weighted percent completed.
+	 *
+	 * @param array $branch_visited ids already expanded on this branch; a subtree that loops back
+	 *                              (tasks pointing at each other) contributes nothing instead of
+	 *                              recursing until memory runs out
+	 * @return array numerator, denominator
+	 */
+	function calculateRecursiveSubtaskPercentCompleted(&$branch_visited = null) {
+		if (!is_array($branch_visited)) $branch_visited = array();
+		if (isset($branch_visited[$this->getId()])) {
+			Logger::log("ProjectTask::calculateRecursiveSubtaskPercentCompleted - parent cycle detected: task " . $this->getId() . " is already on this branch", Logger::WARNING);
+			return array('numerator' => 0, 'denominator' => 0);
+		}
+		$branch_visited[$this->getId()] = true;
+
 		$numerator = 0;
 		$denominator = 0;
 
@@ -2111,7 +2315,7 @@ class ProjectTask extends BaseProjectTask {
 			if(!$this->isCompleted()) {
 				$subtasks = $this->getSubTasks(false, false);
 				foreach($subtasks as $subtask){
-					$subtask_percent_completed_calculations = $subtask->calculateRecursiveSubtaskPercentCompleted();
+					$subtask_percent_completed_calculations = $subtask->calculateRecursiveSubtaskPercentCompleted($branch_visited);
 					$numerator += $subtask_percent_completed_calculations['numerator'];
 					$denominator += $subtask_percent_completed_calculations['denominator'];
 				}
@@ -2131,20 +2335,34 @@ class ProjectTask extends BaseProjectTask {
 	}
 
 
-	function calculateAndSaveOverallTotalWorkedTime() {
+	/**
+	 * Store this task's overall worked time and propagate the change up to every ancestor.
+	 *
+	 * @param array $visited_ids ids already recalculated on this climb; stops it when the parent
+	 *                           chain loops (tasks pointing at each other) instead of recursing
+	 *                           until memory runs out
+	 */
+	function calculateAndSaveOverallTotalWorkedTime(&$visited_ids = null) {
+		if (!is_array($visited_ids)) $visited_ids = array();
+		if (isset($visited_ids[$this->getId()])) {
+			Logger::log("ProjectTask::calculateAndSaveOverallTotalWorkedTime - parent cycle detected: task " . $this->getId() . " was already recalculated on this climb", Logger::WARNING);
+			return;
+		}
+		$visited_ids[$this->getId()] = true;
+		
 		$this->calculateAndSetOverallTotalWorkedTime();
 		
 		$parent = $this->getParent();
 		if($parent instanceof ProjectTask) {
-			$parent->calculateAndSaveOverallTotalWorkedTime();
+			$parent->calculateAndSaveOverallTotalWorkedTime($visited_ids);
 		}
-	} 
+	}
 
 	function calculateAndSetOverallTotalWorkedTime() {
 		// Get worked time of the task
 		$select_sql = "GREATEST(TIMESTAMPDIFF(MINUTE,start_time,end_time),0) - subtract/60 as worked_time";
 
-		if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+		if (Plugins::instance()->isActivePlugin('income')) {
 			$select_sql .= ", invoicing_status";
 		}
 
@@ -2163,7 +2381,7 @@ class ProjectTask extends BaseProjectTask {
 
 		foreach($rows as $row) {
 			$worked_minutes += array_var($row, 'worked_time', 0);
-			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
+			if (Plugins::instance()->isActivePlugin('income')) {
 				$invoicing_status = array_var($row, 'invoicing_status', 'pending');
 				if ($invoicing_status == 'non_billable') {
 					$non_billable_worked_minutes += array_var($row, 'worked_time', 0);
@@ -2182,7 +2400,7 @@ class ProjectTask extends BaseProjectTask {
 		$non_billable_total_worked_minutes = $non_billable_worked_minutes;
 
 		foreach($subtasks as $subtask){
-			$total_worked_minutes += $subtask->getTotalWorkedTime();
+			$total_worked_minutes += $subtask->getOverallWorkedTime();
 			if (Plugins::instance()->isActivePlugin('advanced_billing')) {
 				$billable_total_worked_minutes += $subtask->getBillableTotalWorkedTime();
 				$non_billable_total_worked_minutes += $subtask->getNonBillableTotalWorkedTime();
@@ -2204,8 +2422,8 @@ class ProjectTask extends BaseProjectTask {
 		$sql = "UPDATE `".TABLE_PREFIX."project_tasks` 
 				SET `overall_worked_time_plus_subtasks` = $total_worked_minutes,
 				`total_worked_time` = $worked_minutes,
-				`remaining_time` = CAST(`time_estimate` as SIGNED) - CAST($worked_minutes as SIGNED),
-				`total_remaining_time` = CAST(`total_time_estimate` as SIGNED) - CAST($total_worked_minutes as SIGNED) ".$additional_set_clause."
+				`remaining_time` = GREATEST(CAST(`time_estimate` as SIGNED) - CAST($worked_minutes as SIGNED), 0),
+				`total_remaining_time` = GREATEST(CAST(`total_time_estimate` as SIGNED) - CAST($total_worked_minutes as SIGNED), 0) ".$additional_set_clause."
 				WHERE `object_id` = $task_id;"; 
 
 		DB::execute($sql);
@@ -2224,12 +2442,8 @@ class ProjectTask extends BaseProjectTask {
 			// to use when saving the application log
 			$old_content_object = $this->generateOldContentObjectData();
 
-			$old_status = $this->getColumnValue('invoicing_status');
-			
+			// set the new status
 			$this->setColumnValue('invoicing_status', $status);
-			if($status == 'pending') {
-				$this->setColumnValue('invoice_id', 0);
-			}
 			$this->save();
 			
 			// create log

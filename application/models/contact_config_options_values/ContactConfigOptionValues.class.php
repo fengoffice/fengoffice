@@ -25,11 +25,24 @@
 		return $rows[0]["c"] > 0;
     } // getOptionsByCategory
     
-    function getFilterActivityMember($id,$member) {
+    /**
+    * Retrieve a specific contact configuration option value based on option ID, member ID, and logged user ID.
+    *
+    * @param int $id The ID of the option to filter by.
+    * @param int $member The ID of the member to filter by.
+    * @return ContactConfigOptionValue|null The matching contact configuration option value or null if not found.
+    */
+    static function getFilterActivityMember($id,$member) {
             return ContactConfigOptionValues::instance()->findOne(array('conditions' => array('`option_id` = ? AND `member_id` = ? AND `contact_id` = ?', $id, $member, logged_user()->getId())));
     }
     
-    function getFilterActivityDelete($id) {
+    /**
+    * Delete a specific contact configuration option value based on option ID and logged user ID.
+    *
+    * @param int $id The ID of the option to filter by.
+    * @return boolean True if the option was deleted, false otherwise.
+    */
+    static function getFilterActivityDelete($id) {
             return DB::execute('DELETE FROM `' . TABLE_PREFIX . 'contact_config_option_values` WHERE `option_id` = ? AND `contact_id` = ?',$id, logged_user()->getId());
     }
     

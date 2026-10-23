@@ -1,5 +1,6 @@
 <div class="custom-properties"><?php
 require_javascript("og/CustomProperties.js");
+Env::useHelper('custom_properties');
 
 $object_type_id = $_custom_properties_object instanceof TemplateTask ? ProjectTasks::instance()->getObjectTypeId() : $_custom_properties_object->getObjectTypeId();
 $ot = ObjectTypes::instance()->findById($object_type_id);
@@ -34,31 +35,14 @@ if(count($cps) > 0){
 			echo '<div style="margin-top:12px">';
 
 			if ($customProp->getType() == 'boolean') {
-			    
-			    $options = array();
-			    
-			    $possible_values = array( 'yes' => 1, 'no' => -1);
-			    
-			    $options[] = option_tag("", "0");
-			    foreach ($possible_values as $key => $value) {
-			        
-			        $opt_label = lang($key);
-			        $option_attributes = $default_value == $value ? array('selected' => 'selected') : null;
-			        $options[] = option_tag($opt_label, $value, $option_attributes);
-			        
-			    }
-			    echo select_box($name, $options, $default_value, array('id' => $genid . 'cp' . $customProp->getId()));
+				echo render_boolean_custom_property_field($customProp, array(
+					'name' => $name,
+					'genid' => $genid,
+					'default_value' => $default_value,
+				));
 			}
 			    
 			$label = clean($customProp->getName());
-			if ($customProp->getIsSpecial()) {
-				$label_code = str_replace("_special", "", $customProp->getCode());
-				$label_value = Localization::instance()->lang($label_code);
-				if (is_null($label_value)) {
-					$label_value = Localization::instance()->lang(str_replace('_', ' ', $label_code));
-				}
-				if (!is_null($label_value)) $label = $label_value;
-			}
 			
 			$add_style = "";
 			echo label_tag($label, $genid . 'cp' . $customProp->getId(), $customProp->getIsRequired(), array('style' => 'display:inline;'.$add_style), $customProp->getType() == 'boolean'?'':':');
@@ -400,7 +384,7 @@ if(count($cps) > 0){
 			
 			if ($customProp->getDescription() != ''){
 				// the label is set to pad the description
-				echo '<div><label>&nbsp;</label><span class="desc">' . clean($customProp->getDescription()) . '</span></div>';
+				echo '<div><span class="desc">' . clean($customProp->getDescription()) . '</span></div>';
 			}
 			
 			echo '<div class="clear"></div>';

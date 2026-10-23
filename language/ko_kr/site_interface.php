@@ -347,6 +347,7 @@
 	'footer copy with homepage' => '© {0}년  <a class="internalLink" href="{1}">{2}</a>. 모든 권리 가짐.',
 	'footer copy without homepage' => '© {0}년 {1}. 모든 권리 가짐',
 	'footer powered' => '<a target="_blank" href="{0}">{1}</a>로 구축됨',
+	'powered by' => 'Powered by',
 	'confirm leave page' => '만약 이 페이지를 나가거나 다시불러오면 제출되지 않은 자료를 잃게됩니다',
 	'pending tasks' => '대기중 작업들',
 	'my pending tasks' => '내 대기중 작업들',

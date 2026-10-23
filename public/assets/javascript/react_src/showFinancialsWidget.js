@@ -10,22 +10,284 @@ var { ResponsiveContainer,
       CartesianGrid,
       Tooltip } = require('recharts');
 var { AxisNumberFormatter, FormatNumber } = require('./helpers/widgetChartHelpers');
+var { DateFilterWidgetBase, parseCalendarYMD, installWidgetOptionSaver } = require('./helpers/widgetDateFilterHelpers');
 
 
 class FinancialsWidget extends React.Component {
     constructor(props) {
-      super(props);
-      this.state = { currencySymbol: props.data.currencySymbol ? props.data.currencySymbol : '$',
-                     earned: props.data.earned ? props.data.earned : 0,
-                     dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
-                     estimated: props.data.estimated ? props.data.estimated : 0,
-                     earnedTitle: props.data.earnedTitle ? props.data.earnedTitle : 'Total earned value',
-                     estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total budgeted',
-                     chartData: props.data.chartData ? props.data.chartData : '',
-                     decimals: props.data.decimals ? props.data.decimals : 0,
-                     decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
-                     thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ','
-                    };
+        super(props);
+        
+        // Initialize with unique widget ID
+        this.widgetId = 'financials';
+        this.dateFilterHelper = new DateFilterWidgetBase(props, this.widgetId);
+        
+        this.state = {
+            currencySymbol: props.data.currencySymbol ? props.data.currencySymbol : '$',
+            earned: props.data.earned ? props.data.earned : 0,
+            dateFormat: props.data.dateFormat ? props.data.dateFormat : 'MM/DD/YYYY',
+            estimated: props.data.estimated ? props.data.estimated : 0,
+            consolidatedMissingAmounts: props.data.consolidatedMissingAmounts ? props.data.consolidatedMissingAmounts : 0,
+            earnedTitle: props.data.earnedTitle ? props.data.earnedTitle : 'Total earned value',
+            estimatedTitle: props.data.estimatedTitle ? props.data.estimatedTitle : 'Total budgeted',
+            chartData: props.data.chartData ? props.data.chartData : '',
+            allChartData: props.data.chartData ? [...props.data.chartData] : [],
+            rawDailyData: this.dateFilterHelper.convertCumulativeToDaily(props.data.chartData || []),
+            decimals: props.data.decimals ? props.data.decimals : 0,
+            decimalsSeparator: props.data.decimalsSeparator ? props.data.decimalsSeparator : '.',
+            thousandSeparator: props.data.thousandSeparator ? props.data.thousandSeparator : ',',
+            ignoreTasksWithoutDate: props.data.ignoreTasksWithoutDate || false,
+            ...this.dateFilterHelper.state
+        };
+
+        // Bind methods from helper
+        this.filterDataByDateRange = this.filterDataByDateRange.bind(this);
+        this.handleDateRangeChange = this.handleDateRangeChange.bind(this);
+        this.performAllTimeFiltering = this.performAllTimeFiltering.bind(this);
+        this.parseItemDay = this.parseItemDay.bind(this);
+        this.handleIgnoreToggle = this.handleIgnoreToggle.bind(this);
+
+        installWidgetOptionSaver(this.dateFilterHelper, 'financials', 'financials_widget', props.data.saveWidgetOptionUrl);
+    }
+
+    parseItemDay(item) {
+        if (item.dateKey) {
+            return parseCalendarYMD(item.dateKey);
+        }
+        return moment(item.date, this.state.dateFormat, true).startOf('day');
+    }
+
+    // Convert cumulative data back to daily amounts for proper filtering
+    convertCumulativeToDaily(cumulativeData) {
+        if (!cumulativeData || cumulativeData.length === 0) return [];
+        
+        const dailyData = [];
+        let prevBudget = 0;
+        let prevEarned = 0;
+        
+        cumulativeData.forEach(item => {
+            const dailyBudget = item.total_budget - prevBudget;
+            const dailyEarned = item.total_earned - prevEarned;
+            
+            dailyData.push({
+                date: item.date,
+                daily_budget: dailyBudget,
+                daily_earned: dailyEarned
+            });
+            
+            prevBudget = item.total_budget;
+            prevEarned = item.total_earned;
+        });
+        
+        return dailyData;
+    }
+
+    componentDidMount() {
+        // Expose this component instance globally so template can control it
+        window.financialsWidgetInstance = this;
+        
+        // Set initial filter based on saved preference
+        this.filterDataByDateRange(this.state.selectedDateRange);
+        
+        // Set up event handlers using helper - pass this component reference
+        this.dateFilterHelper.setupDateRangeEventHandlers({
+            currentYearStart: this.state.currentYearStart,
+            currentYearEnd: this.state.currentYearEnd,
+            today: this.state.today
+        }, 'financials_widget', this);
+    }
+
+    componentWillUnmount() {
+        // Clean up global reference
+        if (window.financialsWidgetInstance === this) {
+            window.financialsWidgetInstance = null;
+        }
+    }
+
+    handleDateRangeChange(range) {
+        this.dateFilterHelper.handleDateRangeChange(range, 'financials_widget', this);
+    }
+
+    filterDataByDateRange(range) {
+        this.dateFilterHelper.filterDataByDateRange(range, this);
+    }
+
+    // This method is called by the date filter helper
+    performDateFiltering(startDate, endDate) {
+        // Filter raw daily data by date range
+        const allDailyData = this.state.rawDailyData;
+        
+        const filteredDailyData = allDailyData.filter(item => {
+            const itemDate = this.parseItemDay(item);
+            return itemDate.isBetween(startDate, endDate, 'day', '[]');
+        });
+
+        // If no data exists in the requested range, create empty data points
+        if (filteredDailyData.length === 0) {
+            const emptyData = this.createEmptyDataRange(startDate, endDate);
+            this.setState({
+                chartData: emptyData,
+                estimated: this.state.consolidatedMissingAmounts, // Include missing amounts even with no data
+                earned: 0
+            });
+            return;
+        }
+
+        // Get the actual data range from available data
+        const dataStartDate = allDailyData.length > 0 ? this.parseItemDay(allDailyData[0]) : startDate;
+        const dataEndDate = allDailyData.length > 0 ? this.parseItemDay(allDailyData[allDailyData.length - 1]) : endDate;
+
+        // Extend the daily data to fill the entire requested range
+        const extendedDailyData = this.extendDailyDataToRange(filteredDailyData, startDate, endDate, dataStartDate, dataEndDate);
+
+        // Convert extended daily data back to cumulative format for chart
+        let cumulativeEstimated = 0;
+        let cumulativeEarned = 0;
+        const recalculatedData = extendedDailyData.map(item => {
+            cumulativeEstimated += item.daily_budget;
+            cumulativeEarned += item.daily_earned;
+            return {
+                date: item.date,
+                dateKey: item.dateKey,
+                total_budget: cumulativeEstimated,
+                total_earned: cumulativeEarned
+            };
+        });
+
+        // Use final values from actual filtered data (not extended empty data)
+        const actualDataRecalculated = filteredDailyData.map(item => {
+            return { daily_budget: item.daily_budget, daily_earned: item.daily_earned };
+        });
+        const finalEstimated = actualDataRecalculated.reduce((sum, item) => sum + item.daily_budget, 0) + this.state.consolidatedMissingAmounts;
+        const finalEarned = actualDataRecalculated.reduce((sum, item) => sum + item.daily_earned, 0);
+
+        this.setState({
+            chartData: recalculatedData,
+            estimated: finalEstimated,
+            earned: finalEarned
+        });
+    }
+
+    // Create empty data points for a date range
+    createEmptyDataRange(startDate, endDate) {
+        const emptyData = [];
+        const current = startDate.clone();
+        const df = this.state.dateFormat;
+
+        while (current.isSameOrBefore(endDate)) {
+            emptyData.push({
+                dateKey: current.format('YYYY-MM-DD'),
+                date: current.format(df),
+                total_budget: 0,
+                total_earned: 0
+            });
+            current.add(1, 'day');
+        }
+
+        return emptyData;
+    }
+
+    // Extend daily data to fill the entire requested range with zeros where no data exists
+    extendDailyDataToRange(filteredDailyData, requestedStart, requestedEnd, dataStart, dataEnd) {
+        const result = [];
+        const current = requestedStart.clone();
+        const df = this.state.dateFormat;
+
+        while (current.isSameOrBefore(requestedEnd)) {
+            const currentKey = current.format('YYYY-MM-DD');
+            const existingData = filteredDailyData.find(item =>
+                (item.dateKey && item.dateKey === currentKey) ||
+                (!item.dateKey && this.parseItemDay(item).format('YYYY-MM-DD') === currentKey)
+            );
+
+            if (existingData) {
+                result.push(existingData);
+            } else {
+                result.push({
+                    dateKey: currentKey,
+                    date: current.format(df),
+                    daily_budget: 0,
+                    daily_earned: 0
+                });
+            }
+
+            current.add(1, 'day');
+        }
+
+        return result;
+    }
+
+    // Handle 'All Time' filtering - show all available data
+    performAllTimeFiltering() {
+        // Use the original full data set
+        const fullData = this.state.allChartData;
+        
+        // If there's no data available, show empty data for this year
+        if (!fullData || fullData.length === 0) {
+            const currentYearStart = parseCalendarYMD(this.state.currentYearStart);
+            const currentYearEnd = parseCalendarYMD(this.state.currentYearEnd);
+            const emptyYearData = this.createEmptyDataRange(currentYearStart, currentYearEnd);
+            
+            this.setState({
+                chartData: emptyYearData,
+                estimated: this.state.consolidatedMissingAmounts,
+                earned: 0
+            });
+            return;
+        }
+        
+        const finalEstimated = (fullData.length > 0 ? fullData[fullData.length - 1].total_budget : 0) + this.state.consolidatedMissingAmounts;
+        const finalEarned = fullData.length > 0 ? fullData[fullData.length - 1].total_earned : 0;
+
+        this.setState({
+            chartData: fullData,
+            estimated: finalEstimated,
+            earned: finalEarned
+        });
+    }
+
+    handleIgnoreToggle(e) {
+        const checked = e.target.checked;
+        this.setState({ ignoreTasksWithoutDate: checked });
+        const saveUrl = this.props.data.saveWidgetOptionUrl;
+        const reloadUrl = this.props.data.reloadWidgetUrl;
+        const reloadContainerId = this.props.data.reloadContainerId;
+
+        og.openLink(saveUrl, {
+            post: {
+                widget_name: 'financials',
+                option_name: 'ignore_tasks_without_date',
+                option_value: checked ? '1' : '0'
+            },
+            preventPanelLoad: true,
+            silent: true,
+            postProcess: function(ok) {
+                if (!ok) { console.error('Error saving ignore option'); return; }
+                og.openLink(reloadUrl, {
+                    preventPanelLoad: true,
+                    silent: true,
+                    postProcess: function(ok2, html) {
+                        if (!html) { window.location.reload(); return; }
+                        var scripts = [];
+                        var cleanHtml = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, function(_, sc) {
+                            if (sc.trim()) scripts.push(sc);
+                            return '';
+                        });
+                        var widgetEl = document.getElementById(reloadContainerId);
+                        if (widgetEl) {
+                            jQuery(widgetEl).replaceWith(cleanHtml);
+                        }
+                        setTimeout(function() {
+                            scripts.forEach(function(src) {
+                                var s = document.createElement('script');
+                                s.textContent = src;
+                                document.head.appendChild(s);
+                                document.head.removeChild(s);
+                            });
+                        }, 0);
+                    }
+                });
+            }
+        });
     }
 
     render() {
@@ -40,15 +302,38 @@ class FinancialsWidget extends React.Component {
         const earned = formatToMoney(this.state.earned);
         const estimated = formatToMoney(this.state.estimated);
         const earnedTitle = this.state.earnedTitle;
-        const dateFormat = this.state.dateFormat;
+        const dateFormat = this.state.dateFormat || 'MM/DD/YYYY';
         const estimatedTitle = this.state.estimatedTitle;
         var chartData = this.state.chartData;
         chartData.forEach(d => {
-            d.date = moment(d.date).valueOf();
+            const m = d.dateKey
+                ? parseCalendarYMD(d.dateKey)
+                : moment(d.date, dateFormat, true).startOf('day');
+            d.date = m.isValid() ? m.valueOf() : 0;
         });
         //const tooltipSeparator = ': ' + currencySymbol;
         return (
             <div className="progress-widget-container">
+                <div className="progress-widget-filter-row">
+                    {this.dateFilterHelper.renderDateSelector(
+                        this.state.selectedDateRange,
+                        this.state.savedCustomFrom,
+                        this.state.savedCustomTo,
+                        this.state.currentYearStart,
+                        this.state.today
+                    )}
+                    <label className="mswitch-row">
+                        <span className="mswitch">
+                            <input
+                                type="checkbox"
+                                checked={this.state.ignoreTasksWithoutDate}
+                                onChange={this.handleIgnoreToggle}
+                            />
+                            <span className="mswitch-slider"></span>
+                        </span>
+                        {(this.props.data.labels && this.props.data.labels.ignoreTasksWithoutDate) || 'Ignore tasks without date'}
+                    </label>
+                </div>
 
                 <div className="progress-info-container">
                     <div className="progress-total">
@@ -130,8 +415,7 @@ class FinancialsWidget extends React.Component {
 };
   
 function showFinancialsWidget(data, element){
-    ReactDOM.render(<FinancialsWidget data={data} />,
-        element);
+    ReactDOM.render(<FinancialsWidget data={data} />, element);
 };
 
 module.exports = showFinancialsWidget;

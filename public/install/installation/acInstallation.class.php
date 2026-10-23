@@ -320,7 +320,7 @@ final class acInstallation {
 	 * @param integer $executed_queries Total number of successfully executed queries
 	 * @return boolean
 	 */
-	function executeMultipleQueries($sql, &$total_queries, &$executed_queries) {
+function executeMultipleQueries($sql, &$total_queries, &$executed_queries) {
 		if(!trim($sql)) {
 			$total_queries = 0;
 			$executed_queries = 0;
@@ -342,9 +342,9 @@ final class acInstallation {
 			if(trim($query)) {
 			    
 
-//delete, dubgging
-//$this->printMessage("Query: " . $query);
-//$this->printMessage("Query number: " . $queries);
+		//delete, dubgging
+		//$this->printMessage("Query: " . $query);
+		//$this->printMessage("Query number: " . $queries);
 			    
         if(@mysqli_query($this->database_connection, trim($query))) {
 					$executed_queries++;
@@ -357,6 +357,9 @@ final class acInstallation {
 
 		return true;
 	} // executeMultipleQueries
+
+
+
 
 	// ---------------------------------------------------
 	//  Getters and setters

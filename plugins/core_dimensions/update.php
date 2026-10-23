@@ -346,37 +346,23 @@ function core_dimensions_update_18_19() {
 	}
 }
 
-function core_dimensions_update_19_20() {
-	/** 
-	 * THIS PROCEDURE IS NOT NEEDED ANYMORE, THIS WAS DONE TO FIX CALCULATIONS FOR SOME CLIENTS THAT WERE IN A SPECIFIC VERSiON WiTH AN ERROR IN TIME CALCULATIONS
-	 * THAT VERSION IS NO LONGER USED IN ANY CLIENT, SO FOR PERFORMANCE WE CAN AVOID RECALCULATING THIS
-	Env::useHelper('dimension');
 
-	// ensure that expenses plugin is in the latest version before making calculations
-	// after saving a time some other calculations involving expenses can be triggered by advanced_billing plugin
-	if (Plugins::instance()->isActivePlugin('expenses2')) {
-		$expenses_plugin = Plugins::instance()->findOne(array("conditions" => "`name`='expenses2'"));
-		$expenses_plugin->update();
-	}
-
-	// get timeslots affected by recalculation bug
-	$timeslots = Timeslots::instance()->findAll(array(
-		"conditions" => "updated_on > '2023-08-01' AND trashed_by_id=0"
-	));
-
-	$tasks_processed = array();
-	// call save function to recalculate the values correcctly
-	foreach ($timeslots as $timeslot) {
-		$task = $timeslot->getRelObject();
-		// only recalculate tasks once and don't process timeslots without task
-		if ($task instanceof ProjectTask && !in_array($task->getId(), $tasks_processed)) {
-			$task->dont_calculate_project_financials = true; // don't calculate for projects, it will generate a loop
-
-			$timeslot->save(); // save to trigger the related task's calculations
-			
-			$tasks_processed[] = $task->getId();
-		}
-	}
-	*/
+function core_dimensions_update_20_21() {
+	// content moved to data_changes.php
 }
 
+function core_dimensions_update_21_22() {
+	// content moved to data_changes.php
+}
+
+function core_dimensions_update_22_23() {
+	// content moved to data_changes.php
+}
+
+function core_dimensions_update_23_24() {
+	// content moved to data_changes.php
+}
+
+function core_dimensions_update_24_25() {
+	// content moved to data_changes.php
+}

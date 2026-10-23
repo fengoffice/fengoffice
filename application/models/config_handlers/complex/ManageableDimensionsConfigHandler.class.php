@@ -14,6 +14,7 @@
     * @return string
     */
     function render($control_name) {
+		$genid = gen_id();
 		$value =  $this->getValue();
 		$dimensions  = Dimensions::instance()->findAll(array('conditions' => '`is_manageable` = 1'));
 		$enabled_dimension_ids = config_option('enabled_dimensions');
@@ -29,7 +30,7 @@
 		}
 		
 		$permission_group_ids = ContactPermissionGroups::getPermissionGroupIdsByContactCSV(logged_user()->getId(),false);
-		$out = '' ;
+		$out = '<div class="checkbox-config-options">';
 		foreach ($dimensions as $dim) { /* @var $dim Dimension */
 			if (!in_array($dim->getId(), $enabled_dimension_ids)) continue;
 
@@ -41,14 +42,16 @@
 				}else{
 					$checked = 0 ;
 				}
-				$out.='<div class="dimension" >';
-				$out.=label_tag($dim->getName(), null, false, array('style' => 'display:inline;margin:10px;vertical-align:super;'));
-				$out.=checkbox_field($control_name.'['.$dim->getId().']',$checked );
+				$option_id = $dim->getId();
+				$out.='<div class="checkbox-config-option" >';
+				$out.=checkbox_field($control_name.'['.$dim->getId().']', $checked, array('id' => $genid.'_'.$control_name.'_'.$option_id));
+				$out.=label_tag($dim->getName(), $genid.'_'.$control_name.'_'.$option_id, false, null, '');
 				$out.='</div >';
 			}
 		}
 		
-		$out.='<input type="hidden" name="'.$control_name.'[0]" value=" ">';      
+		$out.='<input type="hidden" name="'.$control_name.'[0]" value=" ">';
+		$out.='</div>';
 		return $out ;	 
     }
     

@@ -86,6 +86,7 @@
 	'footer copy with homepage' => '© {0}  <a class="internalLink" href="{1}">{2}</a>. Все права защищены.',
 	'footer copy without homepage' => '© {0}  {1}. Все права защищены',
 	'footer powered' => 'Под управлением <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Под управлением',
 	'all documents' => 'Все документы',
 	'created by me' => 'Созданные мной',
 	'by project' => 'По проекту',

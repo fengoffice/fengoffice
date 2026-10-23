@@ -10,6 +10,57 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 	private static $readable_members = array();
 	private static $writable_members = array();
 	private static $deletable_members = array();
+
+	/**
+	 * Drop the in-request member access caches.
+	 *
+	 * contactCanAccessMemberAll() memoizes readable/writable/deletable member ids per permission
+	 * group set for the life of the request. That is fine for read-only pages, but after CMPs are
+	 * written (project CSV import creates many members in one request) the memo still reflects the
+	 * pre-write world, so ContactMemberCaches::updateContactMemberCache() concludes the user cannot
+	 * access the brand-new member and skips the cache row. Non-admin users then do not see the
+	 * imported project in the dimension tree until a later full cache rebuild.
+	 */
+	static function clearAccessCaches() {
+		self::$readable_members = array();
+		self::$writable_members = array();
+		self::$deletable_members = array();
+	}
+
+	/**
+	 * SQL subquery with the ids of the object types whose permissions actually grant access to a
+	 * member: content/located types, excluding templates and report, belonging to core or to an
+	 * active+installed plugin, and excluding object types whose tab panel is disabled.
+	 *
+	 * Also excludes types the permission UI never shows (workspace, expense_item, quota): leftover
+	 * CMP rows for those types must not make a member visible in the tree or listing.
+	 *
+	 * @return string SQL SELECT to be used inside `object_type_id IN ( ... )`
+	 */
+	static function accessGrantingObjectTypesSubquery() {
+		return "SELECT ot.id FROM ".TABLE_PREFIX."object_types ot
+				WHERE ot.type IN ('content_object','located')
+					AND ot.name NOT IN ('template_milestone', 'template_task', 'report', 'workspace', 'expense_item', 'quota')
+					AND (ot.plugin_id IS NULL OR ot.plugin_id = 0 OR ot.plugin_id IN (SELECT p.id FROM ".TABLE_PREFIX."plugins p WHERE p.is_activated > 0 AND p.is_installed > 0))
+					AND ot.id NOT IN (SELECT tp.object_type_id FROM ".TABLE_PREFIX."tab_panels tp WHERE tp.object_type_id > 0 AND tp.enabled = 0)";
+	}
+
+	/**
+	 * SQL fragment: member is visible if the user has CMP on a non-hidden object type.
+	 *
+	 * @param string $member_id_sql
+	 * @param string $permission_group_ids_csv
+	 * @return string
+	 */
+	static function sqlMemberHasVisibleAccess($member_id_sql, $permission_group_ids_csv) {
+		if ($permission_group_ids_csv === '' || $permission_group_ids_csv === null) {
+			return " AND FALSE ";
+		}
+		return " AND EXISTS (SELECT cmp.member_id FROM ".TABLE_PREFIX."contact_member_permissions cmp USE INDEX (PRIMARY)
+			WHERE cmp.member_id=".$member_id_sql."
+			AND cmp.permission_group_id IN (".$permission_group_ids_csv.")
+			AND cmp.object_type_id IN (".self::accessGrantingObjectTypesSubquery()."))";
+	}
 	
 	/**
 	 * 
@@ -30,24 +81,8 @@ class ContactMemberPermissions extends BaseContactMemberPermissions {
 			return true;
 		}
 		
-        //Disable object types
-		$disabled_ots = array();
-		$disableds = DB::executeAll("SELECT object_type_id FROM ".TABLE_PREFIX."tab_panels WHERE object_type_id>0 AND enabled=0");
-		if (is_array($disableds)) {
-			$disabled_ots = array_flat($disableds);
-		}
-		$all_allowed_object_type_ids = DB::executeAll("SELECT id FROM ".TABLE_PREFIX."object_types 
-				WHERE type IN ('content_object','located') AND name NOT IN ('template_milestone', 'template_task', 'report')
-				AND (plugin_id is NULL OR plugin_id = 0 OR plugin_id IN (SELECT id FROM ".TABLE_PREFIX."plugins WHERE is_activated > 0 AND is_installed > 0))
-				");
-		$all_allowed_object_type_ids = array_filter(array_flat($all_allowed_object_type_ids));
-		
-		$allowed_object_type_ids = array_diff($all_allowed_object_type_ids, $disabled_ots);
-		
-		$object_type_type_sql = "";
-		if (count($allowed_object_type_ids) > 0) {
-			$object_type_type_sql = " AND object_type_id IN (".implode(',',$allowed_object_type_ids).")";
-		}
+		$allowed_object_type_ids = self::accessGrantingObjectTypesSubquery();
+		$object_type_type_sql = " AND object_type_id IN (".$allowed_object_type_ids.")";
 		
 		if ($access_level == ACCESS_LEVEL_READ) {
 			if (!isset(self::$readable_members["$permission_group_ids"])) {

@@ -113,13 +113,12 @@
 		<div class="separator"></div>
 		<?php endif; ?>
 		<div class="new-task">
-
-
-			<div style="padding-top:12px;">
-				<button class="add-first-btn" type="" onclick="ogTasks.drawAddNewTaskFromData('new_task_<?php echo $genid?>', 'overdue upcoming widget - add task')"><?php echo lang('add task')?></button>
+			<div style="margin-top:12px; display: flex; justify-content: flex-end;">
+				<button class="btn btn-primary" type="" onclick="ogTasks.drawAddNewTaskFromData('new_task_<?php echo $genid?>', 'overdue upcoming widget - add task')">
+					<i class="icon-circle-plus"></i> <?php echo lang('add task list')?>
+				</button>
 			</div>
-			<div class="x-clear"></div>
-			
+			<div class="x-clear"></div>			
 		</div>
 	<?php endif;?>
 	</div>

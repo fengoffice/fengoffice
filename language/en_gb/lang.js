@@ -643,7 +643,8 @@ addLangs({
     'object type not supported': 'This object type is not supported for templates',
     'confirm delete timeslot': 'Are you sure you want to permanently delete this time entry?',
     'confirm delete permanently this member': 'Are you sure you want to delete this {0}?',
-    'confirm delete with keyword': 'Enter \"DELETE\" to confirm',
+    'confirm delete with keyword': 'Enter \"{0}\" to confirm',
+    'delete confirmation keyword mismatch': 'Enter \"{0}\" exactly to confirm the deletion.',
 
     'confirm delete permanently company': 'Are you sure you want to permanently delete this company?\nNote that all company users will also be deleted.',
     'confirm move to trash company': 'Are you sure you want to delete this company?\nNote that all company users will also be deleted.',

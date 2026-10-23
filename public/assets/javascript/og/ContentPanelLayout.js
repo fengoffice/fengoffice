@@ -10,13 +10,27 @@ og.ContentPanelLayout = Ext.extend(Ext.layout.ContainerLayout, {
     onLayout : function(ct, target){
         og.ContentPanelLayout.superclass.onLayout.call(this, ct, target);
         if(!this.container.collapsed){
-        	// get first visible panel
+        	var lastTransient = null;
         	for (var i=0; ct.items.itemAt(i); i++) {
-        		if (!ct.items.itemAt(i).hidden) {
-            		this.setItemSize(this.activeItem || ct.items.itemAt(i), target.getStyleSize());
-            	}
-            }
-            this.setItemSize(this.activeItem || ct.items.itemAt(0), target.getStyleSize());
+        		var item = ct.items.itemAt(i);
+        		if (item.hidden || item.doNotRemove) continue;
+        		if (lastTransient && lastTransient !== item) {
+        			if (typeof og.destroyCkEditorsInElement == 'function' && lastTransient.el) {
+        				og.destroyCkEditorsInElement(lastTransient.el);
+        			}
+        			lastTransient.hide();
+        		}
+        		lastTransient = item;
+        	}
+        	var size = target.getStyleSize();
+        	// After hiding leftover HtmlPanels, size every remaining visible
+        	// child — including doNotRemove managers (FileManager, etc.).
+        	for (var j=0; ct.items.itemAt(j); j++) {
+        		var vis = ct.items.itemAt(j);
+        		if (!vis.hidden) {
+        			this.setItemSize(vis, size);
+        		}
+        	}
         }
     },
 

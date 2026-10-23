@@ -226,6 +226,7 @@ Apache 2.0+
 
 <ul>
     <li style="color: #264653;padding:0 20px;">ActiveCollab 0.7.1 - <a href="http://www.activecollab.com">http://www.activecollab.com</a></li>
+    <li style="color: #264653;padding:0 20px;">chrome-php/chrome - <a href="https://github.com/chrome-php/chrome">https://github.com/chrome-php/chrome</a></li>
     <li style="color: #264653;padding:0 20px;">ExtJs - <a href="http://www.extjs.com">http://www.extjs.com</a></li>
     <li style="color: #264653;padding:0 20px;">jQuery - <a href="http://www.jquery.com">http://www.jquery.com</a></li>
     <li style="color: #264653;padding:0 20px;">jQuery tools - <a href="http://flowplayer.org/tools/">http://flowplayer.org/tools/</a></li>
@@ -247,5 +248,6 @@ Apache 2.0+
     <li style="color: #264653;padding:0 20px;">PEAR - <a href="http://pear.php.net">http://pear.php.net</a></li>
     <li style="color: #264653;padding:0 20px;">Gelsheet - <a href="http://www.gelsheet.org">http://www.gelsheet.org</a></li>
     <li style="color: #264653;padding:0 20px;">TimeZoneDB - <a href="https://timezonedb.com">https://timezonedb.com</a></li>
+	<li style="color: #264653;padding:0 20px;">JQuery ExpressionBuilder - <a href="https://exp.js.org/">https://exp.js.org/</a></li>
 
 </ul>

@@ -1,0 +1,952 @@
+/* ==========================================================================
+   Dimension widget shell — shared by every "dimension widget" (a dashboard
+   widget backed by application/helpers/dimension_widget.php): evx_projects,
+   evx_customers, and any future widget built the same way.
+
+   Generic overlay/table/column-manager styling used by
+   evx_widgets_render_dimension_widget() and the showDimensionTableWidget
+   React component. Widget-specific business styling (if any) lives in each
+   plugin's own stylesheet — this file stays free of per-widget selectors.
+   ========================================================================== */
+
+.evx-widget-list {
+	overflow-x: visible;
+}
+
+.evx-widget-table-wrapper {
+	overflow-x: auto;
+	border-radius: 8px;
+	border: 1px solid #EDEDED;
+}
+
+.evx-widget-list .project-row-container {
+	margin: 0;
+}
+
+.evx-widget-list .statistics-widget table.statistics {
+	margin-top: 10px;
+}
+.evx-widget-list .statistics-widget table.statistics td {
+	padding: 0;
+}
+
+
+.evx-widget-list .project-list-table {
+	width: 100%;
+}
+.evx-widget-list .project-list-table th {
+	color: #999;
+	font-weight: bold;
+	font-size: 15px;
+	padding: 15px 15px 15px 0;
+	width: 22%;
+}
+.evx-widget-list .project-list-table td {
+	color: #444;
+	font-size: 15px;
+	border-top: 1px solid #eee;
+	padding: 15px 15px 15px 0;
+}
+.evx-widget-list .project-list-table td a {
+	color: #444;
+}
+
+.evx-widget-react {
+	width: 100%;
+	color: #444;
+}
+
+.evx-widget-dimension-table .widget-header .evx-widget-gear,
+.evx-widget-feed .widget-header .evx-widget-gear {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	color: #6c757d;
+	cursor: pointer;
+	text-decoration: none;
+	line-height: 1;
+}
+
+/* Extra header icons (e.g. Emails' "Compose") sit before the settings gear —
+   space them apart instead of letting their paddings touch. */
+.evx-widget-feed .widget-header .evx-widget-gear + .evx-widget-gear {
+	margin-left: 4px;
+}
+
+/* Count badge shown right after a widget title (opt-in via title_count — Tasks/Emails). */
+.fo-widget-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	margin-left: 8px;
+	border-radius: 10px;
+	background: #eceff1;
+	color: #6c757d;
+	font-size: 11px;
+	font-weight: 600;
+	vertical-align: middle;
+}
+
+/* Segmented header toggle group (opt-in via header_toggle_groups — Tasks' scope/due-date
+   quick filters). One shared pill track per group; the active segment is a raised thumb. */
+.evx-widget-dimension-table .widget-header .fo-widget-tabs {
+	display: inline-flex;
+	gap: 2px;
+	padding: 3px;
+	margin-right: 12px;
+	background: #f0f0f0;
+	border-radius: 8px;
+}
+.evx-widget-dimension-table .widget-header .fo-widget-tab {
+	font: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 5px 12px;
+	border: none;
+	border-radius: 6px;
+	background: transparent;
+	color: #6c757d;
+	cursor: pointer;
+}
+.evx-widget-dimension-table .widget-header .fo-widget-tab:hover {
+	color: #264653;
+}
+.evx-widget-dimension-table .widget-header .fo-widget-tab.active {
+	background: #fff;
+	color: #1b75bc;
+	box-shadow: 0 1px 3px rgba(0,0,0,.14);
+}
+
+/* Tasks Status column badge — colors set inline per bucket (see tasks_widget_render_status_badge()). */
+.evx-tasks-status {
+	display: inline-block;
+	padding: 3px 9px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+/* "+N" badge for a multi-valued cell (e.g. a task linked to more than one project) —
+   see tasks_widget_render_multi_value_cell(). */
+.evx-tasks-multi-badge {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 8px;
+	background: #eef1f4;
+	color: #666;
+	font-size: 10px;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: default;
+}
+
+
+.evx-widget-table thead .evx-widget-header.evx-widget-header-__edit__ {
+	width: 32px;
+	max-width: 32px;
+	min-width: 32px;
+	padding: 12px 0px;
+}
+
+.evx-widget-table tbody .evx-widget-cell.evx-widget-cell-__edit__ {
+	width: 32px;
+	min-width: 32px;
+	max-width: 32px;
+	padding: 14px 4px 14px 0;
+	text-align: center;
+}
+
+/* ---------- Row-hover quick-actions kebab (Tasks) ---------- */
+.evx-widget-table thead .evx-widget-header.evx-widget-header-__quick_actions__ {
+	width: 36px;
+	max-width: 36px;
+	min-width: 36px;
+	padding: 12px 0;
+}
+.evx-widget-table tbody .evx-widget-cell.evx-widget-cell-__quick_actions__ {
+	width: 36px;
+	min-width: 36px;
+	max-width: 36px;
+	padding: 14px 4px;
+	text-align: center;
+	position: relative;
+}
+.evx-task-kebab {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border: 1px solid #eee;
+	border-radius: 6px;
+	background: #fff;
+	color: #999;
+	cursor: pointer;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s ease, visibility .12s;
+}
+.evx-widget-table tbody .evx-widget-row:hover .evx-task-kebab,
+.evx-task-kebab.is-open {
+	opacity: 1;
+	visibility: visible;
+}
+.evx-task-kebab:hover {
+	background: #f0f0f0;
+	color: #333;
+}
+.evx-task-kebab i {
+	font-size: 15px;
+}
+.evx-task-menu {
+	position: fixed;
+	z-index: 10050;
+	min-width: 190px;
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(0,0,0,.16);
+	padding: 6px;
+}
+.evx-task-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	background: none;
+	border-radius: 6px;
+	font-size: 13px;
+	color: #444;
+	cursor: pointer;
+	text-align: left;
+}
+.evx-task-menu-item:hover {
+	background: #f5f5f5;
+}
+.evx-task-menu-item i {
+	font-size: 15px;
+	color: #888;
+	flex-shrink: 0;
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-edit-icon {
+	color: #888;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-edit-icon:hover {
+	color: #1B75BC;
+}
+
+.evx-widget-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 15px;
+	border-radius: 4px;
+}
+
+.evx-widget-table thead .evx-widget-header {
+	font-weight: bold;
+	text-align: left;
+	padding: 12px 24px 12px 0;
+	border-bottom: 2px solid #f0f0f0;
+	white-space: nowrap;
+	word-break: normal;
+	background-color: #f6f6f6;
+	color: #264653;
+}
+
+/* Sortable column headers: clickable to change the order criterion. */
+.evx-widget-table thead .evx-widget-header-sortable {
+	cursor: pointer;
+	user-select: none;
+}
+
+.evx-widget-table thead .evx-widget-header-sortable:hover {
+	background-color: #eceff1;
+}
+
+.evx-widget-table thead .evx-widget-header-sorted {
+	color: #1b6ca8;
+}
+
+.evx-widget-sort-arrow {
+	margin-left: 6px;
+	font-size: 11px;
+	line-height: 1;
+	vertical-align: middle;
+}
+
+/* Tighten the gap between the header and the table block. The generic
+   .widget-header keeps its 30px padding (so the collapsed card matches the
+   other widgets); instead the body box is pulled up into that bottom padding.
+   Moving the body *box* (not its inner content) keeps overflow:hidden intact,
+   so the caption is never clipped and no tooltips/scrollbars leak out. When
+   collapsed the body is display:none, so this margin has no effect. */
+.evx-widget-dimension-table .widget-body {
+	margin-top: -18px;
+}
+
+/* Always-visible caption stating the active sort criterion + direction.
+   Kept in normal flow at the top of the (raised) .widget-body, so it sits
+   right below the header without any inner negative-margin trickery. */
+.evx-widget-sort-caption {
+	font-size: 12px;
+	color: #888;
+	padding: 2px 2px 6px 2px;
+	text-align: right;
+}
+
+.evx-widget-sort-caption-col {
+	font-weight: 600;
+	color: #555;
+}
+
+.evx-widget-table tbody .evx-widget-row {
+	transition: background-color 0.12s ease;
+}
+
+.evx-widget-table tbody .evx-widget-row:hover {
+	background-color: #fafafa;
+}
+
+.evx-widget-table tbody .evx-widget-cell {
+	color: #444;
+	padding: 12px 24px 12px 0;
+	border-top: 1px solid #eee;
+	vertical-align: middle;
+	white-space: normal;
+	min-width: 100px;
+	max-width: 300px;
+}
+
+.evx-widget-table tbody .evx-widget-cell a {
+	color: #444;
+}
+
+.evx-widget-cell-numeric {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	width: 100px;
+	max-width: 100px;
+}
+
+.evx-widget-cell-start_date,
+.evx-widget-cell-end_date {
+	white-space: nowrap;
+	width: 110px;
+	max-width: 110px;
+}
+
+.evx-widget-cell-status {
+	white-space: nowrap;
+	width: 130px;
+	max-width: 130px;
+}
+
+.evx-widget-cell-multiline {
+	white-space: pre-line;
+}
+
+.evx-widget-table tbody .evx-widget-cell-name {
+	min-width: 300px;
+}
+
+.evx-widget-table tbody .evx-widget-cell-description {
+	min-width: 300px;
+}
+
+.evx-widget-table tbody .evx-widget-cell-multiline {
+	min-width: 300px;
+	word-break: normal;
+	overflow-wrap: break-word;
+}
+
+.evx-widget-table tbody .evx-widget-cell[class*="evx-widget-cell-dim_assoc_"] {
+	min-width: 140px;
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-member-pill {
+	display: inline-block;
+	border-radius: 3px;
+	font-size: 12px;
+	line-height: 16px;
+	word-break: keep-all;
+	overflow-wrap: normal;
+	vertical-align: middle;
+	padding: 4px;
+	margin: 4px;
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-progress-container {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	vertical-align: middle;
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-progress-track {
+	width: 80px;
+	height: 7px;
+	background-color: #DDD;
+	border-radius: 2px;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-progress-fill {
+	height: 100%;
+	width: 0;
+	animation: evxWidgetLoadProgress 0.8s ease-out forwards;
+}
+
+@keyframes evxWidgetLoadProgress {
+	from { width: 0; }
+	to   { width: var(--evx-progress-target); }
+}
+
+.evx-widget-table tbody .evx-widget-cell .evx-widget-progress-label {
+	font-size: 11px;
+	color: #555;
+	white-space: nowrap;
+	line-height: 1;
+}
+
+.evx-widget-empty {
+	color: #999;
+	padding: 20px 0;
+	font-size: 14px;
+	font-style: italic;
+}
+
+.fo-widget-modal-search {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 13px;
+	color: #444;
+	box-sizing: border-box;
+	margin-bottom: 8px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fo-widget-modal-search:focus {
+	outline: none;
+	border-color: #1B75BC;
+	box-shadow: 0 0 0 2px rgba(27, 117, 188, 0.15);
+}
+
+.fo-widget-modal-hint {
+	font-size: 12px;
+	color: #888;
+	margin-bottom: 12px;
+}
+
+.fo-widget-modal-empty {
+	padding: 16px 0;
+	text-align: center;
+	color: #888;
+	font-size: 13px;
+	font-style: italic;
+}
+
+/* Right-align numeric column headers to match their cell alignment */
+.evx-widget-table thead .evx-widget-header-numeric {
+	text-align: right;
+}
+
+.evx-widget-cell-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.evx-widget-cell-multiline .evx-widget-cell-text {
+	white-space: pre-line;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	text-overflow: clip;
+}
+
+.fo-widget-modal-section {
+	margin-bottom: 16px;
+}
+
+.fo-widget-modal-section:last-child {
+	margin-bottom: 0;
+}
+
+.fo-widget-modal-section-heading {
+	font-size: 13px;
+	font-weight: 600;
+	color: #333;
+	margin: 0 0 10px 0;
+	padding-bottom: 6px;
+	border-bottom: 1px solid #eee;
+}
+
+.fo-widget-modal-order-select,
+.fo-widget-modal-order-dir-select {
+	box-sizing: border-box;
+	padding: 4px;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	font-size: 13px;
+	background: #fff;
+	/* Size to the widest option, never stretch to fill the row. */
+	flex: 0 1 auto;
+	max-width: 100%;
+}
+
+.evx-widget-dimension-table.widget h3.fo-widget-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+	padding: 2px 0px;
+	margin-bottom: 0px;
+}
+
+/* Unified config modal — wider to accommodate the two-panel column manager */
+.fo-widget-modal.fo-widget-modal-config {
+    width: 760px;
+}
+
+/* Body uses flex-column so the columns section can fill remaining height */
+.fo-widget-modal-config-body {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.fo-widget-config-section {
+    padding: 14px 20px;
+    flex-shrink: 0;
+}
+
+.fo-widget-config-section + .fo-widget-config-section {
+    border-top: 1px solid #eee;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+.fo-widget-config-section-heading {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 12px 0;
+}
+
+/* Let the col-manager body fill the columns section */
+.fo-widget-config-section-columns {
+    min-height: 0;
+}
+
+.fo-widget-config-section-columns .col-manager-body {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+}
+
+.fo-widget-config-section-hint {
+    font-weight: 400;
+    color: #888;
+    font-size: 12px;
+}
+
+/* Sits after the columns section — override the generic "every section after
+   the first stretches to fill" rule so it keeps its own natural height with
+   its own internal scroll instead of fighting the columns list for space. */
+.fo-widget-config-section-quickactions {
+    flex: 0 0 auto !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: 220px;
+    overflow-y: auto !important;
+}
+
+.fo-widget-sortlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.fo-widget-sortlist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #444;
+    cursor: grab;
+    background: #fff;
+    user-select: none;
+}
+.fo-widget-sortlist-item:hover {
+    background: #fafafa;
+}
+.fo-widget-sortlist-item.dragging {
+    opacity: 0.4;
+}
+.fo-widget-sortlist-item.drag-over {
+    box-shadow: inset 0 2px 0 #1B75BC;
+}
+.fo-widget-sortlist-handle {
+    color: #bbb;
+    font-size: 13px;
+    flex-shrink: 0;
+    cursor: grab;
+}
+.fo-widget-sortlist-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #1B75BC;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+}
+.fo-widget-sortlist-ico {
+    display: inline-flex;
+    color: #888;
+    flex-shrink: 0;
+    font-size: 15px;
+}
+
+/* ============================================================================
+   Feed widget layout (Activity, Emails) — the list/feed counterpart of the
+   evx-widget-table-* rules above. Prefixed fo-widget-* (not evx-widget-*)
+   because, like the modal framework in widgetModal.css, this is generic list
+   layout any widget could use, not specific to the dimension-widget shell.
+   ============================================================================ */
+
+.evx-widget-feed-react {
+	width: 100%;
+	color: #444;
+}
+
+.evx-widget-feed-list-inner {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.fo-widget-list-item {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	padding: 12px 0;
+	border-bottom: 1px solid #eee;
+	position: relative; /* anchor for the Emails hover action bar */
+}
+
+.fo-widget-list-item:last-child {
+	border-bottom: none;
+}
+
+.fo-widget-list-lead {
+	flex-shrink: 0;
+}
+
+.fo-widget-list-body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.fo-widget-list-meta {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+	color: #999;
+	font-size: 12px;
+	white-space: nowrap;
+	line-height: 1.4;
+}
+
+/* Circular icon badge (Activity feed row lead). Background color is set inline
+   per action type. */
+.fo-widget-icon-badge {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	flex-shrink: 0;
+}
+.fo-widget-icon-badge [class^="icon-"] {
+	font-size: 16px;
+}
+
+.fo-widget-feed-text {
+	font-size: 13px;
+	color: #555;
+	line-height: 1.5;
+}
+.fo-widget-feed-text .fo-widget-actor {
+	font-weight: 700;
+	color: #264653;
+}
+.fo-widget-object-link {
+	color: #1b75bc;
+	text-decoration: none;
+}
+.fo-widget-object-link:hover {
+	text-decoration: underline;
+}
+
+.fo-widget-feed-time {
+	margin-top: 4px;
+	font-size: 11px;
+	color: #999;
+}
+
+.fo-widget-feed-quote {
+	margin-top: 4px;
+	font-size: 12px;
+	font-style: italic;
+	color: #888;
+}
+
+.fo-widget-subtext {
+	display: block;
+	margin-top: 4px;
+	color: #888;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.fo-widget-file-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 6px;
+	padding: 5px 8px;
+	border: 1px solid #eee;
+	border-radius: 6px;
+	background: #fff;
+	font-size: 12px;
+	color: #555;
+}
+.fo-widget-file-chip [class^="icon-"] {
+	color: #c0392b;
+}
+
+/* Avatar (Emails row lead) */
+.fo-widget-avatar--initials {
+	width: 32px;
+	height: 32px;
+	border-radius: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 600;
+	font-size: 12px;
+	flex-shrink: 0;
+}
+
+.fo-widget-email-from {
+	display: block;
+	font-weight: 700;
+	font-size: 13px;
+	color: #444;
+	margin-bottom: 2px;
+}
+
+.fo-widget-cell-title {
+	display: block;
+	font-weight: 700;
+	font-size: 13px;
+	color: #1b75bc;
+	text-decoration: none;
+}
+.fo-widget-cell-title:hover {
+	text-decoration: underline;
+}
+
+.fo-widget-cell-sub {
+	display: block;
+	margin-top: 2px;
+	color: #888;
+	font-size: 12px;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.fo-widget-unread-dot {
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #2a9d8f;
+	margin-right: 5px;
+	vertical-align: middle;
+}
+
+/* ---------- Activity-only row treatment (.is-activity-item) ---------- */
+/* Timeline connector linking the icon badges down the list, matching the
+   mockup. Scoped to Activity's rows (.is-activity-item) — Emails' rows use
+   an avatar instead of an icon badge and don't get this line. */
+.fo-widget-list-item.is-activity-item .fo-widget-list-lead {
+	position: relative;
+	z-index: 1;
+}
+.evx-widget-feed-list-inner > .evx-widget-feed-item .fo-widget-list-item.is-activity-item::before {
+	content: "";
+	position: absolute;
+	left: 15px;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	background: #e0e0e0;
+	z-index: 0;
+}
+.evx-widget-feed-list-inner > .evx-widget-feed-item:first-child .fo-widget-list-item.is-activity-item::before {
+	top: 28px;
+}
+.evx-widget-feed-list-inner > .evx-widget-feed-item:last-child .fo-widget-list-item.is-activity-item::before {
+	bottom: calc(100% - 28px);
+}
+
+/* ---------- Emails-only row treatment (.is-mail-item) ---------- */
+.fo-widget-list-item.is-mail-item:hover {
+	background: #fafafa;
+}
+.fo-widget-list-item.is-mail-item .fo-widget-list-body {
+	min-width: 0;
+}
+.fo-widget-list-item.is-mail-item .fo-widget-email-from,
+.fo-widget-list-item.is-mail-item .fo-widget-cell-title {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+}
+
+/* Per-account indicator, shown only when the fetched page spans more than one account. */
+.fo-widget-mail-account {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 2px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #999;
+}
+.fo-widget-mail-account [class^="icon-"] {
+	font-size: 12px;
+	color: #bbb;
+}
+
+/* Per-row hover action bar (reply/forward/archive/delete). */
+.fo-widget-mail-actions {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 8px;
+	padding: 2px;
+	box-shadow: 0 4px 12px rgba(0,0,0,.1);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s ease, visibility .12s;
+}
+.fo-widget-list-item.is-mail-item:hover .fo-widget-mail-actions {
+	opacity: 1;
+	visibility: visible;
+}
+.fo-widget-mail-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border: none;
+	background: none;
+	border-radius: 6px;
+	color: #999;
+	cursor: pointer;
+}
+.fo-widget-mail-action:hover {
+	background: #f0f0f0;
+	color: #333;
+}
+.fo-widget-mail-action [class^="icon-"] {
+	font-size: 15px;
+}
+
+/* Expandable table rows (opt-in: rows that provide a detail_html, e.g. the customer-events widget's
+   participant list). The whole main row is clickable to toggle; a chevron in the first cell shows state. */
+.evx-widget-table tbody .evx-widget-row-expandable {
+	cursor: pointer;
+}
+.evx-widget-table tbody .evx-widget-row-expandable:hover {
+	background-color: #f6f8fa;
+}
+.evx-widget-row-expander {
+	display: inline-block;
+	width: 14px;
+	margin-right: 6px;
+	color: #90a4ae;
+	font-size: 11px;
+	vertical-align: middle;
+	transition: color .15s ease;
+}
+.evx-widget-table tbody .evx-widget-row-expandable:hover .evx-widget-row-expander {
+	color: #546e7a;
+}
+.evx-widget-table tbody .evx-widget-cell.evx-widget-cell-expander {
+	white-space: nowrap;
+}
+/* keep the chevron inline with the event name (the cell text is a block div by default, which would
+   otherwise drop the name onto its own line below the chevron). */
+.evx-widget-table tbody .evx-widget-cell.evx-widget-cell-expander .evx-widget-row-expander {
+	vertical-align: middle;
+}
+.evx-widget-table tbody .evx-widget-cell.evx-widget-cell-expander > .evx-widget-cell-text {
+	display: inline-block;
+	vertical-align: middle;
+	max-width: calc(100% - 24px);
+}
+
+/* Detail row: full-width area under an expanded event holding its participant list. The generic
+   detail-cell container is styled here; the participant-list contents (.et-ce-*) are widget-specific
+   and live in the event_tickets plugin stylesheet. */
+.evx-widget-table tbody .evx-widget-detail-row > .evx-widget-detail-cell {
+	padding: 0 0 8px 20px;
+	border-top: 0;
+	background-color: #fafbfc;
+}

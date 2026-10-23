@@ -3,7 +3,7 @@
 	'quick help' => 'Ajuda e suporte',
 	'personal settings' => 'Configurações pessoais',
 	'back' => 'Voltar',
-	'learn about and manage your Feng Office' => 'Aprenda sobre e gestione o seu Feng Office',
+	'learn about and manage your Feng Office' => 'Aprenda sobre e gestione o seu ' .product_name().'',
 	'system modules' => 'Módulos do sistema',
 	'users groups and permissions' => 'Usuários, grupos e permissões',
 	'companies with users' => 'Empresas com usuários',

@@ -7,7 +7,7 @@ class EncodingConverter
 	var $_last_err_line;
 	var $_last_err_func;
 
-	function _handleError($err, $msg, $errfile, $errline, $errcontext) {
+	function _handleError($err, $msg, $errfile, $errline, $errcontext='') {
 		$trace = debug_backtrace();
 		$trace_count = count($trace);
 		if (is_array($trace) && $trace_count > 2) {

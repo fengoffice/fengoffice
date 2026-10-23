@@ -88,6 +88,7 @@
 	'footer copy with homepage' => '© {0} per <a class="internalLink" href="{1}">{2}</a>. Tots els drets reservats.',
 	'footer copy without homepage' => '© {0} per {1}. Tots els drets reservats',
 	'footer powered' => 'Impulsat per <a target="_blank" href="{0}">{1}</a>',
+	'powered by' => 'Impulsat per',
 	'all documents' => 'Tots els documents',
 	'created by me' => 'Creat per mi',
 	'by project' => 'Per espai de treball',

@@ -146,7 +146,7 @@
 		$mysql_date_format = "";
 		for($i=0; $i<strlen($date_format); $i++) {
 			$char = $date_format[$i];
-			if (in_array($char, array('d','m','Y'))) {
+			if (in_array($char, array('d','m','Y','n','j','y'))) {
 				$mysql_date_format .= "%";
 			}
 			$mysql_date_format .= $char;

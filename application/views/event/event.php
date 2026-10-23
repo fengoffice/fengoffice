@@ -11,7 +11,7 @@ $genid = gen_id();
 	}
 
 	og.cal_show = function(id) {
-		document.getElementById(id).style.display = "block";
+		document.getElementById(id).style.display = "flex";
 	}
 	
 	og.toggleDiv = function(div_id){
@@ -180,11 +180,11 @@ $main_cp_count = CustomProperties::countVisibleCustomPropertiesByObjectType($obj
 $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($object->getObjectTypeId());
 
 ?>
-	<form id="<?php echo $genid ?>submit-edit-form" class="add-event" onsubmit="<?php echo $on_submit?>" class="internalForm" action="<?php echo $form_view_url; ?>" method="post">
-	<input type="hidden" id="event[pm]" name="event[pm]" value="<?php echo $pm?>">
-	<input id="<?php echo $genid?>view_related" type="hidden" name="view_related" value="<?php echo isset($event_related) ? $event_related : ""; ?>" />
-	<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
-	<div class="event">
+<form id="<?php echo $genid ?>submit-edit-form" class="add-event" onsubmit="<?php echo $on_submit?>" class="internalForm" action="<?php echo $form_view_url; ?>" method="post">
+<input type="hidden" id="event[pm]" name="event[pm]" value="<?php echo $pm?>">
+<input id="<?php echo $genid?>view_related" type="hidden" name="view_related" value="<?php echo isset($event_related) ? $event_related : ""; ?>" />
+<input id="<?php echo $genid?>type_related" type="hidden" name="type_related" value="only" />
+<div class="event">
 	<div class="coInputHeader">
 	
 	  <div class="coInputHeaderUpperRow">
@@ -210,477 +210,359 @@ $other_cp_count = CustomProperties::countHiddenCustomPropertiesByObjectType($obj
 	</div>
 	
 		
-	<div class="coInputMainBlock">	
-		<input id="<?php echo $genid?>updated-on-hidden" type="hidden" name="updatedon" value="<?php echo $event->isNew() ? '' : $event->getUpdatedOn()->getTimestamp() ?>">
-		<input id="<?php echo $genid?>merge-changes-hidden" type="hidden" name="merge-changes" value="" >
-		<input id="<?php echo $genid?>genid" type="hidden" name="genid" value="<?php echo $genid ?>" >
-		
-		<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
-	
-		<ul id="<?php echo $genid?>tab_titles">
-		
-			<li><a href="#<?php echo $genid?>time_and_duration"><?php echo lang('basic data') ?></a></li>
-			<li><a href="#<?php echo $genid?>add_more_details_div"><?php echo lang('more details') ?></a></li>
+	<div class="feng-forms">
+		<div class="coInputMainBlock edit-member">
+			<input id="<?php echo $genid?>updated-on-hidden" type="hidden" name="updatedon" value="<?php echo $event->isNew() ? '' : $event->getUpdatedOn()->getTimestamp() ?>">
+			<input id="<?php echo $genid?>merge-changes-hidden" type="hidden" name="merge-changes" value="" >
+			<input id="<?php echo $genid?>genid" type="hidden" name="genid" value="<?php echo $genid ?>" >
 			
-			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
-			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
-			<?php } ?>
-			
-			<li><a href="#<?php echo $genid?>add_event_invitation_div"><?php echo lang('event invitations') ?></a></li>
-			
-			<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
-			
-			<?php foreach ($categories as $category) {
-					if (array_var($category, 'hidden')) continue;
+			<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
+				<?php 
+					$properties_html = null;
+					Hook::fire('override_render_properties', [
+						'object' => $event,
+						'genid' => $genid,
+						'visible_by_default' => true
+					], $properties_html);
 				?>
-			<li><a href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
-			<?php } ?>
-		</ul>
 		
-		<div id="<?php echo $genid?>time_and_duration" class="form-tab">
-		
-		  <div id="<?php echo $genid ?>add_event_select_context_div">
-			<?php
-			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.redrawPeopleList("'.$genid.'");');
-			if ($event->isNew()) {
-				render_member_selectors($event->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
-			} else {
-				render_member_selectors($event->manager()->getObjectTypeId(), $genid, $event->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
-			} 
-			?>
-		  </div>
-		  
-		  
-		  <div class="dataBlock" style="clear: both;">
-			<?php echo label_tag(lang('CAL_DATE')) ?>
-			<?php
-				$tmph = array_var($event_data, 'hour') == -1 ? 0 : array_var($event_data, 'hour');
-				$tmpm = array_var($event_data, 'minute') == -1 ? 0 : array_var($event_data, 'minute');
-				$dv_start = DateTimeValueLib::make($tmph, $tmpm, 0, $month, $day, $year);
-				$event->setStart($dv_start);
-				echo pick_date_widget2('event[start_value]', $event->getStart(), $genid, 120); ?>
-		  </div>
-		  <div class="clear"></div>
-		  
-		  <div class="dataBlock">
-			<?php echo label_tag(lang('CAL_TIME')) ?>
-			<?php
-				$hr = array_var($event_data, 'hour');
-			 	$minute = array_var($event_data, 'minute');
-				$is_pm = array_var($event_data, 'pm');
-				$time_val = "$hr:" . str_pad($minute, 2, '0') . ($use_24_hours ? '' : ' '.($is_pm ? 'PM' : 'AM'));
-				echo pick_time_widget2('event[start_time]', $time_val, $genid, 130);
-			?>
-		  </div>
-		  <div class="clear"></div>
-		  
-		  <?php
-				if (!$event->isNew() && $event->getTimezoneId() != logged_user()->getUserTimezoneId()) {
-		  ?><div class="dataBlock"><?php 
-				  	echo timezone_selector_hidden($event, $genid);
-		  ?></div><?php
-				}
-		  ?>
-		  
-		  <div class="dataBlock">
-			<?php echo label_tag(lang('CAL_DURATION')) ?>
-			<div id="<?php echo $genid ?>ev_duration_div">
-				<select name="event_durationhour" size="1" onchange="document.getElementById('<?php echo $genid?>hf_dhour').value=this.options[this.selectedIndex].value;"><?php
-				for($i = 0; $i < 24; $i++) {
-					echo "<option value='$i'";
-					if(array_var($event_data, 'durationhour')== $i) echo ' selected="selected"';
-					echo ">$i</option>\n";
-				}
+				<ul id="<?php echo $genid?>tab_titles">
 				
-				?></select> <?php echo lang('CAL_HOURS') ?> <select name="event_durationmin" size="1" onchange="document.getElementById('<?php echo $genid?>hf_dmin').value=this.options[this.selectedIndex].value;"><?php
-				
-					// print out the duration minutes drop down
-					$durmin = array_var($event_data, 'durationmin');
-					for($i = 0; $i <= 59; $i = $i + 15) {
-						echo "<option value='$i'";
-						if($durmin >= $i && $i > $durmin - 15) echo ' selected="selected"';
-						echo sprintf(">%02d</option>\n", $i);
-					}
+					<li><a href="#<?php echo $genid?>time_and_duration"><?php echo lang('basic data') ?></a></li>
+					<li><a href="#<?php echo $genid?>add_more_details_div"><?php echo lang('more details') ?></a></li>					
+					
+					<?php 
+					if (is_null($properties_html)) {
+						if ($other_cp_count || config_option('use_object_properties')) {
 					?>
-				</select> 
-			</div>
-		  </div>
-		  <input type="hidden" name="event[durationhour]" id="<?php echo $genid?>hf_dhour" value="<?php echo array_var($event_data, 'durationhour') ?>" />
-		  <input type="hidden" name="event[durationmin]" id="<?php echo $genid?>hf_dmin" value="<?php echo array_var($event_data, 'durationmin') ?>" />
-		  <div class="clear"></div>
-		  
-		  <div class="dataBlock">
-			<?php echo label_tag(lang('CAL_FULL_DAY')) ?>
-			<input type="checkbox" name="event_type_id" <?php echo (array_var($event_data, 'typeofevent', 1) == 2 ? 'checked="checked"' : '');?> 
-				onchange="og.toggleDiv('<?php echo $genid?>event[start_time]'); og.toggleDiv('<?php echo $genid?>ev_duration_div'); document.getElementById('<?php echo $genid?>hf_type').value=(this.checked ? 2 : 1);" />
-			<input type="hidden" name="event[type_id]" id="<?php echo $genid?>hf_type" value="<?php echo array_var($event_data, 'typeofevent', 1) ?>" />
-		  </div>
-		  <div class="clear"></div>
-		  
-		  <div id="<?php echo $genid ?>add_event_description_div" class="dataBlock">
-		    <?php echo label_tag(lang('description')) ?>
-			<?php echo textarea_field('event[description]',array_var($event_data, 'description'), array('id' => 'descriptionFormText', 'rows' => '5', 'style' => "width:500px;"));?>
-		  </div>
-		  <div class="clear"></div>
-		  
-		  <?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
-		  
-			<div class="main-custom-properties-div"><?php
-				if ($main_cp_count) {
-					echo render_object_custom_properties($object, false, null, 'visible_by_default');
-				}
-			?></div>
-			
-		</div>
-		
-		<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
-		  <div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
-			<?php echo render_object_custom_properties($object, false, null, 'other') ?>
-			<?php echo render_add_custom_properties($object);?>
-		  </div>
-		<?php } ?>
-		
-		<div id="<?php echo $genid ?>add_more_details_div"  class="form-tab">
-		
-		  <div class="reminders-div sub-section-div" style="border-top:0px none;">
-			<h2><?php echo lang('object reminders')?></h2>
-			
-			<?php 
-				$note = '';
-				Hook::fire('show_reminder_note', null, $note);
-				echo $note;
-			?>
+						<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
+					<?php }
+					} ?>
+					
+					<li><a href="#<?php echo $genid?>add_event_invitation_div"><?php echo lang('event invitations') ?></a></li>
+					
+					<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
+					
+					<?php foreach ($categories as $category) {
+							if (array_var($category, 'hidden')) continue;
+						?>
+					<li><a href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
+					<?php } ?>
+				</ul>
+				
+				<div id="<?php echo $genid?>time_and_duration" class="form-tab">
 
-			<div id="<?php echo $genid ?>add_reminders_content">
-				<div id="<?php echo $genid ?>add_reminders_warning" class="desc" style="display:none;">
-					<?php echo lang('reminders will not apply to repeating events') ?>
-				</div>
-				<?php echo render_add_reminders($object, "start", null, null, "event");?>
-			</div>
-		  </div>
-		
-		  <div class="repeat-options-div sub-section-div">
-			<h2><?php echo lang('CAL_REPEATING_EVENT')?></h2>
-			<div id="<?php echo $genid ?>event_repeat_options_div">
-<?php 
-			$occ = array_var($event_data, 'occ'); 
-			$rsel1 = array_var($event_data, 'rsel1'); 
-			$rsel2 = array_var($event_data, 'rsel2'); 
-			$rsel3 = array_var($event_data, 'rsel3'); 
-			$rnum = array_var($event_data, 'rnum'); 
-			$rend = array_var($event_data, 'rend');
-			
-			// calculate what is visible given the repeating options
-			$hide = '';
-			$hide2 = (isset($occ) && $occ == 6)? '' : "display: none;";
-			if((!isset($occ)) OR $occ == 1 OR $occ=="6" OR $occ=="") $hide = "display: none;";
-			// print out repeating options for daily/weekly/monthly/yearly repeating.
-			if(!isset($rsel1)) $rsel1=true;
-			if(!isset($rsel2)) $rsel2="";
-			if(!isset($rsel3)) $rsel3="";
-			if(!isset($rnum) || $rsel2=='') $rnum="";
-			if(!isset($rend) || $rsel3=='') $rend="";
-			if(!isset($hide2) ) $hide2="";?>
-			
-			<table border="0" cellpadding="0" cellspacing="0">
-				<tr>
-					<td align="left" valign="top" style="padding-bottom:6px">
-						<table>
-							<tr>
-								<td align="left" valign="top" style="padding-bottom:6px">
-									<?php echo lang('CAL_REPEAT')?> 
-										<select name="event[occurance]" onChange="og.changeRepeat()">
-											<option value="1" id="today"<?php if(isset($occ) && $occ == 1) echo ' selected="selected"'?>><?php echo lang('CAL_ONLY_TODAY')?></option>
-											<option value="2" id="daily"<?php if(isset($occ) && $occ == 2) echo ' selected="selected"'?>><?php echo lang('CAL_DAILY_EVENT')?></option>
-											<option value="3" id="weekly"<?php if(isset($occ) && $occ == 3) echo ' selected="selected"'?>><?php echo lang('CAL_WEEKLY_EVENT')?></option>
-											<option value="4" id="monthly"<?php if(isset($occ) && $occ == 4) echo ' selected="selected"'?>><?php echo lang('CAL_MONTHLY_EVENT') ?></option>
-											<option value="5" id="yearly"<?php if(isset($occ) && $occ == 5) echo  ' selected="selected"'?>><?php echo lang('CAL_YEARLY_EVENT') ?></option>
-											<option value="6" id="holiday"<?php if(isset($occ) && $occ == 6)  echo ' selected="selected"'?>><?php echo lang('CAL_HOLIDAY_EVENT') ?></option>
-										</select>
-									<?php if (isset($occ) && $occ > 1 && $occ < 6){ ?>
-									<script>
-										og.changeRepeat();
-									</script>
-									<?php } ?>
-								</td>
-							</tr>
-						</table>
-					</td>
-					</tr><tr>
-					<td>
-						<div id="cal_extra2" style="width: 400px; align: center; text-align: left; <?php echo $hide ?>">
-							<div id="cal_extra1" style="<?php echo $hide ?>">
-								<?php echo lang('CAL_EVERY') ."&nbsp;". text_field('event[occurance_jump]',array_var($event_data, 'rjump', '1'), array('class' => 'title','size' => '2', 'maxlength' => '100', 'style'=>'width:25px')) ?>
-								<span id="word"></span>
-							</div>
-							<table>
-							<script type="text/javascript">
-								og.selectRepeatMode = function(mode) {
-									var id = '';
-									if (mode == 1) id = 'repeat_opt_forever';
-									else if (mode == 2) id = 'repeat_opt_times';
-									else if (mode == 3) id = 'repeat_opt_until';
-									if (id != '') {
-										el = document.getElementById('<?php echo $genid ?>'+id);
-										if (el) el.checked = true;
-									} 
-								}
-								og.viewDays = function(view) {
-									var btn = Ext.get('<?php echo $genid ?>repeat_days');
-									if(view){
-										btn.dom.style.display = 'block';
-									}else{
-										btn.dom.style.display = 'none';
+					<?php
+					if (!is_null($properties_html)) {
+						echo_custom_properties_html($properties_html);
+
+					} else {
+					?>
+					<div class="container">
+						<div class="row">
+							<div class="col">
+								<?php
+								$available_columns = $object->manager()->getColumnsAvailableInForms();
+
+								// Set context variable for fallback rendering
+								$is_hook_rendering = false;
+
+								foreach ($available_columns as $column) {									
+									$input_file = ROOT . '/application/views/event/form_inputs/' . $column . '.php';
+									if (file_exists($input_file)) {
+										echo '<div class="form-group">';
+										include $input_file;
+										echo '</div>';
 									}
 								}
-							</script>
-							
-								<tr><td colspan="2" style="vertical-align:middle; height: 22px;">
-									<?php echo radio_field('event[repeat_option]',$rsel1,array('id' => $genid.'repeat_opt_forever','value' => '1', 'onclick' => 'og.viewDays(false)')) ."&nbsp;". lang('CAL_REPEAT_FOREVER')?>
-								</td></tr>
-								<tr><td colspan="2" style="vertical-align:middle">
-									<?php echo radio_field('event[repeat_option]',$rsel2,array('id' => $genid.'repeat_opt_times','value' => '2', 'onclick' => 'og.viewDays(true)')) ."&nbsp;". lang('CAL_REPEAT');
-									echo "&nbsp;" . text_field('event[repeat_num]', $rnum, array('size' => '3', 'id' => 'repeat_num', 'maxlength' => '3', 'style'=>'width:25px', 'onchange' => 'og.selectRepeatMode(2);')) ."&nbsp;" . lang('CAL_TIMES') ?>
-								</td></tr>
-								<tr><td style="vertical-align:middle">
-									<?php echo radio_field('event[repeat_option]',$rsel3,array('id' => $genid.'repeat_opt_until','value' => '3', 'onclick' => 'og.viewDays(false)')) ."&nbsp;". lang('CAL_REPEAT_UNTIL');?>
-								</td><td style="padding-left:8px;">
-									<?php echo pick_date_widget2('event[repeat_end]', $rend, $genid, 95);?>
-								</td></tr>
-							</table>
-						</div>
-						<div id="cal_extra3" style="width: 400px; align: center; text-align: left; <?php echo $hide2 ?>'">
-							<?php
-								echo lang('CAL_REPEAT') . "&nbsp;";
-								$options = array(
-									option_tag(lang('1st'), 1, array_var($event_data, 'repeat_wnum') == 1 ? array("selected" => "selected") : null),
-									option_tag(lang('2nd'), 2, array_var($event_data, 'repeat_wnum') == 2 ? array("selected" => "selected") : null),
-									option_tag(lang('3rd'), 3, array_var($event_data, 'repeat_wnum') == 3 ? array("selected" => "selected") : null),
-									option_tag(lang('4th'), 4, array_var($event_data, 'repeat_wnum') == 4 ? array("selected" => "selected") : null),
-								);
-								echo select_box('event[repeat_wnum]', $options, array("id" => $genid."event[repeat_wnum]", "onchange" => "og.updateEventStartDate();"));
+								?>
 								
-								$options = array(
-									option_tag(lang('sunday'), 1, array_var($event_data, 'repeat_dow') == 1 ? array("selected" => "selected") : null),
-									option_tag(lang('monday'), 2, array_var($event_data, 'repeat_dow') == 2 ? array("selected" => "selected") : null),
-									option_tag(lang('tuesday'), 3, array_var($event_data, 'repeat_dow') == 3 ? array("selected" => "selected") : null),
-									option_tag(lang('wednesday'), 4, array_var($event_data, 'repeat_dow') == 4 ? array("selected" => "selected") : null),
-									option_tag(lang('thursday'), 5, array_var($event_data, 'repeat_dow') == 5 ? array("selected" => "selected") : null),
-									option_tag(lang('friday'), 6, array_var($event_data, 'repeat_dow') == 6 ? array("selected" => "selected") : null),
-									option_tag(lang('saturday'), 7, array_var($event_data, 'repeat_dow') == 7 ? array("selected" => "selected") : null),
-								);
-								echo select_box('event[repeat_dow]', $options, array("id" => $genid."event[repeat_dow]", "onchange" => "og.updateEventStartDate();"));
-								echo "&nbsp;" . lang('every') . "&nbsp;";
-								$options = array();
-								for ($i=1; $i<=12; $i++) {
-									$options[] = option_tag("$i", $i, array_var($event_data, 'repeat_mjump') == $i ? array("selected" => "selected") : null);
+								<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+								
+								<div class="form-group">
+								<?php
+								if ($main_cp_count) {
+									echo render_object_custom_properties($object, false, null, 'visible_by_default');
 								}
-								echo select_box('event[repeat_mjump]', $options, array("id" => $genid."event[repeat_mjump]"));
-								echo "&nbsp;" . lang('months');
-							?>
+								?>
+								</div>
+							</div>
+							<div class="col">
+								<div id="<?php echo $genid ?>add_form_select_context_div">
+									<?php
+									$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().');');
+									if ($event->isNew()) {
+										render_member_selectors($event->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
+									} else {
+										render_member_selectors($event->manager()->getObjectTypeId(), $genid, $event->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
+									} 
+									?>
+								</div>
+								<div class="clear"></div>
+							</div>
 						</div>
-					</td>
-				</tr>
-                                <tr id="<?php echo $genid ?>repeat_days" style="display: none;">
-                                    <td>
-                                        <table>
-                                            <tr>
-                                                <td>
-                                                    <input class="checkbox" type="checkbox" value="1" name="event[repeat_saturdays]"/>
-                                                    <?php echo lang('repeat on saturdays')?>                                                
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <input class="checkbox" type="checkbox" value="1" name="event[repeat_sundays]"/>
-                                                    <?php echo lang('repeat on sundays')?>                                                
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <input class="checkbox" type="checkbox" value="1" name="event[working_days]"/>
-                                                    <?php echo lang('repeat working days')?>                                                
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-			</table>
-		</div>
-	  </div>
-	  
-	  <div class="linked-objects-div sub-section-div">
-		<h2><?php echo lang('linked objects')?></h2>
-		<div id="<?php echo $genid ?>add_linked_objects_div">
-		  <?php echo render_object_link_form($object) ?>
-  		</div>
-	  </div>
-	</div>
-
-	
-	
-	<div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
-		<?php $subscriber_ids = array();
-			if (!$object->isNew()) {
-				$subscriber_ids = $object->getSubscriberIds();
-			} else {
-				$subscriber_ids[] = logged_user()->getId();
-			}
-		?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-		<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
-		<div id="<?php echo $genid ?>add_subscribers_content"><?php
-				foreach ($subscriber_ids as $subid) {
-					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
-				} 
-			?></div>
-	</div>
-	
-
-	<div id="<?php echo $genid ?>add_event_invitation_div" class="og-add-subscribers form-tab">
-	
-		<div class="dataBlock">
-			<p><?php echo lang('event invitations desc') ?></p>
-			<p><?php $event_send_invitations = (user_config_option("event_send_invitations") ) ? true : false;
-					 $event_subscribe_invited = (user_config_option("event_subscribe_invited") ) ? true : false;
-					 echo checkbox_field('event[send_notification]', array_var($event_data, 'send_notification', $event_send_invitations), array('id' => $genid . 'eventFormSendNotification')) ?>
-			<label for="<?php echo $genid ?>eventFormSendNotification" class="checkbox"><?php echo lang('send new event notification') ?></label></p>
-			
-			<div class="clear"></div>
-			<p><?php echo checkbox_field('event[subscribe_invited]', array_var($event_data, 'subscribe_invited', $event_subscribe_invited), array('id' => $genid . 'eventFormSubscribeInvited')) ?>
-			<label for="<?php echo $genid ?>eventFormSubscribeInvited" class="checkbox"><?php echo lang('subscribe invited users') ?></label></p>
-		</div>
-		<div class="clear"></div>
-		
-		<div id="emailNotification">
-		<?php // ComboBox for Assistance confirmation 
-			if (!$event->isNew()) {
-				$event_invs = $event->getInvitations();
-				if (isset($event_invs[$filter_user])) {
-					$event_inv_state = $event_invs[$filter_user]->getInvitationState();
-				} else {
-					$event_inv_state = -1;
-				}
+					</div>
+					<?php } // endif properties_html ?>				
+				</div>
 				
-				if ($event_inv_state != -1) {
-					$options = array(
-						option_tag(lang('yes'), 1, ($event_inv_state == 1)?array('selected' => 'selected'):null),
-						option_tag(lang('no'), 2, ($event_inv_state == 2)?array('selected' => 'selected'):null),
-						option_tag(lang('maybe'), 3, ($event_inv_state == 3)?array('selected' => 'selected'):null)
-					);
-					if ($event_inv_state == 0) {
-						$options[] = option_tag(lang('decide later'), 0, ($event_inv_state == 0) ? array('selected' => 'selected'):null);
-					}
-					?>
-					<table><tr><td style="padding-right: 6px;"><label for="eventFormComboAttendance" class="combobox"><?php echo lang('confirm attendance') ?></label></td><td>
-					<?php echo select_box('event[confirmAttendance]', $options, array('id' => 'eventFormComboAttendance'));?>
-					</td></tr></table>	
-			<?php	} //if			
-			} // if ?>
-		</div>
-		<div class="clear"></div>
+				<?php 
+				if (is_null($properties_html)) {
+					if ($other_cp_count || config_option('use_object_properties')) { ?>
+				<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+					<?php echo render_object_custom_properties($object, false, null, 'other') ?>
+					<?php echo render_add_custom_properties($object);?>
+				</div>
+				<?php }
+				} ?>
+				
+				<div id="<?php echo $genid ?>add_more_details_div"  class="form-tab">
+				
+					<div class="reminders-div sub-section-div" style="border-top:0px none;">
+						<h2><?php echo lang('object reminders')?></h2>
+						
+						<?php 
+							$note = '';
+							Hook::fire('show_reminder_note', null, $note);
+							echo $note;
+						?>
+
+						<div id="<?php echo $genid ?>add_reminders_content">
+							<div id="<?php echo $genid ?>add_reminders_warning" class="desc" style="display:none;">
+								<?php echo lang('reminders will not apply to repeating events') ?>
+							</div>
+							<?php echo render_add_reminders($object, "start", null, null, "event");?>
+						</div>
+					</div>
+				
+					<div class="repeat-options-div sub-section-div">
+						<h2><?php echo lang('CAL_REPEATING_EVENT')?></h2>
+						<div id="<?php echo $genid ?>event_repeat_options_div" class="repeat">
+							<?php 
+							$occ = array_var($event_data, 'occ'); 
+							$rsel1 = array_var($event_data, 'rsel1'); 
+							$rsel2 = array_var($event_data, 'rsel2'); 
+							$rsel3 = array_var($event_data, 'rsel3'); 
+							$rnum = array_var($event_data, 'rnum'); 
+							$rend = array_var($event_data, 'rend');
+							
+							// calculate what is visible given the repeating options
+							$hide = '';
+							$hide2 = (isset($occ) && $occ == 6)? '' : "display: none;";
+							if((!isset($occ)) OR $occ == 1 OR $occ=="6" OR $occ=="") $hide = "display: none;";
+							// print out repeating options for daily/weekly/monthly/yearly repeating.
+							if(!isset($rsel1)) $rsel1=true;
+							if(!isset($rsel2)) $rsel2="";
+							if(!isset($rsel3)) $rsel3="";
+							if(!isset($rnum) || $rsel2=='') $rnum="";
+							if(!isset($rend) || $rsel3=='') $rend="";
+							if(!isset($hide2) ) $hide2="";?>
+							
+							<div class="d-flex align-items-center mb-3 gap-2">
+								<?php echo lang('CAL_REPEAT')?> 
+								<select name="event[occurance]" onChange="og.changeRepeat()">
+									<option value="1" id="today"<?php if(isset($occ) && $occ == 1) echo ' selected="selected"'?>><?php echo lang('CAL_ONLY_TODAY')?></option>
+									<option value="2" id="daily"<?php if(isset($occ) && $occ == 2) echo ' selected="selected"'?>><?php echo lang('CAL_DAILY_EVENT')?></option>
+									<option value="3" id="weekly"<?php if(isset($occ) && $occ == 3) echo ' selected="selected"'?>><?php echo lang('CAL_WEEKLY_EVENT')?></option>
+									<option value="4" id="monthly"<?php if(isset($occ) && $occ == 4) echo ' selected="selected"'?>><?php echo lang('CAL_MONTHLY_EVENT') ?></option>
+									<option value="5" id="yearly"<?php if(isset($occ) && $occ == 5) echo  ' selected="selected"'?>><?php echo lang('CAL_YEARLY_EVENT') ?></option>
+									<option value="6" id="holiday"<?php if(isset($occ) && $occ == 6)  echo ' selected="selected"'?>><?php echo lang('CAL_HOLIDAY_EVENT') ?></option>
+								</select>
+								<?php if (isset($occ) && $occ > 1 && $occ < 6){ ?>
+								<script>
+									og.changeRepeat();
+								</script>
+								<?php } ?>
+							</div>
+							<div id="cal_extra2" class="mb-3" style="<?php echo $hide ?>">
+								<div id="cal_extra1" class="d-flex align-items-center gap-5" style="<?php echo $hide ?>">
+									<div class="d-flex align-items-center gap-2">
+										<?php echo lang('CAL_EVERY') . text_field('event[occurance_jump]',array_var($event_data, 'rjump', '1'), array('class' => 'title','size' => '2', 'maxlength' => '100')) ?>
+										<span id="word"></span>
+									</div>
+									<script type="text/javascript">
+										og.selectRepeatMode = function(mode) {
+											var id = '';
+											if (mode == 1) id = 'repeat_opt_forever';
+											else if (mode == 2) id = 'repeat_opt_times';
+											else if (mode == 3) id = 'repeat_opt_until';
+											if (id != '') {
+												el = document.getElementById('<?php echo $genid ?>'+id);
+												if (el) el.checked = true;
+											} 
+										}
+										og.viewDays = function(view) {
+											var btn = Ext.get('<?php echo $genid ?>repeat_days');
+											if(view){
+												btn.dom.style.display = 'block';
+											}else{
+												btn.dom.style.display = 'none';
+											}
+										}
+									</script>
+
+									<div class="d-flex align-items-center gap-2">
+										<?php 
+										echo radio_field('event[repeat_option]',$rsel1,array('id' => $genid.'repeat_opt_forever','value' => '1', 'onclick' => 'og.viewDays(false)')) . lang('CAL_REPEAT_FOREVER');
+										?>
+									</div>
+									<div class="d-flex align-items-center gap-2">
+										<?php 
+										echo radio_field('event[repeat_option]',$rsel2,array('id' => $genid.'repeat_opt_times','value' => '2', 'onclick' => 'og.viewDays(true)')) . lang('CAL_REPEAT');
+										echo text_field('event[repeat_num]', $rnum, array('size' => '3', 'id' => 'repeat_num', 'maxlength' => '3', 'onchange' => 'og.selectRepeatMode(2);')) . lang('CAL_TIMES');
+										?>
+									</div>
+									<div class="d-flex align-items-center gap-2">
+										<?php 
+											echo radio_field('event[repeat_option]',$rsel3,array('id' => $genid.'repeat_opt_until','value' => '3', 'onclick' => 'og.viewDays(false)')) . lang('CAL_REPEAT_UNTIL');
+											echo pick_date_widget2('event[repeat_end]', $rend, $genid, 95);
+										?>
+									</div>
+								</div>
+							</div>
+							<div id="cal_extra3" class="mb-3" style="<?php echo $hide2 ?>'">
+								<div class="d-flex align-items-center flex-wrap gap-2">
+									<?php
+									echo lang('CAL_REPEAT');
+									$options = array(
+										option_tag(lang('1st'), 1, array_var($event_data, 'repeat_wnum') == 1 ? array("selected" => "selected") : null),
+										option_tag(lang('2nd'), 2, array_var($event_data, 'repeat_wnum') == 2 ? array("selected" => "selected") : null),
+										option_tag(lang('3rd'), 3, array_var($event_data, 'repeat_wnum') == 3 ? array("selected" => "selected") : null),
+										option_tag(lang('4th'), 4, array_var($event_data, 'repeat_wnum') == 4 ? array("selected" => "selected") : null),
+									);
+									echo select_box('event[repeat_wnum]', $options, array("id" => $genid."event[repeat_wnum]", "onchange" => "og.updateEventStartDate();"));
+									
+									$options = array(
+										option_tag(lang('sunday'), 1, array_var($event_data, 'repeat_dow') == 1 ? array("selected" => "selected") : null),
+										option_tag(lang('monday'), 2, array_var($event_data, 'repeat_dow') == 2 ? array("selected" => "selected") : null),
+										option_tag(lang('tuesday'), 3, array_var($event_data, 'repeat_dow') == 3 ? array("selected" => "selected") : null),
+										option_tag(lang('wednesday'), 4, array_var($event_data, 'repeat_dow') == 4 ? array("selected" => "selected") : null),
+										option_tag(lang('thursday'), 5, array_var($event_data, 'repeat_dow') == 5 ? array("selected" => "selected") : null),
+										option_tag(lang('friday'), 6, array_var($event_data, 'repeat_dow') == 6 ? array("selected" => "selected") : null),
+										option_tag(lang('saturday'), 7, array_var($event_data, 'repeat_dow') == 7 ? array("selected" => "selected") : null),
+									);
+									echo select_box('event[repeat_dow]', $options, array("id" => $genid."event[repeat_dow]", "onchange" => "og.updateEventStartDate();"));
+									echo lang('every');
+									$options = array();
+									for ($i=1; $i<=12; $i++) {
+										$options[] = option_tag("$i", $i, array_var($event_data, 'repeat_mjump') == $i ? array("selected" => "selected") : null);
+									}
+									echo select_box('event[repeat_mjump]', $options, array("id" => $genid."event[repeat_mjump]"));
+									echo lang('months');
+									?>
+								</div>
+							</div>
+							<div id="<?php echo $genid ?>repeat_days" class="align-items-center" style="display: none;">
+								<div class="d-flex align-items-center gap-3">
+									<input class="checkbox" type="checkbox" value="1" name="event[repeat_saturdays]"/>
+									<?php echo lang('repeat on saturdays')?>                                                
+								</div>
+								<div class="d-flex align-items-center gap-3">
+									<input class="checkbox" type="checkbox" value="1" name="event[repeat_sundays]"/>
+									<?php echo lang('repeat on sundays')?>                                                
+								</div>
+								<div class="d-flex align-items-center gap-3">
+									<input class="checkbox" type="checkbox" value="1" name="event[working_days]"/>
+									<?php echo lang('repeat working days')?>                                                
+								</div>
+							</div>
+						</div>
+					</div>
+			
+					<div class="linked-objects-div sub-section-div">
+						<h2><?php echo lang('linked objects')?></h2>
+						<div id="<?php echo $genid ?>add_linked_objects_div">
+						<?php echo render_object_link_form($object) ?>
+						</div>
+					</div>
+				</div>
+
+				<div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
+					<div id="<?php echo $genid ?>add_subscribers_content">
+						<?php 
+						$subscriber_ids = array();
+						if (!$object->isNew()) {
+							$subscriber_ids = $object->getSubscriberIds();
+						} else {
+							$subscriber_ids[] = logged_user()->getId();
+						}
+						echo render_add_subscribers($object, $genid);
+						?>
+					</div>
+					<input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
+					<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
+				</div>
 		
-	</div>	
-	
+
+				<div id="<?php echo $genid ?>add_event_invitation_div" class="og-add-subscribers form-tab">
+				
+					
+
+					<div class="dataBlock invited-people-container">
+						<div class="property-group-header"><?php echo lang('select people to invite to this event') ?></div>
+						
+						<div class="desc"><?php echo lang('select people to invite to this event help') ?></div>
+
+						<div id="<?php echo $genid ?>invited_people_selector" class="invited-people-selector"></div>
+					</div>
 
 
 
-	<?php foreach ($categories as $category) { ?>
-	<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
-		<?php echo $category['content'] ?>
-	</div>
-	<?php } ?>
+					<div class="dataBlock">
+						
+						<p>
+							<?php 
+								$event_send_invitations = (user_config_option("event_send_invitations") ) ? true : false;
+								$event_type = ObjectTypes::instance()->findByName('event');
+								$disabled_notification_types = config_option("disable_notifications_for_object_type");
+								if (!is_array($disabled_notification_types)) $disabled_notification_types = array();
+								$event_notifications_disabled = $event_type instanceof ObjectType && in_array($event_type->getId(), $disabled_notification_types);
+								$send_notification_checked = $event_notifications_disabled ? false : array_var($event_data, 'send_notification', $event_send_invitations);
+								$send_notification_attributes = array('id' => $genid . 'eventFormSendNotification');
+								if ($event_notifications_disabled) {
+									$send_notification_attributes['disabled'] = 'disabled';
+								}
+								echo checkbox_field('event[send_notification]', 
+									$send_notification_checked,
+									$send_notification_attributes
+								);
+							?>
+							<label for="<?php echo $genid ?>eventFormSendNotification" class="checkbox">
+								<?php echo lang('send new event notification') ?>
+							</label>
+						</p>
+						<?php if ($event_notifications_disabled) { ?>
+							<div class="desc"><?php echo lang('event notifications disabled for object type') ?></div>
+						<?php } ?>
+						
+						<div class="clear"></div>
 
-	<input type="hidden" name="cal_origday" value="<?php echo $day?>">
-	<input type="hidden" name="cal_origmonth" value="<?php echo $month?>">
-	<input type="hidden" name="cal_origyear" value="<?php echo $year?>">
+					</div>
+					<div class="clear"></div>
+
+				</div>
+		
 
 
-	</div>
-	<?php if (!array_var($_REQUEST, 'modal')) {
-		echo submit_button($object->getSubmitButtonFormTitle(),'e',array('onclick' => (!$event->isNew() ? "javascript:if(!og.confirmEditRepEvent('".$event->getId()."',$is_repetitive)) return false;" : ''))); 
-	}?>
-  </div>
+				<?php foreach ($categories as $category) { ?>
+				<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
+					<?php echo $category['content'] ?>
+				</div>
+				<?php } ?>
+
+				<input type="hidden" name="cal_origday" value="<?php echo $day?>">
+				<input type="hidden" name="cal_origmonth" value="<?php echo $month?>">
+				<input type="hidden" name="cal_origyear" value="<?php echo $year?>">
+			</div>
+			<?php if (!array_var($_REQUEST, 'modal')) {
+				echo submit_button($object->getSubmitButtonFormTitle(),'e',array('onclick' => (!$event->isNew() ? "javascript:if(!og.confirmEditRepEvent('".$event->getId()."',$is_repetitive)) return false;" : ''))); 
+			}?>
+  		</div>
+  	</div>
+</div>
 </form>
 
 <script>
 var is_new_event = <?php echo $event->isNew() ? '1' : '0'?>;
-og.eventInvitationsUserFilter = '<?php echo $filter_user ?>';
-
-og.drawInnerHtml = function(companies) {
-	var htmlStr = '';
-	var script = "";
-	var genid = Ext.id();
-	htmlStr += '<div id="' + genid + 'invite_companies"></div>';
-	htmlStr += '&nbsp;';
-	script += 'var div = Ext.getDom(genid + \'invite_companies\');';
-	script += 'div.invite_companies = {};';
-	script += 'var cos = div.invite_companies;';
-	htmlStr += '<div class="company-users">';
-	if (companies != null) {
-		var calendar_user_filter = <?php echo user_config_option('calendar user filter'); ?>;
-		for (i = 0; i < companies.length; i++) {
-			comp_id = companies[i].object_id;
-			comp_name = companies[i].name;
-			comp_img = companies[i].logo_url;			
-			script += 'cos.company_' + comp_id + ' = {id:\'' + genid + 'inviteCompany' + comp_id + '\', checkbox_id : \'inviteCompany' + comp_id + '\',users : []};';
-			
-			htmlStr += '<div onclick="App.modules.addMessageForm.emailNotifyClickCompany('+comp_id+',\'' + genid + '\',\'invite_companies\', \'invitation\')" class="company-name container-div" onmouseover="og.rollOver(this)" onmouseout="og.rollOut(this,true ,true)" >';
-			
-			htmlStr += '<div class="contact-picture-container" style="float:left;padding-top:3px;">' +
-				(comp_id > 0 ? '<img class="commentUserAvatar" src="'+comp_img+'" alt="'+og.clean(comp_name)+'" />' : '') +'</div>' +
-				'<label style="float:left;padding-left:5px;" for="'+comp_id+'">' +
-				'<span class="ico-company link-ico">'+og.clean(comp_name)+'</span>' + '</label><div class="clear"></div>';
-			
-			htmlStr += '<input type="checkbox" style="display:none;" name="event[invite_company_'+comp_id+']" id="' + genid + 'inviteCompany'+comp_id+'" ></input>';
-			
-			htmlStr += '</div>';
-			
-			htmlStr += '<div class="company-users" style="padding-left:10px;">';
-			for (j = 0; j < companies[i].users.length; j++) {
-				usr = companies[i].users[j];
-				var cls = (usr.invited || (is_new_event && usr.id == calendar_user_filter) ? 'checked-user' : 'user-name');
-				htmlStr += '<div id="div' + genid + 'inviteUser'+usr.id+'" class="container-div '+cls+'" style="margin-left:5px;" onmouseover="og.rollOver(this)" onmouseout="og.rollOut(this,false ,true)" onclick="og.checkUser(this)">'
-
-				htmlStr += '<input id="'+genid+'inviteUser'+usr.id+'" type="hidden" name="event[invite_user_'+usr.id+']" value="'+(usr.invited || (is_new_event && usr.id == calendar_user_filter)?'1':'0')+'" />';
-
-				htmlStr += '<div class="contact-picture-container" style="float:left;padding-top:3px;">' +
-					'<img class="commentUserAvatar" src="'+ og.allUsers[usr.id].img_url +'" alt="'+og.clean(usr.name)+'" /></div>';
-				
-				htmlStr += '<label for="' + genid + 'notifyUser' + usr.id + '" style="float:left; width: 125px; min-width:0px; overflow:hidden; padding-left: 5px; padding-right: 5px;">' +
-					'<span class="ico-user link-ico">'+og.clean(usr.name)+'</span><br>' +
-					'<span style="color:#888888;font-size:90%;font-weight:normal;">'+ usr.mail+ '</span></label>';
-				
-				script += 'cos.company_' + comp_id + '.users.push({ id:'+usr.id+', checkbox_id : \'inviteUser' + usr.id + '\'});';
-				htmlStr += '</div>';
-			}
-			htmlStr += '</div>';
-		}
-		htmlStr += '</div>';
-	}
-	Ext.lib.Event.onAvailable(genid + 'invite_companies', function() {
-		eval(script);
-	});
-	return htmlStr;
-};
-
-og.drawUserList = function(success, data) {
-	var companies = data.companies;
-
-	var inv_div = Ext.get('<?php echo $genid ?>inv_companies_div');
-	if (inv_div != null) inv_div.remove();
-	inv_div = Ext.get('emailNotification');
-	
-	if (inv_div != null) {
-		inv_div.insertHtml('beforeEnd', '<div id="<?php echo $genid ?>inv_companies_div">' + og.drawInnerHtml(companies) + '</div>');	
-		if (Ext.isIE) inv_div.update(Ext.getDom("emailNotification").innerHTML, true);
-	}
-};
-
-og.redrawPeopleList = function(genid){
-	var dimension_members_json = Ext.util.JSON.encode(member_selector[genid].sel_context);
-	og.openLink(og.getUrl('event', 'allowed_users_view_events', {context:dimension_members_json, user:og.eventInvitationsUserFilter, evid:<?php echo $event->isNew() ? 0 : $event->getId()?>}), {callback:og.drawUserList});
-};
-
 
 Ext.getCmp(genid + 'event[start_value]Cmp').on({
 	change: og.updateRepeatHParams
@@ -710,6 +592,24 @@ function selectEventRelated(val){
 
 $(function() {
 	$("#<?php echo $genid?>tabs").tabs();
-	og.redrawPeopleList('<?php echo $genid?>');
+
+	// Render contact selector for event invitations
+	og.renderContactSelector({
+		genid: '<?php echo $genid ?>',
+		id: genid + 'event_invited_contact_ids',
+		name: 'event[invited_contact_ids]',
+		render_to: "invited_people_selector",
+		listWidth: 285,
+		width: 285,
+		filters: {},
+		cp_type: 'contact', // needed for quick add link
+		selected: '<?php echo implode(',', $invited_contact_ids) ?>',
+		selected_name: '',
+		empty_text: '<?php echo lang ('select contact').'...' ?>',
+		show_only_name: false,
+		is_multiple: true
+	});
+
+		
 });
 </script>

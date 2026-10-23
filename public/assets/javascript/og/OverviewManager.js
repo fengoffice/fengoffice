@@ -415,9 +415,9 @@ og.OverviewManager = function() {
 		}) ,
 		
 		del: new Ext.Action({
-			text: lang('move to trash'),
+			text: '<i class="icon-trash-2"></i> ' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
@@ -433,9 +433,9 @@ og.OverviewManager = function() {
 			scope: this
 		}),
 		archive: new Ext.Action({
-			text: lang('archive'),
+			text: '<i class="icon-archive"></i> ' + lang('archive'),
             tooltip: lang('archive selected object'),
-            iconCls: 'ico-archive-obj',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_archive_config = parseInt(og.preferences['enableArchiveConfirmation']);
@@ -451,9 +451,9 @@ og.OverviewManager = function() {
 			scope: this
 		}),
 		more: new Ext.Action({
-			text: lang('more'),
+			text: '<i class="icon-circle-ellipsis"></i> ' + lang('more') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
             tooltip: lang('more actions on first selected object'),
-            iconCls: 'ico-more',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			menu: {items: [
 				moreActions.download,
@@ -462,7 +462,8 @@ og.OverviewManager = function() {
 			]}
 		}),
 		markAs: new Ext.Action({
-			text: lang('mark as'),
+			iconCls: 'btn btn-sm',
+			text: '<i class="icon-tag"></i>' + lang('mark as') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
 			tooltip: lang('mark as desc'),
 			menu: [
 				markactions.markAsRead,
@@ -480,9 +481,9 @@ og.OverviewManager = function() {
 		}),
 		showAsDashboard: new Ext.Action({
 			id: "view-as-dashboard",
-			text: lang('view as dashboard'),
+			text: '<i class="icon-layout-dashboard"></i> ' + lang('view as dashboard'),
 			tooltip: lang('view as dashboard'),
-			iconCls: 'ico-view-as-dashboard',
+			iconCls: 'btn btn-sm',
 			handler: function() {
 				og.switchToDashboard();
 			},
@@ -551,7 +552,7 @@ og.OverviewManager = function() {
 			emptyMsg: lang("no objects to display")
 		}),
 		viewConfig: {
-			forceFit: true
+			forceFit: false
 		},
 		sm: sm,
 		tbar: toolbar,

@@ -34,6 +34,35 @@
   	min-width: 550px;
 }
 
+.feng-forms .coInputHeader {
+    padding:0px;
+	margin-left: 16px;
+	background: #FFF;
+	color:#666;
+	display: inline-block;
+}
+
+.feng-forms .coInputTitle {
+font-family: 'Montserrat', sans-serif;
+font-weight: 700;
+font-style: normal;
+font-size: 24px;
+line-height: 29px;
+letter-spacing: 0%;
+color: #111120;
+}
+
+.feng-forms .name-title {
+	font-family: 'Open Sans', Arial, sans-serif;
+font-weight: 400;
+font-style: italic;
+font-size: 16px;
+line-height: 24px;
+letter-spacing: 0%;
+color: #3F5056;
+
+}
+
 .coInputName, .coInputButtons {
 	float: left;
 }
@@ -100,18 +129,21 @@
 }
 
 .coInputMainBlock label {
-	float: left;
-	min-width: 150px;
+	/* float: left; */
+	min-width: 200px;
 	padding-right: 20px;
 	flex-basis: 0;
 }
+#reporting-panel .coInputMainBlock label {
+    float: left !important;
+}
 
 .coInputMainBlock .report-conditions label {
-	float: none;
+	float: none !important;
 }
 
 .coInputMainBlock label.yes_no {
-	float: none;
+	float: none !important;
 }
 
 .coInputMainBlock .permissions-container label {
@@ -129,7 +161,8 @@
 form.add-task {
 	width: 1250px;
 }
-.task-data .left-section, .task-data .right-section {
+.task-data .left-section, .task-data .right-section,
+.objects-import-form .coInputMainBlock label {
 	float: left;
 }
 .task-data td.left-section-td {
@@ -312,3 +345,4 @@ table.color-selector td .color-selector-sample {
     float: left;
     margin-top: 2px;
 }
+

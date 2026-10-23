@@ -15,8 +15,25 @@ if ($task_status == 'invoiced') {
 $object = $task;
 $genid = gen_id();
 
+if (!isset($can_manage_repetitive_properties_of_tasks)) {
+    $can_manage_repetitive_properties_of_tasks = logged_user() instanceof Contact
+        ? SystemPermissions::userHasSystemPermission(logged_user(), 'can_manage_repetitive_properties_of_tasks')
+        : 0;
+}
+
 if ($task->isNew()) {
     $params = array("copyId" => array_var($task_data, 'copyId'));
+    if (array_var($task_data, 'copyId', 0) > 0) {
+        // When copying a task, $_REQUEST['id'] holds the id of the task being copied,
+        // not a parent task id. Use the parent already resolved onto $task_data instead
+        // (copy_task() sets it from the source task's own parent, 0 if it has none).
+        $parent_id_req = (int) array_var($task_data, 'parent_id', 0);
+    } else {
+        $parent_id_req = (int) array_var($_REQUEST, 'parent_id', array_var($_REQUEST, 'id', 0));
+    }
+    if ($parent_id_req > 0) {
+        $params['id'] = $parent_id_req;
+    }
     if (isset($modal) && $modal) {
         $params['ajax'] = 1;
     }
@@ -32,7 +49,11 @@ if (array_var($_REQUEST, 'modal')) {
     } else {
         $callback_fn = "ogTasks.drawTaskRowAfterEdit";
     }
-    $on_submit = "og.setDescription(); og.checkRepeatOptionEntries(); og.checkPercentCompleted(); og.submit_modal_form('" . $genid . "submit-edit-form', $callback_fn); return false;";
+    // Wrapped in try/catch: these pre-submit helpers can throw (e.g. CKEditor not
+    // ready yet right after the modal opens), which would otherwise abort this inline
+    // handler before og.submit_modal_form()/return false run, silently falling through
+    // to a native form submit and making "Save changes" appear to do nothing.
+    $on_submit = "try { og.setDescription(); og.checkRepeatOptionEntries(); og.checkPercentCompleted(); } catch(e) {} og.submit_modal_form('" . $genid . "submit-edit-form', $callback_fn); return false;";
 } else {
     $on_submit = "return App.modules.addTaskForm.checkSubmitAddTask('" . $genid . "','" . $task->manager()->getObjectTypeId() . "') && og.setDescription() && og.checkRepeatOptionEntries() && og.checkPercentCompleted() " .
         ((array_var($task_data, 'multi_assignment') && Plugins::instance()->isActivePlugin('crpm')) ? "&& typeof('og.TaskMultiAssignment')=='function' ? og.TaskMultiAssignment() : true" : "") . ";";
@@ -52,6 +73,20 @@ $categories = array();
 Hook::fire('object_edit_categories', $task, $categories);
 Hook::fire('object_edit_categories_extra_data', array('object' => $task, 'genid' => $genid), $categories);
 
+// The financials tab is what defines the og.udpate_estimated_price_* functions, and it is only rendered
+// when the user has billing or cost permissions. Derive the flag from the rendered tabs instead of
+// re-evaluating the config option, otherwise the JS calls those functions when they do not exist.
+$financials_tab_rendered = false;
+foreach ($categories as $category) {
+    if (array_var($category, 'id') == 'task_financials_tab') {
+        $financials_tab_rendered = true;
+        break;
+    }
+}
+
+$main_properties = array();
+Hook::fire('render_member_properties', array('object' => $object, 'visible_by_default' => true, 'genid' => $genid), $main_properties);
+
 $loc = user_config_option('localization');
 if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 ?>
@@ -59,18 +94,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     og.genid = '<?php echo $genid ?>';
     og.config.multi_assignment = '<?php echo config_option('multi_assignment') && Plugins::instance()->isActivePlugin('crpm') ? '1' : '0' ?>';
 </script>
-<style>
-    .task .coInputMainBlock .dimension-selector-container label {
-        /* margin-right: 10px; */
-        min-width: 150px;
-        flex-basis: 0;
-    }
 
-    .task .custom-properties label {
-        max-width: 190px;
-        min-width: 190px;
-    }
-</style>
 <form id="<?php echo $genid ?>submit-edit-form" class="add-task" action="<?php echo $form_url ?>" method="post" onsubmit="<?php echo $on_submit ?>">
 
     <div class="task">
@@ -100,19 +124,21 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                     $task_name = array_var($task_data, 'name', $task->getName());
                     Hook::fire("render_object_name_prefix", array('object' => $task), $task_name);
 
-                    echo text_field('task[name]', $task_name, array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "tabindex" => "1", "size" => "255", "maxlength" => "255", 'placeholder' => lang('task')));
+                    echo text_field('task[name]', $task_name, array('class' => 'title', 'id' => 'ogTasksPanelATTitle', "size" => "255", "maxlength" => "255", 'placeholder' => lang('task')));
                     ?>
                 </div>
 
                 <div class="coInputButtons">
-                    <?php echo submit_button($task->isNew() ? (array_var($task_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'), 's', array('style' => 'margin-top:0px;margin-left:10px', 'tabindex' => '2')) ?>
+                    <?php echo submit_button($task->isNew() ? (array_var($task_data, 'is_template', false) ? lang('save template') : $object->getSubmitButtonFormTitle()) : lang('save changes'), 's', array('style' => 'margin-top:0px;margin-left:10px')) ?>
                 </div>
                 <div class="clear"></div>
             </div>
 
         </div>
 
-        <div class="coInputMainBlock">
+			<div class="feng-forms">
+			<div class="coInputMainBlock  edit-member">
+		
             <input id="<?php echo $genid ?>updated-on-hidden" type="hidden" name="updatedon" value="<?php echo $task->isNew() ? '' : $task->getUpdatedOn()->getTimestamp() ?>">
             <input id="<?php echo $genid ?>merge-changes-hidden" type="hidden" name="merge-changes" value="">
             <input id="<?php echo $genid ?>genid" type="hidden" name="genid" value="<?php echo $genid ?>">
@@ -147,8 +173,24 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                     <?php } ?>
                 </ul>
 
-
                 <div id="<?php echo $genid ?>add_task_basic_div" class="task-data form-tab">
+					<?php 
+                        $can_notify_assigned = user_config_option('can notify from quick add');
+						$properties_html = null;
+						Hook::fire('override_render_properties', [
+							'object' => $task,
+							'genid' => $genid,
+							'visible_by_default' => true
+						], $properties_html);
+
+						if (!is_null($properties_html)) {
+
+							echo '<div class="main-custom-properties-div">';
+							echo_custom_properties_html($properties_html);
+							echo '</div>';
+
+						} else {
+					?>
                     <table>
                         <tr>
                             <td class="left-section-td">
@@ -159,7 +201,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                         <table>
                                             <tr>
                                                 <td>
-                                                    <label><?php echo lang('assign to') ?>:</label>
+                                                    <label><?php echo lang('assigned to') ?>:</label>
                                                 </td>
                                                 <td>
                                                     <input type="hidden" id="<?php echo $genid ?>taskFormAssignedTo" name="task[assigned_to_contact_id]" value="<?php echo array_var($task_data, 'assigned_to_contact_id') ?>"></input>
@@ -170,12 +212,16 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                         <div class="clear"></div>
                                     </div>
 
-                                    <?php
-                                    $can_notify_assigned = user_config_option('can notify from quick add');
+                                    <?php                                    
                                     $is_assigned = array_var($task_data, 'assigned_to_contact_id') != 0;
                                     $assigned_to_me = array_var($task_data, 'assigned_to_contact_id') == logged_user()->getId();
                                     $show_notif_checkbox_div = $can_notify_assigned && $task->isNew() && $is_assigned && !$assigned_to_me;
                                     $check_notif_checkbox = $show_notif_checkbox_div;
+
+                                    // Hide the checkbox if the 'notifications_manager' plugin is active
+                                    if(Plugins::instance()->isActivePlugin('notifications_manager')) {
+                                        $show_notif_checkbox_div = false;
+                                    }
 
                                     ?>
 
@@ -239,9 +285,9 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                             $hours = ($totalTime - $minutes) / 60;
                                             ?>
                                             <?php echo lang("hours") ?>:&nbsp;
-                                            <?php echo text_field("task[time_estimate_hours]", $hours, array('id' => 'ogTasksPanelATHours', 'style' => 'width:30px', 'tabindex' => '85')) ?>
+                                            <?php echo text_field("task[time_estimate_hours]", $hours, array('id' => 'ogTasksPanelATHours', 'style' => 'width:30px')) ?>
                                             <span style="margin-left:10px"><?php echo lang("minutes") ?>:&nbsp;</span>
-                                            <select name="task[time_estimate_minutes]" size="1" id="ogTasksPanelATMinutes" tabindex="90">
+                                            <select name="task[time_estimate_minutes]" size="1" id="ogTasksPanelATMinutes">
                                                 <?php
                                                 $minutes = ($totalTime % 60);
                                                 $minuteOptions = array(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55);
@@ -267,13 +313,13 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
                                     <div class="dataBlock">
                                         <?php echo label_tag(lang('task priority')) ?>
-                                        <?php echo select_task_priority('task[priority]', array_var($task_data, 'priority', ProjectTasks::PRIORITY_NORMAL),  array('tabindex' => '95')) ?>
+                                        <?php echo select_task_priority('task[priority]', array_var($task_data, 'priority', ProjectTasks::PRIORITY_NORMAL),  array()) ?>
                                         <div class="clear"></div>
                                     </div>
                                     <?php if (config_option('use_task_percent_completed')) { ?>
                                         <div class="dataBlock">
                                             <?php echo label_tag(lang('manual percent completed')); ?>
-                                            <?php echo checkbox_field('task[is_manual_percent_completed]', array_var($task_data, 'is_manual_percent_completed', false), array('id' => $genid . '_is_manual_percent_completed', 'onchange' => 'og.updateIsManualPercentCompleted();', 'tabindex' => '100')); ?>
+                                            <?php echo checkbox_field('task[is_manual_percent_completed]', array_var($task_data, 'is_manual_percent_completed', false), array('id' => $genid . '_is_manual_percent_completed', 'onchange' => 'og.updateIsManualPercentCompleted();')); ?>
                                         </div>
                                         <?php
                                         $show_percent_completed = array_var($task_data, 'is_manual_percent_completed', false) ? '' : 'display:none;';
@@ -294,7 +340,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                                 <div id="<?php echo $genid ?>not_required_custom_properties_container">
                                                     <div id="<?php echo $genid ?>not_required_custom_properties" class="main-custom-properties-div">
                                                         <?php
-                                                        if ($cp_count <= 10) {
+                                                        if ($cp_count <= 10 && is_null($properties_html)) {
                                                             echo render_object_custom_properties($task, false, null, 'visible_by_default');
                                                         } ?>
                                                     </div>
@@ -326,7 +372,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                     <?php if (config_option('use_milestones')) : ?>
                                         <div class="dataBlock">
                                             <label><?php echo lang('milestone') ?>:</label>
-                                            <div style="float:left;" id="<?php $genid ?>add_task_more_div_milestone_combo">
+                                            <div style="float:left;" id="<?php echo $genid ?>add_task_more_div_milestone_combo">
                                                 <?php echo select_milestone('task[milestone_id]', null, array_var($task_data, 'milestone_id'), array('id' => $genid . 'taskListFormMilestone')) ?>
                                             </div>
                                             <div class="clear"></div>
@@ -349,17 +395,17 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                         <?php if (isset($task_data['parent_id']) && $task_data['parent_id'] == 0) { ?>
 
                                             <span id="no-task-selected<?php echo $genid ?>"><?php echo lang('none') ?></span>
-                                            <a style="margin-left: 10px" tabindex="999" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
+                                            <a style="margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
 
                                             <?php } else {
                                             $parentTask = ProjectTasks::instance()->findById(array_var($task_data, 'parent_id'));
                                             if ($parentTask instanceof ProjectTask) { ?>
                                                 <span style="display: none;" id="no-task-selected<?php echo $genid ?>"><?php echo lang('none') ?></span>
-                                                <a tabindex="999" style="display: none;margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
+                                                <a style="display: none;margin-left: 10px" id="<?php echo $genid ?>parent_before" href="#" onclick="og.pickParentTask(this)"><?php echo lang('set parent task') ?></a>
                                                 <div class="og-add-template-object">
                                                     <input type="hidden" name="task[parent_id]" value="<?php echo $parentTask->getId() ?>" />
-                                                    <div class="parent-task-name action-ico ico-task"> <?php echo $parentTask->getTitle() ?> </div>
-                                                    <a tabindex="999" style="float:left" href="#" onclick="og.removeParentTask(this.parentNode)" class="remove" style="display: block;"><?php echo lang('remove') ?> </a>
+                                                    <div class="parent-task-name action-ico ico-task"> <?php echo clean($parentTask->getTitle()) ?> </div>
+                                                    <a style="float:left" href="#" onclick="og.removeParentTask(this.parentNode)" class="remove" style="display: block;"><?php echo lang('remove') ?> </a>
                                                 </div>
                                         <?php }
                                         } ?>
@@ -368,7 +414,6 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
                                     <?php if (config_option('use tasks dependencies')) { ?>
                                         <div class="dataBlock">
-                                            <?php echo label_tag(lang('previous tasks')) ?><br />
                                             <?php
                                             if (!$task->isNew())
                                                 $previous_tasks = ProjectTaskDependencies::instance()->findAll(array('conditions' => 'task_id = ' . $task->getId()));
@@ -393,10 +438,18 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                                         foreach ($previous_tasks as $task_dep) {
                                                             $task_prev = ProjectTasks::instance()->findById($task_dep->getPreviousTaskId());
                                                         ?>
-                                                            <div class="og-add-template-object previous-task">
+                                                            <div class="object-badge">
                                                                 <input type="hidden" name="task[previous]['<?php echo $k ?>']" value="<?php echo $task_prev->getId() ?>" />
-                                                                <div class="previous-task-name action-ico ico-task"><?php echo clean($task_prev->getTitle()) ?></div>
-                                                                <a href="#" tabindex="999" onclick="og.removePreviousTask(this.parentNode, '<?php echo $genid ?>', '<?php echo $k ?>')" class="removeDiv link-ico ico-delete" style="display: block;"><?php echo lang('remove') ?></a>
+                                                                <i class="icon-list-todo"></i>
+                                                                <span id="<?php echo $genid?>task_name" class="name"><?php echo clean($task_prev->getTitle()) ?></span>
+                                                                
+                                                                <a id="<?php echo $genid?>remove_task" 
+                                                                href="#" 
+                                                                onclick="og.removePreviousTask(this.parentNode, '<?php echo $genid ?>', '<?php echo $k ?>')" 
+                                                                class="object-remove-btn" 
+                                                                title="<?php echo lang('remove') ?>">
+                                                                    <i class="icon-circle-x"></i>
+                                                                </a>
                                                             </div>
                                                             <script>
                                                                 var obj = {
@@ -409,10 +462,9 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                                         }
                                                     } ?>
                                                 </div>
-                                                <a class="coViewAction ico-add" tabindex="999" id="<?php echo $genid ?>previous_before" href="#" onclick="og.pickPreviousTask(this, '<?php echo $genid ?>', '<?php echo $task->getId() ?>')"><?php echo lang('add previous task') ?></a>
-
+                                                <br />
+                                                <a class="btn btn-primary-50 btn-sm" id="<?php echo $genid ?>previous_before" href="#" onclick="og.pickPreviousTask(this, '<?php echo $genid ?>', '<?php echo $task->getId() ?>')"><i class="icon-circle-plus"></i> <?php echo lang('add previous task') ?></a>
                                             </div>
-
                                         </div>
                                         <div class="clear"></div>
                                     <?php } ?>
@@ -425,6 +477,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
                     <?php Hook::fire('draw_additional_task_html', $genid, $task); ?>
 
+					<?php } // endif ?>
+
                 </div>
 
                 <div id="<?php echo $genid ?>add_task_desc_div" class="task-data form-tab">
@@ -434,7 +488,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                         if (array_var($task_data, 'type_content') == "text") {
                             $ckEditorContent = purify_html(nl2br(array_var($task_data, 'text')));
                         } else {
-                            $ckEditorContent = purify_html(nl2br(array_var($task_data, 'text')));
+                            $ckEditorContent = persist_wysiwyg_inline_images(array_var($task_data, 'text'));
                         }
                     ?>
 
@@ -471,7 +525,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                 ],
                                 on: {
                                     instanceReady: function(ev) {
-                                        editor.resetDirty();
+                                        ev.editor.resetDirty();
+                                        og.bindCkEditorImagePasteAndDrop(ev.editor);
                                     }
                                 },
                                 fillEmptyBlocks: false,
@@ -714,8 +769,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                                 <div id="<?php echo $genid ?>subtasks" class="subtasks-container">
                                 </div>
                                 <div class="add-subtask-container">
-                                    <a href="#" tabindex="990" class="link-ico ico-add" onclick="ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>')"><?php echo lang('add sub task') ?></a>
-                                    <a href="#" tabindex="990" class="link-ico ico-undo" onclick="ogTasks.undoRemoveSubtasks('<?php echo $genid ?>')" style="display:none;margin-left:20px;" id="<?php echo $genid ?>undo_remove"><?php echo lang('undo remove subtasks') ?></a>
+                                    <a href="#" class="btn btn-primary-50 btn-sm" onclick="ogTasks.drawAddSubTaskInputs('<?php echo $genid ?>')"><i class="icon-circle-plus"></i><?php echo lang('add sub task') ?></a>
+                                    <a href="#" class="link-ico ico-undo" onclick="ogTasks.undoRemoveSubtasks('<?php echo $genid ?>')" style="display:none;margin-left:20px;" id="<?php echo $genid ?>undo_remove"><?php echo lang('undo remove subtasks') ?></a>
                                 </div>
 
                             </div>
@@ -729,7 +784,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                     <div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
                         <div id="<?php echo $genid ?>not_required_custom_properties_container">
                             <div id="<?php echo $genid ?>not_required_custom_properties">
-                                <?php echo render_object_custom_properties($task, false, null, 'others') ?>
+                                <?php if (is_null($properties_html)) echo render_object_custom_properties($task, false, null, 'others') ?>
                             </div>
                         </div>
                         <?php echo render_add_custom_properties($task); ?>
@@ -745,11 +800,29 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                         <div class="clear"></div>
                     </div>
 
-                    <?php $subscriber_ids = array();
-                    if (!$task->isNew()) {
-                        $subscriber_ids = $task->getSubscriberIds();
+                    <?php
+                    if (!function_exists('get_task_form_subscriber_ids')) {
+                    	$helper_file = Env::getHelperPath('task_subscribers');
+                    	if (is_file($helper_file)) {
+                    		include_once $helper_file;
+                    	}
+                    }
+                    if (function_exists('get_task_form_subscriber_ids')) {
+                    	$subscriber_ids = get_task_form_subscriber_ids($task);
+                    	$default_subscriber_config = get_task_default_subscriber_config();
                     } else {
-                        $subscriber_ids[] = logged_user()->getId();
+                    	// Fallback when helper is missing (incomplete upgrade/deploy)
+                    	$subscriber_ids = array();
+                    	if (!$task->isNew()) {
+                    		$subscriber_ids = $task->getSubscriberIds();
+                    	} else if (logged_user() instanceof Contact) {
+                    		$subscriber_ids[] = logged_user()->getId();
+                    	}
+                    	$default_subscriber_config = array(
+                    		'assigned_to' => true,
+                    		'created_by' => true,
+                    		'edited_by' => true,
+                    	);
                     }
                     ?><input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',', $subscriber_ids) ?>" />
                     <input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',', $subscriber_ids) ?>" />
@@ -784,6 +857,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
             }
             ?>
         </div>
+		</div>
     </div>
 </form>
 
@@ -792,6 +866,46 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     og.add_task_genid = '<?php echo $genid ?>';
 
     var is_new_task = <?php echo $task->isNew() ? '1' : '0' ?>;
+    og.config = og.config || {};
+    og.config.default_subscriber_assigned_to = <?php echo $default_subscriber_config['assigned_to'] ? '1' : '0' ?>;
+    og.config.default_subscriber_created_by = <?php echo $default_subscriber_config['created_by'] ? '1' : '0' ?>;
+    og.task_form_auto_assigned_subscriber = og.task_form_auto_assigned_subscriber || {};
+
+    if (typeof og.buildTaskFormSubscriberUids !== 'function') {
+    og.buildTaskFormSubscriberUids = function(genid, assigned_to) {
+        var checked = {};
+        var uids_str = App.modules.addMessageForm.getCheckedUsers(genid);
+        if (uids_str) {
+            uids_str.replace(/\s/g, '').split(',').forEach(function(id) {
+                id = parseInt(id, 10);
+                if (id > 0) checked[id] = true;
+            });
+        }
+
+        assigned_to = parseInt(assigned_to, 10) || 0;
+        var prev_auto = og.task_form_auto_assigned_subscriber[genid] || 0;
+        var ids = {};
+
+        Object.keys(checked).forEach(function(id) {
+            id = parseInt(id, 10);
+            if (id > 0 && id !== prev_auto) {
+                ids[id] = true;
+            }
+        });
+
+        if (og.config.default_subscriber_assigned_to) {
+            if (assigned_to > 0) {
+                ids[assigned_to] = true;
+            }
+            og.task_form_auto_assigned_subscriber[genid] = assigned_to;
+        } else {
+            og.task_form_auto_assigned_subscriber[genid] = 0;
+        }
+
+        return Object.keys(ids).join(',');
+    };
+    }
+
     var original_assigned_user = '<?php echo array_var($task_data, 'assigned_to_contact_id', 0) ?>';
     var can_notify_assigned = <?php echo $can_notify_assigned ? '1' : '0' ?>;
     var start = true;
@@ -801,13 +915,17 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     var use_is_billable_value_in_tasks = <?php echo config_option('use_is_billable_value_in_tasks') ? '1' : '0'; ?>;
     var hour_type_active = <?php echo Plugins::instance()->isActivePlugin('hour_types') ? '1' : '0'; ?>;
     var advanced_billing_active = <?php echo Plugins::instance()->isActivePlugin('advanced_billing') ? '1' : '0'; ?>;
-    var show_financials_tab = false;
-    if (advanced_billing_active) {
-        show_financials_tab = <?php echo config_option('show_financial_tab_in_task_form') ? '1' : '0'; ?>;
-    }
+    var show_financials_tab = <?php echo $financials_tab_rendered ? '1' : '0'; ?>;
 
 
     og.drawAssignedToSelectBox = function(companies, only_me, groups) {
+		if ($('#<?php echo $genid ?>assignto_container_div').length == 0) {
+			return;
+		}
+        // keep the data of the combo to be able to build it again if its container is re-rendered
+        ogTasks.assignedToComboData = ogTasks.assignedToComboData || {};
+        ogTasks.assignedToComboData['<?php echo $genid ?>'] = {companies: companies, only_me: only_me, groups: groups};
+
         ogTasks.usersStore['<?php echo $genid ?>'] = ogTasks.buildAssignedToComboStore(companies, only_me, groups);
         var assignCombo = new Ext.form.ComboBox({
             renderTo: '<?php echo $genid ?>assignto_container_div',
@@ -820,18 +938,95 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
             cls: 'assigned-to-combo',
             triggerAction: 'all',
             selectOnFocus: true,
-            width: 244,
-            tabIndex: '20',
-            listWidth: 244,
+            editable: true,
+            enableKeyEvents: true,
+            //width: 244,
+            //tabIndex: '20',
+            //listWidth: 244,
             listClass: 'assigned-to-combo-list',
             valueField: 'value',
-            emptyText: (lang('select user or group') + '...'),
+            emptyText: (original_assigned_user && original_assigned_user != '0' ? '' : lang('select user or group') + '...'),
             valueNotFoundText: ''
         });
         assignCombo.on('select', og.onAssignToComboSelect);
 
+        // Add focus event to enable filtering without clearing the value
+        // assignCombo.on('focus', function(combo) {
+        //     combo.doQuery('', true);
+        // });
+        // Disable focus-based filtering to align with updated combo behavior
+        
+        assignCombo.el.on('click', function(){
+            if(!assignCombo.isExpanded()){
+                assignCombo.expand();
+            }
+        });
+
+        assignCombo.el.on('keydown', function(e){
+            if (e.getKey() == 32 || e.getKey() == 40) {
+                if (!assignCombo.isExpanded()) {
+                    assignCombo.expand();
+                }
+            }
+        });
+
+        assignCombo.on('blur', function(combo) {
+            var val = document.getElementById('<?php echo $genid ?>taskFormAssignedTo').value;
+            combo.setValue(val);
+            var record = combo.findRecord(combo.valueField, val);
+            if(record) {
+                var text = record.data[combo.displayField];
+                var plain_text = og.removeTags(text);
+                combo.setRawValue(plain_text);
+            }
+        });
+
+        // Prevent Enter key from saving the form
+        assignCombo.on('keydown', function(combo, e) {
+            if (e.getKey() === e.ENTER) {
+                e.stopEvent();
+                return false;
+            }
+        });
+
         assignedto = document.getElementById('<?php echo $genid ?>taskFormAssignedTo');
 
+    }
+
+    /**
+     * Build the assigned to combo again after its container has been re-rendered, for example when
+     * the properties of the form are reloaded because the task type changed. The ext component is
+     * destroyed together with the html it was rendered into, so without this the selector is lost.
+     */
+    og.redrawAssignedToSelectBox = function(genid, value) {
+        if (genid && genid != '<?php echo $genid ?>') {
+            return;
+        }
+        var combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
+        if (combo) {
+            combo.destroy();
+        }
+        // the re-rendered input holds the value stored in the task, so when the caller read the
+        // value that was on screen before re-rendering, that one wins and the input is realigned
+        var assigned_to_input = $('#<?php echo $genid ?>taskFormAssignedTo');
+        if (typeof value != 'undefined' && value !== null && value !== '') {
+            assigned_to_input.val(value);
+        }
+        original_assigned_user = assigned_to_input.val() || 0;
+
+        var data = ogTasks.assignedToComboData && ogTasks.assignedToComboData['<?php echo $genid ?>'];
+        og.drawAssignedToSelectBox(
+            data ? data.companies : [],
+            data ? data.only_me : false,
+            data ? data.groups : []
+        );
+
+        // the display field of the store carries html, show it as plain text like the form does
+        combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
+        var record = combo ? combo.findRecord(combo.valueField, original_assigned_user) : null;
+        if (record) {
+            combo.setRawValue(og.removeTags(record.data[combo.displayField]));
+        }
     }
 
     og.onAssignToComboSelect = function(combo, selected, idx) {
@@ -849,7 +1044,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
         ogTasks.applyAssignedToSubtasksInTaskForm('<?php echo $genid ?>');
 
-        var dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
+        var dimension_members_json = Ext.util.JSON.encode(member_selector.get_selected_context('<?php echo $genid ?>'));
         og.render_tasks_form_subscribers(dimension_members_json);
 
         // more processing...
@@ -865,6 +1060,11 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     }
 
     og.enableDisableNotifyAssignedCheckbox = function(assigned_user, genid) {
+        // Ignore if notifications manager plugin is active
+        var notification_manager_plugin_active = <?php echo Plugins::instance()->isActivePlugin('notifications_manager') ? '1' : '0' ?>;
+        if (notification_manager_plugin_active) {
+            return;
+        }
 
         var original_assigned = $("#" + genid + "originalAssignedUser").val();
 
@@ -927,6 +1127,11 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                         og.drawAssignedToSelectBox(data.companies, only_me, data.groups);
                     }
                     ogTasks.usersStore['<?php echo $genid ?>'] = ogTasks.buildAssignedToComboStore(data.companies, only_me, data.groups);
+                    // the users of the combo are usually loaded into the existing store, keep them
+                    // to be able to build the combo again if its container is re-rendered
+                    ogTasks.assignedToComboData = ogTasks.assignedToComboData || {};
+                    ogTasks.assignedToComboData['<?php echo $genid ?>'] = {companies: data.companies, only_me: only_me, groups: data.groups};
+
                     // update subtasks assigned_to selector
                     var count = $(".subtask-inputs-container.<?php echo $genid ?>").length;
                     for (var i = 0; i < count; i++) {
@@ -1004,10 +1209,14 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
             if (repeatNum.checked) {
                 var repeatUntilInput = document.getElementById("<?php echo $genid ?>task[repeat_end]Cmp");
-                repeatUntilInput.value = null;
+                if (repeatUntilInput) {
+                    repeatUntilInput.value = null;
+                }
             } else if (repeatUntil.checked) {
                 var repeatNumInput = document.getElementById("<?php echo $genid ?>repeat_num");
-                repeatNumInput.value = '';
+                if (repeatNumInput) {
+                    repeatNumInput.value = '';
+                }
             }
         }
     }
@@ -1026,13 +1235,13 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
     og.reload_task_form_selectors = function(is_new, render_add_subscribers) {
         render_add_subscribers = (typeof render_add_subscribers == "undefined") ? true : render_add_subscribers;
         if (!is_new) {
-            var dimension_members_json = Ext.util.JSON.encode(member_selector['<?php echo $genid ?>'].sel_context);
+            var dimension_members_json = Ext.util.JSON.encode(member_selector.get_selected_context('<?php echo $genid ?>'));
         } else {
             var dimension_members_json = og.contextManager.plainContext();
         }
         var milestone_el = document.getElementById('<?php echo $genid ?>taskListFormMilestone');
         var actual_value = milestone_el ? milestone_el.value : 0;
-        var milestone_div = Ext.get('<?php $genid ?>add_task_more_div_milestone_combo');
+        var milestone_div = Ext.get('<?php echo $genid ?>add_task_more_div_milestone_combo');
         if (milestone_div) {
             milestone_div.load({
                 url: og.getUrl('milestone', 'render_add_milestone', {
@@ -1117,18 +1326,20 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
     og.render_tasks_form_subscribers = function(dimension_members_json) {
         var combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
-        if (combo /*&& combo.getValue()!=''*/ ) {
+        var assigned_to = 0;
+        if (combo) {
             assigned_to = combo.getValue();
-        } else assigned_to = 0;
+        }
 
-        var uids = App.modules.addMessageForm.getCheckedUsers('<?php echo $genid ?>');
+        var uids = og.buildTaskFormSubscriberUids('<?php echo $genid ?>', assigned_to);
         Ext.get('<?php echo $genid ?>add_subscribers_content').load({
             url: og.getUrl('object', 'render_add_subscribers', {
                 context: dimension_members_json,
                 users: uids,
                 genid: '<?php echo $genid ?>',
                 assigned_to: assigned_to,
-                otype: '<?php echo $task->manager()->getObjectTypeId() ?>'
+                otype: '<?php echo $task->manager()->getObjectTypeId() ?>',
+                is_new: is_new_task
             }),
             scripts: true
         });
@@ -1202,6 +1413,14 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
     og.redrawUserLists(task_members_json);
 
+    if (og.config.default_subscriber_assigned_to) {
+        var init_combo = Ext.getCmp('<?php echo $genid ?>taskFormAssignedToCombo');
+        var init_assigned = init_combo ? (parseInt(init_combo.getValue(), 10) || 0) : (parseInt(original_assigned_user, 10) || 0);
+        og.task_form_auto_assigned_subscriber['<?php echo $genid ?>'] = init_assigned;
+    }
+	
+	og.render_tasks_form_subscribers(task_members_json);
+
     function selectRelated(val) {
         $("#<?php echo $genid ?>type_related").val(val);
     }
@@ -1228,7 +1447,9 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
             }
         }, before, {
             types: ['task'],
-            selected_type: 'task'
+            selected_type: 'task',
+			ignore_context: false,
+			context: og.projects ? og.getMembersToFilterObjectPicker('<?php echo $genid?>', 'task') : null,
         });
     };
 
@@ -1237,11 +1458,13 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
         var parent = before.parentNode;
         var count = parent.getElementsByTagName('input').length;
         var div = document.createElement('div');
-        div.className = "og-add-template-object " + (count % 2 ? " odd" : "");
+        div.className = "selected-object-wrapper og-add-template-object " + (count % 2 ? " odd" : "");
         div.innerHTML =
             '<input type="hidden" name="task[parent_id]" value="' + obj.object_id + '" />' +
-            '<div class="parent-task-name action-ico ico-' + obj.type + '">' + og.clean(obj.name) + '</div>' +
-            '<a href="#" onclick="og.removeParentTask(this.parentNode)" class="removeDiv link-ico ico-delete" style="display: block;">' + lang('remove') + '</div>';
+            '<div class="object-badge">' +
+                '<i class="icon-list-todo"></i><span class="name">' + og.clean(obj.name) + '</span>' +
+                '<a href="#" onclick="og.removeParentTask(this.parentNode.parentNode); return false;" class="object-remove-btn" title="' + lang('remove') + '"><i class="icon-circle-x"></i></a>' +
+            '</div>';
         bef = document.getElementById('<?php echo $genid ?>parent_before');
         label = document.getElementById('no-task-selected<?php echo $genid ?>');
         if (label) label.style.display = 'none';
@@ -1261,7 +1484,7 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
         if (parent) parent.removeChild(div);
         bef = document.getElementById('<?php echo $genid ?>parent_before');
         label = document.getElementById('no-task-selected<?php echo $genid ?>');
-        if (bef) bef.style.display = 'inline';
+        if (bef) bef.style.display = 'inline-flex';
         if (label) label.style.display = 'inline';
         if (show_financials_tab) {
             og.udpate_restrictions_when_the_task_is_removed();
@@ -1283,6 +1506,14 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 
 
     $(document).ready(function() {
+        // Prevent Enter key from submitting the form
+        $('#<?php echo $genid ?>submit-edit-form').on('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.type !== 'textarea' && e.target.tagName !== 'BUTTON' && !$(e.target).hasClass('submit')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
         if ($("#<?php echo $genid ?>view_related").val()) {
             <?php if ($task->isCompleted()) { ?>
                 this.dialog = new og.TaskPopUp('task_complete', '');
@@ -1343,7 +1574,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
             var render_cps_params = {
                 id: '<?php echo $task->getId() ?>',
                 ot_id: <?php echo $task->getObjectTypeId() ?>,
-                visibility: 'visible_by_default'
+                visibility: 'visible_by_default'<?php if (array_var($task_data, 'parent_id', 0) > 0) { ?>,
+                parent_id: <?php echo (int) array_var($task_data, 'parent_id') ?><?php } ?>
             };
             if (og.more_params_for_render_cps_params) {
                 for (var x = 0; x < og.more_params_for_render_cps_params.length; x++) {
@@ -1355,6 +1587,8 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
                 callback: function(success, data) {
                     $('#<?php echo $genid ?>not_required_custom_properties').html(data.html);
                     $("#modal-forms-container").scrollTop(0);
+                    // the properties arrived after the modal was positioned, make sure it still fits
+                    og.refit_modal_form();
                 }
             });
         <?php } ?>
@@ -1367,16 +1601,16 @@ if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
 		var listenerId = og.eventManager.addListener('after member_selector init', function(params) {
 			let genid = '<?php echo $genid ?>';
 			if (params && params.genid == genid) {
-				if (member_selector[genid] && member_selector[genid].sel_context) {
-					// update the variable with the current selected members json string
-					og.task_form_current_dimension_members_json = Ext.util.JSON.encode(member_selector[genid].sel_context);
-				}
+				// update the variable with the current selected members json string
+				og.task_form_current_dimension_members_json = Ext.util.JSON.encode(member_selector.get_selected_context(genid));
 			}
 			// remove the listener, no need anymore
 			og.eventManager.removeListener(listenerId);
 		});
 
-        $("#ogTasksPanelATTitle").focus();
+        // Use setTimeout to ensure focus happens after other initializations
+        setTimeout(function() {
+            $("#ogTasksPanelATTitle").focus();
+        }, 200);
     });
-    $("#ogTasksPanelATTitle").focus();
 </script>

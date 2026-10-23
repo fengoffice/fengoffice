@@ -11,8 +11,12 @@
   		private static $permission_cache = array();
   		private static $permission_group_ids_cache = array();
   	
-  		static function userHasSystemPermission(Contact $user, $system_permission){
-  			if($user instanceof Contact && $user->isAdministrator()) return true;
+  		static function userHasSystemPermission($user, $system_permission){
+  			// System/cron processes run with full permissions — no user restrictions apply.
+  			if (SystemContext::isActive()) return true;
+
+  			if (!($user instanceof Contact)) return false;
+  			if($user->isAdministrator()) return true;
 					
   			if (array_var(self::$permission_cache, $user->getId())) {
   				if (array_key_exists($system_permission, self::$permission_cache[$user->getId()])) {

@@ -17,17 +17,16 @@
 					if (count($allowed_members) > 0 && !in_array($selected_member->getId(), $allowed_members)) continue;
 					$dimension_has_selection = true;
 			?>
-					<div class="selected-member-div <?php echo $alt_cls?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
-						<div class="completePath"></div>
-						<div class="selected-member-actions" <?php echo $is_ie ? 'style="display:inline;margin-left:40px;float:none;"' : ''?>>
-							<a href="#" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"><?php echo lang("remove")?></a>
-						</div>	
-					</div>	
+					<div class="selected-member-div og-wsname-color-<?php echo $selected_member->getColor() . ' ' . $alt_cls; ?>" id="<?php echo $genid?>selected-member<?php echo $selected_member->getId()?>">
+						<span class="completePath"></span>
+						<span class="selected-member-actions">
+							<a href="#" tabindex="-1" class="coViewAction ico-delete" title="<?php echo lang('remove relation')?>" onclick="member_selector.remove_relation(<?php echo $dimension_id?>,'<?php echo $genid?>', <?php echo $selected_member->getId()?>)"></a>
+						</span>
+					</div>
 			<?php	$alt_cls = $alt_cls == "" ? "alt-row" : "";
 					$sel_mem_ids[] = $selected_member->getId();
-				endforeach; 
+				endforeach;
 			?>
-				<div class="separator"></div>
 			
 			<?php endif;?>
 	</div>	

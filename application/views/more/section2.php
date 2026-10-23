@@ -50,9 +50,11 @@ $right_links[] = array(
 */
 Hook::fire('render_help_and_support_links', null, $right_links);
 
+$wiki_url = getDocumentationWikiUrl();
+
 $right_links[] = array(
 	'ico' => 'ico-large-help',
-	'url' => 'http://wiki.fengoffice.com/',
+	'url' => $wiki_url,
 	'name' => lang('more help'),
 	'target' => '_blank',
 );

@@ -44,7 +44,9 @@ function strpos_utf($haystack, $needle, $offset = 0) {
 function detect_encoding($string, $encoding_list = null, $strict = false) {
 	if (function_exists('mb_detect_encoding')) {
 		if ($encoding_list == null) $encoding_list = mb_detect_order();
-		return mb_detect_encoding($string, $encoding_list, $strict);
+		$encoding = mb_detect_encoding($string, $encoding_list, $strict);
+		if (!$encoding) $encoding = 'UTF-8';
+		return $encoding;
 	} else {
 		return 'UTF-8';
 	}

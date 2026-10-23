@@ -169,6 +169,7 @@
 	'open weblink' => 'Abrir enlace web',
 	'report as spam' => 'Reportar como Spam',
 	'not spam' => 'No es Spam',
+	'trust sender' => 'Confiar en remitente',
 	'mark as unread' => 'Marcar como no leído',
 	'show' => 'Mostrar',
 	'activate' => 'Activar',

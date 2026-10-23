@@ -263,9 +263,9 @@ og.TrashCan = function() {
 
 	actions = {
 		restore: new Ext.Action({
-			text: lang('restore'),
+			text: '<i class="icon-undo-2"></i>' + lang('restore'),
             tooltip: lang('restore selected objects'),
-            iconCls: 'ico-restore',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				if (confirm(lang("confirm restore objects"))) {
@@ -279,9 +279,9 @@ og.TrashCan = function() {
 			scope: this
 		}),
 		deletePermanently: new Ext.Action({
-			text: lang('delete'),
+			text: '<i class="icon-trash-2"></i>' + lang('delete'),
             tooltip: lang('delete selected objects permanently'),
-            iconCls: 'ico-delete',
+            iconCls: 'btn btn-sm',
             disabled: true,
 			handler: function() {
 				if (confirm(lang('confirm delete objects permanently'))) {
@@ -304,9 +304,9 @@ og.TrashCan = function() {
 			scope: this
 		}),
 		emptycan: new Ext.Action({
-			text: lang('empty trash can'),
+			text: '<i class="icon-trash-2"></i>' + lang('empty trash can'),
             tooltip: lang('empty trash can desc'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
 			disabled: false,
 			handler: function() {
 				if (confirm(lang("confirm delete objects permanently"))) {
@@ -380,7 +380,7 @@ og.TrashCan = function() {
 			emptyMsg: lang("no objects to display")
 		}),
 		viewConfig: {
-			forceFit: true
+			forceFit: false
 		},
 		sm: sm,
 		tbar: tbar,

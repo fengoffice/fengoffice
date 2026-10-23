@@ -86,6 +86,7 @@
 	'footer copy with homepage' => '© {0} by <a class="internalLink" href="{1}">{2}</a>. All rights reserved.',
 	'footer copy without homepage' => '© {0} by {1}. All rights reserved',
 	'footer powered' => '<a target="_blank" href="{0}">{1}</a>で動作中',
+	'powered by' => 'Powered by',
 	'all documents' => 'すべてのドキュメント',
 	'created by me' => '私が作成',
 	'by project' => 'ワークスペース順',

@@ -2,8 +2,7 @@
 	require_javascript('og/modules/addMessageForm.js'); 
 	$genid = gen_id();
 	$object = $message;
-	$loc = user_config_option('localization');
-	if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
+
 	$categories = array();
 	Hook::fire('object_edit_categories', $object, $categories);
 	
@@ -19,208 +18,170 @@
 ?>
 <form onsubmit="<?php echo $on_submit?>" class="add-message" id="<?php echo $genid ?>submit-edit-form" style='height:100%;background-color:white' action="<?php echo $message->isNew() ? get_url('message', 'add') : $message->getEditUrl() ?>" method="post" enctype="multipart/form-data" >
 <div class="message">
-<div class="coInputHeader">
+	<div class="coInputHeader">
 
-  <div class="coInputHeaderUpperRow">
-	<div class="coInputTitle">
-			
-		<?php echo $object->getAddEditFormTitle(); ?>
+	<div class="coInputHeaderUpperRow">
+		<div class="coInputTitle">
+				
+			<?php echo $object->getAddEditFormTitle(); ?>
+		</div>
 	</div>
-  </div>
 
-  <div>
-	<div class="coInputName">
-	<?php echo text_field('message[name]', array_var($message_data, 'name'), 
-		array('id' => $genid . 'messageFormTitle', 'class' => 'title', 'placeholder' => lang('type name here'))) ?>
+	<div>
+		<div class="coInputName">
+		<?php echo text_field('message[name]', array_var($message_data, 'name'), 
+			array('id' => $genid . 'messageFormTitle', 'class' => 'title', 'placeholder' => lang('type name here'))) ?>
+		</div>
+			
+		<div class="coInputButtons">
+			<?php echo submit_button($object->getSubmitButtonFormTitle(),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
+		</div>
+		<div class="clear"></div>
 	</div>
-		
-	<div class="coInputButtons">
-		<?php echo submit_button($object->getSubmitButtonFormTitle(),'s',array('style'=>'margin-top:0px;margin-left:10px')) ?>
 	</div>
-	<div class="clear"></div>
-  </div>
-</div>
 
-<div class="coInputMainBlock">
+	<div class="feng-forms">
+		<div class="coInputMainBlock edit-member">
 	
-	<input id="<?php echo $genid?>merge-changes-hidden" type="hidden" name="merge-changes" value="">
-	<input id="<?php echo $genid?>genid" type="hidden" name="genid" value="<?php echo $genid ?>">
-	<input id="<?php echo $genid?>updated-on-hidden" type="hidden" name="updatedon" value="<?php echo !$message->isNew() ? $message->getUpdatedOn()->getTimestamp() : '' ?>">
-	
-	<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
-	
-		<ul id="<?php echo $genid?>tab_titles">
-		
-			<li><a href="#<?php echo $genid?>add_message_text"><?php echo lang('details') ?></a></li>
-			<li><a href="#<?php echo $genid?>add_message_select_context_div"><?php echo lang('related to') ?></a></li>
+			<input id="<?php echo $genid?>merge-changes-hidden" type="hidden" name="merge-changes" value="">
+			<input id="<?php echo $genid?>genid" type="hidden" name="genid" value="<?php echo $genid ?>">
+			<input id="<?php echo $genid?>updated-on-hidden" type="hidden" name="updatedon" value="<?php echo !$message->isNew() ? $message->getUpdatedOn()->getTimestamp() : '' ?>">
 			
-			<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
-			<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
-			<?php } ?>
-			
-			<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
-			
-			<?php if($object->isNew() || $object->canLinkObject(logged_user())) { ?>
-			<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
-			<?php } ?>
-			
-			<?php foreach ($categories as $category) {
-					if (array_var($category, 'hidden')) continue;
+			<div id="<?php echo $genid?>tabs" class="edit-form-tabs">
+				<?php 
+					$properties_html = null;
+					Hook::fire('override_render_properties', [
+						'object' => $message,
+						'genid' => $genid,
+						'visible_by_default' => true
+					], $properties_html);
 				?>
-			<li><a href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
-			<?php } ?>
-		</ul>
-	
-		<div id="<?php echo $genid ?>add_message_select_context_div" class="form-tab">
-			<div class="context-selector-container form-tab">
-		<?php
-			$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
-			if ($message->isNew()) {
-				render_member_selectors($message->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
-			} else {
-				render_member_selectors($message->manager()->getObjectTypeId(), $genid, $message->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
-			} 
-		?>
-			</div>
 			
-			<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
-			
-			<div class="main-custom-properties-div"><?php
-				if ($main_cp_count) {
-					echo render_object_custom_properties($object, false, null, 'visible_by_default');
-				}
-			?></div>
-		</div>
-		
-		<div id="<?php echo $genid ?>add_message_text" class="editor-container form-tab">
-		
-		<?php
-			if(config_option("wysiwyg_messages")){
-				if($message->isNew()) {
-					$ckEditorContent = '';
-				} else {
-					if(array_var($message_data, 'type_content') == "text"){
-						$ckEditorContent = nl2br(htmlspecialchars(array_var($message_data, 'text')));
-					}else{
-						$ckEditorContent = purify_html(nl2br(array_var($message_data, 'text')));
-					}
-				}
-			?>
-	        <div>
-	            <div id="<?php echo $genid ?>ckcontainer" style="height: 400px">
-	                <textarea cols="80" id="<?php echo $genid ?>ckeditor" name="message[text]" rows="10"><?php echo clean($ckEditorContent) ?></textarea>
-	            </div>
-	        </div>
-	        
-	        <script>
-	            var h = document.getElementById("<?php echo $genid ?>ckcontainer").offsetHeight;
-	            var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor', {
-	            	//height: (h-45) + 'px',
-	            	height: '330px',
-	            	allowedContent: true,
-	            	resize_enabled: false,
-	            	enterMode: CKEDITOR.ENTER_BR,
-	            	shiftEnterMode: CKEDITOR.ENTER_BR,
-	            	disableNativeSpellChecker: false,
-	            	language: '<?php echo $loc ?>',
-	            	customConfig: '',
-	            	contentsCss: ['<?php echo get_javascript_url('ckeditor/contents.css').'?rev='.product_version_revision();?>', '<?php echo get_stylesheet_url('og/ckeditor_override.css').'?rev='.product_version_revision();?>'],
-	            	toolbar: [
-								['Bold','Italic','Underline','Strike','-',
-								 'Font','FontSize','-', 'Blockquote','-',
-								 'SpellChecker', 'Scayt','-', 
-								 'NumberedList','BulletedList','-',
-								 'TextColor','BGColor','RemoveFormat','-',
-								 'Link','Unlink','-',
-								 'JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock']
-	                        ],
-	                on: {
-	                        instanceReady: function(ev) {
-	                                og.adjustCkEditorArea('<?php echo $genid ?>');
-	                                editor.resetDirty();
-	                        }
-	                    },
-					fillEmptyBlocks: false,
-					removePlugins: 'scayt,liststyle,magicline,contextmenu,tabletools',
-	                entities_additional : '#336,#337,#368,#369,#124'
-	            });
-	
-	            og.setDescription = function() {
-	                    var form = Ext.getDom('<?php echo $genid ?>submit-edit-form');
-	                    if (form.preventDoubleSubmit) return false;
-	
-	                    setTimeout(function() {
-	                            form.preventDoubleSubmit = false;
-	                    }, 2000);
-	
-	                    var editor = og.getCkEditorInstance('<?php echo $genid ?>ckeditor');
-	                    form['message[text]'].value = editor.getData();
-	
-	                    return true;
-	            };    
-	        </script>
-	        <?php }else{?>
-	        <div>
-	            <?php 
-	                if(array_var($message_data, 'type_content') == "text"){
-	                    $content_text = array_var($message_data, 'text');
-	                }else{
-	                    $content_text = html_to_text(html_entity_decode(nl2br(array_var($message_data, 'text')), null, "UTF-8"));
-	                }   
-	            ?>
-	            <?php echo label_tag(lang('text'), 'messageFormText', false) ?>
-	            <?php echo editor_widget('message[text]', $content_text, array('id' => $genid . 'messageFormText')) ?>
-			</div>
-	        <script>
-	                og.setDescription = function() {
-	                        return true;
-	                };    
-	        </script>
-		<?php }?>
-	
-		</div>
-		
-		<?php if ($other_cp_count || config_option('use_object_properties')) { ?>
-		<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
-			<?php  echo render_object_custom_properties($object, false, null, 'other') ?>
-			<?php  echo render_add_custom_properties($object); ?>
-		</div>
-		<?php } ?>
-		
-		<div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
-			<?php $subscriber_ids = array();
-				if (!$object->isNew()) {
-					$subscriber_ids = $object->getSubscriberIds();
-				} else {
-					$subscriber_ids[] = logged_user()->getId();
-				}
-			?>
-			<input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
-			<div id="<?php echo $genid ?>add_subscribers_content"><?php
-				foreach ($subscriber_ids as $subid) {
-					echo '<input type="hidden" name="subscribers[user_'.$subid.']" value="1"/>';
-				} 
-			?></div>
-		</div>
-		
-		<?php if($object->isNew() || $object->canLinkObject(logged_user())) { ?>
-		<div id="<?php echo $genid ?>add_linked_objects_div" class="form-tab">
-			<?php echo render_object_link_form($object) ?>
-		</div>
-		<?php } // if ?>
-		
-		<?php foreach ($categories as $category) { ?>
-		<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
-			<?php echo $category['content'] ?>
-		</div>
-		<?php } ?>
-	</div>
+				<ul id="<?php echo $genid?>tab_titles">
+				
+					<li><a href="#<?php echo $genid?>add_message_text"><?php echo lang('details') ?></a></li>
+					
+					<?php if (is_null($properties_html)) {
+						if ($other_cp_count || config_option('use_object_properties')) { ?>
+					<li><a href="#<?php echo $genid?>add_custom_properties_div"><?php echo lang('custom properties') ?></a></li>
+					<?php } 
+					} ?>
+					
+					<li><a href="#<?php echo $genid?>add_subscribers_div"><?php echo lang('object subscribers') ?></a></li>
+					
+					<?php if($object->isNew() || $object->canLinkObject(logged_user())) { ?>
+					<li><a href="#<?php echo $genid?>add_linked_objects_div"><?php echo lang('linked objects') ?></a></li>
+					<?php } ?>
+					
+					<?php foreach ($categories as $category) {
+							if (array_var($category, 'hidden')) continue;
+						?>
+					<li><a href="#<?php echo $genid . $category['id'] ?>"><?php echo $category['name'] ?></a></li>
+					<?php } ?>
+				</ul>
+				
+				<div id="<?php echo $genid ?>add_message_text" class="editor-container form-tab">
 
-	
-	<?php if (!array_var($_REQUEST, 'modal')) {
-		echo submit_button($message->isNew() ? lang('add message') : lang('save changes'),'s', array('style'=>'margin-top:0px')); 
-	}?>
-</div>
+					<?php
+					if (!is_null($properties_html)) {
+						echo_custom_properties_html($properties_html);
+
+					} else {
+					?>
+					<div class="container">
+						<div class="row">
+							<div class="col">
+								<?php
+								$available_columns = $object->manager()->getColumnsAvailableInForms();
+
+								// Set context variable for fallback rendering
+								$is_hook_rendering = false;
+
+								foreach ($available_columns as $column) {									
+									$input_file = ROOT . '/application/views/message/form_inputs/' . $column . '.php';
+									if (file_exists($input_file)) {
+										echo '<div class="form-group">';
+										include $input_file;
+										echo '</div>';
+									}
+								}
+								?>
+
+								<?php $null = null; Hook::fire('before_render_main_custom_properties', array('object' => $object), $null);?>
+
+								<div class="form-group">
+									<div class="main-custom-properties-div">
+										<?php
+										if ($main_cp_count) {
+											echo render_object_custom_properties($object, false, null, 'visible_by_default');
+										}
+										?>
+									</div>
+								</div>
+							</div>
+							<div class="col">
+								<div id="<?php echo $genid ?>add_form_select_context_div">
+									<?php
+									$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().')');
+									if ($message->isNew()) {
+										render_member_selectors($message->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners, 'object' => $object), null, null, false);
+									} else {
+										render_member_selectors($message->manager()->getObjectTypeId(), $genid, $message->getMemberIds(), array('listeners' => $listeners, 'object' => $object), null, null, false);
+									}
+									?>
+								</div>
+								<div class="clear"></div>
+							</div>
+						</div>
+					</div>
+					<?php } // endif ?>
+					<div class="clear"></div>
+				</div>
+				
+				<?php if (is_null($properties_html)) {
+					if ($other_cp_count || config_option('use_object_properties')) { ?>
+				<div id="<?php echo $genid ?>add_custom_properties_div" class="form-tab other-custom-properties-div">
+					<?php  echo render_object_custom_properties($object, false, null, 'other') ?>
+					<?php  echo render_add_custom_properties($object); ?>
+				</div>
+				<?php }
+				} ?>
+
+				<div id="<?php echo $genid ?>add_subscribers_div" class="form-tab">
+					<div id="<?php echo $genid ?>add_subscribers_content">
+						<?php 
+						$subscriber_ids = array();
+						if (!$object->isNew()) {
+							$subscriber_ids = $object->getSubscriberIds();
+						} else {
+							$subscriber_ids[] = logged_user()->getId();
+						}
+						echo render_add_subscribers($object, $genid);
+						?>
+					</div>
+					<input type="hidden" id="<?php echo $genid ?>subscribers_ids_hidden" value="<?php echo implode(',',$subscriber_ids)?>"/>
+					<input type="hidden" id="<?php echo $genid ?>original_subscribers" value="<?php echo implode(',',$subscriber_ids)?>"/>
+				</div>
+				
+				<?php if($object->isNew() || $object->canLinkObject(logged_user())) { ?>
+				<div id="<?php echo $genid ?>add_linked_objects_div" class="form-tab">
+					<?php echo render_object_link_form($object) ?>
+				</div>
+				<?php } // if ?>
+				
+				<?php foreach ($categories as $category) { ?>
+				<div id="<?php echo $genid . $category['id'] ?>" class="form-tab">
+					<?php echo $category['content'] ?>
+				</div>
+				<?php } ?>
+			</div>
+
+			
+			<?php if (!array_var($_REQUEST, 'modal')) {
+				echo submit_button($message->isNew() ? lang('add message') : lang('save changes'),'s', array('style'=>'margin-top:0px')); 
+			}?>
+		</div>
+	</div>
 </div>
 </form>
 <script>

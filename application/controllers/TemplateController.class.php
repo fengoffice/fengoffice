@@ -7,6 +7,9 @@ class TemplateController extends ApplicationController {
 	function __construct() {
 		parent::__construct();
 		prepare_company_website_controller($this, 'website');
+		if (Env::helperExists('task_template_categories')) {
+			Env::useHelper('task_template_categories');
+		}
 	}
 
 	function index() {
@@ -16,8 +19,11 @@ class TemplateController extends ApplicationController {
 			return;
 		}
 		
-		$templates=COTemplates::instance()->findAll(array('order' => 'name'));
+		$templates = COTemplates::instance()->findAll(array('order' => 'name'));
 		tpl_assign('templates', $templates);
+		tpl_assign('grouped_task_templates', function_exists('group_task_templates_by_category_label')
+			? group_task_templates_by_category_label($templates)
+			: array(lang('task templates uncategorized') => $templates));
 	}
 	
 	
@@ -48,6 +54,103 @@ class TemplateController extends ApplicationController {
 		}
 		
 		return $tasks_with_missing_properties;
+	}
+
+	private function prepare_task_template_category_select_for_form($template_data) {
+		$sel = (int) array_var($template_data, 'task_template_category_id', 0);
+		$options = array(option_tag(lang('task templates uncategorized'), 0, $sel == 0 ? array('selected' => 'selected') : null));
+		if (function_exists('checkTableExists') && checkTableExists(TABLE_PREFIX . 'task_template_categories')) {
+			foreach (TaskTemplateCategories::instance()->findAll(array('order' => '`sort_order` ASC, `name` ASC')) as $c) {
+				$options[] = option_tag($c->getName(), $c->getId(), $sel == $c->getId() ? array('selected' => 'selected') : null);
+			}
+		}
+		tpl_assign('task_template_category_select_options', $options);
+	}
+
+	function manage_task_template_categories() {
+		if (!can_manage_templates(logged_user())) {
+			flash_error(lang("no access permissions"));
+			ajx_current("empty");
+			return;
+		}
+		if (!function_exists('checkTableExists') || !checkTableExists(TABLE_PREFIX . 'task_template_categories')) {
+			flash_error(lang('task template categories unavailable'));
+			redirect_to(get_url('template', 'index'));
+			return;
+		}
+
+		if (array_var($_POST, 'add_category_submitted')) {
+			$name = trim(array_var($_POST, 'category_name'));
+			$sort_order = (int) array_var($_POST, 'sort_order', 0);
+			if ($name !== '') {
+				$cat = new TaskTemplateCategory();
+				$cat->setName($name);
+				$cat->setSortOrder($sort_order);
+				try {
+					$cat->save();
+					flash_success(lang('success add task template category'));
+				} catch (Exception $e) {
+					flash_error($e->getMessage());
+				}
+			} else {
+				flash_error(lang('task template category name required'));
+			}
+			if (is_ajax_request()) {
+				ajx_replace(true);
+			}
+		}
+		if (array_var($_POST, 'update_categories_submitted')) {
+			$category_data = array_var($_POST, 'categories', array());
+			try {
+				DB::beginWork();
+				foreach ($category_data as $id => $data) {
+					$cat = TaskTemplateCategories::instance()->findById((int) $id);
+					if ($cat instanceof TaskTemplateCategory) {
+						$name = trim(array_var($data, 'name'));
+						if ($name === '') {
+							throw new Exception(lang('task template category name required'));
+						}
+						$cat->setName($name);
+						$cat->setSortOrder((int) array_var($data, 'sort_order', 0));
+						$cat->save();
+					}
+				}
+				DB::commit();
+				flash_success(lang('success edit task template categories'));
+				ajx_current('back');
+				return;
+			} catch (Exception $e) {
+				DB::rollback();
+				flash_error($e->getMessage());
+				if (is_ajax_request()) {
+					ajx_replace(true);
+				}
+			}
+		}
+		$del = array_var($_GET, 'delete_category');
+		if ($del) {
+			$id = (int) $del;
+			$cat = TaskTemplateCategories::instance()->findById($id);
+			if ($cat instanceof TaskTemplateCategory) {
+				$n = COTemplates::instance()->count('task_template_category_id=' . $id);
+				if ($n > 0) {
+					flash_error(lang('cannot delete task template category in use'));
+				} else {
+					try {
+						$cat->delete();
+						flash_success(lang('success delete task template category'));
+					} catch (Exception $e) {
+						flash_error($e->getMessage());
+					}
+				}
+			}
+			if (is_ajax_request()) {
+				ajx_replace(true);
+			}
+		}
+
+		$categories = TaskTemplateCategories::instance()->findAll(array('order' => '`sort_order` ASC, `name` ASC'));
+		tpl_assign('task_template_categories', $categories);
 	}
 	
 	function remove_repetition_from_inconsistent_template_tasks() {
@@ -96,7 +199,8 @@ class TemplateController extends ApplicationController {
 		if (!is_array($template_data)) {
 			$template_data = array(
 				'name' => '',
-				'description' => ''
+				'description' => '',
+				'task_template_category_id' => 0,
 				);
 			
 			//delete old temporaly template tasks
@@ -235,9 +339,8 @@ class TemplateController extends ApplicationController {
 // 				$object_controller = new ObjectController();
 // 				$object_controller->add_to_members($cotemplate, $member_ids);
 				
-//				evt_add('reload tab panel', 'tasks-panel');
-				
 				DB::commit();
+				evt_add('reload tab panel', 'tasks-panel');
 				
 				$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($cotemplate);
 				if (count($tasks_with_missing_properties) > 0) {
@@ -275,6 +378,7 @@ class TemplateController extends ApplicationController {
 		tpl_assign('objects', $objects);
 		tpl_assign('cotemplate', $template);
 		tpl_assign('template_data', $template_data);
+		$this->prepare_task_template_category_select_for_form($template_data);
 	}
 
 	/**
@@ -391,6 +495,37 @@ class TemplateController extends ApplicationController {
 
 		return $decoded_var;
 	}
+
+	/**
+	 * Validate template edit POST before destructive save operations.
+	 * - Rejects stale forms (template changed since the editor was opened).
+	 * - Rejects accidental saves without objects[], unless the user confirmed clearing all tasks.
+	 */
+	function validate_template_edit_post($cotemplate, $decoded_prop_inputs) {
+		$fresh_template = COTemplates::instance()->findById($cotemplate->getId(), true);
+		if (!($fresh_template instanceof COTemplate)) {
+			throw new Exception(lang('template dnx'));
+		}
+
+		$objects = $this->get_prop_input_decoded($decoded_prop_inputs, 'objects');
+		$posted_count = count($objects);
+		$existing_count = count($fresh_template->getObjects());
+		$confirm_clear = array_var($_POST, 'confirm_clear_template_objects') == '1';
+
+		$loaded_updated_on = array_var($_POST, 'template_loaded_updated_on');
+		if ($loaded_updated_on !== '' && $loaded_updated_on !== null) {
+			$updated_on = $fresh_template->getUpdatedOn();
+			if ($updated_on instanceof DateTimeValue && (int) $loaded_updated_on < $updated_on->getTimestamp()) {
+				throw new Exception(lang('template edit stale form'));
+			}
+		}
+
+		if ($existing_count > 0 && $posted_count === 0 && !$confirm_clear) {
+			throw new Exception(lang('template edit missing objects list'));
+		}
+
+		return $objects;
+	}
 	
 	function edit() {
 		if (!can_manage_templates(logged_user())) {
@@ -420,6 +555,7 @@ class TemplateController extends ApplicationController {
 			$template_data = array(
 				'name' => $cotemplate->getObjectName(),
 				'description' => $cotemplate->getDescription(),
+				'task_template_category_id' => $cotemplate->getTaskTemplateCategoryId(),
 			); // array
 			foreach($cotemplate->getObjects() as $obj){
 			    
@@ -444,6 +580,8 @@ class TemplateController extends ApplicationController {
 					throw new Exception(lang('The variable contains an invalid JSON format. Please check the JSON format and try again.'));
 				}
 
+				$objects = $this->validate_template_edit_post($cotemplate, $decoded_prop_inputs);
+
 				$member_ids = json_decode(array_var($_POST, 'members'));
 				DB::beginWork();
 				$tmp_objects = $cotemplate->getObjects();
@@ -451,8 +589,6 @@ class TemplateController extends ApplicationController {
 				// Associated objects to the template are deleted (fo_template_objects)
 				$cotemplate->removeObjects();
 				$cotemplate->save();
-				// Gets objects sent by frontend with POST
-				$objects = $this->get_prop_input_decoded($decoded_prop_inputs, 'objects');
 				
 				// Inserts new objects
 				foreach ($objects as $objid) {
@@ -573,6 +709,7 @@ class TemplateController extends ApplicationController {
 				}
 								
 				DB::commit();
+				evt_add('reload tab panel', 'tasks-panel');
 				
 				$tasks_with_missing_properties = $this->verify_repetitive_tasks_have_date_params($cotemplate);
 				if (count($tasks_with_missing_properties) > 0) {
@@ -602,6 +739,7 @@ class TemplateController extends ApplicationController {
 		tpl_assign('objects', $objects);
 		tpl_assign('cotemplate', $cotemplate);
 		tpl_assign('template_data', $template_data);
+		$this->prepare_task_template_category_select_for_form($template_data);
 	}
 
 	function view() {
@@ -754,6 +892,16 @@ class TemplateController extends ApplicationController {
 	}
 	
 	
+	/**
+	 * Instantiate a template, this will create all the tasks and their respective objects
+	 * from the template and assign the selected members to the instantiated objects
+	 * The objects will be assigned to the members that are currently selected
+	 * (if no member is selected, then the instantiated object will be put in the same members as the original)
+	 * 
+	 * @param array $arguments
+	 * @return array of ProjectTask|ProjectMilestone
+	 * @throws Exception
+	 */
 	function instantiate($arguments = null) {
 		// let the process finish if the connection is lost
 		set_time_limit(0);
@@ -917,9 +1065,9 @@ class TemplateController extends ApplicationController {
 			} else {
 				$object_members = $selected_members;
 			}
-			foreach( $template_object_members as $object_member ) {
-				$object_members[] = $object_member->getId();
-			}
+			
+			// Process the tempalte object members and the given members to assigning members to the new task
+			$object_members = calculate_template_task_copy_members_to_add($template_object_members, $object_members);
 			
 			// add the members that must be autocassified using dimension associations according to the current set of members
 			Env::useHelper('dimension');
@@ -937,18 +1085,12 @@ class TemplateController extends ApplicationController {
 			// subscribe assigned to
 			if ($copy instanceof ProjectTask) {
 				foreach($copy->getOpenSubTasks(false) as $m_task){
-					if ($m_task->getAssignedTo() instanceof Contact) {
-						$m_task->subscribeUser($m_task->getAssignedTo());
-					}
+					apply_default_task_subscribers_on_create($m_task);
 				}
-				if ($copy->getAssignedTo() instanceof Contact) {
-					$copy->subscribeUser($copy->getAssignedTo());
-				}
+				apply_default_task_subscribers_on_create($copy);
 			} else if ($copy instanceof ProjectMilestone) {
 				foreach($copy->getTasks(false) as $m_task){
-					if ($m_task->getAssignedTo() instanceof Contact) {
-						$m_task->subscribeUser($m_task->getAssignedTo());
-					}
+					apply_default_task_subscribers_on_create($m_task);
 				}
 			}
 			
@@ -1053,6 +1195,9 @@ class TemplateController extends ApplicationController {
 			
 			$ret = null;
 			Hook::fire('after_template_object_instantiation_and_commit', array('template' => $template, 'object' => $c), $ret);
+
+			// after hook ends, allow project financials recalculations so the hook after the iteration can do it all at once for all tasks.
+			$c->dont_calculate_project_financials = false;
 		}
 
 		// This hook allows to execute additional general tasks after the template is completely instantiated (like recalculate project's financials)
@@ -1068,6 +1213,8 @@ class TemplateController extends ApplicationController {
 		if (array_var($_GET, 'from_email') > 0) {
 			evt_add('reload tab panel', 'tasks-panel');
 		}
+
+		return $copies;
 	}
 	
 	
@@ -1158,7 +1305,9 @@ class TemplateController extends ApplicationController {
 			$parameters = TemplateParameters::getParametersByTemplate($id);
 			$params = array();
 			foreach($parameters as $parameter){
-				$params[] = $parameter->getArrayInfo();
+				$param = $parameter->getArrayInfo();
+				Hook::fire('task_template_parameter_form_data', array('param' => $param), $param);
+				$params[] = $param;
 			}
 
 			$template = COTemplates::instance()->findById($id);
@@ -1169,11 +1318,11 @@ class TemplateController extends ApplicationController {
 			}
 
 			if (array_var($_REQUEST, 'additional_member_ids')) {
-				$additional_member_ids = array_merge($additional_member_ids,json_decode(array_var($_REQUEST, 'additional_member_ids')));
+				$additional_member_ids = array_merge($additional_member_ids, json_decode(array_var($_REQUEST, 'additional_member_ids')) ?? []);
 			}
 
 			if (array_var($_REQUEST, 'linked_objects')) {
-				$linked_objects = json_decode(array_var($_REQUEST, 'linked_objects'));
+				$linked_objects = json_decode(array_var($_REQUEST, 'linked_objects')) ?? [];
 			}
 
 			tpl_assign('id', $id);

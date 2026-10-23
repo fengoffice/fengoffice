@@ -8,7 +8,7 @@ abstract class DimensionObject extends ContentDataObject {
 	
 	/**
 	 * A Dimension Object has one to one member associated.
-	 * This function returns the memeber associatted with this CO. 
+	 * This function returns the member associatted with this CO. 
 	 * Note that this is different that the members that the object belongs to: 
 	 * - For this call getMembers() instead
 	 */

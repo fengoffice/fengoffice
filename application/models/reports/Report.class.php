@@ -34,6 +34,9 @@
 		if(trim($this->getReportObjectTypeId()) == ''){
 			$errors[] = lang('report object type required');
 		}
+		if (trim($this->getObjectName()) != '' && Reports::nameExists($this->getObjectName(), $this->getId())) {
+			$errors[] = lang('report name already exists');
+		}
 	} // validate
 	
 

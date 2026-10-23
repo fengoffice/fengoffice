@@ -27,9 +27,9 @@
     
     <div id="<?php echo $genid ?>_timeslots_grid_container" class="object-view-grid-container"></div>
 
-	<div id="<?php echo $genid ?>_add_time_link_container" class="" style="display:none;">
-		<button class="ico-new object-view-btn blue" id="<?php echo $genid ?>_add_time_link"><?php echo lang('add work') ?></button>
-		<button class="ico-time object-view-btn" id="<?php echo $genid ?>_start_time_link"><?php echo lang('start work') ?></button>
+	<div id="<?php echo $genid ?>_add_time_link_container" class="gap-2" style="display:none;">
+		<button class="btn btn-primary btn-sm" id="<?php echo $genid ?>_add_time_link"><i class="icon-circle-plus"></i>&nbsp;<?php echo lang('add work') ?></button>
+		<button class="btn btn-primary-50 btn-sm" id="<?php echo $genid ?>_start_time_link"><i class="icon-timer"></i>&nbsp;<?php echo lang('start work') ?></button>
 		<div class="clear"></div>
 	</div>
 
@@ -89,24 +89,19 @@
     		var actions = '';
     		if (r.data.id == '__total_row__' || r.data.id <= 0) return actions;
     		
-    		var actionStyle= ' style="font-size:105%;padding-top:2px;padding-bottom:3px;padding-left:16px;background-repeat:no-repeat;" '; 
-
     		if (r.data.can_edit) {
     			actions += String.format(
-    				'<a class="list-action ico-edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:'+r.data.id+', req_channel:\'task view - line edit\'}});" title="{0}" '+
-    				actionStyle + '>&nbsp;</a>', lang('edit')
+    				'<a class="list-action ico-action edit" href="#" onclick="og.render_modal_form(\'\', {c:\'time\', a:\'edit_timeslot\', params:{id:'+r.data.id+', req_channel:\'task view - line edit\'}});" title="{0}"><i class="icon-pencil-line"></i></a>', lang('edit')
     			);
     		}
     		if (r.data.can_delete) {
     			actions += String.format(
-    				'<a class="list-action ico-delete" href="#" onclick="og.task_timeslots_grid.delete_timeslot('+r.data.id+');" title="{0}" '+
-    				actionStyle + '>&nbsp;</a>', lang('delete')
+    				'<a class="list-action ico-action delete" href="#" onclick="og.task_timeslots_grid.delete_timeslot('+r.data.id+');" title="{0}"><i class="icon-trash-2"></i></a>', lang('delete')
     			);
     		}
 			if (r.data.can_view_history) {
 				actions += String.format(
-					'<a class="list-action ico-properties" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}" ' +
-					actionStyle + '>&nbsp;</a>', lang('view history')
+					'<a class="list-action ico-action history" href="#" onclick="og.render_modal_form(\'\', {c:\'object\', a:\'view_history\', params:{id:' + r.data.id + '}});" title="{0}"><i class="icon-history"></i></a>', lang('view history')
 				);
 			}
     			
@@ -194,49 +189,68 @@
     var timeslots_tbar_items = [];
 	var timeslots_tbar_right_items = [];
 
-<?php 
-	
-	$prevent_adding_worked_time_to_parent = false;	
-	
-	Hook::fire('get_prevent_adding_time_to_parent', array('time_type' => 'worked', 'is_parent' => $__timeslots_object->isParent()), $prevent_adding_worked_time_to_parent);
-	
-	if ($__timeslots_object->canAddTimeslot(logged_user()) && !$prevent_adding_worked_time_to_parent) { ?>
-    
+<?php
+
+	// If user can add time, always show the button,
+	// if there are any other permissions that may prevent the user from adding time
+	// then let the backend handle those and show a proper error message
+	// Don't hide the button, as that may cause confusion to the user on why the button is not there
+	//
+	// Once the task has reached its estimated hours, these buttons follow the same
+	// "don't hide" philosophy: they stay visible but disabled, with a tooltip explaining
+	// why (matching the task list's treatment of the same "add work"/"start work" actions).
+	$estimated_hours_limit_reached = $__timeslots_object instanceof ProjectTask && Timeslot::isEstimatedHoursLimitReached($__timeslots_object);
+	if ($__timeslots_object->canAddTimeslot(logged_user())) { ?>
+
 	var new_btn = new Ext.Button({
-    	iconCls: 'ico-new add-first-btn blue',
-    	text: '<?php echo lang('add work')?>',
+    	iconCls: 'btn btn-primary btn-sm',
+    	text: '<i class="icon-circle-plus"></i> <?php echo lang('add work')?>',
     	id: 'new_user_btn',
+    	<?php if ($estimated_hours_limit_reached) { ?>
+    	disabled: true,
+    	tooltip: '<?php echo escape_single_quotes(lang('cannot add time task estimated hours reached')) ?>',
+    	<?php } ?>
     	handler: function() {
+    		<?php if ($estimated_hours_limit_reached) { ?>
+    		return false;
+    		<?php } else { ?>
     		og.render_modal_form('', {
-				c:'time', 
-				a:'add', 
+				c:'time',
+				a:'add',
 				params: {
-					object_id:<?php echo $__timeslots_object->getId() ?>, 
+					object_id:<?php echo $__timeslots_object->getId() ?>,
 					contact_id:<?php echo logged_user()->getId() ?>,
 					req_channel: 'task view - toolbar add button'
 				}
 			});
+    		<?php } ?>
     	}
     });
     timeslots_tbar_items.push(new_btn);
-    
-    
+
+
     <?php if (user_config_option('show_start_time_action')) { ?>
 	<?php if (!$open_timeslot) { ?>
             var start_work_btn = new Ext.Button({
-                iconCls: 'ico-time add-first-btn',
-                text: '<?php echo lang('start work')?>',
+                iconCls: 'btn btn-primary-50 btn-sm',
+                text: '<i class="icon-timer"></i> <?php echo lang('start work')?>',
                 id: 'start_work_btn',
+                <?php if ($estimated_hours_limit_reached) { ?>
+                disabled: true,
+                tooltip: '<?php echo escape_single_quotes(lang('cannot add time task estimated hours reached')) ?>',
+                <?php } ?>
                 handler: function() {
+					<?php if (!$estimated_hours_limit_reached) { ?>
 					og.openLink(og.getUrl('timeslot', 'open', {
 						object_id:<?php echo $__timeslots_object->getId() ?>,
 						req_channel: 'task view - toolbar start clock'
 					}));
+					<?php } ?>
                 }
             });
             timeslots_tbar_items.push(start_work_btn);
         <?php } ?>
-    <?php } ?>    
+    <?php } ?>
 <?php } ?>
 
 	var ts_print_btn = new Ext.Button({
@@ -256,8 +270,8 @@ $show_delete_all_button = user_config_option('tasksShowWorkPerformedDeleteAllBut
 if ($can_delete_timeslots && $show_delete_all_button){
 ?>
 	var ts_delete_all_btn = new Ext.Button({
-		iconCls: 'ico-delete-btn add-first-btn',
-		text: '<?php echo lang('delete all timeslots')?>',
+		iconCls: 'btn btn-sm',
+		text: '<i class="icon-circle-x"></i> <?php echo lang('delete all timeslots')?>',
 		id: 'ts_delete_all_btn',
 		handler: function() {
 			if (confirm('<?php echo escape_single_quotes(lang('confirm delete all timeslots'))?>')) {

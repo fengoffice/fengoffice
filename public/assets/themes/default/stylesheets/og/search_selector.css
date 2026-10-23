@@ -16,26 +16,75 @@
 
 .search-selector .search-input-div input{
 	width: 100%;
-	border: 1px solid #333;
+	border: 1px solid #264653;
+	border-radius: 4px;
 }
 
-.ico-search-m{
-	background-image: url("../../images/16x16/search_m.png")!important;
-    background-position: right center!important;
-    background-repeat: no-repeat!important;
-   /* margin: 3px!important;*/
-    padding-right: 20px!important;
+.ico-search-m {
+	/* background-image: url("../../images/16x16/search_m.png")!important; */
+    padding-right: 25px !important;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%233F5056" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>') !important;
+    background-position: right 5px center !important;
+	background-size: 16px;
+    background-repeat: no-repeat !important;
+}
+
+/* TODO: this solution breaks something else. Fix ExtJS table layout for toolbar */
+/* 
+.x-toolbar.x-small-editor table {
+	width: 100%;
+	table-layout: fixed;
+} 
+*/
+
+.x-toolbar.x-small-editor table td {
+	position: relative;
+}
+
+.selected-members.ico-search-m,
+.single_current_selected.ico-search-m {
+	position: relative;
+	background-image: none !important;
+	padding-right: 23px !important;
+	box-sizing: border-box;
+}
+
+.selected-members.ico-search-m::after,
+.single_current_selected.ico-search-m:not(input)::after {
+    content: '';
+    display: block;
+    position: absolute;
+    right: 5px;
+    top: 49%;
+    transform: translateY(-49%);
+    width: 18px;
+    height: 18px;
+    background-color: currentColor;
+    pointer-events: none;
+    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="black"><circle cx="11" cy="11" r="7" fill="none" stroke="black" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="black" stroke-width="2" stroke-linecap="round"/></svg>');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="black"><circle cx="11" cy="11" r="7" fill="none" stroke="black" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="black" stroke-width="2" stroke-linecap="round"/></svg>');
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
 }
 
 .coInputMainBlock .ico-search-m {
 	margin-left: 0px;
 }
 
+.feng-forms .coInputMainBlock .ico-search-m {
+	height: 32px;
+}
+
 .single_current_selected .empty-text {
 	font-size:13px;
-	margin:1px 5px;
+	margin:1px 5px; /* margin returned to old value because it was breaking other forms */
 	display: none;
 }
+
 
 .search-selector-more{
 	color: #003562;
@@ -125,6 +174,7 @@
 	z-index: 9999;
 }
 
+/* FENG FORMS - Search Selector Consistency */
 
 
 

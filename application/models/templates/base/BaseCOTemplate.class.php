@@ -55,6 +55,17 @@ abstract class BaseCOTemplate extends ContentDataObject {
 		return $this->setColumnValue('description', $value);
 	} // setDescription()
 
+	/**
+	 * @return integer
+	 */
+	function getTaskTemplateCategoryId() {
+		return (int) $this->getColumnValue('task_template_category_id');
+	}
+
+	function setTaskTemplateCategoryId($value) {
+		return $this->setColumnValue('task_template_category_id', (int) $value);
+	}
+
 
 	/**
 	 * Return manager instance

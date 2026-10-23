@@ -228,6 +228,7 @@
 
   	'report as spam' => 'Report as Spam',
 	'not spam' => 'Not Spam',
+	'trust sender' => 'Trust sender',
   
   	'mark as unread' => 'Mark as unread',
   	'activate' => 'Activate',

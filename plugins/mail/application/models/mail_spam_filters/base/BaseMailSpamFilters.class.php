@@ -151,7 +151,7 @@ abstract class BaseMailSpamFilters extends DataManager {
 	 * @access public
 	 * @param mixed $id
 	 * @param boolean $force_reload If true cache will be skipped and data will be loaded from database
-	 * @return MailAccount
+	 * @return MailSpamFilter
 	 */
 	function findById($id, $force_reload = false) {
 		if(isset($this) && instance_of($this, 'MailSpamFilters')) {

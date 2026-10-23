@@ -1,0 +1,15 @@
+# Long-lived, immutable cache ONLY for URLs that carry our ?rev= cache-buster
+# (see assets_revision() in application/functions.php). Plain CSS @import'd
+# files (e.g. website.css imports ~50 other .css by raw path, no query
+# string) never get a rev, so they must NOT get this header or they'd get
+# stuck cached for a year with no way to invalidate them.
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+	RewriteCond %{QUERY_STRING} (^|&)rev=
+	RewriteRule \.(js|css)$ - [E=CACHE_BUSTED:1]
+</IfModule>
+<IfModule mod_headers.c>
+	<FilesMatch "\.(js|css)$">
+		Header set Cache-Control "public, max-age=31536000, immutable" env=CACHE_BUSTED
+	</FilesMatch>
+</IfModule>

@@ -107,8 +107,13 @@ final class CompanyWebsite {
         if((isset($_REQUEST['auth']) && !empty($_REQUEST['auth'])) || array_var($_REQUEST, 'm') == "login")
         {
             if(array_var($_REQUEST, 'm') != "login"){
-                $contact = Contacts::instance()->findAll(array("conditions" => "`token` = '".$_REQUEST['auth']. "'"));
-                $contact = $contact[0];
+                // Parameterized lookup. NEVER interpolate $_REQUEST['auth'] into SQL:
+                // this was an unauthenticated SQL injection / authentication bypass.
+                $auth_token = array_var($_REQUEST, 'auth');
+                if (!is_scalar($auth_token)) {
+                    $auth_token = '';
+                }
+                $contact = Contacts::instance()->findOne(array("conditions" => array("`token` = ?", $auth_token)));
             }else{
                 $username = urldecode($_REQUEST['username']);
                 $password = $_REQUEST['password'];
@@ -341,8 +346,8 @@ final class CompanyWebsite {
 				$user_id = Cookie::getValue('id');
 				$twisted_token = Cookie::getValue('token');
 				if (!empty($user_id) && !empty($twisted_token)) {
-					$user = Contacts::instance()->findById($user_id);
-					if ($user instanceof Contact && $user->isValidToken($twisted_token)) {
+					$tmp_user = Contacts::instance()->findById($user_id);
+					if ($tmp_user instanceof Contact && $tmp_user->isValidToken($twisted_token)) {
 						$cookies_present = true;
 					} 
 	

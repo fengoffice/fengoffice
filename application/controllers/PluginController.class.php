@@ -39,10 +39,14 @@ class PluginController extends ApplicationController {
 		}
 	} 
 	
+	function build_error_message($plugin, $error, $action) {
+		$name = $plugin instanceof Plugin ? $plugin->getName() : 'n/a';
+		return "Error executing $action for plugin '$name':\n\n" . $error->getMessage() . "\n\n" . $error->getTraceAsString();
+	}
+
 	function show_error_message($plugin, $error, $action) {
 
-		$name = $plugin instanceof Plugin ? $plugin->getName() : 'n/a';
-		$message = "Error executing $action for plugin '$name':\n\n" . $error->getMessage() . "\n\n" . $error->getTraceAsString();
+		$message = $this->build_error_message($plugin, $error, $action);
 
 		if (defined('CONSOLE_MODE')) { // executing by command line
 			
@@ -75,8 +79,13 @@ class PluginController extends ApplicationController {
 					// ensure that some specific columns are present before using objects in any update
 					$this->check_columns_exist_before_updates();
 
+					$dataChangeFunctions = $plg->getDataChangesFunctions();
+
 					$name = $plg->getName();
 					$plg->update();
+
+					// process data changes
+					$plg->executeDataChanges($dataChangeFunctions);
 					
 					DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
 
@@ -89,25 +98,78 @@ class PluginController extends ApplicationController {
 			$this->show_error_message($plg, $e, 'update');
 		}
 	}
+
+	function update_all() {
+		ajx_current("empty");
+		$this->updateAll();
+	}
 	
 	function updateAll() {
 
 		// ensure that some specific columns are present before using objects in any update
 		$this->check_columns_exist_before_updates();
 
-		try {
-			$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1'));
-			foreach ($plugins as $plg) {
-				if ($plg->updateAvailable()) {
+		// Errors are collected per plugin instead of aborting the whole process, so a failure
+		// in one plugin doesn't leave the remaining plugins half-updated (e.g. schema updated
+		// and version bumped but data changes never executed).
+		$error_messages = array();
+		$failed_errors = array();
+
+		$dataChangeFunctions = array();
+		$plugins = Plugins::instance()->findAll(array('conditions' => 'is_installed=1'));
+		$plugins_by_name = array();
+		// process changes in data schema
+		foreach ($plugins as $plg) {
+			$plugins_by_name[$plg->getName()] = $plg;
+			/** @var $plg Plugin */
+			if ($plg->updateAvailable()) {
+				// collect data change functions to be executed later
+				$dataChangeFunctions[$plg->getName()] = $plg->getDataChangesFunctions();
+
+				// execute update
+				try {
 					$plg->update();
 					$this->show_success_message("Plugin ".$plg->getName()." updated successfully");
+				} catch (Throwable $e) {
+					// don't run data changes for a plugin whose schema update failed
+					unset($dataChangeFunctions[$plg->getName()]);
+					$error_messages[] = $this->build_error_message($plg, $e, 'update');
+					$failed_errors[] = $e;
 				}
 			}
+		}
+
+		// process data changes of all plugins after all updates are executed
+		foreach ($dataChangeFunctions as $plgName => $pluginDataChangeFunctions) {
+			if (count($pluginDataChangeFunctions) == 0) continue;
+			
+			$plg = array_var($plugins_by_name, $plgName);
+			if (!$plg instanceof Plugin) continue;
+			
+			try {
+				$plg->executeDataChanges($pluginDataChangeFunctions);
+				$this->show_success_message("Plugin ".$plgName." data changes executed successfully");
+			} catch (Throwable $e) {
+				$error_messages[] = $this->build_error_message($plg, $e, 'data changes');
+				$failed_errors[] = $e;
+			}
+		}
+
+		try {
 			DimensionAssociationsConfigs::ensureAllAssociationsHaveConfigOptions();
-		} catch (Error $e) {
-			$this->show_error_message($plg, $e, 'update');
-		} catch (Exception $e) {
-			$this->show_error_message($plg, $e, 'update');
+		} catch (Throwable $e) {
+			$error_messages[] = $this->build_error_message(null, $e, 'dimension associations config');
+			$failed_errors[] = $e;
+		}
+
+		if (count($error_messages) > 0) {
+			$full_message = implode("\n\n----------------------------------------\n\n", $error_messages);
+			if (defined('CONSOLE_MODE')) { // executing by command line
+				fwrite(STDERR, $full_message . "\n");
+				throw $failed_errors[0]; // for plugin-console.php to catch and exit with error
+			} else { // executing by interface
+				ajx_extra_data(array('errorMessage' => nl2br($full_message)));
+			}
 		}
 	}
 	
@@ -125,6 +187,10 @@ class PluginController extends ApplicationController {
 			if (file_exists($path)){
 				include_once $path;
 			}
+
+			// the class index still lists this plugin's classes, which would keep shadowing
+			// the core ones (installing a plugin drops it for the same reason)
+			@unlink(ROOT . '/cache/autoloader.php');
 			$this->show_success_message("Plugin $name uninstalled successfully");
 		}
 	}
@@ -212,6 +278,14 @@ class PluginController extends ApplicationController {
 			"conditions" => "name NOT IN ('".implode("','", $deprecated_plugins)."')",
 			"order"=>"name ASC",
 		));
+
+		$plugins_that_need_update = array();
+		foreach ($plugins as $plugin) {
+			if ($plugin->isInstalled() && $plugin->updateAvailable()) {
+				$plugins_that_need_update[] = $plugin;
+			}
+		}
+		tpl_assign('plugins_that_need_update', $plugins_that_need_update);
 				
 		tpl_assign('plugins', $plugins);
 		return $plugins ;
@@ -251,10 +325,18 @@ class PluginController extends ApplicationController {
 	 * This is a temporary patch before developing a more structured way to prevent this kind of errors
 	 */
 	function check_columns_exist_before_updates() {
-		
+
 		if ($this->check_installed_and_activated('advanced_billing')) {
 			Env::useHelper('update_script_functions', 'advanced_billing');
 			add_fixed_fee_and_eaned_value_columns_to_task_table();
+		}
+
+		// with object_subtypes active, every dimension association lookup filters on
+		// object_subtype_id; plugins installed before object_subtypes update first and would
+		// query the column before the object_subtypes update adds it
+		if ($this->check_installed_and_activated('object_subtypes')) {
+			Env::useHelper('update_script_functions', 'object_subtypes');
+			add_object_subtype_columns_to_associations();
 		}
 
 	}
@@ -281,7 +363,7 @@ static function executeInstaller($name) {
 		$path = ROOT . "/plugins/$name/info.php";
 		if (file_exists ( $path )) {
 			DB::beginWork ();
-			$pluginInfo = include_once $path;
+			$pluginInfo = include $path;
 			
 			//0. Check if exists in plg table
 			$sql = "SELECT id FROM " . TABLE_PREFIX . "plugins WHERE name = '$name' ";

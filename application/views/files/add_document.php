@@ -44,11 +44,11 @@
 	add_page_action("name_text_field", "javascript:", "", null, array('id' => $genid . 'filename_input', 'type' => 'textfield'));
 	
 	// save button
-	add_page_action(lang("save"), "javascript:(function(){ var form = document.getElementById('{$genid}form'); document.getElementById('{$genid}new_revision_document').value = 'checked'; form.onsubmit(); })()", "save", null, array('id' => $genid . 'save_as_name'));
+	add_page_action("<i class='icon-save'></i>" . lang("save"), "javascript:(function(){ var form = document.getElementById('{$genid}form'); document.getElementById('{$genid}new_revision_document').value = 'checked'; form.onsubmit(); })()", "btn btn-primary", null, array('id' => $genid . 'save_as_name'));
 	
 	// close button
 	$panel_id = array_var($_REQUEST, 'current');
-	add_page_action(lang("close"), "javascript: Ext.getCmp('$panel_id').back();", "ico-delete", null, array('id' => $genid . 'close'));
+	add_page_action("<i class='icon-circle-x'></i>" . lang("close"), "javascript: Ext.getCmp('$panel_id').back();", "btn", null, array('id' => $genid . 'close'));
 	
 
 ?>
@@ -117,7 +117,8 @@ var editor = CKEDITOR.replace('<?php echo $genid ?>ckeditor', {
 	on: {
 		instanceReady: function(ev) {
 			editor.resetDirty();
-			og.resizeCkSpace();
+			var layoutEditor = og.docEditorLayout && og.docEditorLayout.editors['<?php echo $genid ?>'];
+			if (layoutEditor) layoutEditor.resize();
 		},
 		change: function(ev) {
 			var p = og.getParentContentPanel(Ext.get('<?php echo $genid ?>ckeditor'));
@@ -149,44 +150,113 @@ og.eventManager.addListener("document saved", function(obj) {
 }, null, {replace:true});
 
 
-og.resizeresizeCkSpaceAux = function() {
-	var container = document.getElementById('<?php echo $genid ?>form');
-	var parent = document.getElementById('cke_<?php echo $genid ?>ckeditor');
-	if (container && parent) {
+og.docEditorLayout = og.docEditorLayout || {
+	editors: {},
+	bound: false,
+	bind: function() {
+		if (this.bound) return;
+		this.bound = true;
+		var registry = this;
+		Ext.EventManager.onWindowResize(function() {
+			for (var id in registry.editors) {
+				if (registry.editors.hasOwnProperty(id)) registry.editors[id].resize();
+			}
+		});
+	}
+};
+(function() {
+	var genid = '<?php echo $genid ?>';
+	var editor = {
+		retryTimer: null,
+		inputTimer: null
+	};
+	og.docEditorLayout.editors[genid] = editor;
+	og.docEditorLayout.bind();
+
+	function clearRetry() {
+		if (editor.retryTimer) {
+			clearTimeout(editor.retryTimer);
+			editor.retryTimer = null;
+		}
+	}
+	// One chain per editor. A second Add Document must not reuse this timer or this closure.
+	function scheduleRetry(fn) {
+		clearRetry();
+		editor.retryTimer = setTimeout(function() {
+			editor.retryTimer = null;
+			fn();
+		}, 50);
+	}
+
+	editor.resizeCk = function() {
+		var container = document.getElementById(genid + 'form');
+		var parent = document.getElementById('cke_' + genid + 'ckeditor');
+		if (!container || !parent) return;
+		var panelEl = og.getParentContentPanel(Ext.get(container));
+		if (panelEl) {
+			var panel = Ext.getCmp(panelEl.id);
+			if (panel && panel.active === false) return;
+		}
+		if (container.offsetHeight < 120) return;
 		var iframes = parent.getElementsByTagName('iframe');
 		if (iframes.length > 0) {
 			iframes[0].style.height = (container.offsetHeight - 107) + 'px';
 			parent.style.height = (container.offsetHeight) + 'px';
 		}
-	}
-}
-og.resizeFileNameInput = function() {
-	var total_w = $("#<?php echo $genid?>filename_input").closest('.x-toolbar.x-small-editor').width();
-	var buttons_w = 0;
-	var buttons = $("#<?php echo $genid?>filename_input").parent().siblings();
-	for (var i=0; i<buttons.length; i++) {
-		buttons_w += $(buttons[i]).width();
-	}
-	var available_w = total_w - buttons_w - 30;
-	$("#<?php echo $genid?>filename_input").css('width', (available_w)+'px');
-}
-og.resizeCkSpace = function() {
-	if (Ext.isIE) setTimeout('og.resizeresizeCkSpaceAux()', 100);
-	else og.resizeresizeCkSpaceAux();
+	};
+	editor.resizeFileName = function(attempt) {
+		if (typeof attempt !== 'number') attempt = 0;
+		var $input = $('#' + genid + 'filename_input');
+		var total_w = $input.length ? $input.closest('.x-toolbar.x-small-editor').width() : 0;
+		// The editor HTML is eval'd before Ext finishes laying out the toolbar.
+		if (!$input.length || !total_w || total_w < 80) {
+			if (attempt < 20) scheduleRetry(function() { editor.resizeFileName(attempt + 1); });
+			return;
+		}
+		clearRetry();
+		var buttons_w = 0;
+		$input.parent().siblings().each(function() {
+			buttons_w += $(this).outerWidth(true);
+		});
+		// Never grow past the real gap. A forced 180px floor overlaps Save/Close on a narrow bar.
+		var max_w = total_w - buttons_w - 24;
+		if (max_w < 1) max_w = 1;
+		var text = $input.val() || $input.attr('placeholder') || '';
+		var text_w = Ext.util.TextMetrics.measure($input[0], text).width + 36;
+		var w = text_w < 180 ? 180 : text_w;
+		if (w > max_w) w = max_w;
+		var cmp = Ext.getCmp(genid + 'filename_input');
+		if (cmp && cmp.setWidth) cmp.setWidth(w);
+		else $input.css('width', w + 'px');
+	};
+	editor.resize = function() {
+		if (!document.getElementById(genid + 'form')) {
+			clearRetry();
+			if (editor.inputTimer) clearTimeout(editor.inputTimer);
+			delete og.docEditorLayout.editors[genid];
+			return;
+		}
+		if (Ext.isIE) setTimeout(editor.resizeCk, 100);
+		else editor.resizeCk();
+		editor.resizeFileName();
+	};
 
-	og.resizeFileNameInput();
-}
-window.onresize = og.resizeCkSpace;
-
-$(function() {
-	$("#<?php echo $genid?>filename_input").attr('placeholder', '<?php echo lang('filename')?>');
-	$("#<?php echo $genid?>filename_input").val('<?php echo (!$file->isNew() ? $fname_s : ""); ?>');
-	$("#<?php echo $genid?>filename_input").addClass('filename');
-	$("#<?php echo $genid?>filename_input").change(function(event){
-		$("#<?php echo $genid?>filename").val(event.currentTarget.value);
+	$(function() {
+		var $input = $('#' + genid + 'filename_input');
+		$input.attr('placeholder', '<?php echo lang('filename')?>');
+		$input.val('<?php echo (!$file->isNew() ? $fname_s : ""); ?>');
+		$input.addClass('filename');
+		// keyup covers IE, where "input" does not fire for backspace/delete.
+		$input.on('input keyup change', function(event) {
+			$('#' + genid + 'filename').val(event.currentTarget.value);
+			if (editor.inputTimer) clearTimeout(editor.inputTimer);
+			editor.inputTimer = setTimeout(function() {
+				editor.inputTimer = null;
+				editor.resizeFileName();
+			}, 50);
+		});
+		editor.resizeFileName();
 	});
-
-	og.resizeFileNameInput();
-});
+})();
 
 </script>

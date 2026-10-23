@@ -20,6 +20,17 @@
 		* @var string
 		*/
 		const GLOBAL_VAR = 'autoloader_classes';
+
+		/**
+		* Name of the $GLOBALS var where we'll store the signature of the index
+		*
+		* The index maps class names to files and its contents depend on which plugins are
+		* installed, so an index built for one database must not be reused for another one.
+		* Callers set a signature (the database name) and discard the index when it changes.
+		*
+		* @var string
+		*/
+		const SIGNATURE_VAR = 'autoloader_signature';
 		
 		/**
 		* Filename of index file
@@ -62,6 +73,14 @@
 		* @var array
 		*/
 		private $class_index = array();
+
+		/**
+		* Value written to the index file so that callers can tell which configuration it
+		* was built for. Empty means "unknown", which callers should treat as stale.
+		*
+		* @var string
+		*/
+		private $signature = '';
 		
 		// ---------------------------------------------------
 		//  Doers
@@ -93,7 +112,7 @@
 			
 			/* include the needed file or retry on failure */
 			if(isset($GLOBALS[self::GLOBAL_VAR][$class_name])) {
-				if(@include($GLOBALS[self::GLOBAL_VAR][$class_name])) {
+				if(@include_once($GLOBALS[self::GLOBAL_VAR][$class_name])) {
 					return true;
 				} else {
 					if($retrying) {
@@ -136,6 +155,7 @@
 		private function createIndexFile() {
 			/* generate php index file */
 			$index_content = "<?php\n";
+			$index_content .= "\t\$GLOBALS['" . self::SIGNATURE_VAR . "'] = " . var_export($this->getSignature(), true) . ";\n";
 			foreach($this->class_index as $class_name => $class_file) {
 				$index_content .= "\t\$GLOBALS['autoloader_classes'][". var_export(strtoupper($class_name), true) . "] = " . var_export($class_file, true) . ";\n";
 			} // foreach
@@ -248,6 +268,28 @@
 		  $this->index_filename = $value;
 		} // setIndexFilename
 		
+		/**
+		* Get signature
+		*
+		* @access public
+		* @param null
+		* @return string
+		*/
+		function getSignature() {
+		  return $this->signature;
+		} // getSignature
+
+		/**
+		* Set signature value
+		*
+		* @access public
+		* @param string $value
+		* @return null
+		*/
+		function setSignature($value) {
+		  $this->signature = $value;
+		} // setSignature
+
 		/**
 		* Get scan_file_extension
 		*

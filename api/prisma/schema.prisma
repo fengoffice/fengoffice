@@ -1,0 +1,3274 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model fo_actual_expense_tax_values {
+  tax_id        Int
+  object_id     Int
+  applied_value Decimal @default(0.000) @db.Decimal(20, 3)
+  value         Decimal @default(0.000) @db.Decimal(20, 3)
+
+  @@id([tax_id, object_id])
+  @@index([object_id], map: "object_id")
+}
+
+model fo_actual_expense_taxes {
+  id                Int      @id @default(autoincrement())
+  name              String   @db.VarChar(255)
+  value             Decimal  @default(0.000) @db.Decimal(20, 3)
+  is_percentage     Boolean
+  valid_from        DateTime @db.DateTime(0)
+  valid_to          DateTime @db.DateTime(0)
+  currency_id       Int      @default(0)
+  select_by_default Boolean
+}
+
+model fo_address_types {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  name      String @default("") @db.VarChar(30)
+  is_system Int    @default(0) @db.UnsignedTinyInt
+}
+
+model fo_administration_logs {
+  id         Int                             @id @default(autoincrement()) @db.UnsignedInt
+  created_on DateTime                        @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  title      String                          @default("") @db.VarChar(50)
+  log_data   String                          @db.Text
+  category   fo_administration_logs_category
+
+  @@index([category], map: "category")
+  @@index([created_on], map: "created_on")
+}
+
+model fo_administration_tools {
+  id         Int     @id @default(autoincrement()) @db.UnsignedTinyInt
+  name       String  @unique(map: "name") @default("") @db.VarChar(50)
+  controller String  @default("") @db.VarChar(50)
+  action     String  @default("") @db.VarChar(50)
+  order      Int     @default(0) @db.UnsignedTinyInt
+  visible    Boolean @default(true)
+}
+
+model fo_agencies {
+  object_id Int @id @default(autoincrement()) @db.UnsignedInt
+}
+
+model fo_api_searchable_properties {
+  object_type_id    Int    @db.UnsignedInt
+  object_subtype_id Int    @db.UnsignedInt
+  property          String @db.VarChar(255)
+
+  @@id([object_type_id, object_subtype_id, property])
+}
+
+model fo_application_log_details {
+  application_log_id Int
+  property           String @db.VarChar(128)
+  old_value          String @db.Text
+  new_value          String @db.Text
+
+  @@id([application_log_id, property])
+}
+
+model fo_application_logs {
+  id              Int                         @id @default(autoincrement()) @db.UnsignedInt
+  taken_by_id     Int?                        @db.UnsignedInt
+  rel_object_id   Int                         @default(0)
+  object_name     String?                     @db.Text
+  created_on      DateTime                    @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  created_by_id   Int?                        @db.UnsignedInt
+  action          fo_application_logs_action?
+  is_private      Int                         @default(0) @db.UnsignedTinyInt
+  is_silent       Int                         @default(0) @db.UnsignedTinyInt
+  log_data        String?                     @db.Text
+  member_id       Int                         @default(0)
+  full_request    String?                     @db.Text
+  request_channel String?                     @default("") @db.VarChar(511)
+  is_mail_rule    Boolean?                    @default(false)
+
+  @@index([created_on, action, created_by_id, is_silent], map: "created_on_action_created_by_id_is_silent")
+  @@index([member_id, is_silent], map: "member_id")
+  @@index([rel_object_id, created_on, is_silent], map: "object")
+}
+
+model fo_application_read_logs {
+  id            Int                              @id @default(autoincrement()) @db.UnsignedInt
+  taken_by_id   Int                              @default(0)
+  rel_object_id Int                              @default(0)
+  created_on    DateTime                         @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  created_by_id Int?                             @db.UnsignedInt
+  action        fo_application_read_logs_action?
+
+  @@index([created_on], map: "created_on")
+  @@index([rel_object_id], map: "object_key")
+}
+
+model fo_autonumbering_conditions {
+  id             Int    @id @default(autoincrement()) @db.UnsignedInt
+  object_type_id Int    @default(0) @db.UnsignedInt
+  target         String @default("prepend_to_name") @db.VarChar(100)
+  property_id    String @default("") @db.VarChar(255)
+  operator       String @default("") @db.VarChar(50)
+  value          String @default("") @db.VarChar(511)
+}
+
+model fo_billing_categories {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  name          String?   @default("") @db.VarChar(100)
+  description   String?   @db.Text
+  default_value Float     @default(0) @db.Float
+  report_name   String?   @default("") @db.VarChar(100)
+  created_on    DateTime? @db.DateTime(0)
+  created_by_id Int       @default(0) @db.UnsignedInt
+  updated_on    DateTime  @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  updated_by_id Int?      @db.UnsignedInt
+}
+
+model fo_billing_definition_members {
+  definition_id Int @db.UnsignedInt
+  dimension_id  Int @default(0)
+  member_id     Int @default(0)
+
+  @@id([definition_id, dimension_id, member_id])
+}
+
+model fo_billing_definitions {
+  id               Int      @id @default(autoincrement()) @db.UnsignedInt
+  name             String   @db.VarChar(255)
+  description      String?  @db.Text
+  user_id          Int      @default(0) @db.UnsignedInt
+  rate_currency_id Int      @default(0) @db.UnsignedInt
+  hourly_rate      Decimal  @default(0.000) @db.Decimal(20, 3)
+  cost_currency_id Int      @default(0) @db.UnsignedInt
+  hourly_cost      Decimal  @default(0.000) @db.Decimal(20, 3)
+  enable_rate      Boolean  @default(true)
+  enable_cost      Boolean  @default(true)
+  created_by_id    Int      @default(0) @db.UnsignedInt
+  created_on       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  updated_by_id    Int      @default(0) @db.UnsignedInt
+  updated_on       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@index([user_id], map: "user_id")
+}
+
+model fo_billings {
+  object_id Int   @id @db.UnsignedInt
+  value     Float @default(0) @db.Float
+}
+
+model fo_business_companies {
+  object_id Int @id @default(autoincrement()) @db.UnsignedInt
+}
+
+model fo_cobj_template_object_line_values {
+  template_id         Int
+  object_id           Int
+  line_id             Int
+  line_property       String  @db.VarChar(255)
+  line_property_value String? @db.Text
+
+  @@id([template_id, object_id, line_id, line_property])
+}
+
+model fo_cobj_template_object_lines {
+  template_id Int
+  object_id   Int
+  line_id     Int
+
+  @@id([template_id, object_id, line_id])
+}
+
+model fo_cobj_template_object_properties {
+  template_id    Int
+  object_id      Int
+  property       String  @db.VarChar(255)
+  property_type  String? @db.VarChar(255)
+  property_value String? @db.Text
+
+  @@id([template_id, object_id, property])
+}
+
+model fo_cobj_template_object_variable_values {
+  template_id  Int
+  object_id    Int
+  property     String  @db.VarChar(255)
+  parameter_id Int
+  value        String? @db.Text
+
+  @@id([template_id, object_id, property])
+  @@index([parameter_id], map: "parameter_id")
+}
+
+model fo_cobj_template_objects {
+  template_id Int
+  object_id   Int
+
+  @@id([template_id, object_id])
+}
+
+model fo_cobj_template_parameters {
+  template_id  Int
+  parameter_id Int
+  name         String? @db.VarChar(255)
+  description  String? @db.VarChar(255)
+  type         String? @db.VarChar(255)
+  required     Int     @default(0) @db.UnsignedTinyInt
+
+  @@id([template_id, parameter_id])
+}
+
+model fo_cobj_templates {
+  id             Int     @id @default(autoincrement())
+  name           String? @db.VarChar(255)
+  description    String? @db.Text
+  object_type_id Int?
+
+  @@index([name], map: "name")
+  @@index([object_type_id], map: "object_type_id")
+}
+
+model fo_comments {
+  object_id       Int     @id @default(autoincrement()) @db.UnsignedInt
+  rel_object_id   Int     @default(0) @db.UnsignedInt
+  text            String? @db.Text
+  author_name     String? @db.VarChar(50)
+  author_email    String? @db.VarChar(100)
+  author_homepage String  @default("") @db.VarChar(100)
+
+  @@index([rel_object_id], map: "object_id")
+}
+
+model fo_config_categories {
+  id             Int    @id @default(autoincrement()) @db.UnsignedTinyInt
+  name           String @unique(map: "name") @default("") @db.VarChar(50)
+  is_system      Int    @default(0) @db.UnsignedTinyInt
+  category_order Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([category_order], map: "order")
+}
+
+model fo_config_options {
+  id                   Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  category_name        String  @default("") @db.VarChar(30)
+  name                 String  @unique(map: "name") @default("") @db.VarChar(50)
+  value                String? @db.Text
+  config_handler_class String  @default("") @db.VarChar(50)
+  is_system            Int     @default(0) @db.UnsignedTinyInt
+  option_order         Int     @default(0) @db.UnsignedSmallInt
+  dev_comment          String? @db.VarChar(255)
+  options              String? @default("") @db.VarChar(511)
+
+  @@index([category_name], map: "category_id")
+  @@index([option_order], map: "order")
+}
+
+model fo_contact_addresses {
+  id                      Int    @id @default(autoincrement()) @db.UnsignedInt
+  contact_id              Int    @db.UnsignedInt
+  address_type_id         Int    @db.UnsignedInt
+  street                  String @db.Text
+  city                    String @default("") @db.VarChar(50)
+  state                   String @default("") @db.VarChar(50)
+  country                 String @default("") @db.VarChar(50)
+  zip_code                String @default("") @db.VarChar(50)
+  is_main                 Int    @default(0) @db.UnsignedTinyInt
+  default_billing_address Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([contact_id, is_main], map: "by_contact")
+}
+
+model fo_contact_config_categories {
+  id             Int    @id @default(autoincrement()) @db.UnsignedTinyInt
+  name           String @unique(map: "name") @default("") @db.VarChar(50)
+  is_system      Int    @default(0) @db.UnsignedTinyInt
+  type           Int    @default(0) @db.UnsignedTinyInt
+  category_order Int    @default(0) @db.UnsignedTinyInt
+  located_under  Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([category_order], map: "order")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model fo_contact_config_option_values {
+  option_id  Int     @default(0) @db.UnsignedInt
+  contact_id Int     @default(0) @db.UnsignedInt
+  value      String? @db.Text
+  member_id  Int?    @default(0) @db.UnsignedInt
+
+  @@ignore
+}
+
+model fo_contact_config_options {
+  id                   Int     @id @default(autoincrement()) @db.UnsignedInt
+  category_name        String  @default("") @db.VarChar(30)
+  name                 String  @unique(map: "name") @default("") @db.VarChar(50)
+  default_value        String? @db.Text
+  config_handler_class String  @default("") @db.VarChar(50)
+  is_system            Int     @default(0) @db.UnsignedTinyInt
+  option_order         Int     @default(0) @db.UnsignedSmallInt
+  dev_comment          String? @db.VarChar(255)
+  options              String? @db.VarChar(1000)
+
+  @@index([category_name, is_system], map: "category_id")
+  @@index([option_order], map: "order")
+}
+
+model fo_contact_dimension_permissions {
+  permission_group_id Int                                               @db.UnsignedInt
+  dimension_id        Int                                               @db.UnsignedInt
+  permission_type     fo_contact_dimension_permissions_permission_type?
+
+  @@id([permission_group_id, dimension_id])
+}
+
+model fo_contact_emails {
+  id                    Int    @id @default(autoincrement()) @db.UnsignedInt
+  contact_id            Int    @db.UnsignedInt
+  email_type_id         Int    @db.UnsignedInt
+  email_address         String @default("") @db.VarChar(255)
+  is_main               Int    @default(0) @db.UnsignedTinyInt
+  default_billing_email Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([contact_id, is_main], map: "by_contact")
+  @@index([email_address], map: "email_address")
+  @@index([email_address], map: "email_address_2")
+}
+
+model fo_contact_external_tokens {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  contact_id    Int       @db.UnsignedInt
+  token         String?   @db.Text
+  type          String    @default("") @db.VarChar(50)
+  external_key  String?   @default("") @db.VarChar(255)
+  external_name String?   @default("") @db.VarChar(255)
+  created_date  DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  expired_date  DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  // Required for idempotent project creation: INSERT IGNORE relies on this
+  // constraint to detect concurrent inserts of the same external_id.
+  // Apply with: api/prisma/sql/add-unique-external-token.sql
+  @@unique([type, external_key], name: "uq_type_external_key")
+}
+
+model fo_contact_im_values {
+  id         Int    @id @default(autoincrement()) @db.UnsignedInt
+  contact_id Int    @db.UnsignedInt
+  im_type_id Int    @db.UnsignedInt
+  value      String @default("") @db.VarChar(50)
+  is_main    Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([contact_id, is_main], map: "by_contact")
+}
+
+model fo_contact_member_cache {
+  contact_id       Int      @db.UnsignedInt
+  member_id        Int      @db.UnsignedInt
+  parent_member_id Int      @default(0) @db.UnsignedInt
+  last_activity    DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@id([contact_id, member_id])
+  @@index([contact_id], map: "by_contact")
+  @@index([parent_member_id], map: "by_parent")
+  @@index([last_activity], map: "last_activity")
+}
+
+model fo_contact_member_permissions {
+  permission_group_id Int @db.UnsignedInt
+  member_id           Int @db.UnsignedInt
+  object_type_id      Int @db.UnsignedInt
+  can_write           Int @default(0) @db.UnsignedTinyInt
+  can_delete          Int @default(0) @db.UnsignedTinyInt
+
+  @@id([permission_group_id, member_id, object_type_id])
+  @@index([member_id], map: "member_id")
+  @@index([object_type_id], map: "obj_type")
+}
+
+model fo_contact_passwords {
+  id            Int      @id @unique(map: "id") @default(autoincrement())
+  contact_id    Int
+  password      String   @db.VarChar(40)
+  password_date DateTime @db.DateTime(0)
+}
+
+model fo_contact_permission_groups {
+  contact_id          Int @db.UnsignedInt
+  permission_group_id Int @db.UnsignedInt
+
+  @@id([contact_id, permission_group_id])
+  @@index([contact_id], map: "contact_id")
+  @@index([permission_group_id], map: "permission_group_id")
+}
+
+model fo_contact_telephones {
+  id                Int    @id @default(autoincrement()) @db.UnsignedInt
+  contact_id        Int    @db.UnsignedInt
+  telephone_type_id Int    @db.UnsignedInt
+  number            String @default("") @db.VarChar(50)
+  is_main           Int    @default(0) @db.UnsignedTinyInt
+  name              String @db.VarChar(256)
+
+  @@index([contact_id, is_main], map: "by_contact")
+}
+
+model fo_contact_web_pages {
+  id          Int    @id @default(autoincrement()) @db.UnsignedInt
+  contact_id  Int    @db.UnsignedInt
+  web_type_id Int    @db.UnsignedInt
+  url         String @default("") @db.VarChar(50)
+
+  @@index([contact_id, web_type_id], map: "by_contact")
+}
+
+model fo_contact_widget_options {
+  widget_name          String @db.VarChar(40)
+  contact_id           Int
+  member_type_id       Int    @default(0)
+  option               String @db.VarChar(255)
+  value                String @db.VarChar(255)
+  config_handler_class String @db.VarChar(50)
+  is_system            Int?   @default(0) @db.UnsignedTinyInt
+
+  @@id([widget_name, contact_id, member_type_id, option])
+}
+
+model fo_contact_widgets {
+  widget_name String @db.VarChar(40)
+  contact_id  Int
+  section     String @db.VarChar(40)
+  order       Int
+  options     String @db.VarChar(255)
+
+  @@id([widget_name, contact_id])
+}
+
+model fo_contacts {
+  object_id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  first_name           String    @default("") @db.VarChar(255)
+  surname              String    @default("") @db.VarChar(255)
+  is_company           Int       @default(0) @db.UnsignedTinyInt
+  company_id           Int?      @db.UnsignedInt
+  department           String?   @db.VarChar(50)
+  job_title            String?   @db.VarChar(50)
+  birthday             DateTime? @db.DateTime(0)
+  timezone             Float     @default(0.0) @db.Float
+  user_type            Int       @default(0) @db.UnsignedSmallInt
+  is_active_user       Int       @default(0) @db.UnsignedTinyInt
+  token                String    @default("") @db.VarChar(40)
+  salt                 String    @default("") @db.VarChar(13)
+  twister              String    @default("") @db.VarChar(10)
+  display_name         String?   @db.VarChar(50)
+  permission_group_id  Int       @db.UnsignedInt
+  username             String    @default("") @db.VarChar(50)
+  contact_passwords_id Int       @db.UnsignedInt
+  picture_file         String?   @db.VarChar(44)
+  picture_file_small   String    @db.VarChar(100)
+  picture_file_medium  String    @db.VarChar(100)
+  avatar_file          String?   @db.VarChar(44)
+  comments             String?   @db.Text
+  last_login           DateTime? @db.DateTime(0)
+  last_visit           DateTime? @db.DateTime(0)
+  last_activity        DateTime? @db.DateTime(0)
+  personal_member_id   Int?      @db.UnsignedInt
+  disabled             Boolean   @default(false)
+  default_billing_id   Int       @default(0)
+  is_confidential      Boolean   @default(false)
+  user_timezone_id     Int       @default(0) @db.UnsignedInt
+  token_disabled       String    @default("") @db.VarChar(40)
+  default_hour_type_id Int       @default(0) @db.UnsignedInt
+
+  @@index([is_company, company_id, department], map: "company")
+  @@index([first_name, surname], map: "first_name")
+  @@index([permission_group_id], map: "perm_group")
+  @@index([surname, first_name], map: "surname")
+  @@index([user_type, username], map: "username")
+}
+
+model fo_countries {
+  code String @id @default("") @db.Char(10)
+  name String @default("") @db.VarChar(255)
+
+  @@index([name], map: "name")
+}
+
+model fo_cron_events {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  name      String   @unique(map: "uk_name") @default("") @db.VarChar(45)
+  recursive Boolean  @default(true)
+  delay     Int      @default(0) @db.UnsignedInt
+  is_system Boolean  @default(false)
+  enabled   Boolean  @default(true)
+  date      DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+}
+
+model fo_currencies {
+  id          Int     @id @default(autoincrement()) @db.UnsignedInt
+  symbol      String  @db.VarChar(5)
+  name        String  @db.VarChar(128)
+  short_name  String  @db.VarChar(50)
+  is_default  Boolean
+  external_id Int     @db.UnsignedInt
+}
+
+model fo_custom_properties {
+  id                  Int     @id @default(autoincrement())
+  object_type_id      Int     @db.UnsignedInt
+  name                String  @db.VarChar(255)
+  type                String  @db.VarChar(255)
+  description         String  @db.Text
+  values              String  @db.Text
+  default_value       String  @db.VarChar(255)
+  is_required         Boolean
+  is_multiple_values  Boolean
+  property_order      Int
+  position            String? @default("full_width") @db.VarChar(20)
+  visible_by_default  Boolean
+  code                String  @default("") @db.VarChar(255)
+  is_special          Boolean @default(false)
+  is_disabled         Boolean @default(false)
+  total_operation     String  @default("") @db.VarChar(50)
+  object_subtype_id   Int     @default(0) @db.UnsignedInt
+  show_in_lists       Boolean @default(false)
+  default_currency_id Int     @default(1)
+  contact_type        String  @default("all") @db.VarChar(255)
+  is_import_id        Int     @default(0) @db.UnsignedTinyInt
+  is_calculated       Boolean @default(false)
+  is_editable         Boolean @default(false)
+  formula             String  @default("") @db.VarChar(511)
+  filter_values_by    String  @default("") @db.VarChar(255)
+  linked_to           String  @default("") @db.VarChar(255)
+  decimal_digits      Int     @default(2)
+}
+
+model fo_custom_property_values {
+  id                 Int     @id @default(autoincrement())
+  object_id          Int
+  custom_property_id Int
+  value              String? @db.Text
+  currency_id        Int     @default(0)
+
+  @@index([custom_property_id], map: "custom_property_id")
+  @@index([object_id], map: "object_id")
+  @@index([value(length: 255)], map: "value")
+}
+
+model fo_customer_additional_data {
+  customer_id          Int   @id @db.UnsignedInt
+  total_tasks          Int   @db.UnsignedInt
+  completed_tasks      Int   @db.UnsignedInt
+  task_completion_p    Float @db.Float
+  total_estimated_time Int   @db.UnsignedInt
+  total_worked_time    Int   @db.UnsignedInt
+  time_worked_p        Float @db.Float
+
+  @@index([completed_tasks], map: "completed_tasks")
+  @@index([task_completion_p], map: "task_completion")
+  @@index([total_estimated_time], map: "total_estimated_time")
+  @@index([total_tasks], map: "total_tasks")
+  @@index([total_worked_time], map: "total_worked_time")
+  @@index([time_worked_p], map: "worked_time")
+}
+
+model fo_customer_contacts {
+  contact_id  Int @default(autoincrement()) @db.UnsignedInt
+  customer_id Int @db.UnsignedInt
+
+  @@id([contact_id, customer_id])
+}
+
+model fo_customer_feedback {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @db.VarChar(45)
+}
+
+model fo_customer_payment_cycles {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @db.VarChar(45)
+}
+
+model fo_customer_service_types {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @db.VarChar(45)
+}
+
+model fo_customer_status {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @db.VarChar(45)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model fo_customers {
+  object_id               Int       @id @default(autoincrement()) @db.UnsignedInt
+  contact_id              Int       @db.UnsignedInt
+  status_id               Int?      @db.UnsignedInt
+  system_usage            Float?    @db.Float
+  installation_id         String?   @db.VarChar(128)
+  users_limit             Int?      @db.UnsignedInt
+  diskspace_limit         Int?      @db.UnsignedInt
+  collaborators_limit     Int?      @db.UnsignedInt
+  active_users            Int?      @db.UnsignedInt
+  cmrr                    Float?    @db.Float
+  payment_cycle_id        Int?      @db.UnsignedInt
+  service_type_id         Int?      @db.UnsignedInt
+  feedback_id             Int?      @db.UnsignedInt
+  code                    Int?      @db.UnsignedInt
+  start_date              DateTime? @db.DateTime(0)
+  end_date                DateTime? @db.DateTime(0)
+  industry                String?   @db.VarChar(128)
+  internal_users          Int?      @db.UnsignedInt
+  external_users          Int?      @db.UnsignedInt
+  subscription_channel_id Int?      @db.UnsignedInt
+  payment_method_id       Int?      @db.UnsignedInt
+  customer_name           String?   @db.VarChar(100)
+  customer_address        String?   @db.VarChar(100)
+  customer_rut            String?   @db.VarChar(50)
+  customer_number         String?   @db.VarChar(50)
+  automatic_status        Boolean   @default(true)
+  contact_object_type_id  Int       @default(0) @db.UnsignedInt
+}
+
+model fo_dimension_association_filters {
+  id             Int     @id @default(autoincrement())
+  association_id Int?    @default(0)
+  property_id    String? @default("") @db.VarChar(255)
+  operator       String? @default("") @db.VarChar(255)
+  value          String? @default("") @db.VarChar(255)
+
+  @@index([association_id], map: "association_id")
+}
+
+model fo_dimension_associations_config {
+  association_id Int    @db.UnsignedInt
+  config_name    String @db.VarChar(255)
+  type           String @default("boolean") @db.VarChar(255)
+  value          String @db.Text
+
+  @@id([association_id, config_name])
+}
+
+model fo_dimension_content_object_options {
+  dimension_id           Int     @default(0)
+  content_object_type_id Int     @default(0)
+  option                 String  @default("") @db.VarChar(255)
+  value                  String? @db.Text
+
+  @@id([dimension_id, content_object_type_id, option])
+}
+
+model fo_dimension_member_association_default_selections {
+  association_id     Int @db.UnsignedInt
+  member_id          Int @db.UnsignedInt
+  selected_member_id Int @db.UnsignedInt
+
+  @@id([association_id, member_id, selected_member_id])
+}
+
+model fo_dimension_member_associations {
+  id                        Int    @id @default(autoincrement()) @db.UnsignedInt
+  dimension_id              Int    @db.UnsignedInt
+  object_type_id            Int    @db.UnsignedInt
+  associated_dimension_id   Int    @db.UnsignedInt
+  associated_object_type_id Int    @db.UnsignedInt
+  is_required               Int    @default(0) @db.UnsignedTinyInt
+  is_multiple               Int    @default(0) @db.UnsignedTinyInt
+  keeps_record              Int    @default(0) @db.UnsignedTinyInt
+  allows_default_selection  Int    @db.UnsignedTinyInt
+  code                      String @default("") @db.VarChar(255)
+  object_subtype_id         Int    @default(0) @db.UnsignedInt
+
+  @@index([associated_dimension_id, associated_object_type_id], map: "by_associated")
+  @@index([dimension_id, object_type_id], map: "by_dimension_objtype")
+}
+
+model fo_dimension_member_restriction_definitions {
+  dimension_id              Int @db.UnsignedInt
+  object_type_id            Int @db.UnsignedInt
+  restricted_dimension_id   Int @db.UnsignedInt
+  restricted_object_type_id Int @db.UnsignedInt
+  is_orderable              Int @default(0) @db.UnsignedTinyInt
+  enforce_order_progression Int @default(0) @db.UnsignedTinyInt
+  is_required               Int @default(0) @db.UnsignedTinyInt
+
+  @@id([dimension_id, object_type_id, restricted_dimension_id, restricted_object_type_id])
+}
+
+model fo_dimension_object_type_contents {
+  dimension_id             Int @db.UnsignedInt
+  dimension_object_type_id Int @db.UnsignedInt
+  content_object_type_id   Int @db.UnsignedInt
+  is_required              Int @default(0) @db.UnsignedTinyInt
+  is_multiple              Int @default(0) @db.UnsignedTinyInt
+
+  @@id([dimension_id, dimension_object_type_id, content_object_type_id])
+  @@index([content_object_type_id], map: "by_co_obj_type")
+}
+
+model fo_dimension_object_type_hierarchies {
+  dimension_id          Int @db.UnsignedInt
+  parent_object_type_id Int @db.UnsignedInt
+  child_object_type_id  Int @db.UnsignedInt
+
+  @@id([dimension_id, parent_object_type_id, child_object_type_id])
+}
+
+model fo_dimension_object_type_options {
+  dimension_id      Int    @db.UnsignedInt
+  object_type_id    Int    @db.UnsignedInt
+  name              String @db.VarChar(100)
+  value             String @db.Text
+  object_subtype_id Int    @default(0) @db.UnsignedInt
+
+  @@id([dimension_id, object_type_id, name])
+}
+
+model fo_dimension_object_types {
+  dimension_id   Int     @db.UnsignedInt
+  object_type_id Int     @db.UnsignedInt
+  is_root        Int     @default(0) @db.UnsignedTinyInt
+  options        String  @db.Text
+  enabled        Boolean @default(true)
+
+  @@id([dimension_id, object_type_id])
+}
+
+model fo_dimension_options {
+  dimension_id Int    @db.UnsignedInt
+  name         String @db.VarChar(100)
+  value        String @db.Text
+
+  @@id([dimension_id, name])
+}
+
+model fo_dimensions {
+  id                        Int                                   @id @default(autoincrement()) @db.UnsignedInt
+  code                      String                                @unique(map: "code") @default("") @db.VarChar(30)
+  name                      String                                @default("") @db.VarChar(50)
+  is_root                   Int                                   @default(0) @db.UnsignedTinyInt
+  is_manageable             Int                                   @default(0) @db.UnsignedTinyInt
+  allows_multiple_selection Int                                   @default(0) @db.UnsignedTinyInt
+  defines_permissions       Int                                   @default(0) @db.UnsignedTinyInt
+  is_system                 Int                                   @default(0) @db.UnsignedTinyInt
+  is_default                Int                                   @default(0) @db.UnsignedTinyInt
+  default_order             Int                                   @default(0)
+  options                   String                                @db.Text
+  permission_query_method   fo_dimensions_permission_query_method @default(mandatory)
+  is_required               Boolean                               @default(false)
+
+  @@index([name], map: "by_name")
+  @@index([defines_permissions], map: "defines_perm")
+}
+
+model fo_einvoice_external_taxes {
+  income_tax_id           Int @db.UnsignedInt
+  external_invoice_tax_id Int @db.UnsignedInt
+
+  @@id([income_tax_id, external_invoice_tax_id])
+}
+
+model fo_einvoice_external_type {
+  invoice_type_id          Int     @db.UnsignedInt
+  external_invoice_type_id Int     @db.UnsignedInt
+  final_consumer           Boolean @default(false)
+
+  @@id([invoice_type_id, external_invoice_type_id])
+}
+
+model fo_email_types {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  name      String @default("") @db.VarChar(30)
+  is_system Int    @default(0) @db.UnsignedTinyInt
+}
+
+model fo_event_invitations {
+  event_id         Int     @default(0) @db.UnsignedInt
+  contact_id       Int     @default(0) @db.UnsignedInt
+  invitation_state Int     @default(0) @db.UnsignedInt
+  synced           Int?    @default(0)
+  special_id       String? @db.Text
+
+  @@id([event_id, contact_id])
+}
+
+model fo_exchange_rates {
+  id                  Int      @id @default(autoincrement()) @db.UnsignedInt
+  source_currency_id  Int      @db.UnsignedInt
+  destiny_currency_id Int      @db.UnsignedInt
+  date                DateTime @db.DateTime(0)
+  rate                Decimal  @default(1.0000000000) @db.Decimal(20, 10)
+}
+
+model fo_expense_items {
+  object_id        Int      @id @db.UnsignedInt
+  expense_id       Int      @default(0) @db.UnsignedInt
+  date             DateTime @db.DateTime(0)
+  description      String   @db.Text
+  quantity         Decimal  @default(0.000) @db.Decimal(20, 3)
+  product_type_id  Int      @default(0) @db.UnsignedInt
+  currency_id      Int      @default(0) @db.UnsignedInt
+  unit_cost        Decimal  @default(0.000) @db.Decimal(20, 3)
+  total_cost       Decimal  @default(0.000) @db.Decimal(20, 3)
+  price_multiplier Decimal  @default(1.000) @db.Decimal(20, 3)
+  unit_price       Decimal  @default(0.000) @db.Decimal(20, 3)
+  total_price      Decimal  @default(0.000) @db.Decimal(20, 3)
+
+  @@index([date], map: "date")
+  @@index([expense_id], map: "expense_id")
+  @@index([product_type_id, expense_id], map: "product_type_id")
+}
+
+model fo_expense_items_history {
+  id                Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_id         Int      @db.UnsignedInt
+  expense_id        Int      @db.UnsignedInt
+  date              DateTime @db.DateTime(0)
+  name              String   @db.Text
+  description       String   @db.Text
+  quantity          Decimal  @default(0.000) @db.Decimal(20, 3)
+  product_type_id   Int      @default(0) @db.UnsignedInt
+  currency_id       Int      @db.UnsignedInt
+  unit_cost         Decimal  @default(0.000) @db.Decimal(20, 3)
+  total_cost        Decimal  @default(0.000) @db.Decimal(20, 3)
+  price_multiplier  Decimal  @default(1.000) @db.Decimal(20, 3)
+  unit_price        Decimal  @default(0.000) @db.Decimal(20, 3)
+  total_price       Decimal  @default(0.000) @db.Decimal(20, 3)
+  user_id           Int      @db.UnsignedInt
+  modification_date DateTime @db.DateTime(0)
+  modification_log  String   @db.Text
+
+  @@index([date], map: "date")
+  @@index([expense_id], map: "expense_id")
+  @@index([modification_date], map: "modification_date")
+  @@index([object_id], map: "object_id")
+  @@index([user_id], map: "user_id")
+}
+
+model fo_expense_totals {
+  expense_id  Int     @default(0)
+  status_id   Int     @default(0)
+  currency_id Int     @default(0)
+  unit_cost   Decimal @default(0.000) @db.Decimal(20, 3)
+  total_cost  Decimal @default(0.000) @db.Decimal(20, 3)
+  unit_price  Decimal @default(0.000) @db.Decimal(20, 3)
+  total_price Decimal @default(0.000) @db.Decimal(20, 3)
+
+  @@id([expense_id, status_id, currency_id])
+}
+
+model fo_expenses {
+  object_id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  description         String   @db.Text
+  status_id           Int      @default(0) @db.UnsignedInt
+  currency_id         Int      @default(0) @db.UnsignedInt
+  invoicing_status_id Int      @default(0) @db.UnsignedInt
+  date                DateTime @db.DateTime(0)
+  is_billable         Boolean
+  task_id             Int      @default(0) @db.UnsignedInt
+  invoicing_status    String   @default("pending") @db.VarChar(100)
+  expense_type        String   @default("") @db.VarChar(255)
+
+  @@index([task_id], map: "task_id")
+}
+
+model fo_expenses_history {
+  id                Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_id         Int      @db.UnsignedInt
+  name              String   @db.Text
+  description       String   @db.Text
+  user_id           Int      @db.UnsignedInt
+  modification_date DateTime @db.DateTime(0)
+  status_id         Int      @db.UnsignedInt
+  date              DateTime @db.DateTime(0)
+  status_name       String   @db.VarChar(128)
+  modification_log  String   @db.Text
+
+  @@index([object_id], map: "expense")
+}
+
+model fo_expenses_status {
+  id                Int      @id @default(autoincrement()) @db.UnsignedInt
+  order             Int      @db.UnsignedInt
+  code              String   @db.VarChar(128)
+  name              String   @db.VarChar(128)
+  description       String   @db.Text
+  editable          Boolean
+  created_on        DateTime @db.DateTime(0)
+  created_by_id     Int      @db.UnsignedInt
+  enabled           Boolean
+  is_final          Boolean
+  is_temporal       Boolean
+  only_for_expenses Boolean
+
+  @@index([order], map: "order")
+}
+
+model fo_external_calendar_properties {
+  external_calendar_id Int    @db.UnsignedInt
+  key                  String @db.VarChar(255)
+  value                String @db.Text
+
+  @@id([external_calendar_id, key])
+}
+
+model fo_external_calendar_users {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  contact_id Int      @db.UnsignedInt
+  auth_user  String   @db.VarChar(100)
+  auth_pass  String?  @db.Text
+  type       String   @db.Text
+  sync       Boolean? @default(false)
+  related_to String   @db.VarChar(255)
+}
+
+model fo_external_calendars {
+  id                   Int     @id @default(autoincrement()) @db.UnsignedInt
+  ext_cal_user_id      Int     @db.UnsignedInt
+  original_calendar_id String? @db.VarChar(255)
+  calendar_visibility  String  @db.VarChar(255)
+  calendar_name        String  @db.Text
+  calendar_feng        Boolean @default(false)
+  sync                 Boolean @default(false)
+  related_to           String  @default("") @db.VarChar(255)
+}
+
+model fo_facturalista_comprobantes {
+  codigo        Int    @id @db.UnsignedInt
+  name          String @db.VarChar(255)
+  cancel_doc_id Int    @db.UnsignedInt
+}
+
+model fo_facturalista_configs {
+  id          Int    @id @default(autoincrement()) @db.UnsignedInt
+  name        String @db.VarChar(255)
+  description String @db.Text
+  value       String @db.Text
+}
+
+model fo_facturalista_factura {
+  invoice_id Int    @id @db.UnsignedInt
+  id_externa Int    @db.UnsignedInt
+  numero     Int    @db.UnsignedInt
+  serie      String @db.VarChar(255)
+  tipoCFE    Int    @db.UnsignedInt
+}
+
+model fo_facturalista_impuestos {
+  id     Int    @id @default(autoincrement()) @db.UnsignedInt
+  codigo String @db.VarChar(255)
+  name   String @db.VarChar(255)
+}
+
+model fo_facturalista_logs {
+  id        Int     @id @default(autoincrement()) @db.UnsignedInt
+  object_id Int     @db.UnsignedInt
+  name      String  @db.VarChar(255)
+  content   String? @db.Text
+}
+
+model fo_file_repo {
+  id      String @id @default("") @db.VarChar(40)
+  content Bytes
+  order   Int    @default(0) @db.UnsignedInt
+
+  @@index([order], map: "order")
+}
+
+model fo_file_repo_attributes {
+  id        String @default("") @db.VarChar(40)
+  attribute String @default("") @db.VarChar(50)
+  value     String @db.Text
+
+  @@id([id, attribute])
+}
+
+model fo_file_types {
+  id            Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  extension     String  @unique(map: "extension") @default("") @db.VarChar(10)
+  icon          String  @default("") @db.VarChar(30)
+  is_searchable Int     @default(0) @db.UnsignedTinyInt
+  is_image      Int     @default(0) @db.UnsignedTinyInt
+  is_allow      Boolean @default(true)
+  friendly_name String  @default("") @db.VarChar(100)
+}
+
+model fo_forms {
+  object_id Int @id @default(autoincrement()) @db.UnsignedInt
+}
+
+model fo_formula_factors_by_group {
+  group_id         Int     @db.UnsignedInt
+  name             String  @db.VarChar(255)
+  enabled          Boolean
+  comparisson_type String  @db.VarChar(45)
+  required_value   Int     @db.UnsignedInt
+
+  @@id([group_id, name])
+}
+
+model fo_formula_factors_groups {
+  group_id   Int @id @default(autoincrement()) @db.UnsignedInt
+  formula_id Int @db.UnsignedInt
+  status_id  Int @db.UnsignedInt
+}
+
+model fo_formulas {
+  id             Int     @id @default(autoincrement()) @db.UnsignedInt
+  object_type_id Int     @db.UnsignedInt
+  is_default     Boolean
+  name           String  @db.VarChar(256)
+}
+
+model fo_guistate {
+  contact_id Int    @default(1) @db.UnsignedInt
+  name       String @db.VarChar(100)
+  value      String @db.Text
+
+  @@id([contact_id, name])
+}
+
+model fo_historic_values {
+  object_id     Int      @db.UnsignedInt
+  name          String   @default("") @db.VarChar(50)
+  value         String   @default("") @db.VarChar(50)
+  created_on    DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  created_by_id Int      @db.UnsignedInt
+
+  @@id([object_id, created_on])
+}
+
+model fo_im_types {
+  id       Int     @id @default(autoincrement()) @db.UnsignedInt
+  name     String  @default("") @db.VarChar(30)
+  icon     String  @default("") @db.VarChar(30)
+  disabled Boolean @default(false)
+}
+
+model fo_income_config_options {
+  id                   Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  name                 String  @unique(map: "name") @default("") @db.VarChar(50)
+  value                String? @db.Text
+  config_handler_class String  @default("") @db.VarChar(50)
+  is_system            Boolean
+  options              String  @default("") @db.VarChar(255)
+}
+
+model fo_income_copies {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  name           String    @db.VarChar(100)
+  description    String?   @db.Text
+  color          String?   @db.VarChar(100)
+  select_default Boolean?
+  removed_on     DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  removed_by_id  Int?      @default(0) @db.UnsignedInt
+}
+
+model fo_income_invoice_childs {
+  object_id_parent Int @db.UnsignedInt
+  object_id_child  Int @db.UnsignedInt
+
+  @@id([object_id_parent, object_id_child])
+}
+
+model fo_income_invoice_copies {
+  invoice_id Int
+  copy_id    Int
+
+  @@id([invoice_id, copy_id])
+}
+
+model fo_income_invoice_layouts {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  code      String @default("") @db.VarChar(100)
+  name      String @default("") @db.VarChar(100)
+  enabled   Int    @default(1) @db.UnsignedTinyInt
+  is_system Int    @default(0) @db.UnsignedTinyInt
+  content   String @db.Text
+}
+
+model fo_income_invoice_line_taxes {
+  invoice_line_id Int
+  tax_id          Int
+  value           Decimal @db.Decimal(20, 3)
+  applied_value   Decimal @db.Decimal(20, 3)
+
+  @@id([invoice_line_id, tax_id])
+  @@index([tax_id], map: "tax_id")
+}
+
+model fo_income_invoice_lines {
+  id                     Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_id              Int      @db.UnsignedInt
+  currency_id            Int      @default(0)
+  amount                 Decimal  @db.Decimal(20, 3)
+  unit_value             Decimal  @db.Decimal(20, 3)
+  total                  Decimal  @db.Decimal(20, 3)
+  subtotal               Decimal  @db.Decimal(20, 3)
+  taxes                  Decimal  @db.Decimal(20, 3)
+  detail                 String   @db.Text
+  exchange_rate          Int      @default(1)
+  rel_object_id          Int      @default(0)
+  user_id                Int      @default(0)
+  category_id            Int      @default(0)
+  date                   DateTime @db.Date
+  from_object_type_id    Int      @default(0)
+  product_type_id        Int      @default(0)
+  unit_cost              Decimal  @default(0.000) @db.Decimal(20, 3)
+  price_multiplier       Decimal  @default(0.000) @db.Decimal(20, 3)
+  member_id              Int      @default(0)
+  group_by_category_id   Int      @default(0)
+  order                  Int?
+  item_type_id           Int?
+  discount_percent_type  Int?     @default(0)
+  discount_percent_value Decimal? @default(0.000) @db.Decimal(20, 3)
+
+  @@index([object_id], map: "object_id")
+}
+
+model fo_income_invoice_notebooks {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  invoice_type_id   Int       @db.UnsignedInt
+  rut               String?   @db.VarChar(100)
+  expiration_date   DateTime  @db.Date
+  series            String    @db.VarChar(100)
+  initial_number    Int
+  final_number      Int
+  address           String?   @db.VarChar(255)
+  extra_information String?   @db.Text
+  press_information String?   @db.Text
+  exhausted         Boolean?  @default(false)
+  removed_on        DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  removed_by_id     Int?      @default(0) @db.UnsignedInt
+}
+
+model fo_income_invoice_references {
+  id                   Int     @id @default(autoincrement()) @db.UnsignedInt
+  object_id            Int     @db.UnsignedInt
+  serie                String  @db.VarChar(100)
+  invoice_number       Int     @db.UnsignedInt
+  referenced_object_id Int     @db.UnsignedInt
+  detail               String  @db.Text
+  amount               Decimal @default(0.000) @db.Decimal(20, 3)
+}
+
+model fo_income_invoice_taxes {
+  invoice_id  Int
+  tax_id      Int
+  type        String @db.VarChar(50)
+  value       Float  @db.Float
+  fixed_value Float  @db.Float
+
+  @@id([invoice_id, tax_id])
+}
+
+model fo_income_invoice_template_options {
+  template_id     Int    @db.UnsignedInt
+  group_option    String @db.VarChar(200)
+  name            String @db.VarChar(200)
+  label           String @db.VarChar(200)
+  order_number    Int    @default(0) @db.UnsignedInt
+  visible         Int    @default(1) @db.UnsignedTinyInt
+  selected_option String @default("") @db.VarChar(200)
+  format          String @default("") @db.VarChar(100)
+  bold            Int    @default(0) @db.UnsignedTinyInt
+
+  @@id([template_id, name])
+}
+
+model fo_income_invoice_templates {
+  id                                             Int      @id @default(autoincrement()) @db.UnsignedInt
+  name                                           String?  @db.VarChar(255)
+  is_default                                     Boolean  @default(false)
+  group_by                                       String   @default("") @db.VarChar(100)
+  include_date                                   Boolean  @default(false)
+  include_user_name                              String   @default("") @db.VarChar(100)
+  include_labor_category                         Boolean  @default(false)
+  include_description                            Boolean  @default(false)
+  exp_group_by                                   String   @default("") @db.VarChar(100)
+  display_cost_or_price                          String   @default("price") @db.VarChar(100)
+  include_paid_by                                Boolean  @default(false)
+  include_product_type                           Boolean  @default(false)
+  include_expense_category                       Boolean  @default(false)
+  template_type                                  String   @default("detailed") @db.VarChar(100)
+  show_taxes_for_each_line                       Boolean  @default(false)
+  show_headers_before_details                    Boolean  @default(false)
+  include_exp_date                               Boolean  @default(false)
+  include_expense_name                           Boolean  @default(false)
+  include_expense_description                    Boolean  @default(false)
+  include_account_summary                        Boolean? @default(false)
+  break_down_by_subprojects                      String   @default("NO") @db.VarChar(100)
+  footer_text                                    String   @default("") @db.VarChar(2024)
+  break_down_expenses_by_category                String   @default("no") @db.VarChar(100)
+  show_expenses_markup_separated                 Boolean  @default(false)
+  accumulate_discounts                           String   @default("between_line_items") @db.VarChar(100)
+  include_detail                                 Int      @default(0) @db.UnsignedTinyInt
+  include_task_name                              Int      @default(0) @db.UnsignedTinyInt
+  include_hours                                  Int      @default(0) @db.UnsignedTinyInt
+  include_rate                                   Int      @default(0) @db.UnsignedTinyInt
+  include_custom_description                     String   @default("") @db.VarChar(100)
+  include_time_entry_description                 Int      @default(0) @db.UnsignedTinyInt
+  include_total                                  Int      @default(0) @db.UnsignedTinyInt
+  include_exp_quantity                           Int      @default(0) @db.UnsignedTinyInt
+  include_exp_amount                             Int      @default(0) @db.UnsignedTinyInt
+  include_exp_fee                                Int      @default(0) @db.UnsignedTinyInt
+  include_exp_total                              Int      @default(0) @db.UnsignedTinyInt
+  include_project_name                           Int      @default(0) @db.UnsignedTinyInt
+  include_project_description                    Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_project_number                Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_project_name                  Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_from_to                       Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_date                          String   @default("") @db.VarChar(100)
+  include_lump_sum_quantity                      Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_budget_completion             Int      @default(0) @db.UnsignedTinyInt
+  include_expense_project_number                 Int      @default(0) @db.UnsignedTinyInt
+  include_expense_project_name                   Int      @default(0) @db.UnsignedTinyInt
+  include_time_line_date                         String   @default("Item date") @db.VarChar(100)
+  include_exp_type_date                          String   @default("Item date") @db.VarChar(100)
+  include_lump_sum_date_col                      Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_unit_price                    Int      @default(0) @db.UnsignedTinyInt
+  include_lump_sum_project_type                  Int      @default(0) @db.UnsignedTinyInt
+  category_for_lump_sum                          Int      @default(0)
+  product_type_for_lump_sum                      Int      @default(0)
+  category_for_lump_sum_col                      Boolean  @default(false)
+  product_type_for_lump_sum_col                  Boolean  @default(false)
+  category_for_timeslot                          Int      @default(0)
+  product_type_for_timeslot                      Int      @default(0)
+  category_for_timeslot_col                      Boolean  @default(false)
+  product_type_for_timeslot_col                  Boolean  @default(false)
+  category_for_expenses                          Int      @default(0)
+  product_type_for_expenses                      Int      @default(0)
+  category_for_expenses_col                      Boolean  @default(false)
+  product_type_for_expenses_col                  Boolean  @default(false)
+  include_paid_by_col                            Boolean  @default(false)
+  include_lump_sum_deetail_col                   Boolean  @default(false)
+  include_exp_description                        Boolean  @default(false)
+  include_exp_user_name_col                      String   @default("Do not display") @db.VarChar(100)
+  include_user_name_col                          String   @default("Do not display") @db.VarChar(100)
+  invoice_template_assigned                      String   @default("original") @db.VarChar(100)
+  custom_label_include_date                      String   @default("date") @db.VarChar(100)
+  custom_label_include_user_name_col             String   @default("person name") @db.VarChar(100)
+  custom_label_category_for_timeslot_col         String   @default("labor category") @db.VarChar(100)
+  custom_label_include_description               String   @default("detail") @db.VarChar(100)
+  custom_label_include_hours                     String   @default("hours") @db.VarChar(100)
+  custom_label_include_rate                      String   @default("rate") @db.VarChar(100)
+  custom_label_include_total                     String   @default("total") @db.VarChar(100)
+  custom_label_include_exp_date                  String   @default("date") @db.VarChar(100)
+  custom_label_include_paid_by_col               String   @default("paid by") @db.VarChar(100)
+  custom_label_include_exp_user_name_col         String   @default("person name") @db.VarChar(100)
+  custom_label_category_for_expenses_col         String   @default("expense category") @db.VarChar(100)
+  custom_label_product_type_for_expenses_col     String   @default("product type") @db.VarChar(100)
+  custom_label_include_exp_description           String   @default("detail") @db.VarChar(100)
+  custom_label_include_exp_quantity              String   @default("quantity") @db.VarChar(100)
+  custom_label_include_exp_amount                String   @default("unit value") @db.VarChar(100)
+  custom_label_include_exp_fee                   String   @default("fee") @db.VarChar(100)
+  custom_label_include_exp_total                 String   @default("total") @db.VarChar(100)
+  custom_label_include_lump_sum_date_col         String   @default("Date") @db.VarChar(100)
+  custom_label_category_for_lump_sum_col         String   @default("Category") @db.VarChar(100)
+  custom_label_product_type_for_lump_sum_col     String   @default("Product type") @db.VarChar(100)
+  custom_label_include_lump_sum_deetail_col      String   @default("Detail") @db.VarChar(100)
+  custom_label_include_lump_sum_quantity         String   @default("Quantity") @db.VarChar(100)
+  custom_label_include_lump_sum_unit_price       String   @default("total") @db.VarChar(100)
+  template_language_assigned                     String   @default("") @db.VarChar(100)
+  task_all_expenses_includes                     Int      @default(1) @db.UnsignedTinyInt
+  task_group                                     String   @default("aggregated into a single line") @db.VarChar(100)
+  task_custom_detail                             String   @default("") @db.VarChar(100)
+  labor_detail_separator_value                   String   @default("") @db.VarChar(100)
+  expense_detail_separator_value                 String   @default("") @db.VarChar(100)
+  tasks_detail_separator_value                   String   @default("") @db.VarChar(100)
+  lump_sum_detail_separator_value                String   @default("") @db.VarChar(100)
+  task_allow_billing_per_percent                 Int      @default(0) @db.UnsignedTinyInt
+  task_invoice_billing_type                      String   @default("Invoice difference only") @db.VarChar(100)
+  include_exp_unit_cost                          Int      @default(0) @db.UnsignedTinyInt
+  custom_label_include_exp_include_exp_unit_cost String   @default("Unit cost") @db.VarChar(100)
+  expense_detail_vendor_name                     Int      @default(0) @db.UnsignedTinyInt
+  expense_detail_bill_no                         Int      @default(0) @db.UnsignedTinyInt
+  include_expense_task_name                      Int      @default(0) @db.UnsignedTinyInt
+  include_additional_info_in_footer              Int      @default(0) @db.UnsignedTinyInt
+  include_exp_markup_amount                      Int      @default(0) @db.UnsignedTinyInt
+  custom_label_include_exp_markup_amount         String   @default("Markup %") @db.VarChar(100)
+  date_format                                    String   @default("") @db.VarChar(50)
+  include_project_location                       Boolean? @default(false)
+  project_info_section_layout                    String   @default("horizontally") @db.VarChar(50)
+  project_info_show_empty_properties             Int      @default(1) @db.UnsignedTinyInt
+  include_customer_id                            Int?     @default(1) @db.TinyInt
+  include_payment_status                         Int?     @default(1) @db.TinyInt
+  show_labor_subtotal                            Int?     @default(1) @db.TinyInt
+  show_expenses_subtotal                         Int?     @default(1) @db.TinyInt
+  include_task_line_date                         String   @default("Item date") @db.VarChar(100)
+  category_for_task                              Int      @default(0)
+  include_task_user_name                         String   @default("No name") @db.VarChar(100)
+  include_task_labor_category                    Int      @default(0) @db.UnsignedTinyInt
+  include_task_name_for_task                     Int      @default(0) @db.UnsignedTinyInt
+  include_task_project_name                      Int      @default(0) @db.UnsignedTinyInt
+  general_invoice_include_time                   Int      @default(0) @db.UnsignedTinyInt
+  general_invoice_include_tasks                  Int      @default(0) @db.UnsignedTinyInt
+  general_invoice_include_expenses               Int      @default(0) @db.UnsignedTinyInt
+  apply_admin_fee                                Int      @default(0) @db.TinyInt
+  admin_fee_over_labor                           Int      @default(0) @db.TinyInt
+  admin_fee_over_expenses                        Int      @default(0) @db.TinyInt
+  admin_fee_line_type                            String   @default("labor") @db.VarChar(100)
+  admin_fee_product_or_labor_id                  Int      @default(0)
+  admin_fee_detail                               String   @db.Text
+  admin_fee_percentage                           Decimal  @default(0.000) @db.Decimal(20, 3)
+  apply_discount                                 Int      @default(0) @db.TinyInt
+  discount_over_labor                            Int      @default(0) @db.TinyInt
+  discount_over_expenses                         Int      @default(0) @db.TinyInt
+  discount_type                                  String   @default("percentage") @db.VarChar(100)
+  discount_currency_id                           Int      @default(1)
+  discount_value                                 Decimal  @default(0.000) @db.Decimal(20, 3)
+  include_task_description                       Int      @default(0) @db.UnsignedTinyInt
+  bill_to_address_format                         Int      @default(2) @db.UnsignedTinyInt
+  bill_to_format                                 String   @default("name_address") @db.VarChar(100)
+  is_conditional_discount                        Boolean  @default(false)
+  conditional_discount_text                      String   @default("") @db.VarChar(255)
+  conditional_discount_days_to_apply_discount    Int      @default(0)
+  include_invoice_date_in_header                 Int?     @default(1) @db.TinyInt
+  include_invoice_due_date_in_header             Int?     @default(1) @db.TinyInt
+  include_labor_table_title                      Int      @default(0) @db.UnsignedTinyInt
+  labor_table_title                              String   @default("") @db.VarChar(255)
+  include_expense_table_title                    Int      @default(0) @db.UnsignedTinyInt
+  expense_table_title                            String   @default("") @db.VarChar(255)
+  invoice_header_date_format                     String   @default("d/m/Y") @db.VarChar(100)
+  footer_position                                String?  @default("after_totals") @db.VarChar(20)
+  include_payment_summary                        Boolean? @default(false)
+  print_accent_color                             String   @default("") @db.VarChar(16)
+  print_title_color                              String   @default("") @db.VarChar(16)
+  print_invoice_number_color                     String   @default("") @db.VarChar(16)
+  print_subtotal_color                           String   @default("") @db.VarChar(16)
+  print_total_color                              String   @default("") @db.VarChar(16)
+  print_info_section_title_color                 String   @default("") @db.VarChar(16)
+}
+
+model fo_income_invoice_types {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  name           String    @db.VarChar(100)
+  select_default Boolean?
+  removed_on     DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  removed_by_id  Int?      @default(0) @db.UnsignedInt
+}
+
+model fo_income_invoices {
+  object_id                    Int      @id @db.UnsignedInt
+  invoice_notebook_id          Int      @db.UnsignedInt
+  invoice_number               String   @default("") @db.VarChar(50)
+  series                       String   @default("") @db.VarChar(5)
+  date                         DateTime @db.Date
+  final_consumer               Boolean
+  currency_id                  Int      @default(0)
+  subtotal                     Decimal  @db.Decimal(20, 3)
+  total                        Decimal  @db.Decimal(20, 3)
+  customer_id                  Int      @db.UnsignedInt
+  customer_name                String   @db.Text
+  customer_address             String   @db.VarChar(100)
+  customer_city                String   @default("") @db.VarChar(100)
+  customer_rut                 String   @db.VarChar(100)
+  customer_number              String   @db.VarChar(50)
+  status                       String   @db.VarChar(100)
+  repeat_end                   DateTime @db.Date
+  repeat_forever               Boolean
+  repeat_num                   Int      @db.UnsignedInt
+  repeat_d                     Int      @db.UnsignedInt
+  repeat_m                     Int      @db.UnsignedInt
+  repeat_y                     Int      @db.UnsignedInt
+  repeat_h                     Int      @db.UnsignedInt
+  repeat_dow                   Int      @db.UnsignedInt
+  repeat_wnum                  Int      @db.UnsignedInt
+  repeat_mjump                 Int      @db.UnsignedInt
+  from_invoice_id              Int      @db.UnsignedInt
+  additional_information       String   @db.Text
+  expiration_date              DateTime @db.Date
+  invoice_preview_file_id      Int      @default(0) @db.UnsignedInt
+  sent_invoice_mail_id         Int      @default(0) @db.UnsignedInt
+  ordered_by_id                Int      @default(0) @db.UnsignedInt
+  payment_method               String   @db.VarChar(255)
+  external_transaction_id      String   @db.VarChar(255)
+  customer_state               String   @db.VarChar(100)
+  customer_country             String   @db.VarChar(100)
+  customer_zipcode             String   @db.VarChar(100)
+  customer_email               String   @db.VarChar(500)
+  customer_phone               String   @db.VarChar(100)
+  external_transaction_desc    String   @db.Text
+  sent                         String   @default("") @db.VarChar(255)
+  einvoice_document_id         Int      @default(0) @db.UnsignedInt
+  einvoice_destiny_currency_id Int      @default(0) @db.UnsignedInt
+  einvoice_destiny_rate        Decimal  @db.Decimal(20, 3)
+  customer_einvoice_doc_type   Int      @default(0)
+  attn                         String?  @default("") @db.VarChar(255)
+  einvoice_qr_file_id          Int      @default(0) @db.UnsignedInt
+  paid_amount                  Decimal  @default(0.000) @db.Decimal(20, 3)
+  due_amount                   Decimal  @default(0.000) @db.Decimal(20, 3)
+
+  @@index([date], map: "date")
+  @@index([invoice_number], map: "invoice_number")
+  @@index([series, invoice_number], map: "series_invoice_number")
+  @@index([status], map: "status")
+  @@index([total], map: "total")
+}
+
+model fo_income_tax_records {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  tax_id        Int       @db.UnsignedInt
+  type          String    @db.VarChar(50)
+  value         Float     @db.Float
+  date          DateTime  @db.Date
+  removed_on    DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  removed_by_id Int?      @default(0) @db.UnsignedInt
+}
+
+model fo_income_taxes {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  name           String    @db.VarChar(50)
+  select_default Boolean
+  removed_on     DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  removed_by_id  Int?      @default(0) @db.UnsignedInt
+  code           String    @db.VarChar(255)
+  is_special     Boolean   @default(false)
+}
+
+model fo_linked_objects {
+  rel_object_id Int      @default(0) @db.UnsignedInt
+  object_id     Int      @default(0) @db.UnsignedInt
+  created_on    DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  created_by_id Int?     @db.UnsignedInt
+
+  @@id([rel_object_id, object_id])
+}
+
+model fo_locations {
+  object_id Int @id @default(autoincrement())
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model fo_mail_account_contacts {
+  id               Int     @id @default(autoincrement())
+  account_id       Int
+  contact_id       Int
+  can_edit         Boolean @default(false)
+  is_default       Boolean @default(false)
+  signature        String  @db.MediumText
+  sender_name      String  @default("") @db.VarChar(100)
+  last_error_state Int     @default(0) @db.UnsignedInt
+  need_ui_update   Int     @default(0) @db.UnsignedInt
+
+  @@unique([account_id, contact_id], map: "uk_contactacc")
+  @@index([account_id], map: "ix_account")
+  @@index([contact_id], map: "ix_contact")
+}
+
+model fo_mail_account_imap_folder {
+  account_id         Int     @default(0) @db.UnsignedInt
+  folder_name        String  @default("") @db.VarChar(500)
+  check_folder       Boolean @default(false)
+  last_uid_in_folder String  @default("") @db.VarChar(255)
+  special_use        String  @default("") @db.VarChar(255)
+  last_uidvalidity   String  @default("") @db.VarChar(255)
+  last_highestmodseq String  @default("") @db.VarChar(255)
+
+  @@id([account_id, folder_name])
+}
+
+model fo_mail_account_rules {
+  id         Int @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int @db.UnsignedInt
+  rule_id    Int @db.UnsignedInt
+}
+
+model fo_mail_accounts {
+  id                                        Int      @id @default(autoincrement()) @db.UnsignedInt
+  contact_id                                Int      @default(0) @db.UnsignedInt
+  name                                      String   @default("") @db.VarChar(40)
+  email                                     String?  @default("") @db.VarChar(100)
+  email_addr                                String   @default("") @db.VarChar(100)
+  password                                  String?  @default("") @db.VarChar(40)
+  server                                    String   @default("") @db.VarChar(100)
+  is_imap                                   Int      @default(0)
+  incoming_ssl                              Int      @default(0)
+  incoming_ssl_port                         Int?     @default(995)
+  incoming_ssl_verify_peer                  Boolean  @default(false)
+  smtp_server                               String   @default("") @db.VarChar(100)
+  smtp_use_auth                             Int      @default(0) @db.UnsignedInt
+  smtp_username                             String?  @db.VarChar(100)
+  smtp_password                             String?  @db.VarChar(100)
+  smtp_port                                 Int      @default(25) @db.UnsignedInt
+  del_from_server                           Int      @default(0)
+  outgoing_transport_type                   String   @default("") @db.VarChar(5)
+  last_checked                              DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  is_default                                Boolean  @default(false)
+  signature                                 String   @db.Text
+  sender_name                               String   @default("") @db.VarChar(100)
+  last_error_date                           DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  last_error_msg                            String   @db.VarChar(255)
+  sync_addr                                 String   @db.VarChar(100)
+  sync_pass                                 String   @db.VarChar(40)
+  sync_server                               String   @db.VarChar(100)
+  sync_ssl                                  Boolean  @default(false)
+  sync_ssl_port                             Int      @default(993)
+  sync_folder                               String   @db.VarChar(100)
+  member_id                                 String   @db.VarChar(100)
+  mark_read_on_server                       Int      @default(0)
+  get_read_state_from_server                Boolean  @default(true)
+  can_detect_special_folders                Boolean  @default(false)
+  sync_archive_remove_from_inbox_in_server  Boolean  @default(true)
+  sync_classify_remove_from_inbox_in_server Boolean  @default(false)
+  sync_removed_from_inbox_archive_in_feng   Boolean  @default(true)
+  sync_old_deleted_in_server_delete_in_feng Boolean  @default(false)
+  for_newsletters                           Boolean  @default(false)
+  oauth2_access_token                       String   @db.Text
+  oauth2_provider                           String   @default("") @db.VarChar(255)
+  uses_oauth2                               Boolean  @default(false)
+  exclude_from_synchronizing                Boolean  @default(false)
+
+  @@index([contact_id], map: "contact_id")
+}
+
+model fo_mail_content_imap_folders {
+  account_id Int    @db.UnsignedInt
+  message_id String @db.VarChar(255)
+  folder     String @db.VarChar(500)
+  uid        String @default("") @db.VarChar(255)
+  object_id  Int    @default(0) @db.UnsignedInt
+
+  @@id([account_id, folder, object_id])
+  @@index([account_id, folder, object_id], map: "account_id_folder_object_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model fo_mail_contents {
+  object_id         Int      @id @db.UnsignedInt
+  account_id        Int      @default(0) @db.UnsignedInt
+  uid               String   @default("") @db.VarChar(255)
+  from              String   @default("") @db.VarChar(100)
+  from_name         String?  @db.VarChar(250)
+  sent_date         DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  received_date     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  has_attachments   Int      @default(0)
+  size              Int      @default(0)
+  state             Int      @default(0)
+  is_deleted        Int      @default(0)
+  is_shared         Int      @default(0)
+  imap_folder_name  String   @default("") @db.VarChar(100)
+  account_email     String?  @default("") @db.VarChar(100)
+  content_file_id   String   @default("") @db.VarChar(40)
+  message_id        String   @db.VarChar(255)
+  in_reply_to_id    String   @db.VarChar(255)
+  conversation_id   Int      @default(0) @db.UnsignedInt
+  conversation_last Int      @default(1)
+  sync              Int      @default(0)
+
+  @@index([account_id], map: "account_id")
+  @@index([conversation_id], map: "conversation_id")
+  @@index([message_id], map: "message_id")
+  @@index([received_date], map: "received_date")
+  @@index([sent_date], map: "sent_date")
+  @@index([state], map: "state")
+  @@index([uid], map: "uid")
+}
+
+model fo_mail_conversations {
+  id Int @id @default(autoincrement())
+}
+
+model fo_mail_datas {
+  id         Int     @id @db.UnsignedInt
+  to         String  @db.Text
+  cc         String  @db.Text
+  bcc        String  @db.Text
+  subject    String? @db.Text
+  content    String? @db.Text
+  body_plain String? @db.LongText
+  body_html  String? @db.LongText
+  from_copy  String? @db.Text
+
+  @@index([subject(length: 255)], map: "subject")
+  @@index([to(length: 255)], map: "to")
+  @@fulltext([to, cc, bcc, subject, body_plain, from_copy], map: "idx_fulltext_mail_datas_all")
+}
+
+model fo_mail_rule_actions {
+  id           Int     @id @default(autoincrement()) @db.UnsignedInt
+  rule_id      Int     @db.UnsignedInt
+  action       String  @db.VarChar(255)
+  order        Int     @db.SmallInt
+  action_value String? @db.Text
+}
+
+model fo_mail_rule_conditions {
+  id       Int    @id @default(autoincrement())
+  rule_id  Int
+  field    String @db.Text
+  operator String @db.Text
+  value    String @db.Text
+}
+
+model fo_mail_rules {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(255)
+}
+
+model fo_mail_spam_filters {
+  id         Int                             @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int                             @db.UnsignedInt
+  text_type  fo_mail_spam_filters_text_type
+  text       String                          @db.Text
+  spam_state fo_mail_spam_filters_spam_state
+}
+
+model fo_mail_templates {
+  id                       Int    @id @default(autoincrement()) @db.UnsignedInt
+  code                     String @default("") @db.VarChar(255)
+  name                     String @default("") @db.VarChar(255)
+  description              String @db.Text
+  subject                  String @db.Text
+  body                     String @db.Text
+  to                       String @db.Text
+  cc                       String @db.Text
+  bcc                      String @db.Text
+  from_name                String @default("") @db.VarChar(255)
+  attachments              String @db.Text
+  mail_account_id          Int    @default(0) @db.UnsignedInt
+  enabled                  Int    @db.UnsignedTinyInt
+  execution_order          Int    @db.UnsignedInt
+  send_datetime            String @default("now") @db.VarChar(255)
+  member_id                Int    @default(0) @db.UnsignedInt
+  is_notification_template Int    @default(0) @db.UnsignedTinyInt
+  object_status_types_id   Int?   @db.UnsignedInt
+  object_type_id           Int?   @db.UnsignedInt
+
+  @@index([code], map: "code")
+  @@index([name], map: "name")
+}
+
+model fo_mail_tracks {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_id Int      @db.UnsignedInt
+  readed_on DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  ip        String   @default("0") @db.VarChar(255)
+
+  @@index([object_id], map: "object_id")
+}
+
+model fo_max_role_object_type_permissions {
+  role_id        Int     @db.UnsignedInt
+  object_type_id Int     @db.UnsignedInt
+  can_delete     Boolean
+  can_write      Boolean
+
+  @@id([role_id, object_type_id])
+}
+
+model fo_max_system_permissions {
+  permission_group_id                       Int     @id @db.UnsignedInt
+  can_manage_security                       Int     @default(0) @db.UnsignedTinyInt
+  can_manage_configuration                  Int     @default(0) @db.UnsignedTinyInt
+  can_manage_templates                      Int     @default(0) @db.UnsignedTinyInt
+  can_manage_time                           Int     @default(0) @db.UnsignedTinyInt
+  can_add_mail_accounts                     Int     @default(0) @db.UnsignedTinyInt
+  can_manage_dimensions                     Int     @default(0) @db.UnsignedTinyInt
+  can_manage_dimension_members              Int     @default(0) @db.UnsignedTinyInt
+  can_manage_tasks                          Int     @default(0) @db.UnsignedTinyInt
+  can_task_assignee                         Int     @default(0) @db.UnsignedTinyInt
+  can_manage_billing                        Int     @default(0) @db.UnsignedTinyInt
+  can_view_billing                          Int     @default(0) @db.UnsignedTinyInt
+  can_see_assigned_to_other_tasks           Int     @default(1) @db.UnsignedTinyInt
+  can_update_other_users_invitations        Int     @default(0) @db.UnsignedTinyInt
+  can_edit_confirmed_invoices               Int     @default(0) @db.UnsignedTinyInt
+  can_manage_invoicing_configuration        Int     @default(0) @db.UnsignedTinyInt
+  can_link_objects                          Int     @default(0) @db.UnsignedTinyInt
+  can_instantiate_templates                 Int     @default(0) @db.UnsignedTinyInt
+  can_manage_repetitive_properties_of_tasks Boolean @default(false)
+  can_add_timeslots_in_time_tab             Int     @default(0) @db.UnsignedTinyInt
+  can_manage_mail_templates                 Int     @default(0) @db.UnsignedTinyInt
+  can_see_others_timeslots                  Int     @default(1) @db.UnsignedTinyInt
+  can_see_expenses_of_others                Int     @default(1) @db.UnsignedTinyInt
+  can_reopen_task                           Int     @default(0) @db.UnsignedTinyInt
+}
+
+model fo_member_cobj_templates_instantiation_log {
+  member_id        Int @default(0) @db.UnsignedInt
+  cobj_template_id Int @default(0) @db.UnsignedInt
+
+  @@id([member_id, cobj_template_id])
+}
+
+model fo_member_custom_properties {
+  id                 Int     @id @default(autoincrement())
+  object_type_id     Int     @db.UnsignedInt
+  name               String  @db.VarChar(255)
+  type               String  @db.VarChar(255)
+  description        String  @db.Text
+  values             String  @db.Text
+  default_value      String  @db.Text
+  is_system          Boolean
+  is_required        Boolean
+  is_multiple_values Boolean
+  property_order     Int
+  position           String? @default("full_width") @db.VarChar(20)
+  visible_by_default Boolean
+  code               String  @default("") @db.VarChar(255)
+  is_special         Boolean
+  is_disabled        Boolean
+  total_operation    String  @default("") @db.VarChar(50)
+  show_in_lists      Boolean @default(false)
+  is_import_id       Int     @default(0) @db.UnsignedTinyInt
+  is_calculated      Boolean @default(false)
+  is_editable        Boolean @default(false)
+  formula            String  @default("") @db.VarChar(511)
+  filter_values_by   String  @default("") @db.VarChar(255)
+  linked_to          String  @default("") @db.VarChar(255)
+  decimal_digits     Int     @default(2)
+}
+
+model fo_member_custom_property_values {
+  id                 Int    @id @default(autoincrement())
+  member_id          Int
+  custom_property_id Int
+  value              String @db.Text
+
+  @@index([member_id], map: "member_id")
+}
+
+model fo_member_history {
+  id            Int      @id @default(autoincrement())
+  member_id     Int
+  type          String   @db.VarChar(50)
+  property      String   @db.VarChar(50)
+  action        String   @db.VarChar(50)
+  value         String   @db.Text
+  created_by_id Int
+  created_on    DateTime @db.DateTime(0)
+
+  @@index([member_id, created_on], map: "member_id_created_on")
+}
+
+model fo_member_property_members {
+  id                 Int      @id @default(autoincrement()) @db.UnsignedInt
+  association_id     Int      @db.UnsignedInt
+  member_id          Int      @db.UnsignedInt
+  property_member_id Int      @db.UnsignedInt
+  is_active          Int      @default(0) @db.UnsignedTinyInt
+  created_on         DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  created_by_id      Int?     @db.UnsignedInt
+
+  @@index([association_id, member_id, property_member_id], map: "association_id")
+  @@index([is_active], map: "is_active")
+  @@index([member_id, property_member_id], map: "member_id_property_member_id")
+}
+
+model fo_member_restrictions {
+  member_id            Int @db.UnsignedInt
+  restricted_member_id Int @db.UnsignedInt
+  order                Int @db.UnsignedSmallInt
+
+  @@id([member_id, restricted_member_id])
+}
+
+model fo_member_task_templates_instantiation_log {
+  member_id        Int @default(0) @db.UnsignedInt
+  task_template_id Int @default(0) @db.UnsignedInt
+
+  @@id([member_id, task_template_id])
+}
+
+model fo_member_templates {
+  id                        Int     @id @default(autoincrement()) @db.UnsignedInt
+  dimension_id              Int     @default(0) @db.UnsignedInt
+  object_type_id            Int     @default(0) @db.UnsignedInt
+  name                      String  @db.VarChar(200)
+  can_instantiate_from_mail Boolean @default(false)
+  object_subtype_id         Int     @default(0) @db.UnsignedInt
+}
+
+model fo_member_templates_available_types {
+  dimension_id   Int @db.UnsignedInt
+  object_type_id Int @db.UnsignedInt
+
+  @@id([dimension_id, object_type_id])
+}
+
+model fo_member_templates_initial_associations {
+  template_id          Int     @db.UnsignedInt
+  associated_member_id Int     @db.UnsignedInt
+  dim_association_id   Int     @db.UnsignedInt
+  is_initial           Boolean
+
+  @@id([template_id, associated_member_id])
+}
+
+model fo_member_templates_task_templates {
+  template_id           Int     @db.UnsignedInt
+  associated_member_ids String  @db.VarChar(255)
+  task_template_ids     String  @db.VarChar(255)
+  is_initial            Boolean
+  cobj_template_ids     String  @default("") @db.VarChar(255)
+
+  @@id([template_id, associated_member_ids])
+}
+
+model fo_member_totals {
+  id                                    Int     @id @default(autoincrement()) @db.UnsignedInt
+  member_id                             Int     @default(0) @db.UnsignedInt
+  estimated_labor_minutes               Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_labor_billable_price        Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_labor_non_billable_price    Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_labor_total_price           Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_labor_billable_cost         Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_labor_non_billable_cost     Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_labor_total_cost            Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_minutes                Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_billable_minutes       Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_non_billable_minutes   Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_billable_price         Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_non_billable_price     Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_total_price            Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_billable_cost          Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_non_billable_cost      Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_labor_total_cost             Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_expense_billable_price      Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_expense_non_billable_price  Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_expense_total_price         Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_expense_billable_cost       Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_expense_non_billable_cost   Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_expense_total_cost          Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_expense_billable_price       Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_expense_non_billable_price   Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_expense_total_price          Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_expense_billable_cost        Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_expense_non_billable_cost    Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_expense_total_cost           Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_overall_billable_price      Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_overall_non_billable_price  Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_overall_total_price         Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_overall_billable_cost       Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_overall_non_billable_cost   Decimal @default(0.000) @db.Decimal(50, 3)
+  estimated_overall_total_cost          Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_overall_billable_price       Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_overall_non_billable_price   Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_overall_total_price          Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_overall_billable_cost        Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_overall_non_billable_cost    Decimal @default(0.000) @db.Decimal(50, 3)
+  executed_overall_total_cost           Decimal @default(0.000) @db.Decimal(50, 3)
+  invoiced_total                        Decimal @default(0.000) @db.Decimal(50, 3)
+  invoiced_subtotal                     Decimal @default(0.000) @db.Decimal(50, 3)
+  invoiced_paid_amount                  Decimal @default(0.000) @db.Decimal(50, 3)
+  invoiced_due_amount                   Decimal @default(0.000) @db.Decimal(50, 3)
+  percent_completed                     Int     @default(0) @db.UnsignedInt
+  unbilled_labor_price                  Decimal @default(0.000) @db.Decimal(50, 3)
+  unbilled_expense_price                Decimal @default(0.000) @db.Decimal(50, 3)
+  unbilled_total_price                  Decimal @default(0.000) @db.Decimal(50, 3)
+  earned_value_vs_contract_amount       Decimal @default(0.000) @db.Decimal(50, 3)
+  remaining_budgeted_vs_contract_amount Decimal @default(0.000) @db.Decimal(50, 3)
+  earned_value_vs_estimated_price       Decimal @default(0.000) @db.Decimal(50, 3)
+  remaining_budgeted_vs_estimated_price Decimal @default(0.000) @db.Decimal(50, 3)
+  budgeted_cost_consumption             Decimal @default(0.000) @db.Decimal(50, 3)
+  remaining_budgeted_cost               Decimal @default(0.000) @db.Decimal(50, 3)
+
+  @@index([member_id], map: "member_id")
+}
+
+model fo_members {
+  id               Int      @id @default(autoincrement()) @db.UnsignedInt
+  dimension_id     Int      @db.UnsignedInt
+  object_type_id   Int      @db.UnsignedInt
+  parent_member_id Int      @default(0) @db.UnsignedInt
+  depth            Int      @db.UnsignedInt
+  name             String   @default("") @db.VarChar(511)
+  object_id        Int?     @db.UnsignedInt
+  ws_id            Int      @default(0) @db.UnsignedInt
+  archived_by_id   Int      @db.UnsignedInt
+  archived_on      DateTime @db.DateTime(0)
+  color            Int      @default(0) @db.UnsignedInt
+  order            Int      @default(0) @db.UnsignedInt
+  template_id      Int      @default(0) @db.UnsignedInt
+  description      String   @db.Text
+  from_mail_id     Int      @default(0) @db.UnsignedInt
+  display_name     String   @default("") @db.VarChar(511)
+
+  @@index([archived_on], map: "archived_on")
+  @@index([dimension_id, parent_member_id, name(length: 255)], map: "by_dimension")
+  @@index([object_id], map: "by_object_id")
+  @@index([parent_member_id], map: "by_parent")
+  @@index([name(length: 255)], map: "name")
+  @@index([ws_id], map: "ws_id")
+}
+
+model fo_ms_calendar_objects {
+  object_id    Int
+  user_id      Int
+  ms_object_id String @db.Text
+
+  @@id([object_id, user_id])
+  @@index([ms_object_id(length: 511)], map: "ms_event_id")
+  @@index([user_id], map: "user_id")
+}
+
+model fo_newsletter_contacts_pending {
+  newsletter_id Int
+  contact_id    Int
+  status        String @db.VarChar(50)
+
+  @@id([newsletter_id, contact_id])
+}
+
+model fo_newsletter_contacts_sent {
+  newsletter_id Int
+  contact_id    Int
+  sent_date     DateTime @db.DateTime(0)
+
+  @@id([newsletter_id, contact_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model fo_newsletter_sent_emails {
+  id              Int      @id @default(autoincrement())
+  newsletter_id   Int      @default(0)
+  sent_date       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  to              String?  @db.Text
+  cc              String?  @db.Text
+  bcc             String?  @db.Text
+  from            String?  @db.Text
+  subject         String?  @db.Text
+  body            String?  @db.Text
+  attachments     String?  @db.Text
+  message_id      String   @db.VarChar(255)
+  status          String   @default("") @db.VarChar(50)
+  additional_data String?  @db.Text
+}
+
+model fo_newsletters {
+  object_id       Int                         @id @default(autoincrement()) @db.UnsignedInt
+  text            String?                     @db.Text
+  type_content    fo_newsletters_type_content @default(text)
+  start_date      DateTime                    @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  end_date        DateTime                    @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  mail_account_id Int                         @default(0)
+  status          String                      @default("pending") @db.VarChar(50)
+  subject         String                      @db.Text
+}
+
+model fo_newspapers {
+  object_id Int @id @default(autoincrement()) @db.UnsignedInt
+}
+
+model fo_non_working_days {
+  id    Int    @id @default(autoincrement()) @db.UnsignedInt
+  day   Int    @db.UnsignedInt
+  month Int    @db.UnsignedInt
+  name  String @db.VarChar(255)
+  year  Int    @default(0) @db.UnsignedInt
+
+  @@index([month, day], map: "monthday")
+  @@index([year, month, day], map: "year_month_day")
+}
+
+model fo_notification_summaries {
+  id                  Int      @id @default(autoincrement())
+  name                String   @default("") @db.VarChar(255)
+  next_execution_date DateTime @db.DateTime(0)
+  delay               Int
+  enabled             Boolean
+}
+
+model fo_notification_summaries_sent_logs {
+  summary_id         Int @default(0)
+  application_log_id Int @default(0)
+
+  @@id([summary_id, application_log_id])
+}
+
+model fo_object_billing {
+  object_id               Int     @id @default(autoincrement())
+  rel_object_id           Int?
+  contact_id              Int?
+  time                    Int?
+  total_price             Decimal @default(0.000) @db.Decimal(20, 3)
+  billing_rate            Decimal @default(0.000) @db.Decimal(20, 3)
+  is_total_price          Int     @default(0) @db.UnsignedTinyInt
+  rate_currency_id        Int     @default(0) @db.UnsignedInt
+  invoicing_status        String  @default("pending") @db.VarChar(50)
+  invoice_id              Int     @default(0) @db.UnsignedInt
+  total_cost              Decimal @default(0.000) @db.Decimal(20, 3)
+  cost_rate               Decimal @default(0.000) @db.Decimal(20, 3)
+  is_total_cost           Boolean @default(false)
+  adv_billing_id          Int     @default(0) @db.UnsignedInt
+  adv_cost_id             Int     @default(0) @db.UnsignedInt
+  cost_currency_id        Int     @default(0) @db.UnsignedInt
+  billing_category_status String  @default("") @db.VarChar(255)
+
+  @@index([adv_billing_id], map: "adv_billing_id")
+  @@index([adv_cost_id], map: "adv_cost_id")
+  @@index([contact_id], map: "contact_id")
+  @@index([rel_object_id], map: "rel_object_id")
+}
+
+model fo_object_contact_permissions {
+  rel_object_id Int @db.UnsignedInt
+  contact_id    Int @db.UnsignedInt
+  can_read      Int @db.UnsignedTinyInt
+  can_write     Int @db.UnsignedTinyInt
+  can_delete    Int @db.UnsignedTinyInt
+
+  @@id([rel_object_id, contact_id])
+}
+
+model fo_object_formulas {
+  object_id  Int @db.UnsignedInt
+  formula_id Int @db.UnsignedInt
+
+  @@id([object_id, formula_id])
+}
+
+model fo_object_invoice_line_relations {
+  id              Int     @id @default(autoincrement()) @db.UnsignedInt
+  object_id       Int     @default(0)
+  invoice_id      Int     @default(0)
+  invoice_line_id Int     @default(0)
+  currency_id     Int     @default(1)
+  amount          Decimal @default(0.000) @db.Decimal(20, 3)
+
+  @@index([invoice_id], map: "invoice_id")
+  @@index([invoice_line_id], map: "invoice_line_id")
+  @@index([object_id], map: "object_id")
+}
+
+model fo_object_invoice_relations {
+  id          Int     @id @default(autoincrement()) @db.UnsignedInt
+  object_id   Int     @default(0)
+  invoice_id  Int     @default(0)
+  currency_id Int     @default(1)
+  amount      Decimal @default(0.000) @db.Decimal(20, 3)
+
+  @@index([invoice_id], map: "invoice_id")
+  @@index([object_id], map: "object_id")
+}
+
+model fo_object_members {
+  object_id       Int @db.UnsignedInt
+  member_id       Int @db.UnsignedInt
+  is_optimization Int @default(0) @db.UnsignedTinyInt
+
+  @@id([object_id, member_id])
+  @@index([is_optimization], map: "is_optimization")
+  @@index([member_id], map: "member_id")
+  @@index([member_id], map: "member_id_2")
+}
+
+model fo_object_prefix_settings {
+  object_type_id   Int     @db.UnsignedInt
+  enabled          Boolean
+  max_digits       Int     @db.UnsignedInt
+  current_value    Int     @db.UnsignedInt
+  target           String  @default("prepend_to_name") @db.VarChar(100)
+  fixed_prefix     String  @default("") @db.VarChar(100)
+  only_on_creation Boolean @default(true)
+
+  @@id([object_type_id, target])
+}
+
+model fo_object_prefixes {
+  object_id Int    @id @db.UnsignedInt
+  prefix    String @db.VarChar(50)
+  target    String @default("") @db.VarChar(100)
+}
+
+model fo_object_print_options {
+  object_type_id    Int    @default(0) @db.UnsignedInt
+  object_subtype_id Int    @default(0) @db.UnsignedInt
+  option_type       String @default("") @db.VarChar(255)
+  property          String @default("") @db.VarChar(255)
+  html_content      String @db.Text
+  position          String @default("left") @db.VarChar(50)
+  order             Int    @default(0) @db.UnsignedInt
+
+  @@id([object_type_id, object_subtype_id, option_type, property])
+}
+
+model fo_object_properties {
+  id            Int    @id @default(autoincrement()) @db.UnsignedInt
+  rel_object_id Int    @db.UnsignedInt
+  name          String @db.Text
+  value         String @db.Text
+
+  @@index([rel_object_id], map: "ObjectID")
+}
+
+model fo_object_reminder_types {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @default("") @db.VarChar(40)
+}
+
+model fo_object_reminders {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_id      Int      @default(0) @db.UnsignedInt
+  contact_id     Int      @default(0) @db.UnsignedInt
+  type           String   @default("") @db.VarChar(40)
+  context        String   @default("") @db.VarChar(40)
+  minutes_before Int?
+  date           DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@index([object_id, date], map: "obj_date")
+  @@index([type, date], map: "type_date")
+}
+
+model fo_object_selector_temp_values {
+  user_id    Int      @default(0)
+  identifier String   @db.VarChar(255)
+  updated_on DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  value      String   @db.Text
+
+  @@id([user_id, identifier])
+}
+
+model fo_object_status_types {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  object_type_id Int       @db.UnsignedInt
+  name           String    @db.VarChar(255)
+  code           String    @default("") @db.VarChar(255)
+  description    String    @default("") @db.VarChar(255)
+  created_on     DateTime? @db.DateTime(0)
+  created_by_id  Int       @default(0) @db.UnsignedInt
+  updated_on     DateTime? @db.DateTime(0)
+  updated_by_id  Int       @default(0) @db.UnsignedInt
+  status         String    @default("") @db.VarChar(100)
+
+  @@index([object_type_id], map: "by_ot")
+}
+
+model fo_object_subscriptions {
+  object_id  Int @default(0) @db.UnsignedInt
+  contact_id Int @default(0) @db.UnsignedInt
+
+  @@id([object_id, contact_id])
+}
+
+model fo_object_subtype_dependencies {
+  object_subtype_id           Int @db.UnsignedInt
+  dependant_object_subtype_id Int @db.UnsignedInt
+
+  @@id([object_subtype_id, dependant_object_subtype_id])
+}
+
+model fo_object_subtype_properties {
+  object_subtype_id  Int     @db.UnsignedInt
+  property_id        String  @default("") @db.VarChar(255)
+  order              Int     @default(0)
+  is_required        Boolean @default(false)
+  is_disabled        Boolean @default(false)
+  label              String  @default("") @db.VarChar(255)
+  description        String  @db.Text
+  property_group_id  Int     @default(0) @db.UnsignedInt
+  in_parent_options  String  @default("do_not_show") @db.VarChar(255)
+  in_sibling_options String  @default("do_not_show") @db.VarChar(255)
+  in_child_options   String  @default("edit_in_main_tab") @db.VarChar(255)
+
+  @@id([object_subtype_id, property_id])
+}
+
+model fo_object_subtype_task_templates {
+  object_type_id    Int @db.UnsignedInt
+  object_subtype_id Int @db.UnsignedInt
+  task_template_id  Int @db.UnsignedInt
+
+  @@id([object_type_id, object_subtype_id, task_template_id])
+}
+
+model fo_object_subtypes {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_type_id Int      @db.UnsignedInt
+  name           String   @db.VarChar(255)
+  gender         String   @default("m") @db.VarChar(10)
+  code           String   @default("") @db.VarChar(255)
+  created_on     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  created_by_id  Int      @default(0) @db.UnsignedInt
+  updated_on     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  updated_by_id  Int      @default(0) @db.UnsignedInt
+  sum_in_total   Boolean  @default(true)
+  is_special     Boolean  @default(false)
+  member_id      Int      @default(0) @db.UnsignedInt
+  color          Int      @default(1) @db.UnsignedInt
+
+  @@index([name], map: "by_name")
+  @@index([object_type_id], map: "by_ot")
+}
+
+model fo_object_type_dependencies {
+  object_type_id           Int @db.UnsignedInt
+  dependant_object_type_id Int @db.UnsignedInt
+
+  @@id([object_type_id, dependant_object_type_id])
+}
+
+model fo_object_type_hierarchies {
+  id                    Int @id @default(autoincrement()) @db.UnsignedInt
+  parent_object_type_id Int @default(0) @db.UnsignedInt
+  child_object_type_id  Int @default(0) @db.UnsignedInt
+}
+
+model fo_object_type_hierarchy_options {
+  hierarchy_id   Int     @default(0) @db.UnsignedInt
+  dimension_id   Int     @default(0) @db.UnsignedInt
+  member_type_id Int     @default(0) @db.UnsignedInt
+  option         String  @default("") @db.VarChar(255)
+  value          String? @db.Text
+
+  @@id([hierarchy_id, dimension_id, member_type_id, option])
+}
+
+model fo_object_types {
+  id                                    Int                   @id @default(autoincrement()) @db.UnsignedInt
+  name                                  String                @unique(map: "name") @default("") @db.VarChar(50)
+  handler_class                         String                @default("") @db.VarChar(50)
+  table_name                            String                @default("") @db.VarChar(50)
+  type                                  fo_object_types_type?
+  icon                                  String                @default("") @db.VarChar(50)
+  plugin_id                             Int?                  @db.UnsignedInt
+  uses_order                            Int                   @default(0) @db.UnsignedInt
+  disable_generic_type_instantiation    Boolean               @default(false)
+  display_object_type_selector_on_forms Boolean               @default(true)
+
+  @@index([plugin_id], map: "plugin_id")
+}
+
+model fo_objective_history {
+  id                     Int                            @id @default(autoincrement()) @db.UnsignedInt
+  object_id              Int                            @db.UnsignedInt
+  description            String                         @db.Text
+  initial_value          Int                            @db.UnsignedInt
+  intermediate_objective Int                            @db.UnsignedInt
+  final_objective        Int                            @db.UnsignedInt
+  current_value          Int                            @db.UnsignedInt
+  start_date             DateTime                       @db.DateTime(0)
+  end_date               DateTime                       @db.DateTime(0)
+  accomplishment_percent Decimal                        @db.Decimal(10, 2)
+  direction              fo_objective_history_direction @default(asc)
+  status                 Int                            @db.UnsignedInt
+  modification_log       DateTime                       @db.DateTime(0)
+  user_id                Int                            @db.UnsignedInt
+  modification_date      DateTime                       @db.DateTime(0)
+
+  @@index([object_id], map: "expense")
+  @@index([modification_date], map: "logdate")
+}
+
+model fo_objectives {
+  object_id              Int                     @id @default(autoincrement()) @db.UnsignedInt
+  description            String                  @db.Text
+  initial_value          Int                     @db.UnsignedInt
+  intermediate_objective Int                     @db.UnsignedInt
+  final_objective        Int                     @db.UnsignedInt
+  current_value          Int                     @db.UnsignedInt
+  start_date             DateTime                @db.DateTime(0)
+  end_date               DateTime                @db.DateTime(0)
+  accomplishment_percent Decimal                 @db.Decimal(10, 2)
+  direction              fo_objectives_direction @default(asc)
+  status                 Int                     @db.UnsignedInt
+}
+
+model fo_objects {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  object_type_id    Int       @db.UnsignedInt
+  name              String    @default("") @db.VarChar(255)
+  created_on        DateTime  @db.DateTime(0)
+  created_by_id     Int?      @db.UnsignedInt
+  updated_on        DateTime  @db.DateTime(0)
+  updated_by_id     Int?      @db.UnsignedInt
+  trashed_on        DateTime? @db.DateTime(0)
+  trashed_by_id     Int?      @db.UnsignedInt
+  archived_on       DateTime? @db.DateTime(0)
+  archived_by_id    Int?      @db.UnsignedInt
+  timezone_id       Int       @default(0) @db.UnsignedInt
+  timezone_value    Int       @default(0)
+  object_subtype_id Int       @default(0) @db.UnsignedInt
+
+  @@index([archived_by_id], map: "archived_by_id")
+  @@index([created_on], map: "created_on")
+  @@index([name], map: "name")
+  @@index([object_type_id], map: "object_type")
+  @@index([object_type_id, trashed_on, archived_on], map: "object_type_id_trashed_on_archived_on")
+  @@index([trashed_on], map: "trashed_on")
+  @@index([updated_on], map: "updated_on")
+}
+
+model fo_payment_receipts {
+  object_id                Int      @id @db.UnsignedInt
+  expense_id               Int      @default(0) @db.UnsignedInt
+  status_id                Int      @default(0) @db.UnsignedInt
+  date                     DateTime @db.DateTime(0)
+  description              String   @db.Text
+  product_type_id          Int      @default(0) @db.UnsignedInt
+  currency_id              Int      @default(0) @db.UnsignedInt
+  amount                   Decimal  @default(0.000) @db.Decimal(20, 3)
+  document_id              String   @default("") @db.VarChar(255)
+  is_billable              Boolean
+  paid_by_id               Int      @default(0) @db.UnsignedInt
+  quantity                 Decimal  @default(0.000) @db.Decimal(20, 3)
+  unit_cost                Decimal  @default(0.000) @db.Decimal(20, 3)
+  unit_price               Decimal  @default(0.000) @db.Decimal(20, 3)
+  total_price              Decimal  @default(0.000) @db.Decimal(20, 3)
+  price_multiplier         Decimal  @default(1.000) @db.Decimal(20, 3)
+  total_cost_without_taxes Decimal  @default(0.000) @db.Decimal(20, 3)
+  expense_type             String   @default("reimbursable") @db.VarChar(100)
+  due_date                 DateTime @db.DateTime(0)
+  payment_term_id          Int      @default(0) @db.UnsignedInt
+  task_id                  Int      @default(0) @db.UnsignedInt
+  invoice_id               Int      @default(0)
+  invoicing_status         String   @default("pending") @db.VarChar(100)
+  is_paid                  Boolean  @default(false)
+
+  @@index([date], map: "date")
+  @@index([expense_id], map: "expense_id")
+  @@index([product_type_id, expense_id], map: "product_type_id")
+  @@index([task_id], map: "task_id")
+}
+
+model fo_permission_contexts {
+  contact_id          Int @db.UnsignedInt
+  permission_group_id Int @db.UnsignedInt
+  member_id           Int @db.UnsignedInt
+
+  @@id([contact_id, permission_group_id, member_id])
+}
+
+model fo_permission_groups {
+  id         Int                       @id @default(autoincrement()) @db.UnsignedInt
+  name       String                    @unique(map: "name") @default("") @db.VarChar(50)
+  contact_id Int?                      @db.UnsignedInt
+  is_context Int                       @default(0) @db.UnsignedTinyInt
+  plugin_id  Int?                      @db.UnsignedInt
+  parent_id  Int                       @default(0) @db.UnsignedInt
+  type       fo_permission_groups_type
+}
+
+model fo_plugins {
+  id              Int      @id @default(autoincrement()) @db.UnsignedInt
+  name            String   @unique(map: "name") @default("") @db.VarChar(50)
+  is_installed    Int      @default(0) @db.UnsignedTinyInt
+  is_activated    Int      @default(0) @db.UnsignedTinyInt
+  priority        Int      @default(0) @db.UnsignedSmallInt
+  activated_on    DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  activated_by_id Int?     @db.UnsignedInt
+  version         Int?     @default(1) @db.UnsignedInt
+}
+
+model fo_product_type_members {
+  product_type_id Int @db.UnsignedInt
+  dimension_id    Int @default(0)
+  member_id       Int @default(0)
+
+  @@id([product_type_id, dimension_id, member_id])
+}
+
+model fo_product_types {
+  id                    Int      @id @default(autoincrement()) @db.UnsignedInt
+  name                  String   @db.VarChar(255)
+  description           String   @db.Text
+  user_id               Int      @default(0) @db.UnsignedInt
+  rate_currency_id      Int      @default(0) @db.UnsignedInt
+  hourly_rate           Decimal  @default(0.000) @db.Decimal(20, 3)
+  cost_currency_id      Int      @default(0) @db.UnsignedInt
+  hourly_cost           Decimal  @default(0.000) @db.Decimal(20, 3)
+  enable_rate           Boolean  @default(true)
+  enable_cost           Boolean  @default(true)
+  price_multiplier      Decimal  @default(1.000) @db.Decimal(20, 3)
+  uses_price_multiplier Boolean  @default(false)
+  created_by_id         Int      @default(0) @db.UnsignedInt
+  created_on            DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  updated_by_id         Int      @default(0) @db.UnsignedInt
+  updated_on            DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  is_reimbursable       Boolean  @default(true)
+
+  @@index([cost_currency_id, hourly_cost], map: "cost")
+  @@index([name], map: "name")
+  @@index([rate_currency_id, hourly_rate], map: "rate")
+  @@index([user_id], map: "user_id")
+}
+
+model fo_project_additional_data {
+  project_id           Int   @id @db.UnsignedInt
+  calc_customer_id     Int   @db.UnsignedInt
+  total_tasks          Int   @db.UnsignedInt
+  completed_tasks      Int   @db.UnsignedInt
+  task_completion_p    Float @db.Float
+  total_estimated_time Int   @db.UnsignedInt
+  total_worked_time    Int   @db.UnsignedInt
+  time_worked_p        Float @db.Float
+
+  @@index([calc_customer_id], map: "customer")
+  @@index([task_completion_p], map: "task_completion")
+  @@index([time_worked_p], map: "worked_time")
+}
+
+model fo_project_chart_params {
+  id       Int    @db.UnsignedInt
+  chart_id Int    @db.UnsignedInt
+  value    String @db.VarChar(80)
+
+  @@id([id, chart_id])
+}
+
+model fo_project_charts {
+  object_id       Int  @id @db.UnsignedInt
+  type_id         Int? @db.UnsignedInt
+  display_id      Int? @db.UnsignedInt
+  show_in_project Int  @default(1) @db.UnsignedTinyInt
+  show_in_parents Int  @default(0) @db.UnsignedTinyInt
+}
+
+model fo_project_co_types {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  object_manager String   @db.VarChar(45)
+  name           String   @db.VarChar(45)
+  created_by_id  Int      @db.UnsignedInt
+  created_on     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  updated_by_id  Int      @db.UnsignedInt
+  updated_on     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@index([object_manager], map: "object_manager")
+}
+
+model fo_project_events {
+  object_id         Int       @id @db.UnsignedInt
+  start             DateTime? @db.DateTime(0)
+  duration          DateTime? @db.DateTime(0)
+  description       String?   @db.Text
+  private           String    @default("0") @db.Char(1)
+  repeat_end        DateTime? @db.Date
+  repeat_forever    Int       @db.UnsignedTinyInt
+  repeat_num        Int       @default(0) @db.MediumInt
+  repeat_d          Int       @default(0) @db.SmallInt
+  repeat_m          Int       @default(0) @db.SmallInt
+  repeat_y          Int       @default(0) @db.SmallInt
+  repeat_h          Int       @default(0) @db.SmallInt
+  repeat_dow        Int       @default(0) @db.UnsignedInt
+  repeat_wnum       Int       @default(0) @db.UnsignedInt
+  repeat_mjump      Int       @default(0) @db.UnsignedInt
+  type_id           Int       @default(0)
+  special_id        String?   @db.Text
+  update_sync       DateTime  @db.DateTime(0)
+  ext_cal_id        Int       @db.UnsignedInt
+  original_event_id Int?      @default(0) @db.UnsignedInt
+
+  @@index([repeat_h], map: "repeat_h")
+  @@index([start], map: "start")
+  @@index([type_id], map: "type_id")
+}
+
+model fo_project_file_revisions {
+  object_id       Int     @id @default(autoincrement()) @db.UnsignedInt
+  file_id         Int     @default(0) @db.UnsignedInt
+  file_type_id    Int     @default(0) @db.UnsignedSmallInt
+  repository_id   String  @default("") @db.VarChar(40)
+  thumb_filename  String? @db.VarChar(44)
+  revision_number Int     @default(0) @db.UnsignedInt
+  comment         String? @db.Text
+  type_string     String  @default("") @db.VarChar(255)
+  filesize        Int     @default(0) @db.UnsignedInt
+  hash            String? @db.Text
+
+  @@index([file_id, revision_number], map: "file_id")
+  @@index([filesize], map: "filesize")
+  @@index([filesize], map: "size")
+}
+
+model fo_project_files {
+  object_id              Int      @id @db.UnsignedInt
+  description            String?  @db.Text
+  is_locked              Int      @default(0) @db.UnsignedTinyInt
+  is_visible             Int      @default(0) @db.UnsignedTinyInt
+  expiration_time        DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  checked_out_on         DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  checked_out_by_id      Int?     @default(0) @db.UnsignedInt
+  was_auto_checked_out   Int      @default(0) @db.UnsignedTinyInt
+  type                   Int      @default(0)
+  url                    String?  @db.VarChar(255)
+  mail_id                Int      @default(0) @db.UnsignedInt
+  attach_to_notification Boolean  @default(false)
+  default_subject        String?  @db.Text
+}
+
+model fo_project_forms {
+  object_id       Int                     @id @db.UnsignedInt
+  description     String                  @db.Text
+  success_message String                  @db.Text
+  action          fo_project_forms_action @default(add_comment)
+  in_object_id    Int                     @default(0) @db.UnsignedInt
+  is_visible      Int                     @default(0) @db.UnsignedTinyInt
+  is_enabled      Int                     @default(0) @db.UnsignedTinyInt
+  order           Int                     @default(0) @db.SmallInt
+}
+
+model fo_project_messages {
+  object_id    Int                              @id @db.UnsignedInt
+  text         String?                          @db.Text
+  type_content fo_project_messages_type_content @default(html)
+}
+
+model fo_project_milestones {
+  object_id               Int      @id @db.UnsignedInt
+  description             String?  @db.Text
+  due_date                DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  is_urgent               Boolean  @default(false)
+  completed_on            DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  completed_by_id         Int?     @db.UnsignedInt
+  is_template             Boolean  @default(false)
+  from_template_id        Int      @default(0)
+  from_template_object_id Int?     @default(0) @db.UnsignedInt
+
+  @@index([completed_on], map: "completed_on")
+  @@index([due_date], map: "due_date")
+}
+
+model fo_project_task_dependencies {
+  previous_task_id Int      @db.UnsignedInt
+  task_id          Int      @db.UnsignedInt
+  created_on       DateTime @db.DateTime(0)
+  created_by_id    Int      @db.UnsignedInt
+
+  @@id([previous_task_id, task_id])
+}
+
+model fo_project_tasks {
+  object_id                         Int                           @id @db.UnsignedInt
+  parent_id                         Int?                          @db.UnsignedInt
+  text                              String?                       @db.Text
+  due_date                          DateTime                      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  start_date                        DateTime                      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  assigned_to_contact_id            Int?                          @db.UnsignedInt
+  assigned_on                       DateTime?                     @db.DateTime(0)
+  assigned_by_id                    Int?                          @db.UnsignedInt
+  time_estimate                     Int                           @default(0) @db.UnsignedInt
+  completed_on                      DateTime                      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  completed_by_id                   Int?                          @db.UnsignedInt
+  started_on                        DateTime?                     @db.DateTime(0)
+  started_by_id                     Int                           @db.UnsignedInt
+  priority                          Int?                          @default(200) @db.UnsignedInt
+  state                             Int?                          @db.UnsignedInt
+  order                             Int?                          @default(0) @db.UnsignedInt
+  milestone_id                      Int?                          @db.UnsignedInt
+  is_template                       Boolean                       @default(false)
+  from_template_id                  Int                           @default(0)
+  from_template_object_id           Int?                          @default(0) @db.UnsignedInt
+  repeat_end                        DateTime                      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  repeat_forever                    Boolean
+  repeat_num                        Int                           @default(0) @db.UnsignedInt
+  repeat_d                          Int                           @db.UnsignedInt
+  repeat_m                          Int                           @db.UnsignedInt
+  repeat_y                          Int                           @db.UnsignedInt
+  repeat_by                         String                        @default("") @db.VarChar(15)
+  repeat_generate_instances         Boolean
+  repeat_fixed_days                 String                        @default("") @db.VarChar(50)
+  object_subtype                    Int                           @default(0) @db.UnsignedInt
+  percent_completed                 Int                           @default(0) @db.UnsignedInt
+  use_due_time                      Boolean?                      @default(false)
+  use_start_time                    Boolean?                      @default(false)
+  original_task_id                  Int?                          @default(0) @db.UnsignedInt
+  type_content                      fo_project_tasks_type_content @default(html)
+  multi_assignment                  Boolean?                      @default(false)
+  parents_path                      String                        @default("") @db.VarChar(255)
+  depth                             Int                           @default(0) @db.UnsignedInt
+  instantiation_id                  Int                           @default(0) @db.UnsignedInt
+  total_worked_time                 Int                           @default(0) @db.UnsignedInt
+  mark_as_started                   Boolean                       @default(false)
+  move_direction_non_working_days   String?                       @default("advance") @db.VarChar(255)
+  overall_worked_time_plus_subtasks Int                           @default(0) @db.UnsignedInt
+  total_time_estimate               Int                           @default(0) @db.UnsignedInt
+  is_manual_percent_completed       Boolean                       @default(false)
+  is_fixed_fee                      Boolean                       @default(false)
+  earned_value_time_material        Decimal                       @default(0.000) @db.Decimal(20, 3)
+  earned_value_fixed_fee            Decimal                       @default(0.000) @db.Decimal(20, 3)
+  invoiced_amount                   Decimal                       @default(0.000) @db.Decimal(20, 3)
+  invoicing_status                  String                        @default("pending") @db.VarChar(50)
+  executed_cost                     Decimal                       @default(0.000) @db.Decimal(20, 3)
+  earned_value                      Decimal                       @default(0.000) @db.Decimal(20, 3)
+  estimated_cost                    Decimal                       @default(0.000) @db.Decimal(20, 3)
+  estimated_price                   Decimal                       @default(0.000) @db.Decimal(20, 3)
+  is_calculated_executed_cost       Boolean                       @default(true)
+  is_calculated_earned_value        Boolean                       @default(true)
+  is_calculated_estimated_cost      Boolean                       @default(true)
+  is_calculated_estimated_price     Boolean                       @default(true)
+  is_billable                       Boolean                       @default(true)
+  invoice_id                        Int                           @default(0)
+  remaining_time                    Int                           @default(0)
+  total_remaining_time              Int                           @default(0)
+  executed_cost_labor               Decimal                       @default(0.000) @db.Decimal(20, 3)
+  earned_value_labor                Decimal                       @default(0.000) @db.Decimal(20, 3)
+  estimated_cost_labor              Decimal                       @default(0.000) @db.Decimal(20, 3)
+  estimated_price_labor             Decimal                       @default(0.000) @db.Decimal(20, 3)
+  executed_cost_expenses            Decimal                       @default(0.000) @db.Decimal(20, 3)
+  earned_value_expenses             Decimal                       @default(0.000) @db.Decimal(20, 3)
+  estimated_cost_expenses           Decimal                       @default(0.000) @db.Decimal(20, 3)
+  estimated_price_expenses          Decimal                       @default(0.000) @db.Decimal(20, 3)
+  billable_worked_time              Int                           @default(0) @db.UnsignedInt
+  non_billable_worked_time          Int                           @default(0) @db.UnsignedInt
+  billable_total_worked_time        Int                           @default(0) @db.UnsignedInt
+  non_billable_total_worked_time    Int                           @default(0) @db.UnsignedInt
+  self_executed_cost                Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_earned_value                 Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_estimated_cost               Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_estimated_price              Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_executed_cost_labor          Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_earned_value_labor           Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_estimated_cost_labor         Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_estimated_price_labor        Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_executed_cost_expenses       Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_earned_value_expenses        Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_estimated_cost_expenses      Decimal                       @default(0.000) @db.Decimal(20, 3)
+  self_estimated_price_expenses     Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_executed_cost            Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_earned_value             Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_estimated_cost           Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_estimated_price          Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_executed_cost_labor      Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_earned_value_labor       Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_estimated_cost_labor     Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_estimated_price_labor    Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_executed_cost_expenses   Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_earned_value_expenses    Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_estimated_cost_expenses  Decimal                       @default(0.000) @db.Decimal(20, 3)
+  children_estimated_price_expenses Decimal                       @default(0.000) @db.Decimal(20, 3)
+
+  @@index([assigned_to_contact_id], map: "assigned_to")
+  @@index([completed_by_id], map: "completed_by_id")
+  @@index([completed_on], map: "completed_on")
+  @@index([due_date], map: "due_date")
+  @@index([milestone_id], map: "milestone_id")
+  @@index([order], map: "order")
+  @@index([original_task_id], map: "original_task_id")
+  @@index([parent_id], map: "parent_id")
+  @@index([priority], map: "priority")
+  @@index([start_date], map: "start_date")
+  @@index([total_worked_time], map: "total_worked_time")
+}
+
+model fo_project_webpages {
+  object_id   Int     @id @db.UnsignedInt
+  url         String? @db.Text
+  description String? @db.Text
+}
+
+model fo_projects {
+  object_id        Int                      @id @default(autoincrement()) @db.UnsignedInt
+  status           Int?                     @db.UnsignedInt
+  description      String?                  @db.Text
+  customer_id      Int?                     @db.UnsignedInt
+  comments         String?                  @db.Text
+  type_content     fo_projects_type_content @default(text)
+  automatic_status Boolean                  @default(true)
+  manager_id       Int                      @default(0) @db.UnsignedInt
+  start_date       DateTime                 @db.DateTime(0)
+  end_date         DateTime                 @db.DateTime(0)
+}
+
+model fo_property_group_properties {
+  group_id           Int     @default(0)
+  property_id        String  @default("") @db.VarChar(255)
+  order              Int     @default(0)
+  position           String? @default("full_width") @db.VarChar(20)
+  is_inheritable     Boolean @default(false)
+  is_disabled        Boolean @default(false)
+  label              String  @default("") @db.VarChar(255)
+  description        String  @default("") @db.VarChar(255)
+  in_parent_options  String  @default("do_not_show") @db.VarChar(255)
+  in_sibling_options String  @default("do_not_show") @db.VarChar(255)
+  in_child_options   String  @default("edit_in_main_tab") @db.VarChar(255)
+
+  @@id([group_id, property_id])
+  @@index([group_id, order], map: "group_id_order")
+}
+
+model fo_property_groups {
+  id             Int     @id @default(autoincrement())
+  object_type_id Int     @default(0)
+  name           String  @default("") @db.VarChar(255)
+  order          Int     @default(0)
+  is_system      Boolean @default(false)
+  code           String  @db.VarChar(255)
+  alignment      String  @default("left") @db.VarChar(255)
+
+  @@index([object_type_id, name], map: "object_type_id_name")
+  @@index([object_type_id, order], map: "object_type_id_order")
+}
+
+model fo_queued_emails {
+  id          Int      @id @default(autoincrement())
+  to          String?  @db.Text
+  cc          String   @db.Text
+  bcc         String   @db.Text
+  from        String?  @db.Text
+  subject     String?  @db.Text
+  body        String?  @db.Text
+  attachments String?  @db.Text
+  timestamp   DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  object_id   Int      @default(0)
+  log_action  String   @default("") @db.VarChar(255)
+}
+
+model fo_rate_schedules {
+  object_id Int @id @default(autoincrement()) @db.UnsignedInt
+}
+
+model fo_read_objects {
+  rel_object_id Int      @default(0) @db.UnsignedInt
+  contact_id    Int      @default(0) @db.UnsignedInt
+  is_read       Int      @default(0)
+  created_on    DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@id([rel_object_id, contact_id])
+}
+
+model fo_report_category {
+  object_id   Int    @id @default(autoincrement())
+  description String @db.VarChar(255)
+  is_default  Int    @db.TinyInt
+}
+
+model fo_report_columns {
+  id                 Int    @id @default(autoincrement())
+  report_id          Int
+  custom_property_id Int
+  field_name         String @db.VarChar(255)
+}
+
+model fo_report_conditions {
+  id                 Int     @id @default(autoincrement())
+  report_id          Int
+  custom_property_id Int
+  field_name         String  @db.VarChar(255)
+  condition          String  @db.VarChar(255)
+  value              String  @db.VarChar(255)
+  is_parametrizable  Boolean
+  group_id           Int
+}
+
+model fo_reports {
+  object_id                              Int     @id @default(autoincrement())
+  description                            String  @db.VarChar(255)
+  report_object_type_id                  Int     @db.UnsignedInt
+  order_by                               String  @db.VarChar(255)
+  is_order_by_asc                        Boolean
+  ignore_context                         Boolean @default(true)
+  is_default                             Boolean @default(false)
+  is_system                              Boolean @default(false)
+  code                                   String  @default("") @db.VarChar(255)
+  function_url                           String? @default("") @db.VarChar(255)
+  group_by                               String  @default("") @db.VarChar(255)
+  hide_group_details                     Boolean @default(false)
+  group_by_options                       String  @db.Text
+  show_comments                          Boolean @default(false)
+  hide_group_total_counts                Boolean @default(false)
+  show_last_group_as_column              Boolean @default(false)
+  report_category_id                     Int     @default(0) @db.UnsignedInt
+  date_format                            String  @db.VarChar(15)
+  show_currency                          Boolean @default(true)
+  show_negatives                         Boolean @default(true)
+  dont_show_time                         Boolean @default(false)
+  add_signature_and_date_field           Boolean @default(false)
+  calculate_quantity_for_actual_expenses Boolean @default(false)
+
+  @@index([report_object_type_id], map: "object_type")
+}
+
+model fo_role_object_type_permissions {
+  role_id        Int     @db.UnsignedInt
+  object_type_id Int     @db.UnsignedInt
+  can_delete     Boolean
+  can_write      Boolean
+
+  @@id([role_id, object_type_id])
+}
+
+model fo_searchable_objects {
+  rel_object_id   Int    @default(0) @db.UnsignedInt
+  column_name     String @default("") @db.VarChar(50)
+  content         String @db.Text
+  contact_id      Int    @default(0) @db.UnsignedInt
+  assoc_member_id Int    @default(0) @db.UnsignedInt
+
+  @@id([rel_object_id, column_name])
+  @@index([assoc_member_id], map: "assoc_member_id")
+  @@index([column_name], map: "column_name")
+  @@index([rel_object_id], map: "rel_obj_id")
+  @@fulltext([content], map: "content")
+}
+
+model fo_sent_notifications {
+  id              Int      @id @default(autoincrement())
+  queued_email_id Int      @default(0)
+  sent_date       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  to              String?  @db.Text
+  cc              String?  @db.Text
+  bcc             String?  @db.Text
+  from            String?  @db.Text
+  subject         String?  @db.Text
+  body            String?  @db.Text
+  attachments     String?  @db.Text
+  timestamp       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  object_id       Int      @default(0)
+}
+
+model fo_sharing_table {
+  group_id  Int @db.UnsignedInt
+  object_id Int @db.UnsignedInt
+
+  @@id([group_id, object_id])
+  @@index([group_id], map: "group_id")
+  @@index([object_id], map: "object_id")
+}
+
+model fo_sharing_table_flags {
+  id                  Int      @id @default(autoincrement()) @db.UnsignedInt
+  permission_group_id Int      @db.UnsignedInt
+  member_id           Int      @db.UnsignedInt
+  execution_date      DateTime @db.DateTime(0)
+  permission_string   String   @db.Text
+  created_by_id       Int      @db.UnsignedInt
+  object_id           Int      @default(0) @db.UnsignedInt
+}
+
+model fo_specific_permissions {
+  permission_group_id       Int @id @db.UnsignedInt
+  can_change_project_status Int @default(0) @db.UnsignedTinyInt
+  can_revert_project_status Int @default(0) @db.UnsignedTinyInt
+  can_assign_supervisor     Int @default(0) @db.UnsignedTinyInt
+  can_extend_quota          Int @default(0) @db.UnsignedTinyInt
+}
+
+model fo_states_counties {
+  object_id Int @id @default(autoincrement()) @db.UnsignedInt
+}
+
+model fo_system_permissions {
+  permission_group_id                       Int     @id @db.UnsignedInt
+  can_manage_security                       Int     @default(0) @db.UnsignedTinyInt
+  can_manage_configuration                  Int     @default(0) @db.UnsignedTinyInt
+  can_manage_templates                      Int     @default(0) @db.UnsignedTinyInt
+  can_manage_time                           Int     @default(0) @db.UnsignedTinyInt
+  can_add_mail_accounts                     Int     @default(0) @db.UnsignedTinyInt
+  can_manage_dimensions                     Int     @default(0) @db.UnsignedTinyInt
+  can_manage_dimension_members              Int     @default(0) @db.UnsignedTinyInt
+  can_manage_tasks                          Int     @default(0) @db.UnsignedTinyInt
+  can_task_assignee                         Int     @default(0) @db.UnsignedTinyInt
+  can_manage_billing                        Int     @default(0) @db.UnsignedTinyInt
+  can_view_billing                          Int     @default(0) @db.UnsignedTinyInt
+  can_see_assigned_to_other_tasks           Int     @default(1) @db.UnsignedTinyInt
+  can_update_other_users_invitations        Int     @default(0) @db.UnsignedTinyInt
+  can_edit_confirmed_invoices               Int     @default(0) @db.UnsignedTinyInt
+  can_manage_invoicing_configuration        Int     @default(0) @db.UnsignedTinyInt
+  can_link_objects                          Int     @default(0) @db.UnsignedTinyInt
+  can_instantiate_templates                 Int     @default(0) @db.UnsignedTinyInt
+  can_manage_repetitive_properties_of_tasks Boolean @default(false)
+  can_add_timeslots_in_time_tab             Int     @default(0) @db.UnsignedTinyInt
+  can_manage_mail_templates                 Int     @default(0) @db.UnsignedTinyInt
+  can_see_others_timeslots                  Int     @default(1) @db.UnsignedTinyInt
+  can_see_expenses_of_others                Int     @default(1) @db.UnsignedTinyInt
+  can_reopen_task                           Int     @default(0) @db.UnsignedTinyInt
+}
+
+model fo_tab_panel_permissions {
+  permission_group_id Int    @db.UnsignedInt
+  tab_panel_id        String @default("") @db.VarChar(40)
+
+  @@id([permission_group_id, tab_panel_id])
+}
+
+model fo_tab_panels {
+  id                        String             @id @db.VarChar(40)
+  title                     String             @db.VarChar(128)
+  icon_cls                  String             @db.VarChar(40)
+  refresh_on_context_change Boolean
+  default_controller        String             @db.VarChar(45)
+  default_action            String             @db.VarChar(45)
+  initial_controller        String             @db.VarChar(45)
+  initial_action            String             @db.VarChar(45)
+  enabled                   Boolean
+  type                      fo_tab_panels_type
+  ordering                  Int
+  plugin_id                 Int                @db.UnsignedInt
+  object_type_id            Int                @default(0) @db.UnsignedInt
+  url_params                String             @default("") @db.VarChar(255)
+
+  @@index([enabled, type, plugin_id], map: "enabled")
+}
+
+model fo_task_action_conditions {
+  task_id                   Int     @db.UnsignedInt
+  action                    String  @db.VarChar(100)
+  property                  String  @db.VarChar(100)
+  required_values           String  @db.Text
+  defined_only_in_templates Boolean
+
+  @@id([task_id, action, property])
+}
+
+model fo_task_after_action_actions {
+  task_id     Int    @default(autoincrement()) @db.UnsignedInt
+  group_id    Int    @db.UnsignedInt
+  action      String @db.VarChar(45)
+  action_data String @db.Text
+
+  @@id([task_id, group_id, action])
+}
+
+model fo_task_after_action_available_conditions {
+  condition_field String @id @default("") @db.VarChar(255)
+}
+
+model fo_task_after_action_conditions {
+  task_id              Int    @db.UnsignedInt
+  group_id             Int    @db.UnsignedInt
+  condition_field      String @db.VarChar(45)
+  condition_comparison String @db.VarChar(20)
+  condition_value      String @db.VarChar(255)
+
+  @@id([task_id, group_id, condition_field, condition_comparison])
+}
+
+model fo_task_after_action_log {
+  task_id       Int      @default(autoincrement()) @db.UnsignedInt
+  group_id      Int      @db.UnsignedInt
+  action        String   @db.VarChar(45)
+  log_data      String   @db.VarChar(255)
+  created_on    DateTime @db.DateTime(0)
+  created_by_id Int      @db.UnsignedInt
+
+  @@id([task_id, group_id, action])
+}
+
+model fo_telephone_types {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  name      String @default("") @db.VarChar(30)
+  is_system Int    @default(0) @db.UnsignedTinyInt
+}
+
+model fo_template_instantiated_parameters {
+  template_id      Int    @db.UnsignedInt
+  instantiation_id Int    @db.UnsignedInt
+  parameter_name   String @default("") @db.VarChar(255)
+  value            String @db.Text
+
+  @@id([template_id, instantiation_id, parameter_name])
+}
+
+model fo_template_milestones {
+  template_id             Int?     @db.UnsignedInt
+  session_id              Int?
+  object_id               Int      @id @db.UnsignedInt
+  description             String   @db.Text
+  due_date                DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  is_urgent               Boolean  @default(false)
+  completed_on            DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  completed_by_id         Int?     @db.UnsignedInt
+  is_template             Boolean  @default(false)
+  from_template_id        Int      @default(0)
+  from_template_object_id Int?     @default(0) @db.UnsignedInt
+
+  @@index([completed_on], map: "completed_on")
+  @@index([due_date], map: "due_date")
+}
+
+model fo_template_object_properties {
+  template_id Int
+  object_id   Int
+  property    String @db.VarChar(255)
+  value       String @db.Text
+
+  @@id([template_id, object_id, property])
+}
+
+model fo_template_objects {
+  template_id   Int       @default(0) @db.UnsignedInt
+  object_id     Int       @default(0) @db.UnsignedInt
+  created_by_id Int?      @db.UnsignedInt
+  created_on    DateTime? @db.DateTime(0)
+
+  @@id([template_id, object_id])
+}
+
+model fo_template_parameters {
+  id            Int     @id @default(autoincrement())
+  template_id   Int
+  name          String  @db.VarChar(255)
+  type          String  @db.VarChar(255)
+  default_value String  @db.Text
+  is_required   Boolean @default(false)
+}
+
+model fo_template_tasks {
+  template_id                   Int?                           @db.UnsignedInt
+  session_id                    Int?
+  object_id                     Int                            @id @db.UnsignedInt
+  parent_id                     Int?                           @db.UnsignedInt
+  text                          String?                        @db.Text
+  due_date                      DateTime                       @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  start_date                    DateTime                       @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  assigned_to_contact_id        Int?                           @db.UnsignedInt
+  assigned_on                   DateTime?                      @db.DateTime(0)
+  assigned_by_id                Int?                           @db.UnsignedInt
+  time_estimate                 Int                            @default(0) @db.UnsignedInt
+  completed_on                  DateTime                       @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  completed_by_id               Int?                           @db.UnsignedInt
+  started_on                    DateTime?                      @db.DateTime(0)
+  started_by_id                 Int                            @db.UnsignedInt
+  priority                      Int?                           @default(200) @db.UnsignedInt
+  state                         Int?                           @db.UnsignedInt
+  order                         Int?                           @default(0) @db.UnsignedInt
+  milestone_id                  Int?                           @db.UnsignedInt
+  is_template                   Boolean                        @default(false)
+  from_template_id              Int                            @default(0)
+  from_template_object_id       Int?                           @default(0) @db.UnsignedInt
+  repeat_end                    DateTime                       @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  repeat_forever                Boolean
+  repeat_num                    Int                            @default(0) @db.UnsignedInt
+  repeat_d                      Int                            @db.UnsignedInt
+  repeat_m                      Int                            @db.UnsignedInt
+  repeat_y                      Int                            @db.UnsignedInt
+  repeat_by                     String                         @default("") @db.VarChar(15)
+  repeat_generate_instances     Boolean
+  repeat_fixed_days             String                         @default("") @db.VarChar(50)
+  object_subtype                Int                            @default(0) @db.UnsignedInt
+  percent_completed             Int                            @default(0) @db.UnsignedInt
+  use_due_time                  Boolean?                       @default(false)
+  use_start_time                Boolean?                       @default(false)
+  original_task_id              Int?                           @default(0) @db.UnsignedInt
+  type_content                  fo_template_tasks_type_content @default(text)
+  multi_assignment              Boolean?                       @default(false)
+  parents_path                  String                         @default("") @db.VarChar(255)
+  depth                         Int                            @default(0) @db.UnsignedInt
+  is_manual_percent_completed   Boolean                        @default(false)
+  estimated_cost                Decimal                        @default(0.000) @db.Decimal(20, 3)
+  estimated_price               Decimal                        @default(0.000) @db.Decimal(20, 3)
+  is_calculated_estimated_cost  Boolean                        @default(true)
+  is_calculated_estimated_price Boolean                        @default(true)
+  is_fixed_fee                  Boolean                        @default(false)
+  is_billable                   Boolean                        @default(true)
+
+  @@index([assigned_to_contact_id], map: "assigned_to")
+  @@index([completed_on], map: "completed_on")
+  @@index([milestone_id], map: "milestone_id")
+  @@index([order], map: "order")
+  @@index([parent_id], map: "parent_id")
+  @@index([priority], map: "priority")
+}
+
+model fo_templates {
+  object_id              Int     @id @default(autoincrement()) @db.UnsignedInt
+  description            String? @db.Text
+  can_instance_from_mail Int     @default(0)
+  nw_days_todo_action    String  @db.VarChar(50)
+  nw_days_todo_amount    Int     @db.UnsignedInt
+  use_only_working_days  Boolean @default(false)
+}
+
+model fo_tickets {
+  object_id    Int                     @id @default(autoincrement()) @db.UnsignedInt
+  text         String?                 @db.Text
+  type_content fo_tickets_type_content @default(text)
+}
+
+model fo_timeslots {
+  object_id               Int      @id @default(autoincrement()) @db.UnsignedInt
+  rel_object_id           Int      @db.UnsignedInt
+  start_time              DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  end_time                DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  contact_id              Int      @db.UnsignedInt
+  description             String   @db.Text
+  paused_on               DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  subtract                Int      @default(0) @db.UnsignedInt
+  fixed_billing           Decimal  @default(0.000) @db.Decimal(20, 3)
+  hourly_billing          Decimal  @default(0.000) @db.Decimal(20, 3)
+  is_fixed_billing        Float    @default(0) @db.Float
+  billing_id              Int      @default(0) @db.UnsignedInt
+  invoicing_status        String   @default("pending") @db.VarChar(50)
+  invoice_id              Int      @default(0) @db.UnsignedInt
+  rate_currency_id        Int      @default(0) @db.UnsignedInt
+  worked_time             Int      @default(0) @db.UnsignedInt
+  ignore_time_start       Int      @default(0) @db.UnsignedTinyInt
+  fixed_cost              Decimal  @default(0.000) @db.Decimal(20, 3)
+  hourly_cost             Decimal  @default(0.000) @db.Decimal(20, 3)
+  is_fixed_cost           Boolean  @default(false)
+  adv_billing_id          Int      @default(0) @db.UnsignedInt
+  adv_cost_id             Int      @default(0) @db.UnsignedInt
+  cost_currency_id        Int      @default(0) @db.UnsignedInt
+  billing_category_status String   @default("") @db.VarChar(255)
+  is_manual_cost          Boolean  @default(false)
+  is_manual_billing       Boolean  @default(false)
+  is_fixed_fee            Boolean  @default(false)
+  is_billable_work        Boolean  @default(true)
+
+  @@index([contact_id, end_time], map: "contact_end")
+  @@index([contact_id, start_time], map: "contact_start")
+  @@index([end_time], map: "end_time")
+  @@index([rel_object_id], map: "rel_obj_id")
+  @@index([start_time], map: "start_time")
+}
+
+model fo_timezones {
+  id             Int     @id @default(autoincrement())
+  country_code   String  @default("") @db.Char(2)
+  name           String  @default("") @db.VarChar(35)
+  has_dst        Boolean @default(false)
+  gmt_offset     Int     @default(0)
+  gmt_dst_offset Int     @default(0)
+  using_dst      Boolean @default(false)
+
+  @@index([country_code], map: "country_code")
+  @@index([name], map: "name")
+}
+
+model fo_webpage_types {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  name      String @default("") @db.VarChar(30)
+  is_system Int    @default(0) @db.UnsignedTinyInt
+}
+
+model fo_widgets {
+  name            String @id @db.VarChar(64)
+  title           String @db.VarChar(255)
+  plugin_id       Int    @db.UnsignedInt
+  path            String @db.VarChar(512)
+  default_options String @db.Text
+  default_section String @db.VarChar(64)
+  default_order   Int
+  icon_cls        String @default("") @db.VarChar(50)
+}
+
+model fo_workspaces {
+  object_id                    Int     @id @default(autoincrement()) @db.UnsignedInt
+  description                  String? @db.Text
+  show_description_in_overview Int     @default(0) @db.UnsignedTinyInt
+  color                        Int?    @default(0) @db.UnsignedInt
+}
+
+enum fo_contact_dimension_permissions_permission_type {
+  allow_all @map("allow all")
+  deny_all  @map("deny all")
+  check
+}
+
+enum fo_mail_spam_filters_text_type {
+  email_address
+  subject
+}
+
+enum fo_newsletters_type_content {
+  text
+  html
+}
+
+enum fo_project_messages_type_content {
+  text
+  html
+}
+
+enum fo_tickets_type_content {
+  text
+  html
+}
+
+enum fo_project_forms_action {
+  add_comment
+  add_task
+}
+
+enum fo_administration_logs_category {
+  system
+  security
+}
+
+enum fo_mail_spam_filters_spam_state {
+  no_spam @map("no spam")
+  spam
+}
+
+enum fo_object_types_type {
+  content_object
+  dimension_object
+  dimension_group
+  located
+  comment
+}
+
+enum fo_application_read_logs_action {
+  read
+  download
+}
+
+enum fo_projects_type_content {
+  text
+  html
+}
+
+enum fo_application_logs_action {
+  upload
+  open
+  close
+  delete
+  edit
+  add
+  trash
+  untrash
+  subscribe
+  unsubscribe
+  tag
+  comment
+  link
+  unlink
+  login
+  logout
+  untag
+  archive
+  unarchive
+  move
+  copy
+  read
+  download
+  checkin
+  checkout
+  relation_added
+  relation_edited
+  relation_removed
+  print
+  mark_as_spam
+  unmark_as_spam
+  forward
+  reply
+  reply_all
+}
+
+enum fo_permission_groups_type {
+  roles
+  permission_groups
+  user_groups
+}
+
+enum fo_objectives_direction {
+  asc
+  desc
+}
+
+enum fo_tab_panels_type {
+  system
+  plugin
+}
+
+enum fo_objective_history_direction {
+  asc
+  desc
+}
+
+enum fo_dimensions_permission_query_method {
+  mandatory
+  not_mandatory
+}
+
+enum fo_project_tasks_type_content {
+  text
+  html
+}
+
+enum fo_template_tasks_type_content {
+  text
+  html
+}

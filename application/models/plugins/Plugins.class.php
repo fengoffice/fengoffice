@@ -13,6 +13,8 @@
   	var $active = null ; 
     
   	var $current = null ; 
+
+	var $installed = null ;
   	
   	
 	/**
@@ -48,6 +50,16 @@
   		}
   		return $this->active ;
   	}
+
+function getInstalled() {
+	if ($this->installed === null) {
+		$this->installed = $this->findAll(array(
+			"conditions" => array("is_installed = 1"),
+			"order" => "priority"
+		));
+	}
+	return $this->installed;
+}
   	
   	function isActivePlugin($name) {
   		if (!isset($this) || !$this instanceof Plugins) {

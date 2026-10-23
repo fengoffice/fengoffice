@@ -26,13 +26,13 @@
     * @return BaseDimensionObjectTypeOptions 
     */
     function __construct() {
+      Hook::fire('object_definition', 'DimensionObjectTypeOption', self::$columns);
       parent::__construct('DimensionObjectTypeOption', 'dimension_object_type_options', true);
     } // __construct
     
     // -------------------------------------------------------
     //  Description methods
     // -------------------------------------------------------
-    
     /**
     * Return array of object columns
     *

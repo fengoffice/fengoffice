@@ -46,8 +46,18 @@ Ext.extend(og.HtmlPanel, Ext.Panel, {
 	},
 	
 	update: function() {
+		if (this.el && typeof og.destroyCkEditorsInElement == 'function') {
+			og.destroyCkEditorsInElement(this.el);
+		}
 		this.body.update(this.htmli, true);
 		og.captureLinks(this.id, this.ownerCt);
+	},
+
+	beforeDestroy: function() {
+		if (this.el && typeof og.destroyCkEditorsInElement == 'function') {
+			og.destroyCkEditorsInElement(this.el);
+		}
+		og.HtmlPanel.superclass.beforeDestroy.call(this);
 	}
 });
 

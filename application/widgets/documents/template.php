@@ -9,19 +9,19 @@
 	
 	<div class="widget-body widget-documents__body" id="<?php echo $genid; ?>_widget_body">
 		<ul>
-			<?php 
+			<?php
 			$row_cls = "";
 			foreach ($documents as $k => $document): /* @var $document ProjectFile */
-				//$iconClass = $document->getIconClass();
-				$iconUrl = $document->getTypeIconUrl(true, "16x16");
+				$lucideIcon = get_lucide_icon_for_extension(get_file_extension($document->getName()));
 				$crumbOptions = json_encode($document->getMembersIdsToDisplayPath(false, get_dashboard_breadcrumbs_options()));
 				if($crumbOptions == ""){
 					$crumbOptions = "{}";
 				}
 				$crumbJs = " og.getEmptyCrumbHtml($crumbOptions, '.document-breadcrumb-container' ) ";//document-row
 			?>
-				<li id="<?php echo "document-".$document->getId()?>" class="document-row co-row <?php echo $row_cls ?>" style="background: url(<?php echo $iconUrl?>) no-repeat left 4px; ">
-					<div class="doc-text-container">
+				<li id="<?php echo "document-".$document->getId()?>" class="document-row co-row <?php echo $row_cls ?>" style="display:flex;align-items:center;gap:6px;padding-left:0;">
+					<i class="icon-<?php echo $lucideIcon ?>"></i>
+					<div class="doc-text-container" style="flex:1;min-width:0;">
 						<a class="document-title-link" href="<?php echo $document->getViewUrl() ?>"><span class="document-title"><?php echo clean($document->getName());?></span></a>
 					</div>
 					<!-- COMMENT OUT BREADCRUMB
@@ -53,5 +53,4 @@
 		<div class="x-clear"></div>
 		<div class="progress-mask"></div>
 	</div>
-	
 </div>

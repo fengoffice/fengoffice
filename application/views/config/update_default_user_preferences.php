@@ -1,4 +1,8 @@
-<?php if ($category->getName() != 'notification_trigger_options') { ?>
+<?php
+$use_nm_trigger_ui = isset($category) && $category instanceof ContactConfigCategory
+	&& $category->getName() == 'notification_trigger_options'
+	&& Plugins::instance()->isActivePlugin('notifications_manager');
+if (!$use_nm_trigger_ui) { ?>
 
 <div class="adminConfiguration" style="height:100%;background-color:white">
 <form class="internalForm" action="<?php echo $category->getDefaultUpdateUrl() ?>" method="post" onreset="return confirm('<?php echo escape_single_quotes(lang('confirm reset form')) ?>')">
@@ -65,50 +69,13 @@
 	
 	<div class="adminMainBlock">
 
-	<?php if(isset($options) && is_array($options) && count($options)) { 
-	
-
-
-		$grouped_options = array(
-				'none' => array(),
-				'change_in_an_object' => array(),
-		);
-		
-		foreach ($options as $opt) {
-			if (in_array($opt->getName(), array('classification_changed', 'start_or_due_date_modified', 'description_changed', 'timeslot_logged', 'task_started_or_completed'))) {
-				$grouped_options['change_in_an_object'][] = $opt;
-			} else {
-				$grouped_options['none'][] = $opt;
-			}
-		}
-		
-		?>
+	<?php if(isset($options) && is_array($options) && count($options)) { ?>
 			<div id="configCategoryOptions">
-				<?php $counter = 0; ?>
-			
-			<?php foreach ($grouped_options as $group_code => $g_options) { 
-			
-				$style = '';
-				if ($group_code != 'none') {
-					echo '<div class="bold" style="font-size:120%;margin-top:20px;">'.lang($group_code).'</div>';
-					$style = 'style="margin-left:20px;"';
-				}
+				<?php
+					$counter = 0;
+					$nm_trigger_use_default_value = true;
+					include get_template_path('notification_trigger_fields', 'notifications_manager', 'notifications_manager');
 				?>
-				<?php foreach($g_options as $option) { ?>
-					<?php $option->useDefaultValue(); ?>
-					<?php $counter++; ?>
-					<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
-						<div class="configOptionInfo">
-							<div class="configOptionLabel" <?php echo $style ?>><label><?php echo $option->getDisplayName() ?>:</label></div>
-						<?php if(trim($option_description = $option->getDisplayDescription())) { ?>
-							<div class="configOptionDescription desc"><?php echo $option_description ?></div>
-						<?php } // if ?>
-						</div>
-						<div class="configOptionControl"><?php echo $option->render('options[' . $option->getName() . ']') ?></div>
-						<div class="clear"></div>
-					</div>
-				<?php } // foreach ?>
-			<?php } // foreach ?>
 			</div>
 			<?php echo submit_button(lang('save')) ?>&nbsp;<button type="reset" class="submit"><?php echo lang('reset') ?></button>
 	<?php } else { ?>

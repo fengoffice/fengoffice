@@ -1,47 +1,100 @@
 og.emptyBreadcrumbsToRefresh = new Array();
 
-og.eventManager.addListener('replace all empty breadcrumb',function(){
-	//before insert breadcrumbs we need to have all members that we need for breadcrumbs in og.dimensions
-	//CALLBACK
-	var callback = function(emptyBreadcrumbs){		
-		og.replaceAllEmptyBreadcrumbForThisMemberInterval(emptyBreadcrumbs);		
-	}
-	
-	var copy = og.emptyBreadcrumbsToRefresh.slice(0);
-	
-	if(copy.length > 0){
-		var members = og.getMembersFromServer(og.emptyBreadcrumbsToRefresh,callback,copy);
-	}	
+// RAF with setTimeout fallback for environments that lack requestAnimationFrame (e.g. IE9).
+var _raf = window.requestAnimationFrame || function(fn) { return setTimeout(fn, 16); };
 
-	//empty the array after refresh
-	og.emptyBreadcrumbsToRefresh.length = 0;
+// Persistent off-screen element for text-width measurement in insertBreadcrumb.
+// Created lazily on first use; never removed, so no append/remove reflows per segment.
+og._breadcrumbMeasureEl = null;
+og._breadcrumbDebounceTimer = null;
+
+// Maps member_id → array of span IDs registered by getEmptyCrumbHtml.
+// Enables O(1) lookup instead of O(DOM) class scan in replaceAllEmptyBreadcrumbForThisMember.
+og._emptyBreadcrumbById = {};
+og._emptyBreadcrumbIdSeq = 0;
+
+// Shadow object for O(1) dedup of emptyBreadcrumbsToRefresh (keeps the array for callers).
+og._emptyBreadcrumbSet = {};
+
+// Cache compiled Handlebars template for breadcrumb buttons.
+og._breadcrumbPopoverTemplate = null;
+
+// Track if a deferred initBreadcrumbsBtns call is pending.
+og._breadcrumbBtnInitPending = false;
+
+og._getBreadcrumbMeasureEl = function() {
+	if (!og._breadcrumbMeasureEl || !og._breadcrumbMeasureEl.length) {
+		og._breadcrumbMeasureEl = $('<span>').css({
+			position: 'absolute',
+			top: '-9999px',
+			left: '-9999px',
+			visibility: 'hidden',
+			whiteSpace: 'nowrap'
+		}).appendTo('body');
+	}
+	return og._breadcrumbMeasureEl;
+};
+
+// Schedule a single deferred initBreadcrumbsBtns call to batch rapid-fire arrivals.
+og._scheduleInitBreadcrumbsBtns = function() {
+	if (og._breadcrumbBtnInitPending) return;
+	og._breadcrumbBtnInitPending = true;
+	_raf(function() {
+		og._breadcrumbBtnInitPending = false;
+		og.initBreadcrumbsBtns($('.breadcrumbBtn.btnPopoverNotInitialized').toArray());
+	});
+};
+
+og.eventManager.addListener('replace all empty breadcrumb', function() {
+	if (og._breadcrumbDebounceTimer) {
+		clearTimeout(og._breadcrumbDebounceTimer);
+	}
+	og._breadcrumbDebounceTimer = setTimeout(function() {
+		og._breadcrumbDebounceTimer = null;
+		var copy = og.emptyBreadcrumbsToRefresh.slice(0);
+		og.emptyBreadcrumbsToRefresh.length = 0;
+		og._emptyBreadcrumbSet = {};
+		if (copy.length === 0) return;
+		var callback = function(emptyBreadcrumbs) {
+			og.replaceAllEmptyBreadcrumbForThisMemberInterval(emptyBreadcrumbs);
+		};
+		og.getMembersFromServer(copy, callback, copy);
+	}, 50);
 });
 
-og.replaceAllEmptyBreadcrumbForThisMemberInterval = function(emptyBreadcrumbs){
-	var curNewsIndex = -1;
+og.replaceAllEmptyBreadcrumbForThisMemberInterval = function(emptyBreadcrumbs) {
+	var curIndex = 0;
+	var FRAME_BUDGET_MS = 10; // leave ~6ms for browser rendering at 60fps
 
-	function advanceNewsItem() {
-	    ++curNewsIndex;
-	    if (curNewsIndex >= emptyBreadcrumbs.length) {
-	    	 clearInterval(intervalID);
-	    }
-	   	  
-	    var id = emptyBreadcrumbs[curNewsIndex];
-		var members = og.getMemberFromOgDimensions(id, true);
-		
-		if (members.length > 0){
-			var member = members[0];			
-			og.replaceAllEmptyBreadcrumbForThisMember (0,member);
+	// Init buttons already in DOM (cached members rendered by getEmptyCrumbHtml).
+	og._scheduleInitBreadcrumbsBtns();
+
+	function processFrame() {
+		var frameStart = Date.now();
+
+		while (curIndex < emptyBreadcrumbs.length) {
+			var id = emptyBreadcrumbs[curIndex++];
+			var members = og.getMemberFromOgDimensions(id, true, function(dimension_id, member) {
+				og.replaceAllEmptyBreadcrumbForThisMember(0, member);
+				og._scheduleInitBreadcrumbsBtns();
+			});
+			if (members.length > 0) {
+				og.replaceAllEmptyBreadcrumbForThisMember(0, members[0]);
+			}
+
+			// Yield to browser when frame budget is exhausted — continue next frame.
+			if (Date.now() - frameStart >= FRAME_BUDGET_MS) {
+				_raf(processFrame);
+				return;
+			}
 		}
-		
-		//init popover btns that are not initialized yet
-		var btns = $(".breadcrumbBtn.btnPopoverNotInitialized").toArray();
-		og.initBreadcrumbsBtns(btns);
-		
+
+		// Natural exit: all members processed — init any remaining buttons.
+		og._scheduleInitBreadcrumbsBtns();
 	}
 
-	var intervalID = setInterval(advanceNewsItem, 20);	
-}
+	_raf(processFrame);
+};
 
 
 /*
@@ -377,11 +430,23 @@ og.replaceCrumbHtmlWithoutLinks = function(dimension_id ,member, extra_params) {
 	$("#"+ extra_params.genid +"selected-member"+ member.id +" > .completePath").replaceWith(html);
 }
 
-og.replaceAllEmptyBreadcrumbForThisMember = function(dimension_id ,member, extra_params) {
-	//replace all breadcrumb for this member
-	var targets = ".empty-bread-crumb.bread-crumb-"+member.id;
-	var all_targets = $(targets);
-	
+og.replaceAllEmptyBreadcrumbForThisMember = function(dimension_id, member, extra_params) {
+	var all_targets;
+	var registeredIds = og._emptyBreadcrumbById[member.id];
+	if (registeredIds && registeredIds.length > 0) {
+		all_targets = [];
+		for (var _ri = 0; _ri < registeredIds.length; _ri++) {
+			var _el = document.getElementById(registeredIds[_ri]);
+			if (_el) all_targets.push(_el);
+		}
+		delete og._emptyBreadcrumbById[member.id];
+	} else {
+		// Fallback for callers that bypass getEmptyCrumbHtml (e.g. getCrumbHtml path).
+		all_targets = $('.empty-bread-crumb.bread-crumb-' + member.id).toArray();
+	}
+
+	if (all_targets.length === 0) return;
+
 	// generate breadcrumb html for the first one
 	var j= 0;
 	
@@ -401,21 +466,29 @@ og.replaceAllEmptyBreadcrumbForThisMember = function(dimension_id ,member, extra
 	var target_0_html = $("#"+new_target_id).html();
 	
 	// for each target copy the already generated html
+	// Cache widths per container_to_fill selector so rows in the same container type
+	// share one measurement, while rows in different containers get their own width.
+	var container_width_cache = {};
 	for (var j = 1; j < all_targets.length; j++) {
 		var copy_target_id = 'bread-crumb-'+ Ext.id() + member.id;
 		var container_to_fill = $(all_targets[j]).data("container-to-fill");
 		var show_link = $(all_targets[j]).data("show-link");
 		var exclude_parents_path = $(all_targets[j]).data("exclude-parents-path");
 		var epp = exclude_parents_path ? '1' : '0';
-		
+
 		$(all_targets[j]).parent().html('<span id="'+copy_target_id+'" class="bread-crumb-'+ member.id +' member-path real-breadcrumb og-wsname-color-'+ member.color +
 				'" data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'" data-exclude-parents-path="'+epp+'"></span>');
-		
+
 		$('#'+copy_target_id).append(target_0_html);
-		
+
+		// set object-type so checkMultiMemberBreadcrumb can build the collapsed button correctly
+		$('#'+copy_target_id).parent().data('object-type', member.object_type_id);
+
 		// make breadcrumbs groups when container is shorter than brs length
-		var container_width = $(all_targets[j]).closest(container_to_fill).width();
-		og.checkMultiMemberBreadcrumb($(all_targets[j]), container_width); 
+		if (typeof container_width_cache[container_to_fill] === 'undefined') {
+			container_width_cache[container_to_fill] = $('#'+copy_target_id).closest(container_to_fill).width();
+		}
+		og.checkMultiMemberBreadcrumb($('#'+copy_target_id), container_width_cache[container_to_fill]);
 	}
 	
 }
@@ -452,11 +525,16 @@ og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_l
 			for (idx=0; idx<members.length; idx++) {
 				id = members[idx];
 				if (isNaN(id)) continue;
-				
-				//return a target to reload on the callback after get the member from the server if is necesary
-				empty_bread_crumbs += '<span class="member-path"><span class="bread-crumb-'+ id +' empty-bread-crumb member-path" '+
+
+				// Member not cached: assign a unique span ID and register it so
+				// replaceAllEmptyBreadcrumbForThisMember can find it in O(1).
+				var _spanId = 'ebc-' + id + '-' + (++og._emptyBreadcrumbIdSeq);
+				empty_bread_crumbs += '<span class="member-path"><span id="' + _spanId + '" class="bread-crumb-'+ id +' empty-bread-crumb member-path" '+
 					'data-container-to-fill="'+container_to_fill+'" data-show-link="'+show_link+'" data-exclude-parents-path="'+epp+'"></span></span>';
-				if(og.emptyBreadcrumbsToRefresh.indexOf(id) == -1){
+				if (!og._emptyBreadcrumbById[id]) og._emptyBreadcrumbById[id] = [];
+				og._emptyBreadcrumbById[id].push(_spanId);
+				if (!og._emptyBreadcrumbSet[id]) {
+					og._emptyBreadcrumbSet[id] = true;
 					og.emptyBreadcrumbsToRefresh.push(id);
 				}
 			}
@@ -474,143 +552,127 @@ og.getEmptyCrumbHtml = function(dims,container_to_fill,skipped_dimensions,show_l
  * target the class or id of the target to insert the breadcrumb
  * container_to_fill the class or id of the breadcrumb container to be fill
  * */
-og.insertBreadcrumb = function(member_id,target,from_callback) {
-	target = "#"+target;
-	var container_to_fill = $(target).data("container-to-fill");
-	var show_link = $(target).data("show-link");
-	var exclude_parents_path = $(target).data("exclude-parents-path");
-	
-	/*SINGLE BREADCRUMB SECTION*/
-	var extra_params = {										
-			};	
+og.insertBreadcrumb = function(member_id, target, from_callback) {
+	target = '#' + target;
+	var $target = $(target);
+	if (!$target.length) return;
+
+	var container_to_fill    = $target.data('container-to-fill');
+	var show_link            = $target.data('show-link');
+	var exclude_parents_path = $target.data('exclude-parents-path');
+
 	var members = og.getMemberTextsFromOgDimensions(member_id, !exclude_parents_path);
-	
-	//title must have all parents members names
+	if (!members.length) return;
+
+	// members is [leaf, parent, grandparent...] — reverse to get root→leaf for display.
+	var leafMember = members[0]; // leaf before reversing
+	members.reverse();           // now root → leaf
+
+	// Build tooltip in root→leaf order.
 	var title = '';
-	members.reverse();
-	for (var i=0; i<members.length; i++) {
-		var m = members[i];
-		title += m.text;
-		if(m.id != member_id){
-			title += " • ";
-		}
-		member = m;
+	for (var ti = 0; ti < members.length; ti++) {
+		title += members[ti].text;
+		if (members[ti].id !== member_id) title += ' • ';
 	}
-	$(target).attr('title', title);	
-		
-	$(target).parent().data('object-type', member.ot);	
-		
-	//calculate the container width and check if thers more elements in the same container
-	var container_width = $(target).closest(container_to_fill).width();//.parent().parent() .closest(container_to_fill)
-	if ($(target).closest(container_to_fill).css('max-width') !== 'none') {
-		container_width = parseFloat($(target).closest(container_to_fill).css('max-width'));
+	$target.attr('title', title);
+	$target.parent().data('object-type', leafMember ? leafMember.ot : '');
+
+	var $container = $target.closest(container_to_fill);
+	var container_width = $container.width();
+	if ($container.css('max-width') !== 'none') {
+		container_width = parseFloat($container.css('max-width'));
 	}
+
+	// If container has no width (hidden group, collapsed tab), defer one time so that
+	// any expand animation or layout pass can finish before we measure. On the retry we
+	// proceed regardless to avoid an infinite loop (from_callback === 'deferred').
+	if (container_width <= 0 && from_callback !== 'deferred') {
+		var _def_member = member_id;
+		var _def_target = target.replace('#', '');
+		setTimeout(function() { og.insertBreadcrumb(_def_member, _def_target, 'deferred'); }, 150);
+		return;
+	}
+
 	var real_container_width = container_width;
-	var container_current_childs = $(target).parent().siblings();
-	var container_current_childs_width = 0;
-	for (var j = 0; j < container_current_childs.length; j++) {
-		container_current_childs_width += $(container_current_childs[j]).outerWidth(true);
+
+	// Subtract width already taken by sibling member-paths.
+	var $siblings = $target.parent().siblings();
+	var siblings_width = 0;
+	for (var si = 0; si < $siblings.length; si++) {
+		siblings_width += $($siblings[si]).outerWidth(true);
 	}
-	container_width = container_width - container_current_childs_width;
-		
-	//we clone the element because the target or a parent can be not displayed and this can generate some problems to calculate child's widths
-	var clone = $(target).closest(container_to_fill).clone(true);
-	$('body').append(clone);
-	
-	var original_container = $(target).closest(container_to_fill);
-	original_container.html('');
-	
-	//reorder members in path (one from the end, one from the start) work1*work2*work3 ->  work1*...*work3
-	var last = true;
-	var ordained_members = new Array();
-	var length = members.length;
-	for (var i=1; i<= length; i++) {
-		if(last){
-			ordained_members.push(members.pop());			
-			last = false;
-		}else{
-			ordained_members.push(members.shift());			
-			last = true;
+	var available_width = container_width - siblings_width;
+
+	// Build member spans HTML for each member (root→leaf order, i.e. members[0] is root).
+	// Use the off-screen measurement element — no DOM clone needed.
+	var measureEl = og._getBreadcrumbMeasureEl();
+	var sep_html  = '<span class="more-members-separator">...<span class="bullet-separator"></span> </span>';
+	var sep_width = measureEl.html(sep_html).outerWidth(true);
+
+	// Pre-compute HTML + width for each member so we can fill from both ends.
+	var memberSpans = [];
+	for (var ms = 0; ms < members.length; ms++) {
+		var mm = members[ms];
+		var mm_name = mm.text;
+		if (show_link) {
+			var mm_onclick = 'return false;';
+			if (og.additional_on_dimension_object_click[mm.ot]) {
+				mm_onclick = og.additional_on_dimension_object_click[mm.ot].replace('<parameters>', mm.id);
+			} else if (mm.dim) {
+				var mm_tree = Ext.getCmp('dimension-panel-' + mm.dim);
+				if (mm_tree) {
+					mm_onclick = "og.memberTreeExternalClick('" + mm_tree.dimensionCode + "', " + mm.id + ");";
+				}
+			}
+			mm_name = '<a onclick="' + mm_onclick + ';" href="#">' + mm.text + '</a>';
 		}
+		var mm_span = (mm.id == member_id)
+			? '<span>' + mm_name + '</span>'
+			: '<span>' + mm_name + ' <span class="bullet-separator"></span> </span>';
+		memberSpans.push({ html: mm_span, width: measureEl.html(mm_span).outerWidth(true) + 30 });
 	}
-	
-	//add all members
-	last = true;
-	var more_members = '<span class="more-members-separator">...<span class="bullet-separator"></span> </span>';
-	$(target).prepend(more_members);
-	for (var i=0; i<ordained_members.length; i++) {		
-		var m = ordained_members[i];	
-		
-		var member_name = m.text;
-		if(show_link){
-			var onclick = "return false;";
-			if (og.additional_on_dimension_object_click[m.ot]) {
-				onclick = og.additional_on_dimension_object_click[m.ot].replace('<parameters>', m.id);
+
+	// Fill from leaf end (back) and root end (front) alternately, keeping path order in output.
+	// prefix holds members taken from the root side; suffix holds members from the leaf side.
+	var prefix = [], suffix = [];
+	var prefix_w = 0, suffix_w = 0;
+	var front = 0, back = memberSpans.length - 1;
+	var take_back = true; // prioritise showing the leaf member first
+
+	// Ensure at least the leaf member is shown even if it doesn't fit.
+	if (memberSpans.length > 0) {
+		suffix.unshift(memberSpans[back].html);
+		suffix_w += memberSpans[back].width;
+		back--;
+		take_back = false; // next take from front
+	}
+
+	while (front <= back) {
+		var candidate = take_back ? memberSpans[back] : memberSpans[front];
+		var new_total = prefix_w + suffix_w + candidate.width + (front < back ? sep_width : 0);
+		if (new_total < available_width) {
+			if (take_back) {
+				suffix.unshift(candidate.html);
+				suffix_w += candidate.width;
+				back--;
 			} else {
-				if (m.dim) {
-					var dim_tree = Ext.getCmp("dimension-panel-" + m.dim);
-					if (dim_tree) {
-						onclick = "og.memberTreeExternalClick('"+ dim_tree.dimensionCode +"', "+ m.id +");";
-					}
-				}
-			}  
-			
-			member_name = '<a onclick="'+onclick+';" href="#">'+ m.text +'</a>';
-		}
-		
-		
-		var member_text = '<span>'+member_name+' <span class="bullet-separator"></span> </span>';
-		if(m.id == member_id){
-			member_text = '<span>'+member_name+'</span>';
-		}
-			
-		var childs = $(target).children();
-		
-		var childs_width = 0;
-		for (var j = 0; j < childs.length; j++) {
-			childs_width += $(childs[j]).outerWidth(true);
-		}
-			
-		//estimate the width of member text
-		var calc = '<span id="test_width" style="display:none">' + member_text + '</span>';
-		 $('body').append(calc);
-		 var member_text_width = $('#test_width').outerWidth(true) + 30;
-		 $('#test_width').remove();		 	
-		
-		//only add if there's free space
-		if(childs_width + member_text_width < container_width ){
-			if(i == ordained_members.length-1){
-				more_members = "";
+				prefix.push(candidate.html);
+				prefix_w += candidate.width;
+				front++;
 			}
-			if(last){
-				$(target).children( ".more-members-separator" ).replaceWith(more_members + member_text);	
-				last = false;
-			}else{
-				$(target).children( ".more-members-separator" ).replaceWith(member_text + more_members);	
-				last = true;
-			}			
-		}else{
-			if(i == 0){				
-				if(ordained_members.length > 1){
-					$(target).children( ".more-members-separator" ).replaceWith(more_members + member_text);
-				}else{
-					$(target).children( ".more-members-separator" ).replaceWith(member_text);
-				}
-			}
+			take_back = !take_back;
+		} else {
 			break;
-		}		
+		}
 	}
-		
-	//Multiple Breadcrumb	
-	og.checkMultiMemberBreadcrumb(target,real_container_width); // performance killer
-	// @TODO: THIS HAS TO BE DONE AFTER RENDERING ALL BREADCRUMBS
-	
-	//remove the clone
-	/*var final_container = clone.clone(true);
-	original_container.replaceWith(final_container);
-	clone.remove();*/
-	original_container.replaceWith(clone);
-}
+
+	var has_gap = front <= back; // show "..." whenever ancestors are hidden, even if prefix is empty
+	var final_html = prefix.join('') + (has_gap ? sep_html : '') + suffix.join('');
+	$target.html(final_html);
+
+	// Check if multiple member-paths overflow their shared container.
+	og.checkMultiMemberBreadcrumb($target, real_container_width);
+};
 
 //check if there are more member paths in the same breadcrumb container and if is necesary colapse them to objet types totals
 og.checkMultiMemberBreadcrumb = function(target, container_width) {	
@@ -696,62 +758,64 @@ og.checkObjectTypesTotalsOverflow = function(target, container_width) {
 }
 
 og.initBreadcrumbsBtns = function(btns){
+	// Compile Handlebars template once per page, not once per button.
+	if (!og._breadcrumbPopoverTemplate) {
+		var _tmplSource = $('#breadcrumb-popover-template').html();
+		og._breadcrumbPopoverTemplate = Handlebars.compile(_tmplSource);
+	}
+	var template = og._breadcrumbPopoverTemplate;
+
 	for (var i = 0; i < btns.length; i++) {
 	    var btn = $(btns[i]);
-	    
+
 	    var member_paths = btn.siblings(".member-path");
 	    var breadcrumbs_html = new Array();
 	    var max_width = 0;
-	    
+
 	    var tmp_ot = {};
 	   	for (var j = 0; j < member_paths.length; j++) {
-	   		
+
 	   		var ot = $(member_paths[j]).data("object-type");
 	   		if(typeof ot == "undefined"){
 	   			continue;
 	   		}
 	   		if (!og.objectTypes[ot]) continue;
 	   		var ot_name = og.objectTypes[ot].c_name;
-	   		
+
 	   		if(typeof tmp_ot[ot_name] == "undefined"){
 	   			tmp_ot[ot_name] = new Array();
 	   		}
-	   		
+
 	   		if($(member_paths[j]).outerWidth(true) > max_width){
 	   			max_width = $(member_paths[j]).outerWidth(true);
-	   		}  
-	   		
+	   		}
+
 	   		var tmp_member = {};
 			tmp_member["html"] = $(member_paths[j]).html();
-			
+
 			tmp_ot[ot_name].push(tmp_member);
-			
+
 		}
-	   	 	
+
 	   	var btn_id = Ext.id();
-	   	
-	  	//POPOVER	
-	   	//get template
-		var source = $("#breadcrumb-popover-template").html(); 
-		//compile the template
-		var template = Handlebars.compile(source);
-		
+
+	  	//POPOVER
 		//template data
 		var data = {
 				breadcrumbs: tmp_ot,
 				btn_id: btn_id,
 				max_width: max_width
 		}
-		
+
 		//instantiate the template
 		var html = template(data);
-				
-		btn.attr("id",btn_id);		
+
+		btn.attr("id",btn_id);
 		btn.data( "visible", 0 );
 		btn.popover('destroy');
-	    btn.popover({ content: "example", 
-	    	delay: { 
-	    	       show: "100", 
+	    btn.popover({ content: "example",
+	    	delay: {
+	    	       show: "100",
 	    	       hide: "100"
 	    	    },
 	    	html: true,
@@ -759,17 +823,17 @@ og.initBreadcrumbsBtns = function(btns){
 	    	template : html,
 	    	placement: 'auto left',
 	    	trigger: 'hover'
-        });	
-	    	    
+        });
+
 	    btn.removeClass("btnPopoverNotInitialized");
-	    
+
 	    btn.on('hide.bs.popover', function (event) {
 	    	if($(this).data( "visible")){
 	    		event.preventDefault();
-	    	}	    	  
+	    	}
 	    });
-		
-	}	
+
+	}
 }
 
 og.showBreadcrumbsPopover = function(btn_id){

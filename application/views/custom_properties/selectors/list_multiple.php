@@ -11,8 +11,10 @@ $is_mem_cp = isset($configs['member_id']);
 <div id="<?php echo $genid ?>listValues<?php echo $cp->getId()?>" name="listValues<?php echo $cp->getId()?>" class="cp-multiple">
 <?php 
 $selected_values = array();
-foreach ($fieldValues as $v) {
-	$selected_values[] = $v->getValue();
+if (is_array($fieldValues)) {
+	foreach ($fieldValues as $v) {
+		$selected_values[] = $v->getValue();
+	}
 }
 
 $count = 0;

@@ -108,11 +108,6 @@ og.ContactManager = function() {
 					'<a style="font-size:120%" href="{1}" onclick="og.openLink(\'{1}\');return false;" title="{2}">{0}</a>',
 					og.clean(value), og.getUrl('contact', 'card', {id: r.data.object_id}), og.clean(r.data.name));
 			
-			if(r.data.companyId != null && r.data.companyId != 0 && r.data.companyName.trim()!=''){
-				name += String.format(
-					' (<a style="font-size:80%" href="{1}" onclick="og.openLink(\'{1}\');return false;" title="{2}">{0}</a>)',
-					og.clean(r.data.companyName), og.getUrl('contact', 'view_company', {id: r.data.companyId}), og.clean(r.data.companyName));
-			} //end else
 		}
 
 		return name;
@@ -272,10 +267,10 @@ og.ContactManager = function() {
 						}						
 					}
 				}else{
-					if(selections[i].data.contacts && selections[i].data.contacts.length < 1 && 
-							selections[i].data.users && selections[i].data.users.length < 1){
+					if ( (selections[i].data.contacts == '' || selections[i].data.contacts.length < 1) && 
+							(selections[i].data.users == '' || selections[i].data.users.length < 1) ) {
 						ret += "," + selections[i].data.object_id;
-					}else{
+					} else {
 						if (!isNaN(selections[i].id)){
 							array_types_not_deleted.push('company');
 							array_names_not_deleted.push(selections[i].data.name);
@@ -564,8 +559,11 @@ og.ContactManager = function() {
 			text : lang('individual contacts'),
 			checked : (og.preferences['viewContactsChecked'] == 1),
 			checkHandler : function(){
+				displayOptions.contacts.checked = this.checked;
+				this.viewType = "contacts";
 				var url = og.getUrl('account', 'update_user_preference', {name: 'viewContactsChecked', value:(this.checked?1:0)});
 				og.openLink(url,{hideLoading:true, callback: function(success, data) {
+					updateFilterButtonText();
 					og.ContactManager.store.reload();
 				}});
 			}
@@ -574,9 +572,11 @@ og.ContactManager = function() {
 			text : lang('users'),
 			checked : (og.preferences['viewUsersChecked'] == 1),
 			checkHandler : function() {
-				this.viewType = "all";
+				displayOptions.users.checked = this.checked;
+				this.viewType = "users";
 				var url = og.getUrl('account', 'update_user_preference', {name: 'viewUsersChecked', value:(this.checked?1:0)});
 				og.openLink(url,{hideLoading:true , callback: function(success, data) {
+					updateFilterButtonText();
 					og.ContactManager.store.reload();
 				}});
 			}
@@ -585,14 +585,40 @@ og.ContactManager = function() {
 			text : lang('companies'),
 			checked : (og.preferences['viewCompaniesChecked'] == 1),
 			checkHandler : function() {
-				this.viewType = "all";
+				displayOptions.companies.checked = this.checked;
+				this.viewType = "companies";
 				var url = og.getUrl('account', 'update_user_preference', {name: 'viewCompaniesChecked', value:(this.checked?1:0)});
 				og.openLink(url,{hideLoading:true, callback: function(success, data) {
+					updateFilterButtonText();
 					og.ContactManager.store.reload();
 				}});
 			}
 		}
 	};
+
+	function updateFilterButtonText() {
+		var comp = Ext.getCmp('contact-manager').getTopToolbar().items.get('tb-item-filter-by-type');
+		if (!comp) return;
+
+		var items = [];
+		if (displayOptions.contacts.checked) items.push('<b class="filter-item">' + lang('individual contacts') + '</b>');
+		if (displayOptions.users.checked) items.push('<b class="filter-item">' + lang('users') + '</b>');
+		if (displayOptions.companies.checked) items.push('<b class="filter-item">' + lang('companies') + '</b>');
+
+		var iconPrefix = '<i class="icon-list-checks"></i>';
+		var iconSuffix = '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>';
+
+		if (items.length == 0 || items.length == 3) {
+			comp.setText(iconPrefix + '<span class="filter-text">' + lang('filter by type') + '</span>' + iconSuffix);
+			comp.removeClass('filter-selected');
+		} else if (items.length === 1) {
+			comp.setText(iconPrefix + items[0] + iconSuffix);
+			comp.addClass('filter-selected');
+		} else {
+			comp.setText(iconPrefix + items.join(', ') + iconSuffix);
+			comp.addClass('filter-selected');
+		}
+	}
 
 	viewActions = {
 			all: new Ext.Action({
@@ -665,15 +691,15 @@ og.ContactManager = function() {
 	actions = {
 		newContact: new Ext.Action({
 			id: 'new_menu_contact',
-			text: lang('new'),
+			text: '<i class="icon-circle-plus"></i>' + lang('new') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
             tooltip: lang('create contact or client company'),
-            iconCls: 'ico-new new_button',
+            iconCls: 'btn btn-sm btn-secondary',
 			menu: {items: addMenuItems}
 		}),
 		delContact: new Ext.Action({
-			text: lang('move to trash'),
+			text: '<i class="icon-trash-2"></i>' + lang('move to trash'),
             tooltip: lang('move selected objects to trash'),
-            iconCls: 'ico-trash',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 				var confirm_trash_config = parseInt(og.preferences['enableTrashConfirmation']);
@@ -726,15 +752,19 @@ og.ContactManager = function() {
 			scope: this
 		}),
 		editContact: new Ext.Action({
-			text: lang('edit'),
+			text: '<i class="icon-pencil-line"></i>' + lang('edit'),
             tooltip: lang('edit selected object'),
-            iconCls: 'ico-edit',
+            iconCls: 'btn btn-sm',
 			disabled: true,
 			handler: function() {
 			//	var action = (getFirstSelectedType() == 'contact' || getFirstSelectedType() == 'user' ? 'edit' : 'edit_contact');
 			//	og.render_modal_form('', {c:'contact', a:action, params: {id:getFirstSelectedId()}});
 				var url = '';
-				if (getFirstSelectedType() == 'contact' || getFirstSelectedType() == 'user')
+				var sel = sm.getSelected();
+				var type = sel && sel.data.type;
+				var isPerson = type == 'contact' || type == 'user'
+					|| (sel && parseInt(sel.data.userType, 10) > 0);
+				if (isPerson)
 					url = og.getUrl('contact', 'edit', {id:getFirstSelectedId()});
 				else
 					url = og.getUrl('contact', 'edit_company', {id:getFirstSelectedId()});
@@ -770,9 +800,11 @@ og.ContactManager = function() {
 			scope: this
 		}),
 		view: new Ext.Action({
-			text: lang('view'),
-            iconCls: 'ico-view_options',
+			text: lang('filter by type'),
+			iconCls: 'btn btn-sm',
 			disabled: false,
+			id: 'tb-item-filter-by-type',
+			cls: 'x-btn-wrap x-btn x-btn-text-icon',
 			menu: {items: [
 				displayOptions.contacts,				
 				displayOptions.users,
@@ -780,10 +812,11 @@ og.ContactManager = function() {
 			]}
 		}),
 		imp_exp: new Ext.Action({		
-			text: lang('import/export'),
-                        tooltip: lang('contact import - export'),
-                        menu: { items: [
-                        new Ext.Action({
+			text: '<i class="icon-arrow-left-right"></i>' + lang('import/export') + '<i class="icon-chevron-down" style="font-size: 0.8em;"></i>',
+			iconCls: 'btn btn-sm',
+			tooltip: lang('contact import - export'),
+			menu: { items: [
+			new Ext.Action({
 		            text: lang('persons'),
 		            iconCls: 'ico-contact',
 		            menu: { items: [
@@ -912,7 +945,7 @@ og.ContactManager = function() {
             emptyMsg: lang("no objects to display")
         }),
 		viewConfig: {
-            forceFit: true
+            forceFit: false
         },
 		sm: sm,
 		tbar: tbar,
@@ -927,6 +960,7 @@ og.ContactManager = function() {
 					scroller.each(function() {
 						if (this.dom) this.dom.appendChild(msg);
 					});
+					updateFilterButtonText();
 				},
 				scope: this
 			},

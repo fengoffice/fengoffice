@@ -132,7 +132,7 @@ foreach ($all_type_codes as $type_code) {
 ?>
 			<div class="<?php echo ($is_alt ? 'alt-row' : '')?> info-content-item">
 				<strong><?php echo lang('address')?>: </strong><?php echo $out ?>
-				<a class="map-link coViewAction ico-map" href="http://maps.google.com/?q=<?php echo $out ?>" target="_blank"><?php echo lang('map')?></a>
+				<a class="map-link" href="http://maps.google.com/?q=<?php echo $out ?>" target="_blank"><i class="icon-map-pin"></i> <?php echo lang('map')?></a>
 			</div>
 <?php 	}
 	}

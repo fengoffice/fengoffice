@@ -59,9 +59,9 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return array
 	 */
 	static function getNewestContactPasswords() {
+		$contact_passwords_table = ContactPasswords::instance()->getTableName(true);
 		return ContactPasswords::instance()->findAll(array(
-        'order' => 'password_date desc',
-		'group by' => 'contact_id',
+			'conditions' => "$contact_passwords_table.`id` = (SELECT `cp2`.`id` FROM $contact_passwords_table `cp2` WHERE `cp2`.`contact_id` = $contact_passwords_table.`contact_id` ORDER BY `cp2`.`password_date` DESC, `cp2`.`id` DESC LIMIT 1)",
 		)); // findAll
 	} // getNewestContactPasswords
 
@@ -188,6 +188,51 @@ class ContactPasswords extends BaseContactPasswords {
 	}
 
 	/**
+	 * Return validation errors for all configured password requirements.
+	 *
+	 * @access public
+	 * @param string $password
+	 * @param integer $contact_id
+	 * @param boolean $validate_history
+	 * @return array
+	 */
+	static function validatePasswordRequirements($password, $contact_id = null, $validate_history = true) {
+		$errors = array();
+
+		if(!self::validateMinLength($password)) {
+			$min_pass_length = config_option('min_password_length', 0);
+			$errors[] = lang('password invalid min length', $min_pass_length);
+		}
+
+		if(!self::validateNumbers($password)) {
+			$pass_numbers = config_option('password_numbers', 0);
+			$errors[] = lang('password invalid numbers', $pass_numbers);
+		}
+
+		if(!self::validateUppercaseCharacters($password)) {
+			$pass_uppercase = config_option('password_uppercase_characters', 0);
+			$errors[] = lang('password invalid uppercase', $pass_uppercase);
+		}
+
+		if(!self::validateMetacharacters($password)) {
+			$pass_metacharacters = config_option('password_metacharacters', 0);
+			$errors[] = lang('password invalid metacharacters', $pass_metacharacters);
+		}
+
+		if($validate_history && $contact_id) {
+			if(!self::validateAgainstPasswordHistory($contact_id, $password)) {
+				$errors[] = lang('password exists history');
+			}
+
+			if(!self::validateCharDifferences($contact_id, $password)) {
+				$errors[] = lang('password invalid difference');
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
 	 * Check if password is fulfills password options
 	 *
 	 * @access public
@@ -195,13 +240,7 @@ class ContactPasswords extends BaseContactPasswords {
 	 * @return boolean
 	 */
 	static function validatePassword($password){
-		if(self::validateMinLength($password) &&
-		self::validateNumbers($password) &&
-		self::validateUppercaseCharacters($password) &&
-		self::validateMetacharacters($password)){
-			return true;
-		}
-		return false;
+		return count(self::validatePasswordRequirements($password, null, false)) == 0;
 	}
 
 	/**
@@ -294,27 +333,46 @@ class ContactPasswords extends BaseContactPasswords {
 
 
 	/**
-	 * Send password expiration reminders to contacts
+	 * Send password expiration reminders to users
 	 *
 	 * @access public
-	 * @return int
+	 * @return int The number of reminders sent
 	 */
 	static function sendPasswordExpirationReminders(){
-		$sent = 0;
-		$password_expiration_days = config_option('password_expiration', 0);
+		// get the number of days before password expiration date to send reminders
 		$password_expiration_notification = config_option('password_expiration_notification', 0);
-		$contact_passwords = ContactPasswords::getNewestContactPasswords();
+		// get the number of days password expiration date is set to
+		$password_expiration_days = config_option('password_expiration', 0);
+		if($password_expiration_days <= 0){
+			return 0;
+		}
+		
+		// get the newest contact password
+		$contact_passwords = ContactPasswords::getNewestContactPasswords(); 
+		$sent = 0;
+		
+		// loop through each contact password
 		foreach($contact_passwords as $password){
+			// calculate the number of days the current password has been active
 			$diff_days = self::getContactPasswordDays($password);
-			if($diff_days == ($password_expiration_days - $password_expiration_notification)){
+			
+			// check if the password is about to expire
+			if($diff_days >= ($password_expiration_days - $password_expiration_notification) && $diff_days <= $password_expiration_days){
+				// calculate the number of days left before expiration
+				$days_left = $password_expiration_days - $diff_days;
+				
+				// get the user to send the email
 				$contact = Contacts::instance()->findById($password->getContactId());
 				if($contact instanceof Contact){
-					if(Notifier::passwordExpiration($contact, $password_expiration_notification)){
-						$sent++;
-					}
+					// send the password expiration reminder with the number of days left
+					Notifier::passwordExpiration($contact, $days_left);
+					// count the number of reminders sent
+					$sent++;
 				}
 			}
 		}
+		
+		// return the number of reminders sent
 		return $sent;
 	}
 	

@@ -92,7 +92,8 @@ App.modules.addMessageForm = {
 	  				{  		  					
 	  					var div_user = document.getElementById(usrs_div.childNodes[d].id);
 	  					var user = document.getElementById(usrs_div.childNodes[d].id.substr(3));
-						if(div_user.className == 'container-div checked-user'){						
+					// Robust checked-user detection (template can add extra classes).
+					if ((div_user.classList && div_user.classList.contains('checked-user')) || (div_user.className && div_user.className.indexOf('checked-user') >= 0)) {
 							ret += (user.name.substring(17,user.name.length-1)) + ', ';
 						}  					
 	  					

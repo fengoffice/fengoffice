@@ -1,1 +1,216 @@
-var showWorkedHoursWidget=function(e){function t(t){for(var n,l,i=t[0],c=t[1],s=t[2],d=0,m=[];d<i.length;d++)l=i[d],Object.prototype.hasOwnProperty.call(a,l)&&a[l]&&m.push(a[l][0]),a[l]=0;for(n in c)Object.prototype.hasOwnProperty.call(c,n)&&(e[n]=c[n]);for(u&&u(t);m.length;)m.shift()();return o.push.apply(o,s||[]),r()}function r(){for(var e,t=0;t<o.length;t++){for(var r=o[t],n=!0,i=1;i<r.length;i++){var c=r[i];0!==a[c]&&(n=!1)}n&&(o.splice(t--,1),e=l(l.s=r[0]))}return e}var n={},a={2:0},o=[];function l(t){if(n[t])return n[t].exports;var r=n[t]={i:t,l:!1,exports:{}};return e[t].call(r.exports,r,r.exports,l),r.l=!0,r.exports}l.m=e,l.c=n,l.d=function(e,t,r){l.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r})},l.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},l.t=function(e,t){if(1&t&&(e=l(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var r=Object.create(null);if(l.r(r),Object.defineProperty(r,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var n in e)l.d(r,n,function(t){return e[t]}.bind(null,n));return r},l.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return l.d(t,"a",t),t},l.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},l.p="";var i=window.webpackJsonp_name_=window.webpackJsonp_name_||[],c=i.push.bind(i);i.push=t,i=i.slice();for(var s=0;s<i.length;s++)t(i[s]);var u=c;return o.push([361,0]),r()}({361:function(e,t,r){function n(e){return(n="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function a(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}function o(e,t){return!t||"object"!==n(t)&&"function"!=typeof t?function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e):t}function l(e){return(l=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}function i(e,t){return(i=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}var c=r(1),s=r(41),u=r(150),d=u.ResponsiveContainer,m=u.AreaChart,f=u.Area,p=u.XAxis,b=u.YAxis,y=u.CartesianGrid,v=u.Tooltip,h=u.Legend,g=function(e){function t(e){var r;return function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,t),(r=o(this,l(t).call(this,e))).state={worked:e.data.worked?e.data.worked:0,estimated:e.data.estimated?e.data.estimated:0,chartData:e.data.chartData?e.data.chartData:""},r}var r,n,s;return function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&i(e,t)}(t,e),r=t,(n=[{key:"render",value:function(){var e=this.state.worked,t=this.state.estimated,r=this.state.chartData,n=Math.round(e/t*100),a={width:n+"%"},o=t-e,l=100-n,i=Math.round(.96*t),s=t-i;return c.createElement("div",{className:"worked-hours-widget"},c.createElement("div",{className:"progress-info"},c.createElement("div",{className:"progress-bar-container"},c.createElement("div",{className:"progress-label"},n,"%"),c.createElement("div",{className:"progress-bar"},c.createElement("span",{className:"progress-bar-fill",style:a}))),c.createElement("div",{className:"progress-text-container"},c.createElement("div",null,"Estimate at Completion"),c.createElement("div",{className:"bold-600"},t))),c.createElement("div",{className:"progress-info"},c.createElement("div",{className:"progress-text-container"},c.createElement("div",null,"Actual"),c.createElement("div",null,e,"  ",c.createElement("span",{className:"bold-600"},n,"%"))),c.createElement("div",{className:"progress-text-container"},c.createElement("div",null,"Remaining"),c.createElement("div",null,o,"  ",c.createElement("span",{className:"bold-600"},l,"%"))),c.createElement("div",{className:"progress-text-container"},c.createElement("div",null,"Budgeted"),c.createElement("div",{className:"bold-600"},i)),c.createElement("div",{className:"progress-text-container"},c.createElement("div",null,"Variance"),c.createElement("div",{className:"bold-600"},s))),r&&c.createElement("div",{className:"worked-hours-chart"},c.createElement(d,{width:"100%",height:200},c.createElement(m,{data:r,margin:{top:0,right:0,left:-30,bottom:-10}},c.createElement(y,{strokeDasharray:"3 3"}),c.createElement(p,{dataKey:"date"}),c.createElement(b,null),c.createElement(v,null),c.createElement(h,{verticalAlign:"middle",align:"right",layout:"vertical",height:50}),c.createElement(f,{type:"monotone",dataKey:"estimated",stroke:"#b4b3b3",fill:"#b4b3b3"}),c.createElement(f,{type:"monotone",dataKey:"worked",stroke:"#0589e3",fill:"#0589e3"})))))}}])&&a(r.prototype,n),s&&a(r,s),t}(c.Component);e.exports=function(e,t){s.render(c.createElement(g,{data:e}),t)}}});
+"use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); Object.defineProperty(subClass, "prototype", { writable: false }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } else if (call !== void 0) { throw new TypeError("Derived constructors may only return object or undefined"); } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var React = require('react');
+
+var ReactDOM = require('react-dom');
+
+var _require = require('recharts'),
+    ResponsiveContainer = _require.ResponsiveContainer,
+    AreaChart = _require.AreaChart,
+    Area = _require.Area,
+    XAxis = _require.XAxis,
+    YAxis = _require.YAxis,
+    CartesianGrid = _require.CartesianGrid,
+    Tooltip = _require.Tooltip,
+    Legend = _require.Legend;
+
+var WorkedHoursWidget = /*#__PURE__*/function (_React$Component) {
+  _inherits(WorkedHoursWidget, _React$Component);
+
+  var _super = _createSuper(WorkedHoursWidget);
+
+  function WorkedHoursWidget(props) {
+    var _this;
+
+    _classCallCheck(this, WorkedHoursWidget);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      worked: props.data.worked ? props.data.worked : 0,
+      estimated: props.data.estimated ? props.data.estimated : 0,
+      chartData: props.data.chartData ? props.data.chartData : ''
+    };
+    return _this;
+  }
+
+  _createClass(WorkedHoursWidget, [{
+    key: "render",
+    value: function render() {
+      // Define variables that will be used in the returned component
+      var worked = this.state.worked;
+      var estimated = this.state.estimated;
+      var chartData = this.state.chartData;
+      var percentage = Math.round(worked / estimated * 100);
+      var percentStyle = {
+        width: percentage + '%'
+      };
+      var remaining = estimated - worked;
+      var remaining_percent = 100 - percentage;
+      var budgeted = Math.round(estimated * 0.96);
+      var variance = estimated - budgeted;
+      return /*#__PURE__*/React.createElement("div", {
+        className: "worked-hours-widget"
+      }, /*#__PURE__*/React.createElement("p", {
+        style: percentStyle,
+        "data-value": percentage
+      }), /*#__PURE__*/React.createElement("div", {
+        className: "progress-info"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "progress-bar-container"
+      }, percentage <= 4 ? /*#__PURE__*/React.createElement("div", {
+        className: "progress-label-small-number",
+        style: percentStyle,
+        "data-value": percentage
+      }) : /*#__PURE__*/React.createElement("div", {
+        className: "progress-label",
+        style: percentStyle,
+        "data-value": percentage
+      }), /*#__PURE__*/React.createElement("div", {
+        className: "progress-bar"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "progress-bar-fill",
+        style: percentStyle
+      })))), /*#__PURE__*/React.createElement("div", {
+        className: "progress-info"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "progress-text-container"
+      }, /*#__PURE__*/React.createElement("div", null, "Total worked hours"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("svg", {
+        className: "circle-icon icon-worked",
+        version: "1.1",
+        xmlns: "http://www.w3.org/2000/svg",
+        width: "24",
+        height: "24",
+        viewBox: "0 0 24 24"
+      }, /*#__PURE__*/React.createElement("path", {
+        d: "M3.984 12q0-3.281 2.367-5.648t5.648-2.367 5.648 2.367 2.367 5.648-2.367 5.648-5.648 2.367-5.648-2.367-2.367-5.648z"
+      })), /*#__PURE__*/React.createElement("span", {
+        className: "widget-hours-number"
+      }, worked), " ", /*#__PURE__*/React.createElement("span", {
+        className: "font-weight-400"
+      }, "hrs"))), /*#__PURE__*/React.createElement("div", {
+        className: "progress-text-container"
+      }, /*#__PURE__*/React.createElement("div", null, "Total estimated hours"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("svg", {
+        className: "circle-icon icon-estimated",
+        version: "1.1",
+        xmlns: "http://www.w3.org/2000/svg",
+        width: "24",
+        height: "24",
+        viewBox: "0 0 24 24"
+      }, /*#__PURE__*/React.createElement("path", {
+        d: "M3.984 12q0-3.281 2.367-5.648t5.648-2.367 5.648 2.367 2.367 5.648-2.367 5.648-5.648 2.367-5.648-2.367-2.367-5.648z"
+      })), /*#__PURE__*/React.createElement("span", {
+        className: "widget-hours-number"
+      }, estimated), " ", /*#__PURE__*/React.createElement("span", {
+        className: "font-weight-400"
+      }, "hrs")))), chartData && /*#__PURE__*/React.createElement("div", {
+        className: "worked-hours-chart"
+      }, /*#__PURE__*/React.createElement(ResponsiveContainer, {
+        width: "100%",
+        height: 200
+      }, /*#__PURE__*/React.createElement(AreaChart, {
+        data: chartData,
+        margin: {
+          top: 10,
+          right: 0,
+          left: 0,
+          bottom: -10
+        },
+        padding: {}
+      }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
+        id: "colorEstimated",
+        x1: "0",
+        y1: "0",
+        x2: "0",
+        y2: "1"
+      }, /*#__PURE__*/React.createElement("stop", {
+        offset: "5%",
+        stopColor: "#d9d9d9",
+        stopOpacity: 0.8
+      }), /*#__PURE__*/React.createElement("stop", {
+        offset: "95%",
+        stopColor: "#d9d9d9",
+        stopOpacity: 0.1
+      })), /*#__PURE__*/React.createElement("linearGradient", {
+        id: "colorWorked",
+        x1: "0",
+        y1: "0",
+        x2: "0",
+        y2: "1"
+      }, /*#__PURE__*/React.createElement("stop", {
+        offset: "5%",
+        stopColor: "#20a1f8",
+        stopOpacity: 0.9
+      }), /*#__PURE__*/React.createElement("stop", {
+        offset: "95%",
+        stopColor: "#20a1f8",
+        stopOpacity: 0.2
+      }))), /*#__PURE__*/React.createElement(CartesianGrid, {
+        strokeDasharray: "3 3",
+        vertical: false
+      }), /*#__PURE__*/React.createElement(XAxis, {
+        dy: 15,
+        axisLine: false,
+        tickSize: 0,
+        stroke: "#888888",
+        dataKey: "date",
+        interval: "preserveStartEnd",
+        minTickGap: 70,
+        height: 40
+      }), /*#__PURE__*/React.createElement(YAxis, {
+        dx: 10,
+        axisLine: false,
+        tickSize: 0,
+        stroke: "#888888",
+        orientation: "right",
+        width: 50
+      }), /*#__PURE__*/React.createElement(Tooltip, null), /*#__PURE__*/React.createElement(Area, {
+        type: "monotone",
+        dataKey: "estimated",
+        stroke: "#888888",
+        fill: "url(#colorEstimated)",
+        isAnimationActive: false
+      }), /*#__PURE__*/React.createElement(Area, {
+        type: "monotone",
+        dataKey: "worked",
+        stroke: "#20a1f8",
+        fill: "url(#colorWorked)",
+        isAnimationActive: false
+      })))));
+    }
+  }]);
+
+  return WorkedHoursWidget;
+}(React.Component);
+
+;
+
+function showWorkedHoursWidget(data, element) {
+  ReactDOM.render( /*#__PURE__*/React.createElement(WorkedHoursWidget, {
+    data: data
+  }), element);
+}
+
+;
+module.exports = showWorkedHoursWidget;

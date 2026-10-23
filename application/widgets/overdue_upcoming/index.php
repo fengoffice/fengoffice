@@ -1,4 +1,7 @@
 <?php
+if (!module_enabled('tasks')) {
+	return;
+}
 $not_overdue_limit = 5 ;
 $overdue_limit = 20 ;
 

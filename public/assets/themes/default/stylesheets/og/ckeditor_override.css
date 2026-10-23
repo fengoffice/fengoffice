@@ -18,6 +18,17 @@ html {
 	display:none;
 }
 
+/* Keep CKEditor chrome of a hidden tab from overlaying Home / the active view */
+.x-hide-display .cke,
+.x-hide-display .cke_chrome,
+.x-hide-visibility .cke,
+.x-hide-visibility .cke_chrome,
+.x-hide-offsets .cke,
+.x-hide-offsets .cke_chrome {
+	display: none !important;
+	visibility: hidden !important;
+}
+
 /* Add styling to the multiassign texteare CKEditor */
 .cke_textarea_inline {
 	height: 40px;

@@ -75,6 +75,7 @@
 	'footer copy with homepage' => '© {0} <a class="internalLink" href="{1}">{2}</a>。保留所有权利。',
 	'footer copy without homepage' => '© {0} {1}  保留所有权利。',
 	'footer powered' => 'Powered by <a target="_blank" href="{0}">{1}</a>，系统汉化：<a target="_blank" href="mailto:shellwayhe@163.com">Shellway He</a>，<a target="_blank" href="http://blog.shellway.cn">我的BLOG</a>',
+	'powered by' => 'Powered by',
 	'all documents' => '全部文档',
 	'created by me' => '我创建的',
 	'by project' => '通过工作区',

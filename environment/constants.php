@@ -21,6 +21,9 @@
   define('LUCENE_SEARCH', false);
   define('CATDOC_PATH', 'catdoc');
   define('CATPPT_PATH', 'catppt');
+
+  // Upper bound for the member/project list page-size preference (see MemberManager.js)
+  define('MEMBERS_PER_PAGE_MAX', 1000);
   
   // Some nice to have regexps
   define('EMAIL_FORMAT', "/^([a-z0-9+_']|\\-|\\.)+@(([a-z0-9_]|\\-)+\\.)+[a-z]{1,50}\$/i");
@@ -46,4 +49,23 @@
   if (!defined('DATE_W3C'))     define('DATE_W3C',     'Y-m-d\TH:i:sO');
   
   define('SQL_NOT_DELETED', " archived_on = '".EMPTY_DATETIME. "' AND trashed_on = '".EMPTY_DATETIME."'" );
+
+  // What to do with the subtasks of a task when its classification changes, per dimension
+  // (config option 'apply_classification_to_subtasks')
+  define('SUBTASK_CLASSIFICATION_NEVER', 'never');
+  define('SUBTASK_CLASSIFICATION_IF_EMPTY', 'if_empty');
+  define('SUBTASK_CLASSIFICATION_ALWAYS', 'always');
+  // used for the dimensions with no value stored and when the config option is missing
+  define('SUBTASK_CLASSIFICATION_DEFAULT', SUBTASK_CLASSIFICATION_ALWAYS);
+
+  // chrome-php sync/navigation/PDF timeout in ms. Override in config.php per server if needed.
+  // Library default is 5000; large report HTML often needs more.
+  if (!defined('CHROME_TIMEOUT_MS')) define('CHROME_TIMEOUT_MS', 60000);
+
+  // Contact groups a contact custom property selector can be restricted to. Stored in
+  // custom_properties.filter_values_by as comma separated tokens and sent to the selector
+  // as a bitmask. The groups are disjoint and together cover every contact.
+  if (!defined('CONTACT_CP_FILTER_COMPANIES')) define('CONTACT_CP_FILTER_COMPANIES', 1);
+  if (!defined('CONTACT_CP_FILTER_CONTACTS'))  define('CONTACT_CP_FILTER_CONTACTS', 2);
+  if (!defined('CONTACT_CP_FILTER_USERS'))     define('CONTACT_CP_FILTER_USERS', 4);
 ?>

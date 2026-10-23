@@ -6,7 +6,7 @@
 	}
 	$random = rand();
 ?>
-
+	<div class="clear"></div>
     <div class="commentsTitle"><?php echo lang('comments')?> </div>
 <?php if ($countComments > 0) { ?>
 
@@ -19,13 +19,13 @@
 				$options = array();
 				if ($comment->canEdit(logged_user()) && !$__comments_object->isTrashed()) {
 					if ($comment->getCreatedById() == logged_user()->getId() || can_write(logged_user(), $comment->getRelObject()->getMembers(), $comment->getObjectTypeId())) {
-						$options[] = '<a class="internalLink" href="' . $comment->getEditUrl() . '">' . lang('edit') . '</a>';
+						$options[] = '<a class="link-action-icon edit" href="' . $comment->getEditUrl() . '" title="' . lang('edit') . '"><i class="icon-pencil-line"></i></a>';
 					}
 					if ($comment->canLinkObject(logged_user())) {
-						$options[] = render_link_to_object($comment,lang('link objects'),true);
+						$options[] = render_link_to_object($comment,'',true); // just icon
 					}
 				}
-				if ($comment->canDelete(logged_user()) && !$__comments_object->isTrashed()) $options[] = '<a class="internalLink" href="' . $comment->getDeleteUrl() . '" onclick="return confirm(\''.escape_single_quotes(lang('confirm move to trash')).'\')">' . lang('move to trash') . '</a>';
+				if ($comment->canDelete(logged_user()) && !$__comments_object->isTrashed()) $options[] = '<a class="link-action-icon delete" href="' . $comment->getDeleteUrl() . '" onclick="return confirm(\''.escape_single_quotes(lang('confirm move to trash')).'\')" title="' . lang('move to trash') . '"><i class="icon-trash-2"></i></a>';
 ?>
 			<div class="comment <?php echo $counter % 2 ? 'even' : 'odd' ?>" id="comment<?php echo $comment->getId() ?>">
 		
@@ -35,9 +35,9 @@
 					<span><a class="internalLink" href="<?php echo $comment->getViewUrl() ?>" title="<?php echo lang('permalink') ?>">#<?php echo $counter ?></a>:
 					</span> <?php echo lang('comment posted on by', format_datetime($comment->getUpdatedOn()), $comment->getCreatedByCardUrl(), clean($comment->getCreatedByDisplayName())) ?>
 					</td>
-					<td style="text-align:right">
+					<td>
 		<?php 		if(count($options)) { ?>
-					<div><?php echo implode(' | ', $options) ?></div>
+					<div class="d-flex flex-end gap-2"><?php echo implode($options) ?></div>
 		<?php 		} // if ?>
 					</td></tr></table>
 				</div>

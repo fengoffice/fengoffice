@@ -1,5 +1,4 @@
 <?php
-  require_javascript("og/CustomPropertyFunctions.js");
   $genid = gen_id();
 ?>
 

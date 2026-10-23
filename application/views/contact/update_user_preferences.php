@@ -17,12 +17,29 @@
 
 	<?php if(isset($options) && is_array($options) && count($options)) { ?>
 			<div id="configCategoryOptions">
+			<?php
+			$use_nm_trigger_ui = isset($category) && $category instanceof ContactConfigCategory
+				&& $category->getName() == 'notification_trigger_options'
+				&& Plugins::instance()->isActivePlugin('notifications_manager');
+			if ($use_nm_trigger_ui) {
+				$counter = 0;
+				$nm_trigger_use_default_value = false;
+				include get_template_path('notification_trigger_fields', 'notifications_manager', 'notifications_manager');
+			} else {
+			?>
 			<?php $counter = 0; ?>
 			<?php foreach($options as $option) { ?>
 				<?php $counter++; ?>
 				<div class="configCategoryOtpion <?php echo $counter % 2 ? 'odd' : 'even' ?>" id="configCategoryOption_<?php echo $option->getName() ?>">
 					<div class="configOptionInfo">
-						<div class="configOptionLabel"><label><?php echo $option->getDisplayName() ?>:</label></div>
+						<div class="configOptionLabel"><label><?php 
+							$label = $option->getDisplayName();
+							Hook::fire('override_contact_config_option_label', [
+								'category' => $category,
+								'option' => $option
+							], $label);
+							echo $label;
+						?>:</label></div>
 					<?php if(trim($option_description = $option->getDisplayDescription())) { ?>
 						<div class="configOptionDescription desc"><?php echo $option_description ?></div>
 					<?php } // if ?>
@@ -39,6 +56,7 @@
 					<div class="clear"></div>
 				</div>
 			<?php } // foreach ?>
+			<?php } // if nm trigger ui ?>
   			</div>
 			<?php echo submit_button(lang('save')) ?>&nbsp;<button class="submit" type="reset"><?php echo lang('reset') ?></button>
 	<?php } else { ?>

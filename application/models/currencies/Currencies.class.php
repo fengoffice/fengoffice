@@ -31,7 +31,8 @@
 		
 		private $cache = null;
 		static function getCurrency($id) {
-			$all = Currencies::instance()->findAll();
+			// Use the per-request list: this runs once per report cell and findAll() queried the table every time
+			$all = self::getAllCurrencies();
 			foreach ($all as $obj) {
 				if( $obj->getId() == $id) {
 					return $obj;

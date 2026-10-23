@@ -101,6 +101,9 @@ class  CustomProperties extends  BaseCustomProperties {
 	 * @return array
 	 *
 	 */
+	/** Per-request cache for getAllCustomPropertiesByObjectType results. */
+	private static $_all_cp_by_ot_cache = array();
+
 	static function getAllCustomPropertiesByObjectType($object_type, $visibility = 'all', $extra_cond = "", $fire_cond_hook=false, $include_disabled=false, $object = null) {
 
 		if ($fire_cond_hook) {
@@ -128,11 +131,19 @@ class  CustomProperties extends  BaseCustomProperties {
 			$disabled_cond = "AND is_disabled=0";
 		}
 		Hook::fire('add_custom_property_condition', array('user'=>logged_user()), $extra_cond);
+		$cache_key = $object_type . '|' . $visibility . '|' . $extra_cond . '|' . ($fire_cond_hook?'1':'0') . '|' . ($include_disabled?'1':'0');
+		if (array_key_exists($cache_key, self::$_all_cp_by_ot_cache)) {
+			return self::$_all_cp_by_ot_cache[$cache_key];
+		}
+
 		$cond = array("`object_type_id` = ? $extra_cond $disabled_cond", $object_type);
-		return self::instance()->findAll(array(
+		$custom_properties = self::instance()->findAll(array(
 			'conditions' => $cond,
 			'order' => 'property_order asc'
 		));
+
+		self::$_all_cp_by_ot_cache[$cache_key] = $custom_properties;
+		return $custom_properties;
 	} //  getAllCustomPropertiesByObjectType
 
 

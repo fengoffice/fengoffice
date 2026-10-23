@@ -215,7 +215,7 @@ og.ogPermSetLevel = function(genid, dim_id, level){
 }
 
 og.ogPermSetLevelCheckbox = function(checkbox, genid, dim_id, radio_id) {
-	var is_checked = $(checkbox).attr('checked') == 'checked';
+	var is_checked = $(checkbox).prop('checked');
 	var id = is_checked ? radio_id : 0;
 	og.ogPermSetLevel(genid, dim_id, id);
 }
@@ -1076,7 +1076,7 @@ og.userPermissions.ogPermSetLevel = function(genid, level){
 }
 
 og.userPermissions.ogPermSetLevelCheckbox = function(checkbox, genid, radio_id) {
-	var is_checked = $(checkbox).attr('checked') == 'checked';
+	var is_checked = $(checkbox).prop('checked');
 	var id = is_checked ? radio_id : 0;
 	og.userPermissions.ogPermSetLevel(genid, id);
 }
@@ -1210,9 +1210,21 @@ og.userPermissions.showPermissionsPopup = function(container, genid, user_type) 
 }
 
 og.userPermissions.cancelPermissionsModification = function(genid, pg_id) {
-	// make a copy of the origial permissions and set as current
-	var json = Ext.util.JSON.encode(og.userPermissions.permissionInfo[genid].original_permissions[pg_id]);
-	og.userPermissions.permissionInfo[genid].permissions[pg_id] = Ext.util.JSON.decode(json);
+	// Restore the snapshot from when the form was loaded (or empty if this PG was just added).
+	var original = og.userPermissions.permissionInfo[genid].original_permissions
+		? og.userPermissions.permissionInfo[genid].original_permissions[pg_id]
+		: null;
+	if (typeof original === 'undefined' || original === null) {
+		og.userPermissions.permissionInfo[genid].permissions[pg_id] = [];
+	} else {
+		var json = Ext.util.JSON.encode(original);
+		og.userPermissions.permissionInfo[genid].permissions[pg_id] = Ext.util.JSON.decode(json);
+	}
+
+	// Drop the card if there are still no grants (e.g. user added via search then cancelled).
+	if (!og.userPermissions.hasAnyPermissions(genid, pg_id)) {
+		$('#' + genid + '_pg_' + pg_id).remove();
+	}
 }
 
 og.userPermissions.showHidePermissionsRadioButtonsByRole = function(genid, role_id) {
@@ -1270,6 +1282,7 @@ og.userPermissions.onUserSelect = function(genid, arguments) {
 }
 
 og.userPermissions.removeAllPermissions = function(genid) {
+	if (!og.userPermissions.permissionInfo[genid]) og.userPermissions.permissionInfo[genid] = {};
 	og.userPermissions.permissionInfo[genid].permissions = {};
 }
 
@@ -1342,6 +1355,260 @@ og.showHideNonGuestPermissionOptions = function (guest_selected) {
 	}
 }
 
+og.getRootPermissionMaxLevel = function(max) {
+	if (!max) return 3;
+
+	var canDelete = (typeof max.can_delete !== 'undefined') ? max.can_delete : max.d;
+	var canWrite = (typeof max.can_write !== 'undefined') ? max.can_write : max.w;
+	if (parseInt(canDelete) === 1) return 3;
+	if (parseInt(canWrite) === 1) return 2;
+	return 1;
+};
+
+og.getRootPermissionMaxMapForRole = function(role_id, maxMap) {
+	if (maxMap) return maxMap;
+	if (role_id && og.maxRolePermissions && og.maxRolePermissions[role_id]) {
+		return og.maxRolePermissions[role_id];
+	}
+	if (role_id && og.maxRoleObjectTypePermissions && og.maxRoleObjectTypePermissions[role_id]) {
+		return og.maxRoleObjectTypePermissions[role_id];
+	}
+	if (role_id && og.userRootMaxPermissions && og.userRootMaxPermissions[role_id]) {
+		return og.userRootMaxPermissions[role_id];
+	}
+	return null;
+};
+
+og.ogRootPermSetLevel = function(genid, requestedLevel, maxMap, role_id) {
+	if (!og.perm_root_object_type_ids || !og.perm_root_object_type_ids.length) return;
+
+	if (!role_id) {
+		if (og.tmp_role_id && og.tmp_role_id[genid]) role_id = og.tmp_role_id[genid];
+		else if (og.currentRoleId) role_id = og.currentRoleId;
+	}
+	var max_perms = og.getRootPermissionMaxMapForRole(role_id, maxMap);
+	var level = parseInt(requestedLevel, 10);
+	if (isNaN(level)) level = 0;
+
+	for (var i=0; i<og.perm_root_object_type_ids.length; i++) {
+		var ot = og.perm_root_object_type_ids[i];
+		var max = max_perms ? max_perms[ot] : null;
+		var maxLevel = og.getRootPermissionMaxLevel(max);
+		var effectiveLevel = level;
+		if (effectiveLevel > maxLevel) effectiveLevel = maxLevel;
+
+		var radioName = genid + "rg_root_" + ot;
+		var radioNodes = document.getElementsByName(radioName);
+		if (!radioNodes || !radioNodes.length) {
+			radioName = genid + "root_" + ot;
+			radioNodes = document.getElementsByName(radioName);
+		}
+		if (radioNodes && radioNodes.length) {
+			og.ogSetCheckedValue(radioNodes, effectiveLevel);
+		}
+	}
+
+	$(".all-radio-sel-chk-root").removeAttr('checked');
+	if (typeof og.ogRootPermValueChanged === 'function') {
+		og.ogRootPermValueChanged(genid);
+	}
+};
+
+og.ogRootPermSetLevelCheckbox = function(checkbox, genid, radio_id, maxMap, role_id) {
+	var is_checked = $(checkbox).prop('checked');
+	var id = is_checked ? radio_id : 0;
+	og.ogRootPermSetLevel(genid, id, maxMap, role_id);
+};
+
+og.enableRootPermissionRadiosForSubmit = function(form) {
+	var $form = form ? $(form) : null;
+	if (!$form || !$form.length) return;
+	$form.find('.root-permissions input[type=radio]:disabled').prop('disabled', false);
+};
+
+og.ogRootPermValueChanged = function(genid) {
+	if (!og.perm_root_object_type_ids) return;
+
+	var assigned_vals = [];
+	for (var i=0; i<og.perm_root_object_type_ids.length; i++) {
+		var ot = og.perm_root_object_type_ids[i];
+		var radio_name = genid + "rg_root_" + ot;
+		var $checked = $('input[name="' + radio_name + '"]:checked');
+		if (!$checked.length) {
+			radio_name = genid + "root_" + ot;
+			$checked = $('input[name="' + radio_name + '"]:checked');
+		}
+		if (!$checked.length) continue;
+		var v = $checked.val();
+		if (assigned_vals.indexOf(v) == -1) assigned_vals.push(v);
+	}
+
+	$(".all-radio-sel-chk-root").removeAttr('checked');
+	if (assigned_vals.length == 1) {
+		$(".all-radio-sel-chk-root#chk-"+assigned_vals[0]).attr('checked','checked');
+	}
+};
+
+og.applyDefaultRootPermissionsByRole = function(genid, role_id) {
+	if (!og.perm_root_object_type_ids || !og.defaultRolePermissions) return;
+	if (!og.defaultRolePermissions[role_id]) return;
+
+	var max_perms = (og.maxRoleObjectTypePermissions && og.maxRoleObjectTypePermissions[role_id]) ? og.maxRoleObjectTypePermissions[role_id] : null;
+	for (var i=0; i<og.perm_root_object_type_ids.length; i++) {
+		var ot = og.perm_root_object_type_ids[i];
+		var def = og.defaultRolePermissions[role_id][ot];
+
+		var level = 0;
+		if (def) {
+			if (parseInt(def.d) === 1) level = 3;
+			else if (parseInt(def.w) === 1) level = 2;
+			else if (parseInt(def.r) === 1) level = 1;
+		}
+
+		if (max_perms && max_perms[ot]) {
+			var maxLevel = og.getRootPermissionMaxLevel(max_perms[ot]);
+			if (level > maxLevel) level = maxLevel;
+		}
+
+		og.ogSetCheckedValue(document.getElementsByName(genid + "rg_root_" + ot), level);
+	}
+	$(".all-radio-sel-chk-root").removeAttr('checked');
+}
+
+og.roleHasRootPermissions = function(role_id) {
+	if (!role_id) return false;
+	role_id = parseInt(role_id, 10);
+	if (isNaN(role_id)) return false;
+
+	if (og.root_permissions_role_ids && og.root_permissions_role_ids.indexOf(role_id) >= 0) {
+		return true;
+	}
+	if (og.executive_permission_group_ids && og.executive_permission_group_ids.indexOf(role_id) >= 0) {
+		return true;
+	}
+	return false;
+};
+
+og.applyModulePermissionsByRole = function(genid, role_id) {
+	if (!og.tabs_allowed || !og.tabs_allowed[role_id]) return;
+
+	$('#'+genid+'userModulePermissions :input[type=checkbox]').prop('checked', false);
+	for (var f=0; f<og.tabs_allowed[role_id].length; f++) {
+		var tabId = og.tabs_allowed[role_id][f];
+		var $cb = $('input[name="mod_perm['+tabId+']"]');
+		if (!$cb.length) {
+			$cb = $('#'+genid+'mod_perm_'+tabId);
+		}
+		if ($cb.length) $cb.prop('checked', true);
+	}
+};
+
+og.applyRootPermissionsMaxUI = function(genid, role_id, maxMap, keepDisabledSubmittable) {
+	if (!og.perm_root_object_type_ids || !og.perm_root_object_type_ids.length) return;
+
+	var hasExplicitMaxMap = !!maxMap;
+	var max_perms = hasExplicitMaxMap ? maxMap : null;
+	if (!max_perms && og.maxRoleObjectTypePermissions && og.maxRoleObjectTypePermissions[role_id]) {
+		max_perms = og.maxRoleObjectTypePermissions[role_id];
+	}
+	if (!max_perms && og.maxRolePermissions && og.maxRolePermissions[role_id]) {
+		max_perms = og.maxRolePermissions[role_id];
+	}
+	if (!max_perms && og.userRootMaxPermissions && og.userRootMaxPermissions[role_id]) {
+		max_perms = og.userRootMaxPermissions[role_id];
+	}
+	var fallback_max_perms = (!hasExplicitMaxMap && og.maxRoleObjectTypePermissions && og.maxRoleObjectTypePermissions[role_id])
+		? og.maxRoleObjectTypePermissions[role_id] : null;
+
+	for (var i=0; i<og.perm_root_object_type_ids.length; i++) {
+		var ot = og.perm_root_object_type_ids[i];
+		var max = max_perms ? max_perms[ot] : null;
+		if (!max && fallback_max_perms) max = fallback_max_perms[ot];
+		var maxLevel = og.getRootPermissionMaxLevel(max);
+
+		var radioName = genid + "rg_root_" + ot;
+		var $radios = $('input[name="' + radioName + '"]');
+		if (!$radios.length) {
+			radioName = genid + "root_" + ot;
+			$radios = $('input[name="' + radioName + '"]');
+		}
+		$radios.each(function() {
+			var level = parseInt($(this).val(), 10);
+			if (isNaN(level)) return;
+			if (level > maxLevel) {
+				$(this)
+					.show()
+					.prop("disabled", !keepDisabledSubmittable)
+					.css("pointer-events", keepDisabledSubmittable ? "none" : "")
+					.closest("td")
+					.css("opacity", 0.35);
+			} else {
+				$(this)
+					.show()
+					.prop("disabled", false)
+					.css("pointer-events", "")
+					.closest("td")
+					.css("opacity", 1);
+			}
+		});
+	}
+};
+
+og.uncheckDisabledSystemPermissions = function(genid) {
+	var $container = $('#'+genid+'userSystemPermissions');
+	if (!$container || !$container.length) return;
+
+	$container.find(':input:disabled').each(function() {
+		// We only expect checkboxes here; guard anyway.
+		if ($(this).is(':checkbox,:radio')) {
+			$(this).prop('checked', false);
+		}
+	});
+};
+
+og.clampRootRadiosToMax = function(genid, role_id, maxMap) {
+	if (!og.perm_root_object_type_ids || !og.perm_root_object_type_ids.length) return;
+
+	// maxMap may come either as:
+	// - og.maxRoleObjectTypePermissions[role_id] with can_delete/can_write
+	// - og.maxRolePermissions[role_id] with d/w keys
+	var max_perms = maxMap;
+	if (!max_perms && role_id && og.maxRoleObjectTypePermissions && og.maxRoleObjectTypePermissions[role_id]) {
+		max_perms = og.maxRoleObjectTypePermissions[role_id];
+	}
+	if (!max_perms && role_id && og.maxRolePermissions && og.maxRolePermissions[role_id]) {
+		max_perms = og.maxRolePermissions[role_id];
+	}
+	if (!max_perms) return;
+
+	// We need to clamp each object type level individually.
+	for (var i=0; i<og.perm_root_object_type_ids.length; i++) {
+		var ot = og.perm_root_object_type_ids[i];
+		var maxLevel = og.getRootPermissionMaxLevel(max_perms[ot]);
+
+		var radioName = genid + "rg_root_" + ot;
+		var radioNodes = document.getElementsByName(radioName);
+		// Some views use "root_" (role edit) instead of "rg_root_" (user edit).
+		if (!radioNodes || !radioNodes.length) {
+			radioName = genid + "root_" + ot;
+			radioNodes = document.getElementsByName(radioName);
+		}
+		if (!radioNodes || !radioNodes.length) continue;
+
+		var level = 0;
+		var $checked = $('input[name="' + radioName + '"]:checked:visible');
+		if ($checked && $checked.length) {
+			level = parseInt($checked.val(), 10);
+			if (isNaN(level)) level = 0;
+		}
+
+		if (level > maxLevel) {
+			og.ogSetCheckedValue(radioNodes, maxLevel);
+		}
+	}
+	$(".all-radio-sel-chk-root").removeAttr('checked');
+};
+
 og.afterUserTypeChange = function(genid, type) {
 	  
 	  if (!og.tmp_role_id) og.tmp_role_id = {};
@@ -1349,14 +1616,17 @@ og.afterUserTypeChange = function(genid, type) {
 	
 	  $('#'+genid+'userSystemPermissions :input').attr('checked', false);
 	  $('#'+genid+'userModulePermissions :input').attr('checked', false);
+	  var maxSysCols = (og.userMaxRolesPermissions && og.userMaxRolesPermissions[type]) ? og.userMaxRolesPermissions[type] : null;
 	  for(i=0; i< og.userRolesPermissions[type].length;i++){
-		  $('#'+genid+'userSystemPermissions :input[name$="sys_perm['+og.userRolesPermissions[type][i]+']"]').attr('checked', true);
+		  var sysCol = og.userRolesPermissions[type][i];
+		  if (!maxSysCols || (maxSysCols.indexOf(sysCol) >= 0)) {
+			  $('#'+genid+'userSystemPermissions :input[name$="sys_perm['+sysCol+']"]').attr('checked', true);
+		  }
 	  }
-	  for(f=0; f< og.tabs_allowed[type].length;f++){
-		  $('#'+genid+og.tabs_allowed[type][f]+' :input').attr('checked', true);
-	  }
+	  og.applyModulePermissionsByRole(genid, type);
 	  
 	  og.userPermissions.enableDisableSystemPermissionsByRole(genid, type);
+	  og.uncheckDisabledSystemPermissions(genid);
 
 	  var guest_selected = false;
 	  for (j=0; j<og.guest_permission_group_ids.length; j++) {
@@ -1366,9 +1636,11 @@ og.afterUserTypeChange = function(genid, type) {
 		  }
 	  }
 	  
-	  var executive_selected = og.executive_permission_group_ids.indexOf(parseInt(type)) >= 0;
-	  if (executive_selected) {
+	  if (og.roleHasRootPermissions(type)) {
 		  $("#"+genid+"_root_permissions").show();
+		  og.applyDefaultRootPermissionsByRole(genid, type);
+		  og.applyRootPermissionsMaxUI(genid, type);
+		  og.clampRootRadiosToMax(genid, type);
 	  } else {
 		  $("#"+genid+"_root_permissions").hide();
 	  }

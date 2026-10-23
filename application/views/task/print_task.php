@@ -124,7 +124,7 @@ echo $priority;
     if($task->getTypeContent() == "text"){
         echo escape_html_whitespace(convert_to_links(clean($task->getText())));
     }else{
-        echo purify_html(nl2br($task->getText()));
+        echo purify_html($task->getText());
     }
 ?>
 </div>

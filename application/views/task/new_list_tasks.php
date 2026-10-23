@@ -11,6 +11,8 @@
 		require_javascript('multi_assignment.js', 'crpm');
 	}
 
+	require_javascript("og/tasks/InlineCellEditor.js");
+
 	// Set localization
 	$loc = user_config_option('localization');
 	if (strlen($loc) > 2) $loc = substr($loc, 0, 2);
@@ -28,19 +30,47 @@
 	$companies_array = array();
 	$allUsers_array = array();
 	$object_subtypes_array = array();
+	$task_template_show_uncategorized = false;
 	
 	
+	if (Env::helperExists('task_template_categories')) {
+		Env::useHelper('task_template_categories');
+	}
 	if (isset($all_templates) && !is_null($all_templates)){
+		$cat_info_map = function_exists('task_template_category_info_map') ? task_template_category_info_map() : array();
 		foreach($all_templates as $template) {
-			$all_templates_array[] = $template->getArrayInfo();
+			$info = $template->getArrayInfo();
+			$cid = $template->getTaskTemplateCategoryId();
+			$category_info = ($cid > 0 && isset($cat_info_map[$cid])) ? $cat_info_map[$cid] : null;
+			if (!$task_template_show_uncategorized && $category_info) {
+				$task_template_show_uncategorized = true;
+			}
+			$info['g'] = $category_info ? $category_info['name'] : '';
+			$info['go'] = $category_info ? $category_info['sort_order'] : PHP_INT_MAX;
+			$info['gp'] = $category_info ? $category_info['position'] : PHP_INT_MAX;
+			$all_templates_array[] = $info;
 		}
 	}
 
-	// Function to compare strings from templates
+	// Function to compare task templates by configured category order and template name.
 	function compare_strings($a, $b) {
-		return strcmp($a["t"], $b["t"]);
+		$goa = isset($a['go']) ? (int) $a['go'] : PHP_INT_MAX;
+		$gob = isset($b['go']) ? (int) $b['go'] : PHP_INT_MAX;
+		if ($goa !== $gob) {
+			return $goa < $gob ? -1 : 1;
+		}
+
+		$gpa = isset($a['gp']) ? (int) $a['gp'] : PHP_INT_MAX;
+		$gpb = isset($b['gp']) ? (int) $b['gp'] : PHP_INT_MAX;
+		if ($gpa !== $gpb) {
+			return $gpa < $gpb ? -1 : 1;
+		}
+
+		$ga = isset($a['g']) ? $a['g'] : '';
+		$gb = isset($b['g']) ? $b['g'] : '';
+		$c = strcasecmp($ga, $gb);
+		return $c !== 0 ? $c : strcasecmp($a["t"], $b["t"]);
 	}
-	// Sort templates by name
 	usort($all_templates_array, "compare_strings");
 
 	if (isset($project_templates) && !is_null($project_templates)) {
@@ -54,7 +84,8 @@
 	if (isset($tasks)) {
 		foreach($tasks as $task) {
 			$ids[] = $task['id'];
-			$tasks_array[] = ProjectTasks::getArrayInfo($task);
+			// Description is never rendered in the task listing — skip it to reduce payload size
+			$tasks_array[] = ProjectTasks::getArrayInfo($task, false, false, true, true, true, false);
 			if ($task['assigned_to_contact_id'] > 0) {
 				$assigned_users[$task['assigned_to_contact_id']] = $task['assigned_to_contact_id'];
 			}
@@ -134,6 +165,9 @@ og.config.tasks_show_description_on_time_forms = <?php echo user_config_option('
 og.config.stop_running_timeslots = <?php echo user_config_option('stop_running_timeslots'); ?>;
 og.config.tasks_use_date_filters = <?php echo user_config_option('tasksUseDateFilters') ? 'true' : 'false' ?>;
 og.config.tasks_show_assigned_to_name = <?php echo user_config_option('tasksShowAssignedToName') ? 'true' : 'false' ?>;
+<?php $col_cfg = user_config_option('task panel columns config'); ?>
+og.config.tasks_columns_config = <?php echo ($col_cfg !== null && $col_cfg !== '') ? $col_cfg : 'null' ?>;
+ogTasks._serverColumnsConfigApplied = false;
 og.config.quick_add_task_combos = <?php 
 		$object = "";
 		$dimensions_user = get_user_dimensions_ids();
@@ -158,6 +192,8 @@ og.config.quick_add_task_combos = <?php
 		echo "[".$object."]";
 ?>;
 ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
+// Per-subtype map of CPs disabled for inline editing: { subtype_id: { cp_id: 1 } }.
+ogTasks.cp_disabled_by_subtype = <?php echo json_encode(isset($cp_disabled_by_subtype) ? $cp_disabled_by_subtype : new stdClass())?>;
 
 
 
@@ -166,6 +202,7 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 
       
 <div id="taskPanelHiddenFields">
+	<input type="hidden" id="hfTaskTemplatesUncategorizedLabel" value="<?php echo $task_template_show_uncategorized ? escape_character(lang('task templates uncategorized')) : '' ?>" />
 	<input type="hidden" id="hfProjectTemplates" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($project_templates_array)))) ?>"/>
 	<input type="hidden" id="hfAllTemplates" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($all_templates_array)))) ?>"/>
 	<input type="hidden" id="hfTasks" value="<?php echo clean(str_replace('"',"'", escape_character(json_encode($tasks_array)))) ?>"/>
@@ -182,7 +219,7 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 	<input id="<?php echo $genid?>complete_task" type="hidden" name="complete_task" value="yes" />        
 </div>
 
-<div id="tasksPanel<?php echo $genid ?>" class="ogContentPanel" style="background-color:white;background-color:#F0F0F0;height:100%;width:100%;">
+<div id="tasksPanel<?php echo $genid ?>" class="ogContentPanel tasksPanel">
     
 	<div id="tasksPanelTopToolbar" class="x-panel-tbar" style="width:100%;display:block;background-color:#F0F0F0;"></div>
 	<div id="tasksPanelBottomToolbar" class="x-panel-tbar" style="width:100%;display:block;background-color:#F0F0F0;"></div>
@@ -207,7 +244,8 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 
 	//ogTasks.userPermissions = Ext.util.JSON.decode(document.getElementById('hfUserPermissions').value);
 	
-	// load more task groups when scroll hits the bottom
+	// load more task groups when scroll hits the bottom (disabled)
+	/*
 	$("#tasksPanelContent").scroll(function(){
 		var ele = document.getElementById('tasksPanelContent');
 
@@ -216,18 +254,24 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 		var pixels_left_to_hit_bottom = ele.scrollHeight - ele.scrollTop - ele.clientHeight;
 
 		// load more groups if the pixels left to hit bottom is less than 20% of container height
-		if (pixels_left_to_hit_bottom < margin) {
+		if (pixels_left_to_hit_bottom < margin && !ogTasks.manualGroupLoading) {
 			ogTasks.loadMoreGroups();
-		}			
-		/*
+		}
 		if(ele.scrollHeight - ele.scrollTop < ele.clientHeight){
 			ogTasks.loadMoreGroups();
-		}*/
+		}
 	});
+	*/
 
 	var mili = 0;
 	if (og.TasksTopToolbar == 'undefined') {
 		mili = 500;
+	}
+
+	// When reloading tasks list, if not returning from task view
+	// reset pagination variables and expanded groups because we are requesting to the server.
+	if (ogTasks.viewingTaskId === null) {
+		ogTasks.resetPaginationVariables();
 	}
 
 	ogTasks.expandedGroups = [];
@@ -334,7 +378,8 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
 			on: {
 				instanceReady: function(ev) {
 					og.adjustCkEditorArea('<?php echo $genid ?>',id);
-					editor.resetDirty();
+					ev.editor.resetDirty();
+					og.bindCkEditorImagePasteAndDrop(ev.editor);
 				}
 			},
 			fillEmptyBlocks: false,
@@ -347,31 +392,55 @@ ogTasks.custom_properties = <?php echo json_encode($cps_definition)?>;
     ogTasks.additional_groupby_dimensions_member_types = [];
 
     <?php
-    $enabled_dimension_ids = config_option('enabled_dimensions');
-    $enabled_dimensions = Dimensions::instance()->findAll(array('conditions' => '`id` IN ('. implode(",", $enabled_dimension_ids) .')'));
-    foreach ($enabled_dimensions as $enabled_dimension) {
-        $ot_ids = implode(",", DimensionObjectTypes::getObjectTypeIdsByDimension($enabled_dimension->getId()));
-        $dimension_obj_types = ObjectTypes::instance()->findAll(array("conditions" => "`id` IN ($ot_ids)"));
-        
-        $no_folder_ots_count = 0;
-        foreach ($dimension_obj_types as $ot) {
-        	if ($ot->getName() != 'folder' && $ot->getName() != 'project_folder' && $ot->getName() != 'customer_folder') {
-        		$no_folder_ots_count++;
-        	}
-        }
-        foreach ($dimension_obj_types as $ot) {
-        	$mem_type_name = $ot->getObjectTypeName();
-        	if ($no_folder_ots_count == 1 && $ot->getName() != 'folder') {
-        		$mem_type_name = $enabled_dimension->getName();
-        	}
-            if ($ot->getName() != 'project_folder' && $ot->getName() != 'customer_folder') {
-                echo 'ogTasks.additional_groupby_dimensions_member_types.push({dim_id: ' . $enabled_dimension->getId() . ', dim_name:"' . $enabled_dimension->getName() . '", mem_type_id: ' . $ot->getId() . ', mem_type_name:"' . $mem_type_name . '"});';
+		$group_by_dim_member_types = ProjectTasks::instance()->getTaskMemberTypesForListOptions(false);
+		foreach ($group_by_dim_member_types as $group_by_dim_member_type) {
+			$json_encoded = json_encode($group_by_dim_member_type);
+			echo "ogTasks.additional_groupby_dimensions_member_types.push($json_encoded);";
+		}		
 
-            }
-        }
-    }
 
+		$group_by_allowed_options = user_config_option("task_list_group_by_options");
+		if (!is_array($group_by_allowed_options)) $group_by_allowed_options = explode(",", $group_by_allowed_options);
+
+		$order_by_allowed_options = user_config_option("task_list_order_by_options");
+		if (!is_array($order_by_allowed_options)) $order_by_allowed_options = explode(",", $order_by_allowed_options);
+
+		$filter_by_allowed_options = user_config_option("task_list_filter_by_options");
+		if (is_null($filter_by_allowed_options)) $filter_by_allowed_options = [];
+		if (!is_array($filter_by_allowed_options)) $filter_by_allowed_options = explode(",", $filter_by_allowed_options);
+
+		$task_gb_options_names = [
+			'milestone' => lang('milestone')
+			,'priority' => lang('priority')
+			,'assigned_to' => lang('assigned to')
+			,'due_date' => lang('due date')
+			,'start_date' => lang('start date')
+			,'created_on' => lang('created on')
+			,'created_by' => lang('created by')
+			,'completed_on' => lang('completed on')
+			,'completed_by' => lang('completed by')
+			,'status' => lang('status')
+		];
+		Hook::fire('modify_fixed_props_labels', ['object_type_id' => ProjectTasks::instance()->getObjectTypeId()], $task_gb_options_names);
+
+		$task_order_options_names = [
+			'priority' => lang('priority')
+			,'name' => lang('task name')
+			,'due_date' => lang('due date')
+			,'created_on' => lang('created on')
+			,'completed_on' => lang('completed on')
+			,'assigned_to' => lang('assigned to')
+			,'start_date' => lang('start date')
+			,'percent_completed' => lang('progress')
+		];
+		Hook::fire('modify_fixed_props_labels', ['object_type_id' => ProjectTasks::instance()->getObjectTypeId()], $task_order_options_names);
     ?>
+	ogTasks.group_by_allowed_options = JSON.parse('<?php echo json_encode($group_by_allowed_options); ?>');
+	ogTasks.order_by_allowed_options = JSON.parse('<?php echo json_encode($order_by_allowed_options); ?>');
+	ogTasks.filter_by_allowed_options = JSON.parse('<?php echo json_encode($filter_by_allowed_options); ?>');
+
+	ogTasks.task_gb_options_names = JSON.parse('<?php echo json_encode($task_gb_options_names); ?>');
+	ogTasks.task_order_options_names = JSON.parse('<?php echo json_encode($task_order_options_names); ?>');
 
 
 	Handlebars.registerHelper('isTasksColumnCPVisible', function (cp_id) {

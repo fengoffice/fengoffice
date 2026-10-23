@@ -33,6 +33,7 @@
     * @return BaseDimensionMemberAssociations 
     */
     function __construct() {
+	  Hook::fire('object_definition', 'DimensionMemberAssociation', self::$columns);
       parent::__construct('DimensionMemberAssociation', 'dimension_member_associations', true);
     } // __construct
     
@@ -120,7 +121,7 @@
     *
     * @access public
     * @param array $arguments
-    * @return one or DimensionMemberAssociations objects
+    * @return null|array of DimensionMemberAssociations objects
     */
     function findAll($arguments = null) {
       if(isset($this) && instance_of($this, 'DimensionMemberAssociations')) {

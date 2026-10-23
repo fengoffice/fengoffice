@@ -32,6 +32,12 @@
   	}
     
   	
+	/**
+	 * Retrieves all dimension object types associated with an object type
+	 *
+	 * @param int $object_type_id The object type ID
+	 * @return array An array of dimension object type records
+	 */
   	static function getDimensionObjectTypesforObject($object_type_id){
   		return self::instance()->findAll(array('conditions' => "`content_object_type_id` = '$object_type_id'"));
   	}

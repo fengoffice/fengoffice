@@ -29,10 +29,13 @@ if (isset($email)){
 			add_page_action(lang('unarchive'), "javascript:if(confirm(lang('confirm unarchive object'))) og.openLink('" . $email->getUnarchiveUrl() ."');", 'ico-unarchive-obj', null, null, true);
 		}
 		
-		if ($email->getState() == 0 || $email->getState() == 5) {
+		if ($email->getState() != 4 && $email->getState() != 2) {
 			add_page_action(lang('report as spam'), get_url('mail', 'change_email_folder', array("id" => $email->getId(), "newf" => 4)), 'ico-spam');
-		} else if ($email->getState() == 4) {
+		}
+		if ($email->getState() == 4) {
 			add_page_action(lang('not spam'), get_url('mail', 'change_email_folder', array("id" => $email->getId(), "newf" => 0)), 'ico-unclassify');
+		} else if ($email->getState() != 2) {
+			add_page_action(lang('trust sender'), get_url('mail', 'mark_as_not_spam', array("id" => $email->getId())), 'ico-unclassify');
 		}
 	}
 	add_page_action(lang('mark as unread'), get_url('mail', 'mark_as_unread', array('id' => $email->getId())), 'ico-mark-as-unread');
@@ -109,6 +112,11 @@ if (isset($email)){
 	if ($email->getBcc() != '') {		
 		$description .= '<tr><td>' . lang('mail BCC') . ':</td><td>' . MailUtilities::displayMultipleAddresses(clean($email->getBcc())) . '</td></tr>';
 	}
+	if (user_config_option('show_account_on_email_header')) {
+		$account = $email->getAccount();
+		$account_name = $account instanceof MailAccount ? clean($account->getName()) : lang('n/a');
+		$description .= '<tr><td>' . lang('account') . ':</td><td>' . $account_name . '</td></tr>';
+	}
 	$tz_offset = Timezones::getTimezoneOffsetToApply($email);
 	$description .= '<tr><td>' . lang('date') . ':</td><td>' . format_datetime($email->getSentDate(), 'l, j F Y - '.$time_format, ($tz_offset/3600)) . '</td></tr>';
 	
@@ -139,11 +147,9 @@ if (isset($email)){
 					$fName = str_starts_with($att["FileName"], "=?") ? iconv_mime_decode($att["FileName"], 0, "UTF-8") : utf8_safe($att["FileName"]);
 					if (trim($fName) == "" && strlen($att["FileName"]) > 0) $fName = utf8_encode($att["FileName"]);
 					$description .= '<tr><td style="padding-right: 10px">';
-					
-					$ext = get_file_extension($fName);
-					$fileType = FileTypes::getByExtension($ext);
-					$icon = $fileType instanceof FileType ? $fileType->getIcon() : "unknown.png";
-					
+
+					$lucideIcon = get_lucide_icon_for_extension(get_file_extension($fName));
+
 					$att_id = $c;
 					$inside_attachment = trim(array_var($att, 'inside_attachment', ""));
 					if ($inside_attachment != "") {
@@ -154,10 +160,10 @@ if (isset($email)){
 					if (Browser::instance()->getBrowser() == Browser::BROWSER_IE) {
 						$download_url = "javascript:location.href = '$download_url';";
 					}
-					
-					$description .=	'<img src="' . get_image_url("filetypes/" . $icon) .'"></td>
+
+					$description .=	'<i class="icon-' . $lucideIcon . '"></i></td>
 					<td><div id="att-link-container-'.$c.'">
-						<a target="_self" href="' . $download_url . '&fileAttachName='.$fName.'&winmailtype='.$winmailDat.'" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
+						<a target="_self" href="' . $download_url . '&fileAttachName='.$fName.'&winmailtype='.($winmailDat ?? 0).'" class="download-attachment-link">' . clean($fName) . " ($size)" . '</a>
 					</div></td></tr>';
 				}
 	      		$c++;
@@ -226,9 +232,21 @@ if (isset($email)){
 		} else {
 			$conversation_block = '';
 		}
+
+		// initialize the content with the contextual enriched block if defined.
+		$content = isset($contextual_enriched_block) ? $contextual_enriched_block : '';
 		
 		if($email->getBodyHtml() != ''){
 			$html_content = $email->getBodyHtml();
+			// blob: URLs are browser-local; they never load for other users or in iframes from saved mail
+			$html_content = preg_replace_callback(
+				'~<img([^>]*?)\ssrc\s*=\s*(\'|")(blob:[^\'"]*)\2~i',
+				function ($m) {
+					$pixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+					return '<img' . $m[1] . ' src=' . $m[2] . $pixel . $m[2];
+				},
+				$html_content
+			);
 			
 			// inline images
 			$end_while = false;
@@ -352,7 +370,7 @@ if (isset($email)){
 			}			
 			$pre = $email->getAccountId() . '_' . logged_user()->getId() . '_' . $email->getId();
 			$user_token = defined('SANDBOX_URL') ? logged_user()->getTwistedToken() : '';
-			$content = "";
+			
 			if ($remove_images) {
 				$content = '<div id="'.$genid.'showImagesLink" style="background-color:#FFFFCC">'.lang('images are blocked').' 
 					<a href="#" onclick="og.showMailImages(\''.$pre.'\', \''.gen_id().'\', \''.$genid.'\', \''.$user_token.'\');" style="text-decoration: underline;">'.lang('show images').'</a>
@@ -392,9 +410,9 @@ if (isset($email)){
 		} else {
 			if ($email->getBodyPlain() != '') {
 				$remove_quoted = MailUtilities::hasQuotedText($email->getBodyPlain()) && $hide_quoted_text_in_emails;
-				$content = "";
+				
 				if ($remove_quoted) {
-					$content = MailUtilities::replaceQuotedText($email->getBodyPlain(), '-----'.lang('hidden quoted text').'-----');
+					$content .= MailUtilities::replaceQuotedText($email->getBodyPlain(), '-----'.lang('hidden quoted text').'-----');
 					$content = '<div id="'.$genid.'noQuoteMail">' . escape_html_whitespace(convert_to_links(clean($content))) . '</div>';
 					$content = str_replace('-----'.lang('hidden quoted text')."-----", '<span style="color: #777;font-style:italic;padding: 5px 20px">&lt;'.lang('hidden quoted text').'&gt;</span>', $content);
 					$content .= '<a class="internalLink" style="padding-left:10px;" id="'.$genid.'quotedLink" href="#" onclick="og.showQuotedText(\''.$genid.'\')">:: '.lang('show quoted text').' ::</a>';
@@ -422,6 +440,7 @@ if (isset($email)){
 </div>
 <?php } else { echo lang('email not available'); } //if ?>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
 	// prevent mails panel full reload after closing this email
 	og.viewing_mail = true;
@@ -430,6 +449,7 @@ if (isset($email)){
 	og.mail.removePendingMailsFromList();
 
 	$(function() {
+		if (typeof lucide !== 'undefined') lucide.createIcons();
 
 		og.original_download_attachment_link_href_values = {};
 		

@@ -42,6 +42,9 @@ if (isset($task_list) && $task_list instanceof ProjectTask) {
 
 	if (!$task_list->isTrashed() && !logged_user()->isGuest()){
 		if ($task_list->isRepetitive()) {
+		    if (!isset($can_manage_repetitive_properties_of_tasks)) {
+		        $can_manage_repetitive_properties_of_tasks = SystemPermissions::userHasSystemPermission(logged_user(), 'can_manage_repetitive_properties_of_tasks');
+		    }
 		    if ($can_manage_repetitive_properties_of_tasks)
 			 add_page_action(lang('generate repetitition'), get_url("task", "generate_new_repetitive_instance", array("id" => $task_list->getId(), 'req_channel'=>'task view - generate repetition')), 'ico-recurrent', null, null, true);
 		} else {

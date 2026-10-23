@@ -68,29 +68,39 @@ require_javascript('og/modules/addMessageForm.js');
 	<?php if(is_array($users) && count($users)) { ?>
 		<div onclick="og.subscribeCompany(this)" class="container-div company-name<?php echo $allChecked ? ' checked' : ''?>" onmouseout="og.rollOut(this,true)" onmouseover="og.rollOver(this)">
 		<?php ?>
-			<div class="contact-picture-container" style="float:left;padding-top:3px;">
+			<div class="contact-picture-container">
 				<img class="commentUserAvatar" src="<?php echo ($theCompany instanceof Contact ? $theCompany->getPictureUrl() : get_image_url('48x48/company.png')) ?>" alt="<?php echo clean($theCompany instanceof Contact ? $theCompany->getObjectName() : '') ?>" />
 			</div>
-			<label style="float:left;padding-left:5px;" for="<?php echo $genid ?>notifyCompany<?php echo ($theCompany instanceof Contact ? $theCompany->getId() : 0) ?>">
-				<span class="<?php echo ($theCompany instanceof Contact ? "ico-company" : "")?> link-ico"><?php echo ($theCompany instanceof Contact ? clean($theCompany->getFirstName()) : lang('without company')) ?></span>
-			</label>
+			<div class="user-info-container">
+				<div class="company-name-text">
+					<label for="<?php echo $genid ?>notifyCompany<?php echo ($theCompany instanceof Contact ? $theCompany->getId() : 0) ?>">
+						<i class="<?php echo ($theCompany instanceof Contact ? "icon-building-2" : "")?>"></i>
+						<span><?php echo ($theCompany instanceof Contact ? clean($theCompany->getFirstName()) : lang('without company')) ?></span>
+					</label>
+				</div>
+			</div>
 			<div class="clear"></div>
 		</div>
-		<div id="<?php echo $genid . $companyId ?>company_users">
+		<div id="<?php echo $genid . $companyId ?>company_users" class="company-users-container">
 		<?php foreach($users as $user) { ?>
 				<?php
 					$checked = in_array($user->getId(), $subscriberIds);
 				?>
-				<div id="div<?php echo $genid ?>inviteUser<?php echo $user->getId() ?>" class="container-div <?php echo $checked==true? 'checked-user':'user-name' ?>" onmouseout="og.rollOut(this,false <?php echo $checked==true? ',true':',false' ?>)" onmouseover="og.rollOver(this)" onclick="og.checkUser(this)">
+				<div 
+					id="div<?php echo $genid ?>inviteUser<?php echo $user->getId() ?>" 
+					class="user-card container-div <?php echo $checked==true? 'checked-user':'user-name' ?>" 
+					onmouseout="og.rollOut(this,false <?php echo $checked==true? ',true':',false' ?>)" 
+					onmouseover="og.rollOver(this)" onclick="og.checkUser(this)"
+					title="<?php echo clean($user->getObjectName()) ?>"
+				>
 					<input id="<?php echo $genid ?>inviteUser<?php echo $user->getId()?>" type="hidden" name="<?php echo 'subscribers[user_'.$user->getId() .']' ?>" value="<?php echo $checked?'1':'0' ?>" />
-					<div class="contact-picture-container" style="float:left;padding-top:3px;">
+					<div class="contact-picture-container">
 						<img class="commentUserAvatar" src="<?php echo ($user instanceof Contact ? $user->getPictureUrl() : get_image_url('default-avatar.png')) ?>" alt="<?php echo clean($user instanceof Contact ? $user->getObjectName() : '') ?>" />
 					</div>
-					<label for="<?php echo $genid ?>notifyUser<?php echo $user->getId() ?>" style="float:left; width: 130px; min-width:0px; overflow:hidden; padding-left: 5px;padding-right: 5px;">
-						<span class="ico-user link-ico"><?php echo clean($user->getObjectName()) ?></span>
-						<br>
-						<span style="color:#888888;font-size:90%;font-weight:normal;"> <?php echo $user->getEmailAddress()  ?> </span>
-					</label>
+					<div for="<?php echo $genid ?>notifyUser<?php echo $user->getId() ?>" class="user-info-container">
+						<div class="user-name-text"><?php echo clean($user->getObjectName()) ?></div>
+						<div class="user-email-text"><?php echo $user->getEmailAddress(); ?></div>
+					</div>
 					<div class="clear"></div>
 				</div>
 			

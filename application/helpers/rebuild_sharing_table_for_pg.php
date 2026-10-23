@@ -13,8 +13,7 @@
 	
 	$user_id = array_var($argv, 2);
 	$token = array_var($argv, 3);
-	$pg_id = array_var($argv, 4);
-	
+
 	// log user in
 	$user = Contacts::instance()->findById($user_id);
 	if(!($user instanceof Contact) || !$user->isValidToken($token)) {
@@ -23,15 +22,21 @@
 
 	CompanyWebsite::instance()->setLoggedUser($user, false, false, false);
 		
-	try {
-		DB::beginWork();
-		
-		rebuild_sharing_table_for_pg($pg_id);
-		
-		DB::commit();
-	} catch (Exception $e) {
-		DB::rollback();
-		Logger::log("Error rebuilding sharing table for pg: $pg_id: ".$e->getMessage()."\n".$e->getTraceAsString());
+	// argv[4] is a CSV, so one process now covers every permission group queued by the originating
+	// request instead of one process per group.
+	$pg_ids = array_filter(array_map('trim', explode(',', array_var($argv, 4, ''))));
+
+	foreach ($pg_ids as $pg_id) {
+		try {
+			DB::beginWork();
+
+			rebuild_sharing_table_for_pg($pg_id);
+
+			DB::commit();
+		} catch (Exception $e) {
+			DB::rollback();
+			Logger::log("Error rebuilding sharing table for pg: $pg_id: ".$e->getMessage()."\n".$e->getTraceAsString());
+		}
 	}
 	
 	

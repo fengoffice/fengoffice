@@ -113,7 +113,9 @@ function workspaces_add_member_by_type_info($data, &$info) {
 
 		if (array_var($data, 'mem_type') == $w_ot->getId()) {
 			$dimension = Dimensions::findByCode('workspaces');
-			$info = array('name' => lang('add new workspace'), 'url' => get_url('member', 'add', array('dim_id' => $dimension->getId(), 'type' => $w_ot->getId())));
+			// the label has a placeholder for the member type name
+			$type_name = Members::getTypeNameToShowByObjectType($dimension->getId(), $w_ot->getId());
+			$info = array('name' => lang('add new workspace', $type_name), 'url' => get_url('member', 'add', array('dim_id' => $dimension->getId(), 'type' => $w_ot->getId())));
 		}
 	} else if (array_var($data, 'dim_code') == 'tags') {
 		$t_ot = ObjectTypes::findByName('tag');
@@ -175,16 +177,4 @@ function workspaces_after_user_add($object, $ignored) {
 	}
 }
 
-
-function workspaces_custom_reports_object_types($parameters, &$object_types) {
-	$ws_dim = Dimensions::findByCode('workspaces');
-	if (in_array($ws_dim->getId(), config_option('enabled_dimensions'))) {
-		$object_types[] = ObjectTypes::findByName('workspace');
-	}
-	/*
-	$tags_dim = Dimensions::findByCode('tags');
-	if (in_array($tags_dim->getId(), config_option('enabled_dimensions'))) {
-		$object_types[] = ObjectTypes::findByName('tag');
-	}*/
-}
 

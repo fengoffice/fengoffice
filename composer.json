@@ -1,0 +1,54 @@
+{
+    "name": "fengoffice/fengoffice",
+    "description": "An open source business and project management platform",
+    "type": "project",
+    "require": {
+        "php": ">=8.2",
+        "chrome-php/chrome": "^1.13",
+        "microsoft/microsoft-graph": "^2.48.0"
+    },
+    "require-dev": {
+        "wikimedia/composer-merge-plugin": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "FengOffice\\": "src/"
+        },
+        "classmap": [
+            "library/"
+        ],
+        "exclude-files-from-classmap": [
+            "library/htmlpurifier/library/HTMLPurifier/Lexer/PH5P.php",
+            "library/htmlpurifier/maintenance/PH5P.php",
+            "library/json/JSON.class.php",
+            "library/openflashchart/lib/OFC/JSON.php",
+            "library/openflashchart/lib/OFC/Charts/OFC_Charts_Bar.php",
+            "library/openflashchart/lib/OFC/Charts/Bar/OFC_Charts_Bar_Value.php",
+            "library/PEAR/Net/IDNA.php",
+            "library/PEAR/Net/IDNA/php4.php"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        },
+        "merge-plugin": {
+            "include": []
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.2.0"
+        },
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true,
+            "tbachert/spi": true,
+            "wikimedia/composer-merge-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

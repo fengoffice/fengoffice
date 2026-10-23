@@ -1,7 +1,7 @@
 <?php
 
 $panel = TabPanels::instance()->findById('documents-panel');
-if ($panel instanceof TabPanel && $panel->getEnabled()) {
+if ($panel instanceof TabPanel && $panel->getEnabled() && module_enabled('documents')) {
 	$limit = 5;
 	$result = ProjectFiles::instance()->listing(array(
 		"extra_conditions" => "AND o.updated_by_id > 0",

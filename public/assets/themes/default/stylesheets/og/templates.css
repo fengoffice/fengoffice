@@ -75,3 +75,56 @@
 .templates-table td, .templates-table th {
 	padding: 2px 5px;
 }
+
+.template-admin-page {
+	height: 100%;
+	background-color: white;
+}
+
+.template-templates-table,
+.template-categories-table {
+	min-width: 500px;
+}
+
+.template-manage-categories-link {
+	margin-bottom: 12px;
+}
+
+.template-category-row td {
+	background: #f0f0f0;
+	font-weight: bold;
+	padding: 6px 8px;
+}
+
+.template-actions-cell {
+	width: 90px;
+}
+
+.template-category-form {
+	margin-bottom: 24px;
+}
+
+.template-category-sort-order {
+	width: 80px;
+}
+
+
+/* Add tempalte task form (using old styles) - prevent address input from being too wide and overlap the second column */
+form.add-task div.task.template-task {
+	& .custom-properties .input-container .address-input-container textarea,
+	.custom-properties .input-container .address-custom-properties-parent .address-input-container .address_city_input,
+	.custom-properties .input-container .address-custom-properties-parent .address-input-container .address_state_input,
+	.custom-properties .input-container .address-custom-properties-parent .address-input-container .address_zipcode_input
+	{
+		width: 95%;
+		padding: 3px;
+	}
+	& .custom-properties .input-container .address-input-container select.address_country_input {
+		width: 100%;
+		padding: 3px;
+	}
+	& .address-custom-properties-parent {
+		max-width: 370px !important;
+	}
+}
+/* END Add tempalte task form (using old styles) */

@@ -1,1 +1,128 @@
-var showChart=function(e){function t(t){for(var r,u,i=t[0],l=t[1],c=t[2],p=0,s=[];p<i.length;p++)u=i[p],Object.prototype.hasOwnProperty.call(o,u)&&o[u]&&s.push(o[u][0]),o[u]=0;for(r in l)Object.prototype.hasOwnProperty.call(l,r)&&(e[r]=l[r]);for(f&&f(t);s.length;)s.shift()();return a.push.apply(a,c||[]),n()}function n(){for(var e,t=0;t<a.length;t++){for(var n=a[t],r=!0,i=1;i<n.length;i++){var l=n[i];0!==o[l]&&(r=!1)}r&&(a.splice(t--,1),e=u(u.s=n[0]))}return e}var r={},o={1:0},a=[];function u(t){if(r[t])return r[t].exports;var n=r[t]={i:t,l:!1,exports:{}};return e[t].call(n.exports,n,n.exports,u),n.l=!0,n.exports}u.m=e,u.c=r,u.d=function(e,t,n){u.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:n})},u.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},u.t=function(e,t){if(1&t&&(e=u(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var n=Object.create(null);if(u.r(n),Object.defineProperty(n,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var r in e)u.d(n,r,function(t){return e[t]}.bind(null,r));return n},u.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return u.d(t,"a",t),t},u.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},u.p="";var i=window.webpackJsonp_name_=window.webpackJsonp_name_||[],l=i.push.bind(i);i.push=t,i=i.slice();for(var c=0;c<i.length;c++)t(i[c]);var f=l;return a.push([161,0]),n()}({161:function(e,t,n){function r(e){return(r="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function o(e,t){for(var n=0;n<t.length;n++){var r=t[n];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,r.key,r)}}function a(e,t){return!t||"object"!==r(t)&&"function"!=typeof t?function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e):t}function u(e){return(u=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}function i(e,t){return(i=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}var l=n(1),c=n(1).PureComponent,f=n(41),p=n(150),s=p.AreaChart,y=p.Area,b=p.XAxis,m=p.YAxis,v=p.CartesianGrid,d=p.Tooltip,h=[{name:"Page A",uv:4e3,pv:2400,amt:2400},{name:"Page B",uv:3e3,pv:1398,amt:2210},{name:"Page C",uv:2e3,pv:9800,amt:2290},{name:"Page D",uv:2780,pv:3908,amt:2e3},{name:"Page E",uv:1890,pv:4800,amt:2181},{name:"Page F",uv:2390,pv:3800,amt:2500},{name:"Page G",uv:3490,pv:4300,amt:2100}],g=function(e){function t(){return function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,t),a(this,u(t).apply(this,arguments))}var n,r,c;return function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&i(e,t)}(t,e),n=t,(r=[{key:"render",value:function(){return l.createElement(s,{width:400,height:200,data:h,margin:{top:10,right:30,left:0,bottom:0}},l.createElement(v,{strokeDasharray:"3 3"}),l.createElement(b,{dataKey:"name"}),l.createElement(m,null),l.createElement(d,null),l.createElement(y,{type:"monotone",dataKey:"uv",stackId:"1",stroke:"#0589e3",fill:"#0589e3"}),l.createElement(y,{type:"monotone",dataKey:"pv",stackId:"1",stroke:"#b4b3b3",fill:"#b4b3b3"}))}}])&&o(n.prototype,r),c&&o(n,c),t}(c);e.exports=function(e){f.render(l.createElement(g,null),e)}}});
+"use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); Object.defineProperty(subClass, "prototype", { writable: false }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } else if (call !== void 0) { throw new TypeError("Derived constructors may only return object or undefined"); } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var React = require('react');
+
+var PureComponent = require('react').PureComponent;
+
+var ReactDOM = require('react-dom');
+
+var _require = require('recharts'),
+    AreaChart = _require.AreaChart,
+    Area = _require.Area,
+    XAxis = _require.XAxis,
+    YAxis = _require.YAxis,
+    CartesianGrid = _require.CartesianGrid,
+    Tooltip = _require.Tooltip;
+
+var data = [{
+  name: 'Page A',
+  uv: 4000,
+  pv: 2400,
+  amt: 2400
+}, {
+  name: 'Page B',
+  uv: 3000,
+  pv: 1398,
+  amt: 2210
+}, {
+  name: 'Page C',
+  uv: 2000,
+  pv: 9800,
+  amt: 2290
+}, {
+  name: 'Page D',
+  uv: 2780,
+  pv: 3908,
+  amt: 2000
+}, {
+  name: 'Page E',
+  uv: 1890,
+  pv: 4800,
+  amt: 2181
+}, {
+  name: 'Page F',
+  uv: 2390,
+  pv: 3800,
+  amt: 2500
+}, {
+  name: 'Page G',
+  uv: 3490,
+  pv: 4300,
+  amt: 2100
+}];
+
+var Example = /*#__PURE__*/function (_PureComponent) {
+  _inherits(Example, _PureComponent);
+
+  var _super = _createSuper(Example);
+
+  function Example() {
+    _classCallCheck(this, Example);
+
+    return _super.apply(this, arguments);
+  }
+
+  _createClass(Example, [{
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/React.createElement(AreaChart, {
+        width: 400,
+        height: 200,
+        data: data,
+        margin: {
+          top: 10,
+          right: 30,
+          left: 0,
+          bottom: 0
+        }
+      }, /*#__PURE__*/React.createElement(CartesianGrid, {
+        strokeDasharray: "3 3"
+      }), /*#__PURE__*/React.createElement(XAxis, {
+        dataKey: "name"
+      }), /*#__PURE__*/React.createElement(YAxis, null), /*#__PURE__*/React.createElement(Tooltip, null), /*#__PURE__*/React.createElement(Area, {
+        type: "monotone",
+        dataKey: "uv",
+        stackId: "1",
+        stroke: "#0589e3",
+        fill: "#0589e3"
+      }), /*#__PURE__*/React.createElement(Area, {
+        type: "monotone",
+        dataKey: "pv",
+        stackId: "1",
+        stroke: "#b4b3b3",
+        fill: "#b4b3b3"
+      }));
+    }
+  }]);
+
+  return Example;
+}(PureComponent);
+
+function showChart(element) {
+  ReactDOM.render( /*#__PURE__*/React.createElement(Example, null), element);
+}
+
+;
+module.exports = showChart;

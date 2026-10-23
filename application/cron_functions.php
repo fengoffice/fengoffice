@@ -5,6 +5,8 @@ function check_mail() {
 		_log("Checking email...");
 		MailUtilities::getmails(null, $err, $succ, $errAcc, $received, 100);
 		_log("$received emails fetched.");
+		$processed_calendar_events = MailUtilities::processPendingCalendarInvitations();
+		_log("$processed_calendar_events calendar invitation events processed.");
 	}
 }
 
@@ -42,11 +44,22 @@ function send_reminders() {
 	_log("Sending reminders...");
 	Env::useHelper('permissions');
 	$sent = 0;
+	$skipped = 0;
+	$debug_reminders = defined('DEBUG_NOTIFICATIONS') && DEBUG_NOTIFICATIONS;
 	$ors = ObjectReminders::getDueReminders();
+	_log("Due reminders selected: " . count($ors));
 	foreach ($ors as $or) {
 		$object = $or->getObject();
 	    //Check disabled object types notificactions.
 	    if(!$object instanceof ContentDataObject || ($object instanceof ContentDataObject && in_array($object->getObjectTypeId(),config_option("disable_notifications_for_object_type")))){
+	        if ($debug_reminders) {
+	        	_log(sprintf(
+	        		"[reminder] id=%s object_id=%s skipped=disabled_or_missing",
+	        		$or->getId(),
+	        		$object instanceof ContentDataObject ? $object->getId() : 0
+	        	));
+	        }
+	        $skipped++;
 	        $or->delete();
 	        continue;
 	    }
@@ -55,11 +68,22 @@ function send_reminders() {
 			$ret = 0;
 			Hook::fire($function, $or, $ret);
 			$sent += $ret;
+			if ($debug_reminders) {
+				_log(sprintf(
+					"[reminder] id=%s object_id=%s object_type=%s context=%s type=%s result=%s",
+					$or->getId(),
+					$object->getId(),
+					$object->getObjectTypeName(),
+					$or->getContext(),
+					$function,
+					$ret > 0 ? 'sent' : 'no_send'
+				));
+			}
 		} catch (Exception $ex) {
-			_log("Error sending reminder: " . $ex->getMessage());
+			_log("Error sending reminder id=".$or->getId()." object_id=".$object->getId().": " . $ex->getMessage());
 		}
 	}
-	_log("$sent reminders sent.");
+	_log("$sent reminders sent" . ($skipped ? ", $skipped skipped" : "") . ".");
 }
 
 function send_notifications_through_cron() {
@@ -165,6 +189,21 @@ function export_google_calendar() {
 
 function sharing_table_partial_rebuild() {
 	$start_date = config_option('last_sharing_table_rebuild');
+	
+	// Ensure that start_date is not before 3 days ago
+	$three_days_ago = DateTimeValueLib::now();
+	$three_days_ago->add('d', -3);
+	$start_date_dt = null;
+	try {
+		$start_date_dt = DateTimeValueLib::dateFromFormatAndString(DATE_MYSQL, $start_date);
+		if ($start_date_dt instanceof DateTimeValue && $start_date_dt->getTimestamp() < $three_days_ago->getTimestamp()) {
+			$start_date = $three_days_ago->toMySQL();
+		}
+	} catch (Exception $e) {
+		$start_date = $three_days_ago->toMySQL();
+	}
+	// End setting start date
+
 	_log("Rebuilding sharing table since $start_date ...");
 
 	$obj_count = SharingTables::instance()->rebuild($start_date);
@@ -193,6 +232,14 @@ function check_sharing_table_flags() {
 		_log("  Sharing table update finished.");
 	} else {
 		_log("No permission groups need to be updated.");
+	}
+
+	// Requests that die before their shutdown handler runs leave background job spool files
+	// behind. Sweep them here rather than adding another cron event.
+	Env::useHelper('background_jobs');
+	$respawned = respawn_orphan_background_jobs();
+	if ($respawned > 0) {
+		_log("  Respawned $respawned orphaned background job batch(es).");
 	}
 }
 

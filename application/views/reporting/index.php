@@ -12,8 +12,8 @@
 	}
 	
 	$reports_by_type = array();
-	$object_types = ObjectTypes::getAvailableObjectTypes();
-	$object_types[] = ObjectTypes::findByName('timeslot');
+	$object_types = ObjectTypes::getObjectTypesForCustomReports();
+
 	Hook::fire('custom_reports_object_types', array('object_types' => $object_types), $object_types);
 	
 	foreach ($object_types as $ot) {
@@ -47,46 +47,10 @@
 			foreach ($reports_by_type as $type_id => $type_info) {
 				$reports = array_var($customReports, $type_id, array());
 				if (!is_array($reports) || count($reports) == 0) continue;
-				foreach($reports as $report) {?>
-				<div class="report-name">
-					<?php if($report->getFunctionUrl()){?>
-						<a href="<?php echo ROOT_URL.$report->getFunctionUrl() ?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php 
-						echo Localization::instance()->lang_exists($report->getObjectName()) ? lang($report->getObjectName()) : $report->getObjectName();
-						?></a>
-					<?php } else { ?>
-						<a href="<?php echo get_url('reporting','view_custom_report', array('id' => $report->getId()))?>" class="internalLink" target="reporting-panel" style="padding:10px 0;"><?php 
-							echo $report->getObjectName();
-						?></a>
-					<?php } ?>
-	
-						<div style="float:right;">
-							<?php if ($report->canEdit(logged_user())) { ?>
-							<a style="margin-right:5px;font-weight:normal;" class="internalLink coViewAction ico-edit" href="<?php echo $report->getFunctionUrl() ? get_url('reporting','edit_default_report', array('id' => $report->getId())) : get_url('reporting','edit_custom_report', array('id' => $report->getId())) ?>"><?php echo lang('edit') ?></a>
-							<?php } ?>
-							<?php if ($report->canDelete(logged_user())) { ?>
-							<a style="margin-right:5px;font-weight:normal;" class="internalLink coViewAction ico-delete" href="javascript:og.deleteReport(<?php echo $report->getId() ?>)"><?php echo lang('delete') ?></a>
-							<?php } ?>
-						</div>
-
-						<div style="float:right; max-width:700px; margin-right:25px; font-weight:normal;" id="report-<?php echo $report->getId();?>">
-							<span class="breadcrumb"></span>
-							<script>
-								<?php $crumbOptions = json_encode($report->getMembersIdsToDisplayPath());
-									$crumbJs = " og.getEmptyCrumbHtml($crumbOptions) ";?>
-									var crumbHtml = <?php echo $crumbJs;?>;
-									$("#report-<?php echo $report->getId()?> .breadcrumb").html(crumbHtml);
-							</script>
-						</div>
-												
-                                                <?php if($report->getFunctionUrl()){?>
-						<div class="desc"><?php echo Localization::instance()->lang_exists($report->getDescription()) ? lang($report->getDescription()) : $report->getDescription(); ?></div>
-					<?php } else { ?>
-						<div class="desc"><?php echo $report->getDescription() ?></div>
-					<?php } ?>
-
-				</div>
-				
-				<?php }
+				foreach($reports as $report) {
+					tpl_assign('report', $report);
+					tpl_display(get_template_path('report_list_item', 'reporting'));
+				}
 				}
 				?>
 			</div>
@@ -117,5 +81,6 @@
 	};
 	$(function() {
 		og.eventManager.fireEvent('replace all empty breadcrumb');
+		og.initReportActionMenus();
 	});
 </script>

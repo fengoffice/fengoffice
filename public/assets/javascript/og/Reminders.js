@@ -66,7 +66,7 @@ og.removeReminder = function(div, context) {
 					input.name = "reminder_subscribers[" + context + "][" + num + "]";
 				} else if (input.name.substring(0, 22) == "reminder_duration_type") {
 					input.name = "reminder_duration_type[" + context + "][" + num + "]";
-				} else {
+				} else if (input.name.substring(0, 17) == "reminder_duration") {
 					input.name = "reminder_duration[" + context + "][" + num + "]";
 				}
 			}

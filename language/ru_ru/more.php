@@ -4,7 +4,7 @@ return array(
 		'quick help' => 'Подсказка',
 		'personal settings' => 'Настройки пользователя',
 		'back' => 'Назад',
-		'learn about and manage your Feng Office' => 'Руководство по настройке Feng Office',
+		'learn about and manage your Feng Office' => 'Руководство по настройке ' .product_name().'',
 		'system modules' => 'Системные модули',
 		'users groups and permissions' => 'Пользователи, группы и разрешения',
 		'companies with users' => 'Компании с пользователями',

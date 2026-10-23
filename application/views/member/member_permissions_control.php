@@ -12,24 +12,40 @@
 	
 	$pg_condition = " AND EXISTS (SELECT pg.id FROM ".TABLE_PREFIX."permission_groups pg WHERE pg.type<>'roles' AND pg.id=cmp.permission_group_id)";
 	$with_perm_pg_ids = array();
-	//If we are edditing an existing member
-	if ($member instanceof Member) {
-		$with_perm_pg_ids = DB::executeAll("SELECT DISTINCT(cmp.permission_group_id) FROM ".TABLE_PREFIX."contact_member_permissions cmp where cmp.member_id=".$member->getId()." $pg_condition AND object_type_id IN (".implode(',', $allowed_object_types_json).")");
-	} else if ($add_default_permissions_for_users) {
-		// If is a new project without a parent one.
+
+	// Prefer permission groups that actually have readable perms in $member_permissions.
+	// DISTINCT on contact_member_permissions can list users who only have rows for disabled
+	// object types, or CMP rows while the dimension is deny-all — those open as all "None".
+	if (is_array($member_permissions)) {
+		foreach ($member_permissions as $pg_id => $perms) {
+			if (!is_array($perms)) continue;
+			foreach ($perms as $p) {
+				if (!empty($p['r'])) {
+					$with_perm_pg_ids[] = (int) $pg_id;
+					break;
+				}
+			}
+		}
+	}
+
+	// New members: fall back to defaults / parent inheritance when form data has no grants yet.
+	if (count($with_perm_pg_ids) == 0 && !($member instanceof Member) && $add_default_permissions_for_users) {
 		if (isset($parent_sel) && $parent_sel > 0) {
 			$with_perm_pg_ids = DB::executeAll("SELECT DISTINCT(cmp.permission_group_id) FROM ".TABLE_PREFIX."contact_member_permissions cmp where cmp.member_id=".$parent_sel." $pg_condition AND object_type_id IN (".implode(',', $allowed_object_types_json).")");
-		//If is a new project without a parent one.
-		} else  {
+		} else {
 			$with_perm_pg_ids = DB::executeAll("SELECT c.permission_group_id FROM ".TABLE_PREFIX."contacts c where c.user_type IN (SELECT id FROM ".TABLE_PREFIX."permission_groups WHERE type='roles' AND name IN ('Executive','Manager','Administrator','Super Administrator'));");
 		}
 	}
 
-	if (count($with_perm_pg_ids)) $with_perm_pg_ids = array_flat($with_perm_pg_ids);
+	// PHP 8 compat: DB::executeAll() returns null when no rows found (not an empty array).
+	// Projects created via the API may have no permission rows yet — guard count() against null.
+	if (is_array($with_perm_pg_ids) && count($with_perm_pg_ids)) $with_perm_pg_ids = array_values(array_unique(array_map('intval', array_flat($with_perm_pg_ids))));
 	else $with_perm_pg_ids = array(0);
-	
-	if (count($with_perm_pg_ids) > 0) {
+
+	$with_perm_pgs = array();
+	if (count($with_perm_pg_ids) > 0 && $with_perm_pg_ids !== array(0)) {
 		$with_perm_pgs = PermissionGroups::instance()->FindAll(array('conditions' => 'id IN ('.implode(',', $with_perm_pg_ids).')'));
+		if (!is_array($with_perm_pgs)) $with_perm_pgs = array();
 	}
 	$users_with_perms = array();
 	$groups_with_perms = array();
@@ -174,6 +190,7 @@
 		<?php 
 			$row_cls = "";
 			foreach ($allowed_object_types as $ot) {
+				if ($ot->getName() == 'expense_item') continue;
 				$row_cls = $row_cls == "" ? "altRow" : "";
 				$id_suffix = $ot->getId();
 				$change_parameters = '\'' . $genid . '\', ' . $ot->getId();

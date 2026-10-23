@@ -11,14 +11,18 @@ App.engine = {
 
 // lang
 if (typeof _lang != 'object') _lang = {};
+if (typeof _langCompatible != 'object') _langCompatible = {};
 if (typeof _langDefault != 'object') _langDefault = {};
 
 function lang(name) {
 	var value = _lang[name];
 	if (!value) {
-		value = _langDefault[name];
+		value = _langCompatible[name];
 		if (!value) {
-			return "Missing lang.js: " + name;
+			value = _langDefault[name];
+			if (!value) {
+				return "Missing lang.js: " + name;
+			}
 		}
 	}
 	for (var i=1; i < arguments.length; i++) {
@@ -34,6 +38,12 @@ function langhtml(name) {
 function addLangs(langs) {
 	for (var k in langs) {
 		_lang[k] = langs[k];
+	}
+}
+
+function addLangsCompatible(langs) {
+	for (var k in langs) {
+		_langCompatible[k] = langs[k];
 	}
 }
 

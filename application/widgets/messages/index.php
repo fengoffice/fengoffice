@@ -1,7 +1,7 @@
 <?php 
 
 $panel = TabPanels::instance()->findById('messages-panel');
-if ($panel instanceof TabPanel && $panel->getEnabled()) {
+if ($panel instanceof TabPanel && $panel->getEnabled() && module_enabled('messages')) {
 	$limit = 5;
 	$result = ProjectMessages::instance()->listing(array(
 		"order" => "updated_on",

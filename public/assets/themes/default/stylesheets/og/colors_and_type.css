@@ -1,0 +1,185 @@
+/* Sourced from github.com/fengoffice/design-system (colors_and_type.css). Keep in sync with the design-system repo. */
+/* =============================================================================
+   Feng Office Design System — Tokens
+   Single source of truth. Import once at the top of every product surface.
+   ============================================================================= */
+
+:root {
+  /* ---------- Primary (tuned teal — anchors brand & primary actions) -------- */
+  --color-primary-50:  #E6F7F4;
+  --color-primary-100: #BFEAE3;
+  --color-primary-200: #8FDACE;
+  --color-primary-300: #5EC9B9;
+  --color-primary-400: #2FB7A4;
+  --color-primary-500: #0F9D8C;  /* brand */
+  --color-primary-600: #0C8275;
+  --color-primary-700: #0A675D;
+  --color-primary-800: #074A43;
+  --color-primary-900: #03201C;
+
+  /* ---------- Secondary (legacy blue — kept for nav chrome only) ----------- */
+  --color-secondary-500: #1B75BC;
+  --color-secondary-700: #003562;
+
+  /* ---------- Neutral slate (replaces every #717FA1/#264653/#333/#666/#ccc) */
+  --color-neutral-0:   #FFFFFF;
+  --color-neutral-50:  #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+
+  /* ---------- Semantic ----------------------------------------------------- */
+  --color-success-50:  #ECFDF5;
+  --color-success-100: #D1FAE5;
+  --color-success-500: #16A34A;
+  --color-success-600: #15803D;
+  --color-success-700: #166534;
+
+  --color-warning-50:  #FFFBEB;
+  --color-warning-100: #FEF3C7;
+  --color-warning-500: #D97706;
+  --color-warning-600: #B45309;
+  --color-warning-700: #92400E;
+
+  --color-danger-50:   #FEF2F2;
+  --color-danger-100:  #FEE2E2;
+  --color-danger-500:  #DC2626;
+  --color-danger-600:  #B91C1C;
+  --color-danger-700:  #991B1B;
+
+  --color-info-50:     #EFF6FF;
+  --color-info-100:    #DBEAFE;
+  --color-info-500:    #2563EB;
+  --color-info-600:    #1D4ED8;
+  --color-info-700:    #1E40AF;
+
+  /* ---------- Surface aliases (what components consume) -------------------- */
+  --surface-page:    var(--color-neutral-50);
+  --surface-card:    var(--color-neutral-0);
+  --surface-sunken:  var(--color-neutral-100);
+  --surface-overlay: rgba(15, 23, 42, 0.48);
+
+  --border-subtle: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
+  --border-focus:  var(--color-primary-500);
+
+  --text-primary:   var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-600);
+  --text-tertiary:  var(--color-neutral-500);
+  --text-disabled:  var(--color-neutral-400);
+  --text-placeholder : var(--color-neutral-300);
+  --text-on-primary: var(--color-neutral-0);
+  --text-link:      var(--color-primary-600);
+
+  /* ---------- Type --------------------------------------------------------- */
+  --font-sans: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* base body 13px to preserve data density of legacy grids */
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   16px;
+  --text-xl:   18px;
+  --text-2xl:  22px;
+  --text-3xl:  28px;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --leading-tight:   1.25;
+  --leading-normal:  1.45;
+  --leading-relaxed: 1.6;
+
+  /* ---------- Spacing (4-px base) ----------------------------------------- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- Radius ------------------------------------------------------ */
+  /* Single shared scale across desktop + mobile. Mobile surfaces tend to use
+     xl / 2xl; desktop chrome uses sm / md / lg. Don't introduce ad-hoc px
+     values in component CSS — extend this scale instead. */
+  --radius-none: 0;
+  --radius-sm:   3px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-xl:   14px;  /* mobile cards, inputs, list rows */
+  --radius-2xl:  20px;  /* mobile heroes, sheets, profile + auth tiles */
+  --radius-pill: 999px;
+
+  /* ---------- Shadows ----------------------------------------------------- */
+  --shadow-xs:    0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-md:    0 4px 8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-lg:    0 12px 24px rgba(15, 23, 42, 0.10), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-modal: 0 24px 48px rgba(15, 23, 42, 0.18), 0 4px 8px rgba(15, 23, 42, 0.08);
+
+  /* ---------- Motion ------------------------------------------------------ */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 280ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------- Focus ------------------------------------------------------- */
+  --focus-ring: 0 0 0 2px var(--color-neutral-0), 0 0 0 4px var(--color-primary-500);
+
+  /* ---------- Icon sizes -------------------------------------------------- */
+  /* Use these on svg/i elements instead of raw px values.
+     Sizes correspond to UI context, not typographic scale. */
+  --icon-xs:  12px;   /* tiny: chip icons, dim tree carets, add-buttons */
+  --icon-sm:  14px;   /* small: rte toolbar, picker rows, btn-sm icons   */
+  --icon-md:  16px;   /* default: btn icons, modal close, inline alerts  */
+  --icon-lg:  18px;   /* chrome: topbar buttons, module nav items        */
+  --icon-xl:  20px;   /* emphasis: modal intent badge                    */
+  --icon-2xl: 24px;   /* feature: empty-state, icon-grid cells           */
+
+  /* ---------- Z-index ---------------------------------------------------- */
+  --z-toolbar:  100;
+  --z-dropdown: 1000;
+  --z-modal:    1100;
+  --z-toast:    1200;
+  --z-tooltip:  1300;
+}
+
+/* ----------------------------------------------------------------------------
+   Type primitives — apply where you need them, never as page-wide resets
+   ---------------------------------------------------------------------------- */
+.fo-h1 { font: var(--weight-semibold) var(--text-3xl)/var(--leading-tight) var(--font-sans); color: var(--text-primary); letter-spacing: -0.01em; }
+.fo-h2 { font: var(--weight-semibold) var(--text-2xl)/var(--leading-tight) var(--font-sans); color: var(--text-primary); }
+.fo-h3 { font: var(--weight-semibold) var(--text-xl)/var(--leading-tight) var(--font-sans); color: var(--text-primary); }
+.fo-h4 { font: var(--weight-semibold) var(--text-lg)/var(--leading-normal) var(--font-sans); color: var(--text-primary); }
+.fo-body     { font: var(--weight-regular) var(--text-base)/var(--leading-normal) var(--font-sans); color: var(--text-primary); }
+.fo-body-md  { font: var(--weight-regular) var(--text-md)/var(--leading-normal) var(--font-sans);   color: var(--text-primary); }
+.fo-caption  { font: var(--weight-regular) var(--text-sm)/var(--leading-normal) var(--font-sans);   color: var(--text-secondary); }
+.fo-overline { font: var(--weight-semibold) var(--text-xs)/var(--leading-tight) var(--font-sans);   color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
+.fo-mono     { font-family: var(--font-mono); font-size: var(--text-sm); }
+
+/* ----------------------------------------------------------------------------
+   Backgrounds, borders, and other non-typographic tokens are consumed directly 
+   by components, so no helper classes are provided here. 
+   See the token definitions above and apply as needed.
+   ---------------------------------------------------------------------------- */
+.bg-primary { background-color: var(--color-primary-500); }
+.bg-secondary { background-color: var(--color-secondary-500); }
+.bg-surface-page { background-color: var(--surface-page); }
+.bg-surface-card { background-color: var(--surface-card); }
+.bg-surface-sunken { background-color: var(--surface-sunken); }
+.bg-surface-overlay { background-color: var(--surface-overlay); }

@@ -16,7 +16,8 @@ abstract class BaseCOTemplates extends ContentDataObjects {
 	 */
 	static private $columns = array(
     	'object_id' => DATA_TYPE_INTEGER,
-    	'description' => DATA_TYPE_STRING
+    	'description' => DATA_TYPE_STRING,
+    	'task_template_category_id' => DATA_TYPE_INTEGER,
 	);
 
 	/**

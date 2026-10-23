@@ -21,10 +21,12 @@ INSERT INTO `<?php echo $table_prefix ?>dimension_object_types` (`dimension_id`,
  ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='feng_persons'), (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='company'), 1,'{"defaultAjax":{"controller":"contact", "action": "company_card"}}')
 ON DUPLICATE KEY UPDATE dimension_id=dimension_id;
 
-INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (`dimension_id`, `parent_object_type_id`, `child_object_type_id`) VALUES
- ((SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='feng_persons'),
- (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='company'),
- (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='person'));
+INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_hierarchies` (`dimension_id`, `parent_object_type_id`, `child_object_type_id`)
+SELECT d.id, p.id, c.id
+FROM (SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code`='feng_persons') d,
+     (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='company') p,
+     (SELECT `id` FROM `<?php echo $table_prefix ?>object_types` WHERE `name`='person') c
+WHERE d.id IS NOT NULL AND p.id IS NOT NULL AND c.id IS NOT NULL;
 
 INSERT INTO `<?php echo $table_prefix ?>dimension_object_type_contents` (`dimension_id`,`dimension_object_type_id`,`content_object_type_id`, `is_required`, `is_multiple`)
  SELECT 
@@ -117,9 +119,12 @@ INSERT INTO `<?php echo $table_prefix ?>object_members` (`member_id`, `object_id
  WHERE `m`.`id` IN (SELECT `id` FROM `<?php echo $table_prefix ?>members` WHERE `dimension_id` IN (SELECT `id` FROM `<?php echo $table_prefix ?>dimensions` WHERE `code` IN ('feng_persons')))
 	AND `m`.`object_id` IN (SELECT `ei`.`contact_id` FROM `<?php echo $table_prefix ?>event_invitations` `ei` WHERE `ei`.`event_id` = `o`.`id`)
 ON DUPLICATE KEY UPDATE member_id=member_id;
- 
-INSERT INTO `<?php echo $table_prefix ?>config_options` (`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`) VALUES
-	('system', 'hide_people_vinculations', '1', 'BoolConfigHandler', 1, 0)
+
+
+INSERT INTO `<?php echo $table_prefix ?>config_options`
+(`category_name`, `name`, `value`, `config_handler_class`, `is_system`, `option_order`, `dev_comment`, `options`)
+VALUES
+('system', 'hide_people_vinculations', '1', 'BoolConfigHandler', 1, 0, NULL, '')
 ON DUPLICATE KEY UPDATE name=name;
 
 INSERT INTO `<?php echo $table_prefix ?>contact_member_permissions` (`permission_group_id`, `member_id`, `object_type_id`, `can_write`, `can_delete`)

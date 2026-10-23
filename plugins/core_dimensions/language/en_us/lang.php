@@ -58,6 +58,8 @@
 	'unarchived' => 'Unarchived',
 	'contacts-panel' => 'Contacts',
 	'load more task groups' => 'Load more task groups...',
+	'show next n groups' => 'Show next {0} groups',
+	'show all groups' => 'Show all groups',
 	'fix repetitive tasks' => 'Fix repetitive tasks',
 	'warning you have added some repetitive tasks for this template that do not have date variables for their date' => 'Warning: You have added some repetitive tasks for this template that do not have date variables for their date.',
 	'error repetitive tasks' => 'This template has repetitive tasks that don\'t have date variables set.',
@@ -107,4 +109,9 @@
 	'do not group' => 'Do not group',
 
 	'object id' => 'Object Id',
+	'please select a project or client filter' => 'Please select a client and/or project filter',
+
+	'expand collapse all groups' => 'Expand/Collapse all groups',
+	'expand all groups' => 'Expand all groups',
+	'collapse all groups' => 'Collapse all groups',
 );

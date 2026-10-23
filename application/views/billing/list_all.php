@@ -39,7 +39,7 @@ foreach($billing_categories as $billing) {
 <?php 
   $options = array(); 
   if($billing->canDelete(logged_user())) {
-  	$options[] = '<a class="internalLink coViewAction ico-delete" href="' . $billing->getDeleteUrl() . '" onclick="return confirm(\'' . escape_single_quotes(lang('confirm delete billing category')) . '\')">' . lang('delete') . '</a>';
+  	$options[] = '<a class="internalLink coViewAction ico-delete" tabindex="-1" href="' . $billing->getDeleteUrl() . '" onclick="return confirm(\'' . escape_single_quotes(lang('confirm delete billing category')) . '\')">' . lang('delete') . '</a>';
   }
 ?>
     <td style="padding:5px;padding-left:10px;padding-right:10px;font-size:80%;"><?php echo implode(' | ', $options) ?></td>

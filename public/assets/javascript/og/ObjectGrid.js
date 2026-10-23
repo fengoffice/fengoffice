@@ -497,7 +497,7 @@ og.ObjectGrid = function(config, ignore_context) {
             emptyMsg: lang("no objects to display")
         }),
 		viewConfig: {
-            forceFit: typeof(config.forceFit) != "undefined" ? config.forceFit : true
+            forceFit: typeof(config.forceFit) != "undefined" ? config.forceFit : false
         },
 		sm: sm,
 		tbar: tbar,
